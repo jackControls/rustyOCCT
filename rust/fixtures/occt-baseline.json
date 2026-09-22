@@ -1,0 +1,21 @@
+{
+  "cases": 66,
+  "point_classifications": 2292,
+  "largest_error_fraction_of_tolerance": 0.00025444252785419965,
+  "oracle": "OCCT 7.9.3",
+  "properties": [
+    "volume",
+    "surface_area",
+    "centroid",
+    "bounds",
+    "central_inertia",
+    "topology_counts",
+    "point_classification"
+  ],
+  "tolerances": {
+    "property_absolute": 1e-07,
+    "inertia_absolute": 1e-06,
+    "relative": 2e-09,
+    "topology_and_classification": "exact"
+  }
+}

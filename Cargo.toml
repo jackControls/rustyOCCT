@@ -1,0 +1,17 @@
+[workspace]
+members = ["rust/kernel"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+license = "LGPL-2.1-only WITH OCCT-exception-1.0"
+repository = "https://github.com/jackControls/rustyOCCT"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+all = "warn"

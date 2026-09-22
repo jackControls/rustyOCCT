@@ -23,6 +23,14 @@
 !/tests/
 !/.github/
 !/samples/
+!/Cargo.toml
+!/Cargo.lock
+!/rust/
+
+# Rust build output (the upstream source tree is retained as a reference).
+/target/
+/rust/validation-output/
+**/__pycache__/
 
 # data/ level: Ignore everything except tracked subdirectories
 /data/*
