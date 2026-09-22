@@ -197,7 +197,8 @@ Distinct roots remain distinct even if their enclosures overlap. These closed
 binary64 enclosures are not necessarily disjoint isolating intervals; general
 algebraic root isolation is a separate capability (see the distinction in
 [CGAL's algebraic kernel](https://doc.cgal.org/latest/Algebraic_kernel_d/classCGAL_1_1Algebraic__kernel__d__1.html)).
-No cubic/quartic solver or general polynomial API is claimed.
+This specialized radical API remains degree two; the general polynomial API
+below handles degrees through 25 without closed-form cubic/quartic formulas.
 
 ## Implemented contract: curved primitive intersections
 
@@ -381,6 +382,56 @@ At most four side combinations are evaluated. Degree, pole and iteration limits
 bound combinatorial work, not a production latency/allocation budget for exact
 rational operands. Operational performance and cancellation remain open gates.
 
+## Higher-degree roots and spline/plane intersections
+
+`polynomial::Polynomial` accepts up to 26 finite binary64 coefficients in
+ascending power order. Coefficients are exact represented numbers; no epsilon
+reduces the degree. The zero polynomial has every point of the queried domain
+as a root. Nonzero results are distinct real roots in exact increasing order,
+with multiplicity retained. Queries cover the real line or a finite closed
+interval, including endpoints. Root identity survives outside binary64;
+only requesting a finite enclosure can fail as unrepresentable.
+
+The solver clears denominators, removes positive integer content, takes
+square-free gcd layers and isolates roots with a Sturm sequence. Every
+pseudo-division elimination scales by a positive magnitude, preserving sign
+variations even with negative leading coefficients. Open-interval root counts
+exclude endpoints, which are emitted once. An accepted isolating interval also
+has nonroot endpoints. Iterative traversal avoids recursion depth from clustered
+roots. Repeated gcd layers establish multiplicity.
+
+`AlgebraicRoot::sign_at` evaluates another represented polynomial at the exact
+root. Rational witnesses and sign-definite rational intervals are fast paths;
+otherwise the Sturm–Tarski query uses the signed remainder sequence of P and
+P′Q. This decides exact zero as well as positive/negative signs. The reference
+is Li, Passmore and Paulson,
+[Deciding Univariate Polynomial Problems Using Untrusted Certificates in Isabelle/HOL](https://wenda302.github.io/assets/pdf/rcf_jar.pdf),
+§§5.1–5.3. This implementation is not formally verified. Retaining a defining
+polynomial and isolating interval follows the algebraic-number model described
+by the [CGAL Algebraic Kernel](https://doc.cgal.org/latest/Algebraic_kernel_d/index.html).
+
+`intersection::spline_plane` substitutes each rational span into a three-point
+plane using exact homogeneous coefficients on local parameter [0,1]. Positive
+weights ensure a nonzero denominator. All numerator roots are isolated; zero
+polynomials become maximal closed overlap intervals. Overlap endpoints are not
+emitted again as isolated points. Shared-knot hits merge only by exact knot
+identity; proximity and equal floating enclosures never merge distinct roots.
+
+Each point retains the algebraic parameter and homogeneous coordinates. Exact
+sign queries against X−xW yield minimal coordinate bounds; original parameter
+units are restored exactly. Actual plane sides decide crossing versus same-side
+tangency; queried domain endpoints are boundary contacts. Nonsmooth knots retain
+separate left/right contact orders. Periodic queries cover the closed fundamental
+domain with distinct start/end parameter events. This convention and observed
+OCCT differences are [explicitly reviewed](NATIVE_SPLINE_PLANE_DIVERGENCES.md).
+
+`RootIsolationOptions::max_subdivisions` defaults to 65,536, shared across all
+spans of a spline query. Exhaustion returns `Error::ComputationLimit` without
+publishing partial results. This limits subdivision only; exact gcd/sign work,
+coefficient bit growth and allocations do not yet have production latency/memory
+budgets or cancellation. Degree/input limits bound combinatorial work, not
+production response time.
+
 ## Independent and adversarial evidence
 
 - `fixtures/orient2d.tsv`: 2,417 input triples with expected signs calculated by
@@ -434,9 +485,20 @@ rational operands. Operational performance and cancellation remain open gates.
   The native corpus has 210 surface observations. High-degree native evaluation
   discrepancies are independently verified and [reviewed separately](NATIVE_SPLINE_DIVERGENCES.md).
 
+- `fixtures/real-roots.tsv`: 94 exact cases including degree 25, negative leading
+  coefficients, multiplicities, clipping, algebraic sign queries, unrepresentable
+  roots and distinct clustered roots with identical binary64 enclosures. SymPy
+  irreducible factors and Vincent–Akritas–Strzebonski continued fractions provide
+  independent isolation; rational interval evaluation decides reduced query signs.
+- `fixtures/spline-plane.tsv`: 185 complete results from independent exact
+  Cox–de Boor basis polynomials and that continued-fraction oracle. Includes all
+  132 native inputs, random rational spans, periodic/unclamped domains, unequal
+  contact orders, overlap chains, extreme weights and subnormal spans. All
+  preexisting 1,850 spline jet fixture rows remain unchanged.
+
 These fixtures are bounded deterministic tests. Separately, [coverage-guided
 fuzzing](FUZZING.md) mutates predicates, linear/curved intersections, polynomial
-roots, spline evaluation and standalone modeling
+roots, spline evaluation/intersections and standalone modeling
 sequences under sanitizers, with retained corpora and daily campaigns.
 Finite test evidence supplements the arithmetic argument; it does not prove a
 general kernel correct. The OCCT comparison corpus remains a separate oracle.
@@ -461,8 +523,8 @@ disagreement disappear.
 1. Add the distance/incircle comparisons required by subsequent algorithms.
    Preserve explicit units, domains and arithmetic bounds; do not reuse an
    arbitrary global epsilon.
-2. Add certified curve/surface editing; specify contracts for projections, root
-   isolation and general intersections. Use interval/error bounds or
+2. Add certified curve/surface editing and projections; extend root isolation
+   to general intersections. Use interval/error bounds or
    additional precision when ordinary arithmetic cannot establish the answer.
 3. Strengthen topology invariants and tolerance propagation through each
    operation; sampled checks alone cannot certify full curve/surface agreement.
@@ -470,7 +532,7 @@ disagreement disappear.
    minimize failures, and expand resource/performance and independent-oracle
    checks as geometry and operation sequences become more complex.
 
-General curve/surface intersections, higher-degree root isolation, Booleans,
+General curve/surface intersections beyond spline/plane, Booleans,
 generic topology history, STEP and meshing remain unimplemented. Certified
 linear/quadratic primitives and spline evaluation do not establish these capabilities or make
 the rest of the kernel exact.

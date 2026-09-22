@@ -18,7 +18,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections']
 
 
 def seed_corpus(target):
@@ -30,7 +30,16 @@ def seed_corpus(target):
         if not path.exists():
             path.write_bytes(data)
 
-    if target == 'modeling':
+    if target == 'roots':
+        for degree in [0,1,2,7,24]:
+            for mode in range(4):
+                save(bytes([degree,128])+bytes([mode])*25+bytes([mode,mode,24])+bytes((j*37)%256 for j in range(200)))
+    elif target == 'spline_intersections':
+        for mode in range(4):
+            for degree in range(8):
+                for value in [0,1,2,3,4,5,6]:
+                    save(bytes([mode,degree,128,1,128])+bytes(5)+bytes([value])*8+bytes((j*37+1)%256 for j in range(100)))
+    elif target == 'modeling':
         for i in range(48):
             save(bytes([(i*73+j*37) % 255 for j in range(121)]))
         save(bytes([255])+bytes(120))

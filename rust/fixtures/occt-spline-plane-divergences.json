@@ -1,0 +1,948 @@
+[
+  {
+    "id": "occt793-spline-plane-factor_4_axis_0.125",
+    "oracle": "OCCT 7.9.3",
+    "case": "factor_4_axis_0.125",
+    "input_sha256": "c1a36229849831c8416a4968c22842fbaf4e95149693b752125a3440803648bc",
+    "native": {
+      "points": [
+        [
+          "3fd0000000000000",
+          "4001000000000000",
+          "c007270000000000",
+          "4014000000000000"
+        ],
+        [
+          "3fe7ffffffffcb0d",
+          "4002fffffffff962",
+          "c00736fffffffe3e",
+          "4014000000000003"
+        ],
+        [
+          "3fe80000047a4d16",
+          "40030000008f49a3",
+          "c007370000260f8f",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "d6c4a7ccf8665b20ff2ecf22e0c5580ba54bf46320b71d0fe1d2f8a11584ad0d",
+    "reason": "The exact polynomial has two double roots at 1/4 and 3/4; native reports additional nearby point events.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-rational_25_axis_0.125",
+    "oracle": "OCCT 7.9.3",
+    "case": "rational_25_axis_0.125",
+    "input_sha256": "63f29ce458c6f883636f51ba8ad6005bd7f551920febcbf4394bd6c1f657d837",
+    "native": {
+      "points": [
+        [
+          "3fdffffff831b588",
+          "400c8000001279ad",
+          "c006aaaaab2b2a7a",
+          "4013ffffffff7ada"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "cb5158090ae24ec269614238eaed1b0efb3523c6937bb9526c8fcc60a288c098",
+    "reason": "Independent rational basis polynomials and exact root isolation confirm the Rust enclosure; a native parameter or coordinate exceeds the stated comparison budget.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-contained_axis_0.125",
+    "oracle": "OCCT 7.9.3",
+    "case": "contained_axis_0.125",
+    "input_sha256": "696ad6a861e4ca5fe6ddead3345d19cc1a5f6deefec734ecbddc08eea1c19e09",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "The entire [0,1] domain has an identically zero plane numerator; native GeomAPI_IntCS reports no overlap segment.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-partial_overlap_axis_0.125",
+    "oracle": "OCCT 7.9.3",
+    "case": "partial_overlap_axis_0.125",
+    "input_sha256": "21a3e02e37ccbcf6a83265f52416c55051f6ad1842d23f4950ba3299c7cf4ee9",
+    "native": {
+      "points": [
+        [
+          "3ff0000000000000",
+          "4001000000000000",
+          "c008000000000000",
+          "4014000000000000"
+        ],
+        [
+          "4000000000000000",
+          "4002000000000000",
+          "c008000000000000",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "d62f41857986a73a1294bbf4618bb7bbc93edd23a77a6d7c7d55d0fc164fc7b6",
+    "reason": "The plane numerator vanishes identically on [1,2]; native reports its endpoints as isolated points and no overlap segment.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-periodic_2_axis_0.125",
+    "oracle": "OCCT 7.9.3",
+    "case": "periodic_2_axis_0.125",
+    "input_sha256": "7829553d6ba922aadcaf5f7036124550d96f6c3d7aa686bfd6bd3d0278155718",
+    "native": {
+      "points": [
+        [
+          "0000000000000000",
+          "4000800000000000",
+          "c007800000000000",
+          "4014000000000000"
+        ],
+        [
+          "3fe5555555555556",
+          "4000800000000000",
+          "c0069c71c71c71c7",
+          "4014000000000000"
+        ],
+        [
+          "3ff5555555555555",
+          "4000800000000000",
+          "c0059c71c71c71c7",
+          "4014000000000000"
+        ],
+        [
+          "3ffffffffffffffc",
+          "4000800000000000",
+          "c0067fffffffffff",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "a7738d3380da0c3a9f5d4b5c01078167bb021253820995308dd829d2bc275739",
+    "reason": "The declared closed-domain contract retains both parameter endpoints 0 and 3; native emits only one of these periodic seam aliases.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-factor_4_oblique_0.125",
+    "oracle": "OCCT 7.9.3",
+    "case": "factor_4_oblique_0.125",
+    "input_sha256": "e91fe6cbbe49881e1591a23c74b5419e3203cf3e555cb41be7dd0f2b7c88bc58",
+    "native": {
+      "points": [
+        [
+          "3fd0000000000000",
+          "4002000000000000",
+          "c0054e0000000000",
+          "40146c8000000000"
+        ],
+        [
+          "3fe7ffffffffcb0d",
+          "4005fffffffff2ca",
+          "c0036e000000031a",
+          "40146480000000dc"
+        ],
+        [
+          "3fe80000006bad7a",
+          "40060000001aeb63",
+          "c0036dfffff9b0d0",
+          "4014647ffffe365d"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "3d946c838ad8e6b70893289156637753051926d52db1dc00c5d55ea5782cec18",
+    "reason": "The exact polynomial has two double roots at 1/4 and 3/4; native reports additional nearby point events.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-factor_7_oblique_0.125",
+    "oracle": "OCCT 7.9.3",
+    "case": "factor_7_oblique_0.125",
+    "input_sha256": "ed7b70173e9e3e4a87c0def453db522dc03251916532dd4c50dd6e0b20036d6b",
+    "native": {
+      "points": [
+        [
+          "3fdffffffe86796f",
+          "4006ffffffad6a90",
+          "c0028400002a950e",
+          "40147effffffad6b"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "e6704d7a3ec5dc6fc0e58a2e218a52b0d7175915228fed1fcaa07e28c5cb5196",
+    "reason": "The exact polynomial has a single order-seven crossing at 1/2; a native parameter or coordinate exceeds the stated comparison budget.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-contained_oblique_0.125",
+    "oracle": "OCCT 7.9.3",
+    "case": "contained_oblique_0.125",
+    "input_sha256": "264f01710edbf498f6639320f9b60f1c63301dd3a53836ce0e65fa00c83e6511",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "The entire [0,1] domain has an identically zero plane numerator; native GeomAPI_IntCS reports no overlap segment.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-partial_overlap_oblique_0.125",
+    "oracle": "OCCT 7.9.3",
+    "case": "partial_overlap_oblique_0.125",
+    "input_sha256": "0a46bc21b1a10b55fc3acb29722d87cef4b6459e06a589a700ae3f5900e221b2",
+    "native": {
+      "points": [
+        [
+          "3ff0000000000000",
+          "4002000000000000",
+          "c007000000000000",
+          "4014000000000000"
+        ],
+        [
+          "4000000000000000",
+          "4004000000000000",
+          "c006000000000000",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "d62f41857986a73a1294bbf4618bb7bbc93edd23a77a6d7c7d55d0fc164fc7b6",
+    "reason": "The plane numerator vanishes identically on [1,2]; native reports its endpoints as isolated points and no overlap segment.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-periodic_2_oblique_0.125",
+    "oracle": "OCCT 7.9.3",
+    "case": "periodic_2_oblique_0.125",
+    "input_sha256": "1bdd4b9c2c1fe53134af1e6c75112de670d282c91f68184f79546fafe628a548",
+    "native": {
+      "points": [
+        [
+          "0000000000000000",
+          "4001000000000000",
+          "c006800000000000",
+          "4014400000000000"
+        ],
+        [
+          "3fe5555555555556",
+          "4001000000000000",
+          "c004b8e38e38e38e",
+          "4014b1c71c71c71c"
+        ],
+        [
+          "3ff5555555555557",
+          "4001000000000000",
+          "c002b8e38e38e38e",
+          "401531c71c71c71d"
+        ],
+        [
+          "3fffffffffffffff",
+          "4001000000000000",
+          "c004800000000000",
+          "4014c00000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "ce89b0e0035b56ed066e19c890837a254b33c4fe403058eaddc682063cbbdca4",
+    "reason": "The declared closed-domain contract retains both parameter endpoints 0 and 3; native emits only one of these periodic seam aliases.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-factor_4_axis_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "factor_4_axis_1.0",
+    "input_sha256": "97ca938753c7adc5c86473ef5be9f56d04f43e819b838c058172f23b711496b8",
+    "native": {
+      "points": [
+        [
+          "3fd0000000000000",
+          "4008000000000000",
+          "c001380000000000",
+          "4014000000000000"
+        ],
+        [
+          "3fe7ffffffffcb0d",
+          "4013ffffffffe586",
+          "c001b7fffffff1ef",
+          "401400000000001a"
+        ],
+        [
+          "3fe8000003fb4263",
+          "4014000001fda132",
+          "c001b800010ebda2",
+          "4013fffffffffffb"
+        ],
+        [
+          "3fe800000566e82e",
+          "4014000002b37417",
+          "c001b800016f55ab",
+          "4013fffffffffff6"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "ffaa61f6f88957b96bbdbb328954712e3c42658a95086e06cfea75e24dadbd9c",
+    "reason": "The exact polynomial has two double roots at 1/4 and 3/4; native reports additional nearby point events.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-factor_7_axis_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "factor_7_axis_1.0",
+    "input_sha256": "e3bc54b2557a48deec54dc859610f7d27f97f1ab890cdb8602cc3956627e9eca",
+    "native": {
+      "points": [
+        [
+          "3fdffffffc6fac9c",
+          "4015fffffe70db84",
+          "c0001000000c7927",
+          "4014000000000001"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "dd7c62354d01607c4fe32a2fcb0ccb4a7573c47d31e7dcc25c95e2bade978235",
+    "reason": "The exact polynomial has a single order-seven crossing at 1/2; a native parameter or coordinate exceeds the stated comparison budget.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-rational_25_axis_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "rational_25_axis_1.0",
+    "input_sha256": "2791e30e65656a2ea0ff88ea6c4a344d561cbdc43eaa06e348d89dd1ec85f07b",
+    "native": {
+      "points": [
+        [
+          "3fdffffff805eebf",
+          "402cfffffffce400",
+          "bffaaaaab2a38335",
+          "4014000000009d5b"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "99cbcf1dca2e08817e8082a04847abe2a91c4ddd37d61412cf78f838e06a2348",
+    "reason": "Independent rational basis polynomials and exact root isolation confirm the Rust enclosure; a native parameter or coordinate exceeds the stated comparison budget.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-contained_axis_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "contained_axis_1.0",
+    "input_sha256": "1154182282e92fac33cda2f8ae3ab9b984f63d55635ada81d021608dafcca6c8",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "The entire [0,1] domain has an identically zero plane numerator; native GeomAPI_IntCS reports no overlap segment.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-partial_overlap_axis_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "partial_overlap_axis_1.0",
+    "input_sha256": "c9d721f44fbeb85e002feb42637fdb43a572c9d11764493c956129348b44cda0",
+    "native": {
+      "points": [
+        [
+          "3ff0000000000000",
+          "4008000000000000",
+          "c008000000000000",
+          "4014000000000000"
+        ],
+        [
+          "4000000000000000",
+          "4010000000000000",
+          "c008000000000000",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "d62f41857986a73a1294bbf4618bb7bbc93edd23a77a6d7c7d55d0fc164fc7b6",
+    "reason": "The plane numerator vanishes identically on [1,2]; native reports its endpoints as isolated points and no overlap segment.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-periodic_2_axis_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "periodic_2_axis_1.0",
+    "input_sha256": "1533b27b8fef62c35d7c9e896f425a2a800962742e7d32bdfab539dcb66c8d55",
+    "native": {
+      "points": [
+        [
+          "0000000000000000",
+          "4004000000000000",
+          "c004000000000000",
+          "4014000000000000"
+        ],
+        [
+          "3fe5555555555556",
+          "4004000000000000",
+          "bff9c71c71c71c71",
+          "4014000000000000"
+        ],
+        [
+          "3ff5555555555556",
+          "4004000000000000",
+          "bfe38e38e38e38e3",
+          "4014000000000000"
+        ],
+        [
+          "4000000000000000",
+          "4004000000000000",
+          "bff8000000000000",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8c943c743f8abf62de6c5d7e0c795e35331a27b897b7d5757adbccd598872527",
+    "reason": "The declared closed-domain contract retains both parameter endpoints 0 and 3; native emits only one of these periodic seam aliases.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-factor_4_oblique_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "factor_4_oblique_1.0",
+    "input_sha256": "197850065ce8f5b4ef89a94f9f4eb92d4a4689d1b9d453943ce8fefb40ced558",
+    "native": {
+      "points": [
+        [
+          "3fd0000000000000",
+          "4010000000000000",
+          "bfd3800000000000",
+          "4017640000000000"
+        ],
+        [
+          "3fe7ffffffffcb0d",
+          "401fffffffffcb27",
+          "3ff91fffffffce60",
+          "40172400000006e0"
+        ],
+        [
+          "3fe8000001942ade",
+          "4020000000ca1565",
+          "3ff92000017ae8b0",
+          "401723ffffca5282"
+        ],
+        [
+          "3fe80000037aac66",
+          "4020000001bd5624",
+          "3ff920000343012c",
+          "401723ffff89b4fc"
+        ],
+        [
+          "3fe800000573d7d8",
+          "4020000002b9ebf0",
+          "3ff92000051c9a37",
+          "401723ffff469d3d"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "84a64485d3d0d6d699c9cac65fe883c23541646e5a06fa3db1d977e7592ecf7f",
+    "reason": "The exact polynomial has two double roots at 1/4 and 3/4; native reports additional nearby point events.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-factor_7_oblique_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "factor_7_oblique_1.0",
+    "input_sha256": "6ef300c71a22e5c3982a11fe66d47bb56216c98d21d097adbe216eceb1e24063",
+    "native": {
+      "points": [
+        [
+          "3fdffffa97f255ef",
+          "4021fffda27a0598",
+          "4003dffb1f1be517",
+          "4017f7fff689f67b"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "cfc5ff64c44bed2dc6b310a00ca696e313b1b507fa22095ae55e9c624df0fba1",
+    "reason": "The exact polynomial has a single order-seven crossing at 1/2; a native parameter or coordinate exceeds the stated comparison budget.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-rational_25_oblique_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "rational_25_oblique_1.0",
+    "input_sha256": "aaf003b15c2d05d85de4fb01977c10868404c7a6e3f4250cb08c4047e469e795",
+    "native": {
+      "points": [
+        [
+          "3fdffffff80d0b26",
+          "403b00000001f35e",
+          "402855555348a97e",
+          "4019555553430038"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "3a2d2faaad2b0f5a19395b47443ce98d948b444a111f29ce424f2a6f7b145a2e",
+    "reason": "Independent rational basis polynomials and exact root isolation confirm the Rust enclosure; a native parameter or coordinate exceeds the stated comparison budget.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-contained_oblique_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "contained_oblique_1.0",
+    "input_sha256": "e345ba8223586ec37e20d8294422a42ee8f2e028ed46e7fd9ba507224234f410",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "The entire [0,1] domain has an identically zero plane numerator; native GeomAPI_IntCS reports no overlap segment.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-partial_overlap_oblique_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "partial_overlap_oblique_1.0",
+    "input_sha256": "39981313755499f5d76f5aa500d29048ba419345c4d7f3a3ad0548813389f8d5",
+    "native": {
+      "points": [
+        [
+          "3ff0000000000000",
+          "4010000000000000",
+          "c000000000000000",
+          "4014000000000000"
+        ],
+        [
+          "4000000000000000",
+          "4018000000000000",
+          "bff0000000000000",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "d62f41857986a73a1294bbf4618bb7bbc93edd23a77a6d7c7d55d0fc164fc7b6",
+    "reason": "The plane numerator vanishes identically on [1,2]; native reports its endpoints as isolated points and no overlap segment.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-periodic_2_oblique_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "periodic_2_oblique_1.0",
+    "input_sha256": "c1070e82eb9112f2d3d6b89aa51ade6ddd8f08f61f29168e72dc157aae8937bf",
+    "native": {
+      "points": [
+        [
+          "0000000000000000",
+          "4008000000000000",
+          "bff8000000000000",
+          "4016000000000000"
+        ],
+        [
+          "3fe5555555555555",
+          "4008000000000000",
+          "3fd1c71c71c71c6e",
+          "40198e38e38e38e4"
+        ],
+        [
+          "3ff5555555555555",
+          "4007ffffffffffff",
+          "400238e38e38e38f",
+          "401d8e38e38e38e3"
+        ],
+        [
+          "4000000000000000",
+          "4008000000000000",
+          "3fe0000000000000",
+          "401a000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "11109167eb718c1110c1855f5294d9d653e6df03613d165cfd8cfc9b65efe860",
+    "reason": "The declared closed-domain contract retains both parameter endpoints 0 and 3; native emits only one of these periodic seam aliases.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-factor_4_axis_8.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "factor_4_axis_8.0",
+    "input_sha256": "fab83fdfb7ed4facace3305745a17b66ec6851a281bdf99242df73b0c52bdfb2",
+    "native": {
+      "points": [
+        [
+          "3fd0000000000000",
+          "4024000000000000",
+          "400e400000000000",
+          "4014000000000000"
+        ],
+        [
+          "3fe7ffffffffcb0d",
+          "4039ffffffffcb0d",
+          "400a400000007085",
+          "40140000000000cc"
+        ],
+        [
+          "3fe800000484671f",
+          "403a00000484671f",
+          "400a3ffff666a4e2",
+          "4013ffffffffffb3"
+        ],
+        [
+          "3fe8000004b4fe97",
+          "403a000004b4fe97",
+          "400a3ffff5ff6302",
+          "4013ffffffffffb5"
+        ],
+        [
+          "3fe800000582d506",
+          "403a00000582d506",
+          "400a3ffff449fb5b",
+          "4013ffffffffffb6"
+        ],
+        [
+          "3fe8000005d86876",
+          "403a000005d86876",
+          "400a3ffff394220e",
+          "4013ffffffffff8b"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "7357633db33f2477b2d9f88283b9ec4d8a95fa4301c09767b7080c1205effc85",
+    "reason": "The exact polynomial has two double roots at 1/4 and 3/4; native reports additional nearby point events.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-factor_7_axis_8.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "factor_7_axis_8.0",
+    "input_sha256": "f341c291247b30b3dff0dc8ccc7279b5c58fc0cde307c4bd40ab90dad957fa6d",
+    "native": {
+      "points": [
+        [
+          "3fdfffff1a19a8f2",
+          "403dffff36d673d4",
+          "4013bffff36d6a5f",
+          "4013fffffffffffc"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "d312c9c055d5117a89d526f22071232b9958b02fcbad751738c7e1523a2b534e",
+    "reason": "The exact polynomial has a single order-seven crossing at 1/2; a native parameter or coordinate exceeds the stated comparison budget.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-rational_25_axis_8.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "rational_25_axis_8.0",
+    "input_sha256": "fbedf0f0e8b626f299dbf50550dec1ac6986ef23031575513e2d02abcd0166d3",
+    "native": {
+      "points": [
+        [
+          "3fdffffff806f15c",
+          "40597ffffffa8dc3",
+          "401eaaaa9ab0c160",
+          "401400000002ef5e"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "d78eb3e54e4db83053a79c4ef88b4d2b5b3faedb580f3d74360f8be23131ff37",
+    "reason": "Independent rational basis polynomials and exact root isolation confirm the Rust enclosure; a native parameter or coordinate exceeds the stated comparison budget.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-contained_axis_8.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "contained_axis_8.0",
+    "input_sha256": "795609f18ed4fa874419402300d250f06f96e166e0073b02c1613a4c1f84e6ef",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "The entire [0,1] domain has an identically zero plane numerator; native GeomAPI_IntCS reports no overlap segment.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-partial_overlap_axis_8.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "partial_overlap_axis_8.0",
+    "input_sha256": "6fa3b775e5e5c728e27e182fa454fe83a3507e31687ce1e7018213a8999884d7",
+    "native": {
+      "points": [
+        [
+          "3ff0000000000000",
+          "4024000000000000",
+          "c008000000000000",
+          "4014000000000000"
+        ],
+        [
+          "4000000000000000",
+          "4032000000000000",
+          "c008000000000000",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "d62f41857986a73a1294bbf4618bb7bbc93edd23a77a6d7c7d55d0fc164fc7b6",
+    "reason": "The plane numerator vanishes identically on [1,2]; native reports its endpoints as isolated points and no overlap segment.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-periodic_2_axis_8.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "periodic_2_axis_8.0",
+    "input_sha256": "689d41017c56730d252ccfc125fcaa7e419a977e9c0b3b526146ec4a3798a0d9",
+    "native": {
+      "points": [
+        [
+          "0000000000000000",
+          "4018000000000000",
+          "3ff0000000000000",
+          "4014000000000000"
+        ],
+        [
+          "3fe5555555555556",
+          "4017ffffffffffff",
+          "402038e38e38e38f",
+          "4013ffffffffffff"
+        ],
+        [
+          "3ff5555555555555",
+          "4017ffffffffffff",
+          "40301c71c71c71c7",
+          "4013fffffffffffe"
+        ],
+        [
+          "4000000000000000",
+          "4018000000000000",
+          "4022000000000000",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "d868873a9719d3267be768f579748b345c33ea848546fc8a8a4697610e6ed7a0",
+    "reason": "The declared closed-domain contract retains both parameter endpoints 0 and 3; native emits only one of these periodic seam aliases.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-factor_1_oblique_8.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "factor_1_oblique_8.0",
+    "input_sha256": "09125bf8495745584f02b043e8d19549cbfd6b6ed7360907ec6ee2df488cc63e",
+    "native": {
+      "points": [
+        [
+          "3fdffffffd4396d2",
+          "4031fffffea1cb69",
+          "4034fffffdf2b11e",
+          "4029fffffea1cb69"
+        ],
+        [
+          "3fe000000000235c",
+          "403200000000235c",
+          "403500000000350a",
+          "402a00000000235c"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "6997c65c6d66f5d678803fbc9d77a4c356e683ff24171b4807eae9cf95ffcbed",
+    "reason": "The exact polynomial has one double root at 1/2; native reports two nearby point events.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-factor_4_oblique_8.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "factor_4_oblique_8.0",
+    "input_sha256": "a4ca5263ad53ea47128c4da1a74658ccc156326f4fde8ce55221537f17536420",
+    "native": {
+      "points": [
+        [
+          "3fd0000000000000",
+          "4032000000000000",
+          "4032900000000000",
+          "4027900000000000"
+        ],
+        [
+          "3fe7ffffffffcb0d",
+          "4048ffffffffcb27",
+          "4040c7fffffff398",
+          "4026900000001b81"
+        ],
+        [
+          "3fe8000001fca780",
+          "4049000001fca77e",
+          "4040c80000773769",
+          "40268ffffef1c5f9"
+        ],
+        [
+          "3fe8000002d4ee64",
+          "4049000002d4ee5d",
+          "4040c80000a9e7b7",
+          "40268ffffe7ee1a0"
+        ],
+        [
+          "3fe80000038bdc32",
+          "40490000038bdc5b",
+          "4040c80000d4c787",
+          "40268ffffe1db2b7"
+        ],
+        [
+          "3fe80000056c294b",
+          "40490000056c295b",
+          "4040c80001455987",
+          "40268ffffd1e899c"
+        ],
+        [
+          "3fe800000582d506",
+          "404900000582d4fd",
+          "4040c800014aa9ca",
+          "40268ffffd127e4b"
+        ],
+        [
+          "3fe8000005b40b58",
+          "4049000005b40b82",
+          "4040c800015632bb",
+          "40268ffffcf859f0"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "7916987fe4b3e5c8bf833ab97704ef8a9201e86c977caed3b6e5e65c3257a3f2",
+    "reason": "The exact polynomial has two double roots at 1/4 and 3/4; native reports additional nearby point events.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-factor_7_oblique_8.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "factor_7_oblique_8.0",
+    "input_sha256": "a67a3a028f6205f84deaade6cf0f9c8ac38105be3909effd0a330bdcb256e813",
+    "native": {
+      "points": [
+        [
+          "3fdffffffe3eb0f9",
+          "404cfffffe76dadb",
+          "40446fffff3548d4",
+          "4029dffffff3b6c9"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "cbd57c1f23e984a23231d1c3dc43ef85d199b55e2e806706f0a9b8d10a672bb2",
+    "reason": "The exact polynomial has a single order-seven crossing at 1/2; a native parameter or coordinate exceeds the stated comparison budget.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-rational_25_oblique_8.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "rational_25_oblique_8.0",
+    "input_sha256": "8e3ca957b4771ff658e58b218d7841f1025a37d39664085557e13e544640328e",
+    "native": {
+      "points": [
+        [
+          "3fdffffff808fbe1",
+          "40693ffffffd6cee",
+          "405d9555534baead",
+          "402f55554d4ba6cf"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "0f20a89a9f473184489807653ee373e2aa0bc699e00cf3f9368a0fbe77aa82be",
+    "reason": "Independent rational basis polynomials and exact root isolation confirm the Rust enclosure; a native parameter or coordinate exceeds the stated comparison budget.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-contained_oblique_8.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "contained_oblique_8.0",
+    "input_sha256": "d010e6733e49422441f7e4f413f2eb4f964341e24323b9c2c07ce35327ef21dd",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "The entire [0,1] domain has an identically zero plane numerator; native GeomAPI_IntCS reports no overlap segment.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-partial_overlap_oblique_8.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "partial_overlap_oblique_8.0",
+    "input_sha256": "3c910dd5389605b30c60296039fca7785213f7735d28037d06dee13d0e0218ac",
+    "native": {
+      "points": [
+        [
+          "3ff0000000000000",
+          "4032000000000000",
+          "4014000000000000",
+          "4014000000000000"
+        ],
+        [
+          "4000000000000000",
+          "4041000000000000",
+          "402a000000000000",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "d62f41857986a73a1294bbf4618bb7bbc93edd23a77a6d7c7d55d0fc164fc7b6",
+    "reason": "The plane numerator vanishes identically on [1,2]; native reports its endpoints as isolated points and no overlap segment.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt793-spline-plane-periodic_2_oblique_8.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "periodic_2_oblique_8.0",
+    "input_sha256": "f602f171ef04fa83886430521567149da7a393d55536c44eaca908e3be8fcef1",
+    "native": {
+      "points": [
+        [
+          "0000000000000000",
+          "4024000000000000",
+          "4022000000000000",
+          "4022000000000000"
+        ],
+        [
+          "3fe5555555555555",
+          "4024000000000001",
+          "403738e38e38e38e",
+          "40301c71c71c71c8"
+        ],
+        [
+          "3ff5555555555555",
+          "4023fffffffffffe",
+          "40439c71c71c71c7",
+          "40381c71c71c71c6"
+        ],
+        [
+          "4000000000000000",
+          "4024000000000000",
+          "4039000000000000",
+          "4031000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "6c8a71dbf6240bc67d4c8a92ff560a591279ec70c5a4010d5a321935ca961ef4",
+    "reason": "The declared closed-domain contract retains both parameter endpoints 0 and 3; native emits only one of these periodic seam aliases.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  }
+]

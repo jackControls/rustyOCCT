@@ -166,6 +166,16 @@ impl KnotVector {
         }
     }
 
+    pub(crate) fn spans(&self) -> impl Iterator<Item = (f64, f64, usize)> + '_ {
+        self.knots.windows(2).filter_map(|k| {
+            if k[0] < self.domain.0 || k[1] > self.domain.1 {
+                return None;
+            }
+            let start = rational(k[0]);
+            Some((k[0], k[1], self.flat.partition_point(|x| x <= &start) - 1))
+        })
+    }
+
     /// One selected side, and (only if continuity is not guaranteed by knot
     /// multiplicity) the other side needed for an automatic derivative check.
     pub(crate) fn locate(&self, u: f64, side: KnotSide, order: usize) -> Result<Vec<Parameter>> {
@@ -218,6 +228,41 @@ impl KnotVector {
         }
         Ok(sides)
     }
+}
+
+/// Exact homogeneous power coefficients on one span, with local parameter
+/// t=(u-U[span])/(U[span+1]-U[span]). Interpolate polynomials through de Boor;
+/// do not recover coefficients from rounded point samples.
+pub(crate) fn span_polynomial<const N: usize>(
+    axis: &KnotVector,
+    span: usize,
+    poles: Vec<[R; N]>,
+) -> [Vec<R>; N] {
+    let mut d: Vec<[Vec<R>; N]> = poles.into_iter().map(|p| p.map(|c| vec![c])).collect();
+    let p = axis.degree;
+    let start = &axis.flat[span];
+    let length = &axis.flat[span + 1] - start;
+    for r in 1..=p {
+        for j in (r..=p).rev() {
+            let i = span - p + j;
+            let width = &axis.flat[i + p - r + 1] - &axis.flat[i];
+            let a = (start - &axis.flat[i]) / &width;
+            let b = &length / width;
+            d[j] = std::array::from_fn(|c| {
+                let mut value = vec![zero(); r + 1];
+                for (k, entry) in value.iter_mut().enumerate() {
+                    if k < r {
+                        *entry += (integer(1) - &a) * &d[j - 1][c][k] + &a * &d[j][c][k];
+                    }
+                    if k > 0 {
+                        *entry += &b * (&d[j][c][k - 1] - &d[j - 1][c][k - 1]);
+                    }
+                }
+                value
+            });
+        }
+    }
+    d.pop().unwrap()
 }
 
 /// Differentiate de Boor's homogeneous pole interpolation, along one axis.

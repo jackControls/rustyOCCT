@@ -18,6 +18,10 @@ mod splines;
 pub use splines::check_splines;
 mod surfaces;
 pub use surfaces::check_surfaces;
+mod roots;
+pub use roots::check_roots;
+mod spline_intersections;
+pub use spline_intersections::check_spline_intersections;
 
 pub fn byte(data: &[u8], i: usize) -> u8 {
     data.get(i).copied().unwrap_or(0)

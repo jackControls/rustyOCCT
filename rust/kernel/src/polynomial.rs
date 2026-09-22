@@ -1,12 +1,16 @@
-//! Certified real roots of finite binary64 polynomials of degree at most two.
+//! Certified real roots of finite binary64 polynomials through degree 25.
 //!
 //! OCCT reference: math_DirectPolynomialRoots::Solve(A,B,C), including degree
 //! reduction, multiplicity and stable handling of cancellation. This module
 //! deliberately uses exact zero/discriminant decisions, with no coefficient
-//! threshold or near-double-root merging. Cubic/quartic roots are not included.
+//! threshold or near-double-root merging. Higher degrees use exact Sturm
+//! isolation and retain algebraic root identity independently of rounded bounds.
 use crate::{algebraic::Surd, exact, math::finite, Result, ScalarInterval};
 use num_bigint::{BigInt, Sign};
 use std::cmp::Ordering;
+
+pub(crate) mod real;
+pub use real::{AlgebraicRoot, Polynomial, RealRoots, RootIsolationOptions, MAX_POLYNOMIAL_DEGREE};
 
 /// Retains the exact algebraic root, even when no finite binary64 enclosure
 /// exists. A rounded interval is a view of this root, not its identity.

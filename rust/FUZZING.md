@@ -14,6 +14,8 @@ coverage feedback. They are distinct from the deterministic invariant tests.
 | `curved` | Full binary64 coefficients, centers/radii/axes and line endpoints; scaled integers; exact/neighboring tangencies; generator and point segments | Quadratic root count, multiplicity, exact comparisons, minimal enclosures; circle/sphere/cylinder hits against independent polynomial-sign and axial-projection oracles; endpoint clipping and typed failures |
 | `splines` | Raw binary64 poles/weights/knots, scaled geometry, degree 1..25, repeated knots, periodic seams, full-range wrapped parameters, explicit sides and derivative requests | Exact basis-function derivatives and closed quotient formulas independently check homogeneous pole interpolation; minimal position/derivative bounds; discontinuity, domain, nonfinite and overflow errors |
 | `surfaces` | Rational tensor grids, independently periodic U/V, repeated knots, high degree in either direction, full-range wrapped parameters and malformed data | Independent tensor basis plus closed bivariate quotient formulas; exact mixed-partial and quadrant continuity decisions; minimal enclosures and typed failures |
+| `roots` | Products of rational/irrational/complex factors through degree 25, repeated roots, closed-domain clipping, power-of-two coefficient scaling and arbitrary binary64 query polynomials | Complete expected root list from known factors; algebraic signs reduce independently in Q(sqrt(d)); multiplicities, exact comparisons, minimal enclosures and nonfinite rejection |
+| `spline_intersections` | Rational Bézier curves with known factored plane numerators; nonperiodic/periodic rational polylines; varying weights, parameter/space scales, oblique planes, tangencies, knots and zero spans | Complete parameter/position bounds from rational Bernstein evaluation or affine span equations; one-sided orders, crossing/tangent/boundary classification, maximal overlaps, closed seam events |
 
 The rational oracle uses `num-rational` with Gaussian elimination and
 barycentric coordinates, plus polynomial-sign/vertex comparisons and cylinder
@@ -28,7 +30,7 @@ coverage percentages or evidence of exhaustive input coverage.
 
 ## Continuing campaigns
 
-[Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all six targets
+[Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all eight targets
 for 60 seconds of mutation each on relevant pushes/PRs, and 600 seconds each every day at
 06:23 UTC on the default branch. Manual runs accept 1–3,600 seconds per target.
 GitHub can delay scheduled jobs. The schedule must remain enabled on the fork.
@@ -42,7 +44,10 @@ Cache eviction does not remove the checked-in fixtures or regressions.
 Each input has a 20-second limit, a 2 GiB process RSS limit, and at most 256
 bytes. The modeling harness bounds geometry to 24 vertices and eight operations;
 curve spline inputs have at most 51 poles; surfaces have up to 108 poles with
-degree 25 in either direction (the kernel allows 4096 total poles). An
+degree 25 in either direction (the kernel allows 4096 total poles). A Bézier
+intersection input has degree at most eight, and a rational polyline has up to
+eight spans; independent exact fixtures additionally cover degree-25 intersections.
+General root products reach degree 25. An
 outer deadline kills the build/fuzzer process group. Corpus replay without any
 subsequent mutation is an incomplete run. An incomplete run, crash,
 timeout, OOM, changed dependency lock or mathematical disagreement fails CI.

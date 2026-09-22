@@ -29,11 +29,15 @@ jobs:
         run: |
           sudo apt-get update
           # DRAW loads plugins by unversioned .so names supplied by the dev package.
-          sudo apt-get install --no-install-recommends -y tcl occt-draw occt-misc libocct-draw-dev libocct-modeling-data-dev
+          sudo apt-get install --no-install-recommends -y tcl occt-draw occt-misc libocct-draw-dev libocct-modeling-data-dev libocct-modeling-algorithms-dev python3-venv
+      - name: Install independent polynomial oracle
+        run: |
+          python3 -m venv target/math-oracle-venv
+          target/math-oracle-venv/bin/python -m pip install --disable-pip-version-check --no-cache-dir --require-hashes -r rust/tools/math-oracle-requirements.txt
       - name: Test the bridge, including deliberate failures
         env:
           RUSTY_TEST_DRAW_EXE: /usr/bin/occt-draw
-        run: python3 -m unittest discover -s rust/tools -p 'test_*.py' -v
+        run: target/math-oracle-venv/bin/python -m unittest discover -s rust/tools -p 'test_*.py' -v
       - name: Verify the independent exact arithmetic oracle
         run: |
           python3 rust/tools/generate_predicate_fixtures.py --check
@@ -41,6 +45,8 @@ jobs:
           python3 rust/tools/generate_curved_fixtures.py --check
           python3 rust/tools/generate_spline_fixtures.py --check
           python3 rust/tools/generate_surface_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_real_root_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_spline_plane_fixtures.py --check
       - name: Run unchanged upstream tests on both kernels
         run: python3 rust/tools/run_upstream_tests.py --backend both --draw-exe /usr/bin/occt-draw
       - name: Compare line and plane intersections with native OCCT
@@ -52,6 +58,9 @@ jobs:
       - name: Compare surface partial derivatives with native OCCT
         if: ${{ !cancelled() }}
         run: python3 rust/tools/compare_surfaces.py --occt-root /usr
+      - name: Compare spline-plane intersections with native OCCT and exact mathematics
+        if: ${{ !cancelled() }}
+        run: target/math-oracle-venv/bin/python rust/tools/compare_spline_plane.py --occt-root /usr
       - name: Preserve logs and explicit coverage results
         if: always()
         uses: actions/upload-artifact@v4.6.2
@@ -63,6 +72,7 @@ jobs:
             target/curved-oracle/
             target/spline-oracle/
             target/surface-oracle/
+            target/spline-plane-oracle/
           if-no-files-found: warn
 
   native:

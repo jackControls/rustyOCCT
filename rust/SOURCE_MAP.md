@@ -78,6 +78,32 @@ The OCCT 7.6.3 degree-25 second-derivative discrepancy is documented in
 It is counted separately from matching native cases, with the exact independent
 answer recomputed before accepting the review; the comparison budget is unchanged.
 
+## Spline/plane intersection traceability
+
+The source reference remains `3d097a0328e71b826377d4814ab05ec3c3d23871`:
+
+- [`GeomAPI_IntCS.cxx`](../src/ModelingAlgorithms/TKGeomAlgo/GeomAPI/GeomAPI_IntCS.cxx),
+  `Perform`, `Point` and `Segment`: adapted curves/surfaces and point/interval results.
+- [`IntCurveSurface_QuadricCurveExactInterUtils.pxx`](../src/ModelingAlgorithms/TKGeomAlgo/IntCurveSurface/IntCurveSurface_QuadricCurveExactInterUtils.pxx)
+  and `IntCurveSurface_TheQuadCurvExactHInter.cxx`: substitute the curve into the
+  quadric equation and search smooth parameter intervals for roots/zero intervals.
+- `IntCurveSurface_TheQuadCurvFuncOfTheQuadCurvExactHInter.cxx`: implicit value
+  and tangent/gradient derivative of that scalar equation.
+- [`math_FunctionAllRoots.cxx`](../src/FoundationClasses/TKMath/math/math_FunctionAllRoots.cxx):
+  sampled zero-interval classification and root refinement. Its numerical
+  tolerance policy is deliberately replaced with exact polynomial root counts
+  and identically-zero span decisions.
+
+Rust uses exact homogeneous span polynomials, degree-25 Sturm isolation and
+Sturm–Tarski signs at algebraic roots. These are independently implemented
+mathematical algorithms, not translations of OCCT's sampled root finder. See
+`MATHEMATICS.md` for proof references and the subdivision-budget contract.
+The native 132-case oracle was captured before Rust implementation. All native
+events remain visible; [reviewed divergences](NATIVE_SPLINE_PLANE_DIVERGENCES.md)
+require independently verified complete results. The 94 root and 185 spline/plane
+fixtures use exact factorization/continued fractions and basis polynomials;
+separate sustained campaigns mutate roots and spline intersections.
+
 ## Rule for the next capability
 
 1. Define the standalone kernel input/output, numerical, topology/history and

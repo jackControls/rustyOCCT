@@ -40,6 +40,9 @@ Cargo does not build it. Rust work lives on the `rust-kernel` branch, while
 - Rational Bézier and B-spline curves and surfaces through degree 25, with
   certified positions and derivatives through order two, including mixed surface
   partials. Clamped, unclamped and periodic directions have explicit knot/seam sides.
+- Exact real-root isolation through degree 25 and polynomial signs at algebraic
+  roots. Certified spline–plane crossings, tangencies and maximal overlap intervals
+  retain distinct parameters even when their floating enclosures coincide.
 - Coverage-guided fuzzing of predicates, intersections, splines and modeling sequences,
   with independent mathematical oracles and retained corpora/failure inputs.
 
@@ -75,7 +78,8 @@ inputs and OCCT differential tests.
 The mathematical tests include **2,417 exact rational 2D orientation fixtures**
 (all six permutations), **1,648 spatial predicate fixtures**, **963 certified
 linear-intersection fixtures**, **448 quadratic-root fixtures**, **1,092 curved
-intersection fixtures**, **1,059 curve and 791 surface spline fixtures**, **10,000 generated integer predicate cases**, and
+intersection fixtures**, **1,059 curve and 791 surface spline fixtures**, **94 general
+root and 185 spline–plane fixtures**, **10,000 generated integer predicate cases**, and
 **256 generated prism invariant cases**. Debug and optimized native builds run
 the same checks. See [the numerical contracts](rust/MATHEMATICS.md) for limits.
 
@@ -84,11 +88,13 @@ classifications**, comparing volume, area, centroid, bounds, inertia and topolog
 counts. Ordinary Cargo tests run this corpus without an OCCT SDK.
 
 Native OCCT also checks 72 line–plane cases, 174 polynomial/curved cases,
-456 spline-curve cases and 210 spline-surface cases. High-degree native numerical
+456 spline-curve cases, 210 spline-surface cases and 132 spline–plane cases.
+Spline–plane [contract and numerical differences](rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md)
+are independently checked and version-pinned. High-degree native numerical
 differences are [reviewed separately](rust/NATIVE_SPLINE_DIVERGENCES.md); they
 are not counted as parity matches.
 [Sustained fuzzing](rust/FUZZING.md)
-runs six instrumented targets on pushes/PRs and daily, restoring the evolving
+runs eight instrumented targets on pushes/PRs and daily, restoring the evolving
 corpus and retaining crashes, timeouts and mathematical disagreements.
 
 ```sh

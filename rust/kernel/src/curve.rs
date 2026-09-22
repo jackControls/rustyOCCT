@@ -218,6 +218,16 @@ impl BSplineCurve3 {
         );
         spline::rationalize(h, [(0, 0), (1, 0), (2, 0)], order + 1)
     }
+
+    pub(crate) fn span_polynomial(&self, span: usize) -> [Vec<R>; 4] {
+        let poles = (span - self.degree()..=span)
+            .map(|i| {
+                let i = self.basis.pole_index(i);
+                spline::homogeneous::<1>(self.poles[i], self.weights[i]).map(|[x]| x)
+            })
+            .collect();
+        spline::span_polynomial(&self.basis, span, poles)
+    }
 }
 
 /// Rational Bezier curve on [0,1], represented exactly as a clamped B-spline.

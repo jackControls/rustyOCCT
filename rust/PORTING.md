@@ -77,7 +77,9 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
    along with 3D orientation/insphere, exact quadratic roots, certified
    line/segment intersections with planes/triangles/circles/spheres/cylinders and
    sustained structured fuzzing. Certified rational Bézier/B-spline curves and surfaces, including periodic
-   directions and derivatives through order two, also exist. Extend certified comparisons and constructions
+   directions and derivatives through order two, also exist. Exact degree-25
+   root isolation and certified spline/plane intersections cover isolated contacts
+   and whole overlap intervals. Extend certified comparisons and constructions
    to curved geometry and propagate uncertainty through topology changes.
    Continue minimizing fuzz failures. See `MATHEMATICS.md` and `FUZZING.md`.
 2. **Topology invariants and operation history.** Strengthen generic B-rep
@@ -88,7 +90,7 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
 3. **Reliable geometry and intersections.** Circular arcs, trimmed curves,
    spline editing; extend the existing certified
    curve/surface jets with
-   projection, root isolation, intersections, trimming and sewing. Every
+   projection, general intersections, trimming and sewing. Every
    numerical algorithm needs a declared domain, degeneracy behavior and error
    evidence. Introduce acceleration after correctness and workload benchmarks.
 4. **Booleans and mechanical features.** Split/classify/assemble solids and
@@ -123,8 +125,9 @@ future subsystem. Split crates when there is a working boundary to isolate.
 - `intersection`: validated three-point planes/triangles, exact intersection
   classifications, analytic circles/spheres/infinite cylinders, and rational
   or algebraic constructions with binary64 enclosures.
-- `polynomial`: exact degree-two real-root classification, retained algebraic
-  root identity/multiplicity and certified comparisons/enclosures.
+- `polynomial`: specialized exact quadratics and general real-root isolation
+  through degree 25, retained algebraic identity/multiplicity, polynomial signs
+  at exact roots and certified comparisons/enclosures.
 - `curve`: validated periodic/nonperiodic rational Bézier/B-spline data, exact homogeneous
   evaluation, derivative continuity decisions and minimal output enclosures.
 - `spline`: validated shared knot vectors, exact periodic extension and parameter wrapping.

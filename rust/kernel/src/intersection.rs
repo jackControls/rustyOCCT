@@ -15,9 +15,14 @@ use num_bigint::{BigInt, BigUint, Sign};
 use std::cmp::Ordering;
 
 mod curved;
+mod spline_plane;
 pub use curved::{
     line_circle, line_cylinder, line_sphere, segment_circle, segment_cylinder, segment_sphere,
     Circle3, ContactKind, CurveHit, CurvedIntersection, Cylinder3, Sphere3,
+};
+pub use spline_plane::{
+    spline_plane, spline_plane_with_options, SplinePlaneContact, SplinePlaneIntersection,
+    SplinePlaneOverlap, SplinePlanePoint,
 };
 
 /// Plane defined by three exactly noncollinear finite points.
