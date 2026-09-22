@@ -208,6 +208,38 @@ minimal enclosures and the tenth sustained fuzz target. Native dimension
 semantics and [reviewed differences](NATIVE_LINEAR_INTERSECTION_DIVERGENCES.md)
 remain explicit. General curved intersections and B-rep splitting are pending.
 
+## Exact Bézier extraction and editing
+
+Source baseline: `3d097a0328e71b826377d4814ab05ec3c3d23871`.
+
+- `GeomConvert_BSplineCurveToBezierCurve.cxx`, both constructors and `Arc`:
+  segment a copy, raise interior knot multiplicities, extract consecutive poles.
+- `Geom_BSplineCurve.cxx`, `Segment`: locate/insert endpoints, reset periodic
+  origin, remove periodicity and enforce the native one-period limit.
+- `BSplCLib.cxx`, `InsertKnots`, `Bohm`, `IncreaseDegree`: local refinement,
+  derivative interpolation and repeated degree-increment averaging.
+- `Geom_BezierCurve.cxx`, `Segment`, `Reverse`, `Increase`: parameter
+  substitution, pole/weight reversal and elevation constraints; `PLib.cxx`,
+  `Trimming` and `CoefficientsPoles`, plus `BSplCLib::BuildCache` for the
+  native floating power-coefficient editing route. `BSplCLib_3.cxx` forwards
+  `BuildCache` to `BSplCLib_CurveComputation.pxx`, where `Bohm` derivatives are
+  scaled by factorials and span length to produce the power coefficients.
+
+Rust preserves exact shape and parameterization using rational blossom
+extraction, de Casteljau subdivision and Bernstein elevation. It keeps original
+parameter ranges rather than resetting every result to local `[0,1]`, and
+supports explicitly budgeted multi-period extraction. It does not port native
+tolerance snapping, out-of-domain Bézier extrapolation, general B-spline knot
+editing or topology/history. Read [the full contract](BEZIER_EDITING.md).
+
+The original `Geom_BezierCurve_Test.cxx` cubic and rational Segment/Increase/
+Reverse inputs are included in the 546 native captures made before Rust
+implementation. The bridge maps the different parameter conventions and
+preserves native numerical differences. Source test inputs are reused, not
+executed as unchanged GoogleTests. There are no new unchanged DRAW passes.
+The 636 independent exact fixtures, coefficient identities, endpoint/jet and
+edit-commutation checks, and eleventh sustained fuzz target validate this scope.
+
 ## Rule for the next capability
 
 1. Define the standalone kernel input/output, numerical, topology/history and

@@ -85,3 +85,10 @@ path = "fuzz_targets/linear_sets.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "bezier_editing"
+path = "fuzz_targets/bezier_editing.rs"
+test = false
+doc = false
+bench = false

@@ -346,6 +346,53 @@ pub(crate) fn span_polynomial<const N: usize>(
     d.pop().unwrap()
 }
 
+/// Evaluate the spline blossom at `p-i` lower and `i` upper arguments to
+/// obtain Bernstein controls on a clipped span. The arguments are fractions
+/// of the *base* span, so periodic translations do not round the knot data.
+pub(crate) fn bezier_controls(
+    axis: &KnotVector,
+    span: usize,
+    mut poles: Vec<[R; 4]>,
+    lower: &R,
+    upper: &R,
+) -> Vec<[R; 4]> {
+    let p = axis.degree;
+    let start = &axis.flat[span];
+    let width = &axis.flat[span + 1] - start;
+    let a = start + lower * &width;
+    let b = start + upper * &width;
+    let stage = |row: &mut [[R; 4]], r: usize, u: &R| {
+        for j in (r..=p).rev() {
+            let i = span - p + j;
+            let width = &axis.flat[i + p - r + 1] - &axis.flat[i];
+            debug_assert!(width > zero());
+            let alpha = (u - &axis.flat[i]) / width;
+            debug_assert!(alpha >= zero() && alpha <= integer(1));
+            if alpha == zero() {
+                row[j] = row[j - 1].clone();
+            } else if alpha != integer(1) {
+                let complement = integer(1) - &alpha;
+                row[j] =
+                    std::array::from_fn(|c| &complement * &row[j - 1][c] + &alpha * &row[j][c]);
+            }
+        }
+    };
+    let mut result = Vec::with_capacity(p + 1);
+    // Share the prefixes containing lower arguments between blossom queries.
+    for lower_count in 0..=p {
+        let mut row = poles.clone();
+        for r in lower_count + 1..=p {
+            stage(&mut row, r, &b);
+        }
+        result.push(row.pop().unwrap());
+        if lower_count < p {
+            stage(&mut poles, lower_count + 1, &a);
+        }
+    }
+    result.reverse();
+    result
+}
+
 /// Differentiate de Boor's homogeneous pole interpolation, along one axis.
 /// `previous[n]` supplies (lower jet index, derivative multiplier) for alpha'.
 pub(crate) fn de_boor<const N: usize>(

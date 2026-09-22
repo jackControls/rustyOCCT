@@ -18,7 +18,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing']
 
 
 def seed_corpus(target):
@@ -30,7 +30,18 @@ def seed_corpus(target):
         if not path.exists():
             path.write_bytes(data)
 
-    if target in ['proximity','linear_sets']:
+    if target == 'bezier_editing':
+        import struct
+        for degree in [0,1,2,7,24]:
+            for kind in range(3):
+                for op in range(6):
+                    save(bytes([2,degree,1,kind,op,3,1,1,128,15,84,85])+bytes((j*37+1)%256 for j in range(160)))
+        for mode in [0,1]:
+            for kind in range(3):
+                for scale in [0,128,255]:
+                    body=b''.join(struct.pack('<d',x) for _ in range(6) for x in [float.fromhex('0x1.fffffffffffffp+1023'),0.,1.,float.fromhex('0x0.0000000000001p-1022')]) if mode==0 else bytes((j*37+1)%256 for j in range(160))
+                    save(bytes([mode,2,1,kind,5,3,1,1,scale,scale,84,85])+body)
+    elif target in ['proximity','linear_sets']:
         from proximity_reference import COUNTS
         for row in (ROOT/'rust/fixtures'/('proximity.tsv' if target=='proximity' else 'linear_sets.tsv')).read_text().splitlines():
             if row.startswith('#'): continue

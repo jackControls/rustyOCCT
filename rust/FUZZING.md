@@ -15,6 +15,7 @@ coverage feedback. They are distinct from the deterministic invariant tests.
 | `modeling` | Valid radial polygons/circles, optional holes, 49 scales, up to eight operations, plus raw invalid input | Repeated rigid transforms, reversed winding/offsets and planar splits; mass/first-moment conservation, topology, classification, bounds and finite positive properties |
 | `curved` | Full binary64 coefficients, centers/radii/axes and line endpoints; scaled integers; exact/neighboring tangencies; generator and point segments | Quadratic root count, multiplicity, exact comparisons, minimal enclosures; circle/sphere/cylinder hits against independent polynomial-sign and axial-projection oracles; endpoint clipping and typed failures |
 | `splines` | Raw binary64 poles/weights/knots, scaled geometry, degree 1..25, repeated knots, periodic seams, full-range wrapped parameters, explicit sides and derivative requests | Exact basis-function derivatives and closed quotient formulas independently check homogeneous pole interpolation; minimal position/derivative bounds; discontinuity, domain, nonfinite and overflow errors |
+| `bezier_editing` | Raw binary64 and scaled rational controls, degree 1..25, clamped/unclamped/periodic splines, subnormal spans, multi-period extraction and composed edits with rational cuts | Complete homogeneous polynomial identities from independent Cox basis coefficients and affine substitution; exact jets/minimal bounds, positive weights, shared endpoints, reversal, elevation/split commutation and preflight limits |
 | `surfaces` | Rational tensor grids, independently periodic U/V, repeated knots, high degree in either direction, full-range wrapped parameters and malformed data | Independent tensor basis plus closed bivariate quotient formulas; exact mixed-partial and quadrant continuity decisions; minimal enclosures and typed failures |
 | `roots` | Products of rational/irrational/complex factors through degree 25, repeated roots, closed-domain clipping, power-of-two coefficient scaling and arbitrary binary64 query polynomials | Complete expected root list from known factors; algebraic signs reduce independently in Q(sqrt(d)); multiplicities, exact comparisons, minimal enclosures and nonfinite rejection |
 | `spline_intersections` | Rational Bézier curves with known factored plane numerators and squared sphere/cylinder contact equations; weighted rational lines against quadrics; nonperiodic/periodic rational polylines; varying weights, parameter/space scales, oblique planes, tangencies, knots and zero spans; explicit trim bounds, neighboring floats and large periodic offsets | Complete parameter/position bounds from rational Bernstein evaluation, affine span equations, or independent geometric quadratic roots with rational weight-parameter conversion; one-sided orders, crossing/tangent/boundary classification, maximal clipped overlaps, closed seam events and repeated turns |
@@ -35,6 +36,10 @@ fixtures additionally use closed analytic projection/cross-product formulas.
 Complete linear-set fuzzing uses cross-product line/plane formulas and boundary
 edge candidates with a gift-wrapping hull; production solves affine equalities
 and enumerates feasible halfspace vertices before a monotone-chain hull.
+Editing production uses spline blossoms and homogeneous de Casteljau;
+its checker uses basis polynomials, binomial affine substitution and Bernstein
+coefficient expansion. Clearing common denominators before those linear
+transforms reduces repeated GCD work without changing the assertions.
 The Rust oracles and production share `num-bigint`/`num-rational`;
 the checked-in Python `Fraction` fixtures provide a separate integer runtime.
 Coverage counts include the oracle and dependencies: they are not kernel-only
@@ -42,7 +47,7 @@ coverage percentages or evidence of exhaustive input coverage.
 
 ## Continuing campaigns
 
-[Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all ten targets
+[Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all eleven targets
 for 60 seconds of mutation each on relevant pushes/PRs, and 600 seconds each every day at
 06:23 UTC on the default branch. Manual runs accept 1–3,600 seconds per target.
 GitHub can delay scheduled jobs. The schedule must remain enabled on the fork.
@@ -55,7 +60,7 @@ Cache eviction does not remove the checked-in fixtures or regressions.
 
 Each input has a 20-second limit, a 2 GiB process RSS limit, and at most 256
 bytes. The modeling harness bounds geometry to 24 vertices and eight operations;
-curve spline inputs have at most 51 poles; surfaces have up to 108 poles with
+curve spline/editing inputs have at most 51 poles; surfaces have up to 108 poles with
 degree 25 in either direction (the kernel allows 4096 total poles). A Bézier
 known-factor intersection input has degree at most eight, and a rational polyline
 has up to eight spans. Power-curve quadric inputs reach degree 25 (degree-50

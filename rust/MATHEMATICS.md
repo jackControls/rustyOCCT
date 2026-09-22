@@ -273,7 +273,9 @@ With zero-based expanded knots `U` and `N` poles, the closed evaluation domain
 is `[U[degree], U[N]]`, which must have positive width. This includes unclamped
 knot vectors; the first/last distinct knots need not bound the domain.
 `BezierCurve3` uses degree `N-1` and clamped knots 0,1. Nonperiodic
-extrapolation, spline editing and spline B-rep edges are not yet implemented. These query primitives do not change the current prism solid model.
+extrapolation, general knot-vector editing and spline B-rep edges are not yet
+implemented. Exact Bézier extraction/editing is described below. These geometric
+primitives do not change the current prism solid model.
 
 The [de Boor recurrence](https://pages.mtu.edu/~shene/COURSES/cs3621/NOTES/spline/de-Boor.html)
 operates on homogeneous poles `(w*x,w*y,w*z,w)`. Rust converts the represented
@@ -662,6 +664,50 @@ predicate on scaled-integer modes. Native observations remain supplementary;
 [known nonresults and extra geometry](NATIVE_LINEAR_INTERSECTION_DIVERGENCES.md)
 never weaken the mathematical checks.
 
+## Exact Bézier extraction and editing
+
+The [editing contract](BEZIER_EDITING.md) retains positive homogeneous rational
+controls `H_i=(w_i*x_i,w_i*y_i,w_i*z_i,w_i)` and an increasing exact domain `[a,b]`.
+Its local Bernstein parameter is `t=(u-a)/(b-a)`. No edit converts controls back
+through binary64. Each extracted arc keeps its own one-sided endpoint jets.
+
+For a nonempty spline span, the degree-p blossom evaluated at p-i copies of the
+clipped lower parameter and i copies of the upper parameter is Bernstein control
+i on that interval. Generalized de Boor stages evaluate these arguments in exact
+rational arithmetic. The denominator at stage r, index j, is
+`U[span-p+j+p-r+1]-U[span-p+j] > 0`; both arguments lie in the active span,
+so each interpolation fraction belongs to `[0,1]`. Thus every output weight
+stays positive. Shared lower-argument prefixes reduce duplicate blossom work.
+Periodic spans use the original extended knot vector with exact translated
+parameter bounds. Preflight counting rejects excessive turns before enumeration.
+
+Subdivision uses the two boundary diagonals of the homogeneous de Casteljau
+triangle. Its final entry is shared exactly by both results. Trimming composes
+subdivisions while retaining original parameter units. Reversing control order
+substitutes `a+b-u`. Elevation from p to p+1 uses
+`H'_i = i/(p+1)*H_(i-1) + (1-i/(p+1))*H_i`, with unchanged endpoint controls.
+These Bernstein identities preserve the entire homogeneous polynomial, hence
+its rational geometry because the weight polynomial is positive.
+
+Evaluation differentiates homogeneous Bernstein controls, including division by
+the original domain length, then applies the rational quotient rule. Exact
+points and derivatives remain available when a finite floating enclosure cannot
+be represented. Position-only queries avoid unnecessary derivative conversion.
+Input rationals are normalized and zero denominators rejected; interval checks
+and degree limits precede edits. Degree <=25 and the caller's arc-count budget
+bound combinatorial work. Arbitrarily large rational cut parameters and long
+edit sequences do not yet have hard time/allocation guarantees.
+
+Independent Python and Rust oracles expand Cox basis functions into power
+polynomials, apply direct binomial affine substitutions, and compare complete
+coefficients/controls. They do not repeat the production blossom or subdivision
+recurrences. Rust's checker clears common denominators before linear polynomial
+transforms and normalizes only their results. Exact jets, minimal enclosures,
+commutation and source endpoint identities add further checks. The native
+API observations are supplementary; [reviewed degree-25 differences](NATIVE_BEZIER_EDITING_DIVERGENCES.md)
+never bypass these mathematical checks. General spline knot removal/insertion,
+surface editing and attaching these curves to topology remain separate work.
+
 ## Independent and adversarial evidence
 
 - `fixtures/orient2d.tsv`: 2,417 input triples with expected signs calculated by
@@ -726,6 +772,13 @@ never weaken the mathematical checks.
   The native corpus has 210 surface observations. High-degree native evaluation
   discrepancies are independently verified and [reviewed separately](NATIVE_SPLINE_DIVERGENCES.md).
 
+- `fixtures/bezier-editing.tsv`: 636 complete exact extraction/editing results,
+  including all 546 native inputs. Independent homogeneous power coefficients
+  determine every expected control. Additional cases cover full exponents,
+  subnormal and adjacent knots, periodic multi-turn ranges and shifted sub-ULP
+  arcs. Separate tests use rational cuts 2^-2048 apart, exact edit commutation,
+  endpoint derivatives, malformed parameters and preflight traversal limits.
+
 - `fixtures/real-roots.tsv`: 95 exact cases including degree 25, negative leading
   coefficients, multiplicities, clipping, algebraic sign queries, unrepresentable
   roots and distinct clustered roots with identical binary64 enclosures. SymPy
@@ -774,7 +827,7 @@ disagreement disappear.
    curved geometry required by subsequent algorithms.
    Preserve explicit units, domains and arithmetic bounds; do not reuse an
    arbitrary global epsilon.
-2. Add certified curve/surface editing and projections; extend root isolation
+2. Extend certified editing to general spline knot/surface operations and add projections; extend root isolation
    to general intersections. Use interval/error bounds or
    additional precision when ordinary arithmetic cannot establish the answer.
 3. Strengthen topology invariants and tolerance propagation through each

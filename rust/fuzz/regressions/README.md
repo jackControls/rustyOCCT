@@ -67,6 +67,25 @@ Reported times include input construction, kernel work and all oracle checks.
 They are diagnostic; correctness tests do not impose a machine-dependent
 wall-clock threshold. The sanitizer campaigns retain their per-input timeout.
 
+## Bézier editing: dense degree-25 periodic operations
+
+`bezier_editing/periodic-degree25-split.bin` and
+`bezier_editing/periodic-degree25-combined.bin` retain initial sanitizer slow
+units `53ae219acb66d68bc0bbede17bec25d0b628f1cc` and
+`a8115407babd486fe26e65a5ad9e43473fee7fb7`. They are original seeds, not minimized
+crashes. Both passed the complete mathematical oracle, but initially took
+11 and 16 seconds under AddressSanitizer. They exercise rational periodic
+degree-25 extraction across two periods, splits, and combined
+trim/elevate/reverse/split checks. The checker now clears common coefficient
+denominators before binomial power transforms, rather than repeatedly reducing
+fractions in every multiply/add. Geometry, assertions and timeout limits are
+unchanged. Runtime includes independent oracle work, not just kernel work.
+
+```sh
+cargo run --manifest-path rust/fuzz/Cargo.toml --locked --release \
+  --example replay_bezier_editing -- rust/fuzz/regressions/bezier_editing/*.bin
+```
+
 ## Polynomial roots: a wide isolator and a large query
 
 `roots/slow-unit-0d9082d327a81ddd2e03cf8963cb57f12c9bf198.bin` came from

@@ -7,6 +7,9 @@
 use crate::{exact, math::finite, spline, Error, KnotVector, Point3, Result, ScalarInterval};
 use num_rational::BigRational as R;
 
+mod editing;
+pub use editing::{BezierExtractionOptions, ExactBezierCurve3, ExactCurveEvaluation};
+
 pub use crate::spline::{MAX_DEGREE, MAX_POLES};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -36,7 +36,7 @@ pub mod spline;
 pub mod surface;
 pub mod topology;
 
-pub use curve::{BSplineCurve3, BezierCurve3};
+pub use curve::{BSplineCurve3, BezierCurve3, ExactBezierCurve3};
 pub use error::{Error, Result};
 pub use intersection::{Circle3, Cylinder3, Plane3, Sphere3, Triangle3};
 pub use interval::ScalarInterval;

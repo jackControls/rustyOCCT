@@ -12,10 +12,10 @@ The [mathematical foundation](MATHEMATICS.md) includes exact 2D/3D orientation
 and insphere, 2,417 independent 2D rational fixtures in all six permutations,
 1,648 spatial predicate fixtures, 963 certified linear-intersection fixtures,
 448 quadratic-root fixtures, 1,092 curved-intersection fixtures, 1,059 curve and 791 surface spline fixtures,
-95 general polynomial-root, 284 spline/plane, 118 spline/quadric, 554 proximity and 684 complete linear-set fixtures,
+95 general polynomial-root, 284 spline/plane, 118 spline/quadric, 554 proximity, 684 complete linear-set and 636 exact Bézier editing fixtures,
 10,000 integer-oracle predicate cases and 256 generated prism invariant cases.
 These tests do not depend on OCCT or an application and run in native debug and
-release CI. These deterministic generated tests are separate from the ten
+release CI. These deterministic generated tests are separate from the eleven
 [coverage-guided fuzz targets and daily retained-corpus campaigns](FUZZING.md).
 
 `compare_intersections.py` executes native OCCT `IntAna_IntConicQuad` and Rust's
@@ -178,6 +178,7 @@ python3 rust/tools/generate_proximity_fixtures.py --check
 python3 rust/tools/generate_linear_sets_fixtures.py --check
 python3 rust/tools/generate_curved_fixtures.py --check
 python3 rust/tools/generate_spline_fixtures.py --check
+python3 rust/tools/generate_bezier_editing_fixtures.py --check
 python3 rust/tools/generate_surface_fixtures.py --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo check --workspace --lib --locked --target wasm32-unknown-unknown
@@ -193,6 +194,7 @@ python3 rust/tools/compare_proximity.py --occt-root /path/to/occt
 python3 rust/tools/compare_linear_sets.py --occt-root /path/to/occt
 python3 rust/tools/compare_curved.py --occt-root /path/to/occt
 python3 rust/tools/compare_splines.py --occt-root /path/to/occt
+python3 rust/tools/compare_bezier_editing.py --occt-root /path/to/occt
 python3 rust/tools/compare_surfaces.py --occt-root /path/to/occt
 ```
 
@@ -202,7 +204,7 @@ supports Unix-style SDK layouts; Windows still runs all ordinary Rust and
 recorded-corpus tests. It does not install software or change noBS-CAD.
 
 Results and optional native executables go in ignored `target/occt-oracle/`
-and `target/intersection-oracle/`, `target/curved-oracle/`, `target/spline-oracle/`, `target/surface-oracle/`.
+and `target/intersection-oracle/`, `target/curved-oracle/`, `target/spline-oracle/`, `target/surface-oracle/`, `target/bezier-editing-oracle/`.
 The live oracle does not link any rendering or data-exchange toolkit.
 
 To intentionally refresh fixture inputs or reference data:
@@ -227,6 +229,23 @@ recomputed, including complete point counts, minimal enclosures, contact orders
 and overlap endpoints. Review hashes and native budgets use the same fail-closed
 checks as the plane bridge. The ordinary 118 exact fixtures also exercise dense
 degree-25 equations, order-50 contacts and extreme radii/axis magnitudes.
+
+## Exact Bézier extraction and editing
+
+The bridge captures 546 native inputs before running Rust and compares all
+1,672 returned arcs' control data, domains and degrees. Independent exact
+Cox basis polynomials plus affine substitutions must reproduce every Rust
+homogeneous control exactly. The native comparison permits common weight
+normalization and the documented floating budget. OCCT 7.9.3 has 506 matching
+cases and 40 [reviewed degree-25 edit differences](NATIVE_BEZIER_EDITING_DIVERGENCES.md).
+Source GoogleTest inputs are reused, not executed unchanged.
+
+The 636 exact fixtures add subnormal/adjacent knots, full-exponent geometry and
+weights, multi-period intervals and shifted knots below a floating ULP. Separate
+tests retain cuts 2^-2048 apart, prove edit commutation, check distinct one-sided
+derivatives, invalid rational parameters and traversal exhaustion. Fuzzing
+compares complete coefficients as well as exact jets and minimal bounds.
+No fixture or review exempts Rust from the exact mathematical contract.
 
 ## Representation and numeric limits
 
