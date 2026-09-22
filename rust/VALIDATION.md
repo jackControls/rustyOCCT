@@ -10,10 +10,11 @@ remaining release requirements are in [PRODUCTION_READINESS.md](PRODUCTION_READI
 
 The [mathematical foundation](MATHEMATICS.md) includes exact 2D/3D orientation
 and insphere, 2,417 independent 2D rational fixtures in all six permutations,
-1,648 spatial predicate fixtures, 963 certified intersection fixtures,
+1,648 spatial predicate fixtures, 963 certified linear-intersection fixtures,
+448 quadratic-root fixtures, 1,092 curved-intersection fixtures,
 10,000 integer-oracle predicate cases and 256 generated prism invariant cases.
 These tests do not depend on OCCT or an application and run in native debug and
-release CI. These deterministic generated tests are separate from the three
+release CI. These deterministic generated tests are separate from the four
 [coverage-guided fuzz targets and daily retained-corpus campaigns](FUZZING.md).
 
 `compare_intersections.py` executes native OCCT `IntAna_IntConicQuad` and Rust's
@@ -23,6 +24,16 @@ type, affine parameter and point coordinates. The test budget is
 budget. CI runs the same comparison against its recorded distribution runtime.
 Exact parallelism intentionally differs from OCCT's angular-tolerance policy;
 near-degenerate/extreme cases use the independent exact oracles instead.
+
+`compare_curved.py` first captures independent native observations, then checks
+Rust against 174 cases of polynomial roots, line/sphere, line/cylinder and
+coplanar XY line/circle intersections. Repeated polynomial roots retain their
+multiplicity; exactly duplicate native hit parameters are merged only when
+comparing geometric hit counts. Cases include exact tangencies and degree
+reduction. Local OCCT 7.9.3 used at most 0.000078 of the same comparison budget.
+Its source/runtime versions remain separate. Full-exponent, near-tangent,
+arbitrary-plane circle and closed-segment behavior is tested by independent
+polynomial-sign/axial-projection oracles, not inferred from this native corpus.
 
 The first implementation has deterministic analytic tests plus a recorded,
 independently evaluated OCCT 7.9.3 corpus. The live comparison was run on Apple
@@ -71,6 +82,7 @@ cargo test --workspace --locked
 cargo test --workspace --locked --release
 python3 rust/tools/generate_predicate_fixtures.py --check
 python3 rust/tools/generate_spatial_fixtures.py --check
+python3 rust/tools/generate_curved_fixtures.py --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo check --workspace --lib --locked --target wasm32-unknown-unknown
 cargo run --locked --example plate
@@ -81,6 +93,7 @@ The live comparison requires a C++17 compiler and OCCT's modeling SDK:
 ```sh
 python3 rust/tools/compare_occt.py --occt-root /path/to/occt
 python3 rust/tools/compare_intersections.py --occt-root /path/to/occt
+python3 rust/tools/compare_curved.py --occt-root /path/to/occt
 ```
 
 On macOS the default SDK is `/opt/homebrew/opt/opencascade`; on Linux it is
@@ -89,7 +102,7 @@ supports Unix-style SDK layouts; Windows still runs all ordinary Rust and
 recorded-corpus tests. It does not install software or change noBS-CAD.
 
 Results and optional native executables go in ignored `target/occt-oracle/`
-and `target/intersection-oracle/`.
+and `target/intersection-oracle/`, `target/curved-oracle/`.
 The live oracle does not link any rendering or data-exchange toolkit.
 
 To intentionally refresh fixture inputs or reference data:
@@ -116,8 +129,8 @@ The generator uses a fixed seed and writes inputs only.
 - Coordinates that cannot resolve the requested tolerance are rejected using
   a 16-ULP-scale budget; geometry is not rescaled to bypass this check.
   This is a conservative solid-construction guard. The separate exact
-  predicates accept all finite `f64` inputs, and linear intersections use
-  certified coordinate/parameter enclosures. Solid distance, area and moment
+  predicates accept all finite `f64` inputs, and implemented linear/curved
+  intersections use certified coordinate/parameter enclosures. Solid distance, area and moment
   calculations remain ordinary floating-point arithmetic.
 - Boundary validation is quadratic; input is bounded to 4,096 total profile
   edges and 128 holes. This is an initial implementation limit.

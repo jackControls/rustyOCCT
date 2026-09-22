@@ -74,7 +74,8 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
 1. **Mathematical foundation — current priority.** The prism implementation
    provides a working test subject. Exact finite-f64 2D orientation, independent
    rational/integer oracles and generated geometric invariants are implemented,
-   along with 3D orientation/insphere, certified linear intersections and
+   along with 3D orientation/insphere, exact quadratic roots, certified
+   line/segment intersections with planes/triangles/circles/spheres/cylinders and
    sustained structured fuzzing. Extend certified comparisons and constructions
    to curved geometry and propagate uncertainty through topology changes.
    Continue minimizing fuzz failures. See `MATHEMATICS.md` and `FUZZING.md`.
@@ -118,7 +119,10 @@ future subsystem. Split crates when there is a working boundary to isolate.
 - `predicates`: exact signs for represented coordinates, separate from
   approximate constructions and tolerance-band decisions.
 - `intersection`: validated three-point planes/triangles, exact intersection
-  classifications and rational constructions with binary64 enclosures.
+  classifications, analytic circles/spheres/infinite cylinders, and rational
+  or algebraic constructions with binary64 enclosures.
+- `polynomial`: exact degree-two real-root classification, retained algebraic
+  root identity/multiplicity and certified comparisons/enclosures.
 - `profile`: validated material boundaries, containment and planar moments.
   Polygons are normalized CCW; holes are assigned orientation in the B-rep.
 - `topology`: immutable owned vertices/edges/faces, opposite oriented uses,

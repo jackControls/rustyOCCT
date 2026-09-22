@@ -9,9 +9,16 @@
 //! OCCT reference: IntAna_IntConicQuad::Perform(gp_Lin, gp_Pln). The affine
 //! substitution is shared; OCCT's angular-tolerance parallelism is deliberately
 //! replaced by exact sidedness here. See rust/MATHEMATICS.md and SOURCE_MAP.md.
+pub use crate::interval::ScalarInterval;
 use crate::{exact, Bounds3, Error, Point3, Result};
 use num_bigint::{BigInt, BigUint, Sign};
 use std::cmp::Ordering;
+
+mod curved;
+pub use curved::{
+    line_circle, line_cylinder, line_sphere, segment_circle, segment_cylinder, segment_sphere,
+    Circle3, ContactKind, CurveHit, CurvedIntersection, Cylinder3, Sphere3,
+};
 
 /// Plane defined by three exactly noncollinear finite points.
 /// No rounded unit normal is used to define its geometry.
@@ -63,26 +70,6 @@ impl Triangle3 {
     }
     pub fn plane(&self) -> &Plane3 {
         &self.plane
-    }
-}
-
-/// Smallest closed finite binary64 interval containing an exact rational value.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct ScalarInterval {
-    lower: f64,
-    upper: f64,
-}
-
-impl ScalarInterval {
-    pub fn lower(self) -> f64 {
-        self.lower
-    }
-    pub fn upper(self) -> f64 {
-        self.upper
-    }
-    /// A finite representative inside the interval; not an exact construction.
-    pub fn representative(self) -> f64 {
-        self.lower + (self.upper - self.lower) * 0.5
     }
 }
 
@@ -333,38 +320,27 @@ fn compare(n: &BigUint, d: &BigUint, scale: i32, bits: u64) -> Ordering {
 
 fn enclose(num: &BigInt, den: &BigInt, scale: i32, what: &'static str) -> Result<ScalarInterval> {
     debug_assert_eq!(den.sign(), Sign::Plus);
-    const MAX: u64 = 0x7fef_ffff_ffff_ffff;
     let (n, d) = (num.magnitude(), den.magnitude());
-    if compare(n, d, scale, MAX) == Ordering::Greater {
-        return Err(Error::Unrepresentable(what));
-    }
-    // Positive finite bit patterns have numerical order. At most 63 exact
-    // comparisons find the floor; no floating-point quotient can overflow,
-    // underflow or accidentally round away a one-ulp construction uncertainty.
-    let (mut low, mut high) = (0, MAX);
-    while low < high {
-        let mid = low + (high - low).div_ceil(2);
-        if compare(n, d, scale, mid) == Ordering::Less {
-            high = mid - 1;
-        } else {
-            low = mid;
-        }
-    }
-    let upper = if compare(n, d, scale, low) == Ordering::Equal {
-        low
-    } else {
-        low + 1
-    };
-    let (low, high) = (f64::from_bits(low), f64::from_bits(upper));
-    Ok(if num.sign() == Sign::Minus {
-        ScalarInterval {
-            lower: -high,
-            upper: -low,
-        }
-    } else {
-        ScalarInterval {
-            lower: low,
-            upper: high,
-        }
-    })
+    let negative = num.sign() == Sign::Minus;
+    crate::interval::enclose(
+        |x| {
+            if x == 0. {
+                return num.cmp(&BigInt::from(0));
+            }
+            if x.is_sign_negative() != negative {
+                return if negative {
+                    Ordering::Less
+                } else {
+                    Ordering::Greater
+                };
+            }
+            let order = compare(n, d, scale, x.abs().to_bits());
+            if negative {
+                order.reverse()
+            } else {
+                order
+            }
+        },
+        what,
+    )
 }

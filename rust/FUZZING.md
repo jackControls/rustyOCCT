@@ -11,17 +11,20 @@ coverage feedback. They are distinct from the deterministic invariant tests.
 | `predicates` | Full binary64 bit patterns, scaled integers, coplanarity, sphere-boundary points, non-finite coordinates | Exact 2D/3D orientation and insphere against independent rational matrix elimination; sphere ordering; typed rejection |
 | `intersections` | Lines/segments, three-point planes/triangles, full binary64 exponents, coplanarity and degeneracies | All three intersection APIs against a rational barycentric oracle; exact classification; minimal finite coordinate/parameter enclosures; explicit unrepresentable results |
 | `modeling` | Valid radial polygons/circles, optional holes, 49 scales, up to eight operations, plus raw invalid input | Repeated rigid transforms, reversed winding/offsets and planar splits; mass/first-moment conservation, topology, classification, bounds and finite positive properties |
+| `curved` | Full binary64 coefficients, centers/radii/axes and line endpoints; scaled integers; exact/neighboring tangencies; generator and point segments | Quadratic root count, multiplicity, exact comparisons, minimal enclosures; circle/sphere/cylinder hits against independent polynomial-sign and axial-projection oracles; endpoint clipping and typed failures |
 
 The rational oracle uses `num-rational` with Gaussian elimination and
-barycentric coordinates, whereas production uses a fixed binary64 integer
-lattice, determinant expansion and edge half-planes. Both use `num-bigint`;
+barycentric coordinates, plus polynomial-sign/vertex comparisons and cylinder
+axial projection. Production uses a fixed binary64 integer lattice, determinant
+expansion, edge half-planes, exact radical comparisons and cylinder cross
+products. Both use `num-bigint`;
 the checked-in Python `Fraction` fixtures provide a separate integer runtime.
 Coverage counts include the oracle and dependencies: they are not kernel-only
 coverage percentages or evidence of exhaustive input coverage.
 
 ## Continuing campaigns
 
-[Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all three targets
+[Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all four targets
 for 60 seconds each on relevant pushes/PRs, and 600 seconds each every day at
 06:23 UTC on the default branch. Manual runs accept 1–3,600 seconds per target.
 GitHub can delay scheduled jobs. The schedule must remain enabled on the fork.

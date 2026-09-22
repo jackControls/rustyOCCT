@@ -171,6 +171,93 @@ oblique planes, scales and endpoint parameters). Full exponent range,
 near-parallelism and coplanar triangle clipping use independent rational
 oracles; we do not claim parity with OCCT's tolerance decisions there.
 
+## Implemented contract: quadratic algebraic roots
+
+`polynomial::quadratic_roots(a,b,c)` solves `a*t²+b*t+c=0` for all finite
+binary64 coefficients. Exact coefficient zeros determine the degree. The zero
+polynomial returns `All`; a nonzero constant returns `None`; a linear polynomial
+has one simple root. For a quadratic, the exact discriminant determines zero,
+one double, or two distinct real roots. A double root appears once with
+multiplicity two. There is no near-zero threshold or root-merging tolerance.
+
+After making `a` positive, the roots are represented as
+`(-b ± sqrt(b²-4ac))/(2a)`. This formula is **not evaluated in floating point**.
+`algebraic.rs` retains expressions `(n+k*sqrt(D))/d`, with nonnegative integer
+`D` and positive integer `d`. To compare against an exact rational value, clear
+the positive denominator and examine `A+B*sqrt(D)`. Equal-sign terms have that
+sign; opposite-sign terms are ordered by comparing `A²` and `B²*D` exactly.
+Zero is decided exactly as well. Removing a common power of two from polynomial
+coefficients reduces work without changing their roots.
+
+`QuadraticRoot` retains this algebraic identity and multiplicity. `compare(x)`
+orders it against any finite binary64 value. `bounds()` returns the smallest
+finite binary64 enclosure, or `Unrepresentable` if the root exceeds that range.
+An unrepresentable root still exists as an exact object and can be compared.
+Distinct roots remain distinct even if their enclosures overlap. These closed
+binary64 enclosures are not necessarily disjoint isolating intervals; general
+algebraic root isolation is a separate capability (see the distinction in
+[CGAL's algebraic kernel](https://doc.cgal.org/latest/Algebraic_kernel_d/classCGAL_1_1Algebraic__kernel__d__1.html)).
+No cubic/quartic solver or general polynomial API is claimed.
+
+## Implemented contract: curved primitive intersections
+
+`Sphere3`, `Cylinder3` and `Circle3` accept finite centers, strictly positive
+finite radii, and (where relevant) finite nonzero axis/normal vectors. Vectors
+are interpreted exactly without normalization. A cylinder is its infinite
+lateral surface, without end caps. A circle lies in the plane through its
+center perpendicular to its supplied normal. These are query primitives;
+they do not add spherical solids, trimmed cylinder faces, or arc profiles.
+
+All three support infinite-line and closed-segment intersections. With
+`w=p-center`, `d=q-p`, radius `r`, and cylinder axis `v`, substitute into:
+
+```text
+sphere:    |w+t*d|² - r² = 0
+cylinder:  |(w+t*d) × v|² - r²*|v|² = 0
+circle:    sphere equation AND (w+t*d) · normal = 0.
+```
+
+The coefficients are constructed with exact integers, including differences
+that would overflow or lose precision in binary64. A coplanar line/circle
+query uses the sphere quadratic; a line crossing the circle plane has one
+rational candidate whose sphere equation is checked exactly before construction.
+Segment membership compares exact algebraic parameters with zero and one before
+any output bounds are calculated. Thus an out-of-segment unrepresentable root
+cannot discard an otherwise valid hit.
+
+Results distinguish empty, contained cylinder generator, one hit and two hits.
+Each hit identifies a simple crossing, a true tangency, or a zero-length segment
+on the primitive. A zero-length line is an error; an equal-endpoint segment is
+a point at parameter zero. A segment entirely inside a sphere/cylinder with no
+surface contact returns empty: this is surface intersection, not volume overlap.
+
+Each point coordinate uses the exact affine expression `p_i+t*(q_i-p_i)` and
+is bounded directly with integer comparisons, without substituting a rounded
+parameter. This matters at large offsets: two parameter intervals may coincide
+while the exact hit coordinates remain distinct and fully resolvable. Both
+hits are retained, ordered by their exact parameter. Coordinates/parameters
+outside finite binary64 range fail the entire requested construction explicitly.
+Output representatives must not replace their uncertainty bounds in later
+topological decisions.
+
+All input dimensions and polynomial degrees are fixed. Cylinder coefficients
+are degree four in lattice integers with at most 2,099-bit coordinate
+differences; a conservative coefficient bound is 8,410 bits and discriminants
+need fewer than 16,830 bits. After affine construction and binary64 comparisons,
+the largest squared-comparison terms fit within a conservative 23,200-bit
+bound. Each enclosure uses at most 63 bisection iterations. This bounds integer
+work structurally; it is not a measured production latency or allocation limit.
+
+OCCT reference paths are `IntAna_IntConicQuad`, `IntAna_Quadric`,
+`gp_Sphere::Coefficients`, `gp_Cylinder::Coefficients`,
+`IntAna2d_AnaIntersection::Perform(line,circle)` and
+`math_DirectPolynomialRoots::Solve(A,B,C)`. OCCT's coefficient thresholds,
+discriminant uncertainty band and radius epsilon can intentionally classify
+near-degenerate cases differently. The live comparison covers 174 cases in the
+common well-conditioned domain, including exact tangencies and native root
+multiplicities. Independent mathematical oracles define the extreme and
+near-tangent behavior; native results are never used to weaken those contracts.
+
 ## Independent and adversarial evidence
 
 - `fixtures/orient2d.tsv`: 2,417 input triples with expected signs calculated by
@@ -197,9 +284,19 @@ oracles; we do not claim parity with OCCT's tolerance decisions there.
   nonnegative inertia quadratic forms, topology, sampled bounds and boundary
   classification. Each has 32 further classification probes before/after motion.
   Their seed and case index make failures reproducible.
+- `fixtures/quadratic.tsv`: 448 root cases from exact polynomial evaluation and
+  vertex ordering in Python `Fraction`, independent of production radical
+  comparisons. Covers degree reduction, repeated roots, near-double roots,
+  cancellation, full exponent range and unrepresentable roots.
+- `fixtures/curved.tsv`: 1,092 line/segment queries against circles, spheres and
+  cylinders. The reference uses rational axial projection for cylinders and
+  exact polynomial-sign comparisons for root/coordinate bounds. Separate tests
+  cover adjacent-float tangencies, coincident parameter enclosures, endpoint
+  clipping before overflow, direction rescaling and endpoint reversal.
 
 These fixtures are bounded deterministic tests. Separately, [coverage-guided
-fuzzing](FUZZING.md) mutates predicates, intersections and standalone modeling
+fuzzing](FUZZING.md) mutates predicates, linear/curved intersections, polynomial
+roots and standalone modeling
 sequences under sanitizers, with retained corpora and daily campaigns.
 Finite test evidence supplements the arithmetic argument; it does not prove a
 general kernel correct. The OCCT comparison corpus remains a separate oracle.
@@ -209,6 +306,7 @@ cargo test --workspace --locked
 cargo test --workspace --locked --release
 python3 rust/tools/generate_predicate_fixtures.py --check
 python3 rust/tools/generate_spatial_fixtures.py --check
+python3 rust/tools/generate_curved_fixtures.py --check
 ```
 
 Native CI executes both debug and optimized Rust tests. The rational fixture
@@ -230,6 +328,7 @@ disagreement disappear.
    minimize failures, and expand resource/performance and independent-oracle
    checks as geometry and operation sequences become more complex.
 
-General curve/surface intersections, root isolation, Booleans, generic topology
-history, STEP and meshing remain unimplemented. Certified linear primitives do
-not establish these capabilities or make the rest of the kernel exact.
+General curve/surface intersections, higher-degree root isolation, Booleans,
+generic topology history, STEP and meshing remain unimplemented. Certified
+linear and quadratic primitives do not establish these capabilities or make
+the rest of the kernel exact.

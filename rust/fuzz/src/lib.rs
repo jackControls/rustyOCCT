@@ -12,6 +12,9 @@ use rusty_occt::predicates::{
 use rusty_occt::{Error, Point2, Point3, Triangle3};
 use std::cmp::Ordering;
 
+mod curved;
+pub use curved::check_curved;
+
 pub fn byte(data: &[u8], i: usize) -> u8 {
     data.get(i).copied().unwrap_or(0)
 }

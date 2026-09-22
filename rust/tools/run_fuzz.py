@@ -17,7 +17,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling']
+TARGETS = ['predicates','intersections','modeling','curved']
 
 
 def seed_corpus(target):
@@ -33,6 +33,17 @@ def seed_corpus(target):
         for i in range(48):
             save(bytes([(i*73+j*37) % 255 for j in range(121)]))
         save(bytes([255])+bytes(120))
+    elif target == 'curved':
+        for source in ['quadratic.tsv','curved.tsv']:
+            rows = [r.split() for r in (ROOT/'rust/fixtures'/source).read_text().splitlines() if not r.startswith('#')]
+            for i,row in enumerate(rows):
+                if i < 112 or i % 41 == 0:
+                    kind = 0 if source == 'quadratic.tsv' else {'s':1,'y':2,'c':3}[row[0].lower()]
+                    words = row[1:4] if kind == 0 else row[2:15]
+                    save(bytes([0,kind])+b''.join(int(x,16).to_bytes(8,'little') for x in words))
+        for mode in [1,2,3]:
+            for kind in range(4):
+                save(bytes([mode,kind])+bytes((j*37)%256 for j in range(106)))
     else:
         source = 'predicates3d.tsv' if target == 'predicates' else 'intersections.tsv'
         rows = [r.split() for r in (ROOT/'rust/fixtures'/source).read_text().splitlines() if not r.startswith('#')]

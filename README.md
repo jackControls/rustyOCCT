@@ -34,6 +34,9 @@ Cargo does not build it. Rust work lives on the `rust-kernel` branch, while
 - Certified line–plane, segment–plane and segment–triangle intersections,
   including coplanar overlap. Decisions are exact; new coordinates and parameters
   have minimal binary64 enclosures. Rounded representatives retain those bounds.
+- Exact quadratic root classification and algebraic root comparisons; certified
+  line/segment intersections with circles, spheres and infinite cylinders,
+  including exact tangencies, segment clipping and preserved root multiplicity.
 - Coverage-guided fuzzing of predicates, intersections and modeling sequences,
   with independent mathematical oracles and retained corpora/failure inputs.
 
@@ -68,6 +71,7 @@ inputs and OCCT differential tests.
 
 The mathematical tests include **2,417 exact rational 2D orientation fixtures**
 (all six permutations), **1,648 spatial predicate fixtures**, **963 certified
+linear-intersection fixtures**, **448 quadratic-root fixtures**, **1,092 curved
 intersection fixtures**, **10,000 generated integer predicate cases**, and
 **256 generated prism invariant cases**. Debug and optimized native builds run
 the same checks. See [the numerical contracts](rust/MATHEMATICS.md) for limits.
@@ -76,8 +80,9 @@ The checked-in OCCT 7.9.3 reference corpus covers **66 solids and 2,292 point
 classifications**, comparing volume, area, centroid, bounds, inertia and topology
 counts. Ordinary Cargo tests run this corpus without an OCCT SDK.
 
-Native OCCT also checks 72 line–plane cases. [Sustained fuzzing](rust/FUZZING.md)
-runs three instrumented targets on pushes/PRs and daily, restoring the evolving
+Native OCCT also checks 72 line–plane cases and 174 polynomial/curved cases.
+[Sustained fuzzing](rust/FUZZING.md)
+runs four instrumented targets on pushes/PRs and daily, restoring the evolving
 corpus and retaining crashes, timeouts and mathematical disagreements.
 
 ```sh

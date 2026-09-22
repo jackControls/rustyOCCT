@@ -20,17 +20,21 @@
 //! # Ok::<(), rusty_occt::Error>(())
 //! ```
 
+mod algebraic;
 mod error;
 mod exact;
 pub mod intersection;
+mod interval;
 pub mod math;
+pub mod polynomial;
 pub mod predicates;
 mod profile;
 mod solid;
 pub mod topology;
 
 pub use error::{Error, Result};
-pub use intersection::{Plane3, Triangle3};
+pub use intersection::{Circle3, Cylinder3, Plane3, Sphere3, Triangle3};
+pub use interval::ScalarInterval;
 pub use math::{Bounds3, Frame3, Point2, Point3, RigidTransform, Tolerance, Vec3};
 pub use profile::{Boundary, Location, Profile};
 pub use solid::{MassProperties, Solid};
