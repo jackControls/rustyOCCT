@@ -5,7 +5,7 @@ from fractions import Fraction as F
 from functools import lru_cache
 from pathlib import Path
 import random
-from compare_spline_plane import cases, encode
+from compare_spline_plane import base_cases, trimmed_cases, encode
 from exact_polynomial_oracle import add, multiply, roots
 from generate_spline_fixtures import axis
 from generate_curved_fixtures import enclosure
@@ -20,9 +20,10 @@ def parse(row):
     plane = [list(map(lambda x: F(float(x)), w[5+3*i:8+3*i])) for i in range(3)]
     data = list(map(lambda x: F(float(x)), w[14:14+4*np]))
     tail = w[14+4*np:]
+    if w[1].endswith('T'): tail=tail[:-2]
     if len(tail) != 2*nk: raise ValueError('invalid knot count')
     return (degree, plane, [data[i:i+3] for i in range(0, len(data), 4)], data[3::4],
-            list(map(float, tail[::2])), list(map(int, tail[1::2])), w[1] == 'P')
+            list(map(float, tail[::2])), list(map(int, tail[1::2])), w[1].startswith('P'))
 
 
 def homogeneous(degree, poles, weights, flat, span):
@@ -49,20 +50,35 @@ def homogeneous(degree, poles, weights, flat, span):
 def expected(row):
     degree, plane, poles, weights, knots, mults, periodic = parse(row)
     flat, start, end = axis(degree, knots, mults, periodic)
+    trimmed=row.split()[1].endswith('T')
+    first,last=map(lambda x:F(float(x)),row.split()[-2:]) if trimmed else (start,end)
+    assert first<last and (periodic or start<=first<last<=end)
+    # Enumerate translated basis knot intervals, using exact quotient/remainder
+    # arithmetic. Production preflights a traversal budget separately.
+    period=end-start
+    turns=range((first-start)//period,(last-start)//period+1) if periodic else [0]
+    pieces=[]
+    for turn in turns:
+        offset=turn*period
+        for span in range(degree,len(flat)-degree-1):
+            a,b=flat[span:span+2]
+            if a==b or a<start or b>end: continue
+            a,b=a+offset,b+offset
+            low,high=max(a,first),min(b,last)
+            if low<high: pieces.append((span,a,b,low,high))
     u, v = [[p[c]-plane[0][c] for c in range(3)] for p in plane[1:]]
     normal = [u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]]
     candidates, overlaps = [], []
-    for span in range(degree, len(flat)-degree-1):
-        a, b = flat[span:span+2]
-        if a == b or a < start or b > end: continue
+    for span,a,b,low,high in pieces:
+        local_low,local_high=(low-a)/(b-a),(high-a)/(b-a)
         h = homogeneous(degree, poles, weights, flat, span)
         f = []
         for c in range(3):
             f = add(f, [normal[c]*x for x in add(h[c], [-plane[0][c]*w for w in h[3]])])
-        local = roots(f, F(0), F(1))
+        local = roots(f, local_low, local_high)
         if local is None:
-            if overlaps and overlaps[-1][1] == a: overlaps[-1][1] = b
-            else: overlaps.append([a,b])
+            if overlaps and overlaps[-1][1] == low: overlaps[-1][1] = high
+            else: overlaps.append([low,high])
             continue
         # Determine side signs by exact rational probes BETWEEN adjacent roots,
         # independently of production's derivative/multiplicity parity rule.
@@ -70,12 +86,12 @@ def expected(row):
             while left.high >= right.low: left.refine(); right.refine()
         for i, root in enumerate(local):
             from exact_polynomial_oracle import evaluate, sign
-            at_start, at_end = root.compare(0) == 0, root.compare(1) == 0
-            knot = a if at_start else b if at_end else None
-            while not at_start and root.low <= 0: root.refine()
-            while not at_end and root.high >= 1: root.refine()
-            left_probe = ((local[i-1].high if i else F(0)) + root.low)/2
-            right_probe = (root.high + (local[i+1].low if i+1 < len(local) else F(1)))/2
+            at_start, at_end = root.compare(local_low) == 0, root.compare(local_high) == 0
+            knot = low if at_start else high if at_end else None
+            while not at_start and root.low <= local_low: root.refine()
+            while not at_end and root.high >= local_high: root.refine()
+            left_probe = ((local[i-1].high if i else local_low) + root.low)/2
+            right_probe = (root.high + (local[i+1].low if i+1 < len(local) else local_high))/2
             orders = [0 if at_start else root.multiplicity, 0 if at_end else root.multiplicity]
             signs = [None if at_start else sign(evaluate(f,left_probe)), None if at_end else sign(evaluate(f,right_probe))]
             assert all(x in [-1,1] for x in signs if x is not None)
@@ -92,11 +108,12 @@ def expected(row):
         left,right = item['signs']
         contact = 'B' if None in [left,right] else 'T' if left == right else 'C'
         points.append([*item['bounds'], contact, *map(str,item['orders'])])
-    return [str(len(points)), str(len(overlaps)), *[x for p in points for x in p], *[bits(float(x)) for pair in overlaps for x in pair]]
+    endpoints=[v for pair in overlaps for x in pair for v in (enclosure(lambda q:(x>q)-(x<q)) if trimmed else [bits(float(x))])]
+    return [str(len(points)), str(len(overlaps)), *[x for p in points for x in p], *endpoints]
 
 
 def inputs():
-    result = cases().splitlines()
+    result = base_cases().splitlines()
     plane = [(0.,0.,0.),(1.,0.,0.),(0.,1.,0.)]
     tiny, maximum = value(1), value(0x7fefffffffffffff)
     for name, d, poles, weights, knots, mults in [
@@ -116,6 +133,38 @@ def inputs():
         poles = [[float(rng.randint(-8,8)) for _ in range(3)] for _ in range(np)]
         weights = [float(rng.randint(1,5)) for _ in range(np)]
         result.append(encode(f'random_{i}','P' if periodic else 'S',d,plane,poles,weights,knots,mults))
+    result+=trimmed_cases().splitlines()
+    # Shifted knots and isolated hits can share floating enclosures. Their exact
+    # parameter identity must survive; no rounded endpoint clipping is allowed.
+    for name,knots,range_ in [
+        ('shifted_nonbinary',[.1,.4,1.3],(2.,5.)),
+        ('many_subulp_knots',[0.,.125,.5],(2.**53,2.**53+2.)),
+        ('negative_subulp_knots',[0.,.125,.5],(-2.**53-2.,-2.**53)),
+        ('subnormal_turns',[0.,tiny,4*tiny],(tiny,9*tiny)),
+    ]:
+        for zs in [[0.,0.],[-1.,1.]]:
+            line=encode(name+str(zs[0]),'PT',1,plane,[(0.,0.,zs[0]),(1.,2.,zs[1])],[1.,2.],knots,[1,1,1])
+            result.append(line+' '+' '.join(format(x,'.17g') for x in range_))
+    line=encode('subulp_overlaps','PT',1,plane,[(0.,0.,0.),(1.,1.,0.),(2.,0.,1.)],[1.]*3,[0.,.125,.375,.5],[1]*4)
+    result.append(line+' '+format(2.**53,'.17g')+' '+format(2.**53+2.,'.17g'))
+    # Exact tangency at 1/2 is outside these neighboring representable bounds.
+    import math
+    for name,a,b in [('above_half',math.nextafter(.5,math.inf),1.),('below_half',0.,math.nextafter(.5,-math.inf))]:
+        z=[1.,-1.,1.]
+        line=encode(name,'BT',2,plane,[(float(i),0.,z[i]) for i in range(3)],[1.]*3,[0.,1.],[3,3])
+        result.append(line+' '+format(a,'.17g')+' '+format(b,'.17g'))
+    line=next(r for r in base_cases().splitlines() if r.startswith('rational_25_axis_1.0 ')).split()
+    for i,(a,b) in enumerate([(.49,.51),(.5,.75)]):
+        result.append(' '.join([f'trim_degree25_{i}','BT',*line[2:],str(a),str(b)]))
+    a=3*2**18
+    coefficients=[F(-2),F(4*a),F(-2*a*a)]+[F(0)]*6+[F(1)]
+    bernstein=[sum(coefficients[k]*F(math.comb(i,k),math.comb(9,k)) for k in range(i+1)) for i in range(10)]
+    scale=math.lcm(*(x.denominator for x in bernstein))
+    z=[float(x*scale) for x in bernstein]
+    assert all(F(x)==b*scale for x,b in zip(z,bernstein))
+    for i,(low,high) in enumerate([(0.,1/a),(1/a,2/a),(0.,2/a)]):
+        line=encode(f'clipped_cluster_{i}','BT',9,plane,[(float(i),0.,h) for i,h in enumerate(z)],[1.]*10,[0.,1.],[10,10])
+        result.append(line+' '+format(low,'.17g')+' '+format(high,'.17g'))
     return result
 
 

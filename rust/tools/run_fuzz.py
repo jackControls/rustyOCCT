@@ -35,7 +35,7 @@ def seed_corpus(target):
             for mode in range(4):
                 save(bytes([degree,128])+bytes([mode])*25+bytes([mode,mode,24])+bytes((j*37)%256 for j in range(200)))
     elif target == 'spline_intersections':
-        for mode in range(4):
+        for mode in range(16):
             for degree in range(8):
                 for value in [0,1,2,3,4,5,6]:
                     save(bytes([mode,degree,128,1,128])+bytes(5)+bytes([value])*8+bytes((j*37+1)%256 for j in range(100)))

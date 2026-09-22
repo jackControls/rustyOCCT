@@ -1,5 +1,5 @@
 //! Test-only text bridge. Each hit exports all certified bounds and contact data.
-use rusty_occt::intersection::{spline_plane, Plane3, SplinePlaneContact};
+use rusty_occt::intersection::{spline_plane, spline_plane_in, Plane3, SplinePlaneContact};
 use rusty_occt::{BSplineCurve3, Point3};
 use std::io::{self, BufRead};
 
@@ -32,15 +32,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             knots.push(words.next().ok_or("missing knot")?.parse()?);
             mults.push(words.next().ok_or("missing multiplicity")?.parse()?);
         }
+        let range = if kind.ends_with('T') {
+            Some((
+                words.next().ok_or("missing first parameter")?.parse()?,
+                words.next().ok_or("missing last parameter")?.parse()?,
+            ))
+        } else {
+            None
+        };
         if words.next().is_some() {
             return Err("extra input data".into());
         }
         let curve = match kind {
-            "B" | "S" => BSplineCurve3::new(degree, poles, Some(weights), knots, mults)?,
-            "P" => BSplineCurve3::new_periodic(degree, poles, Some(weights), knots, mults)?,
+            "B" | "S" | "BT" | "ST" => {
+                BSplineCurve3::new(degree, poles, Some(weights), knots, mults)?
+            }
+            "P" | "PT" => BSplineCurve3::new_periodic(degree, poles, Some(weights), knots, mults)?,
             _ => return Err("invalid curve kind".into()),
         };
-        let result = spline_plane(&curve, &plane)?;
+        let result = if let Some((a, b)) = range {
+            spline_plane_in(&curve, &plane, a, b)?
+        } else {
+            spline_plane(&curve, &plane)?
+        };
         print!(
             "{name} {} {}",
             result.points().len(),
@@ -59,8 +73,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             print!(" {contact} {left} {right}");
         }
         for overlap in result.overlaps() {
-            let (a, b) = overlap.parameters();
-            print!(" {a:.17e} {b:.17e}");
+            if range.is_some() {
+                for b in overlap.parameter_bounds() {
+                    print!(" {:.17e} {:.17e}", b.lower(), b.upper());
+                }
+            } else {
+                let (a, b) = overlap.parameters();
+                print!(" {a:.17e} {b:.17e}");
+            }
         }
         println!();
     }

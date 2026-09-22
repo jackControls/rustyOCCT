@@ -65,3 +65,28 @@ target/math-oracle-venv/bin/python rust/tools/compare_spline_plane.py
 and a report separating matches, reviewed differences and failures.
 `--native-only` captures OCCT without building Rust. The production library
 does not invoke C++, Python, SymPy or native OCCT.
+
+## Explicit parameter ranges
+
+An additional 82 `Geom_TrimmedCurve` inputs were captured before implementing
+bounded Rust queries. Construction uses `Sense=true, theAdjustPeriodic=false`
+to retain the supplied increasing endpoints. Native point/segment observations
+remain unmodified. The combined 214-case corpus on OCCT 7.9.3 has **155 matches
+and 59 reviewed differences**: the original 35 plus 24 range-query differences.
+Every complete Rust result is independently verified.
+
+The new differences cover duplicate tangent events, missing clipped overlaps,
+ill-conditioned order-seven contacts, and periodic parameter normalization.
+The exact oblique order-seven numerator has its root at 1/2; native normalized
+plane evaluation and root search can return about 0.49645859911066054 for the
+same three defining points. This is recorded against the exact represented-point
+contract, not an assertion that native floating planes promise that contract.
+
+For the explicit periodic range [3,6], native repeats parameter 3 and omits 6
+in the quadratic fixture. For [1.5,7.25], it reports events in only the first
+period of the query. Rust retains all distinct parameter events across the
+requested interval. The pinned source's `IntCurveSurface_InterUtils.pxx`,
+`ComputeAppendPoint`, normalizes periodic hit parameters into the first period;
+the observed parameter-convention differences are therefore explicit, not
+silently merged or counted as matching geometry. Runtime versions and pinned
+source remain distinct references.

@@ -21,8 +21,9 @@ pub use curved::{
     Circle3, ContactKind, CurveHit, CurvedIntersection, Cylinder3, Sphere3,
 };
 pub use spline_plane::{
-    spline_plane, spline_plane_with_options, SplinePlaneContact, SplinePlaneIntersection,
-    SplinePlaneOverlap, SplinePlanePoint,
+    spline_plane, spline_plane_in, spline_plane_in_with_options, spline_plane_with_options,
+    SplinePlaneContact, SplinePlaneIntersection, SplinePlaneOptions, SplinePlaneOverlap,
+    SplinePlanePoint,
 };
 
 /// Plane defined by three exactly noncollinear finite points.

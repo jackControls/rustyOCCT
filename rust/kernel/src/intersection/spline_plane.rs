@@ -24,22 +24,54 @@ pub enum SplinePlaneContact {
     Boundary,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SplinePlaneOverlap {
-    start: f64,
-    end: f64,
+    exact: [R; 2],
+    bounds: [ScalarInterval; 2],
 }
 impl SplinePlaneOverlap {
-    /// Maximal closed interval entirely on the plane. Bounds are original knots.
-    pub fn parameters(self) -> (f64, f64) {
-        (self.start, self.end)
+    /// Representatives of the maximal closed overlap endpoints. For shifted
+    /// periodic knots these may be rounded; retain `parameter_bounds` or compare
+    /// against the exact endpoint. Distinct endpoints may share an enclosure.
+    pub fn parameters(&self) -> (f64, f64) {
+        (
+            self.bounds[0].representative(),
+            self.bounds[1].representative(),
+        )
+    }
+    pub fn parameter_bounds(&self) -> [ScalarInterval; 2] {
+        self.bounds
+    }
+    pub fn compare_parameter(&self, endpoint: usize, value: f64) -> Result<Ordering> {
+        finite(value, "overlap endpoint comparison")?;
+        let exact = self
+            .exact
+            .get(endpoint)
+            .ok_or(Error::OutOfDomain("overlap endpoint"))?;
+        Ok(exact.cmp(&real::rat(value)))
+    }
+}
+
+/// Independent limits on visited spans and polynomial subdivisions. Neither
+/// limit is a floating geometric tolerance or a hard CPU/allocation deadline.
+#[derive(Debug, Clone, Copy)]
+pub struct SplinePlaneOptions {
+    pub root_isolation: RootIsolationOptions,
+    pub max_spans: usize,
+}
+impl Default for SplinePlaneOptions {
+    fn default() -> Self {
+        Self {
+            root_isolation: RootIsolationOptions::default(),
+            max_spans: crate::spline::MAX_POLES,
+        }
     }
 }
 
 #[derive(Debug)]
 struct Span {
-    start: f64,
-    end: f64,
+    start: R,
+    end: R,
     homogeneous: [Vec<R>; 4],
     control_bounds: [(f64, f64); 3],
 }
@@ -64,10 +96,7 @@ impl Span {
         root.sign_polynomial(&IntPolynomial::from_rationals(&coefficients))
     }
     fn compare_parameter(&self, root: &AlgebraicRoot, x: f64) -> Ordering {
-        root.compare_rational(
-            &((real::rat(x) - real::rat(self.start))
-                / (real::rat(self.end) - real::rat(self.start))),
-        )
+        root.compare_rational(&((real::rat(x) - &self.start) / (&self.end - &self.start)))
     }
 }
 
@@ -145,7 +174,7 @@ impl SplinePlaneIntersection {
 struct Candidate {
     span: Arc<Span>,
     root: AlgebraicRoot,
-    knot: Option<f64>,
+    boundary: Option<R>,
     multiplicities: [Option<usize>; 2],
     signs: [Option<Ordering>; 2],
 }
@@ -163,12 +192,52 @@ pub fn spline_plane_with_options(
     plane: &Plane3,
     options: RootIsolationOptions,
 ) -> Result<SplinePlaneIntersection> {
-    let mut budget = Budget::new(options);
+    let (first, last) = curve.domain();
+    spline_plane_in_with_options(
+        curve,
+        plane,
+        first,
+        last,
+        SplinePlaneOptions {
+            root_isolation: options,
+            ..SplinePlaneOptions::default()
+        },
+    )
+}
+
+/// Intersect a finite closed parameter interval of positive length. Nonperiodic
+/// bounds must lie in the curve domain. Periodic bounds remain in the caller's
+/// parameter units, may cross any seam and may span multiple turns. No snapping,
+/// automatic period adjustment, extrapolation or reversed-parameter sense is
+/// applied. Endpoints are included and reported as boundary contacts.
+pub fn spline_plane_in(
+    curve: &BSplineCurve3,
+    plane: &Plane3,
+    first: f64,
+    last: f64,
+) -> Result<SplinePlaneIntersection> {
+    spline_plane_in_with_options(curve, plane, first, last, SplinePlaneOptions::default())
+}
+pub fn spline_plane_in_with_options(
+    curve: &BSplineCurve3,
+    plane: &Plane3,
+    first: f64,
+    last: f64,
+    options: SplinePlaneOptions,
+) -> Result<SplinePlaneIntersection> {
+    let spans = curve
+        .knot_vector()
+        .spans_in(first, last, options.max_spans)?;
+    let mut budget = Budget::new(options.root_isolation);
     let mut candidates: Vec<Candidate> = Vec::new();
-    let mut overlaps: Vec<SplinePlaneOverlap> = Vec::new();
+    let mut overlaps: Vec<[R; 2]> = Vec::new();
     let normal = plane.normal.clone().map(R::from_integer);
     let anchor = plane.vertices[0].to_array().map(real::rat);
-    for (start, end, index) in curve.knot_vector().spans() {
+    for at in spans {
+        let (start, end, index) = (at.start, at.end, at.index);
+        let length = &end - &start;
+        let lower = (&at.lower - &start) / &length;
+        let upper = (&at.upper - &start) / &length;
         let homogeneous = curve.span_polynomial(index);
         let coefficients: Vec<R> = (0..=curve.degree())
             .map(|i| {
@@ -179,14 +248,14 @@ pub fn spline_plane_with_options(
             .collect();
         let polynomial = IntPolynomial::from_rationals(&coefficients);
         if polynomial.is_zero() {
-            if let Some(last) = overlaps.last_mut().filter(|o| o.end == start) {
-                last.end = end;
+            if let Some(last) = overlaps.last_mut().filter(|o| o[1] == at.lower) {
+                last[1] = at.upper;
             } else {
-                overlaps.push(SplinePlaneOverlap { start, end });
+                overlaps.push([at.lower, at.upper]);
             }
             continue;
         }
-        let roots = real::isolate(&polynomial, real::rat(0.), real::rat(1.), &mut budget)?;
+        let roots = real::isolate(&polynomial, lower.clone(), upper.clone(), &mut budget)?;
         if roots.is_empty() {
             continue;
         }
@@ -203,13 +272,13 @@ pub fn spline_plane_with_options(
             control_bounds,
         });
         for root in roots {
-            let at_start = root.compare_rational(&real::rat(0.)) == Ordering::Equal;
-            let at_end = root.compare_rational(&real::rat(1.)) == Ordering::Equal;
+            let at_start = root.compare_rational(&lower) == Ordering::Equal;
+            let at_end = root.compare_rational(&upper) == Ordering::Equal;
             let m = root.multiplicity();
-            let knot = if at_start {
-                Some(start)
+            let boundary = if at_start {
+                Some(at.lower.clone())
             } else if at_end {
-                Some(end)
+                Some(at.upper.clone())
             } else {
                 None
             };
@@ -227,7 +296,7 @@ pub fn spline_plane_with_options(
             let item = Candidate {
                 span: span.clone(),
                 root,
-                knot,
+                boundary: boundary.clone(),
                 multiplicities: [(!at_start).then_some(m), (!at_end).then_some(m)],
                 signs: [
                     (!at_start).then_some(left_sign),
@@ -236,7 +305,7 @@ pub fn spline_plane_with_options(
             };
             if let Some(last) = candidates
                 .last_mut()
-                .filter(|last| knot.is_some() && last.knot == knot)
+                .filter(|last| boundary.is_some() && last.boundary == boundary)
             {
                 debug_assert!(last.multiplicities[0].is_some() && item.multiplicities[1].is_some());
                 last.multiplicities[1] = item.multiplicities[1];
@@ -249,8 +318,9 @@ pub fn spline_plane_with_options(
     let mut points = Vec::new();
     for item in candidates {
         if item
-            .knot
-            .is_some_and(|k| overlaps.iter().any(|o| o.start <= k && k <= o.end))
+            .boundary
+            .as_ref()
+            .is_some_and(|k| overlaps.iter().any(|o| &o[0] <= k && k <= &o[1]))
         {
             continue;
         }
@@ -277,5 +347,69 @@ pub fn spline_plane_with_options(
             contact,
         });
     }
+    let overlaps = overlaps
+        .into_iter()
+        .map(|exact| {
+            let bound = |i: usize| {
+                interval::enclose(|x| exact[i].cmp(&real::rat(x)), "spline overlap endpoint")
+            };
+            Ok(SplinePlaneOverlap {
+                bounds: [bound(0)?, bound(1)?],
+                exact,
+            })
+        })
+        .collect::<Result<Vec<_>>>()?;
     Ok(SplinePlaneIntersection { points, overlaps })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use num_bigint::BigInt;
+
+    #[test]
+    fn exact_parameters_remain_distinct_when_enclosures_coincide() {
+        let first = 2f64.powi(53);
+        let plane = Plane3::through_points(
+            Point3::new(0., 0., 0.),
+            Point3::new(1., 0., 0.),
+            Point3::new(0., 1., 0.),
+        )
+        .unwrap();
+        let curve = BSplineCurve3::new_periodic(
+            1,
+            vec![Point3::new(0., 0., -1.), Point3::new(1., 0., 1.)],
+            None,
+            vec![0., 0.25, 0.5],
+            vec![1; 3],
+        )
+        .unwrap();
+        let hits = spline_plane_in(&curve, &plane, first, first + 2.).unwrap();
+        assert_eq!(hits.points.len(), 8);
+        for (i, point) in hits.points.iter().enumerate() {
+            // Independently known affine crossings: 1/8, 3/8, ... 15/8.
+            let expected = real::rat(first) + R::new(BigInt::from(2 * i + 1), BigInt::from(8));
+            let local = (&expected - &point.span.start) / (&point.span.end - &point.span.start);
+            assert_eq!(point.root.compare_rational(&local), Ordering::Equal);
+        }
+        let curve = BSplineCurve3::new_periodic(
+            1,
+            vec![
+                Point3::new(0., 0., 0.),
+                Point3::new(1., 1., 0.),
+                Point3::new(2., 0., 1.),
+            ],
+            None,
+            vec![0., 0.125, 0.375, 0.5],
+            vec![1; 4],
+        )
+        .unwrap();
+        let hits = spline_plane_in(&curve, &plane, first, first + 2.).unwrap();
+        assert_eq!(hits.overlaps.len(), 4);
+        for (i, overlap) in hits.overlaps.iter().enumerate() {
+            let start = real::rat(first) + R::new(BigInt::from(i), BigInt::from(2));
+            let end = &start + R::new(BigInt::from(1), BigInt::from(8));
+            assert_eq!(overlap.exact, [start, end]);
+        }
+    }
 }

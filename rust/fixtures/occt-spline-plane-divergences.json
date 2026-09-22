@@ -1658,5 +1658,663 @@
     "exact_certificate_sha256": "6c8a71dbf6240bc67d4c8a92ff560a591279ec70c5a4010d5a321935ca961ef4",
     "reason": "The declared closed-domain contract retains both parameter endpoints 0 and 3; native emits only one of these periodic seam aliases.",
     "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt793-spline-plane-trim_0_factor_4_axis_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_0_factor_4_axis_1.0",
+    "input_sha256": "d4e357fe9200ee2fbe8f68de965413204dc8b53f4859243da26845efd43eb9fe",
+    "native": {
+      "points": [
+        [
+          "3fcffffffcf31284",
+          "4007ffffff3cc4a1",
+          "c00138000070de53",
+          "4013ffffffffffff"
+        ],
+        [
+          "3fd0000000002121",
+          "4008000000001090",
+          "c00137fffffff66d",
+          "4013fffffffffffd"
+        ],
+        [
+          "3fd0000002f3c850",
+          "400800000179e428",
+          "c00137ffff258819",
+          "4014000000000000"
+        ],
+        [
+          "3fe7fffffbae9b7b",
+          "4013fffffdd74dbe",
+          "c001b7fffeda614c",
+          "4013fffffffffff6"
+        ],
+        [
+          "3fe7fffffd1e04a0",
+          "4013fffffe8f0250",
+          "c001b7ffff3bf93a",
+          "4013fffffffffff6"
+        ],
+        [
+          "3fe7ffffffffccca",
+          "4013ffffffffe665",
+          "c001b7fffffff266",
+          "401400000000000f"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "ffaa61f6f88957b96bbdbb328954712e3c42658a95086e06cfea75e24dadbd9c",
+    "reason": "Exact factorization gives only the clipped roots at 1/4 and/or 3/4; native reports extra nearby tangency events.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_2_factor_4_axis_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_2_factor_4_axis_1.0",
+    "input_sha256": "716555d99d986dbe27f319941df8f58a2420fee0cf6ac2bf8a0903b6184dfed1",
+    "native": {
+      "points": [
+        [
+          "3fe7fffffcb11563",
+          "4013fffffe588ab2",
+          "c001b7ffff1f09ae",
+          "4014000000000001"
+        ],
+        [
+          "3fe7fffffe1dd7a7",
+          "4013ffffff0eebd4",
+          "c001b7ffff7fed48",
+          "4014000000000005"
+        ],
+        [
+          "3fe7ffffffffcb0e",
+          "4013ffffffffe587",
+          "c001b7fffffff1ef",
+          "4013ffffffffffeb"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "41b1d043fed55592c4d00dbda58cf8a91f231f5aa21d5f8e993130aa3611da64",
+    "reason": "Exact factorization gives only the clipped roots at 1/4 and/or 3/4; native reports extra nearby tangency events.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_0_contained_axis_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_0_contained_axis_1.0",
+    "input_sha256": "16a39ff961012acbf995d9685a33b448654e8d47766c13bf28a996636c976510",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "4e21e87dda8a42570a877d1bb9bb83e3c02a2b2df7877c58fa1f35cce00f7c30",
+    "reason": "The exact plane numerator is identically zero on the clipped span; native omits the overlap interval and may report its boundary as an isolated point.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_1_contained_axis_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_1_contained_axis_1.0",
+    "input_sha256": "47d722cba53784eb9bc7388459cb920a8bd9c8d54129abb27d30076f0bef7e2c",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "848e0df7755c5bae26d6cc4d8a238ddc3746cea0c1403fc6ac15ac8407a2e4db",
+    "reason": "The exact plane numerator is identically zero on the clipped span; native omits the overlap interval and may report its boundary as an isolated point.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_2_contained_axis_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_2_contained_axis_1.0",
+    "input_sha256": "066fcce94924c4888303f3fdaae8cfea748b9a70d80988c849b84d2153de1e72",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "3b887817b760df8c9269697f402a77224253acb5bcd47fccd0f588979d19586b",
+    "reason": "The exact plane numerator is identically zero on the clipped span; native omits the overlap interval and may report its boundary as an isolated point.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_0_partial_overlap_axis_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_0_partial_overlap_axis_1.0",
+    "input_sha256": "50c7db7aedeb9d9526190ddf1f5c22c235b03a08ffb02a8cc0ed46e415505ddd",
+    "native": {
+      "points": [
+        [
+          "3ff0000000000000",
+          "4008000000000000",
+          "c008000000000000",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "f929aa289838d693518a24f85ac3f70affacbe7d7555ab547b53eb932401e003",
+    "reason": "The exact plane numerator is identically zero on the clipped span; native omits the overlap interval and may report its boundary as an isolated point.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_1_partial_overlap_axis_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_1_partial_overlap_axis_1.0",
+    "input_sha256": "65b396bc9f812330fb565e1f9db740e2e0a1d45382ab0332ce63cd36dd04f235",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "01e6e7fac94deeda3cfa5b90e6948bb3b8b3f5963262eb88e3002cfb38361d98",
+    "reason": "The exact plane numerator is identically zero on the clipped span; native omits the overlap interval and may report its boundary as an isolated point.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_3_periodic_1_axis_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_3_periodic_1_axis_1.0",
+    "input_sha256": "e7c290aba8af62b14fa16fc09cb136bae7589087c93b233a7af37caded23b06e",
+    "native": {
+      "points": [
+        [
+          "3ff8000000000000",
+          "4004000000000000",
+          "bff8000000000000",
+          "4014000000000000"
+        ],
+        [
+          "400c000000000000",
+          "4004000000000000",
+          "c004000000000000",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "254be5e75904f08b900eb1b88039b0d7d2836306457458a73d919a79b3e3344a",
+    "reason": "The explicit query spans multiple periods; Rust retains each parameter event and native reports only events in the first period of the query.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_2_periodic_2_axis_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_2_periodic_2_axis_1.0",
+    "input_sha256": "0a7433754ba822013411ac8590494eea038d811736a5d159c521614b92fdc949",
+    "native": {
+      "points": [
+        [
+          "4008000000000000",
+          "4004000000000000",
+          "c004000000000000",
+          "4014000000000000"
+        ],
+        [
+          "4008000000000000",
+          "4004000000000000",
+          "c004000000000000",
+          "4014000000000000"
+        ],
+        [
+          "400d555555555555",
+          "4004000000000000",
+          "bff9c71c71c71c73",
+          "4014000000000000"
+        ],
+        [
+          "4011555555555555",
+          "4003ffffffffffff",
+          "bfe38e38e38e38e4",
+          "4013ffffffffffff"
+        ],
+        [
+          "4014000000000000",
+          "4004000000000000",
+          "bff8000000000000",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "86ebc6879ef4c3e934a3b1f3202d9bdf58eaaf4d894aacbecefccb6e56c279e7",
+    "reason": "The explicit closed interval [3,6] retains both seam parameter events; native repeats parameter 3 and omits parameter 6.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_3_periodic_2_axis_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_3_periodic_2_axis_1.0",
+    "input_sha256": "bdc5a30410584eefb050327b25f79e52870bc20e095a48cf1aaaf09c85719c98",
+    "native": {
+      "points": [
+        [
+          "4000000000000000",
+          "4004000000000000",
+          "bff8000000000000",
+          "4014000000000000"
+        ],
+        [
+          "4008000000000000",
+          "4004000000000000",
+          "c004000000000000",
+          "4014000000000000"
+        ],
+        [
+          "400d555555555555",
+          "4004000000000000",
+          "bff9c71c71c71c73",
+          "4014000000000000"
+        ],
+        [
+          "4011555555555555",
+          "4003ffffffffffff",
+          "bfe38e38e38e38e4",
+          "4013ffffffffffff"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "ca1e9219368c20e8564b776a286db2eabecd4a3b2bf5828a55a320d4f682d063",
+    "reason": "The explicit query spans multiple periods; Rust retains each parameter event and native reports only events in the first period of the query.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_3_periodic_3_axis_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_3_periodic_3_axis_1.0",
+    "input_sha256": "86d46199cd8d463ab5d6666ab1b6a1cf99ab0972a2a4c87e0e54f37646c80a6c",
+    "native": {
+      "points": [
+        [
+          "400476c906b51da5",
+          "4004000000000000",
+          "c0029d3e1d2a2727",
+          "4014000000000000"
+        ],
+        [
+          "40099458935a4465",
+          "4004000000000000",
+          "bffa82c0474a1a18",
+          "4014000000000000"
+        ],
+        [
+          "400dfd96a214ba2b",
+          "4004000000000000",
+          "bfe54bc71c52d64a",
+          "4014000000000000"
+        ],
+        [
+          "4010d40dac3704a5",
+          "4004000000000000",
+          "3fd16d5e65ce1f70",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "69602da0456daea36f5ed49f0d64dc0457733c11e674daa420184402e4a97dc7",
+    "reason": "The explicit query spans multiple periods; Rust retains each parameter event and native reports only events in the first period of the query.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_0_factor_4_oblique_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_0_factor_4_oblique_1.0",
+    "input_sha256": "c07a1c3f12573ffbef79b6845b46ac37608b57ba876e4d56e89620f39c49d682",
+    "native": {
+      "points": [
+        [
+          "3fd0000000002121",
+          "401000000000108e",
+          "bfd37ffffffee2fc",
+          "40176400000004da"
+        ],
+        [
+          "3fd0000001e892c8",
+          "4010000000f44968",
+          "bfd37fffef8a0df5",
+          "4017640000469d39"
+        ],
+        [
+          "3fe7ffffff17dd97",
+          "401fffffff17dd7b",
+          "3ff91fffff265f33",
+          "40172400001ed462"
+        ],
+        [
+          "3fe7ffffffffccca",
+          "401fffffffffccdc",
+          "3ff91fffffffcfdf",
+          "40172400000006d8"
+        ],
+        [
+          "3fe800000067675a",
+          "402000000033b3b6",
+          "3ff920000060f0ee",
+          "401723fffff24462"
+        ],
+        [
+          "3fe800000164e61c",
+          "4020000000b2730d",
+          "3ff92000014e983a",
+          "401723ffffd0995e"
+        ],
+        [
+          "3fe80000020d37bc",
+          "4020000001069bdb",
+          "3ff9200001ec637a",
+          "401723ffffba3e4e"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "84a64485d3d0d6d699c9cac65fe883c23541646e5a06fa3db1d977e7592ecf7f",
+    "reason": "Exact factorization gives only the clipped roots at 1/4 and/or 3/4; native reports extra nearby tangency events.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_2_factor_4_oblique_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_2_factor_4_oblique_1.0",
+    "input_sha256": "da39096bdec72da06420293efdd1df977107505ba370a8f819605c02a76f8d77",
+    "native": {
+      "points": [
+        [
+          "3fe7fffffc46f132",
+          "401ffffffc46f15c",
+          "3ff91ffffc8280e6",
+          "40172400007e93e6"
+        ],
+        [
+          "3fe7fffffd3e9580",
+          "401ffffffd3e9578",
+          "3ff91ffffd6aab26",
+          "40172400005db006"
+        ],
+        [
+          "3fe7fffffdfc62d2",
+          "401ffffffdfc62df",
+          "3ff91ffffe1c9d39",
+          "4017240000447ad5"
+        ],
+        [
+          "3fe7ffffff3057d2",
+          "401fffffff3057e4",
+          "3ff91fffff3d51db",
+          "40172400001b9462"
+        ],
+        [
+          "3fe7ffffffffcb0e",
+          "401fffffffffcafc",
+          "3ff91fffffffcd67",
+          "4017240000000746"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "5c3852608c2500146028997e949a3118baf7737f71855866ea70cbf6ddfcad34",
+    "reason": "Exact factorization gives only the clipped roots at 1/4 and/or 3/4; native reports extra nearby tangency events.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_0_factor_7_oblique_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_0_factor_7_oblique_1.0",
+    "input_sha256": "bf33a5e70ed50f6d3f2ea4037c9790f6935f363380bea4ec37bbbd7da0ebc258",
+    "native": {
+      "points": [
+        [
+          "3fdfc5fa49bfe385",
+          "4021e69d8043f38b",
+          "4003abbf091729f4",
+          "4017f7a10223d0b7"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "cfc5ff64c44bed2dc6b310a00ca696e313b1b507fa22095ae55e9c624df0fba1",
+    "reason": "The exact three-point plane numerator has its order-seven root at 1/2; the ill-conditioned native contact exceeds the unchanged comparison budget.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_1_factor_7_oblique_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_1_factor_7_oblique_1.0",
+    "input_sha256": "5690476da307052e3eb0ec1cc35fbab15113796274d5655a7717673bb8e7d0ed",
+    "native": {
+      "points": [
+        [
+          "3fdffe955710d0c4",
+          "4021ff6156175b56",
+          "4003deb8c583ed4e",
+          "4017f7fd86554da4"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "cfc5ff64c44bed2dc6b310a00ca696e313b1b507fa22095ae55e9c624df0fba1",
+    "reason": "The exact three-point plane numerator has its order-seven root at 1/2; the ill-conditioned native contact exceeds the unchanged comparison budget.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_0_contained_oblique_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_0_contained_oblique_1.0",
+    "input_sha256": "f26667673a57b11e264211fa41e8708ba8b393c5fac1563400d92823ef43ea56",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "4e21e87dda8a42570a877d1bb9bb83e3c02a2b2df7877c58fa1f35cce00f7c30",
+    "reason": "The exact plane numerator is identically zero on the clipped span; native omits the overlap interval and may report its boundary as an isolated point.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_1_contained_oblique_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_1_contained_oblique_1.0",
+    "input_sha256": "e28f90e431243ad75ee9d0bd9e419f1fa505f5865afb9c0942caefb1d079c261",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "848e0df7755c5bae26d6cc4d8a238ddc3746cea0c1403fc6ac15ac8407a2e4db",
+    "reason": "The exact plane numerator is identically zero on the clipped span; native omits the overlap interval and may report its boundary as an isolated point.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_2_contained_oblique_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_2_contained_oblique_1.0",
+    "input_sha256": "cdb19c2c1bc8a659deb144328e2ace330bbc3de50f995e1152f4aa5f2fe029f3",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "3b887817b760df8c9269697f402a77224253acb5bcd47fccd0f588979d19586b",
+    "reason": "The exact plane numerator is identically zero on the clipped span; native omits the overlap interval and may report its boundary as an isolated point.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_0_partial_overlap_oblique_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_0_partial_overlap_oblique_1.0",
+    "input_sha256": "19c768354b0c794ddb05af864470d5d18e476235df50f073c0ed1007340f727d",
+    "native": {
+      "points": [
+        [
+          "3ff0000000000000",
+          "4010000000000000",
+          "c000000000000000",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "f929aa289838d693518a24f85ac3f70affacbe7d7555ab547b53eb932401e003",
+    "reason": "The exact plane numerator is identically zero on the clipped span; native omits the overlap interval and may report its boundary as an isolated point.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_1_partial_overlap_oblique_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_1_partial_overlap_oblique_1.0",
+    "input_sha256": "772fd0bec90a362b2189a1cc16419c3bd3361686b0cd7422acb33f9be3e914cc",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "01e6e7fac94deeda3cfa5b90e6948bb3b8b3f5963262eb88e3002cfb38361d98",
+    "reason": "The exact plane numerator is identically zero on the clipped span; native omits the overlap interval and may report its boundary as an isolated point.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_3_periodic_1_oblique_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_3_periodic_1_oblique_1.0",
+    "input_sha256": "6ce5f7bd5f947a74dd44ff2791ecbf1fd9b8f7eaacbcfdd736b706ed06b24db4",
+    "native": {
+      "points": [
+        [
+          "3ff8000000000000",
+          "4008000000000000",
+          "3fe0000000000000",
+          "401a000000000000"
+        ],
+        [
+          "400c000000000000",
+          "4008000000000000",
+          "bff8000000000000",
+          "4016000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "26cc32aa803e53c4d7ece39e9481b392094e7de8e309bf9597093e07715f57db",
+    "reason": "The explicit query spans multiple periods; Rust retains each parameter event and native reports only events in the first period of the query.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_2_periodic_2_oblique_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_2_periodic_2_oblique_1.0",
+    "input_sha256": "88310d321ed552fb3d4e127048b960749a444fee34703876c66a8f156b40e66d",
+    "native": {
+      "points": [
+        [
+          "4008000000000000",
+          "4008000000000000",
+          "bff8000000000000",
+          "4016000000000000"
+        ],
+        [
+          "4008000000000000",
+          "4008000000000000",
+          "bff8000000000000",
+          "4016000000000000"
+        ],
+        [
+          "400d555555555555",
+          "4008000000000001",
+          "3fd1c71c71c71c64",
+          "40198e38e38e38e5"
+        ],
+        [
+          "4011555555555555",
+          "4007fffffffffffd",
+          "400238e38e38e390",
+          "401d8e38e38e38e1"
+        ],
+        [
+          "4014000000000000",
+          "4008000000000000",
+          "3fe0000000000000",
+          "401a000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "f25bdc9873eb6ce3a64323609346855e9ac75c0a48814e5cbdc46a186ed35efb",
+    "reason": "The explicit closed interval [3,6] retains both seam parameter events; native repeats parameter 3 and omits parameter 6.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_3_periodic_2_oblique_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_3_periodic_2_oblique_1.0",
+    "input_sha256": "dcbc0b7c2888787417c0cfcf3ddf2488b64fe126ea7a4b03f24015694bbc1a14",
+    "native": {
+      "points": [
+        [
+          "4000000000000000",
+          "4008000000000000",
+          "3fe0000000000000",
+          "401a000000000000"
+        ],
+        [
+          "4008000000000000",
+          "4008000000000000",
+          "bff8000000000000",
+          "4016000000000000"
+        ],
+        [
+          "400d555555555555",
+          "4008000000000001",
+          "3fd1c71c71c71c64",
+          "40198e38e38e38e5"
+        ],
+        [
+          "4011555555555555",
+          "4007fffffffffffd",
+          "400238e38e38e390",
+          "401d8e38e38e38e1"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "ca082ed16c8254f7f1a1a0a8f4e5af45948168b17ede4e4a275d443c66fcfa9f",
+    "reason": "The explicit query spans multiple periods; Rust retains each parameter event and native reports only events in the first period of the query.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
+  },
+  {
+    "id": "occt793-spline-plane-trim_3_periodic_3_oblique_1.0",
+    "oracle": "OCCT 7.9.3",
+    "case": "trim_3_periodic_3_oblique_1.0",
+    "input_sha256": "9780c8e1579642876a0acf608fca78d66f1ec9124a2eee9cb26f444a5fb84e49",
+    "native": {
+      "points": [
+        [
+          "400476c906b51da5",
+          "4008000000000000",
+          "bff274f874a89c9f",
+          "4016b160f16aec6c"
+        ],
+        [
+          "40099458935a4466",
+          "4008000000000000",
+          "3fc7d3fb8b5e5ec5",
+          "40195f4fee2d797b"
+        ],
+        [
+          "400dfd96a214ba2b",
+          "4008000000000001",
+          "40015a1c71d694dc",
+          "401d56871c75a539"
+        ],
+        [
+          "4010d40dac3704a5",
+          "4007ffffffffffff",
+          "40102dabccb9c3ee",
+          "40208b6af32e70fb"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "c91283ca8fe611661dd195497f68729859f9c598e602722d5e8fa1ff92d38260",
+    "reason": "The explicit query spans multiple periods; Rust retains each parameter event and native reports only events in the first period of the query.",
+    "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md#explicit-parameter-ranges"
   }
 ]

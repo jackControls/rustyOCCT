@@ -432,6 +432,35 @@ coefficient bit growth and allocations do not yet have production latency/memory
 budgets or cancellation. Degree/input limits bound combinatorial work, not
 production response time.
 
+`spline_plane_in` queries an explicit finite closed interval `[first,last]` with
+positive length. Nonperiodic bounds must stay inside the curve domain. Periodic
+queries can cross seams, start outside the fundamental period, and span multiple
+turns. Parameters are retained in the caller's original units. Reversed bounds,
+zero-length intervals, nonfinite bounds and nonperiodic extrapolation are typed
+errors; curve sense reversal is a separate operation and is not implied.
+
+Shifted periodic knots are rational numbers and need not be representable by
+binary64. Span translation, range clipping, endpoint equality and ordering
+therefore remain exact. Roots are isolated inside each clipped interval; they
+are not accepted/rejected by rounded output bounds. Query endpoints have only
+their interior contact side. A zero span contributes its clipped positive-length
+overlap; when a query only touches its endpoint from a nonzero neighboring span,
+that endpoint becomes an isolated boundary event.
+
+`SplinePlaneOverlap` now retains exact rational endpoints and minimal enclosures.
+`parameters()` supplies rounded representatives; `parameter_bounds()` and
+`compare_parameter()` preserve reliable decisions. Separate overlaps or isolated
+hits can have identical binary64 enclosures and remain distinct. This owning
+type is `Clone` rather than `Copy`.
+
+`SplinePlaneOptions` adds a default limit of 4,096 visited spans, independently
+of the root-subdivision limit. Before enumerating a periodic interval, the exact
+number of translated spans is counted: for base span `(a,b)` and period P, its
+count is `ceil((last-a)/P) - floor((first-b)/P) - 1`. Exceeding the budget returns
+`ComputationLimit` before span enumeration or any root solving. Even queries
+from `-f64::MAX` to `f64::MAX` on tiny periods cannot start an unbounded loop.
+This traversal bound still does not constitute a hard CPU or allocation limit.
+
 ## Independent and adversarial evidence
 
 - `fixtures/orient2d.tsv`: 2,417 input triples with expected signs calculated by
@@ -490,11 +519,14 @@ production response time.
   roots and distinct clustered roots with identical binary64 enclosures. SymPy
   irreducible factors and Vincent–Akritas–Strzebonski continued fractions provide
   independent isolation; rational interval evaluation decides reduced query signs.
-- `fixtures/spline-plane.tsv`: 185 complete results from independent exact
+- `fixtures/spline-plane.tsv`: 283 complete results from independent exact
   Cox–de Boor basis polynomials and that continued-fraction oracle. Includes all
-  132 native inputs, random rational spans, periodic/unclamped domains, unequal
+  214 native inputs, random rational spans, periodic/unclamped domains, unequal
   contact orders, overlap chains, extreme weights and subnormal spans. All
-  preexisting 1,850 spline jet fixture rows remain unchanged.
+  preexisting 1,850 spline jet fixture rows remain unchanged. The original 185
+  intersection rows are also unchanged; 98 appended cases cover clipped contacts,
+  multi-period queries, nonrepresentable shifted knots, subnormal periods,
+  degree-25 clipping and closely clustered roots beside a trim boundary.
 
 These fixtures are bounded deterministic tests. Separately, [coverage-guided
 fuzzing](FUZZING.md) mutates predicates, linear/curved intersections, polynomial

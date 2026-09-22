@@ -36,10 +36,14 @@ int main() {
       poles(i)=gp_Pnt(x,y,z);weights(i)=w;
     }
     for (int i=1;i<=nk;++i) if (!(std::cin>>knots(i)>>mults(i))) return 2;
+    const bool trimmed=kind.size()==2 && kind.back()=='T';
+    double first=0,last=0;
+    if (trimmed && !(std::cin>>first>>last)) return 2;
     try {
       Handle(Geom_Curve) curve;
-      if (kind=="B") curve=new Geom_BezierCurve(poles,weights);
-      else curve=new Geom_BSplineCurve(poles,weights,knots,mults,degree,kind=="P",false);
+      if (kind.front()=='B') curve=new Geom_BezierCurve(poles,weights);
+      else curve=new Geom_BSplineCurve(poles,weights,knots,mults,degree,kind.front()=='P',false);
+      if (trimmed) curve=new Geom_TrimmedCurve(curve,first,last,true,false);
       const gp_Vec normal=gp_Vec(plane_points[0],plane_points[1]).Crossed(gp_Vec(plane_points[0],plane_points[2]));
       Handle(Geom_Surface) plane=new Geom_Plane(gp_Pln(plane_points[0],gp_Dir(normal)));
       GeomAPI_IntCS inter(curve,plane);

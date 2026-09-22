@@ -31,6 +31,16 @@ pub(crate) struct Parameter {
     pub(crate) span: usize,
 }
 
+/// One nonempty piece of an explicit query interval. Shifted periodic knots
+/// need not be representable as f64; keep both span and clipping bounds exact.
+pub(crate) struct KnotSpan {
+    pub index: usize,
+    pub start: R,
+    pub end: R,
+    pub lower: R,
+    pub upper: R,
+}
+
 impl KnotVector {
     /// Distinct, finite increasing knots; degree 1..=25. End multiplicities
     /// are 1..=degree+1, interior multiplicities 1..=degree. No snapping.
@@ -174,6 +184,77 @@ impl KnotVector {
             let start = rational(k[0]);
             Some((k[0], k[1], self.flat.partition_point(|x| x <= &start) - 1))
         })
+    }
+
+    pub(crate) fn spans_in(
+        &self,
+        first: f64,
+        last: f64,
+        max_spans: usize,
+    ) -> Result<Vec<KnotSpan>> {
+        finite(first, "curve interval")?;
+        finite(last, "curve interval")?;
+        if first >= last {
+            return Err(Error::OutOfDomain(
+                "curve interval must have positive length",
+            ));
+        }
+        if !self.periodic && (first < self.domain.0 || last > self.domain.1) {
+            return Err(Error::OutOfDomain("curve interval"));
+        }
+        let (lower, upper) = (rational(first), rational(last));
+        let base: Vec<_> = self
+            .spans()
+            .map(|(a, b, i)| (rational(a), rational(b), i))
+            .collect();
+        let period = rational(self.domain.1) - rational(self.domain.0);
+        // Count before enumeration. A tiny period and a huge query must return
+        // a resource error without iterating an astronomical number of turns.
+        let mut count = BigInt::from(0);
+        for (a, b, _) in &base {
+            count += if self.periodic {
+                (((&upper - a) / &period).ceil() - ((&lower - b) / &period).floor() - integer(1))
+                    .to_integer()
+            } else {
+                BigInt::from(usize::from(a < &upper && b > &lower))
+            };
+            if count > BigInt::from(max_spans) {
+                return Err(Error::ComputationLimit("spline span traversal"));
+            }
+        }
+        let mut offset = if self.periodic {
+            ((&lower - rational(self.domain.0)) / &period).floor() * &period
+        } else {
+            zero()
+        };
+        let mut result = Vec::new();
+        loop {
+            for (a, b, index) in &base {
+                let (start, end) = (a + &offset, b + &offset);
+                if start >= upper {
+                    break;
+                }
+                if end <= lower {
+                    continue;
+                }
+                result.push(KnotSpan {
+                    index: *index,
+                    lower: start.clone().max(lower.clone()),
+                    upper: end.clone().min(upper.clone()),
+                    start,
+                    end,
+                });
+            }
+            if !self.periodic {
+                break;
+            }
+            offset += &period;
+            if rational(self.domain.0) + &offset >= upper {
+                break;
+            }
+        }
+        debug_assert_eq!(BigInt::from(result.len()), count);
+        Ok(result)
     }
 
     /// One selected side, and (only if continuity is not guaranteed by knot

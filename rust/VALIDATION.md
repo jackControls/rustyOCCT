@@ -12,7 +12,7 @@ The [mathematical foundation](MATHEMATICS.md) includes exact 2D/3D orientation
 and insphere, 2,417 independent 2D rational fixtures in all six permutations,
 1,648 spatial predicate fixtures, 963 certified linear-intersection fixtures,
 448 quadratic-root fixtures, 1,092 curved-intersection fixtures, 1,059 curve and 791 surface spline fixtures,
-94 general polynomial-root and 185 spline/plane fixtures,
+94 general polynomial-root and 283 spline/plane fixtures,
 10,000 integer-oracle predicate cases and 256 generated prism invariant cases.
 These tests do not depend on OCCT or an application and run in native debug and
 release CI. These deterministic generated tests are separate from the eight
@@ -82,17 +82,19 @@ Reports count matched, reviewed and unexpected cases separately. In the original
 `compare_splines.py --strict-native` to fail on reviewed differences too. The
 ordinary exact tests and fuzz comparisons have no such exception.
 
-`compare_spline_plane.py` checks 132 native `GeomAPI_IntCS` observations against
-complete independent exact certificates. Local OCCT 7.9.3 has 97 matching cases
-and 35 reviewed differences. Extra near-tangent native points, missing overlap
+`compare_spline_plane.py` checks 214 native `GeomAPI_IntCS` observations against
+complete independent exact certificates. Local OCCT 7.9.3 has 155 matching cases
+and 59 reviewed differences. Extra near-tangent native points, missing overlap
 intervals, periodic endpoint conventions and numerical discrepancies are
 [documented separately](NATIVE_SPLINE_PLANE_DIVERGENCES.md). Every review pins
 version, input, complete native values and independently recomputed certificate;
 it never exempts a Rust result from exact checks. `--strict-native` fails on
 reviewed differences too. SymPy is hash-pinned and test-only; Cargo tests use
 checked-in exact certificates without requiring Python or native OCCT.
-Linux OCCT 7.6.3 has 102 matches and 30 separately reviewed spline/plane
-differences. All 132 Rust certificates agree across macOS and Linux.
+The original 132-case corpus on Linux OCCT 7.6.3 has 102 matches and 30
+separately reviewed differences. Its 132 Rust certificates agree across platforms.
+The additional 82 cases exercise explicit parameter ranges, including shifted
+periods; their native observations require separate reviews.
 
 The first implementation has deterministic analytic tests plus a recorded,
 independently evaluated OCCT 7.9.3 corpus. The live comparison was run on Apple

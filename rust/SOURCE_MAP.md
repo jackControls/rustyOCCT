@@ -104,6 +104,18 @@ require independently verified complete results. The 94 root and 185 spline/plan
 fixtures use exact factorization/continued fractions and basis polynomials;
 separate sustained campaigns mutate roots and spline intersections.
 
+Explicit interval queries additionally reference
+[`Geom_TrimmedCurve.cxx`](../src/ModelingData/TKG3d/Geom/Geom_TrimmedCurve.cxx),
+`SetTrim`, preserving positive-length explicit bounds with periodic adjustment
+disabled, and
+[`IntCurveSurface_InterUtils.pxx`](../src/ModelingAlgorithms/TKGeomAlgo/IntCurveSurface/IntCurveSurface_InterUtils.pxx),
+`ComputeAppendPoint`, for native periodic-hit normalization. Rust's query keeps
+all parameter events across the supplied interval; it does not implement curve
+sense reversal or OCCT tolerance-based extrapolation. Exact shifted knots and
+preflight traversal limits cover huge periodic parameters without float wrapping
+or uncontrolled turn enumeration. Evidence adds 82 native observations and 98
+independent exact fixtures; all prior fixture rows and review pins are retained.
+
 ## Rule for the next capability
 
 1. Define the standalone kernel input/output, numerical, topology/history and

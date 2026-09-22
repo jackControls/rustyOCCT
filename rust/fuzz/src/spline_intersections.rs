@@ -4,7 +4,7 @@ use super::{byte, one, zero};
 use crate::splines::{bounds, rat};
 use num_bigint::BigInt;
 use num_rational::BigRational as R;
-use rusty_occt::intersection::{spline_plane, Plane3, SplinePlaneContact as C};
+use rusty_occt::intersection::{spline_plane, spline_plane_in, Plane3, SplinePlaneContact as C};
 use rusty_occt::{BSplineCurve3, Point3};
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
@@ -98,7 +98,29 @@ fn bezier(data: &[u8]) {
         vec![degree + 1; 2],
     )
     .unwrap();
-    let result = spline_plane(&curve, &plane(frame, scale)).unwrap();
+    let clipped = byte(data, 0) & 4 != 0;
+    let (mut first, last) = if clipped {
+        let a = byte(data, 90) % 4;
+        let b = a + 1 + byte(data, 91) % (4 - a);
+        (
+            (f64::from(a) - 1.) * parameter_scale,
+            (f64::from(b) - 1.) * parameter_scale,
+        )
+    } else {
+        curve.domain()
+    };
+    if clipped && byte(data, 0) & 8 != 0 {
+        first = first.next_up();
+    }
+    let lower = (rat(first) + rat(parameter_scale)) / rat(4. * parameter_scale);
+    let upper = (rat(last) + rat(parameter_scale)) / rat(4. * parameter_scale);
+    expected.retain(|r, _| r >= &lower && r <= &upper);
+    let result = if clipped {
+        spline_plane_in(&curve, &plane(frame, scale), first, last)
+    } else {
+        spline_plane(&curve, &plane(frame, scale))
+    }
+    .unwrap();
     assert!(result.overlaps().is_empty());
     assert_eq!(result.points().len(), expected.len());
     for (point, (root, order)) in result.points().iter().zip(expected) {
@@ -125,13 +147,13 @@ fn bezier(data: &[u8]) {
         assert_eq!(
             point.multiplicities(),
             [
-                (root > zero()).then_some(order),
-                (root < one()).then_some(order)
+                (root > lower).then_some(order),
+                (root < upper).then_some(order)
             ]
         );
         assert_eq!(
             point.contact(),
-            if root == zero() || root == one() {
+            if root == lower || root == upper {
                 C::Boundary
             } else if order % 2 == 0 {
                 C::Tangent
@@ -191,16 +213,63 @@ fn polygon(data: &[u8]) {
         )
     }
     .unwrap();
+    let clipped = byte(data, 0) & 4 != 0;
+    let period = knots[spans];
+    let (first, last) = if clipped {
+        let offset = if periodic {
+            if byte(data, 0) & 8 != 0 {
+                2f64.powi(53) * period
+            } else {
+                (f64::from(byte(data, 90) % 5) - 2.) * period
+            }
+        } else {
+            0.
+        };
+        let a = f64::from(byte(data, 91) % 4) * period / 4.;
+        let length = if periodic {
+            f64::from(1 + byte(data, 92) % 8) * period / 4.
+        } else {
+            period - a
+        };
+        let first = offset + a;
+        (first, (first + length).max(first.next_up()))
+    } else {
+        curve.domain()
+    };
+    let (lower, upper) = (rat(first), rat(last));
+    let start_turn = if periodic {
+        (&lower / rat(period)).floor()
+    } else {
+        zero()
+    };
+    let turns = if periodic {
+        ((&upper / rat(period)).ceil() - &start_turn)
+            .to_integer()
+            .to_string()
+            .parse::<usize>()
+            .unwrap()
+    } else {
+        1
+    };
+    assert!(turns <= 16);
     let mut hits = BTreeMap::<R, Hit>::new();
-    let mut overlaps: Vec<(f64, f64)> = Vec::new();
-    for i in 0..spans {
+    let mut overlaps: Vec<(R, R)> = Vec::new();
+    for (turn, i) in (0..turns).flat_map(|t| (0..spans).map(move |i| (t, i))) {
+        let offset = (&start_turn + integer(turn as i64)) * rat(period);
+        let start = rat(knots[i]) + &offset;
+        let end = rat(knots[i + 1]) + offset;
+        let low = start.clone().max(lower.clone());
+        let high = end.clone().min(upper.clone());
+        if low >= high {
+            continue;
+        }
         let j = (i + 1) % np;
         let (a, b) = (&heights[i], &heights[j]);
         if a == &zero() && b == &zero() {
-            if let Some(last) = overlaps.last_mut().filter(|last| last.1 == knots[i]) {
-                last.1 = knots[i + 1];
+            if let Some(last) = overlaps.last_mut().filter(|last| last.1 == low) {
+                last.1 = high;
             } else {
-                overlaps.push((knots[i], knots[i + 1]));
+                overlaps.push((low, high));
             }
             continue;
         }
@@ -211,7 +280,10 @@ fn polygon(data: &[u8]) {
         if root < zero() || root > one() {
             continue;
         }
-        let u = rat(knots[i]) + (rat(knots[i + 1]) - rat(knots[i])) * &root;
+        let u = &start + (&end - &start) * &root;
+        if u < low || u > high {
+            continue;
+        }
         let w = (one() - &root) * rat(weights[i]) + &root * rat(weights[j]);
         let position = std::array::from_fn(|c| {
             ((one() - &root) * rat(weights[i]) * rat(poles[i].to_array()[c])
@@ -219,8 +291,8 @@ fn polygon(data: &[u8]) {
                 / &w
         });
         let signs = [
-            (root > zero()).then(|| a.cmp(&zero())),
-            (root < one()).then(|| b.cmp(&zero())),
+            (u > low).then(|| a.cmp(&zero())),
+            (u < high).then(|| b.cmp(&zero())),
         ];
         if let Some(previous) = hits.get_mut(&u) {
             assert_eq!(previous.position, position);
@@ -229,16 +301,19 @@ fn polygon(data: &[u8]) {
             hits.insert(u, Hit { position, signs });
         }
     }
-    hits.retain(|u, _| !overlaps.iter().any(|&(a, b)| &rat(a) <= u && u <= &rat(b)));
-    let result = spline_plane(&curve, &plane(frame, scale)).unwrap();
-    assert_eq!(
-        result
-            .overlaps()
-            .iter()
-            .map(|o| o.parameters())
-            .collect::<Vec<_>>(),
-        overlaps
-    );
+    hits.retain(|u, _| !overlaps.iter().any(|(a, b)| a <= u && u <= b));
+    let result = if clipped {
+        spline_plane_in(&curve, &plane(frame, scale), first, last)
+    } else {
+        spline_plane(&curve, &plane(frame, scale))
+    }
+    .unwrap();
+    assert_eq!(result.overlaps().len(), overlaps.len());
+    for (o, (a, b)) in result.overlaps().iter().zip(overlaps) {
+        let [lo, hi] = o.parameter_bounds();
+        bounds(lo, &a);
+        bounds(hi, &b);
+    }
     assert_eq!(result.points().len(), hits.len());
     for (point, (u, hit)) in result.points().iter().zip(hits) {
         bounds(point.parameter(), &u);

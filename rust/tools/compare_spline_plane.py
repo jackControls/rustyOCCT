@@ -34,7 +34,7 @@ def bernstein_from_roots(roots):
     return [float(x*scale) for x in b]
 
 
-def cases():
+def base_cases():
     shapes=[]
     for i,roots in enumerate([[F(1,2)],[F(1,2)]*2,[F(1,4),F(3,4)],
                               [F(1,4),F(1,2),F(3,4)], [F(1,4)]*2+[F(3,4)]*2,
@@ -67,6 +67,24 @@ def cases():
     return '\n'.join(rows)+'\n'
 
 
+def trimmed_cases():
+    rows=[]
+    families=['factor_1','factor_2','factor_3','factor_4','factor_7','rational_3',
+              'contained','join','join_tangent','partial_overlap','unclamped','periodic_1','periodic_2','periodic_3']
+    for row in base_cases().splitlines():
+        w=row.split();name=w[0]
+        if not name.endswith('_1.0') or not any(name.startswith(f+'_') for f in families): continue
+        if w[1]=='P': ranges=[(2.5,3.5),(-1.,.5),(3.,6.),(1.5,7.25)]
+        elif w[1]=='B' or name.startswith('contained_'): ranges=[(.125,.875),(.25,.75),(.5,1.)]
+        else: ranges=[(.25,1.25),(1.,1.75)]
+        for i,(a,b) in enumerate(ranges):
+            rows.append(' '.join([f'trim_{i}_{name}',w[1]+'T',*w[2:],format(a,'.17g'),format(b,'.17g')]))
+    return '\n'.join(rows)+'\n'
+
+
+def cases(): return base_cases()+trimmed_cases()
+
+
 def observations(text):
     rows={}
     for row in text.splitlines():
@@ -84,7 +102,7 @@ def certificates(text, hexadecimal=False):
     number=(lambda s: struct.unpack('>d',bytes.fromhex(s))[0]) if hexadecimal else float
     for row in text.splitlines():
         w=row.split();name=w[0];np,ns=map(int,w[1:3])
-        if name in rows or min(np,ns)<0 or len(w)!=3+11*np+2*ns: raise ValueError('invalid certificate shape')
+        if name in rows or min(np,ns)<0 or len(w) not in [3+11*np+2*ns,3+11*np+4*ns]: raise ValueError('invalid certificate shape')
         points=[]
         for i in range(np):
             at=3+11*i;bounds=list(map(number,w[at:at+8]));contact=w[at+8];orders=list(map(int,w[at+9:at+11]))
@@ -92,8 +110,14 @@ def certificates(text, hexadecimal=False):
             if not all(map(math.isfinite,bounds)) or any(a>b for a,b in zip(bounds[::2],bounds[1::2])): raise ValueError('invalid bounds')
             points.append({'bounds':bounds,'contact':contact,'orders':orders})
         tail=list(map(number,w[3+11*np:]))
-        if not all(map(math.isfinite,tail)) or any(a>=b for a,b in zip(tail[::2],tail[1::2])): raise ValueError('invalid overlap')
-        rows[name]={'points':points,'overlaps':[tail[i:i+2] for i in range(0,len(tail),2)]}
+        if not all(map(math.isfinite,tail)): raise ValueError('invalid overlap')
+        if len(tail)==2*ns:
+            if any(a>=b for a,b in zip(tail[::2],tail[1::2])): raise ValueError('invalid overlap')
+            overlaps=[[a,a,b,b] for a,b in zip(tail[::2],tail[1::2])]
+        else:
+            overlaps=[tail[i:i+4] for i in range(0,len(tail),4)]
+            if any(a>aa or b>bb or a>b or aa>bb or aa==b==a==bb for a,aa,b,bb in overlaps): raise ValueError('invalid overlap bounds')
+        rows[name]={'points':points,'overlaps':overlaps}
     return rows
 
 
@@ -115,7 +139,8 @@ def differences(native, certificate):
                 if x<a-(1e-10+2e-12*abs(a)) or x>b+(1e-10+2e-12*abs(b)):
                     reasons.append('point parameter or position');break
     if len(native['overlaps'])!=len(certificate['overlaps']): reasons.append('overlap interval count')
-    elif any(abs(a-b)>1e-10+2e-12*abs(b) for n,c in zip(native['overlaps'],certificate['overlaps']) for a,b in zip(n,c)):
+    elif any(x<a-(1e-10+2e-12*abs(a)) or x>b+(1e-10+2e-12*abs(b))
+             for n,c in zip(native['overlaps'],certificate['overlaps']) for x,a,b in zip(n,c[::2],c[1::2])):
         reasons.append('overlap interval endpoints')
     return sorted(set(reasons))
 
@@ -154,7 +179,7 @@ def main():
     output=ROOT/'target/spline-plane-oracle';output.mkdir(parents=True,exist_ok=True)
     executable=output/'occt_spline_plane_oracle'
     run(shlex.split(os.environ.get('CXX','c++'))+['-std=c++17','-O2',str(ROOT/'rust/tools/occt_spline_plane_oracle.cpp'),'-I'+str(include),'-L'+str(lib),'-Wl,-rpath,'+str(lib),'-o',str(executable),'-lTKGeomAlgo','-lTKGeomBase','-lTKG3d','-lTKMath','-lTKernel'],cwd=ROOT)
-    data=cases();native=run([str(executable)],input=data,cwd=ROOT)
+    data=cases();native=run([str(executable)],input=data,cwd=ROOT,timeout=120)
     for name,text in [('inputs.txt',data),('occt.tsv',native.stdout),('native-version.txt',native.stderr)]: (output/name).write_text(text)
     expected=observations(native.stdout)
     if len(expected)!=len(data.splitlines()): raise AssertionError('incomplete native observations')

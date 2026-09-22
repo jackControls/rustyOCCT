@@ -1,5 +1,6 @@
 use rusty_occt::intersection::{
-    spline_plane, spline_plane_with_options, Plane3, SplinePlaneContact,
+    spline_plane, spline_plane_in, spline_plane_in_with_options, spline_plane_with_options, Plane3,
+    SplinePlaneContact, SplinePlaneOptions,
 };
 use rusty_occt::polynomial::RootIsolationOptions;
 use rusty_occt::{BSplineCurve3, Error, Point3};
@@ -37,15 +38,28 @@ fn complete_results_match_independent_basis_and_continued_fraction_oracle() {
             knots.push(w.next().unwrap().parse().unwrap());
             mults.push(w.next().unwrap().parse().unwrap());
         }
+        let range = if kind.ends_with('T') {
+            Some((
+                w.next().unwrap().parse().unwrap(),
+                w.next().unwrap().parse().unwrap(),
+            ))
+        } else {
+            None
+        };
         assert!(w.next().is_none());
-        let curve = if kind == "P" {
+        let curve = if kind.starts_with('P') {
             BSplineCurve3::new_periodic(degree, poles, Some(weights), knots, mults)
         } else {
             BSplineCurve3::new(degree, poles, Some(weights), knots, mults)
         }
         .unwrap();
         let plane = Plane3::through_points(plane[0], plane[1], plane[2]).unwrap();
-        let result = spline_plane(&curve, &plane).unwrap_or_else(|e| panic!("{name}: {e}"));
+        let result = if let Some((a, b)) = range {
+            spline_plane_in(&curve, &plane, a, b)
+        } else {
+            spline_plane(&curve, &plane)
+        }
+        .unwrap_or_else(|e| panic!("{name}: {e}"));
         let mut e = expected.split_whitespace();
         assert_eq!(
             result.points().len(),
@@ -110,16 +124,145 @@ fn complete_results_match_independent_basis_and_continued_fraction_oracle() {
             ));
         }
         for overlap in result.overlaps() {
-            assert_eq!(
-                overlap.parameters(),
-                (bits(e.next().unwrap()), bits(e.next().unwrap())),
-                "{name}"
-            );
+            for (i, bounds) in overlap.parameter_bounds().into_iter().enumerate() {
+                let lo = bits(e.next().unwrap());
+                let hi = if range.is_some() {
+                    bits(e.next().unwrap())
+                } else {
+                    lo
+                };
+                assert_eq!((bounds.lower(), bounds.upper()), (lo, hi), "{name}");
+                assert_eq!(
+                    overlap.compare_parameter(i, lo).unwrap(),
+                    if lo == hi { Equal } else { Greater },
+                    "{name}"
+                );
+                assert_eq!(
+                    overlap.compare_parameter(i, hi).unwrap(),
+                    if lo == hi { Equal } else { Less },
+                    "{name}"
+                );
+            }
+            assert!(matches!(
+                overlap.compare_parameter(2, 0.),
+                Err(Error::OutOfDomain(_))
+            ));
         }
         assert!(e.next().is_none(), "{name}");
         count += 1;
     }
-    assert_eq!(count, 185);
+    assert_eq!(count, 283);
+}
+
+#[test]
+fn overlap_touch_becomes_a_boundary_point_when_the_interval_is_outside_the_overlap() {
+    let curve = BSplineCurve3::new(
+        1,
+        vec![
+            Point3::new(0., 0., -1.),
+            Point3::new(1., 0., 0.),
+            Point3::new(2., 0., 0.),
+            Point3::new(3., 0., 1.),
+        ],
+        None,
+        vec![0., 1., 2., 3.],
+        vec![2, 1, 1, 2],
+    )
+    .unwrap();
+    let plane = Plane3::through_points(
+        Point3::new(0., 0., 0.),
+        Point3::new(1., 0., 0.),
+        Point3::new(0., 1., 0.),
+    )
+    .unwrap();
+    for (a, b, u, orders) in [
+        (0.5, 1., 1., [Some(1), None]),
+        (2., 2.5, 2., [None, Some(1)]),
+    ] {
+        let hit = spline_plane_in(&curve, &plane, a, b).unwrap();
+        assert!(hit.overlaps().is_empty());
+        assert_eq!(hit.points().len(), 1);
+        assert_eq!(hit.points()[0].compare_parameter(u).unwrap(), Equal);
+        assert_eq!(hit.points()[0].contact(), SplinePlaneContact::Boundary);
+        assert_eq!(hit.points()[0].multiplicities(), orders);
+    }
+    for (a, b, expected) in [(0.5, 2.5, (1., 2.)), (1.25, 1.75, (1.25, 1.75))] {
+        let hit = spline_plane_in(&curve, &plane, a, b).unwrap();
+        assert!(hit.points().is_empty());
+        assert_eq!(hit.overlaps().len(), 1);
+        assert_eq!(hit.overlaps()[0].parameters(), expected);
+    }
+}
+
+#[test]
+fn periodic_ranges_keep_exact_parameters_and_preflight_traversal_limits() {
+    let curve = BSplineCurve3::new_periodic(
+        1,
+        vec![Point3::new(0., 0., -1.), Point3::new(1., 0., 1.)],
+        None,
+        vec![0., 0.25, 0.5],
+        vec![1; 3],
+    )
+    .unwrap();
+    let plane = Plane3::through_points(
+        Point3::new(0., 0., 0.),
+        Point3::new(1., 0., 0.),
+        Point3::new(0., 1., 0.),
+    )
+    .unwrap();
+    let first = 2f64.powi(53);
+    let last = first + 2.;
+    let hits = spline_plane_in(&curve, &plane, first, last).unwrap();
+    assert_eq!(hits.points().len(), 8);
+    assert!(hits
+        .points()
+        .windows(2)
+        .all(|p| p[0].parameter() == p[1].parameter()));
+    for p in hits.points() {
+        assert_eq!(p.compare_parameter(first).unwrap(), Greater);
+        assert_eq!(p.compare_parameter(last).unwrap(), Less);
+    }
+    let options = SplinePlaneOptions {
+        max_spans: 7,
+        ..SplinePlaneOptions::default()
+    };
+    assert!(matches!(
+        spline_plane_in_with_options(&curve, &plane, first, last, options),
+        Err(Error::ComputationLimit(_))
+    ));
+    assert_eq!(
+        spline_plane_in_with_options(
+            &curve,
+            &plane,
+            first,
+            last,
+            SplinePlaneOptions {
+                max_spans: 8,
+                ..options
+            }
+        )
+        .unwrap()
+        .points()
+        .len(),
+        8
+    );
+    assert!(matches!(
+        spline_plane_in(&curve, &plane, -f64::MAX, f64::MAX),
+        Err(Error::ComputationLimit(_))
+    ));
+    for (a, b) in [(0., 0.), (1., 0.), (f64::NAN, 1.), (0., f64::INFINITY)] {
+        assert!(spline_plane_in(&curve, &plane, a, b).is_err());
+    }
+    let nonperiodic =
+        BSplineCurve3::new(1, curve.poles().to_vec(), None, vec![0., 1.], vec![2; 2]).unwrap();
+    assert!(matches!(
+        spline_plane_in(&nonperiodic, &plane, -0.25, 1.),
+        Err(Error::OutOfDomain(_))
+    ));
+    assert!(matches!(
+        spline_plane_in(&nonperiodic, &plane, 0., 1.25),
+        Err(Error::OutOfDomain(_))
+    ));
 }
 
 #[test]
