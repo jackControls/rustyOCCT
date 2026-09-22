@@ -103,6 +103,9 @@ class BridgeTests(unittest.TestCase):
     def test_timeout_is_a_failure(self):
         self.expect("while {1} {}", "timeout", timeout=0.3)
 
+    def test_missing_executable_is_a_reported_failure(self):
+        self.expect("box b 1 2 3", "failed", tclsh=str(self.root / "absent-tclsh"))
+
     def test_crash_cannot_reuse_old_success(self):
         source = self.root / "crash.tcl"
         source.write_text("box b 1 2 3\ncheckshape b\n")

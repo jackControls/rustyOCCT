@@ -45,7 +45,8 @@ python3 -m unittest discover -s rust/tools -p test_draw_bridge.py -v
 RUSTY_TEST_DRAW_EXE=/path/to/DRAWEXE python3 -m unittest discover -s rust/tools -p test_draw_bridge.py -v
 ```
 
-The macOS native default is `/opt/homebrew/opt/opencascade/bin/DRAWEXE`. Use
+The runner discovers `DRAWEXE` or Ubuntu's `occt-draw` on PATH; the macOS
+fallback is `/opt/homebrew/opt/opencascade/bin/DRAWEXE`. Use
 `--case tests/bugs/modalg_7/bug29311_5` to select a registered test,
 `--data-dir /path/to/test-data` for existing fixtures, and `--timeout 30` to set
 the per-case time limit. No data files are downloaded automatically.
@@ -70,7 +71,7 @@ group, and stale success records are removed before each run.
 | `bugs/modalg_1/buc60684` | Missing fixture | Missing fixture | External `buc60684a.brep` data |
 
 There are **three original geometry tests passing on both backends**, not seven.
-The 16 bridge self-tests are separate infrastructure checks; they do not count
+The 17 bridge self-tests are separate infrastructure checks; they do not count
 as more upstream coverage. The existing 66-solid / 2,292-classification native
 oracle corpus supplies much broader prism geometry checks independently.
 

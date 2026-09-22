@@ -17,6 +17,11 @@ jobs:
     name: Original OCCT tests / Rust and native
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    env:
+      CSF_OCCTResourcePath: /usr/share/opencascade/resources
+      DRAWHOME: /usr/share/opencascade/resources/DrawResources
+      CSF_DrawPluginDefaults: /usr/share/opencascade/resources/DrawResources
+      DRAWDEFAULT: /usr/share/opencascade/resources/DrawResources/DrawDefault
     steps:
       - uses: actions/checkout@v4.2.2
       - run: rustup toolchain install stable --profile minimal
@@ -26,10 +31,10 @@ jobs:
           sudo apt-get install --no-install-recommends -y tcl occt-draw occt-misc
       - name: Test the bridge, including deliberate failures
         env:
-          RUSTY_TEST_DRAW_EXE: /usr/bin/DRAWEXE
+          RUSTY_TEST_DRAW_EXE: /usr/bin/occt-draw
         run: python3 -m unittest discover -s rust/tools -p test_draw_bridge.py -v
       - name: Run unchanged upstream tests on both kernels
-        run: python3 rust/tools/run_upstream_tests.py --backend both --draw-exe /usr/bin/DRAWEXE
+        run: python3 rust/tools/run_upstream_tests.py --backend both --draw-exe /usr/bin/occt-draw
       - name: Preserve logs and explicit coverage results
         if: always()
         uses: actions/upload-artifact@v4.6.2

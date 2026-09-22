@@ -76,8 +76,15 @@ def run_case(backend, sources, directory, worker=None, draw_exe=None,
     started = time.monotonic()
     timed_out = False
     with log_file.open("w") as log:
-        process = subprocess.Popen(command, cwd=ROOT, env=env, stdout=log,
-                                   stderr=subprocess.STDOUT, start_new_session=True)
+        try:
+            process = subprocess.Popen(command, cwd=ROOT, env=env, stdout=log,
+                                       stderr=subprocess.STDOUT, start_new_session=True)
+        except OSError as error:
+            message = f"cannot start test runner: {error}"
+            log.write(message + "\n")
+            return {"backend": backend, "status": "failed", "queries": "0",
+                    "seconds": round(time.monotonic() - started, 6),
+                    "log": str(log_file.resolve()), "error": message}
         try:
             process.wait(timeout=timeout)
         except subprocess.TimeoutExpired:
@@ -136,7 +143,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--backend", choices=["rust", "occt", "both"], default="rust")
     parser.add_argument("--case", action="append", help="manifest test path; repeat to select cases")
-    parser.add_argument("--draw-exe", default=shutil.which("DRAWEXE") or "/opt/homebrew/opt/opencascade/bin/DRAWEXE")
+    parser.add_argument("--draw-exe", default=shutil.which("DRAWEXE") or shutil.which("occt-draw") or "/opt/homebrew/opt/opencascade/bin/DRAWEXE")
     parser.add_argument("--tclsh", default=shutil.which("tclsh") or "tclsh")
     parser.add_argument("--data-dir", action="append", type=Path, default=[])
     parser.add_argument("--timeout", type=float, default=30.0)
