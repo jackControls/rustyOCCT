@@ -237,7 +237,9 @@ The bridge captures 546 native inputs before running Rust and compares all
 Cox basis polynomials plus affine substitutions must reproduce every Rust
 homogeneous control exactly. The native comparison permits common weight
 normalization and the documented floating budget. OCCT 7.9.3 has 506 matching
-cases and 40 [reviewed degree-25 edit differences](NATIVE_BEZIER_EDITING_DIVERGENCES.md).
+cases and 40 [reviewed degree-25 edit differences](NATIVE_BEZIER_EDITING_DIVERGENCES.md);
+Linux OCCT 7.6.3 has 508 matches and 38 separately pinned differences. All 546
+complete exact Rust outputs are byte-identical between the platforms.
 Source GoogleTest inputs are reused, not executed unchanged.
 
 The 636 exact fixtures add subnormal/adjacent knots, full-exponent geometry and

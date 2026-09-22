@@ -36,6 +36,8 @@ Immutable operations on an arc:
 Operations do not round their control data back into `BSplineCurve3`'s f64 pole
 storage. Rational parameters permit repeated editing without a float round trip.
 Input rational parameters are normalized; a zero denominator is rejected.
+Splitting at a nonrational algebraic intersection parameter requires a further
+representation extension; rounding such a parameter does not give an exact cut.
 Resource limits bound arc enumeration and degree, not a hard time deadline for
 arbitrarily large user-supplied rational parameters or edit sequences.
 

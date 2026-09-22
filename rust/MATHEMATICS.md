@@ -682,7 +682,14 @@ Periodic spans use the original extended knot vector with exact translated
 parameter bounds. Preflight counting rejects excessive turns before enumeration.
 
 Subdivision uses the two boundary diagonals of the homogeneous de Casteljau
-triangle. Its final entry is shared exactly by both results. Trimming composes
+triangle. Its final entry is shared exactly by both results. For `t=n/d`, controls
+are first lifted to integers over a common positive denominator D. Each stage
+uses `(d-n)*A+n*B` and denominator `D*d^r`; only returned controls are reduced.
+Evaluation uses the same integer recurrence. Elevation similarly keeps a common
+denominator, multiplying it by p+1 at each increment. These are exact arithmetic
+rearrangements, not rounding or projective rescaling of the published controls.
+They avoid repeated fraction reductions exposed by degree-25 fuzz regressions.
+Trimming composes
 subdivisions while retaining original parameter units. Reversing control order
 substitutes `a+b-u`. Elevation from p to p+1 uses
 `H'_i = i/(p+1)*H_(i-1) + (1-i/(p+1))*H_i`, with unchanged endpoint controls.

@@ -1,6 +1,7 @@
 //! Exact homogeneous spline extraction and immutable Bernstein editing.
 use super::{BSplineCurve3, BezierCurve3, CurveEvaluation, DerivativeOrder, MAX_DEGREE, MAX_POLES};
 use crate::{intersection::ExactPoint3, spline, Error, Result};
+use num_bigint::BigInt;
 use num_rational::BigRational as R;
 
 fn integer(n: usize) -> R {
@@ -133,13 +134,13 @@ impl ExactBezierCurve3 {
             return Err(Error::OutOfDomain("Bezier split parameter"));
         }
         let t = (&u - &self.domain[0]) / (&self.domain[1] - &self.domain[0]);
-        let mut row = self.controls.clone();
-        let mut left = vec![row[0].clone()];
-        let mut right = vec![row.last().unwrap().clone()];
-        while row.len() > 1 {
-            row = interpolate(&row, &t);
-            left.push(row[0].clone());
-            right.push(row.last().unwrap().clone());
+        let mut row = IntegerRow::new(&self.controls);
+        let mut left = vec![self.controls[0].clone()];
+        let mut right = vec![self.controls.last().unwrap().clone()];
+        while row.poles.len() > 1 {
+            row.interpolate(&t);
+            left.push(row.rational(0));
+            right.push(row.rational(row.poles.len() - 1));
         }
         right.reverse();
         Ok([
@@ -162,12 +163,14 @@ impl ExactBezierCurve3 {
             return Err(Error::OutOfDomain("Bezier trim interval"));
         }
         let result = if last < self.domain[1] {
-            self.split_at(&last)?[0].clone()
+            let [left, _] = self.split_at(&last)?;
+            left
         } else {
             self.clone()
         };
         Ok(if first > result.domain[0] {
-            result.split_at(&first)?[1].clone()
+            let [_, right] = result.split_at(&first)?;
+            right
         } else {
             result
         })
@@ -186,19 +189,27 @@ impl ExactBezierCurve3 {
         if degree < self.degree() || degree > MAX_DEGREE {
             return Err(Error::InvalidCurve("Bezier elevation degree"));
         }
-        let mut result = self.clone();
-        while result.degree() < degree {
-            let n = result.controls.len();
-            let mut controls = Vec::with_capacity(n + 1);
-            controls.push(result.controls[0].clone());
-            for i in 1..n {
-                let alpha = integer(i) / integer(n);
-                controls.push(blend(&result.controls[i], &result.controls[i - 1], &alpha));
-            }
-            controls.push(result.controls.last().unwrap().clone());
-            result.controls = controls;
+        if degree == self.degree() {
+            return Ok(self.clone());
         }
-        Ok(result)
+        let mut row = IntegerRow::new(&self.controls);
+        while row.poles.len() <= degree {
+            let n = row.poles.len();
+            let mut controls = Vec::with_capacity(n + 1);
+            controls.push(std::array::from_fn(|c| &row.poles[0][c] * n));
+            for i in 1..n {
+                controls.push(std::array::from_fn(|c| {
+                    &row.poles[i - 1][c] * i + &row.poles[i][c] * (n - i)
+                }));
+            }
+            controls.push(std::array::from_fn(|c| &row.poles[n - 1][c] * n));
+            row.poles = controls;
+            row.denominator *= n;
+        }
+        Ok(Self {
+            controls: (0..row.poles.len()).map(|i| row.rational(i)).collect(),
+            domain: self.domain.clone(),
+        })
     }
 
     /// Exact point and optional derivatives, retained even when their finite
@@ -276,12 +287,42 @@ impl ExactCurveEvaluation {
     }
 }
 
-fn blend(a: &[R; 4], b: &[R; 4], t: &R) -> [R; 4] {
-    let complement = integer(1) - t;
-    std::array::from_fn(|c| &complement * &a[c] + t * &b[c])
+/// A shared positive denominator lets each de Casteljau stage use integer
+/// multiply/add operations. At stage r the denominator is D*t.denom()^r;
+/// normalize only the requested boundary controls or final value. The exact
+/// Bernstein recurrence and published reduced rational controls are unchanged.
+struct IntegerRow {
+    poles: Vec<[BigInt; 4]>,
+    denominator: BigInt,
 }
-fn interpolate(row: &[[R; 4]], t: &R) -> Vec<[R; 4]> {
-    row.windows(2).map(|p| blend(&p[0], &p[1], t)).collect()
+impl IntegerRow {
+    fn new(controls: &[[R; 4]]) -> Self {
+        let mut denominator = BigInt::from(1);
+        for x in controls.iter().flatten() {
+            let (mut a, mut b) = (denominator.clone(), x.denom().clone());
+            while b != BigInt::from(0) {
+                (a, b) = (b.clone(), a % b);
+            }
+            denominator = denominator / a * x.denom();
+        }
+        let poles = controls
+            .iter()
+            .map(|p| std::array::from_fn(|c| p[c].numer() * (&denominator / p[c].denom())))
+            .collect();
+        Self { poles, denominator }
+    }
+    fn rational(&self, i: usize) -> [R; 4] {
+        std::array::from_fn(|c| R::new(self.poles[i][c].clone(), self.denominator.clone()))
+    }
+    fn interpolate(&mut self, t: &R) {
+        let complement = t.denom() - t.numer();
+        self.poles = self
+            .poles
+            .windows(2)
+            .map(|p| std::array::from_fn(|c| &complement * &p[0][c] + t.numer() * &p[1][c]))
+            .collect();
+        self.denominator *= t.denom();
+    }
 }
 fn casteljau(controls: &[[R; 4]], t: &R) -> [R; 4] {
     if t == &integer(0) {
@@ -290,9 +331,9 @@ fn casteljau(controls: &[[R; 4]], t: &R) -> [R; 4] {
     if t == &integer(1) {
         return controls.last().unwrap().clone();
     }
-    let mut row = controls.to_vec();
-    while row.len() > 1 {
-        row = interpolate(&row, t);
+    let mut row = IntegerRow::new(controls);
+    while row.poles.len() > 1 {
+        row.interpolate(t);
     }
-    row.pop().unwrap()
+    row.rational(0)
 }

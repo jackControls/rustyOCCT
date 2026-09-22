@@ -7,12 +7,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for path in paths {
         let data = std::fs::read(&path)?;
         let start = std::time::Instant::now();
-        rusty_occt_fuzz::check_bezier_editing(&data);
+        let times = rusty_occt_fuzz::profile_bezier_editing(&data);
         println!(
             "{path}: {:.6}s, {} bytes, oracle passed",
             start.elapsed().as_secs_f64(),
             data.len()
         );
+        for (label, time) in times {
+            println!("  {label}: {:.6}s", time.as_secs_f64());
+        }
     }
     Ok(())
 }

@@ -10,6 +10,22 @@ mod protocol;
 mod reference;
 
 pub fn check_bezier_editing(data: &[u8]) {
+    check(data, |_| {});
+}
+
+pub fn profile_bezier_editing(
+    data: &[u8],
+) -> std::collections::BTreeMap<&'static str, std::time::Duration> {
+    let mut times = std::collections::BTreeMap::new();
+    let mut at = std::time::Instant::now();
+    check(data, |label| {
+        *times.entry(label).or_default() += at.elapsed();
+        at = std::time::Instant::now();
+    });
+    times
+}
+
+fn check(data: &[u8], mut mark: impl FnMut(&'static str)) {
     let mode = byte(data, 0) % 3;
     let degree = 1 + byte(data, 1) as usize
         % if mode == 0 {
@@ -89,8 +105,11 @@ pub fn check_bezier_editing(data: &[u8]) {
     } else {
         (a, b)
     };
+    mark("input construction");
     let exact = curve.bezier_arcs_in(first, last).unwrap();
+    mark("kernel extraction");
     let expected = reference::extract(&curve, first, last);
+    mark("oracle extraction");
     assert_eq!(exact.len(), expected.len());
     assert!(matches!(
         curve.bezier_arcs_with_options(
@@ -103,14 +122,19 @@ pub fn check_bezier_editing(data: &[u8]) {
         Err(Error::ComputationLimit(_))
     ));
     let probe = R::new(byte(data, 11).into(), 255.into());
+    mark("limits");
     for (arc, reference) in exact.iter().zip(&expected) {
         reference::check(arc, reference, &probe);
+        mark("base coefficient/jet/bounds checks");
         let actual = protocol::apply(arc.clone(), op, elevation);
+        mark("kernel edits");
         let expected = reference::apply(reference.clone(), op, elevation);
+        mark("oracle edits");
         assert_eq!(actual.len(), expected.len());
         for (a, b) in actual.iter().zip(&expected) {
             reference::check(a, b, &probe);
         }
+        mark("edited coefficient/jet/bounds checks");
     }
     // Additional rational cuts vary independently from the native fixed probes.
     let selected = byte(data, 6) as usize % exact.len();
@@ -119,6 +143,7 @@ pub fn check_bezier_editing(data: &[u8]) {
     let [a, b] = arc.domain();
     let cut = a + (b - a) * fraction;
     let [left, right] = arc.split_at(&cut).unwrap();
+    mark("kernel rational split");
     assert_eq!(
         left.homogeneous_poles().last(),
         right.homogeneous_poles().first()
@@ -130,6 +155,7 @@ pub fn check_bezier_editing(data: &[u8]) {
     reference::check(&left, &expected[selected].trim(a, &cut), &probe);
     reference::check(&right, &expected[selected].trim(&cut, b), &probe);
     assert_eq!(left.reversed().reversed(), left);
+    mark("rational split checks");
     if byte(data, 7) & 1 != 0 {
         assert_eq!(
             arc.elevated(elevation).unwrap().split_at(&cut).unwrap(),
@@ -139,4 +165,5 @@ pub fn check_bezier_editing(data: &[u8]) {
             ]
         );
     }
+    mark("kernel commutation check");
 }

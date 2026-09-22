@@ -27,7 +27,7 @@ pub use linear_sets::check_linear_sets;
 mod proximity;
 pub use proximity::check_proximity;
 mod bezier_editing;
-pub use bezier_editing::check_bezier_editing;
+pub use bezier_editing::{check_bezier_editing, profile_bezier_editing};
 
 pub fn byte(data: &[u8], i: usize) -> u8 {
     data.get(i).copied().unwrap_or(0)

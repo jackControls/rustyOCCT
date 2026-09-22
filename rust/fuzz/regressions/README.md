@@ -81,6 +81,19 @@ denominators before binomial power transforms, rather than repeatedly reducing
 fractions in every multiply/add. Geometry, assertions and timeout limits are
 unchanged. Runtime includes independent oracle work, not just kernel work.
 
+The combined-edit seed then exceeded the unchanged 20-second limit on Linux
+in [campaign 35740265339](https://github.com/jackControls/rustyOCCT/actions/runs/35740265339)
+at `69c79163a5ef21ecf17a0f9e448d7eeb6849a08c` (the alarm fired at 27 seconds).
+`periodic-degree25-trim.bin` and `unclamped-degree25-trim.bin` retain the other
+reported Linux slow units; `mutated-degree25.bin` preserves the new slow unit
+`7da76f940ea56d81abfc066fa5fba8ff44517a03` from the local ten-minute campaign.
+Stage timing isolated substantial kernel subdivision/evaluation cost. Those
+de Casteljau recurrences and elevation now use shared-denominator integer rows,
+normalizing only returned values. The same combined input's local optimized
+kernel-plus-oracle replay fell from 0.912 to 0.332 seconds. These measurements
+are machine-specific diagnostics; no checks, input families or limits were
+removed. The replay example prints the separate stage timings.
+
 ```sh
 cargo run --manifest-path rust/fuzz/Cargo.toml --locked --release \
   --example replay_bezier_editing -- rust/fuzz/regressions/bezier_editing/*.bin

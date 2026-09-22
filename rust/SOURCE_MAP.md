@@ -232,8 +232,8 @@ supports explicitly budgeted multi-period extraction. It does not port native
 tolerance snapping, out-of-domain Bézier extrapolation, general B-spline knot
 editing or topology/history. Read [the full contract](BEZIER_EDITING.md).
 
-The original `Geom_BezierCurve_Test.cxx` cubic and rational Segment/Increase/
-Reverse inputs are included in the 546 native captures made before Rust
+The original `Geom_BezierCurve_Test.cxx` cubic and RationalIncrease/
+RationalReverse inputs are included in the 546 native captures made before Rust
 implementation. The bridge maps the different parameter conventions and
 preserves native numerical differences. Source test inputs are reused, not
 executed as unchanged GoogleTests. There are no new unchanged DRAW passes.

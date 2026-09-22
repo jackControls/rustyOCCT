@@ -4,8 +4,10 @@ Source reference: `3d097a0328e71b826377d4814ab05ec3c3d23871`. All 546
 native inputs were captured before the Rust implementation. They exercise
 full/clipped clamped, unclamped and periodic B-spline extraction, Bézier
 trimming, splitting, reversal, elevation and combined edits. Source inputs from
-`Geom_BezierCurve_Test` include the polynomial cubic, rational conic and rational
-increase/reverse examples. This is an API bridge, not execution of the unchanged
+`Geom_BezierCurve_Test` include the polynomial cubic and rational increase/reverse
+examples. The additional quarter-conic case uses `sqrt(0.5)`, one binary64 ULP
+above the source RationalSegment test's `1/sqrt(2)` weight; it is not a verbatim
+input replay of that test. This is an API bridge, not execution of the unchanged
 GoogleTest file or an additional unchanged DRAW pass.
 
 Rust keeps original parameter ranges; OCCT's individual Bézier arcs use local
@@ -41,6 +43,17 @@ the individual floating instruction responsible has not been isolated. Rust
 instead uses exact positive homogeneous de Casteljau interpolation. Independent
 Python and Rust basis-polynomial checks preserve the complete parameterized
 curve, including endpoints and exact derivatives.
+
+## OCCT 7.6.3 on Linux
+
+Linux's OCCT 7.6.3 reports 508 matching cases and 38 differences: 12 trims,
+14 splits and 12 combined edits. These are a subset of the same macOS degree-25
+cases; `periodic_d25_m1_w0_op1` and `periodic_d25_m1_w0_op5` fit the budget on
+Linux. Native values differ, so the 38 observations have separate full bit/field
+pins. The unweighted split example's Linux endpoint is
+`(22,4.000002201702663,5.0594034521456166e-05)`. All 546 complete exact Rust
+outputs are byte-identical across the platforms, and all native count/degree/
+domain comparisons agree. The registry contains 78 version-specific records.
 
 ## Review guards
 
