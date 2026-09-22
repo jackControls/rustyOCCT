@@ -44,8 +44,10 @@ unchanged upstream extrema-test coverage is implied.
 `compare_linear_sets.py` checks all 25 ordered linear primitive pairings over
 433 native inputs. The initial native geometries were captured before Rust
 implementation. All exact results equal an independent boundary-crossing oracle.
-Local OCCT 7.9.3 yields 384 complete combined COMMON/SECTION matches, 46 empty
-results for unbounded intersections, and three extra-edge observations. The
+Local OCCT 7.9.3 and Linux OCCT 7.6.3 each yield 384 complete combined
+COMMON/SECTION matches, 46 empty results for unbounded intersections, and three
+extra-edge/off-line-point observations. All 433 Rust result rows are identical
+between platforms. The
 [reviews](NATIVE_LINEAR_INTERSECTION_DIVERGENCES.md) pin each native result;
 COMMON's intentional omission of lower-dimensional contacts is counted separately.
 The 684 exact fixtures include five/six-vertex polygons, full-exponent and

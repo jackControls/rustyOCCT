@@ -375,7 +375,7 @@
         "SECTION includes geometry outside the exact intersection",
         "COMMON plus SECTION differs from the complete exact set"
       ],
-      "reason": "The oblique line lies on one triangle edge. Both native operations add a second triangle edge with an endpoint outside the line. Exact boundary and affine references agree on the single intended segment."
+      "reason": "The oblique line lies on one triangle edge. COMMON adds a second triangle edge with an endpoint outside the line; SECTION returns a point outside the line. Exact boundary and affine references agree on the single intended segment."
     },
     {
       "oracle": "OCCT 7.9.3",
@@ -751,7 +751,7 @@
         "SECTION includes geometry outside the exact intersection",
         "COMMON plus SECTION differs from the complete exact set"
       ],
-      "reason": "The oblique line lies on one triangle edge. Both native operations add a second triangle edge with an endpoint outside the line. Exact boundary and affine references agree on the single intended segment."
+      "reason": "The oblique line lies on one triangle edge. COMMON adds a second triangle edge with an endpoint outside the line; SECTION returns a point outside the line. Exact boundary and affine references agree on the single intended segment."
     },
     {
       "oracle": "OCCT 7.9.3",
@@ -1127,10 +1127,1158 @@
         "SECTION includes geometry outside the exact intersection",
         "COMMON plus SECTION differs from the complete exact set"
       ],
-      "reason": "The oblique line lies on one triangle edge. Both native operations add a second triangle edge with an endpoint outside the line. Exact boundary and affine references agree on the single intended segment."
+      "reason": "The oblique line lies on one triangle edge. COMMON adds a second triangle edge with an endpoint outside the line; SECTION returns a point outside the line. Exact boundary and affine references agree on the single intended segment."
     },
     {
       "oracle": "OCCT 7.9.3",
+      "case": "BUC60815_initial_planes",
+      "input_sha256": "976f7c479581c484e36c61946622fc69b80a983e34f1831cf82891c83807fcac",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 0/1 0/1 0/1 0/1 1/1 0/1",
+      "differences": [
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "FL_0.125_0",
+      "input_sha256": "60a92db06992eb32b6a8e2682b20d012bf3ad8ebffb15b458eb5d749652e7a83",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 3/8 0/1 5/8 0/1 1/1 0/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "FF_0.125_0",
+      "input_sha256": "788b859a7289f223aaf076262646fa91edacc9f040a80fbbc9774611f5d53447",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 3/8 0/1 5/8 0/1 1/1 0/1",
+      "differences": [
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "coincident_lines_0.125_0",
+      "input_sha256": "5721964cb6ae70453106551dc57d4c5f0c568aede55932ca11d58ec0de3b74a6",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 0/1 -3/8 5/8 1/1 0/1 0/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "coincident_planes_0.125_0",
+      "input_sha256": "22e6ab188a058c8f4e9ada664795e47a3fcf06923ffa2309b4e649b8204c6302",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "F 2 0/1 0/1 1/1 5/8",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "contained_line_0.125_0",
+      "input_sha256": "22d29054e73d92e310a96991af25d2fdc5ee2b9de76ead16bb1b8eb4139f9251",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 0/1 -1/4 5/8 1/1 0/1 0/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "FL_0.125_1",
+      "input_sha256": "843235cdb92825e22eb2badec41e6fc740470ea378ba90d3e53177762b1a2e59",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 1/4 -1/2 0/1 0/1 0/1 1/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "FF_0.125_1",
+      "input_sha256": "b003e5d111206e9b50a6691c8b421ac9ed60db30573a299bf3c4a80efa24ec69",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 1/4 -1/2 0/1 0/1 0/1 1/1",
+      "differences": [
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "coincident_lines_0.125_1",
+      "input_sha256": "9c08c81c6fa96fdacfccb250b6b37d44bf8f0e80b73d7029119d2da591974e25",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 1/4 0/1 5/8 0/1 1/1 0/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "coincident_planes_0.125_1",
+      "input_sha256": "acd31db90fa997208bda4c8506fd53c92a3649d870d3cfc94d521577c39f6edc",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "F 2 1/1 0/1 0/1 1/4",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "contained_line_0.125_1",
+      "input_sha256": "5f6146e5a786030253f5b3faf131f210f92c24c3ac91f9c836e8536483d13971",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 1/4 0/1 3/4 0/1 1/1 0/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "FL_0.125_2",
+      "input_sha256": "6062c423f8d0bc200b39c7e8a3d9f01aecbd56e7132f5f9476866f08b8e7509f",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 1/2 0/1 3/4 0/1 1/1 1/2",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "FF_0.125_2",
+      "input_sha256": "6d8813f4c4e2b63ce914cabccc7cf1a32c5c48ce388df08e313af9baa6309ce8",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 1/2 0/1 3/4 0/1 1/1 1/2",
+      "differences": [
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "coincident_lines_0.125_2",
+      "input_sha256": "8d4798d7b9a6454d0732d2b6e5cc63bc50521ba1d9ebba6567561611f3c2c638",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 0/1 -1/2 5/8 1/1 1/2 0/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "coincident_planes_0.125_2",
+      "input_sha256": "f276a7c2c92ead86c3fbad62f18943cc8deaa3fd37ac6ae88df3e663219170de",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "F 2 1/1 -2/1 4/1 7/2",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "contained_line_0.125_2",
+      "input_sha256": "2150e6ce2e4c9f04fc98bbf290a9b38cbcdd6646aabb423bedba8098fa9ddb73",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 0/1 -1/4 3/4 1/1 1/2 0/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "triangle_edge_line_0.125_2",
+      "input_sha256": "d9352c242e69e39268973056a6b9b4b8c370415d0531fbeecb49bd7b2c3a9fc3",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": [
+            [
+              "S",
+              [
+                [
+                  "3fd0000000000000",
+                  "bfd8000000000000",
+                  "3fe4000000000000"
+                ],
+                [
+                  "3ff4000000000000",
+                  "3fc0000000000000",
+                  "3fe4000000000000"
+                ]
+              ]
+            ],
+            [
+              "S",
+              [
+                [
+                  "3fd0000000000000",
+                  "3fe4000000000000",
+                  "3ff2000000000000"
+                ],
+                [
+                  "3fd0000000000000",
+                  "bfd8000000000000",
+                  "3fe4000000000000"
+                ]
+              ]
+            ]
+          ]
+        },
+        "S": {
+          "status": "R",
+          "pieces": [
+            [
+              "P",
+              [
+                [
+                  "3fd0000000000000",
+                  "3fc4e359426c0826",
+                  "3fec9c6b284d8105"
+                ]
+              ]
+            ]
+          ]
+        }
+      },
+      "exact_result": "S 2 1/4 -3/8 5/8 5/4 1/8 5/8",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "SECTION includes geometry outside the exact intersection",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "The oblique line lies on one triangle edge. COMMON adds a second triangle edge with an endpoint outside the line; SECTION returns a point outside the line. Exact boundary and affine references agree on the single intended segment."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "FL_1.0_0",
+      "input_sha256": "7cd30d3f039713d8ddf570c3f13bcbbc688c072236e64256fbea6be456ffa350",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 3/1 0/1 5/1 0/1 1/1 0/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "FF_1.0_0",
+      "input_sha256": "034c9a102523cfc8b5f6c66dbbfec102c3bcc8819fec156c72dce5067ab0c893",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 3/1 0/1 5/1 0/1 1/1 0/1",
+      "differences": [
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "coincident_lines_1.0_0",
+      "input_sha256": "fc78a0eed312c08b1e668f74c7b6ffc1da78699d7a05d9cb9c9a6d92d987c166",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 0/1 -3/1 5/1 1/1 0/1 0/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "coincident_planes_1.0_0",
+      "input_sha256": "595013c34fd17ec8e2bb6961ec77d06ffe6d2a0ab17db04dcc95c82362cf1c51",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "F 2 0/1 0/1 1/1 5/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "contained_line_1.0_0",
+      "input_sha256": "b8cdac24a329eb79b9799774888854ec9d2cca71a1aaaf32a067edd895bd3147",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 0/1 -2/1 5/1 1/1 0/1 0/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "FL_1.0_1",
+      "input_sha256": "fc851709a00760b2b946a7cc68d42009889e8abc5019cb18dac5701a82b11aa0",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 2/1 -4/1 0/1 0/1 0/1 1/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "FF_1.0_1",
+      "input_sha256": "9302ad94b24cbaadb45453d0c3749cd8bb7ebb16ae00d973d1876d55bf63b50a",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 2/1 -4/1 0/1 0/1 0/1 1/1",
+      "differences": [
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "coincident_lines_1.0_1",
+      "input_sha256": "c83001f78725b4091a59c0caa435599ae3442f69a661cbefcd4be9069f216323",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 2/1 0/1 5/1 0/1 1/1 0/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "coincident_planes_1.0_1",
+      "input_sha256": "97ae80c1a4b29135054a331c6c71d86c69290dc1ecb6c7b7d29797fa8ea3f500",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "F 2 1/1 0/1 0/1 2/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "contained_line_1.0_1",
+      "input_sha256": "816d688552086b6e675206ed1fb7137f87b401f80aac3a799d1dd542fabd6ce7",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 2/1 0/1 6/1 0/1 1/1 0/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "FL_1.0_2",
+      "input_sha256": "a66ce9f29baaf1abf8baf087150523d726686f9d0a8442829fad0ed3922ec0e8",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 4/1 0/1 6/1 0/1 1/1 1/2",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "FF_1.0_2",
+      "input_sha256": "d9cef1ddd272a9e15b384cae7c1bd2d0f98382781468c0b9a617ac65790452bb",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 4/1 0/1 6/1 0/1 1/1 1/2",
+      "differences": [
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "coincident_lines_1.0_2",
+      "input_sha256": "2e9c81a7cf97168717d054279761bb1810c6b62d747d4b47c09abed4d35d1ab2",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 0/1 -4/1 5/1 1/1 1/2 0/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "coincident_planes_1.0_2",
+      "input_sha256": "db129d122edcaeea4fcefa57dc3f35f4f645186ad3bb67d4fe5f990415253a61",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "F 2 1/1 -2/1 4/1 28/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "contained_line_1.0_2",
+      "input_sha256": "ca82d6310881deeaf984028c1c3532c0e191a8e3e4ca95d475441dfe6c16fc9a",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 0/1 -2/1 6/1 1/1 1/2 0/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "triangle_edge_line_1.0_2",
+      "input_sha256": "d2dc3d6fd7d4021eb19c84b1bfb26ccef09ca07589e277bd183be6b391a89074",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": [
+            [
+              "S",
+              [
+                [
+                  "4000000000000000",
+                  "c008000000000000",
+                  "4014000000000000"
+                ],
+                [
+                  "4024000000000000",
+                  "3ff0000000000000",
+                  "4014000000000000"
+                ]
+              ]
+            ],
+            [
+              "S",
+              [
+                [
+                  "4000000000000000",
+                  "4014000000000000",
+                  "4022000000000000"
+                ],
+                [
+                  "4000000000000000",
+                  "c008000000000000",
+                  "4014000000000000"
+                ]
+              ]
+            ]
+          ]
+        },
+        "S": {
+          "status": "R",
+          "pieces": [
+            [
+              "P",
+              [
+                [
+                  "4000000000000000",
+                  "3ff4e359426c0823",
+                  "401c9c6b284d8104"
+                ]
+              ]
+            ]
+          ]
+        }
+      },
+      "exact_result": "S 2 2/1 -3/1 5/1 10/1 1/1 5/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "SECTION includes geometry outside the exact intersection",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "The oblique line lies on one triangle edge. COMMON adds a second triangle edge with an endpoint outside the line; SECTION returns a point outside the line. Exact boundary and affine references agree on the single intended segment."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "FL_32.0_0",
+      "input_sha256": "56a8fe9c5e728e1b0ed1df3969890c5f9df9439df1e9de42e996df4cea9b176d",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 96/1 0/1 160/1 0/1 1/1 0/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "FF_32.0_0",
+      "input_sha256": "f89deb6bd2c77a3ba85076499674a9839155835223261ddf85acd2efcfcbd59f",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 96/1 0/1 160/1 0/1 1/1 0/1",
+      "differences": [
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "coincident_lines_32.0_0",
+      "input_sha256": "a898d93f161c643c74568a616d6be4b1db4edcb4fc436902dc7aa4a1b67f7814",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 0/1 -96/1 160/1 1/1 0/1 0/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "coincident_planes_32.0_0",
+      "input_sha256": "c7b02bd17aaa8e770eacb4fdab434d15a71bbbde39b1f03f3a8e4b48596de015",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "F 2 0/1 0/1 1/1 160/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "contained_line_32.0_0",
+      "input_sha256": "4aa124ef44f49047fc210a81f8e7b552436d7cf63238baaf3794761c229878e9",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 0/1 -64/1 160/1 1/1 0/1 0/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "FL_32.0_1",
+      "input_sha256": "37f2e69617c0588f158653ec2582c8ce1fb2d886a1dc2080fdd982530dd544a8",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 64/1 -128/1 0/1 0/1 0/1 1/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "FF_32.0_1",
+      "input_sha256": "2a98c13f3b0ee82d8ebf4847a4c903860e3c36dcb709f9476b5758d257139355",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 64/1 -128/1 0/1 0/1 0/1 1/1",
+      "differences": [
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "coincident_lines_32.0_1",
+      "input_sha256": "0ef6d21002b18c890a6d4eb81ab0b1c4f66c63cfc667868e901ff876ccf3f97f",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 64/1 0/1 160/1 0/1 1/1 0/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "coincident_planes_32.0_1",
+      "input_sha256": "812e6922a1fefe41610499305f8ce48621b558bb7893c1a848e9ecbbded703ac",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "F 2 1/1 0/1 0/1 64/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "contained_line_32.0_1",
+      "input_sha256": "f157ac2c2ce6ebf56e477e3ed372f31aa6efb2908976976d026339e8df878065",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 64/1 0/1 192/1 0/1 1/1 0/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "FL_32.0_2",
+      "input_sha256": "4520d016084ef3731df4181a17638f236ad9e531be7059540106222c5e7b7b8d",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 128/1 0/1 192/1 0/1 1/1 1/2",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "FF_32.0_2",
+      "input_sha256": "c763e4d438ffc98c8446f13995d406d00e553db4f38dc2c14f244da0488fa41e",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 128/1 0/1 192/1 0/1 1/1 1/2",
+      "differences": [
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "coincident_lines_32.0_2",
+      "input_sha256": "5e6e5078803e3f3676ecc091bb859b72a0fb957e08414e135f085f08628ad9dc",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 0/1 -128/1 160/1 1/1 1/2 0/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "coincident_planes_32.0_2",
+      "input_sha256": "fff78810d6891f5b24034173b3e0fb4542c26ab5003c512caad6887ccb2cfaff",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "F 2 1/1 -2/1 4/1 896/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "contained_line_32.0_2",
+      "input_sha256": "70fadf5e72357871e214d5649ab2a4e03bc63e531106c2da96a42a86b4fe8777",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": []
+        },
+        "S": {
+          "status": "R",
+          "pieces": []
+        }
+      },
+      "exact_result": "L 2 0/1 -64/1 192/1 1/1 1/2 0/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "COMMON and SECTION both return empty for these unbounded operands. The complete exact intersection is the pinned infinite line or plane; this is a native B-rep nonresult, not an agreement."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
+      "case": "triangle_edge_line_32.0_2",
+      "input_sha256": "94466e23e3b5da07bd7e16e0ee18ead0d5249bbd3ccf093555ae314792c4f3d4",
+      "native": {
+        "C": {
+          "status": "R",
+          "pieces": [
+            [
+              "S",
+              [
+                [
+                  "4050000000000000",
+                  "c058000000000000",
+                  "4064000000000000"
+                ],
+                [
+                  "4074000000000000",
+                  "4040000000000000",
+                  "4064000000000000"
+                ]
+              ]
+            ],
+            [
+              "S",
+              [
+                [
+                  "4050000000000000",
+                  "4064000000000000",
+                  "4072000000000000"
+                ],
+                [
+                  "4050000000000000",
+                  "c058000000000000",
+                  "4064000000000000"
+                ]
+              ]
+            ]
+          ]
+        },
+        "S": {
+          "status": "R",
+          "pieces": [
+            [
+              "P",
+              [
+                [
+                  "4050000000000000",
+                  "4044e359426c0826",
+                  "406c9c6b284d8105"
+                ]
+              ]
+            ]
+          ]
+        }
+      },
+      "exact_result": "S 2 64/1 -96/1 160/1 320/1 32/1 160/1",
+      "differences": [
+        "COMMON differs from its dimension-filtered exact set",
+        "SECTION includes geometry outside the exact intersection",
+        "COMMON plus SECTION differs from the complete exact set"
+      ],
+      "reason": "The oblique line lies on one triangle edge. COMMON adds a second triangle edge with an endpoint outside the line; SECTION returns a point outside the line. Exact boundary and affine references agree on the single intended segment."
+    },
+    {
+      "oracle": "OCCT 7.6.3",
       "case": "BUC60815_initial_planes",
       "input_sha256": "976f7c479581c484e36c61946622fc69b80a983e34f1831cf82891c83807fcac",
       "native": {
