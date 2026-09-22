@@ -17,7 +17,7 @@ from generate_curved_fixtures import enclosure
 ROOT=Path(__file__).resolve().parents[1]
 
 
-def jet(degree, poles, weights, flat, u, span, order):
+def basis_jet(degree, flat, u, span, order):
     @lru_cache(None)
     def basis(i,p,r):
         if r>p: return F(0)
@@ -26,7 +26,12 @@ def jet(degree, poles, weights, flat, u, span, order):
         if r:
             return ((p*basis(i,p-1,r-1)/left) if left else 0)-((p*basis(i+1,p-1,r-1)/right) if right else 0)
         return (((u-flat[i])*basis(i,p-1,0)/left) if left else 0)+(((flat[i+p+1]-u)*basis(i+1,p-1,0)/right) if right else 0)
-    h=[[sum(basis(i,degree,r)*w*(p[c] if c<3 else 1) for i,(p,w) in enumerate(zip(poles,weights))) for c in range(4)] for r in range(order+1)]
+    return [[basis(i,degree,r) for r in range(order+1)] for i in range(len(flat)-degree-1)]
+
+
+def jet(degree, poles, weights, flat, u, span, order):
+    basis=basis_jet(degree,flat,u,span,order)
+    h=[[sum(basis[i][r]*w*(p[c] if c<3 else 1) for i,(p,w) in enumerate(zip(poles,weights))) for c in range(4)] for r in range(order+1)]
     w=h[0][3]
     result=[[x/w for x in h[0][:3]]]
     if order>=1:
@@ -36,20 +41,46 @@ def jet(degree, poles, weights, flat, u, span, order):
     return result
 
 
-def expected(degree,poles,weights,knots,mults,u,side,order):
-    if not math.isfinite(u): return ['F']
+def axis(degree,knots,mults,periodic):
     flat=[F(k) for k,m in zip(knots,mults) for _ in range(m)]
-    start,end=flat[degree],flat[len(poles)]
+    if not periodic:
+        return flat,flat[degree],flat[len(flat)-degree-1]
+    start,end=F(knots[0]),F(knots[-1])
+    cycle=flat[:-mults[-1]]
+    # Infinite periodic knot function indexed by Euclidean quotient/remainder.
+    # This differs from production's two slices of extended knot data.
+    offset=degree+1-mults[0]
+    flat=[cycle[i%len(cycle)]+(i//len(cycle))*(end-start) for i in range(-offset,len(cycle)+mults[0]+offset)]
+    return flat,start,end
+
+
+def parameters(flat,start,end,u,side,periodic):
+    if not math.isfinite(u): raise ValueError('nonfinite')
     u=F(u)
-    if u<start or u>end or (u==start and side=='L') or (u==end and side=='R'): return ['O']
-    left=(side=='L' or u==end)
-    span=max(i for i in range(len(flat)) if (flat[i]<u if left else flat[i]<=u))
-    rational_poles=[[F(x) for x in p] for p in poles]
-    rational_weights=list(map(F,weights))
+    if periodic: u=start+(u-start)%(end-start)
+    elif u<start or u>end or (u==start and side=='L') or (u==end and side=='R'): raise IndexError('outside domain')
+    seam=periodic and u==start
+    def at(x,left): return (x,max(i for i,k in enumerate(flat) if (k<x if left else k<=x)))
+    selected=at(end,True) if seam and side=='L' else at(u,side=='L' or u==end)
+    choices=[selected]
+    # Always compare all actual jets at automatic interior knots/seams. The
+    # production multiplicity shortcut is intentionally absent from this oracle.
+    if side=='A' and (seam or (start<u<end and u in flat)):
+        choices.append(at(end if seam else u,True))
+    return choices
+
+
+def expected(degree,poles,weights,knots,mults,u,side,order,periodic=False):
+    if not math.isfinite(u): return ['F']
+    flat,start,end=axis(degree,knots,mults,periodic)
+    try: choices=parameters(flat,start,end,u,side,periodic)
+    except IndexError: return ['O']
+    rational_poles=[[F(x) for x in poles[i%len(poles)]] for i in range(len(flat)-degree-1)]
+    rational_weights=[F(weights[i%len(weights)]) for i in range(len(rational_poles))]
+    u,span=choices[0]
     v=jet(degree,rational_poles,rational_weights,flat,u,span,order)
-    if side=='A' and start<u<end and u in flat:
-        other=max(i for i,k in enumerate(flat) if k<u)
-        if v!=jet(degree,rational_poles,rational_weights,flat,u,other,order): return ['D']
+    for u,span in choices[1:]:
+        if v!=jet(degree,rational_poles,rational_weights,flat,u,span,order): return ['D']
     try:
         return ['P',*[x for row in v for val in row for x in enclosure(lambda x: sign(val-x))]]
     except OverflowError: return ['U']
@@ -96,12 +127,30 @@ def generate():
         knots=[0.,scale,3*scale]
         u=rng.choice([0.,.25,.5,1.,2.,3.])*scale
         inputs.append((f'wide_{i}','S',degree,poles,weights,knots,mults,u,rng.choice(['A','L','R']),2))
+    for degree,seam in [(1,1),(2,1),(2,2),(3,1),(3,3)]:
+        mults=[seam,degree,1,seam]
+        np=sum(mults[:-1])
+        for constant in [False,True]:
+            poles=[(2.,3.,4.) if constant else (float(i%3),float(i*i),float(2-i)) for i in range(np)]
+            for u in [0.,3.,-6.,.5]:
+                for side in ['A','L','R']:
+                    for order in range(3):
+                        inputs.append((f'periodic_continuity_{degree}_{seam}_{constant}_{u}_{side}_{order}','P',degree,poles,[1.+i%2 for i in range(np)],[0.,.5,2.,3.],mults,u,side,order))
+    for name,knots,parameters_ in [
+        ('subnormal_period',[0.,tiny,3*tiny],[maximum,-maximum,1.,-1.,tiny]),
+        ('unrepresentable_period',[-maximum,0.,maximum],[-maximum,0.,maximum]),
+        ('nonrepresentable_remainder',[.1,.4,1.3],[maximum,-maximum,3.,-3.]),
+    ]:
+        for u in parameters_:
+            for side in ['A','L','R']:
+                for order in [0,2]:
+                    inputs.append((f'{name}_{u}_{side}_{order}','P',1,[(0.,0.,0.),(1.,2.,3.)],[1.,2.],knots,[1,1,1],u,side,order))
     rows=[]
     for name,kind,degree,poles,weights,knots,mults,u,side,order in inputs:
         fields=[name,kind,str(degree),str(len(poles)),str(len(knots)),bits(u),side,str(order)]
         fields += [bits(x) for p,w in zip(poles,weights) for x in [*p,w]]
         fields += [x for k,m in zip(knots,mults) for x in [bits(k),str(m)]]
-        rows.append(' '.join(fields+expected(degree,poles,weights,knots,mults,u,side,order)))
+        rows.append(' '.join(fields+expected(degree,poles,weights,knots,mults,u,side,order,kind=='P')))
     return '# label kind degree np nk u_bits side order [x y z w bits] [knot_bits mult] status [lo hi bits]...\n'+'\n'.join(rows)+'\n'
 
 

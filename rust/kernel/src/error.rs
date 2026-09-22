@@ -16,6 +16,8 @@ pub enum Error {
     LimitExceeded(&'static str),
     InvalidTopology(&'static str),
     InvalidCurve(&'static str),
+    InvalidSpline(&'static str),
+    InvalidSurface(&'static str),
     OutOfDomain(&'static str),
     DiscontinuousDerivative,
 }
@@ -34,8 +36,10 @@ impl fmt::Display for Error {
             Self::LimitExceeded(what) => write!(f, "{what} exceeds the supported input limit"),
             Self::InvalidTopology(what) => write!(f, "invalid topology: {what}"),
             Self::InvalidCurve(what) => write!(f, "invalid curve: {what}"),
+            Self::InvalidSpline(what) => write!(f, "invalid spline: {what}"),
+            Self::InvalidSurface(what) => write!(f, "invalid surface: {what}"),
             Self::OutOfDomain(what) => write!(f, "outside the supported domain: {what}"),
-            Self::DiscontinuousDerivative => write!(f, "requested curve derivative is discontinuous at the knot; select a side"),
+            Self::DiscontinuousDerivative => write!(f, "requested derivative is discontinuous at the knot or seam; select a side"),
         }
     }
 }

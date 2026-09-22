@@ -260,7 +260,7 @@ near-tangent behavior; native results are never used to weaken those contracts.
 
 ## Implemented contract: rational spline curves
 
-`curve::BSplineCurve3` stores a nonperiodic curve of degree 1..=25 with at most
+`curve::BSplineCurve3::new` stores a nonperiodic curve of degree 1..=25 with at most
 4096 finite 3D poles. Its distinct knots must be finite and strictly increasing;
 interior multiplicities are 1..=degree and end multiplicities 1..=degree+1.
 The sum of multiplicities is `number_of_poles + degree + 1`. Weights default to
@@ -271,9 +271,8 @@ discarding unequal weights based on an epsilon.
 With zero-based expanded knots `U` and `N` poles, the closed evaluation domain
 is `[U[degree], U[N]]`, which must have positive width. This includes unclamped
 knot vectors; the first/last distinct knots need not bound the domain.
-`BezierCurve3` uses degree `N-1` and clamped knots 0,1. Periodic curves,
-extrapolation, spline editing, surfaces and spline B-rep edges are not yet
-implemented. These query primitives do not change the current prism solid model.
+`BezierCurve3` uses degree `N-1` and clamped knots 0,1. Nonperiodic
+extrapolation, spline editing and spline B-rep edges are not yet implemented. These query primitives do not change the current prism solid model.
 
 The [de Boor recurrence](https://pages.mtu.edu/~shene/COURSES/cs3621/NOTES/spline/de-Boor.html)
 operates on homogeneous poles `(w*x,w*y,w*z,w)`. Rust converts the represented
@@ -329,6 +328,59 @@ of ordinary floating-point intermediate ranges. Rational operand sizes depend
 on the knot data and degree. These input/iteration bounds do not establish a
 production latency or allocation budget; performance gates remain open.
 
+## Periodic curves and rational tensor-product surfaces
+
+`BSplineCurve3::new_periodic` and `KnotVector::new_periodic` require matching
+end multiplicities `m` in `1..=degree`. Pole count is the sum of multiplicities
+minus `m`; both periodic and nonperiodic directions require more poles than
+their degree. This is a conservative supported-domain restriction, including
+for periodic inputs that OCCT's pole-count formula might otherwise admit.
+
+The fundamental domain is `[first knot, last knot]`, with both endpoints
+representing the seam. Extend each end by `degree+1-m` knots, shifted by the
+exact period, and cycle the poles in OCCT's order. Extended knots may be outside
+finite binary64 range: they remain exact rationals internally. All finite
+parameters are reduced as `u - floor((u-start)/period)*period` in exact rational
+arithmetic. No floating division, remainder, overflow or tolerance snapping
+chooses the span. The reduced parameter need not itself be representable by a
+single `f64`. At the seam, Left selects the preceding period and Right selects
+the following period. Automatic derivatives require exact agreement between
+those jets; a closed position alone does not establish derivative continuity.
+
+`BSplineSurface3` takes two independently validated `KnotVector`s and a U-major
+control grid (`index = u*v_count+v`). Degrees are independently 1..=25, with at
+most 4096 total finite poles and optional strictly positive finite weights.
+`BezierSurface3` represents the clamped `[0,1]²` special case. Neither implies a
+trimmed face, a solid, a projection/intersection operation or a regular surface:
+singular and collapsed patches are valid evaluation inputs.
+
+Evaluation first applies the differentiated homogeneous de Boor recurrence in
+V, then U, retaining `(00,10,01,20,02,11)` partials. The recursive multivariate
+quotient identity derived from `X=W*P` is:
+
+```text
+P_(a,b) = [X_(a,b) - sum binomial(a,i)*binomial(b,j)*W_(i,j)*P_(a-i,b-j)] / W
+```
+
+The sum covers `(i,j) != (0,0)`, `i<=a`, `j<=b`. Lower total orders are
+calculated first. In particular, `P_uv=(X_uv-W_uv*P-W_u*P_v-W_v*P_u)/W`.
+Positive tensor basis weights keep `W>0`. First order returns Du and Dv;
+second order additionally returns Duu, Dvv and Duv. Every requested component
+has its minimal finite enclosure. Queries fail atomically if a requested
+component is unrepresentable. Derivatives use the original parameter units.
+
+Each parameter direction has its own side selection. At intersecting knots,
+automatic evaluation compares every relevant quadrant, including both periodic
+seams. A mixed-derivative discontinuity cannot be hidden by agreeing position
+and first derivatives. High multiplicity does not force rejection when the
+actual requested jets agree exactly.
+
+Each surface jet uses at most 26 V recurrences plus one U recurrence, each with
+at most 325 homogeneous interpolation updates and six jet entries per component.
+At most four side combinations are evaluated. Degree, pole and iteration limits
+bound combinatorial work, not a production latency/allocation budget for exact
+rational operands. Operational performance and cancellation remain open gates.
+
 ## Independent and adversarial evidence
 
 - `fixtures/orient2d.tsv`: 2,417 input triples with expected signs calculated by
@@ -364,16 +416,23 @@ production latency or allocation budget; performance gates remain open.
   exact polynomial-sign comparisons for root/coordinate bounds. Separate tests
   cover adjacent-float tangencies, coincident parameter enclosures, endpoint
   clipping before overflow, direction rescaling and endpoint reversal.
-- `fixtures/splines.tsv`: 385 independent exact basis-function/quotient cases
+- `fixtures/splines.tsv`: 1,059 independent exact basis-function/quotient cases
   for positions and first/second derivatives. Includes degree 25, rational and
   polynomial curves, unclamped domains, repeated knots, derivative-side
   decisions, extreme weights/coordinates and subnormal knot spans. Separate
   tests cover power-of-two weight invariance, coordinate permutation, original
   parameter units, malformed input and position-only queries despite derivative
-  overflow. The live native corpus has 214 spline observations.
+  overflow, periodic seams and exact wrapping of extreme parameters. The live native corpus has 456 curve observations.
   One OCCT 7.6.3 second-derivative result exceeds the native comparison budget;
   the exact oracle confirms Rust and the version/input/value-pinned difference
   is reported separately, never counted as a match. See `VALIDATION.md`.
+
+- `fixtures/surfaces.tsv`: 791 exact tensor-basis/closed-quotient cases including
+  all U/V periodicity combinations, mixed derivatives, intersecting knots,
+  degree 25 in both directions, unclamped domains and extreme exponents.
+  Separate invariants transpose the U/V grid and rescale common weights.
+  The native corpus has 210 surface observations. High-degree native evaluation
+  discrepancies are independently verified and [reviewed separately](NATIVE_SPLINE_DIVERGENCES.md).
 
 These fixtures are bounded deterministic tests. Separately, [coverage-guided
 fuzzing](FUZZING.md) mutates predicates, linear/curved intersections, polynomial
@@ -389,6 +448,7 @@ python3 rust/tools/generate_predicate_fixtures.py --check
 python3 rust/tools/generate_spatial_fixtures.py --check
 python3 rust/tools/generate_curved_fixtures.py --check
 python3 rust/tools/generate_spline_fixtures.py --check
+python3 rust/tools/generate_surface_fixtures.py --check
 ```
 
 Native CI executes both debug and optimized Rust tests. The rational fixture
@@ -401,9 +461,8 @@ disagreement disappear.
 1. Add the distance/incircle comparisons required by subsequent algorithms.
    Preserve explicit units, domains and arithmetic bounds; do not reuse an
    arbitrary global epsilon.
-2. Extend the nonperiodic spline evaluator to periodic curves, exact curve
-   editing and surfaces; specify contracts for projections, root isolation
-   and intersections. Use interval/error bounds or
+2. Add certified curve/surface editing; specify contracts for projections, root
+   isolation and general intersections. Use interval/error bounds or
    additional precision when ordinary arithmetic cannot establish the answer.
 3. Strengthen topology invariants and tolerance propagation through each
    operation; sampled checks alone cannot certify full curve/surface agreement.

@@ -11,10 +11,10 @@ remaining release requirements are in [PRODUCTION_READINESS.md](PRODUCTION_READI
 The [mathematical foundation](MATHEMATICS.md) includes exact 2D/3D orientation
 and insphere, 2,417 independent 2D rational fixtures in all six permutations,
 1,648 spatial predicate fixtures, 963 certified linear-intersection fixtures,
-448 quadratic-root fixtures, 1,092 curved-intersection fixtures, 385 spline fixtures,
+448 quadratic-root fixtures, 1,092 curved-intersection fixtures, 1,059 curve and 791 surface spline fixtures,
 10,000 integer-oracle predicate cases and 256 generated prism invariant cases.
 These tests do not depend on OCCT or an application and run in native debug and
-release CI. These deterministic generated tests are separate from the five
+release CI. These deterministic generated tests are separate from the six
 [coverage-guided fuzz targets and daily retained-corpus campaigns](FUZZING.md).
 
 `compare_intersections.py` executes native OCCT `IntAna_IntConicQuad` and Rust's
@@ -35,17 +35,28 @@ Its source/runtime versions remain separate. Full-exponent, near-tangent,
 arbitrary-plane circle and closed-segment behavior is tested by independent
 polynomial-sign/axial-projection oracles, not inferred from this native corpus.
 
-`compare_splines.py` captures 214 native OCCT observations before evaluating
+`compare_splines.py` captures 456 native OCCT observations before evaluating
 Rust positions and first/second derivatives. It covers degree 1..25,
-rational/polynomial Bézier curves, clamped/unclamped nonperiodic B-splines and
-explicit left/right derivatives at repeated knots. The original
-`Geom_BSplineCurve_Test.cxx` cubic fixture is included. Local OCCT 7.9.3 used
-at most 0.156 of the same `1e-10 + 2e-12*abs(expected)` budget. This is a native
-API comparison, not execution of those original C++ GoogleTest assertions.
-The 385 independent Python `Fraction` fixtures use basis-function recursion
-and closed quotient derivative formulas; production differentiates homogeneous
-pole interpolation. They cover subnormal knot spans, huge/tiny weights,
-position versus derivative overflow, and exact left/right continuity decisions.
+rational/polynomial Bézier curves, clamped/unclamped/periodic B-splines and
+explicit left/right derivatives at repeated knots and seams. The original
+`Geom_BSplineCurve_Test.cxx` cubic fixture is included. This is a native API
+comparison, not execution of those original C++ GoogleTest assertions.
+`compare_surfaces.py` adds 210 native rational surface jets, including mixed
+partials, all U/V periodicity combinations and degree 25 in both directions.
+
+The 1,850 independent Python `Fraction` fixtures use basis-function recursion
+and closed quotient formulas; production differentiates homogeneous pole
+interpolation and uses recursive quotient rules. They cover subnormal spans,
+huge/tiny weights, extreme periodic wrapping, position versus derivative
+overflow and exact side/quadrant continuity decisions. All preexisting 385
+curve fixture rows were preserved byte-for-byte when expanding the corpus.
+
+The enlarged native corpus exposed [degree-25 numerical discrepancies](NATIVE_SPLINE_DIVERGENCES.md).
+On local OCCT 7.9.3, curves have 427 matches and 29 reviewed divergent cases;
+surfaces have 169 matches and 41 reviewed divergent cases. Each review pins
+version, input and the complete native jet, and recomputes the independent exact
+jet before accepting the Rust result. The budget remains `1e-10 + 2e-12*abs(expected)`.
+These observations do not establish that OCCT promises that error bound.
 
 Ubuntu's OCCT 7.6.3 has one **reviewed numerical divergence**, not a matching
 case: `d25_r1_s3_5`, second derivative X, is `-0.47077685134240305` instead of
@@ -60,8 +71,8 @@ input hash, native version/value bits, exact rational answer and original CI
 evidence. The comparison recomputes the independent rational answer and checks
 Rust against its minimal enclosure before accepting that specific review.
 Changed inputs, native results, versions or incorrect Rust outputs still fail.
-Reports count matched, reviewed and unexpected cases separately: the observed
-7.6.3 result is **213 matching, 1 reviewed divergence, 0 unexpected**. Use
+Reports count matched, reviewed and unexpected cases separately. In the original
+214-case subset, OCCT 7.6.3 has **213 matching, 1 reviewed divergence, 0 unexpected**. Use
 `compare_splines.py --strict-native` to fail on reviewed differences too. The
 ordinary exact tests and fuzz comparisons have no such exception.
 
@@ -114,6 +125,7 @@ python3 rust/tools/generate_predicate_fixtures.py --check
 python3 rust/tools/generate_spatial_fixtures.py --check
 python3 rust/tools/generate_curved_fixtures.py --check
 python3 rust/tools/generate_spline_fixtures.py --check
+python3 rust/tools/generate_surface_fixtures.py --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo check --workspace --lib --locked --target wasm32-unknown-unknown
 cargo run --locked --example plate
@@ -126,6 +138,7 @@ python3 rust/tools/compare_occt.py --occt-root /path/to/occt
 python3 rust/tools/compare_intersections.py --occt-root /path/to/occt
 python3 rust/tools/compare_curved.py --occt-root /path/to/occt
 python3 rust/tools/compare_splines.py --occt-root /path/to/occt
+python3 rust/tools/compare_surfaces.py --occt-root /path/to/occt
 ```
 
 On macOS the default SDK is `/opt/homebrew/opt/opencascade`; on Linux it is
@@ -134,7 +147,7 @@ supports Unix-style SDK layouts; Windows still runs all ordinary Rust and
 recorded-corpus tests. It does not install software or change noBS-CAD.
 
 Results and optional native executables go in ignored `target/occt-oracle/`
-and `target/intersection-oracle/`, `target/curved-oracle/`, `target/spline-oracle/`.
+and `target/intersection-oracle/`, `target/curved-oracle/`, `target/spline-oracle/`, `target/surface-oracle/`.
 The live oracle does not link any rendering or data-exchange toolkit.
 
 To intentionally refresh fixture inputs or reference data:

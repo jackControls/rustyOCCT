@@ -46,6 +46,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "B" => BezierCurve3::new(poles, Some(weights))?.evaluate(u, order)?,
             "S" => BSplineCurve3::new(degree, poles, Some(weights), knots, mults)?
                 .evaluate(u, order, side)?,
+            "P" => BSplineCurve3::new_periodic(degree, poles, Some(weights), knots, mults)?
+                .evaluate(u, order, side)?,
             _ => return Err("invalid curve type".into()),
         };
         print!("{name}");

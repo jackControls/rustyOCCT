@@ -30,12 +30,22 @@ def cases():
                 shapes.append((f'd{degree}_r{int(rational)}_s{spans}',kind,degree,poles,weights,knots,mults))
     # Non-clamped, nonuniform domain [U[p], U[n+1]], not the extreme knots.
     shapes.append(('unclamped','S',2,[(float(i),float(i%2),float(-i)) for i in range(5)],[1.,2.,1.,.5,1.],[-3.,-2.,0.,.5,2.,3.,4.,7.],[1]*8))
+    for degree in [1,2,3,5,8,25]:
+        for seam in sorted({1,degree}):
+            knots=[0.,.5,2.,3.]
+            mults=[seam,degree,1,seam]
+            count=sum(mults[:-1])
+            poles=[(float(i-3),float(i*i%11-5),float(i*7%13-6)) for i in range(count)]
+            weights=[float(1+i%3)/2 for i in range(count)]
+            shapes.append((f'periodic_d{degree}_m{seam}','P',degree,poles,weights,knots,mults))
     rows=[]
     for name,kind,degree,poles,weights,knots,mults in shapes:
         flat=[k for k,m in zip(knots,mults) for _ in range(m)]
-        start,end=flat[degree],flat[len(poles)]
+        start,end=(knots[0],knots[-1]) if kind=='P' else (flat[degree],flat[len(poles)])
         queries=[(start,'R'),(end,'L')]+[(start+(end-start)*x,'R') for x in [.125,.375,.625,.875]]
         queries += [(k,side) for k in knots if start<k<end for side in ['L','R']]
+        if kind=='P':
+            queries += [(u,side) for u in [start,end,-6.,9.,-5.5,9.5] for side in ['L','R']]
         for i,(u,side) in enumerate(queries):
             values=[name+'_'+str(i),kind,str(degree),str(len(poles)),str(len(knots)),format(u,'.17g'),side,'2']
             values += [format(x,'.17g') for p,w in zip(poles,weights) for x in [*p,w]]
@@ -95,6 +105,14 @@ def compare_observations(oracle, inputs, expected, actual):
     reviewed=[]
     unexpected=[]
     for label,values in expected.items():
+        from review_spline_jets import reviewed_jet
+        fractions=[abs(a-e)/(1e-10+2e-12*abs(e)) for a,e in zip(actual[label],values)]
+        largest=max(largest,*fractions)
+        if max(fractions)>1.:
+            review=reviewed_jet('curves',oracle,label,values,actual[label],inputs[label])
+            if review:
+                reviewed.append({**review,'components':[i for i,f in enumerate(fractions) if f>1.]})
+                continue
         for component,(a,e) in enumerate(zip(actual[label],values)):
             fraction=abs(a-e)/(1e-10+2e-12*abs(e))
             largest=max(largest,fraction)
@@ -140,7 +158,7 @@ def main():
     report={'oracle':native.stderr.strip(),'cases':len(expected),**comparison,
             'source_reference':'3d097a0328e71b826377d4814ab05ec3c3d23871',
             'comparison_budget':{'absolute':1e-10,'relative':2e-12},
-            'domain':'positive-weight, nonperiodic Bezier/B-spline positions and first/second derivatives; degree 1..25; clamped/unclamped; explicit one-sided repeated knots',
+            'domain':'positive-weight Bezier/B-spline positions and first/second derivatives; degree 1..25; clamped/unclamped/periodic; explicit one-sided repeated knots and seams',
             'deliberate_differences':'Exact knots/weights, no tolerance snapping or extrapolation. Full-exponent and discontinuity decisions use independent exact oracles.'}
     (output/'report.json').write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps(report,indent=2))

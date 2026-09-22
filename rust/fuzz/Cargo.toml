@@ -50,3 +50,10 @@ path = "fuzz_targets/splines.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "surfaces"
+path = "fuzz_targets/surfaces.rs"
+test = false
+doc = false
+bench = false

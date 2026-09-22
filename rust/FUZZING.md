@@ -12,7 +12,8 @@ coverage feedback. They are distinct from the deterministic invariant tests.
 | `intersections` | Lines/segments, three-point planes/triangles, full binary64 exponents, coplanarity and degeneracies | All three intersection APIs against a rational barycentric oracle; exact classification; minimal finite coordinate/parameter enclosures; explicit unrepresentable results |
 | `modeling` | Valid radial polygons/circles, optional holes, 49 scales, up to eight operations, plus raw invalid input | Repeated rigid transforms, reversed winding/offsets and planar splits; mass/first-moment conservation, topology, classification, bounds and finite positive properties |
 | `curved` | Full binary64 coefficients, centers/radii/axes and line endpoints; scaled integers; exact/neighboring tangencies; generator and point segments | Quadratic root count, multiplicity, exact comparisons, minimal enclosures; circle/sphere/cylinder hits against independent polynomial-sign and axial-projection oracles; endpoint clipping and typed failures |
-| `splines` | Raw binary64 poles/weights/knots, scaled geometry, degree 1..25, repeated knots, endpoint/interior parameters, explicit sides and derivative requests | Exact basis-function derivatives and closed quotient formulas independently check homogeneous pole interpolation; minimal position/derivative bounds; discontinuity, domain, nonfinite and overflow errors |
+| `splines` | Raw binary64 poles/weights/knots, scaled geometry, degree 1..25, repeated knots, periodic seams, full-range wrapped parameters, explicit sides and derivative requests | Exact basis-function derivatives and closed quotient formulas independently check homogeneous pole interpolation; minimal position/derivative bounds; discontinuity, domain, nonfinite and overflow errors |
+| `surfaces` | Rational tensor grids, independently periodic U/V, repeated knots, high degree in either direction, full-range wrapped parameters and malformed data | Independent tensor basis plus closed bivariate quotient formulas; exact mixed-partial and quadrant continuity decisions; minimal enclosures and typed failures |
 
 The rational oracle uses `num-rational` with Gaussian elimination and
 barycentric coordinates, plus polynomial-sign/vertex comparisons and cylinder
@@ -27,7 +28,7 @@ coverage percentages or evidence of exhaustive input coverage.
 
 ## Continuing campaigns
 
-[Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all five targets
+[Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all six targets
 for 60 seconds of mutation each on relevant pushes/PRs, and 600 seconds each every day at
 06:23 UTC on the default branch. Manual runs accept 1–3,600 seconds per target.
 GitHub can delay scheduled jobs. The schedule must remain enabled on the fork.
@@ -40,7 +41,8 @@ Cache eviction does not remove the checked-in fixtures or regressions.
 
 Each input has a 20-second limit, a 2 GiB process RSS limit, and at most 256
 bytes. The modeling harness bounds geometry to 24 vertices and eight operations;
-spline inputs have at most 51 poles (the kernel allows 4096). An
+curve spline inputs have at most 51 poles; surfaces have up to 108 poles with
+degree 25 in either direction (the kernel allows 4096 total poles). An
 outer deadline kills the build/fuzzer process group. Corpus replay without any
 subsequent mutation is an incomplete run. An incomplete run, crash,
 timeout, OOM, changed dependency lock or mathematical disagreement fails CI.

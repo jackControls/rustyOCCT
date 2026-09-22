@@ -31,6 +31,8 @@ pub mod polynomial;
 pub mod predicates;
 mod profile;
 mod solid;
+pub mod spline;
+pub mod surface;
 pub mod topology;
 
 pub use curve::{BSplineCurve3, BezierCurve3};
@@ -40,3 +42,5 @@ pub use interval::ScalarInterval;
 pub use math::{Bounds3, Frame3, Point2, Point3, RigidTransform, Tolerance, Vec3};
 pub use profile::{Boundary, Location, Profile};
 pub use solid::{MassProperties, Solid};
+pub use spline::KnotVector;
+pub use surface::{BSplineSurface3, BezierSurface3};

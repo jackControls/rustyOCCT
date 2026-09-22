@@ -43,7 +43,7 @@ Spline evaluation references are
 [`BSplCLib_CurveComputation.pxx`](../src/FoundationClasses/TKMath/BSplCLib/BSplCLib_CurveComputation.pxx)
 (`PrepareEval_T`, `BSplCLib_D0/D1/D2`),
 [`BSplCLib.cxx`](../src/FoundationClasses/TKMath/BSplCLib/BSplCLib.cxx)
-(`NbPoles`, `Eval`, `Bohm`), and
+(`NbPoles`, `KnotSequence`, `PoleIndex`, `Eval`, `Bohm`), and
 [`PLib.cxx`](../src/FoundationClasses/TKMath/PLib/PLib.cxx) (`RationalDerivative`).
 Rust's `curve` module retains degree/multiplicity and homogeneous quotient
 semantics, with an independent exact, differentiated de Boor implementation.
@@ -53,9 +53,26 @@ not applied. Derivatives at interior knots need exact two-sided agreement or an
 explicit side. The original
 [`Geom_BSplineCurve_Test.cxx`](../src/ModelingData/TKG3d/GTests/Geom_BSplineCurve_Test.cxx)
 `SetUp` cubic supplies a native-comparison input; it is not counted as a passing
-unchanged upstream test. Evidence: 214 native observations, 385 independent
-exact fixtures, invariance tests and the `splines` fuzz target. Periodic curves,
-curve editing, spline surfaces and spline B-rep integration remain pending.
+unchanged upstream test. Evidence: 456 native curve observations, 1,059 independent exact curve fixtures,
+invariance tests and the `splines` fuzz target. `spline::KnotVector` follows the
+OCCT periodic end-multiplicity, knot-extension and cyclic pole conventions;
+parameter normalization and extended knots use exact arithmetic. Supported
+periodic directions require more poles than their degree.
+
+Surface references are
+[`Geom_BSplineSurface.cxx`](../src/ModelingData/TKG3d/Geom/Geom_BSplineSurface.cxx)
+(`CheckSurfaceData`, constructors),
+[`Geom_BSplineSurface_1.cxx`](../src/ModelingData/TKG3d/Geom/Geom_BSplineSurface_1.cxx)
+(`LocalD0/D1/D2`), and
+[`BSplSLib.cxx`](../src/FoundationClasses/TKMath/BSplSLib/BSplSLib.cxx)
+(`PrepareEval`, `D0/D1/D2`, `RationalDerivative`). The Rust `surface` module
+retains the tensor-product and multivariate quotient semantics with independent
+U/V periodicity. Exact pole interpolation and quadrant continuity checks replace
+floating evaluation; no tolerance-based weight simplification is applied.
+Evidence: 210 native surface jets, 791 exact tensor-basis fixtures, parameter
+transpose/weight invariance tests and the sixth fuzz target, `surfaces`.
+Curve/surface editing and spline B-rep integration remain pending. High-degree
+native discrepancies are [reviewed explicitly](NATIVE_SPLINE_DIVERGENCES.md).
 The OCCT 7.6.3 degree-25 second-derivative discrepancy is documented in
 [`VALIDATION.md`](VALIDATION.md) and pinned in the reviewed-divergence registry.
 It is counted separately from matching native cases, with the exact independent

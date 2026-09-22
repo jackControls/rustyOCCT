@@ -34,8 +34,13 @@ int main() {
       if (order==0) curve.D0(u,p);
       if (order==1) curve.D1(u,p,d1);
       if (order==2) curve.D2(u,p,d1,d2);
-    } else if (kind=="S") {
-      Geom_BSplineCurve curve(poles,weights,knots,mults,degree,false,false);
+    } else if (kind=="S" || kind=="P") {
+      Geom_BSplineCurve curve(poles,weights,knots,mults,degree,kind=="P",false);
+      if (kind=="P") {
+        curve.PeriodicNormalization(u);
+        if (u==knots(1) && side=="L") u=knots(nk);
+        if (u==knots(nk) && side!="L") u=knots(1);
+      }
       int span=1;
       while (span<nk-1 && (knots(span+1)<u || (knots(span+1)==u && side!="L"))) ++span;
       if (order==0) curve.LocalD0(u,span,span+1,p);

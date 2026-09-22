@@ -18,7 +18,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces']
 
 
 def seed_corpus(target):
@@ -39,8 +39,17 @@ def seed_corpus(target):
             for degree in [0,1,2,7,24]:
                 for parameter in range(5):
                     save(bytes([mode,degree,1,0,2,128,parameter,0])+bytes((j*37+1)%256 for j in range(160)))
+                    save(bytes([mode,degree,1,0,2,128,parameter,1])+bytes((j*37+1)%256 for j in range(160)))
         for word in [0x3ff0000000000000,0x7fefffffffffffff,1,0x7ff0000000000000,0x7ff8000000000000]:
             save(bytes([1,1,1,0,2,128,2,0])+word.to_bytes(8,'little')*20)
+    elif target == 'surfaces':
+        for mode in range(4):
+            for degree in [0,1,2,7,24]:
+                for periodic in range(4):
+                    for parameter in [0,2,8]:
+                        save(bytes([mode,degree,1,periodic,0,0,2,128,parameter,parameter,0,0])+bytes((j*37+1)%256 for j in range(200)))
+        for word in [0x3ff0000000000000,0x7fefffffffffffff,1,0x7ff0000000000000,0x7ff8000000000000]:
+            save(bytes([1,1,1,3,0,0,2,128,2,2,0,0])+word.to_bytes(8,'little')*25)
     elif target == 'curved':
         for source in ['quadratic.tsv','curved.tsv']:
             rows = [r.split() for r in (ROOT/'rust/fixtures'/source).read_text().splitlines() if not r.startswith('#')]

@@ -51,6 +51,10 @@ fn positions_and_derivatives_match_independent_exact_basis_oracle() {
             BezierCurve3::new(poles, Some(weights))
                 .unwrap()
                 .evaluate(u, order)
+        } else if kind == "P" {
+            BSplineCurve3::new_periodic(degree, poles, Some(weights), knots, mults)
+                .unwrap()
+                .evaluate(u, order, side)
         } else {
             BSplineCurve3::new(degree, poles, Some(weights), knots, mults)
                 .unwrap()
@@ -83,7 +87,77 @@ fn positions_and_derivatives_match_independent_exact_basis_oracle() {
         assert!(w.next().is_none(), "{name}");
         count += 1;
     }
-    assert_eq!(count, 385);
+    assert_eq!(count, 1059);
+}
+
+#[test]
+fn periodic_seams_have_explicit_sides_and_full_range_exact_wrapping() {
+    let curve = BSplineCurve3::new_periodic(
+        1,
+        vec![
+            Point3::ORIGIN,
+            Point3::new(1., 0., 0.),
+            Point3::new(0., 1., 0.),
+        ],
+        None,
+        vec![0., 1., 2., 3.],
+        vec![1; 4],
+    )
+    .unwrap();
+    assert!(curve.is_periodic());
+    assert_eq!(curve.domain(), (0., 3.));
+    for u in [-6., 0., 3., 9.] {
+        assert_eq!(
+            curve
+                .evaluate(u, D::Position, S::Automatic)
+                .unwrap()
+                .position(),
+            Point3::ORIGIN
+        );
+        assert_eq!(
+            curve.evaluate(u, D::First, S::Automatic),
+            Err(Error::DiscontinuousDerivative)
+        );
+        let left = curve.evaluate(u, D::Second, S::Left).unwrap();
+        let right = curve.evaluate(u, D::Second, S::Right).unwrap();
+        assert_eq!(left.position_bounds(), right.position_bounds());
+        assert_eq!(
+            left.derivative_bounds(1)
+                .unwrap()
+                .map(|x| x.representative()),
+            [0., -1., 0.]
+        );
+        assert_eq!(
+            right
+                .derivative_bounds(1)
+                .unwrap()
+                .map(|x| x.representative()),
+            [1., 0., 0.]
+        );
+    }
+    // Exact integer remainders of the represented maximum floats modulo three.
+    for (u, reduced) in [(f64::MAX, 2.), (-f64::MAX, 1.)] {
+        assert_eq!(
+            curve.evaluate(u, D::Second, S::Right),
+            curve.evaluate(reduced, D::Second, S::Right)
+        );
+    }
+    for mults in [vec![1, 1, 1, 2], vec![0, 1, 1, 0], vec![2, 1, 1, 2]] {
+        assert!(BSplineCurve3::new_periodic(
+            1,
+            curve.poles().to_vec(),
+            None,
+            vec![0., 1., 2., 3.],
+            mults
+        )
+        .is_err());
+    }
+    for u in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        assert!(matches!(
+            curve.evaluate(u, D::Position, S::Automatic),
+            Err(Error::NonFinite(_))
+        ));
+    }
 }
 
 #[test]
