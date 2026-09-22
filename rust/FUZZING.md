@@ -28,7 +28,7 @@ coverage percentages or evidence of exhaustive input coverage.
 ## Continuing campaigns
 
 [Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all five targets
-for 60 seconds each on relevant pushes/PRs, and 600 seconds each every day at
+for 60 seconds of mutation each on relevant pushes/PRs, and 600 seconds each every day at
 06:23 UTC on the default branch. Manual runs accept 1–3,600 seconds per target.
 GitHub can delay scheduled jobs. The schedule must remain enabled on the fork.
 
@@ -46,6 +46,15 @@ subsequent mutation is an incomplete run. An incomplete run, crash,
 timeout, OOM, changed dependency lock or mathematical disagreement fails CI.
 These are harness limits, not kernel production performance guarantees.
 
+The mutation timer starts when the pinned libFuzzer reports `INITED`, after
+corpus replay. Its `max_total_time` flag includes initialization and previously
+allowed a growing corpus to consume the entire short campaign; this was caught
+as an incomplete CI run. The runner now creates a nonempty `stop_file` after
+the full requested mutation budget. LibFuzzer stops normally and emits final
+statistics. The outer deadline still bounds startup/build plus mutation to
+`requested_seconds + 600`; a missing initialization marker or ignored stop
+request cannot hang indefinitely. Early exits never count as completed budgets.
+
 ## Local reproduction
 
 On a cargo-fuzz-supported Unix host with a C++ compiler:
@@ -61,7 +70,8 @@ python3 rust/tools/run_fuzz.py --target intersections --seconds 600 --seed 31415
 The nightly toolchain is only for fuzzing; normal builds retain Rust 1.85 as
 their minimum. `--toolchain` permits deliberate local toolchain experiments.
 `target/fuzz-reports/summary.json` records the compiler, fuzzer, lock hash,
-revision/dirty state, command, replay/mutation execution counts, coverage edges and artifact
+revision/dirty state, command, startup/mutation timing, budget completion,
+replay/mutation execution counts, coverage edges and artifact
 names. The raw log records the random seed. Cargo-fuzz 0.13.1 has no `--locked`
 run option: the runner fetches with `--locked`, builds offline, and verifies
 that the lock remains unchanged.
@@ -82,7 +92,7 @@ Minimization is an explicit triage step, not a claim that CI automatically
 understands or repairs failures. No lifetime reliability guarantee follows
 from any finite campaign.
 
-If corpus replay starts exhausting the mutation budget, compact it with
+If corpus replay starts exhausting the outer startup allowance, compact it with
 `cargo +nightly-2026-09-22 fuzz cmin <target> --fuzz-dir rust/fuzz` and retain
 the uncompressed artifact until the compacted corpus is validated. A stalled
 campaign must be repaired, not counted as a successful mutation run.

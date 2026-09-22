@@ -13,6 +13,7 @@ import platform
 import re
 import signal
 import subprocess
+import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -73,12 +74,22 @@ def version(command, cwd=ROOT):
     return subprocess.check_output(command,cwd=cwd,text=True,stderr=subprocess.STDOUT).strip()
 
 
-def run_process(command, log, timeout, env):
+def run_process(command, log, timeout, env, tick=None):
     # Kill the entire build/fuzzer process group on a wall-clock timeout.
     process = subprocess.Popen(command,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,
                                env=env,start_new_session=True)
+    deadline=time.monotonic()+timeout
     try:
-        return process.wait(timeout=timeout)
+        while True:
+            code=process.poll()
+            if code is not None: return code
+            if tick is not None: tick()
+            remaining=deadline-time.monotonic()
+            if remaining<=0: raise subprocess.TimeoutExpired(command,timeout)
+            try:
+                return process.wait(timeout=min(.1,remaining) if tick is not None else remaining)
+            except subprocess.TimeoutExpired:
+                if time.monotonic()>=deadline: raise
     except subprocess.TimeoutExpired:
         os.killpg(process.pid,signal.SIGKILL)
         process.wait()
@@ -87,6 +98,39 @@ def run_process(command, log, timeout, env):
         os.killpg(process.pid,signal.SIGKILL)
         process.wait()
         raise
+
+
+class MutationBudget:
+    """Start the mutation clock only after libFuzzer finishes corpus replay.
+
+    libFuzzer's max_total_time includes initialization. Its supported stop_file
+    flag instead exits the normal fuzz loop and prints final statistics. The
+    pinned runtime requires a NONEMPTY stop file (FuzzerLoop.cpp).
+    """
+    def __init__(self, log_path, stop_file, seconds):
+        self.log_path,self.stop_file,self.seconds=log_path,stop_file,seconds
+        self.started=time.monotonic()
+        self.initialized=None
+        self.stopped=None
+        self.offset=0
+        self.pending=''
+
+    def tick(self):
+        if self.initialized is None:
+            with self.log_path.open(errors='replace') as reader:
+                reader.seek(self.offset)
+                self.pending+=reader.read()
+                self.offset=reader.tell()
+            if re.search(r'#\d+\s+INITED\b',self.pending): self.initialized=time.monotonic()
+            self.pending=self.pending[-512:]
+        if self.initialized is not None and self.stopped is None and time.monotonic()-self.initialized>=self.seconds:
+            self.stop_file.write_bytes(b'stop\n')
+            self.stopped=time.monotonic()
+
+    def evidence(self):
+        return {'startup_seconds':round(self.initialized-self.started,2) if self.initialized is not None else None,
+                'mutation_seconds_before_stop':round(self.stopped-self.initialized,2) if self.stopped is not None else None,
+                'mutation_budget_completed':self.stopped is not None}
 
 
 def statistics(text):
@@ -133,22 +177,26 @@ def main():
             log_path = output/f'{target}.log'
             # cargo-fuzz enables address sanitizer and coverage instrumentation.
             # Its outer subprocess budget also bounds builds/corpus startup.
-            command = ['cargo',f'+{args.toolchain}','fuzz','run',target,str(corpora[target]),
-                '--fuzz-dir',str(FUZZ),'--sanitizer','address','--',
-                f'-max_total_time={args.seconds}','-timeout=20','-rss_limit_mb=2048',
-                '-max_len=256',f'-seed={args.seed}',f'-artifact_prefix={artifacts}/','-print_final_stats=1']
             started = time.monotonic()
             print(f'Fuzzing {target} for {args.seconds}s; log: {log_path}',flush=True)
-            with log_path.open('w') as log:
-                code = run_process(command,log,args.seconds+600,env)
+            with tempfile.TemporaryDirectory(prefix=f'.{target}-control-',dir=output) as control:
+                stop_file=Path(control)/'stop'
+                timer=MutationBudget(log_path,stop_file,args.seconds)
+                command = ['cargo',f'+{args.toolchain}','fuzz','run',target,str(corpora[target]),
+                    '--fuzz-dir',str(FUZZ),'--sanitizer','address','--',
+                    '-max_total_time=0',f'-stop_file={stop_file}','-timeout=20','-rss_limit_mb=2048',
+                    '-max_len=256',f'-seed={args.seed}',f'-artifact_prefix={artifacts}/','-print_final_stats=1']
+                with log_path.open('w') as log:
+                    code = run_process(command,log,args.seconds+600,env,timer.tick)
             text = log_path.read_text(errors='replace')
             report = {'target':target,'exit_code':code,'elapsed_seconds':round(time.monotonic()-started,2),
+                **timer.evidence(),
                 **statistics(text),
                 'corpus_files':len(list(corpora[target].iterdir())),
                 'artifacts':[p.name for p in sorted(artifacts.iterdir())], 'command':command}
             summary['targets'].append(report)
             # An exit without a completed campaign is not a successful fuzz run.
-            failed |= code != 0 or not report['mutation_executions'] or report['mutation_executions'] < 0 or (FUZZ/'Cargo.lock').read_bytes() != locked
+            failed |= code != 0 or not report['mutation_budget_completed'] or not report['mutation_executions'] or report['mutation_executions'] < 0 or (FUZZ/'Cargo.lock').read_bytes() != locked
             print(json.dumps(report),flush=True)
     finally:
         summary['passed'] = len(summary['targets']) == len(targets) and not failed
