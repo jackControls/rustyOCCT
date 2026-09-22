@@ -16,6 +16,14 @@ Local OCCT 7.9.3 observations:
 | `BRepExtrema_DistShapeShape` | 316 | 54 | 0 | 0 |
 | `gp_Pnt`, `gp_Lin`, `gp_Pln` distances | 120 | 0 | 6 | 244 |
 
+Linux OCCT 7.6.3 was captured in [CI run 35724489035](https://github.com/jackControls/rustyOCCT/actions/runs/35724489035).
+It has the same 316 B-rep matches, 54 nonresults and 412 witness pairs, and all
+126 applicable affine distances match. Its angle diagnostics select the
+parallel branch for the six oblique cases above. The 370 complete Rust rational
+results are byte-identical on Linux and macOS. The 54 Linux nonresults were
+reviewed after capture, with separate version pins; the initial CI failure was
+the required rejection of unreviewed observations, not a waived Rust failure.
+
 These are two overlapping API observations of 370 distinct inputs, not 740
 independent cases. All 412 returned B-rep witness pairs are retained and checked
 for operand ownership and distance. Rust returns one deterministic minimum
@@ -65,7 +73,7 @@ and independently computed squared distance for each reviewed observation.
 The bridge certifies Rust before consulting reviews. Changed observations,
 versions, inputs or incorrect Rust results fail. Deliberate corruptions test
 those guards; `--strict-native` fails on reviewed nonresults/differences too.
-Runtime-specific Linux observations require their own review after capture.
+Runtime-specific reviews do not authorize observations from another version.
 
 ```sh
 python3 rust/tools/compare_proximity.py --occt-root /path/to/occt

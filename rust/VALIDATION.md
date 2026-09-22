@@ -34,6 +34,9 @@ nonresults, and 120 affine matches with six numerical differences; those two
 observation sets overlap. All 412 native witness pairs are also checked for
 shape ownership and distance. The [reviewed differences](NATIVE_PROXIMITY_DIVERGENCES.md)
 are version/input/value pinned, and never weaken the independent Rust checks.
+Linux OCCT 7.6.3 has the same 316 B-rep matches and 54 separately reviewed
+nonresults; all 126 affine distances match. Rust's complete rational results
+are byte-identical between the two platforms.
 The 554 Fraction fixtures add full-exponent, near-degenerate and unrepresentable
 cases outside this well-scaled native corpus. No general B-rep distance or
 unchanged upstream extrema-test coverage is implied.

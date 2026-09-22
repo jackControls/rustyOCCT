@@ -15,6 +15,21 @@
 //! and Extrema_ExtPElS (projection), and BRepExtrema_DistShapeShape (boundary
 //! strata). Exact rank and complete face enumeration replace native tolerance
 //! decisions. See rust/SOURCE_MAP.md and rust/MATHEMATICS.md.
+//!
+//! ```
+//! use rusty_occt::proximity::{closest_points, LinearPrimitive3 as Shape};
+//! use rusty_occt::Point3;
+//! use std::cmp::Ordering;
+//!
+//! let point = Shape::Point(Point3::new(1., 2., 0.));
+//! let segment = Shape::Segment([Point3::ORIGIN, Point3::new(4., 0., 0.)]);
+//! let pair = closest_points(&point, &segment)?;
+//! assert_eq!(pair.compare_distance(2.)?, Ordering::Equal);
+//! assert_eq!(pair.compare_parameter(1, 0, 0.25)?, Ordering::Equal);
+//! assert_eq!(pair.point(1)?, Point3::new(1., 0., 0.));
+//! // Retain pair.exact_points() for further exact incidence calculations.
+//! # Ok::<(), rusty_occt::Error>(())
+//! ```
 
 use crate::{interval, Bounds3, Error, Plane3, Point3, Result, ScalarInterval, Triangle3};
 use num_bigint::BigInt;
