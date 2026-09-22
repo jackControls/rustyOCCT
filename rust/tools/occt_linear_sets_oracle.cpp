@@ -8,7 +8,7 @@
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepBuilderAPI_MakePolygon.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
-#include <BRep_Tool.hxx>
+#include <BRep_TVertex.hxx>
 #include <Precision.hxx>
 #include <Standard_Failure.hxx>
 #include <Standard_Version.hxx>
@@ -56,6 +56,17 @@ static void point(std::ostream& out,const gp_Pnt& p) {
 static void direction(std::ostream& out,const gp_Dir& p) {
   out << ' ' << p.X() << ' ' << p.Y() << ' ' << p.Z();
 }
+// Same stored point + location operation as BRep_Tool::Pnt. Using the
+// public BRep_TVertex accessors avoids pulling Poly_Triangulation headers into
+// this modeling-only oracle (the packaged Ubuntu 7.6 modeling SDK omits
+// NCollection_AliasedArray.hxx, a dependency of those triangulation headers).
+static gp_Pnt vertex_point(const TopoDS_Vertex& vertex) {
+  const Handle(BRep_TVertex) storage=Handle(BRep_TVertex)::DownCast(vertex.TShape());
+  if (storage.IsNull()) throw Standard_Failure("non-BRep vertex");
+  return vertex.Location().IsIdentity() ? storage->Pnt()
+      : storage->Pnt().Transformed(vertex.Location().Transformation());
+}
+
 static std::string describe(const TopoDS_Shape& shape) {
   std::ostringstream out;
   out << std::setprecision(17);
@@ -71,7 +82,7 @@ static std::string describe(const TopoDS_Shape& shape) {
       out << "F"; point(out,surface.Plane().Location()); direction(out,surface.Plane().Axis().Direction());
     } else {
       out << "G " << vertices.Extent();
-      for (int i=1;i<=vertices.Extent();++i) point(out,BRep_Tool::Pnt(TopoDS::Vertex(vertices(i))));
+      for (int i=1;i<=vertices.Extent();++i) point(out,vertex_point(TopoDS::Vertex(vertices(i))));
     }
     pieces.push_back(out.str());
   }
@@ -90,7 +101,7 @@ static std::string describe(const TopoDS_Shape& shape) {
     pieces.push_back(out.str());
   }
   for (TopExp_Explorer it(shape,TopAbs_VERTEX,TopAbs_EDGE);it.More();it.Next()) {
-    out.str(""); out << "P"; point(out,BRep_Tool::Pnt(TopoDS::Vertex(it.Current())));
+    out.str(""); out << "P"; point(out,vertex_point(TopoDS::Vertex(it.Current())));
     pieces.push_back(out.str());
   }
   out.str(""); out << "R " << pieces.size();

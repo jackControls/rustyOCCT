@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import shlex
 import sys
+import subprocess
 from compare_occt import ROOT, run
 from compare_proximity import encode
 from proximity_reference import exact, parse, bits, norm2, sub, dot, cross, on_line, point_triangle
@@ -70,7 +71,12 @@ def capture(prefix,output):
     output.mkdir(parents=True,exist_ok=True)
     executable=output/'occt_linear_sets_oracle'
     libraries=['TKBO','TKBool','TKTopAlgo','TKBRep','TKGeomAlgo','TKGeomBase','TKG3d','TKG2d','TKMath','TKernel']
-    run(shlex.split(os.environ.get('CXX','c++'))+['-std=c++17','-O2',str(ROOT/'rust/tools/occt_linear_sets_oracle.cpp'),'-I'+str(include),'-L'+str(lib),'-Wl,-rpath,'+str(lib),'-o',str(executable)]+['-l'+x for x in libraries],cwd=ROOT)
+    try:
+        build=run(shlex.split(os.environ.get('CXX','c++'))+['-std=c++17','-O2',str(ROOT/'rust/tools/occt_linear_sets_oracle.cpp'),'-I'+str(include),'-L'+str(lib),'-Wl,-rpath,'+str(lib),'-o',str(executable)]+['-l'+x for x in libraries],cwd=ROOT)
+    except subprocess.CalledProcessError as error:
+        (output/'native-build.log').write_text(error.stdout+error.stderr)
+        raise
+    (output/'native-build.log').write_text(build.stdout+build.stderr)
     data=cases()
     native=run([str(executable)],input=data,cwd=ROOT)
     for name,text in [('inputs.txt',data),('occt.tsv',native.stdout),('native-version.txt',native.stderr)]:
@@ -256,4 +262,8 @@ def main():
     print(json.dumps({k:v if k not in ['failures','reviewed_differences'] else len(v) for k,v in report.items()},indent=2))
     if report['failures']: raise SystemExit(1)
 
-if __name__=='__main__': main()
+if __name__=='__main__':
+    try: main()
+    except subprocess.CalledProcessError as error:
+        print(error.stderr,file=sys.stderr)
+        raise SystemExit(error.returncode) from error
