@@ -14,6 +14,27 @@ class ParseTests(unittest.TestCase):
                      'a 0 1 0 inf','a 0 0\na 0 0']:
             with self.assertRaises(ValueError): certificates(text)
 
+    def test_degree_fifty_contact_orders_require_the_quadric_contract(self):
+        row='a 1 0 0 0 0 0 1 1 0 0 B 0 50'
+        with self.assertRaises(ValueError): certificates(row)
+        self.assertEqual(certificates(row,max_order=50)['a']['points'][0]['orders'],[0,50])
+        with self.assertRaises(ValueError): certificates(row+'1',max_order=50)
+
+    @unittest.skipUnless(importlib.util.find_spec('sympy'),'install the pinned test-only mathematics oracle')
+    def test_quadric_review_rejects_changed_geometry_or_removed_overlap(self):
+        from compare_spline_quadric import cases as quadric_cases
+        row=next(r for r in quadric_cases().splitlines() if r.startswith('sphere_rational_arc_0 '))
+        exact,digest=exact_certificate(row)
+        self.assertEqual(exact['overlaps'],[[0.,0.,1.,1.]])
+        native={'points':[],'overlaps':[]}
+        review={'id':'synthetic-test','oracle':'OCCT test','case':row.split()[0],
+                'input_sha256':hashlib.sha256(row.encode()).hexdigest(),
+                'native':native_fingerprint(native),'exact_certificate_sha256':digest}
+        self.assertIsNotNone(reviewed('OCCT test',row,native,exact,[review]))
+        self.assertIsNone(reviewed('OCCT test',row,native,native,[review]))
+        words=row.split();words[11]='2'
+        self.assertIsNone(reviewed('OCCT test',' '.join(words),native,exact,[review]))
+
     @unittest.skipUnless(importlib.util.find_spec('sympy'),'install the pinned test-only mathematics oracle')
     def test_review_pins_native_and_rechecks_complete_independent_answer(self):
         row=next(r for r in cases().splitlines() if r.startswith('contained_axis_1.0 '))

@@ -145,6 +145,32 @@ pub struct AlgebraicRoot {
     multiplicity: usize,
 }
 impl AlgebraicRoot {
+    /// Tighten a single-root interval by a bounded amount before repeated sign
+    /// queries. Its square-free polynomial has one simple root here, so opposite
+    /// endpoint signs certify each bisection without another Sturm chain. This
+    /// is only an exact fast-filter aid: undecided signs still use Sturm-Tarski.
+    pub(crate) fn refine_for_signs(&mut self, steps: usize) {
+        if self.lower == self.upper {
+            return;
+        }
+        let p = &self.defining.polynomial;
+        let left = p.sign_at(&self.lower);
+        debug_assert!(left != Ordering::Equal && left != p.sign_at(&self.upper));
+        for _ in 0..steps {
+            let middle = (&self.lower + &self.upper) / R::from_integer(BigInt::from(2));
+            let sign = p.sign_at(&middle);
+            if sign == Ordering::Equal {
+                self.lower = middle.clone();
+                self.upper = middle;
+                break;
+            }
+            if sign == left {
+                self.lower = middle;
+            } else {
+                self.upper = middle;
+            }
+        }
+    }
     pub fn multiplicity(&self) -> usize {
         self.multiplicity
     }

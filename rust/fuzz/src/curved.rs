@@ -8,12 +8,12 @@ use rusty_occt::{Error, Point3, Result, ScalarInterval, Vec3};
 use std::cmp::Ordering;
 
 #[derive(Clone)]
-enum RefRoot {
+pub(crate) enum RefRoot {
     Rational(R, u8),
     Quadratic { a: R, b: R, c: R, upper: bool },
 }
 impl RefRoot {
-    fn compare(&self, x: &R) -> Ordering {
+    pub(crate) fn compare(&self, x: &R) -> Ordering {
         match self {
             Self::Rational(value, _) => value.cmp(x),
             Self::Quadratic { a, b, c, upper } => {
@@ -33,7 +33,7 @@ impl RefRoot {
             }
         }
     }
-    fn multiplicity(&self) -> u8 {
+    pub(crate) fn multiplicity(&self) -> u8 {
         match self {
             Self::Rational(_, n) => *n,
             _ => 1,
@@ -82,7 +82,7 @@ fn unrepresentable(compare: &impl Fn(&R) -> Ordering) -> bool {
     compare(&R::from_float(-f64::MAX).unwrap()) == Ordering::Less
         || compare(&R::from_float(f64::MAX).unwrap()) == Ordering::Greater
 }
-fn interval(bounds: ScalarInterval, compare: impl Fn(&R) -> Ordering) {
+pub(crate) fn interval(bounds: ScalarInterval, compare: impl Fn(&R) -> Ordering) {
     let (lo, hi) = (bounds.lower(), bounds.upper());
     assert!(lo.is_finite() && hi.is_finite() && lo <= hi);
     let (low, high) = (
@@ -150,7 +150,11 @@ fn evaluate(a: &R, b: &R, c: &R, t: &R) -> R {
     a * t * t + b * t + c
 }
 
-fn expected_surface(kind: u8, v: &[R], segment: bool) -> Option<Vec<(RefRoot, ContactKind)>> {
+pub(crate) fn expected_surface(
+    kind: u8,
+    v: &[R],
+    segment: bool,
+) -> Option<Vec<(RefRoot, ContactKind)>> {
     let (center, axis, radius, p, q) = (&v[..3], &v[3..6], &v[6], &v[7..10], &v[10..13]);
     let (w, d) = (sub(p, center), sub(q, p));
     let (a, b, c) = if kind == 2 {
@@ -210,7 +214,7 @@ fn expected_surface(kind: u8, v: &[R], segment: bool) -> Option<Vec<(RefRoot, Co
     }
 }
 
-fn affine_compare(root: &RefRoot, offset: &R, direction: &R, x: &R) -> Ordering {
+pub(crate) fn affine_compare(root: &RefRoot, offset: &R, direction: &R, x: &R) -> Ordering {
     if *direction == zero() {
         return offset.cmp(x);
     }

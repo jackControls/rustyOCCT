@@ -23,7 +23,7 @@ def parse(row):
     if w[1].endswith('T'): tail=tail[:-2]
     if len(tail) != 2*nk: raise ValueError('invalid knot count')
     return (degree, plane, [data[i:i+3] for i in range(0, len(data), 4)], data[3::4],
-            list(map(float, tail[::2])), list(map(int, tail[1::2])), w[1].startswith('P'))
+            list(map(float, tail[::2])), list(map(int, tail[1::2])), w[1].split(':')[-1].startswith('P'))
 
 
 def homogeneous(degree, poles, weights, flat, span):
@@ -47,7 +47,7 @@ def homogeneous(degree, poles, weights, flat, span):
     return h
 
 
-def expected(row):
+def expected(row, implicit=None):
     degree, plane, poles, weights, knots, mults, periodic = parse(row)
     flat, start, end = axis(degree, knots, mults, periodic)
     trimmed=row.split()[1].endswith('T')
@@ -75,6 +75,7 @@ def expected(row):
         f = []
         for c in range(3):
             f = add(f, [normal[c]*x for x in add(h[c], [-plane[0][c]*w for w in h[3]])])
+        if implicit is not None: f=implicit(h,plane)
         local = roots(f, local_low, local_high)
         if local is None:
             if overlaps and overlaps[-1][1] == low: overlaps[-1][1] = high

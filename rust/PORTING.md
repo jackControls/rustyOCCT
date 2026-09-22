@@ -78,9 +78,11 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
    line/segment intersections with planes/triangles/circles/spheres/cylinders and
    sustained structured fuzzing. Certified rational Bézier/B-spline curves and surfaces, including periodic
    directions and derivatives through order two, also exist. Exact degree-25
-   root isolation and certified spline/plane intersections cover isolated contacts
+   root isolation and certified spline/plane/sphere/cylinder intersections cover
+   isolated contacts
    and whole overlap intervals, including explicit trimmed ranges and multiple
-   periodic turns with exact clipping and traversal limits. Extend certified comparisons and constructions
+   periodic turns with exact clipping and traversal limits; quadratic surfaces
+   use internal equations through degree 50. Extend certified comparisons and constructions
    to curved geometry and propagate uncertainty through topology changes.
    Continue minimizing fuzz failures. See `MATHEMATICS.md` and `FUZZING.md`.
 2. **Topology invariants and operation history.** Strengthen generic B-rep

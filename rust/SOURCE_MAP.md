@@ -116,6 +116,30 @@ preflight traversal limits cover huge periodic parameters without float wrapping
 or uncontrolled turn enumeration. Evidence adds 82 native observations and 98
 independent exact fixtures; all prior fixture rows and review pins are retained.
 
+## Spline/quadric intersection traceability
+
+`spline_sphere` and `spline_cylinder` use the same source baseline and
+`GeomAPI_IntCS` entry point. Read alongside the sphere/cylinder branches of
+`IntCurveSurface_QuadricCurveExactInterUtils::PerformIntersection` and
+[`IntSurf_Quadric.cxx`](../src/ModelingAlgorithms/TKGeomAlgo/IntSurf/IntSurf_Quadric.cxx),
+`Distance`, `Gradient`, and `ValAndGrad`: OCCT evaluates signed distance from
+the curve to each primitive and refines roots over C1 intervals. Rust uses
+equivalent exact homogeneous implicit polynomials (degree at most 50) and the
+shared certified spline intersection engine, including exact contained spans.
+The cylinder axis is never rounded to a unit vector. The mathematical root
+isolator remains an independent implementation, not an OCCT numerical port.
+
+All 92 native inputs were captured before the Rust quadric implementation.
+The 118 independent fixtures add dense/high-degree, full-exponent and
+high-multiplicity cases; the existing plane fixtures are unchanged. The shared
+fuzz target adds factored squared contact equations and a weighted-line oracle
+using independent rational parameter conversion. Native omissions of overlap
+intervals and later periodic events are [reviewed explicitly](NATIVE_SPLINE_QUADRIC_DIVERGENCES.md).
+The source regression `tests/bugs/modalg_4/bug23076` also exercises curve/surface
+intersection, but its external DRAW geometry is unavailable; it is not counted
+as an executed or passing upstream regression. General curve/surface
+intersection and spline B-rep integration remain pending.
+
 ## Rule for the next capability
 
 1. Define the standalone kernel input/output, numerical, topology/history and

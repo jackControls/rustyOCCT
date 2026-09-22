@@ -12,7 +12,7 @@ The [mathematical foundation](MATHEMATICS.md) includes exact 2D/3D orientation
 and insphere, 2,417 independent 2D rational fixtures in all six permutations,
 1,648 spatial predicate fixtures, 963 certified linear-intersection fixtures,
 448 quadratic-root fixtures, 1,092 curved-intersection fixtures, 1,059 curve and 791 surface spline fixtures,
-94 general polynomial-root and 283 spline/plane fixtures,
+94 general polynomial-root, 283 spline/plane and 118 spline/quadric fixtures,
 10,000 integer-oracle predicate cases and 256 generated prism invariant cases.
 These tests do not depend on OCCT or an application and run in native debug and
 release CI. These deterministic generated tests are separate from the eight
@@ -180,6 +180,17 @@ python3 rust/tools/compare_occt.py --occt-root /path/to/occt --write-baseline
 Review all changes to fixture inputs, expected results, version metadata and
 tolerances together. Never update a baseline merely to make a failing test pass.
 The generator uses a fixed seed and writes inputs only.
+
+## Spline/quadric comparisons
+
+`compare_spline_quadric.py` captures 92 sphere/cylinder observations with the
+same headless `GeomAPI_IntCS` helper. OCCT 7.9.3 has 66 direct matches and 26
+[reviewed differences](NATIVE_SPLINE_QUADRIC_DIVERGENCES.md), primarily missing
+overlap intervals and later periodic events. Every Rust result is independently
+recomputed, including complete point counts, minimal enclosures, contact orders
+and overlap endpoints. Review hashes and native budgets use the same fail-closed
+checks as the plane bridge. The ordinary 118 exact fixtures also exercise dense
+degree-25 equations, order-50 contacts and extreme radii/axis magnitudes.
 
 ## Representation and numeric limits
 

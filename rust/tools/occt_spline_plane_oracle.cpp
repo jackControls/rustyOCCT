@@ -3,6 +3,8 @@
 #include <Geom_BSplineCurve.hxx>
 #include <Geom_BezierCurve.hxx>
 #include <Geom_Plane.hxx>
+#include <Geom_SphericalSurface.hxx>
+#include <Geom_CylindricalSurface.hxx>
 #include <Geom_TrimmedCurve.hxx>
 #include <Standard_Failure.hxx>
 #include <Standard_Version.hxx>
@@ -24,6 +26,12 @@ int main() {
   std::string name,kind;
   int degree,np,nk;
   while (std::cin>>name>>kind>>degree>>np>>nk) {
+    std::string surface_kind="plane";
+    const auto separator=kind.find(':');
+    if (separator!=std::string::npos) {
+      surface_kind=kind.substr(0,separator); kind=kind.substr(separator+1);
+      if (surface_kind!="sphere" && surface_kind!="cylinder") return 2;
+    }
     gp_Pnt plane_points[3];
     for (auto& p:plane_points) {
       double x,y,z; if (!(std::cin>>x>>y>>z)) return 2; p=gp_Pnt(x,y,z);
@@ -44,9 +52,16 @@ int main() {
       if (kind.front()=='B') curve=new Geom_BezierCurve(poles,weights);
       else curve=new Geom_BSplineCurve(poles,weights,knots,mults,degree,kind.front()=='P',false);
       if (trimmed) curve=new Geom_TrimmedCurve(curve,first,last,true,false);
-      const gp_Vec normal=gp_Vec(plane_points[0],plane_points[1]).Crossed(gp_Vec(plane_points[0],plane_points[2]));
-      Handle(Geom_Surface) plane=new Geom_Plane(gp_Pln(plane_points[0],gp_Dir(normal)));
-      GeomAPI_IntCS inter(curve,plane);
+      Handle(Geom_Surface) surface;
+      if (surface_kind=="plane") {
+        const gp_Vec normal=gp_Vec(plane_points[0],plane_points[1]).Crossed(gp_Vec(plane_points[0],plane_points[2]));
+        surface=new Geom_Plane(gp_Pln(plane_points[0],gp_Dir(normal)));
+      } else {
+        const gp_Ax3 axes(plane_points[0],gp_Dir(plane_points[1].XYZ()));
+        if (surface_kind=="sphere") surface=new Geom_SphericalSurface(axes,plane_points[2].X());
+        else surface=new Geom_CylindricalSurface(axes,plane_points[2].X());
+      }
+      GeomAPI_IntCS inter(curve,surface);
       if (!inter.IsDone()) {std::cout<<name<<" FAIL\n";continue;}
       std::vector<std::array<double,4>> points;
       std::vector<std::array<double,2>> spans;

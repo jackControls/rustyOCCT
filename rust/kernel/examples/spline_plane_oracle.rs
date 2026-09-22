@@ -1,6 +1,9 @@
 //! Test-only text bridge. Each hit exports all certified bounds and contact data.
-use rusty_occt::intersection::{spline_plane, spline_plane_in, Plane3, SplinePlaneContact};
-use rusty_occt::{BSplineCurve3, Point3};
+use rusty_occt::intersection::{
+    spline_cylinder_in, spline_plane, spline_plane_in, spline_sphere_in, Cylinder3, Plane3,
+    Sphere3, SplineSurfaceContact,
+};
+use rusty_occt::{BSplineCurve3, Point3, Vec3};
 use std::io::{self, BufRead};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -9,6 +12,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut words = line.split_whitespace();
         let name = words.next().ok_or("missing label")?;
         let kind = words.next().ok_or("missing kind")?;
+        let (surface_kind, kind) = kind.split_once(':').unwrap_or(("plane", kind));
         let degree = words.next().ok_or("missing degree")?.parse()?;
         let count: usize = words.next().ok_or("missing pole count")?.parse()?;
         let knot_count: usize = words.next().ok_or("missing knot count")?.parse()?;
@@ -19,7 +23,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         for _ in 0..3 {
             points.push(Point3::new(number()?, number()?, number()?));
         }
-        let plane = Plane3::through_points(points[0], points[1], points[2])?;
         let mut poles = Vec::new();
         let mut weights = Vec::new();
         for _ in 0..count {
@@ -50,10 +53,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "P" | "PT" => BSplineCurve3::new_periodic(degree, poles, Some(weights), knots, mults)?,
             _ => return Err("invalid curve kind".into()),
         };
-        let result = if let Some((a, b)) = range {
-            spline_plane_in(&curve, &plane, a, b)?
-        } else {
-            spline_plane(&curve, &plane)?
+        let (a, b) = range.unwrap_or_else(|| curve.domain());
+        let result = match surface_kind {
+            "plane" => {
+                let plane = Plane3::through_points(points[0], points[1], points[2])?;
+                if range.is_some() {
+                    spline_plane_in(&curve, &plane, a, b)?
+                } else {
+                    spline_plane(&curve, &plane)?
+                }
+            }
+            "sphere" => spline_sphere_in(&curve, &Sphere3::new(points[0], points[2].x)?, a, b)?,
+            "cylinder" => spline_cylinder_in(
+                &curve,
+                &Cylinder3::new(
+                    points[0],
+                    Vec3::new(points[1].x, points[1].y, points[1].z),
+                    points[2].x,
+                )?,
+                a,
+                b,
+            )?,
+            _ => return Err("invalid surface kind".into()),
         };
         print!(
             "{name} {} {}",
@@ -65,9 +86,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 print!(" {:.17e} {:.17e}", bounds.lower(), bounds.upper());
             }
             let contact = match point.contact() {
-                SplinePlaneContact::Crossing => "C",
-                SplinePlaneContact::Tangent => "T",
-                SplinePlaneContact::Boundary => "B",
+                SplineSurfaceContact::Crossing => "C",
+                SplineSurfaceContact::Tangent => "T",
+                SplineSurfaceContact::Boundary => "B",
             };
             let [left, right] = point.multiplicities().map(|m| m.unwrap_or(0));
             print!(" {contact} {left} {right}");

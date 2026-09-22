@@ -16,6 +16,8 @@ use std::cmp::Ordering;
 
 mod curved;
 mod spline_plane;
+mod spline_quadric;
+mod spline_surface;
 pub use curved::{
     line_circle, line_cylinder, line_sphere, segment_circle, segment_cylinder, segment_sphere,
     Circle3, ContactKind, CurveHit, CurvedIntersection, Cylinder3, Sphere3,
@@ -24,6 +26,15 @@ pub use spline_plane::{
     spline_plane, spline_plane_in, spline_plane_in_with_options, spline_plane_with_options,
     SplinePlaneContact, SplinePlaneIntersection, SplinePlaneOptions, SplinePlaneOverlap,
     SplinePlanePoint,
+};
+pub use spline_quadric::{
+    spline_cylinder, spline_cylinder_in, spline_cylinder_in_with_options,
+    spline_cylinder_with_options, spline_sphere, spline_sphere_in, spline_sphere_in_with_options,
+    spline_sphere_with_options,
+};
+pub use spline_surface::{
+    SplineSurfaceContact, SplineSurfaceIntersection, SplineSurfaceOptions, SplineSurfaceOverlap,
+    SplineSurfacePoint,
 };
 
 /// Plane defined by three exactly noncollinear finite points.

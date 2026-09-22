@@ -1,9 +1,10 @@
+use rusty_occt::intersection::{spline_cylinder_in, spline_sphere_in, Cylinder3, Sphere3};
 use rusty_occt::intersection::{
     spline_plane, spline_plane_in, spline_plane_in_with_options, spline_plane_with_options, Plane3,
     SplinePlaneContact, SplinePlaneOptions,
 };
 use rusty_occt::polynomial::RootIsolationOptions;
-use rusty_occt::{BSplineCurve3, Error, Point3};
+use rusty_occt::{BSplineCurve3, Error, Point3, Vec3};
 use std::cmp::Ordering::{Equal, Greater, Less};
 
 fn bits(word: &str) -> f64 {
@@ -12,15 +13,78 @@ fn bits(word: &str) -> f64 {
 
 #[test]
 fn complete_results_match_independent_basis_and_continued_fraction_oracle() {
+    check_fixtures(include_str!("../../fixtures/spline-plane.tsv"), 283);
+}
+
+#[test]
+fn sphere_and_cylinder_results_match_independent_exact_oracle() {
+    check_fixtures(include_str!("../../fixtures/spline-quadric.tsv"), 118);
+}
+
+#[test]
+fn quadric_work_limits_fail_atomically_and_domains_are_explicit() {
+    use rusty_occt::intersection::{
+        spline_cylinder_with_options, spline_sphere_with_options, SplineSurfaceOptions,
+    };
+    let curve = BSplineCurve3::new(
+        1,
+        vec![Point3::new(-2., 0., 0.), Point3::new(2., 0., 0.)],
+        None,
+        vec![0., 1.],
+        vec![2, 2],
+    )
+    .unwrap();
+    let sphere = Sphere3::new(Point3::new(0., 0., 0.), 1.).unwrap();
+    let cylinder = Cylinder3::new(Point3::new(0., 0., 0.), Vec3::new(0., 0., 1.), 1.).unwrap();
+    for options in [
+        SplineSurfaceOptions {
+            max_spans: 0,
+            ..Default::default()
+        },
+        SplineSurfaceOptions {
+            root_isolation: RootIsolationOptions {
+                max_subdivisions: 0,
+            },
+            ..Default::default()
+        },
+    ] {
+        assert!(matches!(
+            spline_sphere_with_options(&curve, &sphere, options),
+            Err(Error::ComputationLimit(_))
+        ));
+        assert!(matches!(
+            spline_cylinder_with_options(&curve, &cylinder, options),
+            Err(Error::ComputationLimit(_))
+        ));
+    }
+    for (first, last) in [(-1., 1.), (0., 2.), (1., 0.), (0.5, 0.5)] {
+        assert!(matches!(
+            spline_sphere_in(&curve, &sphere, first, last),
+            Err(Error::OutOfDomain(_))
+        ));
+        assert!(matches!(
+            spline_cylinder_in(&curve, &cylinder, first, last),
+            Err(Error::OutOfDomain(_))
+        ));
+    }
+    assert!(matches!(
+        spline_sphere_in(&curve, &sphere, f64::NAN, 1.),
+        Err(Error::NonFinite(_))
+    ));
+    assert!(matches!(
+        spline_cylinder_in(&curve, &cylinder, 0., f64::INFINITY),
+        Err(Error::NonFinite(_))
+    ));
+}
+
+fn check_fixtures(text: &str, expected_count: usize) {
     let mut count = 0;
-    for row in include_str!("../../fixtures/spline-plane.tsv")
-        .lines()
-        .filter(|s| !s.starts_with('#'))
-    {
+    for row in text.lines().filter(|s| !s.starts_with('#')) {
         let (input, expected) = row.split_once(" | ").unwrap();
         let mut w = input.split_whitespace();
         let name = w.next().unwrap();
         let kind = w.next().unwrap();
+        let (surface_kind, kind) = kind.split_once(':').unwrap_or(("plane", kind));
         let degree = w.next().unwrap().parse().unwrap();
         let np: usize = w.next().unwrap().parse().unwrap();
         let nk: usize = w.next().unwrap().parse().unwrap();
@@ -53,11 +117,31 @@ fn complete_results_match_independent_basis_and_continued_fraction_oracle() {
             BSplineCurve3::new(degree, poles, Some(weights), knots, mults)
         }
         .unwrap();
-        let plane = Plane3::through_points(plane[0], plane[1], plane[2]).unwrap();
-        let result = if let Some((a, b)) = range {
-            spline_plane_in(&curve, &plane, a, b)
-        } else {
-            spline_plane(&curve, &plane)
+        let (a, b) = range.unwrap_or_else(|| curve.domain());
+        let result = match surface_kind {
+            "sphere" => {
+                spline_sphere_in(&curve, &Sphere3::new(plane[0], plane[2].x).unwrap(), a, b)
+            }
+            "cylinder" => spline_cylinder_in(
+                &curve,
+                &Cylinder3::new(
+                    plane[0],
+                    Vec3::new(plane[1].x, plane[1].y, plane[1].z),
+                    plane[2].x,
+                )
+                .unwrap(),
+                a,
+                b,
+            ),
+            "plane" => {
+                let plane = Plane3::through_points(plane[0], plane[1], plane[2]).unwrap();
+                if range.is_some() {
+                    spline_plane_in(&curve, &plane, a, b)
+                } else {
+                    spline_plane(&curve, &plane)
+                }
+            }
+            _ => panic!("invalid primitive"),
         }
         .unwrap_or_else(|e| panic!("{name}: {e}"));
         let mut e = expected.split_whitespace();
@@ -151,7 +235,7 @@ fn complete_results_match_independent_basis_and_continued_fraction_oracle() {
         assert!(e.next().is_none(), "{name}");
         count += 1;
     }
-    assert_eq!(count, 283);
+    assert_eq!(count, expected_count);
 }
 
 #[test]

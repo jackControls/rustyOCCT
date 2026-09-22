@@ -461,6 +461,52 @@ count is `ceil((last-a)/P) - floor((first-b)/P) - 1`. Exceeding the budget retur
 from `-f64::MAX` to `f64::MAX` on tiny periods cannot start an unbounded loop.
 This traversal bound still does not constitute a hard CPU or allocation limit.
 
+## Spline/sphere and spline/cylinder intersections
+
+`spline_sphere` and `spline_cylinder` query the complete closed fundamental
+domain. Their `_in` variants accept the same explicit closed ranges as plane
+queries, including multiple periodic turns. The `_with_options` variants use
+`SplineSurfaceOptions` for span traversal and root-subdivision limits. A cylinder
+is infinite and has no caps; these queries do not construct a spherical solid
+or test overlap with the interior of a volume.
+
+For homogeneous coordinates `(X,W)`, center/origin `c`, radius `r`, and a
+nonzero cylinder axis `v`, let `D=X-c*W`. The exact scalar polynomials are:
+
+```text
+sphere:   D·D - r² W²
+cylinder: (v·v)(D·D - r² W²) - (v·D)².
+```
+
+Positive spline weights make `W` strictly positive. The cylinder's `v·v` is
+strictly positive, so clearing these denominators introduces no roots, and
+the polynomial sign agrees with outside/inside surface sidedness. Unlike a
+rounded unit-axis construction, this accepts any finite nonzero represented
+axis, including subnormal components. Degree-25 curves produce polynomials
+through degree 50. The internal exact isolator supports these equations;
+the public `Polynomial` coefficient-input limit remains degree 25.
+
+`SplineSurfaceIntersection` shares exact point identities, minimal coordinate
+and parameter enclosures, one-sided contact orders and maximal overlap
+intervals across planes, spheres and cylinders. The prior `SplinePlane*`
+names remain aliases. Order 50 contacts are retained; a constant curve on a
+surface occupies its entire parameter interval. Overlap endpoints are excluded
+from isolated points, and distinct periodic parameter events are not merged
+because they revisit the same position. Outside-domain, nonfinite, traversal
+and subdivision failures remain atomic.
+
+Before repeated coordinate sign queries for sphere/cylinder equations, each
+nonrational root interval is tightened by at most 128 exact rational bisections.
+Plane queries retain their existing filter to avoid unnecessary refinement cost.
+Its square-free defining
+polynomial has exactly one simple root in that interval, so opposite endpoint
+signs certify the retained half. This only improves the interval sign filter;
+an undecided sign still uses Sturm–Tarski, including exact zero decisions.
+The refinement has no tolerance or output-rounding effect. Dense degree-25
+quadric fixtures exposed the need for this filter; those cases remain in the
+ordinary debug/release tests. Span/subdivision limits still do not promise a
+hard CPU or allocation bound.
+
 ## Independent and adversarial evidence
 
 - `fixtures/orient2d.tsv`: 2,417 input triples with expected signs calculated by
@@ -527,6 +573,12 @@ This traversal bound still does not constitute a hard CPU or allocation limit.
   intersection rows are also unchanged; 98 appended cases cover clipped contacts,
   multi-period queries, nonrepresentable shifted knots, subnormal periods,
   degree-25 clipping and closely clustered roots beside a trim boundary.
+- `fixtures/spline-quadric.tsv`: 118 complete sphere/cylinder results, including
+  all 92 native inputs, dense rational degree-25 curves, order-50 tangencies,
+  contained rational arcs and generators, periodic/trimmed/unclamped ranges,
+  subnormal radii/axes, overflowing squared magnitudes and coincident parameter
+  enclosures. The independent basis/continued-fraction oracle uses the cylinder
+  cross-product equation, while production uses dot-product projection.
 
 These fixtures are bounded deterministic tests. Separately, [coverage-guided
 fuzzing](FUZZING.md) mutates predicates, linear/curved intersections, polynomial
@@ -564,7 +616,7 @@ disagreement disappear.
    minimize failures, and expand resource/performance and independent-oracle
    checks as geometry and operation sequences become more complex.
 
-General curve/surface intersections beyond spline/plane, Booleans,
+General curve/surface intersections beyond spline/plane/sphere/cylinder, Booleans,
 generic topology history, STEP and meshing remain unimplemented. Certified
 linear/quadratic primitives and spline evaluation do not establish these capabilities or make
 the rest of the kernel exact.

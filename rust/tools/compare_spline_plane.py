@@ -97,7 +97,7 @@ def observations(text):
     return rows
 
 
-def certificates(text, hexadecimal=False):
+def certificates(text, hexadecimal=False, max_order=25):
     rows={}
     number=(lambda s: struct.unpack('>d',bytes.fromhex(s))[0]) if hexadecimal else float
     for row in text.splitlines():
@@ -106,7 +106,7 @@ def certificates(text, hexadecimal=False):
         points=[]
         for i in range(np):
             at=3+11*i;bounds=list(map(number,w[at:at+8]));contact=w[at+8];orders=list(map(int,w[at+9:at+11]))
-            if contact not in ['C','T','B'] or any(not 0<=x<=25 for x in orders): raise ValueError('invalid contact')
+            if contact not in ['C','T','B'] or any(not 0<=x<=max_order for x in orders): raise ValueError('invalid contact')
             if not all(map(math.isfinite,bounds)) or any(a>b for a,b in zip(bounds[::2],bounds[1::2])): raise ValueError('invalid bounds')
             points.append({'bounds':bounds,'contact':contact,'orders':orders})
         tail=list(map(number,w[3+11*np:]))
@@ -147,10 +147,14 @@ def differences(native, certificate):
 
 @lru_cache(maxsize=256)
 def exact_certificate(row):
-    from generate_spline_plane_fixtures import expected
+    quadric=':' in row.split()[1]
+    if quadric:
+        from generate_spline_quadric_fixtures import expected
+    else:
+        from generate_spline_plane_fixtures import expected
     tokens=expected(row)
     name=row.split()[0]
-    return certificates(name+' '+' '.join(tokens),hexadecimal=True)[name],hashlib.sha256(' '.join(tokens).encode()).hexdigest()
+    return certificates(name+' '+' '.join(tokens),hexadecimal=True,max_order=50 if quadric else 25)[name],hashlib.sha256(' '.join(tokens).encode()).hexdigest()
 
 
 def reviewed(oracle,row,native,rust,reviews):
@@ -167,7 +171,7 @@ def reviewed(oracle,row,native,rust,reviews):
     return None
 
 
-def main():
+def main(case_source=cases, family='plane'):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--occt-root',type=Path,default=Path(os.environ.get('OCCT_ROOT','/opt/homebrew/opt/opencascade' if sys.platform=='darwin' else '/usr')))
     parser.add_argument('--native-only',action='store_true')
@@ -176,10 +180,10 @@ def main():
     include=next((p for p in [prefix/'include/opencascade',prefix/'inc',prefix/'include'] if (p/'GeomAPI_IntCS.hxx').exists()),None)
     lib=next((p for p in [prefix/'lib',prefix/'lib64',prefix/'lib/x86_64-linux-gnu',prefix/'lib/aarch64-linux-gnu'] if any(p.glob('libTKGeomAlgo.*'))),None)
     if not include or not lib: parser.error('OCCT modeling-algorithms SDK not found')
-    output=ROOT/'target/spline-plane-oracle';output.mkdir(parents=True,exist_ok=True)
+    output=ROOT/f'target/spline-{family}-oracle';output.mkdir(parents=True,exist_ok=True)
     executable=output/'occt_spline_plane_oracle'
     run(shlex.split(os.environ.get('CXX','c++'))+['-std=c++17','-O2',str(ROOT/'rust/tools/occt_spline_plane_oracle.cpp'),'-I'+str(include),'-L'+str(lib),'-Wl,-rpath,'+str(lib),'-o',str(executable),'-lTKGeomAlgo','-lTKGeomBase','-lTKG3d','-lTKMath','-lTKernel'],cwd=ROOT)
-    data=cases();native=run([str(executable)],input=data,cwd=ROOT,timeout=120)
+    data=case_source();native=run([str(executable)],input=data,cwd=ROOT,timeout=120)
     for name,text in [('inputs.txt',data),('occt.tsv',native.stdout),('native-version.txt',native.stderr)]: (output/name).write_text(text)
     expected=observations(native.stdout)
     if len(expected)!=len(data.splitlines()): raise AssertionError('incomplete native observations')
@@ -189,9 +193,9 @@ def main():
     run(['cargo','build','--locked','--release','--example','spline_plane_oracle'],cwd=ROOT)
     rust_process=run([str(ROOT/'target/release/examples/spline_plane_oracle')],input=data,cwd=ROOT)
     (output/'rust.tsv').write_text(rust_process.stdout)
-    actual=certificates(rust_process.stdout)
+    actual=certificates(rust_process.stdout,max_order=50 if family=='quadric' else 25)
     if actual.keys()!=expected.keys(): raise AssertionError('incomplete Rust observations')
-    review_path=ROOT/'rust/fixtures/occt-spline-plane-divergences.json'
+    review_path=ROOT/f'rust/fixtures/occt-spline-{family}-divergences.json'
     reviews=json.loads(review_path.read_text()) if review_path.exists() else []
     report={'oracle':native.stderr.strip(),'source_reference':'3d097a0328e71b826377d4814ab05ec3c3d23871',
             'cases':len(expected),'independently_verified':0,'native_matches':0,'reviewed_differences':[], 'failures':[]}

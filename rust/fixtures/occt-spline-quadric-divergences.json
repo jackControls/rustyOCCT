@@ -1,0 +1,442 @@
+[
+  {
+    "id": "occt-793-sphere-constant-0",
+    "oracle": "OCCT 7.9.3",
+    "case": "sphere_constant_0",
+    "input_sha256": "a68b766038d175acb94eba1a76b546ccaf272abfe8acb8858d75dbf2ef2a9bc6",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "Exact homogeneous substitution vanishes identically over the entire query: the constant curve, rational Pythagorean arc, or cylinder generator lies on the surface. Native GeomAPI_IntCS returns no overlap interval. Rust retains the complete closed parameter overlap, independently verified by exact basis polynomials."
+  },
+  {
+    "id": "occt-793-sphere-rational-arc-0",
+    "oracle": "OCCT 7.9.3",
+    "case": "sphere_rational_arc_0",
+    "input_sha256": "d251fc85bdee567df1142cc74e508c365b316c689ac03efc69c720eeb65f6c50",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "Exact homogeneous substitution vanishes identically over the entire query: the constant curve, rational Pythagorean arc, or cylinder generator lies on the surface. Native GeomAPI_IntCS returns no overlap interval. Rust retains the complete closed parameter overlap, independently verified by exact basis polynomials."
+  },
+  {
+    "id": "occt-793-sphere-rational-arc-0-trim",
+    "oracle": "OCCT 7.9.3",
+    "case": "sphere_rational_arc_0_trim",
+    "input_sha256": "5238b5c43e1ebad4998fcf2aedf8e98525f2337a1729def4cf6b871b901b09d1",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "848e0df7755c5bae26d6cc4d8a238ddc3746cea0c1403fc6ac15ac8407a2e4db",
+    "reason": "Exact homogeneous substitution vanishes identically over the entire query: the constant curve, rational Pythagorean arc, or cylinder generator lies on the surface. Native GeomAPI_IntCS returns no overlap interval. Rust retains the complete closed parameter overlap, independently verified by exact basis polynomials."
+  },
+  {
+    "id": "occt-793-sphere-partial-overlap-0",
+    "oracle": "OCCT 7.9.3",
+    "case": "sphere_partial_overlap_0",
+    "input_sha256": "95175e4826a72a2806a549d5a24e06e3f47e181fc65a4861448fb5019c3f4274",
+    "native": {
+      "points": [
+        [
+          "3ff0000000000000",
+          "0000000000000000",
+          "3ff0000000000000",
+          "0000000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "Exact homogeneous substitution is identically zero on [0,1] (or the clipped [.25,.75] query). The adjacent span meets the same endpoint only. Native OCCT omits the overlap and, for the full query, returns that endpoint as an isolated point. Rust reports the maximal overlap and excludes its endpoint from isolated events."
+  },
+  {
+    "id": "occt-793-sphere-partial-overlap-0-trim",
+    "oracle": "OCCT 7.9.3",
+    "case": "sphere_partial_overlap_0_trim",
+    "input_sha256": "b28c000693ed7fbfffb192473b1654cf2c20bb2626d4e4d7d57a2e87cf52b76f",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "848e0df7755c5bae26d6cc4d8a238ddc3746cea0c1403fc6ac15ac8407a2e4db",
+    "reason": "Exact homogeneous substitution is identically zero on [0,1] (or the clipped [.25,.75] query). The adjacent span meets the same endpoint only. Native OCCT omits the overlap and, for the full query, returns that endpoint as an isolated point. Rust reports the maximal overlap and excludes its endpoint from isolated events."
+  },
+  {
+    "id": "occt-793-sphere-periodic-0-trim",
+    "oracle": "OCCT 7.9.3",
+    "case": "sphere_periodic_0_trim",
+    "input_sha256": "279b9e09e2968f93fc3a5bf9fcaed98523829f54de3b1c388aa07d9bc714583e",
+    "native": {
+      "points": [
+        [
+          "400c000000000000",
+          "bff0000000000000",
+          "0000000000000000",
+          "0000000000000000"
+        ],
+        [
+          "4012000000000000",
+          "bff0000000000000",
+          "0000000000000000",
+          "0000000000000000"
+        ],
+        [
+          "4016000000000000",
+          "3ff0000000000000",
+          "0000000000000000",
+          "0000000000000000"
+        ],
+        [
+          "401a000000000000",
+          "3ff0000000000000",
+          "0000000000000000",
+          "0000000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "954d1d72e6c77fdd1716761fca6b25b2d7f5de58e1d8dd5de221b0fe9bf00410",
+    "reason": "The exact closed interval [3.5,8.5] contains six affine crossings, including both endpoints. Native OCCT reports four events ending at 6.5; Rust retains all requested periodic parameter events. No native events are discarded or clustered."
+  },
+  {
+    "id": "occt-793-sphere-constant-1",
+    "oracle": "OCCT 7.9.3",
+    "case": "sphere_constant_1",
+    "input_sha256": "dd9ad5433c7d8379a6363c9ff79c23a466837fd67e0e7fa50b07a0b1401c6ff7",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "Exact homogeneous substitution vanishes identically over the entire query: the constant curve, rational Pythagorean arc, or cylinder generator lies on the surface. Native GeomAPI_IntCS returns no overlap interval. Rust retains the complete closed parameter overlap, independently verified by exact basis polynomials."
+  },
+  {
+    "id": "occt-793-sphere-rational-arc-1",
+    "oracle": "OCCT 7.9.3",
+    "case": "sphere_rational_arc_1",
+    "input_sha256": "a9210c22dfaac9a49b68f341309371abec0dd4960b6c5c1897316a1a788bd47f",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "Exact homogeneous substitution vanishes identically over the entire query: the constant curve, rational Pythagorean arc, or cylinder generator lies on the surface. Native GeomAPI_IntCS returns no overlap interval. Rust retains the complete closed parameter overlap, independently verified by exact basis polynomials."
+  },
+  {
+    "id": "occt-793-sphere-rational-arc-1-trim",
+    "oracle": "OCCT 7.9.3",
+    "case": "sphere_rational_arc_1_trim",
+    "input_sha256": "2247210cd83ede5d18b250c166f7cc562fbb780c28bc75b0fa6f2dcceec94a9f",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "848e0df7755c5bae26d6cc4d8a238ddc3746cea0c1403fc6ac15ac8407a2e4db",
+    "reason": "Exact homogeneous substitution vanishes identically over the entire query: the constant curve, rational Pythagorean arc, or cylinder generator lies on the surface. Native GeomAPI_IntCS returns no overlap interval. Rust retains the complete closed parameter overlap, independently verified by exact basis polynomials."
+  },
+  {
+    "id": "occt-793-sphere-partial-overlap-1",
+    "oracle": "OCCT 7.9.3",
+    "case": "sphere_partial_overlap_1",
+    "input_sha256": "e31c15584f9103c3f3681c37795a70d9d825154c3944025710151db518d939c7",
+    "native": {
+      "points": [
+        [
+          "3ff0000000000000",
+          "4000000000000000",
+          "c008000000000000",
+          "4014800000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "Exact homogeneous substitution is identically zero on [0,1] (or the clipped [.25,.75] query). The adjacent span meets the same endpoint only. Native OCCT omits the overlap and, for the full query, returns that endpoint as an isolated point. Rust reports the maximal overlap and excludes its endpoint from isolated events."
+  },
+  {
+    "id": "occt-793-sphere-partial-overlap-1-trim",
+    "oracle": "OCCT 7.9.3",
+    "case": "sphere_partial_overlap_1_trim",
+    "input_sha256": "48f77d09070d6344803c49557f67a0541b1f70ba43143851a065563b4a54f3cf",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "848e0df7755c5bae26d6cc4d8a238ddc3746cea0c1403fc6ac15ac8407a2e4db",
+    "reason": "Exact homogeneous substitution is identically zero on [0,1] (or the clipped [.25,.75] query). The adjacent span meets the same endpoint only. Native OCCT omits the overlap and, for the full query, returns that endpoint as an isolated point. Rust reports the maximal overlap and excludes its endpoint from isolated events."
+  },
+  {
+    "id": "occt-793-sphere-periodic-1-trim",
+    "oracle": "OCCT 7.9.3",
+    "case": "sphere_periodic_1_trim",
+    "input_sha256": "529669b99e36bbb36485bdac9ceb9b31c2b1da96c037043f9c0d74f12615d876",
+    "native": {
+      "points": [
+        [
+          "400c000000000000",
+          "4000000000000000",
+          "c007000000000000",
+          "4014000000000000"
+        ],
+        [
+          "4012000000000000",
+          "4000000000000000",
+          "c007000000000000",
+          "4014000000000000"
+        ],
+        [
+          "4016000000000000",
+          "4000000000000000",
+          "c009000000000000",
+          "4014000000000000"
+        ],
+        [
+          "401a000000000000",
+          "4000000000000000",
+          "c009000000000000",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "a5cd2f7a2b824c13e5d16e9de0e130e07817625b23df68bdc2f3522d60fe3250",
+    "reason": "The exact closed interval [3.5,8.5] contains six affine crossings, including both endpoints. Native OCCT reports four events ending at 6.5; Rust retains all requested periodic parameter events. No native events are discarded or clustered."
+  },
+  {
+    "id": "occt-793-cylinder-constant-0",
+    "oracle": "OCCT 7.9.3",
+    "case": "cylinder_constant_0",
+    "input_sha256": "ab94f1f326c7866b018eab365b47d08422b74b6c57378922f6acbe9af9aa047e",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "Exact homogeneous substitution vanishes identically over the entire query: the constant curve, rational Pythagorean arc, or cylinder generator lies on the surface. Native GeomAPI_IntCS returns no overlap interval. Rust retains the complete closed parameter overlap, independently verified by exact basis polynomials."
+  },
+  {
+    "id": "occt-793-cylinder-rational-arc-0",
+    "oracle": "OCCT 7.9.3",
+    "case": "cylinder_rational_arc_0",
+    "input_sha256": "39b4f70bfafb336209df20161adb07083438610c77a1638717e2ec0ebe826af3",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "Exact homogeneous substitution vanishes identically over the entire query: the constant curve, rational Pythagorean arc, or cylinder generator lies on the surface. Native GeomAPI_IntCS returns no overlap interval. Rust retains the complete closed parameter overlap, independently verified by exact basis polynomials."
+  },
+  {
+    "id": "occt-793-cylinder-rational-arc-0-trim",
+    "oracle": "OCCT 7.9.3",
+    "case": "cylinder_rational_arc_0_trim",
+    "input_sha256": "94b5c2a4bdb0c0f6ad952bd8d5b0a4c67340a20ff138f1d38116d0fa8fa5b585",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "848e0df7755c5bae26d6cc4d8a238ddc3746cea0c1403fc6ac15ac8407a2e4db",
+    "reason": "Exact homogeneous substitution vanishes identically over the entire query: the constant curve, rational Pythagorean arc, or cylinder generator lies on the surface. Native GeomAPI_IntCS returns no overlap interval. Rust retains the complete closed parameter overlap, independently verified by exact basis polynomials."
+  },
+  {
+    "id": "occt-793-cylinder-generator-0",
+    "oracle": "OCCT 7.9.3",
+    "case": "cylinder_generator_0",
+    "input_sha256": "475875a4047c6cb3c9c9666b5f619cacf08c183df404dbd1aa7bfe2c7798b4ee",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "Exact homogeneous substitution vanishes identically over the entire query: the constant curve, rational Pythagorean arc, or cylinder generator lies on the surface. Native GeomAPI_IntCS returns no overlap interval. Rust retains the complete closed parameter overlap, independently verified by exact basis polynomials."
+  },
+  {
+    "id": "occt-793-cylinder-partial-overlap-0",
+    "oracle": "OCCT 7.9.3",
+    "case": "cylinder_partial_overlap_0",
+    "input_sha256": "2faf6c1f7989d031ed2b7fe1d748f9229688e8e3fe1cb7b79459a0cecdeff1a1",
+    "native": {
+      "points": [
+        [
+          "3ff0000000000000",
+          "0000000000000000",
+          "3ff0000000000000",
+          "0000000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "Exact homogeneous substitution is identically zero on [0,1] (or the clipped [.25,.75] query). The adjacent span meets the same endpoint only. Native OCCT omits the overlap and, for the full query, returns that endpoint as an isolated point. Rust reports the maximal overlap and excludes its endpoint from isolated events."
+  },
+  {
+    "id": "occt-793-cylinder-partial-overlap-0-trim",
+    "oracle": "OCCT 7.9.3",
+    "case": "cylinder_partial_overlap_0_trim",
+    "input_sha256": "8904a9fea3f4f5b9373d9edbe22d47d778f7f262acf9efdb0d74bbbe91c71bca",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "848e0df7755c5bae26d6cc4d8a238ddc3746cea0c1403fc6ac15ac8407a2e4db",
+    "reason": "Exact homogeneous substitution is identically zero on [0,1] (or the clipped [.25,.75] query). The adjacent span meets the same endpoint only. Native OCCT omits the overlap and, for the full query, returns that endpoint as an isolated point. Rust reports the maximal overlap and excludes its endpoint from isolated events."
+  },
+  {
+    "id": "occt-793-cylinder-periodic-0-trim",
+    "oracle": "OCCT 7.9.3",
+    "case": "cylinder_periodic_0_trim",
+    "input_sha256": "48fac48de8341296802ebe3a3746eb8dd75c99bacf688a725f2782631c5d8da5",
+    "native": {
+      "points": [
+        [
+          "400c000000000000",
+          "bff0000000000000",
+          "0000000000000000",
+          "0000000000000000"
+        ],
+        [
+          "4012000000000000",
+          "bff0000000000000",
+          "0000000000000000",
+          "0000000000000000"
+        ],
+        [
+          "4016000000000000",
+          "3ff0000000000000",
+          "0000000000000000",
+          "0000000000000000"
+        ],
+        [
+          "401a000000000000",
+          "3ff0000000000000",
+          "0000000000000000",
+          "0000000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "954d1d72e6c77fdd1716761fca6b25b2d7f5de58e1d8dd5de221b0fe9bf00410",
+    "reason": "The exact closed interval [3.5,8.5] contains six affine crossings, including both endpoints. Native OCCT reports four events ending at 6.5; Rust retains all requested periodic parameter events. No native events are discarded or clustered."
+  },
+  {
+    "id": "occt-793-cylinder-constant-1",
+    "oracle": "OCCT 7.9.3",
+    "case": "cylinder_constant_1",
+    "input_sha256": "ce07b2bade333ab7c6369d51e54820ad86e9f2faf3ac75e53cd3167193839772",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "Exact homogeneous substitution vanishes identically over the entire query: the constant curve, rational Pythagorean arc, or cylinder generator lies on the surface. Native GeomAPI_IntCS returns no overlap interval. Rust retains the complete closed parameter overlap, independently verified by exact basis polynomials."
+  },
+  {
+    "id": "occt-793-cylinder-rational-arc-1",
+    "oracle": "OCCT 7.9.3",
+    "case": "cylinder_rational_arc_1",
+    "input_sha256": "7f0ed0159ec633629b21a52554d96331a421fe7df4ec0fd62bed1dbb39204615",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "Exact homogeneous substitution vanishes identically over the entire query: the constant curve, rational Pythagorean arc, or cylinder generator lies on the surface. Native GeomAPI_IntCS returns no overlap interval. Rust retains the complete closed parameter overlap, independently verified by exact basis polynomials."
+  },
+  {
+    "id": "occt-793-cylinder-rational-arc-1-trim",
+    "oracle": "OCCT 7.9.3",
+    "case": "cylinder_rational_arc_1_trim",
+    "input_sha256": "8261e29a15f843045c26e6e136b22dde1bf0e2b26526c2b69b830882cdbd88e1",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "848e0df7755c5bae26d6cc4d8a238ddc3746cea0c1403fc6ac15ac8407a2e4db",
+    "reason": "Exact homogeneous substitution vanishes identically over the entire query: the constant curve, rational Pythagorean arc, or cylinder generator lies on the surface. Native GeomAPI_IntCS returns no overlap interval. Rust retains the complete closed parameter overlap, independently verified by exact basis polynomials."
+  },
+  {
+    "id": "occt-793-cylinder-generator-1",
+    "oracle": "OCCT 7.9.3",
+    "case": "cylinder_generator_1",
+    "input_sha256": "4e643a857d374218f4ea59336e9e55df6ae65c5f0da1889f2d8a9f9e63e32b08",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "Exact homogeneous substitution vanishes identically over the entire query: the constant curve, rational Pythagorean arc, or cylinder generator lies on the surface. Native GeomAPI_IntCS returns no overlap interval. Rust retains the complete closed parameter overlap, independently verified by exact basis polynomials."
+  },
+  {
+    "id": "occt-793-cylinder-partial-overlap-1",
+    "oracle": "OCCT 7.9.3",
+    "case": "cylinder_partial_overlap_1",
+    "input_sha256": "4a8e41565428441cb069793a7811efdd8b758fe2e44156602709ee3e3c055d6e",
+    "native": {
+      "points": [
+        [
+          "3ff0000000000000",
+          "4000000000000000",
+          "c008000000000000",
+          "4014800000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "Exact homogeneous substitution is identically zero on [0,1] (or the clipped [.25,.75] query). The adjacent span meets the same endpoint only. Native OCCT omits the overlap and, for the full query, returns that endpoint as an isolated point. Rust reports the maximal overlap and excludes its endpoint from isolated events."
+  },
+  {
+    "id": "occt-793-cylinder-partial-overlap-1-trim",
+    "oracle": "OCCT 7.9.3",
+    "case": "cylinder_partial_overlap_1_trim",
+    "input_sha256": "fc9ffe4623f786db018bfbb3a98d29fa0871e421381cce19674750226c48b014",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "848e0df7755c5bae26d6cc4d8a238ddc3746cea0c1403fc6ac15ac8407a2e4db",
+    "reason": "Exact homogeneous substitution is identically zero on [0,1] (or the clipped [.25,.75] query). The adjacent span meets the same endpoint only. Native OCCT omits the overlap and, for the full query, returns that endpoint as an isolated point. Rust reports the maximal overlap and excludes its endpoint from isolated events."
+  },
+  {
+    "id": "occt-793-cylinder-periodic-1-trim",
+    "oracle": "OCCT 7.9.3",
+    "case": "cylinder_periodic_1_trim",
+    "input_sha256": "81b65c37afcd597605f2ecf64478b36f88f3f72f5183d285b20ab7113faa3ac6",
+    "native": {
+      "points": [
+        [
+          "400c000000000000",
+          "4000000000000000",
+          "c007000000000000",
+          "4014000000000000"
+        ],
+        [
+          "4012000000000000",
+          "4000000000000000",
+          "c007000000000000",
+          "4014000000000000"
+        ],
+        [
+          "4016000000000000",
+          "4000000000000000",
+          "c009000000000000",
+          "4014000000000000"
+        ],
+        [
+          "401a000000000000",
+          "4000000000000000",
+          "c009000000000000",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "a5cd2f7a2b824c13e5d16e9de0e130e07817625b23df68bdc2f3522d60fe3250",
+    "reason": "The exact closed interval [3.5,8.5] contains six affine crossings, including both endpoints. Native OCCT reports four events ending at 6.5; Rust retains all requested periodic parameter events. No native events are discarded or clustered."
+  }
+]
