@@ -51,9 +51,9 @@ def main():
     parser.add_argument('--occt-root',type=Path,default=Path(os.environ.get('OCCT_ROOT','/opt/homebrew/opt/opencascade' if sys.platform == 'darwin' else '/usr')))
     args = parser.parse_args()
     prefix = args.occt_root.resolve()
-    include = next((p for p in [prefix/'include/opencascade',prefix/'inc',prefix/'include'] if (p/'Standard_Version.hxx').exists()),None)
+    include = next((p for p in [prefix/'include/opencascade',prefix/'inc',prefix/'include'] if all((p/header).exists() for header in ['Standard_Version.hxx','IntAna_IntConicQuad.hxx'])),None)
     lib = next((p for p in [prefix/'lib',prefix/'lib64',prefix/'lib/x86_64-linux-gnu',prefix/'lib/aarch64-linux-gnu'] if any(p.glob('libTKGeomBase.*'))),None)
-    if not include or not lib: parser.error('OCCT modeling SDK not found')
+    if not include or not lib: parser.error('OCCT modeling-data SDK not found (Ubuntu: libocct-modeling-data-dev)')
     output = ROOT/'target/intersection-oracle'
     output.mkdir(parents=True,exist_ok=True)
     executable = output/'occt_intersection_oracle'

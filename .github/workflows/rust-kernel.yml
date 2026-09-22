@@ -29,7 +29,7 @@ jobs:
         run: |
           sudo apt-get update
           # DRAW loads plugins by unversioned .so names supplied by the dev package.
-          sudo apt-get install --no-install-recommends -y tcl occt-draw occt-misc libocct-draw-dev libocct-modeling-algorithms-dev
+          sudo apt-get install --no-install-recommends -y tcl occt-draw occt-misc libocct-draw-dev libocct-modeling-data-dev
       - name: Test the bridge, including deliberate failures
         env:
           RUSTY_TEST_DRAW_EXE: /usr/bin/occt-draw
