@@ -307,7 +307,7 @@ interpolating poles and uses closed quotient formulas for the first two derivati
 
 `DerivativeOrder` requests position, first or second derivative. Every requested
 component gets its smallest finite binary64 enclosure, using exact rational
-comparisons with at most 63 binary searches over ordered magnitude bits.
+comparisons with at most 63 bisection iterations over ordered magnitude bits.
 Unrepresentable requested derivatives return `Error::Unrepresentable`; a
 position-only query can still succeed. Positive-weight positions lie in the
 finite pole convex hull. Rounded output representatives remain approximate
@@ -371,6 +371,9 @@ production latency or allocation budget; performance gates remain open.
   tests cover power-of-two weight invariance, coordinate permutation, original
   parameter units, malformed input and position-only queries despite derivative
   overflow. The live native corpus has 214 spline observations.
+  One OCCT 7.6.3 second-derivative result exceeds the native comparison budget;
+  the exact oracle confirms Rust and the version/input/value-pinned difference
+  is reported separately, never counted as a match. See `VALIDATION.md`.
 
 These fixtures are bounded deterministic tests. Separately, [coverage-guided
 fuzzing](FUZZING.md) mutates predicates, linear/curved intersections, polynomial

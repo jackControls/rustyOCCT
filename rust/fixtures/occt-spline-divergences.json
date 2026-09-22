@@ -1,0 +1,14 @@
+[
+  {
+    "id": "occt-7.6.3-degree25-d2x",
+    "oracle": "OCCT 7.6.3",
+    "case": "d25_r1_s3_5",
+    "component": 6,
+    "input_sha256": "e405ed344c7632652dfc63aeef2eaeed1762c50286e087a42a722ef49e2d7db9",
+    "native_bits": "bfde21353b0eafb7",
+    "exact_numerator": "-957908464242395847521145459379622054245129531767487839300915043749363289890452426300160000",
+    "exact_denominator": "2034739943237946599823503416921617693923293816403516034208686152895464751579996298032385259",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35696422673",
+    "reason": "The observed OCCT 7.6.3 D2.x differs from the independently evaluated exact basis/quotient value by 2.28145e-10, beyond the unchanged 1e-10+2e-12*abs(expected) native comparison budget. Rust's representative is one endpoint of the minimal exact enclosure. This is a reviewed native numerical divergence, not a matching case."
+  }
+]

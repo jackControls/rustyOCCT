@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Compare spline positions and first/second derivatives with native OCCT."""
 import argparse
+from fractions import Fraction as F
+import hashlib
 import json
 import math
 import os
 from pathlib import Path
 import shlex
+import struct
 import sys
 from compare_occt import ROOT, run
 
@@ -52,10 +55,66 @@ def observations(text):
     return rows
 
 
+def reviewed_divergence(oracle, label, component, native, rust, input_row):
+    """A review never exempts Rust from the independent exact reference.
+
+    Match the version, input hash and exact observed native bits, then recompute
+    the mathematical value from basis functions. Any changed disagreement needs
+    a new investigation; there is no broader epsilon or per-label bypass.
+    """
+    reviews=json.loads((ROOT/'rust/fixtures/occt-spline-divergences.json').read_text())
+    for review in reviews:
+        if (review['oracle'],review['case'],review['component'])!=(oracle,label,component): continue
+        if review['input_sha256']!=hashlib.sha256(input_row.encode()).hexdigest(): continue
+        if review['native_bits']!=struct.pack('>d',native).hex(): continue
+        from generate_spline_fixtures import jet
+        from generate_curved_fixtures import enclosure
+        from generate_spatial_fixtures import value, sign
+        words=input_row.split()
+        degree,np,nk=map(int,words[2:5])
+        data=list(map(lambda x:F(float(x)),words[8:8+4*np]))
+        tail=words[8+4*np:]
+        if len(tail)!=2*nk: return None
+        flat=[F(float(k)) for k,m in zip(tail[::2],tail[1::2]) for _ in range(int(m))]
+        u=F(float(words[5]))
+        left=words[6]=='L' or u==flat[np]
+        span=max(i for i,k in enumerate(flat) if (k<u if left else k<=u))
+        exact=jet(degree,[data[i:i+3] for i in range(0,len(data),4)],data[3::4],flat,u,span,2)[component//3][component%3]
+        if exact!=F(int(review['exact_numerator']),int(review['exact_denominator'])): return None
+        lower,upper=[value(int(x,16)) for x in enclosure(lambda x:sign(exact-x))]
+        if rust not in [lower,upper]: return None
+        return {'id':review['id'],'case':label,'component':component,'native':native,'rust':rust,
+                'exact_lower':lower,'exact_upper':upper,'input_sha256':review['input_sha256'],
+                'reason':review['reason'],'evidence':review['evidence']}
+    return None
+
+
+def compare_observations(oracle, inputs, expected, actual):
+    if actual.keys()!=expected.keys() or expected.keys()!=inputs.keys(): raise AssertionError('spline oracle case sets differ')
+    largest=0.
+    reviewed=[]
+    unexpected=[]
+    for label,values in expected.items():
+        for component,(a,e) in enumerate(zip(actual[label],values)):
+            fraction=abs(a-e)/(1e-10+2e-12*abs(e))
+            largest=max(largest,fraction)
+            if fraction>1.:
+                review=reviewed_divergence(oracle,label,component,e,a,inputs[label])
+                if review: reviewed.append(review)
+                else: unexpected.append({'case':label,'component':component,'native':e,'rust':a,'error_fraction':fraction})
+    divergent={x['case'] for x in reviewed+unexpected}
+    return {'matched_cases':len(expected)-len(divergent),
+            'reviewed_divergence_cases':len({x['case'] for x in reviewed}),
+            'unexpected_mismatch_cases':len({x['case'] for x in unexpected}),
+            'largest_error_fraction_of_budget':largest,
+            'reviewed_divergences':reviewed,'unexpected_mismatches':unexpected}
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--occt-root',type=Path,default=Path(os.environ.get('OCCT_ROOT','/opt/homebrew/opt/opencascade' if sys.platform=='darwin' else '/usr')))
     parser.add_argument('--native-only',action='store_true')
+    parser.add_argument('--strict-native',action='store_true',help='Fail on reviewed native numerical divergences as well as unexpected mismatches')
     args=parser.parse_args()
     prefix=args.occt_root.resolve()
     include=next((p for p in [prefix/'include/opencascade',prefix/'inc',prefix/'include'] if (p/'Geom_BSplineCurve.hxx').exists()),None)
@@ -77,20 +136,16 @@ def main():
     rust=run(['cargo','run','--quiet','--locked','--example','spline_oracle'],input=data,cwd=ROOT)
     (output/'rust.tsv').write_text(rust.stdout)
     actual=observations(rust.stdout)
-    if actual.keys()!=expected.keys() or len(expected)!=len(data.splitlines()): raise AssertionError('spline oracle case sets differ')
-    largest=0.
-    for label,values in expected.items():
-        for a,e in zip(actual[label],values):
-            fraction=abs(a-e)/(1e-10+2e-12*abs(e))
-            largest=max(largest,fraction)
-            if fraction>1.: raise AssertionError(f'{label}: {a} != {e}')
-    report={'oracle':native.stderr.strip(),'cases':len(expected),'largest_error_fraction_of_budget':largest,
+    comparison=compare_observations(native.stderr.strip(),{row.split()[0]:row for row in data.splitlines()},expected,actual)
+    report={'oracle':native.stderr.strip(),'cases':len(expected),**comparison,
             'source_reference':'3d097a0328e71b826377d4814ab05ec3c3d23871',
             'comparison_budget':{'absolute':1e-10,'relative':2e-12},
             'domain':'positive-weight, nonperiodic Bezier/B-spline positions and first/second derivatives; degree 1..25; clamped/unclamped; explicit one-sided repeated knots',
             'deliberate_differences':'Exact knots/weights, no tolerance snapping or extrapolation. Full-exponent and discontinuity decisions use independent exact oracles.'}
     (output/'report.json').write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps(report,indent=2))
+    if comparison['unexpected_mismatches'] or (args.strict_native and comparison['reviewed_divergences']):
+        raise SystemExit(1)
 
 
 if __name__=='__main__':

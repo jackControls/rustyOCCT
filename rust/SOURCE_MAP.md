@@ -56,6 +56,10 @@ explicit side. The original
 unchanged upstream test. Evidence: 214 native observations, 385 independent
 exact fixtures, invariance tests and the `splines` fuzz target. Periodic curves,
 curve editing, spline surfaces and spline B-rep integration remain pending.
+The OCCT 7.6.3 degree-25 second-derivative discrepancy is documented in
+[`VALIDATION.md`](VALIDATION.md) and pinned in the reviewed-divergence registry.
+It is counted separately from matching native cases, with the exact independent
+answer recomputed before accepting the review; the comparison budget is unchanged.
 
 ## Rule for the next capability
 

@@ -47,6 +47,24 @@ and closed quotient derivative formulas; production differentiates homogeneous
 pole interpolation. They cover subnormal knot spans, huge/tiny weights,
 position versus derivative overflow, and exact left/right continuity decisions.
 
+Ubuntu's OCCT 7.6.3 has one **reviewed numerical divergence**, not a matching
+case: `d25_r1_s3_5`, second derivative X, is `-0.47077685134240305` instead of
+the exact value enclosed by `[-0.47077685157054794, -0.4707768515705479]`.
+The difference is 2.2602 times the unchanged native comparison budget; OCCT
+7.9.3 stays within that budget. The independent basis/quotient calculation
+agrees with Rust. This records an observed numerical difference, not a claim
+that OCCT promises our error bound.
+
+[`occt-spline-divergences.json`](fixtures/occt-spline-divergences.json) pins the
+input hash, native version/value bits, exact rational answer and original CI
+evidence. The comparison recomputes the independent rational answer and checks
+Rust against its minimal enclosure before accepting that specific review.
+Changed inputs, native results, versions or incorrect Rust outputs still fail.
+Reports count matched, reviewed and unexpected cases separately: the observed
+7.6.3 result is **213 matching, 1 reviewed divergence, 0 unexpected**. Use
+`compare_splines.py --strict-native` to fail on reviewed differences too. The
+ordinary exact tests and fuzz comparisons have no such exception.
+
 The first implementation has deterministic analytic tests plus a recorded,
 independently evaluated OCCT 7.9.3 corpus. The live comparison was run on Apple
 Silicon macOS with Rust 1.96.0 and the installed OCCT 7.9.3 SDK.
