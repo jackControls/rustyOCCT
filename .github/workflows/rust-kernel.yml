@@ -28,7 +28,8 @@ jobs:
       - name: Install test interpreters
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends -y tcl occt-draw occt-misc
+          # DRAW loads plugins by unversioned .so names supplied by the dev package.
+          sudo apt-get install --no-install-recommends -y tcl occt-draw occt-misc libocct-draw-dev
       - name: Test the bridge, including deliberate failures
         env:
           RUSTY_TEST_DRAW_EXE: /usr/bin/occt-draw
