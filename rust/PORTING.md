@@ -1,12 +1,17 @@
-# noBS-CAD kernel port
+# Kernel scope and implementation order
 
 This is a capability-driven Rust implementation, not a translation of every
 OCCT package or a C++ wrapper. Prioritize reliability, then performance, then
-ease of integration, matching noBS-CAD's accepted product directions.
+ease of integration. Mathematical correctness and standalone kernel robustness
+come first. noBS-CAD's product directions inform scope, not acceptance criteria;
+application adapters and saved-project replay are deferred.
 
-## Requirements baseline
+## Historical capability-scope reference
 
-Inspected noBS-CAD at commit `da92416309debfe52f63530804683c837e3b7c35`:
+The initial scope was informed by noBS-CAD commit
+`da92416309debfe52f63530804683c837e3b7c35`. This remains useful context for which
+geometry families to include, without making its project architecture a kernel
+dependency or making application integration the next milestone:
 
 - [`crates/solid/src/dto.rs`](https://github.com/jackControls/noBS-CAD/blob/da92416309debfe52f63530804683c837e3b7c35/crates/solid/src/dto.rs):
   all 14 `KernelJobDto` variants, profiles/curves, scene and topology contracts.
@@ -66,36 +71,37 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
 
 ## Implementation order and acceptance gates
 
-1. **Exact extrusion foundation — implemented.** Validated profiles, math,
-   analytic curves/surfaces, oriented B-rep, pcurves, seams, exact properties,
-   bounds, classifier and rigid placements. Reject invalid input and compare
-   independent numerical results with OCCT. See `VALIDATION.md`.
-2. **Finish the first noBS-CAD integration slice.** Add circular arcs and
-   curve trims; face properties and sketch-entity provenance; deflection-driven
-   boundary sampling and watertight triangulation. Implement an explicit
-   New Body extrusion adapter to `KernelExtrudeJobDto` / `KernelBodyDto` in a
-   separate integration crate. Fail clearly for unsupported jobs and flags.
-   Replay representative existing extrusions and compare selections, mass,
-   face/edge geometry and export meshes before opting any application path in.
-3. **General geometry and topology editing.** Bézier/rational B-spline curves
-   and surfaces, derivatives, parameter domains, projection, intersections,
-   trimming, sewing, tolerances and operation-history maps. Robust predicates
-   and degeneracy cases need explicit fixtures. Introduce indexed acceleration
-   only when benchmarked workloads justify it.
+1. **Mathematical foundation — current priority.** The prism implementation
+   provides a working test subject. Exact finite-f64 2D orientation, independent
+   rational/integer oracles and generated geometric invariants are implemented.
+   Extend to required 3D predicates, certified comparisons, numerical
+   construction/error contracts and tolerance propagation. Add structured
+   coverage-guided fuzzing and minimize failures. See `MATHEMATICS.md`.
+2. **Topology invariants and operation history.** Strengthen generic B-rep
+   validation beyond sampled prism checks: connectivity, orientation, shells,
+   cavities, seams and curve/pcurve/surface consistency. Define generated,
+   modified and deleted mappings with explicit split/merge ambiguity before
+   topology-changing operations. Body-local indices are not persistent names.
+3. **Reliable geometry and intersections.** Circular arcs, trimmed curves,
+   Bézier/rational B-splines, surfaces, derivatives, parameter domains,
+   projection, root isolation, intersections, trimming and sewing. Every
+   numerical algorithm needs a declared domain, degeneracy behavior and error
+   evidence. Introduce acceleration after correctness and workload benchmarks.
 4. **Booleans and mechanical features.** Split/classify/assemble solids and
    preserve source history, then fuse/cut/common, many-tool operations, plane
    splits, drilling, revolutions and rib attachment. Cover tangency, coincident
    faces, tiny edges, periodic seams and disconnected results. Never replace a
    failed exact operation with a triangle or bounding-box approximation.
-5. **Advanced modeling and interchange.** Sweeps, lofts, offsets/shells,
-   chamfers, fillets, modeled helices/threads, general STEP import/export and
-   repair. Interchange work can proceed once the geometry/topology it needs is
-   ready; preserve units, curve types and application metadata.
-6. **Drawings, CAM and complete migration.** Exact section/HLR and proximity
-   queries; comprehensive saved-project corpus (bench, vise, turbine, threads,
-   assemblies). Check shapes, selected references, exports and measured runtime
-   on macOS/Windows/Linux. Browser/WASM must use the same geometry semantics.
-   Replace the existing OCCT backend only after the required capabilities pass.
+5. **Interchange, meshing and operational guarantees.** Deflection-controlled
+   watertight tessellation, STEP import/export and diagnosis. Begin each as soon
+   as its geometry exists; compare units, topology and geometric error against
+   independent readers. Bound memory/work, support cancellation for long
+   operations, test atomic failure and deterministic standalone operation
+   sequences. Add real WASM execution and kernel performance budgets.
+6. **Advanced modeling and geometric queries.** Sweeps, lofts, offsets/shells,
+   chamfers, fillets, modeled helices/threads, exact section/HLR and proximity
+   queries. Each capability passes the same mathematical, topology, interchange
+   and operational gates. Application migration is separate future work.
 
 No dates or full-kernel equivalence are implied by this ordering. A robust
 CAD kernel is a substantial continuing effort, and each stage needs its own
@@ -108,6 +114,8 @@ future subsystem. Split crates when there is a working boundary to isolate.
 
 - `math`: f64 points/vectors, orthonormal frames, proper rigid transforms,
   dimensional tolerance and bounds. No global mutable precision state.
+- `predicates`: exact signs for represented coordinates, separate from
+  approximate constructions and tolerance-band decisions.
 - `profile`: validated material boundaries, containment and planar moments.
   Polygons are normalized CCW; holes are assigned orientation in the B-rep.
 - `topology`: immutable owned vertices/edges/faces, opposite oriented uses,

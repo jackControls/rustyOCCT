@@ -8,6 +8,12 @@ remaining release requirements are in [PRODUCTION_READINESS.md](PRODUCTION_READI
 
 ## Current evidence
 
+The [mathematical foundation](MATHEMATICS.md) adds an exact 2D orientation
+predicate, 2,417 independent rational fixtures tested in all six permutations,
+10,000 integer-oracle predicate cases and 256 generated prism invariant cases.
+These tests do not depend on OCCT or an application and run in native debug and
+release CI. They are deterministic generated tests, not coverage-guided fuzzing.
+
 The first implementation has deterministic analytic tests plus a recorded,
 independently evaluated OCCT 7.9.3 corpus. The live comparison was run on Apple
 Silicon macOS with Rust 1.96.0 and the installed OCCT 7.9.3 SDK.
@@ -52,6 +58,8 @@ The usual tests require only Rust:
 ```sh
 cargo fmt --all --check
 cargo test --workspace --locked
+cargo test --workspace --locked --release
+python3 rust/tools/generate_predicate_fixtures.py --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo check --workspace --lib --locked --target wasm32-unknown-unknown
 cargo run --locked --example plate
@@ -94,7 +102,9 @@ The generator uses a fixed seed and writes inputs only.
   built under one tolerance are assembled with another.
 - Coordinates that cannot resolve the requested tolerance are rejected using
   a 16-ULP-scale budget; geometry is not rescaled to bypass this check.
-  This is a conservative guard, not an exact-predicate arithmetic system.
+  This is a conservative construction guard. The separate 2D orientation
+  predicate accepts all finite `f64` inputs and computes their exact sign;
+  distance, area, moment and constructed-coordinate computations remain floating-point.
 - Boundary validation is quadratic; input is bounded to 4,096 total profile
   edges and 128 holes. This is an initial implementation limit.
 - Topology is immutable and body-local. Indices and `FaceOrigin` do not claim
@@ -106,7 +116,7 @@ The generator uses a fixed seed and writes inputs only.
   belong to the application. No strength or manufacturing result is implied.
 
 These comparisons establish the implemented prism subset. They do not establish
-parity with the fork-point OCCT development revision, all of OCCT, or existing
-noBS-CAD projects. Complete application migration still needs meshes, job/scene
-adapters, all required operations, reference replay and cross-platform runtime
-validation as described in `PORTING.md`.
+parity with the fork-point OCCT development revision or all of OCCT. Kernel
+readiness requires the mathematical, topology/history, interchange and
+operational gates in `PRODUCTION_READINESS.md`. Application migration is
+separate, deferred work.

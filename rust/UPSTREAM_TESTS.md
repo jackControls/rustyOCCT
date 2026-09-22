@@ -124,4 +124,5 @@ before promoting Rust coverage. Register missing capability/data cases explicitl
 Do not strip viewer calls from a file and then count it as an unchanged passing
 test: classify it outside the headless subset or create a separately attributed
 derived case. Do not use a success percentage across all OCCT suites as the
-application-readiness metric; the noBS-CAD feature contract is the denominator.
+readiness metric; measure evidence against the documented kernel capabilities,
+numerical domains and failure contracts independently of any application.

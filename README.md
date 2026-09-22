@@ -1,10 +1,12 @@
 # rustyOCCT
 
-A native Rust geometry kernel for [noBS-CAD](https://github.com/jackControls/noBS-CAD),
-forked from [Open CASCADE Technology](https://github.com/Open-Cascade-SAS/OCCT).
+A native Rust geometry kernel forked from
+[Open CASCADE Technology](https://github.com/Open-Cascade-SAS/OCCT).
 
-Port the modeling and geometry capabilities noBS-CAD needs today and for its
-accepted mechanical CAD, CAM, additive manufacturing, and analysis directions.
+Prioritize mathematical correctness, numerical robustness, topology/history,
+interchange and operational reliability. [noBS-CAD](https://github.com/jackControls/noBS-CAD)
+provides a capability-scope reference for mechanical CAD, CAM, additive
+manufacturing and analysis; kernel correctness is application-independent.
 No renderer, windowing, GPU integration, viewer, or duplicate application framework.
 
 **Status: first working kernel milestone, not a replacement for OCCT yet.**
@@ -27,6 +29,9 @@ Cargo does not build it. Rust work lives on the `rust-kernel` branch, while
   classification, rigid translation and rotation.
 - Explicit tolerances, finite-input and coordinate-resolution checks, and errors
   for self-intersections, touching/nested holes and degenerate geometry.
+- Exact 2D orientation signs for finite `f64` inputs, with a bounded integer
+  fallback for uncertain floating-point decisions; used in polygon crossing
+  and ray classification. This does not make all geometric constructions exact.
 
 ```sh
 cargo test --workspace --locked
@@ -41,8 +46,9 @@ target to be installed.
 
 ## Scope and next work
 
-[The noBS-CAD porting plan](rust/PORTING.md) maps every current kernel job and
-query to the required OCCT families and a staged Rust implementation. General
+[The kernel scope and porting plan](rust/PORTING.md) maps needed capabilities to
+OCCT families. [The mathematical foundation](rust/MATHEMATICS.md) is the current
+priority, followed by topology/history and reliable intersections. General
 Booleans, arcs/B-splines, revolutions, sweeps/lofts, fillets/chamfers, shelling,
 modeled threads, STEP, drawing HLR, and tessellation remain to be implemented.
 
@@ -50,11 +56,16 @@ Tessellation and hidden-line geometry belong in the kernel because noBS-CAD
 needs export meshes and technical drawings. The application continues to own
 rendering, sketches, feature history, assemblies, CAM planning, and document I/O.
 
-The noBS-CAD application has not been switched to this kernel. Migration requires
-operation-by-operation comparison and saved-project replay, including selected
-face/edge identity; successful primitive construction alone is insufficient.
+Application adapters and migration are deferred. Kernel acceptance uses its own
+contracts, independent mathematical references, geometric invariants, adversarial
+inputs and OCCT differential tests.
 
 ## Validation
+
+The mathematical tests include **2,417 exact rational orientation fixtures**
+(all six permutations), **10,000 generated integer predicate cases**, and
+**256 generated prism invariant cases**. Debug and optimized native builds run
+the same checks. See [the numerical contracts](rust/MATHEMATICS.md) for limits.
 
 The checked-in OCCT 7.9.3 reference corpus covers **66 solids and 2,292 point
 classifications**, comparing volume, area, centroid, bounds, inertia and topology
@@ -79,7 +90,7 @@ python3 rust/tools/run_upstream_tests.py --backend both --draw-exe /path/to/DRAW
 
 The [source map](rust/SOURCE_MAP.md) records implementation references and
 deliberate limitations. [Production release gates](rust/PRODUCTION_READINESS.md)
-cover application replay, stable selections, numerical robustness, fuzzing,
+cover mathematical correctness, topology/history, numerical robustness, fuzzing,
 interchange, failure containment and performance.
 
 ## Upstream and license

@@ -1,4 +1,4 @@
-//! Exact, headless solid geometry for noBS-CAD.
+//! Headless analytic solid geometry with explicit numerical contracts.
 //!
 //! This first implementation supports normal extrusions of simple polygons and
 //! circles, including disjoint polygonal/circular holes. It retains analytic
@@ -22,6 +22,7 @@
 
 mod error;
 pub mod math;
+pub mod predicates;
 mod profile;
 mod solid;
 pub mod topology;

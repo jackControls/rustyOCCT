@@ -1,4 +1,5 @@
 use crate::math::{finite, sum};
+use crate::predicates::{orient2d_finite, Orientation2};
 use crate::{Error, Point2, Result, Tolerance};
 use std::f64::consts::PI;
 
@@ -216,9 +217,15 @@ impl Boundary {
                         return Location::Boundary;
                     }
                     if (a.y > point.y) != (b.y > point.y) {
-                        // Compare x relative to the query, avoiding a large absolute sum.
-                        let x = (a.x - point.x) + (point.y - a.y) * (b.x - a.x) / (b.y - a.y);
-                        if x > 0.0 {
+                        // Decide which side of the ray crossing the point occupies
+                        // without constructing a rounded intersection coordinate.
+                        let side = orient2d_finite(a, b, point);
+                        if side == Orientation2::Collinear {
+                            return Location::Boundary;
+                        }
+                        if (b.y > a.y && side == Orientation2::CounterClockwise)
+                            || (b.y < a.y && side == Orientation2::Clockwise)
+                        {
                             inside = !inside;
                         }
                     }
@@ -390,13 +397,15 @@ fn point_segment_distance(p: Point2, a: Point2, b: Point2) -> f64 {
 }
 fn segments_touch(a: Point2, b: Point2, c: Point2, d: Point2, tolerance: f64) -> bool {
     let (ab_c, ab_d, cd_a, cd_b) = (
-        orient(a, b, c),
-        orient(a, b, d),
-        orient(c, d, a),
-        orient(c, d, b),
+        orient2d_finite(a, b, c),
+        orient2d_finite(a, b, d),
+        orient2d_finite(c, d, a),
+        orient2d_finite(c, d, b),
     );
-    let crosses = ((ab_c > 0.0 && ab_d < 0.0) || (ab_c < 0.0 && ab_d > 0.0))
-        && ((cd_a > 0.0 && cd_b < 0.0) || (cd_a < 0.0 && cd_b > 0.0));
+    let opposite = |left, right| {
+        left != Orientation2::Collinear && right != Orientation2::Collinear && left != right
+    };
+    let crosses = opposite(ab_c, ab_d) && opposite(cd_a, cd_b);
     crosses
         || point_segment_distance(a, c, d)
             .min(point_segment_distance(b, c, d))

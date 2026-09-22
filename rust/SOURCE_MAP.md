@@ -15,6 +15,7 @@ translation of the current Rust kernel.
 | Rust behavior | Original source and contract | Implementation / evidence |
 | --- | --- | --- |
 | `Tolerance::default` | [Precision.hxx](../src/FoundationClasses/TKernel/Precision/Precision.hxx), `Confusion()` and `Angular()` | Same `1e-7` and `1e-12` defaults. Rust additionally validates supplied tolerances and rejects unresolvable coordinates. |
+| `predicates::orient2d`, polygon crossings/classification | [CSLib_Class2d.cxx](../src/FoundationClasses/TKMath/CSLib/CSLib_Class2d.cxx) for ray/boundary behavior; [Shewchuk's predicate filter](https://www.cs.cmu.edu/~quake/robust.html) for numerical error bounds | Exact sign of the represented finite-f64 inputs. Conservative filtered path and independently implemented bounded integer fallback; not an OCCT algorithm port. The OCCT normalization/grid is not reproduced. Independent rational/integer oracles and integration invariants; see `MATHEMATICS.md`. |
 | `Solid::box_at` | [BRepPrimAPI_MakeBox.cxx](../src/ModelingAlgorithms/TKPrim/BRepPrimAPI/BRepPrimAPI_MakeBox.cxx), `pmin` and point/signed-size constructor | Negative dimensions move the minimum corner; absolute dimensions define positive volume. All eight sign combinations checked in Rust and through native DRAW. Zero/sub-tolerance sizes remain errors. Existing `cuboid` still takes positive dimensions. |
 | `Bounds3::intersects` | [Bnd_Box.cxx](../src/FoundationClasses/TKMath/Bnd/Bnd_Box.cxx), finite/non-open branch of `IsOut` | Ported separation comparisons, sum of both gaps, inclusive touching. No infinite, void or open-bound box representation. This is broad-phase overlap, not exact collision. |
 | `RigidTransform::rotation` | [gp_Trsf.cxx](../src/FoundationClasses/TKMath/gp/gp_Trsf.cxx), axis rotation: translation `origin - R*origin` | Same pivot semantics, independently expressed with Rust vectors. No mirror or scale. Transform tests and native DRAW checks. |
@@ -30,8 +31,9 @@ retain source attribution here and beside the relevant implementation.
 
 ## Rule for the next capability
 
-1. Find the noBS-CAD caller and its input/output, error, tolerance and selection
-   contracts. Do not expand into rendering or unrelated OCCT infrastructure.
+1. Define the standalone kernel input/output, numerical, topology/history and
+   failure contracts. Use noBS-CAD only to inform capability scope; application
+   integration is deferred. Exclude rendering and unrelated OCCT infrastructure.
 2. Read the OCCT entry point **and the algorithm it calls**, including degenerate
    branches, orientation, periodicity, tolerance propagation and history maps.
    Record files, symbols and source revision in this table.
@@ -40,7 +42,7 @@ retain source attribution here and beside the relevant implementation.
 4. Implement idiomatic Rust ownership and errors while preserving the supported
    behavior. Record deliberate restrictions or divergences; never silently
    substitute a mesh or bounding box for an exact operation.
-5. Add primitive-level, invariant and application replay checks. A test becoming
+5. Add independent mathematical, invariant and standalone operation-sequence checks. A test becoming
    supported requires a manifest review, not automatic baseline regeneration.
 6. Treat discovered OCCT defects as reviewed divergences with an analytic or
    independent reference, not defects we must reproduce for the sake of parity.
