@@ -258,6 +258,8 @@ compares all 4,023 patches and 324 isocurves. The complete rational homogeneous
 outputs must agree with independent Cox tensor polynomials and binomial affine
 substitutions. The macOS OCCT 7.9.3 capture has 637 matches and 54
 [reviewed degree-25 Segment differences](NATIVE_SURFACE_EDITING_DIVERGENCES.md).
+Linux OCCT 7.6.3 has 635 matches and 56 separately pinned differences. All
+complete exact Rust outputs are byte-identical on the two platforms.
 All counts, degrees and original U/V domains agree. Native differences cannot
 exempt Rust from the exact oracle.
 

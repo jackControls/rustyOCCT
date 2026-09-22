@@ -9,6 +9,13 @@ counts, types, degrees and original U/V ranges agree. Native runtime versions
 are separate from the pinned source reference; this is not a runtime build of
 `3d097a0328e71b826377d4814ab05ec3c3d23871`.
 
+The Ubuntu OCCT 7.6.3 capture has **635 matches and 56 separately reviewed
+differences**: the same 54 cases plus `d1_25_p11_w1_op10` and
+`d25_25_p11_w1_op10`. Its categories are 12 trims, 12 U splits, 12 V splits and
+20 composed edits. All 691 complete exact Rust outputs are byte-identical on
+macOS and Linux. The two runtimes' native results have separate fingerprints;
+one runtime's review cannot approve the other's observations.
+
 All 54 differing cases involve a degree-25 direction and an operation that
 calls `Geom_BezierSurface::Segment`: 12 rectangular trims, 12 U splits, 12 V
 splits and 18 composed edits. The budget remains `1e-10 + 2e-12*abs(exact)`
@@ -25,6 +32,13 @@ The V split (`...op3`) returns
 An endpoint of a clamped rational Bézier patch equals that Euclidean control
 point, so these examples demonstrate changes in geometry, not just an
 alternative projective representation.
+
+For the same U-split corner Linux OCCT 7.6.3 returns
+`(24.000000882015033,25.00000072705512,4.999999947424856)`;
+its V split returns
+`(23.999999929057253,24.999999863614942,5.0000000413877075)`.
+The first Linux job correctly failed while these native observations were
+unreviewed. Independent exact verification had already passed all 691 cases.
 
 The source path is `Geom_BezierSurface::Segment` → `BSplSLib::BuildCache` →
 `PLib::{UTrimming,VTrimming,CoefficientsPoles}`. It edits floating power
