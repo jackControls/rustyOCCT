@@ -115,6 +115,32 @@ further reduced jet work. The complete uninstrumented kernel-plus-oracle replay
 fell from about 4.02 to 1.23 seconds; machine-specific timings are diagnostic,
 not a latency guarantee. The 20-second input limit and all assertions remain.
 
+The first Linux campaign at `253055ba` completed its full mutation budget, but
+reported the same combined seed at **25 seconds** during replay and
+`unclamped-degree25-extraction.bin` (`b91792ae56462056aaea07e89b28c271d87083b9`)
+at 16 seconds. A successful run did not establish adequate time margin:
+libFuzzer's alarm and slow-unit timing are not a hard real-time deadline.
+The local ten-minute campaign also retained the 1,577-byte mutation
+`mutated-unclamped-degree25.bin` (`151a86ed4e5e91dffeca5886c9bb2463933c0e98`)
+at 10 instrumented seconds. Both retained inputs pass their complete oracles.
+
+Exact local knot insertion now builds the identical extraction map with fewer
+stages than repeated blossom queries. The independent polynomial checker also
+reuses denominator-cleared Cox matrices and skips identity substitutions.
+These changes retain every coefficient and assertion. Local full replays of
+the combined, extraction and mutated cases take approximately 0.75, 0.37 and
+0.80 seconds; the combined case's extraction stage is about 0.073 seconds.
+
+The second Linux run at `7b32a108` did time out on the original combined input
+after a 21-second alarm, before corpus replay or mutation completed. It is an
+explicit failed campaign, not a successful fuzz run. It also retained the
+clamped (`f9f28c9651fe1344f65fef3d35b6c9887e1fb641`, 17 seconds) and doubly
+periodic (`a05dfa063c3e189f31e39b03f04374de608fdfd1`, 13 seconds) combined seeds.
+All five full inputs are retained, not described as minimized crashes. The
+independent surface fixture generator decodes their geometry and recomputes
+every output control, including the previously missing degree-25 unclamped
+ordinary regression. The source test names begin with `fuzz_`.
+
 ```sh
 cargo run --manifest-path rust/fuzz/Cargo.toml --locked --release \
   --example replay_surface_editing -- rust/fuzz/regressions/surface_editing/*.bin

@@ -39,6 +39,29 @@ def inputs():
         shape=(f'random_{i}','S',du,dv,poles,weights,uk,um,vk,vm,pu,pv)
         window=(*((-1.,2.) if pu else (.15,1.2)),*((-2.,2.5) if pv else (.25,1.8)))
         rows.append(encode(shape,window,i%11))
+    # Ordinary regressions for the retained degree-25 tensor fuzz
+    # inputs. Only decoding is shared conceptually; exact expectations still
+    # come from the independent Cox tensor/power oracle.
+    for filename in ['unclamped-degree25-combined.bin','unclamped-degree25-extraction.bin','mutated-unclamped-degree25.bin','clamped-degree25-combined.bin','periodic-degree25-combined.bin']:
+        data=(ROOT/'fuzz/regressions/surface_editing'/filename).read_bytes()
+        assert list(data[:3])==[2,24,24] and data[3]==data[4] and data[5] in [0,10]
+        assert data[10]%8 not in [0,1,2] and data[11]%8 not in [0,1,2]
+        kind=data[3]
+        if kind==2: knots,mults,periodic,n=list(map(float,range(54))),[1]*54,False,28
+        elif kind==1: knots,mults,periodic,n=[0.,1.,3.],[1,25,1],True,26
+        else:
+            assert kind==0
+            knots,mults,periodic,n=[0.,1.,3.],[26,1,26],False,27
+        def byte(i): return data[i] if i<len(data) else 0
+        def signed(i):
+            x=byte(i); return float(x if x<128 else x-256)
+        poles=[tuple(signed(16+4*i+c) for c in range(3)) for i in range(n*n)]
+        weights=[float(1+byte(16+4*i+3)%8) for i in range(n*n)]
+        shape=('fuzz_'+filename[:-4].replace('-','_'),'S',25,25,poles,weights,knots,mults,knots,mults,periodic,periodic)
+        intervals=[(25.,26.),(26.,27.),(27.,28.)] if kind==2 else [(0.,1.),(1.,3.)]
+        u,v=intervals[data[12]%len(intervals)],intervals[data[13]%len(intervals)]
+        offset=-6. if periodic and data[8]&32 else 0.
+        rows.append(encode(shape,tuple(x+offset for x in (*u,*v)),data[5]))
     return rows
 
 

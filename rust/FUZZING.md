@@ -37,7 +37,8 @@ fixtures additionally use closed analytic projection/cross-product formulas.
 Complete linear-set fuzzing uses cross-product line/plane formulas and boundary
 edge candidates with a gift-wrapping hull; production solves affine equalities
 and enumerates feasible halfspace vertices before a monotone-chain hull.
-Editing production uses spline blossoms and homogeneous de Casteljau;
+Editing production uses spline blossoms (curves), exact boundary knot insertion
+(tensor extraction) and homogeneous de Casteljau;
 its checker uses basis polynomials, binomial affine substitution and Bernstein
 coefficient expansion. Clearing common denominators before those linear
 transforms reduces repeated GCD work without changing the assertions.

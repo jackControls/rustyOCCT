@@ -12,7 +12,7 @@ The [mathematical foundation](MATHEMATICS.md) includes exact 2D/3D orientation
 and insphere, 2,417 independent 2D rational fixtures in all six permutations,
 1,648 spatial predicate fixtures, 963 certified linear-intersection fixtures,
 448 quadratic-root fixtures, 1,092 curved-intersection fixtures, 1,059 curve and 791 surface spline fixtures,
-95 general polynomial-root, 284 spline/plane, 118 spline/quadric, 554 proximity, 684 complete linear-set, 636 exact Bézier curve and 739 tensor-patch editing fixtures,
+95 general polynomial-root, 284 spline/plane, 118 spline/quadric, 554 proximity, 684 complete linear-set, 636 exact Bézier curve and 744 tensor-patch editing fixtures,
 10,000 integer-oracle predicate cases and 256 generated prism invariant cases.
 These tests do not depend on OCCT or an application and run in native debug and
 release CI. These deterministic generated tests are separate from the twelve
@@ -263,7 +263,7 @@ complete exact Rust outputs are byte-identical on the two platforms.
 All counts, degrees and original U/V domains agree. Native differences cannot
 exempt Rust from the exact oracle.
 
-The 739 ordinary cases retain every complete homogeneous control using a
+The 744 ordinary cases retain every complete homogeneous control using a
 lossless shared-denominator text format. They include all native input families,
 subnormal/adjacent knots, extreme homogeneous values, multiple turns, parameter
 rectangles whose interior knots round to the same float, and seeded rational

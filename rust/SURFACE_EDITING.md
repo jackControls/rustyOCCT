@@ -39,6 +39,7 @@ OCCT references at `3d097a0328e71b826377d4814ab05ec3c3d23871`:
 patch controls and boundaries), `Geom_BSplineSurface::Segment`,
 `Geom_BezierSurface::{Segment,Increase,UReverse,VReverse,ExchangeUV,UIso,VIso}`,
 `BSplSLib::{Iso,IncreaseDegree,BuildCache}` and
+`BSplCLib::{InsertKnots,BoorScheme}` and
 `PLib::{UTrimming,VTrimming,CoefficientsPoles}`. Native segmentation has
 tolerance snapping and a one-period restriction; Rust's exact domain contract
 is deliberately independent of those restrictions. Original GTest input
@@ -51,7 +52,7 @@ Native controls are compared after Euclidean conversion and a single common
 weight normalization. Native exceptions and numerical differences remain
 visible; they cannot excuse a Rust mismatch with the independent exact oracle.
 
-There are 739 complete-control fixtures, including exact extremes not accepted
+There are 744 complete-control fixtures, including exact extremes not accepted
 by the native SDK. A shared denominator per output item stores all rational
 controls without repeating denominator strings; no values are sampled or
 omitted by this lossless representation. Every one of the 691 live native

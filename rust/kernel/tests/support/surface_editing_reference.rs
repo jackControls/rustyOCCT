@@ -159,14 +159,11 @@ fn map_axis(
 
 /// Matrix multiplication after clearing denominators. This is the Cox
 /// coefficient sum, not a de Boor/de Casteljau control-point recurrence.
-fn multiply(matrix: &[Vec<R>], poles: &[R]) -> Vec<R> {
+fn multiply(matrix: &[(Vec<BigInt>, BigInt)], poles: &[R]) -> Vec<R> {
     let (p, den) = integers(poles);
     matrix
         .iter()
-        .map(|row| {
-            let (m, d) = integers(row);
-            R::new(p.iter().zip(&m).map(|(a, b)| a * b).sum(), &den * d)
-        })
+        .map(|(m, d)| R::new(p.iter().zip(m).map(|(a, b)| a * b).sum(), &den * d))
         .collect()
 }
 
@@ -180,6 +177,9 @@ impl Patch {
     pub fn trim(&self, domain: [[R; 2]; 2]) -> Self {
         let mut out = self.clone();
         for (axis, range) in domain.iter().enumerate() {
+            if range == &self.domain[axis] {
+                continue;
+            }
             let length = &self.domain[axis][1] - &self.domain[axis][0];
             let a = (&range[0] - &self.domain[axis][0]) / &length;
             let b = (&range[1] - &range[0]) / length;
@@ -288,8 +288,15 @@ pub fn extract(surface: &BSplineSurface3, rectangle: [f64; 4]) -> Vec<Patch> {
     let degrees = [surface.u_knots().degree(), surface.v_knots().degree()];
     let mut result = Vec::new();
     for u in &us {
-        let um: Vec<Vec<R>> = (0..=degrees[0])
-            .map(|k| u.coefficients.iter().map(|c| c[k].clone()).collect())
+        let um: Vec<_> = (0..=degrees[0])
+            .map(|k| {
+                integers(
+                    &u.coefficients
+                        .iter()
+                        .map(|c| c[k].clone())
+                        .collect::<Vec<_>>(),
+                )
+            })
             .collect();
         for v in &vs {
             let mut controls = Vec::new();
@@ -307,8 +314,15 @@ pub fn extract(surface: &BSplineSurface3, rectangle: [f64; 4]) -> Vec<Patch> {
                     }));
                 }
             }
-            let vm: Vec<Vec<R>> = (0..=degrees[1])
-                .map(|k| v.coefficients.iter().map(|c| c[k].clone()).collect())
+            let vm: Vec<_> = (0..=degrees[1])
+                .map(|k| {
+                    integers(
+                        &v.coefficients
+                            .iter()
+                            .map(|c| c[k].clone())
+                            .collect::<Vec<_>>(),
+                    )
+                })
                 .collect();
             let (controls, d) = map_axis(&controls, degrees, 0, |p| multiply(&um, p));
             let (coefficients, degrees) = map_axis(&controls, d, 1, |p| multiply(&vm, p));

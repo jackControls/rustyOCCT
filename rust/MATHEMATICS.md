@@ -718,12 +718,15 @@ and attaching these curves to topology remain separate work.
 ## Exact tensor Bézier extraction and editing
 
 `ExactBezierSurface3` retains a U-major homogeneous grid and two increasing
-rational domains. Extraction applies the spline blossom independently in U and
-V on each clipped knot rectangle, preserving the entire tensor polynomial.
-The implementation computes each axis map on unit controls, then applies it
-using integer dot products after clearing common denominators. This preserves
-the same exact blossom map while reducing repeated rational reductions across
-large grids. Traversal checks both axis counts and their Cartesian product
+rational domains. Extraction raises each clipped boundary's multiplicity to
+the degree (already clamped boundaries retain degree+1) by exact local knot
+insertion in U and V. The active block is the Bernstein representation of that
+rectangle. A reusable map on unit controls preserves the entire homogeneous
+tensor polynomial; integer dot products apply it to grid rows after clearing
+common denominators. This computes the same map as spline blossoming with fewer
+interpolation stages. An unclamped local endpoint uses the last equal knot
+index, not a span convention that assumes clamped end multiplicities.
+Traversal checks both axis counts and their Cartesian product
 before constructing geometry; the default limits are 4096 patches and
 1,048,576 output controls. They bound combinatorial output, not rational bit
 growth or wall-clock time.

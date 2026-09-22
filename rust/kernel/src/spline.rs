@@ -393,8 +393,10 @@ pub(crate) fn bezier_controls(
     result
 }
 
-/// Reusable extraction map for a tensor axis. Compute the same spline blossom
-/// on unit controls once, then apply that linear map to every homogeneous row.
+/// Reusable extraction map for a tensor axis. Exact knot insertion raises the
+/// two clipped boundary multiplicities on unit controls, then the active
+/// Bernstein block supplies the linear map for every homogeneous grid row.
+/// OCCT reference: BSplCLib::InsertKnots and its local insertion schema.
 /// Clearing denominators before each dot product avoids a rational reduction
 /// at every multiply/add; no coefficient or output rounding is introduced.
 pub(crate) struct BezierSpanTransform {
@@ -402,20 +404,60 @@ pub(crate) struct BezierSpanTransform {
 }
 impl BezierSpanTransform {
     pub(crate) fn new(axis: &KnotVector, span: usize, lower: &R, upper: &R) -> Self {
-        let n = axis.degree() + 1;
-        let mut matrix = vec![vec![zero(); n]; n];
-        for first in (0..n).step_by(4) {
-            let controls = (0..n)
-                .map(|i| std::array::from_fn(|c| integer(usize::from(i == first + c))))
-                .collect();
-            let columns = bezier_controls(axis, span, controls, lower, upper);
-            for (i, row) in matrix.iter_mut().enumerate() {
-                let count = 4.min(n - first);
-                row[first..first + count].clone_from_slice(&columns[i][..count]);
+        let p = axis.degree();
+        let n = p + 1;
+        // Exactly the local p+1 controls and their 2p+2 surrounding knots.
+        // At an unclamped domain end, use the last equal knot index, which
+        // can exceed the last pole index; clamped FindSpan conventions do not
+        // apply to this local representation.
+        let mut knots = axis.flat[span - p..=span + p + 1].to_vec();
+        let width = &axis.flat[span + 1] - &axis.flat[span];
+        let a = &axis.flat[span] + lower * &width;
+        let b = &axis.flat[span] + upper * width;
+        let mut matrix: Vec<Vec<R>> = (0..n)
+            .map(|i| (0..n).map(|j| integer(usize::from(i == j))).collect())
+            .collect();
+        for u in [&a, &b] {
+            let mut mult = knots.iter().filter(|k| *k == u).count();
+            while mult < p {
+                let k = knots.partition_point(|x| x <= u) - 1;
+                matrix = (0..=matrix.len())
+                    .map(|i| {
+                        if i <= k - p {
+                            return matrix[i].clone();
+                        }
+                        if i > k - mult {
+                            return matrix[i - 1].clone();
+                        }
+                        let alpha = (u - &knots[i]) / (&knots[i + p] - &knots[i]);
+                        debug_assert!(alpha >= zero() && alpha <= integer(1));
+                        if alpha == zero() {
+                            return matrix[i - 1].clone();
+                        }
+                        if alpha == integer(1) {
+                            return matrix[i].clone();
+                        }
+                        let complement = integer(1) - &alpha;
+                        matrix[i - 1]
+                            .iter()
+                            .zip(&matrix[i])
+                            .map(|(a, b)| {
+                                if a == b {
+                                    a.clone()
+                                } else {
+                                    &complement * a + &alpha * b
+                                }
+                            })
+                            .collect()
+                    })
+                    .collect();
+                knots.insert(k + 1, u.clone());
+                mult += 1;
             }
         }
+        let k = knots.partition_point(|x| x <= &a) - 1;
         Self {
-            rows: matrix
+            rows: matrix[k - p..=k]
                 .iter()
                 .map(|row| {
                     let denominator = common_denominator(row.iter());

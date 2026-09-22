@@ -52,7 +52,7 @@ fn complete_tensor_controls_and_independent_quotient_jets() {
         }
         count += 1;
     }
-    assert_eq!(count, 739);
+    assert_eq!(count, 744);
 }
 
 #[test]

@@ -255,9 +255,12 @@ constructors, `Patch`, `UKnots` and `VKnots`;
 [`PLib.cxx`](../src/FoundationClasses/TKMath/PLib/PLib.cxx),
 `UTrimming`, `VTrimming`, `CoefficientsPoles`.
 
-Rust applies exact spline blossoms in both axes. A reusable blossom map on
-unit controls and integer dot products avoid recomputing the map for every
-grid row. Immutable curve Bernstein operations act on homogeneous tensor rows;
+Rust raises the clipped boundary multiplicities in each axis using exact local
+knot insertion on unit controls, referencing `BSplCLib::{InsertKnots,BoorScheme}`.
+The resulting Bernstein block supplies a reusable extraction map; integer dot
+products avoid recomputing it for every grid row. This is the same exact map
+as spline blossoming, with fewer interpolation stages. Immutable curve
+Bernstein operations act on homogeneous tensor rows;
 isocurves retain the other original parameter domain. Exact quotient jets
 include mixed partials. Positive weights are preserved without OCCT's rational
 flag simplification, parameter snapping or one-period segmentation restriction.
@@ -266,7 +269,7 @@ The native 691-case corpus was captured before Rust implementation and includes
 the `Geom_BezierSurface_Test.cxx` SetUp, RationalSegment, RationalIncrease,
 RationalSurface_UIso and VIso_Rational input families. Reused GTest inputs do
 not count as unchanged upstream passes. All 4,347 outputs undergo independent
-exact tensor coefficient checks. The 739 ordinary complete-control fixtures,
+exact tensor coefficient checks. The 744 ordinary complete-control fixtures,
 boundary/commutation/overflow/budget tests and twelfth fuzz target add independent
 mathematical evidence. Native degree-25 segmentation differences are
 [reviewed separately](NATIVE_SURFACE_EDITING_DIVERGENCES.md).
