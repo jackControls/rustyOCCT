@@ -43,6 +43,7 @@ jobs:
           python3 rust/tools/generate_predicate_fixtures.py --check
           python3 rust/tools/generate_spatial_fixtures.py --check
           python3 rust/tools/generate_proximity_fixtures.py --check
+          python3 rust/tools/generate_linear_sets_fixtures.py --check
           python3 rust/tools/generate_curved_fixtures.py --check
           python3 rust/tools/generate_spline_fixtures.py --check
           python3 rust/tools/generate_surface_fixtures.py --check
@@ -56,6 +57,9 @@ jobs:
       - name: Compare certified closest points and minimum distances with OCCT
         if: ${{ !cancelled() }}
         run: python3 rust/tools/compare_proximity.py --occt-root /usr
+      - name: Compare complete linear intersection sets with native COMMON and SECTION
+        if: ${{ !cancelled() }}
+        run: python3 rust/tools/compare_linear_sets.py --occt-root /usr
       - name: Compare polynomial roots and curved intersections with native OCCT
         run: python3 rust/tools/compare_curved.py --occt-root /usr
       - name: Compare spline positions and derivatives with native OCCT
@@ -78,6 +82,7 @@ jobs:
             target/upstream-tests/
             target/intersection-oracle/
             target/proximity-oracle/
+            target/linear-sets-oracle/
             target/curved-oracle/
             target/spline-oracle/
             target/surface-oracle/

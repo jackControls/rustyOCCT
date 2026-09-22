@@ -12,10 +12,10 @@ The [mathematical foundation](MATHEMATICS.md) includes exact 2D/3D orientation
 and insphere, 2,417 independent 2D rational fixtures in all six permutations,
 1,648 spatial predicate fixtures, 963 certified linear-intersection fixtures,
 448 quadratic-root fixtures, 1,092 curved-intersection fixtures, 1,059 curve and 791 surface spline fixtures,
-95 general polynomial-root, 284 spline/plane, 118 spline/quadric and 554 proximity fixtures,
+95 general polynomial-root, 284 spline/plane, 118 spline/quadric, 554 proximity and 684 complete linear-set fixtures,
 10,000 integer-oracle predicate cases and 256 generated prism invariant cases.
 These tests do not depend on OCCT or an application and run in native debug and
-release CI. These deterministic generated tests are separate from the nine
+release CI. These deterministic generated tests are separate from the ten
 [coverage-guided fuzz targets and daily retained-corpus campaigns](FUZZING.md).
 
 `compare_intersections.py` executes native OCCT `IntAna_IntConicQuad` and Rust's
@@ -40,6 +40,20 @@ are byte-identical between the two platforms.
 The 554 Fraction fixtures add full-exponent, near-degenerate and unrepresentable
 cases outside this well-scaled native corpus. No general B-rep distance or
 unchanged upstream extrema-test coverage is implied.
+
+`compare_linear_sets.py` checks all 25 ordered linear primitive pairings over
+433 native inputs. The initial native geometries were captured before Rust
+implementation. All exact results equal an independent boundary-crossing oracle.
+Local OCCT 7.9.3 yields 384 complete combined COMMON/SECTION matches, 46 empty
+results for unbounded intersections, and three extra-edge observations. The
+[reviews](NATIVE_LINEAR_INTERSECTION_DIVERGENCES.md) pin each native result;
+COMMON's intentional omission of lower-dimensional contacts is counted separately.
+The 684 exact fixtures include five/six-vertex polygons, full-exponent and
+subnormal geometry, invalid inputs and unrepresentable constructions. Rust
+and Python boundary oracles differ from production affine/halfspace enumeration.
+Every defining-point permutation, operand order and minimal construction bound
+is checked, and `linear_sets` continuously mutates the corpus. General face
+splitting, B-rep Boolean operations and topology/history remain pending.
 
 `compare_curved.py` first captures independent native observations, then checks
 Rust against 174 cases of polynomial roots, line/sphere, line/cylinder and
@@ -159,6 +173,7 @@ cargo test --workspace --locked --release
 python3 rust/tools/generate_predicate_fixtures.py --check
 python3 rust/tools/generate_spatial_fixtures.py --check
 python3 rust/tools/generate_proximity_fixtures.py --check
+python3 rust/tools/generate_linear_sets_fixtures.py --check
 python3 rust/tools/generate_curved_fixtures.py --check
 python3 rust/tools/generate_spline_fixtures.py --check
 python3 rust/tools/generate_surface_fixtures.py --check
@@ -173,6 +188,7 @@ The live comparison requires a C++17 compiler and OCCT's modeling SDK:
 python3 rust/tools/compare_occt.py --occt-root /path/to/occt
 python3 rust/tools/compare_intersections.py --occt-root /path/to/occt
 python3 rust/tools/compare_proximity.py --occt-root /path/to/occt
+python3 rust/tools/compare_linear_sets.py --occt-root /path/to/occt
 python3 rust/tools/compare_curved.py --occt-root /path/to/occt
 python3 rust/tools/compare_splines.py --occt-root /path/to/occt
 python3 rust/tools/compare_surfaces.py --occt-root /path/to/occt

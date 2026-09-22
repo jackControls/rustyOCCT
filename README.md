@@ -34,6 +34,9 @@ Cargo does not build it. Rust work lives on the `rust-kernel` branch, while
 - Certified line–plane, segment–plane and segment–triangle intersections,
   including coplanar overlap. Decisions are exact; new coordinates and parameters
   have minimal binary64 enclosures. Rounded representatives retain those bounds.
+- Complete closed-set intersections of all point/line/segment/plane/triangle
+  pairings, including coplanar polygons and coincident infinite lines/planes.
+  Canonical rational constructions survive finite floating-point overflow.
 - Exact minimum distances and closest points across all point/line/segment/plane/
   triangle pairings. Rational witnesses and threshold comparisons remain available
   independently of floating-point output limits; non-unique minima are supported.
@@ -86,7 +89,7 @@ The mathematical tests include **2,417 exact rational 2D orientation fixtures**
 (all six permutations), **1,648 spatial predicate fixtures**, **963 certified
 linear-intersection fixtures**, **448 quadratic-root fixtures**, **1,092 curved
 intersection fixtures**, **1,059 curve and 791 surface spline fixtures**, **95 general
-root, 284 spline–plane and 118 spline–quadric fixtures**, **554 exact proximity fixtures**,
+root, 284 spline–plane and 118 spline–quadric fixtures**, **554 exact proximity fixtures**, **684 complete linear-set fixtures**,
 **10,000 generated integer predicate cases**, and
 **256 generated prism invariant cases**. Debug and optimized native builds run
 the same checks. See [the numerical contracts](rust/MATHEMATICS.md) for limits.
@@ -103,12 +106,16 @@ are independently checked and version-pinned. High-degree native numerical
 differences are [reviewed separately](rust/NATIVE_SPLINE_DIVERGENCES.md); they
 are not counted as parity matches.
 [Sustained fuzzing](rust/FUZZING.md)
-runs nine instrumented targets on pushes/PRs and daily, restoring the evolving
+runs ten instrumented targets on pushes/PRs and daily, restoring the evolving
 corpus and retaining crashes, timeouts and mathematical disagreements.
 
 Another 370 inputs compare linear-set minimum distances with two native OCCT
 APIs and independently certify Rust's returned witnesses. Unbounded native
 nonresults and affine parallelism differences are [recorded separately](rust/NATIVE_PROXIMITY_DIVERGENCES.md).
+
+A further 433 inputs compare complete linear intersections with native COMMON
+and SECTION; [intentional dimension filtering, unbounded nonresults and three
+extra-edge observations](rust/NATIVE_LINEAR_INTERSECTION_DIVERGENCES.md) are counted separately.
 
 ```sh
 # Optional live differential comparison against an installed OCCT SDK:

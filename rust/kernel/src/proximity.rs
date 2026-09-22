@@ -39,7 +39,8 @@ use std::cmp::Ordering;
 type Vector = [R; 3];
 type IntegerVector = [BigInt; 3];
 
-/// The geometric sets accepted by [`closest_points`]. Line and segment
+/// The geometric sets accepted by [`closest_points`] and
+/// [`crate::intersection::linear_intersection`]. Line and segment
 /// parameters use `a + t(b-a)`; plane and triangle parameters use
 /// `a + u(b-a) + v(c-a)` in the original defining-point order.
 #[derive(Debug, Clone)]

@@ -600,6 +600,68 @@ reference seeds its enclosure using integer square root on a subnormal lattice;
 production searches binary64 bit order with exact squared comparisons. Native
 OCCT observations are a third check with [explicitly reviewed differences](NATIVE_PROXIMITY_DIVERGENCES.md).
 
+## Complete intersections of linear convex sets
+
+The [public contract](LINEAR_INTERSECTIONS.md) extends incidence to the entire
+closed intersection for all 25 point/line/segment/plane/triangle pairings.
+`intersection::LinearPrimitive3` reexports the proximity input type. The output
+`LinearIntersection` distinguishes empty, point, segment, filled convex polygon,
+infinite line and infinite plane. `ExactPoint3` retains rational coordinates;
+requesting minimal binary64 bounds or a representative is separately fallible.
+A result may therefore be usable for exact incidence despite an unrepresentable
+coordinate. No topology identifiers, face orientation or history are inferred.
+
+Each input becomes exact affine equalities plus closed linear inequalities.
+Points fix three coordinates. Lines fix two independent equations; segments
+also bound a coordinate with nonzero direction. Planes have one nonzero normal
+equation; triangles add the three inward edge halfspaces. Normals are rational
+cross products of the represented inputs, never rounded unit vectors.
+
+Exact elimination of the combined equations gives an inconsistent system or
+an affine space `x = o + B t` of dimension zero, one or two. Substitution reduces
+the remaining inequalities to that space:
+
+1. In dimension zero, test all inequalities at the unique point.
+2. In dimension one, intersect every exact closed parameter bound. Equal bounds
+   are one point; reversed bounds are empty. If any operand is bounded, both
+   ends are bounded. Otherwise there are no inequalities and the entire line
+   remains. A ray cannot arise from the supported operands.
+3. In dimension two with no inequalities, the result is the entire plane.
+   Otherwise a triangle operand makes the feasible polyhedron bounded. Every
+   extreme point lies at two independent active boundary lines; enumerate
+   all pairs (at most fifteen), solve each exactly and retain it only if all
+   inequalities hold. A nonempty bounded polyhedron is the convex hull of its
+   extreme points, including when it collapses to a point or segment. Thus an
+   empty candidate list proves emptiness, and taking their hull gives the
+   complete set rather than selected contact samples.
+
+The finite hull removes exact duplicate and collinear vertices. A polygon's
+cycle begins at its lexicographic minimum and selects the smaller direction;
+it is not an oriented B-rep face. Segments use sorted endpoints. Lines set their
+first nonzero direction coordinate to one and that origin coordinate to zero;
+planes normalize their first nonzero normal coefficient to one. These unique
+representations establish exact operand and defining-point order invariance.
+
+At most six equalities, six inequalities and three affine unknowns are involved.
+This bounds the combinatorial work, not a wall-clock production latency.
+The supported binary64 range bounds input bit lengths. All eliminations,
+feasibility decisions and hull orientations use exact rational arithmetic.
+
+The independent reference constructs line intersections using cross products,
+intersects triangle boundary edges with the other operand, and collects
+contained endpoints. Triangle/triangle extreme points are input vertices
+inside the other triangle or boundary intersections; for noncoplanar triangles,
+the intersection segment endpoints occur on an input boundary. A separate
+3D gift-wrapping hull establishes the complete reference result. Rust's oracle
+uses Gram barycentric triangle membership; Python uses oriented halfspaces and
+its own integer arithmetic. Neither reproduces production affine elimination
+or its halfspace-pair enumeration. Tests compare full exact results, all
+individual input permutations and operand swaps, and independently verify
+minimal finite bounds. Fuzzing also checks agreement with the zero-distance
+predicate on scaled-integer modes. Native observations remain supplementary;
+[known nonresults and extra geometry](NATIVE_LINEAR_INTERSECTION_DIVERGENCES.md)
+never weaken the mathematical checks.
+
 ## Independent and adversarial evidence
 
 - `fixtures/orient2d.tsv`: 2,417 input triples with expected signs calculated by
@@ -620,6 +682,11 @@ OCCT observations are a third check with [explicitly reviewed differences](NATIV
   calculated by a separate rational barycentric oracle and Python's rational
   conversion. Includes degenerate, unrepresentable, point, overlap and empty
   results. Tests also reverse segment endpoints and all triangle vertex orders.
+- `fixtures/linear_sets.tsv`: 684 complete rational intersections, all 433 native
+  inputs, full-exponent/subnormal and overflow cases, empty/point/segment/line/plane
+  results, coplanar polygons with three through six vertices, and typed invalid
+  definitions. Independent boundary algorithms and all defining-point orders
+  are checked; the `linear_sets` target adds retained mutation campaigns.
 - `fixtures/proximity.tsv`: 554 exact cases across all 25 ordered pairings,
   including all 370 native inputs, subnormal/full-exponent coordinates, singular
   minima, invalid geometry and separately unrepresentable outputs. Every valid

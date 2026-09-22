@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [predicates, intersections, modeling, curved, splines, surfaces, roots, spline_intersections, proximity]
+        target: [predicates, intersections, modeling, curved, splines, surfaces, roots, spline_intersections, proximity, linear_sets]
     env:
       NIGHTLY: nightly-2026-09-22
       FUZZ_TARGET: ${{ matrix.target }}

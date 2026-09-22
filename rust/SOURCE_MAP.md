@@ -180,6 +180,34 @@ parallelism differences are [reviewed explicitly](NATIVE_PROXIMITY_DIVERGENCES.m
 General B-rep/curved distances, extrema enumeration and topological attachment
 of closest points remain pending.
 
+## Complete linear-set intersections
+
+`intersection::linear_intersection` references the same source baseline and:
+
+- `IntAna_QuadQuadGeo.cxx`, `Perform(gp_Pln,gp_Pln)`: cross-normal intersection
+  direction, coincident/parallel cases and the near-parallel origin refinement.
+- `IntTools_EdgeEdge.cxx`, line/line branch: incidence, finite-range clipping and
+  overlap. `IntTools_EdgeFace.cxx` calls `IntCurveSurface_HInter` and clips its
+  surface intersections to the original edge range.
+- `BRepAlgoAPI_Common.cxx` / `BOPAlgo_BOP.cxx`, `BuildRC`: explicit filtering
+  below the minimum input dimension. `BRepAlgoAPI_Section.cxx` /
+  `BOPAlgo_Section.cxx`, `PerformInternal1` and `BuildSection`: contact results.
+
+Rust preserves geometric incidence and bounded overlap semantics with an
+independent exact affine/halfspace solver. It returns the entire closed set,
+including contacts omitted by COMMON and coplanar polygons with three to six
+vertices. Canonical rational constructions are distinct from rounded positions.
+This is not a port of the general Boolean engine or its tolerance/history policy.
+
+The 433 native input geometries were captured before implementing the Rust
+solver. The initial plane pair from `tests/lowalgos/intss/buc60815` is reused;
+its subsequent swept surfaces and original DRAW assertions are not executed.
+No new unchanged upstream pass is claimed. Evidence includes 684 independent
+fixtures, separate Python/Rust boundary oracles, defining-point permutations,
+minimal enclosures and the tenth sustained fuzz target. Native dimension
+semantics and [reviewed differences](NATIVE_LINEAR_INTERSECTION_DIVERGENCES.md)
+remain explicit. General curved intersections and B-rep splitting are pending.
+
 ## Rule for the next capability
 
 1. Define the standalone kernel input/output, numerical, topology/history and

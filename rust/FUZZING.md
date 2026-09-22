@@ -10,6 +10,7 @@ coverage feedback. They are distinct from the deterministic invariant tests.
 | --- | --- | --- |
 | `predicates` | Full binary64 bit patterns, scaled integers, coplanarity, sphere-boundary points, non-finite coordinates | Exact 2D/3D orientation and insphere against independent rational matrix elimination; sphere ordering; typed rejection |
 | `intersections` | Lines/segments, three-point planes/triangles, full binary64 exponents, coplanarity and degeneracies | All three intersection APIs against a rational barycentric oracle; exact classification; minimal finite coordinate/parameter enclosures; explicit unrepresentable results |
+| `linear_sets` | All 25 linear primitive pairings, raw binary64, coplanar/shared-vertex modes, full exponent range, invalid definitions and collapsed segments | Complete exact sets from independent boundary crossings and a gift-wrapping hull; canonical operand/winding symmetry; minimal construction bounds; zero-distance consistency on scaled-integer modes |
 | `proximity` | All 25 point/line/segment/plane/triangle pairings; arbitrary binary64 coordinates, scaled/coplanar/shared-vertex cases, collapsed segments and invalid inputs | Independent exact membership and supporting-plane certificates prove each returned pair globally minimal; minimal output enclosures, threshold comparisons, operand symmetry, coordinate permutation/vertex reversal and deterministic witnesses |
 | `modeling` | Valid radial polygons/circles, optional holes, 49 scales, up to eight operations, plus raw invalid input | Repeated rigid transforms, reversed winding/offsets and planar splits; mass/first-moment conservation, topology, classification, bounds and finite positive properties |
 | `curved` | Full binary64 coefficients, centers/radii/axes and line endpoints; scaled integers; exact/neighboring tangencies; generator and point segments | Quadratic root count, multiplicity, exact comparisons, minimal enclosures; circle/sphere/cylinder hits against independent polynomial-sign and axial-projection oracles; endpoint clipping and typed failures |
@@ -31,6 +32,9 @@ fixtures use cylinder cross products to check production's dot-product form.
 The proximity checker uses convex supporting-plane inequalities, independently
 of the production face enumeration and exact normal-system solve. Python
 fixtures additionally use closed analytic projection/cross-product formulas.
+Complete linear-set fuzzing uses cross-product line/plane formulas and boundary
+edge candidates with a gift-wrapping hull; production solves affine equalities
+and enumerates feasible halfspace vertices before a monotone-chain hull.
 The Rust oracles and production share `num-bigint`/`num-rational`;
 the checked-in Python `Fraction` fixtures provide a separate integer runtime.
 Coverage counts include the oracle and dependencies: they are not kernel-only
@@ -38,7 +42,7 @@ coverage percentages or evidence of exhaustive input coverage.
 
 ## Continuing campaigns
 
-[Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all nine targets
+[Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all ten targets
 for 60 seconds of mutation each on relevant pushes/PRs, and 600 seconds each every day at
 06:23 UTC on the default branch. Manual runs accept 1–3,600 seconds per target.
 GitHub can delay scheduled jobs. The schedule must remain enabled on the fork.

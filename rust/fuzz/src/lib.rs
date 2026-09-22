@@ -22,6 +22,8 @@ mod roots;
 pub use roots::check_roots;
 mod spline_intersections;
 pub use spline_intersections::check_spline_intersections;
+mod linear_sets;
+pub use linear_sets::check_linear_sets;
 mod proximity;
 pub use proximity::check_proximity;
 

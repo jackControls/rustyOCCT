@@ -18,7 +18,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets']
 
 
 def seed_corpus(target):
@@ -30,9 +30,9 @@ def seed_corpus(target):
         if not path.exists():
             path.write_bytes(data)
 
-    if target == 'proximity':
+    if target in ['proximity','linear_sets']:
         from proximity_reference import COUNTS
-        for row in (ROOT/'rust/fixtures/proximity.tsv').read_text().splitlines():
+        for row in (ROOT/'rust/fixtures'/('proximity.tsv' if target=='proximity' else 'linear_sets.tsv')).read_text().splitlines():
             if row.startswith('#'): continue
             words=iter(row.split()); next(words)
             kinds=[]; coordinates=[]

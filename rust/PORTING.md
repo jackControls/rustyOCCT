@@ -128,7 +128,9 @@ future subsystem. Split crates when there is a working boundary to isolate.
   approximate constructions and tolerance-band decisions.
 - `intersection`: validated three-point planes/triangles, exact intersection
   classifications, analytic circles/spheres/infinite cylinders, and rational
-  or algebraic constructions with binary64 enclosures.
+  or algebraic constructions with binary64 enclosures. Complete linear-set
+  intersections additionally retain canonical rational points, segments, filled
+  convex polygons, infinite lines and planes without eager output rounding.
 - `polynomial`: specialized exact quadratics and general real-root isolation
   through degree 25, retained algebraic identity/multiplicity, polynomial signs
   at exact roots and certified comparisons/enclosures.

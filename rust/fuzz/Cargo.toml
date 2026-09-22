@@ -78,3 +78,10 @@ path = "fuzz_targets/spline_intersections.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "linear_sets"
+path = "fuzz_targets/linear_sets.rs"
+test = false
+doc = false
+bench = false
