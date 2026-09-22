@@ -1,5 +1,11 @@
 # Kernel validation
 
+For original test reuse, see [the DRAW bridge](UPSTREAM_TESTS.md): unchanged Tcl
+tests, assertion helpers and result rules execute against both kernels. Its
+three passing upstream AABB cases and explicit capability/data gaps are separate
+from the 66-solid corpus below. Implementation provenance is in [SOURCE_MAP.md](SOURCE_MAP.md);
+remaining release requirements are in [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md).
+
 ## Current evidence
 
 The first implementation has deterministic analytic tests plus a recorded,

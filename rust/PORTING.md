@@ -23,6 +23,8 @@ The upstream source reference is pinned to
 `3d097a0328e71b826377d4814ab05ec3c3d23871`. The first *runtime oracle* is installed
 OCCT 7.9.3, matching the currently used SDK; it is not a build of that fork point.
 Record the source and runtime versions separately on every future comparison.
+Read [the source map and porting rule](SOURCE_MAP.md) before implementing each
+capability; original OCCT code is the behavioral reference, alongside its tests.
 
 ## Current job coverage
 
@@ -53,7 +55,7 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
 | Scene recompute | Owned bodies, feature-local errors, atomic operation results and repeatable replay | Immutable standalone solids and typed errors exist; scene/job adapter planned. |
 | Topology references | Face/edge identities, membership, geometry signatures, generated/modified/deleted mappings | Shared topology and extrusion face origins exist. Body-local IDs are not persistent naming. History mappings required before feature migration. |
 | Face/edge metadata | Plane, cylinder, cone, circle, curvature, edge lengths and face signatures | Planes/cylinders/circles retained; DTO signatures and additional queries planned. |
-| Measurement | Bounds, mass/area/centroid/inertia, point classification, extrema/closest points | First five supported for current prisms; general distance/extrema and shape classes planned. |
+| Measurement | Bounds, mass/area/centroid/inertia, point classification, extrema/closest points | Bounds, mass properties and point classification supported for current prisms; general distance/extrema and shape classes planned. |
 | Exact interference | Occurrence transforms, minimum clearance, closest points, overlap volume | Transform and classifier foundations only. Distance, common-solid and multi-body queries planned. |
 | Tessellation | Deflection-controlled watertight triangles, normals, face ranges, shared edge samples | Planned geometry output, independent of any renderer. Preserve f64 exact geometry; f32 output conversion belongs at the adapter boundary. |
 | STL / 3MF | Feed trustworthy tessellation to `nbcad-export` | Keep existing Rust writers; do not port OCCT mesh file writers or build a second export stack. |

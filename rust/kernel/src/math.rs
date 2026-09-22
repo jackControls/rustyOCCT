@@ -331,6 +331,31 @@ pub struct Bounds3 {
 }
 
 impl Bounds3 {
+    /// Conservative overlap of finite, closed axis-aligned boxes.
+    /// Each box gets the supplied linear gap, so a separation of at most
+    /// twice that gap still overlaps. This is broad phase, not solid collision.
+    pub fn intersects(self, other: Self, tolerance: Tolerance) -> Result<bool> {
+        for bounds in [self, other] {
+            bounds.min.checked(tolerance)?;
+            bounds.max.checked(tolerance)?;
+            if bounds
+                .min
+                .to_array()
+                .into_iter()
+                .zip(bounds.max.to_array())
+                .any(|(lo, hi)| lo > hi)
+            {
+                return Err(Error::Degenerate("inverted bounds"));
+            }
+        }
+        // OCCT Bnd_Box.cxx, Bnd_Box::IsOut: finite/non-open fast path.
+        // Both gaps contribute, and touching intervals are not separated.
+        let delta = 2.0 * tolerance.linear();
+        let (a_min, a_max) = (self.min.to_array(), self.max.to_array());
+        let (b_min, b_max) = (other.min.to_array(), other.max.to_array());
+        Ok(!(0..3).any(|i| a_min[i] - b_max[i] > delta || b_min[i] - a_max[i] > delta))
+    }
+
     pub fn contains(self, point: Point3, tolerance: Tolerance) -> bool {
         let p = point.to_array();
         let lo = self.min.to_array();

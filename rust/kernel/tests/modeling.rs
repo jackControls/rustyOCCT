@@ -76,6 +76,77 @@ fn box_has_exact_properties_and_closed_oriented_topology() {
 }
 
 #[test]
+fn signed_box_dimensions_follow_occt_minimum_corner_convention() {
+    let t = Tolerance::default();
+    for x in [-1.0, 1.0] {
+        for y in [-1.0, 1.0] {
+            for z in [-1.0, 1.0] {
+                let solid = Solid::box_at(
+                    Point3::new(5.0, 7.0, 9.0),
+                    Vec3::new(x * 2.0, y * 3.0, z * 4.0),
+                    t,
+                )
+                .unwrap();
+                point(
+                    solid.bounds().min,
+                    Point3::new(
+                        5.0 + (x * 2.0).min(0.0),
+                        7.0 + (y * 3.0).min(0.0),
+                        9.0 + (z * 4.0).min(0.0),
+                    ),
+                );
+                close(solid.mass_properties().volume, 24.0);
+                solid.topology().validate(t).unwrap();
+            }
+        }
+    }
+    assert!(Solid::box_at(Point3::ORIGIN, Vec3::new(0.0, 1.0, 1.0), t).is_err());
+    assert!(Solid::box_at(Point3::ORIGIN, Vec3::new(f64::NAN, 1.0, 1.0), t).is_err());
+}
+
+#[test]
+fn aabb_overlap_is_symmetric_and_respects_both_gaps() {
+    let t = Tolerance::default();
+    let a = Bounds3 {
+        min: Point3::ORIGIN,
+        max: Point3::new(1.0, 1.0, 1.0),
+    };
+    for axis in 0..3 {
+        for (gap, expected) in [(0.0, true), (1.9e-7, true), (2.1e-7, false), (1.0, false)] {
+            let mut lo = [0.0; 3];
+            let mut hi = [1.0; 3];
+            lo[axis] = 1.0 + gap;
+            hi[axis] = 2.0 + gap;
+            let b = Bounds3 {
+                min: Point3::new(lo[0], lo[1], lo[2]),
+                max: Point3::new(hi[0], hi[1], hi[2]),
+            };
+            assert_eq!(a.intersects(b, t).unwrap(), expected);
+            assert_eq!(b.intersects(a, t).unwrap(), expected);
+        }
+    }
+    assert!(a.intersects(a, t).unwrap());
+    assert!(a
+        .intersects(
+            Bounds3 {
+                min: a.max,
+                max: a.min
+            },
+            t
+        )
+        .is_err());
+    assert!(a
+        .intersects(
+            Bounds3 {
+                min: Point3::new(f64::NAN, 0.0, 0.0),
+                max: a.max
+            },
+            t
+        )
+        .is_err());
+}
+
+#[test]
 fn concave_profile_preserves_the_missing_corner() {
     let outer = polygon(&[[0., 0.], [4., 0.], [4., 1.], [1., 1.], [1., 4.], [0., 4.]]);
     let solid = Solid::extrude(profile(outer, vec![]), Frame3::xy(), -2., 3.).unwrap();

@@ -72,6 +72,19 @@ impl Solid {
         Self::extrude(profile, Frame3::xy(), 0.0, height)
     }
 
+    /// Axis-aligned box extending from `origin` by signed dimensions.
+    /// Negative dimensions move the minimum corner, as in OCCT's
+    /// `BRepPrimAPI_MakeBox(P, dx, dy, dz)`; volume remains positive.
+    pub fn box_at(origin: Point3, size: crate::Vec3, tolerance: Tolerance) -> Result<Self> {
+        origin.checked(tolerance)?;
+        tolerance.resolve(&size.to_array())?;
+        // Source: BRepPrimAPI_MakeBox.cxx, pmin and the point/size constructor.
+        // See rust/SOURCE_MAP.md for the pinned revision and intentional limits.
+        let minimum = origin + crate::Vec3::new(size.x.min(0.0), size.y.min(0.0), size.z.min(0.0));
+        let solid = Self::cuboid(size.x.abs(), size.y.abs(), size.z.abs(), tolerance)?;
+        solid.transformed(RigidTransform::translation(minimum - Point3::ORIGIN)?)
+    }
+
     pub fn cylinder(
         frame: Frame3,
         radius: f64,

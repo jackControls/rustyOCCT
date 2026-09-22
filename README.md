@@ -68,6 +68,20 @@ python3 rust/tools/compare_occt.py --occt-root /path/to/occt
 See [validation details and limits](rust/VALIDATION.md). CI checks Rust on Linux,
 macOS and Windows, plus the minimum Rust version and a WebAssembly library build.
 
+The [upstream test bridge](rust/UPSTREAM_TESTS.md) runs unchanged OCCT DRAW tests
+and assertions against Rust and native OCCT. Three original AABB regressions
+currently pass on both; unsupported commands and missing data are explicit
+non-passes. CI runs both backends and preserves JSON/JUnit results and logs.
+
+```sh
+python3 rust/tools/run_upstream_tests.py --backend both --draw-exe /path/to/DRAWEXE
+```
+
+The [source map](rust/SOURCE_MAP.md) records implementation references and
+deliberate limitations. [Production release gates](rust/PRODUCTION_READINESS.md)
+cover application replay, stable selections, numerical robustness, fuzzing,
+interchange, failure containment and performance.
+
 ## Upstream and license
 
 Fork point: `Open-Cascade-SAS/OCCT` commit

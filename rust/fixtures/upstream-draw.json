@@ -1,0 +1,66 @@
+{
+  "upstream_revision": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "description": "Small headless DRAW subset plus explicit capability/data sentinels. Expected unsupported/missing statuses satisfy the coverage contract but are never counted as passes. Review any changed expectation.",
+  "sources": {
+    "resources/DrawResources/CheckCommands.tcl": "ff1a6ab0a57e4746346587b3bee439128d8494bf28f14c2f2d854d10136525ff",
+    "resources/DrawResources/TestCommands.tcl": "badd93f0168b28f8f150c59507cc0bf63e8f0462fcb479095af2b4c6bfb236ab",
+    "tests/bugs/begin": "b48f06a88ac5079b55362ad03c7c55715d67268a7f59f26781eb9a4b2f11851e",
+    "tests/bugs/end": "1f73180b566914e19ec07a3439881eb03ce8e9c13c3c92d057c03f4d55ee807d",
+    "tests/bugs/modalg_1/begin": "16a2a51b965d83e675a1c75b1aed0eb0de88905d9ffdc81d57466305d0cf9c8a",
+    "tests/bugs/modalg_1/buc60684": "771b69a7c29a5140a0fd370d0f17a6a27551b67e8fa19233b48c56f90d4245cb",
+    "tests/bugs/modalg_6/begin": "16a2a51b965d83e675a1c75b1aed0eb0de88905d9ffdc81d57466305d0cf9c8a",
+    "tests/bugs/modalg_6/bug28189_2": "2b32b4257cfcfc6f7d111d71e7301f089147ebeac7350d145737698185c24418",
+    "tests/bugs/modalg_6/bug28189_3": "7fa450c825e67af25b3ec2fe1370555c75ff572ab7303c90134cee595ae5e78b",
+    "tests/bugs/modalg_7/begin": "5989051978daa1e26a264a25aa54a6701bb2130c96a593d65b4ccb0ec33374c1",
+    "tests/bugs/modalg_7/bug29311_5": "3c872fea81b6bcd24532825c2b4161b5a63aed9b9dc86dc9d41b52fc2a2aa21c",
+    "tests/bugs/modalg_7/bug29311_6": "9edfc48c936e355a0d1e8b6a69d2cff05113ac4af64a471b8a14d71c18e2c9fd",
+    "tests/bugs/modalg_7/bug29311_7": "f6936da6f89e34f03d2988aa7c9cf00237eb0cdf3f679ee636d643cb84c4cfd8",
+    "tests/bugs/modalg_7/bug29311_8": "100684b62c461fe3cd95674bcb5830b79ecca76e890f7294a4226159a30e923a",
+    "tests/bugs/parse.rules": "946ccdde3ded0ec98d7559cdfd530afd0e7e4c941524b02b389a739ab86e3db6",
+    "tests/parse.rules": "ad8124e361f53b16f5ca3c3f7eec2e18eb855309f38c08ea0ab7ebb2a5971977"
+  },
+  "cases": [
+    {
+      "path": "tests/bugs/modalg_7/bug29311_5",
+      "expected_rust": "pass",
+      "expected_occt": "pass",
+      "purpose": "Disjoint AABBs, both operand orders."
+    },
+    {
+      "path": "tests/bugs/modalg_7/bug29311_6",
+      "expected_rust": "pass",
+      "expected_occt": "pass",
+      "purpose": "Contained AABBs, both operand orders."
+    },
+    {
+      "path": "tests/bugs/modalg_7/bug29311_7",
+      "expected_rust": "pass",
+      "expected_occt": "pass",
+      "purpose": "Overlapping AABBs, both operand orders."
+    },
+    {
+      "path": "tests/bugs/modalg_7/bug29311_8",
+      "expected_rust": "unsupported",
+      "expected_occt": "pass",
+      "purpose": "Oriented bounding boxes; capability sentinel."
+    },
+    {
+      "path": "tests/bugs/modalg_6/bug28189_2",
+      "expected_rust": "unsupported",
+      "expected_occt": "pass",
+      "purpose": "Boolean common of wire compounds; capability sentinel."
+    },
+    {
+      "path": "tests/bugs/modalg_6/bug28189_3",
+      "expected_rust": "unsupported",
+      "expected_occt": "pass",
+      "purpose": "Boolean union of wire compounds; capability sentinel."
+    },
+    {
+      "path": "tests/bugs/modalg_1/buc60684",
+      "expected_rust": "missing_fixture",
+      "expected_occt": "missing_fixture",
+      "purpose": "External BRep fixture; availability sentinel, not a pass."
+    }
+  ]
+}
