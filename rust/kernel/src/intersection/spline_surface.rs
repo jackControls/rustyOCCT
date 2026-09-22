@@ -225,7 +225,7 @@ pub(crate) fn intersect(
         });
         for mut root in roots {
             // Quadrics request tighter intervals before their higher-degree
-            // coordinate sign queries. Plane queries retain their prior filter.
+            // coordinate sign queries. Plane queries skip this eager refinement.
             root.refine_for_signs(refinement_steps);
             let at_start = root.compare_rational(&lower) == Ordering::Equal;
             let at_end = root.compare_rational(&upper) == Ordering::Equal;

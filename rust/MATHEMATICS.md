@@ -497,7 +497,8 @@ and subdivision failures remain atomic.
 
 Before repeated coordinate sign queries for sphere/cylinder equations, each
 nonrational root interval is tightened by at most 128 exact rational bisections.
-Plane queries retain their existing filter to avoid unnecessary refinement cost.
+Plane queries skip this unconditional refinement and use the adaptive sign
+filter described below.
 Its square-free defining
 polynomial has exactly one simple root in that interval, so opposite endpoint
 signs certify the retained half. This only improves the interval sign filter;
@@ -519,6 +520,16 @@ bounds still fall back to Sturm–Tarski. Two saved fuzz inputs exposed the cost
 a subnormal trim endpoint on a degree-seven plane query, and the sphere
 intersection of `(2*t^25,0,0)`. Both remain in the corpus and exact fixtures;
 this optimization changes neither tolerance nor the mathematical answer.
+
+If the initial interval filter cannot decide a sign, algebraic sign queries now
+try up to 64 exact sign bisections on a local copy of the isolator and repeat the
+filter. The same single-simple-root invariant justifies this step. Unresolved
+signs still use the complete Sturm–Tarski calculation on the refined interval;
+no root identity, multiplicity, bound or exact-zero decision is approximated.
+These bounded filter refinements are separate from root isolation's subdivision
+budget. A saved degree-25 fuzz polynomial with a full-exponent query at its
+root `-1` exercises the former expensive fallback and remains in the independent
+root fixtures and fuzz corpus.
 
 ## Independent and adversarial evidence
 
@@ -573,7 +584,7 @@ this optimization changes neither tolerance nor the mathematical answer.
   The native corpus has 210 surface observations. High-degree native evaluation
   discrepancies are independently verified and [reviewed separately](NATIVE_SPLINE_DIVERGENCES.md).
 
-- `fixtures/real-roots.tsv`: 94 exact cases including degree 25, negative leading
+- `fixtures/real-roots.tsv`: 95 exact cases including degree 25, negative leading
   coefficients, multiplicities, clipping, algebraic sign queries, unrepresentable
   roots and distinct clustered roots with identical binary64 enclosures. SymPy
   irreducible factors and Vincent–Akritas–Strzebonski continued fractions provide

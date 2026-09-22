@@ -38,6 +38,20 @@ def generate():
         p=[float(rng.randint(-5,5)) for _ in range(2+i%25)]
         q=[float(rng.randint(-5,5)) for _ in range(1+i%26)]
         cases.append((f'dense_{i}',p,q,None))
+    # Fuzz slow-unit 0d9082d327a81ddd2e03cf8963cb57f12c9bf198. A broad
+    # isolator around -1 made this full-exponent query unnecessarily expensive.
+    p=[F(-1)]
+    for r,count in [(-2,11),(-1,1),(0,1),(1,2),(2,2)]:
+        for _ in range(count): p=multiply(p,[F(-r),F(1)])
+    for d in [2,3,5,-1]: p=multiply(p,[F(-d),F(0),F(1)])
+    q=[value(int(x,16)) for x in '''
+        815c3712edc8a37e a9845f3a15f0cba6 d1ac87623d18f3ce f9d4af8a65401bf6
+        21fcd7b28d68431e 4924ffdab5906b46 714c2702ddb8936e 668bb0d5fa20bb96
+        c19c77522d082641 e9c49f7a55310be6 11ecc7a27d58330e 3914efcaa5805b33
+        01dcb7926d4823fe 7a7a7a7a7a7a7a26 7a7a7a7a7a7a7a7a
+    '''.split()]
+    assert all(F(float(x))==x for x in p)
+    cases.append(('fuzz_wide_isolator_query',list(map(float,p)),q,None))
     rows=[]
     for name,p,q,domain in cases:
         found=roots(p,*(domain or (None,None)))

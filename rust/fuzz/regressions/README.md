@@ -40,3 +40,30 @@ cargo run --manifest-path rust/fuzz/Cargo.toml --locked --release \
 Reported times include input construction, kernel work and all oracle checks.
 They are diagnostic; correctness tests do not impose a machine-dependent
 wall-clock threshold. The sanitizer campaigns retain their per-input timeout.
+
+## Polynomial roots: a wide isolator and a large query
+
+`roots/slow-unit-0d9082d327a81ddd2e03cf8963cb57f12c9bf198.bin` came from
+[campaign 35718215174](https://github.com/jackControls/rustyOCCT/actions/runs/35718215174)
+at `61f2ab507cf6aa5ef8b0834834d25df20104e365`. Its 16-second instrumented
+execution passed the oracle. The degree-25 defining polynomial is
+
+```text
+-(t+2)^11*(t+1)*t*(t-1)^2*(t-2)^2*(t²-2)*(t²-3)*(t²-5)*(t²+1).
+```
+
+It queries a degree-14 polynomial whose exact binary64 coefficients appear in
+`fuzz_wide_isolator_query` in `fixtures/real-roots.tsv`. Profiling identified the
+kernel's sign query at `t=-1`, with a wide initial isolator, as the expensive
+step. This behavior also reproduced before the shared-denominator optimization.
+Up to 64 exact bisections now give the interval filter another chance to decide
+the sign; a still-undecided sign takes the complete Sturm–Tarski path. The
+independent fixture verifies all eleven distinct roots, their multiplicities,
+minimal bounds and query signs.
+
+Replay the entire oracle with:
+
+```sh
+cargo run --manifest-path rust/fuzz/Cargo.toml --locked --release \
+  --example replay_roots -- rust/fuzz/regressions/roots/*.bin
+```

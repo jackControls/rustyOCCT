@@ -90,7 +90,7 @@ fn roots_and_algebraic_queries_match_independent_continued_fraction_oracle() {
         assert!(w.next().is_none(), "{name}");
         count += 1;
     }
-    assert_eq!(count, 94);
+    assert_eq!(count, 95);
 }
 
 #[test]

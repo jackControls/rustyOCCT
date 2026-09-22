@@ -224,9 +224,25 @@ impl AlgebraicRoot {
         if hi == Ordering::Less {
             return Ordering::Less;
         }
+        // A wide isolator can make interval dependency obscure an easy sign.
+        // Try a bounded exact refinement before building the query's Sturm
+        // chain. This cannot decide a false sign: unresolved/zero values still
+        // take the complete algebraic path below.
+        let mut refined = self.clone();
+        refined.refine_for_signs(64);
+        if refined.lower == refined.upper {
+            return g.sign_at(&refined.lower);
+        }
+        let (lo, hi) = g.range_signs(&refined.lower, &refined.upper);
+        if lo == Ordering::Greater {
+            return Ordering::Greater;
+        }
+        if hi == Ordering::Less {
+            return Ordering::Less;
+        }
         let p = &self.defining.polynomial;
         let query = sequence(p.clone(), p.derivative().multiply(g));
-        let sign = variations(&query, &self.lower) - variations(&query, &self.upper);
+        let sign = variations(&query, &refined.lower) - variations(&query, &refined.upper);
         debug_assert!((-1..=1).contains(&sign));
         sign.cmp(&0)
     }
