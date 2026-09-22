@@ -21,6 +21,8 @@
 //! ```
 
 mod error;
+mod exact;
+pub mod intersection;
 pub mod math;
 pub mod predicates;
 mod profile;
@@ -28,6 +30,7 @@ mod solid;
 pub mod topology;
 
 pub use error::{Error, Result};
+pub use intersection::{Plane3, Triangle3};
 pub use math::{Bounds3, Frame3, Point2, Point3, RigidTransform, Tolerance, Vec3};
 pub use profile::{Boundary, Location, Profile};
 pub use solid::{MassProperties, Solid};

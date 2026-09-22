@@ -8,11 +8,21 @@ remaining release requirements are in [PRODUCTION_READINESS.md](PRODUCTION_READI
 
 ## Current evidence
 
-The [mathematical foundation](MATHEMATICS.md) adds an exact 2D orientation
-predicate, 2,417 independent rational fixtures tested in all six permutations,
+The [mathematical foundation](MATHEMATICS.md) includes exact 2D/3D orientation
+and insphere, 2,417 independent 2D rational fixtures in all six permutations,
+1,648 spatial predicate fixtures, 963 certified intersection fixtures,
 10,000 integer-oracle predicate cases and 256 generated prism invariant cases.
 These tests do not depend on OCCT or an application and run in native debug and
-release CI. They are deterministic generated tests, not coverage-guided fuzzing.
+release CI. These deterministic generated tests are separate from the three
+[coverage-guided fuzz targets and daily retained-corpus campaigns](FUZZING.md).
+
+`compare_intersections.py` executes native OCCT `IntAna_IntConicQuad` and Rust's
+line/plane primitive on 72 shared well-conditioned cases, comparing intersection
+type, affine parameter and point coordinates. The test budget is
+`1e-10 + 2e-12*abs(expected)`. Local OCCT 7.9.3 used at most 0.000128 of that
+budget. CI runs the same comparison against its recorded distribution runtime.
+Exact parallelism intentionally differs from OCCT's angular-tolerance policy;
+near-degenerate/extreme cases use the independent exact oracles instead.
 
 The first implementation has deterministic analytic tests plus a recorded,
 independently evaluated OCCT 7.9.3 corpus. The live comparison was run on Apple
@@ -60,6 +70,7 @@ cargo fmt --all --check
 cargo test --workspace --locked
 cargo test --workspace --locked --release
 python3 rust/tools/generate_predicate_fixtures.py --check
+python3 rust/tools/generate_spatial_fixtures.py --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo check --workspace --lib --locked --target wasm32-unknown-unknown
 cargo run --locked --example plate
@@ -69,6 +80,7 @@ The live comparison requires a C++17 compiler and OCCT's modeling SDK:
 
 ```sh
 python3 rust/tools/compare_occt.py --occt-root /path/to/occt
+python3 rust/tools/compare_intersections.py --occt-root /path/to/occt
 ```
 
 On macOS the default SDK is `/opt/homebrew/opt/opencascade`; on Linux it is
@@ -76,7 +88,8 @@ On macOS the default SDK is `/opt/homebrew/opt/opencascade`; on Linux it is
 supports Unix-style SDK layouts; Windows still runs all ordinary Rust and
 recorded-corpus tests. It does not install software or change noBS-CAD.
 
-Results and the optional native executable go in ignored `target/occt-oracle/`.
+Results and optional native executables go in ignored `target/occt-oracle/`
+and `target/intersection-oracle/`.
 The live oracle does not link any rendering or data-exchange toolkit.
 
 To intentionally refresh fixture inputs or reference data:
@@ -102,9 +115,10 @@ The generator uses a fixed seed and writes inputs only.
   built under one tolerance are assembled with another.
 - Coordinates that cannot resolve the requested tolerance are rejected using
   a 16-ULP-scale budget; geometry is not rescaled to bypass this check.
-  This is a conservative construction guard. The separate 2D orientation
-  predicate accepts all finite `f64` inputs and computes their exact sign;
-  distance, area, moment and constructed-coordinate computations remain floating-point.
+  This is a conservative solid-construction guard. The separate exact
+  predicates accept all finite `f64` inputs, and linear intersections use
+  certified coordinate/parameter enclosures. Solid distance, area and moment
+  calculations remain ordinary floating-point arithmetic.
 - Boundary validation is quadratic; input is bounded to 4,096 total profile
   edges and 128 holes. This is an initial implementation limit.
 - Topology is immutable and body-local. Indices and `FaceOrigin` do not claim

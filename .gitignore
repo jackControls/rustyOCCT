@@ -30,6 +30,9 @@
 # Rust build output (the upstream source tree is retained as a reference).
 /target/
 /rust/validation-output/
+/rust/fuzz/target/
+/rust/fuzz/corpus/
+/rust/fuzz/artifacts/
 **/__pycache__/
 
 # data/ level: Ignore everything except tracked subdirectories

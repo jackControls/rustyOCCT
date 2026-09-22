@@ -1,0 +1,81 @@
+name: Rust geometry fuzzing
+
+on:
+  push:
+    branches: [rust-kernel]
+    paths: ['Cargo.toml', 'Cargo.lock', 'rust/**', '.github/workflows/rust-fuzz.yml']
+  pull_request:
+    branches: [rust-kernel]
+    paths: ['Cargo.toml', 'Cargo.lock', 'rust/**', '.github/workflows/rust-fuzz.yml']
+  schedule:
+    - cron: '23 6 * * *'
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: Seconds per target (1–3600)
+        default: '600'
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: geometry-fuzz-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  fuzz:
+    name: Fuzz / ${{ matrix.target }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [predicates, intersections, modeling]
+    env:
+      NIGHTLY: nightly-2026-09-22
+      FUZZ_TARGET: ${{ matrix.target }}
+      EVENT: ${{ github.event_name }}
+      REQUESTED_SECONDS: ${{ inputs.seconds }}
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Install pinned fuzz toolchain
+        run: rustup toolchain install "$NIGHTLY" --profile minimal --component rustfmt
+      - name: Cache fuzz runner
+        id: runner
+        uses: actions/cache@v4.2.3
+        with:
+          path: ~/.cargo/bin/cargo-fuzz
+          key: cargo-fuzz-0.13.1-${{ runner.os }}-${{ runner.arch }}
+      - if: steps.runner.outputs.cache-hit != 'true'
+        run: cargo install cargo-fuzz --version 0.13.1 --locked
+      - run: cargo +"$NIGHTLY" fmt --manifest-path rust/fuzz/Cargo.toml --check
+      - name: Restore evolving corpus
+        uses: actions/cache/restore@v4.2.3
+        with:
+          path: rust/fuzz/corpus/${{ matrix.target }}
+          key: corpus-v1-${{ matrix.target }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: corpus-v1-${{ matrix.target }}-
+      - name: Run sanitizer and mathematical oracle campaign
+        run: |
+          seconds=60
+          if [ "$EVENT" = schedule ]; then seconds=600; fi
+          if [ "$EVENT" = workflow_dispatch ]; then seconds="$REQUESTED_SECONDS"; fi
+          python3 rust/tools/run_fuzz.py --target "$FUZZ_TARGET" --seconds "$seconds" --toolchain "$NIGHTLY"
+      - name: Preserve campaign evidence and reproducer inputs
+        if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: fuzz-${{ matrix.target }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            target/fuzz-reports/
+            rust/fuzz/artifacts/${{ matrix.target }}/
+            rust/fuzz/corpus/${{ matrix.target }}/
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Retain corpus for the next campaign
+        if: always() && github.event_name != 'pull_request'
+        uses: actions/cache/save@v4.2.3
+        with:
+          path: rust/fuzz/corpus/${{ matrix.target }}
+          key: corpus-v1-${{ matrix.target }}-${{ github.run_id }}-${{ github.run_attempt }}

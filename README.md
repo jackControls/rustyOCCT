@@ -10,8 +10,8 @@ manufacturing and analysis; kernel correctness is application-independent.
 No renderer, windowing, GPU integration, viewer, or duplicate application framework.
 
 **Status: first working kernel milestone, not a replacement for OCCT yet.**
-The Rust implementation has no dependencies, no C++ bindings, and forbids unsafe
-code. The inherited C++ source remains available for reference and comparison;
+The Rust implementation uses `num-bigint` for exact arithmetic, has no C++
+bindings, and forbids unsafe code in the kernel. The inherited C++ source remains available for reference and comparison;
 Cargo does not build it. Rust work lives on the `rust-kernel` branch, while
 `master` retains the upstream fork point.
 
@@ -29,9 +29,13 @@ Cargo does not build it. Rust work lives on the `rust-kernel` branch, while
   classification, rigid translation and rotation.
 - Explicit tolerances, finite-input and coordinate-resolution checks, and errors
   for self-intersections, touching/nested holes and degenerate geometry.
-- Exact 2D orientation signs for finite `f64` inputs, with a bounded integer
-  fallback for uncertain floating-point decisions; used in polygon crossing
-  and ray classification. This does not make all geometric constructions exact.
+- Exact 2D/3D orientation and sphere-membership predicates for finite `f64`
+  inputs, including subnormals and values whose floating-point products overflow.
+- Certified line–plane, segment–plane and segment–triangle intersections,
+  including coplanar overlap. Decisions are exact; new coordinates and parameters
+  have minimal binary64 enclosures. Rounded representatives retain those bounds.
+- Coverage-guided fuzzing of predicates, intersections and modeling sequences,
+  with independent mathematical oracles and retained corpora/failure inputs.
 
 ```sh
 cargo test --workspace --locked
@@ -48,7 +52,7 @@ target to be installed.
 
 [The kernel scope and porting plan](rust/PORTING.md) maps needed capabilities to
 OCCT families. [The mathematical foundation](rust/MATHEMATICS.md) is the current
-priority, followed by topology/history and reliable intersections. General
+priority, followed by topology/history and general curve/surface intersections. General
 Booleans, arcs/B-splines, revolutions, sweeps/lofts, fillets/chamfers, shelling,
 modeled threads, STEP, drawing HLR, and tessellation remain to be implemented.
 
@@ -62,14 +66,19 @@ inputs and OCCT differential tests.
 
 ## Validation
 
-The mathematical tests include **2,417 exact rational orientation fixtures**
-(all six permutations), **10,000 generated integer predicate cases**, and
+The mathematical tests include **2,417 exact rational 2D orientation fixtures**
+(all six permutations), **1,648 spatial predicate fixtures**, **963 certified
+intersection fixtures**, **10,000 generated integer predicate cases**, and
 **256 generated prism invariant cases**. Debug and optimized native builds run
 the same checks. See [the numerical contracts](rust/MATHEMATICS.md) for limits.
 
 The checked-in OCCT 7.9.3 reference corpus covers **66 solids and 2,292 point
 classifications**, comparing volume, area, centroid, bounds, inertia and topology
 counts. Ordinary Cargo tests run this corpus without an OCCT SDK.
+
+Native OCCT also checks 72 line–plane cases. [Sustained fuzzing](rust/FUZZING.md)
+runs three instrumented targets on pushes/PRs and daily, restoring the evolving
+corpus and retaining crashes, timeouts and mathematical disagreements.
 
 ```sh
 # Optional live differential comparison against an installed OCCT SDK:

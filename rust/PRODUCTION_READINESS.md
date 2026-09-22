@@ -18,12 +18,12 @@ Promote kernel capabilities only after all applicable gates pass. Use
 
 | Gate | Evidence required | Current state |
 | --- | --- | --- |
-| Mathematical decisions | Correct predicate signs over declared domains, independent exact references, documented arithmetic assumptions | Exact finite-f64 2D orientation exists; 3D orientation, incircle/insphere and certified distance decisions pending |
-| Numerical constructions | Error/residual bounds, conditioning, explicit degeneracy, tolerance propagation through projections/intersections | Basic tolerance guards exist; certified construction and general intersection work pending |
-| Geometric invariants | Analytic cases, conservation, covariance, winding independence, positive mass/inertia, classification consistency | 256 generated prism cases, 2,417 rational predicate fixtures and 10,000 integer predicate cases run in Cargo tests |
+| Mathematical decisions | Correct predicate signs over declared domains, independent exact references, documented arithmetic assumptions | Exact finite-f64 2D/3D orientation and insphere exist; incircle and certified distance decisions pending |
+| Numerical constructions | Error/residual bounds, conditioning, explicit degeneracy, tolerance propagation through projections/intersections | Certified line/plane, segment/plane and segment/triangle constructions exist; general curved geometry and topology tolerance propagation pending |
+| Geometric invariants | Analytic cases, conservation, covariance, winding independence, positive mass/inertia, classification consistency | 256 generated prisms, 2,417 rational 2D fixtures, 1,648 spatial predicate fixtures, 963 intersection fixtures and 10,000 integer cases run in Cargo tests |
 | Structural validity | Closed oriented shells, curve/pcurve/surface consistency, self-intersection, disconnected regions, cavities and invalid-import diagnosis | Specialized prism checks exist; generic B-rep validation/healing pending |
 | Stable topology history | Generated/modified/deleted face and edge mappings across kernel operations; explicit split/merge ambiguity | Only body-local IDs and extrusion provenance exist; general operation history pending |
-| Fuzzing and differential geometry | Structured operation sequences, invalid input, minimized failures, independent oracles and original upstream tests | Deterministic generated tests, 66 OCCT prism cases and three original DRAW cases exist; sustained coverage-guided fuzzing and a source-pinned runtime oracle pending |
+| Fuzzing and differential geometry | Structured operation sequences, invalid input, minimized failures, independent oracles and original upstream tests | Three sanitizer/coverage-guided targets with daily campaigns and retained corpora, 66 OCCT prisms, 72 native line/plane cases and three original DRAW cases; full algorithm coverage and a source-pinned runtime oracle pending |
 | Source and behavior traceability | Pinned source symbols, supported domains, tolerance/error contracts, reviewed divergences | `SOURCE_MAP.md` records OCCT references and independently implemented mathematical algorithms |
 | Failure containment | Atomic operations, bounded work/memory, cancellation, useful error context, no silent approximation | Immutable solid construction, typed errors and profile size limits exist; long-operation cancellation pending |
 | Interchange | STEP unit/topology round trips, independent reader checks, watertight deflection-controlled export meshes | Not implemented |
@@ -33,8 +33,8 @@ Promote kernel capabilities only after all applicable gates pass. Use
 
 **Establish mathematical contracts first.** Separate exact combinatorial
 decisions from approximate geometric construction and from modeling tolerance.
-Extend reliable orientation to the 3D decisions required by intersections, then
-add distance/comparison predicates as needed. Define parameter domains, units,
+Extend the existing spatial predicates and certified linear intersections with
+distance/comparison predicates as needed. Define parameter domains, units,
 residual/error bounds and degeneracy behavior for curve evaluation, projection,
 root finding and intersections before building Booleans on top. Never increase
 a tolerance merely to hide an unstable calculation. Exact predicates do not
@@ -50,9 +50,11 @@ volume conservation with explicit dimensional error budgets.
 Use [structure-aware fuzzing](https://rust-fuzz.github.io/book/cargo-fuzz/structure-aware-fuzzing.html),
 retain seeds and minimize every failure into a deterministic regression. Fuzz
 for crashes, non-finite results, inconsistent topology and excessive work, as
-well as disagreement with OCCT. The bounded seeded tests now run in CI; they are
-not a coverage-guided fuzzer. Sustained fuzz campaigns and automatic failure
-minimization remain to be implemented.
+well as disagreement with OCCT. [The fuzz workflow](FUZZING.md) now runs bounded
+smoke campaigns and longer daily mutation against retained corpora; it is
+separate from deterministic seeded tests. Crashes and oracle disagreements fail
+CI and preserve reproducers. Minimization/diagnosis remains an explicit triage
+step; broader algorithm coverage grows with the kernel.
 
 **Make topology and operation history kernel contracts.** Define operation
 results with generated, modified and deleted mappings before Booleans, fillets
@@ -78,8 +80,7 @@ tests, not just compilation, before claiming that runtime is supported. Define
 per-operation budgets from measured workloads; do not promise generic speedups
 over C++ or trade reliability for a faster average.
 
-The next milestone is a documented, adversarially tested mathematical layer and
-stronger B-rep invariants, followed by topology history and reliable
-intersections. Interchange and performance gates become applicable as those
-capabilities arrive. A finite test suite and one exact predicate do not make
-the entire kernel infallible.
+Continue with stronger B-rep invariants, topology history, certified curved
+geometry and general intersections. Interchange and performance gates become
+applicable as those capabilities arrive. A finite test suite and certified
+linear primitives do not make the entire kernel infallible.

@@ -73,10 +73,11 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
 
 1. **Mathematical foundation — current priority.** The prism implementation
    provides a working test subject. Exact finite-f64 2D orientation, independent
-   rational/integer oracles and generated geometric invariants are implemented.
-   Extend to required 3D predicates, certified comparisons, numerical
-   construction/error contracts and tolerance propagation. Add structured
-   coverage-guided fuzzing and minimize failures. See `MATHEMATICS.md`.
+   rational/integer oracles and generated geometric invariants are implemented,
+   along with 3D orientation/insphere, certified linear intersections and
+   sustained structured fuzzing. Extend certified comparisons and constructions
+   to curved geometry and propagate uncertainty through topology changes.
+   Continue minimizing fuzz failures. See `MATHEMATICS.md` and `FUZZING.md`.
 2. **Topology invariants and operation history.** Strengthen generic B-rep
    validation beyond sampled prism checks: connectivity, orientation, shells,
    cavities, seams and curve/pcurve/surface consistency. Define generated,
@@ -116,6 +117,8 @@ future subsystem. Split crates when there is a working boundary to isolate.
   dimensional tolerance and bounds. No global mutable precision state.
 - `predicates`: exact signs for represented coordinates, separate from
   approximate constructions and tolerance-band decisions.
+- `intersection`: validated three-point planes/triangles, exact intersection
+  classifications and rational constructions with binary64 enclosures.
 - `profile`: validated material boundaries, containment and planar moments.
   Polygons are normalized CCW; holes are assigned orientation in the B-rep.
 - `topology`: immutable owned vertices/edges/faces, opposite oriented uses,
@@ -128,9 +131,12 @@ future subsystem. Split crates when there is a working boundary to isolate.
   silently invoked by the Rust library.
 
 All current constructors return `Result` before publishing a solid. No
-`unsafe`, renderer, OS calls, native SDK dependency, or third-party Rust
-dependency is required by the library. New dependencies must have an actual
-geometry need; dependency count alone is not a correctness or speed metric.
+renderer, OS calls or native SDK dependency is required by the library, and the
+kernel crate forbids `unsafe` code.
+`num-bigint` supplies exact integer arithmetic for predicates/constructions;
+additional rational and libFuzzer dependencies are isolated to the fuzz
+workspace. Dependencies must have an actual geometry need; dependency count
+alone is not a correctness or speed metric.
 
 ## OCCT families to study, not mechanically translate
 

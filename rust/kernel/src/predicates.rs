@@ -4,7 +4,8 @@
 //! A point can be strictly on one side of a line and also inside its tolerance
 //! band. Keep those questions separate. See `rust/MATHEMATICS.md`.
 use crate::math::finite;
-use crate::{Point2, Result};
+use crate::{exact as integer, Error, Point2, Point3, Result};
+use num_bigint::Sign;
 use std::cmp::Ordering;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -144,9 +145,137 @@ fn exact(a: Point2, b: Point2, c: Point2) -> Orientation2 {
     Orientation2::from_ordering(positive.iter().rev().cmp(negative.iter().rev()))
 }
 
+/// Sign of `((b - a) x (c - a)) dot (d - a)`.
+/// Positive is above the oriented plane (opposite Shewchuk's orient3d sign).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Orientation3 {
+    Negative,
+    Coplanar,
+    Positive,
+}
+
+/// Exact sidedness for all finite binary64 coordinates, without a tolerance.
+/// Degenerate defining planes return `Coplanar`; NaN/infinity return an error.
+pub fn orient3d(a: Point3, b: Point3, c: Point3, d: Point3) -> Result<Orientation3> {
+    for p in [a, b, c, d] {
+        for x in p.to_array() {
+            finite(x, "orientation coordinate")?;
+        }
+    }
+    if let Some(sign) = filtered3d(a, b, c, d) {
+        return Ok(sign);
+    }
+    let value = integer::orientation(
+        &integer::point(a)?,
+        &integer::point(b)?,
+        &integer::point(c)?,
+        &integer::point(d)?,
+    );
+    Ok(match value.sign() {
+        Sign::Minus => Orientation3::Negative,
+        Sign::NoSign => Orientation3::Coplanar,
+        Sign::Plus => Orientation3::Positive,
+    })
+}
+
+fn filtered3d(a: Point3, b: Point3, c: Point3, d: Point3) -> Option<Orientation3> {
+    // Shewchuk predicates.c: orient3d / o3derrboundA (public domain, 1996).
+    // Nonzero differences >=2^-252, triple products >=2^-756. Products,
+    // subtraction residuals, and the error bound stay normal on this domain.
+    const SMALL: f64 = f64::from_bits((1023 - 200) << 52);
+    const LARGE: f64 = f64::from_bits((1023 + 200) << 52);
+    if ![a, b, c, d]
+        .iter()
+        .flat_map(|p| p.to_array())
+        .all(|x| x == 0.0 || (SMALL..=LARGE).contains(&x.abs()))
+    {
+        return None;
+    }
+    let [ax, ay, az] = (a - d).to_array();
+    let [bx, by, bz] = (b - d).to_array();
+    let [cx, cy, cz] = (c - d).to_array();
+    let [bc, cb, ca, ac, ab, ba] = [bx * cy, cx * by, cx * ay, ax * cy, ax * by, bx * ay];
+    let determinant = az * (bc - cb) + bz * (ca - ac) + cz * (ab - ba);
+    let permanent = (bc.abs() + cb.abs()) * az.abs()
+        + (ca.abs() + ac.abs()) * bz.abs()
+        + (ab.abs() + ba.abs()) * cz.abs();
+    const U: f64 = f64::EPSILON * 0.5;
+    const BOUND: f64 = (7.0 + 56.0 * U) * U;
+    if determinant.abs() > BOUND * permanent {
+        Some(if determinant < 0.0 {
+            Orientation3::Positive
+        } else {
+            Orientation3::Negative
+        })
+    } else {
+        None
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SphereLocation {
+    Inside,
+    Boundary,
+    Outside,
+}
+
+/// Exact position relative to the sphere through four finite points.
+/// Independent of defining-point order. A coplanar defining tetrahedron has
+/// no unique sphere and returns `Error::Degenerate`. No center is constructed.
+pub fn in_sphere(
+    a: Point3,
+    b: Point3,
+    c: Point3,
+    d: Point3,
+    query: Point3,
+) -> Result<SphereLocation> {
+    let [a, b, c, d, q] = [
+        integer::point(a)?,
+        integer::point(b)?,
+        integer::point(c)?,
+        integer::point(d)?,
+        integer::point(query)?,
+    ];
+    let orientation = integer::orientation(&a, &b, &c, &d);
+    if integer::zero(&orientation) {
+        return Err(Error::Degenerate("sphere defining tetrahedron"));
+    }
+    let [a, b, c, d] = [&a, &b, &c, &d].map(|p| integer::sub(p, &q));
+    // Expand the [dx, dy, dz, squared distance] determinant along its last
+    // column. Its interior sign is opposite our above-plane convention.
+    let determinant = -integer::dot(&a, &a) * integer::determinant(&b, &c, &d)
+        + integer::dot(&b, &b) * integer::determinant(&a, &c, &d)
+        - integer::dot(&c, &c) * integer::determinant(&a, &b, &d)
+        + integer::dot(&d, &d) * integer::determinant(&a, &b, &c);
+    Ok(if integer::zero(&determinant) {
+        SphereLocation::Boundary
+    } else if determinant.sign() == orientation.sign() {
+        SphereLocation::Outside
+    } else {
+        SphereLocation::Inside
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn orientation3_filter_and_fallback_domains() {
+        let a = Point3::ORIGIN;
+        let b = Point3::new(1., 0., 0.);
+        let c = Point3::new(0., 1., 0.);
+        assert_eq!(
+            filtered3d(a, b, c, Point3::new(0., 0., 1.)),
+            Some(Orientation3::Positive)
+        );
+        assert_eq!(filtered3d(a, b, c, Point3::new(0.5, 0.5, 0.)), None);
+        assert_eq!(
+            filtered3d(a, b, c, Point3::new(0., 0., f64::from_bits(1))),
+            None
+        );
+        assert_eq!(filtered3d(a, b, c, Point3::new(0., 0., f64::MAX)), None);
+    }
 
     #[test]
     fn filter_certifies_only_well_separated_normal_arithmetic() {

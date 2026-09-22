@@ -29,21 +29,27 @@ jobs:
         run: |
           sudo apt-get update
           # DRAW loads plugins by unversioned .so names supplied by the dev package.
-          sudo apt-get install --no-install-recommends -y tcl occt-draw occt-misc libocct-draw-dev
+          sudo apt-get install --no-install-recommends -y tcl occt-draw occt-misc libocct-draw-dev libocct-modeling-algorithms-dev
       - name: Test the bridge, including deliberate failures
         env:
           RUSTY_TEST_DRAW_EXE: /usr/bin/occt-draw
-        run: python3 -m unittest discover -s rust/tools -p test_draw_bridge.py -v
+        run: python3 -m unittest discover -s rust/tools -p 'test_*.py' -v
       - name: Verify the independent exact arithmetic oracle
-        run: python3 rust/tools/generate_predicate_fixtures.py --check
+        run: |
+          python3 rust/tools/generate_predicate_fixtures.py --check
+          python3 rust/tools/generate_spatial_fixtures.py --check
       - name: Run unchanged upstream tests on both kernels
         run: python3 rust/tools/run_upstream_tests.py --backend both --draw-exe /usr/bin/occt-draw
+      - name: Compare line and plane intersections with native OCCT
+        run: python3 rust/tools/compare_intersections.py --occt-root /usr
       - name: Preserve logs and explicit coverage results
         if: always()
         uses: actions/upload-artifact@v4.6.2
         with:
           name: upstream-draw-results
-          path: target/upstream-tests/
+          path: |
+            target/upstream-tests/
+            target/intersection-oracle/
           if-no-files-found: warn
 
   native:
