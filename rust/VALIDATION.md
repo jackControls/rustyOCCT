@@ -58,6 +58,11 @@ version, input and the complete native jet, and recomputes the independent exact
 jet before accepting the Rust result. The budget remains `1e-10 + 2e-12*abs(expected)`.
 These observations do not establish that OCCT promises that error bound.
 
+On Linux OCCT 7.6.3, the complete curve corpus has 426 matches and 30 reviewed
+differences (the 29 periodic cases plus the original case below); surfaces have
+169 matches and 41 reviewed differences. Rust observations are identical on
+macOS and Linux. Native numerical differences remain explicit and version-pinned.
+
 Ubuntu's OCCT 7.6.3 has one **reviewed numerical divergence**, not a matching
 case: `d25_r1_s3_5`, second derivative X, is `-0.47077685134240305` instead of
 the exact value enclosed by `[-0.47077685157054794, -0.4707768515705479]`.

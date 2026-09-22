@@ -12,6 +12,14 @@ and tensor-product surfaces. On macOS arm64 with installed OCCT 7.9.3:
 | Curves | 456 | 427 | 29 |
 | Surfaces | 210 | 169 | 41 |
 
+The Linux OCCT 7.6.3 run observes the same 29 new curve and 41 surface divergent
+cases, with version-specific native values. Together with its original
+nonperiodic difference, it has 426 matching / 30 reviewed curve cases and
+169 matching / 41 reviewed surface cases. All Rust outputs are identical to
+the macOS observations and every reviewed jet was independently rechecked.
+The initial failed [Linux comparison](https://github.com/jackControls/rustyOCCT/actions/runs/35700891097)
+preserves the native observations before these additional reviews were added.
+
 All these new disagreements involve degree 25. Every Rust jet agrees with an
 independent exact rational reference: Cox-de Boor basis recursion, its derivative
 identity, tensor basis products, and closed quotient formulas. This reference
