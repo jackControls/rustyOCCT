@@ -22,6 +22,8 @@ mod roots;
 pub use roots::check_roots;
 mod spline_intersections;
 pub use spline_intersections::check_spline_intersections;
+mod proximity;
+pub use proximity::check_proximity;
 
 pub fn byte(data: &[u8], i: usize) -> u8 {
     data.get(i).copied().unwrap_or(0)

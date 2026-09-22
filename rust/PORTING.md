@@ -60,8 +60,8 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
 | Scene recompute | Owned bodies, feature-local errors, atomic operation results and repeatable replay | Immutable standalone solids and typed errors exist; scene/job adapter planned. |
 | Topology references | Face/edge identities, membership, geometry signatures, generated/modified/deleted mappings | Shared topology and extrusion face origins exist. Body-local IDs are not persistent naming. History mappings required before feature migration. |
 | Face/edge metadata | Plane, cylinder, cone, circle, curvature, edge lengths and face signatures | Planes/cylinders/circles retained; DTO signatures and additional queries planned. |
-| Measurement | Bounds, mass/area/centroid/inertia, point classification, extrema/closest points | Bounds, mass properties and point classification supported for current prisms; general distance/extrema and shape classes planned. |
-| Exact interference | Occurrence transforms, minimum clearance, closest points, overlap volume | Transform and classifier foundations only. Distance, common-solid and multi-body queries planned. |
+| Measurement | Bounds, mass/area/centroid/inertia, point classification, extrema/closest points | Bounds, mass properties and point classification supported for current prisms; certified point/line/segment/plane/triangle minimum distances and witnesses exist. General B-rep/curved distance/extrema remain planned. |
+| Exact interference | Occurrence transforms, minimum clearance, closest points, overlap volume | Transform, classifier and certified linear-set distance foundations exist. Solid clearance, common-solid and multi-body queries remain planned. |
 | Tessellation | Deflection-controlled watertight triangles, normals, face ranges, shared edge samples | Planned geometry output, independent of any renderer. Preserve f64 exact geometry; f32 output conversion belongs at the adapter boundary. |
 | STL / 3MF | Feed trustworthy tessellation to `nbcad-export` | Keep existing Rust writers; do not port OCCT mesh file writers or build a second export stack. |
 | STEP export | Exact AP242 geometry, units, names, long thread metadata and assembly placements | Planned; round-trip with imports and independent readers is a release gate. |
@@ -76,7 +76,8 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
    rational/integer oracles and generated geometric invariants are implemented,
    along with 3D orientation/insphere, exact quadratic roots, certified
    line/segment intersections with planes/triangles/circles/spheres/cylinders and
-   sustained structured fuzzing. Certified rational Bézier/B-spline curves and surfaces, including periodic
+   sustained structured fuzzing. Exact point/line/segment/plane/triangle minimum
+   distances retain rational witnesses and certified comparisons. Certified rational Bézier/B-spline curves and surfaces, including periodic
    directions and derivatives through order two, also exist. Exact degree-25
    root isolation and certified spline/plane/sphere/cylinder intersections cover
    isolated contacts
@@ -131,6 +132,9 @@ future subsystem. Split crates when there is a working boundary to isolate.
 - `polynomial`: specialized exact quadratics and general real-root isolation
   through degree 25, retained algebraic identity/multiplicity, polynomial signs
   at exact roots and certified comparisons/enclosures.
+- `proximity`: complete minimum-distance queries among points, lines, closed
+  segments, planes and closed triangles; one exact rational closest pair,
+  original affine parameters and independently requested output enclosures.
 - `curve`: validated periodic/nonperiodic rational Bézier/B-spline data, exact homogeneous
   evaluation, derivative continuity decisions and minimal output enclosures.
 - `spline`: validated shared knot vectors, exact periodic extension and parameter wrapping.

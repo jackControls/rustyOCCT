@@ -12,10 +12,10 @@ The [mathematical foundation](MATHEMATICS.md) includes exact 2D/3D orientation
 and insphere, 2,417 independent 2D rational fixtures in all six permutations,
 1,648 spatial predicate fixtures, 963 certified linear-intersection fixtures,
 448 quadratic-root fixtures, 1,092 curved-intersection fixtures, 1,059 curve and 791 surface spline fixtures,
-95 general polynomial-root, 284 spline/plane and 118 spline/quadric fixtures,
+95 general polynomial-root, 284 spline/plane, 118 spline/quadric and 554 proximity fixtures,
 10,000 integer-oracle predicate cases and 256 generated prism invariant cases.
 These tests do not depend on OCCT or an application and run in native debug and
-release CI. These deterministic generated tests are separate from the eight
+release CI. These deterministic generated tests are separate from the nine
 [coverage-guided fuzz targets and daily retained-corpus campaigns](FUZZING.md).
 
 `compare_intersections.py` executes native OCCT `IntAna_IntConicQuad` and Rust's
@@ -25,6 +25,18 @@ type, affine parameter and point coordinates. The test budget is
 budget. CI runs the same comparison against its recorded distribution runtime.
 Exact parallelism intentionally differs from OCCT's angular-tolerance policy;
 near-degenerate/extreme cases use the independent exact oracles instead.
+
+`compare_proximity.py` captures 370 point/line/segment/plane/triangle inputs
+through native B-rep and lower-level affine distance APIs. Exact rational Rust
+witnesses pass independent analytic formulas and supporting-plane certificates
+before native comparison. Local OCCT 7.9.3 gives 316 B-rep matches, 54 B-rep
+nonresults, and 120 affine matches with six numerical differences; those two
+observation sets overlap. All 412 native witness pairs are also checked for
+shape ownership and distance. The [reviewed differences](NATIVE_PROXIMITY_DIVERGENCES.md)
+are version/input/value pinned, and never weaken the independent Rust checks.
+The 554 Fraction fixtures add full-exponent, near-degenerate and unrepresentable
+cases outside this well-scaled native corpus. No general B-rep distance or
+unchanged upstream extrema-test coverage is implied.
 
 `compare_curved.py` first captures independent native observations, then checks
 Rust against 174 cases of polynomial roots, line/sphere, line/cylinder and
@@ -143,6 +155,7 @@ cargo test --workspace --locked
 cargo test --workspace --locked --release
 python3 rust/tools/generate_predicate_fixtures.py --check
 python3 rust/tools/generate_spatial_fixtures.py --check
+python3 rust/tools/generate_proximity_fixtures.py --check
 python3 rust/tools/generate_curved_fixtures.py --check
 python3 rust/tools/generate_spline_fixtures.py --check
 python3 rust/tools/generate_surface_fixtures.py --check
@@ -156,6 +169,7 @@ The live comparison requires a C++17 compiler and OCCT's modeling SDK:
 ```sh
 python3 rust/tools/compare_occt.py --occt-root /path/to/occt
 python3 rust/tools/compare_intersections.py --occt-root /path/to/occt
+python3 rust/tools/compare_proximity.py --occt-root /path/to/occt
 python3 rust/tools/compare_curved.py --occt-root /path/to/occt
 python3 rust/tools/compare_splines.py --occt-root /path/to/occt
 python3 rust/tools/compare_surfaces.py --occt-root /path/to/occt

@@ -140,6 +140,46 @@ intersection, but its external DRAW geometry is unavailable; it is not counted
 as an executed or passing upstream regression. General curve/surface
 intersection and spline B-rep integration remain pending.
 
+## Linear proximity traceability
+
+The source baseline is unchanged. Read entry points and their implementations:
+
+- [`Extrema_ExtPElC.cxx`](../src/ModelingData/TKGeomBase/Extrema/Extrema_ExtPElC.cxx),
+  line projection and accepted parameter ranges;
+  [`Extrema_ExtPElS.cxx`](../src/ModelingData/TKGeomBase/Extrema/Extrema_ExtPElS.cxx),
+  plane projection and surface parameters.
+- [`Extrema_ExtElC.cxx`](../src/ModelingData/TKGeomBase/Extrema/Extrema_ExtElC.cxx),
+  line/line normal equations, parallel branch and angular/resolution tests;
+  `Extrema_ExtElCS.cxx` and `Extrema_ExtElSS.cxx`, parallel line/plane and
+  plane/plane extrema.
+- [`BRepExtrema_DistShapeShape.cxx`](../src/ModelingAlgorithms/TKTopAlgo/BRepExtrema/BRepExtrema_DistShapeShape.cxx),
+  `Perform` and vertex/edge/face traversal;
+  [`BRepExtrema_DistanceSS.cxx`](../src/ModelingAlgorithms/TKTopAlgo/BRepExtrema/BRepExtrema_DistanceSS.cxx),
+  elementary pairs, boundary classification, tolerance filtering and infinite-edge handling.
+- [`gp_Lin.cxx`](../src/FoundationClasses/TKMath/gp/gp_Lin.cxx), `Distance`;
+  [`gp_Pln.hxx`](../src/FoundationClasses/TKMath/gp/gp_Pln.hxx), distance and
+  parallel/normal decisions, alongside installed OCCT 7.9.3's earlier inline
+  `Distance` implementation; `gp_Dir::Angle`, `IsParallel` and `gp::Resolution`.
+
+`proximity::closest_points` generalizes the line/line stationarity equations to
+exact rational face pairs. It retains geometric projection/minimum-distance
+semantics but replaces tolerance-based rank/containment and rounded unit normals.
+The complete convex face solver and its supporting-plane checker are independent
+implementations, not a port of the general B-rep extrema engine. There is one
+deterministic Rust minimum witness, not OCCT's list of reported extrema.
+
+The original
+[`BRepExtrema_DistShapeShape_Test.cxx`](../src/ModelingAlgorithms/TKTopAlgo/GTests/BRepExtrema_DistShapeShape_Test.cxx)
+`BUC60870_EdgeToVertexMinimumDistance` supplies the edge/point input. The native
+harness uses its standard default deflection; the original GoogleTest's loose
+deflection/EXPECT_NEAR assertion is not replayed. No additional unchanged DRAW
+pass is claimed. All 370 native inputs were captured before Rust implementation;
+554 independent exact fixtures and the ninth fuzz target validate all ordered
+linear-primitive pairings. Unbounded B-rep nonresults and native affine
+parallelism differences are [reviewed explicitly](NATIVE_PROXIMITY_DIVERGENCES.md).
+General B-rep/curved distances, extrema enumeration and topological attachment
+of closest points remain pending.
+
 ## Rule for the next capability
 
 1. Define the standalone kernel input/output, numerical, topology/history and

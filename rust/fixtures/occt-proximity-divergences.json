@@ -1,0 +1,842 @@
+[
+  {
+    "case": "FF_0.125_0",
+    "api": "brep",
+    "input_sha256": "75fd2c9083c69e77a3b90bc6f5a6b1132506fc64dda3e15978f4d6d1cf2f98f1",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-FF_0.125_0",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_lines_0.125_0",
+    "api": "brep",
+    "input_sha256": "cc108973a65d12c0d635223e0345405bb2ea61d626438d2759967e679165189e",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "9/64",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_lines_0.125_0",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "coincident_lines_0.125_0",
+    "api": "brep",
+    "input_sha256": "03afed09a57b1698d50fda25076a6ac91fdf67b51bc9a92125b3ca7d24326bd1",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-coincident_lines_0.125_0",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_planes_0.125_0",
+    "api": "brep",
+    "input_sha256": "a40cf57877ab744ff475815fdfbaa65647f02fc33ee72c56ec57b6795f5794df",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "9/64",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_planes_0.125_0",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "coincident_planes_0.125_0",
+    "api": "brep",
+    "input_sha256": "22e6ab188a058c8f4e9ada664795e47a3fcf06923ffa2309b4e649b8204c6302",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-coincident_planes_0.125_0",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_line_plane_0.125_0",
+    "api": "brep",
+    "input_sha256": "ac9839c7e1d9d8fbc5af411f4ae71a219b0a6baca6715e05a9203082c57a8bde",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "9/64",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_line_plane_0.125_0",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "FF_0.125_1",
+    "api": "brep",
+    "input_sha256": "aef3119b7a34c118bb1c5c1086e87f5fb3c086f427098f0f5dac65e325752ac8",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-FF_0.125_1",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_lines_0.125_1",
+    "api": "brep",
+    "input_sha256": "77ef00375da350638c1f2a83c9b66f457bae3062b75f5da1921fd2bbd273c65a",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "9/64",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_lines_0.125_1",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "coincident_lines_0.125_1",
+    "api": "brep",
+    "input_sha256": "0c69d00e7ea3ce8cddc2d47f7b8cb8aae084f90eb30ec4dad0f140f8b741e0a2",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-coincident_lines_0.125_1",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_planes_0.125_1",
+    "api": "brep",
+    "input_sha256": "0656c35298b93709d8cd93f318a2507b2d56e0caab4fd76557dca4153f9d7048",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "9/64",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_planes_0.125_1",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "coincident_planes_0.125_1",
+    "api": "brep",
+    "input_sha256": "acd31db90fa997208bda4c8506fd53c92a3649d870d3cfc94d521577c39f6edc",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-coincident_planes_0.125_1",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_line_plane_0.125_1",
+    "api": "brep",
+    "input_sha256": "4f219b7583807c70f187df8c01c992e630654f58d971f0711b6fa1c9eeda1c0e",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "9/64",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_line_plane_0.125_1",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "FF_0.125_2",
+    "api": "brep",
+    "input_sha256": "8799802c5cf4e4077ca5be268d2f086f2dad26149bb17ee75bb960f66069cd54",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-FF_0.125_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_lines_0.125_2",
+    "api": "brep",
+    "input_sha256": "1878ec575579cec0901c5e8fa7946c5d7360706323b83edf718816401ed8c618",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "189/64",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_lines_0.125_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_lines_0.125_2",
+    "api": "affine",
+    "input_sha256": "1878ec575579cec0901c5e8fa7946c5d7360706323b83edf718816401ed8c618",
+    "native": {
+      "status": "P",
+      "distance_bits": "3ff5369480174810"
+    },
+    "exact_squared_distance": "189/64",
+    "reason": "Oblique exactly parallel defining geometry has squared distance 189*scale^2. The gp API uses rounded unit directions/normals and gp::Resolution() for its parallel branch; the captured native result differs. Independent analytic formulas and global certificates confirm Rust. See NATIVE_PROXIMITY_DIVERGENCES.md.",
+    "id": "occt-7.9.3-affine-parallel_lines_0.125_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "coincident_lines_0.125_2",
+    "api": "brep",
+    "input_sha256": "c4e2163b44d4f464d62771d8415c6b2b530a92b205be8e2ae6d8bd5b2bedcc9a",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-coincident_lines_0.125_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_planes_0.125_2",
+    "api": "brep",
+    "input_sha256": "cef560a5c03888e342e4533b2232b59f599997e654a000f55a7813ac25f221a8",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "189/64",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_planes_0.125_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_planes_0.125_2",
+    "api": "affine",
+    "input_sha256": "cef560a5c03888e342e4533b2232b59f599997e654a000f55a7813ac25f221a8",
+    "native": {
+      "status": "P",
+      "distance_bits": "0000000000000000"
+    },
+    "exact_squared_distance": "189/64",
+    "reason": "Oblique exactly parallel defining geometry has squared distance 189*scale^2. The gp API uses rounded unit directions/normals and gp::Resolution() for its parallel branch; the captured native result differs. Independent analytic formulas and global certificates confirm Rust. See NATIVE_PROXIMITY_DIVERGENCES.md.",
+    "id": "occt-7.9.3-affine-parallel_planes_0.125_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "coincident_planes_0.125_2",
+    "api": "brep",
+    "input_sha256": "f276a7c2c92ead86c3fbad62f18943cc8deaa3fd37ac6ae88df3e663219170de",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-coincident_planes_0.125_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_line_plane_0.125_2",
+    "api": "brep",
+    "input_sha256": "8de770d115698aa0d3ebb7c324fd007416298088cf3b3a771f02c0a558f2c1c0",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "189/64",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_line_plane_0.125_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "FF_1.0_0",
+    "api": "brep",
+    "input_sha256": "0eba33249917f070855e0ebb41db7079d92ab3a699290ebb112772a9d2ba5302",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-FF_1.0_0",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_lines_1.0_0",
+    "api": "brep",
+    "input_sha256": "c518afe40bd5db3ddaa224ea81df0952572750cd8074443c754c1e810ae60bd5",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "9",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_lines_1.0_0",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "coincident_lines_1.0_0",
+    "api": "brep",
+    "input_sha256": "5ad90ffe052eefc283c8e272f3a0f3089778b0111a36b3824ac8b7d2480580cc",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-coincident_lines_1.0_0",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_planes_1.0_0",
+    "api": "brep",
+    "input_sha256": "4fbba988068a31eb4d62fd9e8cf076a0c16a20f8d8d1eeda4dd71562357c39b1",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "9",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_planes_1.0_0",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "coincident_planes_1.0_0",
+    "api": "brep",
+    "input_sha256": "595013c34fd17ec8e2bb6961ec77d06ffe6d2a0ab17db04dcc95c82362cf1c51",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-coincident_planes_1.0_0",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_line_plane_1.0_0",
+    "api": "brep",
+    "input_sha256": "3757f4a24b9bbe38fab78ecce18c39ce4cad20ea0a15fbb2758049ee1c79e6a0",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "9",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_line_plane_1.0_0",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "FF_1.0_1",
+    "api": "brep",
+    "input_sha256": "caee8a17424a2c9518b9d0e90f8dcf6e4c1c70e75539edc0642255fad9947e10",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-FF_1.0_1",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_lines_1.0_1",
+    "api": "brep",
+    "input_sha256": "0dd4e6c5ed33f9b8262b892d8a2023adcb9a0b45e9afb74ae5678d2ee2a15237",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "9",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_lines_1.0_1",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "coincident_lines_1.0_1",
+    "api": "brep",
+    "input_sha256": "655c5339e7275e8208aaf04460649df10accb97241c4773628bb32670266748a",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-coincident_lines_1.0_1",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_planes_1.0_1",
+    "api": "brep",
+    "input_sha256": "4a24204fcdd3fd105d5fc31851ac56de7f2b87a909ce95b7391fb6e5fcfa0790",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "9",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_planes_1.0_1",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "coincident_planes_1.0_1",
+    "api": "brep",
+    "input_sha256": "97ae80c1a4b29135054a331c6c71d86c69290dc1ecb6c7b7d29797fa8ea3f500",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-coincident_planes_1.0_1",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_line_plane_1.0_1",
+    "api": "brep",
+    "input_sha256": "e74e70f83ff8eaf1f15aaaca3043af89cac8640709c2795c612f8c6c88cf3d30",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "9",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_line_plane_1.0_1",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "FF_1.0_2",
+    "api": "brep",
+    "input_sha256": "9d062b6c178e5de22af2d39f9c87d5f4aad4459cdd31dc720c0732e524079487",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-FF_1.0_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_lines_1.0_2",
+    "api": "brep",
+    "input_sha256": "bf8f63dcc8c6ca0e1ddd93b4d941abb75e41b3fda08eee98642f17534620cd06",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "189",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_lines_1.0_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_lines_1.0_2",
+    "api": "affine",
+    "input_sha256": "bf8f63dcc8c6ca0e1ddd93b4d941abb75e41b3fda08eee98642f17534620cd06",
+    "native": {
+      "status": "P",
+      "distance_bits": "4025369480174810"
+    },
+    "exact_squared_distance": "189",
+    "reason": "Oblique exactly parallel defining geometry has squared distance 189*scale^2. The gp API uses rounded unit directions/normals and gp::Resolution() for its parallel branch; the captured native result differs. Independent analytic formulas and global certificates confirm Rust. See NATIVE_PROXIMITY_DIVERGENCES.md.",
+    "id": "occt-7.9.3-affine-parallel_lines_1.0_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "coincident_lines_1.0_2",
+    "api": "brep",
+    "input_sha256": "29d867693e8232b9c82befd43a5c9433cb9767814c7f816ce1a4527944cb218f",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-coincident_lines_1.0_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_planes_1.0_2",
+    "api": "brep",
+    "input_sha256": "8e95ad91955981f94e9a9ac9109ca0c5d116529d9a1247ccefbbc91be57c4585",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "189",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_planes_1.0_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_planes_1.0_2",
+    "api": "affine",
+    "input_sha256": "8e95ad91955981f94e9a9ac9109ca0c5d116529d9a1247ccefbbc91be57c4585",
+    "native": {
+      "status": "P",
+      "distance_bits": "0000000000000000"
+    },
+    "exact_squared_distance": "189",
+    "reason": "Oblique exactly parallel defining geometry has squared distance 189*scale^2. The gp API uses rounded unit directions/normals and gp::Resolution() for its parallel branch; the captured native result differs. Independent analytic formulas and global certificates confirm Rust. See NATIVE_PROXIMITY_DIVERGENCES.md.",
+    "id": "occt-7.9.3-affine-parallel_planes_1.0_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "coincident_planes_1.0_2",
+    "api": "brep",
+    "input_sha256": "db129d122edcaeea4fcefa57dc3f35f4f645186ad3bb67d4fe5f990415253a61",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-coincident_planes_1.0_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_line_plane_1.0_2",
+    "api": "brep",
+    "input_sha256": "da69ce39a330d89d63661608188867bbcac77ee6881e3f32496032d6772a4fee",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "189",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_line_plane_1.0_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "FF_32.0_0",
+    "api": "brep",
+    "input_sha256": "cccb26070d31ce4966271bbd17d09a5425aec0163d57f690d2415ba6be405e14",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-FF_32.0_0",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_lines_32.0_0",
+    "api": "brep",
+    "input_sha256": "f00fc7dea376392093a59b87e90f47f8463f36a4147aad569696e0439f65936c",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "9216",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_lines_32.0_0",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "coincident_lines_32.0_0",
+    "api": "brep",
+    "input_sha256": "cc259e2478658c7456fa4fe745f5d0ae6364629f3a5e645296283a49ae3ffad2",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-coincident_lines_32.0_0",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_planes_32.0_0",
+    "api": "brep",
+    "input_sha256": "10d80d8e8842ef931f9dc5e7852fc25474306dafcf5b84f79154f32842548183",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "9216",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_planes_32.0_0",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "coincident_planes_32.0_0",
+    "api": "brep",
+    "input_sha256": "c7b02bd17aaa8e770eacb4fdab434d15a71bbbde39b1f03f3a8e4b48596de015",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-coincident_planes_32.0_0",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_line_plane_32.0_0",
+    "api": "brep",
+    "input_sha256": "6aade3f68aa56f2d8817d52be5911b2294cc2f83b031874a24dad07462e20489",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "9216",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_line_plane_32.0_0",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "FF_32.0_1",
+    "api": "brep",
+    "input_sha256": "db65e45c1536a074dbbcea8ddcf535af4a154d9c31dbb4814fc77c43e325fc13",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-FF_32.0_1",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_lines_32.0_1",
+    "api": "brep",
+    "input_sha256": "000dd1c8ff8d490e2e345a3de9c12a94417d7af70ae707ab98186e914f3f017b",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "9216",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_lines_32.0_1",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "coincident_lines_32.0_1",
+    "api": "brep",
+    "input_sha256": "3c21a1823a58a6d5c3bfd1812c77bea0c0db403ed3ad0914959af51836dcfd14",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-coincident_lines_32.0_1",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_planes_32.0_1",
+    "api": "brep",
+    "input_sha256": "f9dd4deba0e2b1247fb8a44e2f02b42d66dbd2a8eab2990e332197da3a1b3482",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "9216",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_planes_32.0_1",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "coincident_planes_32.0_1",
+    "api": "brep",
+    "input_sha256": "812e6922a1fefe41610499305f8ce48621b558bb7893c1a848e9ecbbded703ac",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-coincident_planes_32.0_1",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_line_plane_32.0_1",
+    "api": "brep",
+    "input_sha256": "bd131fee7198164d028b5909ed70f96568ba89c731e464b0517217a29f2b1a85",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "9216",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_line_plane_32.0_1",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "FF_32.0_2",
+    "api": "brep",
+    "input_sha256": "a9a6cfbcf8e76e94845d6846bbdf4c3e29827404fc3eb93fb615e5ff1d101259",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-FF_32.0_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_lines_32.0_2",
+    "api": "brep",
+    "input_sha256": "4591486dc821082db9deb14272edb358119a7c9d9bdefd183bce9bd467fc62dd",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "193536",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_lines_32.0_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_lines_32.0_2",
+    "api": "affine",
+    "input_sha256": "4591486dc821082db9deb14272edb358119a7c9d9bdefd183bce9bd467fc62dd",
+    "native": {
+      "status": "P",
+      "distance_bits": "4075369480174810"
+    },
+    "exact_squared_distance": "193536",
+    "reason": "Oblique exactly parallel defining geometry has squared distance 189*scale^2. The gp API uses rounded unit directions/normals and gp::Resolution() for its parallel branch; the captured native result differs. Independent analytic formulas and global certificates confirm Rust. See NATIVE_PROXIMITY_DIVERGENCES.md.",
+    "id": "occt-7.9.3-affine-parallel_lines_32.0_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "coincident_lines_32.0_2",
+    "api": "brep",
+    "input_sha256": "609981a778e7b971360571f9991464efb5c6076427c9ef5bc2870b42bbe3c4d5",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-coincident_lines_32.0_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_planes_32.0_2",
+    "api": "brep",
+    "input_sha256": "e8a3216e62674095807ff8e1004f203a4acbb79aa000d89674de8a06ec7488f4",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "193536",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_planes_32.0_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_planes_32.0_2",
+    "api": "affine",
+    "input_sha256": "e8a3216e62674095807ff8e1004f203a4acbb79aa000d89674de8a06ec7488f4",
+    "native": {
+      "status": "P",
+      "distance_bits": "0000000000000000"
+    },
+    "exact_squared_distance": "193536",
+    "reason": "Oblique exactly parallel defining geometry has squared distance 189*scale^2. The gp API uses rounded unit directions/normals and gp::Resolution() for its parallel branch; the captured native result differs. Independent analytic formulas and global certificates confirm Rust. See NATIVE_PROXIMITY_DIVERGENCES.md.",
+    "id": "occt-7.9.3-affine-parallel_planes_32.0_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "coincident_planes_32.0_2",
+    "api": "brep",
+    "input_sha256": "fff78810d6891f5b24034173b3e0fb4542c26ab5003c512caad6887ccb2cfaff",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "0",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-coincident_planes_32.0_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  },
+  {
+    "case": "parallel_line_plane_32.0_2",
+    "api": "brep",
+    "input_sha256": "477328c22a41e6990d658ee0a4f07a5ea1b1bf2ed3c968e8e7b05bb58781ab28",
+    "native": {
+      "status": "F",
+      "distance_bits": null
+    },
+    "exact_squared_distance": "193536",
+    "reason": "BRepExtrema_DistShapeShape reports IsDone=false for this unbounded pair. The exact analytic distance and supporting-plane certificate independently validate Rust. This is a native nonresult, never a distance match.",
+    "id": "occt-7.9.3-brep-parallel_line_plane_32.0_2",
+    "oracle": "OCCT 7.9.3",
+    "evidence": "Pre-implementation local OCCT 7.9.3 capture; native harness and exact input are reproducible with compare_proximity.py"
+  }
+]

@@ -30,6 +30,7 @@ pub mod math;
 pub mod polynomial;
 pub mod predicates;
 mod profile;
+pub mod proximity;
 mod solid;
 pub mod spline;
 pub mod surface;

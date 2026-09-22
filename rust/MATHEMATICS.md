@@ -531,6 +531,66 @@ budget. A saved degree-25 fuzz polynomial with a full-exponent query at its
 root `-1` exercises the former expensive fallback and remains in the independent
 root fixtures and fuzz corpus.
 
+## Exact proximity of linear sets
+
+`proximity::closest_points` supports every ordered pair of a point, infinite
+line, closed segment, infinite three-point plane, or closed triangle. Finite
+binary64 defining points are interpreted exactly. Zero-length segments are
+singletons; zero-length lines and collinear planes/triangles are rejected.
+No modeling tolerance, rounded normal, or near-parallel threshold is used.
+
+The result retains one rational point on each operand, original affine
+parameters and exact squared distance. Line/segment parameters use `a+t(b-a)`;
+plane/triangle parameters use `a+u(b-a)+v(c-a)`. Segment parameters are in
+`[0,1]`; triangle parameters satisfy `u>=0`, `v>=0`, `u+v<=1`. The API does
+not claim uniqueness or enumerate a continuum of minima. Exact comparisons
+and the rational result remain usable even when a point, parameter, squared
+distance or unsquared distance has no finite binary64 enclosure. Each requested
+conversion fails separately with `Unrepresentable`. Rounded representatives
+are not exact incidence witnesses. Distances have input length units; squared
+distances have squared units. There is no B-rep, curved-set or clearance-volume
+query in this API.
+
+The solver enumerates the nonempty faces of each bounded simplex (one point,
+three segment faces, seven triangle faces), or the whole unbounded affine set.
+For each pair, minimize `||delta + D*x||²`, where columns of `D` are the first
+face directions and the negatives of the second face directions. Solve the
+normal equations `DᵀD*x = -Dᵀdelta` using exact rational elimination, with
+free variables set to zero. This system is consistent: `ker(DᵀD)=ker(D)`
+and the right-hand side is orthogonal to that kernel. Keep solutions with
+feasible bounded-face barycentric coordinates, then select the smallest exact
+squared distance. A fixed tie order makes repeated queries deterministic.
+
+Completeness includes singular systems. Take a minimum on its smallest active
+faces. It is stationary on their affine hulls. If a null direction changes
+bounded barycentric coordinates, move within the solution set until one reaches
+a boundary, lowering the face dimension without changing distance. Repeat.
+On the resulting enumerated faces, every null direction leaves bounded
+coordinates unchanged, so the solver's particular solution is feasible.
+When both faces are unbounded there are no feasibility inequalities. Collapsed
+segments also have their singleton faces. Thus at least one enumerated
+candidate realizes the global minimum. There are at most 49 systems of at most
+four variables; arithmetic sizes depend on input bits. This finite bound is
+not a measured production latency guarantee.
+
+The independent witness checker uses first-order convex optimality, not another
+face search or elimination. This is the supporting-hyperplane criterion in
+Boyd and Vandenberghe's [Convex Optimization, §4.2.3](https://www.stanford.edu/~boyd/cvxbook/bv_cvxbook.pdf).
+For returned `p` and `q`, let `d=p-q`. Check membership exactly, then check
+`d·(v-p)>=0` at every vertex of the first bounded set and `d·(v-q)<=0` at
+every vertex of the second. For each unbounded set, check orthogonality to
+every direction. These conditions extend to all feasible points by convexity
+or affine linearity. For any other feasible `x,y`, put `h=(x-p)-(y-q)`.
+Then `||x-y||²-||p-q||² = 2*d·h + ||h||² >= 0`, certifying global
+minimality. Tests also reconstruct both points from the returned parameters.
+
+Python `Fraction` fixtures independently use closed projections, cross-product
+line distances, plane intersection, edge halfspaces and boundary candidates.
+They check the exact squared distance and minimal enclosures. The square-root
+reference seeds its enclosure using integer square root on a subnormal lattice;
+production searches binary64 bit order with exact squared comparisons. Native
+OCCT observations are a third check with [explicitly reviewed differences](NATIVE_PROXIMITY_DIVERGENCES.md).
+
 ## Independent and adversarial evidence
 
 - `fixtures/orient2d.tsv`: 2,417 input triples with expected signs calculated by
@@ -551,6 +611,12 @@ root fixtures and fuzz corpus.
   calculated by a separate rational barycentric oracle and Python's rational
   conversion. Includes degenerate, unrepresentable, point, overlap and empty
   results. Tests also reverse segment endpoints and all triangle vertex orders.
+- `fixtures/proximity.tsv`: 554 exact cases across all 25 ordered pairings,
+  including all 370 native inputs, subnormal/full-exponent coordinates, singular
+  minima, invalid geometry and separately unrepresentable outputs. Every valid
+  result and its operand-swapped query pass the global optimality certificate;
+  repeat queries must return the same witness. The dedicated fuzz target adds
+  arbitrary binary64 mutations, exact coordinate permutations and vertex reversal.
 - 256 generated prisms over 25 scales, with concave/convex radial polygons and
   optional holes, check volume/first-moment conservation under splitting,
   introduced cut area, winding and offset reversal, rigid-motion covariance,
@@ -628,7 +694,8 @@ disagreement disappear.
 
 ## Next mathematical work
 
-1. Add the distance/incircle comparisons required by subsequent algorithms.
+1. Add incircle comparisons and extend certified linear-set distances to the
+   curved geometry required by subsequent algorithms.
    Preserve explicit units, domains and arithmetic bounds; do not reuse an
    arbitrary global epsilon.
 2. Add certified curve/surface editing and projections; extend root isolation

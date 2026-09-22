@@ -18,7 +18,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity']
 
 
 def seed_corpus(target):
@@ -30,7 +30,21 @@ def seed_corpus(target):
         if not path.exists():
             path.write_bytes(data)
 
-    if target == 'roots':
+    if target == 'proximity':
+        from proximity_reference import COUNTS
+        for row in (ROOT/'rust/fixtures/proximity.tsv').read_text().splitlines():
+            if row.startswith('#'): continue
+            words=iter(row.split()); next(words)
+            kinds=[]; coordinates=[]
+            for _ in range(2):
+                kind=next(words); kinds.append(list(COUNTS).index(kind))
+                coordinates += [int(next(words),16).to_bytes(8,'little') for _ in range(COUNTS[kind]*3)]
+            save(bytes([0,*kinds,0,128])+b''.join(coordinates))
+        for mode in [1,2,3]:
+            for a in range(5):
+                for b in range(5):
+                    save(bytes([mode,a,b,2,128])+bytes((j*37+1)%256 for j in range(144)))
+    elif target == 'roots':
         for degree in [0,1,2,7,24]:
             for mode in range(4):
                 save(bytes([degree,128])+bytes([mode])*25+bytes([mode,mode,24])+bytes((j*37)%256 for j in range(200)))
