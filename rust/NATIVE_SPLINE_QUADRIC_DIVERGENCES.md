@@ -7,7 +7,11 @@ unclamped knots, corners, explicit trims and multiple periodic turns. The
 source reference is `3d097a0328e71b826377d4814ab05ec3c3d23871`; local OCCT 7.9.3
 and the distribution runtime used by Linux CI are separate builds.
 
-Local OCCT 7.9.3 has **66 matches and 26 reviewed differences**. Every Rust
+Local OCCT 7.9.3 and Linux OCCT 7.6.3 each have **66 matches and 26 reviewed
+differences**. The Linux observations were captured in
+[run 35715108389](https://github.com/jackControls/rustyOCCT/actions/runs/35715108389)
+and all 92 exact certificates were independently recomputed before adding its
+version-specific records. Every Rust
 answer also matches an independent exact basis-polynomial and continued-fraction
 calculation. The differences are:
 

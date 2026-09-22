@@ -184,7 +184,8 @@ The generator uses a fixed seed and writes inputs only.
 ## Spline/quadric comparisons
 
 `compare_spline_quadric.py` captures 92 sphere/cylinder observations with the
-same headless `GeomAPI_IntCS` helper. OCCT 7.9.3 has 66 direct matches and 26
+same headless `GeomAPI_IntCS` helper. OCCT 7.9.3 and Linux OCCT 7.6.3 each have
+66 direct matches and 26
 [reviewed differences](NATIVE_SPLINE_QUADRIC_DIVERGENCES.md), primarily missing
 overlap intervals and later periodic events. Every Rust result is independently
 recomputed, including complete point counts, minimal enclosures, contact orders

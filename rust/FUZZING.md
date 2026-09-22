@@ -20,9 +20,13 @@ coverage feedback. They are distinct from the deterministic invariant tests.
 The rational oracle uses `num-rational` with Gaussian elimination and
 barycentric coordinates, plus polynomial-sign/vertex comparisons and cylinder
 axial projection. Production uses a fixed binary64 integer lattice, determinant
-expansion, edge half-planes, exact radical comparisons and cylinder cross
-products. Spline production uses differentiated de Boor pole interpolation;
+expansion, edge half-planes, exact radical comparisons and, for analytic lines,
+cylinder cross products. Spline production uses differentiated de Boor pole interpolation;
 its fuzz oracle instead evaluates basis functions and their derivative identity.
+Spline/quadric line fuzzing independently solves the physical line's quadratic
+and converts its parameter through the rational weight map; production instead
+isolates the spline's homogeneous implicit polynomial. Separate Python quadric
+fixtures use cylinder cross products to check production's dot-product form.
 The Rust oracles and production share `num-bigint`/`num-rational`;
 the checked-in Python `Fraction` fixtures provide a separate integer runtime.
 Coverage counts include the oracle and dependencies: they are not kernel-only
