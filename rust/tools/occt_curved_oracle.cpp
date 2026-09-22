@@ -1,14 +1,17 @@
 // Test-only OCCT observations, independent of Rust results.
+// OCCT 7.6's IntAna_Quadric.hxx does not declare all referenced gp types.
+#include <gp_Cone.hxx>
+#include <gp_Cylinder.hxx>
+#include <gp_Pln.hxx>
+#include <gp_Sphere.hxx>
 #include <IntAna_IntConicQuad.hxx>
 #include <IntAna_Quadric.hxx>
 #include <IntAna2d_AnaIntersection.hxx>
 #include <IntAna2d_IntPoint.hxx>
 #include <Standard_Version.hxx>
 #include <gp_Circ2d.hxx>
-#include <gp_Cylinder.hxx>
 #include <gp_Lin.hxx>
 #include <gp_Lin2d.hxx>
-#include <gp_Sphere.hxx>
 #include <gp_Vec.hxx>
 #include <math_DirectPolynomialRoots.hxx>
 #include <algorithm>
