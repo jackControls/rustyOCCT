@@ -90,3 +90,13 @@ requested interval. The pinned source's `IntCurveSurface_InterUtils.pxx`,
 the observed parameter-convention differences are therefore explicit, not
 silently merged or counted as matching geometry. Runtime versions and pinned
 source remain distinct references.
+
+On Linux OCCT 7.6.3 the combined corpus has **158 matches and 56 reviewed
+differences**. The 26 additional reviews come from
+[the first range-query CI run](https://github.com/jackControls/rustyOCCT/actions/runs/35710851803),
+after all 214 certificates were independently recomputed and matched macOS.
+Unlike 7.9.3's duplicate seam observation, its `[3,6]` quadratic query returns
+the end near `5.999999999452834`, outside the unchanged budget around the exact
+root 6. Its two trimmed axial order-seven cases also exceed the budget. The
+remaining families have the same types of differences described above, with
+every native value pinned independently for this runtime.
