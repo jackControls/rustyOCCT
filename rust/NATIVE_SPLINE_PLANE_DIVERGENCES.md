@@ -20,9 +20,19 @@ not an asserted OCCT guarantee. The registry pins version, input SHA-256, every
 observed native value bit, and independent complete certificate SHA-256. A
 review is accepted only after rechecking the complete exact Rust answer.
 Changed or unreviewed observations fail. `--strict-native` fails on reviewed
-differences too. Linux distribution observations need their own review.
+differences too.
 
-## Reviewed families
+Linux OCCT 7.6.3 has **102 matches and 30 reviewed differences**, captured in
+[the first intersection CI run](https://github.com/jackControls/rustyOCCT/actions/runs/35706869830).
+All 132 Rust certificates match the macOS certificates and were independently
+recomputed from those Linux artifacts before adding reviews. This runtime's
+`factor_4_*` cases stay within the budget without extra events; all six
+`rational_25_*` cases exceed it. `factor_1_oblique_8.0` returns three nearby
+events around its single double root. Other reviewed families have the same
+types of differences described below. Every Linux observation is pinned
+separately; no review is copied across versions without checking actual output.
+
+## OCCT 7.9.3 reviewed families
 
 | Family | Exact result / native observation |
 | --- | --- |

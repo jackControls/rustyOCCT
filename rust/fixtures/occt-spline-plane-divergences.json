@@ -944,5 +944,719 @@
     "exact_certificate_sha256": "6c8a71dbf6240bc67d4c8a92ff560a591279ec70c5a4010d5a321935ca961ef4",
     "reason": "The declared closed-domain contract retains both parameter endpoints 0 and 3; native emits only one of these periodic seam aliases.",
     "evidence": "rust/NATIVE_SPLINE_PLANE_DIVERGENCES.md"
+  },
+  {
+    "id": "occt763-spline-plane-rational_25_axis_0.125",
+    "oracle": "OCCT 7.6.3",
+    "case": "rational_25_axis_0.125",
+    "input_sha256": "63f29ce458c6f883636f51ba8ad6005bd7f551920febcbf4394bd6c1f657d837",
+    "native": {
+      "points": [
+        [
+          "3fdffffff8175231",
+          "400c8000000e2f6f",
+          "c006aaaaab2adf20",
+          "4014000000006b0c"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "cb5158090ae24ec269614238eaed1b0efb3523c6937bb9526c8fcc60a288c098",
+    "reason": "Independent rational basis polynomials and exact root isolation confirm the Rust enclosure; a native parameter or coordinate exceeds the stated comparison budget.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-contained_axis_0.125",
+    "oracle": "OCCT 7.6.3",
+    "case": "contained_axis_0.125",
+    "input_sha256": "696ad6a861e4ca5fe6ddead3345d19cc1a5f6deefec734ecbddc08eea1c19e09",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "The entire [0,1] domain has an identically zero plane numerator; native GeomAPI_IntCS reports no overlap segment.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-partial_overlap_axis_0.125",
+    "oracle": "OCCT 7.6.3",
+    "case": "partial_overlap_axis_0.125",
+    "input_sha256": "21a3e02e37ccbcf6a83265f52416c55051f6ad1842d23f4950ba3299c7cf4ee9",
+    "native": {
+      "points": [
+        [
+          "3ff0000000000000",
+          "4001000000000000",
+          "c008000000000000",
+          "4014000000000000"
+        ],
+        [
+          "4000000000000000",
+          "4002000000000000",
+          "c008000000000000",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "d62f41857986a73a1294bbf4618bb7bbc93edd23a77a6d7c7d55d0fc164fc7b6",
+    "reason": "The plane numerator vanishes identically on [1,2]; native reports its endpoints as isolated points and no overlap segment.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-periodic_2_axis_0.125",
+    "oracle": "OCCT 7.6.3",
+    "case": "periodic_2_axis_0.125",
+    "input_sha256": "7829553d6ba922aadcaf5f7036124550d96f6c3d7aa686bfd6bd3d0278155718",
+    "native": {
+      "points": [
+        [
+          "0000000000000000",
+          "4000800000000000",
+          "c007800000000000",
+          "4014000000000000"
+        ],
+        [
+          "3fe5555555555556",
+          "4000800000000000",
+          "c0069c71c71c71c7",
+          "4014000000000000"
+        ],
+        [
+          "3ff5555555555555",
+          "4000800000000000",
+          "c0059c71c71c71c7",
+          "4014000000000000"
+        ],
+        [
+          "3ffffffffffffffc",
+          "4000800000000000",
+          "c0067fffffffffff",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "a7738d3380da0c3a9f5d4b5c01078167bb021253820995308dd829d2bc275739",
+    "reason": "The declared closed-domain contract retains both parameter endpoints 0 and 3; native emits only one of these periodic seam aliases.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-factor_7_oblique_0.125",
+    "oracle": "OCCT 7.6.3",
+    "case": "factor_7_oblique_0.125",
+    "input_sha256": "ed7b70173e9e3e4a87c0def453db522dc03251916532dd4c50dd6e0b20036d6b",
+    "native": {
+      "points": [
+        [
+          "3fdffffffd0cf2dc",
+          "4006ffffff5ad521",
+          "c002840000552a1c",
+          "40147effffff5ad5"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "e6704d7a3ec5dc6fc0e58a2e218a52b0d7175915228fed1fcaa07e28c5cb5196",
+    "reason": "The exact polynomial has a single order-seven crossing at 1/2; a native parameter or coordinate exceeds the stated comparison budget.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-rational_25_oblique_0.125",
+    "oracle": "OCCT 7.6.3",
+    "case": "rational_25_oblique_0.125",
+    "input_sha256": "45aa81b30a24a617fe494b6dbdf690e4f89e471c45231c7525b6bbba08c32344",
+    "native": {
+      "points": [
+        [
+          "3fdffffff80aabcb",
+          "40147ffffffdd8ce",
+          "bff1aaaaaca6db30",
+          "4014aaaaaa6ad818"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "72c3635ed2d5bc67d050c8bc262ff923b9feaa5dd2d0d23e7b4052f03f666317",
+    "reason": "Independent rational basis polynomials and exact root isolation confirm the Rust enclosure; a native parameter or coordinate exceeds the stated comparison budget.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-contained_oblique_0.125",
+    "oracle": "OCCT 7.6.3",
+    "case": "contained_oblique_0.125",
+    "input_sha256": "264f01710edbf498f6639320f9b60f1c63301dd3a53836ce0e65fa00c83e6511",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "The entire [0,1] domain has an identically zero plane numerator; native GeomAPI_IntCS reports no overlap segment.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-partial_overlap_oblique_0.125",
+    "oracle": "OCCT 7.6.3",
+    "case": "partial_overlap_oblique_0.125",
+    "input_sha256": "0a46bc21b1a10b55fc3acb29722d87cef4b6459e06a589a700ae3f5900e221b2",
+    "native": {
+      "points": [
+        [
+          "3ff0000000000000",
+          "4002000000000000",
+          "c007000000000000",
+          "4014000000000000"
+        ],
+        [
+          "4000000000000000",
+          "4004000000000000",
+          "c006000000000000",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "d62f41857986a73a1294bbf4618bb7bbc93edd23a77a6d7c7d55d0fc164fc7b6",
+    "reason": "The plane numerator vanishes identically on [1,2]; native reports its endpoints as isolated points and no overlap segment.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-periodic_2_oblique_0.125",
+    "oracle": "OCCT 7.6.3",
+    "case": "periodic_2_oblique_0.125",
+    "input_sha256": "1bdd4b9c2c1fe53134af1e6c75112de670d282c91f68184f79546fafe628a548",
+    "native": {
+      "points": [
+        [
+          "0000000000000000",
+          "4001000000000000",
+          "c006800000000000",
+          "4014400000000000"
+        ],
+        [
+          "3fe555555555554f",
+          "4001000000000001",
+          "c004b8e38e38e38f",
+          "4014b1c71c71c71d"
+        ],
+        [
+          "3ff5555555555557",
+          "4001000000000000",
+          "c002b8e38e38e38e",
+          "401531c71c71c71d"
+        ],
+        [
+          "3fffffffffffffff",
+          "4001000000000000",
+          "c004800000000000",
+          "4014c00000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "ce89b0e0035b56ed066e19c890837a254b33c4fe403058eaddc682063cbbdca4",
+    "reason": "The declared closed-domain contract retains both parameter endpoints 0 and 3; native emits only one of these periodic seam aliases.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-factor_7_axis_1.0",
+    "oracle": "OCCT 7.6.3",
+    "case": "factor_7_axis_1.0",
+    "input_sha256": "e3bc54b2557a48deec54dc859610f7d27f97f1ab890cdb8602cc3956627e9eca",
+    "native": {
+      "points": [
+        [
+          "3fdffffffc32da40",
+          "4015fffffe563f7c",
+          "c0001000000d4e03",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "dd7c62354d01607c4fe32a2fcb0ccb4a7573c47d31e7dcc25c95e2bade978235",
+    "reason": "The exact polynomial has a single order-seven crossing at 1/2; a native parameter or coordinate exceeds the stated comparison budget.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-rational_25_axis_1.0",
+    "oracle": "OCCT 7.6.3",
+    "case": "rational_25_axis_1.0",
+    "input_sha256": "2791e30e65656a2ea0ff88ea6c4a344d561cbdc43eaa06e348d89dd1ec85f07b",
+    "native": {
+      "points": [
+        [
+          "3fdffffff806473c",
+          "402cfffffffcc037",
+          "bffaaaaab2a56a3f",
+          "4014000000012727"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "99cbcf1dca2e08817e8082a04847abe2a91c4ddd37d61412cf78f838e06a2348",
+    "reason": "Independent rational basis polynomials and exact root isolation confirm the Rust enclosure; a native parameter or coordinate exceeds the stated comparison budget.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-contained_axis_1.0",
+    "oracle": "OCCT 7.6.3",
+    "case": "contained_axis_1.0",
+    "input_sha256": "1154182282e92fac33cda2f8ae3ab9b984f63d55635ada81d021608dafcca6c8",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "The entire [0,1] domain has an identically zero plane numerator; native GeomAPI_IntCS reports no overlap segment.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-partial_overlap_axis_1.0",
+    "oracle": "OCCT 7.6.3",
+    "case": "partial_overlap_axis_1.0",
+    "input_sha256": "c9d721f44fbeb85e002feb42637fdb43a572c9d11764493c956129348b44cda0",
+    "native": {
+      "points": [
+        [
+          "3ff0000000000000",
+          "4008000000000000",
+          "c008000000000000",
+          "4014000000000000"
+        ],
+        [
+          "4000000000000000",
+          "4010000000000000",
+          "c008000000000000",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "d62f41857986a73a1294bbf4618bb7bbc93edd23a77a6d7c7d55d0fc164fc7b6",
+    "reason": "The plane numerator vanishes identically on [1,2]; native reports its endpoints as isolated points and no overlap segment.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-periodic_2_axis_1.0",
+    "oracle": "OCCT 7.6.3",
+    "case": "periodic_2_axis_1.0",
+    "input_sha256": "1533b27b8fef62c35d7c9e896f425a2a800962742e7d32bdfab539dcb66c8d55",
+    "native": {
+      "points": [
+        [
+          "0000000000000000",
+          "4004000000000000",
+          "c004000000000000",
+          "4014000000000000"
+        ],
+        [
+          "3fe5555555555556",
+          "4004000000000000",
+          "bff9c71c71c71c71",
+          "4014000000000000"
+        ],
+        [
+          "3ff5555555555556",
+          "4004000000000000",
+          "bfe38e38e38e38e3",
+          "4014000000000000"
+        ],
+        [
+          "4000000000000000",
+          "4004000000000000",
+          "bff8000000000000",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8c943c743f8abf62de6c5d7e0c795e35331a27b897b7d5757adbccd598872527",
+    "reason": "The declared closed-domain contract retains both parameter endpoints 0 and 3; native emits only one of these periodic seam aliases.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-factor_7_oblique_1.0",
+    "oracle": "OCCT 7.6.3",
+    "case": "factor_7_oblique_1.0",
+    "input_sha256": "6ef300c71a22e5c3982a11fe66d47bb56216c98d21d097adbe216eceb1e24063",
+    "native": {
+      "points": [
+        [
+          "3fdfffa2eff07096",
+          "4021ffd748f93142",
+          "4003dfac06c49191",
+          "4017f7ff5d348bbd"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "cfc5ff64c44bed2dc6b310a00ca696e313b1b507fa22095ae55e9c624df0fba1",
+    "reason": "The exact polynomial has a single order-seven crossing at 1/2; a native parameter or coordinate exceeds the stated comparison budget.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-rational_25_oblique_1.0",
+    "oracle": "OCCT 7.6.3",
+    "case": "rational_25_oblique_1.0",
+    "input_sha256": "aaf003b15c2d05d85de4fb01977c10868404c7a6e3f4250cb08c4047e469e795",
+    "native": {
+      "points": [
+        [
+          "3fdffffff80af7aa",
+          "403b00000004a635",
+          "4028555553529925",
+          "40195555534aecb1"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "3a2d2faaad2b0f5a19395b47443ce98d948b444a111f29ce424f2a6f7b145a2e",
+    "reason": "Independent rational basis polynomials and exact root isolation confirm the Rust enclosure; a native parameter or coordinate exceeds the stated comparison budget.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-contained_oblique_1.0",
+    "oracle": "OCCT 7.6.3",
+    "case": "contained_oblique_1.0",
+    "input_sha256": "e345ba8223586ec37e20d8294422a42ee8f2e028ed46e7fd9ba507224234f410",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "The entire [0,1] domain has an identically zero plane numerator; native GeomAPI_IntCS reports no overlap segment.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-partial_overlap_oblique_1.0",
+    "oracle": "OCCT 7.6.3",
+    "case": "partial_overlap_oblique_1.0",
+    "input_sha256": "39981313755499f5d76f5aa500d29048ba419345c4d7f3a3ad0548813389f8d5",
+    "native": {
+      "points": [
+        [
+          "3ff0000000000000",
+          "4010000000000000",
+          "c000000000000000",
+          "4014000000000000"
+        ],
+        [
+          "4000000000000000",
+          "4018000000000000",
+          "bff0000000000000",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "d62f41857986a73a1294bbf4618bb7bbc93edd23a77a6d7c7d55d0fc164fc7b6",
+    "reason": "The plane numerator vanishes identically on [1,2]; native reports its endpoints as isolated points and no overlap segment.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-periodic_2_oblique_1.0",
+    "oracle": "OCCT 7.6.3",
+    "case": "periodic_2_oblique_1.0",
+    "input_sha256": "c1070e82eb9112f2d3d6b89aa51ade6ddd8f08f61f29168e72dc157aae8937bf",
+    "native": {
+      "points": [
+        [
+          "0000000000000000",
+          "4008000000000000",
+          "bff8000000000000",
+          "4016000000000000"
+        ],
+        [
+          "3fe5555555555555",
+          "4008000000000000",
+          "3fd1c71c71c71c70",
+          "40198e38e38e38e4"
+        ],
+        [
+          "3ff5555555555555",
+          "4007ffffffffffff",
+          "400238e38e38e38f",
+          "401d8e38e38e38e3"
+        ],
+        [
+          "4000000000000000",
+          "4008000000000000",
+          "3fe0000000000000",
+          "401a000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "11109167eb718c1110c1855f5294d9d653e6df03613d165cfd8cfc9b65efe860",
+    "reason": "The declared closed-domain contract retains both parameter endpoints 0 and 3; native emits only one of these periodic seam aliases.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-factor_7_axis_8.0",
+    "oracle": "OCCT 7.6.3",
+    "case": "factor_7_axis_8.0",
+    "input_sha256": "f341c291247b30b3dff0dc8ccc7279b5c58fc0cde307c4bd40ab90dad957fa6d",
+    "native": {
+      "points": [
+        [
+          "3fdffffffd412bd9",
+          "403dfffffd99065e",
+          "4013bfffffd99079",
+          "4013fffffffffff1"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "d312c9c055d5117a89d526f22071232b9958b02fcbad751738c7e1523a2b534e",
+    "reason": "The exact polynomial has a single order-seven crossing at 1/2; a native parameter or coordinate exceeds the stated comparison budget.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-rational_25_axis_8.0",
+    "oracle": "OCCT 7.6.3",
+    "case": "rational_25_axis_8.0",
+    "input_sha256": "fbedf0f0e8b626f299dbf50550dec1ac6986ef23031575513e2d02abcd0166d3",
+    "native": {
+      "points": [
+        [
+          "3fdffffff8091e4a",
+          "40597ffffffc90ba",
+          "401eaaaa9ac1a809",
+          "401400000001abde"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "d78eb3e54e4db83053a79c4ef88b4d2b5b3faedb580f3d74360f8be23131ff37",
+    "reason": "Independent rational basis polynomials and exact root isolation confirm the Rust enclosure; a native parameter or coordinate exceeds the stated comparison budget.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-contained_axis_8.0",
+    "oracle": "OCCT 7.6.3",
+    "case": "contained_axis_8.0",
+    "input_sha256": "795609f18ed4fa874419402300d250f06f96e166e0073b02c1613a4c1f84e6ef",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "The entire [0,1] domain has an identically zero plane numerator; native GeomAPI_IntCS reports no overlap segment.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-partial_overlap_axis_8.0",
+    "oracle": "OCCT 7.6.3",
+    "case": "partial_overlap_axis_8.0",
+    "input_sha256": "6fa3b775e5e5c728e27e182fa454fe83a3507e31687ce1e7018213a8999884d7",
+    "native": {
+      "points": [
+        [
+          "3ff0000000000000",
+          "4024000000000000",
+          "c008000000000000",
+          "4014000000000000"
+        ],
+        [
+          "4000000000000000",
+          "4032000000000000",
+          "c008000000000000",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "d62f41857986a73a1294bbf4618bb7bbc93edd23a77a6d7c7d55d0fc164fc7b6",
+    "reason": "The plane numerator vanishes identically on [1,2]; native reports its endpoints as isolated points and no overlap segment.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-periodic_2_axis_8.0",
+    "oracle": "OCCT 7.6.3",
+    "case": "periodic_2_axis_8.0",
+    "input_sha256": "689d41017c56730d252ccfc125fcaa7e419a977e9c0b3b526146ec4a3798a0d9",
+    "native": {
+      "points": [
+        [
+          "0000000000000000",
+          "4018000000000000",
+          "3ff0000000000000",
+          "4014000000000000"
+        ],
+        [
+          "3fe5555555555556",
+          "4018000000000000",
+          "402038e38e38e38f",
+          "4014000000000000"
+        ],
+        [
+          "3ff5555555555555",
+          "4017ffffffffffff",
+          "40301c71c71c71c7",
+          "4013fffffffffffe"
+        ],
+        [
+          "4000000000000000",
+          "4018000000000000",
+          "4022000000000000",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "d868873a9719d3267be768f579748b345c33ea848546fc8a8a4697610e6ed7a0",
+    "reason": "The declared closed-domain contract retains both parameter endpoints 0 and 3; native emits only one of these periodic seam aliases.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-factor_1_oblique_8.0",
+    "oracle": "OCCT 7.6.3",
+    "case": "factor_1_oblique_8.0",
+    "input_sha256": "09125bf8495745584f02b043e8d19549cbfd6b6ed7360907ec6ee2df488cc63e",
+    "native": {
+      "points": [
+        [
+          "3fdffffffe2cd0e5",
+          "4031ffffff166872",
+          "4034fffffea19cac",
+          "4029ffffff166872"
+        ],
+        [
+          "3fdfffffff5477f8",
+          "4031ffffffaa3bfc",
+          "4034ffffff7f59fa",
+          "4029ffffffaa3bfc"
+        ],
+        [
+          "3fe000000000235c",
+          "403200000000235c",
+          "403500000000350a",
+          "402a00000000235c"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "6997c65c6d66f5d678803fbc9d77a4c356e683ff24171b4807eae9cf95ffcbed",
+    "reason": "The exact polynomial has one double root at 1/2; native reports three nearby point events.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-factor_7_oblique_8.0",
+    "oracle": "OCCT 7.6.3",
+    "case": "factor_7_oblique_8.0",
+    "input_sha256": "a67a3a028f6205f84deaade6cf0f9c8ac38105be3909effd0a330bdcb256e813",
+    "native": {
+      "points": [
+        [
+          "3fdfffff3c0fd298",
+          "404cffff548dd848",
+          "40446fffa7992413",
+          "4029dffffaa46fd8"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "cbd57c1f23e984a23231d1c3dc43ef85d199b55e2e806706f0a9b8d10a672bb2",
+    "reason": "The exact polynomial has a single order-seven crossing at 1/2; a native parameter or coordinate exceeds the stated comparison budget.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-rational_25_oblique_8.0",
+    "oracle": "OCCT 7.6.3",
+    "case": "rational_25_oblique_8.0",
+    "input_sha256": "8e3ca957b4771ff658e58b218d7841f1025a37d39664085557e13e544640328e",
+    "native": {
+      "points": [
+        [
+          "3fdffffff80819e1",
+          "406940000004f1fd",
+          "405d955553571b5d",
+          "402f55554d7e1c47"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "0f20a89a9f473184489807653ee373e2aa0bc699e00cf3f9368a0fbe77aa82be",
+    "reason": "Independent rational basis polynomials and exact root isolation confirm the Rust enclosure; a native parameter or coordinate exceeds the stated comparison budget.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-contained_oblique_8.0",
+    "oracle": "OCCT 7.6.3",
+    "case": "contained_oblique_8.0",
+    "input_sha256": "d010e6733e49422441f7e4f413f2eb4f964341e24323b9c2c07ce35327ef21dd",
+    "native": {
+      "points": [],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "8f622d548c76c29d48fd0e528ebf2985449115360615a72179137a6466ff88cb",
+    "reason": "The entire [0,1] domain has an identically zero plane numerator; native GeomAPI_IntCS reports no overlap segment.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-partial_overlap_oblique_8.0",
+    "oracle": "OCCT 7.6.3",
+    "case": "partial_overlap_oblique_8.0",
+    "input_sha256": "3c910dd5389605b30c60296039fca7785213f7735d28037d06dee13d0e0218ac",
+    "native": {
+      "points": [
+        [
+          "3ff0000000000000",
+          "4032000000000000",
+          "4014000000000000",
+          "4014000000000000"
+        ],
+        [
+          "4000000000000000",
+          "4041000000000000",
+          "402a000000000000",
+          "4014000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "d62f41857986a73a1294bbf4618bb7bbc93edd23a77a6d7c7d55d0fc164fc7b6",
+    "reason": "The plane numerator vanishes identically on [1,2]; native reports its endpoints as isolated points and no overlap segment.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
+  },
+  {
+    "id": "occt763-spline-plane-periodic_2_oblique_8.0",
+    "oracle": "OCCT 7.6.3",
+    "case": "periodic_2_oblique_8.0",
+    "input_sha256": "f602f171ef04fa83886430521567149da7a393d55536c44eaca908e3be8fcef1",
+    "native": {
+      "points": [
+        [
+          "0000000000000000",
+          "4024000000000000",
+          "4022000000000000",
+          "4022000000000000"
+        ],
+        [
+          "3fe5555555555555",
+          "4024000000000000",
+          "403738e38e38e38e",
+          "40301c71c71c71c8"
+        ],
+        [
+          "3ff5555555555555",
+          "4023fffffffffffe",
+          "40439c71c71c71c7",
+          "40381c71c71c71c6"
+        ],
+        [
+          "4000000000000000",
+          "4024000000000000",
+          "4039000000000000",
+          "4031000000000000"
+        ]
+      ],
+      "overlaps": []
+    },
+    "exact_certificate_sha256": "6c8a71dbf6240bc67d4c8a92ff560a591279ec70c5a4010d5a321935ca961ef4",
+    "reason": "The declared closed-domain contract retains both parameter endpoints 0 and 3; native emits only one of these periodic seam aliases.",
+    "evidence": "https://github.com/jackControls/rustyOCCT/actions/runs/35706869830"
   }
 ]

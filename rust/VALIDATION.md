@@ -91,6 +91,8 @@ version, input, complete native values and independently recomputed certificate;
 it never exempts a Rust result from exact checks. `--strict-native` fails on
 reviewed differences too. SymPy is hash-pinned and test-only; Cargo tests use
 checked-in exact certificates without requiring Python or native OCCT.
+Linux OCCT 7.6.3 has 102 matches and 30 separately reviewed spline/plane
+differences. All 132 Rust certificates agree across macOS and Linux.
 
 The first implementation has deterministic analytic tests plus a recorded,
 independently evaluated OCCT 7.9.3 corpus. The live comparison was run on Apple
