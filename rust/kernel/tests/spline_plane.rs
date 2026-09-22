@@ -13,7 +13,7 @@ fn bits(word: &str) -> f64 {
 
 #[test]
 fn complete_results_match_independent_basis_and_continued_fraction_oracle() {
-    check_fixtures(include_str!("../../fixtures/spline-plane.tsv"), 283);
+    check_fixtures(include_str!("../../fixtures/spline-plane.tsv"), 284);
 }
 
 #[test]

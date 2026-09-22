@@ -217,11 +217,11 @@ impl AlgebraicRoot {
         }
         // Exact interval Horner evaluation is a sufficient fast test only.
         // If it cannot decide, use the complete Sturm-Tarski query.
-        let (lo, hi) = g.range(&self.lower, &self.upper);
-        if lo > zero() {
+        let (lo, hi) = g.range_signs(&self.lower, &self.upper);
+        if lo == Ordering::Greater {
             return Ordering::Greater;
         }
-        if hi < zero() {
+        if hi == Ordering::Less {
             return Ordering::Less;
         }
         let p = &self.defining.polynomial;
@@ -366,14 +366,26 @@ impl IntPolynomial {
         }
         value.cmp(&BigInt::from(0))
     }
-    fn range(&self, a: &R, b: &R) -> (R, R) {
-        let (mut low, mut high) = (zero(), zero());
-        for c in self.0.iter().rev() {
-            let products = [&low * a, &low * b, &high * a, &high * b];
-            low = products.iter().min().unwrap().clone() + R::from_integer(c.clone());
-            high = products.iter().max().unwrap().clone() + R::from_integer(c.clone());
+    /// Signs of the exact interval-Horner bounds on [a,b]. Keep both bounds
+    /// over the same positive denominator instead of reducing four rational
+    /// products at every coefficient. Only their signs are needed by the filter.
+    fn range_signs(&self, a: &R, b: &R) -> (Ordering, Ordering) {
+        let Some((last, rest)) = self.0.split_last() else {
+            return (Ordering::Equal, Ordering::Equal);
+        };
+        let common = a.denom() / gcd_integer(a.denom().clone(), b.denom().clone()) * b.denom();
+        let a = a.numer() * (&common / a.denom());
+        let b = b.numer() * (&common / b.denom());
+        let (mut low, mut high) = (last.clone(), last.clone());
+        let mut denominator = BigInt::from(1);
+        for c in rest.iter().rev() {
+            let products = [&low * &a, &low * &b, &high * &a, &high * &b];
+            denominator *= &common;
+            let offset = c * &denominator;
+            low = products.iter().min().unwrap() + &offset;
+            high = products.iter().max().unwrap() + offset;
         }
-        (low, high)
+        (low.cmp(&BigInt::from(0)), high.cmp(&BigInt::from(0)))
     }
 }
 

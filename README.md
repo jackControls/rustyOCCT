@@ -83,7 +83,7 @@ The mathematical tests include **2,417 exact rational 2D orientation fixtures**
 (all six permutations), **1,648 spatial predicate fixtures**, **963 certified
 linear-intersection fixtures**, **448 quadratic-root fixtures**, **1,092 curved
 intersection fixtures**, **1,059 curve and 791 surface spline fixtures**, **94 general
-root, 283 spline–plane and 118 spline–quadric fixtures**,
+root, 284 spline–plane and 118 spline–quadric fixtures**,
 **10,000 generated integer predicate cases**, and
 **256 generated prism invariant cases**. Debug and optimized native builds run
 the same checks. See [the numerical contracts](rust/MATHEMATICS.md) for limits.

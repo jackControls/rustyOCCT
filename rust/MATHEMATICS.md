@@ -507,6 +507,19 @@ quadric fixtures exposed the need for this filter; those cases remain in the
 ordinary debug/release tests. Span/subdivision limits still do not promise a
 hard CPU or allocation bound.
 
+Interval-Horner sign filtering carries integer numerators over a shared positive
+denominator. For endpoint denominator LCM `D`, write `[a,b]=[A/D,B/D]`.
+Starting with the leading coefficient over denominator 1, each Horner step
+forms the minimum and maximum of `L*A,L*B,H*A,H*B`, then adds `c*D^k`,
+where the previous bounds had denominator `D^(k-1)`. These are exactly the
+same rational interval bounds as reduced-fraction arithmetic. Their signs
+need no division because `D^k>0`. This avoids repeated large GCDs while retaining
+all four products for intervals of either sign or crossing zero. Zero-containing
+bounds still fall back to Sturm–Tarski. Two saved fuzz inputs exposed the cost:
+a subnormal trim endpoint on a degree-seven plane query, and the sphere
+intersection of `(2*t^25,0,0)`. Both remain in the corpus and exact fixtures;
+this optimization changes neither tolerance nor the mathematical answer.
+
 ## Independent and adversarial evidence
 
 - `fixtures/orient2d.tsv`: 2,417 input triples with expected signs calculated by
@@ -565,7 +578,7 @@ hard CPU or allocation bound.
   roots and distinct clustered roots with identical binary64 enclosures. SymPy
   irreducible factors and Vincent–Akritas–Strzebonski continued fractions provide
   independent isolation; rational interval evaluation decides reduced query signs.
-- `fixtures/spline-plane.tsv`: 283 complete results from independent exact
+- `fixtures/spline-plane.tsv`: 284 complete results from independent exact
   Cox–de Boor basis polynomials and that continued-fraction oracle. Includes all
   214 native inputs, random rational spans, periodic/unclamped domains, unequal
   contact orders, overlap chains, extreme weights and subnormal spans. All

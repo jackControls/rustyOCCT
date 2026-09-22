@@ -105,6 +105,12 @@ Minimization is an explicit triage step, not a claim that CI automatically
 understands or repairs failures. No lifetime reliability guarantee follows
 from any finite campaign.
 
+Slow-unit diagnostics also receive triage even when a campaign passes. The
+checked-in [regression notes](fuzz/regressions/README.md) link saved inputs to
+their originating run and ordinary exact fixtures. A release replay example
+can time complete spline-intersection oracle checks separately from sanitizer
+instrumentation; these timings are diagnostic, not a production latency gate.
+
 If corpus replay starts exhausting the outer startup allowance, compact it with
 `cargo +nightly-2026-09-22 fuzz cmin <target> --fuzz-dir rust/fuzz` and retain
 the uncompressed artifact until the compacted corpus is validated. A stalled

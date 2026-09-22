@@ -12,7 +12,7 @@ The [mathematical foundation](MATHEMATICS.md) includes exact 2D/3D orientation
 and insphere, 2,417 independent 2D rational fixtures in all six permutations,
 1,648 spatial predicate fixtures, 963 certified linear-intersection fixtures,
 448 quadratic-root fixtures, 1,092 curved-intersection fixtures, 1,059 curve and 791 surface spline fixtures,
-94 general polynomial-root, 283 spline/plane and 118 spline/quadric fixtures,
+94 general polynomial-root, 284 spline/plane and 118 spline/quadric fixtures,
 10,000 integer-oracle predicate cases and 256 generated prism invariant cases.
 These tests do not depend on OCCT or an application and run in native debug and
 release CI. These deterministic generated tests are separate from the eight

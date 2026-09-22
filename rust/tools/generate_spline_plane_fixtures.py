@@ -166,6 +166,17 @@ def inputs():
     for i,(low,high) in enumerate([(0.,1/a),(1/a,2/a),(0.,2/a)]):
         line=encode(f'clipped_cluster_{i}','BT',9,plane,[(float(i),0.,h) for i,h in enumerate(z)],[1.]*10,[0.,1.],[10,10])
         result.append(line+' '+format(low,'.17g')+' '+format(high,'.17g'))
+    # Saved fuzz slow-unit b7d2cd2aaf90f34747c5d6472152631484e387ab:
+    # its local plane numerator is proportional to
+    # t (t-1/2) (t-3/4)^4 (t-5/4). The smallest positive binary64 trim
+    # excludes u=0 and introduces a local endpoint denominator of 2^1076.
+    line=encode('fuzz_subnormal_trim_degree7','BT',7,
+                [(0.,0.,0.),(2.,1.,0.),(0.,2.,1.)],
+                [(26.,113.,50.),(12324.,-23965.,48724.),(-4510.,8429.,-17338.),
+                 (889.5,-1852.,3742.),(-64406.,129257.,-257958.),
+                 (-66.,583.,-1372.),(10.,-331.,462.),(-14.5,236.,-154.)],
+                [2.,4.,8.,16.,.0625,.125,8.,16.],[-1.,3.],[8,8])
+    result.append(line+' '+format(tiny,'.17g')+' 2')
     return result
 
 
