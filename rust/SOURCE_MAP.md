@@ -34,6 +34,29 @@ The original copyright/license notices remain in the inherited source. Rust
 additions use LGPL-2.1-only WITH OCCT-exception-1.0; algorithmic ports should
 retain source attribution here and beside the relevant implementation.
 
+## Spline traceability
+
+Spline evaluation references are
+[`Geom_BSplineCurve.cxx`](../src/ModelingData/TKG3d/Geom/Geom_BSplineCurve.cxx)
+(`CheckCurveData`, constructors),
+[`Geom_BezierCurve.cxx`](../src/ModelingData/TKG3d/Geom/Geom_BezierCurve.cxx),
+[`BSplCLib_CurveComputation.pxx`](../src/FoundationClasses/TKMath/BSplCLib/BSplCLib_CurveComputation.pxx)
+(`PrepareEval_T`, `BSplCLib_D0/D1/D2`),
+[`BSplCLib.cxx`](../src/FoundationClasses/TKMath/BSplCLib/BSplCLib.cxx)
+(`NbPoles`, `Eval`, `Bohm`), and
+[`PLib.cxx`](../src/FoundationClasses/TKMath/PLib/PLib.cxx) (`RationalDerivative`).
+Rust's `curve` module retains degree/multiplicity and homogeneous quotient
+semantics, with an independent exact, differentiated de Boor implementation.
+It preserves all positive represented weights and strictly distinct knots;
+OCCT's weight-resolution tests, knot snapping and extrapolation are deliberately
+not applied. Derivatives at interior knots need exact two-sided agreement or an
+explicit side. The original
+[`Geom_BSplineCurve_Test.cxx`](../src/ModelingData/TKG3d/GTests/Geom_BSplineCurve_Test.cxx)
+`SetUp` cubic supplies a native-comparison input; it is not counted as a passing
+unchanged upstream test. Evidence: 214 native observations, 385 independent
+exact fixtures, invariance tests and the `splines` fuzz target. Periodic curves,
+curve editing, spline surfaces and spline B-rep integration remain pending.
+
 ## Rule for the next capability
 
 1. Define the standalone kernel input/output, numerical, topology/history and

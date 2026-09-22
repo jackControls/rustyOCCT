@@ -76,7 +76,8 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
    rational/integer oracles and generated geometric invariants are implemented,
    along with 3D orientation/insphere, exact quadratic roots, certified
    line/segment intersections with planes/triangles/circles/spheres/cylinders and
-   sustained structured fuzzing. Extend certified comparisons and constructions
+   sustained structured fuzzing. Certified nonperiodic rational Bézier/B-spline
+   positions and first/second derivatives also exist. Extend certified comparisons and constructions
    to curved geometry and propagate uncertainty through topology changes.
    Continue minimizing fuzz failures. See `MATHEMATICS.md` and `FUZZING.md`.
 2. **Topology invariants and operation history.** Strengthen generic B-rep
@@ -85,7 +86,8 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
    modified and deleted mappings with explicit split/merge ambiguity before
    topology-changing operations. Body-local indices are not persistent names.
 3. **Reliable geometry and intersections.** Circular arcs, trimmed curves,
-   Bézier/rational B-splines, surfaces, derivatives, parameter domains,
+   periodic splines, spline editing and surfaces; extend the existing certified
+   nonperiodic curve evaluation and derivatives with
    projection, root isolation, intersections, trimming and sewing. Every
    numerical algorithm needs a declared domain, degeneracy behavior and error
    evidence. Introduce acceleration after correctness and workload benchmarks.
@@ -123,6 +125,8 @@ future subsystem. Split crates when there is a working boundary to isolate.
   or algebraic constructions with binary64 enclosures.
 - `polynomial`: exact degree-two real-root classification, retained algebraic
   root identity/multiplicity and certified comparisons/enclosures.
+- `curve`: validated nonperiodic rational Bézier/B-spline data, exact homogeneous
+  evaluation, derivative continuity decisions and minimal output enclosures.
 - `profile`: validated material boundaries, containment and planar moments.
   Polygons are normalized CCW; holes are assigned orientation in the B-rep.
 - `topology`: immutable owned vertices/edges/faces, opposite oriented uses,
@@ -138,8 +142,8 @@ All current constructors return `Result` before publishing a solid. No
 renderer, OS calls or native SDK dependency is required by the library, and the
 kernel crate forbids `unsafe` code.
 `num-bigint` supplies exact integer arithmetic for predicates/constructions;
-additional rational and libFuzzer dependencies are isolated to the fuzz
-workspace. Dependencies must have an actual geometry need; dependency count
+`num-rational` supplies exact rational spline arithmetic. The libFuzzer runtime
+is isolated to the fuzz workspace. Dependencies must have an actual geometry need; dependency count
 alone is not a correctness or speed metric.
 
 ## OCCT families to study, not mechanically translate

@@ -11,6 +11,8 @@ publish = false
 [dependencies]
 # Exact binary64 determinants and rational intersection constructions.
 num-bigint = { version = "0.4.6", default-features = false }
+# Exact rational spline evaluation, including derivatives at repeated knots.
+num-rational = { version = "0.4.2", default-features = false, features = ["num-bigint"] }
 
 [lints]
 workspace = true

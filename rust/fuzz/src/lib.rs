@@ -14,6 +14,8 @@ use std::cmp::Ordering;
 
 mod curved;
 pub use curved::check_curved;
+mod splines;
+pub use splines::check_splines;
 
 pub fn byte(data: &[u8], i: usize) -> u8 {
     data.get(i).copied().unwrap_or(0)

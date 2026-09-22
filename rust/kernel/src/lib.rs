@@ -21,6 +21,7 @@
 //! ```
 
 mod algebraic;
+pub mod curve;
 mod error;
 mod exact;
 pub mod intersection;
@@ -32,6 +33,7 @@ mod profile;
 mod solid;
 pub mod topology;
 
+pub use curve::{BSplineCurve3, BezierCurve3};
 pub use error::{Error, Result};
 pub use intersection::{Circle3, Cylinder3, Plane3, Sphere3, Triangle3};
 pub use interval::ScalarInterval;

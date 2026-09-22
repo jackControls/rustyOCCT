@@ -258,6 +258,77 @@ common well-conditioned domain, including exact tangencies and native root
 multiplicities. Independent mathematical oracles define the extreme and
 near-tangent behavior; native results are never used to weaken those contracts.
 
+## Implemented contract: rational spline curves
+
+`curve::BSplineCurve3` stores a nonperiodic curve of degree 1..=25 with at most
+4096 finite 3D poles. Its distinct knots must be finite and strictly increasing;
+interior multiplicities are 1..=degree and end multiplicities 1..=degree+1.
+The sum of multiplicities is `number_of_poles + degree + 1`. Weights default to
+one; supplied weights must be finite and strictly positive, including positive
+subnormals. Equal weights reduce geometrically to a polynomial curve, without
+discarding unequal weights based on an epsilon.
+
+With zero-based expanded knots `U` and `N` poles, the closed evaluation domain
+is `[U[degree], U[N]]`, which must have positive width. This includes unclamped
+knot vectors; the first/last distinct knots need not bound the domain.
+`BezierCurve3` uses degree `N-1` and clamped knots 0,1. Periodic curves,
+extrapolation, spline editing, surfaces and spline B-rep edges are not yet
+implemented. These query primitives do not change the current prism solid model.
+
+The [de Boor recurrence](https://pages.mtu.edu/~shene/COURSES/cs3621/NOTES/spline/de-Boor.html)
+operates on homogeneous poles `(w*x,w*y,w*z,w)`. Rust converts the represented
+inputs to exact reduced rationals before products, differences or divisions.
+For each local interpolation `H=(1-a)*L+a*R`, where `a` is affine in the original
+parameter, the evaluator carries these derivatives:
+
+```text
+H'  = (1-a)*L'  + a*R'  + a'*(R-L)
+H'' = (1-a)*L'' + a*R'' + 2*a'*(R'-L').
+```
+
+The positive-width active span is contained in every knot interval used by
+the recurrence, so each divisor is strictly positive even at repeated knots.
+Positive weights and the nonnegative partition of unity make the evaluated
+homogeneous weight `W` strictly positive throughout the domain. For each
+coordinate `X`, divide only after interpolation:
+
+```text
+P   = X/W
+P'  = (X' - W'*P)/W
+P'' = (X'' - W''*P - 2*W'*P')/W.
+```
+
+These exact identities give derivatives with respect to the original knot
+parameter, not normalized arc length. They agree with the rational-derivative
+contract studied in OCCT's `PLib::RationalDerivative`. The
+[basis derivative identity](https://pages.mtu.edu/~shene/COURSES/cs3621/NOTES/spline/B-spline/bspline-derv.html)
+is used by the independent oracle, which evaluates basis functions instead of
+interpolating poles and uses closed quotient formulas for the first two derivatives.
+
+`DerivativeOrder` requests position, first or second derivative. Every requested
+component gets its smallest finite binary64 enclosure, using exact rational
+comparisons with at most 63 binary searches over ordered magnitude bits.
+Unrepresentable requested derivatives return `Error::Unrepresentable`; a
+position-only query can still succeed. Positive-weight positions lie in the
+finite pole convex hull. Rounded output representatives remain approximate
+and must not be reclassified as exact spline points.
+
+At an interior knot, `KnotSide::Automatic` checks exact left/right jets when
+the knot multiplicity permits a discontinuity in the requested derivatives.
+Different derivatives return `DiscontinuousDerivative`. Exact agreement is
+accepted even when the knot multiplicity alone would only guarantee lower
+continuity. `Left` and `Right` explicitly choose one-sided values; selecting a
+side outside the closed domain returns `OutOfDomain`. At a domain endpoint,
+automatic evaluation takes the only interior limit. Position-only evaluation
+is continuous under the permitted multiplicities.
+
+The degree bound gives at most 325 local interpolation updates per one-sided
+evaluation, involving at most 26 active poles; a discontinuity check can evaluate
+both sides. Arithmetic uses `num-rational` 0.4.2 with `num-bigint`, independent
+of ordinary floating-point intermediate ranges. Rational operand sizes depend
+on the knot data and degree. These input/iteration bounds do not establish a
+production latency or allocation budget; performance gates remain open.
+
 ## Independent and adversarial evidence
 
 - `fixtures/orient2d.tsv`: 2,417 input triples with expected signs calculated by
@@ -293,10 +364,17 @@ near-tangent behavior; native results are never used to weaken those contracts.
   exact polynomial-sign comparisons for root/coordinate bounds. Separate tests
   cover adjacent-float tangencies, coincident parameter enclosures, endpoint
   clipping before overflow, direction rescaling and endpoint reversal.
+- `fixtures/splines.tsv`: 385 independent exact basis-function/quotient cases
+  for positions and first/second derivatives. Includes degree 25, rational and
+  polynomial curves, unclamped domains, repeated knots, derivative-side
+  decisions, extreme weights/coordinates and subnormal knot spans. Separate
+  tests cover power-of-two weight invariance, coordinate permutation, original
+  parameter units, malformed input and position-only queries despite derivative
+  overflow. The live native corpus has 214 spline observations.
 
 These fixtures are bounded deterministic tests. Separately, [coverage-guided
 fuzzing](FUZZING.md) mutates predicates, linear/curved intersections, polynomial
-roots and standalone modeling
+roots, spline evaluation and standalone modeling
 sequences under sanitizers, with retained corpora and daily campaigns.
 Finite test evidence supplements the arithmetic argument; it does not prove a
 general kernel correct. The OCCT comparison corpus remains a separate oracle.
@@ -307,6 +385,7 @@ cargo test --workspace --locked --release
 python3 rust/tools/generate_predicate_fixtures.py --check
 python3 rust/tools/generate_spatial_fixtures.py --check
 python3 rust/tools/generate_curved_fixtures.py --check
+python3 rust/tools/generate_spline_fixtures.py --check
 ```
 
 Native CI executes both debug and optimized Rust tests. The rational fixture
@@ -319,8 +398,9 @@ disagreement disappear.
 1. Add the distance/incircle comparisons required by subsequent algorithms.
    Preserve explicit units, domains and arithmetic bounds; do not reuse an
    arbitrary global epsilon.
-2. Specify error and conditioning contracts for projections, curve/surface
-   evaluation, root isolation and intersections. Use interval/error bounds or
+2. Extend the nonperiodic spline evaluator to periodic curves, exact curve
+   editing and surfaces; specify contracts for projections, root isolation
+   and intersections. Use interval/error bounds or
    additional precision when ordinary arithmetic cannot establish the answer.
 3. Strengthen topology invariants and tolerance propagation through each
    operation; sampled checks alone cannot certify full curve/surface agreement.
@@ -330,5 +410,5 @@ disagreement disappear.
 
 General curve/surface intersections, higher-degree root isolation, Booleans,
 generic topology history, STEP and meshing remain unimplemented. Certified
-linear and quadratic primitives do not establish these capabilities or make
+linear/quadratic primitives and spline evaluation do not establish these capabilities or make
 the rest of the kernel exact.

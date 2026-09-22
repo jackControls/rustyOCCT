@@ -39,12 +39,15 @@ jobs:
           python3 rust/tools/generate_predicate_fixtures.py --check
           python3 rust/tools/generate_spatial_fixtures.py --check
           python3 rust/tools/generate_curved_fixtures.py --check
+          python3 rust/tools/generate_spline_fixtures.py --check
       - name: Run unchanged upstream tests on both kernels
         run: python3 rust/tools/run_upstream_tests.py --backend both --draw-exe /usr/bin/occt-draw
       - name: Compare line and plane intersections with native OCCT
         run: python3 rust/tools/compare_intersections.py --occt-root /usr
       - name: Compare polynomial roots and curved intersections with native OCCT
         run: python3 rust/tools/compare_curved.py --occt-root /usr
+      - name: Compare spline positions and derivatives with native OCCT
+        run: python3 rust/tools/compare_splines.py --occt-root /usr
       - name: Preserve logs and explicit coverage results
         if: always()
         uses: actions/upload-artifact@v4.6.2
@@ -54,6 +57,7 @@ jobs:
             target/upstream-tests/
             target/intersection-oracle/
             target/curved-oracle/
+            target/spline-oracle/
           if-no-files-found: warn
 
   native:

@@ -10,7 +10,7 @@ manufacturing and analysis; kernel correctness is application-independent.
 No renderer, windowing, GPU integration, viewer, or duplicate application framework.
 
 **Status: first working kernel milestone, not a replacement for OCCT yet.**
-The Rust implementation uses `num-bigint` for exact arithmetic, has no C++
+The Rust implementation uses `num-bigint` and `num-rational` for exact arithmetic, has no C++
 bindings, and forbids unsafe code in the kernel. The inherited C++ source remains available for reference and comparison;
 Cargo does not build it. Rust work lives on the `rust-kernel` branch, while
 `master` retains the upstream fork point.
@@ -37,7 +37,10 @@ Cargo does not build it. Rust work lives on the `rust-kernel` branch, while
 - Exact quadratic root classification and algebraic root comparisons; certified
   line/segment intersections with circles, spheres and infinite cylinders,
   including exact tangencies, segment clipping and preserved root multiplicity.
-- Coverage-guided fuzzing of predicates, intersections and modeling sequences,
+- Rational Bézier and nonperiodic B-spline curves through degree 25, with
+  certified positions and first/second derivatives, clamped/unclamped domains,
+  and explicit one-sided derivatives at repeated knots.
+- Coverage-guided fuzzing of predicates, intersections, splines and modeling sequences,
   with independent mathematical oracles and retained corpora/failure inputs.
 
 ```sh
@@ -56,7 +59,7 @@ target to be installed.
 [The kernel scope and porting plan](rust/PORTING.md) maps needed capabilities to
 OCCT families. [The mathematical foundation](rust/MATHEMATICS.md) is the current
 priority, followed by topology/history and general curve/surface intersections. General
-Booleans, arcs/B-splines, revolutions, sweeps/lofts, fillets/chamfers, shelling,
+Booleans, arc profiles, spline topology/surfaces, revolutions, sweeps/lofts, fillets/chamfers, shelling,
 modeled threads, STEP, drawing HLR, and tessellation remain to be implemented.
 
 Tessellation and hidden-line geometry belong in the kernel because noBS-CAD
@@ -72,7 +75,7 @@ inputs and OCCT differential tests.
 The mathematical tests include **2,417 exact rational 2D orientation fixtures**
 (all six permutations), **1,648 spatial predicate fixtures**, **963 certified
 linear-intersection fixtures**, **448 quadratic-root fixtures**, **1,092 curved
-intersection fixtures**, **10,000 generated integer predicate cases**, and
+intersection fixtures**, **385 spline-evaluation fixtures**, **10,000 generated integer predicate cases**, and
 **256 generated prism invariant cases**. Debug and optimized native builds run
 the same checks. See [the numerical contracts](rust/MATHEMATICS.md) for limits.
 
@@ -80,9 +83,10 @@ The checked-in OCCT 7.9.3 reference corpus covers **66 solids and 2,292 point
 classifications**, comparing volume, area, centroid, bounds, inertia and topology
 counts. Ordinary Cargo tests run this corpus without an OCCT SDK.
 
-Native OCCT also checks 72 line–plane cases and 174 polynomial/curved cases.
+Native OCCT also checks 72 line–plane cases, 174 polynomial/curved cases,
+and 214 spline position/derivative cases.
 [Sustained fuzzing](rust/FUZZING.md)
-runs four instrumented targets on pushes/PRs and daily, restoring the evolving
+runs five instrumented targets on pushes/PRs and daily, restoring the evolving
 corpus and retaining crashes, timeouts and mathematical disagreements.
 
 ```sh

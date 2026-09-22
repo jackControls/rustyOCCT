@@ -43,3 +43,10 @@ path = "fuzz_targets/curved.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "splines"
+path = "fuzz_targets/splines.rs"
+test = false
+doc = false
+bench = false

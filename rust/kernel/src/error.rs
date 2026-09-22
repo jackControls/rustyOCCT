@@ -15,6 +15,9 @@ pub enum Error {
     IntersectingBoundaries(usize, usize),
     LimitExceeded(&'static str),
     InvalidTopology(&'static str),
+    InvalidCurve(&'static str),
+    OutOfDomain(&'static str),
+    DiscontinuousDerivative,
 }
 
 impl fmt::Display for Error {
@@ -30,6 +33,9 @@ impl fmt::Display for Error {
             Self::IntersectingBoundaries(a, b) => write!(f, "boundaries {a} and {b} intersect, touch, or overlap (outer boundary is 0)"),
             Self::LimitExceeded(what) => write!(f, "{what} exceeds the supported input limit"),
             Self::InvalidTopology(what) => write!(f, "invalid topology: {what}"),
+            Self::InvalidCurve(what) => write!(f, "invalid curve: {what}"),
+            Self::OutOfDomain(what) => write!(f, "outside the supported domain: {what}"),
+            Self::DiscontinuousDerivative => write!(f, "requested curve derivative is discontinuous at the knot; select a side"),
         }
     }
 }
