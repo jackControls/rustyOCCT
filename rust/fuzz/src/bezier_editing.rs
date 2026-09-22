@@ -6,8 +6,7 @@ use rusty_occt::{BSplineCurve3, Error, Point3};
 #[path = "../../kernel/tests/support/bezier_protocol.rs"]
 #[allow(dead_code)]
 mod protocol;
-#[path = "../../kernel/tests/support/bezier_reference.rs"]
-mod reference;
+use crate::bezier_reference as reference;
 
 pub fn check_bezier_editing(data: &[u8]) {
     check(data, |_| {});

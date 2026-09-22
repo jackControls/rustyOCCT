@@ -10,7 +10,7 @@ pub fn integer(n: usize) -> R {
 fn rat(x: f64) -> R {
     R::from_float(x).unwrap()
 }
-fn binomial(n: usize, k: usize) -> u64 {
+pub fn binomial(n: usize, k: usize) -> u64 {
     let mut x = 1_u64;
     for i in 0..k {
         x = x * (n - i) as u64 / (i + 1) as u64;
@@ -21,7 +21,7 @@ fn binomial(n: usize, k: usize) -> u64 {
 // Clear coefficient denominators before a linear polynomial transform. This
 // preserves the independent power-basis algorithm while avoiding thousands of
 // repeated rational GCD reductions under the sanitizer.
-fn integers(p: &[R]) -> (Vec<BigInt>, BigInt) {
+pub fn integers(p: &[R]) -> (Vec<BigInt>, BigInt) {
     let mut denominator = BigInt::from(1);
     for x in p {
         let (mut a, mut b) = (denominator.clone(), x.denom().clone());
@@ -44,7 +44,7 @@ fn powers(x: &BigInt, count: usize) -> Vec<BigInt> {
     }
     result
 }
-fn add(a: &[R], b: &[R]) -> Vec<R> {
+pub fn add(a: &[R], b: &[R]) -> Vec<R> {
     let mut result = vec![integer(0); a.len().max(b.len())];
     for p in [a, b] {
         for (i, x) in p.iter().enumerate() {
@@ -56,7 +56,7 @@ fn add(a: &[R], b: &[R]) -> Vec<R> {
     }
     result
 }
-fn linear(p: &[R], a: &R, b: &R) -> Vec<R> {
+pub fn linear(p: &[R], a: &R, b: &R) -> Vec<R> {
     if p.is_empty() {
         return Vec::new();
     }
@@ -67,7 +67,7 @@ fn linear(p: &[R], a: &R, b: &R) -> Vec<R> {
     }
     result
 }
-fn substitute(p: &[R], a: &R, b: &R) -> Vec<R> {
+pub fn substitute(p: &[R], a: &R, b: &R) -> Vec<R> {
     let (p, den) = integers(p);
     let (an, ad, bn, bd) = (
         powers(a.numer(), p.len()),
@@ -84,7 +84,7 @@ fn substitute(p: &[R], a: &R, b: &R) -> Vec<R> {
         })
         .collect()
 }
-fn value(p: &[R], t: &R, order: usize) -> R {
+pub fn value(p: &[R], t: &R, order: usize) -> R {
     if order >= p.len() {
         return integer(0);
     }
@@ -303,7 +303,7 @@ pub fn apply(mut arc: Arc, op: u8, elevation: usize) -> Vec<Arc> {
     }
 }
 
-fn bounds(actual: ScalarInterval, expected: &R) {
+pub fn bounds(actual: ScalarInterval, expected: &R) {
     let (lo, hi) = (actual.lower(), actual.upper());
     assert!(lo.is_finite() && hi.is_finite());
     if lo == hi {

@@ -99,6 +99,27 @@ cargo run --manifest-path rust/fuzz/Cargo.toml --locked --release \
   --example replay_bezier_editing -- rust/fuzz/regressions/bezier_editing/*.bin
 ```
 
+## Tensor patches: degree-25 unclamped composed edits
+
+`surface_editing/unclamped-degree25-combined.bin` is the complete 2,816-byte
+seed saved as `slow-unit-a76a8bdec26f2a5742d5fb75e5865b37aaa9b452` by the first
+local surface-editing campaign. It took 13 instrumented seconds and passed all
+coefficient, jet, enclosure and commutation assertions. This is a retained
+performance case, not a minimized crash. Both directions have degree 25 and
+unclamped knots; the sequence restricts, reverses, exchanges axes and splits.
+
+Initial profiling showed repeated spline blossoming on every row dominated
+extraction. Reusing exact blossom maps reduced extraction from roughly 2.88 to
+0.31 seconds locally. Sharing one de Casteljau triangle for position/D1/D2
+further reduced jet work. The complete uninstrumented kernel-plus-oracle replay
+fell from about 4.02 to 1.23 seconds; machine-specific timings are diagnostic,
+not a latency guarantee. The 20-second input limit and all assertions remain.
+
+```sh
+cargo run --manifest-path rust/fuzz/Cargo.toml --locked --release \
+  --example replay_surface_editing -- rust/fuzz/regressions/surface_editing/*.bin
+```
+
 ## Polynomial roots: a wide isolator and a large query
 
 `roots/slow-unit-0d9082d327a81ddd2e03cf8963cb57f12c9bf198.bin` came from

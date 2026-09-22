@@ -18,7 +18,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing']
 
 
 def seed_corpus(target):
@@ -30,7 +30,18 @@ def seed_corpus(target):
         if not path.exists():
             path.write_bytes(data)
 
-    if target == 'bezier_editing':
+    if target == 'surface_editing':
+        import struct
+        for du,dv in [(1,1),(2,3),(5,4),(25,1),(1,25),(25,25)]:
+            for ku,kv in [(0,0),(1,0),(0,1),(1,1),(2,2)]:
+                for op in [0,1,2,3,4,5,6,7,8,9,10] if du*dv<=25 else [0,10]:
+                    save(bytes([2,du-1,dv-1,ku,kv,op,2,2,32,130,7,7,84,72,85,170])+bytes((j*37+1)%256 for j in range(2800)))
+        for mode in [0,1]:
+            for kind in range(3):
+                for scale in [0,128,255]:
+                    body=b''.join(struct.pack('<d',x) for _ in range(25) for x in [1.,0.,2.,1.]) if mode==0 else bytes((j*37+1)%256 for j in range(2800))
+                    save(bytes([mode,1,1,kind,kind,10,2,2,192,scale,scale,scale,84,72,85,170])+body)
+    elif target == 'bezier_editing':
         import struct
         for degree in [0,1,2,7,24]:
             for kind in range(3):
@@ -232,7 +243,7 @@ def main():
                 command = ['cargo',f'+{args.toolchain}','fuzz','run',target,str(corpora[target]),
                     '--fuzz-dir',str(FUZZ),'--sanitizer','address','--',
                     '-max_total_time=0',f'-stop_file={stop_file}','-timeout=20','-rss_limit_mb=2048',
-                    '-max_len=256',f'-seed={args.seed}',f'-artifact_prefix={artifacts}/','-print_final_stats=1']
+                    f'-max_len={4096 if target == "surface_editing" else 256}',f'-seed={args.seed}',f'-artifact_prefix={artifacts}/','-print_final_stats=1']
                 with log_path.open('w') as log:
                     code = run_process(command,log,args.seconds+600,env,timer.tick)
             text = log_path.read_text(errors='replace')

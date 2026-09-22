@@ -47,6 +47,7 @@ jobs:
           python3 rust/tools/generate_curved_fixtures.py --check
           python3 rust/tools/generate_spline_fixtures.py --check
           python3 rust/tools/generate_bezier_editing_fixtures.py --check
+          python3 rust/tools/generate_surface_editing_fixtures.py --check
           python3 rust/tools/generate_surface_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_real_root_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_spline_plane_fixtures.py --check
@@ -71,6 +72,9 @@ jobs:
       - name: Compare exact Bezier extraction and editing with native OCCT
         if: ${{ !cancelled() }}
         run: python3 rust/tools/compare_bezier_editing.py --occt-root /usr
+      - name: Compare exact tensor patches and isocurves with native OCCT
+        if: ${{ !cancelled() }}
+        run: python3 rust/tools/compare_surface_editing.py --occt-root /usr
       - name: Compare spline-plane intersections with native OCCT and exact mathematics
         if: ${{ !cancelled() }}
         run: target/math-oracle-venv/bin/python rust/tools/compare_spline_plane.py --occt-root /usr
@@ -91,6 +95,7 @@ jobs:
             target/spline-oracle/
             target/surface-oracle/
             target/bezier-editing-oracle/
+            target/surface-editing-oracle/
             target/spline-plane-oracle/
             target/spline-quadric-oracle/
           if-no-files-found: warn

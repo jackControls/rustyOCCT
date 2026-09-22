@@ -28,6 +28,11 @@ mod proximity;
 pub use proximity::check_proximity;
 mod bezier_editing;
 pub use bezier_editing::{check_bezier_editing, profile_bezier_editing};
+#[path = "../../kernel/tests/support/bezier_reference.rs"]
+#[allow(dead_code)]
+pub(crate) mod bezier_reference;
+mod surface_editing;
+pub use surface_editing::{check_surface_editing, profile_surface_editing};
 
 pub fn byte(data: &[u8], i: usize) -> u8 {
     data.get(i).copied().unwrap_or(0)

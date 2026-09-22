@@ -44,4 +44,4 @@ pub use math::{Bounds3, Frame3, Point2, Point3, RigidTransform, Tolerance, Vec3}
 pub use profile::{Boundary, Location, Profile};
 pub use solid::{MassProperties, Solid};
 pub use spline::KnotVector;
-pub use surface::{BSplineSurface3, BezierSurface3};
+pub use surface::{BSplineSurface3, BezierSurface3, ExactBezierSurface3};

@@ -712,8 +712,42 @@ recurrences. Rust's checker clears common denominators before linear polynomial
 transforms and normalizes only their results. Exact jets, minimal enclosures,
 commutation and source endpoint identities add further checks. The native
 API observations are supplementary; [reviewed degree-25 differences](NATIVE_BEZIER_EDITING_DIVERGENCES.md)
-never bypass these mathematical checks. General spline knot removal/insertion,
-surface editing and attaching these curves to topology remain separate work.
+never bypass these mathematical checks. General spline knot removal/insertion
+and attaching these curves to topology remain separate work.
+
+## Exact tensor Bézier extraction and editing
+
+`ExactBezierSurface3` retains a U-major homogeneous grid and two increasing
+rational domains. Extraction applies the spline blossom independently in U and
+V on each clipped knot rectangle, preserving the entire tensor polynomial.
+The implementation computes each axis map on unit controls, then applies it
+using integer dot products after clearing common denominators. This preserves
+the same exact blossom map while reducing repeated rational reductions across
+large grids. Traversal checks both axis counts and their Cartesian product
+before constructing geometry; the default limits are 4096 patches and
+1,048,576 output controls. They bound combinatorial output, not rational bit
+growth or wall-clock time.
+
+Row-wise homogeneous de Casteljau, reversal and degree elevation provide exact
+U/V subdivision, rectangular restriction and degree elevation. Transposition
+exchanges controls, degrees and parameter domains. Constant-U/V substitution
+returns an `ExactBezierCurve3` in the other original parameter's units, including
+exact boundary curves. Every weight stays positive by convex combination.
+Operations retain raw homogeneous controls without projective rescaling.
+
+Homogeneous differentiation in both axes and the multivariate quotient rule
+retain exact `(00,10,01,20,02,11)` jets. Binary64 enclosure is separately requested
+and may fail without losing these values. Each patch owns its one-sided boundary
+limits; neighboring patches need a separate continuity decision. Rational cut
+parameters are normalized and checked before work. Arbitrary trim loops,
+nonrational algebraic cuts, sewing and B-rep integration are not implied.
+
+Independent Python and Rust Cox tensor power coefficients, affine binomial
+substitutions and closed quotient formulas check complete controls/coefficients
+and jets. Shared boundary curves, axis commutation, sub-ULP rational cuts,
+derivative overflow and preflight exhaustion have additional direct tests.
+See [the contract](SURFACE_EDITING.md) and the
+[native observations](NATIVE_SURFACE_EDITING_DIVERGENCES.md).
 
 ## Independent and adversarial evidence
 
@@ -834,7 +868,7 @@ disagreement disappear.
    curved geometry required by subsequent algorithms.
    Preserve explicit units, domains and arithmetic bounds; do not reuse an
    arbitrary global epsilon.
-2. Extend certified editing to general spline knot/surface operations and add projections; extend root isolation
+2. Extend certified editing to general spline knot operations and arbitrary face trimming, and add projections; extend root isolation
    to general intersections. Use interval/error bounds or
    additional precision when ordinary arithmetic cannot establish the answer.
 3. Strengthen topology invariants and tolerance propagation through each

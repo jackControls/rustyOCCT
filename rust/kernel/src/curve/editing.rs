@@ -117,6 +117,14 @@ pub struct ExactBezierCurve3 {
 }
 
 impl ExactBezierCurve3 {
+    /// Internal construction from already validated positive homogeneous data.
+    pub(crate) fn from_homogeneous(controls: Vec<[R; 4]>, domain: [R; 2]) -> Self {
+        debug_assert!((2..=MAX_DEGREE + 1).contains(&controls.len()));
+        debug_assert!(controls.iter().all(|p| p[3] > integer(0)));
+        debug_assert!(domain[0] < domain[1]);
+        Self { controls, domain }
+    }
+
     pub fn degree(&self) -> usize {
         self.controls.len() - 1
     }
@@ -223,22 +231,7 @@ impl ExactBezierCurve3 {
         let count = order.count();
         let length = &self.domain[1] - &self.domain[0];
         let t = (&u - &self.domain[0]) / &length;
-        let mut controls = self.controls.clone();
-        let mut jets: [[R; 4]; 3] = std::array::from_fn(|_| std::array::from_fn(|_| integer(0)));
-        for (n, jet) in jets.iter_mut().enumerate().take(count + 1) {
-            *jet = casteljau(&controls, &t);
-            if n < count {
-                let factor = integer(controls.len() - 1) / &length;
-                controls = if controls.len() == 1 {
-                    vec![std::array::from_fn(|_| integer(0))]
-                } else {
-                    controls
-                        .windows(2)
-                        .map(|p| std::array::from_fn(|c| &factor * (&p[1][c] - &p[0][c])))
-                        .collect()
-                };
-            }
-        }
+        let jets = homogeneous_jet(&self.controls, &t, &length, count);
         let h = std::array::from_fn(|c| std::array::from_fn(|n| jets[n][c].clone()));
         let values = spline::rationalize(h, [(0, 0), (1, 0), (2, 0)], count + 1);
         Ok(ExactCurveEvaluation {
@@ -324,7 +317,7 @@ impl IntegerRow {
         self.denominator *= t.denom();
     }
 }
-fn casteljau(controls: &[[R; 4]], t: &R) -> [R; 4] {
+pub(crate) fn homogeneous_value(controls: &[[R; 4]], t: &R) -> [R; 4] {
     if t == &integer(0) {
         return controls[0].clone();
     }
@@ -336,4 +329,52 @@ fn casteljau(controls: &[[R; 4]], t: &R) -> [R; 4] {
         row.interpolate(t);
     }
     row.rational(0)
+}
+
+/// Homogeneous jets of a Bernstein row; the parameter is local but derivative
+/// units use `length`. Also accepts signed/zero derivative control rows.
+pub(crate) fn homogeneous_jet(controls: &[[R; 4]], t: &R, length: &R, order: usize) -> [[R; 4]; 3] {
+    let mut jets = std::array::from_fn(|_| std::array::from_fn(|_| integer(0)));
+    if order == 0 {
+        jets[0] = homogeneous_value(controls, t);
+        return jets;
+    }
+    let degree = controls.len() - 1;
+    // The final two/three rows of one de Casteljau triangle give D1/D2.
+    // This avoids separately forming and evaluating rational derivative grids.
+    // At an endpoint those rows are just the first/last controls.
+    let endpoint_count = controls.len().min(order + 1);
+    let selected = if t == &integer(0) {
+        &controls[..endpoint_count]
+    } else if t == &integer(1) {
+        &controls[controls.len() - endpoint_count..]
+    } else {
+        controls
+    };
+    let mut row = IntegerRow::new(selected);
+    while row.poles.len() > 1 {
+        if row.poles.len() == 3 && order == 2 {
+            let denominator = &row.denominator * length.numer() * length.numer();
+            let factor = length.denom() * length.denom() * degree * (degree - 1);
+            jets[2] = std::array::from_fn(|c| {
+                R::new(
+                    (&row.poles[2][c] - &row.poles[1][c] * 2 + &row.poles[0][c]) * &factor,
+                    denominator.clone(),
+                )
+            });
+        }
+        if row.poles.len() == 2 {
+            let denominator = &row.denominator * length.numer();
+            let factor = length.denom() * degree;
+            jets[1] = std::array::from_fn(|c| {
+                R::new(
+                    (&row.poles[1][c] - &row.poles[0][c]) * &factor,
+                    denominator.clone(),
+                )
+            });
+        }
+        row.interpolate(t);
+    }
+    jets[0] = row.rational(0);
+    jets
 }

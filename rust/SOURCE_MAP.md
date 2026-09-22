@@ -71,7 +71,8 @@ U/V periodicity. Exact pole interpolation and quadrant continuity checks replace
 floating evaluation; no tolerance-based weight simplification is applied.
 Evidence: 210 native surface jets, 791 exact tensor-basis fixtures, parameter
 transpose/weight invariance tests and the sixth fuzz target, `surfaces`.
-Curve/surface editing and spline B-rep integration remain pending. High-degree
+Exact curve/surface editing is described below; general knot editing and spline
+B-rep integration remain pending. High-degree
 native discrepancies are [reviewed explicitly](NATIVE_SPLINE_DIVERGENCES.md).
 The OCCT 7.6.3 degree-25 second-derivative discrepancy is documented in
 [`VALIDATION.md`](VALIDATION.md) and pinned in the reviewed-divergence registry.
@@ -239,6 +240,36 @@ preserves native numerical differences. Source test inputs are reused, not
 executed as unchanged GoogleTests. There are no new unchanged DRAW passes.
 The 636 independent exact fixtures, coefficient identities, endpoint/jet and
 edit-commutation checks, and eleventh sustained fuzz target validate this scope.
+
+## Exact tensor patch extraction and editing
+
+The [surface editing contract](SURFACE_EDITING.md) references
+[`GeomConvert_BSplineSurfaceToBezierSurface.cxx`](../src/ModelingData/TKGeomBase/GeomConvert/GeomConvert_BSplineSurfaceToBezierSurface.cxx),
+constructors, `Patch`, `UKnots` and `VKnots`;
+[`Geom_BSplineSurface.cxx`](../src/ModelingData/TKG3d/Geom/Geom_BSplineSurface.cxx),
+`segment` and `Segment`;
+[`Geom_BezierSurface.cxx`](../src/ModelingData/TKG3d/Geom/Geom_BezierSurface.cxx),
+`Segment`, `Increase`, `UReverse`, `VReverse`, `ExchangeUV`, `UIso`, `VIso`;
+[`BSplSLib.cxx`](../src/FoundationClasses/TKMath/BSplSLib/BSplSLib.cxx),
+`Iso`, `IncreaseDegree`, `BuildCache`; and
+[`PLib.cxx`](../src/FoundationClasses/TKMath/PLib/PLib.cxx),
+`UTrimming`, `VTrimming`, `CoefficientsPoles`.
+
+Rust applies exact spline blossoms in both axes. A reusable blossom map on
+unit controls and integer dot products avoid recomputing the map for every
+grid row. Immutable curve Bernstein operations act on homogeneous tensor rows;
+isocurves retain the other original parameter domain. Exact quotient jets
+include mixed partials. Positive weights are preserved without OCCT's rational
+flag simplification, parameter snapping or one-period segmentation restriction.
+
+The native 691-case corpus was captured before Rust implementation and includes
+the `Geom_BezierSurface_Test.cxx` SetUp, RationalSegment, RationalIncrease,
+RationalSurface_UIso and VIso_Rational input families. Reused GTest inputs do
+not count as unchanged upstream passes. All 4,347 outputs undergo independent
+exact tensor coefficient checks. The 739 ordinary complete-control fixtures,
+boundary/commutation/overflow/budget tests and twelfth fuzz target add independent
+mathematical evidence. Native degree-25 segmentation differences are
+[reviewed separately](NATIVE_SURFACE_EDITING_DIVERGENCES.md).
 
 ## Rule for the next capability
 

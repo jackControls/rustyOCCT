@@ -12,10 +12,10 @@ The [mathematical foundation](MATHEMATICS.md) includes exact 2D/3D orientation
 and insphere, 2,417 independent 2D rational fixtures in all six permutations,
 1,648 spatial predicate fixtures, 963 certified linear-intersection fixtures,
 448 quadratic-root fixtures, 1,092 curved-intersection fixtures, 1,059 curve and 791 surface spline fixtures,
-95 general polynomial-root, 284 spline/plane, 118 spline/quadric, 554 proximity, 684 complete linear-set and 636 exact Bézier editing fixtures,
+95 general polynomial-root, 284 spline/plane, 118 spline/quadric, 554 proximity, 684 complete linear-set, 636 exact Bézier curve and 739 tensor-patch editing fixtures,
 10,000 integer-oracle predicate cases and 256 generated prism invariant cases.
 These tests do not depend on OCCT or an application and run in native debug and
-release CI. These deterministic generated tests are separate from the eleven
+release CI. These deterministic generated tests are separate from the twelve
 [coverage-guided fuzz targets and daily retained-corpus campaigns](FUZZING.md).
 
 `compare_intersections.py` executes native OCCT `IntAna_IntConicQuad` and Rust's
@@ -179,6 +179,7 @@ python3 rust/tools/generate_linear_sets_fixtures.py --check
 python3 rust/tools/generate_curved_fixtures.py --check
 python3 rust/tools/generate_spline_fixtures.py --check
 python3 rust/tools/generate_bezier_editing_fixtures.py --check
+python3 rust/tools/generate_surface_editing_fixtures.py --check
 python3 rust/tools/generate_surface_fixtures.py --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo check --workspace --lib --locked --target wasm32-unknown-unknown
@@ -195,6 +196,7 @@ python3 rust/tools/compare_linear_sets.py --occt-root /path/to/occt
 python3 rust/tools/compare_curved.py --occt-root /path/to/occt
 python3 rust/tools/compare_splines.py --occt-root /path/to/occt
 python3 rust/tools/compare_bezier_editing.py --occt-root /path/to/occt
+python3 rust/tools/compare_surface_editing.py --occt-root /path/to/occt
 python3 rust/tools/compare_surfaces.py --occt-root /path/to/occt
 ```
 
@@ -204,7 +206,7 @@ supports Unix-style SDK layouts; Windows still runs all ordinary Rust and
 recorded-corpus tests. It does not install software or change noBS-CAD.
 
 Results and optional native executables go in ignored `target/occt-oracle/`
-and `target/intersection-oracle/`, `target/curved-oracle/`, `target/spline-oracle/`, `target/surface-oracle/`, `target/bezier-editing-oracle/`.
+and `target/intersection-oracle/`, `target/curved-oracle/`, `target/spline-oracle/`, `target/surface-oracle/`, `target/bezier-editing-oracle/`, `target/surface-editing-oracle/`.
 The live oracle does not link any rendering or data-exchange toolkit.
 
 To intentionally refresh fixture inputs or reference data:
@@ -248,6 +250,27 @@ tests retain cuts 2^-2048 apart, prove edit commutation, check distinct one-side
 derivatives, invalid rational parameters and traversal exhaustion. Fuzzing
 compares complete coefficients as well as exact jets and minimal bounds.
 No fixture or review exempts Rust from the exact mathematical contract.
+
+## Exact tensor patches and isocurves
+
+The 691-case native bridge captures independently before Rust execution and
+compares all 4,023 patches and 324 isocurves. The complete rational homogeneous
+outputs must agree with independent Cox tensor polynomials and binomial affine
+substitutions. The macOS OCCT 7.9.3 capture has 637 matches and 54
+[reviewed degree-25 Segment differences](NATIVE_SURFACE_EDITING_DIVERGENCES.md).
+All counts, degrees and original U/V domains agree. Native differences cannot
+exempt Rust from the exact oracle.
+
+The 739 ordinary cases retain every complete homogeneous control using a
+lossless shared-denominator text format. They include all native input families,
+subnormal/adjacent knots, extreme homogeneous values, multiple turns, parameter
+rectangles whose interior knots round to the same float, and seeded rational
+surfaces. Full degree-25 x 25 native operations are recomputed in the bridge;
+Cargo fixtures retain extraction and composed edits for all four periodicity
+combinations. Exact boundary curves, mixed derivatives, axis commutation,
+rational cuts 2^-512 apart, invalid raw rational parameters and Cartesian
+budget exhaustion have additional tests. The twelfth fuzz target checks complete
+tensor coefficient identities, exact jets, enclosures and operation sequences.
 
 ## Representation and numeric limits
 

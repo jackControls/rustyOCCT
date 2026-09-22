@@ -6,7 +6,7 @@ degree-elevation recurrence, native outputs or Rust samples supply expectations.
 """
 from fractions import Fraction as F
 from functools import lru_cache
-from math import comb
+from math import comb, lcm
 from generate_spline_fixtures import axis
 
 
@@ -33,9 +33,29 @@ def times_linear(p,a,b):
     return result
 
 
+def integer_matrix(rows):
+    result=[]
+    for row in rows:
+        denominator=lcm(*(x.denominator for x in row))
+        result.append(([x.numerator*(denominator//x.denominator) for x in row],denominator))
+    return result
+
+
+def apply_matrix(p,matrix):
+    denominator=lcm(*(x.denominator for x in p))
+    integers=[x.numerator*(denominator//x.denominator) for x in p]
+    return [F(sum(x*y for x,y in zip(integers,row)),denominator*d) for row,d in matrix]
+
+
+@lru_cache(maxsize=256)
+def affine_matrix(n,a,b):
+    return integer_matrix([[F(comb(j,i))*a**(j-i)*b**i if j>=i else F(0) for j in range(n)] for i in range(n)])
+
+
 def substitute(p,a,b):
-    # Direct binomial affine substitution, not repeated subdivision.
-    return [sum(p[j]*comb(j,i)*a**(j-i)*b**i for j in range(i,len(p))) for i in range(len(p))]
+    # The same direct binomial substitution, with denominators cleared before
+    # matrix multiplication. Only final coefficients require rational reduction.
+    return apply_matrix(p,affine_matrix(len(p),a,b))
 
 
 @lru_cache(maxsize=256)

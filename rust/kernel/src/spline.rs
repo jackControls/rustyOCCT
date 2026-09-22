@@ -393,6 +393,75 @@ pub(crate) fn bezier_controls(
     result
 }
 
+/// Reusable extraction map for a tensor axis. Compute the same spline blossom
+/// on unit controls once, then apply that linear map to every homogeneous row.
+/// Clearing denominators before each dot product avoids a rational reduction
+/// at every multiply/add; no coefficient or output rounding is introduced.
+pub(crate) struct BezierSpanTransform {
+    rows: Vec<(Vec<BigInt>, BigInt)>,
+}
+impl BezierSpanTransform {
+    pub(crate) fn new(axis: &KnotVector, span: usize, lower: &R, upper: &R) -> Self {
+        let n = axis.degree() + 1;
+        let mut matrix = vec![vec![zero(); n]; n];
+        for first in (0..n).step_by(4) {
+            let controls = (0..n)
+                .map(|i| std::array::from_fn(|c| integer(usize::from(i == first + c))))
+                .collect();
+            let columns = bezier_controls(axis, span, controls, lower, upper);
+            for (i, row) in matrix.iter_mut().enumerate() {
+                let count = 4.min(n - first);
+                row[first..first + count].clone_from_slice(&columns[i][..count]);
+            }
+        }
+        Self {
+            rows: matrix
+                .iter()
+                .map(|row| {
+                    let denominator = common_denominator(row.iter());
+                    let numerators = row
+                        .iter()
+                        .map(|x| x.numer() * (&denominator / x.denom()))
+                        .collect();
+                    (numerators, denominator)
+                })
+                .collect(),
+        }
+    }
+
+    pub(crate) fn apply(&self, controls: &[[R; 4]]) -> Vec<[R; 4]> {
+        let denominator = common_denominator(controls.iter().flatten());
+        let numerators: Vec<[BigInt; 4]> = controls
+            .iter()
+            .map(|p| std::array::from_fn(|c| p[c].numer() * (&denominator / p[c].denom())))
+            .collect();
+        self.rows
+            .iter()
+            .map(|(row, d)| {
+                let den = &denominator * d;
+                std::array::from_fn(|c| {
+                    R::new(
+                        row.iter().zip(&numerators).map(|(a, b)| a * &b[c]).sum(),
+                        den.clone(),
+                    )
+                })
+            })
+            .collect()
+    }
+}
+
+fn common_denominator<'a>(values: impl Iterator<Item = &'a R>) -> BigInt {
+    let mut denominator = BigInt::from(1);
+    for x in values {
+        let (mut a, mut b) = (denominator.clone(), x.denom().clone());
+        while b != BigInt::from(0) {
+            (a, b) = (b.clone(), a % b);
+        }
+        denominator = denominator / a * x.denom();
+    }
+    denominator
+}
+
 /// Differentiate de Boor's homogeneous pole interpolation, along one axis.
 /// `previous[n]` supplies (lower jet index, derivative multiplier) for alpha'.
 pub(crate) fn de_boor<const N: usize>(

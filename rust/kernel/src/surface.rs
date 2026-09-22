@@ -8,6 +8,9 @@ use crate::spline::{self, Parameter, MAX_DEGREE, MAX_POLES};
 use crate::{exact, math::finite, Error, KnotVector, Point3, Result, ScalarInterval};
 use num_rational::BigRational as R;
 
+mod editing;
+pub use editing::{BezierPatchExtractionOptions, ExactBezierSurface3, ExactSurfaceEvaluation};
+
 // Ordered by total degree. Every lower partial precedes its dependents.
 const PARTIALS: [(usize, usize); 6] = [(0, 0), (1, 0), (0, 1), (2, 0), (0, 2), (1, 1)];
 const U_PREVIOUS: [Option<(usize, usize)>; 6] =

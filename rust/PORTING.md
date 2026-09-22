@@ -80,7 +80,9 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
    distances retain rational witnesses and certified comparisons. Certified rational Bézier/B-spline curves and surfaces, including periodic
    directions and derivatives through order two, also exist. Exact Bézier
    extraction and subdivision/trimming/reversal/degree elevation preserve
-   homogeneous rational controls and original parameter units. Exact degree-25
+   homogeneous rational controls and original parameter units. Tensor patch
+   extraction through degree 25, independent U/V edits and isocurves also exist,
+   including exact mixed partials and Cartesian output limits. Exact degree-25
    root isolation and certified spline/plane/sphere/cylinder intersections cover
    isolated contacts
    and whole overlap intervals, including explicit trimmed ranges and multiple
@@ -94,7 +96,7 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
    modified and deleted mappings with explicit split/merge ambiguity before
    topology-changing operations. Body-local indices are not persistent names.
 3. **Reliable geometry and intersections.** Circular arcs, trimmed curves,
-   general spline knot/surface editing; extend the existing certified
+   general spline knot editing and arbitrary face trimming; extend the existing certified
    curve/surface jets with
    projection, general intersections, trimming and sewing. Every
    numerical algorithm needs a declared domain, degeneracy behavior and error
@@ -144,7 +146,8 @@ future subsystem. Split crates when there is a working boundary to isolate.
   exact Bézier extraction and immutable editing without rounding control data.
 - `spline`: validated shared knot vectors, exact periodic extension and parameter wrapping.
 - `surface`: immutable rational tensor-product patches and certified partial derivatives;
-  independent U/V periodicity and side selection. These are not yet B-rep faces.
+  independent U/V periodicity and side selection; exact patch extraction,
+  rectangular editing and isocurves. These are not yet B-rep faces.
 - `profile`: validated material boundaries, containment and planar moments.
   Polygons are normalized CCW; holes are assigned orientation in the B-rep.
 - `topology`: immutable owned vertices/edges/faces, opposite oriented uses,
