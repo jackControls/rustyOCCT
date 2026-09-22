@@ -3,6 +3,32 @@
 The runner seeds every `*.bin` under the matching target directory. Keep original
 artifact bytes and names so campaign evidence remains traceable.
 
+## Proximity: full-exponent triangle pairs
+
+`proximity/slow-unit-1052e64729cba6e7060eca6bb910717b1678903a.bin` was saved during
+corpus replay in [campaign 35724489063](https://github.com/jackControls/rustyOCCT/actions/runs/35724489063)
+at `acfc37e7ef5044995b7cee997dac5a25baedc7a3`. The Linux sanitizer reported 14
+seconds for the complete input and oracle, with no wrong answer or failure.
+Its bytes are exactly the `random_TT_5` seed from `fixtures/proximity.tsv`:
+two triangles with independently varying coordinate exponents, from subnormal
+values through approximately `3.5e272`. That existing fixture independently
+checks the exact minimum distance and global supporting-plane certificate.
+
+Profiling showed repeated fraction reduction in candidate solves and point
+evaluation. The solver now clears a common dyadic coordinate denominator,
+uses integer-preserving Bareiss elimination and back substitution, and compares
+homogeneous integer candidates before reducing only the chosen result. Native
+corpus witnesses and all existing exact fixture expectations are unchanged.
+Local five-run release replay medians, including both kernel and oracle, changed
+from approximately 0.5445 seconds to 0.0836 seconds (6.5 times faster). These
+are diagnostic timings on one host, not a general production latency guarantee.
+The 20-second fuzz input limit is unchanged.
+
+```sh
+cargo run --manifest-path rust/fuzz/Cargo.toml --locked --release \
+  --example replay_proximity -- rust/fuzz/regressions/proximity/*.bin
+```
+
 ## Spline intersections: expensive exact sign filtering
 
 Both inputs came from [campaign 35715526133](https://github.com/jackControls/rustyOCCT/actions/runs/35715526133)

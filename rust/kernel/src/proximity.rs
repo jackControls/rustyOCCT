@@ -37,6 +37,7 @@ use num_rational::BigRational as R;
 use std::cmp::Ordering;
 
 type Vector = [R; 3];
+type IntegerVector = [BigInt; 3];
 
 /// The geometric sets accepted by [`closest_points`]. Line and segment
 /// parameters use `a + t(b-a)`; plane and triangle parameters use
@@ -168,49 +169,109 @@ impl ClosestPair {
 /// convergence criterion is used. Integer arithmetic cost depends on input bits.
 pub fn closest_points(a: &LinearPrimitive3, b: &LinearPrimitive3) -> Result<ClosestPair> {
     let [a, b] = [Shape::new(a)?, Shape::new(b)?];
-    let [af, bf] = [a.faces(), b.faces()];
-    let mut best: Option<ClosestPair> = None;
+    // Input rationals are dyadic, so their largest denominator is a common
+    // denominator. Clear it once: the positive scale cancels from the normal
+    // equations. Keep integer coefficients through fraction-free elimination.
+    let denominator = a
+        .points
+        .iter()
+        .chain(&b.points)
+        .flat_map(|p| p.iter())
+        .map(R::denom)
+        .max()
+        .expect("nonempty shapes");
+    let [af, bf] = [a.faces(denominator), b.faces(denominator)];
+    let mut best: Option<Candidate> = None;
     for fa in &af {
         for fb in &bf {
-            let solution = stationary(fa, fb);
+            let (solution, scale) = stationary(fa, fb);
             let (u, v) = solution.split_at(fa.directions.len());
-            if !fa.feasible(u) || !fb.feasible(v) {
+            if !fa.feasible(u, &scale) || !fb.feasible(v, &scale) {
                 continue;
             }
             let parameters = [
-                fa.parameters(u, a.points.len()),
-                fb.parameters(v, b.points.len()),
+                fa.parameters(u, &scale, a.points.len()),
+                fb.parameters(v, &scale, b.points.len()),
             ];
-            let points = [a.evaluate(&parameters[0]), b.evaluate(&parameters[1])];
-            let delta = sub(&points[0], &points[1]);
-            let candidate = ClosestPair {
+            let points = [fa.evaluate(u, &scale), fb.evaluate(v, &scale)];
+            let delta = integer_sub(&points[0], &points[1]);
+            let candidate = Candidate {
                 points,
                 parameters,
-                squared_distance: dot(&delta, &delta),
+                squared_distance: integer_dot(&delta, &delta),
+                denominator: scale,
             };
             // A stable tie choice amongst these candidates, not a global
             // lexicographic minimum of an unbounded family of minimizers.
-            if best.as_ref().is_none_or(|prior| {
-                (
-                    &candidate.squared_distance,
-                    &candidate.points,
-                    &candidate.parameters,
-                ) < (&prior.squared_distance, &prior.points, &prior.parameters)
-            }) {
+            if best
+                .as_ref()
+                .is_none_or(|prior| candidate.cmp(prior) == Ordering::Less)
+            {
                 best = Some(candidate);
             }
         }
     }
     // Every nonempty closed polyhedral pair in this domain has a minimum, and
     // the face enumeration contains a feasible stationary representative.
-    Ok(best.expect("complete face enumeration contains a closest pair"))
+    Ok(best
+        .expect("complete face enumeration contains a closest pair")
+        .into_result(denominator))
+}
+
+/// Homogeneous candidate: points are divided by denominator * input scale,
+/// parameters by denominator, and squared distance by their squared product.
+/// Postpone fraction reduction until after selecting the minimum witness.
+struct Candidate {
+    points: [IntegerVector; 2],
+    parameters: [Vec<BigInt>; 2],
+    squared_distance: BigInt,
+    denominator: BigInt,
+}
+impl Candidate {
+    fn cmp(&self, other: &Self) -> Ordering {
+        (&self.squared_distance * &other.denominator * &other.denominator)
+            .cmp(&(&other.squared_distance * &self.denominator * &self.denominator))
+            .then_with(|| {
+                // Input scale is common and positive. Parameter counts are
+                // fixed by the two original primitives, not the active faces.
+                self.points
+                    .iter()
+                    .flatten()
+                    .chain(self.parameters.iter().flatten())
+                    .zip(
+                        other
+                            .points
+                            .iter()
+                            .flatten()
+                            .chain(other.parameters.iter().flatten()),
+                    )
+                    .map(|(a, b)| (a * &other.denominator).cmp(&(b * &self.denominator)))
+                    .find(|c| *c != Ordering::Equal)
+                    .unwrap_or(Ordering::Equal)
+            })
+    }
+
+    fn into_result(self, input_scale: &BigInt) -> ClosestPair {
+        let coordinate_denominator = &self.denominator * input_scale;
+        ClosestPair {
+            points: self
+                .points
+                .map(|p| p.map(|x| R::new(x, coordinate_denominator.clone()))),
+            parameters: self.parameters.map(|p| {
+                p.into_iter()
+                    .map(|x| R::new(x, self.denominator.clone()))
+                    .collect()
+            }),
+            squared_distance: R::new(
+                self.squared_distance,
+                &coordinate_denominator * &coordinate_denominator,
+            ),
+        }
+    }
 }
 
 fn zero() -> R {
     R::from_integer(BigInt::from(0))
-}
-fn one() -> R {
-    R::from_integer(BigInt::from(1))
 }
 fn rational(x: f64) -> Result<R> {
     R::from_float(x).ok_or(Error::NonFinite("proximity coordinate or threshold"))
@@ -221,10 +282,10 @@ fn bounds(r: &R, what: &'static str) -> Result<ScalarInterval> {
         what,
     )
 }
-fn sub(a: &Vector, b: &Vector) -> Vector {
+fn integer_sub(a: &IntegerVector, b: &IntegerVector) -> IntegerVector {
     std::array::from_fn(|i| &a[i] - &b[i])
 }
-fn dot(a: &Vector, b: &Vector) -> R {
+fn integer_dot(a: &IntegerVector, b: &IntegerVector) -> BigInt {
     a.iter().zip(b).map(|(x, y)| x * y).sum()
 }
 
@@ -252,7 +313,12 @@ impl Shape {
         Ok(Self { points, bounded })
     }
 
-    fn faces(&self) -> Vec<Face> {
+    fn faces(&self, denominator: &BigInt) -> Vec<Face> {
+        let points: Vec<IntegerVector> = self
+            .points
+            .iter()
+            .map(|p| std::array::from_fn(|i| p[i].numer() * (denominator / p[i].denom())))
+            .collect();
         let full = (1 << self.points.len()) - 1;
         let first = if self.bounded { 1 } else { full };
         (first..=full)
@@ -260,10 +326,10 @@ impl Shape {
                 let indices: Vec<_> = (0..self.points.len())
                     .filter(|&i| mask & (1 << i) != 0)
                     .collect();
-                let anchor = self.points[indices[0]].clone();
+                let anchor = points[indices[0]].clone();
                 let directions = indices[1..]
                     .iter()
-                    .map(|&i| sub(&self.points[i], &anchor))
+                    .map(|&i| integer_sub(&points[i], &anchor))
                     .collect();
                 Face {
                     anchor,
@@ -274,43 +340,45 @@ impl Shape {
             })
             .collect()
     }
-
-    fn evaluate(&self, parameters: &[R]) -> Vector {
-        std::array::from_fn(|k| {
-            &self.points[0][k]
-                + parameters
-                    .iter()
-                    .enumerate()
-                    .map(|(i, t)| t * (&self.points[i + 1][k] - &self.points[0][k]))
-                    .sum::<R>()
-        })
-    }
 }
 
 struct Face {
-    anchor: Vector,
-    directions: Vec<Vector>,
+    anchor: IntegerVector,
+    directions: Vec<IntegerVector>,
     indices: Vec<usize>,
     bounded: bool,
 }
 impl Face {
-    fn feasible(&self, x: &[R]) -> bool {
-        !self.bounded || (x.iter().all(|v| *v >= zero()) && x.iter().sum::<R>() <= one())
+    fn feasible(&self, x: &[BigInt], denominator: &BigInt) -> bool {
+        !self.bounded
+            || (x.iter().all(|v| *v >= BigInt::from(0)) && x.iter().sum::<BigInt>() <= *denominator)
     }
 
-    fn parameters(&self, x: &[R], vertices: usize) -> Vec<R> {
-        let mut weights = vec![zero(); vertices];
-        weights[self.indices[0]] = one() - x.iter().sum::<R>();
+    fn parameters(&self, x: &[BigInt], denominator: &BigInt, vertices: usize) -> Vec<BigInt> {
+        let mut weights = vec![BigInt::from(0); vertices];
+        weights[self.indices[0]] = denominator - x.iter().sum::<BigInt>();
         for (&i, t) in self.indices[1..].iter().zip(x) {
             weights[i] = t.clone();
         }
         weights[1..].to_vec()
     }
+
+    fn evaluate(&self, x: &[BigInt], denominator: &BigInt) -> IntegerVector {
+        std::array::from_fn(|k| {
+            &self.anchor[k] * denominator
+                + self
+                    .directions
+                    .iter()
+                    .zip(x)
+                    .map(|(d, t)| &d[k] * t)
+                    .sum::<BigInt>()
+        })
+    }
 }
 
 /// Solve DᵀD x = -Dᵀ(a-b) exactly. This system is always consistent, even
 /// with dependent columns: ker(DᵀD)=ker(D), and the right side is in its range.
-fn stationary(a: &Face, b: &Face) -> Vec<R> {
+fn stationary(a: &Face, b: &Face) -> (Vec<BigInt>, BigInt) {
     let columns: Vec<_> = a
         .directions
         .iter()
@@ -318,47 +386,68 @@ fn stationary(a: &Face, b: &Face) -> Vec<R> {
         .chain(b.directions.iter().map(|v| v.clone().map(|x| -x)))
         .collect();
     let n = columns.len();
-    let delta = sub(&a.anchor, &b.anchor);
-    let mut rows: Vec<Vec<R>> = columns
+    let delta = integer_sub(&a.anchor, &b.anchor);
+    let mut rows: Vec<Vec<BigInt>> = columns
         .iter()
         .map(|c| {
             columns
                 .iter()
-                .map(|d| dot(c, d))
-                .chain([-dot(c, &delta)])
+                .map(|d| integer_dot(c, d))
+                .chain([-integer_dot(c, &delta)])
                 .collect()
         })
         .collect();
     let mut pivots = Vec::new();
+    let mut previous = BigInt::from(1);
+    let integer_zero = BigInt::from(0);
     for col in 0..n {
         let row = pivots.len();
-        let Some(pivot) = (row..n).find(|&i| rows[i][col] != zero()) else {
+        let Some(pivot) = (row..n).find(|&i| rows[i][col] != integer_zero) else {
             continue;
         };
         rows.swap(row, pivot);
-        let scale = rows[row][col].clone();
-        for v in &mut rows[row][col..] {
-            *v /= &scale;
-        }
         let pivot = rows[row].clone();
-        for (i, cells) in rows.iter_mut().enumerate() {
-            if i == row {
-                continue;
-            }
+        // Bareiss elimination: each quotient is exact by Sylvester's identity.
+        // Skipped zero columns do not change the previous nonzero pivot. Even
+        // rows with a zero multiplier must receive the pivot/previous scaling.
+        for cells in rows.iter_mut().skip(row + 1) {
             let scale = cells[col].clone();
-            if scale == zero() {
-                continue;
+            for (cell, value) in cells[col + 1..].iter_mut().zip(&pivot[col + 1..]) {
+                let numerator = &*cell * &pivot[col] - &scale * value;
+                debug_assert_eq!(&numerator % &previous, integer_zero);
+                *cell = numerator / &previous;
             }
-            for (cell, value) in cells[col..].iter_mut().zip(&pivot[col..]) {
-                *cell -= &scale * value;
-            }
+            cells[col] = integer_zero.clone();
         }
+        previous = pivot[col].clone();
         pivots.push(col);
     }
-    debug_assert!(rows[pivots.len()..].iter().all(|row| row[n] == zero()));
-    let mut x = vec![zero(); n];
-    for (row, col) in pivots.into_iter().enumerate() {
-        x[col] = rows[row][n].clone();
+    debug_assert!(rows[pivots.len()..]
+        .iter()
+        .all(|row| row[n] == integer_zero));
+    let mut x = vec![integer_zero.clone(); n];
+    let Some(&last) = pivots.last() else {
+        return (x, BigInt::from(1));
+    };
+    // The final pivot is the determinant of a nonsingular subsystem. Cramer's
+    // rule gives a common denominator for all non-free variables. Backsolve
+    // its integer numerators; no per-operation rational reductions are needed.
+    let mut denominator = rows[pivots.len() - 1][last].clone();
+    for (row, col) in pivots.into_iter().enumerate().rev() {
+        let rest: BigInt = rows[row][col + 1..n]
+            .iter()
+            .zip(&x[col + 1..])
+            .map(|(a, x)| a * x)
+            .sum();
+        let numerator = &rows[row][n] * &denominator - rest;
+        debug_assert_eq!(&numerator % &rows[row][col], integer_zero);
+        x[col] = numerator / &rows[row][col];
     }
-    x
+    if denominator < integer_zero {
+        denominator = -denominator;
+        for v in &mut x {
+            *v = -std::mem::take(v);
+        }
+    }
+    (x, denominator)
 }

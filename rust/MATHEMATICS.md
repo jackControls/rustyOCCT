@@ -555,8 +555,17 @@ The solver enumerates the nonempty faces of each bounded simplex (one point,
 three segment faces, seven triangle faces), or the whole unbounded affine set.
 For each pair, minimize `||delta + D*x||²`, where columns of `D` are the first
 face directions and the negatives of the second face directions. Solve the
-normal equations `DᵀD*x = -Dᵀdelta` using exact rational elimination, with
-free variables set to zero. This system is consistent: `ker(DᵀD)=ker(D)`
+normal equations `DᵀD*x = -Dᵀdelta` exactly, with free variables set to zero.
+Input coordinates have power-of-two denominators. Clearing their common
+denominator leaves integer normal equations. Fraction-free
+[Bareiss elimination](https://www.ams.org/mcom/1968-22-103/S0025-5718-1968-0226829-0/S0025-5718-1968-0226829-0.pdf)
+retains integer coefficients; every division is exact. The last nonzero pivot
+is a nonsingular-subsystem determinant, supplying a common denominator for
+back substitution by Cramer's rule. Feasibility, witness construction and
+candidate comparison keep integer numerators over positive shared denominators.
+Only the selected result is converted to reduced rational values. This avoids
+repeated large fraction reductions without changing rank, minima or tie order.
+This system is consistent: `ker(DᵀD)=ker(D)`
 and the right-hand side is orthogonal to that kernel. Keep solutions with
 feasible bounded-face barycentric coordinates, then select the smallest exact
 squared distance. A fixed tie order makes repeated queries deterministic.
