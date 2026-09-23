@@ -123,6 +123,13 @@ reduced that input's local sanitizer callback from about 9.3 to 2.8 seconds in
 an isolated experiment. These timings are observations under concurrent work,
 not a platform-independent speed guarantee.
 
+The optimized implementation at `fc022e82` completed another clean local run:
+600.04 seconds of mutation after 227.91 seconds of replay, 1,908 mutations,
+and an 898 MiB RSS peak. No new artifacts were produced; the two previously
+retained slow inputs remain archived and both pass the optimized checker.
+Its Linux CI spline campaign also completed its full 60-second mutation budget
+with no artifacts and a 625 MiB RSS peak. Full platform acceptance remains open.
+
 The first probe retained 120-second failures for two high-degree bound views.
 The zero and shared-refinement fixes now complete all 30 cases locally; the
 hard rational degree-73 case takes about 24 seconds including all tight bounds.
@@ -133,9 +140,10 @@ then exposed an incorrect bridge dependency check: `ExtremaPC_Curve` uses
 `TKGeomBase`, while the legacy wrapper also uses `TKGeomAlgo`. Linux correctly
 omits that unused library from the newer probe. The corrected bridge requires
 the actual family dependencies and still validates every loaded OCCT path and
-hash. A separate Linux degree-25 output fingerprint is reviewed with the same
-eight-of-25 witness coverage; neither comparison budgets nor Rust expectations
-were relaxed.
+hash. Separate Linux degree-25 output fingerprints are reviewed with the same
+eight-of-25 legacy and ten-of-25 newer-family witness coverage as macOS. Twelve
+stored fingerprints cover ten family/case differences across the two platforms;
+neither comparison budgets nor Rust expectations were relaxed.
 
 Clean-revision native/platform/fuzz acceptance of these fixes is still pending. This capability
 does not implement curve/curve or curve/surface minimum distance, general
