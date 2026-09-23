@@ -35,11 +35,13 @@ def shutdown_budget(input_seconds):
     return MUTATION_DEPTH * input_seconds + 5
 
 
-def startup_budget(corpus_files):
-    # Retained corpora grow after every campaign. Keep every saved input and
-    # reserve build time plus a bounded replay allowance, separately from the
-    # requested mutation time. Individual input limits still apply in replay.
-    return max(STARTUP_SECONDS,min(MAX_STARTUP_SECONDS,120+2*corpus_files))
+def startup_budget(corpus_files, input_seconds=INPUT_SECONDS):
+    # Exact-arithmetic seeds have widely varying costs. An assumed average
+    # cost can reject an otherwise legal corpus before mutation ever starts.
+    # Reserve build time and each input's configured budget (including the
+    # initial empty input), capped at one hour. Every input keeps its own
+    # timeout; replay never borrows the requested mutation duration.
+    return min(MAX_STARTUP_SECONDS, STARTUP_SECONDS+input_seconds*(corpus_files+1))
 
 
 def sanitizer_build_args(target):
@@ -351,7 +353,7 @@ def main():
                 input_seconds=TARGET_INPUT_SECONDS.get(target,INPUT_SECONDS)
                 shutdown_seconds=shutdown_budget(input_seconds)
                 initial_corpus_files=len(list(corpora[target].iterdir()))
-                startup_seconds=startup_budget(initial_corpus_files)
+                startup_seconds=startup_budget(initial_corpus_files,input_seconds)
                 timer=MutationBudget(log_path,stop_file,args.seconds,startup_seconds=startup_seconds,shutdown_seconds=shutdown_seconds)
                 command = ['cargo',f'+{args.toolchain}','fuzz','run',target,str(corpora[target]),
                     '--fuzz-dir',str(FUZZ),*sanitizer_build_args(target),'--',

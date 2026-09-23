@@ -133,9 +133,12 @@ allowed a growing corpus to consume the entire short campaign; this was caught
 as an incomplete CI run. The runner now creates a nonempty `stop_file` after
 the full requested mutation budget. LibFuzzer stops normally and emits final
 statistics. Build and corpus replay have a separate deadline of
-`max(600, min(3600, 120 + 2 * initial_corpus_files))` seconds. This reserves build
-time and an allowance for a growing retained corpus without deleting inputs or
-borrowing mutation time. A late `INITED` marker cannot borrow mutation or
+`min(3600, 600 + input_limit_seconds * (initial_corpus_files + 1))` seconds.
+This reserves build time and each input's configured allowance, including the
+initial empty input, subject to a one-hour cap. An earlier average-cost estimate
+exhausted startup on a 385-input surface corpus. Every saved input remains in
+replay, with its own timeout, and mutation still receives its full separate
+budget. A late `INITED` marker cannot borrow mutation or
 shutdown time. The pinned libFuzzer checks `stop_file` between mutation batches,
 each containing up to five callbacks. The runner explicitly keeps
 `mutate_depth=5` and allows five times the per-input timeout plus five seconds

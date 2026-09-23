@@ -27,7 +27,7 @@ jobs:
   fuzz:
     name: Fuzz / ${{ matrix.target }}
     runs-on: ubuntu-24.04
-    # At most 1h corpus startup + 1h requested mutation + final-input grace.
+    # At most 1h corpus startup + 1h requested mutation + final-batch grace.
     timeout-minutes: 135
     strategy:
       fail-fast: false

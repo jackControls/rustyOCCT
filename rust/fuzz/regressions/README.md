@@ -478,3 +478,13 @@ Before these checker changes, clean revision `b413b83e` completed a second
 local campaign with 600.10 seconds of mutation, 267 mutation executions after
 296 retained inputs, a 1,021 MiB peak RSS and a 25-second slowest input. Linux's
 resource failures remain separate from that successful local evidence.
+
+At `f24b486a`, all 15 Linux campaigns passed, including the retained surface
+timeout input (41-second slowest input, 440 MiB peak RSS for that campaign).
+The larger local surface corpus had grown to 385 inputs and exhausted the
+890-second startup estimate before mutation began. Its failed manifest and
+log remain retained. The runner now calculates startup from the actual
+20/60-second per-input allowance plus build time, with a one-hour absolute
+cap, instead of assuming two seconds per saved input. It still requires a
+complete separate mutation budget and positive mutation executions. No input
+is discarded and no individual time or memory limit is raised.

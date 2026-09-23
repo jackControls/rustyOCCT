@@ -11,18 +11,21 @@ import run_fuzz
 
 class FuzzRunnerTests(unittest.TestCase):
     def test_retained_corpus_startup_scales_and_remains_capped(self):
-        self.assertEqual(run_fuzz.startup_budget(90),600)
-        self.assertEqual(run_fuzz.startup_budget(648),1416)
+        self.assertEqual(run_fuzz.startup_budget(0),620)
+        self.assertEqual(run_fuzz.startup_budget(90),2420)
+        self.assertEqual(run_fuzz.startup_budget(648),3600)
         self.assertEqual(run_fuzz.startup_budget(100000),3600)
+        self.assertEqual(run_fuzz.startup_budget(10,60),1260)
+        self.assertEqual(run_fuzz.startup_budget(385,60),3600)
         with tempfile.TemporaryDirectory() as directory:
             directory=Path(directory); log_path=directory/'log'
             log_path.write_text('#649 INITED cov: 12\n')
             with patch('run_fuzz.time.monotonic',return_value=0.):
                 timer=run_fuzz.MutationBudget(log_path,directory/'stop',60,startup_seconds=run_fuzz.startup_budget(648))
-            with patch('run_fuzz.time.monotonic',return_value=1416.01):
+            with patch('run_fuzz.time.monotonic',return_value=3600.01):
                 timer.tick()
                 self.assertFalse(timer.evidence()['startup_budget_completed'])
-            self.assertEqual(timer.deadline(),1416)
+            self.assertEqual(timer.deadline(),3600)
 
     def test_tensor_quarantine_budget_is_explicit_and_target_local(self):
         base={'ASAN_OPTIONS':'detect_stack_use_after_return=1','CARGO_NET_OFFLINE':'true'}
