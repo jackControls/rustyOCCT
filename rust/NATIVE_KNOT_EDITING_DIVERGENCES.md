@@ -39,9 +39,22 @@ native-after is `(1,.5,0)`. Native D0 reconstruction confirms those values.
 Complete polynomial equality proves `native_after(u)=before(u-1)` for this case.
 Rust's immutable editing contract preserves `after(u)=before(u)`.
 
-Linux OCCT 7.6.3 observations must be reviewed separately when CI runs; no local
-version review exempts another version or changed result. Reviews never bypass
-Rust's independent mathematics, ordinary regressions, or fuzzing. General
+Linux OCCT 7.6.3 matches 603 cases, with 64 separately pinned differences:
+54 rejected round trips, five accepted round trips with changed control values,
+three degree-25 constant-curve removals with a changed control, and the same
+two seam correspondence cases. The three constant removals return
+`z=4.999999999878329` for one control instead of exactly `5`; this change is
+within the native removal tolerance but exceeds our fixed control comparison
+budget. Rust retains the exact constant function. All 667 complete Rust output
+rows are byte-identical on Linux and macOS, SHA-256
+`c1f9ca57728f2cf844045d2301bc8115836a90e9776ada6a35f34347a5a061b1`.
+
+The Linux observations came from
+[CI run 35822554728](https://github.com/jackControls/rustyOCCT/actions/runs/35822554728)
+at `08c97766`; that first native job correctly failed on the then-unreviewed
+Linux observations. No local version review exempts another version or changed
+result. Reviews never bypass Rust's independent mathematics, ordinary
+regressions, or fuzzing. General
 surface knot editing, degree elevation and topology integration are not covered.
 
 ```sh

@@ -229,13 +229,71 @@ pub fn equal(original: &ExactBSplineCurve3, candidate: &ExactBSplineCurve3) -> b
         })
 }
 
+type Equation = (usize, BTreeMap<usize, BigInt>, [BigInt; 4]);
+struct Solution {
+    controls: Vec<[R; 4]>,
+    integers: Vec<[BigInt; 4]>,
+    denominator: BigInt,
+}
+impl Solution {
+    fn new(pivots: &[Equation], count: usize) -> Self {
+        let mut controls = vec![std::array::from_fn(|_| integer(0)); count];
+        for (j, row, rhs) in pivots.iter().rev() {
+            controls[*j] = std::array::from_fn(|c| {
+                (R::from_integer(rhs[c].clone())
+                    - row
+                        .iter()
+                        .filter(|(i, _)| **i != *j)
+                        .map(|(i, x)| R::from_integer(x.clone()) * &controls[*i][c])
+                        .sum::<R>())
+                    / R::from_integer(row[j].clone())
+            });
+        }
+        let denominator = controls
+            .iter()
+            .flatten()
+            .fold(BigInt::from(1), |d, x| lcm(&d, x.denom()));
+        let integers = controls
+            .iter()
+            .map(|p| std::array::from_fn(|c| p[c].numer() * (&denominator / p[c].denom())))
+            .collect();
+        Self {
+            controls,
+            integers,
+            denominator,
+        }
+    }
+    fn satisfies(&self, basis: &Basis, rhs: &Homogeneous, k: usize) -> bool {
+        (0..4).all(|c| {
+            let sum: BigInt = basis
+                .rows
+                .iter()
+                .zip(&self.integers)
+                .map(|(row, p)| &row[k] * &p[c])
+                .sum();
+            sum * &rhs.denominator
+                == &rhs.coefficients[k][c] * &basis.denominator * &self.denominator
+        })
+    }
+}
+
 pub fn recover(original: &ExactBSplineCurve3, basis: &ExactKnotVector) -> Option<Vec<[R; 4]>> {
-    type Equation = (BTreeMap<usize, BigInt>, [BigInt; 4]);
-    let mut pivots: BTreeMap<usize, Equation> = BTreeMap::new();
+    let mut pivots: Vec<Equation> = Vec::new();
+    let mut solution: Option<Solution> = None;
     for [lo, hi] in partition(original.knot_vector(), basis) {
         let rows = basis_polynomials(basis, &lo, &hi);
         let rhs = homogeneous(original, &lo, &hi);
         for k in 0..=basis.degree() {
+            // Once the coefficient equations determine a unique control row,
+            // check every remaining equation by exact substitution. Eliminating
+            // hundreds of dependent equations again is unnecessary; none of
+            // their residual checks is omitted or replaced by point samples.
+            if let Some(solved) = &solution {
+                if !solved.satisfies(&rows, &rhs, k) {
+                    return None;
+                }
+                continue;
+            }
             let mut row: BTreeMap<_, _> = rows
                 .rows
                 .iter()
@@ -245,16 +303,32 @@ pub fn recover(original: &ExactBSplineCurve3, basis: &ExactKnotVector) -> Option
                 .collect();
             let mut answer: [BigInt; 4] =
                 std::array::from_fn(|c| &rhs.coefficients[k][c] * &rows.denominator);
-            let mut stored = false;
-            while let Some((&j, scale)) = row.first_key_value() {
-                let scale = scale.clone();
-                if let Some((pivot, values)) = pivots.get(&j) {
-                    let divisor = gcd(pivot[&j].clone(), scale.clone());
-                    let a = &pivot[&j] / &divisor;
-                    let b = &scale / divisor;
-                    for x in row.values_mut() {
-                        *x *= &a;
-                    }
+            // Normalize each source equation once, then use fraction-free
+            // elimination. A previous pivot divides every subsequent minor;
+            // verify each division exactly, including under release fuzzing.
+            let mut content = BigInt::from(0);
+            for x in row.values().chain(&answer) {
+                content = gcd(content, x.clone());
+                if content == BigInt::from(1) {
+                    break;
+                }
+            }
+            if content > BigInt::from(1) {
+                for x in row.values_mut().chain(&mut answer) {
+                    *x /= &content;
+                }
+            }
+            let mut previous = BigInt::from(1);
+            for (j, pivot, values) in &pivots {
+                if row.is_empty() {
+                    break;
+                }
+                let a = &pivot[j];
+                let b = row.get(j).cloned().unwrap_or_else(|| 0.into());
+                for x in row.values_mut() {
+                    *x *= a;
+                }
+                if b != BigInt::from(0) {
                     for (&i, x) in pivot {
                         let y = row.get(&i).cloned().unwrap_or_else(|| 0.into()) - &b * x;
                         if y == BigInt::from(0) {
@@ -263,47 +337,31 @@ pub fn recover(original: &ExactBSplineCurve3, basis: &ExactKnotVector) -> Option
                             row.insert(i, y);
                         }
                     }
-                    answer = std::array::from_fn(|c| &a * &answer[c] - &b * &values[c]);
-                    // Primitive integer rows control expression growth without
-                    // changing their exact solution set, including zero rows.
-                    let mut content = BigInt::from(0);
-                    for x in row.values().chain(&answer) {
-                        content = gcd(content, x.clone());
-                        if content == BigInt::from(1) {
-                            break;
-                        }
-                    }
-                    if content > BigInt::from(1) {
-                        for x in row.values_mut().chain(&mut answer) {
-                            *x /= &content;
-                        }
-                    }
-                } else {
-                    pivots.insert(j, (row, answer.clone()));
-                    stored = true;
-                    break;
                 }
+                answer = std::array::from_fn(|c| a * &answer[c] - &b * &values[c]);
+                if previous != BigInt::from(1) {
+                    for x in row.values_mut().chain(&mut answer) {
+                        let q = &*x / &previous;
+                        assert_eq!(&q * &previous, *x, "exact fraction-free division");
+                        *x = q;
+                    }
+                }
+                previous = a.clone();
             }
-            if !stored && answer.iter().any(|x| x != &BigInt::from(0)) {
+            if let Some((&j, _)) = row.first_key_value() {
+                pivots.push((j, row, answer));
+                if pivots.len() == basis.pole_count() {
+                    let solved = Solution::new(&pivots, basis.pole_count());
+                    assert!(solved.satisfies(&rows, &rhs, k));
+                    solution = Some(solved);
+                }
+            } else if answer.iter().any(|x| x != &BigInt::from(0)) {
                 return None;
             }
         }
     }
     assert_eq!(pivots.len(), basis.pole_count(), "independent basis rank");
-    let mut controls = vec![std::array::from_fn(|_| integer(0)); basis.pole_count()];
-    for j in (0..controls.len()).rev() {
-        let (row, rhs) = &pivots[&j];
-        controls[j] = std::array::from_fn(|c| {
-            (R::from_integer(rhs[c].clone())
-                - row
-                    .iter()
-                    .filter(|(i, _)| **i != j)
-                    .map(|(i, x)| R::from_integer(x.clone()) * &controls[*i][c])
-                    .sum::<R>())
-                / R::from_integer(row[&j].clone())
-        });
-    }
-    Some(controls)
+    Some(solution.expect("independent basis has full rank").controls)
 }
 
 /// For valid removal requests which leave more poles than degree.

@@ -179,6 +179,23 @@ same local host, complete release replay fell to 0.57 seconds. The next campaign
 completed its full seed replay and 60-second mutation budget. These diagnostic
 timings do not establish a production latency guarantee.
 
+The first Linux knot-editing campaign at `08c97766` passed its complete mutation
+budget but reported 15- and 22-second seeds. The full inputs are retained as
+`constant-periodic-d25-origin-removal.bin` (`a21ad3d7...`) and
+`constant-periodic-d25-seam-roundtrip.bin` (`cd58aee8...`), from
+[CI run 35822554768](https://github.com/jackControls/rustyOCCT/actions/runs/35822554768).
+They also map to complete ordinary fixtures and the dedicated regression test.
+These are unminimized performance cases; the green job did not remove their
+latency risk.
+
+The checker now uses fraction-free elimination with asserted exact divisions.
+After obtaining full rank, it checks every remaining coefficient equation by
+exact substitution instead of eliminating dependent equations again. Negative
+weights and failed-removal consistency checks remain unchanged. Complete local
+release replays improved from about 1.00/0.62 seconds to 0.24/0.31 seconds for
+the origin/seam cases; every one of the 723 fixtures also passes the revised
+second oracle. Linux sanitizer timing remains a separate validation gate.
+
 ```sh
 cargo run --manifest-path rust/fuzz/Cargo.toml --locked --release \
   --example replay_knot_editing -- rust/fuzz/regressions/knot_editing/*.bin

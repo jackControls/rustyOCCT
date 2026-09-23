@@ -759,7 +759,9 @@ The independent checker expands Cox basis functions on every common span,
 including the entire finite raw support for unclamped curves and one complete
 period for periodic curves. A coefficient linear system recovers the complete
 new controls or proves inconsistency, independently of inverse insertion.
-The Rust checker clears denominators and uses primitive integer equations;
+The Rust checker clears denominators and uses fraction-free integer equations,
+asserting exact divisions. Once the controls are uniquely determined, it checks
+every remaining coefficient equation by exact substitution;
 Python uses `Fraction` elimination, with a separate Greville reconstruction on
 selected cases. No sampled-point comparison determines removal acceptance.
 The 723 fixtures, 667 native observations and thirteenth sustained fuzz target

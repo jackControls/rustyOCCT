@@ -278,22 +278,51 @@ fn nonconstant_periodic_origin_removal_preserves_canonical_control_order() {
 
 #[test]
 fn retained_degree25_removal_exercises_complete_integer_equation_solver() {
-    let bytes =
-        include_bytes!("../../fuzz/regressions/knot_editing/constant-periodic-d25-removal.bin");
-    assert_eq!(&bytes[..5], &[3, 24, 1, 1, 4]);
-    let row = include_str!("../../fixtures/knot-editing.tsv")
-        .lines()
-        .find(|r| r.starts_with("constant_periodic_d25_remove_existing "))
-        .unwrap();
-    let (input, expected) = row.split_once(" | ").unwrap();
-    let input = protocol::parse(input);
-    let actual = reference::removed(&input.curve, &r(1), 0).unwrap();
-    assert_eq!(
-        input.curve.remove_knot(&r(1), 0).unwrap(),
-        Some(actual.clone())
-    );
-    assert!(reference::equal(&input.curve, &actual));
-    assert_eq!(protocol::encode(&input.name, &[true], &actual), expected);
+    for (bytes, op, name) in [
+        (
+            include_bytes!("../../fuzz/regressions/knot_editing/constant-periodic-d25-removal.bin"),
+            4,
+            "constant_periodic_d25_remove_existing ",
+        ),
+        (
+            include_bytes!(
+                "../../fuzz/regressions/knot_editing/constant-periodic-d25-origin-removal.bin"
+            ),
+            5,
+            "constant_periodic_d25_remove_origin ",
+        ),
+        (
+            include_bytes!(
+                "../../fuzz/regressions/knot_editing/constant-periodic-d25-seam-roundtrip.bin"
+            ),
+            3,
+            "constant_periodic_d25_seam_roundtrip ",
+        ),
+    ] {
+        assert_eq!(&bytes[..5], &[3, 24, 1, 1, op]);
+        let row = include_str!("../../fixtures/knot-editing.tsv")
+            .lines()
+            .find(|r| r.starts_with(name))
+            .unwrap();
+        let (input, expected) = row.split_once(" | ").unwrap();
+        let input = protocol::parse(input);
+        let mut curve = input.curve.clone();
+        for (op, u, m) in &input.operations {
+            let next = if *op == 'I' {
+                curve.insert_knot(u, *m).unwrap()
+            } else {
+                let expected = reference::removed(&curve, u, *m).unwrap();
+                assert_eq!(curve.remove_knot(u, *m).unwrap(), Some(expected.clone()));
+                expected
+            };
+            assert!(reference::equal(&curve, &next));
+            curve = next;
+        }
+        assert_eq!(
+            protocol::encode(&input.name, &vec![true; input.operations.len()], &curve),
+            expected
+        );
+    }
 }
 
 #[test]
