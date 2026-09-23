@@ -473,6 +473,9 @@ fn retained_degree25_weighted_contacts_and_parameter_ranges() {
         include_bytes!(
             "../../fuzz/regressions/exact_spline_intersections/mutated-rational-contacts.bin"
         ),
+        include_bytes!(
+            "../../fuzz/regressions/exact_spline_intersections/degree25-sphere-unit-domain.bin"
+        ),
     ];
     let minimal = |interval: rusty_occt::ScalarInterval, value: &R| {
         let lo = R::from_float(interval.lower()).unwrap();
@@ -487,7 +490,7 @@ fn retained_degree25_weighted_contacts_and_parameter_ranges() {
     for bytes in inputs {
         let family = usize::from(bytes[0]);
         let domain_mode = bytes[3];
-        assert!(family == 0 || family == 2);
+        assert!(family <= 2);
         assert_eq!(&bytes[1..3], &[24, 0]);
         assert_eq!(&bytes[4..16], &[1, 2, 0, 0, 7, 2, 5, 255, 0, 84, 0, 0]);
         let (a, width) = match domain_mode {
@@ -542,6 +545,8 @@ fn retained_degree25_weighted_contacts_and_parameter_ranges() {
             )
             .unwrap();
             exact_spline_plane(&curve, &plane).unwrap()
+        } else if family == 1 {
+            exact_spline_sphere(&curve, &sphere()).unwrap()
         } else {
             exact_spline_cylinder(&curve, &cylinder).unwrap()
         };
@@ -571,6 +576,8 @@ fn retained_degree25_weighted_contacts_and_parameter_ranges() {
                 .sum();
             let expected = if family == 0 {
                 [r(0), r(0), &t / w]
+            } else if family == 1 {
+                [r(1), r(0), r(0)]
             } else {
                 [r(1), &t / w, r(0)]
             };

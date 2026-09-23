@@ -332,7 +332,19 @@ pub(crate) fn span_polynomial_from_knots<const N: usize>(
     span: usize,
     poles: Vec<[R; N]>,
 ) -> [Vec<R>; N] {
-    let mut d: Vec<[Vec<R>; N]> = poles.into_iter().map(|p| p.map(|c| vec![c])).collect();
+    // One positive denominator per vector of polynomials avoids reducing a
+    // rational number at every coefficient product and sum. Every de Boor
+    // stage still performs the same exact linear-polynomial interpolation.
+    let denominator = common_denominator(poles.iter().flatten());
+    let mut d: Vec<_> = poles
+        .into_iter()
+        .map(|p| {
+            (
+                p.map(|c| vec![c.numer() * (&denominator / c.denom())]),
+                denominator.clone(),
+            )
+        })
+        .collect();
     let start = &knots[span];
     let length = &knots[span + 1] - start;
     for r in 1..=p {
@@ -341,21 +353,50 @@ pub(crate) fn span_polynomial_from_knots<const N: usize>(
             let width = &knots[i + p - r + 1] - &knots[i];
             let a = (start - &knots[i]) / &width;
             let b = &length / width;
-            d[j] = std::array::from_fn(|c| {
-                let mut value = vec![zero(); r + 1];
+            let (left, left_den) = &d[j - 1];
+            let (right, right_den) = &d[j];
+            let mix_den = integer_lcm(a.denom(), b.denom());
+            let a_num = a.numer() * (&mix_den / a.denom());
+            let b_num = b.numer() * (&mix_den / b.denom());
+            let common = integer_lcm(left_den, right_den);
+            let (ls, rs) = (&common / left_den, &common / right_den);
+            let (l0, r0) = ((&mix_den - &a_num) * &ls, &a_num * &rs);
+            let (l1, r1) = (-&b_num * &ls, &b_num * &rs);
+            let mut coefficients: [Vec<BigInt>; N] = std::array::from_fn(|c| {
+                let mut value = vec![BigInt::from(0); r + 1];
                 for (k, entry) in value.iter_mut().enumerate() {
                     if k < r {
-                        *entry += (integer(1) - &a) * &d[j - 1][c][k] + &a * &d[j][c][k];
+                        *entry += &l0 * &left[c][k] + &r0 * &right[c][k];
                     }
                     if k > 0 {
-                        *entry += &b * (&d[j][c][k - 1] - &d[j - 1][c][k - 1]);
+                        *entry += &l1 * &left[c][k - 1] + &r1 * &right[c][k - 1];
                     }
                 }
                 value
             });
+            let mut denominator = common * mix_den;
+            let mut content = denominator.clone();
+            for value in coefficients.iter().flatten() {
+                if content == BigInt::from(1) {
+                    break;
+                }
+                content = integer_gcd(content, value.clone());
+            }
+            if content > BigInt::from(1) {
+                denominator /= &content;
+                for value in coefficients.iter_mut().flatten() {
+                    *value /= &content;
+                }
+            }
+            d[j] = (coefficients, denominator);
         }
     }
-    d.pop().unwrap()
+    let (coefficients, denominator) = d.pop().unwrap();
+    coefficients.map(|v| {
+        v.into_iter()
+            .map(|x| R::new(x, denominator.clone()))
+            .collect()
+    })
 }
 
 /// Evaluate the spline blossom at `p-i` lower and `i` upper arguments to
@@ -510,13 +551,24 @@ impl BezierSpanTransform {
 pub(crate) fn common_denominator<'a>(values: impl Iterator<Item = &'a R>) -> BigInt {
     let mut denominator = BigInt::from(1);
     for x in values {
-        let (mut a, mut b) = (denominator.clone(), x.denom().clone());
-        while b != BigInt::from(0) {
-            (a, b) = (b.clone(), a % b);
-        }
-        denominator = denominator / a * x.denom();
+        denominator = integer_lcm(&denominator, x.denom());
     }
     denominator
+}
+
+fn integer_lcm(a: &BigInt, b: &BigInt) -> BigInt {
+    a / integer_gcd(a.clone(), b.clone()) * b
+}
+
+fn integer_gcd(mut a: BigInt, mut b: BigInt) -> BigInt {
+    while b != BigInt::from(0) {
+        (a, b) = (b.clone(), a % b);
+    }
+    if a < BigInt::from(0) {
+        -a
+    } else {
+        a
+    }
 }
 
 /// Differentiate de Boor's homogeneous pole interpolation, along one axis.

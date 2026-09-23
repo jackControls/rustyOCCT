@@ -274,6 +274,31 @@ fixed-input runs are separate from mutation campaigns. Their assertions and
 the campaign's corpus, time and memory limits remain intact. These measurements
 still do not imply production latency bounds.
 
+At `fd8fca65`, Linux finished startup in 593.19 seconds and completed 60.09
+seconds of mutation, but the combined 660-second deadline killed the process
+before its last input and final statistics finished. This remained a failed
+campaign, with no invented mutation count, in
+[run 35832787056](https://github.com/jackControls/rustyOCCT/actions/runs/35832787056).
+Its 13-second degree-25 sphere seed on `[0,1]` is retained as
+`degree25-sphere-unit-domain.bin` (`c8011cfcc8d4f68a3f2e52dc62433fe566de6813`)
+and included in the same ordinary complete-contact test. The local campaign
+at that revision completed 1,202 mutations over 600 seconds without a new slow
+input. These local results do not replace the failed Linux result.
+
+Further profiling separated the remaining cost: about 0.26 seconds in exact
+de Boor span polynomials and 0.10 seconds in the implicit equation per retained
+cylinder/sphere input. Shared positive denominators now avoid repeated rational
+reductions during de Boor coefficient interpolation. The five retained full
+release replays take about 0.07–0.22 seconds with the same complete oracles.
+
+The runner also now enforces startup, mutation and shutdown independently:
+600 seconds for build/replay, the full requested mutation duration, then a
+25-second shutdown grace for the unchanged 20-second input timeout and final
+reporting. Tests reproduce the observed 593.19-second boundary, reject late or
+missing initialization, allow a final input to finish, and kill an ignored stop
+request. This changes shutdown accounting; it does not extend the startup,
+per-input, memory or geometry limits, or accept incomplete reports.
+
 ```sh
 cargo run --manifest-path rust/fuzz/Cargo.toml --locked --release \
   --example replay_exact_spline_intersections -- \

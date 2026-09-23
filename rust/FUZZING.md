@@ -100,9 +100,16 @@ corpus replay. Its `max_total_time` flag includes initialization and previously
 allowed a growing corpus to consume the entire short campaign; this was caught
 as an incomplete CI run. The runner now creates a nonempty `stop_file` after
 the full requested mutation budget. LibFuzzer stops normally and emits final
-statistics. The outer deadline still bounds startup/build plus mutation to
-`requested_seconds + 600`; a missing initialization marker or ignored stop
-request cannot hang indefinitely. Early exits never count as completed budgets.
+statistics. Build and corpus replay have a separate 600-second deadline; a
+late `INITED` marker cannot borrow mutation or shutdown time. After the full
+mutation budget, the runner allows 25 seconds for an in-flight input to finish
+and final statistics to be emitted. This covers the unchanged 20-second input
+timeout plus five seconds for exit/reporting. The entire process group remains
+bounded by `requested_seconds + 625`, and ignored stop requests are killed.
+An early exit, startup overrun, missing final statistics or absent mutations
+still fails the campaign. Separating the phases fixes a reproduced Linux run
+that completed its mutation budget but was killed before its last input and
+final statistics finished; the failed evidence remains retained.
 
 ## Local reproduction
 

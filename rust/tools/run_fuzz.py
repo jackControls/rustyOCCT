@@ -19,6 +19,9 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
 TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections']
+STARTUP_SECONDS = 600
+INPUT_SECONDS = 20
+SHUTDOWN_SECONDS = INPUT_SECONDS + 5
 
 
 def seed_corpus(target):
@@ -157,7 +160,7 @@ def version(command, cwd=ROOT):
     return subprocess.check_output(command,cwd=cwd,text=True,stderr=subprocess.STDOUT).strip()
 
 
-def run_process(command, log, timeout, env, tick=None):
+def run_process(command, log, timeout, env, tick=None, phase_deadline=None):
     # Kill the entire build/fuzzer process group on a wall-clock timeout.
     process = subprocess.Popen(command,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,
                                env=env,start_new_session=True)
@@ -167,12 +170,13 @@ def run_process(command, log, timeout, env, tick=None):
             code=process.poll()
             if code is not None: return code
             if tick is not None: tick()
-            remaining=deadline-time.monotonic()
+            active_deadline=min(deadline,phase_deadline()) if phase_deadline is not None else deadline
+            remaining=active_deadline-time.monotonic()
             if remaining<=0: raise subprocess.TimeoutExpired(command,timeout)
             try:
                 return process.wait(timeout=min(.1,remaining) if tick is not None else remaining)
             except subprocess.TimeoutExpired:
-                if time.monotonic()>=deadline: raise
+                if time.monotonic()>=active_deadline: raise
     except subprocess.TimeoutExpired:
         os.killpg(process.pid,signal.SIGKILL)
         process.wait()
@@ -190,8 +194,9 @@ class MutationBudget:
     flag instead exits the normal fuzz loop and prints final statistics. The
     pinned runtime requires a NONEMPTY stop file (FuzzerLoop.cpp).
     """
-    def __init__(self, log_path, stop_file, seconds):
+    def __init__(self, log_path, stop_file, seconds, startup_seconds=STARTUP_SECONDS, shutdown_seconds=SHUTDOWN_SECONDS):
         self.log_path,self.stop_file,self.seconds=log_path,stop_file,seconds
+        self.startup_seconds,self.shutdown_seconds=startup_seconds,shutdown_seconds
         self.started=time.monotonic()
         self.initialized=None
         self.stopped=None
@@ -212,8 +217,20 @@ class MutationBudget:
 
     def evidence(self):
         return {'startup_seconds':round(self.initialized-self.started,2) if self.initialized is not None else None,
+                'startup_budget_completed':self.initialized is not None and self.initialized-self.started<=self.startup_seconds,
+                'startup_limit_seconds':self.startup_seconds,
                 'mutation_seconds_before_stop':round(self.stopped-self.initialized,2) if self.stopped is not None else None,
-                'mutation_budget_completed':self.stopped is not None}
+                'mutation_budget_completed':self.stopped is not None,
+                'shutdown_seconds':round(time.monotonic()-self.stopped,2) if self.stopped is not None else None,
+                'shutdown_grace_seconds':self.shutdown_seconds}
+
+    def deadline(self):
+        # Never let a late INITED marker turn a startup overrun into success.
+        if self.initialized is None or self.initialized-self.started>self.startup_seconds:
+            return self.started+self.startup_seconds
+        # A stop-file request is observed between inputs. Reserve one complete
+        # input timeout plus bounded log/exit time, without extending startup.
+        return self.initialized+self.seconds+self.shutdown_seconds
 
 
 def statistics(text):
@@ -259,7 +276,8 @@ def main():
             artifacts.mkdir(parents=True,exist_ok=True)
             log_path = output/f'{target}.log'
             # cargo-fuzz enables address sanitizer and coverage instrumentation.
-            # Its outer subprocess budget also bounds builds/corpus startup.
+            # Separate startup, mutation and shutdown budgets keep an in-flight
+            # final input from consuming the time reserved for corpus startup.
             started = time.monotonic()
             print(f'Fuzzing {target} for {args.seconds}s; log: {log_path}',flush=True)
             with tempfile.TemporaryDirectory(prefix=f'.{target}-control-',dir=output) as control:
@@ -267,10 +285,10 @@ def main():
                 timer=MutationBudget(log_path,stop_file,args.seconds)
                 command = ['cargo',f'+{args.toolchain}','fuzz','run',target,str(corpora[target]),
                     '--fuzz-dir',str(FUZZ),'--sanitizer','address','--',
-                    '-max_total_time=0',f'-stop_file={stop_file}','-timeout=20','-rss_limit_mb=2048',
+                    '-max_total_time=0',f'-stop_file={stop_file}',f'-timeout={INPUT_SECONDS}','-rss_limit_mb=2048',
                     f'-max_len={4096 if target == "surface_editing" else 512 if target == "knot_editing" else 256}',f'-seed={args.seed}',f'-artifact_prefix={artifacts}/','-print_final_stats=1']
                 with log_path.open('w') as log:
-                    code = run_process(command,log,args.seconds+600,env,timer.tick)
+                    code = run_process(command,log,STARTUP_SECONDS+args.seconds+SHUTDOWN_SECONDS,env,timer.tick,timer.deadline)
             text = log_path.read_text(errors='replace')
             report = {'target':target,'exit_code':code,'elapsed_seconds':round(time.monotonic()-started,2),
                 **timer.evidence(),
@@ -279,7 +297,7 @@ def main():
                 'artifacts':[p.name for p in sorted(artifacts.iterdir())], 'command':command}
             summary['targets'].append(report)
             # An exit without a completed campaign is not a successful fuzz run.
-            failed |= code != 0 or not report['mutation_budget_completed'] or not report['mutation_executions'] or report['mutation_executions'] < 0 or (FUZZ/'Cargo.lock').read_bytes() != locked
+            failed |= code != 0 or not report['startup_budget_completed'] or not report['mutation_budget_completed'] or not report['mutation_executions'] or report['mutation_executions'] < 0 or (FUZZ/'Cargo.lock').read_bytes() != locked
             print(json.dumps(report),flush=True)
     finally:
         summary['passed'] = len(summary['targets']) == len(targets) and not failed

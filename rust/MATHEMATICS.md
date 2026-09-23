@@ -951,6 +951,14 @@ including exact zero. Interval filters and the complete Sturm-Tarski fallback
 then operate on that lower-degree remainder. Neither optimization changes the
 mathematical decision or substitutes sampling for a complete check.
 
+The de Boor coefficient interpolation itself also keeps one positive
+denominator per vector of polynomials. At each stage it clears the two input
+denominators and the two affine mixing coefficients once, performs the same
+linear-polynomial interpolation with integers, then cancels a common divisor
+of the denominator and all coefficients. Final conversion to normalized
+rationals recovers exactly the original homogeneous polynomials. Independent
+Cox coefficient fixtures and all four curve representations check this change.
+
 Bounded root refinement also tries rational candidates obtained from common
 continued-fraction prefixes of the isolating interval. Subtracting a shared
 integer part and reciprocating its positive fractional interval reverses the

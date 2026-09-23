@@ -5,6 +5,7 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest.mock import patch
 import run_fuzz
 
 
@@ -56,11 +57,69 @@ class FuzzRunnerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             directory=Path(directory)
             log_path,stop=directory/'log',directory/'stop'
-            timer=run_fuzz.MutationBudget(log_path,stop,.1)
+            timer=run_fuzz.MutationBudget(log_path,stop,.1,startup_seconds=1,shutdown_seconds=.3)
             with log_path.open('w') as log:
-                code=run_fuzz.run_process([sys.executable,'-c','import time; print("#99 INITED cov: 12",flush=True); time.sleep(10)'],log,.5,os.environ,timer.tick)
+                code=run_fuzz.run_process([sys.executable,'-c','import time; print("#99 INITED cov: 12",flush=True); time.sleep(10)'],log,3,os.environ,timer.tick,timer.deadline)
             self.assertEqual(code,124)
             self.assertTrue(timer.evidence()['mutation_budget_completed'])
+
+    def test_late_replay_cannot_borrow_mutation_or_shutdown_time(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory=Path(directory)
+            log_path,stop=directory/'log',directory/'stop'
+            log_path.write_text('')
+            with patch('run_fuzz.time.monotonic',return_value=0.):
+                timer=run_fuzz.MutationBudget(log_path,stop,60)
+            self.assertEqual(timer.deadline(),600)
+            log_path.write_text('#99 INITED cov: 12\n')
+            with patch('run_fuzz.time.monotonic',return_value=600.01):
+                timer.tick()
+                self.assertFalse(timer.evidence()['startup_budget_completed'])
+            self.assertEqual(timer.deadline(),600)
+
+    def test_linux_boundary_keeps_startup_cap_and_final_input_grace(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory=Path(directory)
+            log_path,stop=directory/'log',directory/'stop'
+            log_path.write_text('#332 INITED cov: 5689\n')
+            with patch('run_fuzz.time.monotonic',return_value=0.):
+                timer=run_fuzz.MutationBudget(log_path,stop,60)
+            with patch('run_fuzz.time.monotonic',return_value=593.19): timer.tick()
+            with patch('run_fuzz.time.monotonic',return_value=653.28):
+                timer.tick()
+                evidence=timer.evidence()
+            self.assertTrue(evidence['startup_budget_completed'])
+            self.assertTrue(evidence['mutation_budget_completed'])
+            self.assertAlmostEqual(timer.deadline(),678.19)
+            self.assertEqual(evidence['shutdown_grace_seconds'],25)
+
+    def test_missing_initialization_ends_at_the_startup_deadline(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory=Path(directory)
+            log_path,stop=directory/'log',directory/'stop'
+            timer=run_fuzz.MutationBudget(log_path,stop,1.,startup_seconds=.3,shutdown_seconds=1.)
+            with log_path.open('w') as log:
+                code=run_fuzz.run_process([sys.executable,'-c','import time; time.sleep(10)'],log,3,os.environ,timer.tick,timer.deadline)
+            self.assertEqual(code,124)
+            self.assertLess(time.monotonic()-timer.started,2.)
+            self.assertFalse(timer.evidence()['startup_budget_completed'])
+            self.assertFalse(timer.evidence()['mutation_budget_completed'])
+
+    def test_inflight_input_finishes_after_the_mutation_stop(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory=Path(directory)
+            log_path,stop=directory/'log',directory/'stop'
+            script=('import time,pathlib,sys; time.sleep(.65); '
+                    'print("#99 INITED cov: 12",flush=True); '
+                    '\nwhile not pathlib.Path(sys.argv[1]).exists(): time.sleep(.01)\n'
+                    'time.sleep(.65); print("stat::number_of_executed_units: 102",flush=True)')
+            timer=run_fuzz.MutationBudget(log_path,stop,.2,startup_seconds=1.,shutdown_seconds=1.)
+            with log_path.open('w') as log:
+                code=run_fuzz.run_process([sys.executable,'-c',script,str(stop)],log,2.2,os.environ,timer.tick,timer.deadline)
+            self.assertEqual(code,0)
+            self.assertTrue(timer.evidence()['startup_budget_completed'])
+            self.assertTrue(timer.evidence()['mutation_budget_completed'])
+            self.assertEqual(run_fuzz.statistics(log_path.read_text())['mutation_executions'],3)
 
     @unittest.skipUnless(os.name == 'posix','campaign runner requires Unix process groups')
     def test_deadline_kills_fuzzer_descendants(self):
