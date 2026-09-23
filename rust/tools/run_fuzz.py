@@ -18,10 +18,19 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots']
 STARTUP_SECONDS = 600
 INPUT_SECONDS = 20
+# Full tensor coefficient equations and double-axis degree-25 edits are a
+# larger per-input workload. Existing targets keep their original 20s limit.
+TARGET_INPUT_SECONDS = {"surface_knots": 60}
 SHUTDOWN_SECONDS = INPUT_SECONDS + 5
+
+
+def sanitizer_build_args(target):
+    # The tensor target also purges freed ASan allocator memory during corpus
+    # replay; libFuzzer itself does that only after mutation has started.
+    return ['--sanitizer','address'] + (['--features','asan-allocator'] if target == 'surface_knots' else [])
 
 
 def seed_corpus(target):
@@ -33,7 +42,24 @@ def seed_corpus(target):
         if not path.exists():
             path.write_bytes(data)
 
-    if target == 'exact_spline_intersections':
+    if target == 'surface_knots':
+        import struct
+        for degree in range(1,26):
+            for axis in range(2):
+                du,dv=(degree,2) if axis==0 else (2,degree)
+                save(bytes([2,du-1,dv-1,degree%3,(degree+1)%3,axis,degree%5,84,degree-1,128,7,7,0,0,0,0])+bytes((j*37+1)%256 for j in range(2800)))
+        for kind in range(3):
+            for op in [0,1,2,4]:
+                save(bytes([2,24,24,kind,kind,0,op,84,1,128,7,7,0,0,0,0])+bytes((j*37+1)%256 for j in range(3200)))
+        for axis in range(2):
+            for degree in [2,8,25]:
+                save(bytes([3,degree-1,degree-1,1,1,axis,3,84,1,128,7,7,0,0,0,0]))
+        for kind in range(3):
+            for scale in [0,128,255]:
+                for mode in [0,1]:
+                    body=b''.join(struct.pack('<d',x) for _ in range(36) for x in [1.,0.,2.,1.]) if mode==0 else bytes((j*37+1)%256 for j in range(2800))
+                    save(bytes([mode,1,1,kind,kind,0,2,84,1,scale,scale,scale,0,0,0,0])+body)
+    elif target == 'exact_spline_intersections':
         for family in range(3):
             for mode in range(6):
                 for degree in ([1,3,8,25] if mode in [0,1,4] else [2]):
@@ -282,15 +308,19 @@ def main():
             print(f'Fuzzing {target} for {args.seconds}s; log: {log_path}',flush=True)
             with tempfile.TemporaryDirectory(prefix=f'.{target}-control-',dir=output) as control:
                 stop_file=Path(control)/'stop'
-                timer=MutationBudget(log_path,stop_file,args.seconds)
+                input_seconds=TARGET_INPUT_SECONDS.get(target,INPUT_SECONDS)
+                shutdown_seconds=input_seconds+5
+                timer=MutationBudget(log_path,stop_file,args.seconds,shutdown_seconds=shutdown_seconds)
                 command = ['cargo',f'+{args.toolchain}','fuzz','run',target,str(corpora[target]),
-                    '--fuzz-dir',str(FUZZ),'--sanitizer','address','--',
-                    '-max_total_time=0',f'-stop_file={stop_file}',f'-timeout={INPUT_SECONDS}','-rss_limit_mb=2048',
-                    f'-max_len={4096 if target == "surface_editing" else 512 if target == "knot_editing" else 256}',f'-seed={args.seed}',f'-artifact_prefix={artifacts}/','-print_final_stats=1']
+                    '--fuzz-dir',str(FUZZ),*sanitizer_build_args(target),'--',
+                    '-max_total_time=0',f'-stop_file={stop_file}',f'-timeout={input_seconds}','-rss_limit_mb=2048',
+                    f'-max_len={4096 if target in ["surface_editing", "surface_knots"] else 512 if target == "knot_editing" else 256}',f'-seed={args.seed}',f'-artifact_prefix={artifacts}/','-print_final_stats=1']
                 with log_path.open('w') as log:
-                    code = run_process(command,log,STARTUP_SECONDS+args.seconds+SHUTDOWN_SECONDS,env,timer.tick,timer.deadline)
+                    code = run_process(command,log,STARTUP_SECONDS+args.seconds+shutdown_seconds,env,timer.tick,timer.deadline)
             text = log_path.read_text(errors='replace')
             report = {'target':target,'exit_code':code,'elapsed_seconds':round(time.monotonic()-started,2),
+                'input_limit_seconds':input_seconds,
+                'allocator_cleanup_during_replay':target == 'surface_knots',
                 **timer.evidence(),
                 **statistics(text),
                 'corpus_files':len(list(corpora[target].iterdir())),

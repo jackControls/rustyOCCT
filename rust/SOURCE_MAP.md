@@ -335,6 +335,35 @@ rational inputs. [Limits and output semantics](EXACT_SPLINE_INTERSECTIONS.md)
 remain explicit; no general surface intersector or tolerance-based equivalence
 is implied.
 
+## Exact B-spline surface knot editing
+
+Source revision remains `3d097a0328e71b826377d4814ab05ec3c3d23871`.
+`Geom_BSplineSurface_1.cxx::{InsertUKnots,InsertVKnots,RemoveUKnot,RemoveVKnot}`
+and `BSplSLib.cxx::{SetPoles,GetPoles,InsertKnots,RemoveKnot}` were read before
+implementation, including transverse homogeneous packing and delegated
+`BSplCLib` insertion/removal. The Rust surface uses the existing exact curve
+insertion rule as a sparse shared map and its inverse across all transverse rows;
+combined refinement preflights both axes
+and the complete Cartesian control count before control arithmetic.
+
+[Native capture](fixtures/occt-surface-knot-capture.json) pins 1,748 observations
+made before the Rust file existed, including adapted SetUp and U/V insertion/
+removal inputs from `Geom_BSplineSurface_Test.cxx`. These are native API
+comparisons, not claims that the original GTests run unchanged. The Python
+oracle solves every Cox power-coefficient equation over full raw support and
+verifies 1,756 complete grids. A separate Rust fraction-free equation solver
+checks tensor sequences and removal feasibility during fuzzing. The source pin
+and installed OCCT runtime version remain separately reported.
+
+Exact partials reuse differentiated de Boor interpolation weights and integer
+dot products across the tensor grid. The 791 independent surface fixtures also
+compare against the original de Boor path. Isocurves preserve complete rational
+B-splines and compose with the existing certified analytic intersections.
+[Contracts and limits](SURFACE_KNOT_EDITING.md) exclude general surface/surface
+intersection, arbitrary face trims, general degree elevation and B-rep topology.
+[Native discrepancies](NATIVE_SURFACE_KNOT_DIVERGENCES.md) are recorded separately
+from actual matches.
+
 ## Rule for the next capability
 
 1. Define the standalone kernel input/output, numerical, topology/history and

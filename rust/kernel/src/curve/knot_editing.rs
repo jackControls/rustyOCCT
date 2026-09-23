@@ -4,14 +4,13 @@
 //! desired extended knot sequence selects the canonical cyclic control block.
 use super::{
     BSplineCurve3, BezierExtractionOptions, CurveEvaluation, DerivativeOrder, ExactBezierCurve3,
-    ExactCurveEvaluation, KnotSide, MAX_POLES,
+    ExactCurveEvaluation, KnotSide,
 };
 use crate::{
     spline::{self, ExactKnotVector},
     Error, Result,
 };
 use num_rational::BigRational as R;
-use std::collections::BTreeMap;
 
 fn integer(n: usize) -> R {
     R::from_integer(n.into())
@@ -116,51 +115,10 @@ impl ExactBSplineCurve3 {
     /// knots and periodic seam aliases use the greatest target. At most 4096
     /// requests and 4096 resulting poles, preflighted before local arithmetic.
     pub fn refined(&self, requests: &[(R, usize)]) -> Result<Self> {
-        if requests.len() > MAX_POLES {
-            return Err(Error::LimitExceeded("knot refinement requests"));
-        }
-        let mut requested = BTreeMap::<R, usize>::new();
-        for (u, target) in requests {
-            let mut u = spline::normalize(u)?;
-            if u < self.domain()[0] || u > self.domain()[1] {
-                return Err(Error::OutOfDomain("knot refinement parameter"));
-            }
-            let physical_end =
-                !self.is_periodic() && (u == self.knots()[0] || &u == self.knots().last().unwrap());
-            if *target > self.degree() + usize::from(physical_end) {
-                return Err(Error::InvalidSpline("knot refinement multiplicity"));
-            }
-            if self.is_periodic() && u == self.domain()[1] {
-                u = self.domain()[0].clone();
-            }
-            requested
-                .entry(u)
-                .and_modify(|m| *m = (*m).max(*target))
-                .or_insert(*target);
-        }
-        let mut map: BTreeMap<_, _> = self
-            .knots()
-            .iter()
-            .cloned()
-            .zip(self.multiplicities().iter().copied())
-            .collect();
-        let mut changes = Vec::new();
-        for (u, target) in requested {
-            let current = map.get(&u).copied().unwrap_or(0);
-            if target > current {
-                map.insert(u.clone(), target);
-                if self.is_periodic() && u == self.domain()[0] {
-                    map.insert(self.domain()[1].clone(), target);
-                }
-                changes.push((u, target - current));
-            }
-        }
+        let (basis, changes) = self.basis.refinement_plan(requests)?;
         if changes.is_empty() {
             return Ok(self.clone());
         }
-        let (knots, multiplicities) = map.into_iter().unzip();
-        let basis =
-            ExactKnotVector::build(self.degree(), knots, multiplicities, self.is_periodic())?;
         let mut work = self.unrolled();
         for (u, count) in changes {
             let copies = if self.is_periodic() {
@@ -375,11 +333,8 @@ impl Work {
         let row: Vec<_> = (first..=last)
             .map(|i| {
                 let alpha = (u - &self.knots[i]) / (&self.knots[i + degree] - &self.knots[i]);
-                let complement = integer(1) - &alpha;
                 debug_assert!(alpha >= integer(0) && alpha <= integer(1));
-                std::array::from_fn(|c| {
-                    &complement * &self.controls[i - 1][c] + &alpha * &self.controls[i][c]
-                })
+                spline::blend_homogeneous(&self.controls[i - 1], &self.controls[i], &alpha)
             })
             .collect();
         self.controls.insert(last + 1, self.controls[last].clone());

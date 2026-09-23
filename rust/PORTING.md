@@ -153,7 +153,8 @@ future subsystem. Split crates when there is a working boundary to isolate.
 - `spline`: validated binary64 and rational knot vectors, exact periodic extension and parameter wrapping.
 - `surface`: immutable rational tensor-product patches and certified partial derivatives;
   independent U/V periodicity and side selection; exact patch extraction,
-  rectangular editing and isocurves. These are not yet B-rep faces.
+  rectangular editing and isocurves; exact B-spline surface refinement/removal
+  across complete U/V grids. These are not yet B-rep faces.
 - `profile`: validated material boundaries, containment and planar moments.
   Polygons are normalized CCW; holes are assigned orientation in the B-rep.
 - `topology`: immutable owned vertices/edges/faces, opposite oriented uses,

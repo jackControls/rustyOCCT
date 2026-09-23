@@ -7,6 +7,10 @@ edition = "2021"
 [package.metadata]
 cargo-fuzz = true
 
+[features]
+# Requires cargo-fuzz --sanitizer address. This is test-harness-only FFI.
+asan-allocator = []
+
 [dependencies]
 libfuzzer-sys = "=0.4.13"
 num-bigint = "0.4.6"
@@ -110,6 +114,13 @@ bench = false
 [[bin]]
 name = "exact_spline_intersections"
 path = "fuzz_targets/exact_spline_intersections.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "surface_knots"
+path = "fuzz_targets/surface_knots.rs"
 test = false
 doc = false
 bench = false

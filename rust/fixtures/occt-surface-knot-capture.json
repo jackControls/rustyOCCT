@@ -1,0 +1,9 @@
+{
+  "head": "f464ec28a9e0b5ab6b06e2199e7070017e7e3574",
+  "implementation_present": false,
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "cases": 1748,
+  "input_sha256": "85fba701faede5d70980b83e10fbdfb086f8d4ad29d59307f0165a7648be7c89",
+  "native_sha256": "b6bdd77eed3d17e329f73b69a9f94457262380c2f5091467abbf80e0a2ab9614",
+  "oracle": "OCCT 7.9.3"
+}

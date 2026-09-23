@@ -368,3 +368,21 @@ the independent Python expectations and the separate Rust coefficient/jet
 checker. Shared integer denominators reduce checker replay cost without
 changing its equations or assertions. Retained fuzz inputs and failed startup
 campaigns are documented in [the regression record](fuzz/regressions/README.md).
+
+## Exact surface knot representations
+
+`generate_surface_knot_fixtures.py --check` independently regenerates 1,756
+complete U/V knot edits, success flags and homogeneous grids using Cox power
+coefficient equations over full raw support. Ordinary Rust tests consume all
+fixtures. The original 791 surface jet fixtures additionally verify the retained
+exact representation and reusable differentiated de Boor evaluation.
+`compare_surface_knots.py` compares 1,748 complete native observations;
+[native round-trip differences](NATIVE_SURFACE_KNOT_DIVERGENCES.md) remain
+separate from matches. Six deliberate-corruption bridge tests protect control,
+weight, flag, input-set and versioned-review comparisons.
+
+The `surface_knots` sanitizer target checks every transverse coefficient,
+independent exact removal feasibility, whole patch polynomials, quotient jets,
+isocurves, periodic wrapping, malformed data and operation sequences. Its
+retained degree-25 timeout reproducer is also an ordinary Cargo regression.
+The fifteen-target daily workflow retains evolving corpora and artifacts.

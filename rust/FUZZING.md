@@ -17,6 +17,7 @@ coverage feedback. They are distinct from the deterministic invariant tests.
 | `splines` | Raw binary64 poles/weights/knots, scaled geometry, degree 1..25, repeated knots, periodic seams, full-range wrapped parameters, explicit sides and derivative requests | Exact basis-function derivatives and closed quotient formulas independently check homogeneous pole interpolation; minimal position/derivative bounds; discontinuity, domain, nonfinite and overflow errors |
 | `bezier_editing` | Raw binary64 and scaled rational controls, degree 1..25, clamped/unclamped/periodic splines, subnormal spans, multi-period extraction and composed edits with rational cuts | Complete homogeneous polynomial identities from independent Cox basis coefficients and affine substitution; exact jets/minimal bounds, positive weights, shared endpoints, reversal, elevation/split commutation and preflight limits |
 | `knot_editing` | Degrees 1..25, raw binary64 and scaled controls, rational cuts, unclamped inactive controls, repeated knots, periodic seams/origin changes, refinement/removal sequences and invalid data | Entire raw-support homogeneous identities; independent coefficient-equation removal feasibility, exact complete controls, rational jets/extraction, minimal enclosures, batch order/duplicate behavior, round trips and unchanged rejection limits |
+| `surface_knots` | Tensor degrees 1..25 in both axes, independent periodicity and raw unclamped support, arbitrary binary64 and scaled controls, rational insertions, batch/transpose identities, inverse edits and periodic origin deletion | Every transverse homogeneous Cox coefficient; shared independent fraction-free removal equations; full extracted patch coefficients and quotient jets; retained isocurves, parameter wrapping, invalid rational rejection and atomicity |
 | `exact_spline_intersections` | Rational controls/weights and knots, degree 1..25, rational trims, close roots through 2^-2048 spacing, huge/subnormal domains, periodic seams and edit sequences | Complete known-factor contacts, rational secants and exact circle overlaps; independent full polynomial edit identity; exact parameter/coordinate comparisons, contact orders through 50, minimal finite bounds or typed conversion failure, traversal limits and malformed-rational rejection |
 | `surface_editing` | Tensor degrees 1..25 in both directions, raw binary64 and scaled controls, independent periodicity, unclamped knots, subnormal domains, full low-degree multi-period queries and high-degree selected spans, composed edits and rational cuts | Complete tensor polynomial identities; all exact partials through order two and minimal bounds; exact isocurves/shared boundaries, reversals, transposition, elevation/split commutation and Cartesian output limits |
 | `surfaces` | Rational tensor grids, independently periodic U/V, repeated knots, high degree in either direction, full-range wrapped parameters and malformed data | Independent tensor basis plus closed bivariate quotient formulas; exact mixed-partial and quadrant continuity decisions; minimal enclosures and typed failures |
@@ -54,7 +55,7 @@ coverage percentages or evidence of exhaustive input coverage.
 
 ## Continuing campaigns
 
-[Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all fourteen targets
+[Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all fifteen targets
 for 60 seconds of mutation each on relevant pushes/PRs, and 600 seconds each every day at
 06:23 UTC on the default branch. Manual runs accept 1–3,600 seconds per target.
 GitHub can delay scheduled jobs. The schedule must remain enabled on the fork.
@@ -65,8 +66,13 @@ the corpus but do not publish corpus caches. All runs upload logs, JSON metadata
 corpora, and crash/timeout/OOM artifacts for 30 days, including failed runs.
 Cache eviction does not remove the checked-in fixtures or regressions.
 
-Each input has a 20-second limit and a 2 GiB process RSS limit. Surface editing
-permits 4096 bytes to populate full tensor grids; knot editing permits 512 bytes;
+Each input has a 20-second limit, except complete surface-knot verification,
+which has 60 seconds. All targets retain the 2 GiB process RSS limit. The new
+tensor target checks both axes at degree 25 and every raw-support homogeneous
+equation; the densest retained input takes approximately 23 seconds with
+instrumentation on the development machine. Its larger verification budget is
+explicit in each campaign report. Surface editing
+and surface knot editing permit 4096 bytes to populate full tensor grids; curve knot editing permits 512 bytes;
 other targets permit 256
 bytes. The modeling harness bounds geometry to 24 vertices and eight operations;
 curve spline/Bézier-editing inputs have at most 51 poles; knot editing starts with
@@ -95,6 +101,19 @@ subsequent mutation is an incomplete run. An incomplete run, crash,
 timeout, OOM, changed dependency lock or mathematical disagreement fails CI.
 These are harness limits, not kernel production performance guarantees.
 
+The surface-knot runner enables the test-only `asan-allocator` feature together
+with AddressSanitizer. At most once per second, after a complete input and all
+its mathematical checks have returned, the harness invokes
+`__sanitizer_purge_allocator`. The pinned libFuzzer already invokes this API
+during mutation, but omits it during seed replay. The additional call covers
+replay as well. It drains freed-allocation quarantine and releases unused pages;
+it does not free live geometry or change the RSS limit. This does shorten the
+quarantine across independent inputs, as the runtime's existing purge does;
+the normal sanitizer checks remain active throughout each input. Ordinary
+replay binaries and the production kernel have no sanitizer FFI dependency.
+See the pinned runtime's `FuzzerLoop.cpp::{ReadAndExecuteSeedCorpora,PurgeAllocator}`
+and [LLVM's allocator implementation](https://github.com/llvm/llvm-project/blob/main/compiler-rt/lib/asan/asan_allocator.cpp).
+
 The mutation timer starts when the pinned libFuzzer reports `INITED`, after
 corpus replay. Its `max_total_time` flag includes initialization and previously
 allowed a growing corpus to consume the entire short campaign; this was caught
@@ -102,10 +121,10 @@ as an incomplete CI run. The runner now creates a nonempty `stop_file` after
 the full requested mutation budget. LibFuzzer stops normally and emits final
 statistics. Build and corpus replay have a separate 600-second deadline; a
 late `INITED` marker cannot borrow mutation or shutdown time. After the full
-mutation budget, the runner allows 25 seconds for an in-flight input to finish
-and final statistics to be emitted. This covers the unchanged 20-second input
-timeout plus five seconds for exit/reporting. The entire process group remains
-bounded by `requested_seconds + 625`, and ignored stop requests are killed.
+mutation budget, the runner allows the per-input timeout plus five seconds
+for an in-flight input and final statistics: 25 seconds normally, 65 for surface
+knots. The process group is bounded by `requested_seconds + 625` normally and
+`requested_seconds + 665` for surface knots. Ignored stop requests are killed.
 An early exit, startup overrun, missing final statistics or absent mutations
 still fails the campaign. Separating the phases fixes a reproduced Linux run
 that completed its mutation budget but was killed before its last input and
@@ -139,6 +158,9 @@ cargo +nightly-2026-09-22 fuzz run intersections rust/fuzz/artifacts/intersectio
 cargo +nightly-2026-09-22 fuzz tmin intersections rust/fuzz/artifacts/intersections/crash-HASH --fuzz-dir rust/fuzz -- -max_total_time=120
 ```
 
+For the surface-knot target, include `--sanitizer address --features asan-allocator`
+before the final `--` when reproducing the campaign's allocator behavior.
+
 Keep the original artifact. Investigate whether the defect is in the kernel,
 the oracle, or its input contract. Add the minimized bytes under
 `rust/fuzz/regressions/<target>/*.bin`, with a short explanation and a readable
@@ -158,3 +180,11 @@ If corpus replay starts exhausting the outer startup allowance, compact it with
 `cargo +nightly-2026-09-22 fuzz cmin <target> --fuzz-dir rust/fuzz` and retain
 the uncompressed artifact until the compacted corpus is validated. A stalled
 campaign must be repaired, not counted as a successful mutation run.
+
+
+Surface knot editing starts with up to 784 controls, preserving every complete
+transverse coefficient identity after each edit. Its independent checker shares
+basis construction and equation factorization across transverse fields rather
+than repeating them per row. Every field and residual equation is retained.
+The fifteen-target daily workflow includes this campaign with the same startup,
+mutation and memory limits; its larger per-input limit is documented above.

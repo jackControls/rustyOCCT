@@ -543,3 +543,33 @@ pub fn check_profiled(
     }
     mark("oracle tensor bounds");
 }
+
+/// Complete tensor Cox power polynomial on a cell without an interior knot.
+/// Exact rational axes/control data remain exact throughout this independent
+/// coefficient transform. No kernel de Boor or extraction routine is used.
+#[allow(dead_code)]
+pub fn exact_patch(
+    surface: &rusty_occt::ExactBSplineSurface3,
+    domain: [[R; 2]; 2],
+    basis: impl Fn(&rusty_occt::ExactKnotVector, &R, &R) -> Vec<Vec<R>>,
+) -> Patch {
+    let mut coefficients = Grid::from_rationals(surface.homogeneous_poles());
+    let mut degrees = surface.pole_counts().map(|n| n - 1);
+    for (i, axis) in [surface.u_knots(), surface.v_knots()]
+        .into_iter()
+        .enumerate()
+    {
+        let polynomials = basis(axis, &domain[i][0], &domain[i][1]);
+        let matrix = Matrix::new(
+            (0..=axis.degree())
+                .map(|k| integers(&polynomials.iter().map(|c| c[k].clone()).collect::<Vec<_>>()))
+                .collect(),
+        );
+        (coefficients, degrees) = coefficients.map(degrees, i, &matrix);
+    }
+    Patch {
+        degrees,
+        domain,
+        coefficients,
+    }
+}

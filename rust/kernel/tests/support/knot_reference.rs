@@ -147,7 +147,7 @@ fn basis_polynomials(basis: &ExactKnotVector, lo: &R, hi: &R) -> Basis {
 }
 
 struct Homogeneous {
-    coefficients: Vec<[BigInt; 4]>,
+    coefficients: Vec<Vec<BigInt>>,
     denominator: BigInt,
 }
 fn homogeneous(curve: &ExactBSplineCurve3, lo: &R, hi: &R) -> Homogeneous {
@@ -165,13 +165,15 @@ fn homogeneous(curve: &ExactBSplineCurve3, lo: &R, hi: &R) -> Homogeneous {
     Homogeneous {
         coefficients: (0..=curve.degree())
             .map(|k| {
-                std::array::from_fn(|c| {
-                    rows.rows
-                        .iter()
-                        .zip(&poles)
-                        .map(|(row, p)| &row[k] * &p[c])
-                        .sum()
-                })
+                (0..4)
+                    .map(|c| {
+                        rows.rows
+                            .iter()
+                            .zip(&poles)
+                            .map(|(row, p)| &row[k] * &p[c])
+                            .sum()
+                    })
+                    .collect()
             })
             .collect(),
         denominator: denominator * rows.denominator,
@@ -229,25 +231,27 @@ pub fn equal(original: &ExactBSplineCurve3, candidate: &ExactBSplineCurve3) -> b
         })
 }
 
-type Equation = (usize, BTreeMap<usize, BigInt>, [BigInt; 4]);
+type Equation = (usize, BTreeMap<usize, BigInt>, Vec<BigInt>);
 struct Solution {
-    controls: Vec<[R; 4]>,
-    integers: Vec<[BigInt; 4]>,
+    controls: Vec<Vec<R>>,
+    integers: Vec<Vec<BigInt>>,
     denominator: BigInt,
 }
 impl Solution {
-    fn new(pivots: &[Equation], count: usize) -> Self {
-        let mut controls = vec![std::array::from_fn(|_| integer(0)); count];
+    fn new(pivots: &[Equation], count: usize, width: usize) -> Self {
+        let mut controls = vec![vec![integer(0); width]; count];
         for (j, row, rhs) in pivots.iter().rev() {
-            controls[*j] = std::array::from_fn(|c| {
-                (R::from_integer(rhs[c].clone())
-                    - row
-                        .iter()
-                        .filter(|(i, _)| **i != *j)
-                        .map(|(i, x)| R::from_integer(x.clone()) * &controls[*i][c])
-                        .sum::<R>())
-                    / R::from_integer(row[j].clone())
-            });
+            controls[*j] = (0..width)
+                .map(|c| {
+                    (R::from_integer(rhs[c].clone())
+                        - row
+                            .iter()
+                            .filter(|(i, _)| **i != *j)
+                            .map(|(i, x)| R::from_integer(x.clone()) * &controls[*i][c])
+                            .sum::<R>())
+                        / R::from_integer(row[j].clone())
+                })
+                .collect();
         }
         let denominator = controls
             .iter()
@@ -255,7 +259,11 @@ impl Solution {
             .fold(BigInt::from(1), |d, x| lcm(&d, x.denom()));
         let integers = controls
             .iter()
-            .map(|p| std::array::from_fn(|c| p[c].numer() * (&denominator / p[c].denom())))
+            .map(|p| {
+                p.iter()
+                    .map(|x| x.numer() * (&denominator / x.denom()))
+                    .collect()
+            })
             .collect();
         Self {
             controls,
@@ -264,7 +272,7 @@ impl Solution {
         }
     }
     fn satisfies(&self, basis: &Basis, rhs: &Homogeneous, k: usize) -> bool {
-        (0..4).all(|c| {
+        (0..rhs.coefficients[k].len()).all(|c| {
             let sum: BigInt = basis
                 .rows
                 .iter()
@@ -278,11 +286,24 @@ impl Solution {
 }
 
 pub fn recover(original: &ExactBSplineCurve3, basis: &ExactKnotVector) -> Option<Vec<[R; 4]>> {
+    recover_many(std::slice::from_ref(original), basis).map(|mut rows| rows.remove(0))
+}
+
+/// Share each complete Cox matrix and fraction-free elimination across every
+/// transverse field. All equations and all homogeneous components are checked.
+#[allow(dead_code)]
+pub fn recover_many(
+    original: &[ExactBSplineCurve3],
+    basis: &ExactKnotVector,
+) -> Option<Vec<Vec<[R; 4]>>> {
+    assert!(!original.is_empty());
+    let input = ControlRows::new(original);
+    let width = 4 * original.len();
     let mut pivots: Vec<Equation> = Vec::new();
     let mut solution: Option<Solution> = None;
-    for [lo, hi] in partition(original.knot_vector(), basis) {
+    for [lo, hi] in partition(original[0].knot_vector(), basis) {
         let rows = basis_polynomials(basis, &lo, &hi);
-        let rhs = homogeneous(original, &lo, &hi);
+        let rhs = input.polynomial(&basis_polynomials(original[0].knot_vector(), &lo, &hi));
         for k in 0..=basis.degree() {
             // Once the coefficient equations determine a unique control row,
             // check every remaining equation by exact substitution. Eliminating
@@ -301,8 +322,10 @@ pub fn recover(original: &ExactBSplineCurve3, basis: &ExactKnotVector) -> Option
                 .filter(|(_, r)| r[k] != BigInt::from(0))
                 .map(|(i, r)| (i, &r[k] * &rhs.denominator))
                 .collect();
-            let mut answer: [BigInt; 4] =
-                std::array::from_fn(|c| &rhs.coefficients[k][c] * &rows.denominator);
+            let mut answer: Vec<BigInt> = rhs.coefficients[k]
+                .iter()
+                .map(|x| x * &rows.denominator)
+                .collect();
             // Normalize each source equation once, then use fraction-free
             // elimination. A previous pivot divides every subsequent minor;
             // verify each division exactly, including under release fuzzing.
@@ -338,7 +361,11 @@ pub fn recover(original: &ExactBSplineCurve3, basis: &ExactKnotVector) -> Option
                         }
                     }
                 }
-                answer = std::array::from_fn(|c| a * &answer[c] - &b * &values[c]);
+                answer = answer
+                    .iter()
+                    .zip(values)
+                    .map(|(x, y)| a * x - &b * y)
+                    .collect();
                 if previous != BigInt::from(1) {
                     for x in row.values_mut().chain(&mut answer) {
                         let q = &*x / &previous;
@@ -351,7 +378,7 @@ pub fn recover(original: &ExactBSplineCurve3, basis: &ExactKnotVector) -> Option
             if let Some((&j, _)) = row.first_key_value() {
                 pivots.push((j, row, answer));
                 if pivots.len() == basis.pole_count() {
-                    let solved = Solution::new(&pivots, basis.pole_count());
+                    let solved = Solution::new(&pivots, basis.pole_count(), width);
                     assert!(solved.satisfies(&rows, &rhs, k));
                     solution = Some(solved);
                 }
@@ -361,11 +388,33 @@ pub fn recover(original: &ExactBSplineCurve3, basis: &ExactKnotVector) -> Option
         }
     }
     assert_eq!(pivots.len(), basis.pole_count(), "independent basis rank");
-    Some(solution.expect("independent basis has full rank").controls)
+    let controls = solution.expect("independent basis has full rank").controls;
+    Some(
+        (0..original.len())
+            .map(|j| {
+                controls
+                    .iter()
+                    .map(|p| std::array::from_fn(|c| p[4 * j + c].clone()))
+                    .collect()
+            })
+            .collect(),
+    )
 }
 
 /// For valid removal requests which leave more poles than degree.
 pub fn removed(curve: &ExactBSplineCurve3, u: &R, target: usize) -> Option<ExactBSplineCurve3> {
+    let basis = removal_basis(curve, u, target);
+    if &basis == curve.knot_vector() {
+        return Some(curve.clone());
+    }
+    let controls = recover(curve, &basis)?;
+    if controls.iter().any(|c| c[3] <= integer(0)) {
+        return None;
+    }
+    Some(ExactBSplineCurve3::from_homogeneous(basis, controls).unwrap())
+}
+
+pub fn removal_basis(curve: &ExactBSplineCurve3, u: &R, target: usize) -> ExactKnotVector {
     let seam = curve.is_periodic() && (u == &curve.domain()[0] || u == &curve.domain()[1]);
     let u = if seam { &curve.domain()[0] } else { u };
     let mut map: BTreeMap<_, _> = curve
@@ -375,7 +424,7 @@ pub fn removed(curve: &ExactBSplineCurve3, u: &R, target: usize) -> Option<Exact
         .zip(curve.multiplicities().iter().copied())
         .collect();
     if target >= map[u] {
-        return Some(curve.clone());
+        return curve.knot_vector().clone();
     }
     if target == 0 {
         map.remove(u);
@@ -391,15 +440,126 @@ pub fn removed(curve: &ExactBSplineCurve3, u: &R, target: usize) -> Option<Exact
         }
     }
     let (knots, mults) = map.into_iter().unzip();
-    let basis = if curve.is_periodic() {
+    if curve.is_periodic() {
         ExactKnotVector::new_periodic(curve.degree(), knots, mults)
     } else {
         ExactKnotVector::new(curve.degree(), knots, mults)
     }
-    .unwrap();
-    let controls = recover(curve, &basis)?;
-    if controls.iter().any(|c| c[3] <= integer(0)) {
-        return None;
+    .unwrap()
+}
+
+/// Every Cox basis coefficient on one common partition cell. Used by the
+/// independent tensor oracle; no production extraction/evaluation is called.
+#[allow(dead_code)]
+pub fn basis_coefficients(basis: &ExactKnotVector, lo: &R, hi: &R) -> Vec<Vec<R>> {
+    let table = basis_polynomials(basis, lo, hi);
+    table
+        .rows
+        .into_iter()
+        .map(|row| {
+            row.into_iter()
+                .map(|x| R::new(x, table.denominator.clone()))
+                .collect()
+        })
+        .collect()
+}
+
+struct ControlRows {
+    values: Vec<Vec<BigInt>>,
+    denominator: BigInt,
+}
+impl ControlRows {
+    fn new(curves: &[ExactBSplineCurve3]) -> Self {
+        assert!(curves
+            .iter()
+            .all(|c| c.knot_vector() == curves[0].knot_vector()));
+        let denominator = curves
+            .iter()
+            .flat_map(|c| c.homogeneous_poles().iter().flatten())
+            .fold(BigInt::from(1), |d, x| lcm(&d, x.denom()));
+        let values = (0..curves[0].homogeneous_poles().len())
+            .map(|i| {
+                curves
+                    .iter()
+                    .flat_map(|c| {
+                        c.homogeneous_poles()[i]
+                            .iter()
+                            .map(|x| x.numer() * (&denominator / x.denom()))
+                    })
+                    .collect()
+            })
+            .collect();
+        Self {
+            values,
+            denominator,
+        }
     }
-    Some(ExactBSplineCurve3::from_homogeneous(basis, controls).unwrap())
+    fn polynomial(&self, basis: &Basis) -> Homogeneous {
+        let mut coefficients =
+            vec![vec![BigInt::from(0); self.values[0].len()]; basis.rows[0].len()];
+        for (row, values) in basis.rows.iter().zip(&self.values) {
+            for (factor, out) in row.iter().zip(&mut coefficients) {
+                if factor == &BigInt::from(0) {
+                    continue;
+                }
+                for (x, value) in out.iter_mut().zip(values) {
+                    if value != &BigInt::from(0) {
+                        *x += factor * value;
+                    }
+                }
+            }
+        }
+        let mut denominator = &self.denominator * &basis.denominator;
+        let mut content = denominator.clone();
+        for x in coefficients.iter().flatten() {
+            content = gcd(content, x.clone());
+            if content == BigInt::from(1) {
+                break;
+            }
+        }
+        if content > BigInt::from(1) {
+            denominator /= &content;
+            for x in coefficients.iter_mut().flatten() {
+                *x /= &content;
+            }
+        }
+        Homogeneous {
+            coefficients,
+            denominator,
+        }
+    }
+}
+
+/// Share full Cox matrices across transverse fields while preserving every
+/// coefficient and component. Common integer contents are canceled exactly.
+#[allow(dead_code)]
+pub fn equal_many(original: &[ExactBSplineCurve3], candidate: &[ExactBSplineCurve3]) -> bool {
+    assert_eq!(original.len(), candidate.len());
+    let a = original[0].knot_vector();
+    let b = candidate[0].knot_vector();
+    if a.degree() != b.degree()
+        || a.is_periodic() != b.is_periodic()
+        || (a.is_periodic() && &a.domain()[1] - &a.domain()[0] != &b.domain()[1] - &b.domain()[0])
+    {
+        return false;
+    }
+    let before = ControlRows::new(original);
+    let after = ControlRows::new(candidate);
+    partition(a, b).iter().all(|[lo, hi]| {
+        let left = before.polynomial(&basis_polynomials(a, lo, hi));
+        let right = after.polynomial(&basis_polynomials(b, lo, hi));
+        let ratio = R::new(right.denominator, left.denominator);
+        let unity = ratio == integer(1);
+        left.coefficients
+            .iter()
+            .flatten()
+            .zip(right.coefficients.iter().flatten())
+            .all(|(x, y)| {
+                if unity {
+                    x == y
+                } else {
+                    x * ratio.numer() == y * ratio.denom()
+                }
+            })
+    })
 }

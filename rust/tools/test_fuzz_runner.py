@@ -10,6 +10,15 @@ import run_fuzz
 
 
 class FuzzRunnerTests(unittest.TestCase):
+    def test_allocator_hook_is_linked_only_with_address_sanitizer(self):
+        for target in run_fuzz.TARGETS:
+            args=run_fuzz.sanitizer_build_args(target)
+            self.assertEqual(args[:2],['--sanitizer','address'])
+            if target=='surface_knots':
+                self.assertEqual(args[2:],['--features','asan-allocator'])
+            else:
+                self.assertEqual(args[2:],[])
+
     def test_requires_completed_mutation_after_corpus_replay(self):
         text = '#99\tINITED cov: 12 ft: 50\n#102\tDONE cov: 14\nstat::number_of_executed_units: 102\n'
         self.assertEqual(run_fuzz.statistics(text),{
@@ -92,6 +101,25 @@ class FuzzRunnerTests(unittest.TestCase):
             self.assertTrue(evidence['mutation_budget_completed'])
             self.assertAlmostEqual(timer.deadline(),678.19)
             self.assertEqual(evidence['shutdown_grace_seconds'],25)
+
+    def test_tensor_budget_allows_complete_final_input_without_extending_startup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory=Path(directory); log_path,stop=directory/'log',directory/'stop'
+            log_path.write_text('#99 INITED cov: 12\n')
+            input_seconds=run_fuzz.TARGET_INPUT_SECONDS['surface_knots']
+            with patch('run_fuzz.time.monotonic',return_value=0.):
+                timer=run_fuzz.MutationBudget(log_path,stop,60,shutdown_seconds=input_seconds+5)
+            with patch('run_fuzz.time.monotonic',return_value=590.): timer.tick()
+            with patch('run_fuzz.time.monotonic',return_value=650.): timer.tick()
+            self.assertEqual(timer.deadline(),715.)
+            self.assertEqual(timer.evidence()['startup_limit_seconds'],600)
+            self.assertEqual(timer.evidence()['shutdown_grace_seconds'],65)
+            self.assertTrue(stop.read_bytes())
+            with patch('run_fuzz.time.monotonic',return_value=0.):
+                late=run_fuzz.MutationBudget(log_path,directory/'late-stop',60,shutdown_seconds=input_seconds+5)
+            with patch('run_fuzz.time.monotonic',return_value=600.01): late.tick()
+            self.assertEqual(late.deadline(),600.)
+            self.assertFalse(late.evidence()['startup_budget_completed'])
 
     def test_missing_initialization_ends_at_the_startup_deadline(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -6,8 +6,7 @@ use rusty_occt::{BSplineSurface3, Error, KnotVector, Point3};
 #[path = "../../kernel/tests/support/surface_editing_protocol.rs"]
 #[allow(dead_code)]
 mod protocol;
-#[path = "../../kernel/tests/support/surface_editing_reference.rs"]
-mod reference;
+use crate::surface_reference as reference;
 
 pub fn check_surface_editing(data: &[u8]) {
     check(data, |_| {});

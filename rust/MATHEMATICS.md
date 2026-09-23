@@ -1007,3 +1007,18 @@ General curve/surface intersections beyond spline/plane/sphere/cylinder, Boolean
 generic topology history, STEP and meshing remain unimplemented. Certified
 linear/quadratic primitives and spline evaluation do not establish these capabilities or make
 the rest of the kernel exact.
+
+## Exact B-spline surface knot edits
+
+`ExactBSplineSurface3` retains both rational knot vectors and all positive
+homogeneous tensor controls. Combined refinement preflights both axes and the
+Cartesian control limit. Exact removal must preserve every homogeneous
+transverse row over full raw support; an inexact inverse returns `None` and
+cannot partially update a surface. U/V periodic origins and their aliases are
+independent. Retained isocurves can be passed to exact analytic intersectors.
+
+The differentiated de Boor map is computed once per axis and applied through
+integer dot products, with exact rational quotient rules through total order
+two. Explicit knot quadrants and automatic continuity retain the existing
+surface evaluation contract. See [surface knot editing](SURFACE_KNOT_EDITING.md)
+for rational domains, limits, independent equation checks and exclusions.

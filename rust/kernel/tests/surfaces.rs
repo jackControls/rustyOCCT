@@ -57,6 +57,15 @@ fn surface_jets_match_independent_exact_tensor_basis_oracle() {
         };
         let u_axis = axis(du, ku, pu != 0);
         let v_axis = axis(dv, kv, pv != 0);
+        let exact = BSplineSurface3::new(
+            u_axis.clone(),
+            v_axis.clone(),
+            poles.clone(),
+            Some(weights.clone()),
+        )
+        .unwrap()
+        .to_exact()
+        .evaluate(u, v, order, sides);
         let result = if words[1] == "B" {
             BezierSurface3::new(du, dv, poles, Some(weights))
                 .unwrap()
@@ -66,6 +75,10 @@ fn surface_jets_match_independent_exact_tensor_basis_oracle() {
                 .unwrap()
                 .evaluate(u, v, order, sides)
         };
+        assert_eq!(
+            result, exact,
+            "{name}: exact tensor jet disagrees with original homogeneous de Boor path"
+        );
         let status = *data.next().unwrap();
         match result {
             Err(Error::Unrepresentable(_)) => assert_eq!(status, "U", "{name}"),

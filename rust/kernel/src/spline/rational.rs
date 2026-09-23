@@ -3,6 +3,7 @@ use super::{integer, zero, KnotSpan, KnotVector, Parameter, MAX_DEGREE, MAX_POLE
 use crate::{curve::KnotSide, Error, Result};
 use num_bigint::BigInt;
 use num_rational::BigRational as R;
+use std::collections::BTreeMap;
 
 /// OCCT knot and periodic pole-order conventions, with exact rational atoms.
 /// Degree 1..=25, degree < pole count <=4096. There is no knot snapping.
@@ -150,6 +151,58 @@ impl ExactKnotVector {
     }
     pub fn domain(&self) -> &[R; 2] {
         &self.domain
+    }
+    /// Plan both axis and grid limits without touching any control values.
+    pub(crate) fn refinement_plan(
+        &self,
+        requests: &[(R, usize)],
+    ) -> Result<(Self, Vec<(R, usize)>)> {
+        if requests.len() > MAX_POLES {
+            return Err(Error::LimitExceeded("knot refinement requests"));
+        }
+        let mut requested = BTreeMap::<R, usize>::new();
+        for (u, target) in requests {
+            let mut u = normalize(u)?;
+            if u < self.domain()[0] || u > self.domain()[1] {
+                return Err(Error::OutOfDomain("knot refinement parameter"));
+            }
+            let physical_end =
+                !self.is_periodic() && (u == self.knots()[0] || &u == self.knots().last().unwrap());
+            if *target > self.degree() + usize::from(physical_end) {
+                return Err(Error::InvalidSpline("knot refinement multiplicity"));
+            }
+            if self.is_periodic() && u == self.domain()[1] {
+                u = self.domain()[0].clone();
+            }
+            requested
+                .entry(u)
+                .and_modify(|m| *m = (*m).max(*target))
+                .or_insert(*target);
+        }
+        let mut map: BTreeMap<_, _> = self
+            .knots()
+            .iter()
+            .cloned()
+            .zip(self.multiplicities().iter().copied())
+            .collect();
+        let mut changes = Vec::new();
+        for (u, target) in requested {
+            let current = map.get(&u).copied().unwrap_or(0);
+            if target > current {
+                map.insert(u.clone(), target);
+                if self.is_periodic() && u == self.domain()[0] {
+                    map.insert(self.domain()[1].clone(), target);
+                }
+                changes.push((u, target - current));
+            }
+        }
+        if changes.is_empty() {
+            return Ok((self.clone(), changes));
+        }
+        let (knots, multiplicities) = map.into_iter().unzip();
+        let basis =
+            ExactKnotVector::build(self.degree(), knots, multiplicities, self.is_periodic())?;
+        Ok((basis, changes))
     }
     pub(crate) fn pole_index(&self, index: usize) -> usize {
         if self.periodic {

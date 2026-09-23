@@ -372,3 +372,55 @@ Replay the entire oracle with:
 cargo run --manifest-path rust/fuzz/Cargo.toml --locked --release \
   --example replay_roots -- rust/fuzz/regressions/roots/*.bin
 ```
+
+
+## Surface knots: degree-25 periodic origin removal
+
+`surface_knots/periodic-degree25-origin-removal.bin` is the 12-byte structural
+reproducer for an initial surface-knot fuzz startup timeout. Removing the four
+trailing zero bytes from the saved 16-byte input leaves the decoded geometry
+unchanged. It constructs a 28 by 28, degree-25 periodic surface, redundant in U
+with nonconstant weighted V geometry, then deletes the U origin and checks the
+entire result, patch coefficients, isocurves and wrapped exact partials.
+
+The first complete release replay took about 7.2 seconds. Shared Cox matrices
+and elimination reduced checker repetition; reusable differentiated de Boor
+maps reduced kernel jet work. The same full release replay then took about
+0.77 seconds on the development machine. These are diagnostic measurements,
+not portable performance guarantees. Ordinary Cargo tests preserve the same
+complete geometry and independent checks. No homogeneous coefficient or residual
+check was dropped.
+
+```sh
+cargo run --manifest-path rust/fuzz/Cargo.toml --locked --release \
+  --example replay_surface_knots -- rust/fuzz/regressions/surface_knots/*.bin
+```
+
+
+`surface_knots/unclamped-degree25-both-refinement.bin` retains the full 28 by
+28 unclamped tensor that exceeded the initial 20-second instrumented budget.
+Its 3,152 bytes omit only unused trailing data from the original 3,216-byte
+input. The additional `unclamped-degree25-full-multiplicities.bin` raises both
+new knot multiplicities to 25. Shared sparse Boehm maps and integer affine
+blends remove repeated kernel reductions; common Cox matrices and exact integer
+content cancellation preserve every independent raw-support equation.
+Both complete cases are ordinary Cargo regressions. The full-multiplicity case
+still takes about 23 seconds with instrumentation, so this new target has an
+explicit 60-second per-input verification budget. Existing targets retain their
+20-second budget, and all targets keep the 2 GiB process memory limit.
+
+`degree23-input-at-campaign-memory-limit.bin` preserves the 432 used bytes of
+the input active when the first long campaign crossed 2 GiB after 419 mutations.
+That input passes on its own; it is not a standalone OOM reproducer. The failed
+campaign's manifest, full log and corpus remain in the local verification
+artifacts. A new sustained campaign must pass the unchanged memory gate before
+this surface-knot milestone is considered verified.
+
+A subsequent diagnostic replay of all 197 saved inputs reached 2,205 MiB RSS,
+while sanitizer accounting after completed inputs remained near 25 MB of live
+allocations. The runtime's usual allocator purge runs only during mutation,
+after seed replay. The test-only surface harness now also purges freed allocator
+memory between completed inputs, at most once per second. Both the failed
+2 GiB campaigns and the separate 4 GiB diagnostic replay are retained; the
+diagnostic is not a successful gating campaign. The fresh campaign still uses
+the 2 GiB memory gate and full mutation budget.

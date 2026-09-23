@@ -155,6 +155,19 @@ pub struct ExactBezierSurface3 {
     domain: [[R; 2]; 2],
 }
 impl ExactBezierSurface3 {
+    pub(crate) fn from_homogeneous(
+        degrees: [usize; 2],
+        controls: Vec<[R; 4]>,
+        domain: [[R; 2]; 2],
+    ) -> Self {
+        debug_assert_eq!(controls.len(), (degrees[0] + 1) * (degrees[1] + 1));
+        debug_assert!(controls.iter().all(|p| p[3] > integer(0)));
+        Self {
+            degrees,
+            controls,
+            domain,
+        }
+    }
     pub fn degrees(&self) -> [usize; 2] {
         self.degrees
     }
@@ -393,6 +406,12 @@ pub struct ExactSurfaceEvaluation {
     derivatives: [Option<[R; 3]>; 5],
 }
 impl ExactSurfaceEvaluation {
+    pub(crate) fn from_values(values: Vec<[R; 3]>) -> Self {
+        Self {
+            position: ExactPoint3::from_coordinates(values[0].clone()),
+            derivatives: std::array::from_fn(|i| values.get(i + 1).cloned()),
+        }
+    }
     pub fn position(&self) -> &ExactPoint3 {
         &self.position
     }

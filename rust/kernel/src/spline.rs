@@ -7,6 +7,8 @@ use crate::{curve::KnotSide, exact, interval, math::finite, Error, Result, Scala
 use num_bigint::BigInt;
 use num_rational::BigRational as R;
 
+mod refinement;
+pub(crate) use refinement::KnotRefinementTransform;
 mod rational;
 pub(crate) use rational::normalize;
 pub use rational::ExactKnotVector;
@@ -546,6 +548,77 @@ impl BezierSpanTransform {
             })
             .collect()
     }
+}
+
+/// A reusable differentiated de Boor map for one parameter. Propagating the
+/// final interpolation weight backwards through the triangular de Boor graph
+/// constructs all local pole weights and their first/second derivatives once.
+/// Tensor rows then use exact integer dot products with shared denominators.
+/// This is algebraically the same interpolation/derivative rule as de_boor_exact;
+/// no sampling, finite differencing or floating-point accumulation is used.
+pub(crate) struct SplineJetTransform(BezierSpanTransform);
+impl SplineJetTransform {
+    pub(crate) fn new(p: usize, flat: &[R], at: &Parameter, order: usize) -> Self {
+        debug_assert!(order <= 2);
+        let mut weights: Vec<[R; 3]> = (0..=p).map(|_| std::array::from_fn(|_| zero())).collect();
+        weights[p][0] = integer(1);
+        for r in (1..=p).rev() {
+            for j in r..=p {
+                let i = at.span - p + j;
+                let width = &flat[i + p - r + 1] - &flat[i];
+                debug_assert!(width > zero());
+                let alpha = (&at.value - &flat[i]) / &width;
+                let complement = integer(1) - &alpha;
+                let incoming = weights[j].clone();
+                for n in 0..=order {
+                    let correction = if n == 0 {
+                        zero()
+                    } else {
+                        integer(n) * &incoming[n - 1] / &width
+                    };
+                    weights[j][n] = &alpha * &incoming[n] + &correction;
+                    weights[j - 1][n] += &complement * &incoming[n] - correction;
+                }
+            }
+        }
+        Self(BezierSpanTransform {
+            rows: (0..=order)
+                .map(|n| {
+                    let denominator = common_denominator(weights.iter().map(|w| &w[n]));
+                    let numerators = weights
+                        .iter()
+                        .map(|w| w[n].numer() * (&denominator / w[n].denom()))
+                        .collect();
+                    (numerators, denominator)
+                })
+                .collect(),
+        })
+    }
+    pub(crate) fn apply(&self, controls: &[[R; 4]]) -> Vec<[R; 4]> {
+        self.0.apply(controls)
+    }
+}
+
+/// Exact homogeneous affine blend. Clear the eight control denominators once
+/// and reduce only the four completed coordinates, rather than every product.
+pub(crate) fn blend_homogeneous(left: &[R; 4], right: &[R; 4], alpha: &R) -> [R; 4] {
+    if alpha == &zero() {
+        return left.clone();
+    }
+    if alpha == &integer(1) {
+        return right.clone();
+    }
+    let denominator = common_denominator(left.iter().chain(right));
+    let a = alpha.numer();
+    let b = alpha.denom() - a;
+    let output_den = &denominator * alpha.denom();
+    std::array::from_fn(|c| {
+        R::new(
+            &b * left[c].numer() * (&denominator / left[c].denom())
+                + a * right[c].numer() * (&denominator / right[c].denom()),
+            output_den.clone(),
+        )
+    })
 }
 
 pub(crate) fn common_denominator<'a>(values: impl Iterator<Item = &'a R>) -> BigInt {

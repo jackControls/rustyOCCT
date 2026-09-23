@@ -10,6 +10,8 @@ use num_rational::BigRational as R;
 
 mod editing;
 pub use editing::{BezierPatchExtractionOptions, ExactBezierSurface3, ExactSurfaceEvaluation};
+mod knot_editing;
+pub use knot_editing::ExactBSplineSurface3;
 
 // Ordered by total degree. Every lower partial precedes its dependents.
 const PARTIALS: [(usize, usize); 6] = [(0, 0), (1, 0), (0, 1), (2, 0), (0, 2), (1, 1)];

@@ -32,7 +32,12 @@ pub use bezier_editing::{check_bezier_editing, profile_bezier_editing};
 #[allow(dead_code)]
 pub(crate) mod bezier_reference;
 mod surface_editing;
+#[path = "../../kernel/tests/support/surface_editing_reference.rs"]
+#[allow(dead_code)]
+pub(crate) mod surface_reference;
 pub use surface_editing::{check_surface_editing, profile_surface_editing};
+mod surface_knots;
+pub use surface_knots::{check_surface_knots, profile_surface_knots};
 mod knot_editing;
 pub use knot_editing::{check_knot_editing, profile_knot_editing};
 mod exact_spline_intersections;
