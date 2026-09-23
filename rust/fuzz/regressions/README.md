@@ -488,3 +488,26 @@ log remain retained. The runner now calculates startup from the actual
 cap, instead of assuming two seconds per saved input. It still requires a
 complete separate mutation budget and positive mutation executions. No input
 is discarded and no individual time or memory limit is raised.
+
+## Degree-elevation rejection contract
+
+The first degree-elevation seed replay stopped on
+`crash-0e91d858c2385d16d407340416d35a9770047460`, before mutation started.
+The test harness incorrectly expected `InvalidCurve` for degree reduction;
+the public knot-axis contract returns `InvalidSpline` for invalid degree and
+`LimitExceeded` for an oversized result. The seven-byte
+`degree_elevation/degree-reduction-error.bin` retains the minimized trigger.
+The checker now distinguishes both typed errors and still requires rejection.
+The failed campaign is preserved as a failure, not counted as fuzzing time.
+
+A separate dense degree-24-to-25 unclamped tensor replay with coordinates
+scaled by 2^4096 took 100.985 seconds under ASan. Single-file libFuzzer replay
+does not enforce its normal per-input alarm; the enclosing 95-second probe
+was recorded as failed, and process inspection confirmed no leftover replay.
+`degree_elevation/extreme-unclamped-both-24-25.bin` retains all 2,932 relevant
+bytes (the unused input suffix was removed). Primitive elimination reduced
+integer growth; reconstructing every source unit column before applying the
+map to all transverse fields removed coordinate magnitude from factorization.
+All unit-column equations and all resulting controls remain checked exactly.
+The fixed instrumented replay and full campaigns must pass their original
+60-second/2-GiB gates before acceptance.

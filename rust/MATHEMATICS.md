@@ -994,7 +994,7 @@ periodic seams and extreme rational domains. See
    curved geometry required by subsequent algorithms.
    Preserve explicit units, domains and arithmetic bounds; do not reuse an
    arbitrary global epsilon.
-2. Extend certified editing to general spline elevation, surface knot operations and arbitrary face trimming, and add projections; extend root isolation
+2. Complete general spline elevation acceptance, add arbitrary face trimming and projections, and extend root isolation
    to general intersections. Use interval/error bounds or
    additional precision when ordinary arithmetic cannot establish the answer.
 3. Strengthen topology invariants and tolerance propagation through each
@@ -1022,3 +1022,22 @@ integer dot products, with exact rational quotient rules through total order
 two. Explicit knot quadrants and automatic continuity retain the existing
 surface evaluation contract. See [surface knot editing](SURFACE_KNOT_EDITING.md)
 for rational domains, limits, independent equation checks and exclusions.
+
+## General exact degree elevation
+
+Degree elevation preserves all four homogeneous spline functions on the
+original active domain. Periodic multiplicities rise by the degree increment,
+with the same cyclic origin and period. For a nonperiodic axis, the original
+first/last active distinct-knot indices determine how many exterior flat knots
+are removed; partial exterior multiplicities are retained. Inactive controls
+are determined by a fully clamped zero-padded working extension and its exact
+crop. Equality outside the original active interval is not implied.
+
+Production uses Prautzsch rank averaging and shared exact refinement maps.
+The independent oracles instead reconstruct every working control from every
+Cox power-coefficient equation, require full rank, and verify all residuals.
+They do not infer equality from samples. The Rust equation solver uses primitive
+integer elimination for degree changes, skipping zero pivot columns while
+retaining all constraints and checking integer divisions. The target pole count
+and the full tensor product are checked before production control arithmetic.
+See [contracts, native discrepancies and current gates](DEGREE_ELEVATION.md).

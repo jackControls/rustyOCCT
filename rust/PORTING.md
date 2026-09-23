@@ -87,7 +87,10 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
    including periodic seams and unclamped controls, with rational knots
    throughout. Surface knot refinement and exact removal apply the same
    contract to the complete tensor grid, with independent U/V periodicity and
-   atomic Cartesian limits. Exact degree-25
+   atomic Cartesian limits. General exact curve/tensor degree elevation now
+   has complete independent coefficient reconstruction and a source-pinned
+   native gate; sustained fuzzing and published platform acceptance are in
+   progress. Exact degree-25
    root isolation and certified spline/plane/sphere/cylinder intersections cover
    isolated contacts
    and whole overlap intervals, including explicit trimmed ranges and multiple
@@ -103,7 +106,7 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
    modified and deleted mappings with explicit split/merge ambiguity before
    topology-changing operations. Body-local indices are not persistent names.
 3. **Reliable geometry and intersections.** Circular arcs, trimmed curves,
-   general spline degree elevation and arbitrary face trimming; extend the existing certified
+   complete general spline degree-elevation acceptance and arbitrary face trimming; extend the existing certified
    curve/surface jets with
    projection, general intersections, trimming and sewing. Every
    numerical algorithm needs a declared domain, degeneracy behavior and error

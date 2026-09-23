@@ -34,7 +34,7 @@ class FuzzRunnerTests(unittest.TestCase):
         self.assertEqual(env['CARGO_NET_OFFLINE'],'true')
         self.assertEqual(base['ASAN_OPTIONS'],'detect_stack_use_after_return=1')
         for target in run_fuzz.TARGETS:
-            if target!='surface_knots':
+            if target not in run_fuzz.TENSOR_TARGETS:
                 self.assertEqual(run_fuzz.campaign_environment(target,base),base)
         self.assertEqual(run_fuzz.campaign_environment('surface_knots',{})['ASAN_OPTIONS'],'quarantine_size_mb=64')
 
@@ -42,7 +42,7 @@ class FuzzRunnerTests(unittest.TestCase):
         for target in run_fuzz.TARGETS:
             args=run_fuzz.sanitizer_build_args(target)
             self.assertEqual(args[:2],['--sanitizer','address'])
-            if target=='surface_knots':
+            if target in run_fuzz.TENSOR_TARGETS:
                 self.assertEqual(args[2:],['--features','asan-allocator'])
             else:
                 self.assertEqual(args[2:],[])

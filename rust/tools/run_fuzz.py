@@ -18,13 +18,14 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation']
 STARTUP_SECONDS = 600
 MAX_STARTUP_SECONDS = 3600
 INPUT_SECONDS = 20
 # Full tensor coefficient equations and double-axis degree-25 edits are a
 # larger per-input workload. Existing targets keep their original 20s limit.
-TARGET_INPUT_SECONDS = {"surface_knots": 60}
+TARGET_INPUT_SECONDS = {"surface_knots": 60, "degree_elevation": 60}
+TENSOR_TARGETS = {'surface_knots', 'degree_elevation'}
 # The pinned libFuzzer checks stop_file between MutateAndTestOne batches,
 # not between each callback. Keep its default mutation sequence length.
 MUTATION_DEPTH = 5
@@ -47,12 +48,12 @@ def startup_budget(corpus_files, input_seconds=INPUT_SECONDS):
 def sanitizer_build_args(target):
     # The tensor target also purges freed ASan allocator memory during corpus
     # replay; libFuzzer itself does that only after mutation has started.
-    return ['--sanitizer','address'] + (['--features','asan-allocator'] if target == 'surface_knots' else [])
+    return ['--sanitizer','address'] + (['--features','asan-allocator'] if target in TENSOR_TARGETS else [])
 
 
 def campaign_environment(target, base):
     env=dict(base)
-    if target=='surface_knots':
+    if target in TENSOR_TARGETS:
         # Complete exact tensor oracles create millions of temporary integers.
         # Bound the freed-block quarantine, keeping the 2 GiB process gate.
         # This intentionally shortens the use-after-free detection window;
@@ -71,7 +72,28 @@ def seed_corpus(target):
         if not path.exists():
             path.write_bytes(data)
 
-    if target == 'surface_knots':
+    if target == 'degree_elevation':
+        import struct
+        def degree_seed(family,du,dv,ku,kv,qu,qv,op=0,mode=2,scale=128,parameter=7):
+            body=(b''.join(struct.pack('<d',x) for _ in range(100) for x in [1.,0.,2.,1.])
+                  if mode==0 else bytes((j*37+1)%256 for j in range(3200)))
+            save(bytes([family,mode,du-1,dv-1,ku,kv,qu,qv,op,scale,parameter,parameter,0,0,84,1])+body)
+        # Every degree and each axis kind; single and both-axis requests.
+        for degree in range(1,26):
+            degree_seed(0,degree,1,degree%5,0,2,0,degree%3)
+            degree_seed(1,degree,2,degree%5,(degree+1)%5,2,2,degree%3)
+        for kind in range(5):
+            for degree in [1,2,8,24]:
+                degree_seed(0,degree,1,kind,0,31,0,degree%3)
+            degree_seed(1,24,24,kind,kind,2,2,kind%3)
+        for mode in [0,1,3]:
+            for scale in [0,1,255]:
+                degree_seed(0,2,2,1,3,2,2,1,mode,scale,scale)
+                degree_seed(1,2,3,1,3,2,2,2,mode,scale,scale)
+        for request in [0,2,26,27,28]:
+            for family in range(3):
+                degree_seed(family,2,3,1,2,request,request,request%3)
+    elif target == 'surface_knots':
         import struct
         for degree in range(1,26):
             for axis in range(2):
@@ -358,7 +380,7 @@ def main():
                 command = ['cargo',f'+{args.toolchain}','fuzz','run',target,str(corpora[target]),
                     '--fuzz-dir',str(FUZZ),*sanitizer_build_args(target),'--',
                     '-max_total_time=0',f'-stop_file={stop_file}',f'-mutate_depth={MUTATION_DEPTH}',f'-timeout={input_seconds}','-rss_limit_mb=2048',
-                    f'-max_len={4096 if target in ["surface_editing", "surface_knots"] else 512 if target == "knot_editing" else 256}',f'-seed={args.seed}',f'-artifact_prefix={artifacts}/','-print_final_stats=1']
+                    f'-max_len={4096 if target in ["surface_editing", "surface_knots", "degree_elevation"] else 512 if target == "knot_editing" else 256}',f'-seed={args.seed}',f'-artifact_prefix={artifacts}/','-print_final_stats=1']
                 with log_path.open('w') as log:
                     campaign_env=campaign_environment(target,env)
                     code = run_process(command,log,startup_seconds+args.seconds+shutdown_seconds,campaign_env,timer.tick,timer.deadline)
@@ -367,7 +389,7 @@ def main():
                 'input_limit_seconds':input_seconds,
                 'mutation_depth':MUTATION_DEPTH,
                 'initial_corpus_files':initial_corpus_files,
-                'allocator_cleanup_during_replay':target == 'surface_knots',
+                'allocator_cleanup_during_replay':target in TENSOR_TARGETS,
                 'sanitizer_options':campaign_env.get('ASAN_OPTIONS'),
                 **timer.evidence(),
                 **statistics(text),

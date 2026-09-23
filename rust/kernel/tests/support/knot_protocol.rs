@@ -52,7 +52,10 @@ pub fn execute(input: &Input) -> (Vec<bool>, ExactBSplineCurve3) {
     let mut curve = input.curve.clone();
     let mut flags = Vec::new();
     for (op, u, m) in &input.operations {
-        if *op == 'I' {
+        if *op == 'D' {
+            curve = curve.elevated(*m).unwrap();
+            flags.push(true);
+        } else if *op == 'I' {
             curve = curve.insert_knot(u, *m).unwrap();
             flags.push(true);
         } else {

@@ -297,14 +297,47 @@ pub fn recover_many(
     basis: &ExactKnotVector,
 ) -> Option<Vec<Vec<[R; 4]>>> {
     assert!(!original.is_empty());
-    let input = ControlRows::new(original);
-    let width = 4 * original.len();
+    assert!(original
+        .iter()
+        .all(|c| c.knot_vector() == original[0].knot_vector()));
+    recover_controls(
+        original[0].knot_vector(),
+        &original
+            .iter()
+            .map(|c| c.homogeneous_poles())
+            .collect::<Vec<_>>(),
+        basis,
+    )
+}
+
+/// Test-only raw homogeneous fields permit zero padding on a clamped working
+/// extension. No geometric curve with zero weights is constructed or exposed.
+/// Both degrees participate in every coefficient equation, including the
+/// higher zero coefficients when the source and destination degrees differ.
+#[allow(dead_code)]
+pub fn recover_controls(
+    original_basis: &ExactKnotVector,
+    controls: &[&[[R; 4]]],
+    basis: &ExactKnotVector,
+) -> Option<Vec<Vec<[R; 4]>>> {
+    assert!(!controls.is_empty());
+    assert!(controls
+        .iter()
+        .all(|row| row.len() == original_basis.pole_count()));
+    let input = ControlRows::from_controls(controls);
+    let width = 4 * controls.len();
+    let degree = original_basis.degree().max(basis.degree());
     let mut pivots: Vec<Equation> = Vec::new();
     let mut solution: Option<Solution> = None;
-    for [lo, hi] in partition(original[0].knot_vector(), basis) {
-        let rows = basis_polynomials(basis, &lo, &hi);
-        let rhs = input.polynomial(&basis_polynomials(original[0].knot_vector(), &lo, &hi));
-        for k in 0..=basis.degree() {
+    for [lo, hi] in partition(original_basis, basis) {
+        let mut rows = basis_polynomials(basis, &lo, &hi);
+        let mut rhs = input.polynomial(&basis_polynomials(original_basis, &lo, &hi));
+        for row in &mut rows.rows {
+            row.resize(degree + 1, BigInt::from(0));
+        }
+        rhs.coefficients
+            .resize(degree + 1, vec![BigInt::from(0); width]);
+        for k in 0..=degree {
             // Once the coefficient equations determine a unique control row,
             // check every remaining equation by exact substitution. Eliminating
             // hundreds of dependent equations again is unnecessary; none of
@@ -345,6 +378,48 @@ pub fn recover_many(
             for (j, pivot, values) in &pivots {
                 if row.is_empty() {
                     break;
+                }
+                if original_basis.degree() != basis.degree() {
+                    // Sparse degree-changing systems have long stretches of
+                    // zero pivot columns. Primitive integer elimination can
+                    // skip these without repeatedly scaling every transverse
+                    // field by unrelated Bareiss minors. All source equations
+                    // and later exact residual checks are still required.
+                    let Some(b) = row.get(j).cloned() else {
+                        continue;
+                    };
+                    let common = gcd(pivot[j].clone(), b.clone());
+                    let a = &pivot[j] / &common;
+                    let b = b / common;
+                    for x in row.values_mut() {
+                        *x *= &a;
+                    }
+                    for (&i, x) in pivot {
+                        let y = row.get(&i).cloned().unwrap_or_else(|| 0.into()) - &b * x;
+                        if y == BigInt::from(0) {
+                            row.remove(&i);
+                        } else {
+                            row.insert(i, y);
+                        }
+                    }
+                    for (x, y) in answer.iter_mut().zip(values) {
+                        *x = &a * &*x - &b * y;
+                    }
+                    let mut content = BigInt::from(0);
+                    for x in row.values().chain(&answer) {
+                        content = gcd(content, x.clone());
+                        if content == BigInt::from(1) {
+                            break;
+                        }
+                    }
+                    if content > BigInt::from(1) {
+                        for x in row.values_mut().chain(&mut answer) {
+                            let q = &*x / &content;
+                            assert_eq!(&q * &content, *x, "exact primitive integer division");
+                            *x = q;
+                        }
+                    }
+                    continue;
                 }
                 let a = &pivot[j];
                 let b = row.get(j).cloned().unwrap_or_else(|| 0.into());
@@ -390,7 +465,7 @@ pub fn recover_many(
     assert_eq!(pivots.len(), basis.pole_count(), "independent basis rank");
     let controls = solution.expect("independent basis has full rank").controls;
     Some(
-        (0..original.len())
+        (0..width / 4)
             .map(|j| {
                 controls
                     .iter()
@@ -473,19 +548,25 @@ impl ControlRows {
         assert!(curves
             .iter()
             .all(|c| c.knot_vector() == curves[0].knot_vector()));
-        let denominator = curves
+        Self::from_controls(
+            &curves
+                .iter()
+                .map(|c| c.homogeneous_poles())
+                .collect::<Vec<_>>(),
+        )
+    }
+    fn from_controls(controls: &[&[[R; 4]]]) -> Self {
+        assert!(!controls.is_empty());
+        assert!(controls.iter().all(|r| r.len() == controls[0].len()));
+        let denominator = controls
             .iter()
-            .flat_map(|c| c.homogeneous_poles().iter().flatten())
+            .flat_map(|c| c.iter().flatten())
             .fold(BigInt::from(1), |d, x| lcm(&d, x.denom()));
-        let values = (0..curves[0].homogeneous_poles().len())
+        let values = (0..controls[0].len())
             .map(|i| {
-                curves
+                controls
                     .iter()
-                    .flat_map(|c| {
-                        c.homogeneous_poles()[i]
-                            .iter()
-                            .map(|x| x.numer() * (&denominator / x.denom()))
-                    })
+                    .flat_map(|c| c[i].iter().map(|x| x.numer() * (&denominator / x.denom())))
                     .collect()
             })
             .collect();

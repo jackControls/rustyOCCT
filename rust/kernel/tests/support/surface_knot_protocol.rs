@@ -54,6 +54,7 @@ pub fn parse(row: &str) -> Input {
             match axis {
                 'U' => 0,
                 'V' => 1,
+                'B' if op == 'D' => 2,
                 _ => panic!("axis"),
             },
             R::from_float(at).unwrap(),
@@ -75,6 +76,16 @@ pub fn execute(input: &Input) -> (Vec<bool>, ExactBSplineSurface3) {
     let mut flags = Vec::new();
     for (op, axis, u, m) in &input.operations {
         let next = match (op, axis) {
+            ('D', 0) => Some(surface.elevated(*m, surface.degrees()[1]).unwrap()),
+            ('D', 1) => Some(surface.elevated(surface.degrees()[0], *m).unwrap()),
+            ('D', 2) => {
+                assert!(u.is_integer());
+                Some(
+                    surface
+                        .elevated(usize::try_from(u.to_integer()).unwrap(), *m)
+                        .unwrap(),
+                )
+            }
             ('I', 0) => Some(surface.insert_u_knot(u, *m).unwrap()),
             ('I', 1) => Some(surface.insert_v_knot(u, *m).unwrap()),
             ('R', 0) => surface.remove_u_knot(u, *m).unwrap(),

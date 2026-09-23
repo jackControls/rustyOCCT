@@ -33,7 +33,7 @@ def parse(row):
     for p,periodic,k in [(du,pu,ku),(dv,pv,kv)]:
         pairs=[(F(float(next(w))),int(next(w))) for _ in range(k)]
         knots,mults=map(tuple,zip(*pairs)); axes.append((p,bool(periodic),knots,mults))
-    ops=[(next(w),'UV'.index(next(w)),F(float(next(w))),int(next(w))) for _ in range(nop)]
+    ops=[(next(w),'UVB'.index(next(w)),F(float(next(w))),int(next(w))) for _ in range(nop)]
     if list(w) or [count(a) for a in axes]!=[nu,nv]: raise ValueError('input dimensions')
     return name,(tuple(axes),tuple(controls)),ops
 

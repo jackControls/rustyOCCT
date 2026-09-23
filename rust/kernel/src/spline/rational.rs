@@ -152,6 +152,50 @@ impl ExactKnotVector {
     pub fn domain(&self) -> &[R; 2] {
         &self.domain
     }
+    /// Preflight degree and pole limits without evaluating any control data.
+    /// An unclamped axis loses only the exterior flat knots prescribed by its
+    /// original active knot indices; the active parameter interval is unchanged.
+    pub(crate) fn elevation_plan(&self, degree: usize) -> Result<Self> {
+        if degree < self.degree || degree > MAX_DEGREE {
+            return Err(Error::InvalidSpline("degree elevation target"));
+        }
+        let delta = degree - self.degree;
+        if delta == 0 {
+            return Ok(self.clone());
+        }
+        let first = self.knots.binary_search(&self.domain[0]).unwrap();
+        let last = self.knots.binary_search(&self.domain[1]).unwrap();
+        if self.pole_count + delta * (last - first) > MAX_POLES {
+            return Err(Error::LimitExceeded("spline control data"));
+        }
+        let mut left = if self.periodic { 0 } else { delta * first };
+        let mut right = if self.periodic {
+            0
+        } else {
+            delta * (self.knots.len() - 1 - last)
+        };
+        let mut pairs: Vec<_> = self
+            .knots
+            .iter()
+            .zip(&self.multiplicities)
+            .filter_map(|(k, &m)| {
+                let m = m + delta;
+                let take = left.min(m);
+                left -= take;
+                (m > take).then(|| (k.clone(), m - take))
+            })
+            .collect();
+        for (_, m) in pairs.iter_mut().rev() {
+            let take = right.min(*m);
+            right -= take;
+            *m -= take;
+        }
+        let (knots, mults) = pairs.into_iter().filter(|(_, m)| *m != 0).unzip();
+        let result = Self::build(degree, knots, mults, self.periodic)?;
+        debug_assert_eq!(result.domain, self.domain);
+        debug_assert_eq!(result.pole_count, self.pole_count + delta * (last - first));
+        Ok(result)
+    }
     /// Plan both axis and grid limits without touching any control values.
     pub(crate) fn refinement_plan(
         &self,

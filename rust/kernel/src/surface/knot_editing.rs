@@ -114,6 +114,39 @@ impl ExactBSplineSurface3 {
         &self.controls
     }
 
+    /// Independently raise U and V degrees, preserving all homogeneous tensor
+    /// components on the same active rectangle. Both degree requests and the
+    /// complete 4096-control grid limit are checked before control arithmetic.
+    /// Equal degrees are identities; reduction or degree >25 is an error.
+    pub fn elevated(&self, u_degree: usize, v_degree: usize) -> Result<Self> {
+        let targets = [u_degree, v_degree];
+        let axes = [
+            self.axes[0].elevation_plan(u_degree)?,
+            self.axes[1].elevation_plan(v_degree)?,
+        ];
+        control_count(&axes)?;
+        let mut result = self.clone();
+        for axis in 0..2 {
+            if result.axes[axis].degree() == targets[axis] {
+                continue;
+            }
+            let transform = spline::DegreeElevationTransform::new(&result.axes[axis], &axes[axis]);
+            let rows: Vec<_> = result
+                .rows(axis)
+                .iter()
+                .map(|row| {
+                    ExactBSplineCurve3::from_homogeneous(
+                        axes[axis].clone(),
+                        transform.apply(row.homogeneous_poles()),
+                    )
+                    .expect("convex degree elevation preserves positive homogeneous weights")
+                })
+                .collect();
+            result = result.with_rows(axis, &rows);
+        }
+        Ok(result)
+    }
+
     fn rows(&self, axis: usize) -> Vec<ExactBSplineCurve3> {
         let counts = self.pole_counts();
         (0..counts[1 - axis])

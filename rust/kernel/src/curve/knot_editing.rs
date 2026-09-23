@@ -97,6 +97,23 @@ impl ExactBSplineCurve3 {
         &self.controls
     }
 
+    /// Raise degree exactly while preserving the active domain and homogeneous
+    /// rational function. Equal degree is an identity; reduction, degree >25,
+    /// or more than 4096 resulting controls is rejected before arithmetic.
+    /// Periodic curves retain their cyclic origin and period. Unclamped exterior
+    /// knots use the original active indices to select the elevated basis.
+    pub fn elevated(&self, degree: usize) -> Result<Self> {
+        let basis = self.basis.elevation_plan(degree)?;
+        if degree == self.degree() {
+            return Ok(self.clone());
+        }
+        let transform = spline::DegreeElevationTransform::new(&self.basis, &basis);
+        Ok(Self {
+            basis,
+            controls: transform.apply(&self.controls),
+        })
+    }
+
     pub(crate) fn span_polynomial(&self, span: usize) -> [Vec<R>; 4] {
         let controls = (span - self.degree()..=span)
             .map(|i| self.controls[self.basis.pole_index(i)].clone())

@@ -5,7 +5,7 @@
 mod allocator;
 
 libfuzzer_sys::fuzz_target!(|data: &[u8]| {
-    rusty_occt_fuzz::check_surface_knots(data);
+    rusty_occt_fuzz::check_degree_elevation(data);
     #[cfg(feature = "asan-allocator")]
     allocator::purge_between_inputs();
 });

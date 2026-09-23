@@ -381,3 +381,21 @@ from actual matches.
    supported requires a manifest review, not automatic baseline regeneration.
 6. Treat discovered OCCT defects as reviewed divergences with an analytic or
    independent reference, not defects we must reproduce for the sake of parity.
+
+## General exact degree elevation
+
+Source revision `3d097a0328e71b826377d4814ab05ec3c3d23871`:
+`Geom_BSplineCurve::IncreaseDegree`, `Geom_BSplineSurface::IncreaseDegree`,
+`BSplCLib::{IncreaseDegreeCountKnots,IncreaseDegree}` and delegated `BSplSLib`
+homogeneous packing were read before implementation. The Prautzsch rank-average
+construction is implemented as a shared exact sparse map. Unclamped working
+padding/cropping and canonical periodic origins are explicit in
+[the degree-elevation contract](DEGREE_ELEVATION.md).
+
+The 142 curve and 125 tensor inputs were captured before Rust implementation,
+including three adapted original GTests. A pristine source-pinned headless SDK
+reproduces those observations. Complete independent Python coefficient systems
+and a separate Rust integer solver check all 267 control grids. The native gate
+reports 187 matches and 80 fingerprinted discrepancies separately; their range
+errors and invalid control counts are not emulated. Fuzz and platform acceptance
+remain in progress. This capability adds no rendering or C++ runtime dependency.

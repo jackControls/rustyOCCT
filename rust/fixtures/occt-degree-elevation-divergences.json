@@ -1,0 +1,3497 @@
+{
+  "policy": "Explicit source-pinned discrepancies, never counted as matches. Any changed input, expected control, native stdout, stderr, source revision, classification or difference invalidates its review. Process crashes are never exempted.",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "reviewed_source": "src/FoundationClasses/TKMath/BSplCLib/BSplCLib.cxx:2592-2960 (Prautzsch working extension and final unclamped crop)",
+  "before_implementation_capture": "rust/fixtures/occt-degree-elevation-capture.json",
+  "independent_contract": "rust/DEGREE_ELEVATION.md",
+  "reviews": [
+    {
+      "kind": "curve",
+      "case": "unclamped_p1_q2_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "5c1f319cf70932147c1e414c5f895b81bc6ae84345bee6aafc5176f714fe425f",
+      "exact_sha256": "e92ac271f918c62e3702f7ea08e874f1f719760150b08de7607bacfbdb5c5db8",
+      "native_stdout_sha256": "c00e6811554c17182be5617462f7f941e3d8ae786c5f12d5fbe30d53dcaff640",
+      "native_stderr_sha256": "305f1aa2b92beec4c3c8f597c3aae2ee753fb7966f9f0812a9d4621bdc81ec4c",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1
+        ],
+        "target_degrees": [
+          2
+        ],
+        "exact_pole_counts": [
+          7
+        ],
+        "preserved_domains": [
+          [
+            "1",
+            "4"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p1_q25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "691eabe01172b961df505b5e68baa5941f38125d8ab50be4b92e674028ea96d8",
+      "exact_sha256": "bad6cd12c18e03fe13b4e4ae61336281804aeb3e3b70075f64cd30f07265594c",
+      "native_stdout_sha256": "a20e72cab77057a00c145c5ba7a7588bc34d1a6b7304504dd6af8c330835824b",
+      "native_stderr_sha256": "468b99584dff0f40cf77ce79da223bf9ee8a855ce8a6601d8c021c37eb0a2a66",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          76
+        ],
+        "preserved_domains": [
+          [
+            "1",
+            "4"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p1_q2_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "0a8e7d077d7a0c4cbf624adea41a510f0fbac4f6e22da441551636ca6fc940f6",
+      "exact_sha256": "80ce6092ee2bf4ef16c7f880ec1001adbc54dbfbda9db1be060cfcc6c4438f51",
+      "native_stdout_sha256": "16c017b8e5c1a39bff4c81dd3e541128e640a3730b711e6f65648451405e4143",
+      "native_stderr_sha256": "95ee5279de4a9c4efa2cbe3695df8527440a2622365729769712692785034e3e",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1
+        ],
+        "target_degrees": [
+          2
+        ],
+        "exact_pole_counts": [
+          7
+        ],
+        "preserved_domains": [
+          [
+            "1",
+            "4"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p1_q25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "b1cbcf3c22f5ab5d1cfc7b14967db3273ab6aeb668e4bec23720039609e21bbb",
+      "exact_sha256": "06b542cf6c9de9dba383ae69b2f6ff00fd9ae26566601ad2b52ddf9203ce9830",
+      "native_stdout_sha256": "c887c8262538cecdb8429d537488f904a4d214b9e1586e22f8df3acc95035477",
+      "native_stderr_sha256": "f2a79cb83797dc6c1d1d4e2351f804fc13df764a9d4b38a9590578f65d51fbca",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          76
+        ],
+        "preserved_domains": [
+          [
+            "1",
+            "4"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "inactive_p1_q2_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "74b934d467500a718088ce613bc2e3785c82f9714f5af677398eac57340feedb",
+      "exact_sha256": "8e82da4e452beed02e63d623a9086044bfb532d574a495fcf8d1d747420abd45",
+      "native_stdout_sha256": "198e1cf0d619b8a4577e843c65746553e09bc7de8744079f423e47f911654100",
+      "native_stderr_sha256": "7342692eb3801dc2a5c10045b789ba5e7388d373574acd31cbecbdc719327e92",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1
+        ],
+        "target_degrees": [
+          2
+        ],
+        "exact_pole_counts": [
+          9
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "inactive_p1_q25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "3043b57e8a1dbb6c7cf18c42d3cb79a3a01c333a6292758295ca37bbe991689b",
+      "exact_sha256": "fcecfbe015bf4b211c443eed9bbb31b82ef8c6f58a67015032376f69e48b1a53",
+      "native_stdout_sha256": "0084cc0ccaa74a26050bc61bd930f0fe1821dacb736989d3e69c4bc8267aba3a",
+      "native_stderr_sha256": "a2099a70e58cdc224abcfd770708a82f9f69848baa7b2134828c94c91f3cbec9",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          101
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "inactive_p1_q2_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "08792b7df46ed3d7342f745f01b213946a678e336e1ef6a224d826736b912187",
+      "exact_sha256": "8cd17e40871975ac2fceb658f97bc9d037da9e44b406ebf98cb4a677561b073f",
+      "native_stdout_sha256": "cb5c9d09e8627ff2fe8ac8d4e41b93c0820049d9e0ca45761b23af0a215c6000",
+      "native_stderr_sha256": "ee7dc90ad68c75fb7000eec2fac311088e1ef008d028d33fd7f5a0837c159121",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1
+        ],
+        "target_degrees": [
+          2
+        ],
+        "exact_pole_counts": [
+          9
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "inactive_p1_q25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "41c6ce3124a43cb5f376acbcd32ee910f4c3a19e6521aea962227ff83ff59d62",
+      "exact_sha256": "b4249adb71682882df5b44218868d84138648010d136bc9c3f0145b4aad56103",
+      "native_stdout_sha256": "67a1bfd205dcb5daee8c64d72f9c7c85a54f55927d11082e4c678fe0f6d8c868",
+      "native_stderr_sha256": "54aec788fd18326eb360f986b05b189ca6591cc6a81276d1c404ee0f46be3589",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          101
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p2_q3_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "969769bbf9229b20124f60f51d318acb30e6aa5a7cd7a4a2f553ac409650383f",
+      "exact_sha256": "bacb57ff5b4ad9990779b29d9bbd7f8a1691bf9e393134045f25f1e845ac8500",
+      "native_stdout_sha256": "44516cc3ce46dffdcc7b08b7f62159a9a6a84dabdb388faa759ebd2d86cc66eb",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid curve axis or control count"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [8], but its returned degrees and knot multiplicities require [10]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2
+        ],
+        "target_degrees": [
+          3
+        ],
+        "exact_pole_counts": [
+          8
+        ],
+        "preserved_domains": [
+          [
+            "2",
+            "5"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          8
+        ],
+        "native_counts_required_by_returned_knots": [
+          10
+        ],
+        "native_reported_domains": [
+          [
+            "3",
+            "7"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p2_q25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "9d14a06b16c3e2c174e495d94b49ab39d325a4ccc46a30b9dc3713152dfa9689",
+      "exact_sha256": "893da3b69de1cfaf6969f4489757e1055c9c5f2a379f8a4dc790f5f2f1f70f12",
+      "native_stdout_sha256": "31b40994c50d5f291c867393ee1501238a0eb7f098b9962cc8eee9a573b8ac63",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid curve axis or control count"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [74], but its returned degrees and knot multiplicities require [120]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          74
+        ],
+        "preserved_domains": [
+          [
+            "2",
+            "5"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          74
+        ],
+        "native_counts_required_by_returned_knots": [
+          120
+        ],
+        "native_reported_domains": [
+          [
+            "3",
+            "7"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p2_q3_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "6f1721eb62295371d1366ffbe04ddcfea126aba08eb12289ac248ecde63b7e0e",
+      "exact_sha256": "1c6a7aec0a051619c32067f664ed057708e539e20a2e6802bbcacef3f3199183",
+      "native_stdout_sha256": "f2692130e66351decfe155a99a19cf7dcb563248068943143e2b26ef4f600adf",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid curve axis or control count"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [8], but its returned degrees and knot multiplicities require [10]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2
+        ],
+        "target_degrees": [
+          3
+        ],
+        "exact_pole_counts": [
+          8
+        ],
+        "preserved_domains": [
+          [
+            "2",
+            "5"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          8
+        ],
+        "native_counts_required_by_returned_knots": [
+          10
+        ],
+        "native_reported_domains": [
+          [
+            "3",
+            "7"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p2_q25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "6f00e6a3ba114a74e47651b70079564bf9c2032bf1193bd578f0ffa0a816ece2",
+      "exact_sha256": "f7e29e9ed3f3aa23a2362f45b843b4f257d3d93deefcc1121e2d253570c04872",
+      "native_stdout_sha256": "ecd18dcc31aba889438c5c04d475727c01853f791189d4e2ea24ce1b3f46c991",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid curve axis or control count"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [74], but its returned degrees and knot multiplicities require [120]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          74
+        ],
+        "preserved_domains": [
+          [
+            "2",
+            "5"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          74
+        ],
+        "native_counts_required_by_returned_knots": [
+          120
+        ],
+        "native_reported_domains": [
+          [
+            "3",
+            "7"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "inactive_p2_q3_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "48e88e9300f28c62a9903295a808ae09778ccc71821ff488e6746f015f55f93a",
+      "exact_sha256": "5f425fc032c4c2360bc4f1e51722928ec8d3e3e4ab02ef27a372621026e86629",
+      "native_stdout_sha256": "952bdfbbf813efe7dde105d9a1ee3a44cd58ef8d4082355c161c3f1b8f6ac0cb",
+      "native_stderr_sha256": "de748ff26e396228159b5b2d99a46b8190c8303ea3f51dd1a9384d8f9eeee460",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2
+        ],
+        "target_degrees": [
+          3
+        ],
+        "exact_pole_counts": [
+          13
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "inactive_p2_q25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "380b78cd590ede578d66a5203c3c3f946ea45abb03359094a7610a01c9ff295d",
+      "exact_sha256": "6fa3e96a2b08eaf0ade0097f90ae4ae4dab86dbf69d04216cde24d3531cfe946",
+      "native_stdout_sha256": "6773464bd1e750e92019c9a27c8484c90b247da67f9a63753324ba9369c6cfb3",
+      "native_stderr_sha256": "8a0f14a43729bea4bc533cf3ae4a6429164b42f4a26963a87cc539b367b358ef",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          101
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "inactive_p2_q3_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "07cdaad043b423bb75bcd0a155b5b8296fff42736dd93239e2714b19e751149c",
+      "exact_sha256": "76d3c337dca9af44ca6a639d4a794fb4dd282a770fd936dab112f194e0972682",
+      "native_stdout_sha256": "8cb67d525d1ead9b8fab098842c1c2218ff8fd7af976c8f1da32b809ae61c7ad",
+      "native_stderr_sha256": "82c8b371826962d42866940b46bf4b00727336b36b2b8b97bb567b3104688fc8",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2
+        ],
+        "target_degrees": [
+          3
+        ],
+        "exact_pole_counts": [
+          13
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "inactive_p2_q25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "394f79ab6017667a443ad31d8142e5189f3745ab4ec0741fdbbb4e7a85493147",
+      "exact_sha256": "89e55a0d428e4f7ad515f333595af1db82c1f94288d048a4f143702ff637b46b",
+      "native_stdout_sha256": "d8627f88fcb5a400f307fcf86d906672ca5f56939192757427a2a0826b2be8b5",
+      "native_stderr_sha256": "244b1fad6923c287df9582c306901e2068e67cf0c167e8e1c31537e226774807",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          101
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p3_q4_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "0aa86d24fead3fa2b74d9eb3ee5e196fcc1ef483618726486b171de347fd0f9c",
+      "exact_sha256": "ec5471090b2cbc720e505426300ae9b5bf06d64135896d247c8df4492a629eaa",
+      "native_stdout_sha256": "b5b9ea05946ca1bf1571e4fd75f70cd225c82e76900f30d177758e06ef6bc39c",
+      "native_stderr_sha256": "3af5fb3a52a49a3e10c11ae94d71b81d96456ad606bacc008744db86fc5cbb43",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          3
+        ],
+        "target_degrees": [
+          4
+        ],
+        "exact_pole_counts": [
+          9
+        ],
+        "preserved_domains": [
+          [
+            "3",
+            "6"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p3_q25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "27062d38fa86add3ab1d0c2711e805cc65709e82a596bb4b55813752de4bbd12",
+      "exact_sha256": "be04fc2a25d06c6bcda2b4487ba9308957db9bb141a121ac278f824444682e09",
+      "native_stdout_sha256": "6af7d24880a3ddeb8a93fd0be322928733fda97c605e2b33784a60fa90e12f56",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid curve axis or control count"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [72], but its returned degrees and knot multiplicities require [112]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          3
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          72
+        ],
+        "preserved_domains": [
+          [
+            "3",
+            "6"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          72
+        ],
+        "native_counts_required_by_returned_knots": [
+          112
+        ],
+        "native_reported_domains": [
+          [
+            "4",
+            "7"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p3_q4_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "267099290e786c12c55656f5239dfdbaec9a0019247b7ebf8df663b497bdb769",
+      "exact_sha256": "a243d8a9f3e911761f08cd5e3bdf707e00ec42a51c6eeccfa3ed80021167bdd7",
+      "native_stdout_sha256": "66b243ee437032aca923f1d7421c9b5fbc7f6ec506ef9161c63ca1340a070300",
+      "native_stderr_sha256": "982801fff7f0ce227bfe1f1ca27ddffe297d38342720080d8e088211bb770892",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          3
+        ],
+        "target_degrees": [
+          4
+        ],
+        "exact_pole_counts": [
+          9
+        ],
+        "preserved_domains": [
+          [
+            "3",
+            "6"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p3_q25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "48a37a299f5de4cf0c79f1013ce3a4cc4272f754f46a6a5de1a6787e986f4ac3",
+      "exact_sha256": "af1cdf4be680e42224055d424ec83872b137e4661f26a74f411f272d543b291b",
+      "native_stdout_sha256": "4f666182a630c126259a0ae0e20a3f01493966194c0fbb23a7e334ec28445a71",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid curve axis or control count"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [72], but its returned degrees and knot multiplicities require [112]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          3
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          72
+        ],
+        "preserved_domains": [
+          [
+            "3",
+            "6"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          72
+        ],
+        "native_counts_required_by_returned_knots": [
+          112
+        ],
+        "native_reported_domains": [
+          [
+            "4",
+            "7"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "inactive_p3_q4_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "dc0480827ad769b5199dac81d832e921ca7590ff2f54cddd4ba3ff5ca72ebec2",
+      "exact_sha256": "e3e601e180e8143ebd33b970d7d86d57da36e98ad30af9013d857437a626cf05",
+      "native_stdout_sha256": "d011d06c2fab78710fc1eac37c099b2b990dfb56231259755604b3ff9da13faf",
+      "native_stderr_sha256": "a0a6a9e2d8b55e7239a7419689639f776a9bec2edab2dfc7af5bb43b7af85d91",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          3
+        ],
+        "target_degrees": [
+          4
+        ],
+        "exact_pole_counts": [
+          17
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "inactive_p3_q25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "846842dd55a8d58074ebbab143b187e646105efe2b13edf4326f8188b67f2516",
+      "exact_sha256": "922141d4a5aa48e3167e87ac654979d3744b7c53ea779fb349dba4e2e319c089",
+      "native_stdout_sha256": "49c00cd84073c89f49e9054f5a9cb057696feb8b8bab91e9d5c681ac90ce139b",
+      "native_stderr_sha256": "45b529e575aee085410f8b565e2b4583e78e58cd26b95f1ce9e518f52b978c9a",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          3
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          101
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "inactive_p3_q4_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "6fcdc9aab4654cea61ecfe1d7fe14db301bee9e4e739a9a182f26463cd4aa0b9",
+      "exact_sha256": "a961946eacdd504f1a87f77765e916bb596ac09feed6a8d0f8445ed138454f9b",
+      "native_stdout_sha256": "8a1ad28eca6b934285c0e8e1301338bc5a7975226011e7ace3347cfe40515349",
+      "native_stderr_sha256": "1f2d710ad0924dc184e89bd4ae55b1631a818eda7f4f348863f461cc1f04c3c1",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          3
+        ],
+        "target_degrees": [
+          4
+        ],
+        "exact_pole_counts": [
+          17
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "inactive_p3_q25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "702cefc8fecea17d228ce941e553ffcfe099f0258849a9d0fea480d9288e4ab9",
+      "exact_sha256": "ac9574e409983aa2e8e8ec1d439fa9a63db185c0db8323d44d08299f4f18e746",
+      "native_stdout_sha256": "1d3ed594950af0167bcf427c175c98b1f65c3cfea87ed70462f909a59166e44f",
+      "native_stderr_sha256": "d7a109b62e005978d05509fd15ad62c3936aba3cfd56df392720b9d66623052c",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          3
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          101
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p8_q9_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "3ba555559e51a70f4ebea778180e2e778e0f2608552513b1973dffddf42f7648",
+      "exact_sha256": "b143d791e00b24d40e09db11ca92038ce97fd4bc1d3dc52fd73a2892c9694bdc",
+      "native_stdout_sha256": "7a181bef54df66e73d9bd0950fbadab78b00f08f4bd96a1b7c5ca12f8069f4a9",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid curve axis or control count"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [14], but its returned degrees and knot multiplicities require [22]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          8
+        ],
+        "target_degrees": [
+          9
+        ],
+        "exact_pole_counts": [
+          14
+        ],
+        "preserved_domains": [
+          [
+            "8",
+            "11"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          14
+        ],
+        "native_counts_required_by_returned_knots": [
+          22
+        ],
+        "native_reported_domains": [
+          [
+            "12",
+            "19"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p8_q25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "0b8e75cba70ff394a98d164da37f042c346ea47452de8c82bf5d06984b43559a",
+      "exact_sha256": "462f430c88f623d34052729ab1f4bc33914fde924c83ec140f7885ce3e0ee2f4",
+      "native_stdout_sha256": "e25955b21ae07637170296866c92a6602de2f4013c43950eace0b96568a8e86d",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid curve axis or control count"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [62], but its returned degrees and knot multiplicities require [82]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          8
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          62
+        ],
+        "preserved_domains": [
+          [
+            "8",
+            "11"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          62
+        ],
+        "native_counts_required_by_returned_knots": [
+          82
+        ],
+        "native_reported_domains": [
+          [
+            "9",
+            "12"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p8_q9_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "237393cc901bac8c1bfff6cdc7106f076e152016b3c76e41bd576b30095b64ee",
+      "exact_sha256": "495b5683a0eb1186f81e7ce44d79d5b60c0953e5857c78e02dfd1ecb934bd8bb",
+      "native_stdout_sha256": "19e68e616de2631ee217e028bec749ec3b24e3f83acfca91c2266d90a86ad9df",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid curve axis or control count"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [14], but its returned degrees and knot multiplicities require [22]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          8
+        ],
+        "target_degrees": [
+          9
+        ],
+        "exact_pole_counts": [
+          14
+        ],
+        "preserved_domains": [
+          [
+            "8",
+            "11"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          14
+        ],
+        "native_counts_required_by_returned_knots": [
+          22
+        ],
+        "native_reported_domains": [
+          [
+            "12",
+            "19"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p8_q25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "18ceca90e9efa83708d5582c06ded649422f849fc973761e1bf7c79e3a2e3181",
+      "exact_sha256": "841f72e6c6634099cfc7b7d4dd51692f14aa68b1a61c8503b1ed22cb1fbc7d89",
+      "native_stdout_sha256": "c0227c60d449a788ec770a52716a2ef449435d92928394037fecb2fb89741def",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid curve axis or control count"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [62], but its returned degrees and knot multiplicities require [82]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          8
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          62
+        ],
+        "preserved_domains": [
+          [
+            "8",
+            "11"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          62
+        ],
+        "native_counts_required_by_returned_knots": [
+          82
+        ],
+        "native_reported_domains": [
+          [
+            "9",
+            "12"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "inactive_p8_q9_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "3fceb4bf6354b056aeb49e94fe0ab3ce5371455d5b257e3cf454ac1f21f4b5bc",
+      "exact_sha256": "cd50c92e57d841b0e622099d5ad2ea9ba896d969dd2b73ce9c94d549643e45c4",
+      "native_stdout_sha256": "0a3188ee03bfea790b38bf805bf217b1474546cbf4e7c793846da27c035b20bc",
+      "native_stderr_sha256": "3b461f3c29710a7b098340412dcbb91570c8d3115e620bdd76a1265a0377cdd1",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          8
+        ],
+        "target_degrees": [
+          9
+        ],
+        "exact_pole_counts": [
+          37
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "inactive_p8_q25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "66386cdc02274f9fade86590ee90436da03fcc9f7b0cf9d05d220f46ba565910",
+      "exact_sha256": "49d818eb43f3dbcf09b53f4b95d043ea6a1a190663a0a05c1400e3014673c515",
+      "native_stdout_sha256": "bd383757faefec7b73749fae2a50171738d64f7fd14881abba914a03cf712f42",
+      "native_stderr_sha256": "0b726c4ed045471b42121ff88098e48cf0db0f01ee02462670af6cf1bff892ba",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          8
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          101
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "inactive_p8_q9_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "2ea3794bfcc0066caea192c26b2643503fbdad489dbeb9f1d33a2963ea3435df",
+      "exact_sha256": "ce024cfbf8b2beffa35e5427ea1b24ad5d113b816c55cc3be7d56c8f28f3a029",
+      "native_stdout_sha256": "649f0c57738ecdb3c8aed289dd05ac4252d719019e7d0cb6a672be3f64392bfb",
+      "native_stderr_sha256": "f7e58b55ae8d22a0e6304db8c3d174be7325d94024f91dc0a1480790cd4456b1",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          8
+        ],
+        "target_degrees": [
+          9
+        ],
+        "exact_pole_counts": [
+          37
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "inactive_p8_q25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "27dda1b92b285424598333e1eb95ec190b65808cf5e5bf55c32221d257ce5819",
+      "exact_sha256": "aa282ab8852bd3dbd6501dcb6a8214b2e8c556ec6772a6622a44bc60376855df",
+      "native_stdout_sha256": "dd2479df5480ffc9bc9ddbfb3386b3818e98c3abb6fc5bb035a6a011a992c6b7",
+      "native_stderr_sha256": "8cab20a256ef40860b912c6569bfe9778ee68be40fb770e60d8782bb08c7f49c",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          8
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          101
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p24_q25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "e65d9fafc9aa2cef5926a4caac19abebd6cc8586cc2e9ba0e5b1e7135483f2ad",
+      "exact_sha256": "136a9989705568daaa441c0ede19fee0c71138f00706b702aff898892f2c1e18",
+      "native_stdout_sha256": "33e612bfea3ca5c339a02cfbccc650c1270a1afbb079cebe616fb1f4d602e924",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid curve axis or control count"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [30], but its returned degrees and knot multiplicities require [54]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          24
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          30
+        ],
+        "preserved_domains": [
+          [
+            "24",
+            "27"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          30
+        ],
+        "native_counts_required_by_returned_knots": [
+          54
+        ],
+        "native_reported_domains": [
+          [
+            "36",
+            "51"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p24_q25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "433b1c3738bb0169633a5683ee23cfe86d9b679f578aa6e25bbab59197b4bff1",
+      "exact_sha256": "299c7fa2fbf3788268497ec7abd2d4a3073fde976a3fe79404b40cb65eded0cb",
+      "native_stdout_sha256": "731d968356ea2e5a9c47b06a8f32a2ba97510f55a5a5bac91269e674771d441f",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid curve axis or control count"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [30], but its returned degrees and knot multiplicities require [54]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          24
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          30
+        ],
+        "preserved_domains": [
+          [
+            "24",
+            "27"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          30
+        ],
+        "native_counts_required_by_returned_knots": [
+          54
+        ],
+        "native_reported_domains": [
+          [
+            "36",
+            "51"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "inactive_p24_q25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "bd88df56438670142331336bfa427f7b1eadfa31fe7c3a93ccdf41141924563f",
+      "exact_sha256": "598c47964c30bec046fafb9ccd9bc2d028f1f293a32b294b06cfb12e408b1cb1",
+      "native_stdout_sha256": "9e34d46d6fd54579f4dd52d349492e5832779e8287c34a0215b9a4c722d32670",
+      "native_stderr_sha256": "39d8b6a107aa268b25402d8cd85cb14ecf8b0fb674d2e158437546ca963fcf80",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          24
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          101
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "curve",
+      "case": "inactive_p24_q25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "d02caef9227de7084d2fe4d071db8aa88d167f77ac98609555e996e937d3f9c4",
+      "exact_sha256": "c7f2dd27c28a1208140cf05afc427828d8a84b4e3971b41a071217b37fa98421",
+      "native_stdout_sha256": "aec63fd93efa601f1f4a7bcfd1873d0754c3208562a312b06aa09602f3fb2fc9",
+      "native_stderr_sha256": "fcc24303099a96bd828fd9cadbf8bdb83c8ff55ef2f79ce7e370b088c9b4450a",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          24
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          101
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p1_2_q2_2_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "cd4eb384b6dbe15eb0b22c42c5bdc8778ff3936e3918a6ce4ac37fb559aebf18",
+      "exact_sha256": "6febf81e3933ed9e3bfa3757cf765e788cbe6dca9df1ff0f70152122e8e7ca9d",
+      "native_stdout_sha256": "914c4f3fc689f9e5c429dbd9c9da47de7bb22b6df265c0516fe73b54f8948ea4",
+      "native_stderr_sha256": "bcb727088b70294a91a904b63182aa5347e907c9385700c71d156ecae576f97d",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1,
+          2
+        ],
+        "target_degrees": [
+          2,
+          2
+        ],
+        "exact_pole_counts": [
+          7,
+          4
+        ],
+        "preserved_domains": [
+          [
+            "1",
+            "4"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p1_2_q2_3_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "fd0bad39f0f4a866ad5fe6fb828c36fcd02303eed2d7f7ca84fa224fa5639ce3",
+      "exact_sha256": "7959830543709e72033d4162cf103e843cb8071f7631c012372421714d2e16b8",
+      "native_stdout_sha256": "e168d99567c72a58e0e738f265cd34f66a440ee8b4f655b74c16b97a4c6004ad",
+      "native_stderr_sha256": "3926adcdb74dbdade1be3cf7f6fe9da9cb1c3162675a89e0511d7df4dc10e891",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1,
+          2
+        ],
+        "target_degrees": [
+          2,
+          3
+        ],
+        "exact_pole_counts": [
+          7,
+          6
+        ],
+        "preserved_domains": [
+          [
+            "1",
+            "4"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p1_2_q25_25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "5428abcbfb9a07cf4da4d66ce8be8770a35b8bc9baa5589e23a9db7fd0313760",
+      "exact_sha256": "a49ff8c3ff22444deb64aca812094cdb103656dc2904945463fc371faf98973f",
+      "native_stdout_sha256": "e6256bdb538cebee7e367c9c03e5c9c933781ac8ee01ce0e90dc5c0fab050f5e",
+      "native_stderr_sha256": "457b2f89e1b2730ce94814f1e56aea98f7bcb1f5e3986d014ff600918e6c617f",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1,
+          2
+        ],
+        "target_degrees": [
+          25,
+          25
+        ],
+        "exact_pole_counts": [
+          76,
+          50
+        ],
+        "preserved_domains": [
+          [
+            "1",
+            "4"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p1_2_q2_2_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "5d2859f5cc35bc14b4f8655cdd639d2d763612e1c1df4e827e6f09d16f277a6b",
+      "exact_sha256": "1380a247e9af8553dccdb2441eb0a5f3b8ebf6398ad5decf40ca9a25a94a76db",
+      "native_stdout_sha256": "bb8ebf64a88155e4513b1e9b7d6f9e652999de26661cb03cc1df7f5a11dc0bfa",
+      "native_stderr_sha256": "c99c505596db1fa1af8119b4d16d687968fc653a52b71eb3b9f1fee607e75a85",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1,
+          2
+        ],
+        "target_degrees": [
+          2,
+          2
+        ],
+        "exact_pole_counts": [
+          7,
+          4
+        ],
+        "preserved_domains": [
+          [
+            "1",
+            "4"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p1_2_q2_3_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "37d1425da0621b01e66ff4f64dbf14b89352808a679f25d5611a76eb65ab2eb1",
+      "exact_sha256": "898ceece4cd75cf9e91a6174d2fabc65646542764c981f8d7f105ae834a7f9fb",
+      "native_stdout_sha256": "fa993d78f66dd95752746a9d544c13679b3a3a20491dba24fd01da35e218b546",
+      "native_stderr_sha256": "ab39b74db8542603b167660cc7f7a3c39a77eb93146edb74349de688bf0e9735",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1,
+          2
+        ],
+        "target_degrees": [
+          2,
+          3
+        ],
+        "exact_pole_counts": [
+          7,
+          6
+        ],
+        "preserved_domains": [
+          [
+            "1",
+            "4"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p1_2_q25_25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "7340935ba84358c4fe2fc34e61d4e8ef7ccd3ee12afb497283a234a4e87f951f",
+      "exact_sha256": "cd3889e7c4a7c52c2fc4a87621064534c17bec3eabb6408b47418f2ac6ec3d1c",
+      "native_stdout_sha256": "d8b6557835607139c3b1cbb29bfc352bab84e62a47234de57bb38864d7b00869",
+      "native_stderr_sha256": "1c4b2e33753622ae20b867d8c32bb7f438ad73467b784997390854e3afc4579f",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1,
+          2
+        ],
+        "target_degrees": [
+          25,
+          25
+        ],
+        "exact_pole_counts": [
+          76,
+          50
+        ],
+        "preserved_domains": [
+          [
+            "1",
+            "4"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p1_2_q1_3_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "e5b079cffd7c195b97f570e28bd16a09f4817671b403df6adda4473812d4a0db",
+      "exact_sha256": "ac0bcbfc1993b74b77e32d3fb582776c61cf07c0a51e305eaf85098431bc394d",
+      "native_stdout_sha256": "63c1075634217125f432bd638ab9bad991695749f60f724b72b7b1db5f77a70e",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [2, 8], but its returned degrees and knot multiplicities require [2, 10]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1,
+          2
+        ],
+        "target_degrees": [
+          1,
+          3
+        ],
+        "exact_pole_counts": [
+          2,
+          8
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "2",
+            "5"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          2,
+          8
+        ],
+        "native_counts_required_by_returned_knots": [
+          2,
+          10
+        ],
+        "native_reported_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "3",
+            "7"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p1_2_q2_3_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "a7623fa2ab66abf4afa2b0f4ad683be438bedea9a2034e206ed747d90dbdcc99",
+      "exact_sha256": "4e8fc65f1f1aa1eadfa92d9e01e8c2ef0867d1e5915b92856e30d6f1489c6f9d",
+      "native_stdout_sha256": "716f169146572f2a17c81f6a0034938ab363cad7cc4165e8f972e8e62dd18e3f",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [4, 8], but its returned degrees and knot multiplicities require [4, 10]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1,
+          2
+        ],
+        "target_degrees": [
+          2,
+          3
+        ],
+        "exact_pole_counts": [
+          4,
+          8
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "2",
+            "5"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          4,
+          8
+        ],
+        "native_counts_required_by_returned_knots": [
+          4,
+          10
+        ],
+        "native_reported_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "3",
+            "7"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p1_2_q25_25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "af11abd5fef22f59a7733263ea45cd9169a10fd7ed0361aea4e2d66b53219896",
+      "exact_sha256": "c2ac0ae54081c67ca5038cb9d03c202fef4220438243e28d731299706da24548",
+      "native_stdout_sha256": "c4ae3d209b114374293e8cea4be91e55ddfb32252788c388aa6151d1552955ba",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [50, 74], but its returned degrees and knot multiplicities require [50, 120]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1,
+          2
+        ],
+        "target_degrees": [
+          25,
+          25
+        ],
+        "exact_pole_counts": [
+          50,
+          74
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "2",
+            "5"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          50,
+          74
+        ],
+        "native_counts_required_by_returned_knots": [
+          50,
+          120
+        ],
+        "native_reported_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "3",
+            "7"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p1_2_q1_3_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "efd383e1708a1ac3a42d9010a8605a1d25fb27e23c8e56ec22d70ccf27273dfe",
+      "exact_sha256": "37ceed43a8d3ed3d02d595e977831c654a6468401ed3b08b8fd8798d906be215",
+      "native_stdout_sha256": "9fb20b55ab44933c48582ac53d181569e38bafece66c60c8242a11d586906ace",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [2, 8], but its returned degrees and knot multiplicities require [2, 10]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1,
+          2
+        ],
+        "target_degrees": [
+          1,
+          3
+        ],
+        "exact_pole_counts": [
+          2,
+          8
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "2",
+            "5"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          2,
+          8
+        ],
+        "native_counts_required_by_returned_knots": [
+          2,
+          10
+        ],
+        "native_reported_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "3",
+            "7"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p1_2_q2_3_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "18818702259c2bf9e4292fd8461b59a3d27f16109f16affb3330629123cc8e28",
+      "exact_sha256": "af00081b97ece0593525f772d9a25ab704b4fdd8fb13f86e62bc12f61aca687e",
+      "native_stdout_sha256": "bba6d016305308687ee17ca2859954db1f15650257434474032dc36abe24b130",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [4, 8], but its returned degrees and knot multiplicities require [4, 10]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1,
+          2
+        ],
+        "target_degrees": [
+          2,
+          3
+        ],
+        "exact_pole_counts": [
+          4,
+          8
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "2",
+            "5"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          4,
+          8
+        ],
+        "native_counts_required_by_returned_knots": [
+          4,
+          10
+        ],
+        "native_reported_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "3",
+            "7"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p1_2_q25_25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "0b1c44aadfdfb38ad19ea8ad7ce8322d7075ea5782dd4a4a1adc70870c8738b6",
+      "exact_sha256": "4d834d97dbed6078fb48f97c843fb91910882da30ba86062f0b2437ed8194830",
+      "native_stdout_sha256": "d2ff2fd98417fe9ff9994d97fb6b920a279e239c6a39bd525aff8340bcdd5dc3",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [50, 74], but its returned degrees and knot multiplicities require [50, 120]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1,
+          2
+        ],
+        "target_degrees": [
+          25,
+          25
+        ],
+        "exact_pole_counts": [
+          50,
+          74
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "2",
+            "5"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          50,
+          74
+        ],
+        "native_counts_required_by_returned_knots": [
+          50,
+          120
+        ],
+        "native_reported_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "3",
+            "7"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "inactive_inactive_p1_2_q1_3_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "b2790c402ebb5b12ea8a1b1a08f3105e7ee708cb3197f465ecea225978c59e2c",
+      "exact_sha256": "0d05d335e81619bdb1f80fa8b5ee92947d1e2348f5d7f2a4f6aedde3ee3522ce",
+      "native_stdout_sha256": "e9f1799d45480963d82759c8e6bf71e87f3425bbaf3395ff852231d73884d396",
+      "native_stderr_sha256": "bb11563f6bdb5b20b5e0b646eed8e2266c295a975033c29a4497fa3db3101a3f",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1,
+          2
+        ],
+        "target_degrees": [
+          1,
+          3
+        ],
+        "exact_pole_counts": [
+          5,
+          13
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ],
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "inactive_inactive_p1_2_q2_2_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "ec892cbf48fb6055cd6dac1b5319751517466ebac5634e24ed7d9aecf831f5da",
+      "exact_sha256": "baf8bba0aed82b73da0fbacf2b5ebc26ffd339c704279f2f5cc78a919b5970ff",
+      "native_stdout_sha256": "7d56310f14e8c3c3ab1f183d7cb65176fafc0d405425f0888cd668020b0763ae",
+      "native_stderr_sha256": "33f11f462c497caacfa58fee0f0d4b988e5679bd21221afd823418af164beb9e",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1,
+          2
+        ],
+        "target_degrees": [
+          2,
+          2
+        ],
+        "exact_pole_counts": [
+          9,
+          9
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ],
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "inactive_inactive_p1_2_q2_3_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "74029b890b8e19efe5841551b5239c95893efdbad2a275fa2aec413b3935b970",
+      "exact_sha256": "888788a63cf59399e35c2d26f518b2dce5964c06d1f1ae7e3b249f9e3c577554",
+      "native_stdout_sha256": "cd5eb6e2a6bc261a54300b70212180edd5ce49f2486439a18169a8a969cea558",
+      "native_stderr_sha256": "da3f9047dcdd2ebd8b9c8364d05629657e407c2daa37af7a7ed1dc6c787906c8",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1,
+          2
+        ],
+        "target_degrees": [
+          2,
+          3
+        ],
+        "exact_pole_counts": [
+          9,
+          13
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ],
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "inactive_inactive_p1_2_q1_3_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "628e720e6b1ea7a8aa29601769616300edf8f1de11b0125022a48fb804858843",
+      "exact_sha256": "9512c73d7f2295ce851916d004b8fc960be25d097bc1ca6708a9c6e28e2bde23",
+      "native_stdout_sha256": "bc44fd53ccf2d83c1aedc72451e2122ef153d1411173fd161537b36122791629",
+      "native_stderr_sha256": "e3bf3fc2d30ed533cb1fd44893a96eb8b3a5ae4ad4eb269ca8c13bb60716dd63",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1,
+          2
+        ],
+        "target_degrees": [
+          1,
+          3
+        ],
+        "exact_pole_counts": [
+          5,
+          13
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ],
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "inactive_inactive_p1_2_q2_2_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "9514ba4b07dace95af88e9e5f78c6b043bcd3dcd4ed9e0f43a729020ebb777e4",
+      "exact_sha256": "2ab61b3e65d0988b03187e49a5f37df8f2c2e2acc3d94330b8740334cd6be066",
+      "native_stdout_sha256": "eb3bfa38185cd737c8a73c3248b8c6019943b7e999b9446729a22a95426fe551",
+      "native_stderr_sha256": "bf1cd4b85e9164195b4dfe32b7a7d25ee542be2da5123065fadbce3bcaa49f73",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1,
+          2
+        ],
+        "target_degrees": [
+          2,
+          2
+        ],
+        "exact_pole_counts": [
+          9,
+          9
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ],
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "inactive_inactive_p1_2_q2_3_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "a128af3a2101439913b5a137d5acdf74d9083fe7f268db4aef0c2cc0672ce65e",
+      "exact_sha256": "65e0183c9c67658d12bcff5e4108d13b0c99be3dcbe6c3369c7b2d4b05f7d15e",
+      "native_stdout_sha256": "80ccdbe52a55421cfe9b77e659480a3b7617f10a5f8b6d8ede2dbd477e50b49c",
+      "native_stderr_sha256": "1ef52225180435886e30cd0206ea154af51c026217c0295bd5148e6ef0c5c2c9",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1,
+          2
+        ],
+        "target_degrees": [
+          2,
+          3
+        ],
+        "exact_pole_counts": [
+          9,
+          13
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ],
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p2_3_q3_3_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "481bda459d88b786aa2a6961f34297233cb1767c14b650118c2f4153367b5a5f",
+      "exact_sha256": "e4a32730c72d2ffeb5b76552bc859cadaab1bdc094d2101ce212c874176e671a",
+      "native_stdout_sha256": "cede54f5c67dfde72f58461cf1a630cce8ea40553e7eb35a3c3cc32887eaa13d",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [8, 5], but its returned degrees and knot multiplicities require [10, 5]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          3,
+          3
+        ],
+        "exact_pole_counts": [
+          8,
+          5
+        ],
+        "preserved_domains": [
+          [
+            "2",
+            "5"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          8,
+          5
+        ],
+        "native_counts_required_by_returned_knots": [
+          10,
+          5
+        ],
+        "native_reported_domains": [
+          [
+            "3",
+            "7"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p2_3_q3_4_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "8b13ee3baca96f4cd137ae8647a1602212779ec272d0dda210d34b0815fab9bb",
+      "exact_sha256": "4cc77dc708b12f7daf871cb4ec361fb382204729547ca49b7d4d51ae8fdf683b",
+      "native_stdout_sha256": "0326328be7a3d0f2b242d15e4d39ee9951e150aa7e57b25c251837dd8a5f00ac",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [8, 7], but its returned degrees and knot multiplicities require [10, 7]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          3,
+          4
+        ],
+        "exact_pole_counts": [
+          8,
+          7
+        ],
+        "preserved_domains": [
+          [
+            "2",
+            "5"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          8,
+          7
+        ],
+        "native_counts_required_by_returned_knots": [
+          10,
+          7
+        ],
+        "native_reported_domains": [
+          [
+            "3",
+            "7"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p2_3_q25_25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "d9ed16c29b6f4eff5b3843dfab907100c6e89900c3430fa38826af36c54c5e29",
+      "exact_sha256": "ec64291e422adfa9d824a552fdd5277ca8e8530377ea427a5590ba30659c31f2",
+      "native_stdout_sha256": "758a98ee23544ef176658180e9a8e70564be151ce220090cce4c9938a6a97d8a",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [74, 49], but its returned degrees and knot multiplicities require [120, 49]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          25,
+          25
+        ],
+        "exact_pole_counts": [
+          74,
+          49
+        ],
+        "preserved_domains": [
+          [
+            "2",
+            "5"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          74,
+          49
+        ],
+        "native_counts_required_by_returned_knots": [
+          120,
+          49
+        ],
+        "native_reported_domains": [
+          [
+            "3",
+            "7"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p2_3_q3_3_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "01d6907dda3d06a31e6830a0e68da5fac4bf534fd7853ebc736972b22814b000",
+      "exact_sha256": "439ed520edc3b6e985096c9177bd177795dea25f6ef1a69a0a9d4fd7cff2b6cb",
+      "native_stdout_sha256": "43db37f07f69bb4a20154b453608f76e8500365647cb7759121cb9e70c9c3906",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [8, 5], but its returned degrees and knot multiplicities require [10, 5]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          3,
+          3
+        ],
+        "exact_pole_counts": [
+          8,
+          5
+        ],
+        "preserved_domains": [
+          [
+            "2",
+            "5"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          8,
+          5
+        ],
+        "native_counts_required_by_returned_knots": [
+          10,
+          5
+        ],
+        "native_reported_domains": [
+          [
+            "3",
+            "7"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p2_3_q3_4_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "1b44f0324d6a07c6cc74ab66bfeeaadfc260c3db4832d64af6ab55205dbcf6f8",
+      "exact_sha256": "9ba9c43d3d14ade84464b6a72f0fe81c8b3ab3edd234df9290f7930a3ff2723f",
+      "native_stdout_sha256": "a5a41a01bb8ccc81cddc411e91c7fed27f55427152d1e6bfb96edf067e5a4faf",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [8, 7], but its returned degrees and knot multiplicities require [10, 7]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          3,
+          4
+        ],
+        "exact_pole_counts": [
+          8,
+          7
+        ],
+        "preserved_domains": [
+          [
+            "2",
+            "5"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          8,
+          7
+        ],
+        "native_counts_required_by_returned_knots": [
+          10,
+          7
+        ],
+        "native_reported_domains": [
+          [
+            "3",
+            "7"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p2_3_q25_25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "af236c640b0780616cb71ab11dab5e627f01bc1964c97956fd93f2f125ef68f0",
+      "exact_sha256": "ca0668d7359d5ec45fd62dc5982cb5e2868f046f6c53671970fb610f8cfb1b57",
+      "native_stdout_sha256": "282125723ea0249e891f7c69624a340f0af7c6741cf78dcdff7712db595f34b2",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [74, 49], but its returned degrees and knot multiplicities require [120, 49]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          25,
+          25
+        ],
+        "exact_pole_counts": [
+          74,
+          49
+        ],
+        "preserved_domains": [
+          [
+            "2",
+            "5"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          74,
+          49
+        ],
+        "native_counts_required_by_returned_knots": [
+          120,
+          49
+        ],
+        "native_reported_domains": [
+          [
+            "3",
+            "7"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p2_3_q2_4_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "e98999f812a6e8e4118a54c7502e047674cca95485ae276c3f1292fbdf0c0c18",
+      "exact_sha256": "0a27fc920d1ea557fbc2fb8491f3f2fe955b54a8cb789de5443458e1ce7f65d6",
+      "native_stdout_sha256": "7de8a0644492c98dc881e9526bc4f522fbefa40cadb9fc7c5324bf937ea097e4",
+      "native_stderr_sha256": "b1921820e637ee9081f8eaf4d6a25cdc13e09da1946cdf2dcbc3f5a332d740db",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          2,
+          4
+        ],
+        "exact_pole_counts": [
+          3,
+          9
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "3",
+            "6"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p2_3_q3_4_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "64f9170a66aa515e460c7173228f306cd414b6d55ec1a9b7c5e042f202521174",
+      "exact_sha256": "0d3410a42a73c466cedabe442ef09cc9f0aeec7815bfae7c795c2116ca4975e4",
+      "native_stdout_sha256": "c25d0ef482c4085e8965539faeaf16d5cf21ad422f89df60b19c161610e64add",
+      "native_stderr_sha256": "dd00498b28bdd6ad5b06be6ff1454bc92d7047c17b4a91caddcc23295466eb88",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          3,
+          4
+        ],
+        "exact_pole_counts": [
+          5,
+          9
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "3",
+            "6"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p2_3_q25_25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "acf5927428c18b54646e96f4d088dfd5d1d9f6dce830857bc25f13f50732ee66",
+      "exact_sha256": "69e0328461fb4c60ca104ee655fdccdf5d649f6a66a3f436d08ce99e9476141b",
+      "native_stdout_sha256": "38dae5c452904971375cc998d121c0427fc32ea4757dc2620121c7d88be6718b",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [49, 72], but its returned degrees and knot multiplicities require [49, 112]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          25,
+          25
+        ],
+        "exact_pole_counts": [
+          49,
+          72
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "3",
+            "6"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          49,
+          72
+        ],
+        "native_counts_required_by_returned_knots": [
+          49,
+          112
+        ],
+        "native_reported_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "4",
+            "7"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p2_3_q2_4_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "be163aa4e772d1ff4dc470ef72e2340d38c1d1abe880a769cacf60d3f0d3dab2",
+      "exact_sha256": "20cae30f4f6194ce231a5e635d84059f84a0d61fbee8c47170d20579e84f806d",
+      "native_stdout_sha256": "2d4f413a3e9b2af0e2427ebdfc1a8799bd95e9a3c34dcd975e5781fe30bdde41",
+      "native_stderr_sha256": "693f68b4e97ca6f9594178225d934dad8caeac503f6c21ca436be84606326f94",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          2,
+          4
+        ],
+        "exact_pole_counts": [
+          3,
+          9
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "3",
+            "6"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p2_3_q3_4_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "e9d20467a8bcadd97edc1b6ae812bcff79fb89518066506bce710dabf178cd01",
+      "exact_sha256": "4097b7389253376e79f348e2ed5c06510b5a79ff7df031020494fc84e17ec08d",
+      "native_stdout_sha256": "267bd8d25f3a4e1c99c197bdd7e33d78fd9af71705418c23e7b020561ac5c9de",
+      "native_stderr_sha256": "f7da346f3d6ca18a47ee9a851f7f1a75f403a9df12b149c237761cc70121bae0",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          3,
+          4
+        ],
+        "exact_pole_counts": [
+          5,
+          9
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "3",
+            "6"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p2_3_q25_25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "556eb465aeca7b3b7fbfb1f77c6bbf9f04ec09d5a2c0b028eefbe43812fd9613",
+      "exact_sha256": "737a08ec3578c8dd758d0ff81ed1c24147b951346217cff66a2ad85250641bf9",
+      "native_stdout_sha256": "0aa71b515837682ec232758bd9664ea872d73b7a7e9ebe1e7a7d936843e4a729",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [49, 72], but its returned degrees and knot multiplicities require [49, 112]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          25,
+          25
+        ],
+        "exact_pole_counts": [
+          49,
+          72
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "3",
+            "6"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          49,
+          72
+        ],
+        "native_counts_required_by_returned_knots": [
+          49,
+          112
+        ],
+        "native_reported_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "4",
+            "7"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "inactive_inactive_p2_3_q2_4_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "4a1de42051db7e4c3d8ba2203ec73330455c7dac6bcba36fdb2067933e37099b",
+      "exact_sha256": "7549eda2fa61c4d13124906fe6ec3edc706846d0276b4c0a99c0e9a28648bbbd",
+      "native_stdout_sha256": "86cd1bc29699a7008102c2c9ac56bb2a3a417c05cecbdfd28a2f8e1ce7e77040",
+      "native_stderr_sha256": "921d7b677e61b0bd7bb4212906dc4605d21b070a23db1ff7dde3babd6875b338",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          2,
+          4
+        ],
+        "exact_pole_counts": [
+          9,
+          17
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ],
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "inactive_inactive_p2_3_q3_3_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "150e7bcd11b3fead5f901970bbc42c4033ff8418ce51ef48ba5e3753a7da4702",
+      "exact_sha256": "6ee994c485c0197c23d0f27a7ec00edd1946c0ad8d566b9e3e304da36783bfa1",
+      "native_stdout_sha256": "d741e0a0504d0898eb7c795ad3b7398a85e1558c4305b9c93cd7477c55ea9377",
+      "native_stderr_sha256": "e82ec9f0b10e4b356597b778fa46ebfb46dc5254ad543d56c16d25fab586ede8",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          3,
+          3
+        ],
+        "exact_pole_counts": [
+          13,
+          13
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ],
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "inactive_inactive_p2_3_q3_4_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "e44d5a131af05898174ba6b8b2237ea1a227b2a255706b88d0c86373f69c5fdd",
+      "exact_sha256": "d7b88b0457694634ad01129efc0582759e7b6f0c3ed2b91098aa72e94ca8106c",
+      "native_stdout_sha256": "79df260e5842fcd32dcccfdc49e87ef8a416e03e43863f915d2d9963aaacdca8",
+      "native_stderr_sha256": "43f8fb9f6a63048528526e367468d19aaadfb99dbc5f1a2eef3fa8dd0fc6ade6",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          3,
+          4
+        ],
+        "exact_pole_counts": [
+          13,
+          17
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ],
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "inactive_inactive_p2_3_q2_4_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "a4c3e9f9def0eb33339e8d546dd6c79d44617a878ef0afac82044cc7868cf691",
+      "exact_sha256": "da979db4a1856e0ab3478bcd601ad42881c78faa2634f568f98bf11d235a4679",
+      "native_stdout_sha256": "24695426a57eaa83b7abb00e98136b626f3a2a918f640b9e14d971cd6db35f49",
+      "native_stderr_sha256": "d2bf4d1ea50671d1dea15f07540f2fa523f454d2b28e9f8cd9d972f8693224c8",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          2,
+          4
+        ],
+        "exact_pole_counts": [
+          9,
+          17
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ],
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "inactive_inactive_p2_3_q3_3_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "f945e4787214a6485a9c540d0c8da3736de09e63fe98ff3bf7a59bb3a15a1c58",
+      "exact_sha256": "1ba71167cb1da7f12715da28e584e3be8604c34ad6ae0bb00bafa2bfa20f3752",
+      "native_stdout_sha256": "4d1f71f3e35671beb1d44552f6deaf1fdb57cf56d3a768439a91773a5de0aa39",
+      "native_stderr_sha256": "3aaa0239ea4425ad517334ed6512e87ac9432006146331829e7232c6a0e65315",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          3,
+          3
+        ],
+        "exact_pole_counts": [
+          13,
+          13
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ],
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "inactive_inactive_p2_3_q3_4_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "870ffc6d7a0e1263431bea47de0792224907e591c905bce91ff8a3d97b601ccf",
+      "exact_sha256": "b2c0ebe9b21d66ee8847bc153f4dc4af8f04b7ef0d9e1747431b0cde51347bc3",
+      "native_stdout_sha256": "04848b86d2300837d82346217773db6a691dacf2ef5d63f2c0b2405b8855b96c",
+      "native_stderr_sha256": "2d4796f05a3a5d5cafa061a3ace8db4ebf187f5e460766714746e01b2fa25f95",
+      "classification": "native_exception",
+      "differences": [
+        "native degree elevation rejected a validated input"
+      ],
+      "reason": "Source-pinned OCCT raises NCollection_Array1::ChangeValue while elevating this valid unclamped input. Exact full-rank coefficient reconstruction succeeds and preserves the original active domain. This exception was recorded before the Rust implementation and is reproduced byte for byte.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          3,
+          4
+        ],
+        "exact_pole_counts": [
+          13,
+          17
+        ],
+        "preserved_domains": [
+          [
+            "-1",
+            "3"
+          ],
+          [
+            "-1",
+            "3"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p24_24_q25_24_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "d59afb874eecd271348814df340d0b58f09903a5b0e097baf79644006943f8b6",
+      "exact_sha256": "4e282ac423ce3979797c5bd9a5afe89e192b1b4dce2b698fa9a749d6a3481e04",
+      "native_stdout_sha256": "25b8f3612bcfc265a278da45563cf758cc5d95bc287097746b8d979636afe93a",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [30, 26], but its returned degrees and knot multiplicities require [54, 26]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          24,
+          24
+        ],
+        "target_degrees": [
+          25,
+          24
+        ],
+        "exact_pole_counts": [
+          30,
+          26
+        ],
+        "preserved_domains": [
+          [
+            "24",
+            "27"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          30,
+          26
+        ],
+        "native_counts_required_by_returned_knots": [
+          54,
+          26
+        ],
+        "native_reported_domains": [
+          [
+            "36",
+            "51"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p24_24_q25_25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "6e843f0a68d4818cb59decf99dcafa0f2fac77288da6f1bfeb11f542d5e774c8",
+      "exact_sha256": "301c0bbe6980db6dacca9e6a6c9b35e9224e390626c2a86825d5fa5e4cf347b6",
+      "native_stdout_sha256": "f1bd969f647a520e36bb789b7f5136d7a3952bfec150faee7dd4e507ea13c2b6",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [30, 28], but its returned degrees and knot multiplicities require [54, 28]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          24,
+          24
+        ],
+        "target_degrees": [
+          25,
+          25
+        ],
+        "exact_pole_counts": [
+          30,
+          28
+        ],
+        "preserved_domains": [
+          [
+            "24",
+            "27"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          30,
+          28
+        ],
+        "native_counts_required_by_returned_knots": [
+          54,
+          28
+        ],
+        "native_reported_domains": [
+          [
+            "36",
+            "51"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p24_24_q25_24_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "3691ae65fa58f860362cada26616c0856910b2517bb714eb156b93b41ae60f93",
+      "exact_sha256": "9fbe10ba50574a3134a73c928a97fc1619da88675f168e3f98dcf5453af460f3",
+      "native_stdout_sha256": "0a454b5fdcf7a63ceee06f8da7dab7bb040b4df9332a28b27de875dc17253c60",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [30, 26], but its returned degrees and knot multiplicities require [54, 26]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          24,
+          24
+        ],
+        "target_degrees": [
+          25,
+          24
+        ],
+        "exact_pole_counts": [
+          30,
+          26
+        ],
+        "preserved_domains": [
+          [
+            "24",
+            "27"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          30,
+          26
+        ],
+        "native_counts_required_by_returned_knots": [
+          54,
+          26
+        ],
+        "native_reported_domains": [
+          [
+            "36",
+            "51"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p24_24_q25_25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "b35937cff8199d0d7f88e077eff5a624b853ba7fe58d480dea7758c83335a493",
+      "exact_sha256": "a18303c5f935bf03ca4d68557fd485fe0c07fdce8c7b48e37cf6773749294f50",
+      "native_stdout_sha256": "b2bbef6ed00e4fc5c2f1a1e20b82e4c0bd2b4f255cf28b8f539653b5a6f90982",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [30, 28], but its returned degrees and knot multiplicities require [54, 28]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          24,
+          24
+        ],
+        "target_degrees": [
+          25,
+          25
+        ],
+        "exact_pole_counts": [
+          30,
+          28
+        ],
+        "preserved_domains": [
+          [
+            "24",
+            "27"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          30,
+          28
+        ],
+        "native_counts_required_by_returned_knots": [
+          54,
+          28
+        ],
+        "native_reported_domains": [
+          [
+            "36",
+            "51"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p24_24_q24_25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "9eb5936657f69af1b55503b8cc386feae25ec192472493ba20b6bad48e0d45b0",
+      "exact_sha256": "22c8a3b22a66977f1fafc4c3444d4d96cc01a33e50938555abf2c0e405fe744a",
+      "native_stdout_sha256": "2f0c0bfbed99cfae9f55265cbbe86a7470d2d3af28011e1498d90d7189353c77",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [25, 30], but its returned degrees and knot multiplicities require [25, 54]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          24,
+          24
+        ],
+        "target_degrees": [
+          24,
+          25
+        ],
+        "exact_pole_counts": [
+          25,
+          30
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "24",
+            "27"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          25,
+          30
+        ],
+        "native_counts_required_by_returned_knots": [
+          25,
+          54
+        ],
+        "native_reported_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "36",
+            "51"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p24_24_q25_25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "851a7d9581029cdaed4caccd02a38059892f203edabb7dcf65832b78d7447bfc",
+      "exact_sha256": "bcd6e12606d5d9769d12faae755d7ad3a7cd00f9cf68df9830188fe83445b829",
+      "native_stdout_sha256": "cfa34635373a0ca0cbf87d2186b39951e07d0c9ce89595c2d04d664212edf48d",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [27, 30], but its returned degrees and knot multiplicities require [27, 54]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          24,
+          24
+        ],
+        "target_degrees": [
+          25,
+          25
+        ],
+        "exact_pole_counts": [
+          27,
+          30
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "24",
+            "27"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          27,
+          30
+        ],
+        "native_counts_required_by_returned_knots": [
+          27,
+          54
+        ],
+        "native_reported_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "36",
+            "51"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p24_24_q24_25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "39dfd7b7238b63abdd7203c2fb41cadf5d406162cca79217b798feb9a0d7c367",
+      "exact_sha256": "00186e466132e87c5c0a52a216692b794c939654ebc90d4623b609a882ca063e",
+      "native_stdout_sha256": "419e5af21e470301f72b24f76a1f4bc352dd9e0aeb3681f672c0cc77fa1dab7c",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [25, 30], but its returned degrees and knot multiplicities require [25, 54]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          24,
+          24
+        ],
+        "target_degrees": [
+          24,
+          25
+        ],
+        "exact_pole_counts": [
+          25,
+          30
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "24",
+            "27"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          25,
+          30
+        ],
+        "native_counts_required_by_returned_knots": [
+          25,
+          54
+        ],
+        "native_reported_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "36",
+            "51"
+          ]
+        ]
+      }
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p24_24_q25_25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "0b0736a1d934cfa61b207959ebf08d52b9d3a355116e1cdc1c50e69b71b796c9",
+      "exact_sha256": "696706f7bd08da313e7d2b3c5d7a702f36b5b3267cf078b175eb57374913c570",
+      "native_stdout_sha256": "b1b47cc682987460cb7b953c4da93673b4fce2bc1133b3b591aaa3a6f176ea6c",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Source-pinned OCCT returns pole counts [27, 30], but its returned degrees and knot multiplicities require [27, 54]. This violates the B-spline representation invariant; the result cannot be a valid equivalent curve or tensor grid. The complete exact reconstruction preserves the input domain. Native output bytes reproduce the preimplementation capture.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          24,
+          24
+        ],
+        "target_degrees": [
+          25,
+          25
+        ],
+        "exact_pole_counts": [
+          27,
+          30
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "24",
+            "27"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          27,
+          30
+        ],
+        "native_counts_required_by_returned_knots": [
+          27,
+          54
+        ],
+        "native_reported_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "36",
+            "51"
+          ]
+        ]
+      }
+    }
+  ]
+}

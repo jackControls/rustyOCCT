@@ -38,6 +38,8 @@ pub(crate) mod surface_reference;
 pub use surface_editing::{check_surface_editing, profile_surface_editing};
 mod surface_knots;
 pub use surface_knots::{check_surface_knots, profile_surface_knots};
+mod degree_elevation;
+pub use degree_elevation::{check_degree_elevation, profile_degree_elevation};
 mod knot_editing;
 pub use knot_editing::{check_knot_editing, profile_knot_editing};
 mod exact_spline_intersections;

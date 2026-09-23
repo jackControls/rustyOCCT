@@ -9,6 +9,8 @@ use num_rational::BigRational as R;
 
 mod refinement;
 pub(crate) use refinement::KnotRefinementTransform;
+mod elevation;
+pub(crate) use elevation::DegreeElevationTransform;
 mod rational;
 pub(crate) use rational::normalize;
 pub use rational::ExactKnotVector;

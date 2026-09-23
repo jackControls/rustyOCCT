@@ -124,3 +124,10 @@ path = "fuzz_targets/surface_knots.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "degree_elevation"
+path = "fuzz_targets/degree_elevation.rs"
+test = false
+doc = false
+bench = false

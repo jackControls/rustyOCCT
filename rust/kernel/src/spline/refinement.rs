@@ -7,8 +7,8 @@ use num_bigint::BigInt;
 use num_rational::BigRational as R;
 use std::collections::BTreeMap;
 
-type Sparse = Vec<(usize, R)>;
-fn blend(left: &Sparse, right: &Sparse, alpha: &R) -> Sparse {
+pub(super) type Sparse = Vec<(usize, R)>;
+pub(super) fn blend(left: &Sparse, right: &Sparse, alpha: &R) -> Sparse {
     if alpha == &integer(0) {
         return left.clone();
     }
@@ -114,7 +114,10 @@ impl KnotRefinementTransform {
             debug_assert_eq!(work.knots, new.flat);
             0
         };
-        let rows = work.rows[offset..offset + new.pole_count()]
+        Self::from_rows(&work.rows[offset..offset + new.pole_count()])
+    }
+    pub(super) fn from_rows(rows: &[Sparse]) -> Self {
+        let rows = rows
             .iter()
             .map(|row| {
                 let denominator = common_denominator(row.iter().map(|(_, x)| x));

@@ -18,6 +18,7 @@ coverage feedback. They are distinct from the deterministic invariant tests.
 | `bezier_editing` | Raw binary64 and scaled rational controls, degree 1..25, clamped/unclamped/periodic splines, subnormal spans, multi-period extraction and composed edits with rational cuts | Complete homogeneous polynomial identities from independent Cox basis coefficients and affine substitution; exact jets/minimal bounds, positive weights, shared endpoints, reversal, elevation/split commutation and preflight limits |
 | `knot_editing` | Degrees 1..25, raw binary64 and scaled controls, rational cuts, unclamped inactive controls, repeated knots, periodic seams/origin changes, refinement/removal sequences and invalid data | Entire raw-support homogeneous identities; independent coefficient-equation removal feasibility, exact complete controls, rational jets/extraction, minimal enclosures, batch order/duplicate behavior, round trips and unchanged rejection limits |
 | `surface_knots` | Tensor degrees 1..25 in both axes, independent periodicity and raw unclamped support, arbitrary binary64 and scaled controls, rational insertions, batch/transpose identities, inverse edits and periodic origin deletion | Every transverse homogeneous Cox coefficient; shared independent fraction-free removal equations; full extracted patch coefficients and quotient jets; retained isocurves, parameter wrapping, invalid rational rejection and atomicity |
+| `degree_elevation` | Curve/tensor degrees 1..25; clamped, unclamped, inactive and periodic axes; raw binary64 and extreme rational atoms; invalid targets and full 4096-control boundaries | Complete independent Cox-equation control reconstruction; original domains, positive weights, staged edits, refinement composition, tensor order/transposition, exact jets and typed degree/count rejection |
 | `exact_spline_intersections` | Rational controls/weights and knots, degree 1..25, rational trims, close roots through 2^-2048 spacing, huge/subnormal domains, periodic seams and edit sequences | Complete known-factor contacts, rational secants and exact circle overlaps; independent full polynomial edit identity; exact parameter/coordinate comparisons, contact orders through 50, minimal finite bounds or typed conversion failure, traversal limits and malformed-rational rejection |
 | `surface_editing` | Tensor degrees 1..25 in both directions, raw binary64 and scaled controls, independent periodicity, unclamped knots, subnormal domains, full low-degree multi-period queries and high-degree selected spans, composed edits and rational cuts | Complete tensor polynomial identities; all exact partials through order two and minimal bounds; exact isocurves/shared boundaries, reversals, transposition, elevation/split commutation and Cartesian output limits |
 | `surfaces` | Rational tensor grids, independently periodic U/V, repeated knots, high degree in either direction, full-range wrapped parameters and malformed data | Independent tensor basis plus closed bivariate quotient formulas; exact mixed-partial and quadrant continuity decisions; minimal enclosures and typed failures |
@@ -55,7 +56,7 @@ coverage percentages or evidence of exhaustive input coverage.
 
 ## Continuing campaigns
 
-[Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all fifteen targets
+[Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all sixteen targets
 for 60 seconds of mutation each on relevant pushes/PRs, and 600 seconds each every day at
 06:23 UTC on the default branch. Manual runs accept 1–3,600 seconds per target.
 GitHub can delay scheduled jobs. The schedule must remain enabled on the fork.
@@ -66,13 +67,13 @@ the corpus but do not publish corpus caches. All runs upload logs, JSON metadata
 corpora, and crash/timeout/OOM artifacts for 30 days, including failed runs.
 Cache eviction does not remove the checked-in fixtures or regressions.
 
-Each input has a 20-second limit, except complete surface-knot verification,
+Each input has a 20-second limit, except complete surface-knot and degree-elevation verification,
 which has 60 seconds. All targets retain the 2 GiB process RSS limit. The new
 tensor target checks both axes at degree 25 and every raw-support homogeneous
 equation; the densest retained input takes approximately 23 seconds with
 instrumentation on the development machine. Its larger verification budget is
 explicit in each campaign report. Surface editing
-and surface knot editing permit 4096 bytes to populate full tensor grids; curve knot editing permits 512 bytes;
+and surface knot/degree editing permit 4096 bytes to populate full tensor grids; curve knot editing permits 512 bytes;
 other targets permit 256
 bytes. The modeling harness bounds geometry to 24 vertices and eight operations;
 curve spline/Bézier-editing inputs have at most 51 poles; knot editing starts with

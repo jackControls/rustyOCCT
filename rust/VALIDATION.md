@@ -388,3 +388,22 @@ independent exact removal feasibility, whole patch polynomials, quotient jets,
 isocurves, periodic wrapping, malformed data and operation sequences. Its
 retained degree-25 timeout reproducer is also an ordinary Cargo regression.
 The fifteen-target daily workflow retains evolving corpora and artifacts.
+
+## General degree-elevation acceptance in progress
+
+All 142 curve and 125 tensor fixture grids are reconstructed with Python
+Fraction/Cox equations and independently with the Rust integer equation solver.
+`RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation`
+checks every second-oracle result, including unclamped inactive controls.
+
+The source-pinned OCCT SDK is built from commit `3d097a0328e71b826377d4814ab05ec3c3d23871`
+with exception checks enabled. The native comparison runner reports 187 matches,
+46 reviewed native exceptions and 34 reviewed invalid grids. Fingerprints cover
+every input, exact output, native output/diagnostic and source revision; crashes
+remain failures. Deliberate-corruption tests reject altered controls, flags,
+domains, case sets, stale captures and wrong runtime libraries. See
+[degree elevation](DEGREE_ELEVATION.md) for the native comparison commands.
+
+The sixteenth fuzz target and source-pinned CI job are added. Successful local
+mathematical/native checks do not substitute for a complete mutation campaign
+or final published-revision platform results; those acceptance gates are pending.
