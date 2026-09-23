@@ -18,7 +18,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing']
 
 
 def seed_corpus(target):
@@ -30,7 +30,20 @@ def seed_corpus(target):
         if not path.exists():
             path.write_bytes(data)
 
-    if target == 'surface_editing':
+    if target == 'knot_editing':
+        import struct
+        for degree in [1,2,3,8,25]:
+            for kind in range(3):
+                for op in range(6):
+                    save(bytes([2,degree-1,kind,1,op,128,7,84,degree-1,1,2,0,0,0,0,0])+bytes((j*37+1)%256 for j in range(416)))
+            for op in [3,4,5]:
+                save(bytes([3,degree-1,1,1,op,128,7,84,degree-1,1,2,0,0,0,0,0]))
+        for mode in [0,1]:
+            for kind in range(3):
+                for scale in [0,128,255]:
+                    body=b''.join(struct.pack('<d',x) for _ in range(12) for x in [float.fromhex('0x1.fffffffffffffp+1023'),0.,1.,float.fromhex('0x0.0000000000001p-1022')]) if mode==0 else bytes((j*37+1)%256 for j in range(416))
+                    save(bytes([mode,2,kind,1,2,scale,scale,84,2,0,1,0,0,0,0,0])+body)
+    elif target == 'surface_editing':
         import struct
         for du,dv in [(1,1),(2,3),(5,4),(25,1),(1,25),(25,25)]:
             for ku,kv in [(0,0),(1,0),(0,1),(1,1),(2,2)]:
@@ -243,7 +256,7 @@ def main():
                 command = ['cargo',f'+{args.toolchain}','fuzz','run',target,str(corpora[target]),
                     '--fuzz-dir',str(FUZZ),'--sanitizer','address','--',
                     '-max_total_time=0',f'-stop_file={stop_file}','-timeout=20','-rss_limit_mb=2048',
-                    f'-max_len={4096 if target == "surface_editing" else 256}',f'-seed={args.seed}',f'-artifact_prefix={artifacts}/','-print_final_stats=1']
+                    f'-max_len={4096 if target == "surface_editing" else 512 if target == "knot_editing" else 256}',f'-seed={args.seed}',f'-artifact_prefix={artifacts}/','-print_final_stats=1']
                 with log_path.open('w') as log:
                     code = run_process(command,log,args.seconds+600,env,timer.tick)
             text = log_path.read_text(errors='replace')

@@ -36,12 +36,12 @@ pub mod spline;
 pub mod surface;
 pub mod topology;
 
-pub use curve::{BSplineCurve3, BezierCurve3, ExactBezierCurve3};
+pub use curve::{BSplineCurve3, BezierCurve3, ExactBSplineCurve3, ExactBezierCurve3};
 pub use error::{Error, Result};
 pub use intersection::{Circle3, Cylinder3, Plane3, Sphere3, Triangle3};
 pub use interval::ScalarInterval;
 pub use math::{Bounds3, Frame3, Point2, Point3, RigidTransform, Tolerance, Vec3};
 pub use profile::{Boundary, Location, Profile};
 pub use solid::{MassProperties, Solid};
-pub use spline::KnotVector;
+pub use spline::{ExactKnotVector, KnotVector};
 pub use surface::{BSplineSurface3, BezierSurface3, ExactBezierSurface3};

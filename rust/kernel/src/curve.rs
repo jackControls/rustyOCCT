@@ -8,8 +8,10 @@ use crate::{exact, math::finite, spline, Error, KnotVector, Point3, Result, Scal
 use num_rational::BigRational as R;
 
 mod editing;
+mod knot_editing;
 pub(crate) use editing::{homogeneous_jet, homogeneous_value};
 pub use editing::{BezierExtractionOptions, ExactBezierCurve3, ExactCurveEvaluation};
+pub use knot_editing::ExactBSplineCurve3;
 
 pub use crate::spline::{MAX_DEGREE, MAX_POLES};
 

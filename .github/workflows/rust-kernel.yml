@@ -16,7 +16,7 @@ jobs:
   upstream-draw:
     name: Original OCCT tests / Rust and native
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     env:
       CSF_OCCTResourcePath: /usr/share/opencascade/resources
       DRAWHOME: /usr/share/opencascade/resources/DrawResources
@@ -47,6 +47,7 @@ jobs:
           python3 rust/tools/generate_curved_fixtures.py --check
           python3 rust/tools/generate_spline_fixtures.py --check
           python3 rust/tools/generate_bezier_editing_fixtures.py --check
+          python3 rust/tools/generate_knot_editing_fixtures.py --check
           python3 rust/tools/generate_surface_editing_fixtures.py --check
           python3 rust/tools/generate_surface_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_real_root_fixtures.py --check
@@ -75,6 +76,9 @@ jobs:
       - name: Compare exact tensor patches and isocurves with native OCCT
         if: ${{ !cancelled() }}
         run: python3 rust/tools/compare_surface_editing.py --occt-root /usr
+      - name: Compare exact knot refinement and removal with native OCCT
+        if: ${{ !cancelled() }}
+        run: python3 rust/tools/compare_knot_editing.py --occt-root /usr
       - name: Compare spline-plane intersections with native OCCT and exact mathematics
         if: ${{ !cancelled() }}
         run: target/math-oracle-venv/bin/python rust/tools/compare_spline_plane.py --occt-root /usr
@@ -96,6 +100,7 @@ jobs:
             target/surface-oracle/
             target/bezier-editing-oracle/
             target/surface-editing-oracle/
+            target/knot-editing-oracle/
             target/spline-plane-oracle/
             target/spline-quadric-oracle/
           if-no-files-found: warn
@@ -119,6 +124,11 @@ jobs:
         env:
           RUSTY_VERIFY_ALL_SURFACE_ORACLES: '1'
         run: cargo +stable test --locked --release --test surface_editing complete_tensor_controls_and_independent_quotient_jets
+      - name: Verify every knot edit with the second independent equation solver
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          RUSTY_VERIFY_ALL_KNOT_ORACLES: '1'
+        run: cargo +stable test --locked --release --test knot_editing exact_controls_and_removal_decisions_match_independent_equations
       - run: cargo +stable clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo +stable run --locked --example plate
 

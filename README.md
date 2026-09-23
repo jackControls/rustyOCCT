@@ -54,6 +54,9 @@ Cargo does not build it. Rust work lives on the `rust-kernel` branch, while
   periodicity, rectangular trimming, subdivision, parameter exchange, degree
   elevation and exact boundary/isoparametric curves. Mixed partials and original
   parameter domains are retained. See [surface editing](rust/SURFACE_EDITING.md).
+- Exact B-spline knot refinement and removal, including unclamped end controls
+  and periodic seams. Rational knots and positive homogeneous controls survive
+  edit sequences without rounding. See [knot editing](rust/KNOT_EDITING.md).
 - Exact real-root isolation through degree 25 and polynomial signs at algebraic
   roots. Certified spline intersections with planes, spheres and infinite cylinders;
   crossings, tangencies and maximal overlap intervals
@@ -97,7 +100,7 @@ The mathematical tests include **2,417 exact rational 2D orientation fixtures**
 (all six permutations), **1,648 spatial predicate fixtures**, **963 certified
 linear-intersection fixtures**, **448 quadratic-root fixtures**, **1,092 curved
 intersection fixtures**, **1,059 curve and 791 surface spline fixtures**, **95 general
-root, 284 spline–plane and 118 spline–quadric fixtures**, **554 exact proximity fixtures**, **684 complete linear-set fixtures**, **636 exact Bézier curve and 744 tensor-patch editing fixtures**,
+root, 284 spline–plane and 118 spline–quadric fixtures**, **554 exact proximity fixtures**, **684 complete linear-set fixtures**, **636 exact Bézier curve, 744 tensor-patch and 723 knot-editing fixtures**,
 **10,000 generated integer predicate cases**, and
 **256 generated prism invariant cases**. Debug and optimized native builds run
 the same checks. See [the numerical contracts](rust/MATHEMATICS.md) for limits.
@@ -114,7 +117,7 @@ are independently checked and version-pinned. High-degree native numerical
 differences are [reviewed separately](rust/NATIVE_SPLINE_DIVERGENCES.md); they
 are not counted as parity matches.
 [Sustained fuzzing](rust/FUZZING.md)
-runs twelve instrumented targets on pushes/PRs and daily, restoring the evolving
+runs thirteen instrumented targets on pushes/PRs and daily, restoring the evolving
 corpus and retaining crashes, timeouts and mathematical disagreements.
 
 Another 370 inputs compare linear-set minimum distances with two native OCCT
@@ -132,6 +135,11 @@ are retained separately; Rust must match independent exact polynomials first.
 A further 691 inputs compare tensor patch extraction, edits and isocurves.
 All complete homogeneous tensor coefficients are checked independently;
 [native high-degree differences](rust/NATIVE_SURFACE_EDITING_DIVERGENCES.md)
+remain separate from matches.
+
+Another 667 inputs compare complete knot refinement/removal representations and
+operation success flags. Independent coefficient equations check all Rust
+results; [native round-trip and seam correspondence differences](rust/NATIVE_KNOT_EDITING_DIVERGENCES.md)
 remain separate from matches.
 
 ```sh

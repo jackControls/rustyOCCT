@@ -273,8 +273,8 @@ With zero-based expanded knots `U` and `N` poles, the closed evaluation domain
 is `[U[degree], U[N]]`, which must have positive width. This includes unclamped
 knot vectors; the first/last distinct knots need not bound the domain.
 `BezierCurve3` uses degree `N-1` and clamped knots 0,1. Nonperiodic
-extrapolation, general knot-vector editing and spline B-rep edges are not yet
-implemented. Exact Bézier extraction/editing is described below. These geometric
+extrapolation and spline B-rep edges are not yet implemented. Exact Bézier
+extraction/editing and rational curve knot editing are described below. These geometric
 primitives do not change the current prism solid model.
 
 The [de Boor recurrence](https://pages.mtu.edu/~shene/COURSES/cs3621/NOTES/spline/de-Boor.html)
@@ -712,8 +712,59 @@ recurrences. Rust's checker clears common denominators before linear polynomial
 transforms and normalizes only their results. Exact jets, minimal enclosures,
 commutation and source endpoint identities add further checks. The native
 API observations are supplementary; [reviewed degree-25 differences](NATIVE_BEZIER_EDITING_DIVERGENCES.md)
-never bypass these mathematical checks. General spline knot removal/insertion
-and attaching these curves to topology remain separate work.
+never bypass these mathematical checks. General spline knot refinement/removal
+is described next; attaching these curves to topology remains separate work.
+
+## Exact rational B-spline knot editing
+
+`ExactKnotVector` retains the same multiplicity/pole-order family over normalized
+rationals. `ExactBSplineCurve3` stores positive homogeneous controls and supports
+exact jets, rational-interval extraction, batch refinement and exact removal.
+See [KNOT_EDITING.md](KNOT_EDITING.md) for input and failure contracts.
+
+For one inserted knot `u`, let `k` be its last index in the old expanded vector
+(or the preceding knot index for a new value), `s` its old multiplicity and `p`
+the degree. For `i=k-p+1..k-s`, the new homogeneous controls satisfy
+
+```text
+alpha_i = (u-U_i)/(U_(i+p)-U_i)
+Q_i = (1-alpha_i)*P_(i-1) + alpha_i*P_i.
+```
+
+Earlier controls are copied and later controls shifted one index. The closed
+valid domain makes each interpolation coefficient lie in `[0,1]`; exact
+insertion preserves positive weights. This includes controls inactive inside
+an unclamped fundamental domain. They must not be discarded simply because
+point samples cannot observe them.
+
+Removal constructs the coarser knot vector and solves these equations from the
+unaffected left anchor. For a strictly interior finite removal, every divisor
+`alpha_i` is strictly positive. The recovered right anchor must equal its
+unaffected neighbor in all four homogeneous components. Exact equality proves
+inverse insertion; disagreement returns no curve. Final nonpositive weights
+also return no curve. This is a homogeneous representation contract, stronger
+than arbitrary equivalence of Euclidean rational functions or tolerance-based
+simplification.
+
+Periodic editing unrolls the cyclic knot/control functions into five periods.
+Insertions update the relevant translated copies, including both outer domain
+ends for a seam; removals act on four strictly interior translated copies.
+Because supported curves have more poles than degree, the desired central
+extended knot vector lies within the edited support. Its exact knot sequence
+selects the canonical control block. Removing the last seam occurrence advances
+the origin to the next distinct knot and retains the period. Parameter-to-point
+correspondence is preserved, even where native behavior differs.
+
+The independent checker expands Cox basis functions on every common span,
+including the entire finite raw support for unclamped curves and one complete
+period for periodic curves. A coefficient linear system recovers the complete
+new controls or proves inconsistency, independently of inverse insertion.
+The Rust checker clears denominators and uses primitive integer equations;
+Python uses `Fraction` elimination, with a separate Greville reconstruction on
+selected cases. No sampled-point comparison determines removal acceptance.
+The 723 fixtures, 667 native observations and thirteenth sustained fuzz target
+cover this scope. General spline elevation and surface knot editing remain
+separate work. Arbitrary rational bit lengths still have no wall-clock bound.
 
 ## Exact tensor Bézier extraction and editing
 
@@ -842,6 +893,10 @@ See [the contract](SURFACE_EDITING.md) and the
   subnormal radii/axes, overflowing squared magnitudes and coincident parameter
   enclosures. The independent basis/continued-fraction oracle uses the cylinder
   cross-product equation, while production uses dot-product projection.
+- `fixtures/knot-editing.tsv`: 723 complete representations and operation flags,
+  including 667 native inputs, exact rejection, rational weights, extreme
+  domains, inactive unclamped controls and periodic seam origin changes. Every
+  output is independently recovered from complete Cox coefficient equations.
 
 These fixtures are bounded deterministic tests. Separately, [coverage-guided
 fuzzing](FUZZING.md) mutates predicates, linear/curved intersections, polynomial
@@ -871,7 +926,7 @@ disagreement disappear.
    curved geometry required by subsequent algorithms.
    Preserve explicit units, domains and arithmetic bounds; do not reuse an
    arbitrary global epsilon.
-2. Extend certified editing to general spline knot operations and arbitrary face trimming, and add projections; extend root isolation
+2. Extend certified editing to general spline elevation, surface knot operations and arbitrary face trimming, and add projections; extend root isolation
    to general intersections. Use interval/error bounds or
    additional precision when ordinary arithmetic cannot establish the answer.
 3. Strengthen topology invariants and tolerance propagation through each

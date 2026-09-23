@@ -16,6 +16,7 @@ coverage feedback. They are distinct from the deterministic invariant tests.
 | `curved` | Full binary64 coefficients, centers/radii/axes and line endpoints; scaled integers; exact/neighboring tangencies; generator and point segments | Quadratic root count, multiplicity, exact comparisons, minimal enclosures; circle/sphere/cylinder hits against independent polynomial-sign and axial-projection oracles; endpoint clipping and typed failures |
 | `splines` | Raw binary64 poles/weights/knots, scaled geometry, degree 1..25, repeated knots, periodic seams, full-range wrapped parameters, explicit sides and derivative requests | Exact basis-function derivatives and closed quotient formulas independently check homogeneous pole interpolation; minimal position/derivative bounds; discontinuity, domain, nonfinite and overflow errors |
 | `bezier_editing` | Raw binary64 and scaled rational controls, degree 1..25, clamped/unclamped/periodic splines, subnormal spans, multi-period extraction and composed edits with rational cuts | Complete homogeneous polynomial identities from independent Cox basis coefficients and affine substitution; exact jets/minimal bounds, positive weights, shared endpoints, reversal, elevation/split commutation and preflight limits |
+| `knot_editing` | Degrees 1..25, raw binary64 and scaled controls, rational cuts, unclamped inactive controls, repeated knots, periodic seams/origin changes, refinement/removal sequences and invalid data | Entire raw-support homogeneous identities; independent coefficient-equation removal feasibility, exact complete controls, rational jets/extraction, minimal enclosures, batch order/duplicate behavior, round trips and unchanged rejection limits |
 | `surface_editing` | Tensor degrees 1..25 in both directions, raw binary64 and scaled controls, independent periodicity, unclamped knots, subnormal domains, full low-degree multi-period queries and high-degree selected spans, composed edits and rational cuts | Complete tensor polynomial identities; all exact partials through order two and minimal bounds; exact isocurves/shared boundaries, reversals, transposition, elevation/split commutation and Cartesian output limits |
 | `surfaces` | Rational tensor grids, independently periodic U/V, repeated knots, high degree in either direction, full-range wrapped parameters and malformed data | Independent tensor basis plus closed bivariate quotient formulas; exact mixed-partial and quadrant continuity decisions; minimal enclosures and typed failures |
 | `roots` | Products of rational/irrational/complex factors through degree 25, repeated roots, closed-domain clipping, power-of-two coefficient scaling and arbitrary binary64 query polynomials | Complete expected root list from known factors; algebraic signs reduce independently in Q(sqrt(d)); multiplicities, exact comparisons, minimal enclosures and nonfinite rejection |
@@ -42,6 +43,9 @@ Editing production uses spline blossoms (curves), exact boundary knot insertion
 its checker uses basis polynomials, binomial affine substitution and Bernstein
 coefficient expansion. Clearing common denominators before those linear
 transforms reduces repeated GCD work without changing the assertions.
+Knot editing uses exact Boehm insertion and inverse insertion in production;
+its independent checker solves Cox power coefficient equations with integer
+elimination, including inactive unclamped support and failed removals.
 The Rust oracles and production share `num-bigint`/`num-rational`;
 the checked-in Python `Fraction` fixtures provide a separate integer runtime.
 Coverage counts include the oracle and dependencies: they are not kernel-only
@@ -49,7 +53,7 @@ coverage percentages or evidence of exhaustive input coverage.
 
 ## Continuing campaigns
 
-[Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all twelve targets
+[Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all thirteen targets
 for 60 seconds of mutation each on relevant pushes/PRs, and 600 seconds each every day at
 06:23 UTC on the default branch. Manual runs accept 1–3,600 seconds per target.
 GitHub can delay scheduled jobs. The schedule must remain enabled on the fork.
@@ -61,9 +65,11 @@ corpora, and crash/timeout/OOM artifacts for 30 days, including failed runs.
 Cache eviction does not remove the checked-in fixtures or regressions.
 
 Each input has a 20-second limit and a 2 GiB process RSS limit. Surface editing
-permits 4096 bytes to populate full tensor grids; other targets permit 256
+permits 4096 bytes to populate full tensor grids; knot editing permits 512 bytes;
+other targets permit 256
 bytes. The modeling harness bounds geometry to 24 vertices and eight operations;
-curve spline/editing inputs have at most 51 poles; surfaces have up to 108 poles with
+curve spline/Bézier-editing inputs have at most 51 poles; knot editing starts with
+up to 101 poles and can insert up to 50 more; surfaces have up to 108 poles with
 degree 25 in either direction. The surface-editing target allows up to 784
 poles, including degree 25 in both axes (the kernel allows 4096 total poles).
 It queries one selected knot rectangle for high-degree grids and also full

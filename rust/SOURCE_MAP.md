@@ -71,7 +71,7 @@ U/V periodicity. Exact pole interpolation and quadrant continuity checks replace
 floating evaluation; no tolerance-based weight simplification is applied.
 Evidence: 210 native surface jets, 791 exact tensor-basis fixtures, parameter
 transpose/weight invariance tests and the sixth fuzz target, `surfaces`.
-Exact curve/surface editing is described below; general knot editing and spline
+Exact curve/surface and curve knot editing are described below; surface knot editing and spline
 B-rep integration remain pending. High-degree
 native discrepancies are [reviewed explicitly](NATIVE_SPLINE_DIVERGENCES.md).
 The OCCT 7.6.3 degree-25 second-derivative discrepancy is documented in
@@ -230,8 +230,8 @@ Rust preserves exact shape and parameterization using rational blossom
 extraction, de Casteljau subdivision and Bernstein elevation. It keeps original
 parameter ranges rather than resetting every result to local `[0,1]`, and
 supports explicitly budgeted multi-period extraction. It does not port native
-tolerance snapping, out-of-domain Bézier extrapolation, general B-spline knot
-editing or topology/history. Read [the full contract](BEZIER_EDITING.md).
+tolerance snapping, out-of-domain Bézier extrapolation or topology/history.
+General curve knot editing is described separately below. Read [the Bézier contract](BEZIER_EDITING.md).
 
 The original `Geom_BezierCurve_Test.cxx` cubic and RationalIncrease/
 RationalReverse inputs are included in the 546 native captures made before Rust
@@ -273,6 +273,40 @@ exact tensor coefficient checks. The 744 ordinary complete-control fixtures,
 boundary/commutation/overflow/budget tests and twelfth fuzz target add independent
 mathematical evidence. Native degree-25 segmentation differences are
 [reviewed separately](NATIVE_SURFACE_EDITING_DIVERGENCES.md).
+
+## Exact curve knot refinement and removal
+
+Read at source baseline `3d097a0328e71b826377d4814ab05ec3c3d23871`:
+
+- [`Geom_BSplineCurve.cxx`](../src/ModelingData/TKG3d/Geom/Geom_BSplineCurve.cxx),
+  `InsertKnot`, `InsertKnots`, `RemoveKnot`, and their declarations/contracts.
+- [`BSplCLib.cxx`](../src/FoundationClasses/TKMath/BSplCLib/BSplCLib.cxx),
+  `PrepareInsertKnots`, `InsertKnots`, `BoorScheme`, `RemoveKnot`, `AntiBoorScheme`:
+  multiplicity and count preflight, local homogeneous interpolation/inversion,
+  cyclic indexing and periodic origin changes.
+- [`Geom_BSplineCurve_Test.cxx`](../src/ModelingData/TKG3d/GTests/Geom_BSplineCurve_Test.cxx),
+  SetUp, InsertKnot, RemoveKnot, InsertKnots_Multiple and periodic inputs.
+
+The first 665 native operation sequences were captured before the Rust
+implementation; [the capture record](fixtures/occt-knot-editing-capture.json)
+pins the input/output hashes and records the implementation's absence. Two
+supplemental nonconstant seam cases were added during validation, for 667 total.
+These reuse source inputs and API operations; they are not unchanged GTest or
+DRAW executions. Source and installed runtime versions remain distinct.
+
+`ExactKnotVector` and `ExactBSplineCurve3` preserve rational knots and homogeneous
+controls throughout immutable edits. Exact inverse insertion proves removal or
+returns no result, with final positive-weight validation. A five-period unroll
+handles cyclic indexing and canonical seam origin changes. The complete
+supported family, limits and stricter failure rules are in [KNOT_EDITING.md](KNOT_EDITING.md).
+This does not add general degree elevation, surface knot editing or spline B-rep.
+
+The 723 complete-control fixtures solve independent Cox power coefficient
+equations. A second Rust equation solver checks all full-support identities and
+removal feasibility in fuzzing; selected Python cases also use independent
+Greville collocation. Native differences are
+[reviewed separately](NATIVE_KNOT_EDITING_DIVERGENCES.md). The thirteenth fuzz
+target retains a degree-25 timeout regression without relaxing its checks.
 
 ## Rule for the next capability
 

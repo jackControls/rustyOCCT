@@ -160,6 +160,30 @@ cargo run --manifest-path rust/fuzz/Cargo.toml --locked --release \
   --example replay_surface_editing -- rust/fuzz/regressions/surface_editing/*.bin
 ```
 
+## Exact knot editing: degree-25 removal equations
+
+`knot_editing/constant-periodic-d25-removal.bin` retains the complete 16-byte
+input from local artifact `timeout-511950b9670c399e097346e15a935fa51c700b3b`.
+It was a seed-replay timeout, not a geometry disagreement or a minimized crash.
+The ordinary `constant_periodic_d25_remove_existing` fixture and dedicated
+`retained_degree25_removal_exercises_complete_integer_equation_solver` test
+cover the same full coefficient system.
+
+The initial sanitizer run exceeded the unchanged 20-second per-input limit.
+Release profiling measured 6.61 seconds, including 4.38 seconds solving the
+independent removal equations and 2.14 seconds checking full polynomial identity;
+kernel removal itself took approximately 0.0013 seconds. The checker now keeps
+Cox polynomials over common integer denominators and eliminates primitive
+integer equations. Every coefficient and rejection assertion remains. On the
+same local host, complete release replay fell to 0.57 seconds. The next campaign
+completed its full seed replay and 60-second mutation budget. These diagnostic
+timings do not establish a production latency guarantee.
+
+```sh
+cargo run --manifest-path rust/fuzz/Cargo.toml --locked --release \
+  --example replay_knot_editing -- rust/fuzz/regressions/knot_editing/*.bin
+```
+
 ## Polynomial roots: a wide isolator and a large query
 
 `roots/slow-unit-0d9082d327a81ddd2e03cf8963cb57f12c9bf198.bin` came from

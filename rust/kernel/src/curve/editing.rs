@@ -254,6 +254,12 @@ pub struct ExactCurveEvaluation {
     derivatives: [Option<[R; 3]>; 2],
 }
 impl ExactCurveEvaluation {
+    pub(crate) fn from_values(values: Vec<[R; 3]>) -> Self {
+        Self {
+            position: ExactPoint3::from_coordinates(values[0].clone()),
+            derivatives: [values.get(1).cloned(), values.get(2).cloned()],
+        }
+    }
     pub fn position(&self) -> &ExactPoint3 {
         &self.position
     }

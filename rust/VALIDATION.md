@@ -12,10 +12,10 @@ The [mathematical foundation](MATHEMATICS.md) includes exact 2D/3D orientation
 and insphere, 2,417 independent 2D rational fixtures in all six permutations,
 1,648 spatial predicate fixtures, 963 certified linear-intersection fixtures,
 448 quadratic-root fixtures, 1,092 curved-intersection fixtures, 1,059 curve and 791 surface spline fixtures,
-95 general polynomial-root, 284 spline/plane, 118 spline/quadric, 554 proximity, 684 complete linear-set, 636 exact Bézier curve and 744 tensor-patch editing fixtures,
+95 general polynomial-root, 284 spline/plane, 118 spline/quadric, 554 proximity, 684 complete linear-set, 636 exact Bézier curve, 744 tensor-patch and 723 knot-editing fixtures,
 10,000 integer-oracle predicate cases and 256 generated prism invariant cases.
 These tests do not depend on OCCT or an application and run in native debug and
-release CI. These deterministic generated tests are separate from the twelve
+release CI. These deterministic generated tests are separate from the thirteen
 [coverage-guided fuzz targets and daily retained-corpus campaigns](FUZZING.md).
 
 `compare_intersections.py` executes native OCCT `IntAna_IntConicQuad` and Rust's
@@ -250,6 +250,31 @@ tests retain cuts 2^-2048 apart, prove edit commutation, check distinct one-side
 derivatives, invalid rational parameters and traversal exhaustion. Fuzzing
 compares complete coefficients as well as exact jets and minimal bounds.
 No fixture or review exempts Rust from the exact mathematical contract.
+
+## Exact curve knot refinement and removal
+
+The native bridge retains all operation flags and complete curve representations
+for 667 inputs, including 665 captures made before Rust implementation and two
+supplemental nonconstant seam cases. The 723 ordinary fixtures independently
+solve every homogeneous Cox coefficient equation; selected cases also use a
+separate Greville collocation reconstruction. Rust's coefficient solver checks
+the entire unclamped raw support and full periodic function, so inactive end
+controls and seam correspondence cannot disappear behind point samples.
+
+Debug/release tests cover rational cuts separated by `2^-2048`, exact derivative
+overflow, discontinuities, positive-weight rejection, output preflight, periodic
+origin changes and a retained degree-25 solver timeout. Linux release CI runs
+the second exact equation oracle over every fixture, including failed removal.
+The thirteenth sanitizer target mutates edit sequences and independently solves
+removal feasibility. [Native differences](NATIVE_KNOT_EDITING_DIVERGENCES.md)
+remain separate from parity matches. No new unchanged upstream DRAW passes are
+claimed; surface knot editing, general degree elevation and topology remain out
+of this milestone's scope.
+
+```sh
+python3 rust/tools/generate_knot_editing_fixtures.py --check
+python3 rust/tools/compare_knot_editing.py --occt-root /path/to/occt
+```
 
 ## Exact tensor patches and isocurves
 

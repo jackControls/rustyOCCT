@@ -33,6 +33,8 @@ pub use bezier_editing::{check_bezier_editing, profile_bezier_editing};
 pub(crate) mod bezier_reference;
 mod surface_editing;
 pub use surface_editing::{check_surface_editing, profile_surface_editing};
+mod knot_editing;
+pub use knot_editing::{check_knot_editing, profile_knot_editing};
 
 pub fn byte(data: &[u8], i: usize) -> u8 {
     data.get(i).copied().unwrap_or(0)

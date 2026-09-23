@@ -7,6 +7,10 @@ use crate::{curve::KnotSide, exact, interval, math::finite, Error, Result, Scala
 use num_bigint::BigInt;
 use num_rational::BigRational as R;
 
+mod rational;
+pub(crate) use rational::normalize;
+pub use rational::ExactKnotVector;
+
 pub const MAX_DEGREE: usize = 25;
 /// Also the maximum total number of control points in a surface.
 pub const MAX_POLES: usize = 4096;
@@ -404,16 +408,19 @@ pub(crate) struct BezierSpanTransform {
 }
 impl BezierSpanTransform {
     pub(crate) fn new(axis: &KnotVector, span: usize, lower: &R, upper: &R) -> Self {
-        let p = axis.degree();
+        Self::from_knots(axis.degree, &axis.flat, span, lower, upper)
+    }
+
+    pub(crate) fn from_knots(p: usize, flat: &[R], span: usize, lower: &R, upper: &R) -> Self {
         let n = p + 1;
         // Exactly the local p+1 controls and their 2p+2 surrounding knots.
         // At an unclamped domain end, use the last equal knot index, which
         // can exceed the last pole index; clamped FindSpan conventions do not
         // apply to this local representation.
-        let mut knots = axis.flat[span - p..=span + p + 1].to_vec();
-        let width = &axis.flat[span + 1] - &axis.flat[span];
-        let a = &axis.flat[span] + lower * &width;
-        let b = &axis.flat[span] + upper * width;
+        let mut knots = flat[span - p..=span + p + 1].to_vec();
+        let width = &flat[span + 1] - &flat[span];
+        let a = &flat[span] + lower * &width;
+        let b = &flat[span] + upper * width;
         let mut matrix: Vec<Vec<R>> = (0..n)
             .map(|i| (0..n).map(|j| integer(usize::from(i == j))).collect())
             .collect();
@@ -509,16 +516,26 @@ fn common_denominator<'a>(values: impl Iterator<Item = &'a R>) -> BigInt {
 pub(crate) fn de_boor<const N: usize>(
     axis: &KnotVector,
     at: &Parameter,
+    poles: Vec<[[R; N]; 4]>,
+    previous: [Option<(usize, usize)>; N],
+    count: usize,
+) -> [[R; N]; 4] {
+    de_boor_exact(axis.degree, &axis.flat, at, poles, previous, count)
+}
+
+pub(crate) fn de_boor_exact<const N: usize>(
+    p: usize,
+    flat: &[R],
+    at: &Parameter,
     mut poles: Vec<[[R; N]; 4]>,
     previous: [Option<(usize, usize)>; N],
     count: usize,
 ) -> [[R; N]; 4] {
-    let p = axis.degree;
     for r in 1..=p {
         for j in (r..=p).rev() {
             let i = at.span - p + j;
-            let low = &axis.flat[i];
-            let width = &axis.flat[i + p - r + 1] - low;
+            let low = &flat[i];
+            let width = &flat[i + p - r + 1] - low;
             debug_assert!(width > zero());
             let alpha = (&at.value - low) / &width;
             let complement = integer(1) - &alpha;
