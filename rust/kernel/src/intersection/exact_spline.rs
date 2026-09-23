@@ -52,7 +52,7 @@ pub fn exact_spline_plane_in_with_options(
         first,
         last,
         options,
-        0,
+        32,
         super::spline_plane::polynomial(plane),
     )
 }

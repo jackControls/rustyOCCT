@@ -60,7 +60,7 @@ pub fn spline_plane_in_with_options(
     last: f64,
     options: SplinePlaneOptions,
 ) -> Result<SplinePlaneIntersection> {
-    super::spline_surface::intersect(curve, first, last, options, 0, polynomial(plane))
+    super::spline_surface::intersect(curve, first, last, options, 32, polynomial(plane))
 }
 
 pub(super) fn polynomial(plane: &Plane3) -> impl Fn(&[Vec<R>; 4]) -> IntPolynomial {

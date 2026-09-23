@@ -951,6 +951,17 @@ including exact zero. Interval filters and the complete Sturm-Tarski fallback
 then operate on that lower-degree remainder. Neither optimization changes the
 mathematical decision or substitutes sampling for a complete check.
 
+Bounded root refinement also tries rational candidates obtained from common
+continued-fraction prefixes of the isolating interval. Subtracting a shared
+integer part and reciprocating its positive fractional interval reverses the
+bounds; undoing those maps produces a candidate in the original interval.
+The kernel independently verifies both interval membership and an exact zero
+of the defining polynomial before storing a rational root. A failed candidate
+leaves the complete algebraic path unchanged. Candidates are tried initially
+and every 16 bisections, with at most 32 eager bisections for planes and 128 for
+quadrics. This avoids repeating an algebraic sign solve for contacts already
+provably rational; it is not a tolerance or a rationality assumption.
+
 Minimal floating enclosures are optional, fallible conversions. A parameter
 outside finite binary64 range can still have a finite position, and a finite
 parameter can still have an unrepresentable coordinate. An enclosure failure

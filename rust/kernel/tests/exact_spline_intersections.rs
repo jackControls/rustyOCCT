@@ -458,7 +458,7 @@ fn periodic_origin_removal_preserves_contacts_on_the_same_query() {
 }
 
 #[test]
-fn retained_degree25_weighted_contacts_on_huge_domains() {
+fn retained_degree25_weighted_contacts_and_parameter_ranges() {
     use std::collections::BTreeMap;
     let inputs = [
         include_bytes!(
@@ -467,16 +467,35 @@ fn retained_degree25_weighted_contacts_on_huge_domains() {
         include_bytes!(
             "../../fuzz/regressions/exact_spline_intersections/degree25-positive-huge-domain.bin"
         ),
+        include_bytes!(
+            "../../fuzz/regressions/exact_spline_intersections/degree25-unit-domain.bin"
+        ),
+        include_bytes!(
+            "../../fuzz/regressions/exact_spline_intersections/mutated-rational-contacts.bin"
+        ),
     ];
+    let minimal = |interval: rusty_occt::ScalarInterval, value: &R| {
+        let lo = R::from_float(interval.lower()).unwrap();
+        let hi = R::from_float(interval.upper()).unwrap();
+        assert!(lo <= *value && *value <= hi);
+        if lo != hi {
+            assert!(lo < *value && *value < hi);
+            // All finite values in these recipes are nonnegative.
+            assert_eq!(interval.upper().to_bits(), interval.lower().to_bits() + 1);
+        }
+    };
     for bytes in inputs {
+        let family = usize::from(bytes[0]);
         let domain_mode = bytes[3];
-        assert!(domain_mode == 2 || domain_mode == 6);
-        assert_eq!(&bytes[..3], &[2, 24, 0]);
+        assert!(family == 0 || family == 2);
+        assert_eq!(&bytes[1..3], &[24, 0]);
         assert_eq!(&bytes[4..16], &[1, 2, 0, 0, 7, 2, 5, 255, 0, 84, 0, 0]);
-        let (a, width) = if domain_mode == 2 {
-            (-power(2048), q(7, 3))
-        } else {
-            (power(1024), power(1024))
+        let (a, width) = match domain_mode {
+            0 => (q(1, 3), q(5, 7)),
+            2 => (-power(2048), q(7, 3)),
+            5 => (r(0), r(1)),
+            6 => (power(1024), power(1024)),
+            _ => panic!("unexpected retained domain"),
         };
         let b = &a + &width;
         let roots: Vec<_> = bytes[16..41]
@@ -488,13 +507,20 @@ fn retained_degree25_weighted_contacts_on_huge_domains() {
             .map(|v| q(i64::from(1 + v % 31), 11))
             .collect();
         // Known numerator factors; replace the positive Bernstein weights and
-        // rotate the cylinder axis to Y, preserving X^2 + Z^2 - W^2 = N^2.
-        let base = factored(&roots, 2, [a.clone(), b.clone()]);
+        // rotate coordinates. The plane equation is N; the cylinder equation
+        // is N^2. Positive Bernstein weights do not introduce other contacts.
+        let base = factored(&roots, family, [a.clone(), b.clone()]);
         let controls = base
             .homogeneous_poles()
             .iter()
             .zip(&weights)
-            .map(|(h, w)| [w.clone(), h[2].clone(), h[0].clone(), w.clone()])
+            .map(|(h, w)| {
+                if family == 0 {
+                    [r(0), h[2].clone(), h[0].clone(), w.clone()]
+                } else {
+                    [w.clone(), h[2].clone(), h[0].clone(), w.clone()]
+                }
+            })
             .collect();
         let original =
             ExactBSplineCurve3::from_homogeneous(base.knot_vector().clone(), controls).unwrap();
@@ -508,20 +534,34 @@ fn retained_degree25_weighted_contacts_on_huge_domains() {
             .unwrap();
         assert!(identity::equal(&original, &curve));
         let cylinder = Cylinder3::new(Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 1.).unwrap();
-        let hits = exact_spline_cylinder(&curve, &cylinder).unwrap();
+        let hits = if family == 0 {
+            let plane = Plane3::through_points(
+                Point3::new(0., 0., 0.),
+                Point3::new(0., 0., 1.),
+                Point3::new(1., 0., 0.),
+            )
+            .unwrap();
+            exact_spline_plane(&curve, &plane).unwrap()
+        } else {
+            exact_spline_cylinder(&curve, &cylinder).unwrap()
+        };
         let mut orders = BTreeMap::new();
         for t in roots.into_iter().filter(|t| t >= &r(0) && t <= &r(1)) {
-            *orders.entry(t).or_insert(0) += 2;
+            *orders.entry(t).or_insert(0) += if family == 0 { 1 } else { 2 };
         }
         assert_eq!(hits.points().len(), orders.len());
         assert!(hits.overlaps().is_empty());
         for (point, (t, order)) in hits.points().iter().zip(orders) {
             let parameter = &a + &width * &t;
             assert_eq!(point.compare_parameter(&parameter).unwrap(), Equal);
-            assert!(matches!(
-                point.parameter_bounds(),
-                Err(Error::Unrepresentable(_))
-            ));
+            if domain_mode == 2 || domain_mode == 6 {
+                assert!(matches!(
+                    point.parameter_bounds(),
+                    Err(Error::Unrepresentable(_))
+                ));
+            } else {
+                minimal(point.parameter_bounds().unwrap(), &parameter);
+            }
             let w: R = weights
                 .iter()
                 .enumerate()
@@ -529,19 +569,14 @@ fn retained_degree25_weighted_contacts_on_huge_domains() {
                     w * choose(25, i) * t.pow(i as i32) * (r(1) - &t).pow((25 - i) as i32)
                 })
                 .sum();
-            let expected = [r(1), &t / w, r(0)];
+            let expected = if family == 0 {
+                [r(0), r(0), &t / w]
+            } else {
+                [r(1), &t / w, r(0)]
+            };
             for (i, value) in expected.iter().enumerate() {
                 assert_eq!(point.compare_coordinate(i, value).unwrap(), Equal);
-                let interval = point.coordinate_bound(i).unwrap();
-                let lo = R::from_float(interval.lower()).unwrap();
-                let hi = R::from_float(interval.upper()).unwrap();
-                assert!(lo <= *value && *value <= hi);
-                if lo != hi {
-                    assert!(lo < *value && *value < hi);
-                    // Every coordinate in this recipe is nonnegative, so the
-                    // adjacent positive bit patterns certify minimal width.
-                    assert_eq!(interval.upper().to_bits(), interval.lower().to_bits() + 1);
-                }
+                minimal(point.coordinate_bound(i).unwrap(), value);
             }
             assert_eq!(
                 point.multiplicities(),
@@ -551,6 +586,8 @@ fn retained_degree25_weighted_contacts_on_huge_domains() {
                 point.contact(),
                 if t == r(0) || t == r(1) {
                     SplineSurfaceContact::Boundary
+                } else if order % 2 == 1 {
+                    SplineSurfaceContact::Crossing
                 } else {
                     SplineSurfaceContact::Tangent
                 }

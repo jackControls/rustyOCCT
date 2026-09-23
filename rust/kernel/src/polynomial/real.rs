@@ -148,15 +148,17 @@ impl AlgebraicRoot {
     /// Tighten a single-root interval by a bounded amount before repeated sign
     /// queries. Its square-free polynomial has one simple root here, so opposite
     /// endpoint signs certify each bisection without another Sturm chain. This
+    /// Verified rational candidates can collapse the interval exactly. This
     /// is only an exact fast-filter aid: undecided signs still use Sturm-Tarski.
     pub(crate) fn refine_for_signs(&mut self, steps: usize) {
-        if self.lower == self.upper {
+        if self.lower == self.upper || self.recognize_rational() {
             return;
         }
-        let p = &self.defining.polynomial;
+        let defining = self.defining.clone();
+        let p = &defining.polynomial;
         let left = p.sign_at(&self.lower);
         debug_assert!(left != Ordering::Equal && left != p.sign_at(&self.upper));
-        for _ in 0..steps {
+        for i in 0..steps {
             let middle = (&self.lower + &self.upper) / R::from_integer(BigInt::from(2));
             let sign = p.sign_at(&middle);
             if sign == Ordering::Equal {
@@ -169,6 +171,24 @@ impl AlgebraicRoot {
             } else {
                 self.upper = middle;
             }
+            if (i + 1) % 16 == 0 && self.recognize_rational() {
+                break;
+            }
+        }
+    }
+    fn recognize_rational(&mut self) -> bool {
+        let value = rational_in_interval(&self.lower, &self.upper);
+        // Membership and a zero of the defining polynomial certify that this
+        // is the unique isolated root. A guess alone never changes the result.
+        if self.lower <= value
+            && value <= self.upper
+            && self.defining.polynomial.sign_at(&value) == Ordering::Equal
+        {
+            self.lower = value.clone();
+            self.upper = value;
+            true
+        } else {
+            false
         }
     }
     pub fn multiplicity(&self) -> usize {
@@ -257,6 +277,31 @@ impl AlgebraicRoot {
         debug_assert!((-1..=1).contains(&sign));
         sign.cmp(&0)
     }
+}
+
+/// A rational candidate in a closed interval, using common continued-fraction
+/// prefixes. If no integer lies in [a,b], both share floor(a) and have positive
+/// fractional parts; subtract that integer and reciprocate, reversing bounds.
+/// Reversing these exact maps recovers a candidate in the original interval.
+/// The iterative form avoids a call stack proportional to rational bit length.
+fn rational_in_interval(a: &R, b: &R) -> R {
+    let (mut lower, mut upper) = (a.clone(), b.clone());
+    let mut prefixes = Vec::new();
+    let mut value = loop {
+        let integer = lower.ceil();
+        if integer <= upper {
+            break integer;
+        }
+        let floor = lower.floor();
+        let next_lower = one() / (&upper - &floor);
+        let next_upper = one() / (&lower - &floor);
+        prefixes.push(floor);
+        (lower, upper) = (next_lower, next_upper);
+    };
+    for prefix in prefixes.into_iter().rev() {
+        value = prefix + one() / value;
+    }
+    value
 }
 
 /// Primitive coefficients, ascending powers. Only positive common factors are

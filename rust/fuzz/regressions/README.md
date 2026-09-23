@@ -247,10 +247,32 @@ replay took 7.17/7.20 seconds. These are host-specific diagnostics, not a kernel
 latency guarantee, and fixed-input replay is not a fuzz campaign.
 
 Both full inputs are added to every campaign's corpus. The ordinary
-`retained_degree25_weighted_contacts_on_huge_domains` test independently
+`retained_degree25_weighted_contacts_and_parameter_ranges` test independently
 reconstructs their factors and weights, proves the complete edited function
 unchanged, and verifies every contact, order, coordinate and minimal enclosure.
 No degree, operand-size, assertion, timeout or RSS limit was relaxed.
+
+The first Linux campaign at `c197a8cc` exhausted its 660-second outer deadline
+while replaying the 330 seeds, so it failed without claiming any mutation
+coverage. It also saved the 21-second `degree25-unit-domain.bin`
+(`69f8157e36d0c5b2d9b386e589daa359010b04d6`) from
+[CI run 35830708600](https://github.com/jackControls/rustyOCCT/actions/runs/35830708600).
+This is the same weighted cylinder recipe on `[0,1]`. The local 600-second
+campaign at that revision completed 1,160 mutations, but saved a separate
+10-second plane input, `mutated-rational-contacts.bin`
+(`a20f16ed32d2aa6ac05bb12e663766a033f9dafe`), whose mutated factors and weights
+are retained unchanged. The ordinary test covers both additional full recipes.
+
+Root refinement now recognizes rational candidates only after proving their
+membership in the isolating interval and an exact zero of the defining
+polynomial. Failed candidates retain the complete algebraic fallback. Plane
+intersections perform up to 32 initial bisections with these checks; quadrics
+retain their 128-step maximum. Complete release replay of the Linux input
+improved from 0.83 to 0.43 seconds, and the mutated plane from 0.76 to 0.25
+seconds. Local sanitizer replays took 4.35 and 2.50 seconds respectively; these
+fixed-input runs are separate from mutation campaigns. Their assertions and
+the campaign's corpus, time and memory limits remain intact. These measurements
+still do not imply production latency bounds.
 
 ```sh
 cargo run --manifest-path rust/fuzz/Cargo.toml --locked --release \

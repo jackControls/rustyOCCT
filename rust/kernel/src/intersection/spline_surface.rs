@@ -474,8 +474,8 @@ fn collect(
             control_bounds,
         });
         for mut root in roots {
-            // Quadrics request tighter intervals before their higher-degree
-            // coordinate sign queries. Plane queries skip this eager refinement.
+            // Bounded refinement also recognizes exactly verified rational
+            // roots. Quadrics request more steps for their higher-degree signs.
             root.refine_for_signs(refinement_steps);
             let at_start = root.compare_rational(&lower) == Ordering::Equal;
             let at_end = root.compare_rational(&upper) == Ordering::Equal;
