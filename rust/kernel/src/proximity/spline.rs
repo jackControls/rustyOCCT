@@ -292,6 +292,7 @@ pub fn closest_points_on_exact_spline_in(
         let spans = curve
             .knot_vector()
             .spans_in(&first, &last, options.max_spans)?;
+        let mut zero_found = false;
         for (i, at) in spans.into_iter().enumerate() {
             let length = &at.end - &at.start;
             let lower = (&at.lower - &at.start) / &length;
@@ -304,6 +305,42 @@ pub fn closest_points_on_exact_spline_in(
             let span = Arc::new(Span::new(
                 at.start, length, h, &point, min_weight, max_weight,
             ));
+            // Squared distance is zero iff all three spatial deltas vanish.
+            // Their common polynomial has degree at most p, whereas the
+            // stationary-distance equation can reach 3p-2. Isolating every
+            // common root proves the complete local zero set directly.
+            let mut common = IntPolynomial::from_rationals(&span.delta[0]);
+            for delta in &span.delta[1..] {
+                if common.is_constant() && !common.is_zero() {
+                    break;
+                }
+                common = common.gcd(&IntPolynomial::from_rationals(delta));
+            }
+            if !common.is_zero() {
+                let zeros =
+                    real::isolate(&common, lower.clone(), upper.clone(), &mut context.roots)?;
+                if !zeros.is_empty() {
+                    zero_found = true;
+                    for mut root in zeros {
+                        root.refine_for_signs(16);
+                        context.consider(
+                            &mut winners,
+                            Candidate {
+                                at: Distance {
+                                    span: span.clone(),
+                                    root,
+                                },
+                                interval: None,
+                            },
+                        )?;
+                    }
+                }
+                if zero_found {
+                    continue;
+                }
+            } else {
+                zero_found = true;
+            }
             let f = subtract(
                 &product(&derivative(&span.numerator), &span.homogeneous[3]),
                 &product(&span.numerator, &derivative(&span.homogeneous[3])),
@@ -379,14 +416,22 @@ pub fn closest_points_on_exact_spline_in(
             });
         }
     }
-    let mut points = Vec::new();
+    let mut points: Vec<SplineClosestPoint> = Vec::new();
     for candidate in winners.into_iter().filter(|c| c.interval.is_none()) {
         let point = SplineClosestPoint { at: candidate.at };
         let covered = intervals.iter().any(|range| {
             point.compare_parameter(&range.parameters[0]).unwrap() != Less
                 && point.compare_parameter(&range.parameters[1]).unwrap() != Greater
         });
-        if !covered {
+        // A zero-distance root can be emitted by both adjacent closed spans.
+        // Only their exact shared rational boundary can be duplicated; aliases
+        // from different turns remain distinct parameters.
+        let duplicate = point.rational_parameter().is_some_and(|u| {
+            points
+                .last()
+                .is_some_and(|last| last.compare_parameter(&u).unwrap() == Equal)
+        });
+        if !covered && !duplicate {
             points.push(point);
         }
     }

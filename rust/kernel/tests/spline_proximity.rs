@@ -12,6 +12,83 @@ fn rational(n: i32, d: i32) -> R {
 }
 
 #[test]
+fn zero_minima_merge_shared_knots_and_intervals_without_losing_later_hits() {
+    // The first span has strictly positive minimum distance. Later spans hit
+    // the query at shared knots, stay there for two spans, leave, and return.
+    let controls = [
+        [-3., -1., 0.],
+        [-2., 1., 0.],
+        [0., 0., 0.],
+        [1., 1., 0.],
+        [0., 0., 0.],
+        [0., 0., 0.],
+        [0., 0., 0.],
+        [1., 0., 0.],
+        [0., 0., 0.],
+    ];
+    let curve = BSplineCurve3::new(
+        1,
+        controls
+            .into_iter()
+            .map(|p| Point3::new(p[0], p[1], p[2]))
+            .collect(),
+        None,
+        (0..=8).map(f64::from).collect(),
+        vec![2, 1, 1, 1, 1, 1, 1, 1, 2],
+    )
+    .unwrap();
+    let result = closest_points_on_spline(&curve, Point3::ORIGIN).unwrap();
+    assert_eq!(result.compare_squared_distance(0.).unwrap(), Equal);
+    assert_eq!(result.points().len(), 2);
+    for (point, u) in result.points().iter().zip([2, 8]) {
+        assert_eq!(point.rational_parameter(), Some(rational(u, 1)));
+        for axis in 0..3 {
+            assert_eq!(
+                point.compare_coordinate(axis, &rational(0, 1)).unwrap(),
+                Equal
+            );
+        }
+    }
+    assert_eq!(result.intervals().len(), 1);
+    assert_eq!(
+        result.intervals()[0].parameters(),
+        &[rational(4, 1), rational(6, 1)]
+    );
+
+    let result =
+        closest_points_on_spline_in(&curve, Point3::ORIGIN, 4.25, 5.75, Default::default())
+            .unwrap();
+    assert!(result.points().is_empty());
+    assert_eq!(result.intervals().len(), 1);
+    assert_eq!(
+        result.intervals()[0].parameters(),
+        &[rational(17, 4), rational(23, 4)]
+    );
+
+    // A common polynomial can have no real roots in the queried range.
+    // C(t)=(t^2+1,0,0) on [-1,1] has its positive minimum at t=0.
+    let away = BSplineCurve3::new(
+        2,
+        vec![
+            Point3::new(2., 0., 0.),
+            Point3::ORIGIN,
+            Point3::new(2., 0., 0.),
+        ],
+        None,
+        vec![-1., 1.],
+        vec![3, 3],
+    )
+    .unwrap();
+    let result = closest_points_on_spline(&away, Point3::ORIGIN).unwrap();
+    assert_eq!(result.points().len(), 1);
+    assert_eq!(
+        result.points()[0].rational_parameter(),
+        Some(rational(0, 1))
+    );
+    assert_eq!(result.compare_squared_distance(1.).unwrap(), Equal);
+}
+
+#[test]
 fn exact_minima_survive_unrepresentable_parameter_coordinate_and_distance_views() {
     let huge = R::from_integer(BigInt::from(1) << 2048usize);
     let half = rational(1, 2);

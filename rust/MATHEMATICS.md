@@ -1066,8 +1066,15 @@ See [contracts, native discrepancies and current gates](DEGREE_ELEVATION.md).
 Closed point-to-rational-B-spline queries enumerate all isolated minimum
 parameters and maximal constant-distance intervals. They retain periodic aliases
 and singular stationary points. Positive homogeneous weights give squared
-distance `N/W²`; its degree-at-most-73 numerator `N'W-2NW'`, all knots and both
-trim endpoints form a complete candidate set. Exact interval filters and
+distance `N/W²`; its degree-at-most-73 stationary numerator `N'W-2NW'`, all knots and both
+trim endpoints form a complete candidate set. The degree-at-most-25 common
+polynomial of the three homogeneous spatial deltas first identifies every
+zero-distance parameter. A real zero proves the local minimum without solving
+the larger stationary equation; all-zero deltas give a whole minimum interval.
+After the global distance reaches zero, only complete zero sets can contribute
+further minimizers. Spans with no real zeros fall back to the stationary
+equation until then. Shared knot hits are deduplicated by exact parameter
+identity. Exact interval filters and
 quotient-ring image polynomials decide global ties without approximate equality.
 The image construction carries relative rational scales and full integer row
 dependence witnesses. Independent Cox/VAS/resultant fixtures verify complete

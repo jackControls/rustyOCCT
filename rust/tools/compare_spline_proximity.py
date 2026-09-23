@@ -27,6 +27,17 @@ from spline_proximity_reference import ABSOLUTE, RELATIVE, verify_rust, decode_n
 SOURCES = {'legacy': 'occt_spline_projection_oracle.cpp', 'extremapc': 'occt_spline_extremapc_oracle.cpp'}
 
 
+def verify_family_libraries(family, loaded):
+    # ExtremaPC_Curve belongs to TKGeomBase. Linux --as-needed correctly drops
+    # TKGeomAlgo when this probe does not call its legacy GeomAPI wrapper.
+    if family not in SOURCES:
+        raise ValueError('unknown extrema family: '+family)
+    required = ['TKGeomBase', 'TKGeomAlgo'] if family == 'legacy' else ['TKGeomBase']
+    for toolkit in required:
+        if not any(Path(p['path']).name.startswith('lib'+toolkit+'.') for p in loaded):
+            raise ValueError('missing loaded extrema library: '+toolkit)
+
+
 def sha(text):
     return hashlib.sha256(text.encode()).hexdigest()
 
@@ -80,10 +91,12 @@ def capture(family, data, prefix, output, sdk_manifest):
     include, lib = prefix/'include/opencascade', prefix/'lib'
     source = ROOT/'rust/tools'/SOURCES[family]
     executable = output/'oracle'
+    libraries = ['TKGeomBase', 'TKG3d', 'TKMath', 'TKernel']
+    if family == 'legacy':
+        libraries.insert(0, 'TKGeomAlgo')
     command = shlex.split(os.environ.get('CXX', 'c++'))+[
         '-std=c++17', '-O2', str(source), '-I'+str(include), '-L'+str(lib),
-        '-Wl,-rpath,'+str(lib), '-o', str(executable), '-lTKGeomAlgo', '-lTKGeomBase',
-        '-lTKG3d', '-lTKMath', '-lTKernel']
+        '-Wl,-rpath,'+str(lib), '-o', str(executable)]+['-l'+name for name in libraries]
     built = subprocess.run(command, text=True, capture_output=True)
     (output/'native-build.log').write_text(built.stdout+built.stderr)
     built.check_returncode()
@@ -101,9 +114,7 @@ def capture(family, data, prefix, output, sdk_manifest):
         loaded_text = traced.stderr
     (output/'loaded-libraries.txt').write_text(loaded_text)
     loaded = verify_loaded_libraries(loaded_text, lib, sys.platform)
-    for toolkit in ['TKGeomAlgo', 'TKGeomBase']:
-        if not any(Path(p['path']).name.startswith('lib'+toolkit+'.') for p in loaded):
-            raise ValueError('missing loaded extrema library: '+toolkit)
+    verify_family_libraries(family, loaded)
     records = []
     for line in data.splitlines():
         records.append(observe(executable, line, 20, env))
@@ -131,6 +142,7 @@ def reuse(family, data, output, sdk_manifest):
     for p in metadata['loaded_libraries']:
         if digest(Path(p['path'])) != p['sha256']:
             raise ValueError('captured native library changed')
+    verify_family_libraries(family, metadata['loaded_libraries'])
     return json.loads((output/'native.json').read_text()), metadata
 
 

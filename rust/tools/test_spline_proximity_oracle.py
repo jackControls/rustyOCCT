@@ -7,7 +7,7 @@ import math
 from pathlib import Path
 import unittest
 
-from compare_spline_proximity import review_for, original_capture
+from compare_spline_proximity import review_for, original_capture, verify_family_libraries
 from spline_proximity_reference import verify_rust, decode_rust, decode_native, compare_native
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -16,6 +16,20 @@ LINE = 'line_interior R 1 0 4 4 P .5 .5 .5 .5 0 0 0 0'
 
 
 class SplineProximityOracle(unittest.TestCase):
+    def test_newer_api_loads_its_actual_toolkit_without_unused_legacy_wrapper(self):
+        for suffix in ['.so.8.1', '.8.1.dylib']:
+            base = [{'path': '/pinned/lib/libTKGeomBase'+suffix}]
+            legacy = base+[{'path': '/pinned/lib/libTKGeomAlgo'+suffix}]
+            verify_family_libraries('extremapc', base)
+            verify_family_libraries('legacy', legacy)
+            with self.assertRaises(ValueError):
+                verify_family_libraries('legacy', base)
+            for family in ['legacy', 'extremapc']:
+                with self.assertRaises(ValueError):
+                    verify_family_libraries(family, legacy[1:])
+        with self.assertRaises(ValueError):
+            verify_family_libraries('unknown', legacy)
+
     def test_original_observations_and_inputs_remain_unchanged(self):
         original_capture()
 

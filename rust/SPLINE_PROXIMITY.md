@@ -24,7 +24,7 @@ out-of-domain ranges return errors. Negative distance thresholds compare below
 every result. No geometric snapping or approximate tie threshold is applied.
 
 `SplineProximityOptions` limits span traversal, candidate count, shared root
-subdivisions, image coefficient updates and intermediate image integer size.
+isolation subdivisions, image coefficient updates and intermediate image integer size.
 Defaults are 4,096 spans, 65,536 candidates, 65,536 subdivisions, 2,000,000 image
 updates and 65,536 image bits. Exhaustion returns `ComputationLimit` and no partial
 minimum set. These structural limits are **not hard CPU or RSS deadlines**;
@@ -39,6 +39,16 @@ equation is `F = N'W - 2NW'`, of degree at most `3p-2` (73 at degree 25).
 Every real stationary root, every nonsmooth knot and both range endpoints are
 considered. `F=0` identically gives a constant-distance interval. The equation
 never divides by curve speed, so singular stationary points are retained.
+
+First, the common polynomial of `X_i-Q_i W` is checked for every exact
+zero-distance parameter on the span. It has degree at most `p`. If it has real
+roots in the queried range, they are all local minima with distance zero; other
+stationary points cannot improve them. Three identically zero deltas give a
+whole zero-distance interval. After any zero is found, subsequent spans need
+only this complete zero-set check. Earlier positive-distance winners are
+discarded. When there are no real zeros, the stationary equation remains the
+fallback. Shared rational knot hits merge exactly, while periodic aliases and
+whole intervals survive. Both isolation paths use the same subdivision budget.
 
 Exact interval bounds filter candidate distances. Zero distance uses the
 sum-of-squares identity. Unresolved comparisons use a rational-function image
@@ -103,12 +113,31 @@ release acceptance. The retained corpus grew from 73 to 311 files. The new
 `spline_proximity` target runs with the unchanged 20-second input/2 GiB limits
 and joins the daily retained-corpus workflow.
 
+At `e70225a0`, all seventeen CI fuzz targets passed their full 60-second mutation
+budgets after replay. The clean local spline campaign completed 600.03 seconds
+of mutation after 455.47 seconds of replay, with 584 mutations and a 1,453 MiB
+RSS peak. There were no crash, timeout, OOM or mathematical-disagreement
+artifacts. Two local slow inputs and one CI slow input were retained; the CI
+input reached the 20-second threshold. The subsequent exact zero-set path
+reduced that input's local sanitizer callback from about 9.3 to 2.8 seconds in
+an isolated experiment. These timings are observations under concurrent work,
+not a platform-independent speed guarantee.
+
 The first probe retained 120-second failures for two high-degree bound views.
 The zero and shared-refinement fixes now complete all 30 cases locally; the
 hard rational degree-73 case takes about 24 seconds including all tight bounds.
 These are workload observations, not general latency guarantees.
 
-Clean-revision native/platform/fuzz acceptance is still pending. This capability
+The first Linux native run independently certified all thirty Rust results,
+then exposed an incorrect bridge dependency check: `ExtremaPC_Curve` uses
+`TKGeomBase`, while the legacy wrapper also uses `TKGeomAlgo`. Linux correctly
+omits that unused library from the newer probe. The corrected bridge requires
+the actual family dependencies and still validates every loaded OCCT path and
+hash. A separate Linux degree-25 output fingerprint is reviewed with the same
+eight-of-25 witness coverage; neither comparison budgets nor Rust expectations
+were relaxed.
+
+Clean-revision native/platform/fuzz acceptance of these fixes is still pending. This capability
 does not implement curve/curve or curve/surface minimum distance, general
 intersections, Boolean topology, persistent history, STEP, cancellation or hard
 per-operation resource ceilings. Full production kernel parity remains open.

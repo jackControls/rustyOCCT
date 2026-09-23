@@ -160,6 +160,22 @@
       "reason": "Several degree-25 native witnesses fail the fixed parameter, point or squared-distance comparison budget. The report retains native counts and raw observations; these cases are numerical discrepancies, not matches.",
       "independent_evidence": "Exact Cox coefficients from the actual binary64 controls, irreducible factorization and VAS isolation prove 25 distinct zeros of the sole nonzero coordinate in [-1,1]. All and only those parameters attain squared distance zero. Every Rust parameter and tight coordinate/distance enclosure is independently certified; no ideal unrounded Chebyshev coefficients supply expectations.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "family": "legacy",
+      "case": "chebyshev_25_coincident_minima",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "81535fcd055087e48c8d2447c7357e877d2d84dd6782fefcf30d4994d7cc5bb0",
+      "exact_sha256": "4d7447279bc27f0683a104d76990e667d8930cc190efbfabafc737bd96a5d2eb",
+      "native_stdout_sha256": "464e4959abe15e09009c23e67e989e2e3f4366ec952c8d854920fd2b28ae8a28",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "differences": [
+        "minimum_witness_coverage_8_of_25"
+      ],
+      "reason": "Several degree-25 native witnesses fail the fixed parameter, point or squared-distance comparison budget. The report retains native counts and raw observations; these cases are numerical discrepancies, not matches. Linux reports 64 stationary candidates (macOS reports 163), but the same eight exact minima have compatible parameter/coordinate/distance witnesses under the fixed budget.",
+      "independent_evidence": "Exact Cox coefficients from the actual binary64 controls, irreducible factorization and VAS isolation prove 25 distinct zeros of the sole nonzero coordinate in [-1,1]. All and only those parameters attain squared distance zero. Every Rust parameter and tight coordinate/distance enclosure is independently certified; no ideal unrounded Chebyshev coefficients supply expectations.",
+      "platform_observed": "Linux x86_64; source-pinned OCCT 8.1.0; GitHub Actions 35919612871"
     }
   ]
 }

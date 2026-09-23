@@ -405,7 +405,7 @@ impl IntPolynomial {
     pub(crate) fn is_zero(&self) -> bool {
         self.0.is_empty()
     }
-    fn is_constant(&self) -> bool {
+    pub(crate) fn is_constant(&self) -> bool {
         self.0.len() <= 1
     }
     fn positive(mut self) -> Self {
@@ -466,7 +466,7 @@ impl IntPolynomial {
         }
         r
     }
-    fn gcd(&self, other: &Self) -> Self {
+    pub(crate) fn gcd(&self, other: &Self) -> Self {
         let (mut a, mut b) = (self.clone(), other.clone());
         while !b.is_zero() {
             let r = a.remainder(&b);
