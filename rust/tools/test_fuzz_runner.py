@@ -10,6 +10,31 @@ import run_fuzz
 
 
 class FuzzRunnerTests(unittest.TestCase):
+    def test_retained_corpus_startup_scales_and_remains_capped(self):
+        self.assertEqual(run_fuzz.startup_budget(90),600)
+        self.assertEqual(run_fuzz.startup_budget(648),1416)
+        self.assertEqual(run_fuzz.startup_budget(100000),3600)
+        with tempfile.TemporaryDirectory() as directory:
+            directory=Path(directory); log_path=directory/'log'
+            log_path.write_text('#649 INITED cov: 12\n')
+            with patch('run_fuzz.time.monotonic',return_value=0.):
+                timer=run_fuzz.MutationBudget(log_path,directory/'stop',60,startup_seconds=run_fuzz.startup_budget(648))
+            with patch('run_fuzz.time.monotonic',return_value=1416.01):
+                timer.tick()
+                self.assertFalse(timer.evidence()['startup_budget_completed'])
+            self.assertEqual(timer.deadline(),1416)
+
+    def test_tensor_quarantine_budget_is_explicit_and_target_local(self):
+        base={'ASAN_OPTIONS':'detect_stack_use_after_return=1','CARGO_NET_OFFLINE':'true'}
+        env=run_fuzz.campaign_environment('surface_knots',base)
+        self.assertEqual(env['ASAN_OPTIONS'],'detect_stack_use_after_return=1:quarantine_size_mb=64')
+        self.assertEqual(env['CARGO_NET_OFFLINE'],'true')
+        self.assertEqual(base['ASAN_OPTIONS'],'detect_stack_use_after_return=1')
+        for target in run_fuzz.TARGETS:
+            if target!='surface_knots':
+                self.assertEqual(run_fuzz.campaign_environment(target,base),base)
+        self.assertEqual(run_fuzz.campaign_environment('surface_knots',{})['ASAN_OPTIONS'],'quarantine_size_mb=64')
+
     def test_allocator_hook_is_linked_only_with_address_sanitizer(self):
         for target in run_fuzz.TARGETS:
             args=run_fuzz.sanitizer_build_args(target)
@@ -22,9 +47,23 @@ class FuzzRunnerTests(unittest.TestCase):
     def test_requires_completed_mutation_after_corpus_replay(self):
         text = '#99\tINITED cov: 12 ft: 50\n#102\tDONE cov: 14\nstat::number_of_executed_units: 102\n'
         self.assertEqual(run_fuzz.statistics(text),{
-            'executions':102,'initial_executions':99,'mutation_executions':3,'coverage_edges':14})
+            'executions':102,'initial_executions':99,'mutation_executions':3,'coverage_edges':14,
+            'slowest_input_seconds':None,'peak_rss_mb':None})
         self.assertIsNone(run_fuzz.statistics('#99 INITED cov: 12')['mutation_executions'])
         self.assertEqual(run_fuzz.statistics('#99 INITED cov: 12\nstat::number_of_executed_units: 99')['mutation_executions'],0)
+
+    def test_successful_exit_does_not_exempt_reported_resource_overrun(self):
+        # The first Linux surface-knot campaign exited zero but reported a 64s
+        # input against a 60s alarm. Such a run must fail the resource gate.
+        stats=run_fuzz.statistics('stat::slowest_unit_time_sec: 64\nstat::peak_rss_mb: 1400\n')
+        report={**stats,'input_limit_seconds':60,'exit_code':0}
+        self.assertFalse(run_fuzz.resource_limits_satisfied(report))
+        report['slowest_input_seconds']=60
+        self.assertTrue(run_fuzz.resource_limits_satisfied(report))
+        report['peak_rss_mb']=2049
+        self.assertFalse(run_fuzz.resource_limits_satisfied(report))
+        for key in ['slowest_input_seconds','peak_rss_mb']:
+            self.assertFalse(run_fuzz.resource_limits_satisfied({**report,key:None}))
 
     def test_propagates_failure_and_preserves_log(self):
         with tempfile.TemporaryDirectory() as directory:

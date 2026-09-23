@@ -376,6 +376,8 @@ complete U/V knot edits, success flags and homogeneous grids using Cox power
 coefficient equations over full raw support. Ordinary Rust tests consume all
 fixtures. The original 791 surface jet fixtures additionally verify the retained
 exact representation and reusable differentiated de Boor evaluation.
+The Linux job also sets `RUSTY_VERIFY_ALL_SURFACE_KNOT_ORACLES=1` to run every
+surface-knot fixture through the separate Rust coefficient/feasibility solver.
 `compare_surface_knots.py` compares 1,748 complete native observations;
 [native round-trip differences](NATIVE_SURFACE_KNOT_DIVERGENCES.md) remain
 separate from matches. Six deliberate-corruption bridge tests protect control,

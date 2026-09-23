@@ -114,19 +114,37 @@ replay binaries and the production kernel have no sanitizer FFI dependency.
 See the pinned runtime's `FuzzerLoop.cpp::{ReadAndExecuteSeedCorpora,PurgeAllocator}`
 and [LLVM's allocator implementation](https://github.com/llvm/llvm-project/blob/main/compiler-rt/lib/asan/asan_allocator.cpp).
 
+This target also sets `ASAN_OPTIONS=quarantine_size_mb=64`, retaining a 64 MiB
+freed-block quarantine while keeping the same 2 GiB process gate. Other targets
+use their existing sanitizer settings. Default quarantine plus allocator
+cleanup still exhausted macOS RSS during retained-corpus replay despite roughly
+38 MB of live allocations at the failure. Ordinary Rust replay of the same 197
+inputs twice peaked at approximately 62 MiB. The smaller quarantine is a
+documented instrumentation tradeoff: it can miss a stale-pointer access after
+its freed allocation leaves quarantine sooner. It does not suppress a reported
+error, remove a mathematical assertion, or raise the process memory cap.
+Campaign manifests record the effective sanitizer options. These measurements
+diagnose this corpus and runtime; they do not establish a general kernel memory
+bound.
+
 The mutation timer starts when the pinned libFuzzer reports `INITED`, after
 corpus replay. Its `max_total_time` flag includes initialization and previously
 allowed a growing corpus to consume the entire short campaign; this was caught
 as an incomplete CI run. The runner now creates a nonempty `stop_file` after
 the full requested mutation budget. LibFuzzer stops normally and emits final
-statistics. Build and corpus replay have a separate 600-second deadline; a
-late `INITED` marker cannot borrow mutation or shutdown time. After the full
+statistics. Build and corpus replay have a separate deadline of
+`max(600, min(3600, 120 + 2 * initial_corpus_files))` seconds. This reserves build
+time and an allowance for a growing retained corpus without deleting inputs or
+borrowing mutation time. A late `INITED` marker cannot borrow mutation or
+shutdown time. After the full
 mutation budget, the runner allows the per-input timeout plus five seconds
 for an in-flight input and final statistics: 25 seconds normally, 65 for surface
-knots. The process group is bounded by `requested_seconds + 625` normally and
-`requested_seconds + 665` for surface knots. Ignored stop requests are killed.
+knots. The process group is bounded by the startup allowance plus the requested
+mutation duration plus that final-input grace. Ignored stop requests are killed.
 An early exit, startup overrun, missing final statistics or absent mutations
-still fails the campaign. Separating the phases fixes a reproduced Linux run
+still fails the campaign. Reported peak RSS or slowest input exceeding its limit
+also fails, even if the runtime exits successfully: a Linux seed took 64 seconds
+against a 60-second alarm without a nonzero exit. Separating the phases fixes a reproduced Linux run
 that completed its mutation budget but was killed before its last input and
 final statistics finished; the failed evidence remains retained.
 
@@ -158,8 +176,9 @@ cargo +nightly-2026-09-22 fuzz run intersections rust/fuzz/artifacts/intersectio
 cargo +nightly-2026-09-22 fuzz tmin intersections rust/fuzz/artifacts/intersections/crash-HASH --fuzz-dir rust/fuzz -- -max_total_time=120
 ```
 
-For the surface-knot target, include `--sanitizer address --features asan-allocator`
-before the final `--` when reproducing the campaign's allocator behavior.
+For the surface-knot target, set `ASAN_OPTIONS=quarantine_size_mb=64` and include
+`--sanitizer address --features asan-allocator` before the final `--` when
+reproducing the campaign's allocator behavior.
 
 Keep the original artifact. Investigate whether the defect is in the kernel,
 the oracle, or its input contract. Add the minimized bytes under
@@ -186,5 +205,8 @@ Surface knot editing starts with up to 784 controls, preserving every complete
 transverse coefficient identity after each edit. Its independent checker shares
 basis construction and equation factorization across transverse fields rather
 than repeating them per row. Every field and residual equation is retained.
+Pairs of identical complete before/after control columns share one projection
+only after comparing every integer in both columns. Any changed field creates
+its own pair; tests corrupt every control component to verify rejection.
 The fifteen-target daily workflow includes this campaign with the same startup,
 mutation and memory limits; its larger per-input limit is documented above.

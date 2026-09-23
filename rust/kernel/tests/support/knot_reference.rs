@@ -528,6 +528,30 @@ impl ControlRows {
             denominator,
         }
     }
+
+    /// Identical pairs of complete control columns have identical residual
+    /// equations on every span. Prove that identity by comparing all integers
+    /// before sharing their projection. A changed component always creates a
+    /// distinct pair and is still checked. No hash, sampling or linear
+    /// approximation decides equality here.
+    fn share_identical_pairs(&mut self, other: &mut Self) {
+        let mut seen = BTreeSet::new();
+        let keep: Vec<_> = (0..self.values[0].len())
+            .map(|c| {
+                seen.insert(
+                    self.values
+                        .iter()
+                        .chain(&other.values)
+                        .map(|row| row[c].clone())
+                        .collect::<Vec<_>>(),
+                )
+            })
+            .collect();
+        for row in self.values.iter_mut().chain(&mut other.values) {
+            let mut columns = keep.iter();
+            row.retain(|_| *columns.next().unwrap());
+        }
+    }
 }
 
 /// Share full Cox matrices across transverse fields while preserving every
@@ -543,8 +567,9 @@ pub fn equal_many(original: &[ExactBSplineCurve3], candidate: &[ExactBSplineCurv
     {
         return false;
     }
-    let before = ControlRows::new(original);
-    let after = ControlRows::new(candidate);
+    let mut before = ControlRows::new(original);
+    let mut after = ControlRows::new(candidate);
+    before.share_identical_pairs(&mut after);
     partition(a, b).iter().all(|[lo, hi]| {
         let left = before.polynomial(&basis_polynomials(a, lo, hi));
         let right = after.polynomial(&basis_polynomials(b, lo, hi));

@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
 TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots']
 STARTUP_SECONDS = 600
+MAX_STARTUP_SECONDS = 3600
 INPUT_SECONDS = 20
 # Full tensor coefficient equations and double-axis degree-25 edits are a
 # larger per-input workload. Existing targets keep their original 20s limit.
@@ -27,10 +28,29 @@ TARGET_INPUT_SECONDS = {"surface_knots": 60}
 SHUTDOWN_SECONDS = INPUT_SECONDS + 5
 
 
+def startup_budget(corpus_files):
+    # Retained corpora grow after every campaign. Keep every saved input and
+    # reserve build time plus a bounded replay allowance, separately from the
+    # requested mutation time. Individual input limits still apply in replay.
+    return max(STARTUP_SECONDS,min(MAX_STARTUP_SECONDS,120+2*corpus_files))
+
+
 def sanitizer_build_args(target):
     # The tensor target also purges freed ASan allocator memory during corpus
     # replay; libFuzzer itself does that only after mutation has started.
     return ['--sanitizer','address'] + (['--features','asan-allocator'] if target == 'surface_knots' else [])
+
+
+def campaign_environment(target, base):
+    env=dict(base)
+    if target=='surface_knots':
+        # Complete exact tensor oracles create millions of temporary integers.
+        # Bound the freed-block quarantine, keeping the 2 GiB process gate.
+        # This intentionally shortens the use-after-free detection window;
+        # other sanitizer options and all other targets remain unchanged.
+        options=env.get('ASAN_OPTIONS','')
+        env['ASAN_OPTIONS']=options+(':' if options else '')+'quarantine_size_mb=64'
+    return env
 
 
 def seed_corpus(target):
@@ -263,11 +283,23 @@ def statistics(text):
     executed = re.findall(r'stat::number_of_executed_units:\s*(\d+)',text)
     initialized = re.findall(r'#(\d+)\s+INITED\b',text)
     coverage = re.findall(r'cov: (\d+)',text)
+    slowest = re.findall(r'stat::slowest_unit_time_sec:\s*(\d+)',text)
+    peak = re.findall(r'stat::peak_rss_mb:\s*(\d+)',text)
     total = int(executed[-1]) if executed else None
     replayed = int(initialized[-1]) if initialized else None
     return {'executions':total,'initial_executions':replayed,
             'mutation_executions':total-replayed if total is not None and replayed is not None else None,
-            'coverage_edges':int(coverage[-1]) if coverage else None}
+            'coverage_edges':int(coverage[-1]) if coverage else None,
+            'slowest_input_seconds':int(slowest[-1]) if slowest else None,
+            'peak_rss_mb':int(peak[-1]) if peak else None}
+
+
+def resource_limits_satisfied(report):
+    # The runtime alarm is asynchronous: a callback can exceed its configured
+    # limit and still return success between alarm ticks. Check final evidence.
+    slowest,peak=report['slowest_input_seconds'],report['peak_rss_mb']
+    return (slowest is not None and peak is not None and
+            slowest <= report['input_limit_seconds'] and peak <= 2048)
 
 
 def main():
@@ -310,24 +342,29 @@ def main():
                 stop_file=Path(control)/'stop'
                 input_seconds=TARGET_INPUT_SECONDS.get(target,INPUT_SECONDS)
                 shutdown_seconds=input_seconds+5
-                timer=MutationBudget(log_path,stop_file,args.seconds,shutdown_seconds=shutdown_seconds)
+                initial_corpus_files=len(list(corpora[target].iterdir()))
+                startup_seconds=startup_budget(initial_corpus_files)
+                timer=MutationBudget(log_path,stop_file,args.seconds,startup_seconds=startup_seconds,shutdown_seconds=shutdown_seconds)
                 command = ['cargo',f'+{args.toolchain}','fuzz','run',target,str(corpora[target]),
                     '--fuzz-dir',str(FUZZ),*sanitizer_build_args(target),'--',
                     '-max_total_time=0',f'-stop_file={stop_file}',f'-timeout={input_seconds}','-rss_limit_mb=2048',
                     f'-max_len={4096 if target in ["surface_editing", "surface_knots"] else 512 if target == "knot_editing" else 256}',f'-seed={args.seed}',f'-artifact_prefix={artifacts}/','-print_final_stats=1']
                 with log_path.open('w') as log:
-                    code = run_process(command,log,STARTUP_SECONDS+args.seconds+shutdown_seconds,env,timer.tick,timer.deadline)
+                    campaign_env=campaign_environment(target,env)
+                    code = run_process(command,log,startup_seconds+args.seconds+shutdown_seconds,campaign_env,timer.tick,timer.deadline)
             text = log_path.read_text(errors='replace')
             report = {'target':target,'exit_code':code,'elapsed_seconds':round(time.monotonic()-started,2),
                 'input_limit_seconds':input_seconds,
+                'initial_corpus_files':initial_corpus_files,
                 'allocator_cleanup_during_replay':target == 'surface_knots',
+                'sanitizer_options':campaign_env.get('ASAN_OPTIONS'),
                 **timer.evidence(),
                 **statistics(text),
                 'corpus_files':len(list(corpora[target].iterdir())),
                 'artifacts':[p.name for p in sorted(artifacts.iterdir())], 'command':command}
             summary['targets'].append(report)
             # An exit without a completed campaign is not a successful fuzz run.
-            failed |= code != 0 or not report['startup_budget_completed'] or not report['mutation_budget_completed'] or not report['mutation_executions'] or report['mutation_executions'] < 0 or (FUZZ/'Cargo.lock').read_bytes() != locked
+            failed |= code != 0 or not report['startup_budget_completed'] or not report['mutation_budget_completed'] or not report['mutation_executions'] or report['mutation_executions'] < 0 or not resource_limits_satisfied(report) or (FUZZ/'Cargo.lock').read_bytes() != locked
             print(json.dumps(report),flush=True)
     finally:
         summary['passed'] = len(summary['targets']) == len(targets) and not failed

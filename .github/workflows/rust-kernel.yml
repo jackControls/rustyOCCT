@@ -140,6 +140,11 @@ jobs:
         env:
           RUSTY_VERIFY_ALL_KNOT_ORACLES: '1'
         run: cargo +stable test --locked --release --test knot_editing exact_controls_and_removal_decisions_match_independent_equations
+      - name: Verify every surface knot edit with the second independent equation solver
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          RUSTY_VERIFY_ALL_SURFACE_KNOT_ORACLES: '1'
+        run: cargo +stable test --locked --release --test surface_knots full_grids_and_removal_decisions_match_independent_equations
       - run: cargo +stable clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo +stable run --locked --example plate
 

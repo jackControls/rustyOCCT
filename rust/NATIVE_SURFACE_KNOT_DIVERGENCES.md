@@ -29,6 +29,14 @@ hash, OCCT version, every native control bit and knot, exact-result hash and
 difference fields. A review never permits Rust to disagree with independent
 mathematics. New runtime observations or changed values require a fresh review.
 
+Linux OCCT 7.6.3 independently verifies the same 1,748 inputs, with 1,601
+direct matches and 147 reviewed differences: 142 rejected inverse removals and
+five accepted round trips with control errors outside the bridge budget. Every
+reviewed exact result is again the original complete homogeneous grid. The
+largest accepted native control error is approximately `4.18e-10`. Each runtime
+has its own complete observations and review pins; their results are not merged
+into a single match count.
+
 Run `python3 rust/tools/compare_surface_knots.py --occt-root /path/to/occt`.
 `--strict-native` ignores reviews and fails every native discrepancy.
 Fixtures use full controls with one shared integer denominator, preserving

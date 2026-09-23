@@ -424,3 +424,27 @@ memory between completed inputs, at most once per second. Both the failed
 2 GiB campaigns and the separate 4 GiB diagnostic replay are retained; the
 diagnostic is not a successful gating campaign. The fresh campaign still uses
 the 2 GiB memory gate and full mutation budget.
+
+Allocator cleanup alone did not fix macOS replay: it still exceeded the cap
+with approximately 38 MB live and 247 MB quarantined, plus unused allocator
+chunks. Ordinary release replay of the identical 197 inputs twice passed with
+64,700,416 bytes peak RSS. The target now explicitly budgets its sanitizer
+quarantine at 64 MiB; the shorter freed-memory detection window and reproduction
+settings are documented in [FUZZING.md](../../FUZZING.md). The resulting local
+campaign completed 600.01 seconds of mutation and 337 mutation executions after
+replaying all 197 saved inputs, with a 1,018 MiB peak RSS and a slowest input of
+25 seconds. The failed earlier runs remain evidence.
+
+Linux run `35870767498` completed mutation but reported the retained full-
+multiplicity input at 64 seconds against its 60-second alarm. The runner now
+checks final per-input and RSS statistics even after a zero exit. Complete
+before/after control-column pairs share polynomial projections only when every
+integer in both columns is identical; deliberate corruption of every field is
+still rejected. This reduced the local full-input replay from approximately
+3.0 to 2.6 seconds without removing coefficient equations.
+
+The same run exhausted the original fixed 600-second build/replay allowance in
+five older targets as retained corpora grew. Startup now scales with the input
+count, separately capped at 3,600 seconds, as specified in FUZZING.md. Every
+saved input remains in replay, and requested mutation time and per-input limits
+are unchanged. These runner changes require fresh complete CI campaigns.
