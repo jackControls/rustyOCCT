@@ -37,7 +37,7 @@ pub fn integers(p: &[R]) -> (Vec<BigInt>, BigInt) {
         denominator,
     )
 }
-fn powers(x: &BigInt, count: usize) -> Vec<BigInt> {
+pub fn powers(x: &BigInt, count: usize) -> Vec<BigInt> {
     let mut result = vec![BigInt::from(1); count];
     for i in 1..count {
         result[i] = &result[i - 1] * x;

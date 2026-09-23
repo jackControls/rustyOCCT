@@ -59,3 +59,15 @@ omitted by this lossless representation. Every one of the 691 live native
 cases also recomputes every Rust control independently. See
 [validation](VALIDATION.md), [native differences](NATIVE_SURFACE_EDITING_DIVERGENCES.md)
 and [sustained fuzzing](FUZZING.md).
+
+The second Rust oracle independently forms Cox tensor power coefficients,
+uses binomial substitutions, and evaluates direct monomial derivative sums.
+It carries an integer grid over one positive denominator across transforms;
+complete polynomial equality uses exact cross multiplication, with no sampled
+or omitted coefficients. Linux release CI checks this oracle on all 744
+fixtures, beyond the representative checks in ordinary debug tests. Reproduce:
+
+```sh
+RUSTY_VERIFY_ALL_SURFACE_ORACLES=1 cargo test --locked --release \
+  --test surface_editing complete_tensor_controls_and_independent_quotient_jets
+```

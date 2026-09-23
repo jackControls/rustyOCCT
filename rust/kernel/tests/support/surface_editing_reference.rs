@@ -1,7 +1,7 @@
 //! Independent Cox tensor/power identities. No production extraction/editing
 //! or evaluation routine supplies any expected coefficient or derivative.
 pub(crate) use crate::bezier_reference as curves;
-use curves::{add, binomial, integer, integers, linear, substitute, value};
+use curves::{add, binomial, integer, integers, linear, powers, substitute};
 use num_bigint::BigInt;
 use num_rational::BigRational as R;
 use rusty_occt::curve::DerivativeOrder;
@@ -113,65 +113,159 @@ fn spans(axis: &KnotVector, first: f64, last: f64) -> Vec<Span> {
     result
 }
 
-fn map_axis(
-    grid: &[[R; 4]],
-    degrees: [usize; 2],
-    axis: usize,
-    mut transform: impl FnMut(&[R]) -> Vec<R>,
-) -> (Vec<[R; 4]>, [usize; 2]) {
-    let mut out = Vec::new();
-    let mut new_degrees = degrees;
-    for fixed in 0..=degrees[1 - axis] {
-        let indices: Vec<_> = (0..=degrees[axis])
-            .map(|i| {
-                if axis == 0 {
-                    i * (degrees[1] + 1) + fixed
-                } else {
-                    fixed * (degrees[1] + 1) + i
-                }
-            })
-            .collect();
-        let rows: [Vec<R>; 4] = std::array::from_fn(|c| {
-            transform(
-                &indices
-                    .iter()
-                    .map(|&i| grid[i][c].clone())
-                    .collect::<Vec<_>>(),
-            )
-        });
-        new_degrees[axis] = rows[0].len() - 1;
-        if out.is_empty() {
-            out.resize_with((new_degrees[0] + 1) * (new_degrees[1] + 1), || {
-                std::array::from_fn(|_| integer(0))
-            });
-        }
-        for (i, _) in rows[0].iter().enumerate() {
-            let index = if axis == 0 {
-                i * (new_degrees[1] + 1) + fixed
-            } else {
-                fixed * (new_degrees[1] + 1) + i
-            };
-            out[index] = std::array::from_fn(|c| rows[c][i].clone());
+/// Independent power coefficients share one positive denominator throughout
+/// tensor transforms. Fractions are reduced only when a scalar is returned;
+/// coefficient equality cross-multiplies complete integer grids exactly.
+#[derive(Clone)]
+struct Grid {
+    values: Vec<[BigInt; 4]>,
+    denominator: BigInt,
+}
+impl Grid {
+    fn from_rationals(values: &[[R; 4]]) -> Self {
+        let (values, denominator) = integers(&values.iter().flatten().cloned().collect::<Vec<_>>());
+        Self {
+            values: values
+                .chunks(4)
+                .map(|p| std::array::from_fn(|c| p[c].clone()))
+                .collect(),
+            denominator,
         }
     }
-    (out, new_degrees)
+    fn rational(&self, i: usize, c: usize) -> R {
+        R::new(self.values[i][c].clone(), self.denominator.clone())
+    }
+    fn map(&self, degrees: [usize; 2], axis: usize, matrix: &Matrix) -> (Self, [usize; 2]) {
+        let mut new_degrees = degrees;
+        new_degrees[axis] = matrix.rows.len() - 1;
+        let values = (0..=new_degrees[0])
+            .flat_map(|u| {
+                (0..=new_degrees[1]).map(move |v| {
+                    let (row, fixed) = if axis == 0 { (u, v) } else { (v, u) };
+                    std::array::from_fn(|c| {
+                        matrix.rows[row]
+                            .iter()
+                            .enumerate()
+                            .map(|(i, m)| {
+                                let index = if axis == 0 {
+                                    i * (degrees[1] + 1) + fixed
+                                } else {
+                                    fixed * (degrees[1] + 1) + i
+                                };
+                                m * &self.values[index][c]
+                            })
+                            .sum()
+                    })
+                })
+            })
+            .collect();
+        (
+            Self {
+                values,
+                denominator: &self.denominator * &matrix.denominator,
+            },
+            new_degrees,
+        )
+    }
+    fn assert_equal(&self, other: &Self) {
+        assert_eq!(self.values.len(), other.values.len());
+        let scale = R::new(other.denominator.clone(), self.denominator.clone());
+        for (a, b) in self
+            .values
+            .iter()
+            .flatten()
+            .zip(other.values.iter().flatten())
+        {
+            assert_eq!(
+                a * scale.numer(),
+                b * scale.denom(),
+                "complete homogeneous tensor polynomial identity"
+            );
+        }
+    }
 }
 
-/// Matrix multiplication after clearing denominators. This is the Cox
-/// coefficient sum, not a de Boor/de Casteljau control-point recurrence.
-fn multiply(matrix: &[(Vec<BigInt>, BigInt)], poles: &[R]) -> Vec<R> {
-    let (p, den) = integers(poles);
-    matrix
-        .iter()
-        .map(|(m, d)| R::new(p.iter().zip(m).map(|(a, b)| a * b).sum(), &den * d))
-        .collect()
+struct Matrix {
+    rows: Vec<Vec<BigInt>>,
+    denominator: BigInt,
+}
+impl Matrix {
+    fn new(rows: Vec<(Vec<BigInt>, BigInt)>) -> Self {
+        let (_, denominator) = integers(
+            &rows
+                .iter()
+                .map(|(_, d)| R::new(1.into(), d.clone()))
+                .collect::<Vec<_>>(),
+        );
+        Self {
+            rows: rows
+                .into_iter()
+                .map(|(r, d)| {
+                    let factor = &denominator / d;
+                    r.into_iter().map(|x| x * &factor).collect()
+                })
+                .collect(),
+            denominator,
+        }
+    }
+}
+
+/// Binomial affine substitution on power coefficients. Build each exact
+/// matrix once per axis/operation, independently of the control data.
+fn affine_matrix(degree: usize, a: &R, b: &R) -> Matrix {
+    let n = degree + 1;
+    let (an, ad, bn, bd) = (
+        powers(a.numer(), n),
+        powers(a.denom(), n),
+        powers(b.numer(), n),
+        powers(b.denom(), n),
+    );
+    Matrix::new(
+        (0..n)
+            .map(|i| {
+                let row = (0..n)
+                    .map(|j| {
+                        if j < i {
+                            BigInt::from(0)
+                        } else {
+                            binomial(j, i) * &an[j - i] * &ad[degree - j] * &bn[i]
+                        }
+                    })
+                    .collect();
+                (row, &ad[degree - i] * &bd[i])
+            })
+            .collect(),
+    )
+}
+
+/// Direct monomial derivative sums, sharing powers and input denominators
+/// between derivative orders. This does not use a Bernstein recurrence.
+fn value_matrix(degree: usize, t: &R, order: usize) -> Matrix {
+    let (tn, td) = (powers(t.numer(), degree + 1), powers(t.denom(), degree + 1));
+    Matrix::new(
+        (0..=order)
+            .map(|r| {
+                let row = (0..=degree)
+                    .map(|i| {
+                        if i < r {
+                            BigInt::from(0)
+                        } else {
+                            let factor: usize = (i + 1 - r..=i).product();
+                            factor * &tn[i - r] * &td[degree - i]
+                        }
+                    })
+                    .collect();
+                (row, td[degree - r.min(degree)].clone())
+            })
+            .collect(),
+    )
 }
 
 #[derive(Clone)]
 pub struct Patch {
     pub degrees: [usize; 2],
     pub domain: [[R; 2]; 2],
-    pub coefficients: Vec<[R; 4]>,
+    coefficients: Grid,
 }
 impl Patch {
     pub fn trim(&self, domain: [[R; 2]; 2]) -> Self {
@@ -183,17 +277,15 @@ impl Patch {
             let length = &self.domain[axis][1] - &self.domain[axis][0];
             let a = (&range[0] - &self.domain[axis][0]) / &length;
             let b = (&range[1] - &range[0]) / length;
-            (out.coefficients, out.degrees) = map_axis(&out.coefficients, out.degrees, axis, |p| {
-                substitute(p, &a, &b)
-            });
+            let matrix = affine_matrix(out.degrees[axis], &a, &b);
+            (out.coefficients, out.degrees) = out.coefficients.map(out.degrees, axis, &matrix);
         }
         out.domain = domain;
         out
     }
     pub fn reversed(&self, axis: usize) -> Self {
-        let (coefficients, degrees) = map_axis(&self.coefficients, self.degrees, axis, |p| {
-            substitute(p, &integer(1), &-integer(1))
-        });
+        let matrix = affine_matrix(self.degrees[axis], &integer(1), &-integer(1));
+        let (coefficients, degrees) = self.coefficients.map(self.degrees, axis, &matrix);
         Self {
             coefficients,
             degrees,
@@ -204,56 +296,64 @@ impl Patch {
         Self {
             degrees: [self.degrees[1], self.degrees[0]],
             domain: [self.domain[1].clone(), self.domain[0].clone()],
-            coefficients: (0..=self.degrees[1])
-                .flat_map(|j| {
-                    (0..=self.degrees[0])
-                        .map(move |i| self.coefficients[i * (self.degrees[1] + 1) + j].clone())
-                })
-                .collect(),
+            coefficients: Grid {
+                values: (0..=self.degrees[1])
+                    .flat_map(|j| {
+                        (0..=self.degrees[0]).map(move |i| {
+                            self.coefficients.values[i * (self.degrees[1] + 1) + j].clone()
+                        })
+                    })
+                    .collect(),
+                denominator: self.coefficients.denominator.clone(),
+            },
         }
     }
     pub fn elevated(&self, target: [usize; 2]) -> Self {
-        let mut out = self.clone();
-        for (axis, &d) in target.iter().enumerate() {
-            (out.coefficients, out.degrees) = map_axis(&out.coefficients, out.degrees, axis, |p| {
-                let mut p = p.to_vec();
-                p.resize(d + 1, integer(0));
-                p
-            });
+        let values = (0..=target[0])
+            .flat_map(|i| {
+                (0..=target[1]).map(move |j| {
+                    if i <= self.degrees[0] && j <= self.degrees[1] {
+                        self.coefficients.values[i * (self.degrees[1] + 1) + j].clone()
+                    } else {
+                        std::array::from_fn(|_| BigInt::from(0))
+                    }
+                })
+            })
+            .collect();
+        Self {
+            degrees: target,
+            domain: self.domain.clone(),
+            coefficients: Grid {
+                values,
+                denominator: self.coefficients.denominator.clone(),
+            },
         }
-        out
     }
     pub fn iso(&self, axis: usize, t: &R) -> curves::Arc {
-        let (coefficients, _) = map_axis(&self.coefficients, self.degrees, axis, |p| {
-            vec![value(p, t, 0)]
-        });
+        let (coefficients, _) =
+            self.coefficients
+                .map(self.degrees, axis, &value_matrix(self.degrees[axis], t, 0));
         curves::Arc {
             degree: self.degrees[1 - axis],
             domain: self.domain[1 - axis].clone(),
             coefficients: std::array::from_fn(|c| {
-                coefficients.iter().map(|p| p[c].clone()).collect()
+                (0..coefficients.values.len())
+                    .map(|i| coefficients.rational(i, c))
+                    .collect()
             }),
         }
     }
     pub fn jet(&self, parameters: [&R; 2]) -> [[R; 3]; 6] {
         let length: [R; 2] = std::array::from_fn(|i| &self.domain[i][1] - &self.domain[i][0]);
         let t: [R; 2] = std::array::from_fn(|i| (parameters[i] - &self.domain[i][0]) / &length[i]);
+        let vm = value_matrix(self.degrees[1], &t[1], 2);
+        let um = value_matrix(self.degrees[0], &t[0], 2);
+        let (v_jets, d) = self.coefficients.map(self.degrees, 1, &vm);
+        let (jets, _) = v_jets.map(d, 0, &um);
         let h: [[R; 4]; 6] = std::array::from_fn(|r| {
-            let (uo, vo) = PARTIALS[r];
-            std::array::from_fn(|c| {
-                let rows: Vec<_> = self
-                    .coefficients
-                    .chunks(self.degrees[1] + 1)
-                    .map(|row| {
-                        value(
-                            &row.iter().map(|p| p[c].clone()).collect::<Vec<_>>(),
-                            &t[1],
-                            vo,
-                        )
-                    })
-                    .collect();
-                value(&rows, &t[0], uo) / (length[0].pow(uo as i32) * length[1].pow(vo as i32))
-            })
+            let (u, v) = PARTIALS[r];
+            let units = length[0].pow(u as i32) * length[1].pow(v as i32);
+            std::array::from_fn(|c| jets.rational(u * 3 + v, c) / &units)
         });
         let w = &h[0][3];
         std::array::from_fn(|r| {
@@ -288,16 +388,18 @@ pub fn extract(surface: &BSplineSurface3, rectangle: [f64; 4]) -> Vec<Patch> {
     let degrees = [surface.u_knots().degree(), surface.v_knots().degree()];
     let mut result = Vec::new();
     for u in &us {
-        let um: Vec<_> = (0..=degrees[0])
-            .map(|k| {
-                integers(
-                    &u.coefficients
-                        .iter()
-                        .map(|c| c[k].clone())
-                        .collect::<Vec<_>>(),
-                )
-            })
-            .collect();
+        let um = Matrix::new(
+            (0..=degrees[0])
+                .map(|k| {
+                    integers(
+                        &u.coefficients
+                            .iter()
+                            .map(|c| c[k].clone())
+                            .collect::<Vec<_>>(),
+                    )
+                })
+                .collect(),
+        );
         for v in &vs {
             let mut controls = Vec::new();
             for &i in &u.indices {
@@ -314,18 +416,20 @@ pub fn extract(surface: &BSplineSurface3, rectangle: [f64; 4]) -> Vec<Patch> {
                     }));
                 }
             }
-            let vm: Vec<_> = (0..=degrees[1])
-                .map(|k| {
-                    integers(
-                        &v.coefficients
-                            .iter()
-                            .map(|c| c[k].clone())
-                            .collect::<Vec<_>>(),
-                    )
-                })
-                .collect();
-            let (controls, d) = map_axis(&controls, degrees, 0, |p| multiply(&um, p));
-            let (coefficients, degrees) = map_axis(&controls, d, 1, |p| multiply(&vm, p));
+            let vm = Matrix::new(
+                (0..=degrees[1])
+                    .map(|k| {
+                        integers(
+                            &v.coefficients
+                                .iter()
+                                .map(|c| c[k].clone())
+                                .collect::<Vec<_>>(),
+                        )
+                    })
+                    .collect(),
+            );
+            let (controls, d) = Grid::from_rationals(&controls).map(degrees, 0, &um);
+            let (coefficients, degrees) = controls.map(d, 1, &vm);
             result.push(Patch {
                 degrees,
                 coefficients,
@@ -387,41 +491,50 @@ pub fn apply(mut p: Patch, op: u8, elevation: [usize; 2]) -> Vec<Item> {
         .collect()
 }
 
+#[allow(dead_code)] // Cargo fixtures use this entry point; fuzz profiling uses the one below.
 pub fn check(actual: &ExactBezierSurface3, expected: &Patch, probe: [&R; 2]) {
+    check_profiled(actual, expected, probe, |_| {});
+}
+
+pub fn check_profiled(
+    actual: &ExactBezierSurface3,
+    expected: &Patch,
+    probe: [&R; 2],
+    mut mark: impl FnMut(&'static str),
+) {
     assert_eq!(actual.degrees(), expected.degrees);
     assert_eq!(actual.domain(), &expected.domain);
     assert!(actual.homogeneous_poles().iter().all(|p| p[3] > integer(0)));
-    let mut coefficients = actual.homogeneous_poles().to_vec();
+    let mut coefficients = Grid::from_rationals(actual.homogeneous_poles());
     let degrees = actual.degrees();
     for axis in 0..2 {
-        (coefficients, _) = map_axis(&coefficients, degrees, axis, |p| {
-            let (p, den) = integers(p);
-            let degree = p.len() - 1;
+        let degree = degrees[axis];
+        let matrix = Matrix::new(
             (0..=degree)
                 .map(|k| {
-                    let sum: BigInt = (0..=k)
+                    let row = (0..=k)
                         .map(|i| {
-                            let x = &p[i] * (binomial(degree, i) * binomial(degree - i, k - i));
+                            let x = BigInt::from(binomial(degree, i) * binomial(degree - i, k - i));
                             if (k - i) % 2 == 0 {
                                 x
                             } else {
                                 -x
                             }
                         })
-                        .sum();
-                    R::new(sum, den.clone())
+                        .collect();
+                    (row, BigInt::from(1))
                 })
-                .collect()
-        });
+                .collect(),
+        );
+        (coefficients, _) = coefficients.map(degrees, axis, &matrix);
     }
-    assert_eq!(
-        coefficients, expected.coefficients,
-        "complete homogeneous tensor polynomial identity"
-    );
+    coefficients.assert_equal(&expected.coefficients);
+    mark("oracle tensor controls");
     let at: [R; 2] = std::array::from_fn(|i| {
         &expected.domain[i][0] + (&expected.domain[i][1] - &expected.domain[i][0]) * probe[i]
     });
     let jet = expected.jet([&at[0], &at[1]]);
+    mark("oracle tensor jet");
     let exact = actual
         .exact_evaluate(&at[0], &at[1], DerivativeOrder::Second)
         .unwrap();
@@ -429,9 +542,12 @@ pub fn check(actual: &ExactBezierSurface3, expected: &Patch, probe: [&R; 2]) {
     for (i, &(u, v)) in PARTIALS.iter().enumerate().skip(1) {
         assert_eq!(exact.derivative(u, v), Some(&jet[i]));
     }
+    mark("kernel tensor jet");
     let max = rat(f64::MAX);
     let representable = jet.iter().flatten().all(|x| x >= &-&max && x <= &max);
-    match exact.enclosed() {
+    let enclosed = exact.enclosed();
+    mark("kernel tensor enclosure");
+    match enclosed {
         Ok(enclosed) => {
             assert!(representable);
             for (i, &(u, v)) in PARTIALS.iter().enumerate() {
@@ -448,4 +564,5 @@ pub fn check(actual: &ExactBezierSurface3, expected: &Patch, probe: [&R; 2]) {
         Err(Error::Unrepresentable(_)) => assert!(!representable),
         other => panic!("unexpected enclosure {other:?}"),
     }
+    mark("oracle tensor bounds");
 }

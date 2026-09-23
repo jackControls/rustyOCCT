@@ -151,7 +151,7 @@ fn check(data: &[u8], mut mark: impl FnMut(&'static str)) {
     }
     let probe: [R; 2] = std::array::from_fn(|i| R::new(byte(data, 14 + i).into(), 255.into()));
     for (a, b) in patches.iter().zip(&expected) {
-        reference::check(a, b, [&probe[0], &probe[1]]);
+        reference::check_profiled(a, b, [&probe[0], &probe[1]], &mut mark);
     }
     mark("base coefficient jet bounds");
     let selected = byte(data, 8) as usize % patches.len();
@@ -166,7 +166,7 @@ fn check(data: &[u8], mut mark: impl FnMut(&'static str)) {
     for (a, b) in actual.iter().zip(&references) {
         match (a, b) {
             (protocol::Item::Patch(a), reference::Item::Patch(b)) => {
-                reference::check(a, b, [&probe[0], &probe[1]])
+                reference::check_profiled(a, b, [&probe[0], &probe[1]], &mut mark)
             }
             (protocol::Item::Curve(a), reference::Item::Curve(b)) => {
                 reference::curves::check(a, b, &probe[0])
@@ -195,10 +195,11 @@ fn check(data: &[u8], mut mark: impl FnMut(&'static str)) {
     };
     assert_eq!(iso(&left), iso(&right));
     for split in [&left, &right] {
-        reference::check(
+        reference::check_profiled(
             split,
             &expected[selected].trim(split.domain().clone()),
             [&probe[0], &probe[1]],
+            &mut mark,
         );
     }
     assert_eq!(p.exchanged_uv().exchanged_uv(), *p);

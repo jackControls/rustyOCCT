@@ -141,6 +141,20 @@ independent surface fixture generator decodes their geometry and recomputes
 every output control, including the previously missing degree-25 unclamped
 ordinary regression. The source test names begin with `fuzz_`.
 
+The third Linux campaign at `73af204c` passed, including its complete mutation
+budget, but the retained mutation `151a86ed...` still took 20 instrumented
+seconds. The complete local ten-minute campaign passed 1,285 mutation executions
+without a new slow artifact. A green job alone did not resolve the timing risk.
+Detailed profiling separated kernel work, complete-coefficient conversion,
+independent jets and enclosure checks. The checker now carries one positive
+integer denominator across tensor polynomial transforms and reuses exact
+binomial/monomial matrices; it reduces only returned scalar values. Complete
+coefficient equality still checks every component by exact cross multiplication.
+No assertion, input family, timeout or memory limit is removed. On this local
+host the retained mutation's uninstrumented replay fell from about 0.80 to 0.49
+seconds. The exhaustive second-oracle pass checks all 744 fixtures, and is also
+run by Linux release CI. Timings remain diagnostics rather than guarantees.
+
 ```sh
 cargo run --manifest-path rust/fuzz/Cargo.toml --locked --release \
   --example replay_surface_editing -- rust/fuzz/regressions/surface_editing/*.bin

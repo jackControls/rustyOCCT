@@ -17,6 +17,7 @@ fn q(n: i32, d: i32) -> R {
 #[test]
 fn complete_tensor_controls_and_independent_quotient_jets() {
     let mut count = 0;
+    let all_oracles = std::env::var_os("RUSTY_VERIFY_ALL_SURFACE_ORACLES").is_some();
     for row in include_str!("../../fixtures/surface-editing.tsv")
         .lines()
         .filter(|r| !r.starts_with('#'))
@@ -32,7 +33,8 @@ fn complete_tensor_controls_and_independent_quotient_jets() {
         );
         // Python checks every complete result. A second independent Rust
         // coefficient/jet oracle checks selected cases here and every fuzz input.
-        if count % 17 == 0 {
+        // The opt-in exhaustive pass verifies checker changes against all fixtures.
+        if all_oracles || count % 17 == 0 {
             let references: Vec<_> = reference::extract(&input.surface, input.rectangle)
                 .into_iter()
                 .flat_map(|p| reference::apply(p, input.op, input.elevation))

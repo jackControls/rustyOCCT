@@ -114,6 +114,11 @@ jobs:
       - run: cargo +stable fmt --all --check
       - run: cargo +stable test --workspace --locked
       - run: cargo +stable test --workspace --locked --release
+      - name: Verify every tensor fixture with the second independent oracle
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          RUSTY_VERIFY_ALL_SURFACE_ORACLES: '1'
+        run: cargo +stable test --locked --release --test surface_editing complete_tensor_controls_and_independent_quotient_jets
       - run: cargo +stable clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo +stable run --locked --example plate
 
