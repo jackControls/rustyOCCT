@@ -552,6 +552,188 @@ fn irrational_distance_ties_retain_exact_images_and_atomic_budgets() {
 }
 
 #[test]
+fn affine_lower_bounds_handle_rotated_planes_and_unattained_projections() {
+    // On [-2,2], X=P=t^3-2t, Y=t^4 P. These independently expanded
+    // Bernstein coefficients are transformed along orthogonal directions
+    // u=(1,2,-1), v=(1,0,1), n=(1,-1,-1), of squared lengths 6,2,3.
+    // C=Q+(5/7)n+(uP+vt^4P)/W gives
+    // D=75/49 + P^2(6+2t^8)/W^2, with W strictly positive.
+    let x = [
+        (-4, 1),
+        (12, 7),
+        (20, 7),
+        (44, 35),
+        (-44, 35),
+        (-20, 7),
+        (-12, 7),
+        (4, 1),
+    ];
+    let y = [
+        (-64, 1),
+        (704, 7),
+        (-2624, 21),
+        (960, 7),
+        (-960, 7),
+        (2624, 21),
+        (-704, 7),
+        (64, 1),
+    ];
+    let query = [rational(7, 1), rational(-3, 1), rational(2, 1)];
+    let expected = [rational(54, 7), rational(-26, 7), rational(9, 7)];
+    for weighted in [false, true] {
+        let controls = x
+            .into_iter()
+            .zip(y)
+            .enumerate()
+            .map(|(i, ((xn, xd), (yn, yd)))| {
+                let w = rational(if weighted { 1 + (i % 3) as i32 } else { 1 }, 1);
+                let xyz: [R; 3] = std::array::from_fn(|k| {
+                    &expected[k] * &w
+                        + rational([1, 2, -1][k], 1) * rational(xn, xd)
+                        + rational([1, 0, 1][k], 1) * rational(yn, yd)
+                });
+                [xyz[0].clone(), xyz[1].clone(), xyz[2].clone(), w]
+            })
+            .collect();
+        let curve = ExactBSplineCurve3::from_homogeneous(
+            ExactKnotVector::new(7, vec![rational(-2, 1), rational(2, 1)], vec![8, 8]).unwrap(),
+            controls,
+        )
+        .unwrap();
+        let result = closest_points_on_exact_spline_in(
+            &curve,
+            &query,
+            &rational(-2, 1),
+            &rational(2, 1),
+            Default::default(),
+        )
+        .unwrap();
+        assert_eq!(result.points().len(), 3);
+        assert!(result.intervals().is_empty());
+        assert_eq!(
+            result
+                .compare_squared_distance_exact(&rational(75, 49))
+                .unwrap(),
+            Equal
+        );
+        for point in result.points() {
+            for (k, value) in expected.iter().enumerate() {
+                assert_eq!(point.compare_coordinate(k, value).unwrap(), Equal);
+            }
+        }
+        assert_eq!(
+            result.points()[1].rational_parameter(),
+            Some(rational(0, 1))
+        );
+        // Neither +/-sqrt(2) nor 0 lies in this trim: the hull's distance
+        // lower bound is unattainable and must not be returned as the answer.
+        let clipped = closest_points_on_exact_spline_in(
+            &curve,
+            &query,
+            &rational(3, 2),
+            &rational(2, 1),
+            Default::default(),
+        )
+        .unwrap();
+        assert_eq!(
+            clipped
+                .compare_squared_distance_exact(&rational(75, 49))
+                .unwrap(),
+            Greater
+        );
+        if !weighted {
+            // P and 6+2t^8 are strictly increasing and positive here.
+            let distance = rational(75, 49)
+                + rational(9, 64) * (rational(6, 1) + rational(2, 1) * rational(3, 2).pow(8));
+            assert_eq!(clipped.points().len(), 1);
+            assert_eq!(
+                clipped.points()[0].rational_parameter(),
+                Some(rational(3, 2))
+            );
+            assert_eq!(
+                clipped.compare_squared_distance_exact(&distance).unwrap(),
+                Equal
+            );
+        }
+    }
+}
+
+#[test]
+fn positive_span_bounds_do_not_prune_better_minima_or_constant_intervals() {
+    // The first segment attains its affine-hull lower bound 100. Later
+    // segments attain 4, both at an isolated parameter and on a constant span.
+    let curve = BSplineCurve3::new(
+        1,
+        [
+            (-1., 10.),
+            (1., 10.),
+            (-1., 2.),
+            (1., 2.),
+            (0., 2.),
+            (0., 2.),
+        ]
+        .into_iter()
+        .map(|(x, y)| Point3::new(x, y, 0.))
+        .collect(),
+        None,
+        (0..=5).map(f64::from).collect(),
+        vec![2, 1, 1, 1, 1, 2],
+    )
+    .unwrap();
+    let result = closest_points_on_spline(&curve, Point3::ORIGIN).unwrap();
+    assert_eq!(result.compare_squared_distance(4.).unwrap(), Equal);
+    assert_eq!(result.points().len(), 1);
+    assert_eq!(
+        result.points()[0].rational_parameter(),
+        Some(rational(5, 2))
+    );
+    assert_eq!(result.intervals().len(), 1);
+    assert_eq!(
+        result.intervals()[0].parameters(),
+        &[rational(4, 1), rational(5, 1)]
+    );
+
+    // C(t)=(t,t^2,t^3) has a three-dimensional affine hull. For Q=(0,0,1),
+    // D'=2t(3t^4+2t^2-3t+1). The quartic is positive: outside [1/2,1]
+    // its quadratic part is nonnegative, and inside it 3t^4>=3/16>1/8.
+    // Therefore t=0 uniquely minimizes distance, at D=1, not the hull bound 0.
+    let curve = ExactBSplineCurve3::from_homogeneous(
+        ExactKnotVector::new(3, vec![rational(-1, 1), rational(1, 1)], vec![4, 4]).unwrap(),
+        [
+            (-1, 1, 1, 1, -1),
+            (-1, 3, -1, 3, 1),
+            (1, 3, -1, 3, -1),
+            (1, 1, 1, 1, 1),
+        ]
+        .into_iter()
+        .map(|(xn, xd, yn, yd, z)| {
+            [
+                rational(xn, xd),
+                rational(yn, yd),
+                rational(z, 1),
+                rational(1, 1),
+            ]
+        })
+        .collect(),
+    )
+    .unwrap();
+    let result = closest_points_on_exact_spline_in(
+        &curve,
+        &[rational(0, 1), rational(0, 1), rational(1, 1)],
+        &rational(-1, 1),
+        &rational(1, 1),
+        Default::default(),
+    )
+    .unwrap();
+    assert_eq!(result.points().len(), 1);
+    assert_eq!(
+        result.points()[0].rational_parameter(),
+        Some(rational(0, 1))
+    );
+    assert_eq!(result.compare_squared_distance(1.).unwrap(), Equal);
+}
+
+#[test]
 fn computation_limits_are_atomic_and_invalid_queries_are_rejected() {
     let curve = parabola();
     let point = Point3::new(0., 1., 0.);

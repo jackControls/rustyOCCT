@@ -36,10 +36,13 @@ fn choose(n: usize, k: usize) -> R {
 }
 fn bernstein(p: &[R], degree: usize) -> Vec<R> {
     // t=-3+6u; direct binomial power-to-Bernstein identity, without de Boor.
+    bernstein_on(p, degree, &r(-3), &r(6))
+}
+fn bernstein_on(p: &[R], degree: usize, offset: &R, width: &R) -> Vec<R> {
     let mut power = vec![r(0); degree + 1];
     for (i, c) in p.iter().enumerate() {
         for (j, v) in power.iter_mut().enumerate().take(i + 1) {
-            *v += c * choose(i, j) * r(-3).pow((i - j) as i32) * r(6).pow(j as i32);
+            *v += c * choose(i, j) * offset.pow((i - j) as i32) * width.pow(j as i32);
         }
     }
     (0..=degree)
@@ -120,8 +123,8 @@ fn factors(data: &[u8]) {
     let power_degree = 1 + usize::from(byte(data, 1) % 21);
     let degree = power_degree + 4;
     // Offset cases have D=h^2 + scale^2 P^2(1+t^8)/W^2, so all and only
-    // the same known roots attain the positive minimum h^2. They exercise
-    // stationary isolation even after the zero-distance shortcut.
+    // the same known roots attain the positive minimum h^2. These include
+    // degree-25 inputs retained from before the affine-hull shortcut.
     let offset = byte(data, 2) & 1 != 0;
     let height = if offset {
         q(1 + i64::from(byte(data, 37) % 16), 8)
@@ -236,6 +239,125 @@ fn factors(data: &[u8]) {
             .zip(&closest)
         {
             bounds(b, value);
+        }
+    }
+}
+
+fn compare_radical(square: &R, sign: i8, x: &R) -> Ordering {
+    match sign {
+        0 => r(0).cmp(x),
+        1 if x < &r(0) => Greater,
+        1 => square.cmp(&(x * x)),
+        -1 if x > &r(0) => Less,
+        -1 => (x * x).cmp(square),
+        _ => unreachable!(),
+    }
+}
+
+fn nonplanar(data: &[u8]) {
+    // On [-1,1], P=s(s^2-a), V=1+s^2, and
+    // C-Q=(scale*P, h*(1-s^2)/V, 2h*s/V).
+    // Thus D=h^2+scale^2*P^2: its complete minimum set is {-sqrt(a),0,sqrt(a)}.
+    // The coefficient vectors of (P*V, h*(1-s^2), 2h*s, V) have affine
+    // rank three. The affine-hull bound is zero and is never attained, so
+    // non-singleton queries still exercise the general stationary solver.
+    let degree = 5;
+    let a = q(1 + i64::from(byte(data, 1) % 7), 8);
+    let height = q(1 + i64::from(byte(data, 2) % 16), 8);
+    let query: [R; 3] = std::array::from_fn(|i| q(i64::from(byte(data, 28 + i) as i8), 16));
+    let shift = q(i64::from(byte(data, 31) as i8), 8);
+    let width = pow2(i32::from(byte(data, 32) % 17) - 8);
+    let scale = pow2(i32::from(byte(data, 33) % 17) - 8);
+    let axis = usize::from(byte(data, 34) % 3);
+    let components = [
+        multiply(&[r(0), -&a, r(0), r(1)], &[r(1), r(0), r(1)]),
+        vec![r(1), r(0), r(-1)],
+        vec![r(0), r(2)],
+        vec![r(1), r(0), r(1)],
+    ]
+    .map(|p| bernstein_on(&p, degree, &r(-1), &r(2)));
+    let controls = (0..=degree)
+        .map(|i| {
+            // The independent degree-five Bernstein weights are
+            // [2,6/5,4/5,4/5,6/5,2], strictly positive.
+            let w = &components[3][i];
+            assert!(w > &r(0));
+            let xyz: [R; 3] = std::array::from_fn(|c| {
+                let local = (c + axis) % 3;
+                &query[c] * w + &components[local][i] * if local == 0 { &scale } else { &height }
+            });
+            [xyz[0].clone(), xyz[1].clone(), xyz[2].clone(), w.clone()]
+        })
+        .collect();
+    let mut c = curve(
+        degree,
+        controls,
+        vec![&shift - &width, &shift + &width],
+        vec![degree + 1; 2],
+        false,
+    );
+    if byte(data, 35) & 1 != 0 {
+        c = c.insert_knot(&(&shift + &width / r(3)), degree).unwrap();
+    }
+    if byte(data, 35) & 2 != 0 {
+        c = c.elevated(degree + 1).unwrap();
+    }
+    let (lo, hi) = match byte(data, 36) % 4 {
+        0 => (-1, 1),
+        1 => (0, 1),
+        2 => (-1, 0),
+        _ => (0, 0),
+    };
+    let result = closest_points_on_exact_spline_in(
+        &c,
+        &query,
+        &(&shift + r(lo) * &width),
+        &(&shift + r(hi) * &width),
+        Default::default(),
+    )
+    .unwrap();
+    let expected: Vec<_> = [-1, 0, 1]
+        .into_iter()
+        .filter(|&sign| {
+            compare_radical(&a, sign, &r(lo)) != Less
+                && compare_radical(&a, sign, &r(hi)) != Greater
+        })
+        .collect();
+    assert_eq!(result.points().len(), expected.len());
+    assert!(result.intervals().is_empty());
+    distance(&result, &(&height * &height));
+    for (actual, sign) in result.points().iter().zip(expected) {
+        interval(actual.parameter_bounds().unwrap(), |x| {
+            compare_radical(&a, sign, &((x - &shift) / &width))
+        });
+        assert_eq!(actual.compare_parameter(&shift).unwrap(), sign.cmp(&0));
+        for (c, b) in actual.coordinate_bounds().unwrap().into_iter().enumerate() {
+            match (c + axis) % 3 {
+                0 => {
+                    bounds(b, &query[c]);
+                    assert_eq!(actual.compare_coordinate(c, &query[c]).unwrap(), Equal);
+                }
+                1 => {
+                    let value = &query[c]
+                        + if sign == 0 {
+                            height.clone()
+                        } else {
+                            &height * (r(1) - &a) / (r(1) + &a)
+                        };
+                    bounds(b, &value);
+                    assert_eq!(actual.compare_coordinate(c, &value).unwrap(), Equal);
+                }
+                _ => {
+                    let factor = r(2) * &height / (r(1) + &a);
+                    interval(b, |x| {
+                        compare_radical(&a, sign, &((x - &query[c]) / &factor))
+                    });
+                    assert_eq!(
+                        actual.compare_coordinate(c, &query[c]).unwrap(),
+                        sign.cmp(&0)
+                    );
+                }
+            }
         }
     }
 }
@@ -542,6 +664,9 @@ fn polyline(data: &[u8]) {
 }
 
 pub fn check_spline_proximity(data: &[u8]) {
+    if byte(data, 0) == 4 {
+        return nonplanar(data);
+    }
     match byte(data, 0) % 4 {
         0 => factors(data),
         1 => parabola(data),

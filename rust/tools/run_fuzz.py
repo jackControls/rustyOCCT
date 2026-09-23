@@ -78,13 +78,20 @@ def seed_corpus(target):
             data[0:4]=bytes([0,degree-5,0,0])
             data[28:37]=bytes([13,7,9,0,8,16,degree%3,degree%4,degree%3])
             save(bytes(data))
-        # Positive known minimum distances also exercise stationary equations,
-        # even when the zero-distance common-factor path is available.
+        # Keep the original high-degree positive-distance timeout regressions.
         for degree in [5,6,7,8,11,16,24,25]:
             for variant in [0,1]:
                 data=bytearray((i*37+variant*13)%256 for i in range(72))
                 data[:3]=bytes([0,degree-5,1])
                 data[35:37]=bytes([0,0])
+                save(bytes(data))
+        # Nonplanar rational cylinder curves have known nonzero minima. Their
+        # affine-hull bound is unattainable, retaining stationary-solver work.
+        for square in range(7):
+            for variant in range(4):
+                data=bytearray((i*37+variant*13)%256 for i in range(40))
+                data[:3]=bytes([4,square,variant*5])
+                data[32:37]=bytes([square*2,16-square*2,square%3,variant,(square+variant)%4])
                 save(bytes(data))
         for family in [1,2,3]:
             for mode in [0,1,2,3]:
@@ -92,7 +99,7 @@ def seed_corpus(target):
                     data=bytearray((i*17+3)%256 for i in range(40))
                     data[:5]=bytes([family,mode,mode,exponent,127])
                     save(bytes(data))
-        for family in range(4):
+        for family in range(5):
             save(bytes([family]))
     elif target == 'degree_elevation':
         import struct

@@ -36,19 +36,25 @@ On each nonempty normalized knot span, write the homogeneous curve as
 `(X,Y,Z,W)` with `W>0`, the query as `Q`, and
 `N = Σ(X_i - Q_i W)^2`. Then squared distance is `N/W²`, and its stationary
 equation is `F = N'W - 2NW'`, of degree at most `3p-2` (73 at degree 25).
-Every real stationary root, every nonsmooth knot and both range endpoints are
-considered. `F=0` identically gives a constant-distance interval. The equation
-never divides by curve speed, so singular stationary points are retained.
 
-First, the common polynomial of `X_i-Q_i W` is checked for every exact
-zero-distance parameter on the span. It has degree at most `p`. If it has real
-roots in the queried range, they are all local minima with distance zero; other
-stationary points cannot improve them. Three identically zero deltas give a
-whole zero-distance interval. After any zero is found, subsequent spans need
-only this complete zero-set check. Earlier positive-distance winners are
-discarded. When there are no real zeros, the stationary equation remains the
-fallback. Shared rational knot hits merge exactly, while periodic aliases and
-whole intervals survive. Both isolation paths use the same subdivision budget.
+First, exact coefficient vectors determine the curve span's affine hull. Let
+`c` be the orthogonal projection of the query onto that hull, expressed relative
+to the query, and let `R_i = X_i-Q_i W-c_i W`. Exact orthogonality gives
+`N/W² = ||c||² + ΣR_i²/W²`. Thus `||c||²` is a certified lower bound. Every real
+common root of the residual polynomials attains it, and these are all local
+minima when at least one lies in the closed query range. Their common polynomial
+has degree at most `p`; the solver can omit the larger stationary equation and
+retain the certified rational distance even at irrational parameters. The hull
+may be a point, line, plane or all of 3D; no coordinate alignment is assumed.
+
+An unattained hull bound never becomes a result. In that case, every real
+stationary root, nonsmooth knot and range endpoint is considered. `F=0`
+identically gives a constant-distance interval. The equation never divides by
+curve speed, so singular stationary points are retained. A positive local bound
+does not prune later spans, which may contain smaller minima. After an attained
+global zero is found, only further zero minima can survive. Shared rational
+knot hits merge exactly, while periodic aliases and whole intervals survive.
+Both isolation paths use the same subdivision budget.
 
 Exact interval bounds filter candidate distances. Zero distance uses the
 sum-of-squares identity. When refined distance intervals still overlap, a
@@ -75,7 +81,16 @@ The sustained checker includes positive known minima of
 `h² + scale² P(t)²(1+t^8)/W(t)²`. Positive weights and the independently known
 factors of `P` prove the complete minimum parameter set. Rational parameter
 ties reach degree 25; positive-distance irrational ties and composed edits reach
-degree eight before optional elevation to nine. Separate regressions retain
+degree eight before optional elevation to nine. These planar offset cases
+exercise the hull shortcut, including the unchanged degree-24 timeout seed.
+Another family uses the nonplanar rational curve
+`C-Q = (scale*s(s²-a), h*(1-s²)/(1+s²), 2h*s/(1+s²))` for `0<a<1`.
+Its distance is `h² + scale²*s²*(s²-a)²`, so the complete minimum set is
+`{-sqrt(a),0,sqrt(a)}`. Its affine hull is all of 3D and its zero lower bound is
+unattainable, retaining general stationary-solver coverage. Positive degree-five
+weights, parameter changes, coordinate permutations, translations, knot
+insertion, optional elevation to six and closed trims are varied. Expected
+roots and coordinates use independent rational radical signs. Separate regressions retain
 irrational minimum distances and image-budget failures, and distinguish
 parabola minima under a `2^-180` query displacement.
 
@@ -166,7 +181,9 @@ differences and zero failures, and all seventeen CI fuzz targets passed again.
 Only the review data and this document changed from `fc022e82`; its kernel,
 tests, tools and dependencies are identical to the fully tested platform source.
 The earlier workflow remains recorded as failed because its new Linux native
-fingerprint had not yet been reviewed. The final platform rerun remains in flight.
+fingerprint had not yet been reviewed. The final rerun also passed all eight
+jobs, including 132 debug and release tests on each of Linux, macOS and Windows,
+132 tests on Rust 1.85, and the WebAssembly check.
 
 The subsequent rational-distance filter passed 134 release tests, nine focused
 debug tests, both lint checks, ten bridge self-tests, sixteen fuzz-runner
@@ -176,6 +193,24 @@ of replay in a scratch development tree: 1,062 mutations, a 1,502 MiB RSS peak,
 and no crash, timeout, OOM or mathematical disagreement. One 10-second slow seed
 was retained. Clean-revision acceptance is separate from that experiment and
 from the accepted zero-distance optimization above.
+
+At `31f378b0`, all eight kernel CI jobs passed: 134 debug and release tests on
+each native platform, 134 tests on Rust 1.85, WebAssembly, the original-test
+bridge and the source-pinned native comparisons. The clean local spline run
+completed 600.04 seconds of mutation after 810.18 seconds of replay, with 1,238
+mutations and a 1,674 MiB RSS peak. Sixteen CI fuzz targets passed, but the spline
+target timed out during replay of its deterministic degree-24 positive-distance
+seed. That failure remains recorded; a local pass does not excuse it.
+
+The affine-hull optimization preserves that input and all comparison, timeout
+and RSS limits. In paired local sanitizer replays, the Linux timeout seed went
+from 8.51 to 0.67 seconds; three other retained slow inputs also improved.
+These timings are local observations, not portable latency guarantees. The
+expanded development checker passed 39 separate sanitizer replays, including
+35 nonplanar seeds or retained mutations and the four retained slow/timeout
+inputs. Development checks passed 136 release tests, eleven focused debug
+tests, both lint checks, and a fresh 50/10/0 native comparison. Clean-revision
+fuzzing and fresh Linux CI are still required to close the published failure.
 
 This capability
 does not implement curve/curve or curve/surface minimum distance, general

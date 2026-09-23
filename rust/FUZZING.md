@@ -12,7 +12,7 @@ coverage feedback. They are distinct from the deterministic invariant tests.
 | `intersections` | Lines/segments, three-point planes/triangles, full binary64 exponents, coplanarity and degeneracies | All three intersection APIs against a rational barycentric oracle; exact classification; minimal finite coordinate/parameter enclosures; explicit unrepresentable results |
 | `linear_sets` | All 25 linear primitive pairings, raw binary64, coplanar/shared-vertex modes, full exponent range, invalid definitions and collapsed segments | Complete exact sets from independent boundary crossings and a gift-wrapping hull; canonical operand/winding symmetry; minimal construction bounds; zero-distance consistency on scaled-integer modes |
 | `proximity` | All 25 point/line/segment/plane/triangle pairings; arbitrary binary64 coordinates, scaled/coplanar/shared-vertex cases, collapsed segments and invalid inputs | Independent exact membership and supporting-plane certificates prove each returned pair globally minimal; minimal output enclosures, threshold comparisons, operand symmetry, coordinate permutation/vertex reversal and deterministic witnesses |
-| `spline_proximity` | Positive-weight rational space curves through degree 25 with known zero and nonzero minima, rational/irrational factor roots, composed exact knot/degree edits, trimmed/singleton ranges, near-tie parabolas, rational circles and periodic polylines | Complete minimum parameter sets and whole intervals from independent factor signs, a monotone cubic, circle identities and exhaustive rational segment projections; tight parameter/coordinate/distance bounds; exact ties and periodic aliases |
+| `spline_proximity` | Positive-weight rational space curves through degree 25 with known zero and nonzero minima, nonplanar cylinder curves, rational/irrational factor roots, composed exact knot/degree edits, trimmed/singleton ranges, near-tie parabolas, rational circles and periodic polylines | Complete minimum parameter sets and whole intervals from independent factor and radical signs, a monotone cubic, circle identities and exhaustive rational segment projections; tight parameter/coordinate/distance bounds; exact ties and periodic aliases |
 | `modeling` | Valid radial polygons/circles, optional holes, 49 scales, up to eight operations, plus raw invalid input | Repeated rigid transforms, reversed winding/offsets and planar splits; mass/first-moment conservation, topology, classification, bounds and finite positive properties |
 | `curved` | Full binary64 coefficients, centers/radii/axes and line endpoints; scaled integers; exact/neighboring tangencies; generator and point segments | Quadratic root count, multiplicity, exact comparisons, minimal enclosures; circle/sphere/cylinder hits against independent polynomial-sign and axial-projection oracles; endpoint clipping and typed failures |
 | `splines` | Raw binary64 poles/weights/knots, scaled geometry, degree 1..25, repeated knots, periodic seams, full-range wrapped parameters, explicit sides and derivative requests | Exact basis-function derivatives and closed quotient formulas independently check homogeneous pole interpolation; minimal position/derivative bounds; discontinuity, domain, nonfinite and overflow errors |
@@ -99,12 +99,17 @@ scaling and coordinate permutations exercise conditioning independently of
 root identity. These cases retain exact results when floating conversion fails.
 Spline minimum-distance inputs additionally offset known-factor curves so the
 positive squared minimum is exactly `h²`. Their stationary equations can reach
-degree 73; the zero-distance shortcut cannot decide these cases. Rational
+degree 73, while an attained affine-hull bound can certify minima directly. Rational
 parameter ties reach degree 25, while positive-distance irrational ties and
 composed edits start at degree at most eight, with optional elevation to nine.
 The independent factor identities still certify every minimizing parameter;
-all original zero-distance degree-25 cases remain. The input and RSS budgets
-are unchanged.
+all original zero-distance degree-25 cases remain. Nonplanar rational cylinder
+curves additionally have `D=h²+scale²*s²*(s²-a)²`, with `0<a<1`. Their full 3D
+affine hull has an unattainable zero lower bound, so non-singleton ranges retain
+the general stationary solver. Independently known roots and coordinates
+certify all minima through parameter changes, translations, axis permutations,
+degree-five-to-six elevation, knot insertion and closed trims. The input and
+RSS budgets are unchanged; the original degree-24 timeout seed remains included.
 General root products reach degree 25. An
 outer deadline kills the build/fuzzer process group. Corpus replay without any
 subsequent mutation is an incomplete run. An incomplete run, crash,

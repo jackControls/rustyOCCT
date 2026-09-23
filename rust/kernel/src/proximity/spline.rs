@@ -239,9 +239,10 @@ pub fn closest_points_on_exact_spline(
         SplineProximityOptions::default(),
     )
 }
-/// Minimize squared Euclidean distance over the complete closed range. Every
-/// smooth-span stationary root and every nonsmooth knot/range endpoint is
-/// considered. No speed normalization discards singular stationary points.
+/// Minimize squared Euclidean distance over the complete closed range. An exact
+/// affine-hull bound can certify all span minima directly; otherwise every
+/// stationary root and knot/range endpoint is considered. No speed
+/// normalization discards singular stationary points.
 /// Degree 1..25 and positive weights follow the curve's existing contract.
 pub fn closest_points_on_exact_spline_in(
     curve: &ExactBSplineCurve3,
@@ -284,6 +285,7 @@ pub fn closest_points_on_exact_spline_in(
                 at: Distance {
                     span,
                     root: AlgebraicRoot::rational(zero()),
+                    known_squared_distance: None,
                 },
                 interval: None,
             },
@@ -305,12 +307,16 @@ pub fn closest_points_on_exact_spline_in(
             let span = Arc::new(Span::new(
                 at.start, length, h, &point, min_weight, max_weight,
             ));
-            // Squared distance is zero iff all three spatial deltas vanish.
-            // Their common polynomial has degree at most p, whereas the
-            // stationary-distance equation can reach 3p-2. Isolating every
-            // common root proves the complete local zero set directly.
-            let mut common = IntPolynomial::from_rationals(&span.delta[0]);
-            for delta in &span.delta[1..] {
+            // Orthogonal projection onto the exact affine hull proves a
+            // squared-distance lower bound. Every preimage of that projection
+            // attains the bound; no other point on the span can improve it.
+            let (projection, residual) = span.affine_hull_projection();
+            let lower_bound = dot(&projection, &projection);
+            if zero_found && lower_bound > zero() {
+                continue;
+            }
+            let mut common = IntPolynomial::from_rationals(&residual[0]);
+            for delta in &residual[1..] {
                 if common.is_constant() && !common.is_zero() {
                     break;
                 }
@@ -320,7 +326,7 @@ pub fn closest_points_on_exact_spline_in(
                 let zeros =
                     real::isolate(&common, lower.clone(), upper.clone(), &mut context.roots)?;
                 if !zeros.is_empty() {
-                    zero_found = true;
+                    zero_found |= lower_bound == zero();
                     for mut root in zeros {
                         root.refine_for_signs(16);
                         context.consider(
@@ -329,17 +335,19 @@ pub fn closest_points_on_exact_spline_in(
                                 at: Distance {
                                     span: span.clone(),
                                     root,
+                                    known_squared_distance: Some(lower_bound.clone()),
                                 },
                                 interval: None,
                             },
                         )?;
                     }
+                    continue;
                 }
                 if zero_found {
                     continue;
                 }
             } else {
-                zero_found = true;
+                zero_found |= lower_bound == zero();
             }
             let f = subtract(
                 &product(&derivative(&span.numerator), &span.homogeneous[3]),
@@ -354,6 +362,7 @@ pub fn closest_points_on_exact_spline_in(
                         at: Distance {
                             span,
                             root: AlgebraicRoot::rational(lower),
+                            known_squared_distance: None,
                         },
                         interval: Some([at.lower, at.upper]),
                     },
@@ -367,6 +376,7 @@ pub fn closest_points_on_exact_spline_in(
                         at: Distance {
                             span: span.clone(),
                             root: AlgebraicRoot::rational(lower.clone()),
+                            known_squared_distance: None,
                         },
                         interval: None,
                     },
@@ -384,6 +394,7 @@ pub fn closest_points_on_exact_spline_in(
                         at: Distance {
                             span: span.clone(),
                             root,
+                            known_squared_distance: None,
                         },
                         interval: None,
                     },
@@ -395,6 +406,7 @@ pub fn closest_points_on_exact_spline_in(
                     at: Distance {
                         span,
                         root: AlgebraicRoot::rational(upper),
+                        known_squared_distance: None,
                     },
                     interval: None,
                 },
@@ -423,7 +435,7 @@ pub fn closest_points_on_exact_spline_in(
             point.compare_parameter(&range.parameters[0]).unwrap() != Less
                 && point.compare_parameter(&range.parameters[1]).unwrap() != Greater
         });
-        // A zero-distance root can be emitted by both adjacent closed spans.
+        // A local minimum can be emitted by both adjacent closed spans.
         // Only their exact shared rational boundary can be duplicated; aliases
         // from different turns remain distinct parameters.
         let duplicate = point.rational_parameter().is_some_and(|u| {
@@ -450,6 +462,8 @@ struct Candidate {
 struct Distance {
     span: Arc<Span>,
     root: AlgebraicRoot,
+    // Set only after common residual roots certify the affine lower bound.
+    known_squared_distance: Option<R>,
 }
 #[derive(Debug)]
 struct Span {
@@ -463,6 +477,56 @@ struct Span {
     max_weight: R,
 }
 impl Span {
+    /// The query is the origin in `delta` coordinates. Return the orthogonal
+    /// projection of that origin onto the curve's affine hull, and the
+    /// homogeneous displacement from that projection. All arithmetic is exact.
+    fn affine_hull_projection(&self) -> ([R; 3], [Vec<R>; 3]) {
+        let w = &self.homogeneous[3];
+        let anchor: [R; 3] =
+            std::array::from_fn(|i| self.delta[i].first().cloned().unwrap_or_else(zero) / &w[0]);
+        let degree = self
+            .delta
+            .iter()
+            .map(Vec::len)
+            .chain([w.len()])
+            .max()
+            .unwrap();
+        let mut direction: Option<[R; 3]> = None;
+        let mut normal: Option<[R; 3]> = None;
+        for j in 1..degree {
+            let v: [R; 3] = std::array::from_fn(|i| {
+                self.delta[i].get(j).cloned().unwrap_or_else(zero)
+                    - &anchor[i] * w.get(j).cloned().unwrap_or_else(zero)
+            });
+            if let Some(n) = &normal {
+                if dot(n, &v) != zero() {
+                    // Full three-dimensional hull: its lower bound is zero.
+                    return (std::array::from_fn(|_| zero()), self.delta.clone());
+                }
+            } else if let Some(u) = &direction {
+                let n: [R; 3] = std::array::from_fn(|i| {
+                    &u[(i + 1) % 3] * &v[(i + 2) % 3] - &u[(i + 2) % 3] * &v[(i + 1) % 3]
+                });
+                if n.iter().any(|x| x != &zero()) {
+                    normal = Some(n);
+                }
+            } else if v.iter().any(|x| x != &zero()) {
+                direction = Some(v);
+            }
+        }
+        let projection = if let Some(n) = normal {
+            let scale = dot(&anchor, &n) / dot(&n, &n);
+            n.map(|x| x * &scale)
+        } else if let Some(u) = direction {
+            let scale = dot(&anchor, &u) / dot(&u, &u);
+            std::array::from_fn(|i| &anchor[i] - &u[i] * &scale)
+        } else {
+            anchor
+        };
+        let residual = std::array::from_fn(|i| subtract(&self.delta[i], w, &projection[i]));
+        (projection, residual)
+    }
+
     fn new(
         start: R,
         length: R,
@@ -500,9 +564,11 @@ impl Distance {
         refined
     }
     fn rational_value(&self) -> Option<R> {
-        self.root
-            .rational_value()
-            .map(|x| evaluate(&self.span.numerator, x) / evaluate(&self.span.denominator, x))
+        self.known_squared_distance.clone().or_else(|| {
+            self.root
+                .rational_value()
+                .map(|x| evaluate(&self.span.numerator, x) / evaluate(&self.span.denominator, x))
+        })
     }
     fn compare_rational(&self, value: &R) -> Ordering {
         if value < &zero() {
@@ -678,6 +744,10 @@ impl Context {
         }
         unreachable!("annihilating polynomial contains the selected finite image")
     }
+}
+
+fn dot(a: &[R; 3], b: &[R; 3]) -> R {
+    a.iter().zip(b).map(|(x, y)| x * y).sum()
 }
 
 fn zero() -> R {
