@@ -511,3 +511,23 @@ map to all transverse fields removed coordinate magnitude from factorization.
 All unit-column equations and all resulting controls remain checked exactly.
 The fixed instrumented replay and full campaigns must pass their original
 60-second/2-GiB gates before acceptance.
+
+Linux runs [35897946980](https://github.com/jackControls/rustyOCCT/actions/runs/35897946980)
+and [35899308823](https://github.com/jackControls/rustyOCCT/actions/runs/35899308823)
+both timed out on the identical
+`timeout-1a8f85cf535d9243909bccfd017a763e7fa28bec` during seed replay. It raises
+a 27-by-27 uniform periodic surface from degree 24 to 25 in both directions,
+then checks the independent full grid, transposition and exact jets.
+`degree_elevation/uniform-periodic-both-24-25.bin` retains the 2,932 consumed
+bytes of the 3,216-byte input; only its unused suffix was removed.
+
+Profiling identified repeated production control-map construction. The two
+identical axes now share their exact map, and periodic degree elevation uses
+the three periods needed by the complete canonical support instead of five.
+The proof and independent unit-column boundary tests are described in
+[`DEGREE_ELEVATION.md`](../../DEGREE_ELEVATION.md). Every resulting control and
+all composition/derivative assertions remain enabled. On the local machine,
+ordinary replay fell from 4.253 to 2.074 seconds; the ASan replay took 36.086
+seconds. Single-file replay is timed separately because libFuzzer does not
+enforce its usual alarm in that mode. Published Linux campaigns must still
+pass the unchanged 60-second/2-GiB input gates.

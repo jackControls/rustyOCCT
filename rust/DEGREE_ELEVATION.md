@@ -53,8 +53,17 @@ The production map references `BSplCLib::IncreaseDegree` and its Prautzsch
 averaging: duplicate controls by congruence class, increase the selected knot
 multiplicities, refine the remaining knots, and average p+1 rank curves.
 Sparse maps are reused for every transverse homogeneous field of a surface.
-Periodic working data spans five periods; the complete canonical extended
-knot sequence selects the resulting cyclic controls.
+Identical source and destination axes also share the map between U and V.
+Periodic working data spans three periods: the fundamental interval and one
+neighbor on either side. With n cyclic poles and degree p, validation requires
+n > p. Thus the unclamped working active interval contains the whole central
+period; zero padding at the two outer ends does not change its function.
+After elevation, n' > q and the canonical extension length e remains unchanged.
+In particular, n'-e is at least the new seam multiplicity, so the first and
+last canonical extension knots lie strictly inside the outer period endpoints.
+The complete canonical extended knot sequence selects the cyclic controls,
+preserving their original origin. Two more outer periods would add computation
+without contributing support to this result.
 
 The Python oracle in `tools/degree_elevation_reference.py` instead solves
 every Cox power-coefficient equation on every support interval using exact
@@ -81,6 +90,13 @@ curve `IncreaseDegree` and `RationalCurveIncreaseDegree` GTests and the original
 surface `IncreaseDegree` GTest. Rust tests compare every resulting knot,
 multiplicity, domain, and homogeneous control. Additional tests cover extreme
 rational values, staged elevation, transposition, and atomic count rejection.
+The tightest periodic support (only p+1 cyclic poles) is checked separately
+for every raising source degree, low/middle/full seam multiplicity, a single
+increment and a jump to degree 25. These tests pack every source unit column
+into tensor coordinate fields and reconstruct the complete map with the
+independent global periodic coefficient solver. The saved degree-24 periodic
+tensor timeout also reconstructs all 54-by-54 resulting controls and checks
+transposition in the ordinary test suite.
 
 Regenerate or verify the independent fixtures with:
 

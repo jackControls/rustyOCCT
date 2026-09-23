@@ -4,7 +4,7 @@
 //!
 //! Unclamped cropping is derived from the original active knot indices, rather
 //! than OCCT's output-copy loop, which can change domains or emit bad counts.
-//! Periodic data is extended over five periods and cropped by the complete
+//! Periodic data is extended over three periods and cropped by the complete
 //! canonical extended knot sequence, preserving the original cyclic origin.
 use super::refinement::{blend, Sparse};
 use super::{integer, ExactKnotVector, KnotRefinementTransform};
@@ -93,7 +93,14 @@ impl DegreeElevationTransform {
             let e = p + 1 - old.multiplicities()[0];
             let mut knots = Vec::new();
             let mut mults = Vec::new();
-            for turn in -2..=2 {
+            // n > p puts the active interval of these three periods strictly
+            // around the entire fundamental period. Zero clamping at the two
+            // outer ends therefore cannot affect it. After elevation, n' > q
+            // and e = q + 1 - m' is unchanged: the canonical knot extension
+            // lies strictly inside the neighboring periods, away from either
+            // clamped end. Matching that full window preserves the cyclic
+            // origin. Extra outer periods add work but no supporting basis.
+            for turn in -1..=1 {
                 let shift = R::from_integer(turn.into()) * &period;
                 for (k, &m) in old
                     .knots()
@@ -105,9 +112,9 @@ impl DegreeElevationTransform {
                     mults.push(m);
                 }
             }
-            knots.push(&old.knots()[0] + integer(3) * &period);
+            knots.push(&old.knots()[0] + integer(2) * &period);
             mults.push(old.multiplicities()[0]);
-            let rows: Vec<_> = (0..5 * n - e)
+            let rows: Vec<_> = (0..3 * n - e)
                 .map(|i| vec![((i + e) % n, integer(1))])
                 .collect();
             (knots, mults, rows, e, e)

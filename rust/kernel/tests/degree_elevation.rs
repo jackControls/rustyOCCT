@@ -31,6 +31,80 @@ fn independent_degree_equations_reject_unrepresentable_higher_coefficients() {
 }
 
 #[test]
+fn retained_periodic_tensor_timeout_reconstructs_every_control() {
+    let data =
+        include_bytes!("../../fuzz/regressions/degree_elevation/uniform-periodic-both-24-25.bin");
+    let axis = ExactKnotVector::new_periodic(24, (0..28).map(r).collect(), vec![1; 28]).unwrap();
+    let controls = (0..27 * 27)
+        .map(|i| {
+            std::array::from_fn(|c| {
+                let byte = data[16 + 4 * i + c];
+                r(if c == 3 {
+                    1 + i32::from(byte % 8)
+                } else {
+                    byte as i8 as i32
+                })
+            })
+        })
+        .collect();
+    let surface = ExactBSplineSurface3::from_homogeneous(axis.clone(), axis, controls).unwrap();
+    let result = surface.elevated(25, 25).unwrap();
+    assert_eq!(result, reference::elevated_surface(&surface, [25, 25]));
+    assert_eq!(result.domain(), surface.domain());
+    assert_eq!(result.pole_counts(), [54, 54]);
+    assert_eq!(
+        result.exchanged_uv(),
+        surface.exchanged_uv().elevated(25, 25).unwrap()
+    );
+}
+
+#[test]
+fn minimal_periodic_support_reconstructs_every_source_unit_column() {
+    // With only p+1 cyclic poles, the support reaches furthest into the
+    // neighboring periods. Pack every source unit column into x/y/z fields
+    // of a transverse tensor row; positive unit weights keep valid geometry.
+    // The global periodic Cox solver checks all map coefficients without
+    // using the production working extension or its clamping/cropping.
+    for p in 1usize..25 {
+        let n = p + 1;
+        let width = n.div_ceil(3).max(2);
+        let mut v_mults = vec![1; width];
+        v_mults[0] = 2;
+        v_mults[width - 1] = 2;
+        let v =
+            ExactKnotVector::new(1, (0..width).map(|i| r(i as i32)).collect(), v_mults).unwrap();
+        let mut seams = vec![1, p.div_ceil(2), p];
+        seams.sort_unstable();
+        seams.dedup();
+        for seam in seams {
+            let u = ExactKnotVector::new_periodic(
+                p,
+                vec![r(0), R::new(1.into(), 257.into()), r(3)],
+                vec![seam, n - seam, seam],
+            )
+            .unwrap();
+            let controls = (0..n)
+                .flat_map(|i| {
+                    (0..width).map(move |j| {
+                        std::array::from_fn(|c| r(i32::from(c == 3 || i == 3 * j + c)))
+                    })
+                })
+                .collect();
+            let surface = ExactBSplineSurface3::from_homogeneous(u, v.clone(), controls).unwrap();
+            let mut targets = vec![p + 1, 25];
+            targets.dedup();
+            for q in targets {
+                assert_eq!(
+                    surface.elevated(q, 1).unwrap(),
+                    reference::elevated_surface(&surface, [q, 1]),
+                    "degree {p} to {q}, seam multiplicity {seam}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
 fn every_curve_control_matches_independent_coefficient_equations() {
     let mut count = 0;
     for row in include_str!("../../fixtures/degree-elevation-curves.tsv").lines() {

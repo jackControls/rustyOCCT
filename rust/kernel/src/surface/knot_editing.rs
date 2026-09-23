@@ -125,12 +125,22 @@ impl ExactBSplineSurface3 {
             self.axes[1].elevation_plan(v_degree)?,
         ];
         control_count(&axes)?;
+        // The map depends only on the source and destination knot axes. When
+        // both directions have identical axes, reuse its exact coefficients
+        // while still applying them independently to every transverse field.
+        let shared_axes = self.axes[0] == self.axes[1] && axes[0] == axes[1];
+        let mut transform = None;
         let mut result = self.clone();
         for axis in 0..2 {
             if result.axes[axis].degree() == targets[axis] {
                 continue;
             }
-            let transform = spline::DegreeElevationTransform::new(&result.axes[axis], &axes[axis]);
+            if !shared_axes {
+                transform = None;
+            }
+            let transform = transform.get_or_insert_with(|| {
+                spline::DegreeElevationTransform::new(&result.axes[axis], &axes[axis])
+            });
             let rows: Vec<_> = result
                 .rows(axis)
                 .iter()
