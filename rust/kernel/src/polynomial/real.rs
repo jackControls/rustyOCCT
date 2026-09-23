@@ -201,6 +201,31 @@ impl AlgebraicRoot {
         finite(x, "root comparison value")?;
         Ok(self.compare_rational(&rat(x)))
     }
+    /// Exact ordering of two real algebraic roots, including roots of different
+    /// polynomials. Multiplicity and overlapping binary64 bounds do not affect
+    /// equality. No iterative approximate-equality criterion is used.
+    pub fn compare_root(&self, other: &Self) -> Ordering {
+        if other.lower == other.upper {
+            return self.compare_rational(&other.lower);
+        }
+        if self.compare_rational(&other.lower) != Ordering::Greater {
+            return Ordering::Less;
+        }
+        if self.compare_rational(&other.upper) != Ordering::Less {
+            return Ordering::Greater;
+        }
+        // self is strictly inside other's isolator. Its square-free defining
+        // polynomial has exactly one simple root there and changes sign once.
+        // A zero proves equality even when the two defining polynomials differ.
+        let sign = self.sign_polynomial(&other.defining.polynomial);
+        if sign == Ordering::Equal {
+            Ordering::Equal
+        } else if sign == other.defining.polynomial.sign_at(&other.lower) {
+            Ordering::Less
+        } else {
+            Ordering::Greater
+        }
+    }
     /// Exact sign of another represented polynomial at this root. In
     /// particular, a zero is decided algebraically, without approximate equality.
     pub fn sign_at(&self, polynomial: &Polynomial) -> Ordering {

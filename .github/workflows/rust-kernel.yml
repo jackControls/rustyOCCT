@@ -54,6 +54,7 @@ jobs:
           python3 rust/tools/generate_surface_editing_fixtures.py --check
           python3 rust/tools/generate_surface_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_real_root_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_root_comparison_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_spline_plane_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_spline_quadric_fixtures.py --check
       - name: Run unchanged upstream tests on both kernels

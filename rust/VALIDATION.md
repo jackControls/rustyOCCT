@@ -389,7 +389,7 @@ isocurves, periodic wrapping, malformed data and operation sequences. Its
 retained degree-25 timeout reproducer is also an ordinary Cargo regression.
 The fifteen-target daily workflow retains evolving corpora and artifacts.
 
-## General degree-elevation acceptance in progress
+## General degree-elevation acceptance
 
 All 142 curve and 125 tensor fixture grids are reconstructed with Python
 Fraction/Cox equations and independently with the Rust integer equation solver.
@@ -404,6 +404,23 @@ remain failures. Deliberate-corruption tests reject altered controls, flags,
 domains, case sets, stale captures and wrong runtime libraries. See
 [degree elevation](DEGREE_ELEVATION.md) for the native comparison commands.
 
-The sixteenth fuzz target and source-pinned CI job are added. Successful local
-mathematical/native checks do not substitute for a complete mutation campaign
-or final published-revision platform results; those acceptance gates are pending.
+Revision `27647fadbb82ca8e516b66b606687d65144e0cf7` passed all sixteen Linux
+sanitizer targets, each with a full 60-second mutation budget after replay,
+and a separate 600-second local degree-elevation mutation campaign. Its
+platform gate passed 120 tests in debug and release on Linux, macOS and Windows,
+Rust 1.85, WebAssembly compilation and all five Linux second-oracle checks.
+The retained periodic tensor timeout is covered by ordinary tests as well as
+fuzzing. [The acceptance evidence](DEGREE_ELEVATION.md#accepted-revision-and-campaign-evidence)
+pins the code revision, workflow runs, observed limits and remaining scope.
+
+## Exact ordering across algebraic equations
+
+`generate_root_comparison_fixtures.py --check` verifies 130 equation pairs using
+irreducible-factor identity and continued-fraction isolation. Cargo checks all
+pairwise root comparisons in both directions, including exact ties, degree-25
+clusters, unrepresentable roots and shifts below binary64 resolution. The
+existing 95 real-root fixtures also check every within-equation ordering.
+The `roots` sanitizer harness constructs independent one- and two-root factor
+equations to check cross-equation equality and ordering throughout campaigns.
+This foundation does not yet implement rational-function image comparison or
+complete curved-distance minima.

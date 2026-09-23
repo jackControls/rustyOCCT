@@ -412,6 +412,25 @@ is Li, Passmore and Paulson,
 polynomial and isolating interval follows the algebraic-number model described
 by the [CGAL Algebraic Kernel](https://doc.cgal.org/latest/Algebraic_kernel_d/index.html).
 
+`AlgebraicRoot::compare_root` orders exact roots across different defining
+polynomials, independently of multiplicity or binary64 views. Let beta have
+square-free defining polynomial Q and a nonrational isolator (a,b). First
+compare alpha exactly with a and b. If alpha is inside, Q(alpha)=0 proves
+equality. Otherwise, Q changes sign exactly once on this interval, so the sign
+of Q(alpha) equals Q(a) precisely when alpha < beta. Rational beta uses the
+existing rational comparison. This gives a terminating equality decision;
+repeated approximate refinement is not needed to separate true ties.
+
+The independent comparison fixtures use irreducible factor identities and
+canonical real-root indices to recognize equality, then VAS interval refinement
+to separate distinct values. The 130 equation pairs include shared factors,
+repeated roots, degree-25 equations, coefficients at binary64's exponent limits,
+roots outside binary64, and distinct roots whose binary64 views coincide.
+The `roots` fuzz target additionally compares each known-factor root against an
+independently constructed minimal equation and checks cross-equation ordering.
+General rational-function images and global curved-distance minimizers require
+additional machinery and are not implied by root ordering alone.
+
 `intersection::spline_plane` substitutes each rational span into a three-point
 plane using exact homogeneous coefficients on local parameter [0,1]. Positive
 weights ensure a nonzero denominator. All numerator roots are isolated; zero

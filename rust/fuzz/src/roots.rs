@@ -166,10 +166,29 @@ pub fn check_roots(data: &[u8]) {
     if !finite {
         assert!(matches!(query, Err(Error::NonFinite(_))));
     }
-    for (root, expected) in actual.iter().zip(expected) {
+    for (index, (root, expected)) in actual.iter().zip(expected).enumerate() {
         assert_eq!(root.multiplicity(), expected.multiplicity);
         interval(root.bounds().unwrap(), |x| expected.compare(x));
         assert_eq!(root.sign_at(&polynomial), Equal);
+        // These one- or two-root equations independently describe the known
+        // factor. Equality must survive different defining polynomials and
+        // multiplicities; ordering uses the independently ordered factor list.
+        let factor = if let Some(n) = expected.rational {
+            vec![-f64::from(n), 1.]
+        } else {
+            vec![-f64::from(expected.square), 0., 1.]
+        };
+        let RealRoots::Finite(factor_roots) =
+            Polynomial::new(&factor).unwrap().real_roots().unwrap()
+        else {
+            panic!("known factor is not zero");
+        };
+        let known = &factor_roots[usize::from(expected.rational.is_none() && expected.positive)];
+        assert_eq!(root.compare_root(known), Equal);
+        assert_eq!(known.compare_root(root), Equal);
+        let other = usize::from(byte(data, 238 + index)) % actual.len();
+        assert_eq!(known.compare_root(&actual[other]), index.cmp(&other));
+        assert_eq!(actual[other].compare_root(known), other.cmp(&index));
         if finite {
             assert_eq!(root.sign_at(query.as_ref().unwrap()), expected.sign_at(&q));
         }

@@ -79,6 +79,11 @@ fn roots_and_algebraic_queries_match_independent_continued_fraction_oracle() {
                     assert_eq!(r.sign_at(&q), sign, "{name}");
                     assert_eq!(r.sign_at(&p), Equal, "{name}");
                 }
+                for (i, root) in roots.iter().enumerate() {
+                    for (j, other) in roots.iter().enumerate() {
+                        assert_eq!(root.compare_root(other), i.cmp(&j), "{name}");
+                    }
+                }
                 if name.starts_with("cluster") {
                     assert_eq!(roots.len(), 2);
                     assert_eq!(roots[0].bounds().unwrap(), roots[1].bounds().unwrap());
@@ -91,6 +96,90 @@ fn roots_and_algebraic_queries_match_independent_continued_fraction_oracle() {
         count += 1;
     }
     assert_eq!(count, 95);
+}
+
+#[test]
+fn comparisons_across_defining_polynomials_resolve_shared_and_close_roots() {
+    fn roots(coefficients: &[f64]) -> Vec<rusty_occt::polynomial::AlgebraicRoot> {
+        let RealRoots::Finite(roots) = Polynomial::new(coefficients).unwrap().real_roots().unwrap()
+        else {
+            panic!()
+        };
+        roots
+    }
+    let square = roots(&[-2., 0., 1.]);
+    // Repeated common factor, plus the rational root 1.
+    let repeated = roots(&[-4., 12., -8., -8., 11., -1., -3., 1.]);
+    let cube = roots(&[-3., 0., 0., 1.]);
+    let one = roots(&[-1., 1.]);
+    for (i, j) in [(0, 0), (1, 2)] {
+        assert_eq!(square[i].compare_root(&repeated[j]), Equal);
+        assert_eq!(repeated[j].compare_root(&square[i]), Equal);
+    }
+    assert_eq!(one[0].compare_root(&repeated[1]), Equal);
+    assert_eq!(square[0].compare_root(&one[0]), Less);
+    assert_eq!(square[1].compare_root(&cube[0]), Less);
+    assert_eq!(cube[0].compare_root(&square[1]), Greater);
+    // Both positive roots enclose to the same adjacent binary64 values.
+    // An exactly represented tiny linear coefficient shifts both roots right.
+    let close = roots(&[-2., -2f64.powi(-70), 1.]);
+    assert_eq!(square[1].bounds().unwrap(), close[1].bounds().unwrap());
+    assert_eq!(square[1].compare_root(&close[1]), Less);
+    assert_eq!(close[0].compare_root(&square[0]), Greater);
+    // Roots outside binary64 remain ordered without constructing a view.
+    let huge = roots(&[-f64::MAX, f64::from_bits(1)]);
+    let twice = roots(&[-f64::MAX, f64::from_bits(2)]);
+    assert_eq!(huge[0].compare_root(&twice[0]), Greater);
+}
+
+#[test]
+fn cross_equation_order_matches_independent_factor_identity_and_vas_oracle() {
+    fn read_roots(
+        words: &mut std::str::SplitWhitespace<'_>,
+    ) -> Vec<rusty_occt::polynomial::AlgebraicRoot> {
+        fn number(word: &str) -> f64 {
+            f64::from_bits(u64::from_str_radix(word, 16).unwrap())
+        }
+        let count = words.next().unwrap().parse::<usize>().unwrap();
+        let (lower, upper) = (words.next().unwrap(), words.next().unwrap());
+        let coefficients = (0..count)
+            .map(|_| number(words.next().unwrap()))
+            .collect::<Vec<_>>();
+        let polynomial = Polynomial::new(&coefficients).unwrap();
+        let found = if lower == "*" {
+            polynomial.real_roots()
+        } else {
+            polynomial.roots_in(number(lower), number(upper))
+        }
+        .unwrap();
+        let RealRoots::Finite(found) = found else {
+            panic!("nonzero equation")
+        };
+        assert_eq!(found.len(), words.next().unwrap().parse::<usize>().unwrap());
+        found
+    }
+    let mut count = 0;
+    let mut comparisons = 0;
+    for row in include_str!("../../fixtures/root-comparisons.tsv")
+        .lines()
+        .filter(|s| !s.starts_with('#'))
+    {
+        let mut words = row.split_whitespace();
+        let name = words.next().unwrap();
+        let (a, b) = (read_roots(&mut words), read_roots(&mut words));
+        for x in &a {
+            for y in &b {
+                let expected = words.next().unwrap().parse::<i32>().unwrap().cmp(&0);
+                assert_eq!(x.compare_root(y), expected, "{name}");
+                assert_eq!(y.compare_root(x), expected.reverse(), "{name}");
+                comparisons += 1;
+            }
+        }
+        assert!(words.next().is_none(), "{name}");
+        count += 1;
+    }
+    assert_eq!(count, 130);
+    assert!(comparisons > 300);
 }
 
 #[test]

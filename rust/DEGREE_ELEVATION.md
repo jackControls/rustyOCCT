@@ -1,9 +1,9 @@
 # Exact B-spline degree elevation
 
-The general curve and tensor-surface implementation is under verification.
-Both independent complete coefficient oracles and the local source-pinned
-native gate pass. Sustained structured fuzzing and published platform gates
-remain pending. This is not a claim of full kernel parity or production readiness.
+The general curve and tensor-surface implementation passed its mathematical,
+source-pinned native, sustained fuzz and platform gates at code revision
+`27647fadbb82ca8e516b66b606687d65144e0cf7`. The evidence below covers this
+capability; full kernel parity and production readiness remain unfinished.
 
 `ExactBSplineCurve3::elevated(degree)` and
 `ExactBSplineSurface3::elevated(u_degree, v_degree)` preserve the four
@@ -178,6 +178,34 @@ differences. `--reuse-capture` accepts only unchanged corpus/probe/source/SDK
 and observation hashes. The runner also verifies every resolved OCCT runtime
 library against the selected SDK. CI builds the pinned headless SDK separately
 and retains observations, reports, library hashes and build logs.
+
+## Accepted revision and campaign evidence
+
+The [platform workflow](https://github.com/jackControls/rustyOCCT/actions/runs/35904050143)
+passed at the revision above: 120 tests in each debug and release suite on
+Linux, macOS and Windows, 120 tests on Rust 1.85, Clippy, formatting and a
+WebAssembly library compile. Linux also ran all five complete second-oracle
+checks, including the seven degree-elevation tests. The source-pinned native
+job reproduced 187 matches and 80 reviewed discrepancies with no new failures.
+The original DRAW bridge passed three unchanged tests on both kernels;
+three Rust cases remain unsupported and one lacks its external data fixture.
+
+All sixteen [Linux sanitizer targets](https://github.com/jackControls/rustyOCCT/actions/runs/35904050060)
+completed at least 60 seconds of mutation after corpus replay. The degree
+target performed 43 mutations; its slowest input took 55 seconds and its peak
+resident memory was 400 MiB. A separate clean-revision local degree campaign
+completed 600.03 seconds of mutation and 359 mutations after 397.79 seconds of
+startup/replay, with a 21-second slowest input and 646 MiB peak resident memory.
+It retained 278 corpus files. These timings describe observed campaigns, not
+worst-case bounds for arbitrary rational inputs.
+
+The two earlier Linux degree campaigns failed on the same periodic tensor
+timeout during replay. Their saved input remains a regression. Sharing equal
+U/V transforms and reducing the periodic working support from five to three
+periods resolved that input without relaxing assertions or resource limits.
+Later documentation commits do not change the revision to which this evidence
+applies. General intersections, curved distances, B-rep operations and full
+production guarantees remain separate work.
 
 The `degree_elevation` fuzz target reconstructs every successful control grid
 independently. It covers degrees 1..25, all five axis families in the fixture

@@ -398,4 +398,5 @@ reproduces those observations. Complete independent Python coefficient systems
 and a separate Rust integer solver check all 267 control grids. The native gate
 reports 187 matches and 80 fingerprinted discrepancies separately; their range
 errors and invalid control counts are not emulated. Fuzz and platform acceptance
-remain in progress. This capability adds no rendering or C++ runtime dependency.
+passed at Rust revision `27647fad`; the linked contract retains exact campaign
+and workflow evidence. This capability adds no rendering or C++ runtime dependency.
