@@ -326,6 +326,73 @@ fn retained_degree25_removal_exercises_complete_integer_equation_solver() {
 }
 
 #[test]
+fn retained_periodic_degree25_refinement_preserves_complete_polynomial() {
+    let bytes = include_bytes!("../../fuzz/regressions/knot_editing/periodic-d25-refinement.bin");
+    assert_eq!(&bytes[..11], &[2, 24, 1, 1, 1, 128, 7, 84, 24, 1, 2]);
+    // Full saved input: a periodic degree-25 curve with 28 rational poles,
+    // seam multiplicity two, and two full-multiplicity rational insertions.
+    let original = BSplineCurve3::new_periodic(
+        25,
+        (0..28)
+            .map(|i| {
+                Point3::new(
+                    bytes[16 + 4 * i] as i8 as f64,
+                    bytes[17 + 4 * i] as i8 as f64,
+                    bytes[18 + 4 * i] as i8 as f64,
+                )
+            })
+            .collect(),
+        Some(
+            (0..28)
+                .map(|i| f64::from(1 + bytes[19 + 4 * i] % 8))
+                .collect(),
+        ),
+        vec![0., 1., 3., 4.],
+        vec![2, 25, 1, 2],
+    )
+    .unwrap()
+    .to_exact();
+    let u = R::new(85.into(), 257.into());
+    let v = R::new(171.into(), 257.into());
+    let edited = original
+        .refined(&[
+            (v.clone(), 25),
+            (u.clone(), 25),
+            (v.clone(), 1),
+            (u.clone(), 0),
+        ])
+        .unwrap();
+    assert_eq!(
+        edited,
+        original
+            .insert_knot(&u, 25)
+            .unwrap()
+            .insert_knot(&v, 25)
+            .unwrap()
+    );
+    assert!(reference::equal(&original, &edited));
+    let arc = edited.bezier_arcs_in(&v, &r(1)).unwrap().remove(0);
+    let polynomial = bernstein::Arc {
+        degree: 25,
+        domain: [v.clone(), r(1)],
+        coefficients: reference::polynomial(&edited, &v, &r(1)),
+    };
+    bernstein::check(&arc, &polynomial, &u);
+    let probe = &v + (r(1) - &v) * &u;
+    let jet = edited
+        .exact_evaluate(&probe, D::Second, S::Automatic)
+        .unwrap();
+    assert_eq!(jet, arc.exact_evaluate(&probe, D::Second).unwrap());
+    let translated = probe + r(4) * R::from_integer(BigInt::from(1) << 2048);
+    assert_eq!(
+        jet,
+        edited
+            .exact_evaluate(&translated, D::Second, S::Automatic)
+            .unwrap()
+    );
+}
+
+#[test]
 fn validation_resource_preflight_and_nonpositive_coarse_weights() {
     let curve = cubic();
     let bad = R::new_raw(1.into(), 0.into());

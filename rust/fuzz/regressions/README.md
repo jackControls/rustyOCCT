@@ -194,7 +194,24 @@ exact substitution instead of eliminating dependent equations again. Negative
 weights and failed-removal consistency checks remain unchanged. Complete local
 release replays improved from about 1.00/0.62 seconds to 0.24/0.31 seconds for
 the origin/seam cases; every one of the 723 fixtures also passes the revised
-second oracle. Linux sanitizer timing remains a separate validation gate.
+second oracle. The next Linux campaign at `7b0fc6c6` completed corpus replay
+and its full mutation budget, with a maximum reported input time of 13 seconds.
+The three original removal cases no longer emitted slow-unit diagnostics.
+
+That campaign retained a different 432-byte input as
+`periodic-d25-refinement.bin` (`a363a30e7ba20a77d76980d6f4cddd2c7c71343a`),
+from [CI run 35824211538](https://github.com/jackControls/rustyOCCT/actions/runs/35824211538).
+It refines a degree-25 periodic rational curve with 28 poles and seam
+multiplicity two, inserting `85/257` and `171/257` to multiplicity 25.
+All full-support coefficient, extraction, jet, enclosure and periodic wrapping
+checks passed. Local complete release replay took 0.433 seconds, including
+0.213 seconds of edits and 0.196 seconds of extraction/jet/bound checks;
+the sanitizer replay took 4.359 seconds. The Linux 13-second observation is
+below the unchanged 20-second limit, with no failure or mathematical
+disagreement. The full original input is preserved and the ordinary
+`retained_periodic_degree25_refinement_preserves_complete_polynomial` test
+replays its operations against the independent complete polynomial oracle.
+These timings remain host-specific diagnostics, not production guarantees.
 
 ```sh
 cargo run --manifest-path rust/fuzz/Cargo.toml --locked --release \
