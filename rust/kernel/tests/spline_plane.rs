@@ -1,3 +1,4 @@
+use num_rational::BigRational as R;
 use rusty_occt::intersection::{spline_cylinder_in, spline_sphere_in, Cylinder3, Sphere3};
 use rusty_occt::intersection::{
     spline_plane, spline_plane_in, spline_plane_in_with_options, spline_plane_with_options, Plane3,
@@ -6,6 +7,11 @@ use rusty_occt::intersection::{
 use rusty_occt::polynomial::RootIsolationOptions;
 use rusty_occt::{BSplineCurve3, Error, Point3, Vec3};
 use std::cmp::Ordering::{Equal, Greater, Less};
+#[path = "support/exact_spline_edits.rs"]
+mod exact_edits;
+#[allow(dead_code)]
+#[path = "support/knot_reference.rs"]
+mod knot_identity;
 
 fn bits(word: &str) -> f64 {
     f64::from_bits(u64::from_str_radix(word, 16).unwrap())
@@ -233,6 +239,66 @@ fn check_fixtures(text: &str, expected_count: usize) {
             ));
         }
         assert!(e.next().is_none(), "{name}");
+        // Every independent fixture also covers exact conversion, rational
+        // refinement, and exact removal. The complete function identity is
+        // checked by a Cox coefficient oracle independent of production.
+        let original = curve.to_exact();
+        let (fine, cuts) = exact_edits::refined(&original);
+        assert!(knot_identity::equal(&original, &fine), "{name}");
+        let restored = exact_edits::restored(&fine, &cuts);
+        assert_eq!(restored, original, "{name}");
+        for exact in [&original, &fine, &restored] {
+            use rusty_occt::intersection::{
+                exact_spline_cylinder_in, exact_spline_plane_in, exact_spline_sphere_in,
+            };
+            let (a, b) = (R::from_float(a).unwrap(), R::from_float(b).unwrap());
+            let exact_result = match surface_kind {
+                "plane" => exact_spline_plane_in(
+                    exact,
+                    &Plane3::through_points(plane[0], plane[1], plane[2]).unwrap(),
+                    &a,
+                    &b,
+                ),
+                "sphere" => exact_spline_sphere_in(
+                    exact,
+                    &Sphere3::new(plane[0], plane[2].x).unwrap(),
+                    &a,
+                    &b,
+                ),
+                "cylinder" => exact_spline_cylinder_in(
+                    exact,
+                    &Cylinder3::new(
+                        plane[0],
+                        Vec3::new(plane[1].x, plane[1].y, plane[1].z),
+                        plane[2].x,
+                    )
+                    .unwrap(),
+                    &a,
+                    &b,
+                ),
+                _ => unreachable!(),
+            }
+            .unwrap_or_else(|e| panic!("{name}: exact intersection: {e}"));
+            assert_eq!(exact_result.is_disjoint(), result.is_disjoint(), "{name}");
+            let enclosed = exact_result.enclosed().unwrap();
+            assert_eq!(enclosed.points().len(), result.points().len(), "{name}");
+            for (i, (x, y)) in enclosed.points().iter().zip(result.points()).enumerate() {
+                assert_eq!(x.parameter(), y.parameter(), "{name}");
+                assert_eq!(x.coordinate_bounds(), y.coordinate_bounds(), "{name}");
+                assert_eq!(x.contact(), y.contact(), "{name}");
+                assert_eq!(x.multiplicities(), y.multiplicities(), "{name}");
+                for value in [y.parameter().lower(), y.parameter().upper()] {
+                    assert_eq!(
+                        exact_result.points()[i]
+                            .compare_parameter(&R::from_float(value).unwrap())
+                            .unwrap(),
+                        y.compare_parameter(value).unwrap(),
+                        "{name}"
+                    );
+                }
+            }
+            assert_eq!(enclosed.overlaps(), result.overlaps(), "{name}");
+        }
         count += 1;
     }
     assert_eq!(count, expected_count);

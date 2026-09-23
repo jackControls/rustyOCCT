@@ -35,6 +35,13 @@ mod surface_editing;
 pub use surface_editing::{check_surface_editing, profile_surface_editing};
 mod knot_editing;
 pub use knot_editing::{check_knot_editing, profile_knot_editing};
+mod exact_spline_intersections;
+#[path = "../../kernel/tests/support/knot_reference.rs"]
+#[allow(dead_code)]
+pub(crate) mod knot_reference;
+pub use exact_spline_intersections::{
+    check_exact_spline_intersections, profile_exact_spline_intersections,
+};
 
 pub fn byte(data: &[u8], i: usize) -> u8 {
     data.get(i).copied().unwrap_or(0)

@@ -308,6 +308,33 @@ Greville collocation. Native differences are
 [reviewed separately](NATIVE_KNOT_EDITING_DIVERGENCES.md). The thirteenth fuzz
 target retains a degree-25 timeout regression without relaxing its checks.
 
+## Exact edited-curve intersection traceability
+
+`exact_spline_plane`, `exact_spline_sphere` and `exact_spline_cylinder` retain
+the implicit equations and point/interval model of the source entry points
+listed above: `GeomAPI_IntCS::{Perform,Parameters,Segment}`,
+`IntCurveSurface_QuadricCurveExactInterUtils::PerformIntersection`, and
+`IntSurf_Quadric::Distance`. Their adapters, tolerance-based roots and interval
+branches were read before this extension. `GeomAPI_IntCS_Test.cxx`'s OCC26979
+general-surface regressions remain outside the analytic surface family and are
+not newly claimed as passes.
+
+[Fresh captures](fixtures/occt-exact-spline-intersection-capture.json) preserve
+the existing 214 plane and 92 sphere/cylinder observations before the new Rust
+API was implemented. Exact conversion and rational edits retain those inputs'
+parameter-to-point functions. All four representations must agree with the
+independent complete certificate; the native corpus count remains 306.
+
+The engine now accepts rational knot data directly, preserves exact algebraic
+contacts and overlap endpoints, and computes finite output enclosures only on
+request. Exact comparisons and positive-weight control hulls do not require
+finite binary64 poles or parameters. The existing binary64 entry points use the
+same engine and retain their fallible enclosure contract. A separate 274-case
+Python Fraction oracle and the fourteenth sanitizer target cover arbitrary
+rational inputs. [Limits and output semantics](EXACT_SPLINE_INTERSECTIONS.md)
+remain explicit; no general surface intersector or tolerance-based equivalence
+is implied.
+
 ## Rule for the next capability
 
 1. Define the standalone kernel input/output, numerical, topology/history and

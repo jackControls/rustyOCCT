@@ -117,8 +117,16 @@ are independently checked and version-pinned. High-degree native numerical
 differences are [reviewed separately](rust/NATIVE_SPLINE_DIVERGENCES.md); they
 are not counted as parity matches.
 [Sustained fuzzing](rust/FUZZING.md)
-runs thirteen instrumented targets on pushes/PRs and daily, restoring the evolving
+runs fourteen instrumented targets on pushes/PRs and daily, restoring the evolving
 corpus and retaining crashes, timeouts and mathematical disagreements.
+
+[Exact edited-curve intersections](rust/EXACT_SPLINE_INTERSECTIONS.md) preserve
+rational knots, homogeneous controls and trim endpoints through plane, sphere
+and cylinder queries. An additional **274 exact rational fixtures** check
+complete contacts and overlaps, including values outside binary64 range. All
+402 existing spline intersection fixtures also run after exact conversion,
+refinement and removal; the 306 native cases retain their original input count
+and separately verify all four representations.
 
 Another 370 inputs compare linear-set minimum distances with two native OCCT
 APIs and independently certify Rust's returned witnesses. Unbounded native

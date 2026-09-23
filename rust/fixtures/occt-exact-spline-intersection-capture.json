@@ -1,0 +1,20 @@
+{
+  "source_revision": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "preimplementation_revision": "d2350d6e93a2ba49677e9e86b9c6569223d5bd96",
+  "implementation_present": false,
+  "description": "Fresh native observations of the unchanged curve geometry; the new exact representation and exact edits must preserve its parameter-to-point function. These are existing native input families, not additional unchanged upstream test passes.",
+  "families": {
+    "plane": {
+      "cases": 214,
+      "oracle": "OCCT 7.9.3",
+      "inputs_sha256": "9db81a00c7ec527d0008e4d8e2dc71d6ecd670d998107dff4f9bee359d39569e",
+      "native_sha256": "f7ac7a108a1b4120263b7fcaa8635a4ff144a7ac82a8272e0e02ca8945a0c1e6"
+    },
+    "quadric": {
+      "cases": 92,
+      "oracle": "OCCT 7.9.3",
+      "inputs_sha256": "973e7a1023ef0d44b037bbe7bf906dd934217a7cac9ab93e96721071b89423c5",
+      "native_sha256": "8498bd3393290e4445f309cf9054bf8862f540052e83c5dddf943b6214e10146"
+    }
+  }
+}

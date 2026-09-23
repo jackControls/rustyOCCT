@@ -3,10 +3,21 @@ import copy
 import hashlib
 import importlib.util
 import unittest
-from compare_spline_plane import cases, certificates, exact_certificate, native_fingerprint, observations, reviewed
+from compare_spline_plane import cases, certificates, exact_certificate, native_fingerprint, observations, reviewed, CURVE_MODES, representation_differences
 
 
 class ParseTests(unittest.TestCase):
+    def test_exact_edit_modes_cannot_hide_a_missing_or_changed_result(self):
+        exact={'points':[{'bounds':[0.,0.,1.,1.,0.,0.,0.,0.], 'contact':'C', 'orders':[1,1]}], 'overlaps':[]}
+        outputs={mode:copy.deepcopy(exact) for mode in CURVE_MODES}
+        self.assertEqual(representation_differences(exact,outputs),[])
+        outputs['refined']['points'][0]['orders']=[2,2]
+        self.assertEqual(representation_differences(exact,outputs),['refined'])
+        outputs['exact']['points']=[]
+        self.assertEqual(representation_differences(exact,outputs),['exact','refined'])
+        del outputs['roundtrip']
+        with self.assertRaises(ValueError): representation_differences(exact,outputs)
+
     def test_rejects_malformed_and_nonfinite_observations(self):
         for text in ['a -1 0','a 1 0 0 1 2 nan','a 0 0\na 0 0','a 0 1 0']:
             with self.assertRaises(ValueError): observations(text)

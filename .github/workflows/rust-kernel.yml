@@ -48,6 +48,7 @@ jobs:
           python3 rust/tools/generate_spline_fixtures.py --check
           python3 rust/tools/generate_bezier_editing_fixtures.py --check
           python3 rust/tools/generate_knot_editing_fixtures.py --check
+          python3 rust/tools/generate_exact_spline_intersection_fixtures.py --check
           python3 rust/tools/generate_surface_editing_fixtures.py --check
           python3 rust/tools/generate_surface_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_real_root_fixtures.py --check

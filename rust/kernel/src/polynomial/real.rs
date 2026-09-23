@@ -209,6 +209,17 @@ impl AlgebraicRoot {
         if self.lower == self.upper {
             return g.sign_at(&self.lower);
         }
+        // At a root of p, g and its positive pseudo-remainder modulo p have
+        // the same sign. Reduce before interval evaluation and Sturm-Tarski:
+        // repeated contacts can have a low-degree square-free p while their
+        // coordinates and implicit derivatives have much higher degree.
+        let reduced;
+        let g = if g.0.len() >= self.defining.polynomial.0.len() {
+            reduced = g.remainder(&self.defining.polynomial);
+            &reduced
+        } else {
+            g
+        };
         if g.is_zero() {
             return Ordering::Equal;
         }

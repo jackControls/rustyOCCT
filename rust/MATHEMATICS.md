@@ -922,6 +922,53 @@ generator is checked independently in the Linux validation job. Its default
 write mode is for deliberate, reviewed corpus additions, never for making a
 disagreement disappear.
 
+## Intersections after exact curve editing
+
+Plane, sphere and infinite-cylinder queries also accept `ExactBSplineCurve3`
+directly. Exact knot refinement and removal therefore compose with certified
+intersection without rounding their rational knots, homogeneous controls or
+trim interval. The shared engine forms each homogeneous span polynomial in a
+local rational parameter, clears its positive weight denominator and isolates
+every real root of the resulting implicit equation. Identically zero spans
+produce maximal closed overlaps. Exact shared-knot identity merges duplicate
+contacts while preserving left/right contact orders; roots with the same
+floating enclosure remain separate.
+
+`ExactSplineSurfacePoint` retains that algebraic identity and its original
+rational parameter transformation. Comparisons against rational parameters and
+coordinates require no binary64 result. Coordinate comparisons first use the
+exact positive-weight control hull, then the sign of `H_c - x H_w` at the root
+when the hull does not decide the answer. This remains valid when individual
+controls exceed binary64 range but cancel to a finite contact.
+
+All four homogeneous polynomials share one positive integer scale, cleared once
+per retained span. A query for rational `x=n/d` therefore signs `d H_c - n H_w`
+using integer coefficients, without repeated rational normalization. Before a
+nontrivial algebraic sign query, a polynomial whose degree reaches that of the
+square-free defining polynomial is reduced by positive pseudo-division. At a
+root of the defining polynomial, this remainder has the original query's sign,
+including exact zero. Interval filters and the complete Sturm-Tarski fallback
+then operate on that lower-degree remainder. Neither optimization changes the
+mathematical decision or substitutes sampling for a complete check.
+
+Minimal floating enclosures are optional, fallible conversions. A parameter
+outside finite binary64 range can still have a finite position, and a finite
+parameter can still have an unrepresentable coordinate. An enclosure failure
+does not erase any exact contact or overlap; converting the complete result
+succeeds for every requested component or returns an error. Rational overlap
+endpoints remain directly available. Span and root-subdivision limits still
+bound counts, not arbitrary-precision operand size or wall-clock time.
+
+The 274 additional Python `Fraction` fixtures independently expand known-factor
+equations and check complete contacts, orders, coordinates, overlaps and minimal
+bounds. The existing 402 independently certified intersection cases also run
+through exact conversion, rational refinement and exact removal. Native
+comparisons reuse their 306 original geometries across those representations;
+this does not multiply the distinct native case count. The fourteenth fuzz
+target adds mutated exact edits, complete coefficient identities, close roots,
+periodic seams and extreme rational domains. See
+[the exact intersection contract](EXACT_SPLINE_INTERSECTIONS.md).
+
 ## Next mathematical work
 
 1. Add incircle comparisons and extend certified linear-set distances to the

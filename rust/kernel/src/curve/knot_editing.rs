@@ -98,6 +98,13 @@ impl ExactBSplineCurve3 {
         &self.controls
     }
 
+    pub(crate) fn span_polynomial(&self, span: usize) -> [Vec<R>; 4] {
+        let controls = (span - self.degree()..=span)
+            .map(|i| self.controls[self.basis.pole_index(i)].clone())
+            .collect();
+        spline::span_polynomial_from_knots(self.degree(), &self.basis.flat, span, controls)
+    }
+
     /// Raise the total multiplicity. Zero or a smaller valid target is a no-op.
     /// The closed fundamental domain is required; periodic endpoint aliases
     /// refer to one seam. Invalid/oversized requests are errors, never snapped.

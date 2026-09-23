@@ -15,7 +15,7 @@ and insphere, 2,417 independent 2D rational fixtures in all six permutations,
 95 general polynomial-root, 284 spline/plane, 118 spline/quadric, 554 proximity, 684 complete linear-set, 636 exact Bézier curve, 744 tensor-patch and 723 knot-editing fixtures,
 10,000 integer-oracle predicate cases and 256 generated prism invariant cases.
 These tests do not depend on OCCT or an application and run in native debug and
-release CI. These deterministic generated tests are separate from the thirteen
+release CI. These deterministic generated tests are separate from the fourteen
 [coverage-guided fuzz targets and daily retained-corpus campaigns](FUZZING.md).
 
 `compare_intersections.py` executes native OCCT `IntAna_IntConicQuad` and Rust's
@@ -250,6 +250,31 @@ tests retain cuts 2^-2048 apart, prove edit commutation, check distinct one-side
 derivatives, invalid rational parameters and traversal exhaustion. Fuzzing
 compares complete coefficients as well as exact jets and minimal bounds.
 No fixture or review exempts Rust from the exact mathematical contract.
+
+## Exact edited-curve intersections
+
+All 402 existing spline/plane/sphere/cylinder fixtures run on the original
+binary64 curve, exact conversion, rational refinement, and exact removal back
+to the original. Independent Cox coefficients verify the refined homogeneous
+function, and every contact count, enclosure, order and overlap must equal the
+independent original certificate. The native bridges likewise check all four
+representations against independently recomputed certificates for the same
+214 plane and 92 quadric inputs. Existing reviewed OCCT differences remain
+separate from native matches; these are not 1,224 distinct native geometries.
+
+The 274 new Python `Fraction` fixtures manufacture known-factor polynomials,
+verify the complete implicit equation in Bernstein/power form, and provide
+exact rational contacts and minimal binary64 bounds (or explicit conversion
+failure). They cover degrees through 25, contact orders through 50, rational
+trims, roots separated by 2^-2048, mixed representable/unrepresentable results,
+huge/subnormal parameter domains, contained arcs and periodic crossings. Ordinary
+tests also check exact seam-origin removal, malformed rational input, atomic
+work-limit failure and huge control values cancelling to a finite contact.
+
+See [the exact result contract](EXACT_SPLINE_INTERSECTIONS.md). Enclosure
+failure does not discard the exact contacts. The fourteenth fuzz target checks
+complete known-factor, secant and periodic answers after exact edits, including
+independent full polynomial identity and output-bound checks.
 
 ## Exact curve knot refinement and removal
 

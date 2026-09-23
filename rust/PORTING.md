@@ -90,7 +90,9 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
    isolated contacts
    and whole overlap intervals, including explicit trimmed ranges and multiple
    periodic turns with exact clipping and traversal limits; quadratic surfaces
-   use internal equations through degree 50. Extend certified comparisons and constructions
+   use internal equations through degree 50. The same complete queries accept
+   exact edited curves and rational trim bounds, retaining algebraic contacts
+   and overlaps independently of optional binary64 enclosures. Extend certified comparisons and constructions
    to curved geometry and propagate uncertainty through topology changes.
    Continue minimizing fuzz failures. See `MATHEMATICS.md` and `FUZZING.md`.
 2. **Topology invariants and operation history.** Strengthen generic B-rep

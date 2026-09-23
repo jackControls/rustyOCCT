@@ -8,8 +8,10 @@ use crate::polynomial::{
     AlgebraicRoot, RootIsolationOptions,
 };
 use crate::{
-    interval, math::finite, BSplineCurve3, Bounds3, Error, Point3, Result, ScalarInterval,
+    interval, math::finite, spline, BSplineCurve3, Bounds3, Error, ExactBSplineCurve3, Point3,
+    Result, ScalarInterval,
 };
+use num_bigint::BigInt;
 use num_rational::BigRational as R;
 use std::{cmp::Ordering, sync::Arc};
 
@@ -67,35 +69,220 @@ impl Default for SplineSurfaceOptions {
     }
 }
 
+/// Exact maximal closed interval contained in the surface. Endpoints can be
+/// outside binary64 range or arbitrarily close together.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExactSplineSurfaceOverlap {
+    parameters: [R; 2],
+}
+impl ExactSplineSurfaceOverlap {
+    pub fn parameters(&self) -> &[R; 2] {
+        &self.parameters
+    }
+    pub fn compare_parameter(&self, endpoint: usize, value: &R) -> Result<Ordering> {
+        let value = spline::normalize(value)?;
+        Ok(self
+            .parameters
+            .get(endpoint)
+            .ok_or(Error::OutOfDomain("overlap endpoint"))?
+            .cmp(&value))
+    }
+    pub fn parameter_bounds(&self) -> Result<[ScalarInterval; 2]> {
+        let bound = |i: usize| {
+            interval::enclose(
+                |x| self.parameters[i].cmp(&real::rat(x)),
+                "spline overlap endpoint",
+            )
+        };
+        Ok([bound(0)?, bound(1)?])
+    }
+    pub fn enclosed(&self) -> Result<SplineSurfaceOverlap> {
+        Ok(SplineSurfaceOverlap {
+            exact: self.parameters.clone(),
+            bounds: self.parameter_bounds()?,
+        })
+    }
+}
+
+/// Exact algebraic contact in the original rational parameter units. No
+/// floating enclosure is required to retain or compare this result.
+#[derive(Debug, Clone)]
+pub struct ExactSplineSurfacePoint {
+    span: Arc<Span>,
+    root: AlgebraicRoot,
+    multiplicities: [Option<usize>; 2],
+    contact: SplineSurfaceContact,
+}
+impl ExactSplineSurfacePoint {
+    pub fn contact(&self) -> SplineSurfaceContact {
+        self.contact
+    }
+    pub fn multiplicities(&self) -> [Option<usize>; 2] {
+        self.multiplicities
+    }
+    pub fn compare_parameter(&self, value: &R) -> Result<Ordering> {
+        Ok(self
+            .span
+            .compare_rational_parameter(&self.root, &spline::normalize(value)?))
+    }
+    pub fn compare_coordinate(&self, component: usize, value: &R) -> Result<Ordering> {
+        if component >= 3 {
+            return Err(Error::OutOfDomain("coordinate component"));
+        }
+        Ok(self
+            .span
+            .compare_rational_coordinate(&self.root, component, &spline::normalize(value)?))
+    }
+    pub fn parameter_bounds(&self) -> Result<ScalarInterval> {
+        interval::enclose(
+            |x| self.span.compare_parameter(&self.root, x),
+            "spline intersection parameter",
+        )
+    }
+    pub fn coordinate_bound(&self, component: usize) -> Result<ScalarInterval> {
+        if component >= 3 {
+            return Err(Error::OutOfDomain("coordinate component"));
+        }
+        interval::enclose(
+            |x| self.span.compare_coordinate(&self.root, component, x),
+            "spline intersection coordinate",
+        )
+    }
+    pub fn coordinate_bounds(&self) -> Result<[ScalarInterval; 3]> {
+        Ok([
+            self.coordinate_bound(0)?,
+            self.coordinate_bound(1)?,
+            self.coordinate_bound(2)?,
+        ])
+    }
+    /// All finite enclosures, or a typed error. The exact contact is unchanged.
+    pub fn enclosed(&self) -> Result<SplineSurfacePoint> {
+        self.clone().into_enclosed()
+    }
+    fn into_enclosed(self) -> Result<SplineSurfacePoint> {
+        Ok(SplineSurfacePoint {
+            parameter: self.parameter_bounds()?,
+            coordinates: self.coordinate_bounds()?,
+            exact: self,
+        })
+    }
+}
+
+/// Complete exact contacts and overlaps. Positive weights permit denominator
+/// clearing without adding roots. Failure never returns a partial result.
+#[derive(Debug, Clone)]
+pub struct ExactSplineSurfaceIntersection {
+    points: Vec<ExactSplineSurfacePoint>,
+    overlaps: Vec<ExactSplineSurfaceOverlap>,
+}
+impl ExactSplineSurfaceIntersection {
+    pub fn points(&self) -> &[ExactSplineSurfacePoint] {
+        &self.points
+    }
+    pub fn overlaps(&self) -> &[ExactSplineSurfaceOverlap] {
+        &self.overlaps
+    }
+    pub fn is_disjoint(&self) -> bool {
+        self.points.is_empty() && self.overlaps.is_empty()
+    }
+    /// Enclose every parameter and coordinate atomically. Exact results remain
+    /// usable if any value is outside finite binary64 range.
+    pub fn enclosed(&self) -> Result<SplineSurfaceIntersection> {
+        self.clone().into_enclosed()
+    }
+    fn into_enclosed(self) -> Result<SplineSurfaceIntersection> {
+        Ok(SplineSurfaceIntersection {
+            points: self
+                .points
+                .into_iter()
+                .map(ExactSplineSurfacePoint::into_enclosed)
+                .collect::<Result<_>>()?,
+            overlaps: self
+                .overlaps
+                .iter()
+                .map(ExactSplineSurfaceOverlap::enclosed)
+                .collect::<Result<_>>()?,
+        })
+    }
+}
+
+#[derive(Debug)]
+enum ControlBounds {
+    Binary64([(f64, f64); 3]),
+    Rational(Box<[(R, R); 3]>),
+}
+impl ControlBounds {
+    fn compare_rational(&self, component: usize, value: &R) -> Option<Ordering> {
+        let compare = |lo: &R, hi: &R| {
+            if value < lo {
+                Some(Ordering::Greater)
+            } else if value > hi {
+                Some(Ordering::Less)
+            } else if lo == hi {
+                Some(Ordering::Equal)
+            } else {
+                None
+            }
+        };
+        match self {
+            Self::Binary64(bounds) => {
+                let (lo, hi) = bounds[component];
+                compare(&real::rat(lo), &real::rat(hi))
+            }
+            Self::Rational(bounds) => compare(&bounds[component].0, &bounds[component].1),
+        }
+    }
+    fn compare_float(&self, component: usize, value: f64) -> Option<Ordering> {
+        if let Self::Binary64(bounds) = self {
+            let (lo, hi) = bounds[component];
+            if value < lo {
+                Some(Ordering::Greater)
+            } else if value > hi {
+                Some(Ordering::Less)
+            } else if lo == hi {
+                Some(Ordering::Equal)
+            } else {
+                None
+            }
+        } else {
+            self.compare_rational(component, &real::rat(value))
+        }
+    }
+}
+
 #[derive(Debug)]
 struct Span {
     start: R,
     end: R,
-    homogeneous: [Vec<R>; 4],
-    control_bounds: [(f64, f64); 3],
+    // All four coordinates share one positive scale. Clearing denominators
+    // once preserves H_c/H_w and avoids rational reductions at every query.
+    homogeneous: [Vec<BigInt>; 4],
+    control_bounds: ControlBounds,
 }
 impl Span {
     fn compare_coordinate(&self, root: &AlgebraicRoot, c: usize, x: f64) -> Ordering {
-        let (lo, hi) = self.control_bounds[c];
-        if x < lo {
-            return Ordering::Greater;
-        }
-        if x > hi {
-            return Ordering::Less;
-        }
-        if lo == hi {
-            return Ordering::Equal;
-        }
-        let x = real::rat(x);
+        self.control_bounds
+            .compare_float(c, x)
+            .unwrap_or_else(|| self.coordinate_sign(root, c, &real::rat(x)))
+    }
+    fn compare_rational_coordinate(&self, root: &AlgebraicRoot, c: usize, x: &R) -> Ordering {
+        self.control_bounds
+            .compare_rational(c, x)
+            .unwrap_or_else(|| self.coordinate_sign(root, c, x))
+    }
+    fn coordinate_sign(&self, root: &AlgebraicRoot, c: usize, x: &R) -> Ordering {
         let coefficients: Vec<_> = self.homogeneous[c]
             .iter()
             .zip(&self.homogeneous[3])
-            .map(|(a, w)| a - &x * w)
+            .map(|(a, w)| a * x.denom() - x.numer() * w)
             .collect();
-        root.sign_polynomial(&IntPolynomial::from_rationals(&coefficients))
+        root.sign_polynomial(&IntPolynomial::new(coefficients))
     }
     fn compare_parameter(&self, root: &AlgebraicRoot, x: f64) -> Ordering {
-        root.compare_rational(&((real::rat(x) - &self.start) / (&self.end - &self.start)))
+        self.compare_rational_parameter(root, &real::rat(x))
+    }
+    fn compare_rational_parameter(&self, root: &AlgebraicRoot, x: &R) -> Ordering {
+        root.compare_rational(&((x - &self.start) / (&self.end - &self.start)))
     }
 }
 
@@ -104,14 +291,14 @@ impl Span {
 /// binary64 enclosures coincide or the curve visits the same position twice.
 #[derive(Debug, Clone)]
 pub struct SplineSurfacePoint {
-    span: Arc<Span>,
-    root: AlgebraicRoot,
+    exact: ExactSplineSurfacePoint,
     parameter: ScalarInterval,
     coordinates: [ScalarInterval; 3],
-    multiplicities: [Option<usize>; 2],
-    contact: SplineSurfaceContact,
 }
 impl SplineSurfacePoint {
+    pub fn exact(&self) -> &ExactSplineSurfacePoint {
+        &self.exact
+    }
     pub fn parameter(&self) -> ScalarInterval {
         self.parameter
     }
@@ -131,24 +318,27 @@ impl SplineSurfacePoint {
         }
     }
     pub fn contact(&self) -> SplineSurfaceContact {
-        self.contact
+        self.exact.contact
     }
     /// Contact orders in the left and right nonzero span polynomials. None
     /// denotes the outside of the queried parameter domain. At a knot, orders
     /// can differ; there is no invented single multiplicity across a corner.
     pub fn multiplicities(&self) -> [Option<usize>; 2] {
-        self.multiplicities
+        self.exact.multiplicities
     }
     pub fn compare_parameter(&self, value: f64) -> Result<Ordering> {
         finite(value, "intersection parameter comparison")?;
-        Ok(self.span.compare_parameter(&self.root, value))
+        Ok(self.exact.span.compare_parameter(&self.exact.root, value))
     }
     pub fn compare_coordinate(&self, component: usize, value: f64) -> Result<Ordering> {
         finite(value, "intersection coordinate comparison")?;
         if component >= 3 {
             return Err(Error::OutOfDomain("coordinate component"));
         }
-        Ok(self.span.compare_coordinate(&self.root, component, value))
+        Ok(self
+            .exact
+            .span
+            .compare_coordinate(&self.exact.root, component, value))
     }
 }
 
@@ -178,6 +368,41 @@ struct Candidate {
     signs: [Option<Ordering>; 2],
 }
 
+trait CurveInput {
+    fn polynomial(&self, span: usize) -> [Vec<R>; 4];
+    fn control_bounds(&self, span: usize) -> ControlBounds;
+}
+impl CurveInput for BSplineCurve3 {
+    fn polynomial(&self, span: usize) -> [Vec<R>; 4] {
+        self.span_polynomial(span)
+    }
+    fn control_bounds(&self, span: usize) -> ControlBounds {
+        ControlBounds::Binary64(std::array::from_fn(|c| {
+            let mut values = (span - self.degree()..=span)
+                .map(|i| self.poles()[self.knot_vector().pole_index(i)].to_array()[c]);
+            let first = values.next().unwrap();
+            values.fold((first, first), |(lo, hi), x| (lo.min(x), hi.max(x)))
+        }))
+    }
+}
+impl CurveInput for ExactBSplineCurve3 {
+    fn polynomial(&self, span: usize) -> [Vec<R>; 4] {
+        self.span_polynomial(span)
+    }
+    fn control_bounds(&self, span: usize) -> ControlBounds {
+        ControlBounds::Rational(Box::new(std::array::from_fn(|c| {
+            let mut values = (span - self.degree()..=span).map(|i| {
+                let p = &self.homogeneous_poles()[self.knot_vector().pole_index(i)];
+                &p[c] / &p[3]
+            });
+            let first = values.next().unwrap();
+            values.fold((first.clone(), first), |(lo, hi), x| {
+                (lo.min(x.clone()), hi.max(x))
+            })
+        })))
+    }
+}
+
 pub(crate) fn intersect(
     curve: &BSplineCurve3,
     first: f64,
@@ -189,6 +414,30 @@ pub(crate) fn intersect(
     let spans = curve
         .knot_vector()
         .spans_in(first, last, options.max_spans)?;
+    collect(curve, spans, options, refinement_steps, polynomial)?.into_enclosed()
+}
+
+pub(crate) fn intersect_exact(
+    curve: &ExactBSplineCurve3,
+    first: &R,
+    last: &R,
+    options: SplineSurfaceOptions,
+    refinement_steps: usize,
+    polynomial: impl Fn(&[Vec<R>; 4]) -> IntPolynomial,
+) -> Result<ExactSplineSurfaceIntersection> {
+    let spans = curve
+        .knot_vector()
+        .spans_in(first, last, options.max_spans)?;
+    collect(curve, spans, options, refinement_steps, polynomial)
+}
+
+fn collect(
+    curve: &impl CurveInput,
+    spans: Vec<spline::KnotSpan>,
+    options: SplineSurfaceOptions,
+    refinement_steps: usize,
+    polynomial: impl Fn(&[Vec<R>; 4]) -> IntPolynomial,
+) -> Result<ExactSplineSurfaceIntersection> {
     let mut budget = Budget::new(options.root_isolation);
     let mut candidates: Vec<Candidate> = Vec::new();
     let mut overlaps: Vec<[R; 2]> = Vec::new();
@@ -197,7 +446,7 @@ pub(crate) fn intersect(
         let length = &end - &start;
         let lower = (&at.lower - &start) / &length;
         let upper = (&at.upper - &start) / &length;
-        let homogeneous = curve.span_polynomial(index);
+        let homogeneous = curve.polynomial(index);
         let polynomial = polynomial(&homogeneous);
         if polynomial.is_zero() {
             if let Some(last) = overlaps.last_mut().filter(|o| o[1] == at.lower) {
@@ -211,11 +460,12 @@ pub(crate) fn intersect(
         if roots.is_empty() {
             continue;
         }
-        let control_bounds = std::array::from_fn(|c| {
-            let mut values = (index - curve.degree()..=index)
-                .map(|i| curve.poles()[curve.knot_vector().pole_index(i)].to_array()[c]);
-            let first = values.next().unwrap();
-            values.fold((first, first), |(lo, hi), x| (lo.min(x), hi.max(x)))
+        let control_bounds = curve.control_bounds(index);
+        let denominator = spline::common_denominator(homogeneous.iter().flatten());
+        let homogeneous = homogeneous.map(|v| {
+            v.into_iter()
+                .map(|c| c.numer() * (&denominator / c.denom()))
+                .collect()
         });
         let span = Arc::new(Span {
             start,
@@ -284,18 +534,7 @@ pub(crate) fn intersect(
             [Some(_), Some(_)] => SplineSurfaceContact::Tangent,
             _ => SplineSurfaceContact::Boundary,
         };
-        let coordinate = |c| {
-            interval::enclose(
-                |x| item.span.compare_coordinate(&item.root, c, x),
-                "spline intersection coordinate",
-            )
-        };
-        points.push(SplineSurfacePoint {
-            parameter: interval::enclose(
-                |x| item.span.compare_parameter(&item.root, x),
-                "spline intersection parameter",
-            )?,
-            coordinates: [coordinate(0)?, coordinate(1)?, coordinate(2)?],
+        points.push(ExactSplineSurfacePoint {
             span: item.span,
             root: item.root,
             multiplicities: item.multiplicities,
@@ -304,17 +543,9 @@ pub(crate) fn intersect(
     }
     let overlaps = overlaps
         .into_iter()
-        .map(|exact| {
-            let bound = |i: usize| {
-                interval::enclose(|x| exact[i].cmp(&real::rat(x)), "spline overlap endpoint")
-            };
-            Ok(SplineSurfaceOverlap {
-                bounds: [bound(0)?, bound(1)?],
-                exact,
-            })
-        })
-        .collect::<Result<Vec<_>>>()?;
-    Ok(SplineSurfaceIntersection { points, overlaps })
+        .map(|parameters| ExactSplineSurfaceOverlap { parameters })
+        .collect();
+    Ok(ExactSplineSurfaceIntersection { points, overlaps })
 }
 
 #[cfg(test)]
@@ -345,8 +576,10 @@ mod tests {
         for (i, point) in hits.points.iter().enumerate() {
             // Independently known affine crossings: 1/8, 3/8, ... 15/8.
             let expected = real::rat(first) + R::new(BigInt::from(2 * i + 1), BigInt::from(8));
-            let local = (&expected - &point.span.start) / (&point.span.end - &point.span.start);
-            assert_eq!(point.root.compare_rational(&local), Ordering::Equal);
+            assert_eq!(
+                point.exact().compare_parameter(&expected).unwrap(),
+                Ordering::Equal
+            );
         }
         let curve = BSplineCurve3::new_periodic(
             1,

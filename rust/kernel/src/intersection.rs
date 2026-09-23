@@ -15,6 +15,7 @@ use num_bigint::{BigInt, BigUint, Sign};
 use std::cmp::Ordering;
 
 mod curved;
+mod exact_spline;
 mod linear_sets;
 mod spline_plane;
 mod spline_quadric;
@@ -23,6 +24,12 @@ pub use crate::proximity::LinearPrimitive3;
 pub use curved::{
     line_circle, line_cylinder, line_sphere, segment_circle, segment_cylinder, segment_sphere,
     Circle3, ContactKind, CurveHit, CurvedIntersection, Cylinder3, Sphere3,
+};
+pub use exact_spline::{
+    exact_spline_cylinder, exact_spline_cylinder_in, exact_spline_cylinder_in_with_options,
+    exact_spline_cylinder_with_options, exact_spline_plane, exact_spline_plane_in,
+    exact_spline_plane_in_with_options, exact_spline_plane_with_options, exact_spline_sphere,
+    exact_spline_sphere_in, exact_spline_sphere_in_with_options, exact_spline_sphere_with_options,
 };
 pub use linear_sets::{linear_intersection, ExactPoint3, LinearIntersection};
 pub use spline_plane::{
@@ -36,6 +43,12 @@ pub use spline_quadric::{
     spline_sphere_with_options,
 };
 pub use spline_surface::{
+    ExactSplineSurfaceIntersection as ExactSplinePlaneIntersection,
+    ExactSplineSurfaceOverlap as ExactSplinePlaneOverlap,
+    ExactSplineSurfacePoint as ExactSplinePlanePoint,
+};
+pub use spline_surface::{
+    ExactSplineSurfaceIntersection, ExactSplineSurfaceOverlap, ExactSplineSurfacePoint,
     SplineSurfaceContact, SplineSurfaceIntersection, SplineSurfaceOptions, SplineSurfaceOverlap,
     SplineSurfacePoint,
 };

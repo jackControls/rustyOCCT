@@ -171,6 +171,15 @@ def reviewed(oracle,row,native,rust,reviews):
     return None
 
 
+CURVE_MODES = ('binary64', 'exact', 'refined', 'roundtrip')
+
+
+def representation_differences(expected, outputs):
+    if set(outputs) != set(CURVE_MODES):
+        raise ValueError('incomplete curve representation checks')
+    return [mode for mode in CURVE_MODES if outputs[mode] != expected]
+
+
 def main(case_source=cases, family='plane'):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--occt-root',type=Path,default=Path(os.environ.get('OCCT_ROOT','/opt/homebrew/opt/opencascade' if sys.platform=='darwin' else '/usr')))
@@ -191,18 +200,25 @@ def main(case_source=cases, family='plane'):
         print(native.stderr.strip(),len(expected),'native cases;',sum(x is None for x in expected.values()),'native failures')
         return
     run(['cargo','build','--locked','--release','--example','spline_plane_oracle'],cwd=ROOT)
-    rust_process=run([str(ROOT/'target/release/examples/spline_plane_oracle')],input=data,cwd=ROOT)
-    (output/'rust.tsv').write_text(rust_process.stdout)
-    actual=certificates(rust_process.stdout,max_order=50 if family=='quadric' else 25)
-    if actual.keys()!=expected.keys(): raise AssertionError('incomplete Rust observations')
+    representations={}
+    for mode in CURVE_MODES:
+        rust_process=run([str(ROOT/'target/release/examples/spline_plane_oracle'),mode],input=data,cwd=ROOT)
+        (output/('rust.tsv' if mode=='binary64' else f'rust-{mode}.tsv')).write_text(rust_process.stdout)
+        representations[mode]=certificates(rust_process.stdout,max_order=50 if family=='quadric' else 25)
+        if representations[mode].keys()!=expected.keys(): raise AssertionError(f'incomplete Rust {mode} observations')
+    actual=representations['binary64']
     review_path=ROOT/f'rust/fixtures/occt-spline-{family}-divergences.json'
     reviews=json.loads(review_path.read_text()) if review_path.exists() else []
     report={'oracle':native.stderr.strip(),'source_reference':'3d097a0328e71b826377d4814ab05ec3c3d23871',
-            'cases':len(expected),'independently_verified':0,'native_matches':0,'reviewed_differences':[], 'failures':[]}
+            'cases':len(expected),'independently_verified':0,'native_matches':0,'reviewed_differences':[], 'failures':[],
+            'representations_independently_verified':dict.fromkeys(CURVE_MODES,0)}
     for row in data.splitlines():
         name=row.split()[0];exact,exact_hash=exact_certificate(row)
-        if actual[name]!=exact:
-            report['failures'].append({'case':name,'reason':'Rust differs from the independent exact certificate'});continue
+        failed=representation_differences(exact,{mode:representations[mode][name] for mode in CURVE_MODES})
+        for mode in CURVE_MODES:
+            if mode not in failed: report['representations_independently_verified'][mode]+=1
+        if failed:
+            report['failures'].append({'case':name,'reason':'Rust differs from the independent exact certificate','representations':failed});continue
         report['independently_verified']+=1
         diff=differences(expected[name],actual[name])
         if not diff: report['native_matches']+=1;continue

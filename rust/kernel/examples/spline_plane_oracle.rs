@@ -1,12 +1,21 @@
 //! Test-only text bridge. Each hit exports all certified bounds and contact data.
+use num_rational::BigRational as R;
 use rusty_occt::intersection::{
-    spline_cylinder_in, spline_plane, spline_plane_in, spline_sphere_in, Cylinder3, Plane3,
-    Sphere3, SplineSurfaceContact,
+    exact_spline_cylinder_in, exact_spline_plane_in, exact_spline_sphere_in, spline_cylinder_in,
+    spline_plane, spline_plane_in, spline_sphere_in, Cylinder3, Plane3, Sphere3,
+    SplineSurfaceContact,
 };
 use rusty_occt::{BSplineCurve3, Point3, Vec3};
 use std::io::{self, BufRead};
+#[path = "../tests/support/exact_spline_edits.rs"]
+mod exact_edits;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args: Vec<_> = std::env::args().skip(1).collect();
+    let mode = args.first().map_or("binary64", String::as_str);
+    if args.len() > 1 || !["binary64", "exact", "refined", "roundtrip"].contains(&mode) {
+        return Err("expected binary64, exact, refined or roundtrip".into());
+    }
     for line in io::stdin().lock().lines() {
         let line = line?;
         let mut words = line.split_whitespace();
@@ -54,27 +63,67 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             _ => return Err("invalid curve kind".into()),
         };
         let (a, b) = range.unwrap_or_else(|| curve.domain());
-        let result = match surface_kind {
-            "plane" => {
-                let plane = Plane3::through_points(points[0], points[1], points[2])?;
-                if range.is_some() {
-                    spline_plane_in(&curve, &plane, a, b)?
+        let result = if mode != "binary64" {
+            let original = curve.to_exact();
+            let exact = if mode == "exact" {
+                original
+            } else {
+                let (fine, cuts) = exact_edits::refined(&original);
+                if mode == "refined" {
+                    fine
                 } else {
-                    spline_plane(&curve, &plane)?
+                    let restored = exact_edits::restored(&fine, &cuts);
+                    assert_eq!(restored, original);
+                    restored
                 }
-            }
-            "sphere" => spline_sphere_in(&curve, &Sphere3::new(points[0], points[2].x)?, a, b)?,
-            "cylinder" => spline_cylinder_in(
-                &curve,
-                &Cylinder3::new(
-                    points[0],
-                    Vec3::new(points[1].x, points[1].y, points[1].z),
-                    points[2].x,
+            };
+            let (a, b) = (R::from_float(a).unwrap(), R::from_float(b).unwrap());
+            match surface_kind {
+                "plane" => exact_spline_plane_in(
+                    &exact,
+                    &Plane3::through_points(points[0], points[1], points[2])?,
+                    &a,
+                    &b,
                 )?,
-                a,
-                b,
-            )?,
-            _ => return Err("invalid surface kind".into()),
+                "sphere" => {
+                    exact_spline_sphere_in(&exact, &Sphere3::new(points[0], points[2].x)?, &a, &b)?
+                }
+                "cylinder" => exact_spline_cylinder_in(
+                    &exact,
+                    &Cylinder3::new(
+                        points[0],
+                        Vec3::new(points[1].x, points[1].y, points[1].z),
+                        points[2].x,
+                    )?,
+                    &a,
+                    &b,
+                )?,
+                _ => return Err("invalid surface kind".into()),
+            }
+            .enclosed()?
+        } else {
+            match surface_kind {
+                "plane" => {
+                    let plane = Plane3::through_points(points[0], points[1], points[2])?;
+                    if range.is_some() {
+                        spline_plane_in(&curve, &plane, a, b)?
+                    } else {
+                        spline_plane(&curve, &plane)?
+                    }
+                }
+                "sphere" => spline_sphere_in(&curve, &Sphere3::new(points[0], points[2].x)?, a, b)?,
+                "cylinder" => spline_cylinder_in(
+                    &curve,
+                    &Cylinder3::new(
+                        points[0],
+                        Vec3::new(points[1].x, points[1].y, points[1].z),
+                        points[2].x,
+                    )?,
+                    a,
+                    b,
+                )?,
+                _ => return Err("invalid surface kind".into()),
+            }
         };
         print!(
             "{name} {} {}",

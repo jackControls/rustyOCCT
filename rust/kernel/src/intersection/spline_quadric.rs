@@ -107,11 +107,26 @@ fn intersect(
     last: f64,
     options: SplineSurfaceOptions,
 ) -> Result<SplineSurfaceIntersection> {
+    super::spline_surface::intersect(
+        curve,
+        first,
+        last,
+        options,
+        128,
+        polynomial(center, radius, axis),
+    )
+}
+
+pub(super) fn polynomial(
+    center: [R; 3],
+    radius: R,
+    axis: Option<[R; 3]>,
+) -> impl Fn(&[Vec<R>; 4]) -> IntPolynomial {
     let radius2 = &radius * &radius;
     let norm: R = axis
         .as_ref()
         .map_or_else(|| rat(1.), |v| v.iter().map(|x| x * x).sum());
-    super::spline_surface::intersect(curve, first, last, options, 128, |h| {
+    move |h| {
         let n = h[3].len();
         let delta: [Vec<R>; 3] = std::array::from_fn(|c| {
             h[c].iter()
@@ -134,5 +149,5 @@ fn intersect(
             }
         }
         IntPolynomial::from_rationals(&f)
-    })
+    }
 }

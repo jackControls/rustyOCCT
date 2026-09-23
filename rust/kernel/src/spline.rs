@@ -323,15 +323,23 @@ pub(crate) fn span_polynomial<const N: usize>(
     span: usize,
     poles: Vec<[R; N]>,
 ) -> [Vec<R>; N] {
+    span_polynomial_from_knots(axis.degree, &axis.flat, span, poles)
+}
+
+pub(crate) fn span_polynomial_from_knots<const N: usize>(
+    p: usize,
+    knots: &[R],
+    span: usize,
+    poles: Vec<[R; N]>,
+) -> [Vec<R>; N] {
     let mut d: Vec<[Vec<R>; N]> = poles.into_iter().map(|p| p.map(|c| vec![c])).collect();
-    let p = axis.degree;
-    let start = &axis.flat[span];
-    let length = &axis.flat[span + 1] - start;
+    let start = &knots[span];
+    let length = &knots[span + 1] - start;
     for r in 1..=p {
         for j in (r..=p).rev() {
             let i = span - p + j;
-            let width = &axis.flat[i + p - r + 1] - &axis.flat[i];
-            let a = (start - &axis.flat[i]) / &width;
+            let width = &knots[i + p - r + 1] - &knots[i];
+            let a = (start - &knots[i]) / &width;
             let b = &length / width;
             d[j] = std::array::from_fn(|c| {
                 let mut value = vec![zero(); r + 1];
@@ -499,7 +507,7 @@ impl BezierSpanTransform {
     }
 }
 
-fn common_denominator<'a>(values: impl Iterator<Item = &'a R>) -> BigInt {
+pub(crate) fn common_denominator<'a>(values: impl Iterator<Item = &'a R>) -> BigInt {
     let mut denominator = BigInt::from(1);
     for x in values {
         let (mut a, mut b) = (denominator.clone(), x.denom().clone());

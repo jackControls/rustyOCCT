@@ -106,3 +106,10 @@ path = "fuzz_targets/knot_editing.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "exact_spline_intersections"
+path = "fuzz_targets/exact_spline_intersections.rs"
+test = false
+doc = false
+bench = false

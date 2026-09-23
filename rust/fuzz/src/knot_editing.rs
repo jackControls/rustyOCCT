@@ -1,13 +1,12 @@
 //! Full-support polynomial identities, independent removal feasibility, exact
 //! jets, periodic seam edits and rational operation sequences.
+use crate::knot_reference as reference;
 use crate::{bezier_reference as bernstein, byte};
 use num_bigint::BigInt;
 use num_rational::BigRational as R;
+use reference::integer as r;
 use rusty_occt::curve::{DerivativeOrder as D, KnotSide as S};
 use rusty_occt::{BSplineCurve3, Error, ExactBSplineCurve3, Point3};
-#[path = "../../kernel/tests/support/knot_reference.rs"]
-mod reference;
-use reference::integer as r;
 
 pub fn check_knot_editing(data: &[u8]) {
     check(data, |_| {});

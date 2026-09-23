@@ -18,7 +18,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections']
 
 
 def seed_corpus(target):
@@ -30,7 +30,19 @@ def seed_corpus(target):
         if not path.exists():
             path.write_bytes(data)
 
-    if target == 'knot_editing':
+    if target == 'exact_spline_intersections':
+        for family in range(3):
+            for mode in range(6):
+                for degree in ([1,3,8,25] if mode in [0,1,4] else [2]):
+                    for domain in [0,1,2,3,5,6,7]:
+                        # Full interval, plus rational refinement. High-degree,
+                        # close-root and unrepresentable cases are seed inputs.
+                        header=bytes([family,degree-1,mode,domain,1,2,0,0,7,2,5,255,0,84,0,0])
+                        save(header+bytes((j*37+1)%256 for j in range(96)))
+        for family in range(3):
+            for mode in [0,1,3,4,5]:
+                save(bytes([family,7,mode,1,2,2,1,8,1,2,7,255,255,255,0,0])+bytes((j*17+3)%256 for j in range(96)))
+    elif target == 'knot_editing':
         import struct
         for degree in [1,2,3,8,25]:
             for kind in range(3):

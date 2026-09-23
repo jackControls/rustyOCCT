@@ -218,6 +218,46 @@ cargo run --manifest-path rust/fuzz/Cargo.toml --locked --release \
   --example replay_knot_editing -- rust/fuzz/regressions/knot_editing/*.bin
 ```
 
+## Exact edited-curve intersections: high-degree weighted coordinates
+
+The first local `exact_spline_intersections` campaign, in the working tree based
+on `d2350d6e`, completed its 60-second mutation budget with 93 mutations and no
+mathematical or sanitizer failures. It retained two unminimized 112-byte inputs:
+
+- `exact_spline_intersections/degree25-negative-huge-domain.bin`
+  (`5f281664175a36f607cb6443d18e1c23354d5004`), reported at 15 seconds.
+- `exact_spline_intersections/degree25-positive-huge-domain.bin`
+  (`0afe9b337cc4748968cb489a52eeeed5cd49aa57`), reported at 17 seconds.
+
+Both represent degree-25 rational curves with independently known factored
+cylinder contacts, arbitrary positive Bernstein weights and the cylinder axis
+permuted to Y. They refine at fractions `85/257` and `171/257`, then remove the
+first cut exactly. Their parameter domains are respectively
+`[-2^2048, -2^2048 + 7/3]` and `[2^1024, 2^1025]`. Exact contacts remain usable
+although finite parameter enclosures are impossible.
+
+Complete release replay took about 1.80/1.77 seconds, mostly in coordinate sign
+queries and minimal enclosures. The independent full polynomial identity check
+took only about 0.01 seconds. The kernel now clears one shared denominator for
+all homogeneous coordinates per span and reduces polynomial sign queries by
+positive pseudo-remainders modulo the root's square-free defining polynomial.
+These changes preserve signs, exact zeros and the complete algebraic fallback.
+Complete release replay fell to about 0.88/0.83 seconds; individual sanitizer
+replay took 7.17/7.20 seconds. These are host-specific diagnostics, not a kernel
+latency guarantee, and fixed-input replay is not a fuzz campaign.
+
+Both full inputs are added to every campaign's corpus. The ordinary
+`retained_degree25_weighted_contacts_on_huge_domains` test independently
+reconstructs their factors and weights, proves the complete edited function
+unchanged, and verifies every contact, order, coordinate and minimal enclosure.
+No degree, operand-size, assertion, timeout or RSS limit was relaxed.
+
+```sh
+cargo run --manifest-path rust/fuzz/Cargo.toml --locked --release \
+  --example replay_exact_spline_intersections -- \
+  rust/fuzz/regressions/exact_spline_intersections/*.bin
+```
+
 ## Polynomial roots: a wide isolator and a large query
 
 `roots/slow-unit-0d9082d327a81ddd2e03cf8963cb57f12c9bf198.bin` came from

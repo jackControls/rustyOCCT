@@ -17,6 +17,7 @@ coverage feedback. They are distinct from the deterministic invariant tests.
 | `splines` | Raw binary64 poles/weights/knots, scaled geometry, degree 1..25, repeated knots, periodic seams, full-range wrapped parameters, explicit sides and derivative requests | Exact basis-function derivatives and closed quotient formulas independently check homogeneous pole interpolation; minimal position/derivative bounds; discontinuity, domain, nonfinite and overflow errors |
 | `bezier_editing` | Raw binary64 and scaled rational controls, degree 1..25, clamped/unclamped/periodic splines, subnormal spans, multi-period extraction and composed edits with rational cuts | Complete homogeneous polynomial identities from independent Cox basis coefficients and affine substitution; exact jets/minimal bounds, positive weights, shared endpoints, reversal, elevation/split commutation and preflight limits |
 | `knot_editing` | Degrees 1..25, raw binary64 and scaled controls, rational cuts, unclamped inactive controls, repeated knots, periodic seams/origin changes, refinement/removal sequences and invalid data | Entire raw-support homogeneous identities; independent coefficient-equation removal feasibility, exact complete controls, rational jets/extraction, minimal enclosures, batch order/duplicate behavior, round trips and unchanged rejection limits |
+| `exact_spline_intersections` | Rational controls/weights and knots, degree 1..25, rational trims, close roots through 2^-2048 spacing, huge/subnormal domains, periodic seams and edit sequences | Complete known-factor contacts, rational secants and exact circle overlaps; independent full polynomial edit identity; exact parameter/coordinate comparisons, contact orders through 50, minimal finite bounds or typed conversion failure, traversal limits and malformed-rational rejection |
 | `surface_editing` | Tensor degrees 1..25 in both directions, raw binary64 and scaled controls, independent periodicity, unclamped knots, subnormal domains, full low-degree multi-period queries and high-degree selected spans, composed edits and rational cuts | Complete tensor polynomial identities; all exact partials through order two and minimal bounds; exact isocurves/shared boundaries, reversals, transposition, elevation/split commutation and Cartesian output limits |
 | `surfaces` | Rational tensor grids, independently periodic U/V, repeated knots, high degree in either direction, full-range wrapped parameters and malformed data | Independent tensor basis plus closed bivariate quotient formulas; exact mixed-partial and quadrant continuity decisions; minimal enclosures and typed failures |
 | `roots` | Products of rational/irrational/complex factors through degree 25, repeated roots, closed-domain clipping, power-of-two coefficient scaling and arbitrary binary64 query polynomials | Complete expected root list from known factors; algebraic signs reduce independently in Q(sqrt(d)); multiplicities, exact comparisons, minimal enclosures and nonfinite rejection |
@@ -53,7 +54,7 @@ coverage percentages or evidence of exhaustive input coverage.
 
 ## Continuing campaigns
 
-[Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all thirteen targets
+[Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all fourteen targets
 for 60 seconds of mutation each on relevant pushes/PRs, and 600 seconds each every day at
 06:23 UTC on the default branch. Manual runs accept 1–3,600 seconds per target.
 GitHub can delay scheduled jobs. The schedule must remain enabled on the fork.
@@ -81,6 +82,13 @@ known-factor intersection input has degree at most eight, and a rational polylin
 has up to eight spans. Power-curve quadric inputs reach degree 25 (degree-50
 equations), checked by independent monotonic rational powers. Independent exact
 fixtures additionally cover dense degree-25 intersections.
+The exact edited-curve target starts with at most 26 poles and refines to at
+most 52. It checks degree-25 known-factor plane numerators and squared quadric
+contacts through order 50, rational secants, periodic line crossings and
+exact periodic circle overlaps. Parameter domains include rational offsets and
+widths through 2^2048 and 2^-2048; positive rational weights, common homogeneous
+scaling and coordinate permutations exercise conditioning independently of
+root identity. These cases retain exact results when floating conversion fails.
 General root products reach degree 25. An
 outer deadline kills the build/fuzzer process group. Corpus replay without any
 subsequent mutation is an incomplete run. An incomplete run, crash,

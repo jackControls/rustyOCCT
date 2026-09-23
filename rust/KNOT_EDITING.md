@@ -3,8 +3,10 @@
 This milestone changes curve representation without changing its homogeneous
 piecewise polynomial. It does not implement general degree elevation, surface
 knot editing, approximation, topology, or tolerance-based simplification.
-Existing spline intersection entry points still accept `BSplineCurve3`;
-accepting edited rational curves directly without rounding is follow-up work.
+The `exact_spline_plane`, `exact_spline_sphere` and `exact_spline_cylinder`
+intersection families accept edited curves directly, including rational query
+intervals. [Their exact results](EXACT_SPLINE_INTERSECTIONS.md) retain contacts
+outside binary64 range and provide optional finite enclosures.
 
 ## Representation and operations
 

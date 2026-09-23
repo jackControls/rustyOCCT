@@ -60,10 +60,14 @@ pub fn spline_plane_in_with_options(
     last: f64,
     options: SplinePlaneOptions,
 ) -> Result<SplinePlaneIntersection> {
+    super::spline_surface::intersect(curve, first, last, options, 0, polynomial(plane))
+}
+
+pub(super) fn polynomial(plane: &Plane3) -> impl Fn(&[Vec<R>; 4]) -> IntPolynomial {
     let normal = plane.normal.clone().map(R::from_integer);
     let anchor = plane.vertices[0].to_array().map(real::rat);
-    super::spline_surface::intersect(curve, first, last, options, 0, |homogeneous| {
-        let coefficients: Vec<R> = (0..=curve.degree())
+    move |homogeneous| {
+        let coefficients: Vec<R> = (0..homogeneous[3].len())
             .map(|i| {
                 (0..3)
                     .map(|c| &normal[c] * (&homogeneous[c][i] - &anchor[c] * &homogeneous[3][i]))
@@ -71,5 +75,5 @@ pub fn spline_plane_in_with_options(
             })
             .collect();
         IntPolynomial::from_rationals(&coefficients)
-    })
+    }
 }
