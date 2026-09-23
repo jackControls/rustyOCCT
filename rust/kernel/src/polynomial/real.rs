@@ -352,7 +352,7 @@ impl AlgebraicRoot {
 /// fractional parts; subtract that integer and reciprocate, reversing bounds.
 /// Reversing these exact maps recovers a candidate in the original interval.
 /// The iterative form avoids a call stack proportional to rational bit length.
-fn rational_in_interval(a: &R, b: &R) -> R {
+pub(crate) fn rational_in_interval(a: &R, b: &R) -> R {
     let (mut lower, mut upper) = (a.clone(), b.clone());
     let mut prefixes = Vec::new();
     let mut value = loop {

@@ -51,7 +51,13 @@ fallback. Shared rational knot hits merge exactly, while periodic aliases and
 whole intervals survive. Both isolation paths use the same subdivision budget.
 
 Exact interval bounds filter candidate distances. Zero distance uses the
-sum-of-squares identity. Unresolved comparisons use a rational-function image
+sum-of-squares identity. When refined distance intervals still overlap, a
+continued-fraction candidate proposes a rational squared distance. The candidate
+is accepted only if `N-cW²` vanishes exactly at a selected parameter; an exact
+threshold comparison then orders the other distance. This also resolves rational
+distance ties at irrational parameters without constructing their images.
+A failed proposal retains the general exact fallback, including arbitrarily
+close unequal values. Unresolved comparisons use a rational-function image
 in the square-free parameter polynomial's quotient ring. Pole factors shared
 with the denominator are removed; they cannot contain the selected parameter.
 Extended Euclid gives the denominator's inverse. Successive powers of the image
@@ -64,6 +70,14 @@ reused within a query for candidates sharing a span's defining equation.
 Output conversion reuses a bounded, refined isolator across exact threshold
 queries. A certified zero returns its zero enclosure immediately. Neither
 optimization weakens the exact fallback or replaces it with a tolerance.
+
+The sustained checker includes positive known minima of
+`h² + scale² P(t)²(1+t^8)/W(t)²`. Positive weights and the independently known
+factors of `P` prove the complete minimum parameter set. Rational parameter
+ties reach degree 25; positive-distance irrational ties and composed edits reach
+degree eight before optional elevation to nine. Separate regressions retain
+irrational minimum distances and image-budget failures, and distinguish
+parabola minima under a `2^-180` query displacement.
 
 ## Reference and independent evidence
 
@@ -127,8 +141,10 @@ The optimized implementation at `fc022e82` completed another clean local run:
 600.04 seconds of mutation after 227.91 seconds of replay, 1,908 mutations,
 and an 898 MiB RSS peak. No new artifacts were produced; the two previously
 retained slow inputs remain archived and both pass the optimized checker.
-Its Linux CI spline campaign also completed its full 60-second mutation budget
-with no artifacts and a 625 MiB RSS peak. Full platform acceptance remains open.
+All seventeen CI fuzz targets passed on this revision. Its Linux spline campaign
+completed its full 60-second mutation budget with no artifacts and a 625 MiB RSS
+peak. Linux, macOS and Windows each passed 132 debug and 132 release tests;
+Rust 1.85 passed all 132 tests, and the WebAssembly library check passed.
 
 The first probe retained 120-second failures for two high-degree bound views.
 The zero and shared-refinement fixes now complete all 30 cases locally; the
@@ -145,7 +161,23 @@ eight-of-25 legacy and ten-of-25 newer-family witness coverage as macOS. Twelve
 stored fingerprints cover ten family/case differences across the two platforms;
 neither comparison budgets nor Rust expectations were relaxed.
 
-Clean-revision native/platform/fuzz acceptance of these fixes is still pending. This capability
+At `14fb4ea3`, the fresh Linux native gate passed with 50 matches, ten reviewed
+differences and zero failures, and all seventeen CI fuzz targets passed again.
+Only the review data and this document changed from `fc022e82`; its kernel,
+tests, tools and dependencies are identical to the fully tested platform source.
+The earlier workflow remains recorded as failed because its new Linux native
+fingerprint had not yet been reviewed. The final platform rerun remains in flight.
+
+The subsequent rational-distance filter passed 134 release tests, nine focused
+debug tests, both lint checks, ten bridge self-tests, sixteen fuzz-runner
+self-tests, and another fresh native comparison with the same 50/10/0 result.
+The expanded checker completed 600.05 seconds of mutation after 80.79 seconds
+of replay in a scratch development tree: 1,062 mutations, a 1,502 MiB RSS peak,
+and no crash, timeout, OOM or mathematical disagreement. One 10-second slow seed
+was retained. Clean-revision acceptance is separate from that experiment and
+from the accepted zero-distance optimization above.
+
+This capability
 does not implement curve/curve or curve/surface minimum distance, general
 intersections, Boolean topology, persistent history, STEP, cancellation or hard
 per-operation resource ceilings. Full production kernel parity remains open.

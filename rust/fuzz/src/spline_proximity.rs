@@ -119,12 +119,23 @@ fn compare_known(index: usize, x: &R) -> Ordering {
 fn factors(data: &[u8]) {
     let power_degree = 1 + usize::from(byte(data, 1) % 21);
     let degree = power_degree + 4;
+    // Offset cases have D=h^2 + scale^2 P^2(1+t^8)/W^2, so all and only
+    // the same known roots attain the positive minimum h^2. They exercise
+    // stationary isolation even after the zero-distance shortcut.
+    let offset = byte(data, 2) & 1 != 0;
+    let height = if offset {
+        q(1 + i64::from(byte(data, 37) % 16), 8)
+    } else {
+        r(0)
+    };
     let mut p = vec![r(0), r(1)];
     let mut present = [false; 11];
     present[5] = true;
     while p.len() <= power_degree {
         let v = byte(data, 3 + p.len());
-        let factor = if p.len() < power_degree && v & 1 == 1 {
+        // Bound each instrumented input: positive-distance irrational ties
+        // reach degree eight; rational parameter ties still reach degree 25.
+        let factor = if p.len() < power_degree && v & 1 == 1 && (!offset || degree <= 8) {
             let (square, indices) = match (v / 2) % 3 {
                 0 => (2, [3, 7]),
                 1 => (3, [2, 8]),
@@ -143,11 +154,15 @@ fn factors(data: &[u8]) {
         p = multiply(&p, &factor);
     }
     assert_eq!(p.len(), power_degree + 1);
-    let base = [
+    let mut base = [
         p.clone(),
         multiply(&p, &[r(0), r(0), r(1)]),
         multiply(&p, &[r(0), r(0), r(0), r(0), r(1)]),
     ];
+    if offset {
+        base[1] = base[2].clone();
+        base[2] = vec![r(0)];
+    }
     let components = base.map(|c| bernstein(&c, degree));
     let query: [R; 3] = std::array::from_fn(|i| q(i64::from(byte(data, 28 + i) as i8), 16));
     let shift = q(i64::from(byte(data, 31) as i8), 8);
@@ -157,10 +172,14 @@ fn factors(data: &[u8]) {
     let controls = (0..=degree)
         .map(|i| {
             // Positive Bernstein weights, often full degree. Squared-distance
-            // stationarity can reach 3p-2 although the complete zero set is known.
+            // stationarity can reach 3p-2 although every minimum is known.
             let w = r(1 + i64::from(byte(data, 40 + i) % 5));
-            let xyz: [R; 3] =
-                std::array::from_fn(|c| &query[c] * &w + &scale * &components[(c + axis) % 3][i]);
+            let xyz: [R; 3] = std::array::from_fn(|c| {
+                let local = (c + axis) % 3;
+                &query[c] * &w
+                    + &scale * &components[local][i]
+                    + if local == 2 { &height * &w } else { r(0) }
+            });
             [xyz[0].clone(), xyz[1].clone(), xyz[2].clone(), w]
         })
         .collect();
@@ -194,15 +213,28 @@ fn factors(data: &[u8]) {
         .collect();
     assert_eq!(result.points().len(), expected.len());
     assert!(result.intervals().is_empty());
-    distance(&result, &r(0));
+    distance(&result, &(&height * &height));
+    let closest: [R; 3] = std::array::from_fn(|c| {
+        &query[c]
+            + if (c + axis) % 3 == 2 {
+                height.clone()
+            } else {
+                r(0)
+            }
+    });
     for (actual, i) in result.points().iter().zip(expected) {
         interval(actual.parameter_bounds().unwrap(), |x| {
             compare_known(i, &((x - &shift) / &width))
         });
-        for (axis, value) in query.iter().enumerate() {
+        for (axis, value) in closest.iter().enumerate() {
             assert_eq!(actual.compare_coordinate(axis, value).unwrap(), Equal);
         }
-        for (b, value) in actual.coordinate_bounds().unwrap().into_iter().zip(&query) {
+        for (b, value) in actual
+            .coordinate_bounds()
+            .unwrap()
+            .into_iter()
+            .zip(&closest)
+        {
             bounds(b, value);
         }
     }

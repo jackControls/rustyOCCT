@@ -78,6 +78,14 @@ def seed_corpus(target):
             data[0:4]=bytes([0,degree-5,0,0])
             data[28:37]=bytes([13,7,9,0,8,16,degree%3,degree%4,degree%3])
             save(bytes(data))
+        # Positive known minimum distances also exercise stationary equations,
+        # even when the zero-distance common-factor path is available.
+        for degree in [5,6,7,8,11,16,24,25]:
+            for variant in [0,1]:
+                data=bytearray((i*37+variant*13)%256 for i in range(72))
+                data[:3]=bytes([0,degree-5,1])
+                data[35:37]=bytes([0,0])
+                save(bytes(data))
         for family in [1,2,3]:
             for mode in [0,1,2,3]:
                 for exponent in [0,1,70,127]:

@@ -286,21 +286,26 @@ fn all_equal_minima_and_sub_float_ties_are_distinguished_exactly() {
             .unwrap(),
         Greater
     );
-    let shifted = closest_points_on_spline(&curve, Point3::new(2f64.powi(-70), 1., 0.)).unwrap();
-    assert_eq!(shifted.points().len(), 1);
-    assert_eq!(
-        shifted.points()[0]
-            .compare_parameter(&rational(0, 1))
-            .unwrap(),
-        Greater
-    );
-    assert_eq!(shifted.compare_squared_distance(0.75).unwrap(), Less);
-    assert_eq!(
-        shifted
-            .distance_cmp(&symmetric, SplineProximityOptions::default())
-            .unwrap(),
-        Less
-    );
+    // The smaller displacement keeps the candidate enclosures overlapping
+    // through bounded refinement. Proposing 3/4 must not snap either value.
+    for exponent in [-70, -180] {
+        let shifted =
+            closest_points_on_spline(&curve, Point3::new(2f64.powi(exponent), 1., 0.)).unwrap();
+        assert_eq!(shifted.points().len(), 1);
+        assert_eq!(
+            shifted.points()[0]
+                .compare_parameter(&rational(0, 1))
+                .unwrap(),
+            Greater
+        );
+        assert_eq!(shifted.compare_squared_distance(0.75).unwrap(), Less);
+        assert_eq!(
+            shifted
+                .distance_cmp(&symmetric, SplineProximityOptions::default())
+                .unwrap(),
+            Less
+        );
+    }
     let degenerate = closest_points_on_spline(&curve, Point3::new(0., 0.5, 0.)).unwrap();
     assert_eq!(degenerate.points().len(), 1);
     assert_eq!(
@@ -366,6 +371,187 @@ fn whole_constant_distance_intervals_and_periodic_parameter_aliases_survive() {
 }
 
 #[test]
+fn rational_distance_at_irrational_parameters_avoids_image_construction() {
+    // Independently expanded Bernstein coefficients on [-2,2]:
+    // X=P=t^3-2t, Y=t^4 P, Z=(5/7)W; every weight is positive.
+    // D=25/49 + P^2(1+t^8)/W^2. Its complete minimum set is
+    // {-sqrt(2), 0, sqrt(2)}, including two irrational parameters.
+    let x = [
+        (-4, 1),
+        (12, 7),
+        (20, 7),
+        (44, 35),
+        (-44, 35),
+        (-20, 7),
+        (-12, 7),
+        (4, 1),
+    ];
+    let y = [
+        (-64, 1),
+        (704, 7),
+        (-2624, 21),
+        (960, 7),
+        (-960, 7),
+        (2624, 21),
+        (-704, 7),
+        (64, 1),
+    ];
+    let curve = ExactBSplineCurve3::from_homogeneous(
+        ExactKnotVector::new(7, vec![rational(-2, 1), rational(2, 1)], vec![8, 8]).unwrap(),
+        x.into_iter()
+            .zip(y)
+            .enumerate()
+            .map(|(i, ((xn, xd), (yn, yd)))| {
+                let w = rational(1 + (i % 3) as i32, 1);
+                [rational(xn, xd), rational(yn, yd), rational(5, 7) * &w, w]
+            })
+            .collect(),
+    )
+    .unwrap();
+    let options = SplineProximityOptions {
+        max_image_coefficient_updates: 0,
+        max_image_coefficient_bits: 0,
+        ..Default::default()
+    };
+    let query = [rational(0, 1), rational(0, 1), rational(0, 1)];
+    let result = closest_points_on_exact_spline_in(
+        &curve,
+        &query,
+        &rational(-2, 1),
+        &rational(2, 1),
+        options,
+    )
+    .unwrap();
+    assert_eq!(result.points().len(), 3);
+    assert!(result.intervals().is_empty());
+    assert_eq!(
+        result
+            .compare_squared_distance_exact(&rational(25, 49))
+            .unwrap(),
+        Equal
+    );
+    for point in result.points() {
+        for (axis, expected) in [rational(0, 1), rational(0, 1), rational(5, 7)]
+            .iter()
+            .enumerate()
+        {
+            assert_eq!(point.compare_coordinate(axis, expected).unwrap(), Equal);
+        }
+    }
+    assert_eq!(
+        result.points()[1].rational_parameter(),
+        Some(rational(0, 1))
+    );
+    for (index, lo, hi) in [(0, -2, -1), (2, 1, 2)] {
+        assert_eq!(
+            result.points()[index]
+                .compare_parameter(&rational(lo, 1))
+                .unwrap(),
+            Greater
+        );
+        assert_eq!(
+            result.points()[index]
+                .compare_parameter(&rational(hi, 1))
+                .unwrap(),
+            Less
+        );
+    }
+    let left = closest_points_on_exact_spline_in(
+        &curve,
+        &query,
+        &rational(-2, 1),
+        &rational(-1, 1),
+        options,
+    )
+    .unwrap();
+    let right = closest_points_on_exact_spline_in(
+        &curve,
+        &query,
+        &rational(1, 1),
+        &rational(2, 1),
+        options,
+    )
+    .unwrap();
+    assert_eq!(left.distance_cmp(&right, options).unwrap(), Equal);
+}
+
+#[test]
+fn irrational_distance_ties_retain_exact_images_and_atomic_budgets() {
+    // C(t)=(t^2,t^3,0), Q=(1,0,0), t in [-1,1]. Writing s=t^2,
+    // D=s^3+s^2-2s+1 has its unique s-minimum at (sqrt(7)-1)/3.
+    // Both parameter signs minimize D=(47-14 sqrt(7))/27, an irrational
+    // value that must retain the general algebraic image fallback.
+    let curve = ExactBSplineCurve3::from_homogeneous(
+        ExactKnotVector::new(3, vec![rational(-1, 1), rational(1, 1)], vec![4, 4]).unwrap(),
+        [
+            (rational(1, 1), -1),
+            (rational(-1, 3), 1),
+            (rational(-1, 3), -1),
+            (rational(1, 1), 1),
+        ]
+        .into_iter()
+        .map(|(x, y)| [x, rational(y, 1), rational(0, 1), rational(1, 1)])
+        .collect(),
+    )
+    .unwrap();
+    let query = [rational(1, 1), rational(0, 1), rational(0, 1)];
+    for options in [
+        SplineProximityOptions {
+            max_image_coefficient_updates: 0,
+            ..Default::default()
+        },
+        SplineProximityOptions {
+            max_image_coefficient_bits: 0,
+            ..Default::default()
+        },
+    ] {
+        assert!(matches!(
+            closest_points_on_exact_spline_in(
+                &curve,
+                &query,
+                &rational(-1, 1),
+                &rational(1, 1),
+                options,
+            ),
+            Err(Error::ComputationLimit(_))
+        ));
+    }
+    let result = closest_points_on_exact_spline_in(
+        &curve,
+        &query,
+        &rational(-1, 1),
+        &rational(1, 1),
+        Default::default(),
+    )
+    .unwrap();
+    assert_eq!(result.points().len(), 2);
+    assert!(result.intervals().is_empty());
+    assert_eq!(
+        result.points()[0]
+            .compare_parameter(&rational(0, 1))
+            .unwrap(),
+        Less
+    );
+    assert_eq!(
+        result.points()[1]
+            .compare_parameter(&rational(0, 1))
+            .unwrap(),
+        Greater
+    );
+    let bounds = result.squared_distance_bounds().unwrap();
+    for (value, expected) in [(bounds.lower(), Greater), (bounds.upper(), Less)] {
+        let threshold = R::from_float(value).unwrap();
+        let z = rational(47, 1) - rational(27, 1) * &threshold;
+        assert!(z > rational(0, 1));
+        assert_eq!((&z * &z).cmp(&rational(1372, 1)), expected);
+        assert_eq!(
+            result.compare_squared_distance_exact(&threshold).unwrap(),
+            expected
+        );
+    }
+}
+
+#[test]
 fn computation_limits_are_atomic_and_invalid_queries_are_rejected() {
     let curve = parabola();
     let point = Point3::new(0., 1., 0.);
@@ -376,14 +562,6 @@ fn computation_limits_are_atomic_and_invalid_queries_are_rejected() {
         },
         SplineProximityOptions {
             max_candidates: 0,
-            ..Default::default()
-        },
-        SplineProximityOptions {
-            max_image_coefficient_updates: 0,
-            ..Default::default()
-        },
-        SplineProximityOptions {
-            max_image_coefficient_bits: 0,
             ..Default::default()
         },
     ] {

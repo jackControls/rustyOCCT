@@ -634,6 +634,22 @@ impl Context {
                 .root
                 .sign_polynomial(&IntPolynomial::from_rationals(&difference)));
         }
+        // A rational squared distance can occur at an irrational parameter.
+        // The continued-fraction candidate is only a proposal: exact polynomial
+        // vanishing certifies it before it can decide a comparison.
+        let (al, ah) = a.range();
+        let (bl, bh) = b.range();
+        let value = real::rational_in_interval(&al.max(bl), &ah.min(bh));
+        for (selected, other, reverse) in [(&*a, &*b, true), (&*b, &*a, false)] {
+            let difference = subtract(&selected.span.numerator, &selected.span.denominator, &value);
+            if selected
+                .root
+                .vanishes_polynomial(&IntPolynomial::from_rationals(&difference))
+            {
+                let order = other.compare_rational(&value);
+                return Ok(if reverse { order.reverse() } else { order });
+            }
+        }
         Ok(self.image(a)?.compare_root(&self.image(b)?))
     }
     fn image(&mut self, value: &Distance) -> Result<AlgebraicRoot> {
