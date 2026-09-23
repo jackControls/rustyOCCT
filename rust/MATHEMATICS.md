@@ -1060,3 +1060,16 @@ integer elimination for degree changes, skipping zero pivot columns while
 retaining all constraints and checking integer divisions. The target pole count
 and the full tensor product are checked before production control arithmetic.
 See [contracts, native discrepancies and current gates](DEGREE_ELEVATION.md).
+
+## Complete point-to-spline minimum sets
+
+Closed point-to-rational-B-spline queries enumerate all isolated minimum
+parameters and maximal constant-distance intervals. They retain periodic aliases
+and singular stationary points. Positive homogeneous weights give squared
+distance `N/W²`; its degree-at-most-73 numerator `N'W-2NW'`, all knots and both
+trim endpoints form a complete candidate set. Exact interval filters and
+quotient-ring image polynomials decide global ties without approximate equality.
+The image construction carries relative rational scales and full integer row
+dependence witnesses. Independent Cox/VAS/resultant fixtures verify complete
+minima, tight views and every coefficient of the image construction.
+See [the full contract, proof structure and limits](SPLINE_PROXIMITY.md).

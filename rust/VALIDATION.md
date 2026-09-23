@@ -15,8 +15,17 @@ and insphere, 2,417 independent 2D rational fixtures in all six permutations,
 95 general polynomial-root, 284 spline/plane, 118 spline/quadric, 554 proximity, 684 complete linear-set, 636 exact Bézier curve, 745 tensor-patch and 723 knot-editing fixtures,
 10,000 integer-oracle predicate cases and 256 generated prism invariant cases.
 These tests do not depend on OCCT or an application and run in native debug and
-release CI. These deterministic generated tests are separate from the fourteen
+release CI. These deterministic generated tests are separate from the seventeen
 [coverage-guided fuzz targets and daily retained-corpus campaigns](FUZZING.md).
+
+Exact root-to-root ordering was accepted at revision `de1d1d43`: 122 debug and
+122 release tests on Linux/macOS/Windows, Rust 1.85, WASM compilation and all
+sixteen then-existing fuzz targets passed. Its local roots campaign completed
+600.06 seconds of mutation with 10,483 mutations. Full kernel parity remains
+incomplete. The new [point-to-spline minimum-set capability](SPLINE_PROXIMITY.md)
+adds 30 independent complete-minimum cases, 94 whole image-polynomial equations,
+a source-pinned native bridge and a seventeenth fuzz target; its clean-revision
+platform/native/fuzz acceptance is pending.
 
 `compare_intersections.py` executes native OCCT `IntAna_IntConicQuad` and Rust's
 line/plane primitive on 72 shared well-conditioned cases, comparing intersection

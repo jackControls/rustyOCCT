@@ -1,0 +1,61 @@
+{
+  "captured_at_utc": "2026-09-23T18:55:54.052992+00:00",
+  "rust_revision_before_projection_implementation": "27647fadbb82ca8e516b66b606687d65144e0cf7",
+  "rust_worktree_dirty": false,
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "source_archive_sha256": "7044127eaf44081e5dd38c67bd260be8661fecd2c1020ce314337c4d46e1bff2",
+  "sdk_manifest_sha256": "e1c686da184d2aa384c5e9e4bc3411ec4348450cbb0bfab33f4e76e5de695d71",
+  "input_sha256": "1e880a03e6e8c5c7aa0fd5373b02ee2288c3e31e6e36b267565c1c59db25a730",
+  "cases_sha256": "ec7eab3c188de22a46794bd2d276bd8149d926d2a420d7c9147a319069952031",
+  "probe_source_sha256": "24ef70fc6e813537bd1f2dfdc9afdbc788a9ff941c64539c6147b65ab001e938",
+  "probe_binary_sha256": "68b0e2979324809126af039ca8ad518d6a21a0df87f5d97aad660406b790d9d6",
+  "observations_sha256": "f3557d583c3a9310bea6a6eb53d8496f1b515ef3c595479046d845d2af7201bc",
+  "loaded_libraries": [
+    {
+      "path": "$REPO/target/projection-preflight/pinned-sdk/install/lib/libTKBRep.8.1.0.dylib",
+      "sha256": "49ba20c37b9f55bc13e37fd420ea37c9c4080bbe05d5d449458aea7b8cf67004"
+    },
+    {
+      "path": "$REPO/target/projection-preflight/pinned-sdk/install/lib/libTKG2d.8.1.0.dylib",
+      "sha256": "acfaa5041ece14ff5ef7ef4f239aca3c3c0a9671968c106437374d38966a9d21"
+    },
+    {
+      "path": "$REPO/target/projection-preflight/pinned-sdk/install/lib/libTKG3d.8.1.0.dylib",
+      "sha256": "84aad91005a84fb136efcf427e4ccbaa9e2e507f84b22ba205564a2464b1198a"
+    },
+    {
+      "path": "$REPO/target/projection-preflight/pinned-sdk/install/lib/libTKGeomAlgo.8.1.0.dylib",
+      "sha256": "d1cffdcbb486dffad5d40f061fe3b10616b3d43e7d0946b51a8f505f698e1c56"
+    },
+    {
+      "path": "$REPO/target/projection-preflight/pinned-sdk/install/lib/libTKGeomBase.8.1.0.dylib",
+      "sha256": "d5e36a8d96eeed03c563e8e026985b5d49311b19b25bef8fb6dadec99524fc48"
+    },
+    {
+      "path": "$REPO/target/projection-preflight/pinned-sdk/install/lib/libTKMath.8.1.0.dylib",
+      "sha256": "1fdb379a5711ea66f373d6abe40e496aed8fee735466a33d9bb95d208614f422"
+    },
+    {
+      "path": "$REPO/target/projection-preflight/pinned-sdk/install/lib/libTKernel.8.1.0.dylib",
+      "sha256": "4540a9a23fbbf4a3002f2b79f7214d96812de0e67af50306ed0dee1eaa4a2b8f"
+    }
+  ],
+  "command": [
+    "c++",
+    "-std=c++17",
+    "-O2",
+    "$REPO/target/projection-preflight/native_projection.cpp",
+    "-I$REPO/target/projection-preflight/pinned-sdk/install/include/opencascade",
+    "-L$REPO/target/projection-preflight/pinned-sdk/install/lib",
+    "-Wl,-rpath,$REPO/target/projection-preflight/pinned-sdk/install/lib",
+    "-o",
+    "$REPO/target/projection-preflight/degree73/native_projection",
+    "-lTKGeomAlgo",
+    "-lTKGeomBase",
+    "-lTKG3d",
+    "-lTKMath",
+    "-lTKernel"
+  ],
+  "case_count": 1,
+  "note": "Research-only native baseline. No Rust projection API or parity claim."
+}

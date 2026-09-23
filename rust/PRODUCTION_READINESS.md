@@ -80,6 +80,14 @@ tests, not just compilation, before claiming that runtime is supported. Define
 per-operation budgets from measured workloads; do not promise generic speedups
 over C++ or trade reliability for a faster average.
 
+The point-to-rational-spline minimum-set implementation adds a complete
+closed-range contract, exact algebraic distance comparisons, independent
+minimum/whole-equation fixtures, source-pinned native observations and a
+seventeenth fuzz target. Its initial local ten-minute mutation campaign passed;
+clean-revision platform/native/fuzz acceptance remains pending. See
+[the capability's evidence and limits](SPLINE_PROXIMITY.md). Structural work
+limits do not replace application-level cancellation or hard resource ceilings.
+
 Continue with stronger B-rep invariants, topology history, certified curved
 geometry and general intersections. Interchange and performance gates become
 applicable as those capabilities arrive. A finite test suite and certified

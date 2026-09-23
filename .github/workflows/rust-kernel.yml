@@ -55,6 +55,8 @@ jobs:
           python3 rust/tools/generate_surface_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_real_root_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_root_comparison_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_algebraic_image_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_spline_proximity_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_spline_plane_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_spline_quadric_fixtures.py --check
       - name: Run unchanged upstream tests on both kernels
@@ -137,6 +139,38 @@ jobs:
             target/degree-sdk/*.log
             target/degree-sdk/build/CMakeCache.txt
             target/degree-sdk/build/compile_commands.json
+          if-no-files-found: warn
+
+  pinned-spline-proximity-oracle:
+    name: Spline minimum distances / source-pinned OCCT
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - run: rustup toolchain install stable --profile minimal
+      - name: Install the independent exact polynomial oracle
+        run: |
+          python3 -m venv target/math-oracle-venv
+          target/math-oracle-venv/bin/python -m pip install --disable-pip-version-check --no-cache-dir --require-hashes -r rust/tools/math-oracle-requirements.txt
+      - name: Fetch the exact reference source
+        run: git fetch --no-tags --depth=1 https://github.com/Open-Cascade-SAS/OCCT.git 3d097a0328e71b826377d4814ab05ec3c3d23871
+      - name: Build the headless extrema SDK with exception checks
+        run: python3 rust/tools/build_pinned_occt.py --output target/spline-proximity-sdk --toolkit TKGeomAlgo --jobs 2
+      - name: Test deliberate bridge failures and certify every minimum
+        run: |
+          target/math-oracle-venv/bin/python rust/tools/test_spline_proximity_oracle.py
+          target/math-oracle-venv/bin/python rust/tools/compare_spline_proximity.py --occt-root target/spline-proximity-sdk/install --sdk-manifest target/spline-proximity-sdk/build-manifest.json
+      - name: Preserve source provenance, native observations, and differences
+        if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: source-pinned-spline-proximity-results
+          path: |
+            target/spline-proximity-oracle/
+            target/spline-proximity-sdk/build-manifest.json
+            target/spline-proximity-sdk/*.log
+            target/spline-proximity-sdk/build/CMakeCache.txt
+            target/spline-proximity-sdk/build/compile_commands.json
           if-no-files-found: warn
 
   native:

@@ -21,6 +21,13 @@ rusty-occt = { path = "../kernel" }
 members = ["."]
 
 [[bin]]
+name = "spline_proximity"
+path = "fuzz_targets/spline_proximity.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "proximity"
 path = "fuzz_targets/proximity.rs"
 test = false

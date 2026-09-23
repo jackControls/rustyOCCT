@@ -29,7 +29,16 @@ pub(crate) fn enclose(
     compare: impl Fn(f64) -> Ordering,
     what: &'static str,
 ) -> Result<ScalarInterval> {
-    let negative = compare(0.) == Ordering::Less;
+    let negative = match compare(0.) {
+        Ordering::Equal => {
+            return Ok(ScalarInterval {
+                lower: 0.,
+                upper: 0.,
+            })
+        }
+        Ordering::Less => true,
+        Ordering::Greater => false,
+    };
     let magnitude_cmp = |x: f64| {
         if negative {
             compare(-x).reverse()

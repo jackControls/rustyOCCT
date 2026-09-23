@@ -1,0 +1,165 @@
+{
+  "note": "Exact observation fingerprints, separate from matches. Never exempts crashes, timeouts, malformed output or mathematical disagreement in Rust. New platform observations require investigation and explicit additional records.",
+  "reviews": [
+    {
+      "family": "legacy",
+      "case": "circle_constant_distance",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "83340e08d667e5b142cee312c72c0813c5ffe6f21c5e5b87aa4f76bddfced66d",
+      "exact_sha256": "6749cbdfbee3def1bb6b05e9320ce71ef45a59c5cd7a9b7bf0609bb5e2c26a19",
+      "native_stdout_sha256": "911e3a2cc93a1729e2f85ad4964a8174fc9f9a201bcbc4a4dadb67a2568e460c",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "differences": [
+        "whole_minimum_interval_not_represented"
+      ],
+      "reason": "The native result contains finite endpoint/candidate observations without an infinite-solution representation for this rational circle. Rust reports the complete minimizing interval under its closed-range contract.",
+      "independent_evidence": "Independent Cox coefficients satisfy X^2+Y^2=W^2 identically. The query is on the circle axis, so squared distance is exactly 1 or 5 for every parameter in [0,1].",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "family": "legacy",
+      "case": "circle_constant_distance_off_plane",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "4b80974684754eec8963dd9ba041e5bfa7d0a1cfac251269c8b9a506562e4e65",
+      "exact_sha256": "6b40ffc6d9b71cf1429ca6e7d63dd3748d141f968e52272eadcc8b5db680b012",
+      "native_stdout_sha256": "7895e676ace177599ec127b52e5adb8c20a3a6c545a66bcbcdb5e754caee7ab2",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "differences": [
+        "whole_minimum_interval_not_represented"
+      ],
+      "reason": "The native result contains finite endpoint/candidate observations without an infinite-solution representation for this rational circle. Rust reports the complete minimizing interval under its closed-range contract.",
+      "independent_evidence": "Independent Cox coefficients satisfy X^2+Y^2=W^2 identically. The query is on the circle axis, so squared distance is exactly 1 or 5 for every parameter in [0,1].",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "family": "legacy",
+      "case": "constant_curve",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "285144fba22d4c92d32f28354f4cbcf72b925e8fa1f81f27895fc7ee439e514a",
+      "exact_sha256": "1ade5fcf58964b7a5eeeb47e1d61b062d6b8d235506afe88e2686c6e66202b37",
+      "native_stdout_sha256": "a903ab4911e3b15e93bd955cbbd2a4ee9acc6945c75ed8d6dc8eef60cc05e17c",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "differences": [
+        "whole_minimum_interval_not_represented"
+      ],
+      "reason": "The legacy projection API returns no orthogonal candidates and only separate endpoint distances. It has no whole-parameter interval representation here. Rust retains every minimizing parameter.",
+      "independent_evidence": "Every Cartesian control is (1,2,3); positive homogeneous weights preserve that constant position. Squared distance is identically 14 throughout [0,1].",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "family": "legacy",
+      "case": "periodic_polygon_multiple_turns",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "31fa748d94c453852f77344bfb273d0a13296bdd199d2b2387d7631d718cb226",
+      "exact_sha256": "8b9adc8c62598c0fa9c2a2329b11a46f90fc6a78bd103367beb0425411ea2414",
+      "native_stdout_sha256": "a1fcc05af0ae6860c370d58469b40ff032f92bc96799b4f1a65d0cd98ef641e4",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "differences": [
+        "minimum_witness_coverage_2_of_4"
+      ],
+      "reason": "The native candidate/endpoint set omits parameter aliases at identical geometric positions. The Rust closed-range contract preserves each queried turn and both ends.",
+      "independent_evidence": "Exact segment projections of the periodic triangle against (-1,-1,0) prove minimum squared distance 2 precisely at parameters 3k. This gives [0,3] on one turn, or [-3,0,3,6] on the wider range; no other segment parameter attains it.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "family": "legacy",
+      "case": "chebyshev_25_coincident_minima",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "81535fcd055087e48c8d2447c7357e877d2d84dd6782fefcf30d4994d7cc5bb0",
+      "exact_sha256": "4d7447279bc27f0683a104d76990e667d8930cc190efbfabafc737bd96a5d2eb",
+      "native_stdout_sha256": "e8b4d34b499fba054e6b083b67ae773038bdad9a18ff11c77bf333ce539dfc45",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "differences": [
+        "minimum_witness_coverage_8_of_25"
+      ],
+      "reason": "Several degree-25 native witnesses fail the fixed parameter, point or squared-distance comparison budget. The report retains native counts and raw observations; these cases are numerical discrepancies, not matches.",
+      "independent_evidence": "Exact Cox coefficients from the actual binary64 controls, irreducible factorization and VAS isolation prove 25 distinct zeros of the sole nonzero coordinate in [-1,1]. All and only those parameters attain squared distance zero. Every Rust parameter and tight coordinate/distance enclosure is independently certified; no ideal unrounded Chebyshev coefficients supply expectations.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "family": "extremapc",
+      "case": "circle_constant_distance",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "83340e08d667e5b142cee312c72c0813c5ffe6f21c5e5b87aa4f76bddfced66d",
+      "exact_sha256": "6749cbdfbee3def1bb6b05e9320ce71ef45a59c5cd7a9b7bf0609bb5e2c26a19",
+      "native_stdout_sha256": "1d8d6be4d0832c44d97b0c1607614d4e7f7bea8cd788a608e6faed7681808389",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "differences": [
+        "whole_minimum_interval_not_represented"
+      ],
+      "reason": "The native result contains finite endpoint/candidate observations without an infinite-solution representation for this rational circle. Rust reports the complete minimizing interval under its closed-range contract.",
+      "independent_evidence": "Independent Cox coefficients satisfy X^2+Y^2=W^2 identically. The query is on the circle axis, so squared distance is exactly 1 or 5 for every parameter in [0,1].",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "family": "extremapc",
+      "case": "circle_constant_distance_off_plane",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "4b80974684754eec8963dd9ba041e5bfa7d0a1cfac251269c8b9a506562e4e65",
+      "exact_sha256": "6b40ffc6d9b71cf1429ca6e7d63dd3748d141f968e52272eadcc8b5db680b012",
+      "native_stdout_sha256": "3cd204436b6e22733591d597127a4b3c54320ff1a6a40eb183a35943f482d761",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "differences": [
+        "whole_minimum_interval_not_represented"
+      ],
+      "reason": "The native result contains finite endpoint/candidate observations without an infinite-solution representation for this rational circle. Rust reports the complete minimizing interval under its closed-range contract.",
+      "independent_evidence": "Independent Cox coefficients satisfy X^2+Y^2=W^2 identically. The query is on the circle axis, so squared distance is exactly 1 or 5 for every parameter in [0,1].",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "family": "extremapc",
+      "case": "periodic_polygon_one_turn",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "37e867542aea6f68bb161bbc87ecb5e5442acea952c85c417fb7878caf13065a",
+      "exact_sha256": "141e1186d4506b82784959e26498bb8abe5399754628334914463ba5dab289e3",
+      "native_stdout_sha256": "2f6bd7a4e01fd6e039beef4baabf66065cf822a21474c7a08277a1f794aa03c7",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "differences": [
+        "minimum_witness_coverage_1_of_2"
+      ],
+      "reason": "The native candidate/endpoint set omits parameter aliases at identical geometric positions. The Rust closed-range contract preserves each queried turn and both ends.",
+      "independent_evidence": "Exact segment projections of the periodic triangle against (-1,-1,0) prove minimum squared distance 2 precisely at parameters 3k. This gives [0,3] on one turn, or [-3,0,3,6] on the wider range; no other segment parameter attains it.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "family": "extremapc",
+      "case": "periodic_polygon_multiple_turns",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "31fa748d94c453852f77344bfb273d0a13296bdd199d2b2387d7631d718cb226",
+      "exact_sha256": "8b9adc8c62598c0fa9c2a2329b11a46f90fc6a78bd103367beb0425411ea2414",
+      "native_stdout_sha256": "74c716bcf0f4b0d0dde22407455cdf1811708c9921fa20936cc97bcd787beefd",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "differences": [
+        "minimum_witness_coverage_3_of_4"
+      ],
+      "reason": "The native candidate/endpoint set omits parameter aliases at identical geometric positions. The Rust closed-range contract preserves each queried turn and both ends.",
+      "independent_evidence": "Exact segment projections of the periodic triangle against (-1,-1,0) prove minimum squared distance 2 precisely at parameters 3k. This gives [0,3] on one turn, or [-3,0,3,6] on the wider range; no other segment parameter attains it.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "family": "extremapc",
+      "case": "chebyshev_25_coincident_minima",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "81535fcd055087e48c8d2447c7357e877d2d84dd6782fefcf30d4994d7cc5bb0",
+      "exact_sha256": "4d7447279bc27f0683a104d76990e667d8930cc190efbfabafc737bd96a5d2eb",
+      "native_stdout_sha256": "5f2bc5f935aaf0593351eed9a8c91c84afc1394a02ce060f58d96e434c8d7a55",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "differences": [
+        "minimum_witness_coverage_10_of_25"
+      ],
+      "reason": "Several degree-25 native witnesses fail the fixed parameter, point or squared-distance comparison budget. The report retains native counts and raw observations; these cases are numerical discrepancies, not matches.",
+      "independent_evidence": "Exact Cox coefficients from the actual binary64 controls, irreducible factorization and VAS isolation prove 25 distinct zeros of the sole nonzero coordinate in [-1,1]. All and only those parameters attain squared distance zero. Every Rust parameter and tight coordinate/distance enclosure is independently certified; no ideal unrounded Chebyshev coefficients supply expectations.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}

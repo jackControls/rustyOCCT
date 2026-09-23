@@ -60,7 +60,7 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
 | Scene recompute | Owned bodies, feature-local errors, atomic operation results and repeatable replay | Immutable standalone solids and typed errors exist; scene/job adapter planned. |
 | Topology references | Face/edge identities, membership, geometry signatures, generated/modified/deleted mappings | Shared topology and extrusion face origins exist. Body-local IDs are not persistent naming. History mappings required before feature migration. |
 | Face/edge metadata | Plane, cylinder, cone, circle, curvature, edge lengths and face signatures | Planes/cylinders/circles retained; DTO signatures and additional queries planned. |
-| Measurement | Bounds, mass/area/centroid/inertia, point classification, extrema/closest points | Bounds, mass properties and point classification supported for current prisms; certified point/line/segment/plane/triangle minimum distances and witnesses exist. General B-rep/curved distance/extrema remain planned. |
+| Measurement | Bounds, mass/area/centroid/inertia, point classification, extrema/closest points | Bounds, mass properties and point classification supported for current prisms; certified linear-set minimum distances exist. Complete point-to-rational-spline minimum sets are implemented, with clean-revision acceptance pending. General B-rep and other curved-pair distance/extrema remain planned. |
 | Exact interference | Occurrence transforms, minimum clearance, closest points, overlap volume | Transform, classifier and certified linear-set distance foundations exist. Solid clearance, common-solid and multi-body queries remain planned. |
 | Tessellation | Deflection-controlled watertight triangles, normals, face ranges, shared edge samples | Planned geometry output, independent of any renderer. Preserve f64 exact geometry; f32 output conversion belongs at the adapter boundary. |
 | STL / 3MF | Feed trustworthy tessellation to `nbcad-export` | Keep existing Rust writers; do not port OCCT mesh file writers or build a second export stack. |
@@ -151,6 +151,8 @@ future subsystem. Split crates when there is a working boundary to isolate.
 - `proximity`: complete minimum-distance queries among points, lines, closed
   segments, planes and closed triangles; one exact rational closest pair,
   original affine parameters and independently requested output enclosures.
+  Point-to-rational-spline queries additionally retain all algebraic minimum
+  parameters and whole minimizing intervals, including periodic aliases.
 - `curve`: validated periodic/nonperiodic rational Bézier/B-spline data, exact homogeneous
   evaluation, derivative continuity decisions and minimal output enclosures;
   exact Bézier extraction and immutable editing without rounding control data;

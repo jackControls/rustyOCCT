@@ -12,6 +12,7 @@ coverage feedback. They are distinct from the deterministic invariant tests.
 | `intersections` | Lines/segments, three-point planes/triangles, full binary64 exponents, coplanarity and degeneracies | All three intersection APIs against a rational barycentric oracle; exact classification; minimal finite coordinate/parameter enclosures; explicit unrepresentable results |
 | `linear_sets` | All 25 linear primitive pairings, raw binary64, coplanar/shared-vertex modes, full exponent range, invalid definitions and collapsed segments | Complete exact sets from independent boundary crossings and a gift-wrapping hull; canonical operand/winding symmetry; minimal construction bounds; zero-distance consistency on scaled-integer modes |
 | `proximity` | All 25 point/line/segment/plane/triangle pairings; arbitrary binary64 coordinates, scaled/coplanar/shared-vertex cases, collapsed segments and invalid inputs | Independent exact membership and supporting-plane certificates prove each returned pair globally minimal; minimal output enclosures, threshold comparisons, operand symmetry, coordinate permutation/vertex reversal and deterministic witnesses |
+| `spline_proximity` | Positive-weight rational space curves through degree 25 with known rational/irrational factor zeros, composed exact knot/degree edits, trimmed/singleton ranges, near-tie parabolas, rational circles and periodic polylines | Complete minimum parameter sets and whole intervals from independent factor signs, a monotone cubic, circle identities and exhaustive rational segment projections; tight parameter/coordinate/distance bounds; exact ties and periodic aliases |
 | `modeling` | Valid radial polygons/circles, optional holes, 49 scales, up to eight operations, plus raw invalid input | Repeated rigid transforms, reversed winding/offsets and planar splits; mass/first-moment conservation, topology, classification, bounds and finite positive properties |
 | `curved` | Full binary64 coefficients, centers/radii/axes and line endpoints; scaled integers; exact/neighboring tangencies; generator and point segments | Quadratic root count, multiplicity, exact comparisons, minimal enclosures; circle/sphere/cylinder hits against independent polynomial-sign and axial-projection oracles; endpoint clipping and typed failures |
 | `splines` | Raw binary64 poles/weights/knots, scaled geometry, degree 1..25, repeated knots, periodic seams, full-range wrapped parameters, explicit sides and derivative requests | Exact basis-function derivatives and closed quotient formulas independently check homogeneous pole interpolation; minimal position/derivative bounds; discontinuity, domain, nonfinite and overflow errors |
@@ -56,7 +57,7 @@ coverage percentages or evidence of exhaustive input coverage.
 
 ## Continuing campaigns
 
-[Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all sixteen targets
+[Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all seventeen targets
 for 60 seconds of mutation each on relevant pushes/PRs, and 600 seconds each every day at
 06:23 UTC on the default branch. Manual runs accept 1–3,600 seconds per target.
 GitHub can delay scheduled jobs. The schedule must remain enabled on the fork.

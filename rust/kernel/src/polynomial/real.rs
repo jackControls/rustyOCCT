@@ -9,6 +9,8 @@ use num_bigint::{BigInt, Sign};
 use num_rational::BigRational as R;
 use std::{cmp::Ordering, sync::Arc};
 
+pub(crate) mod image;
+
 pub const MAX_POLYNOMIAL_DEGREE: usize = 25;
 
 /// A deterministic work limit, independent of geometric tolerance. Exhaustion
@@ -145,9 +147,38 @@ pub struct AlgebraicRoot {
     multiplicity: usize,
 }
 impl AlgebraicRoot {
+    pub(crate) fn rational(value: R) -> Self {
+        let polynomial = IntPolynomial::new(vec![-value.numer(), value.denom().clone()]);
+        Self {
+            defining: Arc::new(RootPolynomial {
+                sturm: vec![polynomial.clone(), polynomial.derivative()],
+                polynomial,
+            }),
+            lower: value.clone(),
+            upper: value,
+            multiplicity: 1,
+        }
+    }
+    pub(crate) fn rational_value(&self) -> Option<&R> {
+        (self.lower == self.upper).then_some(&self.lower)
+    }
+    pub(crate) fn isolator(&self) -> (&R, &R) {
+        (&self.lower, &self.upper)
+    }
+    /// Zero-only query without constructing a signed Sturm-Tarski chain. The
+    /// gcd is a square-free divisor of the defining polynomial. Our isolator
+    /// contains at most one of its roots, so a sign change is necessary and
+    /// sufficient for membership. Its endpoints cannot be roots of the divisor.
+    pub(crate) fn vanishes_polynomial(&self, g: &IntPolynomial) -> bool {
+        if self.lower == self.upper {
+            return g.sign_at(&self.lower) == Ordering::Equal;
+        }
+        let common = self.defining.polynomial.gcd(g);
+        !common.is_constant() && common.sign_at(&self.lower) != common.sign_at(&self.upper)
+    }
     /// Tighten a single-root interval by a bounded amount before repeated sign
     /// queries. Its square-free polynomial has one simple root here, so opposite
-    /// endpoint signs certify each bisection without another Sturm chain. This
+    /// endpoint signs certify each bisection without another Sturm chain.
     /// Verified rational candidates can collapse the interval exactly. This
     /// is only an exact fast-filter aid: undecided signs still use Sturm-Tarski.
     pub(crate) fn refine_for_signs(&mut self, steps: usize) {
@@ -241,13 +272,18 @@ impl AlgebraicRoot {
         if x >= &self.upper {
             return Ordering::Less;
         }
-        if self.defining.polynomial.sign_at(x) == Ordering::Equal {
+        let p = &self.defining.polynomial;
+        let sign = p.sign_at(x);
+        if sign == Ordering::Equal {
             return Ordering::Equal;
         }
-        if variations(&self.defining.sturm, &self.lower) > variations(&self.defining.sturm, x) {
-            Ordering::Less
-        } else {
+        // A square-free polynomial has exactly one simple root in this
+        // isolator. An interior point is left of that root iff its sign agrees
+        // with the left endpoint; evaluating the entire Sturm chain is needless.
+        if sign == p.sign_at(&self.lower) {
             Ordering::Greater
+        } else {
+            Ordering::Less
         }
     }
     pub(crate) fn sign_polynomial(&self, g: &IntPolynomial) -> Ordering {
@@ -295,6 +331,13 @@ impl AlgebraicRoot {
         }
         if hi == Ordering::Less {
             return Ordering::Less;
+        }
+        // A shared square-free factor can prove zero far more cheaply than
+        // constructing P'Q. In particular, geometric coordinates may vanish at
+        // many roots of a higher-degree stationary equation. Nonzero values
+        // still follow the complete signed query below.
+        if refined.vanishes_polynomial(g) {
+            return Ordering::Equal;
         }
         let p = &self.defining.polynomial;
         let query = sequence(p.clone(), p.derivative().multiply(g));

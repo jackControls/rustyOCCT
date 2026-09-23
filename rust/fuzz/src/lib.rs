@@ -26,6 +26,8 @@ mod linear_sets;
 pub use linear_sets::check_linear_sets;
 mod proximity;
 pub use proximity::check_proximity;
+mod spline_proximity;
+pub use spline_proximity::check_spline_proximity;
 mod bezier_editing;
 pub use bezier_editing::{check_bezier_editing, profile_bezier_editing};
 #[path = "../../kernel/tests/support/bezier_reference.rs"]

@@ -1,4 +1,4 @@
-//! Certified minimum distances between closed linear geometric sets.
+//! Certified minimum distances for linear sets and point-to-spline queries.
 //!
 //! All 25 ordered pairings of points, infinite lines, closed segments, infinite
 //! planes and closed triangles are supported. Finite binary64 inputs define
@@ -10,6 +10,11 @@
 //! Exact rational points and original affine parameters remain available even
 //! when their finite binary64 enclosures cannot be represented. Rounded points
 //! need not lie exactly on either operand: use the rational values or bounds.
+//!
+//! The separate `closest_points_on_spline*` APIs enumerate every globally
+//! closest parameter on a closed rational B-spline range, including whole
+//! minimizing intervals and repeated periodic aliases. They preserve algebraic
+//! identities, expose exact comparisons, and report exhausted work limits.
 //!
 //! OCCT references: Extrema_ExtElC (line/line normal equations), Extrema_ExtPElC
 //! and Extrema_ExtPElS (projection), and BRepExtrema_DistShapeShape (boundary
@@ -35,6 +40,13 @@ use crate::{interval, Bounds3, Error, Plane3, Point3, Result, ScalarInterval, Tr
 use num_bigint::BigInt;
 use num_rational::BigRational as R;
 use std::cmp::Ordering;
+
+mod spline;
+pub use spline::{
+    closest_points_on_exact_spline, closest_points_on_exact_spline_in, closest_points_on_spline,
+    closest_points_on_spline_in, SplineClosestInterval, SplineClosestPoint, SplineClosestSet,
+    SplineProximityOptions,
+};
 
 type Vector = [R; 3];
 type IntegerVector = [BigInt; 3];

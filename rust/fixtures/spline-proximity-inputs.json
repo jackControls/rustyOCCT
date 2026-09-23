@@ -1,0 +1,1752 @@
+{
+  "reference_revision": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "note": "The first 29 input cases and both native extrema families were captured before the Rust spline distance implementation. Ten cases adapt original OCCT GTest inputs; they do not execute original assertions. The degree-73 case was also captured separately before implementation. Expected minima come only from the independent mathematical generator.",
+  "cases": [
+    {
+      "name": "line_interior",
+      "degree": 1,
+      "periodic": false,
+      "controls": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        0.0,
+        1.0
+      ],
+      "multiplicities": [
+        2,
+        2
+      ],
+      "query": [
+        0.5,
+        2.0,
+        0.0
+      ],
+      "range": [
+        0.0,
+        1.0
+      ],
+      "note": "Closed-range global minimum includes both ends even without an orthogonal candidate."
+    },
+    {
+      "name": "line_left_endpoint",
+      "degree": 1,
+      "periodic": false,
+      "controls": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        0.0,
+        1.0
+      ],
+      "multiplicities": [
+        2,
+        2
+      ],
+      "query": [
+        -1.0,
+        2.0,
+        0.0
+      ],
+      "range": [
+        0.0,
+        1.0
+      ],
+      "note": "Closed-range global minimum includes both ends even without an orthogonal candidate."
+    },
+    {
+      "name": "line_right_endpoint",
+      "degree": 1,
+      "periodic": false,
+      "controls": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        0.0,
+        1.0
+      ],
+      "multiplicities": [
+        2,
+        2
+      ],
+      "query": [
+        2.0,
+        2.0,
+        0.0
+      ],
+      "range": [
+        0.0,
+        1.0
+      ],
+      "note": "Closed-range global minimum includes both ends even without an orthogonal candidate."
+    },
+    {
+      "name": "line_on_endpoint",
+      "degree": 1,
+      "periodic": false,
+      "controls": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        0.0,
+        1.0
+      ],
+      "multiplicities": [
+        2,
+        2
+      ],
+      "query": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "range": [
+        0.0,
+        1.0
+      ],
+      "note": "Closed-range global minimum includes both ends even without an orthogonal candidate."
+    },
+    {
+      "name": "line_trimmed_endpoint",
+      "degree": 1,
+      "periodic": false,
+      "controls": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        0.0,
+        1.0
+      ],
+      "multiplicities": [
+        2,
+        2
+      ],
+      "query": [
+        0.5,
+        2.0,
+        0.0
+      ],
+      "range": [
+        0.125,
+        0.25
+      ],
+      "note": "Closed-range global minimum includes both ends even without an orthogonal candidate."
+    },
+    {
+      "name": "line_singleton",
+      "degree": 1,
+      "periodic": false,
+      "controls": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        0.0,
+        1.0
+      ],
+      "multiplicities": [
+        2,
+        2
+      ],
+      "query": [
+        0.0,
+        2.0,
+        0.0
+      ],
+      "range": [
+        0.25,
+        0.25
+      ],
+      "note": "Closed-range global minimum includes both ends even without an orthogonal candidate."
+    },
+    {
+      "name": "parabola_two_equal_minima",
+      "degree": 2,
+      "periodic": false,
+      "controls": [
+        [
+          -2.0,
+          4.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          -4.0,
+          0.0,
+          1.0
+        ],
+        [
+          2.0,
+          4.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        -2.0,
+        2.0
+      ],
+      "multiplicities": [
+        3,
+        3
+      ],
+      "query": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "range": [
+        -2.0,
+        2.0
+      ],
+      "note": "Exact parabola C(t)=(t,t^2,0). Roots of its distance derivative include maxima and degenerate stationary points."
+    },
+    {
+      "name": "parabola_near_tie",
+      "degree": 2,
+      "periodic": false,
+      "controls": [
+        [
+          -2.0,
+          4.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          -4.0,
+          0.0,
+          1.0
+        ],
+        [
+          2.0,
+          4.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        -2.0,
+        2.0
+      ],
+      "multiplicities": [
+        3,
+        3
+      ],
+      "query": [
+        8.470329472543003e-22,
+        1.0,
+        0.0
+      ],
+      "range": [
+        -2.0,
+        2.0
+      ],
+      "note": "Exact parabola C(t)=(t,t^2,0). Roots of its distance derivative include maxima and degenerate stationary points."
+    },
+    {
+      "name": "parabola_stationary_zero_curvature",
+      "degree": 2,
+      "periodic": false,
+      "controls": [
+        [
+          -2.0,
+          4.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          -4.0,
+          0.0,
+          1.0
+        ],
+        [
+          2.0,
+          4.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        -2.0,
+        2.0
+      ],
+      "multiplicities": [
+        3,
+        3
+      ],
+      "query": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "range": [
+        -2.0,
+        2.0
+      ],
+      "note": "Exact parabola C(t)=(t,t^2,0). Roots of its distance derivative include maxima and degenerate stationary points."
+    },
+    {
+      "name": "circle_constant_distance",
+      "degree": 2,
+      "periodic": false,
+      "controls": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          1.0,
+          1.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          2.0
+        ]
+      ],
+      "knots": [
+        0.0,
+        1.0
+      ],
+      "multiplicities": [
+        3,
+        3
+      ],
+      "query": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "range": [
+        0.0,
+        1.0
+      ],
+      "note": "Exact rational quarter circle; every parameter minimizes squared distance 1."
+    },
+    {
+      "name": "circle_constant_distance_off_plane",
+      "degree": 2,
+      "periodic": false,
+      "controls": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          1.0,
+          1.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          2.0
+        ]
+      ],
+      "knots": [
+        0.0,
+        1.0
+      ],
+      "multiplicities": [
+        3,
+        3
+      ],
+      "query": [
+        0.0,
+        0.0,
+        2.0
+      ],
+      "range": [
+        0.0,
+        1.0
+      ],
+      "note": "Every parameter minimizes squared distance 5."
+    },
+    {
+      "name": "constant_curve",
+      "degree": 2,
+      "periodic": false,
+      "controls": [
+        [
+          1.0,
+          2.0,
+          3.0,
+          1.0
+        ],
+        [
+          1.0,
+          2.0,
+          3.0,
+          2.0
+        ],
+        [
+          1.0,
+          2.0,
+          3.0,
+          3.0
+        ]
+      ],
+      "knots": [
+        0.0,
+        1.0
+      ],
+      "multiplicities": [
+        3,
+        3
+      ],
+      "query": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "range": [
+        0.0,
+        1.0
+      ],
+      "note": "All parameters have the same image and squared distance 14."
+    },
+    {
+      "name": "linear_corner_minimum",
+      "degree": 1,
+      "periodic": false,
+      "controls": [
+        [
+          0.0,
+          1.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        0.0,
+        1.0,
+        2.0
+      ],
+      "multiplicities": [
+        2,
+        1,
+        2
+      ],
+      "query": [
+        -1.0,
+        -1.0,
+        0.0
+      ],
+      "range": [
+        0.0,
+        2.0
+      ],
+      "note": "Unique nearest parameter is the nondifferentiable internal knot 1."
+    },
+    {
+      "name": "periodic_polygon_one_turn",
+      "degree": 1,
+      "periodic": true,
+      "controls": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        0.0,
+        1.0,
+        2.0,
+        3.0
+      ],
+      "multiplicities": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "query": [
+        -1.0,
+        -1.0,
+        0.0
+      ],
+      "range": [
+        0.0,
+        3.0
+      ],
+      "note": "Preserve parameter aliases across all queried turns; shared points alone do not identify parameters."
+    },
+    {
+      "name": "periodic_polygon_multiple_turns",
+      "degree": 1,
+      "periodic": true,
+      "controls": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        0.0,
+        1.0,
+        2.0,
+        3.0
+      ],
+      "multiplicities": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "query": [
+        -1.0,
+        -1.0,
+        0.0
+      ],
+      "range": [
+        -3.0,
+        6.0
+      ],
+      "note": "Preserve parameter aliases across all queried turns; shared points alone do not identify parameters."
+    },
+    {
+      "name": "cusp_stationary",
+      "degree": 3,
+      "periodic": false,
+      "controls": [
+        [
+          3.0,
+          -1.0,
+          0.0,
+          1.0
+        ],
+        [
+          -1.0,
+          1.0,
+          0.0,
+          1.0
+        ],
+        [
+          -1.0,
+          -1.0,
+          0.0,
+          1.0
+        ],
+        [
+          3.0,
+          1.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        -1.0,
+        1.0
+      ],
+      "multiplicities": [
+        4,
+        4
+      ],
+      "query": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "range": [
+        -1.0,
+        1.0
+      ],
+      "note": "C(t)=(3t^2,t^3,0); zero first derivative at the unique global minimum t=0."
+    },
+    {
+      "name": "chebyshev_3_coincident_minima",
+      "degree": 3,
+      "periodic": false,
+      "controls": [
+        [
+          0.0,
+          -1.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          5.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          -5.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        -1.0,
+        1.0
+      ],
+      "multiplicities": [
+        4,
+        4
+      ],
+      "query": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "range": [
+        -1.0,
+        1.0
+      ],
+      "note": "Self-overlapping scalar curve with many zero-distance parameters. Expected equations must use the rounded Cartesian control atoms, not the ideal Chebyshev coefficients."
+    },
+    {
+      "name": "chebyshev_8_coincident_minima",
+      "degree": 8,
+      "periodic": false,
+      "controls": [
+        [
+          0.0,
+          1.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          -15.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          65.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          -143.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          183.85714285714286,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          -143.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          65.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          -15.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        -1.0,
+        1.0
+      ],
+      "multiplicities": [
+        9,
+        9
+      ],
+      "query": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "range": [
+        -1.0,
+        1.0
+      ],
+      "note": "Self-overlapping scalar curve with many zero-distance parameters. Expected equations must use the rounded Cartesian control atoms, not the ideal Chebyshev coefficients."
+    },
+    {
+      "name": "chebyshev_25_coincident_minima",
+      "degree": 25,
+      "periodic": false,
+      "controls": [
+        [
+          0.0,
+          -1.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          49.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          -767.6666666666666,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          6909.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          -42441.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          193342.33333333334,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          -685486.4545454546,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1950999.9090909092,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          -4552333.121212121,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          8836881.94117647,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          -14418070.535603715,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          19910668.83488132,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          -23373393.84964329,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          23373393.84964329,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          -19910668.83488132,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          14418070.535603715,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          -8836881.94117647,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          4552333.121212121,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          -1950999.9090909092,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          685486.4545454546,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          -193342.33333333334,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          42441.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          -6909.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          767.6666666666666,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          -49.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        -1.0,
+        1.0
+      ],
+      "multiplicities": [
+        26,
+        26
+      ],
+      "query": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "range": [
+        -1.0,
+        1.0
+      ],
+      "note": "Self-overlapping scalar curve with many zero-distance parameters. Expected equations must use the rounded Cartesian control atoms, not the ideal Chebyshev coefficients."
+    },
+    {
+      "name": "upstream_BSpline_Linear",
+      "degree": 1,
+      "periodic": false,
+      "controls": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          1.0,
+          1.0,
+          0.0,
+          1.0
+        ],
+        [
+          2.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          3.0,
+          1.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        0.0,
+        0.33,
+        0.67,
+        1.0
+      ],
+      "multiplicities": [
+        2,
+        1,
+        1,
+        2
+      ],
+      "query": [
+        1.5,
+        1.5,
+        0.0
+      ],
+      "range": [
+        0.0,
+        1.0
+      ],
+      "original_test": "BSpline_Linear",
+      "source_file": "src/ModelingData/TKGeomBase/GTests/ExtremaPC_ExtendedGeometry_Test.cxx",
+      "source_sha256": "4e69694f0e1b2bf047d61490dd6e1baa342027c8cd125523bf664eb55246fd70",
+      "adaptation": "Same B-spline controls, knots and query.",
+      "original_assertions_executed": false
+    },
+    {
+      "name": "upstream_BSpline_Quadratic",
+      "degree": 2,
+      "periodic": false,
+      "controls": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          1.0,
+          2.0,
+          0.0,
+          1.0
+        ],
+        [
+          2.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          3.0,
+          2.0,
+          0.0,
+          1.0
+        ],
+        [
+          4.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        0.0,
+        0.5,
+        1.0
+      ],
+      "multiplicities": [
+        3,
+        2,
+        3
+      ],
+      "query": [
+        2.0,
+        2.5,
+        0.0
+      ],
+      "range": [
+        0.0,
+        1.0
+      ],
+      "original_test": "BSpline_Quadratic",
+      "source_file": "src/ModelingData/TKGeomBase/GTests/ExtremaPC_ExtendedGeometry_Test.cxx",
+      "source_sha256": "4e69694f0e1b2bf047d61490dd6e1baa342027c8cd125523bf664eb55246fd70",
+      "adaptation": "Same B-spline controls, knots and query.",
+      "original_assertions_executed": false
+    },
+    {
+      "name": "upstream_BSpline_3D_Helix",
+      "degree": 6,
+      "periodic": false,
+      "controls": [
+        [
+          10.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          7.0,
+          7.0,
+          5.0,
+          1.0
+        ],
+        [
+          0.0,
+          10.0,
+          10.0,
+          1.0
+        ],
+        [
+          -7.0,
+          7.0,
+          15.0,
+          1.0
+        ],
+        [
+          -10.0,
+          0.0,
+          20.0,
+          1.0
+        ],
+        [
+          -7.0,
+          -7.0,
+          25.0,
+          1.0
+        ],
+        [
+          0.0,
+          -10.0,
+          30.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        0.0,
+        1.0
+      ],
+      "multiplicities": [
+        7,
+        7
+      ],
+      "query": [
+        0.0,
+        0.0,
+        15.0
+      ],
+      "range": [
+        0.0,
+        1.0
+      ],
+      "original_test": "BSpline_3D_Helix",
+      "source_file": "src/ModelingData/TKGeomBase/GTests/ExtremaPC_ExtendedGeometry_Test.cxx",
+      "source_sha256": "4e69694f0e1b2bf047d61490dd6e1baa342027c8cd125523bf664eb55246fd70",
+      "adaptation": "Same B-spline controls, knots and query.",
+      "original_assertions_executed": false
+    },
+    {
+      "name": "upstream_Bezier_Quadratic",
+      "degree": 2,
+      "periodic": false,
+      "controls": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          5.0,
+          10.0,
+          0.0,
+          1.0
+        ],
+        [
+          10.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        0.0,
+        1.0
+      ],
+      "multiplicities": [
+        3,
+        3
+      ],
+      "query": [
+        5.0,
+        8.0,
+        0.0
+      ],
+      "range": [
+        0.0,
+        1.0
+      ],
+      "original_test": "Bezier_Quadratic",
+      "source_file": "src/ModelingData/TKGeomBase/GTests/ExtremaPC_ExtendedGeometry_Test.cxx",
+      "source_sha256": "4e69694f0e1b2bf047d61490dd6e1baa342027c8cd125523bf664eb55246fd70",
+      "adaptation": "Same controls and query; Bezier is represented as a clamped B-spline.",
+      "original_assertions_executed": false
+    },
+    {
+      "name": "upstream_Bezier_HighDegree",
+      "degree": 6,
+      "periodic": false,
+      "controls": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          1.0,
+          3.0,
+          0.0,
+          1.0
+        ],
+        [
+          2.0,
+          -1.0,
+          0.0,
+          1.0
+        ],
+        [
+          3.0,
+          4.0,
+          0.0,
+          1.0
+        ],
+        [
+          4.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          5.0,
+          2.0,
+          0.0,
+          1.0
+        ],
+        [
+          6.0,
+          1.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        0.0,
+        1.0
+      ],
+      "multiplicities": [
+        7,
+        7
+      ],
+      "query": [
+        3.0,
+        3.0,
+        0.0
+      ],
+      "range": [
+        0.0,
+        1.0
+      ],
+      "original_test": "Bezier_HighDegree",
+      "source_file": "src/ModelingData/TKGeomBase/GTests/ExtremaPC_ExtendedGeometry_Test.cxx",
+      "source_sha256": "4e69694f0e1b2bf047d61490dd6e1baa342027c8cd125523bf664eb55246fd70",
+      "adaptation": "Same controls and query; Bezier is represented as a clamped B-spline.",
+      "original_assertions_executed": false
+    },
+    {
+      "name": "upstream_Bezier_3D_SCurve",
+      "degree": 3,
+      "periodic": false,
+      "controls": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          3.0,
+          5.0,
+          2.0,
+          1.0
+        ],
+        [
+          6.0,
+          0.0,
+          4.0,
+          1.0
+        ],
+        [
+          9.0,
+          5.0,
+          6.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        0.0,
+        1.0
+      ],
+      "multiplicities": [
+        4,
+        4
+      ],
+      "query": [
+        4.5,
+        3.0,
+        3.0
+      ],
+      "range": [
+        0.0,
+        1.0
+      ],
+      "original_test": "Bezier_3D_SCurve",
+      "source_file": "src/ModelingData/TKGeomBase/GTests/ExtremaPC_ExtendedGeometry_Test.cxx",
+      "source_sha256": "4e69694f0e1b2bf047d61490dd6e1baa342027c8cd125523bf664eb55246fd70",
+      "adaptation": "Same controls and query; Bezier is represented as a clamped B-spline.",
+      "original_assertions_executed": false
+    },
+    {
+      "name": "upstream_BSpline_CubicCurve",
+      "degree": 3,
+      "periodic": false,
+      "controls": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          1.0,
+          2.0,
+          0.0,
+          1.0
+        ],
+        [
+          2.0,
+          2.0,
+          0.0,
+          1.0
+        ],
+        [
+          3.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        0.0,
+        1.0
+      ],
+      "multiplicities": [
+        4,
+        4
+      ],
+      "query": [
+        1.5,
+        3.0,
+        0.0
+      ],
+      "range": [
+        0.0,
+        1.0
+      ],
+      "original_test": "BSpline_CubicCurve",
+      "source_file": "src/ModelingData/TKGeomBase/GTests/ExtremaPC_Comparison_Test.cxx",
+      "source_sha256": "08b20fa15de75b757556ba85978581ed77bd4eab274acf1200567767bb556f3e",
+      "adaptation": "Same B-spline controls, knots and query.",
+      "original_assertions_executed": false
+    },
+    {
+      "name": "upstream_BSpline_MultiSpan",
+      "degree": 2,
+      "periodic": false,
+      "controls": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          1.0,
+          3.0,
+          0.0,
+          1.0
+        ],
+        [
+          2.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          3.0,
+          3.0,
+          0.0,
+          1.0
+        ],
+        [
+          4.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          5.0,
+          3.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        0.0,
+        0.33,
+        0.67,
+        1.0
+      ],
+      "multiplicities": [
+        3,
+        1,
+        2,
+        3
+      ],
+      "query": [
+        3.0,
+        4.0,
+        0.0
+      ],
+      "range": [
+        0.0,
+        1.0
+      ],
+      "original_test": "BSpline_MultiSpan",
+      "source_file": "src/ModelingData/TKGeomBase/GTests/ExtremaPC_Comparison_Test.cxx",
+      "source_sha256": "08b20fa15de75b757556ba85978581ed77bd4eab274acf1200567767bb556f3e",
+      "adaptation": "Same B-spline controls, knots and query.",
+      "original_assertions_executed": false
+    },
+    {
+      "name": "upstream_Bezier_CubicCurve",
+      "degree": 3,
+      "periodic": false,
+      "controls": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          1.0,
+          3.0,
+          0.0,
+          1.0
+        ],
+        [
+          3.0,
+          3.0,
+          0.0,
+          1.0
+        ],
+        [
+          4.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        0.0,
+        1.0
+      ],
+      "multiplicities": [
+        4,
+        4
+      ],
+      "query": [
+        2.0,
+        4.0,
+        0.0
+      ],
+      "range": [
+        0.0,
+        1.0
+      ],
+      "original_test": "Bezier_CubicCurve",
+      "source_file": "src/ModelingData/TKGeomBase/GTests/ExtremaPC_Comparison_Test.cxx",
+      "source_sha256": "08b20fa15de75b757556ba85978581ed77bd4eab274acf1200567767bb556f3e",
+      "adaptation": "Same controls and query; Bezier is represented as a clamped B-spline.",
+      "original_assertions_executed": false
+    },
+    {
+      "name": "upstream_PointOnCurve_BSpline",
+      "degree": 3,
+      "periodic": false,
+      "controls": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          1.0,
+          2.0,
+          0.0,
+          1.0
+        ],
+        [
+          2.0,
+          2.0,
+          0.0,
+          1.0
+        ],
+        [
+          3.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "knots": [
+        0.0,
+        1.0
+      ],
+      "multiplicities": [
+        4,
+        4
+      ],
+      "query": [
+        1.5,
+        1.5,
+        0.0
+      ],
+      "range": [
+        0.0,
+        1.0
+      ],
+      "original_test": "PointOnCurve_BSpline",
+      "source_file": "src/ModelingData/TKGeomBase/GTests/ExtremaPC_Comparison_Test.cxx",
+      "source_sha256": "08b20fa15de75b757556ba85978581ed77bd4eab274acf1200567767bb556f3e",
+      "adaptation": "Same B-spline controls, knots and query.",
+      "original_assertions_executed": false
+    },
+    {
+      "name": "degree25_rational_space_projection",
+      "degree": 25,
+      "periodic": false,
+      "controls": [
+        [
+          0.0,
+          -1.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.04,
+          49.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.08,
+          -767.6666666666666,
+          0.0,
+          1.0
+        ],
+        [
+          0.12,
+          6909.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.16,
+          -42441.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.2,
+          193342.33333333334,
+          0.0,
+          1.0
+        ],
+        [
+          0.24,
+          -685486.4545454546,
+          0.0,
+          1.0
+        ],
+        [
+          0.28,
+          1950999.9090909092,
+          0.0,
+          1.0
+        ],
+        [
+          0.32,
+          -4552333.121212121,
+          0.0,
+          1.0
+        ],
+        [
+          0.36,
+          8836881.94117647,
+          0.0,
+          1.0
+        ],
+        [
+          0.4,
+          -14418070.535603715,
+          0.0,
+          1.0
+        ],
+        [
+          0.44,
+          19910668.83488132,
+          0.0,
+          1.0
+        ],
+        [
+          0.48,
+          -23373393.84964329,
+          0.0,
+          1.0
+        ],
+        [
+          0.52,
+          23373393.84964329,
+          0.0,
+          1.0
+        ],
+        [
+          0.56,
+          -19910668.83488132,
+          0.0,
+          1.0
+        ],
+        [
+          0.6,
+          14418070.535603715,
+          0.0,
+          1.0
+        ],
+        [
+          0.64,
+          -8836881.94117647,
+          0.0,
+          1.0
+        ],
+        [
+          0.68,
+          4552333.121212121,
+          0.0,
+          1.0
+        ],
+        [
+          0.72,
+          -1950999.9090909092,
+          0.0,
+          1.0
+        ],
+        [
+          0.76,
+          685486.4545454546,
+          0.0,
+          1.0
+        ],
+        [
+          0.8,
+          -193342.33333333334,
+          0.0,
+          1.0
+        ],
+        [
+          0.84,
+          42441.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.88,
+          -6909.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.92,
+          767.6666666666666,
+          0.0,
+          1.0
+        ],
+        [
+          0.96,
+          -49.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.8888888888888888,
+          0.8888888888888888,
+          0.0,
+          1.125
+        ]
+      ],
+      "knots": [
+        -1.0,
+        1.0
+      ],
+      "multiplicities": [
+        26,
+        26
+      ],
+      "query": [
+        0.125,
+        0.01,
+        0.0
+      ],
+      "range": [
+        -1.0,
+        1.0
+      ],
+      "note": "Exploratory degree-73 stationary equation from actual positive-weight binary64 control atoms; no minimum or completeness claim from sampling."
+    }
+  ]
+}

@@ -18,7 +18,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity']
 STARTUP_SECONDS = 600
 MAX_STARTUP_SECONDS = 3600
 INPUT_SECONDS = 20
@@ -72,7 +72,21 @@ def seed_corpus(target):
         if not path.exists():
             path.write_bytes(data)
 
-    if target == 'degree_elevation':
+    if target == 'spline_proximity':
+        for degree in range(5,26):
+            data=bytearray((i*37+1)%256 for i in range(72))
+            data[0:4]=bytes([0,degree-5,0,0])
+            data[28:37]=bytes([13,7,9,0,8,16,degree%3,degree%4,degree%3])
+            save(bytes(data))
+        for family in [1,2,3]:
+            for mode in [0,1,2,3]:
+                for exponent in [0,1,70,127]:
+                    data=bytearray((i*17+3)%256 for i in range(40))
+                    data[:5]=bytes([family,mode,mode,exponent,127])
+                    save(bytes(data))
+        for family in range(4):
+            save(bytes([family]))
+    elif target == 'degree_elevation':
         import struct
         def degree_seed(family,du,dv,ku,kv,qu,qv,op=0,mode=2,scale=128,parameter=7):
             body=(b''.join(struct.pack('<d',x) for _ in range(100) for x in [1.,0.,2.,1.])

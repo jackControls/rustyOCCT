@@ -400,3 +400,21 @@ reports 187 matches and 80 fingerprinted discrepancies separately; their range
 errors and invalid control counts are not emulated. Fuzz and platform acceptance
 passed at Rust revision `27647fad`; the linked contract retains exact campaign
 and workflow evidence. This capability adds no rendering or C++ runtime dependency.
+
+## Point-to-rational-spline global minima
+
+At reference revision `3d097a0328e71b826377d4814ab05ec3c3d23871`, the source
+review covered `GeomAPI_ProjectPointOnCurve`, `Extrema_ExtPC`,
+`Extrema_GGExtPC`/`Extrema_GGenExtPC`/`Extrema_GFuncExtPC`, `math_FunctionRoots`,
+and the newer `ExtremaPC_Curve`, `ExtremaPC_BSplineCurve` and `ExtremaPC::Result`
+endpoint/status semantics. Native observations preceded implementation.
+Inputs were adapted from `ExtremaPC_ExtendedGeometry_Test.cxx` and
+`ExtremaPC_Comparison_Test.cxx`; their original assertions were not executed.
+
+Rust preserves the stationary equation, knot partition and closed-domain
+endpoints, using exact polynomial isolation and algebraic distance comparisons
+instead of sampled searches and numerical root merging. Complete constant
+intervals and periodic aliases are explicit. Native contract/numerical
+differences have exact observation fingerprints and separate independent proofs.
+See [spline proximity](SPLINE_PROXIMITY.md) for the supported mathematical
+contract and the still-pending clean-revision acceptance gates.
