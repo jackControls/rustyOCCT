@@ -495,10 +495,16 @@ impl ControlRows {
         }
     }
     fn polynomial(&self, basis: &Basis) -> Homogeneous {
-        let mut coefficients =
-            vec![vec![BigInt::from(0); self.values[0].len()]; basis.rows[0].len()];
+        self.polynomial_from(basis, 0)
+    }
+
+    fn polynomial_from(&self, basis: &Basis, first_coefficient: usize) -> Homogeneous {
+        let mut coefficients = vec![
+            vec![BigInt::from(0); self.values[0].len()];
+            basis.rows[0].len() - first_coefficient
+        ];
         for (row, values) in basis.rows.iter().zip(&self.values) {
-            for (factor, out) in row.iter().zip(&mut coefficients) {
+            for (factor, out) in row[first_coefficient..].iter().zip(&mut coefficients) {
                 if factor == &BigInt::from(0) {
                     continue;
                 }
@@ -554,8 +560,28 @@ impl ControlRows {
     }
 }
 
-/// Share full Cox matrices across transverse fields while preserving every
-/// coefficient and component. Common integer contents are canceled exactly.
+fn multiplicity(basis: &ExactKnotVector, parameter: &R) -> usize {
+    let parameter = if basis.is_periodic() {
+        let period = &basis.domain()[1] - &basis.domain()[0];
+        parameter - ((parameter - &basis.domain()[0]) / &period).floor() * period
+    } else {
+        parameter.clone()
+    };
+    basis
+        .knots()
+        .iter()
+        .position(|k| k == &parameter)
+        .map_or(0, |i| basis.multiplicities()[i])
+}
+
+/// Complete coefficient identity by induction along the common knot partition.
+/// At a knot of maximum multiplicity m, both degree-p Cox sums are C^(p-m).
+/// Once the preceding span is equal, their difference has zero derivatives
+/// 0..=p-m at this span's left endpoint. Those low power coefficients are
+/// therefore already proved zero; explicitly check the remaining m coefficients.
+/// Nonperiodic sums start at zero outside their raw support. Periodic sums have
+/// no exterior zero span, so their first cell checks all p+1 coefficients.
+/// This proves every coefficient of every transverse field, without sampling.
 #[allow(dead_code)]
 pub fn equal_many(original: &[ExactBSplineCurve3], candidate: &[ExactBSplineCurve3]) -> bool {
     assert_eq!(original.len(), candidate.len());
@@ -570,9 +596,14 @@ pub fn equal_many(original: &[ExactBSplineCurve3], candidate: &[ExactBSplineCurv
     let mut before = ControlRows::new(original);
     let mut after = ControlRows::new(candidate);
     before.share_identical_pairs(&mut after);
-    partition(a, b).iter().all(|[lo, hi]| {
-        let left = before.polynomial(&basis_polynomials(a, lo, hi));
-        let right = after.polynomial(&basis_polynomials(b, lo, hi));
+    partition(a, b).iter().enumerate().all(|(cell, [lo, hi])| {
+        let first = if cell == 0 && a.is_periodic() {
+            0
+        } else {
+            a.degree() + 1 - multiplicity(a, lo).max(multiplicity(b, lo))
+        };
+        let left = before.polynomial_from(&basis_polynomials(a, lo, hi), first);
+        let right = after.polynomial_from(&basis_polynomials(b, lo, hi), first);
         let ratio = R::new(right.denominator, left.denominator);
         let unity = ratio == integer(1);
         left.coefficients

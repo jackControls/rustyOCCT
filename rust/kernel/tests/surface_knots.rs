@@ -465,15 +465,25 @@ fn edited_surface_isocurves_feed_certified_analytic_intersections() {
 #[test]
 fn retained_degree25_unclamped_batch_timeout_checks_every_raw_support_coefficient() {
     for u_target in [2, 25] {
-        check_unclamped_batch(u_target);
+        check_unclamped_batch(u_target, None);
     }
+    check_unclamped_batch(
+        25,
+        Some(include_bytes!(
+            "../../fuzz/regressions/surface_knots/unclamped-degree25-mutated-grid.bin"
+        )),
+    );
 }
 
-fn check_unclamped_batch(u_target: usize) {
+fn check_unclamped_batch(u_target: usize, retained: Option<&[u8]>) {
     let axis = ExactKnotVector::new(25, (0..54).map(|i| q(i, 1)).collect(), vec![1; 54]).unwrap();
     let controls = (0..784)
         .map(|i| {
-            let byte = |c: usize| ((37 * (4 * i + c) + 1) % 256) as u8;
+            let byte = |c: usize| {
+                retained.map_or(((37 * (4 * i + c) + 1) % 256) as u8, |data| {
+                    data[16 + 4 * i + c]
+                })
+            };
             let w = q(1 + i32::from(byte(3) % 8), 1);
             [
                 q(byte(0) as i8 as i32, 1) * &w,
@@ -552,5 +562,72 @@ fn coefficient_checker_rejects_every_control_field_and_large_signed_residuals() 
             &before,
             &reference::curves(&bad, 0)
         ));
+    }
+}
+
+#[test]
+fn continuity_certificate_agrees_with_every_explicit_coefficient() {
+    use rusty_occt::ExactBSplineCurve3;
+    for degree in [1, 2, 5] {
+        let clamped = ExactKnotVector::new(
+            degree,
+            vec![q(0, 1), q(1, 1), q(3, 1)],
+            vec![degree + 1, 1, degree + 1],
+        )
+        .unwrap();
+        let unclamped = ExactKnotVector::new(
+            degree,
+            (0..2 * degree + 4).map(|i| q(i as i32, 3)).collect(),
+            vec![1; 2 * degree + 4],
+        )
+        .unwrap();
+        let periodic = ExactKnotVector::new_periodic(
+            degree,
+            (0..degree + 4).map(|i| q(i as i32, 3)).collect(),
+            vec![1; degree + 4],
+        )
+        .unwrap();
+        for basis in [clamped, unclamped, periodic] {
+            let controls = (0..basis.pole_count())
+                .map(|i| [q(i as i32, 3), q((i * i) as i32, 5), q(-2, 1), q(1, 1)])
+                .collect();
+            let original = ExactBSplineCurve3::from_homogeneous(basis, controls).unwrap();
+            let cut = &original.domain()[0] + q(1, 7);
+            let edited = original.insert_knot(&cut, degree).unwrap();
+            let agrees = |candidate: &ExactBSplineCurve3| {
+                let exhaustive = knot_reference::equal(&original, candidate);
+                assert_eq!(
+                    knot_reference::equal_many(
+                        std::slice::from_ref(&original),
+                        std::slice::from_ref(candidate)
+                    ),
+                    exhaustive,
+                    "continuity certificate versus every power coefficient"
+                );
+                exhaustive
+            };
+            assert!(agrees(&edited));
+            // This includes inactive unclamped controls and both sides of the
+            // periodic seam. No alteration may hide behind continuity.
+            for i in 0..edited.homogeneous_poles().len() {
+                for c in 0..4 {
+                    let mut poles = edited.homogeneous_poles().to_vec();
+                    poles[i][c] += q(1, 11);
+                    let bad =
+                        ExactBSplineCurve3::from_homogeneous(edited.knot_vector().clone(), poles)
+                            .unwrap();
+                    assert!(!agrees(&bad));
+                }
+            }
+            let mut poles = edited.homogeneous_poles().to_vec();
+            for p in &mut poles {
+                p[0] += q(1, 1);
+            }
+            let shifted =
+                ExactBSplineCurve3::from_homogeneous(edited.knot_vector().clone(), poles).unwrap();
+            // On a periodic partition this constant changes no positive-
+            // order coefficient: the full first-cell anchor must reject it.
+            assert!(!agrees(&shifted));
+        }
     }
 }

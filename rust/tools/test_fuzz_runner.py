@@ -125,7 +125,7 @@ class FuzzRunnerTests(unittest.TestCase):
                 self.assertFalse(timer.evidence()['startup_budget_completed'])
             self.assertEqual(timer.deadline(),600)
 
-    def test_linux_boundary_keeps_startup_cap_and_final_input_grace(self):
+    def test_linux_boundary_keeps_startup_cap_and_final_batch_grace(self):
         with tempfile.TemporaryDirectory() as directory:
             directory=Path(directory)
             log_path,stop=directory/'log',directory/'stop'
@@ -138,27 +138,43 @@ class FuzzRunnerTests(unittest.TestCase):
                 evidence=timer.evidence()
             self.assertTrue(evidence['startup_budget_completed'])
             self.assertTrue(evidence['mutation_budget_completed'])
-            self.assertAlmostEqual(timer.deadline(),678.19)
-            self.assertEqual(evidence['shutdown_grace_seconds'],25)
+            self.assertAlmostEqual(timer.deadline(),758.19)
+            self.assertEqual(evidence['shutdown_grace_seconds'],105)
 
-    def test_tensor_budget_allows_complete_final_input_without_extending_startup(self):
+    def test_tensor_budget_allows_complete_final_batch_without_extending_startup(self):
         with tempfile.TemporaryDirectory() as directory:
             directory=Path(directory); log_path,stop=directory/'log',directory/'stop'
             log_path.write_text('#99 INITED cov: 12\n')
             input_seconds=run_fuzz.TARGET_INPUT_SECONDS['surface_knots']
             with patch('run_fuzz.time.monotonic',return_value=0.):
-                timer=run_fuzz.MutationBudget(log_path,stop,60,shutdown_seconds=input_seconds+5)
+                timer=run_fuzz.MutationBudget(log_path,stop,60,shutdown_seconds=run_fuzz.shutdown_budget(input_seconds))
             with patch('run_fuzz.time.monotonic',return_value=590.): timer.tick()
             with patch('run_fuzz.time.monotonic',return_value=650.): timer.tick()
-            self.assertEqual(timer.deadline(),715.)
+            self.assertEqual(timer.deadline(),955.)
             self.assertEqual(timer.evidence()['startup_limit_seconds'],600)
-            self.assertEqual(timer.evidence()['shutdown_grace_seconds'],65)
+            self.assertEqual(timer.evidence()['shutdown_grace_seconds'],305)
             self.assertTrue(stop.read_bytes())
             with patch('run_fuzz.time.monotonic',return_value=0.):
-                late=run_fuzz.MutationBudget(log_path,directory/'late-stop',60,shutdown_seconds=input_seconds+5)
+                late=run_fuzz.MutationBudget(log_path,directory/'late-stop',60,shutdown_seconds=run_fuzz.shutdown_budget(input_seconds))
             with patch('run_fuzz.time.monotonic',return_value=600.01): late.tick()
             self.assertEqual(late.deadline(),600.)
             self.assertFalse(late.evidence()['startup_budget_completed'])
+
+    def test_stop_file_is_observed_after_complete_mutation_batch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory=Path(directory); log_path,stop=directory/'log',directory/'stop'
+            # Mirrors the pinned runtime's outer stop-file check. Five legal
+            # callbacks can outlive a grace period sized for only one input.
+            script=('import time,pathlib,sys; print("#99 INITED cov: 12",flush=True); '
+                    '\nwhile not pathlib.Path(sys.argv[1]).exists():\n'
+                    ' for _ in range(5): time.sleep(.1)\n'
+                    'print("stat::number_of_executed_units: 104",flush=True)')
+            timer=run_fuzz.MutationBudget(log_path,stop,.1,startup_seconds=1.,shutdown_seconds=.6)
+            with log_path.open('w') as log:
+                code=run_fuzz.run_process([sys.executable,'-c',script,str(stop)],log,2.,os.environ,timer.tick,timer.deadline)
+            self.assertEqual(code,0)
+            self.assertTrue(timer.evidence()['mutation_budget_completed'])
+            self.assertEqual(run_fuzz.statistics(log_path.read_text())['mutation_executions'],5)
 
     def test_missing_initialization_ends_at_the_startup_deadline(self):
         with tempfile.TemporaryDirectory() as directory:

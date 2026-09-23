@@ -136,17 +136,27 @@ statistics. Build and corpus replay have a separate deadline of
 `max(600, min(3600, 120 + 2 * initial_corpus_files))` seconds. This reserves build
 time and an allowance for a growing retained corpus without deleting inputs or
 borrowing mutation time. A late `INITED` marker cannot borrow mutation or
-shutdown time. After the full
-mutation budget, the runner allows the per-input timeout plus five seconds
-for an in-flight input and final statistics: 25 seconds normally, 65 for surface
+shutdown time. The pinned libFuzzer checks `stop_file` between mutation batches,
+each containing up to five callbacks. The runner explicitly keeps
+`mutate_depth=5` and allows five times the per-input timeout plus five seconds
+for that final batch and its statistics: 105 seconds normally, 305 for surface
 knots. The process group is bounded by the startup allowance plus the requested
-mutation duration plus that final-input grace. Ignored stop requests are killed.
+mutation duration plus that final-batch grace. Individual input limits stay at
+20/60 seconds, and ignored stop requests are killed.
 An early exit, startup overrun, missing final statistics or absent mutations
 still fails the campaign. Reported peak RSS or slowest input exceeding its limit
 also fails, even if the runtime exits successfully: a Linux seed took 64 seconds
 against a 60-second alarm without a nonzero exit. Separating the phases fixes a reproduced Linux run
 that completed its mutation budget but was killed before its last input and
 final statistics finished; the failed evidence remains retained.
+
+Surface-knot coefficient checks use exact continuity induction across the full
+common raw-support partition. Equality on the preceding span and the known
+knot multiplicities prove the lower coefficients; explicit integer comparisons
+prove the rest. Periodic curves require all first-span coefficients because
+they have no exterior zero polynomial. This remains a complete identity proof,
+with adversarial comparisons against the exhaustive coefficient checker; it
+does not substitute sampled points or approximate comparisons.
 
 ## Local reproduction
 

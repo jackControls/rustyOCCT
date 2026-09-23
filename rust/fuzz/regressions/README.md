@@ -448,3 +448,33 @@ five older targets as retained corpora grew. Startup now scales with the input
 count, separately capped at 3,600 seconds, as specified in FUZZING.md. Every
 saved input remains in replay, and requested mutation time and per-input limits
 are unchanged. These runner changes require fresh complete CI campaigns.
+
+Linux run `35880483859` retained a new 3,152-byte control-grid mutation as
+`surface_knots/unclamped-degree25-mutated-grid.bin`
+(`6390006ed8fa76be9aabd74d9dd9c8201b9ededb`). The runtime timed it out after 68
+seconds against the unchanged 60-second limit. It passes all mathematical
+checks in ordinary replay and is now included in the degree-25 Cargo regression.
+The checker proves full polynomial equality by continuity induction along the
+entire common raw-support partition: at a knot of maximum multiplicity m,
+equality on the previous span forces the first p+1-m coefficients of the
+degree-p difference to vanish. It explicitly checks the remaining coefficients
+of every field. Nonperiodic sums start at zero outside their raw support;
+periodic sums require a complete first-cell comparison. An adversarial test
+compares this certificate with every explicit power coefficient, including
+corrupted inactive controls, weights and constant shifts at periodic seams.
+The complete saved-input replay decreased from 2.60 to 1.41 seconds locally;
+instrumented replay took 26.35 seconds. These are diagnostic measurements,
+and fresh Linux campaigns must still satisfy the 60-second input gate.
+
+The same run killed the curve-knot campaign during shutdown without final
+statistics. Inspection of the pinned libFuzzer `FuzzerLoop.cpp` showed that
+`stop_file` is checked outside `MutateAndTestOne`, which can execute five
+callbacks. The runner now explicitly pins that existing mutation depth and
+reserves the full last batch: 105 seconds for 20-second inputs, 305 for
+60-second inputs. This preserves input limits and mutation depth; it does not
+turn the failed run into a pass. The original logs and corpus are retained.
+
+Before these checker changes, clean revision `b413b83e` completed a second
+local campaign with 600.10 seconds of mutation, 267 mutation executions after
+296 retained inputs, a 1,021 MiB peak RSS and a 25-second slowest input. Linux's
+resource failures remain separate from that successful local evidence.

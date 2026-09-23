@@ -25,7 +25,14 @@ INPUT_SECONDS = 20
 # Full tensor coefficient equations and double-axis degree-25 edits are a
 # larger per-input workload. Existing targets keep their original 20s limit.
 TARGET_INPUT_SECONDS = {"surface_knots": 60}
-SHUTDOWN_SECONDS = INPUT_SECONDS + 5
+# The pinned libFuzzer checks stop_file between MutateAndTestOne batches,
+# not between each callback. Keep its default mutation sequence length.
+MUTATION_DEPTH = 5
+SHUTDOWN_SECONDS = MUTATION_DEPTH * INPUT_SECONDS + 5
+
+
+def shutdown_budget(input_seconds):
+    return MUTATION_DEPTH * input_seconds + 5
 
 
 def startup_budget(corpus_files):
@@ -274,8 +281,9 @@ class MutationBudget:
         # Never let a late INITED marker turn a startup overrun into success.
         if self.initialized is None or self.initialized-self.started>self.startup_seconds:
             return self.started+self.startup_seconds
-        # A stop-file request is observed between inputs. Reserve one complete
-        # input timeout plus bounded log/exit time, without extending startup.
+        # stop_file is checked between batches of MUTATION_DEPTH callbacks.
+        # Reserve that batch plus log/exit time, without extending startup or
+        # changing any individual callback's timeout/resource validation.
         return self.initialized+self.seconds+self.shutdown_seconds
 
 
@@ -341,13 +349,13 @@ def main():
             with tempfile.TemporaryDirectory(prefix=f'.{target}-control-',dir=output) as control:
                 stop_file=Path(control)/'stop'
                 input_seconds=TARGET_INPUT_SECONDS.get(target,INPUT_SECONDS)
-                shutdown_seconds=input_seconds+5
+                shutdown_seconds=shutdown_budget(input_seconds)
                 initial_corpus_files=len(list(corpora[target].iterdir()))
                 startup_seconds=startup_budget(initial_corpus_files)
                 timer=MutationBudget(log_path,stop_file,args.seconds,startup_seconds=startup_seconds,shutdown_seconds=shutdown_seconds)
                 command = ['cargo',f'+{args.toolchain}','fuzz','run',target,str(corpora[target]),
                     '--fuzz-dir',str(FUZZ),*sanitizer_build_args(target),'--',
-                    '-max_total_time=0',f'-stop_file={stop_file}',f'-timeout={input_seconds}','-rss_limit_mb=2048',
+                    '-max_total_time=0',f'-stop_file={stop_file}',f'-mutate_depth={MUTATION_DEPTH}',f'-timeout={input_seconds}','-rss_limit_mb=2048',
                     f'-max_len={4096 if target in ["surface_editing", "surface_knots"] else 512 if target == "knot_editing" else 256}',f'-seed={args.seed}',f'-artifact_prefix={artifacts}/','-print_final_stats=1']
                 with log_path.open('w') as log:
                     campaign_env=campaign_environment(target,env)
@@ -355,6 +363,7 @@ def main():
             text = log_path.read_text(errors='replace')
             report = {'target':target,'exit_code':code,'elapsed_seconds':round(time.monotonic()-started,2),
                 'input_limit_seconds':input_seconds,
+                'mutation_depth':MUTATION_DEPTH,
                 'initial_corpus_files':initial_corpus_files,
                 'allocator_cleanup_during_replay':target == 'surface_knots',
                 'sanitizer_options':campaign_env.get('ASAN_OPTIONS'),
