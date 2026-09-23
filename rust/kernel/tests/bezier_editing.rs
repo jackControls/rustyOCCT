@@ -11,6 +11,7 @@ use rusty_occt::{BSplineCurve3, BezierCurve3, Error, Point3};
 #[test]
 fn exact_controls_match_independent_polynomials_and_original_parameter_jets() {
     let mut count = 0;
+    let all_oracles = std::env::var_os("RUSTY_VERIFY_ALL_BEZIER_ORACLES").is_some();
     for row in include_str!("../../fixtures/bezier-editing.tsv")
         .lines()
         .filter(|r| !r.starts_with('#'))
@@ -27,7 +28,7 @@ fn exact_controls_match_independent_polynomials_and_original_parameter_jets() {
         // Every case has an independent Python coefficient oracle. Exercise a
         // second, Rust coefficient oracle on all moderate degrees and selected
         // high degrees; fuzzing uses it for every generated case.
-        if input.curve.degree() <= 8 || count % 13 == 0 {
+        if all_oracles || input.curve.degree() <= 8 || count % 13 == 0 {
             let references = reference::extract(&input.curve, input.first, input.last)
                 .into_iter()
                 .flat_map(|c| reference::apply(c, input.op, input.elevation))

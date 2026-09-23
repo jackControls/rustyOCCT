@@ -1,7 +1,7 @@
 //! Independent Cox tensor/power identities. No production extraction/editing
 //! or evaluation routine supplies any expected coefficient or derivative.
 pub(crate) use crate::bezier_reference as curves;
-use curves::{add, binomial, integer, integers, linear, powers, substitute};
+use curves::{binomial, integer, integers, powers, substitute};
 use num_bigint::BigInt;
 use num_rational::BigRational as R;
 use rusty_occt::curve::DerivativeOrder;
@@ -56,38 +56,7 @@ fn spans(axis: &KnotVector, first: f64, last: f64) -> Vec<Span> {
             if lo >= hi {
                 continue;
             }
-            let mut basis: Vec<Vec<R>> = (0..flat.len() - 1)
-                .map(|i| {
-                    if i == span {
-                        vec![integer(1)]
-                    } else {
-                        Vec::new()
-                    }
-                })
-                .collect();
-            for degree in 1..=p {
-                basis = (0..basis.len() - 1)
-                    .map(|i| {
-                        let l = &flat[i + degree] - &flat[i];
-                        let r = &flat[i + degree + 1] - &flat[i + 1];
-                        let x = if l == integer(0) || basis[i].is_empty() {
-                            Vec::new()
-                        } else {
-                            linear(&basis[i], &((a - &flat[i]) / &l), &((b - a) / &l))
-                        };
-                        let y = if r == integer(0) || basis[i + 1].is_empty() {
-                            Vec::new()
-                        } else {
-                            linear(
-                                &basis[i + 1],
-                                &((&flat[i + degree + 1] - a) / &r),
-                                &((a - b) / &r),
-                            )
-                        };
-                        add(&x, &y)
-                    })
-                    .collect();
-            }
+            let basis = curves::cox_basis(&flat, span, p);
             let coefficients = (span - p..=span)
                 .map(|i| {
                     let mut c = substitute(
@@ -355,27 +324,35 @@ impl Patch {
             let units = length[0].pow(u as i32) * length[1].pow(v as i32);
             std::array::from_fn(|c| jets.rational(u * 3 + v, c) / &units)
         });
+        // The common scale cancels from every closed quotient formula. Keep
+        // integer numerators until the final scalar so extreme weights do not
+        // trigger a rational GCD at each intermediate multiply and subtract.
+        let (values, _) = integers(&h.iter().flatten().cloned().collect::<Vec<_>>());
+        let h: [[BigInt; 4]; 6] =
+            std::array::from_fn(|i| std::array::from_fn(|c| values[4 * i + c].clone()));
         let w = &h[0][3];
+        let w2 = w * w;
+        let w3 = &w2 * w;
         std::array::from_fn(|r| {
             std::array::from_fn(|c| match r {
-                0 => &h[0][c] / w,
-                1 | 2 => (&h[r][c] * w - &h[0][c] * &h[r][3]) / (w * w),
+                0 => R::new(h[0][c].clone(), w.clone()),
+                1 | 2 => R::new(&h[r][c] * w - &h[0][c] * &h[r][3], w2.clone()),
                 3 | 4 => {
                     let i = r - 2;
-                    (&h[r][c] * w * w
-                        - &h[0][c] * &h[r][3] * w
-                        - integer(2) * &h[i][c] * w * &h[i][3]
-                        + integer(2) * &h[0][c] * &h[i][3] * &h[i][3])
-                        / (w * w * w)
+                    R::new(
+                        &h[r][c] * &w2 - &h[0][c] * &h[r][3] * w - 2 * &h[i][c] * w * &h[i][3]
+                            + 2 * &h[0][c] * &h[i][3] * &h[i][3],
+                        w3.clone(),
+                    )
                 }
-                _ => {
-                    (&h[5][c] * w * w
+                _ => R::new(
+                    &h[5][c] * &w2
                         - &h[1][c] * w * &h[2][3]
                         - &h[2][c] * w * &h[1][3]
                         - &h[0][c] * w * &h[5][3]
-                        + integer(2) * &h[0][c] * &h[1][3] * &h[2][3])
-                        / (w * w * w)
-                }
+                        + 2 * &h[0][c] * &h[1][3] * &h[2][3],
+                    w3.clone(),
+                ),
             })
         })
     }

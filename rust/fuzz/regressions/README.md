@@ -99,6 +99,18 @@ cargo run --manifest-path rust/fuzz/Cargo.toml --locked --release \
   --example replay_bezier_editing -- rust/fuzz/regressions/bezier_editing/*.bin
 ```
 
+At `1fcee25d`, the Linux Bézier campaign exhausted its 600-second startup
+allowance replaying 381 retained seeds in
+[run 35835064613](https://github.com/jackControls/rustyOCCT/actions/runs/35835064613).
+It failed before initialization or mutation; the absence of a crash did not
+make this a successful campaign. Profiling showed the independent Cox
+polynomial checker dominated the retained periodic inputs. It now carries one
+positive denominator per basis polynomial and skips identity substitutions.
+The complete combined replay fell from about 0.30 to 0.16 seconds locally.
+Every coefficient, derivative, enclosure and operation check remains. Linux
+release CI now also verifies this second oracle against all 636 independently
+generated Python fixtures.
+
 ## Tensor patches: degree-25 unclamped composed edits
 
 `surface_editing/unclamped-degree25-combined.bin` is the complete 2,816-byte
@@ -160,6 +172,24 @@ cargo run --manifest-path rust/fuzz/Cargo.toml --locked --release \
   --example replay_surface_editing -- rust/fuzz/regressions/surface_editing/*.bin
 ```
 
+`surface_editing/slow-unit-3e01ced2e0056a1159d07d2a69d7405e6dddf050.bin`
+retains the complete 802-byte input reported at 21 seconds by
+[run 35835064613](https://github.com/jackControls/rustyOCCT/actions/runs/35835064613).
+That job passed, but this input exceeded the nominal 20-second target; the
+libFuzzer alarm is not a hard real-time bound. It is a degree-two doubly
+periodic surface with full-exponent binary64 controls and positive weights,
+queried over three periods in both directions. This is an unminimized slow
+input, not a mathematical disagreement. The ordinary
+`fuzz_full_exponent_periodic` fixture independently recomputes all resulting
+controls, and its complete second coefficient/jet oracle always runs.
+
+Closed-form quotient derivatives in the independent tensor checker now clear
+one common denominator and use integer arithmetic until the final scalar.
+Their formulas remain separate from the kernel's recursive quotient rule.
+Complete local replay fell from about 0.60 to 0.34 seconds. All 745 fixtures
+are checked by both independent oracles; these diagnostic times are not
+production bounds, and no assertion or campaign limit was relaxed.
+
 ## Exact knot editing: degree-25 removal equations
 
 `knot_editing/constant-periodic-d25-removal.bin` retains the complete 16-byte
@@ -217,6 +247,17 @@ These timings remain host-specific diagnostics, not production guarantees.
 cargo run --manifest-path rust/fuzz/Cargo.toml --locked --release \
   --example replay_knot_editing -- rust/fuzz/regressions/knot_editing/*.bin
 ```
+
+`knot_editing/slow-unit-66a9ef4c53624190feb8541eef54ef38fde65a8b.bin`
+retains the full 12-byte mutation reported at 14 seconds by the same
+[run 35835064613](https://github.com/jackControls/rustyOCCT/actions/runs/35835064613).
+It removes the origin of a degree-25 constant periodic curve with the smallest
+positive binary64 knot spacing. Complete local release replay passed in about
+0.52 seconds. The ordinary
+`retained_subnormal_periodic_degree25_removal_preserves_complete_polynomial`
+test verifies the independent removal equations, full-support polynomial
+identity, exact derivatives and finite enclosures. The input was not minimized,
+and fixed-input replay is separate from mutation coverage.
 
 ## Exact edited-curve intersections: high-degree weighted coordinates
 

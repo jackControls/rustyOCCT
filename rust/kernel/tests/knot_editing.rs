@@ -326,6 +326,38 @@ fn retained_degree25_removal_exercises_complete_integer_equation_solver() {
 }
 
 #[test]
+fn retained_subnormal_periodic_degree25_removal_preserves_complete_polynomial() {
+    let bytes = include_bytes!(
+        "../../fuzz/regressions/knot_editing/slow-unit-66a9ef4c53624190feb8541eef54ef38fde65a8b.bin"
+    );
+    assert_eq!(bytes, &[3, 24, 1, 1, 4, 66, 128, 134, 7, 84, 212, 0]);
+    // The original full input removes the origin of a constant periodic curve
+    // whose knot spacing is the smallest positive binary64 value.
+    let tiny = f64::from_bits(1);
+    let original = BSplineCurve3::new_periodic(
+        25,
+        vec![Point3::new(2., -3., 5.); 28],
+        None,
+        (0..29).map(|i| i as f64 * tiny).collect(),
+        vec![1; 29],
+    )
+    .unwrap()
+    .to_exact();
+    let actual = original.remove_knot(&r(0), 0).unwrap().unwrap();
+    assert_eq!(
+        Some(actual.clone()),
+        reference::removed(&original, &r(0), 0)
+    );
+    assert!(reference::equal(&original, &actual));
+    let u = R::from_float(tiny).unwrap() * R::new(135.into(), 257.into());
+    let jet = actual.exact_evaluate(&u, D::Second, S::Automatic).unwrap();
+    assert_eq!(jet.position().coordinates(), &[r(2), -r(3), r(5)]);
+    assert_eq!(jet.derivative(1).unwrap(), &std::array::from_fn(|_| r(0)));
+    assert_eq!(jet.derivative(2).unwrap(), &std::array::from_fn(|_| r(0)));
+    assert!(jet.enclosed().is_ok());
+}
+
+#[test]
 fn retained_periodic_degree25_refinement_preserves_complete_polynomial() {
     let bytes = include_bytes!("../../fuzz/regressions/knot_editing/periodic-d25-refinement.bin");
     assert_eq!(&bytes[..11], &[2, 24, 1, 1, 1, 128, 7, 84, 24, 1, 2]);

@@ -44,30 +44,93 @@ pub fn powers(x: &BigInt, count: usize) -> Vec<BigInt> {
     }
     result
 }
-pub fn add(a: &[R], b: &[R]) -> Vec<R> {
-    let mut result = vec![integer(0); a.len().max(b.len())];
-    for p in [a, b] {
-        for (i, x) in p.iter().enumerate() {
-            result[i] += x;
+// Cox basis coefficients are accumulated over one positive denominator per
+// polynomial. This remains independent of the kernel's knot insertion and
+// de Boor extraction; only scalar fraction reductions are deferred.
+pub fn cox_basis(knots: &[R], span: usize, degree: usize) -> Vec<Vec<R>> {
+    fn lcm(a: &BigInt, b: &BigInt) -> BigInt {
+        let (mut x, mut y) = (a.clone(), b.clone());
+        while y != BigInt::from(0) {
+            (x, y) = (y.clone(), x % y);
+        }
+        a / x * b
+    }
+    struct Polynomial {
+        values: Vec<BigInt>,
+        denominator: BigInt,
+    }
+    impl Polynomial {
+        fn add_linear(&mut self, row: &Self, a: R, b: R) {
+            let den = lcm(a.denom(), b.denom());
+            let an = a.numer() * (&den / a.denom());
+            let bn = b.numer() * (&den / b.denom());
+            let term_den = den * &row.denominator;
+            let denominator = lcm(&self.denominator, &term_den);
+            let old_scale = &denominator / &self.denominator;
+            let term_scale = &denominator / term_den;
+            for x in &mut self.values {
+                *x *= &old_scale;
+            }
+            self.values
+                .resize(self.values.len().max(row.values.len() + 1), 0.into());
+            for (i, x) in row.values.iter().enumerate() {
+                self.values[i] += &term_scale * &an * x;
+                self.values[i + 1] += &term_scale * &bn * x;
+            }
+            self.denominator = denominator;
         }
     }
-    while result.last() == Some(&integer(0)) {
-        result.pop();
+    let (a, b) = (&knots[span], &knots[span + 1]);
+    let mut rows: Vec<_> = (0..knots.len() - 1)
+        .map(|i| Polynomial {
+            values: if i == span {
+                vec![1.into()]
+            } else {
+                Vec::new()
+            },
+            denominator: 1.into(),
+        })
+        .collect();
+    for d in 1..=degree {
+        rows = (0..rows.len() - 1)
+            .map(|i| {
+                let mut row = Polynomial {
+                    values: Vec::new(),
+                    denominator: 1.into(),
+                };
+                let left = &knots[i + d] - &knots[i];
+                let right = &knots[i + d + 1] - &knots[i + 1];
+                if left != integer(0) && !rows[i].values.is_empty() {
+                    row.add_linear(&rows[i], (a - &knots[i]) / &left, (b - a) / left);
+                }
+                if right != integer(0) && !rows[i + 1].values.is_empty() {
+                    row.add_linear(
+                        &rows[i + 1],
+                        (&knots[i + d + 1] - a) / &right,
+                        (a - b) / right,
+                    );
+                }
+                while row.values.last() == Some(&BigInt::from(0)) {
+                    row.values.pop();
+                }
+                row
+            })
+            .collect();
     }
-    result
+    rows.into_iter()
+        .map(|row| {
+            row.values
+                .into_iter()
+                .map(|v| R::new(v, row.denominator.clone()))
+                .collect()
+        })
+        .collect()
 }
-pub fn linear(p: &[R], a: &R, b: &R) -> Vec<R> {
-    if p.is_empty() {
-        return Vec::new();
-    }
-    let mut result = vec![integer(0); p.len() + 1];
-    for (i, x) in p.iter().enumerate() {
-        result[i] += a * x;
-        result[i + 1] += b * x;
-    }
-    result
-}
+
 pub fn substitute(p: &[R], a: &R, b: &R) -> Vec<R> {
+    if a == &integer(0) && b == &integer(1) {
+        return p.to_vec();
+    }
     let (p, den) = integers(p);
     let (an, ad, bn, bd) = (
         powers(a.numer(), p.len()),
@@ -214,38 +277,7 @@ pub fn extract(curve: &BSplineCurve3, first: f64, last: f64) -> Vec<Arc> {
             if lo >= hi {
                 continue;
             }
-            let mut basis: Vec<Vec<R>> = (0..flat.len() - 1)
-                .map(|i| {
-                    if i == span {
-                        vec![integer(1)]
-                    } else {
-                        Vec::new()
-                    }
-                })
-                .collect();
-            for degree in 1..=p {
-                basis = (0..basis.len() - 1)
-                    .map(|i| {
-                        let left = &flat[i + degree] - &flat[i];
-                        let right = &flat[i + degree + 1] - &flat[i + 1];
-                        let x = if left == integer(0) || basis[i].is_empty() {
-                            Vec::new()
-                        } else {
-                            linear(&basis[i], &((a - &flat[i]) / &left), &((b - a) / &left))
-                        };
-                        let y = if right == integer(0) || basis[i + 1].is_empty() {
-                            Vec::new()
-                        } else {
-                            linear(
-                                &basis[i + 1],
-                                &((&flat[i + degree + 1] - a) / &right),
-                                &((a - b) / &right),
-                            )
-                        };
-                        add(&x, &y)
-                    })
-                    .collect();
-            }
+            let basis = cox_basis(&flat, span, p);
             let coefficients = std::array::from_fn(|c| {
                 let mut sum = vec![integer(0); p + 1];
                 for (i, coefficients) in basis.iter().enumerate() {

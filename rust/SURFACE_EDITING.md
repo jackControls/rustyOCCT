@@ -52,7 +52,7 @@ Native controls are compared after Euclidean conversion and a single common
 weight normalization. Native exceptions and numerical differences remain
 visible; they cannot excuse a Rust mismatch with the independent exact oracle.
 
-There are 744 complete-control fixtures, including exact extremes not accepted
+There are 745 complete-control fixtures, including exact extremes not accepted
 by the native SDK. A shared denominator per output item stores all rational
 controls without repeating denominator strings; no values are sampled or
 omitted by this lossless representation. Every one of the 691 live native
@@ -64,7 +64,7 @@ The second Rust oracle independently forms Cox tensor power coefficients,
 uses binomial substitutions, and evaluates direct monomial derivative sums.
 It carries an integer grid over one positive denominator across transforms;
 complete polynomial equality uses exact cross multiplication, with no sampled
-or omitted coefficients. Linux release CI checks this oracle on all 744
+or omitted coefficients. Linux release CI checks this oracle on all 745
 fixtures, beyond the representative checks in ordinary debug tests. Reproduce:
 
 ```sh

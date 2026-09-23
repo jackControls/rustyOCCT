@@ -34,7 +34,7 @@ fn complete_tensor_controls_and_independent_quotient_jets() {
         // Python checks every complete result. A second independent Rust
         // coefficient/jet oracle checks selected cases here and every fuzz input.
         // The opt-in exhaustive pass verifies checker changes against all fixtures.
-        if all_oracles || count % 17 == 0 {
+        if all_oracles || count % 17 == 0 || input.name.starts_with("fuzz_full_exponent_periodic") {
             let references: Vec<_> = reference::extract(&input.surface, input.rectangle)
                 .into_iter()
                 .flat_map(|p| reference::apply(p, input.op, input.elevation))
@@ -54,7 +54,7 @@ fn complete_tensor_controls_and_independent_quotient_jets() {
         }
         count += 1;
     }
-    assert_eq!(count, 744);
+    assert_eq!(count, 745);
 }
 
 #[test]

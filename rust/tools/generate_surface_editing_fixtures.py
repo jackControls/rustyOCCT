@@ -4,6 +4,7 @@ import argparse
 import math
 from pathlib import Path
 import random
+import struct
 from compare_surface_editing import cases,encode
 from surface_editing_reference import expected,encode_fixture
 ROOT=Path(__file__).resolve().parents[1]
@@ -62,6 +63,14 @@ def inputs():
         u,v=intervals[data[12]%len(intervals)],intervals[data[13]%len(intervals)]
         offset=-6. if periodic and data[8]&32 else 0.
         rows.append(encode(shape,tuple(x+offset for x in (*u,*v)),data[5]))
+    # Complete full-exponent periodic input saved by Linux sanitizer fuzzing.
+    data=(ROOT/'fuzz/regressions/surface_editing/slow-unit-3e01ced2e0056a1159d07d2a69d7405e6dddf050.bin').read_bytes()
+    assert list(data[:16])==[0,1,1,1,1,10,2,2,192,255,255,255,84,72,85,170]
+    values=[struct.unpack('<d',data[16+8*i:24+8*i])[0] for i in range(36)]
+    poles=[tuple(values[4*i:4*i+3]) for i in range(9)]
+    weights=values[3::4]
+    shape=('fuzz_full_exponent_periodic','S',2,2,poles,weights,[0.,1.,3.],[1,2,1],[0.,1.,3.],[1,2,1],True,True)
+    rows.append(encode(shape,(-3.,6.,-3.,6.),10))
     return rows
 
 

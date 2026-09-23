@@ -269,7 +269,7 @@ The native 691-case corpus was captured before Rust implementation and includes
 the `Geom_BezierSurface_Test.cxx` SetUp, RationalSegment, RationalIncrease,
 RationalSurface_UIso and VIso_Rational input families. Reused GTest inputs do
 not count as unchanged upstream passes. All 4,347 outputs undergo independent
-exact tensor coefficient checks. The 744 ordinary complete-control fixtures,
+exact tensor coefficient checks. The 745 ordinary complete-control fixtures,
 boundary/commutation/overflow/budget tests and twelfth fuzz target add independent
 mathematical evidence. Native degree-25 segmentation differences are
 [reviewed separately](NATIVE_SURFACE_EDITING_DIVERGENCES.md).

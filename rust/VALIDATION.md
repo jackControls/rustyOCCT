@@ -12,7 +12,7 @@ The [mathematical foundation](MATHEMATICS.md) includes exact 2D/3D orientation
 and insphere, 2,417 independent 2D rational fixtures in all six permutations,
 1,648 spatial predicate fixtures, 963 certified linear-intersection fixtures,
 448 quadratic-root fixtures, 1,092 curved-intersection fixtures, 1,059 curve and 791 surface spline fixtures,
-95 general polynomial-root, 284 spline/plane, 118 spline/quadric, 554 proximity, 684 complete linear-set, 636 exact Bézier curve, 744 tensor-patch and 723 knot-editing fixtures,
+95 general polynomial-root, 284 spline/plane, 118 spline/quadric, 554 proximity, 684 complete linear-set, 636 exact Bézier curve, 745 tensor-patch and 723 knot-editing fixtures,
 10,000 integer-oracle predicate cases and 256 generated prism invariant cases.
 These tests do not depend on OCCT or an application and run in native debug and
 release CI. These deterministic generated tests are separate from the fourteen
@@ -313,7 +313,7 @@ complete exact Rust outputs are byte-identical on the two platforms.
 All counts, degrees and original U/V domains agree. Native differences cannot
 exempt Rust from the exact oracle.
 
-The 744 ordinary cases retain every complete homogeneous control using a
+The 745 ordinary cases retain every complete homogeneous control using a
 lossless shared-denominator text format. They include all native input families,
 subnormal/adjacent knots, extreme homogeneous values, multiple turns, parameter
 rectangles whose interior knots round to the same float, and seeded rational
@@ -355,3 +355,16 @@ parity with the fork-point OCCT development revision or all of OCCT. Kernel
 readiness requires the mathematical, topology/history, interchange and
 operational gates in `PRODUCTION_READINESS.md`. Application migration is
 separate, deferred work.
+
+The Bézier second oracle also has an exhaustive gate:
+
+```sh
+RUSTY_VERIFY_ALL_BEZIER_ORACLES=1 cargo test --locked --release \
+  --test bezier_editing exact_controls_match_independent_polynomials_and_original_parameter_jets
+```
+
+Linux release CI verifies all 636 Bézier and 745 tensor fixtures against both
+the independent Python expectations and the separate Rust coefficient/jet
+checker. Shared integer denominators reduce checker replay cost without
+changing its equations or assertions. Retained fuzz inputs and failed startup
+campaigns are documented in [the regression record](fuzz/regressions/README.md).

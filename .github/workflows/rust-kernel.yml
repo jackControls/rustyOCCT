@@ -120,6 +120,11 @@ jobs:
       - run: cargo +stable fmt --all --check
       - run: cargo +stable test --workspace --locked
       - run: cargo +stable test --workspace --locked --release
+      - name: Verify every Bezier fixture with the second independent oracle
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          RUSTY_VERIFY_ALL_BEZIER_ORACLES: '1'
+        run: cargo +stable test --locked --release --test bezier_editing exact_controls_match_independent_polynomials_and_original_parameter_jets
       - name: Verify every tensor fixture with the second independent oracle
         if: matrix.os == 'ubuntu-latest'
         env:
