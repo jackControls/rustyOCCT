@@ -3492,6 +3492,1741 @@
           ]
         ]
       }
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p3_q25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "48a37a299f5de4cf0c79f1013ce3a4cc4272f754f46a6a5de1a6787e986f4ac3",
+      "exact_sha256": "af1cdf4be680e42224055d424ec83872b137e4661f26a74f411f272d543b291b",
+      "native_stdout_sha256": "809409c70d1cc7c6035307cdba0962eda272395d1d5f34e0b074bdb5e61fa8ce",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid curve axis or control count"
+      ],
+      "reason": "Linux x86_64 / GCC 13.3.0 from the same pristine source archive returns exactly the previously reviewed malformed axes, domains and control counts. Only 8 serialized Cartesian control/weight components differ from the macOS capture. The representation still violates its declared knot/control-count invariant; every Rust control agrees exactly with the independent equations. This platform observation was made after implementation and is pinned separately, not treated as a native match.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          3
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          72
+        ],
+        "preserved_domains": [
+          [
+            "3",
+            "6"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          72
+        ],
+        "native_counts_required_by_returned_knots": [
+          112
+        ],
+        "native_reported_domains": [
+          [
+            "4",
+            "7"
+          ]
+        ]
+      },
+      "observed_platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler": "GNU 13.3.0",
+      "capture_run_url": "https://github.com/jackControls/rustyOCCT/actions/runs/35897946987",
+      "changed_native_components": 8,
+      "maximum_native_ulp_difference": 16,
+      "sample_native_component_changes": [
+        {
+          "control": 36,
+          "component": 0,
+          "macos": "3.2762974381560577",
+          "linux": "3.2762974381560617"
+        },
+        {
+          "control": 37,
+          "component": 0,
+          "macos": "3.3123846124863432",
+          "linux": "3.3123846124863436"
+        },
+        {
+          "control": 38,
+          "component": 0,
+          "macos": "3.3509382859353805",
+          "linux": "3.3509382859353818"
+        }
+      ]
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p8_q9_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "3ba555559e51a70f4ebea778180e2e778e0f2608552513b1973dffddf42f7648",
+      "exact_sha256": "b143d791e00b24d40e09db11ca92038ce97fd4bc1d3dc52fd73a2892c9694bdc",
+      "native_stdout_sha256": "a2b6f079366614a4b018d27f88cc477e6f81175b39b99135a41f5321c664a85e",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid curve axis or control count"
+      ],
+      "reason": "Linux x86_64 / GCC 13.3.0 from the same pristine source archive returns exactly the previously reviewed malformed axes, domains and control counts. Only 9 serialized Cartesian control/weight components differ from the macOS capture. The representation still violates its declared knot/control-count invariant; every Rust control agrees exactly with the independent equations. This platform observation was made after implementation and is pinned separately, not treated as a native match.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          8
+        ],
+        "target_degrees": [
+          9
+        ],
+        "exact_pole_counts": [
+          14
+        ],
+        "preserved_domains": [
+          [
+            "8",
+            "11"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          14
+        ],
+        "native_counts_required_by_returned_knots": [
+          22
+        ],
+        "native_reported_domains": [
+          [
+            "12",
+            "19"
+          ]
+        ]
+      },
+      "observed_platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler": "GNU 13.3.0",
+      "capture_run_url": "https://github.com/jackControls/rustyOCCT/actions/runs/35897946987",
+      "changed_native_components": 9,
+      "maximum_native_ulp_difference": 2,
+      "sample_native_component_changes": [
+        {
+          "control": 0,
+          "component": 1,
+          "macos": "3.5000000000000004",
+          "linux": "3.5"
+        },
+        {
+          "control": 5,
+          "component": 2,
+          "macos": "5.2526455026455032",
+          "linux": "5.2526455026455023"
+        },
+        {
+          "control": 6,
+          "component": 1,
+          "macos": "5.8677248677248679",
+          "linux": "5.8677248677248661"
+        }
+      ]
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p8_q25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "0b8e75cba70ff394a98d164da37f042c346ea47452de8c82bf5d06984b43559a",
+      "exact_sha256": "462f430c88f623d34052729ab1f4bc33914fde924c83ec140f7885ce3e0ee2f4",
+      "native_stdout_sha256": "dce7d3e3e7df465edc1dfcfddf888b5b6d3d2c1c5835cdbaf28be395768686fc",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid curve axis or control count"
+      ],
+      "reason": "Linux x86_64 / GCC 13.3.0 from the same pristine source archive returns exactly the previously reviewed malformed axes, domains and control counts. Only 17 serialized Cartesian control/weight components differ from the macOS capture. The representation still violates its declared knot/control-count invariant; every Rust control agrees exactly with the independent equations. This platform observation was made after implementation and is pinned separately, not treated as a native match.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          8
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          62
+        ],
+        "preserved_domains": [
+          [
+            "8",
+            "11"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          62
+        ],
+        "native_counts_required_by_returned_knots": [
+          82
+        ],
+        "native_reported_domains": [
+          [
+            "9",
+            "12"
+          ]
+        ]
+      },
+      "observed_platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler": "GNU 13.3.0",
+      "capture_run_url": "https://github.com/jackControls/rustyOCCT/actions/runs/35897946987",
+      "changed_native_components": 17,
+      "maximum_native_ulp_difference": 14,
+      "sample_native_component_changes": [
+        {
+          "control": 33,
+          "component": 1,
+          "macos": "4.0093918456797475",
+          "linux": "4.0093918456797457"
+        },
+        {
+          "control": 34,
+          "component": 1,
+          "macos": "3.8278051539421667",
+          "linux": "3.8278051539421636"
+        },
+        {
+          "control": 35,
+          "component": 1,
+          "macos": "3.6549999580362851",
+          "linux": "3.6549999580362811"
+        }
+      ]
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p8_q9_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "237393cc901bac8c1bfff6cdc7106f076e152016b3c76e41bd576b30095b64ee",
+      "exact_sha256": "495b5683a0eb1186f81e7ce44d79d5b60c0953e5857c78e02dfd1ecb934bd8bb",
+      "native_stdout_sha256": "927f4833121390757fb4d74c368d2e02103f0d7fda12794cabb29c238e9299be",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid curve axis or control count"
+      ],
+      "reason": "Linux x86_64 / GCC 13.3.0 from the same pristine source archive returns exactly the previously reviewed malformed axes, domains and control counts. Only 14 serialized Cartesian control/weight components differ from the macOS capture. The representation still violates its declared knot/control-count invariant; every Rust control agrees exactly with the independent equations. This platform observation was made after implementation and is pinned separately, not treated as a native match.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          8
+        ],
+        "target_degrees": [
+          9
+        ],
+        "exact_pole_counts": [
+          14
+        ],
+        "preserved_domains": [
+          [
+            "8",
+            "11"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          14
+        ],
+        "native_counts_required_by_returned_knots": [
+          22
+        ],
+        "native_reported_domains": [
+          [
+            "12",
+            "19"
+          ]
+        ]
+      },
+      "observed_platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler": "GNU 13.3.0",
+      "capture_run_url": "https://github.com/jackControls/rustyOCCT/actions/runs/35897946987",
+      "changed_native_components": 14,
+      "maximum_native_ulp_difference": 2,
+      "sample_native_component_changes": [
+        {
+          "control": 0,
+          "component": 2,
+          "macos": "4.5016423150979721",
+          "linux": "4.501642315097973"
+        },
+        {
+          "control": 3,
+          "component": 2,
+          "macos": "6.2598950882212687",
+          "linux": "6.2598950882212705"
+        },
+        {
+          "control": 4,
+          "component": 1,
+          "macos": "10.646187363834425",
+          "linux": "10.646187363834423"
+        }
+      ]
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p8_q25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "18ceca90e9efa83708d5582c06ded649422f849fc973761e1bf7c79e3a2e3181",
+      "exact_sha256": "841f72e6c6634099cfc7b7d4dd51692f14aa68b1a61c8503b1ed22cb1fbc7d89",
+      "native_stdout_sha256": "8219f36e3df12a7aeb5c12654e7b52e4511a63237abfd7afc2352515d554219b",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid curve axis or control count"
+      ],
+      "reason": "Linux x86_64 / GCC 13.3.0 from the same pristine source archive returns exactly the previously reviewed malformed axes, domains and control counts. Only 35 serialized Cartesian control/weight components differ from the macOS capture. The representation still violates its declared knot/control-count invariant; every Rust control agrees exactly with the independent equations. This platform observation was made after implementation and is pinned separately, not treated as a native match.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          8
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          62
+        ],
+        "preserved_domains": [
+          [
+            "8",
+            "11"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          62
+        ],
+        "native_counts_required_by_returned_knots": [
+          82
+        ],
+        "native_reported_domains": [
+          [
+            "9",
+            "12"
+          ]
+        ]
+      },
+      "observed_platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler": "GNU 13.3.0",
+      "capture_run_url": "https://github.com/jackControls/rustyOCCT/actions/runs/35897946987",
+      "changed_native_components": 35,
+      "maximum_native_ulp_difference": 17,
+      "sample_native_component_changes": [
+        {
+          "control": 0,
+          "component": 2,
+          "macos": "5.7507020836939207",
+          "linux": "5.7507020836939313"
+        },
+        {
+          "control": 4,
+          "component": 2,
+          "macos": "5.6232199782599137",
+          "linux": "5.6232199782599146"
+        },
+        {
+          "control": 5,
+          "component": 2,
+          "macos": "5.5351268013477402",
+          "linux": "5.5351268013477446"
+        }
+      ]
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p24_q25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "e65d9fafc9aa2cef5926a4caac19abebd6cc8586cc2e9ba0e5b1e7135483f2ad",
+      "exact_sha256": "136a9989705568daaa441c0ede19fee0c71138f00706b702aff898892f2c1e18",
+      "native_stdout_sha256": "0e154188cf9c7c5e7c7b0eff5a5965345d75ff87287b39e389dd0a37037610b6",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid curve axis or control count"
+      ],
+      "reason": "Linux x86_64 / GCC 13.3.0 from the same pristine source archive returns exactly the previously reviewed malformed axes, domains and control counts. Only 34 serialized Cartesian control/weight components differ from the macOS capture. The representation still violates its declared knot/control-count invariant; every Rust control agrees exactly with the independent equations. This platform observation was made after implementation and is pinned separately, not treated as a native match.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          24
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          30
+        ],
+        "preserved_domains": [
+          [
+            "24",
+            "27"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          30
+        ],
+        "native_counts_required_by_returned_knots": [
+          54
+        ],
+        "native_reported_domains": [
+          [
+            "36",
+            "51"
+          ]
+        ]
+      },
+      "observed_platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler": "GNU 13.3.0",
+      "capture_run_url": "https://github.com/jackControls/rustyOCCT/actions/runs/35897946987",
+      "changed_native_components": 34,
+      "maximum_native_ulp_difference": 2,
+      "sample_native_component_changes": [
+        {
+          "control": 0,
+          "component": 0,
+          "macos": "6.7400000000000011",
+          "linux": "6.7400000000000002"
+        },
+        {
+          "control": 1,
+          "component": 2,
+          "macos": "5.3688982861231116",
+          "linux": "5.3688982861231098"
+        },
+        {
+          "control": 2,
+          "component": 2,
+          "macos": "5.1495783407184401",
+          "linux": "5.1495783407184383"
+        }
+      ]
+    },
+    {
+      "kind": "curve",
+      "case": "unclamped_p24_q25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "433b1c3738bb0169633a5683ee23cfe86d9b679f578aa6e25bbab59197b4bff1",
+      "exact_sha256": "299c7fa2fbf3788268497ec7abd2d4a3073fde976a3fe79404b40cb65eded0cb",
+      "native_stdout_sha256": "1dc7a4698729077398fac5d5c63bfb06ff68f4188200ae817549aaed72a587b6",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid curve axis or control count"
+      ],
+      "reason": "Linux x86_64 / GCC 13.3.0 from the same pristine source archive returns exactly the previously reviewed malformed axes, domains and control counts. Only 67 serialized Cartesian control/weight components differ from the macOS capture. The representation still violates its declared knot/control-count invariant; every Rust control agrees exactly with the independent equations. This platform observation was made after implementation and is pinned separately, not treated as a native match.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          24
+        ],
+        "target_degrees": [
+          25
+        ],
+        "exact_pole_counts": [
+          30
+        ],
+        "preserved_domains": [
+          [
+            "24",
+            "27"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          30
+        ],
+        "native_counts_required_by_returned_knots": [
+          54
+        ],
+        "native_reported_domains": [
+          [
+            "36",
+            "51"
+          ]
+        ]
+      },
+      "observed_platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler": "GNU 13.3.0",
+      "capture_run_url": "https://github.com/jackControls/rustyOCCT/actions/runs/35897946987",
+      "changed_native_components": 67,
+      "maximum_native_ulp_difference": 5,
+      "sample_native_component_changes": [
+        {
+          "control": 0,
+          "component": 1,
+          "macos": "3.9863556958644653",
+          "linux": "3.9863556958644657"
+        },
+        {
+          "control": 1,
+          "component": 2,
+          "macos": "4.1282676848817115",
+          "linux": "4.1282676848817106"
+        },
+        {
+          "control": 2,
+          "component": 0,
+          "macos": "7.7912735250083376",
+          "linux": "7.7912735250083394"
+        }
+      ]
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p1_2_q25_25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "af11abd5fef22f59a7733263ea45cd9169a10fd7ed0361aea4e2d66b53219896",
+      "exact_sha256": "c2ac0ae54081c67ca5038cb9d03c202fef4220438243e28d731299706da24548",
+      "native_stdout_sha256": "6f6585e3f0d232b3d935d9e8f5ce1ede81a91da59789f82b7e3fafc6677c5f52",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Linux x86_64 / GCC 13.3.0 from the same pristine source archive returns exactly the previously reviewed malformed axes, domains and control counts. Only 304 serialized Cartesian control/weight components differ from the macOS capture. The representation still violates its declared knot/control-count invariant; every Rust control agrees exactly with the independent equations. This platform observation was made after implementation and is pinned separately, not treated as a native match.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1,
+          2
+        ],
+        "target_degrees": [
+          25,
+          25
+        ],
+        "exact_pole_counts": [
+          50,
+          74
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "2",
+            "5"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          50,
+          74
+        ],
+        "native_counts_required_by_returned_knots": [
+          50,
+          120
+        ],
+        "native_reported_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "3",
+            "7"
+          ]
+        ]
+      },
+      "observed_platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler": "GNU 13.3.0",
+      "capture_run_url": "https://github.com/jackControls/rustyOCCT/actions/runs/35897946987",
+      "changed_native_components": 304,
+      "maximum_native_ulp_difference": 105,
+      "sample_native_component_changes": [
+        {
+          "control": 122,
+          "component": 2,
+          "macos": "0.28819999999999912",
+          "linux": "0.28819999999999923"
+        },
+        {
+          "control": 123,
+          "component": 2,
+          "macos": "0.10179999999999918",
+          "linux": "0.10179999999999938"
+        },
+        {
+          "control": 124,
+          "component": 2,
+          "macos": "0.015399999999999237",
+          "linux": "0.015399999999999419"
+        }
+      ]
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p1_2_q25_25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "0b1c44aadfdfb38ad19ea8ad7ce8322d7075ea5782dd4a4a1adc70870c8738b6",
+      "exact_sha256": "4d834d97dbed6078fb48f97c843fb91910882da30ba86062f0b2437ed8194830",
+      "native_stdout_sha256": "0964927fd2a15980d1f5f2bb2673c5f0192bb8a89cfcdcdc793f088a3fa6e341",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Linux x86_64 / GCC 13.3.0 from the same pristine source archive returns exactly the previously reviewed malformed axes, domains and control counts. Only 197 serialized Cartesian control/weight components differ from the macOS capture. The representation still violates its declared knot/control-count invariant; every Rust control agrees exactly with the independent equations. This platform observation was made after implementation and is pinned separately, not treated as a native match.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          1,
+          2
+        ],
+        "target_degrees": [
+          25,
+          25
+        ],
+        "exact_pole_counts": [
+          50,
+          74
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "2",
+            "5"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          50,
+          74
+        ],
+        "native_counts_required_by_returned_knots": [
+          50,
+          120
+        ],
+        "native_reported_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "3",
+            "7"
+          ]
+        ]
+      },
+      "observed_platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler": "GNU 13.3.0",
+      "capture_run_url": "https://github.com/jackControls/rustyOCCT/actions/runs/35897946987",
+      "changed_native_components": 197,
+      "maximum_native_ulp_difference": 647,
+      "sample_native_component_changes": [
+        {
+          "control": 299,
+          "component": 1,
+          "macos": "1.822704507512525",
+          "linux": "1.8227045075125212"
+        },
+        {
+          "control": 300,
+          "component": 1,
+          "macos": "1.8533980582524336",
+          "linux": "1.8533980582524283"
+        },
+        {
+          "control": 301,
+          "component": 1,
+          "macos": "1.8842931937172813",
+          "linux": "1.8842931937172789"
+        }
+      ]
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p2_3_q25_25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "d9ed16c29b6f4eff5b3843dfab907100c6e89900c3430fa38826af36c54c5e29",
+      "exact_sha256": "ec64291e422adfa9d824a552fdd5277ca8e8530377ea427a5590ba30659c31f2",
+      "native_stdout_sha256": "18ea69b464f84ff1ac4675bee2ebf5f66cff2c45501e1e30ad08c9abf02a0217",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Linux x86_64 / GCC 13.3.0 from the same pristine source archive returns exactly the previously reviewed malformed axes, domains and control counts. Only 239 serialized Cartesian control/weight components differ from the macOS capture. The representation still violates its declared knot/control-count invariant; every Rust control agrees exactly with the independent equations. This platform observation was made after implementation and is pinned separately, not treated as a native match.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          25,
+          25
+        ],
+        "exact_pole_counts": [
+          74,
+          49
+        ],
+        "preserved_domains": [
+          [
+            "2",
+            "5"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          74,
+          49
+        ],
+        "native_counts_required_by_returned_knots": [
+          120,
+          49
+        ],
+        "native_reported_domains": [
+          [
+            "3",
+            "7"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      },
+      "observed_platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler": "GNU 13.3.0",
+      "capture_run_url": "https://github.com/jackControls/rustyOCCT/actions/runs/35897946987",
+      "changed_native_components": 239,
+      "maximum_native_ulp_difference": 254,
+      "sample_native_component_changes": [
+        {
+          "control": 24,
+          "component": 2,
+          "macos": "-0.045512500000000108",
+          "linux": "-0.045512500000000101"
+        },
+        {
+          "control": 25,
+          "component": 2,
+          "macos": "-0.08286250000000013",
+          "linux": "-0.082862500000000117"
+        },
+        {
+          "control": 59,
+          "component": 2,
+          "macos": "-0.24429076086956555",
+          "linux": "-0.2442907608695655"
+        }
+      ]
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p2_3_q3_4_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "1b44f0324d6a07c6cc74ab66bfeeaadfc260c3db4832d64af6ab55205dbcf6f8",
+      "exact_sha256": "9ba9c43d3d14ade84464b6a72f0fe81c8b3ab3edd234df9290f7930a3ff2723f",
+      "native_stdout_sha256": "2d90763a3e06e7de03f6f386dbe073a8c7225dbea89d43d70d83379b38e8511c",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Linux x86_64 / GCC 13.3.0 from the same pristine source archive returns exactly the previously reviewed malformed axes, domains and control counts. Only 26 serialized Cartesian control/weight components differ from the macOS capture. The representation still violates its declared knot/control-count invariant; every Rust control agrees exactly with the independent equations. This platform observation was made after implementation and is pinned separately, not treated as a native match.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          3,
+          4
+        ],
+        "exact_pole_counts": [
+          8,
+          7
+        ],
+        "preserved_domains": [
+          [
+            "2",
+            "5"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          8,
+          7
+        ],
+        "native_counts_required_by_returned_knots": [
+          10,
+          7
+        ],
+        "native_reported_domains": [
+          [
+            "3",
+            "7"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      },
+      "observed_platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler": "GNU 13.3.0",
+      "capture_run_url": "https://github.com/jackControls/rustyOCCT/actions/runs/35897946987",
+      "changed_native_components": 26,
+      "maximum_native_ulp_difference": 4,
+      "sample_native_component_changes": [
+        {
+          "control": 10,
+          "component": 2,
+          "macos": "-0.038834951456310676",
+          "linux": "-0.038834951456310704"
+        },
+        {
+          "control": 16,
+          "component": 1,
+          "macos": "2.0384615384615383",
+          "linux": "2.0384615384615388"
+        },
+        {
+          "control": 16,
+          "component": 2,
+          "macos": "0.55631868131868123",
+          "linux": "0.55631868131868134"
+        }
+      ]
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p2_3_q25_25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "af236c640b0780616cb71ab11dab5e627f01bc1964c97956fd93f2f125ef68f0",
+      "exact_sha256": "ca0668d7359d5ec45fd62dc5982cb5e2868f046f6c53671970fb610f8cfb1b57",
+      "native_stdout_sha256": "77a447f208508f4fa094cfda8fbfe308af12c334ada2e8665f0d7e2c2147980f",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Linux x86_64 / GCC 13.3.0 from the same pristine source archive returns exactly the previously reviewed malformed axes, domains and control counts. Only 884 serialized Cartesian control/weight components differ from the macOS capture. The representation still violates its declared knot/control-count invariant; every Rust control agrees exactly with the independent equations. This platform observation was made after implementation and is pinned separately, not treated as a native match.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          25,
+          25
+        ],
+        "exact_pole_counts": [
+          74,
+          49
+        ],
+        "preserved_domains": [
+          [
+            "2",
+            "5"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          74,
+          49
+        ],
+        "native_counts_required_by_returned_knots": [
+          120,
+          49
+        ],
+        "native_reported_domains": [
+          [
+            "3",
+            "7"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      },
+      "observed_platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler": "GNU 13.3.0",
+      "capture_run_url": "https://github.com/jackControls/rustyOCCT/actions/runs/35897946987",
+      "changed_native_components": 884,
+      "maximum_native_ulp_difference": 1141,
+      "sample_native_component_changes": [
+        {
+          "control": 79,
+          "component": 2,
+          "macos": "0.3331173480613529",
+          "linux": "0.33311734806135301"
+        },
+        {
+          "control": 80,
+          "component": 2,
+          "macos": "0.3118259785514732",
+          "linux": "0.31182597855147326"
+        },
+        {
+          "control": 81,
+          "component": 2,
+          "macos": "0.29222138440657469",
+          "linux": "0.29222138440657502"
+        }
+      ]
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p2_3_q25_25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "acf5927428c18b54646e96f4d088dfd5d1d9f6dce830857bc25f13f50732ee66",
+      "exact_sha256": "69e0328461fb4c60ca104ee655fdccdf5d649f6a66a3f436d08ce99e9476141b",
+      "native_stdout_sha256": "6199642241392d63572a3a1f5741e715f45c6f592a60e17cc50f497384195a09",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Linux x86_64 / GCC 13.3.0 from the same pristine source archive returns exactly the previously reviewed malformed axes, domains and control counts. Only 331 serialized Cartesian control/weight components differ from the macOS capture. The representation still violates its declared knot/control-count invariant; every Rust control agrees exactly with the independent equations. This platform observation was made after implementation and is pinned separately, not treated as a native match.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          25,
+          25
+        ],
+        "exact_pole_counts": [
+          49,
+          72
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "3",
+            "6"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          49,
+          72
+        ],
+        "native_counts_required_by_returned_knots": [
+          49,
+          112
+        ],
+        "native_reported_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "4",
+            "7"
+          ]
+        ]
+      },
+      "observed_platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler": "GNU 13.3.0",
+      "capture_run_url": "https://github.com/jackControls/rustyOCCT/actions/runs/35897946987",
+      "changed_native_components": 331,
+      "maximum_native_ulp_difference": 365,
+      "sample_native_component_changes": [
+        {
+          "control": 1,
+          "component": 2,
+          "macos": "-0.2200999999999998",
+          "linux": "-0.22010000000000002"
+        },
+        {
+          "control": 2,
+          "component": 2,
+          "macos": "-0.19305555555555542",
+          "linux": "-0.19305555555555595"
+        },
+        {
+          "control": 3,
+          "component": 2,
+          "macos": "-0.18361908212560391",
+          "linux": "-0.18361908212560404"
+        }
+      ]
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p2_3_q25_25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "556eb465aeca7b3b7fbfb1f77c6bbf9f04ec09d5a2c0b028eefbe43812fd9613",
+      "exact_sha256": "737a08ec3578c8dd758d0ff81ed1c24147b951346217cff66a2ad85250641bf9",
+      "native_stdout_sha256": "91e815580b6c68879da17aa93c465ea6e6bfbb52c0f440e1a1a76bf6e1c54dac",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Linux x86_64 / GCC 13.3.0 from the same pristine source archive returns exactly the previously reviewed malformed axes, domains and control counts. Only 1559 serialized Cartesian control/weight components differ from the macOS capture. The representation still violates its declared knot/control-count invariant; every Rust control agrees exactly with the independent equations. This platform observation was made after implementation and is pinned separately, not treated as a native match.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          2,
+          3
+        ],
+        "target_degrees": [
+          25,
+          25
+        ],
+        "exact_pole_counts": [
+          49,
+          72
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "3",
+            "6"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          49,
+          72
+        ],
+        "native_counts_required_by_returned_knots": [
+          49,
+          112
+        ],
+        "native_reported_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "4",
+            "7"
+          ]
+        ]
+      },
+      "observed_platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler": "GNU 13.3.0",
+      "capture_run_url": "https://github.com/jackControls/rustyOCCT/actions/runs/35897946987",
+      "changed_native_components": 1559,
+      "maximum_native_ulp_difference": 607,
+      "sample_native_component_changes": [
+        {
+          "control": 4,
+          "component": 1,
+          "macos": "2.1580513261296681",
+          "linux": "2.158051326129665"
+        },
+        {
+          "control": 5,
+          "component": 1,
+          "macos": "2.1863490553006018",
+          "linux": "2.1863490553005969"
+        },
+        {
+          "control": 6,
+          "component": 1,
+          "macos": "2.215332839531976",
+          "linux": "2.2153328395319734"
+        }
+      ]
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p24_24_q25_24_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "d59afb874eecd271348814df340d0b58f09903a5b0e097baf79644006943f8b6",
+      "exact_sha256": "4e282ac423ce3979797c5bd9a5afe89e192b1b4dce2b698fa9a749d6a3481e04",
+      "native_stdout_sha256": "0813e3586cfbda9cb4f18cc5e58a0f57fe47b3b6bd0399685029ec13a9cfadb8",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Linux x86_64 / GCC 13.3.0 from the same pristine source archive returns exactly the previously reviewed malformed axes, domains and control counts. Only 857 serialized Cartesian control/weight components differ from the macOS capture. The representation still violates its declared knot/control-count invariant; every Rust control agrees exactly with the independent equations. This platform observation was made after implementation and is pinned separately, not treated as a native match.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          24,
+          24
+        ],
+        "target_degrees": [
+          25,
+          24
+        ],
+        "exact_pole_counts": [
+          30,
+          26
+        ],
+        "preserved_domains": [
+          [
+            "24",
+            "27"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          30,
+          26
+        ],
+        "native_counts_required_by_returned_knots": [
+          54,
+          26
+        ],
+        "native_reported_domains": [
+          [
+            "36",
+            "51"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      },
+      "observed_platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler": "GNU 13.3.0",
+      "capture_run_url": "https://github.com/jackControls/rustyOCCT/actions/runs/35897946987",
+      "changed_native_components": 857,
+      "maximum_native_ulp_difference": 24,
+      "sample_native_component_changes": [
+        {
+          "control": 0,
+          "component": 0,
+          "macos": "6.7400000000000011",
+          "linux": "6.7400000000000002"
+        },
+        {
+          "control": 0,
+          "component": 2,
+          "macos": "-0.15186463955571508",
+          "linux": "-0.15186463955571505"
+        },
+        {
+          "control": 1,
+          "component": 0,
+          "macos": "6.7400000000000011",
+          "linux": "6.7400000000000002"
+        }
+      ]
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p24_24_q25_25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "6e843f0a68d4818cb59decf99dcafa0f2fac77288da6f1bfeb11f542d5e774c8",
+      "exact_sha256": "301c0bbe6980db6dacca9e6a6c9b35e9224e390626c2a86825d5fa5e4cf347b6",
+      "native_stdout_sha256": "03a82786e9d39422c54cd35a74edf937a6dcfa850a2f4f91062054041dbb6428",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Linux x86_64 / GCC 13.3.0 from the same pristine source archive returns exactly the previously reviewed malformed axes, domains and control counts. Only 643 serialized Cartesian control/weight components differ from the macOS capture. The representation still violates its declared knot/control-count invariant; every Rust control agrees exactly with the independent equations. This platform observation was made after implementation and is pinned separately, not treated as a native match.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          24,
+          24
+        ],
+        "target_degrees": [
+          25,
+          25
+        ],
+        "exact_pole_counts": [
+          30,
+          28
+        ],
+        "preserved_domains": [
+          [
+            "24",
+            "27"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          30,
+          28
+        ],
+        "native_counts_required_by_returned_knots": [
+          54,
+          28
+        ],
+        "native_reported_domains": [
+          [
+            "36",
+            "51"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      },
+      "observed_platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler": "GNU 13.3.0",
+      "capture_run_url": "https://github.com/jackControls/rustyOCCT/actions/runs/35897946987",
+      "changed_native_components": 643,
+      "maximum_native_ulp_difference": 251,
+      "sample_native_component_changes": [
+        {
+          "control": 0,
+          "component": 2,
+          "macos": "-0.15186463955571516",
+          "linux": "-0.15186463955571497"
+        },
+        {
+          "control": 1,
+          "component": 2,
+          "macos": "-0.10743118877853107",
+          "linux": "-0.10743118877853094"
+        },
+        {
+          "control": 2,
+          "component": 2,
+          "macos": "0.015939088077753509",
+          "linux": "0.015939088077753537"
+        }
+      ]
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p24_24_q25_24_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "3691ae65fa58f860362cada26616c0856910b2517bb714eb156b93b41ae60f93",
+      "exact_sha256": "9fbe10ba50574a3134a73c928a97fc1619da88675f168e3f98dcf5453af460f3",
+      "native_stdout_sha256": "eec322b64c789b46f68885808ac60c4be1797adb4a7bd032461afe6e83a9acfe",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Linux x86_64 / GCC 13.3.0 from the same pristine source archive returns exactly the previously reviewed malformed axes, domains and control counts. Only 2108 serialized Cartesian control/weight components differ from the macOS capture. The representation still violates its declared knot/control-count invariant; every Rust control agrees exactly with the independent equations. This platform observation was made after implementation and is pinned separately, not treated as a native match.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          24,
+          24
+        ],
+        "target_degrees": [
+          25,
+          24
+        ],
+        "exact_pole_counts": [
+          30,
+          26
+        ],
+        "preserved_domains": [
+          [
+            "24",
+            "27"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          30,
+          26
+        ],
+        "native_counts_required_by_returned_knots": [
+          54,
+          26
+        ],
+        "native_reported_domains": [
+          [
+            "36",
+            "51"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      },
+      "observed_platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler": "GNU 13.3.0",
+      "capture_run_url": "https://github.com/jackControls/rustyOCCT/actions/runs/35897946987",
+      "changed_native_components": 2108,
+      "maximum_native_ulp_difference": 120,
+      "sample_native_component_changes": [
+        {
+          "control": 0,
+          "component": 0,
+          "macos": "6.7450998821669632",
+          "linux": "6.7450998821669623"
+        },
+        {
+          "control": 0,
+          "component": 2,
+          "macos": "-0.24114543449596645",
+          "linux": "-0.24114543449596634"
+        },
+        {
+          "control": 0,
+          "component": 3,
+          "macos": "2.5056630024804938",
+          "linux": "2.5056630024804942"
+        }
+      ]
+    },
+    {
+      "kind": "surface",
+      "case": "unclamped_clamped_p24_24_q25_25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "b35937cff8199d0d7f88e077eff5a624b853ba7fe58d480dea7758c83335a493",
+      "exact_sha256": "a18303c5f935bf03ca4d68557fd485fe0c07fdce8c7b48e37cf6773749294f50",
+      "native_stdout_sha256": "7751f22bc8f31a7e77104ea7f364fbd998eddb3c232a9354811b5c133fe400b9",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Linux x86_64 / GCC 13.3.0 from the same pristine source archive returns exactly the previously reviewed malformed axes, domains and control counts. Only 1695 serialized Cartesian control/weight components differ from the macOS capture. The representation still violates its declared knot/control-count invariant; every Rust control agrees exactly with the independent equations. This platform observation was made after implementation and is pinned separately, not treated as a native match.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          24,
+          24
+        ],
+        "target_degrees": [
+          25,
+          25
+        ],
+        "exact_pole_counts": [
+          30,
+          28
+        ],
+        "preserved_domains": [
+          [
+            "24",
+            "27"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          30,
+          28
+        ],
+        "native_counts_required_by_returned_knots": [
+          54,
+          28
+        ],
+        "native_reported_domains": [
+          [
+            "36",
+            "51"
+          ],
+          [
+            "0",
+            "4"
+          ]
+        ]
+      },
+      "observed_platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler": "GNU 13.3.0",
+      "capture_run_url": "https://github.com/jackControls/rustyOCCT/actions/runs/35897946987",
+      "changed_native_components": 1695,
+      "maximum_native_ulp_difference": 14298,
+      "sample_native_component_changes": [
+        {
+          "control": 0,
+          "component": 0,
+          "macos": "6.7450998821669561",
+          "linux": "6.7450998821669543"
+        },
+        {
+          "control": 0,
+          "component": 2,
+          "macos": "-0.24114543449596637",
+          "linux": "-0.24114543449596626"
+        },
+        {
+          "control": 0,
+          "component": 3,
+          "macos": "2.5056630024804947",
+          "linux": "2.5056630024804956"
+        }
+      ]
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p24_24_q24_25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "9eb5936657f69af1b55503b8cc386feae25ec192472493ba20b6bad48e0d45b0",
+      "exact_sha256": "22c8a3b22a66977f1fafc4c3444d4d96cc01a33e50938555abf2c0e405fe744a",
+      "native_stdout_sha256": "e743ff9e7f4e5696b756ddde1798004702ddc1860b12b307dd26a67deb59425f",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Linux x86_64 / GCC 13.3.0 from the same pristine source archive returns exactly the previously reviewed malformed axes, domains and control counts. Only 937 serialized Cartesian control/weight components differ from the macOS capture. The representation still violates its declared knot/control-count invariant; every Rust control agrees exactly with the independent equations. This platform observation was made after implementation and is pinned separately, not treated as a native match.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          24,
+          24
+        ],
+        "target_degrees": [
+          24,
+          25
+        ],
+        "exact_pole_counts": [
+          25,
+          30
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "24",
+            "27"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          25,
+          30
+        ],
+        "native_counts_required_by_returned_knots": [
+          25,
+          54
+        ],
+        "native_reported_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "36",
+            "51"
+          ]
+        ]
+      },
+      "observed_platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler": "GNU 13.3.0",
+      "capture_run_url": "https://github.com/jackControls/rustyOCCT/actions/runs/35897946987",
+      "changed_native_components": 937,
+      "maximum_native_ulp_difference": 143,
+      "sample_native_component_changes": [
+        {
+          "control": 0,
+          "component": 1,
+          "macos": "6.7400000000000011",
+          "linux": "6.7400000000000002"
+        },
+        {
+          "control": 0,
+          "component": 2,
+          "macos": "-0.1007992332256389",
+          "linux": "-0.10079923322563905"
+        },
+        {
+          "control": 1,
+          "component": 2,
+          "macos": "0.10079923322563898",
+          "linux": "0.10079923322563884"
+        }
+      ]
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p24_24_q25_25_r0",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "851a7d9581029cdaed4caccd02a38059892f203edabb7dcf65832b78d7447bfc",
+      "exact_sha256": "bcd6e12606d5d9769d12faae755d7ad3a7cd00f9cf68df9830188fe83445b829",
+      "native_stdout_sha256": "0ca2c30561f8f59e0b908b512b4043882926551ad566f929014e09f8d9e8ba96",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Linux x86_64 / GCC 13.3.0 from the same pristine source archive returns exactly the previously reviewed malformed axes, domains and control counts. Only 1037 serialized Cartesian control/weight components differ from the macOS capture. The representation still violates its declared knot/control-count invariant; every Rust control agrees exactly with the independent equations. This platform observation was made after implementation and is pinned separately, not treated as a native match.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          24,
+          24
+        ],
+        "target_degrees": [
+          25,
+          25
+        ],
+        "exact_pole_counts": [
+          27,
+          30
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "24",
+            "27"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          27,
+          30
+        ],
+        "native_counts_required_by_returned_knots": [
+          27,
+          54
+        ],
+        "native_reported_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "36",
+            "51"
+          ]
+        ]
+      },
+      "observed_platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler": "GNU 13.3.0",
+      "capture_run_url": "https://github.com/jackControls/rustyOCCT/actions/runs/35897946987",
+      "changed_native_components": 1037,
+      "maximum_native_ulp_difference": 683,
+      "sample_native_component_changes": [
+        {
+          "control": 0,
+          "component": 1,
+          "macos": "6.7400000000000011",
+          "linux": "6.7400000000000002"
+        },
+        {
+          "control": 0,
+          "component": 2,
+          "macos": "-0.15298979308349214",
+          "linux": "-0.15298979308349211"
+        },
+        {
+          "control": 2,
+          "component": 0,
+          "macos": "1.6133333333333342",
+          "linux": "1.6133333333333337"
+        }
+      ]
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p24_24_q24_25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "39dfd7b7238b63abdd7203c2fb41cadf5d406162cca79217b798feb9a0d7c367",
+      "exact_sha256": "00186e466132e87c5c0a52a216692b794c939654ebc90d4623b609a882ca063e",
+      "native_stdout_sha256": "de9c39440e0e6a5cc564938b40313e1d20a89be4601d1a20f3fcb90f4725f1fd",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Linux x86_64 / GCC 13.3.0 from the same pristine source archive returns exactly the previously reviewed malformed axes, domains and control counts. Only 2006 serialized Cartesian control/weight components differ from the macOS capture. The representation still violates its declared knot/control-count invariant; every Rust control agrees exactly with the independent equations. This platform observation was made after implementation and is pinned separately, not treated as a native match.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          24,
+          24
+        ],
+        "target_degrees": [
+          24,
+          25
+        ],
+        "exact_pole_counts": [
+          25,
+          30
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "24",
+            "27"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          25,
+          30
+        ],
+        "native_counts_required_by_returned_knots": [
+          25,
+          54
+        ],
+        "native_reported_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "36",
+            "51"
+          ]
+        ]
+      },
+      "observed_platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler": "GNU 13.3.0",
+      "capture_run_url": "https://github.com/jackControls/rustyOCCT/actions/runs/35897946987",
+      "changed_native_components": 2006,
+      "maximum_native_ulp_difference": 14,
+      "sample_native_component_changes": [
+        {
+          "control": 0,
+          "component": 1,
+          "macos": "6.9511691892545482",
+          "linux": "6.9511691892545509"
+        },
+        {
+          "control": 0,
+          "component": 2,
+          "macos": "0.5181425488345931",
+          "linux": "0.51814254883459321"
+        },
+        {
+          "control": 0,
+          "component": 3,
+          "macos": "2.8967067844404251",
+          "linux": "2.8967067844404242"
+        }
+      ]
+    },
+    {
+      "kind": "surface",
+      "case": "periodic_unclamped_p24_24_q25_25_r1",
+      "oracle": "OCCT 8.1.0",
+      "native_source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "input_sha256": "0b0736a1d934cfa61b207959ebf08d52b9d3a355116e1cdc1c50e69b71b796c9",
+      "exact_sha256": "696706f7bd08da313e7d2b3c5d7a702f36b5b3267cf078b175eb57374913c570",
+      "native_stdout_sha256": "446259576190bf4c9a79cdff277fa6f687b9ff9c20a564e6b97ff8da6930f2e2",
+      "native_stderr_sha256": "6b924efe20dc4538e6ab7db8904234c8e103b6fdbeeb26fab3e124858cdaa736",
+      "classification": "invalid_native_output",
+      "differences": [
+        "invalid grid dimensions"
+      ],
+      "reason": "Linux x86_64 / GCC 13.3.0 from the same pristine source archive returns exactly the previously reviewed malformed axes, domains and control counts. Only 2066 serialized Cartesian control/weight components differ from the macOS capture. The representation still violates its declared knot/control-count invariant; every Rust control agrees exactly with the independent equations. This platform observation was made after implementation and is pinned separately, not treated as a native match.",
+      "independent_evidence": "Every resulting homogeneous coefficient is reconstructed by Python Fraction/Cox equations and separately by the Rust integer coefficient solver. Run generate_degree_elevation_fixtures.py --check and RUSTY_VERIFY_ALL_DEGREE_ORACLES=1 cargo test --release --test degree_elevation.",
+      "reviewed_mathematical_facts": {
+        "original_degrees": [
+          24,
+          24
+        ],
+        "target_degrees": [
+          25,
+          25
+        ],
+        "exact_pole_counts": [
+          27,
+          30
+        ],
+        "preserved_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "24",
+            "27"
+          ]
+        ],
+        "native_declared_pole_counts": [
+          27,
+          30
+        ],
+        "native_counts_required_by_returned_knots": [
+          27,
+          54
+        ],
+        "native_reported_domains": [
+          [
+            "0",
+            "3"
+          ],
+          [
+            "36",
+            "51"
+          ]
+        ]
+      },
+      "observed_platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler": "GNU 13.3.0",
+      "capture_run_url": "https://github.com/jackControls/rustyOCCT/actions/runs/35897946987",
+      "changed_native_components": 2066,
+      "maximum_native_ulp_difference": 149,
+      "sample_native_component_changes": [
+        {
+          "control": 1,
+          "component": 0,
+          "macos": "1.5851402414492213",
+          "linux": "1.5851402414492217"
+        },
+        {
+          "control": 1,
+          "component": 1,
+          "macos": "7.2640511107239156",
+          "linux": "7.2640511107239183"
+        },
+        {
+          "control": 1,
+          "component": 2,
+          "macos": "0.44750974019022882",
+          "linux": "0.44750974019022888"
+        }
+      ]
     }
   ]
 }

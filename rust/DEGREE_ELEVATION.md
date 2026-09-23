@@ -144,6 +144,12 @@ native stdout/stderr, native source revision, classification and differences.
 The review records include the independently preserved domain and, for
 malformed outputs, the declared versus required control counts. A new result
 needs a new review; a native crash cannot receive a behavior exemption.
+Linux x86_64 with GCC 13.3.0 reproduces the same match/exception/invalid-grid
+counts. Twenty-two malformed outputs have different serialized control fields
+from the macOS capture, with identical knots, domains and declared/required
+counts. Their additional fingerprints and component-change summaries are
+reviewed separately. They were captured after implementation; they do not add
+new test cases or matches to the preimplementation corpus.
 
 ```sh
 python3 rust/tools/compare_degree_elevation.py \
