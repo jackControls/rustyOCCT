@@ -1,7 +1,7 @@
 //! Exact rational-function images in a square-free polynomial quotient ring.
 //! Keep common denominators and carry the complete dependence witness through
 //! every integer row operation. See MATHEMATICS.md for the algebraic contract.
-use super::{abs, gcd_integer, isolate, one, AlgebraicRoot, Budget, IntPolynomial, R};
+use super::{abs, content, gcd_integer, isolate, one, AlgebraicRoot, Budget, IntPolynomial, R};
 use crate::{exact, Error, Result};
 use num_bigint::{BigInt, Sign};
 
@@ -43,9 +43,6 @@ fn trim(v: &mut Vec<BigInt>) {
     while v.last().is_some_and(exact::zero) {
         v.pop();
     }
-}
-fn content(v: &[BigInt], initial: BigInt) -> BigInt {
-    v.iter().fold(initial, |g, x| gcd_integer(g, abs(x)))
 }
 impl RationalPolynomial {
     fn new(

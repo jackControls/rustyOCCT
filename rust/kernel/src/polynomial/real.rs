@@ -1,6 +1,6 @@
-//! Exact real-root isolation and sign evaluation by primitive Sturm sequences.
+//! Exact real-root isolation and sign evaluation by subresultant Sturm sequences.
 //!
-//! Polynomials are primitive integer vectors; pseudo-division scales by positive
+//! Polynomials are integer vectors; pseudo-division scales by positive
 //! leading-coefficient magnitudes so sign variations remain valid. Sturm-Tarski
 //! queries decide polynomial signs at an isolated algebraic root, including zero.
 //! See MATHEMATICS.md for the proof reference and resource contract.
@@ -233,17 +233,20 @@ impl AlgebraicRoot {
         // an integer. Once the isolator is narrower than 1/|lead|, that integer
         // is its only candidate. This recognizes huge-denominator roots long
         // before their simplest continued-fraction prefix becomes unique.
-        let lead = R::from_integer(abs(self.defining.polynomial.0.last().unwrap()));
-        let scaled = (&self.lower * &lead).ceil();
-        let candidates = [
-            rational_in_interval(&self.lower, &self.upper),
-            &scaled / &lead,
-        ];
+        let lead = abs(self.defining.polynomial.0.last().unwrap());
+        let (ln, ld) = (self.lower.numer(), self.lower.denom());
+        let (un, ud) = (self.upper.numer(), self.upper.denom());
+        // (upper-lower)*lead < 1, cleared over the positive denominators.
+        let unique = (un * ld - ln * ud) * &lead < ud * ld;
+        let mut candidates = vec![rational_in_interval(&self.lower, &self.upper)];
+        if unique {
+            candidates.push(R::new(div_ceil(&(ln * &lead), ld), lead));
+        }
         for value in candidates {
             // Membership and a zero of the defining polynomial certify that this
             // is the unique isolated root. A guess alone never changes the result.
-            if self.lower <= value
-                && value <= self.upper
+            if le(&self.lower, &value)
+                && le(&value, &self.upper)
                 && self.defining.polynomial.sign_at(&value) == Ordering::Equal
             {
                 self.lower = value.clone();
@@ -445,25 +448,37 @@ impl AlgebraicRoot {
 /// prefixes. If no integer lies in [a,b], both share floor(a) and have positive
 /// fractional parts; subtract that integer and reciprocate, reversing bounds.
 /// Reversing these exact maps recovers a candidate in the original interval.
-/// The iterative form avoids a call stack proportional to rational bit length.
+/// Integer numerator/denominator pairs avoid a rational reduction per step,
+/// and continued-fraction convergents are already in lowest terms.
 pub(crate) fn rational_in_interval(a: &R, b: &R) -> R {
-    let (mut lower, mut upper) = (a.clone(), b.clone());
+    // lower = ln/ld and upper = un/ud with positive denominators.
+    let (mut ln, mut ld) = (a.numer().clone(), a.denom().clone());
+    let (mut un, mut ud) = (b.numer().clone(), b.denom().clone());
     let mut prefixes = Vec::new();
-    let mut value = loop {
-        let integer = lower.ceil();
-        if integer <= upper {
+    let integer = loop {
+        let integer = div_ceil(&ln, &ld);
+        if &integer * &ud <= un {
             break integer;
         }
-        let floor = lower.floor();
-        let next_lower = one() / (&upper - &floor);
-        let next_upper = one() / (&lower - &floor);
+        // lower is not an integer here, so both remainders are positive.
+        let floor = &integer - 1;
+        let (rl, ru) = (&ln - &floor * &ld, &un - &floor * &ud);
         prefixes.push(floor);
-        (lower, upper) = (next_lower, next_upper);
+        (ln, ld, un, ud) = (ud, ru, ld, rl);
     };
+    let (mut numer, mut denom) = (integer, BigInt::from(1));
     for prefix in prefixes.into_iter().rev() {
-        value = prefix + one() / value;
+        (numer, denom) = (&prefix * &numer + &denom, numer);
     }
-    value
+    R::new_raw(numer, denom)
+}
+/// a <= b by one cross-multiplication. num-rational's Ord walks floor-division
+/// continued fractions, which is far slower for multi-thousand-bit operands.
+fn le(a: &R, b: &R) -> bool {
+    a.numer() * b.denom() <= b.numer() * a.denom()
+}
+fn div_ceil(n: &BigInt, d: &BigInt) -> BigInt {
+    num_integer::Integer::div_ceil(n, d)
 }
 
 /// Primitive coefficients, ascending powers. Only positive common factors are
@@ -475,9 +490,7 @@ impl IntPolynomial {
         while coefficients.last().is_some_and(exact::zero) {
             coefficients.pop();
         }
-        let content = coefficients
-            .iter()
-            .fold(BigInt::from(0), |g, x| gcd_integer(g, abs(x)));
+        let content = content(&coefficients, BigInt::from(0));
         if content > BigInt::from(1) {
             for c in &mut coefficients {
                 *c /= &content;
@@ -539,11 +552,21 @@ impl IntPolynomial {
     /// A positive multiple of the true rational remainder. Positive scaling at
     /// EVERY elimination step is essential when the divisor's lead is negative.
     fn remainder(&self, divisor: &Self) -> Self {
+        Self::new(self.pseudo_remainder(divisor).0)
+    }
+    /// |lead(divisor)|^(deg difference + 1) times the rational remainder,
+    /// without content removal.
+    fn pseudo_remainder(&self, divisor: &Self) -> Self {
         debug_assert!(!divisor.is_zero());
         let mut r = self.clone();
         let lead = divisor.0.last().unwrap();
         let magnitude = abs(lead);
+        // The classical pseudo-remainder scales by exactly |lead|^(delta+1),
+        // even when cancellation skips elimination steps; subresultant
+        // divisibility depends on that exact power.
+        let mut missing = (self.0.len() + 1).saturating_sub(divisor.0.len());
         while !r.is_zero() && r.0.len() >= divisor.0.len() {
+            missing -= 1;
             let shift = r.0.len() - divisor.0.len();
             let multiplier = if lead.sign() == Sign::Minus {
                 -r.0.last().unwrap()
@@ -562,16 +585,32 @@ impl IntPolynomial {
                 r.0.pop();
             }
         }
-        Self::new(r.0)
+        if missing > 0 && !r.is_zero() {
+            let scale = magnitude.pow(missing as u32);
+            for c in &mut r.0 {
+                *c *= &scale;
+            }
+        }
+        r
+    }
+    fn divide_exact(mut self, divisor: &BigInt) -> Self {
+        for c in &mut self.0 {
+            debug_assert!(exact::zero(&(&*c % divisor)));
+            *c /= divisor;
+        }
+        self
     }
     pub(crate) fn gcd(&self, other: &Self) -> Self {
-        let (mut a, mut b) = (self.clone(), other.clone());
-        while !b.is_zero() {
-            let r = a.remainder(&b);
-            a = b;
-            b = r;
+        let (a, b) = if self.0.len() >= other.0.len() {
+            (self, other)
+        } else {
+            (other, self)
+        };
+        if b.is_zero() {
+            return Self::new(a.0.clone()).positive();
         }
-        a.positive()
+        let mut chain = subresultants(Self::new(a.0.clone()), Self::new(b.0.clone()), false);
+        Self::new(chain.pop().unwrap().0).positive()
     }
     fn quotient_exact(&self, divisor: &Self) -> Self {
         debug_assert!(!divisor.is_zero());
@@ -628,12 +667,47 @@ impl IntPolynomial {
 }
 
 fn sequence(first: IntPolynomial, second: IntPolynomial) -> Vec<IntPolynomial> {
+    subresultants(first, second, true)
+}
+/// Magnitude subresultant remainder sequence (Collins; Cohen, Algorithm 3.3.1).
+/// Each element is a positive multiple of the next Euclidean remainder, negated
+/// for a Sturm chain. Dividing by |g| h^delta is exact because these terms
+/// differ from the classical subresultants only by sign, so no integer content
+/// is ever computed. The last element is a nonzero multiple of the gcd.
+fn subresultants(first: IntPolynomial, second: IntPolynomial, sturm: bool) -> Vec<IntPolynomial> {
     let mut chain = vec![first];
-    let mut next = second;
-    while !next.is_zero() {
-        let remainder = chain.last().unwrap().remainder(&next).negate();
-        chain.push(next);
-        next = remainder;
+    if second.is_zero() {
+        return chain;
+    }
+    chain.push(second);
+    let (mut g, mut h) = (BigInt::from(1), BigInt::from(1));
+    loop {
+        let (a, b) = (&chain[chain.len() - 2], &chain[chain.len() - 1]);
+        if b.is_constant() {
+            break;
+        }
+        if a.0.len() < b.0.len() {
+            // A Sturm-Tarski query can start with a higher-degree second term.
+            // Its remainder is the first term itself; restart the scaling there.
+            let r = a.clone();
+            (g, h) = (BigInt::from(1), BigInt::from(1));
+            chain.push(if sturm { r.negate() } else { r });
+            continue;
+        }
+        let delta = (a.0.len() - b.0.len()) as u32;
+        let r = a.pseudo_remainder(b);
+        if r.is_zero() {
+            break;
+        }
+        let r = r.divide_exact(&(&g * h.pow(delta)));
+        let lead = abs(b.0.last().unwrap());
+        h = if delta == 0 {
+            h
+        } else {
+            lead.pow(delta) / h.pow(delta - 1)
+        };
+        g = lead;
+        chain.push(if sturm { r.negate() } else { r });
     }
     chain
 }
@@ -752,10 +826,31 @@ pub(crate) fn isolate(
     }
     Ok(roots)
 }
-/// Nonnegative gcd. Stein's binary algorithm avoids a full multiprecision
-/// division per Euclidean step; content extraction dominates exact PRS work.
+/// Nonnegative gcd of nonnegative integers. Stein's binary algorithm avoids a
+/// multiprecision division per Euclidean step, but it removes only about one
+/// bit per step from the larger operand. One initial division balances the
+/// operands, and a unit operand needs no work at all.
 fn gcd_integer(a: BigInt, b: BigInt) -> BigInt {
-    num_integer::Integer::gcd(&a, &b)
+    let (big, small) = if a >= b { (a, b) } else { (b, a) };
+    if exact::zero(&small) {
+        return big;
+    }
+    if small == BigInt::from(1) {
+        return small;
+    }
+    let rest = &big % &small;
+    num_integer::Integer::gcd(&small, &rest)
+}
+/// Integer content, stopping as soon as it is one.
+fn content(v: &[BigInt], initial: BigInt) -> BigInt {
+    let mut g = initial;
+    for x in v {
+        if g == BigInt::from(1) {
+            break;
+        }
+        g = gcd_integer(g, abs(x));
+    }
+    g
 }
 fn abs(x: &BigInt) -> BigInt {
     if x.sign() == Sign::Minus {
@@ -772,4 +867,131 @@ fn zero() -> R {
 }
 fn one() -> R {
     R::from_integer(BigInt::from(1))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The previous rational-arithmetic implementation, kept as a reference.
+    fn reference(a: &R, b: &R) -> R {
+        let (mut lower, mut upper) = (a.clone(), b.clone());
+        let mut prefixes = Vec::new();
+        let mut value = loop {
+            let integer = lower.ceil();
+            if integer <= upper {
+                break integer;
+            }
+            let floor = lower.floor();
+            let next_lower = one() / (&upper - &floor);
+            let next_upper = one() / (&lower - &floor);
+            prefixes.push(floor);
+            (lower, upper) = (next_lower, next_upper);
+        };
+        for prefix in prefixes.into_iter().rev() {
+            value = prefix + one() / value;
+        }
+        value
+    }
+
+    /// The previous primitive Euclidean Sturm chain, kept as a reference.
+    fn primitive_chain(first: IntPolynomial, second: IntPolynomial) -> Vec<IntPolynomial> {
+        let mut chain = vec![first];
+        let mut next = second;
+        while !next.is_zero() {
+            let remainder = chain.last().unwrap().remainder(&next).negate();
+            chain.push(next);
+            next = remainder;
+        }
+        chain
+    }
+
+    #[test]
+    fn subresultant_chains_are_positive_multiples_of_primitive_chains() {
+        let mut state = 0x2545_f491_4f6c_dd1d_u64;
+        let mut next = || {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            state
+        };
+        let poly = |c: Vec<i64>| IntPolynomial::new(c.into_iter().map(BigInt::from).collect());
+        let mut pairs = vec![
+            // Degree drops by more than one; the second term has higher degree.
+            (poly(vec![1, 0, 0, 0, 1]), poly(vec![0, 0, 1, 0, 0, 1])),
+            (poly(vec![-2, 0, 1]), poly(vec![0, 2])),
+            (
+                poly(vec![1, 0, 0, 0, 0, 0, -1]),
+                poly(vec![0, 0, 0, 0, 0, 6]),
+            ),
+        ];
+        for _ in 0..400 {
+            let random = |n: usize, next: &mut dyn FnMut() -> u64| {
+                poly((0..n).map(|_| (next() % 41) as i64 - 20).collect())
+            };
+            let a = random(2 + (next() % 12) as usize, &mut next);
+            let b = random(1 + (next() % 12) as usize, &mut next);
+            if !a.is_zero() && !b.is_zero() {
+                pairs.push((a, b));
+            }
+        }
+        for (a, b) in pairs {
+            let fast = subresultants(a.clone(), b.clone(), true);
+            let slow = primitive_chain(a.clone(), b.clone());
+            assert_eq!(fast.len(), slow.len(), "{a:?} {b:?}");
+            for (x, y) in fast.iter().zip(&slow) {
+                // Same primitive part and the same sign: a positive multiple.
+                let px = IntPolynomial::new(x.0.clone());
+                assert_eq!(px, *y, "{a:?} {b:?}");
+            }
+            let g = a.gcd(&b);
+            assert_eq!(
+                g,
+                primitive_chain(a.clone(), b.clone())
+                    .pop()
+                    .unwrap()
+                    .positive()
+            );
+        }
+    }
+
+    #[test]
+    fn integer_continued_fraction_matches_rational_reference() {
+        let mut state = 0x9e37_79b9_7f4a_7c15_u64;
+        let mut next = || {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            state
+        };
+        let big = |bits: u32, x: u64| BigInt::from(x) << bits as usize;
+        let mut cases = vec![
+            (R::from_integer(3.into()), R::from_integer(3.into())),
+            (R::new((-7).into(), 3.into()), R::new((-2).into(), 1.into())),
+            (R::new(1.into(), 3.into()), R::new(1.into(), 3.into())),
+            (
+                R::new(big(0, 1) + big(1012, 3), big(1012, 3) * 3),
+                R::new(big(0, 1) + big(1012, 3) + 1, big(1012, 3) * 3),
+            ),
+        ];
+        for _ in 0..2000 {
+            let scale = next() % 700;
+            let d1 = big(scale as u32, 1 + next() % 1000);
+            let d2 = big((next() % 700) as u32, 1 + next() % 1000);
+            let n1 = BigInt::from(next() as i64 >> (next() % 60)) * &d1 / 1000;
+            let a = R::new(n1, d1);
+            let b = &a + R::new(BigInt::from(1 + next() % 5000), d2);
+            cases.push((a, b));
+        }
+        for (a, b) in cases {
+            let actual = rational_in_interval(&a, &b);
+            assert_eq!(actual, reference(&a, &b), "{a} {b}");
+            assert!(a <= actual && actual <= b);
+            // new_raw requires lowest terms and a positive denominator.
+            assert_eq!(
+                actual,
+                R::new(actual.numer().clone(), actual.denom().clone())
+            );
+        }
+    }
 }

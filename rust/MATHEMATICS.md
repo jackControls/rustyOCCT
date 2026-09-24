@@ -397,7 +397,14 @@ only requesting a finite enclosure can fail as unrepresentable.
 The solver clears denominators, removes positive integer content, takes
 square-free gcd layers and isolates roots with a Sturm sequence. Every
 pseudo-division elimination scales by a positive magnitude, preserving sign
-variations even with negative leading coefficients. Open-interval root counts
+variations even with negative leading coefficients. Gcds and Sturm chains use
+a magnitude subresultant sequence (Collins; Cohen, *A Course in Computational
+Algebraic Number Theory*, Algorithm 3.3.1). Each pseudo-remainder is scaled by
+exactly `|lead|^(δ+1)` and divided exactly by `|g|·h^δ`. The terms differ from
+classical subresultants only by sign, so these divisions are exact and every
+chain element is a positive multiple of the Euclidean remainder. No integer
+content is computed per remainder. A test checks every element's primitive
+part and sign against the previous primitive Euclidean chain. Open-interval root counts
 exclude endpoints, which are emitted once. An accepted isolating interval also
 has nonroot endpoints. Iterative traversal avoids recursion depth from clustered
 roots. Repeated gcd layers establish multiplicity.

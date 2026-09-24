@@ -1,6 +1,6 @@
 """Independent test oracle: SymPy factorization and continued-fraction isolation.
 
-Production uses primitive integer Sturm/Sturm-Tarski sequences. This oracle
+Production uses subresultant integer Sturm/Sturm-Tarski sequences. This oracle
 uses irreducible QQ factors, VAS isolation/refinement, and rational interval
 evaluation. No Rust observation or approximate root supplies an expected value.
 Install the hash-pinned math-oracle-requirements.txt in a test-only environment.

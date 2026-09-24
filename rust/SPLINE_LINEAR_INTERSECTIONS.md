@@ -82,47 +82,45 @@ image resultant.
 
 ## Shared arithmetic changes
 
-Two changes to the shared exact root arithmetic were driven by this
-capability's fuzz inputs. Neither changes a mathematical result.
+This capability's fuzz inputs drove several changes to the shared exact root
+arithmetic. None changes a mathematical result; each only changes cost.
 
-* Integer content during primitive polynomial remainders now uses Stein's
-  binary gcd from `num-integer`, which `num-bigint` and `num-rational` already
-  require. The previous schoolbook Euclid performed a full multiprecision
-  division at every step.
-* Rational-root recognition now also tries the unique candidate given by the
-  rational root theorem: a root `a/b` in lowest terms has `b | lead(p)`, so
-  once the isolator is narrower than `1/|lead(p)|`, `ceil(lead·lower)/lead` is
-  its only rational candidate. As before, a candidate is accepted only after
-  an exact zero check inside the unique-root isolator. The continued-fraction
-  candidate needs width about `1/b²`; this one needs `1/|lead|`.
-* Before an exact sign query falls back to a gcd or Sturm-Tarski chain, the
-  isolator is bisected up to 64 further steps if that reaches width
-  `1/|lead|`. Bisection evaluates only the small defining polynomial, while the
-  fallback gcd can involve a much larger query polynomial. An uncapped version
-  slowed spline/plane tests by 46%; with the cap, every suite stays within
-  noise of the baseline.
-* Pseudo-remainders now remove integer content once per remainder instead of
-  after every elimination step. Content removal only bounds coefficient
-  growth; the positive `|lead|` scaling that keeps Sturm signs correct is
-  unchanged.
-* Each result point's span keeps positive-scaled primitive integer forms of
-  its polynomials. Exact coordinate and line-parameter probes combine them as
-  `n·A - m·B`, a positive multiple of the rational query, instead of reducing
+* **Integer gcd.** Content and denominator gcds use Stein's binary gcd from
+  `num-integer`, which `num-bigint` and `num-rational` already require. One
+  initial division balances unequal operands, and a unit operand returns
+  immediately. Content extraction stops as soon as it reaches one. Stein's
+  algorithm removes only about one bit per step, so `gcd(1, x)` previously
+  cost as much as a full gcd for every remaining coefficient.
+* **Subresultant sequences.** Polynomial gcds and Sturm chains use a
+  magnitude subresultant sequence instead of making every remainder primitive
+  (see `MATHEMATICS.md`). A test checks each chain element's primitive part
+  and sign against the previous Euclidean chain.
+* **Rational-root recognition.** It also tries the rational-root-theorem
+  candidate: a root `a/b` in lowest terms has `b | lead(p)`, so once the
+  isolator is narrower than `1/|lead(p)|`, `ceil(lead·lower)/lead` is its only
+  rational candidate. The continued-fraction candidate is computed on integer
+  numerator/denominator pairs, returning exactly what the previous
+  BigRational code returned, and membership uses one cross-multiplication. As
+  before, a candidate is accepted only after an exact zero check inside the
+  unique-root isolator.
+* **Lead-bound bisection.** Before an exact sign query falls back to a gcd or
+  Sturm-Tarski chain, the isolator is bisected up to 64 further steps if that
+  reaches width `1/|lead|`. An uncapped version slowed spline/plane tests by
+  46%.
+* **Integer probes.** Each spline/linear result point's span keeps
+  positive-scaled primitive integer forms of its polynomials. Coordinate and
+  line-parameter probes combine them as `n·A - m·B`, instead of reducing
   thousands-of-bits rational coefficients on every probe.
 
-On a degree-25 known-factor input with a sub-float root pair near `1/3`,
-queries at the large-denominator root previously built a multi-thousand-bit
-integer gcd each time. Its complete release fuzz-oracle replay fell from 65.5
-seconds to 7.6 seconds with the binary gcd, then to 0.79 seconds with both
-changes.
-The first clean campaign then found a degree-25 query exceeding the 20-second
-sanitizer limit. The capped lead-bound bisection cut its release check from
-4.48 to 1.25 seconds (11.7 seconds under AddressSanitizer). That seed then
-timed out during the first Linux CI corpus replay, on a runner about 2.6 times
-slower for this workload. The remainder and integer-probe changes brought it
-to 0.32 seconds in release and about 6 seconds under local AddressSanitizer.
-The complete release kernel suite shows no suite-level regression, and kernel
-unit tests fell from 23.5 to 10.6 seconds on the development machine.
+The retained degree-25 fuzz seeds show the effect. One complete release
+fuzz-oracle replay originally took 65.5 seconds. The first clean campaign's
+timeout seed took 4.48 seconds in release and exceeded 20 seconds under
+AddressSanitizer on Linux CI. All three seeds now take 0.3 seconds in release
+and 3.2–3.6 seconds under local AddressSanitizer. On the development machine,
+the complete release kernel suite fell from 99.4 to 54.1 seconds, with no suite
+slower. Spline/plane tests fell from 29.0 to 7.2 seconds, and kernel unit tests
+from 23.5 to 1.3 seconds. In a paired A/B run, the subresultant sequence alone
+was about 8% faster on the root-heavy suites.
 
 ## Independent evidence
 
