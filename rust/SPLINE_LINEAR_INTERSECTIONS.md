@@ -171,6 +171,16 @@ inputs. The two formerly slow random inputs are retained as regressions. This
 is not clean-revision acceptance. Its RSS headroom should be watched in longer
 daily campaigns.
 
+Clean local 600-second campaigns followed. At `da7be8be`, one input exceeded
+the 20-second sanitizer limit; it is now a retained regression. At
+`809f8b4b`, accumulated allocator retention caused an OOM at 2,055 MB. The
+`d6b2105c` run used the allocator settings described in `FUZZING.md` and
+passed. It completed 600.07 seconds of mutation after 291.76 seconds of
+replay, with 1,488 mutation executions, 6,288 coverage edges and a 1,035 MB
+RSS peak. There were no crash, timeout, OOM or disagreement artifacts; one
+slow-unit input was reported. Linux CI and platform acceptance are still
+pending.
+
 ## Native OCCT observations
 
 Before any Rust implementation existed, the source review read
