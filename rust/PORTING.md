@@ -99,7 +99,7 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
    exact edited curves and rational trim bounds, retaining algebraic contacts
    and overlaps independently of optional binary64 enclosures. Complete
    spline/line and spline/segment preimages add exact closed clipping and
-   cross-span parameter ordering; a reviewed native bridge exists, platform acceptance is pending. Extend certified comparisons and constructions
+   cross-span parameter ordering; native, platform and fuzz acceptance passed at `30c5a247`. Extend certified comparisons and constructions
    to curved geometry and propagate uncertainty through topology changes.
    Continue minimizing fuzz failures. See `MATHEMATICS.md` and `FUZZING.md`.
 2. **Topology invariants and operation history.** Strengthen generic B-rep

@@ -263,7 +263,27 @@ Linux CI builds the same pinned TKBO SDK. Its first run (OCCT 8.1.0) gave the
 same 23 matches and the same eight difference classes. Five Linux outputs
 differed from macOS only in their last floating-point bits, and have their own
 fingerprinted reviews. The degree-25 query took 51.8 seconds there, within the
-120-second deadline. Platform acceptance and a
-clean-revision fuzz campaign remain **pending**. General curve/curve and
+120-second deadline.
+
+## Acceptance
+
+Revision `30c5a247` passed every gate:
+
+* **Rust kernel workflow:** all nine jobs passed. They cover Linux, macOS and
+  Windows debug/release tests, Rust 1.85, WebAssembly, the original-test
+  bridge and three source-pinned native comparisons. The spline/linear
+  comparison certified all 31 Rust cases, with 23 matches, eight reviewed
+  differences and no failures. Its degree-25 native query took 39 seconds.
+* **Geometry fuzzing workflow:** all eighteen targets passed. The Linux
+  `spline_linear` campaign replayed its corpus, including the three retained
+  slow seeds, in 105 seconds. It then completed 60.08 seconds of mutation with
+  no artifacts and a 383 MB RSS peak.
+* **Clean local 600-second campaign:** 600.08 seconds of mutation after 251.02
+  seconds of replay, with 2,766 mutation executions, 6,381 coverage edges and
+  a 971 MB RSS peak. There were no crash, timeout, OOM, slow-unit or
+  disagreement artifacts.
+
+These are observations of this revision and these runners, not portable
+latency guarantees. General curve/curve and
 curve/surface intersections beyond planes, spheres, cylinders, lines and
 segments remain separate work.

@@ -1096,7 +1096,7 @@ Results from different spans are ordered by exact comparison of positive
 affine root images, with no image resultant. Periodic aliases and backtracking
 preimages remain distinct. Independent sample-point clipping fixtures and a
 constructed-answer fuzz target verify complete sets. See
-[the contract, native bridge and pending platform gates](SPLINE_LINEAR_INTERSECTIONS.md).
+[the contract, native bridge and acceptance evidence](SPLINE_LINEAR_INTERSECTIONS.md).
 
 This work also changed the shared root arithmetic. Polynomial content uses a
 binary integer gcd. Rational-root recognition adds the rational root theorem

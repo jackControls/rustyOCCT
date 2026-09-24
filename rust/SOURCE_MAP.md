@@ -417,7 +417,7 @@ instead of sampled searches and numerical root merging. Complete constant
 intervals and periodic aliases are explicit. Native contract/numerical
 differences have exact observation fingerprints and separate independent proofs.
 See [spline proximity](SPLINE_PROXIMITY.md) for the supported mathematical
-contract and the still-pending clean-revision acceptance gates.
+contract and its clean-revision acceptance at `d1206b15`.
 
 ## Spline/line and spline/segment intersections
 
@@ -431,5 +431,5 @@ merging with exact common roots, closed polynomial inequalities and exact
 parameter identity. Native finite-edge, periodic-edge-range and
 `MergeSolutions` coverage differences are recorded in
 [spline/linear intersections](SPLINE_LINEAR_INTERSECTIONS.md). A reviewed
-native comparison bridge now passes on the pinned macOS SDK with reviewed
-differences; Linux and platform acceptance are pending.
+native comparison bridge passes on macOS and Linux with reviewed
+differences; acceptance passed at `30c5a247`.
