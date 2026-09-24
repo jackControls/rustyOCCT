@@ -3,10 +3,9 @@
 
 Rust rows are first certified against the independent exact generator. Native
 queries then use documented structural adapters: a proven finite pole-hull
-cover for unbounded lines, one fundamental-period window per requested
-periodic turn with its integer offset, and, only after a recorded whole-range
-timeout, 32 uniform Geom_BSplineCurve::Segment windows. Contract and tolerance
-differences need a fingerprinted review; process failures cannot be reviewed.
+cover for unbounded lines, and one fundamental-period window per requested
+periodic turn with its integer offset. Contract and tolerance differences need
+a fingerprinted review; timeouts and other process failures cannot be reviewed.
 """
 import argparse
 import hashlib
@@ -31,8 +30,9 @@ ORIGINAL = ROOT/'rust/fixtures/occt-spline-linear-preimplementation'
 REVIEWS = ROOT/'rust/fixtures/occt-spline-linear-divergences.json'
 SOURCE_FILE = ROOT/'rust/tools/occt_spline_linear_oracle.cpp'
 TOOLKITS = ['TKBO', 'TKTopAlgo', 'TKBRep', 'TKGeomAlgo', 'TKGeomBase', 'TKG3d', 'TKG2d', 'TKMath', 'TKernel']
-TIMEOUT = 20
-WINDOWS = 32
+# The degree-25 whole-range query takes about 20 seconds locally. A generous
+# per-process deadline keeps slower CI runners from turning it into a failure.
+TIMEOUT = 120
 
 
 def sha(text):
@@ -77,40 +77,26 @@ def queries(case):
     return result
 
 
-def segmented(case):
-    first, last = case['range']
-    return [(dict(case, range=[first+(last-first)*i/WINDOWS, first+(last-first)*(i+1)/WINDOWS]), 0)
-            for i in range(WINDOWS)]
-
-
-def run(executable, rows, env, mode):
-    data = ''.join(native_line(case)+f' {mode}\n' for case, _ in rows)
+def run(executable, rows, env):
+    data = ''.join(native_line(case)+'\n' for case, _ in rows)
     started = time.monotonic()
     try:
         result = subprocess.run([str(executable)], input=data, text=True, capture_output=True,
                                 timeout=TIMEOUT, env=env)
-        return {'input_sha256': sha(data), 'mode': mode, 'windows': len(rows),
+        return {'input_sha256': sha(data), 'windows': len(rows),
                 'offsets': [float(o) for _, o in rows], 'exit_code': result.returncode,
                 'stdout': result.stdout, 'stderr': result.stderr, 'seconds': time.monotonic()-started}
     except subprocess.TimeoutExpired as error:
         decode = lambda v: v.decode(errors='replace') if isinstance(v, bytes) else v or ''
-        return {'input_sha256': sha(data), 'mode': mode, 'windows': len(rows),
+        return {'input_sha256': sha(data), 'windows': len(rows),
                 'offsets': [float(o) for _, o in rows], 'exit_code': None, 'timeout_seconds': TIMEOUT,
                 'stdout': decode(error.stdout), 'stderr': decode(error.stderr),
                 'seconds': time.monotonic()-started}
 
 
-def observe(executable, case, env):
-    """Whole-range (or per-turn) records, then the segmented fallback if needed."""
-    records = [run(executable, queries(case), env, 0)]
-    if records[0]['exit_code'] is None:
-        records.append(run(executable, segmented(case), env, 1))
-    return records
-
-
 def native_parts(case, record):
     rows = [r for r in record['stdout'].splitlines() if r]
-    windows = queries(case) if record['mode'] == 0 else segmented(case)
+    windows = queries(case)
     if len(rows) != len(windows):
         raise ValueError('native window count changed')
     return [decode_native(row, case, offset) for row, (_, offset) in zip(rows, windows)]
@@ -132,7 +118,7 @@ def build(prefix, output):
     linked = subprocess.run(link, text=True, capture_output=True, check=True, env=env)
     loaded_text = linked.stdout+linked.stderr
     if sys.platform == 'darwin':
-        first = native_line(native_cases()[0])+' 0\n'
+        first = native_line(native_cases()[0])+'\n'
         loaded_text = subprocess.run([str(executable)], input=first, text=True, capture_output=True,
                                      timeout=TIMEOUT, check=True,
                                      env=dict(env, DYLD_PRINT_LIBRARIES='1')).stderr
@@ -175,35 +161,31 @@ def main():
               'isolated_points': sum(len(c['points']) for c in certified.values()),
               'overlap_intervals': sum(len(c['intervals']) for c in certified.values()),
               'native_comparison_budget': {'absolute': ABSOLUTE, 'relative': RELATIVE},
-              'native_timeouts': [], 'matches': [], 'reviewed_differences': [], 'failures': []}
+              'native_timeout_seconds': TIMEOUT, 'native_seconds': {}, 'matches': [], 'reviewed_differences': [], 'failures': []}
     observations = {}
     oracle = None
     for case in cases:
         name = case['name']
-        records = observe(executable, case, env)
-        observations[name] = records
+        record = run(executable, queries(case), env)
+        observations[name] = record
         write(output/'native.json', observations)
-        if records[0]['exit_code'] is None:
-            report['native_timeouts'].append(name)
-        final = records[-1]
-        if final['exit_code'] != 0:
-            report['failures'].append({'case': name, 'reason': 'native process failed', 'record': final})
+        report['native_seconds'][name] = round(record['seconds'], 3)
+        if record['exit_code'] != 0:
+            reason = 'native timeout' if record['exit_code'] is None else 'native process failed'
+            report['failures'].append({'case': name, 'reason': reason, 'record': record})
             continue
-        versions = {r['stderr'].splitlines()[0] for r in records if r['stderr'].splitlines()}
-        oracle = oracle or next(iter(versions), None)
+        oracle = oracle or next(iter(record['stderr'].splitlines()), None)
         try:
-            differences = compare_native(certified[name], merge_native(native_parts(case, final)))
+            differences = compare_native(certified[name], merge_native(native_parts(case, record)))
         except (ValueError, IndexError) as error:
             report['failures'].append({'case': name, 'reason': str(error)})
             continue
-        if records[0]['exit_code'] is None:
-            differences = sorted(set(differences) | {'whole_range_timeout'})
         if not differences:
             report['matches'].append(name)
             continue
         evidence = {'case': name, 'source_reference': SOURCE, 'oracle': oracle,
                     'input_sha256': sha(native_line(case)),
-                    'native_stdout_sha256': sha(''.join(r['stdout'] for r in records)),
+                    'native_stdout_sha256': sha(record['stdout']),
                     'differences': differences}
         review = review_for(evidence, reviews)
         report['reviewed_differences' if review else 'failures'].append(review or evidence)

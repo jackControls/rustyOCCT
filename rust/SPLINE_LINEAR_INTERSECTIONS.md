@@ -190,9 +190,9 @@ FindBestSolution,ComputeLineLine,IsIntersection,IsCoincident}` and
 source-pinned, headless TKBO SDK captured the first 31 fixture inputs with
 explicit curve ranges, zero extra fuzzy value and quick coincidence checks
 disabled. Thirty completed. The degree-25 Chebyshev case exceeded the
-20-second process deadline and remains a recorded failure, not a match. Its
-32-window dyadic partition finished in 17.7 seconds and reported eight distinct
-verified witnesses of 25 exact roots.
+20-second process deadline in that capture. Given more time, it completes in
+about 20 seconds on the development machine but reports only eight of the 25
+exact roots.
 
 These pre-implementation observations show contract differences, not
 necessarily native defects:
@@ -220,19 +220,19 @@ tight parameter bound must contain its irreducible root, and each line
 parameter must meet the rigorous bracket. Native observations are compared
 only after this, under the existing 1e-6 absolute plus 1e-10 relative budget.
 
-`occt_spline_linear_oracle.cpp` is the pre-implementation probe with two
-structural adapters, and neither changes a tolerance or a result:
+`occt_spline_linear_oracle.cpp` is the pre-implementation probe with one
+structural adapter. An unbounded line uses the finite range `[-2e, 2e]` of the
+same `gp_Lin`, where `e` bounds every pole's L1 distance from `A`. Positive
+weights keep the curve in its pole hull, and every hull point's
+unit-direction projection has magnitude below `e`, so no intersection is
+excluded. The driver also queries one fundamental-period window per requested
+periodic turn, with its exact integer offset. Neither changes a tolerance or a
+result.
 
-* An unbounded line uses the finite range `[-2e, 2e]` of the same `gp_Lin`,
-  where `e` bounds every pole's L1 distance from `A`. Positive weights keep the
-  curve in its pole hull, and every hull point's unit-direction projection has
-  magnitude below `e`, so no intersection is excluded.
-* A trailing mode can restrict the curve with `Geom_BSplineCurve::Segment`,
-  which keeps original parameters.
-
-The driver adds one fundamental-period window per requested periodic turn,
-with its exact integer offset. Only after a recorded whole-range timeout does
-it run 32 uniform `Segment` windows.
+Each native process has a 120-second deadline. The degree-25 query needs about
+20 seconds locally, and slower CI runners must not turn that into a failure. A
+timeout or any other process failure is always a failure and can never be
+reviewed. Every report records each case's native time.
 
 On the pinned macOS SDK (OCCT 8.1.0), 23 cases match and eight are reviewed
 contract or tolerance differences, with no failures. The eight are:
@@ -241,11 +241,9 @@ contract or tolerance differences, with no failures. The eight are:
 * two exact crossings `2^-19` apart merged into one vertex
 * the second disjoint retrace interval omitted by `MergeSolutions`
 * three collinear pieces reported as single vertices
-* the degree-25 whole-range timeout, whose segmented observation witnesses
-  all 25 exact roots
+* the degree-25 query, which reports only eight of 25 exact crossings (all
+  eight match exact roots)
 
-The timeout is reviewable only together with that complete segmented
-observation, and it remains listed in every report.
 `occt-spline-linear-divergences.json` fingerprints each observation and gives
 its independent evidence. `test_spline_linear_oracle.py` checks deliberately
 wrong rows and native classifications.

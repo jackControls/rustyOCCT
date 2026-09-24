@@ -1,5 +1,5 @@
 {
-  "note": "Exact observation fingerprints, separate from matches. Never exempts crashes, malformed output or disagreement with the independently certified Rust preimage. A whole-range timeout is reviewed only together with its segmented-adapter observation. New platform observations require investigation and explicit additional records.",
+  "note": "Exact observation fingerprints, separate from matches. Never exempts timeouts, crashes, malformed output or disagreement with the independently certified Rust preimage. New platform observations require investigation and explicit additional records.",
   "reviews": [
     {
       "case": "near_tangent_-40_-1",
@@ -97,12 +97,12 @@
       "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
       "oracle": "OCCT 8.1.0",
       "input_sha256": "ea92ad8c0c9699621adcd0554cdf3e366dbd5f130c532ffb7be9db6baaf2d661",
-      "native_stdout_sha256": "4dbfeadfa8092a2aeb5bbf2e0e3a3548a1e0a69cc901185bf36aee711c50c27b",
+      "native_stdout_sha256": "68db1587b7df3310f9047217be4fefd6ede1ed95011e2a7058c280b195dadc13",
       "differences": [
-        "whole_range_timeout"
+        "missing_isolated_point"
       ],
-      "reason": "The unadapted whole-range IntTools_EdgeEdge query exceeds the 20-second process deadline. The documented 32-window Geom_BSplineCurve::Segment fallback then witnesses all 25 exact roots within the comparison budget.",
-      "independent_evidence": "The y component is the degree-25 Chebyshev polynomial rounded to binary64 Bernstein controls; the independent QQ generator isolates exactly 25 simple roots in (-1,1) on the x axis. The timeout itself remains recorded in each report.",
+      "reason": "IntTools_EdgeEdge completes the whole-range query in about 20 seconds but reports only 8 of the 25 exact crossings. Every reported vertex matches an exact root within the comparison budget; the other 17 are absent.",
+      "independent_evidence": "The y component is the degree-25 Chebyshev polynomial rounded to binary64 Bernstein controls. The independent QQ generator isolates exactly 25 simple roots in (-1,1) on the x axis, and the certified Rust result contains all 25.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     }
   ]

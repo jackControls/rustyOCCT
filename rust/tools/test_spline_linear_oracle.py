@@ -3,7 +3,7 @@
 from fractions import Fraction as F
 import unittest
 
-from compare_spline_linear import original_capture, queries, review_for, segmented
+from compare_spline_linear import original_capture, queries, review_for
 from spline_linear_reference import compare_native, decode_native, native_cases, verify_rust
 
 CASES = {c['name']: c for c in native_cases()}
@@ -68,9 +68,7 @@ class SplineLinearOracle(unittest.TestCase):
         self.assertEqual([(w['range'], offset) for w, offset in windows],
                          [([F(0), F(3)], F(-3)), ([F(0), F(3)], F(0)), ([F(0), F(3)], F(3))])
         self.assertEqual(len(queries(CASES['periodic_one_turn'])), 1)
-        parts = segmented(CASES['chebyshev_25'])
-        self.assertEqual(len(parts), 32)
-        self.assertEqual((parts[0][0]['range'][0], parts[-1][0]['range'][1]), (F(-1), F(1)))
+        self.assertEqual(len(queries(CASES['chebyshev_25'])), 1)
 
     def test_review_requires_rationale_and_exact_fingerprint(self):
         evidence = {'case': 'x', 'native_stdout_sha256': 'a', 'differences': ['missing_overlap']}

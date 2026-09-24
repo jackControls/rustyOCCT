@@ -1,10 +1,7 @@
 // Source-pinned IntTools_EdgeEdge observations for spline/line and segment queries.
-// Input rows extend the pre-implementation protocol with one trailing mode:
-// 0 passes [first,last] to IntTools_EdgeEdge; 1 first restricts the curve with
-// Geom_BSplineCurve::Segment(first,last), which keeps original parameters.
-// IntTools_EdgeEdge needs finite edges. A line ("L") therefore uses the finite
-// range [-2e,2e] of the SAME gp_Lin, where e bounds every pole's L1 distance
-// from A. Positive weights keep every curve point in the pole hull, and each
+// Rows use the pre-implementation protocol. IntTools_EdgeEdge needs finite
+// edges, so a line ("L") uses the finite range [-2e,2e] of the SAME gp_Lin,
+// where e bounds every pole's L1 distance from A. Positive weights keep every curve point in the pole hull, and each
 // hull point's unit-direction projection has magnitude below e, so no
 // intersection is excluded. No tolerance, sampling or result is adjusted.
 #include <BRepAdaptor_Curve.hxx>
@@ -34,7 +31,7 @@ int main() {
   while (std::getline(std::cin,row)) {
     std::istringstream input(row);
     std::string name,kind,extra;
-    int degree,periodic,np,nk,mode;
+    int degree,periodic,np,nk;
     double first,last;
     if (!(input>>name>>kind>>degree>>periodic>>np>>nk>>first>>last)) return 2;
     try {
@@ -50,9 +47,8 @@ int main() {
         poles(i)=gp_Pnt(x,y,z);weights(i)=w;
       }
       for (int i=1;i<=nk;++i) if (!(input>>knots(i)>>mults(i))) return 2;
-      if (!(input>>mode) || (mode!=0 && mode!=1) || input>>extra || (kind!="L" && kind!="S")) return 2;
+      if (input>>extra || (kind!="L" && kind!="S")) return 2;
       Handle(Geom_BSplineCurve) curve=new Geom_BSplineCurve(poles,weights,knots,mults,degree,periodic!=0,false);
-      if (mode==1) curve->Segment(first,last);
       BRepBuilderAPI_MakeEdge makeCurve(curve,curve->FirstParameter(),curve->LastParameter());
       if (!makeCurve.IsDone()) {
         std::cout<<name<<" E curve_edge "<<static_cast<int>(makeCurve.Error())<<'\n';continue;
