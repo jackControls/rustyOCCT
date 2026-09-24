@@ -210,7 +210,15 @@ expanded development checker passed 39 separate sanitizer replays, including
 35 nonplanar seeds or retained mutations and the four retained slow/timeout
 inputs. Development checks passed 136 release tests, eleven focused debug
 tests, both lint checks, and a fresh 50/10/0 native comparison. Clean-revision
-fuzzing and fresh Linux CI are still required to close the published failure.
+fuzzing and fresh Linux CI were then required to close the published failure.
+
+That affine-hull revision, `d1206b15`, closed it. GitHub's Rust kernel workflow
+passed all eight jobs, and the geometry fuzzing workflow passed all seventeen
+targets, including a Linux spline campaign in which the previously published
+timeout input passes under unchanged limits. A clean local macOS spline run
+completed 600.08 seconds of mutation after 645.31 seconds of replay, with
+1,862 mutation executions and a 1,015 MB RSS peak. Its five retained slow-unit
+inputs are observations, not crash, timeout, OOM or disagreement artifacts.
 
 This capability
 does not implement curve/curve or curve/surface minimum distance, general

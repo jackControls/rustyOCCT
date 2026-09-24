@@ -208,19 +208,29 @@ impl AlgebraicRoot {
         }
     }
     fn recognize_rational(&mut self) -> bool {
-        let value = rational_in_interval(&self.lower, &self.upper);
-        // Membership and a zero of the defining polynomial certify that this
-        // is the unique isolated root. A guess alone never changes the result.
-        if self.lower <= value
-            && value <= self.upper
-            && self.defining.polynomial.sign_at(&value) == Ordering::Equal
-        {
-            self.lower = value.clone();
-            self.upper = value;
-            true
-        } else {
-            false
+        // A rational root a/b in lowest terms has b | lead(p), so lead*root is
+        // an integer. Once the isolator is narrower than 1/|lead|, that integer
+        // is its only candidate. This recognizes huge-denominator roots long
+        // before their simplest continued-fraction prefix becomes unique.
+        let lead = R::from_integer(abs(self.defining.polynomial.0.last().unwrap()));
+        let scaled = (&self.lower * &lead).ceil();
+        let candidates = [
+            rational_in_interval(&self.lower, &self.upper),
+            &scaled / &lead,
+        ];
+        for value in candidates {
+            // Membership and a zero of the defining polynomial certify that this
+            // is the unique isolated root. A guess alone never changes the result.
+            if self.lower <= value
+                && value <= self.upper
+                && self.defining.polynomial.sign_at(&value) == Ordering::Equal
+            {
+                self.lower = value.clone();
+                self.upper = value;
+                return true;
+            }
         }
+        false
     }
     pub fn multiplicity(&self) -> usize {
         self.multiplicity
@@ -249,6 +259,54 @@ impl AlgebraicRoot {
         // polynomial has exactly one simple root there and changes sign once.
         // A zero proves equality even when the two defining polynomials differ.
         let sign = self.sign_polynomial(&other.defining.polynomial);
+        if sign == Ordering::Equal {
+            Ordering::Equal
+        } else if sign == other.defining.polynomial.sign_at(&other.lower) {
+            Ordering::Less
+        } else {
+            Ordering::Greater
+        }
+    }
+    /// Compare two positive affine images without constructing image resultants.
+    /// Callers own normalized offsets and strictly positive widths.
+    pub(crate) fn compare_affine(
+        &self,
+        offset: &R,
+        width: &R,
+        other: &Self,
+        other_offset: &R,
+        other_width: &R,
+    ) -> Ordering {
+        debug_assert!(width > &zero() && other_width > &zero());
+        if offset == other_offset && width == other_width {
+            return self.compare_root(other);
+        }
+        let delta = offset - other_offset;
+        let threshold = |x: &R| (other_width * x - &delta) / width;
+        if let Some(x) = other.rational_value() {
+            return self.compare_rational(&threshold(x));
+        }
+        if self.compare_rational(&threshold(&other.lower)) != Ordering::Greater {
+            return Ordering::Less;
+        }
+        if self.compare_rational(&threshold(&other.upper)) != Ordering::Less {
+            return Ordering::Greater;
+        }
+        // The mapped self root lies strictly inside other's unique-root
+        // isolator. Positive denominator clearing preserves this sign query.
+        let a = delta / other_width;
+        let b = width / other_width;
+        let mut coefficients = Vec::<R>::new();
+        for c in other.defining.polynomial.0.iter().rev() {
+            let mut next = vec![zero(); coefficients.len() + 1];
+            for (i, v) in coefficients.into_iter().enumerate() {
+                next[i] += &a * &v;
+                next[i + 1] += &b * &v;
+            }
+            next[0] += R::from_integer(c.clone());
+            coefficients = next;
+        }
+        let sign = self.sign_polynomial(&IntPolynomial::from_rationals(&coefficients));
         if sign == Ordering::Equal {
             Ordering::Equal
         } else if sign == other.defining.polynomial.sign_at(&other.lower) {
@@ -654,13 +712,10 @@ pub(crate) fn isolate(
     }
     Ok(roots)
 }
-fn gcd_integer(mut a: BigInt, mut b: BigInt) -> BigInt {
-    while !exact::zero(&b) {
-        let r = &a % &b;
-        a = b;
-        b = r;
-    }
-    a
+/// Nonnegative gcd. Stein's binary algorithm avoids a full multiprecision
+/// division per Euclidean step; content extraction dominates exact PRS work.
+fn gcd_integer(a: BigInt, b: BigInt) -> BigInt {
+    num_integer::Integer::gcd(&a, &b)
 }
 fn abs(x: &BigInt) -> BigInt {
     if x.sign() == Sign::Minus {

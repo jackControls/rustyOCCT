@@ -418,3 +418,17 @@ intervals and periodic aliases are explicit. Native contract/numerical
 differences have exact observation fingerprints and separate independent proofs.
 See [spline proximity](SPLINE_PROXIMITY.md) for the supported mathematical
 contract and the still-pending clean-revision acceptance gates.
+
+## Spline/line and spline/segment intersections
+
+At reference revision `3d097a0328e71b826377d4814ab05ec3c3d23871`, the source
+review covered `IntTools_EdgeEdge::{Perform,Prepare,FindSolutions,
+MergeSolutions,AddSolution,FindBestSolution,ComputeLineLine,IsIntersection,
+IsCoincident}` and `IntTools_CommonPrt`. Native observations of 31 inputs
+preceded implementation. Rust keeps OCCT's result model of isolated vertices
+and common parameter ranges. It replaces tolerance-based range searches and
+merging with exact common roots, closed polynomial inequalities and exact
+parameter identity. Native finite-edge, periodic-edge-range and
+`MergeSolutions` coverage differences are recorded in
+[spline/linear intersections](SPLINE_LINEAR_INTERSECTIONS.md). A reviewed
+native comparison bridge is pending.

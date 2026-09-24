@@ -60,7 +60,7 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
 | Scene recompute | Owned bodies, feature-local errors, atomic operation results and repeatable replay | Immutable standalone solids and typed errors exist; scene/job adapter planned. |
 | Topology references | Face/edge identities, membership, geometry signatures, generated/modified/deleted mappings | Shared topology and extrusion face origins exist. Body-local IDs are not persistent naming. History mappings required before feature migration. |
 | Face/edge metadata | Plane, cylinder, cone, circle, curvature, edge lengths and face signatures | Planes/cylinders/circles retained; DTO signatures and additional queries planned. |
-| Measurement | Bounds, mass/area/centroid/inertia, point classification, extrema/closest points | Bounds, mass properties and point classification supported for current prisms; certified linear-set minimum distances exist. Complete point-to-rational-spline minimum sets are implemented, with clean-revision acceptance pending. General B-rep and other curved-pair distance/extrema remain planned. |
+| Measurement | Bounds, mass/area/centroid/inertia, point classification, extrema/closest points | Bounds, mass properties and point classification supported for current prisms; certified linear-set minimum distances exist. Complete point-to-rational-spline minimum sets are implemented and accepted at `d1206b15`. General B-rep and other curved-pair distance/extrema remain planned. |
 | Exact interference | Occurrence transforms, minimum clearance, closest points, overlap volume | Transform, classifier and certified linear-set distance foundations exist. Solid clearance, common-solid and multi-body queries remain planned. |
 | Tessellation | Deflection-controlled watertight triangles, normals, face ranges, shared edge samples | Planned geometry output, independent of any renderer. Preserve f64 exact geometry; f32 output conversion belongs at the adapter boundary. |
 | STL / 3MF | Feed trustworthy tessellation to `nbcad-export` | Keep existing Rust writers; do not port OCCT mesh file writers or build a second export stack. |
@@ -97,7 +97,9 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
    periodic turns with exact clipping and traversal limits; quadratic surfaces
    use internal equations through degree 50. The same complete queries accept
    exact edited curves and rational trim bounds, retaining algebraic contacts
-   and overlaps independently of optional binary64 enclosures. Extend certified comparisons and constructions
+   and overlaps independently of optional binary64 enclosures. Complete
+   spline/line and spline/segment preimages add exact closed clipping and
+   cross-span parameter ordering; their native comparison gate is pending. Extend certified comparisons and constructions
    to curved geometry and propagate uncertainty through topology changes.
    Continue minimizing fuzz failures. See `MATHEMATICS.md` and `FUZZING.md`.
 2. **Topology invariants and operation history.** Strengthen generic B-rep
@@ -145,6 +147,8 @@ future subsystem. Split crates when there is a working boundary to isolate.
   or algebraic constructions with binary64 enclosures. Complete linear-set
   intersections additionally retain canonical rational points, segments, filled
   convex polygons, infinite lines and planes without eager output rounding.
+  Rational spline curves against lines and closed segments return complete
+  algebraic parameter preimages, including whole overlap intervals.
 - `polynomial`: specialized exact quadratics and general real-root isolation
   through degree 25, retained algebraic identity/multiplicity, polynomial signs
   at exact roots and certified comparisons/enclosures.

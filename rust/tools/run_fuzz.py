@@ -18,7 +18,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear']
 STARTUP_SECONDS = 600
 MAX_STARTUP_SECONDS = 3600
 INPUT_SECONDS = 20
@@ -72,7 +72,19 @@ def seed_corpus(target):
         if not path.exists():
             path.write_bytes(data)
 
-    if target == 'spline_proximity':
+    if target == 'spline_linear':
+        # Known factors, rational polylines, the rational circle and the
+        # quadratic retrace, as lines and segments, across the degree range.
+        for family in range(4):
+            for line in [0,1]:
+                for variant in range(12):
+                    data=bytearray((j*37+variant*13+family*5+1)%256 for j in range(128))
+                    data[:2]=bytes([family,line])
+                    if family==0:
+                        data[2]=[0,1,7,24][variant%4]
+                    save(bytes(data))
+            save(bytes([family]))
+    elif target == 'spline_proximity':
         for degree in range(5,26):
             data=bytearray((i*37+1)%256 for i in range(72))
             data[0:4]=bytes([0,degree-5,0,0])

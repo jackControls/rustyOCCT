@@ -17,6 +17,7 @@ use std::cmp::Ordering;
 mod curved;
 mod exact_spline;
 mod linear_sets;
+mod spline_linear;
 mod spline_plane;
 mod spline_quadric;
 mod spline_surface;
@@ -32,6 +33,14 @@ pub use exact_spline::{
     exact_spline_sphere_in, exact_spline_sphere_in_with_options, exact_spline_sphere_with_options,
 };
 pub use linear_sets::{linear_intersection, ExactPoint3, LinearIntersection};
+pub use spline_linear::{
+    exact_spline_line, exact_spline_line_in, exact_spline_line_in_with_options,
+    exact_spline_line_with_options, exact_spline_segment, exact_spline_segment_in,
+    exact_spline_segment_in_with_options, exact_spline_segment_with_options, spline_line,
+    spline_line_in, spline_line_in_with_options, spline_line_with_options, spline_segment,
+    spline_segment_in, spline_segment_in_with_options, spline_segment_with_options,
+    SplineLinearIntersection, SplineLinearOptions, SplineLinearOverlap, SplineLinearPoint,
+};
 pub use spline_plane::{
     spline_plane, spline_plane_in, spline_plane_in_with_options, spline_plane_with_options,
     SplinePlaneContact, SplinePlaneIntersection, SplinePlaneOptions, SplinePlaneOverlap,

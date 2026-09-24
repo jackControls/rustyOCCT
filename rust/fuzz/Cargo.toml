@@ -138,3 +138,10 @@ path = "fuzz_targets/degree_elevation.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "spline_linear"
+path = "fuzz_targets/spline_linear.rs"
+test = false
+doc = false
+bench = false

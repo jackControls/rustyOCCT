@@ -1080,3 +1080,26 @@ The image construction carries relative rational scales and full integer row
 dependence witnesses. Independent Cox/VAS/resultant fixtures verify complete
 minima, tight views and every coefficient of the image construction.
 See [the full contract, proof structure and limits](SPLINE_PROXIMITY.md).
+
+## Complete spline/line and spline/segment preimages
+
+Closed rational B-spline ranges against infinite lines or closed segments
+return every isolated curve parameter and every maximal closed parameter
+interval. With positive span weight `W`, `Δ=(X,Y,Z)-AW` and `D=B-A`, a
+parameter lies on the line exactly when `Δ×D=0`. The primitive gcd of those
+three components has degree at most the curve degree. A collapsed segment uses
+`Δ=0` directly. Segment clipping is `0 <= Δ·D <= (D·D)W`, without division.
+Contained spans are clipped by a complete sign decomposition. Every boundary
+root is isolated, and each open cell's sign is the first nonzero derivative
+sign at its left boundary, so no approximate midpoint decides topology.
+Results from different spans are ordered by exact comparison of positive
+affine root images, with no image resultant. Periodic aliases and backtracking
+preimages remain distinct. Independent sample-point clipping fixtures and a
+constructed-answer fuzz target verify complete sets. See
+[the contract, evidence and pending native gates](SPLINE_LINEAR_INTERSECTIONS.md).
+
+This work also changed the shared root arithmetic. Polynomial content uses a
+binary integer gcd. Rational-root recognition adds the rational root theorem
+candidate `ceil(lead·lower)/lead`, which is unique once the isolator is
+narrower than `1/|lead|`, and still requires an exact zero check. Both change
+cost only, not results.

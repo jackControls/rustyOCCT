@@ -125,6 +125,7 @@ name = "rusty-occt"
 version = "0.1.0"
 dependencies = [
  "num-bigint",
+ "num-integer",
  "num-rational",
 ]
 

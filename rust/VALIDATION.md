@@ -15,7 +15,7 @@ and insphere, 2,417 independent 2D rational fixtures in all six permutations,
 95 general polynomial-root, 284 spline/plane, 118 spline/quadric, 554 proximity, 684 complete linear-set, 636 exact Bézier curve, 745 tensor-patch and 723 knot-editing fixtures,
 10,000 integer-oracle predicate cases and 256 generated prism invariant cases.
 These tests do not depend on OCCT or an application and run in native debug and
-release CI. These deterministic generated tests are separate from the seventeen
+release CI. These deterministic generated tests are separate from the eighteen
 [coverage-guided fuzz targets and daily retained-corpus campaigns](FUZZING.md).
 
 Exact root-to-root ordering was accepted at revision `de1d1d43`: 122 debug and
@@ -25,7 +25,10 @@ sixteen then-existing fuzz targets passed. Its local roots campaign completed
 incomplete. The new [point-to-spline minimum-set capability](SPLINE_PROXIMITY.md)
 adds 30 independent complete-minimum cases, 94 whole image-polynomial equations,
 a source-pinned native bridge and a seventeenth fuzz target; its clean-revision
-platform/native/fuzz acceptance is pending.
+platform/native/fuzz acceptance passed at `d1206b15`. The
+[spline/line and spline/segment capability](SPLINE_LINEAR_INTERSECTIONS.md) adds
+60 complete independent preimages, 79 closed clipping sets, 851 affine root
+orderings and an eighteenth fuzz target; its native bridge is pending.
 
 `compare_intersections.py` executes native OCCT `IntAna_IntConicQuad` and Rust's
 line/plane primitive on 72 shared well-conditioned cases, comparing intersection
@@ -190,6 +193,9 @@ python3 rust/tools/generate_spline_fixtures.py --check
 python3 rust/tools/generate_bezier_editing_fixtures.py --check
 python3 rust/tools/generate_surface_editing_fixtures.py --check
 python3 rust/tools/generate_surface_fixtures.py --check
+target/math-oracle-venv/bin/python rust/tools/generate_spline_linear_fixtures.py --check
+target/math-oracle-venv/bin/python rust/tools/generate_closed_clip_fixtures.py --check
+target/math-oracle-venv/bin/python rust/tools/generate_affine_parameter_fixtures.py --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo check --workspace --lib --locked --target wasm32-unknown-unknown
 cargo run --locked --example plate
@@ -433,3 +439,18 @@ The `roots` sanitizer harness constructs independent one- and two-root factor
 equations to check cross-equation equality and ordering throughout campaigns.
 This foundation does not yet implement rational-function image comparison or
 complete curved-distance minima.
+
+## Complete spline/linear preimages
+
+`generate_spline_linear_fixtures.py --check` reproduces 60 complete line and
+segment preimages from independent Cox coefficients, QQ factorization, VAS
+isolation and rational sample-point clipping. Cargo proves every returned
+parameter's membership in the independent irreducible equation and its
+isolator, and checks line parameters. It also repeats the 43
+binary64-representable cases through the binary64 entry points and every case
+after exact knot insertion and elevation. The first 31 inputs match the separate
+SymPy-inequality preimages captured with the pre-implementation native
+observations. Closed clipping (79 inequality sets) and affine root ordering
+(851 comparisons) have separate generated fixtures. The `spline_linear` fuzz
+target checks constructed complete answers. No native comparison bridge or
+platform acceptance is claimed yet.

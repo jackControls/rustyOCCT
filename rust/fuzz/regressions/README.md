@@ -531,3 +531,16 @@ ordinary replay fell from 4.253 to 2.074 seconds; the ASan replay took 36.086
 seconds. Single-file replay is timed separately because libFuzzer does not
 enforce its usual alarm in that mode. Published Linux campaigns must still
 pass the unchanged 60-second/2-GiB input gates.
+
+## Spline/linear: sub-float known-factor root pairs
+
+`spline_linear/slow-replay-9ff24f8f748d219d6d9db4edc3ee40340a02bad0.bin` and
+`spline_linear/slow-replay-42dacee5663eef4c37bfd32d84bf2b9c29617986.bin` came
+from a deterministic development replay of 3,000 random inputs, before any
+libFuzzer campaign. Both are known-factor curves elevated to degree 24 or 25
+with a sub-float root pair near `1/3`. Their complete release checks took 65.5
+and 29.9 seconds, with no wrong answer. Profiling found schoolbook integer gcds
+during polynomial content removal and late recognition of a large-denominator
+rational root. After the binary gcd and rational-root-theorem candidate, they
+take 0.79 and 0.60 seconds in release. The local AddressSanitizer target takes
+6.7 and 5.0 seconds. Limits and assertions are unchanged.
