@@ -25,7 +25,9 @@ INPUT_SECONDS = 20
 # Full tensor coefficient equations and double-axis degree-25 edits are a
 # larger per-input workload. Existing targets keep their original 20s limit.
 TARGET_INPUT_SECONDS = {"surface_knots": 60, "degree_elevation": 60}
-TENSOR_TARGETS = {'surface_knots', 'degree_elevation'}
+# Targets whose exact oracles churn enough temporary BigInts that default ASan
+# quarantine and allocator retention, not live data, exhaust the RSS gate.
+ALLOCATOR_TARGETS = {'surface_knots', 'degree_elevation', 'spline_linear'}
 # The pinned libFuzzer checks stop_file between MutateAndTestOne batches,
 # not between each callback. Keep its default mutation sequence length.
 MUTATION_DEPTH = 5
@@ -46,15 +48,15 @@ def startup_budget(corpus_files, input_seconds=INPUT_SECONDS):
 
 
 def sanitizer_build_args(target):
-    # The tensor target also purges freed ASan allocator memory during corpus
+    # These targets also purge freed ASan allocator memory during corpus
     # replay; libFuzzer itself does that only after mutation has started.
-    return ['--sanitizer','address'] + (['--features','asan-allocator'] if target in TENSOR_TARGETS else [])
+    return ['--sanitizer','address'] + (['--features','asan-allocator'] if target in ALLOCATOR_TARGETS else [])
 
 
 def campaign_environment(target, base):
     env=dict(base)
-    if target in TENSOR_TARGETS:
-        # Complete exact tensor oracles create millions of temporary integers.
+    if target in ALLOCATOR_TARGETS:
+        # Complete exact tensor and preimage oracles create millions of temporary integers.
         # Bound the freed-block quarantine, keeping the 2 GiB process gate.
         # This intentionally shortens the use-after-free detection window;
         # other sanitizer options and all other targets remain unchanged.
@@ -430,7 +432,7 @@ def main():
                 'input_limit_seconds':input_seconds,
                 'mutation_depth':MUTATION_DEPTH,
                 'initial_corpus_files':initial_corpus_files,
-                'allocator_cleanup_during_replay':target in TENSOR_TARGETS,
+                'allocator_cleanup_during_replay':target in ALLOCATOR_TARGETS,
                 'sanitizer_options':campaign_env.get('ASAN_OPTIONS'),
                 **timer.evidence(),
                 **statistics(text),

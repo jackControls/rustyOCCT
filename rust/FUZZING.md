@@ -152,6 +152,14 @@ Campaign manifests record the effective sanitizer options. These measurements
 diagnose this corpus and runtime; they do not establish a general kernel memory
 bound.
 
+`spline_linear` uses the same two settings, for the same measured reason. Its
+second clean local 600-second campaign at `809f8b4b` stopped with an OOM at
+2,055 MB. RSS was already about 1.9 GB when the 535-input corpus replay ended.
+The saved OOM input alone peaks at 65 MB under AddressSanitizer and 3.6 MB
+without it. The campaign-wide growth is therefore freed-block quarantine and
+allocator retention from exact BigInt churn, not live data. The input limit,
+2 GiB gate and all assertions are unchanged.
+
 The mutation timer starts when the pinned libFuzzer reports `INITED`, after
 corpus replay. Its `max_total_time` flag includes initialization and previously
 allowed a growing corpus to consume the entire short campaign; this was caught
