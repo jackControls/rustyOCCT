@@ -544,3 +544,15 @@ during polynomial content removal and late recognition of a large-denominator
 rational root. After the binary gcd and rational-root-theorem candidate, they
 take 0.79 and 0.60 seconds in release. The local AddressSanitizer target takes
 6.7 and 5.0 seconds. Limits and assertions are unchanged.
+
+`spline_linear/timeout-b85e667578fb887a586777f84b229f4bca17e25e.bin` is the
+original artifact from the first clean local 600-second campaign at `da7be8be`.
+It is a degree-25 known-factor line query. After 143.65 seconds of replay and
+462 mutation executions, the sanitizer callback exceeded 20 seconds; the
+release check then took 4.48 seconds. Every exact zero proof at one rational
+parameter built a gcd with a 13,378-bit query polynomial. That root's degree-10
+defining polynomial has a 615-bit leading coefficient. The fixed 64-step
+refinement stopped at isolator width about `2^-604`, just short of the `2^-615`
+needed by the rational-root-theorem candidate. A capped extra bisection to that
+bound (at most 64 steps) recognizes the root before any gcd. The release check
+now takes 1.25 seconds and the local sanitizer target 11.7 seconds.

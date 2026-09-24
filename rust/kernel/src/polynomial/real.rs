@@ -26,6 +26,8 @@ impl Default for RootIsolationOptions {
         }
     }
 }
+/// Extra bisections allowed to reach the rational-root-theorem candidate.
+const LEAD_BOUND_STEPS: i64 = 64;
 pub(crate) struct Budget {
     remaining: usize,
 }
@@ -207,6 +209,25 @@ impl AlgebraicRoot {
             }
         }
     }
+    /// Bisect until the isolator is narrower than 1/|lead(p)|, where the rational
+    /// root theorem leaves one candidate, then test it. Only a short remaining
+    /// distance is attempted: repeated long bisections at irrational roots cost
+    /// more than the algebraic fallback they would avoid.
+    fn refine_to_lead_bound(&mut self) {
+        if self.lower == self.upper {
+            return;
+        }
+        let lead = R::from_integer(abs(self.defining.polynomial.0.last().unwrap()));
+        let scaled = (&self.upper - &self.lower) * &lead;
+        let steps = scaled.numer().bits() as i64 - scaled.denom().bits() as i64 + 2;
+        if !(1..=LEAD_BOUND_STEPS).contains(&steps) {
+            return;
+        }
+        self.refine_for_signs(steps as usize);
+        if self.lower != self.upper {
+            self.recognize_rational();
+        }
+    }
     fn recognize_rational(&mut self) -> bool {
         // A rational root a/b in lowest terms has b | lead(p), so lead*root is
         // an integer. Once the isolator is narrower than 1/|lead|, that integer
@@ -380,6 +401,21 @@ impl AlgebraicRoot {
         // take the complete algebraic path below.
         let mut refined = self.clone();
         refined.refine_for_signs(64);
+        if refined.lower == refined.upper {
+            return g.sign_at(&refined.lower);
+        }
+        let (lo, hi) = g.range_signs(&refined.lower, &refined.upper);
+        if lo == Ordering::Greater {
+            return Ordering::Greater;
+        }
+        if hi == Ordering::Less {
+            return Ordering::Less;
+        }
+        // Bisecting the defining polynomial is far cheaper than a gcd with a
+        // large query. Reaching width 1/|lead| lets the rational root theorem
+        // recognize any rational root; otherwise the tighter isolator can
+        // still decide the interval test before the algebraic paths below.
+        refined.refine_to_lead_bound();
         if refined.lower == refined.upper {
             return g.sign_at(&refined.lower);
         }

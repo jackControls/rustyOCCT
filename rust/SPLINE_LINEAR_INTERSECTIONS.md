@@ -95,14 +95,23 @@ capability's fuzz inputs. Neither changes a mathematical result.
   its only rational candidate. As before, a candidate is accepted only after
   an exact zero check inside the unique-root isolator. The continued-fraction
   candidate needs width about `1/b²`; this one needs `1/|lead|`.
+* Before an exact sign query falls back to a gcd or Sturm-Tarski chain, the
+  isolator is bisected up to 64 further steps if that reaches width
+  `1/|lead|`. Bisection evaluates only the small defining polynomial, while the
+  fallback gcd can involve a much larger query polynomial. An uncapped version
+  slowed spline/plane tests by 46%; with the cap, every suite stays within
+  noise of the baseline.
 
 On a degree-25 known-factor input with a sub-float root pair near `1/3`,
 queries at the large-denominator root previously built a multi-thousand-bit
 integer gcd each time. Its complete release fuzz-oracle replay fell from 65.5
 seconds to 7.6 seconds with the binary gcd, then to 0.79 seconds with both
 changes.
-The complete release kernel suite shows no suite-level regression, and kernel
-unit tests fell from 23.5 to 13.6 seconds on the development machine.
+The first clean campaign then found a degree-25 query exceeding the 20-second
+sanitizer limit. The capped lead-bound bisection cut its release check from
+4.48 to 1.25 seconds (11.7 seconds under AddressSanitizer). The complete release
+kernel suite shows no suite-level regression, and kernel unit tests fell from
+23.5 to 12.1 seconds on the development machine.
 
 ## Independent evidence
 
