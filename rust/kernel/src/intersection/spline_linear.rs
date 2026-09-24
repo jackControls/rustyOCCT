@@ -11,6 +11,7 @@ use crate::{
     math::finite,
     spline, BSplineCurve3, Bounds3, Error, ExactBSplineCurve3, Point3, Result, ScalarInterval,
 };
+use num_bigint::{BigInt, Sign};
 use num_rational::BigRational as R;
 use std::{
     cmp::Ordering::{self, Equal, Greater, Less},
@@ -124,13 +125,10 @@ impl SplineLinearPoint {
             return Err(Error::OutOfDomain("spline linear coordinate"));
         }
         let value = spline::normalize(value)?;
+        let h = &self.span.scaled_homogeneous;
         Ok(self
             .root
-            .sign_polynomial(&IntPolynomial::from_rationals(&add_scaled(
-                &self.span.homogeneous[component],
-                &self.span.homogeneous[3],
-                &-value,
-            ))))
+            .sign_polynomial(&difference(&h[component], &h[3], &value)))
     }
     pub fn coordinate_bounds(&self) -> Result<[ScalarInterval; 3]> {
         let point = self.for_view();
@@ -155,13 +153,11 @@ impl SplineLinearPoint {
     }
     pub fn compare_linear_parameter(&self, value: &R) -> Result<Ordering> {
         let value = spline::normalize(value)?;
-        Ok(self
-            .root
-            .sign_polynomial(&IntPolynomial::from_rationals(&add_scaled(
-                &self.span.along,
-                &self.span.linear_denominator,
-                &-value,
-            ))))
+        Ok(self.root.sign_polynomial(&difference(
+            &self.span.scaled_along,
+            &self.span.scaled_denominator,
+            &value,
+        )))
     }
     pub fn linear_parameter_bounds(&self) -> Result<ScalarInterval> {
         let point = self.for_view();
@@ -181,13 +177,49 @@ impl SplineLinearPoint {
     }
 }
 
+/// `value = scale * poly` with a positive rational scale, so exact probes can
+/// combine integer polynomials instead of reducing rational coefficients.
+#[derive(Debug)]
+struct Scaled {
+    poly: IntPolynomial,
+    scale: R,
+}
+impl Scaled {
+    fn new(p: &[R]) -> Self {
+        let poly = IntPolynomial::from_rationals(p);
+        // from_rationals applies a positive denominator and removes positive content.
+        let scale = p
+            .iter()
+            .zip(&poly.0)
+            .find(|(_, c)| c.sign() != Sign::NoSign)
+            .map_or_else(one, |(x, c)| x / R::from_integer(c.clone()));
+        Self { poly, scale }
+    }
+}
+/// A positive multiple of `a - value*b`, without content removal: n*A - m*B
+/// where value*scale(b)/scale(a) = m/n and n > 0.
+fn difference(a: &Scaled, b: &Scaled, value: &R) -> IntPolynomial {
+    let t = value * &b.scale / &a.scale;
+    let (m, n) = (t.numer(), t.denom());
+    let zero = BigInt::from(0);
+    let mut c: Vec<BigInt> = (0..a.poly.0.len().max(b.poly.0.len()))
+        .map(|i| n * a.poly.0.get(i).unwrap_or(&zero) - m * b.poly.0.get(i).unwrap_or(&zero))
+        .collect();
+    while c.last().is_some_and(|x| x.sign() == Sign::NoSign) {
+        c.pop();
+    }
+    IntPolynomial(c)
+}
+
 #[derive(Debug)]
 struct Span {
     start: R,
     length: R,
-    homogeneous: [Vec<R>; 4],
     along: Vec<R>,
     linear_denominator: Vec<R>,
+    scaled_homogeneous: [Scaled; 4],
+    scaled_along: Scaled,
+    scaled_denominator: Scaled,
 }
 impl Span {
     fn new(
@@ -221,7 +253,9 @@ impl Span {
             Self {
                 start,
                 length,
-                homogeneous,
+                scaled_homogeneous: std::array::from_fn(|i| Scaled::new(&homogeneous[i])),
+                scaled_along: Scaled::new(&along),
+                scaled_denominator: Scaled::new(&linear_denominator),
                 along,
                 linear_denominator,
             },
@@ -350,7 +384,10 @@ fn intersect(
         let (span, common) = Span::new(start, length, h, &anchor, &direction, &norm);
         let span = Arc::new(span);
         let at = |mut root: AlgebraicRoot| {
+            // Every later exact view starts from this isolator. Recognizing a
+            // rational root once here avoids repeating it in each sign query.
             root.refine_for_signs(16);
+            root.refine_to_lead_bound();
             SplineLinearPoint {
                 span: span.clone(),
                 root,

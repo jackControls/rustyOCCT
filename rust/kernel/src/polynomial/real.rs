@@ -213,7 +213,7 @@ impl AlgebraicRoot {
     /// root theorem leaves one candidate, then test it. Only a short remaining
     /// distance is attempted: repeated long bisections at irrational roots cost
     /// more than the algebraic fallback they would avoid.
-    fn refine_to_lead_bound(&mut self) {
+    pub(crate) fn refine_to_lead_bound(&mut self) {
         if self.lower == self.upper {
             return;
         }
@@ -556,9 +556,13 @@ impl IntPolynomial {
             for (i, c) in divisor.0.iter().enumerate() {
                 r.0[i + shift] -= &multiplier * c;
             }
-            r = Self::new(r.0);
+            // Content removal only bounds growth; one pass at the end costs
+            // far less than a multiprecision gcd sweep after every step.
+            while r.0.last().is_some_and(exact::zero) {
+                r.0.pop();
+            }
         }
-        r
+        Self::new(r.0)
     }
     pub(crate) fn gcd(&self, other: &Self) -> Self {
         let (mut a, mut b) = (self.clone(), other.clone());

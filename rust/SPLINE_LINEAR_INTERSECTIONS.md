@@ -101,6 +101,14 @@ capability's fuzz inputs. Neither changes a mathematical result.
   fallback gcd can involve a much larger query polynomial. An uncapped version
   slowed spline/plane tests by 46%; with the cap, every suite stays within
   noise of the baseline.
+* Pseudo-remainders now remove integer content once per remainder instead of
+  after every elimination step. Content removal only bounds coefficient
+  growth; the positive `|lead|` scaling that keeps Sturm signs correct is
+  unchanged.
+* Each result point's span keeps positive-scaled primitive integer forms of
+  its polynomials. Exact coordinate and line-parameter probes combine them as
+  `n·A - m·B`, a positive multiple of the rational query, instead of reducing
+  thousands-of-bits rational coefficients on every probe.
 
 On a degree-25 known-factor input with a sub-float root pair near `1/3`,
 queries at the large-denominator root previously built a multi-thousand-bit
@@ -109,9 +117,12 @@ seconds to 7.6 seconds with the binary gcd, then to 0.79 seconds with both
 changes.
 The first clean campaign then found a degree-25 query exceeding the 20-second
 sanitizer limit. The capped lead-bound bisection cut its release check from
-4.48 to 1.25 seconds (11.7 seconds under AddressSanitizer). The complete release
-kernel suite shows no suite-level regression, and kernel unit tests fell from
-23.5 to 12.1 seconds on the development machine.
+4.48 to 1.25 seconds (11.7 seconds under AddressSanitizer). That seed then
+timed out during the first Linux CI corpus replay, on a runner about 2.6 times
+slower for this workload. The remainder and integer-probe changes brought it
+to 0.32 seconds in release and about 6 seconds under local AddressSanitizer.
+The complete release kernel suite shows no suite-level regression, and kernel
+unit tests fell from 23.5 to 10.6 seconds on the development machine.
 
 ## Independent evidence
 
@@ -248,8 +259,11 @@ contract or tolerance differences, with no failures. The eight are:
 its independent evidence. `test_spline_linear_oracle.py` checks deliberately
 wrong rows and native classifications.
 
-Linux CI builds the same pinned TKBO SDK. Its first native fingerprints need
-their own review, as spline proximity's did. Platform acceptance and a
+Linux CI builds the same pinned TKBO SDK. Its first run (OCCT 8.1.0) gave the
+same 23 matches and the same eight difference classes. Five Linux outputs
+differed from macOS only in their last floating-point bits, and have their own
+fingerprinted reviews. The degree-25 query took 51.8 seconds there, within the
+120-second deadline. Platform acceptance and a
 clean-revision fuzz campaign remain **pending**. General curve/curve and
 curve/surface intersections beyond planes, spheres, cylinders, lines and
 segments remain separate work.
