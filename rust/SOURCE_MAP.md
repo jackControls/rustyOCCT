@@ -431,4 +431,5 @@ merging with exact common roots, closed polynomial inequalities and exact
 parameter identity. Native finite-edge, periodic-edge-range and
 `MergeSolutions` coverage differences are recorded in
 [spline/linear intersections](SPLINE_LINEAR_INTERSECTIONS.md). A reviewed
-native comparison bridge is pending.
+native comparison bridge now passes on the pinned macOS SDK with reviewed
+differences; Linux and platform acceptance are pending.

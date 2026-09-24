@@ -1,0 +1,68 @@
+{
+  "created_at_utc": "2026-09-23T21:32:09.820706+00:00",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "rust_revision": "fc022e8262322a616c7bbec526fc7642f90f665b",
+  "rust_worktree_dirty": false,
+  "rust_spline_linear_implementation_exists": false,
+  "source_archive_sha256": "7044127eaf44081e5dd38c67bd260be8661fecd2c1020ce314337c4d46e1bff2",
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "probe_source_sha256": "0b6d984b8df77ee40d6246c928140d0c142f359adf48df6e761d5524e9073459",
+  "probe_sha256": "bf82d50fd04e6518e2cd67b584df4477ebf0b085bcd0accd246b150060cbfcc6",
+  "cases_sha256": "99d9c41ffd372269fc556848dbd5e508d69c24651f739536615b32d3d3d8c9bc",
+  "input_sha256": "0486af0ecd2da2937a505f4b4cf4456f51bb22480510dce355fc69e2bd6ebca8",
+  "loaded_libraries": [
+    {
+      "path": "$SDK/lib/libTKBO.8.1.0.dylib",
+      "sha256": "19ffa0e83d67e556a055b0210007c6e14ed52daff1d92f9f99255e6d80913f7b"
+    },
+    {
+      "path": "$SDK/lib/libTKBRep.8.1.0.dylib",
+      "sha256": "26f78e3a27851c43b986812e4c94f364bc71696d72015cac0f268724894a394f"
+    },
+    {
+      "path": "$SDK/lib/libTKG2d.8.1.0.dylib",
+      "sha256": "cbab2a878670278ef1f37a183f2507000d859929aca9355f5a342179af126fc3"
+    },
+    {
+      "path": "$SDK/lib/libTKG3d.8.1.0.dylib",
+      "sha256": "a13258b3c5774536740a095fc6ed0299aec5708022d22751d243d9068f1fb316"
+    },
+    {
+      "path": "$SDK/lib/libTKGeomAlgo.8.1.0.dylib",
+      "sha256": "1a0b73a411217838c8b0304cf9fd96450a80977b4e54fa4709c0bfc7542469c5"
+    },
+    {
+      "path": "$SDK/lib/libTKGeomBase.8.1.0.dylib",
+      "sha256": "829059f561d3ff762c275702e7ff279962a81c1572829a818dfc833ea48b923e"
+    },
+    {
+      "path": "$SDK/lib/libTKMath.8.1.0.dylib",
+      "sha256": "91c41c3ba27496a1159d0a2c5d6f230dce16b93cab39db64427670bc451e1169"
+    },
+    {
+      "path": "$SDK/lib/libTKPrim.8.1.0.dylib",
+      "sha256": "0eaee87f49b29522731c80614314f7c495b309a6b8c823c9ce51111208ff5815"
+    },
+    {
+      "path": "$SDK/lib/libTKShHealing.8.1.0.dylib",
+      "sha256": "9552226abd75c08f1cf375d95d7a009dc1f9d32cd7b703d3a085e6997e412062"
+    },
+    {
+      "path": "$SDK/lib/libTKTopAlgo.8.1.0.dylib",
+      "sha256": "f79a4603eeefb66877106ee19c818228129548bcb815d859c781ca9ba3028090"
+    },
+    {
+      "path": "$SDK/lib/libTKernel.8.1.0.dylib",
+      "sha256": "683cd72b4b55ab98298b8c91a7c867a58663a7e91cec2a2acf6b9627c3c5b932"
+    }
+  ],
+  "native_timeout_seconds": 20,
+  "native_fuzzy_value": 0,
+  "quick_coincidence_check": false,
+  "status": "captured",
+  "case_count": 31,
+  "observations_sha256": "cf4c813938f668a03757e6cdce0e4c7718ee67dcca8c23fd1de0ce43d7f1cd13",
+  "finished_at_utc": "2026-09-23T21:32:30.199405+00:00",
+  "original_capture_sha256": "8bf4612a346ec68e52da01f4634577f6a6fba24b851243ecc9a0de66a10ea698",
+  "path_note": "Loaded-library paths are relative to the pinned SDK install prefix ($SDK); hashes are unchanged."
+}

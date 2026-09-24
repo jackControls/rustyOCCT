@@ -28,7 +28,7 @@ a source-pinned native bridge and a seventeenth fuzz target; its clean-revision
 platform/native/fuzz acceptance passed at `d1206b15`. The
 [spline/line and spline/segment capability](SPLINE_LINEAR_INTERSECTIONS.md) adds
 60 complete independent preimages, 79 closed clipping sets, 851 affine root
-orderings and an eighteenth fuzz target; its native bridge is pending.
+orderings, an eighteenth fuzz target and a source-pinned native bridge (23 matches, eight reviewed differences locally); platform acceptance is pending.
 
 `compare_intersections.py` executes native OCCT `IntAna_IntConicQuad` and Rust's
 line/plane primitive on 72 shared well-conditioned cases, comparing intersection
@@ -452,5 +452,7 @@ after exact knot insertion and elevation. The first 31 inputs match the separate
 SymPy-inequality preimages captured with the pre-implementation native
 observations. Closed clipping (79 inequality sets) and affine root ordering
 (851 comparisons) have separate generated fixtures. The `spline_linear` fuzz
-target checks constructed complete answers. No native comparison bridge or
-platform acceptance is claimed yet.
+target checks constructed complete answers. `compare_spline_linear.py` then
+compares native `IntTools_EdgeEdge` observations. See
+[the bridge](SPLINE_LINEAR_INTERSECTIONS.md#native-comparison-bridge).
+No platform acceptance is claimed yet.

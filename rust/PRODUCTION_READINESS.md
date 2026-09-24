@@ -91,8 +91,9 @@ resource ceilings.
 Complete spline/line and spline/segment preimages add exact closed polynomial
 clipping, cross-span affine root ordering, 60 independent complete-preimage
 fixtures and an eighteenth fuzz target with constructed answers. Native
-`IntTools_EdgeEdge` observations preceded implementation. A reviewed native
-comparison bridge, platform CI and a clean-revision campaign remain pending.
+`IntTools_EdgeEdge` observations preceded implementation. Its source-pinned
+bridge gives 23 matches and eight reviewed differences locally; Linux review,
+platform CI and a clean-revision campaign remain pending.
 See [spline/linear intersections](SPLINE_LINEAR_INTERSECTIONS.md).
 
 Continue with stronger B-rep invariants, topology history, certified curved

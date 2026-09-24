@@ -175,7 +175,8 @@ disabled. Thirty completed. The degree-25 Chebyshev case exceeded the
 32-window dyadic partition finished in 17.7 seconds and reported eight distinct
 verified witnesses of 25 exact roots.
 
-These observations show contract differences, not necessarily native defects:
+These pre-implementation observations show contract differences, not
+necessarily native defects:
 
 * `IntTools_EdgeEdge` is a finite-edge algorithm, so both unbounded lines
   returned empty results. A finite pole-hull cover recovered the expected
@@ -188,7 +189,50 @@ These observations show contract differences, not necessarily native defects:
   covered, clears earlier common parts and stops. It is not designed to list
   every disjoint parameter preimage of a retracing curve.
 
-A checked-in native comparison bridge with reviewed discrepancies, platform
-acceptance and a clean-revision campaign are **pending** for this capability.
-General curve/curve and curve/surface intersections beyond planes, spheres,
-cylinders, lines and segments remain separate work.
+## Native comparison bridge
+
+`compare_spline_linear.py` first verifies the pinned SDK manifest, every loaded
+toolkit, the unchanged pre-implementation capture in
+`fixtures/occt-spline-linear-preimplementation/`, and byte-identical
+regeneration of the native inputs. That capture's library paths are stored
+relative to the SDK prefix, with their original hashes. The bridge then
+certifies all 31 Rust probe rows against the independent generator. Each
+tight parameter bound must contain its irreducible root, and each line
+parameter must meet the rigorous bracket. Native observations are compared
+only after this, under the existing 1e-6 absolute plus 1e-10 relative budget.
+
+`occt_spline_linear_oracle.cpp` is the pre-implementation probe with two
+structural adapters, and neither changes a tolerance or a result:
+
+* An unbounded line uses the finite range `[-2e, 2e]` of the same `gp_Lin`,
+  where `e` bounds every pole's L1 distance from `A`. Positive weights keep the
+  curve in its pole hull, and every hull point's unit-direction projection has
+  magnitude below `e`, so no intersection is excluded.
+* A trailing mode can restrict the curve with `Geom_BSplineCurve::Segment`,
+  which keeps original parameters.
+
+The driver adds one fundamental-period window per requested periodic turn,
+with its exact integer offset. Only after a recorded whole-range timeout does
+it run 32 uniform `Segment` windows.
+
+On the pinned macOS SDK (OCCT 8.1.0), 23 cases match and eight are reviewed
+contract or tolerance differences, with no failures. The eight are:
+
+* two tolerance contacts on exact misses by `2^-40` and `2^-54`
+* two exact crossings `2^-19` apart merged into one vertex
+* the second disjoint retrace interval omitted by `MergeSolutions`
+* three collinear pieces reported as single vertices
+* the degree-25 whole-range timeout, whose segmented observation witnesses
+  all 25 exact roots
+
+The timeout is reviewable only together with that complete segmented
+observation, and it remains listed in every report.
+`occt-spline-linear-divergences.json` fingerprints each observation and gives
+its independent evidence. `test_spline_linear_oracle.py` checks deliberately
+wrong rows and native classifications.
+
+Linux CI builds the same pinned TKBO SDK. Its first native fingerprints need
+their own review, as spline proximity's did. Platform acceptance and a
+clean-revision fuzz campaign remain **pending**. General curve/curve and
+curve/surface intersections beyond planes, spheres, cylinders, lines and
+segments remain separate work.

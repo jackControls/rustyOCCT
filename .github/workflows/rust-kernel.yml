@@ -176,6 +176,38 @@ jobs:
             target/spline-proximity-sdk/build/compile_commands.json
           if-no-files-found: warn
 
+  pinned-spline-linear-oracle:
+    name: Spline/line intersections / source-pinned OCCT
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - run: rustup toolchain install stable --profile minimal
+      - name: Install the independent exact polynomial oracle
+        run: |
+          python3 -m venv target/math-oracle-venv
+          target/math-oracle-venv/bin/python -m pip install --disable-pip-version-check --no-cache-dir --require-hashes -r rust/tools/math-oracle-requirements.txt
+      - name: Fetch the exact reference source
+        run: git fetch --no-tags --depth=1 https://github.com/Open-Cascade-SAS/OCCT.git 3d097a0328e71b826377d4814ab05ec3c3d23871
+      - name: Build the headless edge/edge SDK with exception checks
+        run: python3 rust/tools/build_pinned_occt.py --output target/spline-linear-sdk --toolkit TKBO --jobs 2
+      - name: Test deliberate bridge failures and certify every preimage
+        run: |
+          target/math-oracle-venv/bin/python rust/tools/test_spline_linear_oracle.py
+          target/math-oracle-venv/bin/python rust/tools/compare_spline_linear.py --occt-root target/spline-linear-sdk/install --sdk-manifest target/spline-linear-sdk/build-manifest.json
+      - name: Preserve source provenance, native observations, and differences
+        if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: source-pinned-spline-linear-results
+          path: |
+            target/spline-linear-oracle/
+            target/spline-linear-sdk/build-manifest.json
+            target/spline-linear-sdk/*.log
+            target/spline-linear-sdk/build/CMakeCache.txt
+            target/spline-linear-sdk/build/compile_commands.json
+          if-no-files-found: warn
+
   native:
     name: Rust / ${{ matrix.os }}
     strategy:

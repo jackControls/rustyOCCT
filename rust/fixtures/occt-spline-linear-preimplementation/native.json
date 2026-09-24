@@ -1,0 +1,220 @@
+[
+  {
+    "case": "parabola_secant",
+    "exit_code": 0,
+    "stdout": "parabola_secant R 1 2 P 1 -0.99999999999996536 1.0000000000000346 -0.99999999999996536 0.99999999999993072 0 -0.99999999999996536 1 0 P 1 0.99999999999996536 2.9999999999999654 0.99999999999996536 0.99999999999993072 0 0.99999999999996536 1 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.012739041999999756
+  },
+  {
+    "case": "parabola_secant_reversed",
+    "exit_code": 0,
+    "stdout": "parabola_secant_reversed R 1 2 P 1 -0.99999999999996536 2.9999999999999654 -0.99999999999996536 0.99999999999993072 0 -0.99999999999996536 1 0 P 1 0.99999999999996536 1.0000000000000346 0.99999999999996536 0.99999999999993072 0 0.99999999999996536 1 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.012221042000000182
+  },
+  {
+    "case": "parabola_one_hit",
+    "exit_code": 0,
+    "stdout": "parabola_one_hit R 1 1 P 1 0.99999999999994937 0.99999999999994937 0.99999999999994937 0.99999999999989875 0 0.99999999999994937 1 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.012209833000000003
+  },
+  {
+    "case": "parabola_tangent",
+    "exit_code": 0,
+    "stdout": "parabola_tangent R 1 1 P 1 1.6550210637719664e-14 1.0000000000000169 1.6431300764452317e-14 2.6998764481189129e-28 0 1.6875389974302379e-14 0 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011890166999999785
+  },
+  {
+    "case": "parabola_skew",
+    "exit_code": 0,
+    "stdout": "parabola_skew R 1 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011703624999999995
+  },
+  {
+    "case": "parabola_outside_segment",
+    "exit_code": 0,
+    "stdout": "parabola_outside_segment R 1 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011524875000000101
+  },
+  {
+    "case": "parabola_line",
+    "exit_code": 0,
+    "stdout": "parabola_line R 1 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011700083000000028
+  },
+  {
+    "case": "parabola_trimmed",
+    "exit_code": 0,
+    "stdout": "parabola_trimmed R 1 1 P 1 0.99999999999997491 2.9999999999999751 0.99999999999997513 0.99999999999995026 0 0.99999999999997513 1 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.01296283400000009
+  },
+  {
+    "case": "parabola_closed_ends",
+    "exit_code": 0,
+    "stdout": "parabola_closed_ends R 1 2 P 1 -1 0 -1 1 0 -1 1 0 P 1 1 2 1 1 0 1 1 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.012091916999999786
+  },
+  {
+    "case": "near_tangent_-40_-1",
+    "exit_code": 0,
+    "stdout": "near_tangent_-40_-1 R 1 1 P 1 6.7873766503023791e-16 1.0000000000000007 6.6613381477509392e-16 -9.0949470177292824e-13 0 6.6613381477509392e-16 0 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.01166358299999981
+  },
+  {
+    "case": "near_tangent_-40_1",
+    "exit_code": 0,
+    "stdout": "near_tangent_-40_1 R 1 1 P 1 -1.8324931619772184e-13 0.99999999999981681 -1.8329782136561334e-13 9.0938367947049935e-13 0 -1.8318679906315083e-13 0 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011959083999999898
+  },
+  {
+    "case": "near_tangent_-20_-1",
+    "exit_code": 0,
+    "stdout": "near_tangent_-20_-1 R 1 2 P 1 -0.00097656250012141677 0.99902343749987854 -0.0009765625001214584 2.3722343535458051e-16 0 -0.0009765625001214584 0 0 P 1 0.00097656250012914648 1.0009765625001292 0.00097656250012922996 2.5240226577132581e-16 0 0.00097656250012922996 0 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011940375000000003
+  },
+  {
+    "case": "near_tangent_-20_1",
+    "exit_code": 0,
+    "stdout": "near_tangent_-20_1 R 1 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011980541999999872
+  },
+  {
+    "case": "rounded_space_near_tangent",
+    "exit_code": 0,
+    "stdout": "rounded_space_near_tangent R 1 1 P 1 -9.3704341161404692e-15 0.99999999999999067 -9.3258734068513149e-15 8.6971914800616552e-29 1.7763568394000682e-15 -9.3258734068513149e-15 0 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.012404500000000152
+  },
+  {
+    "case": "space_tangent",
+    "exit_code": 0,
+    "stdout": "space_tangent R 1 1 P 1 -1.7919080932612963e-13 0.99999999999946176 -5.375699885235008e-13 4.4408920994634999e-16 -8.8817841976426377e-16 -5.3823612233827589e-13 0 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011875666999999979
+  },
+  {
+    "case": "space_endpoint_pair",
+    "exit_code": 0,
+    "stdout": "space_endpoint_pair R 1 2 P 1 -1.0000000000000193 -7.4148802856339921e-14 -3.0000000000000577 3.0000000000001155 -1.000000000000058 -3.0000000000000702 3 -1.0000000000000235 P 1 1.0000000000000193 6.3245553203368328 3.0000000000000586 3.0000000000001172 1.0000000000000586 3.0000000000000702 3 1.0000000000000235\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011885540999999833
+  },
+  {
+    "case": "space_skew",
+    "exit_code": 0,
+    "stdout": "space_skew R 1 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011652541999999766
+  },
+  {
+    "case": "collinear_disconnected_parameters",
+    "exit_code": 0,
+    "stdout": "collinear_disconnected_parameters R 1 1 I 1 -1.414213668438894 -0.9999998500002597 1 0 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011944291000000273
+  },
+  {
+    "case": "collinear_whole_line",
+    "exit_code": 0,
+    "stdout": "collinear_whole_line R 1 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.01152158400000003
+  },
+  {
+    "case": "collinear_connected_parameters",
+    "exit_code": 0,
+    "stdout": "collinear_connected_parameters R 1 1 I 1 -1.0000001499997133 1.0000001499997133 1 0 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011740417000000392
+  },
+  {
+    "case": "collinear_touch_only",
+    "exit_code": 0,
+    "stdout": "collinear_touch_only R 1 1 P 1 1.95492032934938e-13 1 3.8180867812696971e-26 0 0 0 0 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.01160354099999994
+  },
+  {
+    "case": "rational_circle_diagonal",
+    "exit_code": 0,
+    "stdout": "rational_circle_diagonal R 1 1 P 1 0.41421356237305745 1 0.70710678118659287 0.70710678118650205 0 0.70710678118654746 0.70710678118654746 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011797333000000076
+  },
+  {
+    "case": "rational_circle_endpoints",
+    "exit_code": 0,
+    "stdout": "rational_circle_endpoints R 1 2 P 1 0 0 1 0 0 1 0 0 P 1 1 1.4142135623730949 0 1 0 1.7730231858351654e-16 0.99999999999999978 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011693541000000085
+  },
+  {
+    "case": "rational_circle_tangent",
+    "exit_code": 0,
+    "stdout": "rational_circle_tangent R 1 1 P 1 0 1 1 0 0 1 0 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.0118612920000003
+  },
+  {
+    "case": "polyline_partial_overlap",
+    "exit_code": 0,
+    "stdout": "polyline_partial_overlap R 1 1 P 1 1.7499999999999285 0.2499999999999285 0.7499999999999285 0 0 0.7499999999999285 0 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011727667000000164
+  },
+  {
+    "case": "polyline_knot_hit",
+    "exit_code": 0,
+    "stdout": "polyline_knot_hit R 1 1 P 1 1.0000000000000084 1 8.4376949871511897e-15 0 0 0 0 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011755957999999733
+  },
+  {
+    "case": "periodic_one_turn",
+    "exit_code": 0,
+    "stdout": "periodic_one_turn R 1 2 P 1 0.44999999999999996 1.45 0.44999999999999996 0 0 0.44999999999999996 0 0 P 1 3 1 0 0 0 0 0 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011667875000000105
+  },
+  {
+    "case": "periodic_multiple_turns",
+    "exit_code": 0,
+    "stdout": "periodic_multiple_turns R 1 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011859875000000297
+  },
+  {
+    "case": "chebyshev_3",
+    "exit_code": 0,
+    "stdout": "chebyshev_3 R 1 3 P 1 -0.86602540378445658 1 0 -1.0760128824251246e-13 0 0 0 0 P 1 2.7188354708544151e-17 1 0 0 0 0 0 0 P 1 0.86602540378445658 1 0 1.0756336219566946e-13 0 0 0 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011578749999999971
+  },
+  {
+    "case": "chebyshev_8",
+    "exit_code": 0,
+    "stdout": "chebyshev_8 R 1 8 P 1 -0.98078528040323987 1 0 3.8622305388036826e-13 0 0 0 0 P 1 -0.83146961230256866 1 0 -3.3862900011402119e-13 0 0 0 0 P 1 -0.55557023301965314 1 0 4.7028777230490757e-13 0 0 0 0 P 1 -0.19509032201618193 1 0 -5.8890434400975443e-13 0 0 0 0 P 1 0.19509032201618492 1 0 -1.2828498497818087e-12 0 0 0 0 P 1 0.55557023301961883 1 0 1.1531430775508903e-12 0 0 0 0 P 1 0.83146961230258265 1 0 -2.6440025804682781e-12 0 0 0 0 P 1 0.98078528040325508 1 0 -7.5356676798481571e-12 0 0 0 0\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.012474542000000088
+  },
+  {
+    "case": "chebyshev_25",
+    "exit_code": null,
+    "timeout_seconds": 20,
+    "stdout": "",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 20.003861292
+  }
+]
