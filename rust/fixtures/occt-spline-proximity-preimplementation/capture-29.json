@@ -115,5 +115,6 @@
       ]
     }
   ],
-  "note": "Research only. Ten original GTest inputs adapted; original assertions were not run. Four Bezier inputs use equivalent clamped B-splines. ExtremaPC queried both with and without endpoints; no Rust projection implementation exists."
+  "note": "Research only. Ten original GTest inputs adapted; original assertions were not run. Four Bezier inputs use equivalent clamped B-splines. ExtremaPC queried both with and without endpoints; no Rust projection implementation exists.",
+  "path_note": "Absolute paths are shown relative to the repository root ($REPO); all hashes are unchanged."
 }

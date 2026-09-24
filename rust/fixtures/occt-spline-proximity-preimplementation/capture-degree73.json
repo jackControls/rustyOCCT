@@ -57,5 +57,6 @@
     "-lTKernel"
   ],
   "case_count": 1,
-  "note": "Research-only native baseline. No Rust projection API or parity claim."
+  "note": "Research-only native baseline. No Rust projection API or parity claim.",
+  "path_note": "Absolute paths are shown relative to the repository root ($REPO); all hashes are unchanged."
 }
