@@ -21,6 +21,7 @@ pub enum Error {
     InvalidSurface(&'static str),
     OutOfDomain(&'static str),
     DiscontinuousDerivative,
+    InvalidLabel(&'static str),
 }
 
 impl fmt::Display for Error {
@@ -42,6 +43,7 @@ impl fmt::Display for Error {
             Self::InvalidSurface(what) => write!(f, "invalid surface: {what}"),
             Self::OutOfDomain(what) => write!(f, "outside the supported domain: {what}"),
             Self::DiscontinuousDerivative => write!(f, "requested derivative is discontinuous at the knot or seam; select a side"),
+            Self::InvalidLabel(what) => write!(f, "invalid input labels: {what}"),
         }
     }
 }

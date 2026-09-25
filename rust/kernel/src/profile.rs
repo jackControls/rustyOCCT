@@ -1,3 +1,4 @@
+use crate::identity::InputLabel;
 use crate::math::{finite, sum};
 use crate::predicates::{orient2d_finite, Orientation2};
 use crate::{Error, Point2, Result, Tolerance};
@@ -27,13 +28,36 @@ pub(crate) enum BoundaryKind {
     Circle { center: Point2, radius: f64 },
 }
 
+/// Caller labels for one boundary, the roots of its entities' ids. A polygon
+/// has one segment and one vertex label per distinct point (a repeated closing
+/// point has none); a circle has one of each (its seam vertex).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BoundaryLabels {
+    pub boundary: InputLabel,
+    pub segments: Vec<InputLabel>,
+    pub vertices: Vec<InputLabel>,
+}
+
 /// A validated simple closed boundary. Polygon points are stored CCW with the
 /// original first vertex retained. A repeated closing point is optional.
-#[derive(Debug, Clone, PartialEq)]
+/// Equality compares stored geometry and stored-order labels, not the
+/// caller's input orientation.
+#[derive(Debug, Clone)]
 pub struct Boundary {
     pub(crate) kind: BoundaryKind,
     pub(crate) moments: AreaMoments,
     perimeter: f64,
+    /// The caller gave the polygon clockwise; storage reversed points[1..].
+    reversed: bool,
+    /// In stored order.
+    labels: Option<BoundaryLabels>,
+}
+
+impl PartialEq for Boundary {
+    fn eq(&self, other: &Self) -> bool {
+        (&self.kind, &self.moments, self.perimeter, &self.labels)
+            == (&other.kind, &other.moments, other.perimeter, &other.labels)
+    }
 }
 
 impl Boundary {
@@ -80,7 +104,8 @@ impl Boundary {
         if !signed_area.is_finite() || signed_area.abs() <= tolerance.linear() * perimeter * 0.5 {
             return Err(Error::Degenerate("polygon area"));
         }
-        if signed_area < 0.0 {
+        let reversed = signed_area < 0.0;
+        if reversed {
             points[1..].reverse();
         }
         let area = signed_area.abs();
@@ -115,6 +140,8 @@ impl Boundary {
                 second: [xx, xy, yy],
             },
             perimeter,
+            reversed,
+            labels: None,
         })
     }
 
@@ -161,9 +188,51 @@ impl Boundary {
                 second: [moment, 0.0, moment],
             },
             perimeter: 2.0 * PI * radius,
+            reversed: false,
+            labels: None,
         })
     }
 
+    /// Attach caller labels, given in the caller's input order: segment `i`
+    /// runs from input vertex `i` to `i + 1`. They are stored in the
+    /// boundary's counter-clockwise order. Labels must be distinct.
+    pub fn with_labels(mut self, labels: BoundaryLabels) -> Result<Self> {
+        let count = self.polygon_vertices().map_or(1, <[Point2]>::len);
+        if labels.segments.len() != count || labels.vertices.len() != count {
+            return Err(Error::InvalidLabel(
+                "one segment and one vertex label per point",
+            ));
+        }
+        let mut seen = std::collections::BTreeSet::new();
+        let all = std::iter::once(&labels.boundary)
+            .chain(&labels.segments)
+            .chain(&labels.vertices);
+        if !all.into_iter().all(|l| seen.insert(*l)) {
+            return Err(Error::InvalidLabel("duplicate label"));
+        }
+        let (segments, vertices) = if self.reversed {
+            // Stored segment j is input segment n-1-j traversed backwards;
+            // stored vertex j is input vertex (n-j) mod n.
+            (
+                (0..count).map(|j| labels.segments[count - 1 - j]).collect(),
+                (0..count)
+                    .map(|j| labels.vertices[(count - j) % count])
+                    .collect(),
+            )
+        } else {
+            (labels.segments, labels.vertices)
+        };
+        self.labels = Some(BoundaryLabels {
+            boundary: labels.boundary,
+            segments,
+            vertices,
+        });
+        Ok(self)
+    }
+    /// Labels in stored (counter-clockwise) order, if any.
+    pub fn labels(&self) -> Option<&BoundaryLabels> {
+        self.labels.as_ref()
+    }
     pub fn area(&self) -> f64 {
         self.moments.area
     }
@@ -187,10 +256,20 @@ impl Boundary {
     }
 
     pub(crate) fn validated(&self, tolerance: Tolerance) -> Result<Self> {
-        match &self.kind {
-            BoundaryKind::Polygon(points) => Self::polygon(points.clone(), tolerance),
-            BoundaryKind::Circle { center, radius } => Self::circle(*center, *radius, tolerance),
+        let mut rebuilt = match &self.kind {
+            BoundaryKind::Polygon(points) => Self::polygon(points.clone(), tolerance)?,
+            BoundaryKind::Circle { center, radius } => Self::circle(*center, *radius, tolerance)?,
+        };
+        // Stored points are already counter-clockwise: keep the caller's
+        // orientation record and the stored-order labels.
+        if rebuilt.polygon_vertices().map(<[Point2]>::len)
+            != self.polygon_vertices().map(<[Point2]>::len)
+        {
+            return Err(Error::Degenerate("polygon"));
         }
+        rebuilt.reversed = self.reversed;
+        rebuilt.labels = self.labels.clone();
+        Ok(rebuilt)
     }
     fn sample(&self) -> Point2 {
         match &self.kind {
@@ -270,6 +349,15 @@ impl Profile {
             .map(|hole| hole.validated(tolerance))
             .collect::<Result<Vec<_>>>()?;
         let boundaries = std::iter::once(&outer).chain(&holes).collect::<Vec<_>>();
+        let mut labels = std::collections::BTreeSet::new();
+        for b in boundaries.iter().filter_map(|b| b.labels()) {
+            let all = std::iter::once(&b.boundary)
+                .chain(&b.segments)
+                .chain(&b.vertices);
+            if !all.into_iter().all(|l| labels.insert(*l)) {
+                return Err(Error::InvalidLabel("duplicate label in profile"));
+            }
+        }
         for (i, hole) in holes.iter().enumerate() {
             if boundaries_touch(&outer, hole, tolerance.linear())
                 || outer.locate(hole.sample(), tolerance) != Location::Inside

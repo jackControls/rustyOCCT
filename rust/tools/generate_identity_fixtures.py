@@ -7,17 +7,16 @@ entity kind and role. identity-cases.txt lists extrusion cases in a text
 protocol; identity-expected.tsv gives, per case, every entity's id, role,
 ordinal, parents and structural locator, computed by identity_reference.py.
 The 512 prisms that mirror the invariants corpus (same xorshift stream and
-structure, correctly rounded trigonometry) are recorded as a SHA-256 digest of
-their sorted rows; explicit cases are recorded row by row. No Rust result
+structure, correctly rounded trigonometry) are recorded as an FNV-1a-128 digest
+of their newline-joined sorted rows; explicit cases are recorded row by row. No Rust result
 supplies an expectation.
 """
 import argparse
-import hashlib
 from pathlib import Path
 
 from brep_reference import cos_rn, sin_rn
 from identity_reference import (Boundary, Case, Derivation, encode_case, entity_text,
-                                extrude_entities, hexid)
+                                extrude_entities, fnv128, hexid)
 
 ROOT = Path(__file__).resolve().parents[1]
 TAU = 6.283185307179586
@@ -106,7 +105,7 @@ def explicit():
     for k in range(4):
         cases.append(Case(f'holes_{k}', tol, 8, tilted, 0.0, 3.0, [Boundary(points=outer)]+holes[:k]))
     lab_holes = [labelled(square((-5.0, -5.0), 1.0), 500),
-                 Boundary(circle=(5.0, 5.0, 1.5), labels=(600, [601], [701])),
+                 Boundary(circle=(5.0, 5.0, 1.5), labels=(650, [651], [751])),
                  labelled(square((5.0, -5.0), 1.0)[::-1], 800)]
     cases.append(Case('holes_3_labelled', tol, 8, tilted, 0.0, 3.0, [labelled(outer, 100)]+lab_holes))
     cases.append(Case('holes_3_reversed_direction', tol, 8, tilted, 3.0, 0.0,
@@ -179,7 +178,7 @@ def generate():
             expected.append(f'{c.name}\t{row}')
     for c in corpus_cases:
         rows = sorted(entity_text(e) for e in extrude_entities(c))
-        digest = hashlib.sha256('\n'.join(rows).encode()).hexdigest()
+        digest = fnv128('\n'.join(rows).encode()).hex()
         expected.append(f'{c.name}\tdigest {len(rows)} {digest}')
     return cases, {
         'identity-vectors.tsv': vectors(),

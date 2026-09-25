@@ -152,3 +152,10 @@ path = "fuzz_targets/brep_validation.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "identity"
+path = "fuzz_targets/identity.rs"
+test = false
+doc = false
+bench = false

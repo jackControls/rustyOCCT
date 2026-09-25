@@ -1,4 +1,4 @@
-use rusty_occt::topology::{FaceOrigin, Surface};
+use rusty_occt::topology::{FaceId, FaceOrigin, Surface};
 use rusty_occt::*;
 use std::f64::consts::{FRAC_PI_2, PI};
 
@@ -290,8 +290,14 @@ fn winding_and_duplicate_closure_do_not_change_the_solid() {
     let b = Solid::extrude(profile(b, vec![]), Frame3::xy(), 7., -3.).unwrap();
     assert_eq!(a.mass_properties(), b.mass_properties());
     assert_eq!(a.bounds(), b.bounds());
-    assert_eq!(a.topology().faces()[0].origin, FaceOrigin::StartCap);
-    assert_eq!(b.topology().faces()[0].origin, FaceOrigin::EndCap);
+    assert_eq!(
+        a.topology().face_origin(FaceId::new(0)),
+        Some(FaceOrigin::StartCap)
+    );
+    assert_eq!(
+        b.topology().face_origin(FaceId::new(0)),
+        Some(FaceOrigin::EndCap)
+    );
     close(b.topology().faces()[0].normal(Point2::default()).z, -1.);
 }
 
@@ -326,20 +332,18 @@ fn arbitrary_plane_and_rigid_motion_preserve_geometry() {
         restored.mass_properties().centroid,
         solid.mass_properties().centroid,
     );
-    assert_eq!(
-        restored
-            .topology()
-            .faces()
-            .iter()
-            .map(|f| f.origin)
-            .collect::<Vec<_>>(),
-        solid
-            .topology()
-            .faces()
-            .iter()
-            .map(|f| f.origin)
+    let origins = |s: &Solid| {
+        s.topology()
+            .face_ids()
+            .map(|f| s.topology().face_origin(f))
             .collect::<Vec<_>>()
-    );
+    };
+    assert_eq!(origins(&restored), origins(&solid));
+    // Rigid motion keeps every id and derivation.
+    for moved in [&moved, &restored] {
+        assert_eq!(moved.topology().body_id(), solid.topology().body_id());
+        assert!(moved.topology().ids().eq(solid.topology().ids()));
+    }
 }
 
 #[test]
@@ -557,7 +561,8 @@ fn every_wall_normal_points_out_of_material_including_holes() {
     )
     .unwrap();
     let solid = Solid::extrude(profile(outer, holes), frame, 3., -2.).unwrap();
-    for face in solid.topology().faces().iter().skip(2) {
+    for (index, face) in solid.topology().faces().iter().enumerate().skip(2) {
+        let origin = solid.topology().face_origin(FaceId::new(index));
         let corners = face.loops[0]
             .iter()
             .map(|c| c.pcurve.point(0.0))
@@ -571,14 +576,12 @@ fn every_wall_normal_points_out_of_material_including_holes() {
         assert_eq!(
             solid.classify(on_face + normal * 1e-4).unwrap(),
             Location::Outside,
-            "{:?}",
-            face.origin
+            "{origin:?}"
         );
         assert_eq!(
             solid.classify(on_face + normal * -1e-4).unwrap(),
             Location::Inside,
-            "{:?}",
-            face.origin
+            "{origin:?}"
         );
     }
 }

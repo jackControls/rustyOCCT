@@ -2,9 +2,17 @@
 //!
 //! Edges are shared by oriented face uses. Each use retains its own parameter
 //! curve, including the two distinct parameter curves of a cylindrical seam.
-//! IDs are body-local indices, not persistent names across arbitrary edits.
+//! Slots (`VertexId`, `EdgeId`, `FaceId`) are dense body-local indices. Every
+//! entity also has a value [`EntityId`] derived from how it was made (see
+//! `identity.rs`), with maps between slots and ids.
+use crate::history::{EntityInfo, EntitySet, Geometry};
+use crate::identity::{
+    Derivation, EntityId, EntityKind, InputLabel, OperationId, OperationKind, Parent,
+    ProfileElement, Role,
+};
 use crate::profile::BoundaryKind;
 use crate::{Error, Frame3, Point2, Point3, Profile, Result, Tolerance, Vec3};
+use std::collections::BTreeMap;
 use std::f64::consts::TAU;
 
 mod validate;
@@ -27,6 +35,85 @@ macro_rules! index_type {
 index_type!(VertexId);
 index_type!(EdgeId);
 index_type!(FaceId);
+
+/// An entity's body-local position.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Slot {
+    Vertex(VertexId),
+    Edge(EdgeId),
+    Face(FaceId),
+}
+
+/// Ids, retained derivations and the slot maps of one body.
+#[derive(Debug, Clone, PartialEq)]
+struct Identity {
+    body: EntityId,
+    body_derivation: Derivation,
+    vertices: Vec<EntityId>,
+    edges: Vec<EntityId>,
+    faces: Vec<EntityId>,
+    derivations: BTreeMap<EntityId, Derivation>,
+    slots: BTreeMap<EntityId, Slot>,
+    /// Profile labels, for deriving builder provenance.
+    labels: BTreeMap<InputLabel, (u32, ProfileElement)>,
+}
+
+impl Identity {
+    /// Ids from per-slot derivations; a repeated id is an operation error.
+    fn new(
+        body: Derivation,
+        derivations: Vec<(Slot, Derivation)>,
+        labels: BTreeMap<InputLabel, (u32, ProfileElement)>,
+    ) -> Result<Self> {
+        let mut identity = Self {
+            body: body.id(),
+            body_derivation: body,
+            vertices: Vec::new(),
+            edges: Vec::new(),
+            faces: Vec::new(),
+            derivations: BTreeMap::new(),
+            slots: BTreeMap::new(),
+            labels,
+        };
+        let mut ordered = derivations;
+        ordered.sort_by_key(|(slot, _)| *slot);
+        for (slot, derivation) in ordered {
+            let id = derivation.id();
+            if id == identity.body || identity.slots.insert(id, slot).is_some() {
+                return Err(Error::InvalidTopology("id collision"));
+            }
+            identity.derivations.insert(id, derivation);
+            let list = match slot {
+                Slot::Vertex(v) => (&mut identity.vertices, v.0),
+                Slot::Edge(e) => (&mut identity.edges, e.0),
+                Slot::Face(f) => (&mut identity.faces, f.0),
+            };
+            if list.0.len() != list.1 {
+                return Err(Error::InvalidTopology("slot without a derivation"));
+            }
+            list.0.push(id);
+        }
+        Ok(identity)
+    }
+
+    /// `External` derivations for caller-supplied parts: one per slot.
+    fn external(vertices: usize, edges: usize, faces: usize) -> Result<Self> {
+        let d = |entity, ordinal: usize| Derivation {
+            operation: OperationId::UNSPECIFIED,
+            kind: OperationKind::External,
+            entity,
+            role: Role::External,
+            ordinal: ordinal as u32,
+            parents: Vec::new(),
+        };
+        let slots = (0..vertices)
+            .map(|i| (Slot::Vertex(VertexId(i)), d(EntityKind::Vertex, i)))
+            .chain((0..edges).map(|i| (Slot::Edge(EdgeId(i)), d(EntityKind::Edge, i))))
+            .chain((0..faces).map(|i| (Slot::Face(FaceId(i)), d(EntityKind::Face, i))))
+            .collect();
+        Self::new(d(EntityKind::Body, 0), slots, BTreeMap::new())
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Orientation {
@@ -187,7 +274,6 @@ pub struct Face {
     pub orientation: Orientation,
     /// Outer loop first, then inner loops; traversal follows the oriented face.
     pub loops: Vec<Vec<Coedge>>,
-    pub origin: FaceOrigin,
 }
 
 impl Face {
@@ -203,6 +289,7 @@ pub struct Topology {
     faces: Vec<Face>,
     /// The first shell bounds the solid; later shells bound cavities.
     shells: Vec<Vec<FaceId>>,
+    identity: Identity,
 }
 
 /// Unvalidated boundary data for [`Topology::from_parts`].
@@ -238,12 +325,126 @@ impl Topology {
         if !issues.is_empty() {
             return Err(issues);
         }
+        let identity =
+            Identity::external(parts.vertices.len(), parts.edges.len(), parts.faces.len())
+                .expect("distinct external ordinals give distinct ids");
         Ok(Self {
             vertices: parts.vertices,
             edges: parts.edges,
             faces: parts.faces,
             shells: parts.shells,
+            identity,
         })
+    }
+    /// The body's id; rigid transforms keep it.
+    pub fn body_id(&self) -> EntityId {
+        self.identity.body
+    }
+    pub fn body_derivation(&self) -> &Derivation {
+        &self.identity.body_derivation
+    }
+    pub fn id_of(&self, slot: Slot) -> Option<EntityId> {
+        match slot {
+            Slot::Vertex(v) => self.identity.vertices.get(v.0),
+            Slot::Edge(e) => self.identity.edges.get(e.0),
+            Slot::Face(f) => self.identity.faces.get(f.0),
+        }
+        .copied()
+    }
+    pub fn slot_of(&self, id: EntityId) -> Option<Slot> {
+        self.identity.slots.get(&id).copied()
+    }
+    /// Why the entity has its id.
+    pub fn derivation(&self, id: EntityId) -> Option<&Derivation> {
+        self.identity.derivations.get(&id)
+    }
+    /// Every entity id with its slot, in id order.
+    pub fn ids(&self) -> impl Iterator<Item = (EntityId, Slot)> + '_ {
+        self.identity.slots.iter().map(|(id, slot)| (*id, *slot))
+    }
+    /// Builder provenance, derived from the face's derivation and the
+    /// profile's labels.
+    pub fn face_origin(&self, face: FaceId) -> Option<FaceOrigin> {
+        let derivation = self.derivation(self.id_of(Slot::Face(face))?)?;
+        Some(match derivation.role {
+            Role::StartCap => FaceOrigin::StartCap,
+            Role::EndCap => FaceOrigin::EndCap,
+            Role::Wall => {
+                let (boundary, element) = match derivation.parents.first()? {
+                    Parent::Label(label) => *self.identity.labels.get(label)?,
+                    Parent::Profile { boundary, element } => (*boundary, *element),
+                    Parent::Entity(_) => return None,
+                };
+                let ProfileElement::Segment(segment) = element else {
+                    return None;
+                };
+                FaceOrigin::Wall {
+                    boundary: boundary as usize,
+                    segment: segment as usize,
+                }
+            }
+            _ => FaceOrigin::External,
+        })
+    }
+    /// Every entity as the history checker sees it.
+    pub fn entity_set(&self, tolerance: Tolerance) -> EntitySet {
+        let mut entities = BTreeMap::new();
+        for (id, slot) in self.ids() {
+            let ordinal = self.identity.derivations[&id].ordinal;
+            let vid = |v: VertexId| self.identity.vertices[v.0];
+            let (kind, geometry, structure) = match slot {
+                Slot::Vertex(v) => (
+                    EntityKind::Vertex,
+                    Geometry::Point(self.vertices[v.0].position),
+                    Vec::new(),
+                ),
+                Slot::Edge(e) => {
+                    let edge = &self.edges[e.0];
+                    (
+                        EntityKind::Edge,
+                        Geometry::Curve(edge.curve.clone()),
+                        vec![vec![
+                            (vid(edge.start), Orientation::Forward),
+                            (vid(edge.end), Orientation::Forward),
+                        ]],
+                    )
+                }
+                Slot::Face(f) => {
+                    let face = &self.faces[f.0];
+                    let loops = face
+                        .loops
+                        .iter()
+                        .map(|lp| {
+                            lp.iter()
+                                .map(|u| (self.identity.edges[u.edge.0], u.orientation))
+                                .collect()
+                        })
+                        .collect();
+                    (
+                        EntityKind::Face,
+                        Geometry::Surface {
+                            surface: face.surface.clone(),
+                            orientation: face.orientation,
+                        },
+                        loops,
+                    )
+                }
+            };
+            entities.insert(
+                id,
+                EntityInfo {
+                    kind,
+                    ordinal,
+                    geometry,
+                    structure,
+                },
+            );
+        }
+        EntitySet {
+            body: self.body_id(),
+            tolerance,
+            entities,
+        }
     }
     pub fn shells(&self) -> &[Vec<FaceId>] {
         &self.shells
@@ -329,8 +530,70 @@ impl Topology {
         low: f64,
         high: f64,
         start_is_low: bool,
+        operation: OperationId,
     ) -> Result<Self> {
         let tolerance = profile.tolerance();
+        // Derivations per slot. "Bottom"/"top" roles name the start/end side.
+        let derive = |entity, role, ordinal, parents| Derivation {
+            operation,
+            kind: OperationKind::Extrude,
+            entity,
+            role,
+            ordinal,
+            parents,
+        };
+        let (low_vertex, high_vertex, low_edge, high_edge, low_cap, high_cap, low_seam) =
+            if start_is_low {
+                (
+                    Role::BottomVertex,
+                    Role::TopVertex,
+                    Role::BottomEdge,
+                    Role::TopEdge,
+                    Role::StartCap,
+                    Role::EndCap,
+                    0,
+                )
+            } else {
+                (
+                    Role::TopVertex,
+                    Role::BottomVertex,
+                    Role::TopEdge,
+                    Role::BottomEdge,
+                    Role::EndCap,
+                    Role::StartCap,
+                    1,
+                )
+            };
+        let mut derivations: Vec<(Slot, Derivation)> = Vec::new();
+        let mut labels = BTreeMap::new();
+        let mut cap_parents = Vec::new();
+        for (b, wire) in profile.boundaries().enumerate() {
+            let b = b as u32;
+            match wire.labels() {
+                Some(l) => {
+                    cap_parents.push(Parent::Label(l.boundary));
+                    labels.insert(l.boundary, (b, ProfileElement::Boundary));
+                    for (j, label) in l.segments.iter().enumerate() {
+                        labels.insert(*label, (b, ProfileElement::Segment(j as u32)));
+                    }
+                    for (j, label) in l.vertices.iter().enumerate() {
+                        labels.insert(*label, (b, ProfileElement::Vertex(j as u32)));
+                    }
+                }
+                None => cap_parents.push(Parent::Profile {
+                    boundary: b,
+                    element: ProfileElement::Boundary,
+                }),
+            }
+        }
+        derivations.push((
+            Slot::Face(FaceId(0)),
+            derive(EntityKind::Face, low_cap, 0, cap_parents.clone()),
+        ));
+        derivations.push((
+            Slot::Face(FaceId(1)),
+            derive(EntityKind::Face, high_cap, 0, cap_parents),
+        ));
         let bottom_frame = Frame3::new(
             frame.point(Point2::default(), low),
             -frame.normal(),
@@ -351,27 +614,37 @@ impl Topology {
                     surface: Surface::Plane(bottom_frame),
                     orientation: Orientation::Forward,
                     loops: Vec::new(),
-                    origin: if start_is_low {
-                        FaceOrigin::StartCap
-                    } else {
-                        FaceOrigin::EndCap
-                    },
                 },
                 Face {
                     surface: Surface::Plane(top_frame),
                     orientation: Orientation::Forward,
                     loops: Vec::new(),
-                    origin: if start_is_low {
-                        FaceOrigin::EndCap
-                    } else {
-                        FaceOrigin::StartCap
-                    },
                 },
             ],
             shells: Vec::new(),
+            identity: Identity::new(
+                derive(EntityKind::Body, Role::Body, 0, Vec::new()),
+                Vec::new(),
+                BTreeMap::new(),
+            )?,
         };
         for (boundary, wire) in profile.boundaries().enumerate() {
             let inner = boundary > 0;
+            let b = boundary as u32;
+            let seg = |j: usize| match wire.labels() {
+                Some(l) => Parent::Label(l.segments[j]),
+                None => Parent::Profile {
+                    boundary: b,
+                    element: ProfileElement::Segment(j as u32),
+                },
+            };
+            let vert = |j: usize| match wire.labels() {
+                Some(l) => Parent::Label(l.vertices[j]),
+                None => Parent::Profile {
+                    boundary: b,
+                    element: ProfileElement::Vertex(j as u32),
+                },
+            };
             match &wire.kind {
                 BoundaryKind::Polygon(points) => {
                     let bottom = points
@@ -392,6 +665,29 @@ impl Topology {
                     let vertical = (0..count)
                         .map(|i| topology.add_line(bottom[i], top[i]))
                         .collect::<Vec<_>>();
+                    for j in 0..count {
+                        let (v, e) = (EntityKind::Vertex, EntityKind::Edge);
+                        derivations.push((
+                            Slot::Vertex(bottom[j]),
+                            derive(v, low_vertex, 0, vec![vert(j)]),
+                        ));
+                        derivations.push((
+                            Slot::Vertex(top[j]),
+                            derive(v, high_vertex, 0, vec![vert(j)]),
+                        ));
+                        derivations.push((
+                            Slot::Edge(bottom_edges[j]),
+                            derive(e, low_edge, 0, vec![seg(j)]),
+                        ));
+                        derivations.push((
+                            Slot::Edge(top_edges[j]),
+                            derive(e, high_edge, 0, vec![seg(j)]),
+                        ));
+                        derivations.push((
+                            Slot::Edge(vertical[j]),
+                            derive(e, Role::Vertical, 0, vec![vert(j)]),
+                        ));
+                    }
                     topology.add_cap_loop(0, &bottom_edges, !inner, bottom_frame);
                     topology.add_cap_loop(1, &top_edges, inner, top_frame);
                     for i in 0..count {
@@ -423,14 +719,14 @@ impl Topology {
                                 topology.plane_use(*edge, *orientation, side_frame)
                             })
                             .collect();
+                        derivations.push((
+                            Slot::Face(FaceId(topology.faces.len())),
+                            derive(EntityKind::Face, Role::Wall, 0, vec![seg(i)]),
+                        ));
                         topology.faces.push(Face {
                             surface: Surface::Plane(side_frame),
                             orientation: Orientation::Forward,
                             loops: vec![coedges],
-                            origin: FaceOrigin::Wall {
-                                boundary,
-                                segment: i,
-                            },
                         });
                     }
                 }
@@ -468,6 +764,22 @@ impl Topology {
                         },
                     );
                     let seam = topology.add_line(bottom_vertex, top_vertex);
+                    let (v, e) = (EntityKind::Vertex, EntityKind::Edge);
+                    derivations.push((
+                        Slot::Vertex(bottom_vertex),
+                        derive(v, Role::SeamVertex, low_seam, vec![vert(0)]),
+                    ));
+                    derivations.push((
+                        Slot::Vertex(top_vertex),
+                        derive(v, Role::SeamVertex, 1 - low_seam, vec![vert(0)]),
+                    ));
+                    derivations.push((Slot::Edge(bottom), derive(e, low_edge, 0, vec![seg(0)])));
+                    derivations.push((Slot::Edge(top), derive(e, high_edge, 0, vec![seg(0)])));
+                    derivations.push((Slot::Edge(seam), derive(e, Role::Seam, 0, vec![vert(0)])));
+                    derivations.push((
+                        Slot::Face(FaceId(topology.faces.len())),
+                        derive(EntityKind::Face, Role::Wall, 0, vec![seg(0)]),
+                    ));
                     topology.add_cap_loop(0, &[bottom], !inner, bottom_frame);
                     topology.add_cap_loop(1, &[top], inner, top_frame);
                     let (u0, u1, orientation, opposite) = if inner {
@@ -518,15 +830,28 @@ impl Topology {
                             Orientation::Forward
                         },
                         loops: vec![coedges],
-                        origin: FaceOrigin::Wall {
-                            boundary,
-                            segment: 0,
-                        },
                     });
                 }
             }
         }
         topology.shells = vec![topology.face_ids().collect()];
+        topology.identity = Identity::new(
+            derive(EntityKind::Body, Role::Body, 0, Vec::new()),
+            derivations,
+            labels,
+        )?;
+        let identity = &topology.identity;
+        if (
+            identity.vertices.len(),
+            identity.edges.len(),
+            identity.faces.len(),
+        ) != (
+            topology.vertices.len(),
+            topology.edges.len(),
+            topology.faces.len(),
+        ) {
+            return Err(Error::InvalidTopology("slot without a derivation"));
+        }
         topology.validate(tolerance)?;
         if topology.euler_characteristic() != 2 - 2 * profile.holes().len() as i64 {
             return Err(Error::InvalidTopology("unexpected shell genus"));

@@ -18,7 +18,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear','brep_validation']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear','brep_validation','identity']
 STARTUP_SECONDS = 600
 MAX_STARTUP_SECONDS = 3600
 INPUT_SECONDS = 20
@@ -74,7 +74,13 @@ def seed_corpus(target):
         if not path.exists():
             path.write_bytes(data)
 
-    if target == 'brep_validation':
+    if target == 'identity':
+        # Polygon sides, holes, labels and transforms all vary with the bytes.
+        for k in range(96):
+            data=bytearray((j*97+k*31+7)%256 for j in range(160))
+            save(bytes(data))
+        save(bytes([0]))
+    elif target == 'brep_validation':
         # Every mutation on every base feature (none, round hole, square hole,
         # cavity), outline sizes 3..12 and small, unit and large scales.
         for mutation in range(16):

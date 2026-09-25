@@ -1,8 +1,8 @@
 //! Line protocol written by rust/tools/brep_reference.py::encode, shared by
 //! the fixture test and the native-comparison probe.
 use rusty_occt::topology::{
-    Coedge, Curve2, Curve3, Edge, EdgeId, Face, FaceId, FaceOrigin, Orientation, Surface,
-    TopologyParts, Vertex, VertexId,
+    Coedge, Curve2, Curve3, Edge, EdgeId, Face, FaceId, Orientation, Surface, TopologyParts,
+    Vertex, VertexId,
 };
 use rusty_occt::{Frame3, Point2, Point3, Tolerance, Vec3};
 
@@ -79,7 +79,6 @@ pub fn parse(block: &str) -> (String, f64, TopologyParts) {
                     surface,
                     orientation: orientation(o),
                     loops: Vec::new(),
-                    origin: FaceOrigin::External,
                 });
             }
             "l" => parts.faces.last_mut().unwrap().loops.push(Vec::new()),

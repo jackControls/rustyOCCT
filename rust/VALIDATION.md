@@ -15,7 +15,7 @@ and insphere, 2,417 independent 2D rational fixtures in all six permutations,
 95 general polynomial-root, 284 spline/plane, 118 spline/quadric, 554 proximity, 684 complete linear-set, 636 exact Bézier curve, 745 tensor-patch and 723 knot-editing fixtures,
 10,000 integer-oracle predicate cases and 256 generated prism invariant cases.
 These tests do not depend on OCCT or an application and run in native debug and
-release CI. These deterministic generated tests are separate from the nineteen
+release CI. These deterministic generated tests are separate from the twenty
 [coverage-guided fuzz targets and daily retained-corpus campaigns](FUZZING.md).
 
 Exact root-to-root ordering was accepted at revision `de1d1d43`: 122 debug and
@@ -461,6 +461,22 @@ target checks constructed complete answers. `compare_spline_linear.py` then
 compares native `IntTools_EdgeEdge` observations. See
 [the bridge](SPLINE_LINEAR_INTERSECTIONS.md#native-comparison-bridge).
 No platform acceptance is claimed yet.
+
+## Value identity
+
+`generate_identity_fixtures.py --check` pins the derivation encoding and
+FNV-1a-128 digest with 11 vectors, and computes every entity id of 546
+extrusions from an independent Python enumeration: 34 explicit cases (3–12
+sides, circles, 0–3 holes, both directions, clockwise input, labels absent,
+present, permuted, moved and inserted, the eight `box_at` sign combinations and
+rigid copies) and 512 mirroring the invariants corpus. `identity.rs` locates
+every Rust entity from geometry alone and requires its id, role, ordinal and
+parents to match, before and after every rigid motion. The `identity` fuzz
+target recomputes ids with its own encoder.
+
+There is no native bridge for value identity: OCCT has no value ids. A
+`TopoDS_Shape` is the same shape only while it holds the same `TShape` pointer
+and location, so no native observation can confirm or refute an id.
 
 ## Generic B-rep validation
 

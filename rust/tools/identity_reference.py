@@ -197,6 +197,8 @@ def extrude_entities(c):
     def add(kind, role, parents, locator, ordinal=0):
         ents.append(Entity(kind, Derivation(op, 'extrude', kind, role, ordinal, tuple(parents)), locator))
 
+    labels = [l for b in boundaries if b.labels for l in (b.labels[0], *b.labels[1], *b.labels[2])]
+    assert len(labels) == len(set(labels)), f'{c.name}: duplicate labels'
     cap_parents = []
     for b, boundary in enumerate(boundaries):
         _, labels = stored(boundary, tol)

@@ -1,3 +1,4 @@
+use crate::identity::OperationId;
 use crate::math::finite;
 use crate::profile::BoundaryKind;
 use crate::topology::Topology;
@@ -29,12 +30,26 @@ pub struct Solid {
     topology: Topology,
     mass: MassProperties,
     bounds: Bounds3,
+    operation: OperationId,
 }
 
 impl Solid {
     /// Extrude along the profile frame's normal between two signed offsets.
     /// Either direction is allowed; zero or sub-tolerance thickness is rejected.
+    /// Ids derive from [`OperationId::UNSPECIFIED`]; see [`Solid::extrude_with`].
     pub fn extrude(profile: Profile, frame: Frame3, start: f64, end: f64) -> Result<Self> {
+        Self::extrude_with(OperationId::UNSPECIFIED, profile, frame, start, end)
+    }
+
+    /// [`Solid::extrude`] with a caller operation id, the root of every entity
+    /// id together with the profile's labels (or indices).
+    pub fn extrude_with(
+        operation: OperationId,
+        profile: Profile,
+        frame: Frame3,
+        start: f64,
+        end: f64,
+    ) -> Result<Self> {
         let tolerance = profile.tolerance();
         tolerance.resolve(&[start, end])?;
         let low = start.min(end);
@@ -47,7 +62,7 @@ impl Solid {
         bounds.min.checked(tolerance)?;
         bounds.max.checked(tolerance)?;
         let mass = properties(&profile, frame, low, height)?;
-        let topology = Topology::prism(&profile, frame, low, high, start < end)?;
+        let topology = Topology::prism(&profile, frame, low, high, start < end, operation)?;
         Ok(Self {
             profile,
             frame,
@@ -56,6 +71,7 @@ impl Solid {
             topology,
             mass,
             bounds,
+            operation,
         })
     }
 
@@ -115,6 +131,9 @@ impl Solid {
     pub fn topology(&self) -> &Topology {
         &self.topology
     }
+    pub fn operation(&self) -> OperationId {
+        self.operation
+    }
     pub fn mass_properties(&self) -> MassProperties {
         self.mass
     }
@@ -144,9 +163,10 @@ impl Solid {
     }
 
     /// Rebuilds equivalent analytic geometry in the new frame, retaining
-    /// body-local topology order and builder provenance.
+    /// body-local topology order, builder provenance and every id.
     pub fn transformed(&self, transform: RigidTransform) -> Result<Self> {
-        Self::extrude(
+        Self::extrude_with(
+            self.operation,
             self.profile.clone(),
             self.frame
                 .transformed(transform, self.profile.tolerance())?,
