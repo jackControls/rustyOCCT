@@ -58,7 +58,7 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
 | Contract / use | Required kernel work | Status |
 | --- | --- | --- |
 | Scene recompute | Owned bodies, feature-local errors, atomic operation results and repeatable replay | Immutable standalone solids and typed errors exist; scene/job adapter planned. |
-| Topology references | Face/edge identities, membership, geometry signatures, generated/modified/deleted mappings | Shared topology and extrusion face origins exist. Body-local IDs are not persistent naming. History mappings required before feature migration; contracts in `IDENTITY_AND_HISTORY.md`. |
+| Topology references | Face/edge identities, membership, geometry signatures, generated/modified/deleted mappings | Value ids derived from caller labels and complete checked histories exist for extrusions and rigid transforms (M0–M2 of `IDENTITY_AND_HISTORY.md`, accepted at `34efd36c`). Splits, merges and attributes on real operations (M3–M4) are required before feature migration. |
 | Face/edge metadata | Plane, cylinder, cone, circle, curvature, edge lengths and face signatures | Planes/cylinders/circles retained; DTO signatures and additional queries planned. |
 | Measurement | Bounds, mass/area/centroid/inertia, point classification, extrema/closest points | Bounds, mass properties and point classification supported for current prisms; certified linear-set minimum distances exist. Complete point-to-rational-spline minimum sets are implemented and accepted at `d1206b15`. General B-rep and other curved-pair distance/extrema remain planned. |
 | Exact interference | Occurrence transforms, minimum clearance, closest points, overlap volume | Transform, classifier and certified linear-set distance foundations exist. Solid clearance, common-solid and multi-body queries remain planned. |
@@ -110,7 +110,10 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
    modified and deleted mappings with explicit split/merge ambiguity before
    topology-changing operations. Body-local indices are not persistent names. The identity, history,
    attribute and enclosure contracts and their milestones M0–M5 are specified
-   in `IDENTITY_AND_HISTORY.md`.
+   in `IDENTITY_AND_HISTORY.md`. M0–M2 are accepted: value ids derived from
+   caller labels, and complete, independently checked histories for
+   extrusions and rigid transforms (`34efd36c`); M3 (the first splits and
+   merges) is next.
 3. **Reliable geometry and intersections.** Circular arcs, trimmed curves,
    arbitrary face trimming; extend the existing certified
    curve/surface jets with

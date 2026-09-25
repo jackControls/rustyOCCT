@@ -18,8 +18,9 @@ never verified for completeness, and naming lives in the application framework
 as a heuristic re-selection layer. These are retrofit failures. The kernel has
 one builder and no Booleans, so the decisions below are still cheap.
 
-**Status:** contracts defined; milestones M0–M5 pending. Record acceptance
-evidence per milestone under [Acceptance](#acceptance).
+**Status:** M0, M1 and M2 accepted (value ids, complete checked histories
+and the attribute checker, on extrusions and rigid transforms); M3–M5
+pending. Acceptance evidence per milestone is under [Acceptance](#acceptance).
 
 ## What the kernel promises, and what it does not
 
@@ -495,9 +496,59 @@ Linux, and a clean local 600-second campaign here, in the style of
 `BREP_VALIDATION.md`. A finite corpus does not make the contract complete;
 say what remains.
 
-* M0 — pending
-* M1 — pending
-* M2 — pending
+* **M0 — accepted at `d388158a`.** `identity.rs`, `history.rs` and
+  `attributes.rs` with their checkers; no operation changed. The Rust kernel
+  workflow passed all ten jobs (Linux, macOS and Windows debug/release, Rust
+  1.85, WebAssembly, the original-test bridge and four source-pinned native
+  comparisons) and the fuzzing workflow all nineteen targets. Evidence: the
+  11 fixed vectors in `identity-vectors.tsv` (produced by the independent
+  `identity_reference.py`) plus the published FNV-1a-128 vectors, decoding and
+  malformed-input tests, and `history_contracts.rs`, which triggers every
+  history issue kind on hand-written histories, checks composition laws
+  (identity steps, associativity, split-then-merge is `Modified`, many-to-many
+  is rejected) and the full attribute policy matrix. No native bridge applies.
+* **M1 — accepted at `34efd36c`**, together with M2 (the ids are unchanged by
+  M2; that revision carries both). `identity.rs` in the test suite matches
+  the independent ids, roles, ordinals and parents of 46,734 entities in 546
+  extrusions, each entity located from geometry alone, before and after every
+  rigid motion. The `identity` fuzz target recomputes every id with its own
+  encoder. No native bridge applies: OCCT has no value ids (recorded in
+  `VALIDATION.md`).
+* **M2 — accepted at `34efd36c`.**
+  * Rust kernel workflow: all eleven jobs passed, including the new
+    source-pinned history comparison.
+  * Fuzzing workflow: all twenty-one targets passed. On Linux, `identity`
+    replayed 97 inputs in 70 seconds, then ran 60.08 seconds of mutation
+    (881 executions, 6,178 coverage edges, 641 MB RSS peak); `history`
+    replayed 113 inputs in 71 seconds, then ran 60.07 seconds (2,730
+    executions, 6,933 edges, 630 MB). Neither produced an artifact.
+  * Native history bridge (`compare_history.py`, OCCT 8.1.0 built from the
+    pinned source): 98 matches, 0 reviewed differences and 0 failures on
+    both macOS and Linux; the slowest Linux case took 0.044 seconds. The
+    observations were captured at `427cecb3`, before any Rust identity or
+    history code existed. OCCT's own prism history plus First/Last shapes
+    reached every output entity.
+  * Independent fixtures: 114,890 relations over the same 546 cases
+    (constructions, every transform step and their compositions), each
+    history also passing the independent checker.
+  * Derived DRAW cases: `prism_history_rectangle` and
+    `prism_history_reversed_triangle` pass on the Rust adapter and on native
+    DRAW (OCCT 7.9.3 locally, the Ubuntu 24.04 package in CI). They are
+    derived, not original upstream tests.
+  * Clean local 600-second campaigns at `34efd36c` (AddressSanitizer,
+    standard 20-second/2 GiB limits): `history` completed 600.05 seconds of
+    mutation after 26.17 seconds of replay, with 22,614 executions, 6,968
+    coverage edges and a 794 MB RSS peak; `identity` completed 600.09 seconds
+    after 106.83 seconds of replay, with 6,726 executions, 6,592 edges and an
+    848 MB peak. There were no crash, timeout, OOM, slow-unit or disagreement
+    artifacts. (An earlier `identity` campaign at the M1 commit `bc8f7015`
+    also passed, with 14,350 executions.)
+
+  What remains: histories cover only constructions and rigid motions, so
+  `Split`, `Merged` and `Deleted` have been exercised only on hand-written and
+  fuzz-synthesized histories, not produced by an operation (M3). Attribute
+  storage and outcomes on real operations are M4, and enclosures M5. Ids are
+  not yet persisted outside the process (no native format).
 * M3 — pending
 * M4 — pending
 * M5 — pending

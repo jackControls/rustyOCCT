@@ -9,12 +9,15 @@
 //! validate their inputs and return errors; there is no C++ runtime dependency.
 //!
 //! ```
+//! use rusty_occt::identity::OperationId;
 //! use rusty_occt::{Boundary, Frame3, Point2, Profile, Solid, Tolerance};
 //! let tolerance = Tolerance::default();
 //! let outer = Boundary::rectangle(40.0, 20.0, tolerance)?;
 //! let hole = Boundary::circle(Point2::new(10.0, 10.0), 3.0, tolerance)?;
 //! let profile = Profile::new(outer, vec![hole], tolerance)?;
-//! let plate = Solid::extrude(profile, Frame3::xy(), 0.0, 5.0)?;
+//! let (plate, history) = Solid::extrude_with(OperationId(1), profile, Frame3::xy(), 0.0, 5.0)?;
+//! // Every vertex, edge and face is generated from a profile element.
+//! assert_eq!(history.relations.len(), plate.topology().ids().count());
 //! plate.topology().validate(tolerance)?;
 //! assert_eq!(plate.topology().faces().len(), 7);
 //! # Ok::<(), rusty_occt::Error>(())
