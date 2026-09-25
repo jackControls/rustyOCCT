@@ -1,0 +1,1895 @@
+# case	id kind role ordinal parents locator (explicit) or digest (corpus)
+polygon_3	2958f71aa862bed0ba8b2c50803f2850 vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+polygon_3	29606acfb462bed0ba8b2c52cb1719c1 vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+polygon_3	2967de84c062bed0ba8b2c5515ef0b32 vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+polygon_3	29c3ea84e403c1866d0680fb96752d34 face wall 0 P0.s2 0 segment 2 both
+polygon_3	29d2d1eefc03c1866d0681002c251016 face wall 0 P0.s0 0 segment 0 both
+polygon_3	29da45a40803c1866d06810276fd0187 face wall 0 P0.s1 0 segment 1 both
+polygon_3	6e8f3c5ba50efaabc964e574bc8693b6 face end_cap 0 P0.b0 cap end
+polygon_3	749654a4de057d82e5c5cda30eaff6ff face start_cap 0 P0.b0 cap start
+polygon_3	929eff9b9aada398e599a73b90078d8c edge bottom_edge 0 P0.s2 0 segment 2 start
+polygon_3	92ade705b2ada398e599a74025b7706e edge bottom_edge 0 P0.s0 0 segment 0 start
+polygon_3	92b55ababeada398e599a742708f61df edge bottom_edge 0 P0.s1 0 segment 1 start
+polygon_3	e2d9157484b8dcbe41f80e8482f718a8 edge top_edge 0 P0.s1 0 segment 1 end
+polygon_3	e2e0892990b8dcbe41f80e86cdcf0a19 edge top_edge 0 P0.s0 0 segment 0 end
+polygon_3	e2ef7093a8b8dcbe41f80e8b637eecfb edge top_edge 0 P0.s2 0 segment 2 end
+polygon_3	f003dcfb1c5785ab5e2ccaa971e3d7d9 vertex top_vertex 0 P0.v2 0 vertex 2 end
+polygon_3	f00b50b0285785ab5e2ccaabbcbbc94a vertex top_vertex 0 P0.v1 0 vertex 1 end
+polygon_3	f012c465345785ab5e2ccaae0793babb vertex top_vertex 0 P0.v0 0 vertex 0 end
+polygon_3	f4566574f2af5f955e58f984ecd691fc edge vertical 0 P0.v1 0 vertex 1 both
+polygon_3	f45dd929feaf5f955e58f98737ae836d edge vertical 0 P0.v0 0 vertex 0 both
+polygon_3	f46cc09416af5f955e58f98bcd5e664f edge vertical 0 P0.v2 0 vertex 2 both
+polygon_4	2958f71aa862bed0ba8b2c50803f2850 vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+polygon_4	29606acfb462bed0ba8b2c52cb1719c1 vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+polygon_4	2967de84c062bed0ba8b2c5515ef0b32 vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+polygon_4	296f5239cc62bed0ba8b2c5760c6fca3 vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+polygon_4	29c3ea84e403c1866d0680fb96752d34 face wall 0 P0.s2 0 segment 2 both
+polygon_4	29cb5e39f003c1866d0680fde14d1ea5 face wall 0 P0.s3 0 segment 3 both
+polygon_4	29d2d1eefc03c1866d0681002c251016 face wall 0 P0.s0 0 segment 0 both
+polygon_4	29da45a40803c1866d06810276fd0187 face wall 0 P0.s1 0 segment 1 both
+polygon_4	6e8f3c5ba50efaabc964e574bc8693b6 face end_cap 0 P0.b0 cap end
+polygon_4	749654a4de057d82e5c5cda30eaff6ff face start_cap 0 P0.b0 cap start
+polygon_4	929eff9b9aada398e599a73b90078d8c edge bottom_edge 0 P0.s2 0 segment 2 start
+polygon_4	92a67350a6ada398e599a73ddadf7efd edge bottom_edge 0 P0.s3 0 segment 3 start
+polygon_4	92ade705b2ada398e599a74025b7706e edge bottom_edge 0 P0.s0 0 segment 0 start
+polygon_4	92b55ababeada398e599a742708f61df edge bottom_edge 0 P0.s1 0 segment 1 start
+polygon_4	e2d9157484b8dcbe41f80e8482f718a8 edge top_edge 0 P0.s1 0 segment 1 end
+polygon_4	e2e0892990b8dcbe41f80e86cdcf0a19 edge top_edge 0 P0.s0 0 segment 0 end
+polygon_4	e2e7fcde9cb8dcbe41f80e8918a6fb8a edge top_edge 0 P0.s3 0 segment 3 end
+polygon_4	e2ef7093a8b8dcbe41f80e8b637eecfb edge top_edge 0 P0.s2 0 segment 2 end
+polygon_4	effc6946105785ab5e2ccaa7270be668 vertex top_vertex 0 P0.v3 0 vertex 3 end
+polygon_4	f003dcfb1c5785ab5e2ccaa971e3d7d9 vertex top_vertex 0 P0.v2 0 vertex 2 end
+polygon_4	f00b50b0285785ab5e2ccaabbcbbc94a vertex top_vertex 0 P0.v1 0 vertex 1 end
+polygon_4	f012c465345785ab5e2ccaae0793babb vertex top_vertex 0 P0.v0 0 vertex 0 end
+polygon_4	f4566574f2af5f955e58f984ecd691fc edge vertical 0 P0.v1 0 vertex 1 both
+polygon_4	f45dd929feaf5f955e58f98737ae836d edge vertical 0 P0.v0 0 vertex 0 both
+polygon_4	f4654cdf0aaf5f955e58f989828674de edge vertical 0 P0.v3 0 vertex 3 both
+polygon_4	f46cc09416af5f955e58f98bcd5e664f edge vertical 0 P0.v2 0 vertex 2 both
+polygon_5	2958f71aa862bed0ba8b2c50803f2850 vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+polygon_5	29606acfb462bed0ba8b2c52cb1719c1 vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+polygon_5	2967de84c062bed0ba8b2c5515ef0b32 vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+polygon_5	296f5239cc62bed0ba8b2c5760c6fca3 vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+polygon_5	2976c5eed862bed0ba8b2c59ab9eee14 vertex bottom_vertex 0 P0.v4 0 vertex 4 start
+polygon_5	29b5031acc03c1866d0680f700c54a52 face wall 0 P0.s4 0 segment 4 both
+polygon_5	29c3ea84e403c1866d0680fb96752d34 face wall 0 P0.s2 0 segment 2 both
+polygon_5	29cb5e39f003c1866d0680fde14d1ea5 face wall 0 P0.s3 0 segment 3 both
+polygon_5	29d2d1eefc03c1866d0681002c251016 face wall 0 P0.s0 0 segment 0 both
+polygon_5	29da45a40803c1866d06810276fd0187 face wall 0 P0.s1 0 segment 1 both
+polygon_5	6e8f3c5ba50efaabc964e574bc8693b6 face end_cap 0 P0.b0 cap end
+polygon_5	749654a4de057d82e5c5cda30eaff6ff face start_cap 0 P0.b0 cap start
+polygon_5	9290183182ada398e599a736fa57aaaa edge bottom_edge 0 P0.s4 0 segment 4 start
+polygon_5	929eff9b9aada398e599a73b90078d8c edge bottom_edge 0 P0.s2 0 segment 2 start
+polygon_5	92a67350a6ada398e599a73ddadf7efd edge bottom_edge 0 P0.s3 0 segment 3 start
+polygon_5	92ade705b2ada398e599a74025b7706e edge bottom_edge 0 P0.s0 0 segment 0 start
+polygon_5	92b55ababeada398e599a742708f61df edge bottom_edge 0 P0.s1 0 segment 1 start
+polygon_5	e2d9157484b8dcbe41f80e8482f718a8 edge top_edge 0 P0.s1 0 segment 1 end
+polygon_5	e2e0892990b8dcbe41f80e86cdcf0a19 edge top_edge 0 P0.s0 0 segment 0 end
+polygon_5	e2e7fcde9cb8dcbe41f80e8918a6fb8a edge top_edge 0 P0.s3 0 segment 3 end
+polygon_5	e2ef7093a8b8dcbe41f80e8b637eecfb edge top_edge 0 P0.s2 0 segment 2 end
+polygon_5	e2fe57fdc0b8dcbe41f80e8ff92ecfdd edge top_edge 0 P0.s4 0 segment 4 end
+polygon_5	effc6946105785ab5e2ccaa7270be668 vertex top_vertex 0 P0.v3 0 vertex 3 end
+polygon_5	f003dcfb1c5785ab5e2ccaa971e3d7d9 vertex top_vertex 0 P0.v2 0 vertex 2 end
+polygon_5	f00b50b0285785ab5e2ccaabbcbbc94a vertex top_vertex 0 P0.v1 0 vertex 1 end
+polygon_5	f012c465345785ab5e2ccaae0793babb vertex top_vertex 0 P0.v0 0 vertex 0 end
+polygon_5	f0309339645785ab5e2ccab732f3807f vertex top_vertex 0 P0.v4 0 vertex 4 end
+polygon_5	f4400a55ceaf5f955e58f97e0c4ebda9 edge vertical 0 P0.v4 0 vertex 4 both
+polygon_5	f4566574f2af5f955e58f984ecd691fc edge vertical 0 P0.v1 0 vertex 1 both
+polygon_5	f45dd929feaf5f955e58f98737ae836d edge vertical 0 P0.v0 0 vertex 0 both
+polygon_5	f4654cdf0aaf5f955e58f989828674de edge vertical 0 P0.v3 0 vertex 3 both
+polygon_5	f46cc09416af5f955e58f98bcd5e664f edge vertical 0 P0.v2 0 vertex 2 both
+polygon_6	2958f71aa862bed0ba8b2c50803f2850 vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+polygon_6	29606acfb462bed0ba8b2c52cb1719c1 vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+polygon_6	2967de84c062bed0ba8b2c5515ef0b32 vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+polygon_6	296f5239cc62bed0ba8b2c5760c6fca3 vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+polygon_6	2976c5eed862bed0ba8b2c59ab9eee14 vertex bottom_vertex 0 P0.v4 0 vertex 4 start
+polygon_6	297e39a3e462bed0ba8b2c5bf676df85 vertex bottom_vertex 0 P0.v5 0 vertex 5 start
+polygon_6	29b5031acc03c1866d0680f700c54a52 face wall 0 P0.s4 0 segment 4 both
+polygon_6	29bc76cfd803c1866d0680f94b9d3bc3 face wall 0 P0.s5 0 segment 5 both
+polygon_6	29c3ea84e403c1866d0680fb96752d34 face wall 0 P0.s2 0 segment 2 both
+polygon_6	29cb5e39f003c1866d0680fde14d1ea5 face wall 0 P0.s3 0 segment 3 both
+polygon_6	29d2d1eefc03c1866d0681002c251016 face wall 0 P0.s0 0 segment 0 both
+polygon_6	29da45a40803c1866d06810276fd0187 face wall 0 P0.s1 0 segment 1 both
+polygon_6	6e8f3c5ba50efaabc964e574bc8693b6 face end_cap 0 P0.b0 cap end
+polygon_6	749654a4de057d82e5c5cda30eaff6ff face start_cap 0 P0.b0 cap start
+polygon_6	9290183182ada398e599a736fa57aaaa edge bottom_edge 0 P0.s4 0 segment 4 start
+polygon_6	92978be68eada398e599a739452f9c1b edge bottom_edge 0 P0.s5 0 segment 5 start
+polygon_6	929eff9b9aada398e599a73b90078d8c edge bottom_edge 0 P0.s2 0 segment 2 start
+polygon_6	92a67350a6ada398e599a73ddadf7efd edge bottom_edge 0 P0.s3 0 segment 3 start
+polygon_6	92ade705b2ada398e599a74025b7706e edge bottom_edge 0 P0.s0 0 segment 0 start
+polygon_6	92b55ababeada398e599a742708f61df edge bottom_edge 0 P0.s1 0 segment 1 start
+polygon_6	e2d9157484b8dcbe41f80e8482f718a8 edge top_edge 0 P0.s1 0 segment 1 end
+polygon_6	e2e0892990b8dcbe41f80e86cdcf0a19 edge top_edge 0 P0.s0 0 segment 0 end
+polygon_6	e2e7fcde9cb8dcbe41f80e8918a6fb8a edge top_edge 0 P0.s3 0 segment 3 end
+polygon_6	e2ef7093a8b8dcbe41f80e8b637eecfb edge top_edge 0 P0.s2 0 segment 2 end
+polygon_6	e2f6e448b4b8dcbe41f80e8dae56de6c edge top_edge 0 P0.s5 0 segment 5 end
+polygon_6	e2fe57fdc0b8dcbe41f80e8ff92ecfdd edge top_edge 0 P0.s4 0 segment 4 end
+polygon_6	effc6946105785ab5e2ccaa7270be668 vertex top_vertex 0 P0.v3 0 vertex 3 end
+polygon_6	f003dcfb1c5785ab5e2ccaa971e3d7d9 vertex top_vertex 0 P0.v2 0 vertex 2 end
+polygon_6	f00b50b0285785ab5e2ccaabbcbbc94a vertex top_vertex 0 P0.v1 0 vertex 1 end
+polygon_6	f012c465345785ab5e2ccaae0793babb vertex top_vertex 0 P0.v0 0 vertex 0 end
+polygon_6	f0291f84585785ab5e2ccab4e81b8f0e vertex top_vertex 0 P0.v5 0 vertex 5 end
+polygon_6	f0309339645785ab5e2ccab732f3807f vertex top_vertex 0 P0.v4 0 vertex 4 end
+polygon_6	f43896a0c2af5f955e58f97bc176cc38 edge vertical 0 P0.v5 0 vertex 5 both
+polygon_6	f4400a55ceaf5f955e58f97e0c4ebda9 edge vertical 0 P0.v4 0 vertex 4 both
+polygon_6	f4566574f2af5f955e58f984ecd691fc edge vertical 0 P0.v1 0 vertex 1 both
+polygon_6	f45dd929feaf5f955e58f98737ae836d edge vertical 0 P0.v0 0 vertex 0 both
+polygon_6	f4654cdf0aaf5f955e58f989828674de edge vertical 0 P0.v3 0 vertex 3 both
+polygon_6	f46cc09416af5f955e58f98bcd5e664f edge vertical 0 P0.v2 0 vertex 2 both
+polygon_7	2958f71aa862bed0ba8b2c50803f2850 vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+polygon_7	29606acfb462bed0ba8b2c52cb1719c1 vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+polygon_7	2967de84c062bed0ba8b2c5515ef0b32 vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+polygon_7	296f5239cc62bed0ba8b2c5760c6fca3 vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+polygon_7	2976c5eed862bed0ba8b2c59ab9eee14 vertex bottom_vertex 0 P0.v4 0 vertex 4 start
+polygon_7	297e39a3e462bed0ba8b2c5bf676df85 vertex bottom_vertex 0 P0.v5 0 vertex 5 start
+polygon_7	2985ad58f062bed0ba8b2c5e414ed0f6 vertex bottom_vertex 0 P0.v6 0 vertex 6 start
+polygon_7	29a61bb0b403c1866d0680f26b156770 face wall 0 P0.s6 0 segment 6 both
+polygon_7	29b5031acc03c1866d0680f700c54a52 face wall 0 P0.s4 0 segment 4 both
+polygon_7	29bc76cfd803c1866d0680f94b9d3bc3 face wall 0 P0.s5 0 segment 5 both
+polygon_7	29c3ea84e403c1866d0680fb96752d34 face wall 0 P0.s2 0 segment 2 both
+polygon_7	29cb5e39f003c1866d0680fde14d1ea5 face wall 0 P0.s3 0 segment 3 both
+polygon_7	29d2d1eefc03c1866d0681002c251016 face wall 0 P0.s0 0 segment 0 both
+polygon_7	29da45a40803c1866d06810276fd0187 face wall 0 P0.s1 0 segment 1 both
+polygon_7	6e8f3c5ba50efaabc964e574bc8693b6 face end_cap 0 P0.b0 cap end
+polygon_7	749654a4de057d82e5c5cda30eaff6ff face start_cap 0 P0.b0 cap start
+polygon_7	928130c76aada398e599a73264a7c7c8 edge bottom_edge 0 P0.s6 0 segment 6 start
+polygon_7	9290183182ada398e599a736fa57aaaa edge bottom_edge 0 P0.s4 0 segment 4 start
+polygon_7	92978be68eada398e599a739452f9c1b edge bottom_edge 0 P0.s5 0 segment 5 start
+polygon_7	929eff9b9aada398e599a73b90078d8c edge bottom_edge 0 P0.s2 0 segment 2 start
+polygon_7	92a67350a6ada398e599a73ddadf7efd edge bottom_edge 0 P0.s3 0 segment 3 start
+polygon_7	92ade705b2ada398e599a74025b7706e edge bottom_edge 0 P0.s0 0 segment 0 start
+polygon_7	92b55ababeada398e599a742708f61df edge bottom_edge 0 P0.s1 0 segment 1 start
+polygon_7	e2d9157484b8dcbe41f80e8482f718a8 edge top_edge 0 P0.s1 0 segment 1 end
+polygon_7	e2e0892990b8dcbe41f80e86cdcf0a19 edge top_edge 0 P0.s0 0 segment 0 end
+polygon_7	e2e7fcde9cb8dcbe41f80e8918a6fb8a edge top_edge 0 P0.s3 0 segment 3 end
+polygon_7	e2ef7093a8b8dcbe41f80e8b637eecfb edge top_edge 0 P0.s2 0 segment 2 end
+polygon_7	e2f6e448b4b8dcbe41f80e8dae56de6c edge top_edge 0 P0.s5 0 segment 5 end
+polygon_7	e2fe57fdc0b8dcbe41f80e8ff92ecfdd edge top_edge 0 P0.s4 0 segment 4 end
+polygon_7	e30d3f67d8b8dcbe41f80e948edeb2bf edge top_edge 0 P0.s6 0 segment 6 end
+polygon_7	effc6946105785ab5e2ccaa7270be668 vertex top_vertex 0 P0.v3 0 vertex 3 end
+polygon_7	f003dcfb1c5785ab5e2ccaa971e3d7d9 vertex top_vertex 0 P0.v2 0 vertex 2 end
+polygon_7	f00b50b0285785ab5e2ccaabbcbbc94a vertex top_vertex 0 P0.v1 0 vertex 1 end
+polygon_7	f012c465345785ab5e2ccaae0793babb vertex top_vertex 0 P0.v0 0 vertex 0 end
+polygon_7	f021abcf4c5785ab5e2ccab29d439d9d vertex top_vertex 0 P0.v6 0 vertex 6 end
+polygon_7	f0291f84585785ab5e2ccab4e81b8f0e vertex top_vertex 0 P0.v5 0 vertex 5 end
+polygon_7	f0309339645785ab5e2ccab732f3807f vertex top_vertex 0 P0.v4 0 vertex 4 end
+polygon_7	f43896a0c2af5f955e58f97bc176cc38 edge vertical 0 P0.v5 0 vertex 5 both
+polygon_7	f4400a55ceaf5f955e58f97e0c4ebda9 edge vertical 0 P0.v4 0 vertex 4 both
+polygon_7	f44ef1bfe6af5f955e58f982a1fea08b edge vertical 0 P0.v6 0 vertex 6 both
+polygon_7	f4566574f2af5f955e58f984ecd691fc edge vertical 0 P0.v1 0 vertex 1 both
+polygon_7	f45dd929feaf5f955e58f98737ae836d edge vertical 0 P0.v0 0 vertex 0 both
+polygon_7	f4654cdf0aaf5f955e58f989828674de edge vertical 0 P0.v3 0 vertex 3 both
+polygon_7	f46cc09416af5f955e58f98bcd5e664f edge vertical 0 P0.v2 0 vertex 2 both
+polygon_8	2958f71aa862bed0ba8b2c50803f2850 vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+polygon_8	29606acfb462bed0ba8b2c52cb1719c1 vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+polygon_8	2967de84c062bed0ba8b2c5515ef0b32 vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+polygon_8	296f5239cc62bed0ba8b2c5760c6fca3 vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+polygon_8	2976c5eed862bed0ba8b2c59ab9eee14 vertex bottom_vertex 0 P0.v4 0 vertex 4 start
+polygon_8	297e39a3e462bed0ba8b2c5bf676df85 vertex bottom_vertex 0 P0.v5 0 vertex 5 start
+polygon_8	2985ad58f062bed0ba8b2c5e414ed0f6 vertex bottom_vertex 0 P0.v6 0 vertex 6 start
+polygon_8	298d210dfc62bed0ba8b2c608c26c267 vertex bottom_vertex 0 P0.v7 0 vertex 7 start
+polygon_8	29a61bb0b403c1866d0680f26b156770 face wall 0 P0.s6 0 segment 6 both
+polygon_8	29ad8f65c003c1866d0680f4b5ed58e1 face wall 0 P0.s7 0 segment 7 both
+polygon_8	29b5031acc03c1866d0680f700c54a52 face wall 0 P0.s4 0 segment 4 both
+polygon_8	29bc76cfd803c1866d0680f94b9d3bc3 face wall 0 P0.s5 0 segment 5 both
+polygon_8	29c3ea84e403c1866d0680fb96752d34 face wall 0 P0.s2 0 segment 2 both
+polygon_8	29cb5e39f003c1866d0680fde14d1ea5 face wall 0 P0.s3 0 segment 3 both
+polygon_8	29d2d1eefc03c1866d0681002c251016 face wall 0 P0.s0 0 segment 0 both
+polygon_8	29da45a40803c1866d06810276fd0187 face wall 0 P0.s1 0 segment 1 both
+polygon_8	6e8f3c5ba50efaabc964e574bc8693b6 face end_cap 0 P0.b0 cap end
+polygon_8	749654a4de057d82e5c5cda30eaff6ff face start_cap 0 P0.b0 cap start
+polygon_8	928130c76aada398e599a73264a7c7c8 edge bottom_edge 0 P0.s6 0 segment 6 start
+polygon_8	9288a47c76ada398e599a734af7fb939 edge bottom_edge 0 P0.s7 0 segment 7 start
+polygon_8	9290183182ada398e599a736fa57aaaa edge bottom_edge 0 P0.s4 0 segment 4 start
+polygon_8	92978be68eada398e599a739452f9c1b edge bottom_edge 0 P0.s5 0 segment 5 start
+polygon_8	929eff9b9aada398e599a73b90078d8c edge bottom_edge 0 P0.s2 0 segment 2 start
+polygon_8	92a67350a6ada398e599a73ddadf7efd edge bottom_edge 0 P0.s3 0 segment 3 start
+polygon_8	92ade705b2ada398e599a74025b7706e edge bottom_edge 0 P0.s0 0 segment 0 start
+polygon_8	92b55ababeada398e599a742708f61df edge bottom_edge 0 P0.s1 0 segment 1 start
+polygon_8	e2d9157484b8dcbe41f80e8482f718a8 edge top_edge 0 P0.s1 0 segment 1 end
+polygon_8	e2e0892990b8dcbe41f80e86cdcf0a19 edge top_edge 0 P0.s0 0 segment 0 end
+polygon_8	e2e7fcde9cb8dcbe41f80e8918a6fb8a edge top_edge 0 P0.s3 0 segment 3 end
+polygon_8	e2ef7093a8b8dcbe41f80e8b637eecfb edge top_edge 0 P0.s2 0 segment 2 end
+polygon_8	e2f6e448b4b8dcbe41f80e8dae56de6c edge top_edge 0 P0.s5 0 segment 5 end
+polygon_8	e2fe57fdc0b8dcbe41f80e8ff92ecfdd edge top_edge 0 P0.s4 0 segment 4 end
+polygon_8	e305cbb2ccb8dcbe41f80e924406c14e edge top_edge 0 P0.s7 0 segment 7 end
+polygon_8	e30d3f67d8b8dcbe41f80e948edeb2bf edge top_edge 0 P0.s6 0 segment 6 end
+polygon_8	effc6946105785ab5e2ccaa7270be668 vertex top_vertex 0 P0.v3 0 vertex 3 end
+polygon_8	f003dcfb1c5785ab5e2ccaa971e3d7d9 vertex top_vertex 0 P0.v2 0 vertex 2 end
+polygon_8	f00b50b0285785ab5e2ccaabbcbbc94a vertex top_vertex 0 P0.v1 0 vertex 1 end
+polygon_8	f012c465345785ab5e2ccaae0793babb vertex top_vertex 0 P0.v0 0 vertex 0 end
+polygon_8	f01a381a405785ab5e2ccab0526bac2c vertex top_vertex 0 P0.v7 0 vertex 7 end
+polygon_8	f021abcf4c5785ab5e2ccab29d439d9d vertex top_vertex 0 P0.v6 0 vertex 6 end
+polygon_8	f0291f84585785ab5e2ccab4e81b8f0e vertex top_vertex 0 P0.v5 0 vertex 5 end
+polygon_8	f0309339645785ab5e2ccab732f3807f vertex top_vertex 0 P0.v4 0 vertex 4 end
+polygon_8	f43896a0c2af5f955e58f97bc176cc38 edge vertical 0 P0.v5 0 vertex 5 both
+polygon_8	f4400a55ceaf5f955e58f97e0c4ebda9 edge vertical 0 P0.v4 0 vertex 4 both
+polygon_8	f4477e0adaaf5f955e58f9805726af1a edge vertical 0 P0.v7 0 vertex 7 both
+polygon_8	f44ef1bfe6af5f955e58f982a1fea08b edge vertical 0 P0.v6 0 vertex 6 both
+polygon_8	f4566574f2af5f955e58f984ecd691fc edge vertical 0 P0.v1 0 vertex 1 both
+polygon_8	f45dd929feaf5f955e58f98737ae836d edge vertical 0 P0.v0 0 vertex 0 both
+polygon_8	f4654cdf0aaf5f955e58f989828674de edge vertical 0 P0.v3 0 vertex 3 both
+polygon_8	f46cc09416af5f955e58f98bcd5e664f edge vertical 0 P0.v2 0 vertex 2 both
+polygon_9	2958f71aa862bed0ba8b2c50803f2850 vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+polygon_9	29606acfb462bed0ba8b2c52cb1719c1 vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+polygon_9	2967de84c062bed0ba8b2c5515ef0b32 vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+polygon_9	296f5239cc62bed0ba8b2c5760c6fca3 vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+polygon_9	2976c5eed862bed0ba8b2c59ab9eee14 vertex bottom_vertex 0 P0.v4 0 vertex 4 start
+polygon_9	297e39a3e462bed0ba8b2c5bf676df85 vertex bottom_vertex 0 P0.v5 0 vertex 5 start
+polygon_9	2985ad58f062bed0ba8b2c5e414ed0f6 vertex bottom_vertex 0 P0.v6 0 vertex 6 start
+polygon_9	298d210dfc62bed0ba8b2c608c26c267 vertex bottom_vertex 0 P0.v7 0 vertex 7 start
+polygon_9	299494c30862bed0ba8b2c62d6feb3d8 vertex bottom_vertex 0 P0.v8 0 vertex 8 start
+polygon_9	29a61bb0b403c1866d0680f26b156770 face wall 0 P0.s6 0 segment 6 both
+polygon_9	29ad8f65c003c1866d0680f4b5ed58e1 face wall 0 P0.s7 0 segment 7 both
+polygon_9	29b5031acc03c1866d0680f700c54a52 face wall 0 P0.s4 0 segment 4 both
+polygon_9	29bc76cfd803c1866d0680f94b9d3bc3 face wall 0 P0.s5 0 segment 5 both
+polygon_9	29c3ea84e403c1866d0680fb96752d34 face wall 0 P0.s2 0 segment 2 both
+polygon_9	29cb5e39f003c1866d0680fde14d1ea5 face wall 0 P0.s3 0 segment 3 both
+polygon_9	29d2d1eefc03c1866d0681002c251016 face wall 0 P0.s0 0 segment 0 both
+polygon_9	29da45a40803c1866d06810276fd0187 face wall 0 P0.s1 0 segment 1 both
+polygon_9	2a0e6f975c03c1866d06811282e49b9e face wall 0 P0.s8 0 segment 8 both
+polygon_9	6e8f3c5ba50efaabc964e574bc8693b6 face end_cap 0 P0.b0 cap end
+polygon_9	749654a4de057d82e5c5cda30eaff6ff face start_cap 0 P0.b0 cap start
+polygon_9	9272495d52ada398e599a72dcef7e4e6 edge bottom_edge 0 P0.s8 0 segment 8 start
+polygon_9	928130c76aada398e599a73264a7c7c8 edge bottom_edge 0 P0.s6 0 segment 6 start
+polygon_9	9288a47c76ada398e599a734af7fb939 edge bottom_edge 0 P0.s7 0 segment 7 start
+polygon_9	9290183182ada398e599a736fa57aaaa edge bottom_edge 0 P0.s4 0 segment 4 start
+polygon_9	92978be68eada398e599a739452f9c1b edge bottom_edge 0 P0.s5 0 segment 5 start
+polygon_9	929eff9b9aada398e599a73b90078d8c edge bottom_edge 0 P0.s2 0 segment 2 start
+polygon_9	92a67350a6ada398e599a73ddadf7efd edge bottom_edge 0 P0.s3 0 segment 3 start
+polygon_9	92ade705b2ada398e599a74025b7706e edge bottom_edge 0 P0.s0 0 segment 0 start
+polygon_9	92b55ababeada398e599a742708f61df edge bottom_edge 0 P0.s1 0 segment 1 start
+polygon_9	e2a4eb8130b8dcbe41f80e74770f7e91 edge top_edge 0 P0.s8 0 segment 8 end
+polygon_9	e2d9157484b8dcbe41f80e8482f718a8 edge top_edge 0 P0.s1 0 segment 1 end
+polygon_9	e2e0892990b8dcbe41f80e86cdcf0a19 edge top_edge 0 P0.s0 0 segment 0 end
+polygon_9	e2e7fcde9cb8dcbe41f80e8918a6fb8a edge top_edge 0 P0.s3 0 segment 3 end
+polygon_9	e2ef7093a8b8dcbe41f80e8b637eecfb edge top_edge 0 P0.s2 0 segment 2 end
+polygon_9	e2f6e448b4b8dcbe41f80e8dae56de6c edge top_edge 0 P0.s5 0 segment 5 end
+polygon_9	e2fe57fdc0b8dcbe41f80e8ff92ecfdd edge top_edge 0 P0.s4 0 segment 4 end
+polygon_9	e305cbb2ccb8dcbe41f80e924406c14e edge top_edge 0 P0.s7 0 segment 7 end
+polygon_9	e30d3f67d8b8dcbe41f80e948edeb2bf edge top_edge 0 P0.s6 0 segment 6 end
+polygon_9	efd726bcd45785ab5e2cca9bb0d42f33 vertex top_vertex 0 P0.v8 0 vertex 8 end
+polygon_9	effc6946105785ab5e2ccaa7270be668 vertex top_vertex 0 P0.v3 0 vertex 3 end
+polygon_9	f003dcfb1c5785ab5e2ccaa971e3d7d9 vertex top_vertex 0 P0.v2 0 vertex 2 end
+polygon_9	f00b50b0285785ab5e2ccaabbcbbc94a vertex top_vertex 0 P0.v1 0 vertex 1 end
+polygon_9	f012c465345785ab5e2ccaae0793babb vertex top_vertex 0 P0.v0 0 vertex 0 end
+polygon_9	f01a381a405785ab5e2ccab0526bac2c vertex top_vertex 0 P0.v7 0 vertex 7 end
+polygon_9	f021abcf4c5785ab5e2ccab29d439d9d vertex top_vertex 0 P0.v6 0 vertex 6 end
+polygon_9	f0291f84585785ab5e2ccab4e81b8f0e vertex top_vertex 0 P0.v5 0 vertex 5 end
+polygon_9	f0309339645785ab5e2ccab732f3807f vertex top_vertex 0 P0.v4 0 vertex 4 end
+polygon_9	f4223b819eaf5f955e58f974e0eef7e5 edge vertical 0 P0.v8 0 vertex 8 both
+polygon_9	f43896a0c2af5f955e58f97bc176cc38 edge vertical 0 P0.v5 0 vertex 5 both
+polygon_9	f4400a55ceaf5f955e58f97e0c4ebda9 edge vertical 0 P0.v4 0 vertex 4 both
+polygon_9	f4477e0adaaf5f955e58f9805726af1a edge vertical 0 P0.v7 0 vertex 7 both
+polygon_9	f44ef1bfe6af5f955e58f982a1fea08b edge vertical 0 P0.v6 0 vertex 6 both
+polygon_9	f4566574f2af5f955e58f984ecd691fc edge vertical 0 P0.v1 0 vertex 1 both
+polygon_9	f45dd929feaf5f955e58f98737ae836d edge vertical 0 P0.v0 0 vertex 0 both
+polygon_9	f4654cdf0aaf5f955e58f989828674de edge vertical 0 P0.v3 0 vertex 3 both
+polygon_9	f46cc09416af5f955e58f98bcd5e664f edge vertical 0 P0.v2 0 vertex 2 both
+polygon_10	2958f71aa862bed0ba8b2c50803f2850 vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+polygon_10	29606acfb462bed0ba8b2c52cb1719c1 vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+polygon_10	2967de84c062bed0ba8b2c5515ef0b32 vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+polygon_10	296f5239cc62bed0ba8b2c5760c6fca3 vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+polygon_10	2976c5eed862bed0ba8b2c59ab9eee14 vertex bottom_vertex 0 P0.v4 0 vertex 4 start
+polygon_10	297e39a3e462bed0ba8b2c5bf676df85 vertex bottom_vertex 0 P0.v5 0 vertex 5 start
+polygon_10	2985ad58f062bed0ba8b2c5e414ed0f6 vertex bottom_vertex 0 P0.v6 0 vertex 6 start
+polygon_10	298d210dfc62bed0ba8b2c608c26c267 vertex bottom_vertex 0 P0.v7 0 vertex 7 start
+polygon_10	299494c30862bed0ba8b2c62d6feb3d8 vertex bottom_vertex 0 P0.v8 0 vertex 8 start
+polygon_10	299c08781462bed0ba8b2c6521d6a549 vertex bottom_vertex 0 P0.v9 0 vertex 9 start
+polygon_10	29a61bb0b403c1866d0680f26b156770 face wall 0 P0.s6 0 segment 6 both
+polygon_10	29ad8f65c003c1866d0680f4b5ed58e1 face wall 0 P0.s7 0 segment 7 both
+polygon_10	29b5031acc03c1866d0680f700c54a52 face wall 0 P0.s4 0 segment 4 both
+polygon_10	29bc76cfd803c1866d0680f94b9d3bc3 face wall 0 P0.s5 0 segment 5 both
+polygon_10	29c3ea84e403c1866d0680fb96752d34 face wall 0 P0.s2 0 segment 2 both
+polygon_10	29cb5e39f003c1866d0680fde14d1ea5 face wall 0 P0.s3 0 segment 3 both
+polygon_10	29d2d1eefc03c1866d0681002c251016 face wall 0 P0.s0 0 segment 0 both
+polygon_10	29da45a40803c1866d06810276fd0187 face wall 0 P0.s1 0 segment 1 both
+polygon_10	2a0e6f975c03c1866d06811282e49b9e face wall 0 P0.s8 0 segment 8 both
+polygon_10	2a15e34c6803c1866d068114cdbc8d0f face wall 0 P0.s9 0 segment 9 both
+polygon_10	6e8f3c5ba50efaabc964e574bc8693b6 face end_cap 0 P0.b0 cap end
+polygon_10	749654a4de057d82e5c5cda30eaff6ff face start_cap 0 P0.b0 cap start
+polygon_10	9272495d52ada398e599a72dcef7e4e6 edge bottom_edge 0 P0.s8 0 segment 8 start
+polygon_10	9279bd125eada398e599a73019cfd657 edge bottom_edge 0 P0.s9 0 segment 9 start
+polygon_10	928130c76aada398e599a73264a7c7c8 edge bottom_edge 0 P0.s6 0 segment 6 start
+polygon_10	9288a47c76ada398e599a734af7fb939 edge bottom_edge 0 P0.s7 0 segment 7 start
+polygon_10	9290183182ada398e599a736fa57aaaa edge bottom_edge 0 P0.s4 0 segment 4 start
+polygon_10	92978be68eada398e599a739452f9c1b edge bottom_edge 0 P0.s5 0 segment 5 start
+polygon_10	929eff9b9aada398e599a73b90078d8c edge bottom_edge 0 P0.s2 0 segment 2 start
+polygon_10	92a67350a6ada398e599a73ddadf7efd edge bottom_edge 0 P0.s3 0 segment 3 start
+polygon_10	92ade705b2ada398e599a74025b7706e edge bottom_edge 0 P0.s0 0 segment 0 start
+polygon_10	92b55ababeada398e599a742708f61df edge bottom_edge 0 P0.s1 0 segment 1 start
+polygon_10	e29d77cc24b8dcbe41f80e722c378d20 edge top_edge 0 P0.s9 0 segment 9 end
+polygon_10	e2a4eb8130b8dcbe41f80e74770f7e91 edge top_edge 0 P0.s8 0 segment 8 end
+polygon_10	e2d9157484b8dcbe41f80e8482f718a8 edge top_edge 0 P0.s1 0 segment 1 end
+polygon_10	e2e0892990b8dcbe41f80e86cdcf0a19 edge top_edge 0 P0.s0 0 segment 0 end
+polygon_10	e2e7fcde9cb8dcbe41f80e8918a6fb8a edge top_edge 0 P0.s3 0 segment 3 end
+polygon_10	e2ef7093a8b8dcbe41f80e8b637eecfb edge top_edge 0 P0.s2 0 segment 2 end
+polygon_10	e2f6e448b4b8dcbe41f80e8dae56de6c edge top_edge 0 P0.s5 0 segment 5 end
+polygon_10	e2fe57fdc0b8dcbe41f80e8ff92ecfdd edge top_edge 0 P0.s4 0 segment 4 end
+polygon_10	e305cbb2ccb8dcbe41f80e924406c14e edge top_edge 0 P0.s7 0 segment 7 end
+polygon_10	e30d3f67d8b8dcbe41f80e948edeb2bf edge top_edge 0 P0.s6 0 segment 6 end
+polygon_10	efcfb307c85785ab5e2cca9965fc3dc2 vertex top_vertex 0 P0.v9 0 vertex 9 end
+polygon_10	efd726bcd45785ab5e2cca9bb0d42f33 vertex top_vertex 0 P0.v8 0 vertex 8 end
+polygon_10	effc6946105785ab5e2ccaa7270be668 vertex top_vertex 0 P0.v3 0 vertex 3 end
+polygon_10	f003dcfb1c5785ab5e2ccaa971e3d7d9 vertex top_vertex 0 P0.v2 0 vertex 2 end
+polygon_10	f00b50b0285785ab5e2ccaabbcbbc94a vertex top_vertex 0 P0.v1 0 vertex 1 end
+polygon_10	f012c465345785ab5e2ccaae0793babb vertex top_vertex 0 P0.v0 0 vertex 0 end
+polygon_10	f01a381a405785ab5e2ccab0526bac2c vertex top_vertex 0 P0.v7 0 vertex 7 end
+polygon_10	f021abcf4c5785ab5e2ccab29d439d9d vertex top_vertex 0 P0.v6 0 vertex 6 end
+polygon_10	f0291f84585785ab5e2ccab4e81b8f0e vertex top_vertex 0 P0.v5 0 vertex 5 end
+polygon_10	f0309339645785ab5e2ccab732f3807f vertex top_vertex 0 P0.v4 0 vertex 4 end
+polygon_10	f41ac7cc92af5f955e58f97296170674 edge vertical 0 P0.v9 0 vertex 9 both
+polygon_10	f4223b819eaf5f955e58f974e0eef7e5 edge vertical 0 P0.v8 0 vertex 8 both
+polygon_10	f43896a0c2af5f955e58f97bc176cc38 edge vertical 0 P0.v5 0 vertex 5 both
+polygon_10	f4400a55ceaf5f955e58f97e0c4ebda9 edge vertical 0 P0.v4 0 vertex 4 both
+polygon_10	f4477e0adaaf5f955e58f9805726af1a edge vertical 0 P0.v7 0 vertex 7 both
+polygon_10	f44ef1bfe6af5f955e58f982a1fea08b edge vertical 0 P0.v6 0 vertex 6 both
+polygon_10	f4566574f2af5f955e58f984ecd691fc edge vertical 0 P0.v1 0 vertex 1 both
+polygon_10	f45dd929feaf5f955e58f98737ae836d edge vertical 0 P0.v0 0 vertex 0 both
+polygon_10	f4654cdf0aaf5f955e58f989828674de edge vertical 0 P0.v3 0 vertex 3 both
+polygon_10	f46cc09416af5f955e58f98bcd5e664f edge vertical 0 P0.v2 0 vertex 2 both
+polygon_11	2958f71aa862bed0ba8b2c50803f2850 vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+polygon_11	29606acfb462bed0ba8b2c52cb1719c1 vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+polygon_11	2967de84c062bed0ba8b2c5515ef0b32 vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+polygon_11	296f5239cc62bed0ba8b2c5760c6fca3 vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+polygon_11	2976c5eed862bed0ba8b2c59ab9eee14 vertex bottom_vertex 0 P0.v4 0 vertex 4 start
+polygon_11	297e39a3e462bed0ba8b2c5bf676df85 vertex bottom_vertex 0 P0.v5 0 vertex 5 start
+polygon_11	2985ad58f062bed0ba8b2c5e414ed0f6 vertex bottom_vertex 0 P0.v6 0 vertex 6 start
+polygon_11	298d210dfc62bed0ba8b2c608c26c267 vertex bottom_vertex 0 P0.v7 0 vertex 7 start
+polygon_11	299494c30862bed0ba8b2c62d6feb3d8 vertex bottom_vertex 0 P0.v8 0 vertex 8 start
+polygon_11	299c08781462bed0ba8b2c6521d6a549 vertex bottom_vertex 0 P0.v9 0 vertex 9 start
+polygon_11	29a37c2d2062bed0ba8b2c676cae96ba vertex bottom_vertex 0 P0.v10 0 vertex 10 start
+polygon_11	29a61bb0b403c1866d0680f26b156770 face wall 0 P0.s6 0 segment 6 both
+polygon_11	29ad8f65c003c1866d0680f4b5ed58e1 face wall 0 P0.s7 0 segment 7 both
+polygon_11	29b5031acc03c1866d0680f700c54a52 face wall 0 P0.s4 0 segment 4 both
+polygon_11	29bc76cfd803c1866d0680f94b9d3bc3 face wall 0 P0.s5 0 segment 5 both
+polygon_11	29c3ea84e403c1866d0680fb96752d34 face wall 0 P0.s2 0 segment 2 both
+polygon_11	29cb5e39f003c1866d0680fde14d1ea5 face wall 0 P0.s3 0 segment 3 both
+polygon_11	29d2d1eefc03c1866d0681002c251016 face wall 0 P0.s0 0 segment 0 both
+polygon_11	29da45a40803c1866d06810276fd0187 face wall 0 P0.s1 0 segment 1 both
+polygon_11	29ff882d4403c1866d06810ded34b8bc face wall 0 P0.s10 0 segment 10 both
+polygon_11	2a0e6f975c03c1866d06811282e49b9e face wall 0 P0.s8 0 segment 8 both
+polygon_11	2a15e34c6803c1866d068114cdbc8d0f face wall 0 P0.s9 0 segment 9 both
+polygon_11	6e8f3c5ba50efaabc964e574bc8693b6 face end_cap 0 P0.b0 cap end
+polygon_11	749654a4de057d82e5c5cda30eaff6ff face start_cap 0 P0.b0 cap start
+polygon_11	926361f33aada398e599a72939480204 edge bottom_edge 0 P0.s10 0 segment 10 start
+polygon_11	9272495d52ada398e599a72dcef7e4e6 edge bottom_edge 0 P0.s8 0 segment 8 start
+polygon_11	9279bd125eada398e599a73019cfd657 edge bottom_edge 0 P0.s9 0 segment 9 start
+polygon_11	928130c76aada398e599a73264a7c7c8 edge bottom_edge 0 P0.s6 0 segment 6 start
+polygon_11	9288a47c76ada398e599a734af7fb939 edge bottom_edge 0 P0.s7 0 segment 7 start
+polygon_11	9290183182ada398e599a736fa57aaaa edge bottom_edge 0 P0.s4 0 segment 4 start
+polygon_11	92978be68eada398e599a739452f9c1b edge bottom_edge 0 P0.s5 0 segment 5 start
+polygon_11	929eff9b9aada398e599a73b90078d8c edge bottom_edge 0 P0.s2 0 segment 2 start
+polygon_11	92a67350a6ada398e599a73ddadf7efd edge bottom_edge 0 P0.s3 0 segment 3 start
+polygon_11	92ade705b2ada398e599a74025b7706e edge bottom_edge 0 P0.s0 0 segment 0 start
+polygon_11	92b55ababeada398e599a742708f61df edge bottom_edge 0 P0.s1 0 segment 1 start
+polygon_11	e29d77cc24b8dcbe41f80e722c378d20 edge top_edge 0 P0.s9 0 segment 9 end
+polygon_11	e2a4eb8130b8dcbe41f80e74770f7e91 edge top_edge 0 P0.s8 0 segment 8 end
+polygon_11	e2b3d2eb48b8dcbe41f80e790cbf6173 edge top_edge 0 P0.s10 0 segment 10 end
+polygon_11	e2d9157484b8dcbe41f80e8482f718a8 edge top_edge 0 P0.s1 0 segment 1 end
+polygon_11	e2e0892990b8dcbe41f80e86cdcf0a19 edge top_edge 0 P0.s0 0 segment 0 end
+polygon_11	e2e7fcde9cb8dcbe41f80e8918a6fb8a edge top_edge 0 P0.s3 0 segment 3 end
+polygon_11	e2ef7093a8b8dcbe41f80e8b637eecfb edge top_edge 0 P0.s2 0 segment 2 end
+polygon_11	e2f6e448b4b8dcbe41f80e8dae56de6c edge top_edge 0 P0.s5 0 segment 5 end
+polygon_11	e2fe57fdc0b8dcbe41f80e8ff92ecfdd edge top_edge 0 P0.s4 0 segment 4 end
+polygon_11	e305cbb2ccb8dcbe41f80e924406c14e edge top_edge 0 P0.s7 0 segment 7 end
+polygon_11	e30d3f67d8b8dcbe41f80e948edeb2bf edge top_edge 0 P0.s6 0 segment 6 end
+polygon_11	efc83f52bc5785ab5e2cca971b244c51 vertex top_vertex 0 P0.v10 0 vertex 10 end
+polygon_11	efcfb307c85785ab5e2cca9965fc3dc2 vertex top_vertex 0 P0.v9 0 vertex 9 end
+polygon_11	efd726bcd45785ab5e2cca9bb0d42f33 vertex top_vertex 0 P0.v8 0 vertex 8 end
+polygon_11	effc6946105785ab5e2ccaa7270be668 vertex top_vertex 0 P0.v3 0 vertex 3 end
+polygon_11	f003dcfb1c5785ab5e2ccaa971e3d7d9 vertex top_vertex 0 P0.v2 0 vertex 2 end
+polygon_11	f00b50b0285785ab5e2ccaabbcbbc94a vertex top_vertex 0 P0.v1 0 vertex 1 end
+polygon_11	f012c465345785ab5e2ccaae0793babb vertex top_vertex 0 P0.v0 0 vertex 0 end
+polygon_11	f01a381a405785ab5e2ccab0526bac2c vertex top_vertex 0 P0.v7 0 vertex 7 end
+polygon_11	f021abcf4c5785ab5e2ccab29d439d9d vertex top_vertex 0 P0.v6 0 vertex 6 end
+polygon_11	f0291f84585785ab5e2ccab4e81b8f0e vertex top_vertex 0 P0.v5 0 vertex 5 end
+polygon_11	f0309339645785ab5e2ccab732f3807f vertex top_vertex 0 P0.v4 0 vertex 4 end
+polygon_11	f41ac7cc92af5f955e58f97296170674 edge vertical 0 P0.v9 0 vertex 9 both
+polygon_11	f4223b819eaf5f955e58f974e0eef7e5 edge vertical 0 P0.v8 0 vertex 8 both
+polygon_11	f43122ebb6af5f955e58f979769edac7 edge vertical 0 P0.v10 0 vertex 10 both
+polygon_11	f43896a0c2af5f955e58f97bc176cc38 edge vertical 0 P0.v5 0 vertex 5 both
+polygon_11	f4400a55ceaf5f955e58f97e0c4ebda9 edge vertical 0 P0.v4 0 vertex 4 both
+polygon_11	f4477e0adaaf5f955e58f9805726af1a edge vertical 0 P0.v7 0 vertex 7 both
+polygon_11	f44ef1bfe6af5f955e58f982a1fea08b edge vertical 0 P0.v6 0 vertex 6 both
+polygon_11	f4566574f2af5f955e58f984ecd691fc edge vertical 0 P0.v1 0 vertex 1 both
+polygon_11	f45dd929feaf5f955e58f98737ae836d edge vertical 0 P0.v0 0 vertex 0 both
+polygon_11	f4654cdf0aaf5f955e58f989828674de edge vertical 0 P0.v3 0 vertex 3 both
+polygon_11	f46cc09416af5f955e58f98bcd5e664f edge vertical 0 P0.v2 0 vertex 2 both
+polygon_12	2958f71aa862bed0ba8b2c50803f2850 vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+polygon_12	29606acfb462bed0ba8b2c52cb1719c1 vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+polygon_12	2967de84c062bed0ba8b2c5515ef0b32 vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+polygon_12	296f5239cc62bed0ba8b2c5760c6fca3 vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+polygon_12	2976c5eed862bed0ba8b2c59ab9eee14 vertex bottom_vertex 0 P0.v4 0 vertex 4 start
+polygon_12	297e39a3e462bed0ba8b2c5bf676df85 vertex bottom_vertex 0 P0.v5 0 vertex 5 start
+polygon_12	2985ad58f062bed0ba8b2c5e414ed0f6 vertex bottom_vertex 0 P0.v6 0 vertex 6 start
+polygon_12	298d210dfc62bed0ba8b2c608c26c267 vertex bottom_vertex 0 P0.v7 0 vertex 7 start
+polygon_12	299494c30862bed0ba8b2c62d6feb3d8 vertex bottom_vertex 0 P0.v8 0 vertex 8 start
+polygon_12	299c08781462bed0ba8b2c6521d6a549 vertex bottom_vertex 0 P0.v9 0 vertex 9 start
+polygon_12	29a37c2d2062bed0ba8b2c676cae96ba vertex bottom_vertex 0 P0.v10 0 vertex 10 start
+polygon_12	29a61bb0b403c1866d0680f26b156770 face wall 0 P0.s6 0 segment 6 both
+polygon_12	29aaefe22c62bed0ba8b2c69b786882b vertex bottom_vertex 0 P0.v11 0 vertex 11 start
+polygon_12	29ad8f65c003c1866d0680f4b5ed58e1 face wall 0 P0.s7 0 segment 7 both
+polygon_12	29b5031acc03c1866d0680f700c54a52 face wall 0 P0.s4 0 segment 4 both
+polygon_12	29bc76cfd803c1866d0680f94b9d3bc3 face wall 0 P0.s5 0 segment 5 both
+polygon_12	29c3ea84e403c1866d0680fb96752d34 face wall 0 P0.s2 0 segment 2 both
+polygon_12	29cb5e39f003c1866d0680fde14d1ea5 face wall 0 P0.s3 0 segment 3 both
+polygon_12	29d2d1eefc03c1866d0681002c251016 face wall 0 P0.s0 0 segment 0 both
+polygon_12	29da45a40803c1866d06810276fd0187 face wall 0 P0.s1 0 segment 1 both
+polygon_12	29ff882d4403c1866d06810ded34b8bc face wall 0 P0.s10 0 segment 10 both
+polygon_12	2a06fbe25003c1866d068110380caa2d face wall 0 P0.s11 0 segment 11 both
+polygon_12	2a0e6f975c03c1866d06811282e49b9e face wall 0 P0.s8 0 segment 8 both
+polygon_12	2a15e34c6803c1866d068114cdbc8d0f face wall 0 P0.s9 0 segment 9 both
+polygon_12	6e8f3c5ba50efaabc964e574bc8693b6 face end_cap 0 P0.b0 cap end
+polygon_12	749654a4de057d82e5c5cda30eaff6ff face start_cap 0 P0.b0 cap start
+polygon_12	926361f33aada398e599a72939480204 edge bottom_edge 0 P0.s10 0 segment 10 start
+polygon_12	926ad5a846ada398e599a72b841ff375 edge bottom_edge 0 P0.s11 0 segment 11 start
+polygon_12	9272495d52ada398e599a72dcef7e4e6 edge bottom_edge 0 P0.s8 0 segment 8 start
+polygon_12	9279bd125eada398e599a73019cfd657 edge bottom_edge 0 P0.s9 0 segment 9 start
+polygon_12	928130c76aada398e599a73264a7c7c8 edge bottom_edge 0 P0.s6 0 segment 6 start
+polygon_12	9288a47c76ada398e599a734af7fb939 edge bottom_edge 0 P0.s7 0 segment 7 start
+polygon_12	9290183182ada398e599a736fa57aaaa edge bottom_edge 0 P0.s4 0 segment 4 start
+polygon_12	92978be68eada398e599a739452f9c1b edge bottom_edge 0 P0.s5 0 segment 5 start
+polygon_12	929eff9b9aada398e599a73b90078d8c edge bottom_edge 0 P0.s2 0 segment 2 start
+polygon_12	92a67350a6ada398e599a73ddadf7efd edge bottom_edge 0 P0.s3 0 segment 3 start
+polygon_12	92ade705b2ada398e599a74025b7706e edge bottom_edge 0 P0.s0 0 segment 0 start
+polygon_12	92b55ababeada398e599a742708f61df edge bottom_edge 0 P0.s1 0 segment 1 start
+polygon_12	e29d77cc24b8dcbe41f80e722c378d20 edge top_edge 0 P0.s9 0 segment 9 end
+polygon_12	e2a4eb8130b8dcbe41f80e74770f7e91 edge top_edge 0 P0.s8 0 segment 8 end
+polygon_12	e2ac5f363cb8dcbe41f80e76c1e77002 edge top_edge 0 P0.s11 0 segment 11 end
+polygon_12	e2b3d2eb48b8dcbe41f80e790cbf6173 edge top_edge 0 P0.s10 0 segment 10 end
+polygon_12	e2d9157484b8dcbe41f80e8482f718a8 edge top_edge 0 P0.s1 0 segment 1 end
+polygon_12	e2e0892990b8dcbe41f80e86cdcf0a19 edge top_edge 0 P0.s0 0 segment 0 end
+polygon_12	e2e7fcde9cb8dcbe41f80e8918a6fb8a edge top_edge 0 P0.s3 0 segment 3 end
+polygon_12	e2ef7093a8b8dcbe41f80e8b637eecfb edge top_edge 0 P0.s2 0 segment 2 end
+polygon_12	e2f6e448b4b8dcbe41f80e8dae56de6c edge top_edge 0 P0.s5 0 segment 5 end
+polygon_12	e2fe57fdc0b8dcbe41f80e8ff92ecfdd edge top_edge 0 P0.s4 0 segment 4 end
+polygon_12	e305cbb2ccb8dcbe41f80e924406c14e edge top_edge 0 P0.s7 0 segment 7 end
+polygon_12	e30d3f67d8b8dcbe41f80e948edeb2bf edge top_edge 0 P0.s6 0 segment 6 end
+polygon_12	efc0cb9db05785ab5e2cca94d04c5ae0 vertex top_vertex 0 P0.v11 0 vertex 11 end
+polygon_12	efc83f52bc5785ab5e2cca971b244c51 vertex top_vertex 0 P0.v10 0 vertex 10 end
+polygon_12	efcfb307c85785ab5e2cca9965fc3dc2 vertex top_vertex 0 P0.v9 0 vertex 9 end
+polygon_12	efd726bcd45785ab5e2cca9bb0d42f33 vertex top_vertex 0 P0.v8 0 vertex 8 end
+polygon_12	effc6946105785ab5e2ccaa7270be668 vertex top_vertex 0 P0.v3 0 vertex 3 end
+polygon_12	f003dcfb1c5785ab5e2ccaa971e3d7d9 vertex top_vertex 0 P0.v2 0 vertex 2 end
+polygon_12	f00b50b0285785ab5e2ccaabbcbbc94a vertex top_vertex 0 P0.v1 0 vertex 1 end
+polygon_12	f012c465345785ab5e2ccaae0793babb vertex top_vertex 0 P0.v0 0 vertex 0 end
+polygon_12	f01a381a405785ab5e2ccab0526bac2c vertex top_vertex 0 P0.v7 0 vertex 7 end
+polygon_12	f021abcf4c5785ab5e2ccab29d439d9d vertex top_vertex 0 P0.v6 0 vertex 6 end
+polygon_12	f0291f84585785ab5e2ccab4e81b8f0e vertex top_vertex 0 P0.v5 0 vertex 5 end
+polygon_12	f0309339645785ab5e2ccab732f3807f vertex top_vertex 0 P0.v4 0 vertex 4 end
+polygon_12	f41ac7cc92af5f955e58f97296170674 edge vertical 0 P0.v9 0 vertex 9 both
+polygon_12	f4223b819eaf5f955e58f974e0eef7e5 edge vertical 0 P0.v8 0 vertex 8 both
+polygon_12	f429af36aaaf5f955e58f9772bc6e956 edge vertical 0 P0.v11 0 vertex 11 both
+polygon_12	f43122ebb6af5f955e58f979769edac7 edge vertical 0 P0.v10 0 vertex 10 both
+polygon_12	f43896a0c2af5f955e58f97bc176cc38 edge vertical 0 P0.v5 0 vertex 5 both
+polygon_12	f4400a55ceaf5f955e58f97e0c4ebda9 edge vertical 0 P0.v4 0 vertex 4 both
+polygon_12	f4477e0adaaf5f955e58f9805726af1a edge vertical 0 P0.v7 0 vertex 7 both
+polygon_12	f44ef1bfe6af5f955e58f982a1fea08b edge vertical 0 P0.v6 0 vertex 6 both
+polygon_12	f4566574f2af5f955e58f984ecd691fc edge vertical 0 P0.v1 0 vertex 1 both
+polygon_12	f45dd929feaf5f955e58f98737ae836d edge vertical 0 P0.v0 0 vertex 0 both
+polygon_12	f4654cdf0aaf5f955e58f989828674de edge vertical 0 P0.v3 0 vertex 3 both
+polygon_12	f46cc09416af5f955e58f98bcd5e664f edge vertical 0 P0.v2 0 vertex 2 both
+circle	205f358ad2667fbd09255df960eeb0df vertex seam_vertex 1 P0.v0 0 vertex 0 end
+circle	29d2d1eefc03c1866d0681002c251016 face wall 0 P0.s0 0 segment 0 both
+circle	68720a21b924d47f2916053f0d9d2d92 vertex seam_vertex 0 P0.v0 0 vertex 0 start
+circle	6e8f3c5ba50efaabc964e574bc8693b6 face end_cap 0 P0.b0 cap end
+circle	749654a4de057d82e5c5cda30eaff6ff face start_cap 0 P0.b0 cap start
+circle	92ade705b2ada398e599a74025b7706e edge bottom_edge 0 P0.s0 0 segment 0 start
+circle	e2e0892990b8dcbe41f80e86cdcf0a19 edge top_edge 0 P0.s0 0 segment 0 end
+circle	ff96f50b027af26cb082deff140acd3a edge seam 0 P0.v0 0 vertex 0 both
+circle_labelled	19a2d6dace78d7155eba01a18deb9ea5 edge top_edge 0 L10 0 segment 0 end
+circle_labelled	472304053a97830795a697571a953a81 vertex seam_vertex 1 L11 0 vertex 0 end
+circle_labelled	65110518276a67930146ed3742ae5855 face start_cap 0 L9 cap start
+circle_labelled	939b9758ed4bc63cff3faca03409012e vertex seam_vertex 0 L11 0 vertex 0 start
+circle_labelled	9c6084d75db4e27304ca16ff0e802796 edge seam 0 L11 0 vertex 0 both
+circle_labelled	d506c058d6e1f3f8cdb02f999c65350e face end_cap 0 L9 cap end
+circle_labelled	d98e699d27c53fff55ac6d7ae7a2a8fc edge bottom_edge 0 L10 0 segment 0 start
+circle_labelled	e253571b982e5c355b36d7d9c219cf64 face wall 0 L10 0 segment 0 both
+holes_0	043bd527e2bd81462458dd089385d2f8 vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+holes_0	044348dceebd81462458dd0ade5dc469 vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+holes_0	044abc91fabd81462458dd0d2935b5da vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+holes_0	0452304706bd81462458dd0f740da74b vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+holes_0	0f6d7d53da89141d7682c27e250a2b54 vertex top_vertex 0 P0.v2 0 vertex 2 end
+holes_0	0f74f108e689141d7682c2806fe21cc5 vertex top_vertex 0 P0.v3 0 vertex 3 end
+holes_0	0f7c64bdf289141d7682c282baba0e36 vertex top_vertex 0 P0.v0 0 vertex 0 end
+holes_0	0f83d872fe89141d7682c2850591ffa7 vertex top_vertex 0 P0.v1 0 vertex 1 end
+holes_0	45449349d405868cb6f45f5d474a69f8 edge vertical 0 P0.v0 0 vertex 0 both
+holes_0	454c06fee005868cb6f45f5f92225b69 edge vertical 0 P0.v1 0 vertex 1 both
+holes_0	45537ab3ec05868cb6f45f61dcfa4cda edge vertical 0 P0.v2 0 vertex 2 both
+holes_0	455aee68f805868cb6f45f6427d23e4b edge vertical 0 P0.v3 0 vertex 3 both
+holes_0	56c1e34a41fc0963d3554a5db129e34c edge top_edge 0 P0.s0 0 segment 0 end
+holes_0	56c956ff4dfc0963d3554a5ffc01d4bd edge top_edge 0 P0.s1 0 segment 1 end
+holes_0	56d0cab459fc0963d3554a6246d9c62e edge top_edge 0 P0.s2 0 segment 2 end
+holes_0	56d83e6965fc0963d3554a6491b1b79f edge top_edge 0 P0.s3 0 segment 3 end
+holes_0	66271620c8370bf4fe1bba2f62fdf24e face start_cap 0 P0.b0 cap start
+holes_0	6c2e2e6a012d8ecc1a7ca25db5275597 face end_cap 0 P0.b0 cap end
+holes_0	78d1137a8bc79c3b257f3572dc6a84dc edge bottom_edge 0 P0.s3 0 segment 3 start
+holes_0	78d8872f97c79c3b257f35752742764d edge bottom_edge 0 P0.s2 0 segment 2 start
+holes_0	78dffae4a3c79c3b257f3577721a67be edge bottom_edge 0 P0.s1 0 segment 1 start
+holes_0	78e76e99afc79c3b257f3579bcf2592f edge bottom_edge 0 P0.s0 0 segment 0 start
+holes_0	82c726e315f921a36ca68aa0c8b1e11c face wall 0 P0.s3 0 segment 3 both
+holes_0	82ce9a9821f921a36ca68aa31389d28d face wall 0 P0.s2 0 segment 2 both
+holes_0	82d60e4d2df921a36ca68aa55e61c3fe face wall 0 P0.s1 0 segment 1 both
+holes_0	82dd820239f921a36ca68aa7a939b56f face wall 0 P0.s0 0 segment 0 both
+holes_1	043bd527e2bd81462458dd089385d2f8 vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+holes_1	044348dceebd81462458dd0ade5dc469 vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+holes_1	044abc91fabd81462458dd0d2935b5da vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+holes_1	0452304706bd81462458dd0f740da74b vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+holes_1	0f6d7d53da89141d7682c27e250a2b54 vertex top_vertex 0 P0.v2 0 vertex 2 end
+holes_1	0f74f108e689141d7682c2806fe21cc5 vertex top_vertex 0 P0.v3 0 vertex 3 end
+holes_1	0f7c64bdf289141d7682c282baba0e36 vertex top_vertex 0 P0.v0 0 vertex 0 end
+holes_1	0f83d872fe89141d7682c2850591ffa7 vertex top_vertex 0 P0.v1 0 vertex 1 end
+holes_1	45449349d405868cb6f45f5d474a69f8 edge vertical 0 P0.v0 0 vertex 0 both
+holes_1	454c06fee005868cb6f45f5f92225b69 edge vertical 0 P0.v1 0 vertex 1 both
+holes_1	45537ab3ec05868cb6f45f61dcfa4cda edge vertical 0 P0.v2 0 vertex 2 both
+holes_1	455aee68f805868cb6f45f6427d23e4b edge vertical 0 P0.v3 0 vertex 3 both
+holes_1	56c1e34a41fc0963d3554a5db129e34c edge top_edge 0 P0.s0 0 segment 0 end
+holes_1	56c956ff4dfc0963d3554a5ffc01d4bd edge top_edge 0 P0.s1 0 segment 1 end
+holes_1	56d0cab459fc0963d3554a6246d9c62e edge top_edge 0 P0.s2 0 segment 2 end
+holes_1	56d83e6965fc0963d3554a6491b1b79f edge top_edge 0 P0.s3 0 segment 3 end
+holes_1	78d1137a8bc79c3b257f3572dc6a84dc edge bottom_edge 0 P0.s3 0 segment 3 start
+holes_1	78d8872f97c79c3b257f35752742764d edge bottom_edge 0 P0.s2 0 segment 2 start
+holes_1	78dffae4a3c79c3b257f3577721a67be edge bottom_edge 0 P0.s1 0 segment 1 start
+holes_1	78e76e99afc79c3b257f3579bcf2592f edge bottom_edge 0 P0.s0 0 segment 0 start
+holes_1	7d54bddfedbd7aced8f71d95b550cbac vertex bottom_vertex 0 P1.v2 1 vertex 2 start
+holes_1	7d5c3194f9bd7aced8f71d980028bd1d vertex bottom_vertex 0 P1.v3 1 vertex 3 start
+holes_1	7d63a54a05bd7aced8f71d9a4b00ae8e vertex bottom_vertex 0 P1.v0 1 vertex 0 start
+holes_1	7d6b18ff11bd7aced8f71d9c95d89fff vertex bottom_vertex 0 P1.v1 1 vertex 1 start
+holes_1	82c726e315f921a36ca68aa0c8b1e11c face wall 0 P0.s3 0 segment 3 both
+holes_1	82ce9a9821f921a36ca68aa31389d28d face wall 0 P0.s2 0 segment 2 both
+holes_1	82d60e4d2df921a36ca68aa55e61c3fe face wall 0 P0.s1 0 segment 1 both
+holes_1	82dd820239f921a36ca68aa7a939b56f face wall 0 P0.s0 0 segment 0 both
+holes_1	9654949bcf891a94c1e481f1033f32a0 vertex top_vertex 0 P1.v1 1 vertex 1 end
+holes_1	965c0850db891a94c1e481f34e172411 vertex top_vertex 0 P1.v0 1 vertex 0 end
+holes_1	96637c05e7891a94c1e481f598ef1582 vertex top_vertex 0 P1.v3 1 vertex 3 end
+holes_1	966aefbaf3891a94c1e481f7e3c706f3 vertex top_vertex 0 P1.v2 1 vertex 2 end
+holes_1	c75e33907f214a140187118819bfe414 face start_cap 0 P0.b0,P1.b0 cap start
+holes_1	cc0ddbbd99058d0402561ec6fa1fab80 edge vertical 0 P1.v3 1 vertex 3 both
+holes_1	cc154f72a5058d0402561ec944f79cf1 edge vertical 0 P1.v2 1 vertex 2 both
+holes_1	cc1cc327b1058d0402561ecb8fcf8e62 edge vertical 0 P1.v1 1 vertex 1 both
+holes_1	cc2436dcbd058d0402561ecddaa77fd3 edge vertical 0 P1.v0 1 vertex 0 both
+holes_1	e6b854069efc02ec87f3908a6cb12534 edge top_edge 0 P1.s3 1 segment 3 end
+holes_1	e6bfc7bbaafc02ec87f3908cb78916a5 edge top_edge 0 P1.s2 1 segment 2 end
+holes_1	e6c73b70b6fc02ec87f3908f02610816 edge top_edge 0 P1.s1 1 segment 1 end
+holes_1	e6ceaf25c2fc02ec87f390914d38f987 edge top_edge 0 P1.s0 1 segment 0 end
+holes_1	e78f924b0e9a8dd08a6ebd6b3a1f3209 face end_cap 0 P0.b0,P1.b0 cap end
+holes_1	e8daa2be2ec7a2b270e0ef4620e342f4 edge bottom_edge 0 P1.s0 1 segment 0 start
+holes_1	e8e216733ac7a2b270e0ef486bbb3465 edge bottom_edge 0 P1.s1 1 segment 1 start
+holes_1	e8e98a2846c7a2b270e0ef4ab69325d6 edge bottom_edge 0 P1.s2 1 segment 2 start
+holes_1	e8f0fddd52c7a2b270e0ef4d016b1747 edge bottom_edge 0 P1.s3 1 segment 3 start
+holes_1	f2d0b626b8f9281ab80844740d2a9f34 face wall 0 P1.s0 1 segment 0 both
+holes_1	f2d829dbc4f9281ab8084476580290a5 face wall 0 P1.s1 1 segment 1 both
+holes_1	f2df9d90d0f9281ab8084478a2da8216 face wall 0 P1.s2 1 segment 2 both
+holes_1	f2e71145dcf9281ab808447aedb27387 face wall 0 P1.s3 1 segment 3 both
+holes_2	043bd527e2bd81462458dd089385d2f8 vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+holes_2	044348dceebd81462458dd0ade5dc469 vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+holes_2	044abc91fabd81462458dd0d2935b5da vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+holes_2	0452304706bd81462458dd0f740da74b vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+holes_2	0470e703f351f88265fdf05e4bdfe590 face end_cap 0 P0.b0,P1.b0,P2.b0 cap end
+holes_2	0f6d7d53da89141d7682c27e250a2b54 vertex top_vertex 0 P0.v2 0 vertex 2 end
+holes_2	0f74f108e689141d7682c2806fe21cc5 vertex top_vertex 0 P0.v3 0 vertex 3 end
+holes_2	0f7c64bdf289141d7682c282baba0e36 vertex top_vertex 0 P0.v0 0 vertex 0 end
+holes_2	0f83d872fe89141d7682c2850591ffa7 vertex top_vertex 0 P0.v1 0 vertex 1 end
+holes_2	2c17f84b61fa4078c3d28a2206bd28d9 edge seam 0 P2.v0 2 vertex 0 both
+holes_2	45449349d405868cb6f45f5d474a69f8 edge vertical 0 P0.v0 0 vertex 0 both
+holes_2	454c06fee005868cb6f45f5f92225b69 edge vertical 0 P0.v1 0 vertex 1 both
+holes_2	45537ab3ec05868cb6f45f61dcfa4cda edge vertical 0 P0.v2 0 vertex 2 both
+holes_2	455aee68f805868cb6f45f6427d23e4b edge vertical 0 P0.v3 0 vertex 3 both
+holes_2	56c1e34a41fc0963d3554a5db129e34c edge top_edge 0 P0.s0 0 segment 0 end
+holes_2	56c956ff4dfc0963d3554a5ffc01d4bd edge top_edge 0 P0.s1 0 segment 1 end
+holes_2	56d0cab459fc0963d3554a6246d9c62e edge top_edge 0 P0.s2 0 segment 2 end
+holes_2	56d83e6965fc0963d3554a6491b1b79f edge top_edge 0 P0.s3 0 segment 3 end
+holes_2	64812a7013fc16526a18c93ed7e40f02 edge top_edge 0 P2.s0 2 segment 0 end
+holes_2	78d1137a8bc79c3b257f3572dc6a84dc edge bottom_edge 0 P0.s3 0 segment 3 start
+holes_2	78d8872f97c79c3b257f35752742764d edge bottom_edge 0 P0.s2 0 segment 2 start
+holes_2	78dffae4a3c79c3b257f3577721a67be edge bottom_edge 0 P0.s1 0 segment 1 start
+holes_2	78e76e99afc79c3b257f3579bcf2592f edge bottom_edge 0 P0.s0 0 segment 0 start
+holes_2	7d54bddfedbd7aced8f71d95b550cbac vertex bottom_vertex 0 P1.v2 1 vertex 2 start
+holes_2	7d5c3194f9bd7aced8f71d980028bd1d vertex bottom_vertex 0 P1.v3 1 vertex 3 start
+holes_2	7d63a54a05bd7aced8f71d9a4b00ae8e vertex bottom_vertex 0 P1.v0 1 vertex 0 start
+holes_2	7d6b18ff11bd7aced8f71d9c95d89fff vertex bottom_vertex 0 P1.v1 1 vertex 1 start
+holes_2	80157f216ba79aab7033bc0b92eff409 face start_cap 0 P0.b0,P1.b0,P2.b0 cap start
+holes_2	82c726e315f921a36ca68aa0c8b1e11c face wall 0 P0.s3 0 segment 3 both
+holes_2	82ce9a9821f921a36ca68aa31389d28d face wall 0 P0.s2 0 segment 2 both
+holes_2	82d60e4d2df921a36ca68aa55e61c3fe face wall 0 P0.s1 0 segment 1 both
+holes_2	82dd820239f921a36ca68aa7a939b56f face wall 0 P0.s0 0 segment 0 both
+holes_2	86a6b5bf81c7a929bc42b45ae3ac84e5 edge bottom_edge 0 P2.s0 2 segment 0 start
+holes_2	909cc9280bf92e92036a0988cff3e125 face wall 0 P2.s0 2 segment 0 both
+holes_2	9654949bcf891a94c1e481f1033f32a0 vertex top_vertex 0 P1.v1 1 vertex 1 end
+holes_2	965c0850db891a94c1e481f34e172411 vertex top_vertex 0 P1.v0 1 vertex 0 end
+holes_2	96637c05e7891a94c1e481f598ef1582 vertex top_vertex 0 P1.v3 1 vertex 3 end
+holes_2	966aefbaf3891a94c1e481f7e3c706f3 vertex top_vertex 0 P1.v2 1 vertex 2 end
+holes_2	b736b6b86fbbb85b14d61458eccec7d5 vertex seam_vertex 0 P2.v0 2 vertex 0 start
+holes_2	bf165be1527a26fa624da2d02940eb9c vertex seam_vertex 1 P2.v0 2 vertex 0 end
+holes_2	cc0ddbbd99058d0402561ec6fa1fab80 edge vertical 0 P1.v3 1 vertex 3 both
+holes_2	cc154f72a5058d0402561ec944f79cf1 edge vertical 0 P1.v2 1 vertex 2 both
+holes_2	cc1cc327b1058d0402561ecb8fcf8e62 edge vertical 0 P1.v1 1 vertex 1 both
+holes_2	cc2436dcbd058d0402561ecddaa77fd3 edge vertical 0 P1.v0 1 vertex 0 both
+holes_2	e6b854069efc02ec87f3908a6cb12534 edge top_edge 0 P1.s3 1 segment 3 end
+holes_2	e6bfc7bbaafc02ec87f3908cb78916a5 edge top_edge 0 P1.s2 1 segment 2 end
+holes_2	e6c73b70b6fc02ec87f3908f02610816 edge top_edge 0 P1.s1 1 segment 1 end
+holes_2	e6ceaf25c2fc02ec87f390914d38f987 edge top_edge 0 P1.s0 1 segment 0 end
+holes_2	e8daa2be2ec7a2b270e0ef4620e342f4 edge bottom_edge 0 P1.s0 1 segment 0 start
+holes_2	e8e216733ac7a2b270e0ef486bbb3465 edge bottom_edge 0 P1.s1 1 segment 1 start
+holes_2	e8e98a2846c7a2b270e0ef4ab69325d6 edge bottom_edge 0 P1.s2 1 segment 2 start
+holes_2	e8f0fddd52c7a2b270e0ef4d016b1747 edge bottom_edge 0 P1.s3 1 segment 3 start
+holes_2	f2d0b626b8f9281ab80844740d2a9f34 face wall 0 P1.s0 1 segment 0 both
+holes_2	f2d829dbc4f9281ab8084476580290a5 face wall 0 P1.s1 1 segment 1 both
+holes_2	f2df9d90d0f9281ab8084478a2da8216 face wall 0 P1.s2 1 segment 2 both
+holes_2	f2e71145dcf9281ab808447aedb27387 face wall 0 P1.s3 1 segment 3 both
+holes_3	008115e272f935094ecbc3509e34e808 face wall 0 P3.s2 3 segment 2 both
+holes_3	008889977ef935094ecbc352e90cd979 face wall 0 P3.s3 3 segment 3 both
+holes_3	008ffd4c8af935094ecbc35533e4caea face wall 0 P3.s0 3 segment 0 both
+holes_3	0097710196f935094ecbc3577ebcbc5b face wall 0 P3.s1 3 segment 1 both
+holes_3	043bd527e2bd81462458dd089385d2f8 vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+holes_3	044348dceebd81462458dd0ade5dc469 vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+holes_3	044abc91fabd81462458dd0d2935b5da vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+holes_3	0452304706bd81462458dd0f740da74b vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+holes_3	0f6d7d53da89141d7682c27e250a2b54 vertex top_vertex 0 P0.v2 0 vertex 2 end
+holes_3	0f74f108e689141d7682c2806fe21cc5 vertex top_vertex 0 P0.v3 0 vertex 3 end
+holes_3	0f7c64bdf289141d7682c282baba0e36 vertex top_vertex 0 P0.v0 0 vertex 0 end
+holes_3	0f83d872fe89141d7682c2850591ffa7 vertex top_vertex 0 P0.v1 0 vertex 1 end
+holes_3	2c17f84b61fa4078c3d28a2206bd28d9 edge seam 0 P2.v0 2 vertex 0 both
+holes_3	45449349d405868cb6f45f5d474a69f8 edge vertical 0 P0.v0 0 vertex 0 both
+holes_3	454c06fee005868cb6f45f5f92225b69 edge vertical 0 P0.v1 0 vertex 1 both
+holes_3	45537ab3ec05868cb6f45f61dcfa4cda edge vertical 0 P0.v2 0 vertex 2 both
+holes_3	455aee68f805868cb6f45f6427d23e4b edge vertical 0 P0.v3 0 vertex 3 both
+holes_3	5661d457243dc42f325efedbbcc9a2c8 face end_cap 0 P0.b0,P1.b0,P2.b0,P3.b0 cap end
+holes_3	56c1e34a41fc0963d3554a5db129e34c edge top_edge 0 P0.s0 0 segment 0 end
+holes_3	56c956ff4dfc0963d3554a5ffc01d4bd edge top_edge 0 P0.s1 0 segment 1 end
+holes_3	56d0cab459fc0963d3554a6246d9c62e edge top_edge 0 P0.s2 0 segment 2 end
+holes_3	56d83e6965fc0963d3554a6491b1b79f edge top_edge 0 P0.s3 0 segment 3 end
+holes_3	5d4a0d9303bd87bd6fba913312e28218 vertex bottom_vertex 0 P3.v0 3 vertex 0 start
+holes_3	5d5181480fbd87bd6fba91355dba7389 vertex bottom_vertex 0 P3.v1 3 vertex 1 start
+holes_3	5d58f4fd1bbd87bd6fba9137a89264fa vertex bottom_vertex 0 P3.v2 3 vertex 2 start
+holes_3	5d6068b227bd87bd6fba9139f36a566b vertex bottom_vertex 0 P3.v3 3 vertex 3 start
+holes_3	64812a7013fc16526a18c93ed7e40f02 edge top_edge 0 P2.s0 2 segment 0 end
+holes_3	762c157ab589278358a7f58535712348 vertex top_vertex 0 P3.v3 3 vertex 3 end
+holes_3	7633892fc189278358a7f587804914b9 vertex top_vertex 0 P3.v2 3 vertex 2 end
+holes_3	763afce4cd89278358a7f589cb21062a vertex top_vertex 0 P3.v1 3 vertex 1 end
+holes_3	76427099d989278358a7f58c15f8f79b vertex top_vertex 0 P3.v0 3 vertex 0 end
+holes_3	78d1137a8bc79c3b257f3572dc6a84dc edge bottom_edge 0 P0.s3 0 segment 3 start
+holes_3	78d8872f97c79c3b257f35752742764d edge bottom_edge 0 P0.s2 0 segment 2 start
+holes_3	78dffae4a3c79c3b257f3577721a67be edge bottom_edge 0 P0.s1 0 segment 1 start
+holes_3	78e76e99afc79c3b257f3579bcf2592f edge bottom_edge 0 P0.s0 0 segment 0 start
+holes_3	7d54bddfedbd7aced8f71d95b550cbac vertex bottom_vertex 0 P1.v2 1 vertex 2 start
+holes_3	7d5c3194f9bd7aced8f71d980028bd1d vertex bottom_vertex 0 P1.v3 1 vertex 3 start
+holes_3	7d63a54a05bd7aced8f71d9a4b00ae8e vertex bottom_vertex 0 P1.v0 1 vertex 0 start
+holes_3	7d6b18ff11bd7aced8f71d9c95d89fff vertex bottom_vertex 0 P1.v1 1 vertex 1 start
+holes_3	82c726e315f921a36ca68aa0c8b1e11c face wall 0 P0.s3 0 segment 3 both
+holes_3	82ce9a9821f921a36ca68aa31389d28d face wall 0 P0.s2 0 segment 2 both
+holes_3	82d60e4d2df921a36ca68aa55e61c3fe face wall 0 P0.s1 0 segment 1 both
+holes_3	82dd820239f921a36ca68aa7a939b56f face wall 0 P0.s0 0 segment 0 both
+holes_3	86a6b5bf81c7a929bc42b45ae3ac84e5 edge bottom_edge 0 P2.s0 2 segment 0 start
+holes_3	909cc9280bf92e92036a0988cff3e125 face wall 0 P2.s0 2 segment 0 both
+holes_3	9654949bcf891a94c1e481f1033f32a0 vertex top_vertex 0 P1.v1 1 vertex 1 end
+holes_3	965c0850db891a94c1e481f34e172411 vertex top_vertex 0 P1.v0 1 vertex 0 end
+holes_3	96637c05e7891a94c1e481f598ef1582 vertex top_vertex 0 P1.v3 1 vertex 3 end
+holes_3	966aefbaf3891a94c1e481f7e3c706f3 vertex top_vertex 0 P1.v2 1 vertex 2 end
+holes_3	9bf7c8ab9430b1fe3311ede0eb1d0711 face start_cap 0 P0.b0,P1.b0,P2.b0,P3.b0 cap start
+holes_3	b736b6b86fbbb85b14d61458eccec7d5 vertex seam_vertex 0 P2.v0 2 vertex 0 start
+holes_3	bf165be1527a26fa624da2d02940eb9c vertex seam_vertex 1 P2.v0 2 vertex 0 end
+holes_3	cc0ddbbd99058d0402561ec6fa1fab80 edge vertical 0 P1.v3 1 vertex 3 both
+holes_3	cc154f72a5058d0402561ec944f79cf1 edge vertical 0 P1.v2 1 vertex 2 both
+holes_3	cc1cc327b1058d0402561ecb8fcf8e62 edge vertical 0 P1.v1 1 vertex 1 both
+holes_3	cc2436dcbd058d0402561ecddaa77fd3 edge vertical 0 P1.v0 1 vertex 0 both
+holes_3	e6b854069efc02ec87f3908a6cb12534 edge top_edge 0 P1.s3 1 segment 3 end
+holes_3	e6bfc7bbaafc02ec87f3908cb78916a5 edge top_edge 0 P1.s2 1 segment 2 end
+holes_3	e6c73b70b6fc02ec87f3908f02610816 edge top_edge 0 P1.s1 1 segment 1 end
+holes_3	e6ceaf25c2fc02ec87f390914d38f987 edge top_edge 0 P1.s0 1 segment 0 end
+holes_3	e8daa2be2ec7a2b270e0ef4620e342f4 edge bottom_edge 0 P1.s0 1 segment 0 start
+holes_3	e8e216733ac7a2b270e0ef486bbb3465 edge bottom_edge 0 P1.s1 1 segment 1 start
+holes_3	e8e98a2846c7a2b270e0ef4ab69325d6 edge bottom_edge 0 P1.s2 1 segment 2 start
+holes_3	e8f0fddd52c7a2b270e0ef4d016b1747 edge bottom_edge 0 P1.s3 1 segment 3 start
+holes_3	ec365adeb30580156b92ab32c7edbad8 edge vertical 0 P3.v1 3 vertex 1 both
+holes_3	ec3dce93bf0580156b92ab3512c5ac49 edge vertical 0 P3.v0 3 vertex 0 both
+holes_3	ec454248cb0580156b92ab375d9d9dba edge vertical 0 P3.v3 3 vertex 3 both
+holes_3	ec4cb5fdd70580156b92ab39a8758f2b edge vertical 0 P3.v2 3 vertex 2 both
+holes_3	f2d0b626b8f9281ab80844740d2a9f34 face wall 0 P1.s0 1 segment 0 both
+holes_3	f2d829dbc4f9281ab8084476580290a5 face wall 0 P1.s1 1 segment 1 both
+holes_3	f2df9d90d0f9281ab8084478a2da8216 face wall 0 P1.s2 1 segment 2 both
+holes_3	f2e71145dcf9281ab808447aedb27387 face wall 0 P1.s3 1 segment 3 both
+holes_3	f486829688fc0fdb1eb70f70291b33cc edge top_edge 0 P3.s1 3 segment 1 end
+holes_3	f48df64b94fc0fdb1eb70f7273f3253d edge top_edge 0 P3.s0 3 segment 0 end
+holes_3	f4956a00a0fc0fdb1eb70f74becb16ae edge top_edge 0 P3.s3 3 segment 3 end
+holes_3	f49cddb5acfc0fdb1eb70f7709a3081f edge top_edge 0 P3.s2 3 segment 2 end
+holes_3	f68b0279e8c7afa107a46e22b1ed8bc8 edge bottom_edge 0 P3.s2 3 segment 2 start
+holes_3	f692762ef4c7afa107a46e24fcc57d39 edge bottom_edge 0 P3.s3 3 segment 3 start
+holes_3	f699e9e400c7afa107a46e27479d6eaa edge bottom_edge 0 P3.s0 3 segment 0 start
+holes_3	f6a15d990cc7afa107a46e299275601b edge bottom_edge 0 P3.s1 3 segment 1 start
+holes_3_labelled	0e6af3b2578bb40c0d32b5f97765f1a2 edge top_edge 0 L102 0 segment 1 end
+holes_3_labelled	13202e298d7c0bc0eed726b6b40a5387 vertex top_vertex 0 L604 1 vertex 3 end
+holes_3_labelled	15cbf1f26bc65e7022358a1b35ef5af8 face wall 0 L502 1 segment 1 both
+holes_3_labelled	17b89c880e8bb2d60769c0b4d7228a5a edge top_edge 0 L803 3 segment 1 end
+holes_3_labelled	1a4f3186f53f4b1256c199064248d93b edge bottom_edge 0 L501 1 segment 0 start
+holes_3_labelled	1aafb57d917c0ba6b9a5aad49f0dc66e vertex top_vertex 0 L601 1 vertex 0 end
+holes_3_labelled	1fa2000c968bb1bf84e3770c5cd10cc5 edge top_edge 0 L502 1 segment 1 end
+holes_3_labelled	22ab87892bc875e0fca7ad766a9bfb72 vertex bottom_vertex 0 L903 3 vertex 2 start
+holes_3_labelled	234ce6e3b64fa88ee8253e6840054c91 edge seam 0 L701 2 vertex 0 both
+holes_3_labelled	236cee87af3f4b028a730bb319716272 edge bottom_edge 0 L504 1 segment 3 start
+holes_3_labelled	264609a7b38c6a0a7dfe60efc85256dd vertex seam_vertex 0 L701 2 vertex 0 start
+holes_3_labelled	2702fe4caac65c2399e64b2e1b5a761b face wall 0 L102 0 segment 1 both
+holes_3_labelled	33c102f88b7c0eb5ac20b1f58c8f1d3d vertex top_vertex 0 L204 0 vertex 3 end
+holes_3_labelled	34a3fae1ee3f48b60223ccc5fedc7d95 edge bottom_edge 0 L104 0 segment 3 start
+holes_3_labelled	36a476bfb08bb1c4bd9a37bc42096580 edge top_edge 0 L503 1 segment 2 end
+holes_3_labelled	37d8d03be28bb2cb73d1f41193836c4c edge top_edge 0 L801 3 segment 3 end
+holes_3_labelled	3e4a37e6e60340b0ecf12bcd6a720a7a edge vertical 0 L904 3 vertex 1 both
+holes_3_labelled	410d99bb4cc876f239a75a35b243b793 vertex bottom_vertex 0 L203 0 vertex 2 start
+holes_3_labelled	42cbbb3cffc875d6690fe0d326fcdd64 vertex bottom_vertex 0 L901 3 vertex 0 start
+holes_3_labelled	42d0e40af7033f5615d45b3293475ce5 edge vertical 0 L202 0 vertex 1 both
+holes_3_labelled	48b4a2e3c57c0bb12b132c34697e77e4 vertex top_vertex 0 L603 1 vertex 2 end
+holes_3_labelled	49106fe44640ad00d8878c2fb796aefe vertex seam_vertex 1 L701 2 vertex 0 end
+holes_3_labelled	4be6c2229d3f4a3ae34b3966f226ca32 edge bottom_edge 0 L802 3 segment 2 start
+holes_3_labelled	4ee2a5297fc65ad897a29ab74b52da75 face wall 0 L801 3 segment 3 both
+holes_3_labelled	51e4221eef8bb4114e74097a3ae9e583 edge top_edge 0 L103 0 segment 2 end
+holes_3_labelled	56d9ad23ba7c0d45d889262885a03b4a vertex top_vertex 0 L902 3 vertex 3 end
+holes_3_labelled	5b0886e5c1c87592325e5bbbd42c4c69 vertex bottom_vertex 0 L904 3 vertex 1 start
+holes_3_labelled	5c977306e2c65c13d62250abd0ce9a78 face wall 0 L101 0 segment 0 both
+holes_3_labelled	5e223c24113f4a1b4aae1ec0a077dca0 edge bottom_edge 0 L804 3 segment 0 start
+holes_3_labelled	6350ef68c5033cff0f47beac60d05dd9 edge vertical 0 L604 1 vertex 3 both
+holes_3_labelled	695577b2c37c0ea5e85cb7734203419a vertex top_vertex 0 L203 0 vertex 2 end
+holes_3_labelled	6bdf0f49648bb2b1472b0b005cd27a59 edge top_edge 0 L804 3 segment 0 end
+holes_3_labelled	6c4f254d1a0340bb5e5ead2d34e2bbf0 edge vertical 0 L902 3 vertex 3 both
+holes_3_labelled	74a72f38b6d7457cd2b7a9165df452a4 face end_cap 0 L100,L500,L600,L800 cap end
+holes_3_labelled	76e8cfd2543f47b48d2d63f170e66aaa edge bottom_edge 0 L601 2 segment 0 start
+holes_3_labelled	77d71e6621c65e6066fc2269c9af1a7b face wall 0 L501 1 segment 0 both
+holes_3_labelled	795a345f4ac873fd8d72f49896562429 vertex bottom_vertex 0 L603 1 vertex 2 start
+holes_3_labelled	7ce7928fb3c65ae309101c1715c38beb face wall 0 L803 3 segment 1 both
+holes_3_labelled	80f4db66dbc65e509aad9516a0d7a3b2 face wall 0 L504 1 segment 3 both
+holes_3_labelled	8486c827e4c876f77ae8adb675c7ab74 vertex bottom_vertex 0 L204 0 vertex 3 start
+holes_3_labelled	84de9a89ee7c0d5049f6a7885010ecc0 vertex top_vertex 0 L904 3 vertex 1 end
+holes_3_labelled	8601e300e63f48d0486a6e49d07040fa edge bottom_edge 0 L103 0 segment 2 start
+holes_3_labelled	864a12778f033f5b5715aeb356cb50c6 edge vertical 0 L201 0 vertex 0 both
+holes_3_labelled	909653d9e18bb3f1be6181a4c7869317 edge top_edge 0 L601 2 segment 0 end
+holes_3_labelled	9155dccef9033d0980b5400c2b410f4f edge vertical 0 L602 1 vertex 1 both
+holes_3_labelled	922be7c11ac65c04125e56298642bed5 face wall 0 L104 0 segment 3 both
+holes_3_labelled	997a68131ec873f2f9db27f552b7061b vertex bottom_vertex 0 L601 1 vertex 0 start
+holes_3_labelled	a1418e60253f4b1cd9444007c950c0fd edge bottom_edge 0 L503 1 segment 2 start
+holes_3_labelled	a6ca1dd55d033d045089122d245451ba edge vertical 0 L603 1 vertex 2 both
+holes_3_labelled	a7c8b661f88bb2d0bd9dda633552fb53 edge top_edge 0 L802 3 segment 2 end
+holes_3_labelled	accea61f5b7c0eab299e0af40587357b vertex top_vertex 0 L202 0 vertex 1 end
+holes_3_labelled	adf1ee96533f4a2b2811d1b585e689b5 edge bottom_edge 0 L801 3 segment 3 start
+holes_3_labelled	ae3a1e0cfc0340b636bd121f0c419981 edge vertical 0 L903 3 vertex 2 both
+holes_3_labelled	afb219e6808bb1ba3b1790babb017dbe edge top_edge 0 L501 1 segment 0 end
+holes_3_labelled	b126c3f0478bb44099bff9011a8d786c edge top_edge 0 L104 0 segment 3 end
+holes_3_labelled	b2bba16315c875dbb2dbc724c8cc6c6b vertex bottom_vertex 0 L902 3 vertex 3 start
+holes_3_labelled	b84405133f3f4b2211fb00b7ae8919b8 edge bottom_edge 0 L502 1 segment 1 start
+holes_3_labelled	b8e4d997707c0d361d4fbe77195ffacd vertex top_vertex 0 L901 3 vertex 0 end
+holes_3_labelled	ba1b3ce21cc876e7b724b3342b3bcfd1 vertex bottom_vertex 0 L201 0 vertex 0 start
+holes_3_labelled	bbde8731c7033f4b9351b4310c3f7523 edge vertical 0 L204 0 vertex 3 both
+holes_3_labelled	bcd362cbe2c87402ceb4481959da180a vertex bottom_vertex 0 L604 1 vertex 3 start
+holes_3_labelled	c25dd04a868bb1f41170ba13fff8938f edge top_edge 0 L504 1 segment 3 end
+holes_3_labelled	c97b116d7e3f48d589abc1ca93f434db edge bottom_edge 0 L102 0 segment 1 start
+holes_3_labelled	caf1c545bf8bb406cbf16278b3e1fdc1 edge top_edge 0 L101 0 segment 0 end
+holes_3_labelled	cdac49db545b6ebd41af226c1d961269 face start_cap 0 L100,L500,L600,L800 cap start
+holes_3_labelled	d470bcb180c65b029d67ed54f84cabea face wall 0 L601 2 segment 0 both
+holes_3_labelled	d4cf0b3b91033d0ec1f6938ceec50330 edge vertical 0 L601 1 vertex 0 both
+holes_3_labelled	dbf6dbfc873f4a35997f531550573b2b edge bottom_edge 0 L803 3 segment 1 start
+holes_3_labelled	dc3f0b73300340c0a82a937ed6b24af7 edge vertical 0 L901 3 vertex 0 both
+holes_3_labelled	dcf3967fb6c873f83b1c7b76163af9fc vertex bottom_vertex 0 L602 1 vertex 1 start
+holes_3_labelled	e2631ad9937c0e9b65da1071bafb59d8 vertex top_vertex 0 L201 0 vertex 0 end
+holes_3_labelled	e389cfe012c65c1e58a4f7ad57d6823a face wall 0 L103 0 segment 2 both
+holes_3_labelled	e51b40c3597c0bb67d69a556e999a211 vertex top_vertex 0 L602 1 vertex 1 end
+holes_3_labelled	e6e9c6fda47c0d408ebd3fd6e3d0ac43 vertex top_vertex 0 L903 3 vertex 2 end
+holes_3_labelled	ecd778b5c9c65ae852dc0268b7931af2 face wall 0 L802 3 segment 2 both
+holes_3_labelled	fd946b4eb4c876ecf86606b4eebfc3b2 vertex bottom_vertex 0 L202 0 vertex 1 start
+holes_3_labelled	fec97b3f51c65e6ae97ec96b50b7023d face wall 0 L503 1 segment 2 both
+holes_3_labelled	ff0f8627b63f48c5c5e7c74849685938 edge bottom_edge 0 L101 0 segment 0 start
+holes_3_labelled	ff12f2b73dc65ac8ba3ee7c265e42d60 face wall 0 L804 3 segment 0 both
+holes_3_labelled	ff57b59e5f033f50d49307b1cfc36904 edge vertical 0 L203 0 vertex 2 both
+holes_3_reversed_direction	0e6af3b2578bb40c0d32b5f97765f1a2 edge top_edge 0 L102 0 segment 1 end
+holes_3_reversed_direction	13202e298d7c0bc0eed726b6b40a5387 vertex top_vertex 0 L604 1 vertex 3 end
+holes_3_reversed_direction	15cbf1f26bc65e7022358a1b35ef5af8 face wall 0 L502 1 segment 1 both
+holes_3_reversed_direction	17b89c880e8bb2d60769c0b4d7228a5a edge top_edge 0 L803 3 segment 1 end
+holes_3_reversed_direction	1a4f3186f53f4b1256c199064248d93b edge bottom_edge 0 L501 1 segment 0 start
+holes_3_reversed_direction	1aafb57d917c0ba6b9a5aad49f0dc66e vertex top_vertex 0 L601 1 vertex 0 end
+holes_3_reversed_direction	1fa2000c968bb1bf84e3770c5cd10cc5 edge top_edge 0 L502 1 segment 1 end
+holes_3_reversed_direction	22ab87892bc875e0fca7ad766a9bfb72 vertex bottom_vertex 0 L903 3 vertex 2 start
+holes_3_reversed_direction	234ce6e3b64fa88ee8253e6840054c91 edge seam 0 L701 2 vertex 0 both
+holes_3_reversed_direction	236cee87af3f4b028a730bb319716272 edge bottom_edge 0 L504 1 segment 3 start
+holes_3_reversed_direction	264609a7b38c6a0a7dfe60efc85256dd vertex seam_vertex 0 L701 2 vertex 0 start
+holes_3_reversed_direction	2702fe4caac65c2399e64b2e1b5a761b face wall 0 L102 0 segment 1 both
+holes_3_reversed_direction	33c102f88b7c0eb5ac20b1f58c8f1d3d vertex top_vertex 0 L204 0 vertex 3 end
+holes_3_reversed_direction	34a3fae1ee3f48b60223ccc5fedc7d95 edge bottom_edge 0 L104 0 segment 3 start
+holes_3_reversed_direction	36a476bfb08bb1c4bd9a37bc42096580 edge top_edge 0 L503 1 segment 2 end
+holes_3_reversed_direction	37d8d03be28bb2cb73d1f41193836c4c edge top_edge 0 L801 3 segment 3 end
+holes_3_reversed_direction	3e4a37e6e60340b0ecf12bcd6a720a7a edge vertical 0 L904 3 vertex 1 both
+holes_3_reversed_direction	410d99bb4cc876f239a75a35b243b793 vertex bottom_vertex 0 L203 0 vertex 2 start
+holes_3_reversed_direction	42cbbb3cffc875d6690fe0d326fcdd64 vertex bottom_vertex 0 L901 3 vertex 0 start
+holes_3_reversed_direction	42d0e40af7033f5615d45b3293475ce5 edge vertical 0 L202 0 vertex 1 both
+holes_3_reversed_direction	48b4a2e3c57c0bb12b132c34697e77e4 vertex top_vertex 0 L603 1 vertex 2 end
+holes_3_reversed_direction	49106fe44640ad00d8878c2fb796aefe vertex seam_vertex 1 L701 2 vertex 0 end
+holes_3_reversed_direction	4be6c2229d3f4a3ae34b3966f226ca32 edge bottom_edge 0 L802 3 segment 2 start
+holes_3_reversed_direction	4ee2a5297fc65ad897a29ab74b52da75 face wall 0 L801 3 segment 3 both
+holes_3_reversed_direction	51e4221eef8bb4114e74097a3ae9e583 edge top_edge 0 L103 0 segment 2 end
+holes_3_reversed_direction	56d9ad23ba7c0d45d889262885a03b4a vertex top_vertex 0 L902 3 vertex 3 end
+holes_3_reversed_direction	5b0886e5c1c87592325e5bbbd42c4c69 vertex bottom_vertex 0 L904 3 vertex 1 start
+holes_3_reversed_direction	5c977306e2c65c13d62250abd0ce9a78 face wall 0 L101 0 segment 0 both
+holes_3_reversed_direction	5e223c24113f4a1b4aae1ec0a077dca0 edge bottom_edge 0 L804 3 segment 0 start
+holes_3_reversed_direction	6350ef68c5033cff0f47beac60d05dd9 edge vertical 0 L604 1 vertex 3 both
+holes_3_reversed_direction	695577b2c37c0ea5e85cb7734203419a vertex top_vertex 0 L203 0 vertex 2 end
+holes_3_reversed_direction	6bdf0f49648bb2b1472b0b005cd27a59 edge top_edge 0 L804 3 segment 0 end
+holes_3_reversed_direction	6c4f254d1a0340bb5e5ead2d34e2bbf0 edge vertical 0 L902 3 vertex 3 both
+holes_3_reversed_direction	74a72f38b6d7457cd2b7a9165df452a4 face end_cap 0 L100,L500,L600,L800 cap end
+holes_3_reversed_direction	76e8cfd2543f47b48d2d63f170e66aaa edge bottom_edge 0 L601 2 segment 0 start
+holes_3_reversed_direction	77d71e6621c65e6066fc2269c9af1a7b face wall 0 L501 1 segment 0 both
+holes_3_reversed_direction	795a345f4ac873fd8d72f49896562429 vertex bottom_vertex 0 L603 1 vertex 2 start
+holes_3_reversed_direction	7ce7928fb3c65ae309101c1715c38beb face wall 0 L803 3 segment 1 both
+holes_3_reversed_direction	80f4db66dbc65e509aad9516a0d7a3b2 face wall 0 L504 1 segment 3 both
+holes_3_reversed_direction	8486c827e4c876f77ae8adb675c7ab74 vertex bottom_vertex 0 L204 0 vertex 3 start
+holes_3_reversed_direction	84de9a89ee7c0d5049f6a7885010ecc0 vertex top_vertex 0 L904 3 vertex 1 end
+holes_3_reversed_direction	8601e300e63f48d0486a6e49d07040fa edge bottom_edge 0 L103 0 segment 2 start
+holes_3_reversed_direction	864a12778f033f5b5715aeb356cb50c6 edge vertical 0 L201 0 vertex 0 both
+holes_3_reversed_direction	909653d9e18bb3f1be6181a4c7869317 edge top_edge 0 L601 2 segment 0 end
+holes_3_reversed_direction	9155dccef9033d0980b5400c2b410f4f edge vertical 0 L602 1 vertex 1 both
+holes_3_reversed_direction	922be7c11ac65c04125e56298642bed5 face wall 0 L104 0 segment 3 both
+holes_3_reversed_direction	997a68131ec873f2f9db27f552b7061b vertex bottom_vertex 0 L601 1 vertex 0 start
+holes_3_reversed_direction	a1418e60253f4b1cd9444007c950c0fd edge bottom_edge 0 L503 1 segment 2 start
+holes_3_reversed_direction	a6ca1dd55d033d045089122d245451ba edge vertical 0 L603 1 vertex 2 both
+holes_3_reversed_direction	a7c8b661f88bb2d0bd9dda633552fb53 edge top_edge 0 L802 3 segment 2 end
+holes_3_reversed_direction	accea61f5b7c0eab299e0af40587357b vertex top_vertex 0 L202 0 vertex 1 end
+holes_3_reversed_direction	adf1ee96533f4a2b2811d1b585e689b5 edge bottom_edge 0 L801 3 segment 3 start
+holes_3_reversed_direction	ae3a1e0cfc0340b636bd121f0c419981 edge vertical 0 L903 3 vertex 2 both
+holes_3_reversed_direction	afb219e6808bb1ba3b1790babb017dbe edge top_edge 0 L501 1 segment 0 end
+holes_3_reversed_direction	b126c3f0478bb44099bff9011a8d786c edge top_edge 0 L104 0 segment 3 end
+holes_3_reversed_direction	b2bba16315c875dbb2dbc724c8cc6c6b vertex bottom_vertex 0 L902 3 vertex 3 start
+holes_3_reversed_direction	b84405133f3f4b2211fb00b7ae8919b8 edge bottom_edge 0 L502 1 segment 1 start
+holes_3_reversed_direction	b8e4d997707c0d361d4fbe77195ffacd vertex top_vertex 0 L901 3 vertex 0 end
+holes_3_reversed_direction	ba1b3ce21cc876e7b724b3342b3bcfd1 vertex bottom_vertex 0 L201 0 vertex 0 start
+holes_3_reversed_direction	bbde8731c7033f4b9351b4310c3f7523 edge vertical 0 L204 0 vertex 3 both
+holes_3_reversed_direction	bcd362cbe2c87402ceb4481959da180a vertex bottom_vertex 0 L604 1 vertex 3 start
+holes_3_reversed_direction	c25dd04a868bb1f41170ba13fff8938f edge top_edge 0 L504 1 segment 3 end
+holes_3_reversed_direction	c97b116d7e3f48d589abc1ca93f434db edge bottom_edge 0 L102 0 segment 1 start
+holes_3_reversed_direction	caf1c545bf8bb406cbf16278b3e1fdc1 edge top_edge 0 L101 0 segment 0 end
+holes_3_reversed_direction	cdac49db545b6ebd41af226c1d961269 face start_cap 0 L100,L500,L600,L800 cap start
+holes_3_reversed_direction	d470bcb180c65b029d67ed54f84cabea face wall 0 L601 2 segment 0 both
+holes_3_reversed_direction	d4cf0b3b91033d0ec1f6938ceec50330 edge vertical 0 L601 1 vertex 0 both
+holes_3_reversed_direction	dbf6dbfc873f4a35997f531550573b2b edge bottom_edge 0 L803 3 segment 1 start
+holes_3_reversed_direction	dc3f0b73300340c0a82a937ed6b24af7 edge vertical 0 L901 3 vertex 0 both
+holes_3_reversed_direction	dcf3967fb6c873f83b1c7b76163af9fc vertex bottom_vertex 0 L602 1 vertex 1 start
+holes_3_reversed_direction	e2631ad9937c0e9b65da1071bafb59d8 vertex top_vertex 0 L201 0 vertex 0 end
+holes_3_reversed_direction	e389cfe012c65c1e58a4f7ad57d6823a face wall 0 L103 0 segment 2 both
+holes_3_reversed_direction	e51b40c3597c0bb67d69a556e999a211 vertex top_vertex 0 L602 1 vertex 1 end
+holes_3_reversed_direction	e6e9c6fda47c0d408ebd3fd6e3d0ac43 vertex top_vertex 0 L903 3 vertex 2 end
+holes_3_reversed_direction	ecd778b5c9c65ae852dc0268b7931af2 face wall 0 L802 3 segment 2 both
+holes_3_reversed_direction	fd946b4eb4c876ecf86606b4eebfc3b2 vertex bottom_vertex 0 L202 0 vertex 1 start
+holes_3_reversed_direction	fec97b3f51c65e6ae97ec96b50b7023d face wall 0 L503 1 segment 2 both
+holes_3_reversed_direction	ff0f8627b63f48c5c5e7c74849685938 edge bottom_edge 0 L101 0 segment 0 start
+holes_3_reversed_direction	ff12f2b73dc65ac8ba3ee7c265e42d60 face wall 0 L804 3 segment 0 both
+holes_3_reversed_direction	ff57b59e5f033f50d49307b1cfc36904 edge vertical 0 L203 0 vertex 2 both
+clockwise_labelled	02f9bdfc6d72970eb7637469496c2ca3 vertex top_vertex 0 L404 0 vertex 4 end
+clockwise_labelled	0849e6fef373521f15ac1dcb605d44cf edge vertical 0 L406 0 vertex 2 both
+clockwise_labelled	1167a3ffad73520f495d90783785ce06 edge vertical 0 L403 0 vertex 5 both
+clockwise_labelled	1281b00bb962f2b9d3d26c0acad7064f edge top_edge 0 L301 0 segment 6 end
+clockwise_labelled	193002bffca06123c5706b08c160190d face wall 0 L302 0 segment 5 both
+clockwise_labelled	19fc34af87729713f01a35192ea4855e vertex top_vertex 0 L405 0 vertex 3 end
+clockwise_labelled	1f4c5db20d7352244e62de7b45959d8a edge vertical 0 L407 0 vertex 1 both
+clockwise_labelled	25b93843baaf597c06f99813f36f095d edge bottom_edge 0 L306 0 segment 1 start
+clockwise_labelled	27e0ee61e7729728f51f831c3cb454e2 vertex top_vertex 0 L401 0 vertex 0 end
+clockwise_labelled	3032797316a06128fe272bb8a69871c8 face wall 0 L303 0 segment 4 both
+clockwise_labelled	3832f9044962f231332ff0f6ef704175 edge top_edge 0 L307 0 segment 0 end
+clockwise_labelled	3cbbaef6d4af59813fb058c3d8a76218 edge bottom_edge 0 L307 0 segment 0 start
+clockwise_labelled	4130829bfc26330cac6dfdc677e5d15b vertex bottom_vertex 0 L405 0 vertex 3 start
+clockwise_labelled	4cc6056aeca060b029d33df7f40923b7 face wall 0 L304 0 segment 3 both
+clockwise_labelled	4f153c4e5c263321b1734bc985f5a0df vertex bottom_vertex 0 L401 0 vertex 0 start
+clockwise_labelled	4f356fb76362f2366be6b1a6d4a89a30 edge top_edge 0 L306 0 segment 1 end
+clockwise_labelled	4f67655adaaf59bb1609821d1d9e77e9 edge bottom_edge 0 L302 0 segment 5 start
+clockwise_labelled	5832f94f16263311e524be765d1e2a16 vertex bottom_vertex 0 L404 0 vertex 4 start
+clockwise_labelled	63c87c1e06a060b56289fea7d9417c72 face wall 0 L305 0 segment 2 both
+clockwise_labelled	6669dc0df4af59c04ec042cd02d6d0a4 edge bottom_edge 0 L303 0 segment 4 start
+clockwise_labelled	89ec1ad59d72971939e61b6ad0741465 vertex top_vertex 0 L406 0 vertex 2 end
+clockwise_labelled	8f3c43d823735229982ec4cce7652c91 edge vertical 0 L404 0 vertex 4 both
+clockwise_labelled	97d0d487fd72972e3eeb696dde83e3e9 vertex top_vertex 0 L402 0 vertex 6 end
+clockwise_labelled	985a00d8dd735219cbe03779be8db5c8 edge vertical 0 L401 0 vertex 0 both
+clockwise_labelled	99740ce4e962f2c45655130c51deee11 edge top_edge 0 L303 0 segment 4 end
+clockwise_labelled	9ec6db6a8aaf59718476f1126c67219b edge bottom_edge 0 L304 0 segment 3 start
+clockwise_labelled	a0ee9188b772971e729cdc1ab5ac6d20 vertex top_vertex 0 L407 0 vertex 1 end
+clockwise_labelled	a63eba8b3d73522ed0e5857ccc9d854c edge vertical 0 L405 0 vertex 3 both
+clockwise_labelled	a9401c99e6a0611e7ba484b71f908a06 face wall 0 L301 0 segment 6 both
+clockwise_labelled	aed34b3b1772973377a22a1dc3bc3ca4 vertex top_vertex 0 L403 0 vertex 5 end
+clockwise_labelled	b07683980362f2c98f0bd3bc371746cc edge top_edge 0 L302 0 segment 5 end
+clockwise_labelled	b1409c2b1962f226b0ad49f5686859b3 edge top_edge 0 L305 0 segment 2 end
+clockwise_labelled	b5c9521da4af5976bd2db1c2519f7a56 edge bottom_edge 0 L305 0 segment 2 start
+clockwise_labelled	c78fc044f553f6def31be52c2158938e face end_cap 0 L300 cap end
+clockwise_labelled	c822df752c2633172ef0a4c7feedb91d vertex bottom_vertex 0 L407 0 vertex 1 start
+clockwise_labelled	c84312de3362f22be9640aa54da0b26e edge top_edge 0 L304 0 segment 3 end
+clockwise_labelled	d3b862441ca060baac55e4f97b110b79 face wall 0 L306 0 segment 1 both
+clockwise_labelled	d60799278c26332c33f5f2cb0cfd88a1 vertex bottom_vertex 0 L403 0 vertex 5 start
+clockwise_labelled	d9eb8330056455cb60a1a92c044f83fd face start_cap 0 L300 cap start
+clockwise_labelled	df2556284626331c67a76577e42611d8 vertex bottom_vertex 0 L406 0 vertex 2 start
+clockwise_labelled	df777f34c4af59b5cc3d9bcb7bcee8e2 edge bottom_edge 0 L301 0 segment 6 start
+clockwise_labelled	eabad8f736a060bfe50ca5a960496434 face wall 0 L307 0 segment 0 both
+clockwise_labelled	ed0a0fdaa62633316cacb37af235e15c vertex bottom_vertex 0 L402 0 vertex 6 start
+clockwise_labelled	fa652d4c9373520a10a6cfc8524d754b edge vertical 0 L402 0 vertex 6 both
+clockwise_closing_point	347f3761231aab81d23d5d380e970238 vertex top_vertex 0 P0.v5 0 vertex 5 end
+clockwise_closing_point	3486ab162f1aab81d23d5d3a596ef3a9 vertex top_vertex 0 P0.v4 0 vertex 4 end
+clockwise_closing_point	34959280471aab81d23d5d3eef1ed68b vertex top_vertex 0 P0.v6 0 vertex 6 end
+clockwise_closing_point	349d0635531aab81d23d5d4139f6c7fc vertex top_vertex 0 P0.v1 0 vertex 1 end
+clockwise_closing_point	34a479ea5f1aab81d23d5d4384ceb96d vertex top_vertex 0 P0.v0 0 vertex 0 end
+clockwise_closing_point	34abed9f6b1aab81d23d5d45cfa6aade vertex top_vertex 0 P0.v3 0 vertex 3 end
+clockwise_closing_point	34b36154771aab81d23d5d481a7e9c4f vertex top_vertex 0 P0.v2 0 vertex 2 end
+clockwise_closing_point	3fceae614ae63e59246742b6cb7b2058 vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+clockwise_closing_point	3fd6221656e63e59246742b9165311c9 vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+clockwise_closing_point	3fdd95cb62e63e59246742bb612b033a vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+clockwise_closing_point	3fe509806ee63e59246742bdac02f4ab vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+clockwise_closing_point	3fec7d357ae63e59246742bff6dae61c vertex bottom_vertex 0 P0.v6 0 vertex 6 start
+clockwise_closing_point	3ffb649f92e63e59246742c48c8ac8fe vertex bottom_vertex 0 P0.v4 0 vertex 4 start
+clockwise_closing_point	4002d8549ee63e59246742c6d762ba6f vertex bottom_vertex 0 P0.v5 0 vertex 5 start
+clockwise_closing_point	5270583da3da6767aa819253802386b9 edge vertical 0 P0.v6 0 vertex 6 both
+clockwise_closing_point	5277cbf2afda6767aa819255cafb782a edge vertical 0 P0.v5 0 vertex 5 both
+clockwise_closing_point	527f3fa7bbda6767aa81925815d3699b edge vertical 0 P0.v4 0 vertex 4 both
+clockwise_closing_point	5286b35cc7da6767aa81925a60ab5b0c edge vertical 0 P0.v3 0 vertex 3 both
+clockwise_closing_point	528e2711d3da6767aa81925cab834c7d edge vertical 0 P0.v2 0 vertex 2 both
+clockwise_closing_point	52959ac6dfda6767aa81925ef65b3dee edge vertical 0 P0.v1 0 vertex 1 both
+clockwise_closing_point	529d0e7bebda6767aa81926141332f5f edge vertical 0 P0.v0 0 vertex 0 both
+clockwise_closing_point	9d609131cddc23642340df0423be1648 edge bottom_edge 0 P0.s0 0 segment 0 start
+clockwise_closing_point	9d6804e6d9dc23642340df066e9607b9 edge bottom_edge 0 P0.s1 0 segment 1 start
+clockwise_closing_point	9d6f789be5dc23642340df08b96df92a edge bottom_edge 0 P0.s2 0 segment 2 start
+clockwise_closing_point	9d76ec50f1dc23642340df0b0445ea9b edge bottom_edge 0 P0.s3 0 segment 3 start
+clockwise_closing_point	9d7e6005fddc23642340df0d4f1ddc0c edge bottom_edge 0 P0.s4 0 segment 4 start
+clockwise_closing_point	9d85d3bb09dc23642340df0f99f5cd7d edge bottom_edge 0 P0.s5 0 segment 5 start
+clockwise_closing_point	9d8d477015dc23642340df11e4cdbeee edge bottom_edge 0 P0.s6 0 segment 6 start
+clockwise_closing_point	b020e9aab56cb3aa4aa45a4e7db27d29 face start_cap 0 P0.b0 cap start
+clockwise_closing_point	bf6fc16217a7b63b756aca194efeb7d8 edge top_edge 0 P0.s3 0 segment 3 end
+clockwise_closing_point	bf77351723a7b63b756aca1b99d6a949 edge top_edge 0 P0.s2 0 segment 2 end
+clockwise_closing_point	bf7ea8cc2fa7b63b756aca1de4ae9aba edge top_edge 0 P0.s1 0 segment 1 end
+clockwise_closing_point	bf861c813ba7b63b756aca202f868c2b edge top_edge 0 P0.s0 0 segment 0 end
+clockwise_closing_point	bf9503eb53a7b63b756aca24c5366f0d edge top_edge 0 P0.s6 0 segment 6 end
+clockwise_closing_point	bf9c77a05fa7b63b756aca27100e607e edge top_edge 0 P0.s5 0 segment 5 end
+clockwise_closing_point	bfa3eb556ba7b63b756aca295ae651ef edge top_edge 0 P0.s4 0 segment 4 end
+clockwise_closing_point	e3da2e1dfd6e6fa6c363a14405717238 face wall 0 P0.s4 0 segment 4 both
+clockwise_closing_point	e3e1a1d3096e6fa6c363a146504963a9 face wall 0 P0.s5 0 segment 5 both
+clockwise_closing_point	e3e91588156e6fa6c363a1489b21551a face wall 0 P0.s6 0 segment 6 both
+clockwise_closing_point	e3f7fcf22d6e6fa6c363a14d30d137fc face wall 0 P0.s0 0 segment 0 both
+clockwise_closing_point	e3ff70a7396e6fa6c363a14f7ba9296d face wall 0 P0.s1 0 segment 1 both
+clockwise_closing_point	e406e45c456e6fa6c363a151c6811ade face wall 0 P0.s2 0 segment 2 both
+clockwise_closing_point	e40e5811516e6fa6c363a15411590c4f face wall 0 P0.s3 0 segment 3 both
+clockwise_closing_point	faa7508a663a027e158d899724e397d4 face end_cap 0 P0.b0 cap end
+labels_absent	738c48d7d9e89cbe359735037d09b630 face wall 0 P0.s2 0 segment 2 both
+labels_absent	7393bc8ce5e89cbe35973505c7e1a7a1 face wall 0 P0.s3 0 segment 3 both
+labels_absent	739b3041f1e89cbe3597350812b99912 face wall 0 P0.s0 0 segment 0 both
+labels_absent	73a2a3f6fde89cbe3597350a5d918a83 face wall 0 P0.s1 0 segment 1 both
+labels_absent	73b8ff1621e89cbe359735113e195ed6 face wall 0 P0.s4 0 segment 4 both
+labels_absent	73c072cb2de89cbe3597351388f15047 face wall 0 P0.s5 0 segment 5 both
+labels_absent	7bebdcd2954ba78ec3e5dc865d5a8452 vertex top_vertex 0 P0.v5 0 vertex 5 end
+labels_absent	7bf35087a14ba78ec3e5dc88a83275c3 vertex top_vertex 0 P0.v4 0 vertex 4 end
+labels_absent	7bfac43cad4ba78ec3e5dc8af30a6734 vertex top_vertex 0 P0.v3 0 vertex 3 end
+labels_absent	7c0237f1b94ba78ec3e5dc8d3de258a5 vertex top_vertex 0 P0.v2 0 vertex 2 end
+labels_absent	7c09aba6c54ba78ec3e5dc8f88ba4a16 vertex top_vertex 0 P0.v1 0 vertex 1 end
+labels_absent	7c111f5bd14ba78ec3e5dc91d3923b87 vertex top_vertex 0 P0.v0 0 vertex 0 end
+labels_absent	7d825c40641a22267cbe8a3169511270 edge bottom_edge 0 P0.s2 0 segment 2 start
+labels_absent	7d89cff5701a22267cbe8a33b42903e1 edge bottom_edge 0 P0.s3 0 segment 3 start
+labels_absent	7d9143aa7c1a22267cbe8a35ff00f552 edge bottom_edge 0 P0.s0 0 segment 0 start
+labels_absent	7d98b75f881a22267cbe8a3849d8e6c3 edge bottom_edge 0 P0.s1 0 segment 1 start
+labels_absent	7daf127eac1a22267cbe8a3f2a60bb16 edge bottom_edge 0 P0.s4 0 segment 4 start
+labels_absent	7db68633b81a22267cbe8a417538ac87 edge bottom_edge 0 P0.s5 0 segment 5 start
+labels_absent	b539833d1556e0b420443e2b20dde358 vertex bottom_vertex 0 P0.v4 0 vertex 4 start
+labels_absent	b540f6f22156e0b420443e2d6bb5d4c9 vertex bottom_vertex 0 P0.v5 0 vertex 5 start
+labels_absent	b55752114556e0b420443e344c3da91c vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+labels_absent	b55ec5c65156e0b420443e3697159a8d vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+labels_absent	b566397b5d56e0b420443e38e1ed8bfe vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+labels_absent	b56dad306956e0b420443e3b2cc57d6f vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+labels_absent	b8579aae9af3d5e391f5997ca31b1cb2 face end_cap 0 P0.b0 cap end
+labels_absent	be5eb2f7d3ea58baae5681aaf5447ffb face start_cap 0 P0.b0 cap start
+labels_absent	cd9ea3451e255b4bd91cf17130e0d7c8 edge top_edge 0 P0.s5 0 segment 5 end
+labels_absent	cda616fa2a255b4bd91cf1737bb8c939 edge top_edge 0 P0.s4 0 segment 4 end
+labels_absent	cdbc72194e255b4bd91cf17a5c409d8c edge top_edge 0 P0.s1 0 segment 1 end
+labels_absent	cdc3e5ce5a255b4bd91cf17ca7188efd edge top_edge 0 P0.s0 0 segment 0 end
+labels_absent	cdcb598366255b4bd91cf17ef1f0806e edge top_edge 0 P0.s3 0 segment 3 end
+labels_absent	cdd2cd3872255b4bd91cf1813cc871df edge top_edge 0 P0.s2 0 segment 2 end
+labels_absent	df39c219bc1bde22f57ddc7ac62016e0 edge vertical 0 P0.v1 0 vertex 1 both
+labels_absent	df4135cec81bde22f57ddc7d10f80851 edge vertical 0 P0.v0 0 vertex 0 both
+labels_absent	df48a983d41bde22f57ddc7f5bcff9c2 edge vertical 0 P0.v3 0 vertex 3 both
+labels_absent	df501d38e01bde22f57ddc81a6a7eb33 edge vertical 0 P0.v2 0 vertex 2 both
+labels_absent	df5790edec1bde22f57ddc83f17fdca4 edge vertical 0 P0.v5 0 vertex 5 both
+labels_absent	df5f04a2f81bde22f57ddc863c57ce15 edge vertical 0 P0.v4 0 vertex 4 both
+labels_present	040ae263a7c3277185e74f5e2c7efccc edge bottom_edge 0 L46 0 segment 5 start
+labels_present	0dcb51f1feff357f90651f9fb99951e0 edge vertical 0 L144 0 vertex 3 both
+labels_present	1431cb426c4a3b6cff8d9c5ae7e7ae0d vertex top_vertex 0 L143 0 vertex 2 end
+labels_present	1c3c3c34f1efadcf9ce173818653b9f3 face end_cap 0 L40 cap end
+labels_present	1fa0fd63e33c16bed51532dba38eb82b face wall 0 L41 0 segment 0 both
+labels_present	2d85b716433c16d3da1a80deb19e87af face wall 0 L45 0 segment 4 both
+labels_present	363a95eeee76be7289ef9581c4b822f1 edge top_edge 0 L42 0 segment 1 end
+labels_present	3977f11866ff3622774e3c376693da1f edge vertical 0 L143 0 vertex 2 both
+labels_present	399f571ddfc32761c22354dbe1f32129 edge bottom_edge 0 L43 0 segment 2 start
+labels_present	441f4fa14e76be878ef4e384d2c7f275 edge top_edge 0 L46 0 segment 5 end
+labels_present	5144805e96ff3584d1a673207d1d45c1 edge vertical 0 L145 0 vertex 4 both
+labels_present	54256f0ee2fdcd3744c508bc8334daf4 vertex bottom_vertex 0 L143 0 vertex 2 start
+labels_present	5535721e1b3c16af115138595902dc88 face wall 0 L42 0 segment 1 both
+labels_present	631a2bd07b3c16c41656865c6712ac0c face wall 0 L46 0 segment 5 both
+labels_present	658fb361644a3b8745d43ddeb97b7172 vertex top_vertex 0 L144 0 vertex 3 end
+labels_present	6df070645afdccfd76f672341c896049 vertex bottom_vertex 0 L146 0 vertex 5 start
+labels_present	79b3c45b8676be77cb30e902883c16d2 edge top_edge 0 L41 0 segment 0 end
+labels_present	87987e0de676be8cd0363705964be656 edge top_edge 0 L45 0 segment 4 end
+labels_present	8afd3f3cd7c3277c0869f65fb386e48e edge bottom_edge 0 L44 0 segment 3 start
+labels_present	9479f1ae12782207761ffa3616137198 face start_cap 0 L40 cap start
+labels_present	94bdaecb2eff358a12e7c6a140a139a2 edge vertical 0 L146 0 vertex 5 both
+labels_present	979e9d7b7afdcd3c86065c3d46b8ced5 vertex bottom_vertex 0 L142 0 vertex 1 start
+labels_present	98aea08ab33c16b452928bda1c86d069 face wall 0 L43 0 segment 2 both
+labels_present	9b24281b9c4a3b778210435c6eef95cf vertex top_vertex 0 L141 0 vertex 0 end
+labels_present	a908e1cdfc4a3b8c8715915f7cff6553 vertex top_vertex 0 L145 0 vertex 4 end
+labels_present	b1699ed0f2fdcd02b837c5b4e00d542a vertex bottom_vertex 0 L145 0 vertex 4 start
+labels_present	b285943f36ff3617f4cb9535df8bf25d edge vertical 0 L141 0 vertex 0 both
+labels_present	c091b3f70fc3276c44a5fbdd68fb08eb edge bottom_edge 0 L41 0 segment 0 start
+labels_present	cb11ac7a7e76be9211778a8659cfda37 edge top_edge 0 L44 0 segment 3 end
+labels_present	ce766da96fc3278149ab49e0770ad86f edge bottom_edge 0 L45 0 segment 4 start
+labels_present	d0b89cd5d44a3b67be4c48da2463ba2c vertex top_vertex 0 L142 0 vertex 1 end
+labels_present	db17cbe812fdcd41c747afbe0a3cc2b6 vertex bottom_vertex 0 L141 0 vertex 0 start
+labels_present	de9d5688344a3b7cc35196dd327389b0 vertex top_vertex 0 L146 0 vertex 5 end
+labels_present	ea0c88a9ab3c16ce98d92d5dee1a93ce face wall 0 L44 0 segment 3 both
+labels_present	f2c167825676be6d48ae420101342f10 edge top_edge 0 L43 0 segment 2 end
+labels_present	f4e2cd3d8afdcd07f9791935a391480b vertex bottom_vertex 0 L144 0 vertex 3 start
+labels_present	f5fec2abceff361d360ce8b6a30fe63e edge vertical 0 L142 0 vertex 1 both
+labels_present	f62628b147c3275c80e2015b1e6f2d48 edge bottom_edge 0 L42 0 segment 1 start
+labels_permuted	040ae263a7c3277185e74f5e2c7efccc edge bottom_edge 0 L46 0 segment 2 start
+labels_permuted	0dcb51f1feff357f90651f9fb99951e0 edge vertical 0 L144 0 vertex 0 both
+labels_permuted	1431cb426c4a3b6cff8d9c5ae7e7ae0d vertex top_vertex 0 L143 0 vertex 5 end
+labels_permuted	1c3c3c34f1efadcf9ce173818653b9f3 face end_cap 0 L40 cap end
+labels_permuted	1fa0fd63e33c16bed51532dba38eb82b face wall 0 L41 0 segment 1 both
+labels_permuted	2d85b716433c16d3da1a80deb19e87af face wall 0 L45 0 segment 4 both
+labels_permuted	363a95eeee76be7289ef9581c4b822f1 edge top_edge 0 L42 0 segment 3 end
+labels_permuted	3977f11866ff3622774e3c376693da1f edge vertical 0 L143 0 vertex 5 both
+labels_permuted	399f571ddfc32761c22354dbe1f32129 edge bottom_edge 0 L43 0 segment 5 start
+labels_permuted	441f4fa14e76be878ef4e384d2c7f275 edge top_edge 0 L46 0 segment 2 end
+labels_permuted	5144805e96ff3584d1a673207d1d45c1 edge vertical 0 L145 0 vertex 4 both
+labels_permuted	54256f0ee2fdcd3744c508bc8334daf4 vertex bottom_vertex 0 L143 0 vertex 5 start
+labels_permuted	5535721e1b3c16af115138595902dc88 face wall 0 L42 0 segment 3 both
+labels_permuted	631a2bd07b3c16c41656865c6712ac0c face wall 0 L46 0 segment 2 both
+labels_permuted	658fb361644a3b8745d43ddeb97b7172 vertex top_vertex 0 L144 0 vertex 0 end
+labels_permuted	6df070645afdccfd76f672341c896049 vertex bottom_vertex 0 L146 0 vertex 2 start
+labels_permuted	79b3c45b8676be77cb30e902883c16d2 edge top_edge 0 L41 0 segment 1 end
+labels_permuted	87987e0de676be8cd0363705964be656 edge top_edge 0 L45 0 segment 4 end
+labels_permuted	8afd3f3cd7c3277c0869f65fb386e48e edge bottom_edge 0 L44 0 segment 0 start
+labels_permuted	9479f1ae12782207761ffa3616137198 face start_cap 0 L40 cap start
+labels_permuted	94bdaecb2eff358a12e7c6a140a139a2 edge vertical 0 L146 0 vertex 2 both
+labels_permuted	979e9d7b7afdcd3c86065c3d46b8ced5 vertex bottom_vertex 0 L142 0 vertex 3 start
+labels_permuted	98aea08ab33c16b452928bda1c86d069 face wall 0 L43 0 segment 5 both
+labels_permuted	9b24281b9c4a3b778210435c6eef95cf vertex top_vertex 0 L141 0 vertex 1 end
+labels_permuted	a908e1cdfc4a3b8c8715915f7cff6553 vertex top_vertex 0 L145 0 vertex 4 end
+labels_permuted	b1699ed0f2fdcd02b837c5b4e00d542a vertex bottom_vertex 0 L145 0 vertex 4 start
+labels_permuted	b285943f36ff3617f4cb9535df8bf25d edge vertical 0 L141 0 vertex 1 both
+labels_permuted	c091b3f70fc3276c44a5fbdd68fb08eb edge bottom_edge 0 L41 0 segment 1 start
+labels_permuted	cb11ac7a7e76be9211778a8659cfda37 edge top_edge 0 L44 0 segment 0 end
+labels_permuted	ce766da96fc3278149ab49e0770ad86f edge bottom_edge 0 L45 0 segment 4 start
+labels_permuted	d0b89cd5d44a3b67be4c48da2463ba2c vertex top_vertex 0 L142 0 vertex 3 end
+labels_permuted	db17cbe812fdcd41c747afbe0a3cc2b6 vertex bottom_vertex 0 L141 0 vertex 1 start
+labels_permuted	de9d5688344a3b7cc35196dd327389b0 vertex top_vertex 0 L146 0 vertex 2 end
+labels_permuted	ea0c88a9ab3c16ce98d92d5dee1a93ce face wall 0 L44 0 segment 0 both
+labels_permuted	f2c167825676be6d48ae420101342f10 edge top_edge 0 L43 0 segment 5 end
+labels_permuted	f4e2cd3d8afdcd07f9791935a391480b vertex bottom_vertex 0 L144 0 vertex 0 start
+labels_permuted	f5fec2abceff361d360ce8b6a30fe63e edge vertical 0 L142 0 vertex 3 both
+labels_permuted	f62628b147c3275c80e2015b1e6f2d48 edge bottom_edge 0 L42 0 segment 3 start
+labels_moved	040ae263a7c3277185e74f5e2c7efccc edge bottom_edge 0 L46 0 segment 5 start
+labels_moved	0dcb51f1feff357f90651f9fb99951e0 edge vertical 0 L144 0 vertex 3 both
+labels_moved	1431cb426c4a3b6cff8d9c5ae7e7ae0d vertex top_vertex 0 L143 0 vertex 2 end
+labels_moved	1c3c3c34f1efadcf9ce173818653b9f3 face end_cap 0 L40 cap end
+labels_moved	1fa0fd63e33c16bed51532dba38eb82b face wall 0 L41 0 segment 0 both
+labels_moved	2d85b716433c16d3da1a80deb19e87af face wall 0 L45 0 segment 4 both
+labels_moved	363a95eeee76be7289ef9581c4b822f1 edge top_edge 0 L42 0 segment 1 end
+labels_moved	3977f11866ff3622774e3c376693da1f edge vertical 0 L143 0 vertex 2 both
+labels_moved	399f571ddfc32761c22354dbe1f32129 edge bottom_edge 0 L43 0 segment 2 start
+labels_moved	441f4fa14e76be878ef4e384d2c7f275 edge top_edge 0 L46 0 segment 5 end
+labels_moved	5144805e96ff3584d1a673207d1d45c1 edge vertical 0 L145 0 vertex 4 both
+labels_moved	54256f0ee2fdcd3744c508bc8334daf4 vertex bottom_vertex 0 L143 0 vertex 2 start
+labels_moved	5535721e1b3c16af115138595902dc88 face wall 0 L42 0 segment 1 both
+labels_moved	631a2bd07b3c16c41656865c6712ac0c face wall 0 L46 0 segment 5 both
+labels_moved	658fb361644a3b8745d43ddeb97b7172 vertex top_vertex 0 L144 0 vertex 3 end
+labels_moved	6df070645afdccfd76f672341c896049 vertex bottom_vertex 0 L146 0 vertex 5 start
+labels_moved	79b3c45b8676be77cb30e902883c16d2 edge top_edge 0 L41 0 segment 0 end
+labels_moved	87987e0de676be8cd0363705964be656 edge top_edge 0 L45 0 segment 4 end
+labels_moved	8afd3f3cd7c3277c0869f65fb386e48e edge bottom_edge 0 L44 0 segment 3 start
+labels_moved	9479f1ae12782207761ffa3616137198 face start_cap 0 L40 cap start
+labels_moved	94bdaecb2eff358a12e7c6a140a139a2 edge vertical 0 L146 0 vertex 5 both
+labels_moved	979e9d7b7afdcd3c86065c3d46b8ced5 vertex bottom_vertex 0 L142 0 vertex 1 start
+labels_moved	98aea08ab33c16b452928bda1c86d069 face wall 0 L43 0 segment 2 both
+labels_moved	9b24281b9c4a3b778210435c6eef95cf vertex top_vertex 0 L141 0 vertex 0 end
+labels_moved	a908e1cdfc4a3b8c8715915f7cff6553 vertex top_vertex 0 L145 0 vertex 4 end
+labels_moved	b1699ed0f2fdcd02b837c5b4e00d542a vertex bottom_vertex 0 L145 0 vertex 4 start
+labels_moved	b285943f36ff3617f4cb9535df8bf25d edge vertical 0 L141 0 vertex 0 both
+labels_moved	c091b3f70fc3276c44a5fbdd68fb08eb edge bottom_edge 0 L41 0 segment 0 start
+labels_moved	cb11ac7a7e76be9211778a8659cfda37 edge top_edge 0 L44 0 segment 3 end
+labels_moved	ce766da96fc3278149ab49e0770ad86f edge bottom_edge 0 L45 0 segment 4 start
+labels_moved	d0b89cd5d44a3b67be4c48da2463ba2c vertex top_vertex 0 L142 0 vertex 1 end
+labels_moved	db17cbe812fdcd41c747afbe0a3cc2b6 vertex bottom_vertex 0 L141 0 vertex 0 start
+labels_moved	de9d5688344a3b7cc35196dd327389b0 vertex top_vertex 0 L146 0 vertex 5 end
+labels_moved	ea0c88a9ab3c16ce98d92d5dee1a93ce face wall 0 L44 0 segment 3 both
+labels_moved	f2c167825676be6d48ae420101342f10 edge top_edge 0 L43 0 segment 2 end
+labels_moved	f4e2cd3d8afdcd07f9791935a391480b vertex bottom_vertex 0 L144 0 vertex 3 start
+labels_moved	f5fec2abceff361d360ce8b6a30fe63e edge vertical 0 L142 0 vertex 1 both
+labels_moved	f62628b147c3275c80e2015b1e6f2d48 edge bottom_edge 0 L42 0 segment 1 start
+labels_inserted_vertex	040ae263a7c3277185e74f5e2c7efccc edge bottom_edge 0 L46 0 segment 6 start
+labels_inserted_vertex	0dcb51f1feff357f90651f9fb99951e0 edge vertical 0 L144 0 vertex 4 both
+labels_inserted_vertex	1431cb426c4a3b6cff8d9c5ae7e7ae0d vertex top_vertex 0 L143 0 vertex 2 end
+labels_inserted_vertex	1c3c3c34f1efadcf9ce173818653b9f3 face end_cap 0 L40 cap end
+labels_inserted_vertex	1fa0fd63e33c16bed51532dba38eb82b face wall 0 L41 0 segment 0 both
+labels_inserted_vertex	2d85b716433c16d3da1a80deb19e87af face wall 0 L45 0 segment 5 both
+labels_inserted_vertex	363a95eeee76be7289ef9581c4b822f1 edge top_edge 0 L42 0 segment 1 end
+labels_inserted_vertex	3977f11866ff3622774e3c376693da1f edge vertical 0 L143 0 vertex 2 both
+labels_inserted_vertex	399f571ddfc32761c22354dbe1f32129 edge bottom_edge 0 L43 0 segment 2 start
+labels_inserted_vertex	3f62e28da6ff34a81ceec000697742d7 edge vertical 0 L199 0 vertex 3 both
+labels_inserted_vertex	3f8a48931fc325e767c3d8a4e4d689e1 edge bottom_edge 0 L99 0 segment 3 start
+labels_inserted_vertex	441f4fa14e76be878ef4e384d2c7f275 edge top_edge 0 L46 0 segment 6 end
+labels_inserted_vertex	5144805e96ff3584d1a673207d1d45c1 edge vertical 0 L145 0 vertex 5 both
+labels_inserted_vertex	54256f0ee2fdcd3744c508bc8334daf4 vertex bottom_vertex 0 L143 0 vertex 2 start
+labels_inserted_vertex	5535721e1b3c16af115138595902dc88 face wall 0 L42 0 segment 1 both
+labels_inserted_vertex	5b30c84bf33c17da98dcd004e16429a1 face wall 0 L99 0 segment 3 both
+labels_inserted_vertex	631a2bd07b3c16c41656865c6712ac0c face wall 0 L46 0 segment 6 both
+labels_inserted_vertex	658fb361644a3b8745d43ddeb97b7172 vertex top_vertex 0 L144 0 vertex 4 end
+labels_inserted_vertex	6df070645afdccfd76f672341c896049 vertex bottom_vertex 0 L146 0 vertex 6 start
+labels_inserted_vertex	79b3c45b8676be77cb30e902883c16d2 edge top_edge 0 L41 0 segment 0 end
+labels_inserted_vertex	87987e0de676be8cd0363705964be656 edge top_edge 0 L45 0 segment 5 end
+labels_inserted_vertex	8afd3f3cd7c3277c0869f65fb386e48e edge bottom_edge 0 L44 0 segment 4 start
+labels_inserted_vertex	91a3474da2fdcc10fe7ac491be5781bc vertex bottom_vertex 0 L199 0 vertex 3 start
+labels_inserted_vertex	9479f1ae12782207761ffa3616137198 face start_cap 0 L40 cap start
+labels_inserted_vertex	94bdaecb2eff358a12e7c6a140a139a2 edge vertical 0 L146 0 vertex 6 both
+labels_inserted_vertex	979e9d7b7afdcd3c86065c3d46b8ced5 vertex bottom_vertex 0 L142 0 vertex 1 start
+labels_inserted_vertex	98aea08ab33c16b452928bda1c86d069 face wall 0 L43 0 segment 2 both
+labels_inserted_vertex	9b24281b9c4a3b778210435c6eef95cf vertex top_vertex 0 L141 0 vertex 0 end
+labels_inserted_vertex	a908e1cdfc4a3b8c8715915f7cff6553 vertex top_vertex 0 L145 0 vertex 5 end
+labels_inserted_vertex	b1699ed0f2fdcd02b837c5b4e00d542a vertex bottom_vertex 0 L145 0 vertex 5 start
+labels_inserted_vertex	b285943f36ff3617f4cb9535df8bf25d edge vertical 0 L141 0 vertex 0 both
+labels_inserted_vertex	c091b3f70fc3276c44a5fbdd68fb08eb edge bottom_edge 0 L41 0 segment 0 start
+labels_inserted_vertex	cb11ac7a7e76be9211778a8659cfda37 edge top_edge 0 L44 0 segment 4 end
+labels_inserted_vertex	ce766da96fc3278149ab49e0770ad86f edge bottom_edge 0 L45 0 segment 5 start
+labels_inserted_vertex	d0b89cd5d44a3b67be4c48da2463ba2c vertex top_vertex 0 L142 0 vertex 1 end
+labels_inserted_vertex	d6b3f303ac4a3c9345d7e085acc50745 vertex top_vertex 0 L199 0 vertex 3 end
+labels_inserted_vertex	db17cbe812fdcd41c747afbe0a3cc2b6 vertex bottom_vertex 0 L141 0 vertex 0 start
+labels_inserted_vertex	de9d5688344a3b7cc35196dd327389b0 vertex top_vertex 0 L146 0 vertex 6 end
+labels_inserted_vertex	ea0c88a9ab3c16ce98d92d5dee1a93ce face wall 0 L44 0 segment 4 both
+labels_inserted_vertex	ecd6760d1676bfe7a30dbe37fe50c658 edge top_edge 0 L99 0 segment 3 end
+labels_inserted_vertex	f2c167825676be6d48ae420101342f10 edge top_edge 0 L43 0 segment 2 end
+labels_inserted_vertex	f4e2cd3d8afdcd07f9791935a391480b vertex bottom_vertex 0 L144 0 vertex 4 start
+labels_inserted_vertex	f5fec2abceff361d360ce8b6a30fe63e edge vertical 0 L142 0 vertex 1 both
+labels_inserted_vertex	f62628b147c3275c80e2015b1e6f2d48 edge bottom_edge 0 L42 0 segment 1 start
+transformed_copy	1de3cb54d119317e699ca7fbc9798639 vertex bottom_vertex 0 L165 0 vertex 4 start
+transformed_copy	2403b7e4f8cca2615800d020cbaf4ec0 edge top_edge 0 L64 0 segment 3 end
+transformed_copy	25f68da807db11364c0820f1e2ea250f face start_cap 0 L60 cap start
+transformed_copy	2a86cc49d78038bf751ff9acb6edeca6 edge bottom_edge 0 L63 0 segment 2 start
+transformed_copy	2ba9b45f37171bd6c4e87833e4f0625c face wall 0 L61 0 segment 0 both
+transformed_copy	2bc88507311931936ea1f5fed78955bd vertex bottom_vertex 0 L161 0 vertex 0 start
+transformed_copy	305d8c155fccca3395d300dec57abe51 vertex top_vertex 0 L164 0 vertex 3 end
+transformed_copy	3eaf0ba0b844308b105c1fc4d3ba190f edge vertical 0 L164 0 vertex 3 both
+transformed_copy	59982c9f30cca251943cd59e8123731d edge top_edge 0 L61 0 segment 0 end
+transformed_copy	5b42d2eb97171a9b7998e606120339a0 face wall 0 L65 0 segment 4 both
+transformed_copy	665ec6a8904430664792d73f7b1e6de8 edge vertical 0 L163 0 vertex 2 both
+transformed_copy	677ce65190cca266994223a18f3342a1 edge top_edge 0 L65 0 segment 4 end
+transformed_copy	6dfffab66f8038c4b6614d2d7a71e087 edge bottom_edge 0 L62 0 segment 1 start
+transformed_copy	6f41b373c9193198afe3497f9b0d499e vertex bottom_vertex 0 L162 0 vertex 1 start
+transformed_copy	81bb743457ccca4ddc19a262970e81b6 vertex top_vertex 0 L163 0 vertex 2 end
+transformed_copy	9b9aa733878037259338887124b99e18 edge bottom_edge 0 L65 0 segment 4 start
+transformed_copy	9d115b0bc8cca256d57e291f44a766fe edge top_edge 0 L62 0 segment 1 end
+transformed_copy	9e3443212863856e2546a7a672a9dcb4 face end_cap 0 L60 cap end
+transformed_copy	9ebc01582f171aa0bada3986d5872d81 face wall 0 L64 0 segment 3 both
+transformed_copy	a3946f70a78038b4f29d52ab2fe604e4 edge bottom_edge 0 L61 0 segment 0 start
+transformed_copy	a9d7f5152844306b88d42ac03ea261c9 edge vertical 0 L162 0 vertex 1 both
+transformed_copy	b29c113867171be1476b1f356bf84a1e face wall 0 L63 0 segment 2 both
+transformed_copy	b2bae1e06119319df1249d005e913d7f vertex bottom_vertex 0 L163 0 vertex 2 start
+transformed_copy	c534a2a0efccca531d5af5e35a927597 vertex top_vertex 0 L162 0 vertex 1 end
+transformed_copy	da6a9ce839193179285b547b05f59258 vertex bottom_vertex 0 L164 0 vertex 3 start
+transformed_copy	df13d5a01f80372ad479dbf1e83d91f9 edge bottom_edge 0 L64 0 segment 3 start
+transformed_copy	e08a897860cca25c16bf7ca0082b5adf edge top_edge 0 L63 0 segment 2 end
+transformed_copy	ece45da8c7ccca2e5491ad5e01f6ca70 vertex top_vertex 0 L165 0 vertex 4 end
+transformed_copy	ed512381c0443070ca157e41022655aa edge vertical 0 L161 0 vertex 0 both
+transformed_copy	f6153fa4ff171be688ac72b62f7c3dff face wall 0 L62 0 segment 1 both
+transformed_copy	fac9175b27ccca435996fb61100699f4 vertex top_vertex 0 L161 0 vertex 0 end
+transformed_copy	fb35dd3420443085cf1acc441036252e edge vertical 0 L165 0 vertex 4 both
+box_ppp	14145467dac249bcdbe93cad583cb950 edge vertical 0 P0.v0 0 vertex 0 both
+box_ppp	141bc81ce6c249bcdbe93cafa314aac1 edge vertical 0 P0.v1 0 vertex 1 both
+box_ppp	14233bd1f2c249bcdbe93cb1edec9c32 edge vertical 0 P0.v2 0 vertex 2 both
+box_ppp	142aaf86fec249bcdbe93cb438c48da3 edge vertical 0 P0.v3 0 vertex 3 both
+box_ppp	154192e990898b21e676183489e21a20 vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+box_ppp	1549069e9c898b21e6761836d4ba0b91 vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+box_ppp	15507a53a8898b21e67618391f91fd02 vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+box_ppp	1557ee08b4898b21e676183b6a69ee73 vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+box_ppp	20733b1588551df9389ffdaa1b66727c vertex top_vertex 0 P0.v2 0 vertex 2 end
+box_ppp	207aaeca94551df9389ffdac663e63ed vertex top_vertex 0 P0.v3 0 vertex 3 end
+box_ppp	2082227fa0551df9389ffdaeb116555e vertex top_vertex 0 P0.v0 0 vertex 0 end
+box_ppp	20899634ac551df9389ffdb0fbee46cf vertex top_vertex 0 P0.v1 0 vertex 1 end
+box_ppp	2591a46848b8cc93f84a27adc21c32a4 edge top_edge 0 P0.s0 0 segment 0 end
+box_ppp	2599181d54b8cc93f84a27b00cf42415 edge top_edge 0 P0.s1 0 segment 1 end
+box_ppp	25a08bd260b8cc93f84a27b257cc1586 edge top_edge 0 P0.s2 0 segment 2 end
+box_ppp	25a7ff876cb8cc93f84a27b4a2a406f7 edge top_edge 0 P0.s3 0 segment 3 end
+box_ppp	34f6d73ecef3cf252310977f73f041a6 face start_cap 0 P0.b0 cap start
+box_ppp	3afdef8807ea51fc3f717fadc619a4ef face end_cap 0 P0.b0 cap end
+box_ppp	47a0d49892845f6b4a7412c2ed5cd434 edge bottom_edge 0 P0.s3 0 segment 3 start
+box_ppp	47a8484d9e845f6b4a7412c53834c5a5 edge bottom_edge 0 P0.s2 0 segment 2 start
+box_ppp	47afbc02aa845f6b4a7412c7830cb716 edge bottom_edge 0 P0.s1 0 segment 1 start
+box_ppp	47b72fb7b6845f6b4a7412c9cde4a887 edge bottom_edge 0 P0.s0 0 segment 0 start
+box_ppp	5196e8011cb5e4d3919b67f0d9a43074 face wall 0 P0.s3 0 segment 3 both
+box_ppp	519e5bb628b5e4d3919b67f3247c21e5 face wall 0 P0.s2 0 segment 2 both
+box_ppp	51a5cf6b34b5e4d3919b67f56f541356 face wall 0 P0.s1 0 segment 1 both
+box_ppp	51ad432040b5e4d3919b67f7ba2c04c7 face wall 0 P0.s0 0 segment 0 both
+box_ppn	14145467dac249bcdbe93cad583cb950 edge vertical 0 P0.v0 0 vertex 0 both
+box_ppn	141bc81ce6c249bcdbe93cafa314aac1 edge vertical 0 P0.v1 0 vertex 1 both
+box_ppn	14233bd1f2c249bcdbe93cb1edec9c32 edge vertical 0 P0.v2 0 vertex 2 both
+box_ppn	142aaf86fec249bcdbe93cb438c48da3 edge vertical 0 P0.v3 0 vertex 3 both
+box_ppn	154192e990898b21e676183489e21a20 vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+box_ppn	1549069e9c898b21e6761836d4ba0b91 vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+box_ppn	15507a53a8898b21e67618391f91fd02 vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+box_ppn	1557ee08b4898b21e676183b6a69ee73 vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+box_ppn	20733b1588551df9389ffdaa1b66727c vertex top_vertex 0 P0.v2 0 vertex 2 end
+box_ppn	207aaeca94551df9389ffdac663e63ed vertex top_vertex 0 P0.v3 0 vertex 3 end
+box_ppn	2082227fa0551df9389ffdaeb116555e vertex top_vertex 0 P0.v0 0 vertex 0 end
+box_ppn	20899634ac551df9389ffdb0fbee46cf vertex top_vertex 0 P0.v1 0 vertex 1 end
+box_ppn	2591a46848b8cc93f84a27adc21c32a4 edge top_edge 0 P0.s0 0 segment 0 end
+box_ppn	2599181d54b8cc93f84a27b00cf42415 edge top_edge 0 P0.s1 0 segment 1 end
+box_ppn	25a08bd260b8cc93f84a27b257cc1586 edge top_edge 0 P0.s2 0 segment 2 end
+box_ppn	25a7ff876cb8cc93f84a27b4a2a406f7 edge top_edge 0 P0.s3 0 segment 3 end
+box_ppn	34f6d73ecef3cf252310977f73f041a6 face start_cap 0 P0.b0 cap start
+box_ppn	3afdef8807ea51fc3f717fadc619a4ef face end_cap 0 P0.b0 cap end
+box_ppn	47a0d49892845f6b4a7412c2ed5cd434 edge bottom_edge 0 P0.s3 0 segment 3 start
+box_ppn	47a8484d9e845f6b4a7412c53834c5a5 edge bottom_edge 0 P0.s2 0 segment 2 start
+box_ppn	47afbc02aa845f6b4a7412c7830cb716 edge bottom_edge 0 P0.s1 0 segment 1 start
+box_ppn	47b72fb7b6845f6b4a7412c9cde4a887 edge bottom_edge 0 P0.s0 0 segment 0 start
+box_ppn	5196e8011cb5e4d3919b67f0d9a43074 face wall 0 P0.s3 0 segment 3 both
+box_ppn	519e5bb628b5e4d3919b67f3247c21e5 face wall 0 P0.s2 0 segment 2 both
+box_ppn	51a5cf6b34b5e4d3919b67f56f541356 face wall 0 P0.s1 0 segment 1 both
+box_ppn	51ad432040b5e4d3919b67f7ba2c04c7 face wall 0 P0.s0 0 segment 0 both
+box_pnp	14145467dac249bcdbe93cad583cb950 edge vertical 0 P0.v0 0 vertex 0 both
+box_pnp	141bc81ce6c249bcdbe93cafa314aac1 edge vertical 0 P0.v1 0 vertex 1 both
+box_pnp	14233bd1f2c249bcdbe93cb1edec9c32 edge vertical 0 P0.v2 0 vertex 2 both
+box_pnp	142aaf86fec249bcdbe93cb438c48da3 edge vertical 0 P0.v3 0 vertex 3 both
+box_pnp	154192e990898b21e676183489e21a20 vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+box_pnp	1549069e9c898b21e6761836d4ba0b91 vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+box_pnp	15507a53a8898b21e67618391f91fd02 vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+box_pnp	1557ee08b4898b21e676183b6a69ee73 vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+box_pnp	20733b1588551df9389ffdaa1b66727c vertex top_vertex 0 P0.v2 0 vertex 2 end
+box_pnp	207aaeca94551df9389ffdac663e63ed vertex top_vertex 0 P0.v3 0 vertex 3 end
+box_pnp	2082227fa0551df9389ffdaeb116555e vertex top_vertex 0 P0.v0 0 vertex 0 end
+box_pnp	20899634ac551df9389ffdb0fbee46cf vertex top_vertex 0 P0.v1 0 vertex 1 end
+box_pnp	2591a46848b8cc93f84a27adc21c32a4 edge top_edge 0 P0.s0 0 segment 0 end
+box_pnp	2599181d54b8cc93f84a27b00cf42415 edge top_edge 0 P0.s1 0 segment 1 end
+box_pnp	25a08bd260b8cc93f84a27b257cc1586 edge top_edge 0 P0.s2 0 segment 2 end
+box_pnp	25a7ff876cb8cc93f84a27b4a2a406f7 edge top_edge 0 P0.s3 0 segment 3 end
+box_pnp	34f6d73ecef3cf252310977f73f041a6 face start_cap 0 P0.b0 cap start
+box_pnp	3afdef8807ea51fc3f717fadc619a4ef face end_cap 0 P0.b0 cap end
+box_pnp	47a0d49892845f6b4a7412c2ed5cd434 edge bottom_edge 0 P0.s3 0 segment 3 start
+box_pnp	47a8484d9e845f6b4a7412c53834c5a5 edge bottom_edge 0 P0.s2 0 segment 2 start
+box_pnp	47afbc02aa845f6b4a7412c7830cb716 edge bottom_edge 0 P0.s1 0 segment 1 start
+box_pnp	47b72fb7b6845f6b4a7412c9cde4a887 edge bottom_edge 0 P0.s0 0 segment 0 start
+box_pnp	5196e8011cb5e4d3919b67f0d9a43074 face wall 0 P0.s3 0 segment 3 both
+box_pnp	519e5bb628b5e4d3919b67f3247c21e5 face wall 0 P0.s2 0 segment 2 both
+box_pnp	51a5cf6b34b5e4d3919b67f56f541356 face wall 0 P0.s1 0 segment 1 both
+box_pnp	51ad432040b5e4d3919b67f7ba2c04c7 face wall 0 P0.s0 0 segment 0 both
+box_pnn	14145467dac249bcdbe93cad583cb950 edge vertical 0 P0.v0 0 vertex 0 both
+box_pnn	141bc81ce6c249bcdbe93cafa314aac1 edge vertical 0 P0.v1 0 vertex 1 both
+box_pnn	14233bd1f2c249bcdbe93cb1edec9c32 edge vertical 0 P0.v2 0 vertex 2 both
+box_pnn	142aaf86fec249bcdbe93cb438c48da3 edge vertical 0 P0.v3 0 vertex 3 both
+box_pnn	154192e990898b21e676183489e21a20 vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+box_pnn	1549069e9c898b21e6761836d4ba0b91 vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+box_pnn	15507a53a8898b21e67618391f91fd02 vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+box_pnn	1557ee08b4898b21e676183b6a69ee73 vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+box_pnn	20733b1588551df9389ffdaa1b66727c vertex top_vertex 0 P0.v2 0 vertex 2 end
+box_pnn	207aaeca94551df9389ffdac663e63ed vertex top_vertex 0 P0.v3 0 vertex 3 end
+box_pnn	2082227fa0551df9389ffdaeb116555e vertex top_vertex 0 P0.v0 0 vertex 0 end
+box_pnn	20899634ac551df9389ffdb0fbee46cf vertex top_vertex 0 P0.v1 0 vertex 1 end
+box_pnn	2591a46848b8cc93f84a27adc21c32a4 edge top_edge 0 P0.s0 0 segment 0 end
+box_pnn	2599181d54b8cc93f84a27b00cf42415 edge top_edge 0 P0.s1 0 segment 1 end
+box_pnn	25a08bd260b8cc93f84a27b257cc1586 edge top_edge 0 P0.s2 0 segment 2 end
+box_pnn	25a7ff876cb8cc93f84a27b4a2a406f7 edge top_edge 0 P0.s3 0 segment 3 end
+box_pnn	34f6d73ecef3cf252310977f73f041a6 face start_cap 0 P0.b0 cap start
+box_pnn	3afdef8807ea51fc3f717fadc619a4ef face end_cap 0 P0.b0 cap end
+box_pnn	47a0d49892845f6b4a7412c2ed5cd434 edge bottom_edge 0 P0.s3 0 segment 3 start
+box_pnn	47a8484d9e845f6b4a7412c53834c5a5 edge bottom_edge 0 P0.s2 0 segment 2 start
+box_pnn	47afbc02aa845f6b4a7412c7830cb716 edge bottom_edge 0 P0.s1 0 segment 1 start
+box_pnn	47b72fb7b6845f6b4a7412c9cde4a887 edge bottom_edge 0 P0.s0 0 segment 0 start
+box_pnn	5196e8011cb5e4d3919b67f0d9a43074 face wall 0 P0.s3 0 segment 3 both
+box_pnn	519e5bb628b5e4d3919b67f3247c21e5 face wall 0 P0.s2 0 segment 2 both
+box_pnn	51a5cf6b34b5e4d3919b67f56f541356 face wall 0 P0.s1 0 segment 1 both
+box_pnn	51ad432040b5e4d3919b67f7ba2c04c7 face wall 0 P0.s0 0 segment 0 both
+box_npp	14145467dac249bcdbe93cad583cb950 edge vertical 0 P0.v0 0 vertex 0 both
+box_npp	141bc81ce6c249bcdbe93cafa314aac1 edge vertical 0 P0.v1 0 vertex 1 both
+box_npp	14233bd1f2c249bcdbe93cb1edec9c32 edge vertical 0 P0.v2 0 vertex 2 both
+box_npp	142aaf86fec249bcdbe93cb438c48da3 edge vertical 0 P0.v3 0 vertex 3 both
+box_npp	154192e990898b21e676183489e21a20 vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+box_npp	1549069e9c898b21e6761836d4ba0b91 vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+box_npp	15507a53a8898b21e67618391f91fd02 vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+box_npp	1557ee08b4898b21e676183b6a69ee73 vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+box_npp	20733b1588551df9389ffdaa1b66727c vertex top_vertex 0 P0.v2 0 vertex 2 end
+box_npp	207aaeca94551df9389ffdac663e63ed vertex top_vertex 0 P0.v3 0 vertex 3 end
+box_npp	2082227fa0551df9389ffdaeb116555e vertex top_vertex 0 P0.v0 0 vertex 0 end
+box_npp	20899634ac551df9389ffdb0fbee46cf vertex top_vertex 0 P0.v1 0 vertex 1 end
+box_npp	2591a46848b8cc93f84a27adc21c32a4 edge top_edge 0 P0.s0 0 segment 0 end
+box_npp	2599181d54b8cc93f84a27b00cf42415 edge top_edge 0 P0.s1 0 segment 1 end
+box_npp	25a08bd260b8cc93f84a27b257cc1586 edge top_edge 0 P0.s2 0 segment 2 end
+box_npp	25a7ff876cb8cc93f84a27b4a2a406f7 edge top_edge 0 P0.s3 0 segment 3 end
+box_npp	34f6d73ecef3cf252310977f73f041a6 face start_cap 0 P0.b0 cap start
+box_npp	3afdef8807ea51fc3f717fadc619a4ef face end_cap 0 P0.b0 cap end
+box_npp	47a0d49892845f6b4a7412c2ed5cd434 edge bottom_edge 0 P0.s3 0 segment 3 start
+box_npp	47a8484d9e845f6b4a7412c53834c5a5 edge bottom_edge 0 P0.s2 0 segment 2 start
+box_npp	47afbc02aa845f6b4a7412c7830cb716 edge bottom_edge 0 P0.s1 0 segment 1 start
+box_npp	47b72fb7b6845f6b4a7412c9cde4a887 edge bottom_edge 0 P0.s0 0 segment 0 start
+box_npp	5196e8011cb5e4d3919b67f0d9a43074 face wall 0 P0.s3 0 segment 3 both
+box_npp	519e5bb628b5e4d3919b67f3247c21e5 face wall 0 P0.s2 0 segment 2 both
+box_npp	51a5cf6b34b5e4d3919b67f56f541356 face wall 0 P0.s1 0 segment 1 both
+box_npp	51ad432040b5e4d3919b67f7ba2c04c7 face wall 0 P0.s0 0 segment 0 both
+box_npn	14145467dac249bcdbe93cad583cb950 edge vertical 0 P0.v0 0 vertex 0 both
+box_npn	141bc81ce6c249bcdbe93cafa314aac1 edge vertical 0 P0.v1 0 vertex 1 both
+box_npn	14233bd1f2c249bcdbe93cb1edec9c32 edge vertical 0 P0.v2 0 vertex 2 both
+box_npn	142aaf86fec249bcdbe93cb438c48da3 edge vertical 0 P0.v3 0 vertex 3 both
+box_npn	154192e990898b21e676183489e21a20 vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+box_npn	1549069e9c898b21e6761836d4ba0b91 vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+box_npn	15507a53a8898b21e67618391f91fd02 vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+box_npn	1557ee08b4898b21e676183b6a69ee73 vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+box_npn	20733b1588551df9389ffdaa1b66727c vertex top_vertex 0 P0.v2 0 vertex 2 end
+box_npn	207aaeca94551df9389ffdac663e63ed vertex top_vertex 0 P0.v3 0 vertex 3 end
+box_npn	2082227fa0551df9389ffdaeb116555e vertex top_vertex 0 P0.v0 0 vertex 0 end
+box_npn	20899634ac551df9389ffdb0fbee46cf vertex top_vertex 0 P0.v1 0 vertex 1 end
+box_npn	2591a46848b8cc93f84a27adc21c32a4 edge top_edge 0 P0.s0 0 segment 0 end
+box_npn	2599181d54b8cc93f84a27b00cf42415 edge top_edge 0 P0.s1 0 segment 1 end
+box_npn	25a08bd260b8cc93f84a27b257cc1586 edge top_edge 0 P0.s2 0 segment 2 end
+box_npn	25a7ff876cb8cc93f84a27b4a2a406f7 edge top_edge 0 P0.s3 0 segment 3 end
+box_npn	34f6d73ecef3cf252310977f73f041a6 face start_cap 0 P0.b0 cap start
+box_npn	3afdef8807ea51fc3f717fadc619a4ef face end_cap 0 P0.b0 cap end
+box_npn	47a0d49892845f6b4a7412c2ed5cd434 edge bottom_edge 0 P0.s3 0 segment 3 start
+box_npn	47a8484d9e845f6b4a7412c53834c5a5 edge bottom_edge 0 P0.s2 0 segment 2 start
+box_npn	47afbc02aa845f6b4a7412c7830cb716 edge bottom_edge 0 P0.s1 0 segment 1 start
+box_npn	47b72fb7b6845f6b4a7412c9cde4a887 edge bottom_edge 0 P0.s0 0 segment 0 start
+box_npn	5196e8011cb5e4d3919b67f0d9a43074 face wall 0 P0.s3 0 segment 3 both
+box_npn	519e5bb628b5e4d3919b67f3247c21e5 face wall 0 P0.s2 0 segment 2 both
+box_npn	51a5cf6b34b5e4d3919b67f56f541356 face wall 0 P0.s1 0 segment 1 both
+box_npn	51ad432040b5e4d3919b67f7ba2c04c7 face wall 0 P0.s0 0 segment 0 both
+box_nnp	14145467dac249bcdbe93cad583cb950 edge vertical 0 P0.v0 0 vertex 0 both
+box_nnp	141bc81ce6c249bcdbe93cafa314aac1 edge vertical 0 P0.v1 0 vertex 1 both
+box_nnp	14233bd1f2c249bcdbe93cb1edec9c32 edge vertical 0 P0.v2 0 vertex 2 both
+box_nnp	142aaf86fec249bcdbe93cb438c48da3 edge vertical 0 P0.v3 0 vertex 3 both
+box_nnp	154192e990898b21e676183489e21a20 vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+box_nnp	1549069e9c898b21e6761836d4ba0b91 vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+box_nnp	15507a53a8898b21e67618391f91fd02 vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+box_nnp	1557ee08b4898b21e676183b6a69ee73 vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+box_nnp	20733b1588551df9389ffdaa1b66727c vertex top_vertex 0 P0.v2 0 vertex 2 end
+box_nnp	207aaeca94551df9389ffdac663e63ed vertex top_vertex 0 P0.v3 0 vertex 3 end
+box_nnp	2082227fa0551df9389ffdaeb116555e vertex top_vertex 0 P0.v0 0 vertex 0 end
+box_nnp	20899634ac551df9389ffdb0fbee46cf vertex top_vertex 0 P0.v1 0 vertex 1 end
+box_nnp	2591a46848b8cc93f84a27adc21c32a4 edge top_edge 0 P0.s0 0 segment 0 end
+box_nnp	2599181d54b8cc93f84a27b00cf42415 edge top_edge 0 P0.s1 0 segment 1 end
+box_nnp	25a08bd260b8cc93f84a27b257cc1586 edge top_edge 0 P0.s2 0 segment 2 end
+box_nnp	25a7ff876cb8cc93f84a27b4a2a406f7 edge top_edge 0 P0.s3 0 segment 3 end
+box_nnp	34f6d73ecef3cf252310977f73f041a6 face start_cap 0 P0.b0 cap start
+box_nnp	3afdef8807ea51fc3f717fadc619a4ef face end_cap 0 P0.b0 cap end
+box_nnp	47a0d49892845f6b4a7412c2ed5cd434 edge bottom_edge 0 P0.s3 0 segment 3 start
+box_nnp	47a8484d9e845f6b4a7412c53834c5a5 edge bottom_edge 0 P0.s2 0 segment 2 start
+box_nnp	47afbc02aa845f6b4a7412c7830cb716 edge bottom_edge 0 P0.s1 0 segment 1 start
+box_nnp	47b72fb7b6845f6b4a7412c9cde4a887 edge bottom_edge 0 P0.s0 0 segment 0 start
+box_nnp	5196e8011cb5e4d3919b67f0d9a43074 face wall 0 P0.s3 0 segment 3 both
+box_nnp	519e5bb628b5e4d3919b67f3247c21e5 face wall 0 P0.s2 0 segment 2 both
+box_nnp	51a5cf6b34b5e4d3919b67f56f541356 face wall 0 P0.s1 0 segment 1 both
+box_nnp	51ad432040b5e4d3919b67f7ba2c04c7 face wall 0 P0.s0 0 segment 0 both
+box_nnn	14145467dac249bcdbe93cad583cb950 edge vertical 0 P0.v0 0 vertex 0 both
+box_nnn	141bc81ce6c249bcdbe93cafa314aac1 edge vertical 0 P0.v1 0 vertex 1 both
+box_nnn	14233bd1f2c249bcdbe93cb1edec9c32 edge vertical 0 P0.v2 0 vertex 2 both
+box_nnn	142aaf86fec249bcdbe93cb438c48da3 edge vertical 0 P0.v3 0 vertex 3 both
+box_nnn	154192e990898b21e676183489e21a20 vertex bottom_vertex 0 P0.v1 0 vertex 1 start
+box_nnn	1549069e9c898b21e6761836d4ba0b91 vertex bottom_vertex 0 P0.v0 0 vertex 0 start
+box_nnn	15507a53a8898b21e67618391f91fd02 vertex bottom_vertex 0 P0.v3 0 vertex 3 start
+box_nnn	1557ee08b4898b21e676183b6a69ee73 vertex bottom_vertex 0 P0.v2 0 vertex 2 start
+box_nnn	20733b1588551df9389ffdaa1b66727c vertex top_vertex 0 P0.v2 0 vertex 2 end
+box_nnn	207aaeca94551df9389ffdac663e63ed vertex top_vertex 0 P0.v3 0 vertex 3 end
+box_nnn	2082227fa0551df9389ffdaeb116555e vertex top_vertex 0 P0.v0 0 vertex 0 end
+box_nnn	20899634ac551df9389ffdb0fbee46cf vertex top_vertex 0 P0.v1 0 vertex 1 end
+box_nnn	2591a46848b8cc93f84a27adc21c32a4 edge top_edge 0 P0.s0 0 segment 0 end
+box_nnn	2599181d54b8cc93f84a27b00cf42415 edge top_edge 0 P0.s1 0 segment 1 end
+box_nnn	25a08bd260b8cc93f84a27b257cc1586 edge top_edge 0 P0.s2 0 segment 2 end
+box_nnn	25a7ff876cb8cc93f84a27b4a2a406f7 edge top_edge 0 P0.s3 0 segment 3 end
+box_nnn	34f6d73ecef3cf252310977f73f041a6 face start_cap 0 P0.b0 cap start
+box_nnn	3afdef8807ea51fc3f717fadc619a4ef face end_cap 0 P0.b0 cap end
+box_nnn	47a0d49892845f6b4a7412c2ed5cd434 edge bottom_edge 0 P0.s3 0 segment 3 start
+box_nnn	47a8484d9e845f6b4a7412c53834c5a5 edge bottom_edge 0 P0.s2 0 segment 2 start
+box_nnn	47afbc02aa845f6b4a7412c7830cb716 edge bottom_edge 0 P0.s1 0 segment 1 start
+box_nnn	47b72fb7b6845f6b4a7412c9cde4a887 edge bottom_edge 0 P0.s0 0 segment 0 start
+box_nnn	5196e8011cb5e4d3919b67f0d9a43074 face wall 0 P0.s3 0 segment 3 both
+box_nnn	519e5bb628b5e4d3919b67f3247c21e5 face wall 0 P0.s2 0 segment 2 both
+box_nnn	51a5cf6b34b5e4d3919b67f56f541356 face wall 0 P0.s1 0 segment 1 both
+box_nnn	51ad432040b5e4d3919b67f7ba2c04c7 face wall 0 P0.s0 0 segment 0 both
+corpus_0	digest 50 e1102e551f37e22f547df270794ce8be9bdc26ba19b72be28a97ca5af891906e
+corpus_0_alternate	digest 50 e1102e551f37e22f547df270794ce8be9bdc26ba19b72be28a97ca5af891906e
+corpus_1	digest 62 2dbace578c9a4ba3b09eb4d8d9baab1614de031e24693eeb612c67f28096a362
+corpus_1_alternate	digest 62 2dbace578c9a4ba3b09eb4d8d9baab1614de031e24693eeb612c67f28096a362
+corpus_2	digest 62 1acce5a7d69012c6e145de1aecbe97269843f7859fafa5c66d6c9b5a48f94d0f
+corpus_2_alternate	digest 62 1acce5a7d69012c6e145de1aecbe97269843f7859fafa5c66d6c9b5a48f94d0f
+corpus_3	digest 74 c6b1d29544cdcceabe25ed17ba2eea1d3e5cf64a2401d45ceac7c7efb35c5b11
+corpus_3_alternate	digest 74 c6b1d29544cdcceabe25ed17ba2eea1d3e5cf64a2401d45ceac7c7efb35c5b11
+corpus_4	digest 74 44331b8b4cb240f83d18c55505227820a17a32b6d3d06fa4f8e8aa5f36192739
+corpus_4_alternate	digest 74 44331b8b4cb240f83d18c55505227820a17a32b6d3d06fa4f8e8aa5f36192739
+corpus_5	digest 86 0efaa1a6ab33e8784c7da89d03ccc1318297ca8b5c06d7463151d905e4186097
+corpus_5_alternate	digest 86 0efaa1a6ab33e8784c7da89d03ccc1318297ca8b5c06d7463151d905e4186097
+corpus_6	digest 86 791b57c5522e42860c1f429385ad44388101fec07fb6bf9f7bb269dd3ee6a152
+corpus_6_alternate	digest 86 791b57c5522e42860c1f429385ad44388101fec07fb6bf9f7bb269dd3ee6a152
+corpus_7	digest 98 866527b310913fb2e78c89636123d851e4ef5df1639032e3cddff706060dc368
+corpus_7_alternate	digest 98 866527b310913fb2e78c89636123d851e4ef5df1639032e3cddff706060dc368
+corpus_8	digest 98 e448d4348c3e8225df63dee9f23badae2aa4cb463838f38638e11dd8023830f5
+corpus_8_alternate	digest 98 e448d4348c3e8225df63dee9f23badae2aa4cb463838f38638e11dd8023830f5
+corpus_9	digest 110 f87550f3b855bba3e7222394ad12753a02648f63bf63e1cbcd8d97f43e835c06
+corpus_9_alternate	digest 110 f87550f3b855bba3e7222394ad12753a02648f63bf63e1cbcd8d97f43e835c06
+corpus_10	digest 110 5a88bf3e6935d2fbbb2eceb466b8c8fffe6708ad76aa9657e6b34f1aac398d85
+corpus_10_alternate	digest 110 5a88bf3e6935d2fbbb2eceb466b8c8fffe6708ad76aa9657e6b34f1aac398d85
+corpus_11	digest 122 88757e28f0e7b032c109e3abc15fa4bd2f4cddf0068616fdefa3d5d021990cfe
+corpus_11_alternate	digest 122 88757e28f0e7b032c109e3abc15fa4bd2f4cddf0068616fdefa3d5d021990cfe
+corpus_12	digest 122 3ca94dfff4e232acda8a515caffcb7ac8383ec76501d0130ab5e17e0386f02a4
+corpus_12_alternate	digest 122 3ca94dfff4e232acda8a515caffcb7ac8383ec76501d0130ab5e17e0386f02a4
+corpus_13	digest 56 ad0c8154e2120a04c0748d95b133d7b773c58f46f3fbdeb3bb99523bdc244e51
+corpus_13_alternate	digest 56 ad0c8154e2120a04c0748d95b133d7b773c58f46f3fbdeb3bb99523bdc244e51
+corpus_14	digest 56 2b57b5080fc1bc7de01289f25ac6f4f67dfb91abdd04a03fcea0dc2cd76e7ec1
+corpus_14_alternate	digest 56 2b57b5080fc1bc7de01289f25ac6f4f67dfb91abdd04a03fcea0dc2cd76e7ec1
+corpus_15	digest 68 8d7d5950e2b427575c0f026525dfafcbcd3aaf2edaf375eb0bc735a547687d8a
+corpus_15_alternate	digest 68 8d7d5950e2b427575c0f026525dfafcbcd3aaf2edaf375eb0bc735a547687d8a
+corpus_16	digest 68 dc8030d5fc465786f108197682c2263f6e683034b0fd4ab08005af3e8fc3e69d
+corpus_16_alternate	digest 68 dc8030d5fc465786f108197682c2263f6e683034b0fd4ab08005af3e8fc3e69d
+corpus_17	digest 80 44aee29b8d78579b9ae5b1f71d9ecb94feb14badeb0a4a0fb808f13e2141852b
+corpus_17_alternate	digest 80 44aee29b8d78579b9ae5b1f71d9ecb94feb14badeb0a4a0fb808f13e2141852b
+corpus_18	digest 80 addcb48ff67f8dbda0156562a34d06ef51339db237ec29d1df0a886339bb4a0c
+corpus_18_alternate	digest 80 addcb48ff67f8dbda0156562a34d06ef51339db237ec29d1df0a886339bb4a0c
+corpus_19	digest 92 a4ae03ef411baaf2f7d8c292e9362a19f8842ef4a8c9bd571aa681b68306ea26
+corpus_19_alternate	digest 92 a4ae03ef411baaf2f7d8c292e9362a19f8842ef4a8c9bd571aa681b68306ea26
+corpus_20	digest 92 185776168af5ab1696cd0d33f8ec574f3d2c8c033971d68b0a13dec7a7d96ae7
+corpus_20_alternate	digest 92 185776168af5ab1696cd0d33f8ec574f3d2c8c033971d68b0a13dec7a7d96ae7
+corpus_21	digest 104 8911ceb66aadb1a3c6267dec52915ba97b5075fc459ff3d81d82989ecbc8a386
+corpus_21_alternate	digest 104 8911ceb66aadb1a3c6267dec52915ba97b5075fc459ff3d81d82989ecbc8a386
+corpus_22	digest 104 78ffbb8b8e7e63450d2be9c04ec6cd8c4e5ada4d25a0340ab2a6ce6e1e7b2687
+corpus_22_alternate	digest 104 78ffbb8b8e7e63450d2be9c04ec6cd8c4e5ada4d25a0340ab2a6ce6e1e7b2687
+corpus_23	digest 116 4595ef36c5cc6858cf0f4d4799d7cb94827dc631e95b2349da9e333faf20f215
+corpus_23_alternate	digest 116 4595ef36c5cc6858cf0f4d4799d7cb94827dc631e95b2349da9e333faf20f215
+corpus_24	digest 116 5adc6c6613b55bd558c9ff19aa3419a0d0ba628415c9328a7151e33d34774c86
+corpus_24_alternate	digest 116 5adc6c6613b55bd558c9ff19aa3419a0d0ba628415c9328a7151e33d34774c86
+corpus_25	digest 128 d0b4eaa5d50dd473b89d03b4cdddd45b7597ee6e14dc75ff2daca4c157212373
+corpus_25_alternate	digest 128 d0b4eaa5d50dd473b89d03b4cdddd45b7597ee6e14dc75ff2daca4c157212373
+corpus_26	digest 50 139d1592cede08699e57bd2c1ee86b575b5df1ba899e5dcd09af58355ec8c99c
+corpus_26_alternate	digest 50 139d1592cede08699e57bd2c1ee86b575b5df1ba899e5dcd09af58355ec8c99c
+corpus_27	digest 62 82e18e6d34f7ae270b02aa65d6c54fbc30ef54cf39d8103e71b3ed701798c48d
+corpus_27_alternate	digest 62 82e18e6d34f7ae270b02aa65d6c54fbc30ef54cf39d8103e71b3ed701798c48d
+corpus_28	digest 62 1d7ec55fc5e2361541b1c58e3e0452fd62dd1f775338f6ae0a121c52b9b37e16
+corpus_28_alternate	digest 62 1d7ec55fc5e2361541b1c58e3e0452fd62dd1f775338f6ae0a121c52b9b37e16
+corpus_29	digest 74 69e1fe7f8525c4515ea7134eedd26f3f695926238777a98814731ef4940ebad1
+corpus_29_alternate	digest 74 69e1fe7f8525c4515ea7134eedd26f3f695926238777a98814731ef4940ebad1
+corpus_30	digest 74 9c5560b8964a57f4bec7ecbe01448556435045fccfc3b19640d3209e618a9957
+corpus_30_alternate	digest 74 9c5560b8964a57f4bec7ecbe01448556435045fccfc3b19640d3209e618a9957
+corpus_31	digest 86 6143c2788bc55eb214fdd8d6c1f25eb4f613d5675a17316aaee1b601ca5327ed
+corpus_31_alternate	digest 86 6143c2788bc55eb214fdd8d6c1f25eb4f613d5675a17316aaee1b601ca5327ed
+corpus_32	digest 86 f74c8e734fa980e12228730522226ff1569b727aa58682872b3c38bb56a1856e
+corpus_32_alternate	digest 86 f74c8e734fa980e12228730522226ff1569b727aa58682872b3c38bb56a1856e
+corpus_33	digest 98 6d70ca23dce97058cd605ef480892587a6235d8d84df0d001fb4925b25a692be
+corpus_33_alternate	digest 98 6d70ca23dce97058cd605ef480892587a6235d8d84df0d001fb4925b25a692be
+corpus_34	digest 98 0f404e47335cdd7d3b3e3d464dbc330a258af27d3d0b9d8a96b159c0689d8865
+corpus_34_alternate	digest 98 0f404e47335cdd7d3b3e3d464dbc330a258af27d3d0b9d8a96b159c0689d8865
+corpus_35	digest 110 528f5fe284074222c60a8a5cd3aa5038134c5eeb4ee5880d89a956587695649a
+corpus_35_alternate	digest 110 528f5fe284074222c60a8a5cd3aa5038134c5eeb4ee5880d89a956587695649a
+corpus_36	digest 110 13ffd9d8fb5a02719c84856911c1528dfa642acee4f1a642a4e483f428a2675d
+corpus_36_alternate	digest 110 13ffd9d8fb5a02719c84856911c1528dfa642acee4f1a642a4e483f428a2675d
+corpus_37	digest 122 4dc12385d954a54ba1257f606e9159e1f6a7c7a1103df2f7e70af81f3036f1e4
+corpus_37_alternate	digest 122 4dc12385d954a54ba1257f606e9159e1f6a7c7a1103df2f7e70af81f3036f1e4
+corpus_38	digest 122 894f5fd515a567869a25f46af71701ea90ddf052ed0e1678e2b1897ca4779aea
+corpus_38_alternate	digest 122 894f5fd515a567869a25f46af71701ea90ddf052ed0e1678e2b1897ca4779aea
+corpus_39	digest 56 fb7ba64c1df81cf7b3b0dc7496e8b17459ad7489aaf7978c9027ae215b232d20
+corpus_39_alternate	digest 56 fb7ba64c1df81cf7b3b0dc7496e8b17459ad7489aaf7978c9027ae215b232d20
+corpus_40	digest 56 d8976a3438a3df0455d5b67d35e37bf48a141edba6ea5faedb2ac2c1e70129ed
+corpus_40_alternate	digest 56 d8976a3438a3df0455d5b67d35e37bf48a141edba6ea5faedb2ac2c1e70129ed
+corpus_41	digest 68 ccaeb04fa39f741fde271512b55c1c7521ab289d8d657f8d8f847e74651175fa
+corpus_41_alternate	digest 68 ccaeb04fa39f741fde271512b55c1c7521ab289d8d657f8d8f847e74651175fa
+corpus_42	digest 68 ff599014763993f9ec68efa4e19c31f9b5d959fddceae6b6eab4ada3248d2e13
+corpus_42_alternate	digest 68 ff599014763993f9ec68efa4e19c31f9b5d959fddceae6b6eab4ada3248d2e13
+corpus_43	digest 80 c9ac064e05b28006c4a469265fdd5c03d805d6b77604a391fbe7d8b65f9fa25f
+corpus_43_alternate	digest 80 c9ac064e05b28006c4a469265fdd5c03d805d6b77604a391fbe7d8b65f9fa25f
+corpus_44	digest 80 848afbb4baee8a127bacb742e83cce4e0948a569c32a1834d2182cf975471cfc
+corpus_44_alternate	digest 80 848afbb4baee8a127bacb742e83cce4e0948a569c32a1834d2182cf975471cfc
+corpus_45	digest 92 87c40a643bebfabd5c0290fdf491300e28abbc7b4d2ce8eceb0de033e2e2d685
+corpus_45_alternate	digest 92 87c40a643bebfabd5c0290fdf491300e28abbc7b4d2ce8eceb0de033e2e2d685
+corpus_46	digest 92 cb6e1111f1b055532054f883859e465e0c679fcb81fb45849505aa18bdb69a0b
+corpus_46_alternate	digest 92 cb6e1111f1b055532054f883859e465e0c679fcb81fb45849505aa18bdb69a0b
+corpus_47	digest 104 6b812f1a2298ccea447fa815b2fab00711dbf776b4fd41371e8874962e1a84cd
+corpus_47_alternate	digest 104 6b812f1a2298ccea447fa815b2fab00711dbf776b4fd41371e8874962e1a84cd
+corpus_48	digest 104 a59bea5d878072c262ce87333ff34305ec5e5e6754946e386ebc971987751b16
+corpus_48_alternate	digest 104 a59bea5d878072c262ce87333ff34305ec5e5e6754946e386ebc971987751b16
+corpus_49	digest 116 3822e61ba42fc1543bbd0507f64f5e5c46717e31e1a0485fd132ee1da26f0465
+corpus_49_alternate	digest 116 3822e61ba42fc1543bbd0507f64f5e5c46717e31e1a0485fd132ee1da26f0465
+corpus_50	digest 116 94e58228879191c26600f19de181306784d8c327f99f67f5e23188896bf3f478
+corpus_50_alternate	digest 116 94e58228879191c26600f19de181306784d8c327f99f67f5e23188896bf3f478
+corpus_51	digest 128 3400f674c4c7eb15a2ca0eb6a645cc975402f5d4295afbdd618142d3205a0251
+corpus_51_alternate	digest 128 3400f674c4c7eb15a2ca0eb6a645cc975402f5d4295afbdd618142d3205a0251
+corpus_52	digest 50 9f755ef685c057a80c837f7389a9170cec788989e32f09926407389b77ffc806
+corpus_52_alternate	digest 50 9f755ef685c057a80c837f7389a9170cec788989e32f09926407389b77ffc806
+corpus_53	digest 62 6f0685554bfa5f685cd84ad34a139c3b661ebc630f33b1e08a5e1acd6be46914
+corpus_53_alternate	digest 62 6f0685554bfa5f685cd84ad34a139c3b661ebc630f33b1e08a5e1acd6be46914
+corpus_54	digest 62 72a02b35767e70cb22c7c09e030441bc4d9a43cac2f23a2d743f66810b8935bb
+corpus_54_alternate	digest 62 72a02b35767e70cb22c7c09e030441bc4d9a43cac2f23a2d743f66810b8935bb
+corpus_55	digest 74 c3dca9f2772497c52fb792bf035f5fc1f8e3370b605d91677e8619fe23175144
+corpus_55_alternate	digest 74 c3dca9f2772497c52fb792bf035f5fc1f8e3370b605d91677e8619fe23175144
+corpus_56	digest 74 dc1a5802d2e1bcbce71803ce7906cc7b3e324a1d7d6f7163cb566ddb43bf3a84
+corpus_56_alternate	digest 74 dc1a5802d2e1bcbce71803ce7906cc7b3e324a1d7d6f7163cb566ddb43bf3a84
+corpus_57	digest 86 0a194cff506fc05165f2ab7d1f72baef99b53f100d03099b07b179efcd241fc8
+corpus_57_alternate	digest 86 0a194cff506fc05165f2ab7d1f72baef99b53f100d03099b07b179efcd241fc8
+corpus_58	digest 86 235f4310cdf285e52ce591cd99df6692e11444e670269c236feef2b07f2dfda5
+corpus_58_alternate	digest 86 235f4310cdf285e52ce591cd99df6692e11444e670269c236feef2b07f2dfda5
+corpus_59	digest 98 586f3b375f1afe7d6a8229c0e2a90a9afc5e57252bfac0ffacbfdffed93fe823
+corpus_59_alternate	digest 98 586f3b375f1afe7d6a8229c0e2a90a9afc5e57252bfac0ffacbfdffed93fe823
+corpus_60	digest 98 5c91ae53488ab5b1f393f809f30053d75c584152842e84aade08e7c98f280f5a
+corpus_60_alternate	digest 98 5c91ae53488ab5b1f393f809f30053d75c584152842e84aade08e7c98f280f5a
+corpus_61	digest 110 3ea6edf5211c10934ecd4da817cf965a9dc6c60530199e821023797575d8b47e
+corpus_61_alternate	digest 110 3ea6edf5211c10934ecd4da817cf965a9dc6c60530199e821023797575d8b47e
+corpus_62	digest 110 76bb77c58d491c40e18ee53b4e8cb94af981a1f0c6698e4ba7aba3dd21ffa30e
+corpus_62_alternate	digest 110 76bb77c58d491c40e18ee53b4e8cb94af981a1f0c6698e4ba7aba3dd21ffa30e
+corpus_63	digest 122 53a0d8f6d44b4be729847def725078d971822b2d9f8b7168b85781b017379e71
+corpus_63_alternate	digest 122 53a0d8f6d44b4be729847def725078d971822b2d9f8b7168b85781b017379e71
+corpus_64	digest 122 a7bd97dbfd70c79cf05ddc7b1c88f08c050c57916f70fff722c39606265ae46d
+corpus_64_alternate	digest 122 a7bd97dbfd70c79cf05ddc7b1c88f08c050c57916f70fff722c39606265ae46d
+corpus_65	digest 56 49cb4e25c9880281a41b941158f48fbf34b3d071d9affa8ea38ee255c4e757db
+corpus_65_alternate	digest 56 49cb4e25c9880281a41b941158f48fbf34b3d071d9affa8ea38ee255c4e757db
+corpus_66	digest 56 ec1888a5826ed7c90d472375bf29a7e1e43ddf33cfb8856f928d6e95c5c2f7b0
+corpus_66_alternate	digest 56 ec1888a5826ed7c90d472375bf29a7e1e43ddf33cfb8856f928d6e95c5c2f7b0
+corpus_67	digest 68 571b469e4632b8f001cee7396448ce61114c65d0c264aa717cdaece621d53400
+corpus_67_alternate	digest 68 571b469e4632b8f001cee7396448ce61114c65d0c264aa717cdaece621d53400
+corpus_68	digest 68 46239abbdcd32b5f5461d87294b968d164eb797ca8cd3f99fecea601ca084c53
+corpus_68_alternate	digest 68 46239abbdcd32b5f5461d87294b968d164eb797ca8cd3f99fecea601ca084c53
+corpus_69	digest 80 7412f243914f395ff2c0b95750a5fc9be6fa078139ecc22f5f8bf26c66b97e03
+corpus_69_alternate	digest 80 7412f243914f395ff2c0b95750a5fc9be6fa078139ecc22f5f8bf26c66b97e03
+corpus_70	digest 80 13dd28fa6f19bb447f29189cc54d34298c045fde4f8b0104dec75c42e920c979
+corpus_70_alternate	digest 80 13dd28fa6f19bb447f29189cc54d34298c045fde4f8b0104dec75c42e920c979
+corpus_71	digest 92 d1bde79f8b088ad6d369439d4f92e8bac82257136e60efd5c01b03739f8def32
+corpus_71_alternate	digest 92 d1bde79f8b088ad6d369439d4f92e8bac82257136e60efd5c01b03739f8def32
+corpus_72	digest 92 2305c9c62dde9f82b028ecd1e113085ecb0aff56ae08ab295424134d3b8c5701
+corpus_72_alternate	digest 92 2305c9c62dde9f82b028ecd1e113085ecb0aff56ae08ab295424134d3b8c5701
+corpus_73	digest 104 93e9405e95571ab263a2e65092acb7a442fe0dc239335fbf6a7feaeed725525d
+corpus_73_alternate	digest 104 93e9405e95571ab263a2e65092acb7a442fe0dc239335fbf6a7feaeed725525d
+corpus_74	digest 104 48df3c9fed9dbd692380ef27992bbfc0eba97c6948793c169bb10a6a7dab3112
+corpus_74_alternate	digest 104 48df3c9fed9dbd692380ef27992bbfc0eba97c6948793c169bb10a6a7dab3112
+corpus_75	digest 116 3d436ce9b76a8898ee9af423449a2643695fe0acd906ad46e0e747a387ec0191
+corpus_75_alternate	digest 116 3d436ce9b76a8898ee9af423449a2643695fe0acd906ad46e0e747a387ec0191
+corpus_76	digest 116 571f89fdd7b0fc19636414289ad9c43a34c253893fbfc6faefa002a0304e0c85
+corpus_76_alternate	digest 116 571f89fdd7b0fc19636414289ad9c43a34c253893fbfc6faefa002a0304e0c85
+corpus_77	digest 128 e910ac1d4e9b4f6c424d1a1bb43ebf13178aa5af869c716dcd12b03e5f033ff7
+corpus_77_alternate	digest 128 e910ac1d4e9b4f6c424d1a1bb43ebf13178aa5af869c716dcd12b03e5f033ff7
+corpus_78	digest 50 ff4f04c41166730e41055443ada58f87a17e018b4622caaa78124dbd8a1edf58
+corpus_78_alternate	digest 50 ff4f04c41166730e41055443ada58f87a17e018b4622caaa78124dbd8a1edf58
+corpus_79	digest 62 5acf3f3aab659130738091b4ef4da800f02ee5b3604a5949466c53ffa336e279
+corpus_79_alternate	digest 62 5acf3f3aab659130738091b4ef4da800f02ee5b3604a5949466c53ffa336e279
+corpus_80	digest 62 16dcaabe1ca75f25953ed8b2a3040fc106ad99c83192558256f4656d2357e0a6
+corpus_80_alternate	digest 62 16dcaabe1ca75f25953ed8b2a3040fc106ad99c83192558256f4656d2357e0a6
+corpus_81	digest 74 f53a1a4b636cc39fba791f83df361362ebc43ec5185fa2bfd42e596658cc2317
+corpus_81_alternate	digest 74 f53a1a4b636cc39fba791f83df361362ebc43ec5185fa2bfd42e596658cc2317
+corpus_82	digest 74 972554a99bdb9107e55b29104926fb001c92a0a13e64853ab63d12c29acef12b
+corpus_82_alternate	digest 74 972554a99bdb9107e55b29104926fb001c92a0a13e64853ab63d12c29acef12b
+corpus_83	digest 86 033c5580734adffc8aecbef28fccb313a3a6bfd582afe9e87280af897c18c167
+corpus_83_alternate	digest 86 033c5580734adffc8aecbef28fccb313a3a6bfd582afe9e87280af897c18c167
+corpus_84	digest 86 bd2f0f817b392cafc6efb00d7cb8c3f04ed1712f368ff46bb262da078e33e6d0
+corpus_84_alternate	digest 86 bd2f0f817b392cafc6efb00d7cb8c3f04ed1712f368ff46bb262da078e33e6d0
+corpus_85	digest 98 3460d7fa351f6262077df806967000f138665a842ef4e85d85290a56c50da7af
+corpus_85_alternate	digest 98 3460d7fa351f6262077df806967000f138665a842ef4e85d85290a56c50da7af
+corpus_86	digest 98 be34d8de321419baf979b3c24ad3b0390f227712b3b284e6be81960e2b5fd9aa
+corpus_86_alternate	digest 98 be34d8de321419baf979b3c24ad3b0390f227712b3b284e6be81960e2b5fd9aa
+corpus_87	digest 110 1325042a71b9a78d0a0ec7e0ad516e4745ab58cb0982f4e4d39daa64d76d2771
+corpus_87_alternate	digest 110 1325042a71b9a78d0a0ec7e0ad516e4745ab58cb0982f4e4d39daa64d76d2771
+corpus_88	digest 110 1e6f2391d92c7182f01a414c1cc0ff978445342099b6fc3ab2cd017b62bde6c0
+corpus_88_alternate	digest 110 1e6f2391d92c7182f01a414c1cc0ff978445342099b6fc3ab2cd017b62bde6c0
+corpus_89	digest 122 6085ef5d82df331ec98ee9a3e42e9ad2c42abfafbdce4238d73a5f5bb292fc93
+corpus_89_alternate	digest 122 6085ef5d82df331ec98ee9a3e42e9ad2c42abfafbdce4238d73a5f5bb292fc93
+corpus_90	digest 122 fd9d569665f996f21da1ddc8a4f299248ec8d2ebec525a94c570440431d89442
+corpus_90_alternate	digest 122 fd9d569665f996f21da1ddc8a4f299248ec8d2ebec525a94c570440431d89442
+corpus_91	digest 56 6310c78feef4483a08bb75cf4e9073e13d93569f72b6384bd1fc37fcf92ccce0
+corpus_91_alternate	digest 56 6310c78feef4483a08bb75cf4e9073e13d93569f72b6384bd1fc37fcf92ccce0
+corpus_92	digest 56 c9d3edd6f21e26ee68771e7b89370feda169662e354bc48788cb8144387d8a38
+corpus_92_alternate	digest 56 c9d3edd6f21e26ee68771e7b89370feda169662e354bc48788cb8144387d8a38
+corpus_93	digest 68 8aced6a17ff091a28b013bec39ca705fb0960d99f4f2115296a97e2295e805e3
+corpus_93_alternate	digest 68 8aced6a17ff091a28b013bec39ca705fb0960d99f4f2115296a97e2295e805e3
+corpus_94	digest 68 e34f20600bc6a5bf2a605fe92d3288cf01e0a854b733e429d6664b4285bc26d3
+corpus_94_alternate	digest 68 e34f20600bc6a5bf2a605fe92d3288cf01e0a854b733e429d6664b4285bc26d3
+corpus_95	digest 80 d9d514d6e7cde8d02ef68ad5f0bcdc1fc8aa32ad8d64ae8fe9ee467afbe9e249
+corpus_95_alternate	digest 80 d9d514d6e7cde8d02ef68ad5f0bcdc1fc8aa32ad8d64ae8fe9ee467afbe9e249
+corpus_96	digest 80 8441fd0cf1850168d6767ad5d75407e3501a691d458243ae2978e99a9a0717c3
+corpus_96_alternate	digest 80 8441fd0cf1850168d6767ad5d75407e3501a691d458243ae2978e99a9a0717c3
+corpus_97	digest 92 674e4a2465500cc01b03f79d1d9e3868058627eed0966508a68b68eaa8836542
+corpus_97_alternate	digest 92 674e4a2465500cc01b03f79d1d9e3868058627eed0966508a68b68eaa8836542
+corpus_98	digest 92 8f5d702e24059bd1a568265801a65cdd558ef1b20cab30fd36aecfc931880721
+corpus_98_alternate	digest 92 8f5d702e24059bd1a568265801a65cdd558ef1b20cab30fd36aecfc931880721
+corpus_99	digest 104 1acc0f8f3f05a498844e4f70be7b7334d49962d1ed4a024c585d673ee6220dc4
+corpus_99_alternate	digest 104 1acc0f8f3f05a498844e4f70be7b7334d49962d1ed4a024c585d673ee6220dc4
+corpus_100	digest 104 849b597eea5d897529b39b1f6737fc339a4a8a476140b972adcda988463dd845
+corpus_100_alternate	digest 104 849b597eea5d897529b39b1f6737fc339a4a8a476140b972adcda988463dd845
+corpus_101	digest 116 86f5963e6fcfa712afd556d49147d23d0e4ebf143e7611ed736d79e4aaaa94b1
+corpus_101_alternate	digest 116 86f5963e6fcfa712afd556d49147d23d0e4ebf143e7611ed736d79e4aaaa94b1
+corpus_102	digest 116 81275c1bfa76399aeaa65f788113ed3121d5bea789994f24eed75c5bb104a6ad
+corpus_102_alternate	digest 116 81275c1bfa76399aeaa65f788113ed3121d5bea789994f24eed75c5bb104a6ad
+corpus_103	digest 128 e88dc684364c0a70e92b8a7a403854899fe81831d714146c8ed92ad8fe7f3273
+corpus_103_alternate	digest 128 e88dc684364c0a70e92b8a7a403854899fe81831d714146c8ed92ad8fe7f3273
+corpus_104	digest 50 1466a835015de1ec3611e590fa6bb814b4a10ef6679c46b88f3e067b416b1cfd
+corpus_104_alternate	digest 50 1466a835015de1ec3611e590fa6bb814b4a10ef6679c46b88f3e067b416b1cfd
+corpus_105	digest 62 d2c2f822421b62f3c1b38f6a0f225fe9e0f9fcf69d724481d7e9c3d09f4435e2
+corpus_105_alternate	digest 62 d2c2f822421b62f3c1b38f6a0f225fe9e0f9fcf69d724481d7e9c3d09f4435e2
+corpus_106	digest 62 6cbceddef70842177cecc2ce84e23985a55f3bb04e98a407fd894c79bc44aefb
+corpus_106_alternate	digest 62 6cbceddef70842177cecc2ce84e23985a55f3bb04e98a407fd894c79bc44aefb
+corpus_107	digest 74 d57876d96b16e3bb3911e393eb7843515ab3fd78f7c68b018c6b719dd06ce2a7
+corpus_107_alternate	digest 74 d57876d96b16e3bb3911e393eb7843515ab3fd78f7c68b018c6b719dd06ce2a7
+corpus_108	digest 74 4a31fc261e2f540a9f7dec695ddc7f30cc022441cf02f9b7bb081aadd70890f6
+corpus_108_alternate	digest 74 4a31fc261e2f540a9f7dec695ddc7f30cc022441cf02f9b7bb081aadd70890f6
+corpus_109	digest 86 afecafe253fe067edc609bb949d7f18572cb6dcae20b217e90ca534132e8bf9b
+corpus_109_alternate	digest 86 afecafe253fe067edc609bb949d7f18572cb6dcae20b217e90ca534132e8bf9b
+corpus_110	digest 86 df3766901fe49c42b1a3c59405a6b793b0bc0c52dd9601eb4ec8afe4909d1a4c
+corpus_110_alternate	digest 86 df3766901fe49c42b1a3c59405a6b793b0bc0c52dd9601eb4ec8afe4909d1a4c
+corpus_111	digest 98 be4bab1aa428ac79b38adc4ddec3d02c5953e27e6387304580c60ad467f0bb40
+corpus_111_alternate	digest 98 be4bab1aa428ac79b38adc4ddec3d02c5953e27e6387304580c60ad467f0bb40
+corpus_112	digest 98 3d478c4c6f1f3a646574a4c668c193c352eda41d47eb4c93ec11f5759aa531ab
+corpus_112_alternate	digest 98 3d478c4c6f1f3a646574a4c668c193c352eda41d47eb4c93ec11f5759aa531ab
+corpus_113	digest 110 bce918ffc8834020f3865f60349b1721e6910e75929a65def69d15d8dbdb7280
+corpus_113_alternate	digest 110 bce918ffc8834020f3865f60349b1721e6910e75929a65def69d15d8dbdb7280
+corpus_114	digest 110 8ee1e256a26eed316bc616ee552c3b08283e78a0f0b4629591940b1f7bf9c3eb
+corpus_114_alternate	digest 110 8ee1e256a26eed316bc616ee552c3b08283e78a0f0b4629591940b1f7bf9c3eb
+corpus_115	digest 122 5626fba8925460eb98f6dbad891e0c052d9e03263778dbb14ac0ce863aa030e4
+corpus_115_alternate	digest 122 5626fba8925460eb98f6dbad891e0c052d9e03263778dbb14ac0ce863aa030e4
+corpus_116	digest 122 387515010f071ad38dab4294fb554f549bdd57571763558fe4cd187e990de61d
+corpus_116_alternate	digest 122 387515010f071ad38dab4294fb554f549bdd57571763558fe4cd187e990de61d
+corpus_117	digest 56 90989afa308ce29980b0e89b48717bdce4addecafae7232377c40f3a748d4172
+corpus_117_alternate	digest 56 90989afa308ce29980b0e89b48717bdce4addecafae7232377c40f3a748d4172
+corpus_118	digest 56 af96bd2a66037c4f875eef9c6fb3b354deacae381ba0135291cdd06a3d0ff734
+corpus_118_alternate	digest 56 af96bd2a66037c4f875eef9c6fb3b354deacae381ba0135291cdd06a3d0ff734
+corpus_119	digest 68 74012852c084f862b9fc76bc60a3266ab133d639f28c2d0c4c62c5a494a1f87a
+corpus_119_alternate	digest 68 74012852c084f862b9fc76bc60a3266ab133d639f28c2d0c4c62c5a494a1f87a
+corpus_120	digest 68 fd3ea96f1c3db4f0b985f3e0a07af61a3a28e30e4099ddf35f3c1ae21c3502a0
+corpus_120_alternate	digest 68 fd3ea96f1c3db4f0b985f3e0a07af61a3a28e30e4099ddf35f3c1ae21c3502a0
+corpus_121	digest 80 775de4c72bd1984c428508ab4c7623061d551ca7a02615d8f628bcd20b0c1f49
+corpus_121_alternate	digest 80 775de4c72bd1984c428508ab4c7623061d551ca7a02615d8f628bcd20b0c1f49
+corpus_122	digest 80 49cd69b839d41bb24dea3f43deda653551f5e488669c2a726138be5b66bcbc1a
+corpus_122_alternate	digest 80 49cd69b839d41bb24dea3f43deda653551f5e488669c2a726138be5b66bcbc1a
+corpus_123	digest 92 2971c8c5d71b759a7ffde4d8f07fc01da2cda5075939cce702b11aaebd1a6c6a
+corpus_123_alternate	digest 92 2971c8c5d71b759a7ffde4d8f07fc01da2cda5075939cce702b11aaebd1a6c6a
+corpus_124	digest 92 43a7ea909e758287384d5baa44a38aa3c4697401f155c8837060862733dd9b9f
+corpus_124_alternate	digest 92 43a7ea909e758287384d5baa44a38aa3c4697401f155c8837060862733dd9b9f
+corpus_125	digest 104 ae0eb868d154761e8ae2c94979333085f4e641da485c4a8ac67c25a19037e9b7
+corpus_125_alternate	digest 104 ae0eb868d154761e8ae2c94979333085f4e641da485c4a8ac67c25a19037e9b7
+corpus_126	digest 104 1e8fe217286f8c6536f69b9f91d7f51d2d266e39ac39c00619911961b117eab2
+corpus_126_alternate	digest 104 1e8fe217286f8c6536f69b9f91d7f51d2d266e39ac39c00619911961b117eab2
+corpus_127	digest 116 07c15daadf56109811c1e5cbdf3a6c6c3428401bab36cb8c774ae77caef59299
+corpus_127_alternate	digest 116 07c15daadf56109811c1e5cbdf3a6c6c3428401bab36cb8c774ae77caef59299
+corpus_128	digest 116 ac0e8bb2b67e58d0e4c0511e03b46d1ff40b2d60c4c5aa91dae3e3c3cce3296b
+corpus_128_alternate	digest 116 ac0e8bb2b67e58d0e4c0511e03b46d1ff40b2d60c4c5aa91dae3e3c3cce3296b
+corpus_129	digest 128 673fb462056a8e59cdfe19c3cdf57e32e2f2f6d23e0d9ed4a7f3b6bc6362a341
+corpus_129_alternate	digest 128 673fb462056a8e59cdfe19c3cdf57e32e2f2f6d23e0d9ed4a7f3b6bc6362a341
+corpus_130	digest 50 7160bbaaa0cc9c3584d796620c08a16b3062af75f53c7fc980103fcb611155e0
+corpus_130_alternate	digest 50 7160bbaaa0cc9c3584d796620c08a16b3062af75f53c7fc980103fcb611155e0
+corpus_131	digest 62 efb3d55a311a9d16728b414b202f118860d644092cd08d24223075b9cb0e3aca
+corpus_131_alternate	digest 62 efb3d55a311a9d16728b414b202f118860d644092cd08d24223075b9cb0e3aca
+corpus_132	digest 62 3c19237afc422ec287d4d7bc7b9d5b6d4522af15efad7810fe17d721db39ff94
+corpus_132_alternate	digest 62 3c19237afc422ec287d4d7bc7b9d5b6d4522af15efad7810fe17d721db39ff94
+corpus_133	digest 74 36896cbfe8a4044b32aab147b0abbf020d617b875170059aa0e950c403074ac5
+corpus_133_alternate	digest 74 36896cbfe8a4044b32aab147b0abbf020d617b875170059aa0e950c403074ac5
+corpus_134	digest 74 262e19c394bfd3477d314f44b8806058dd222256c64f0b4c6c4690b93b46e750
+corpus_134_alternate	digest 74 262e19c394bfd3477d314f44b8806058dd222256c64f0b4c6c4690b93b46e750
+corpus_135	digest 86 5386a4b06ed9c5e933c6f1a888105dd4624533d606255f774163990b227f730c
+corpus_135_alternate	digest 86 5386a4b06ed9c5e933c6f1a888105dd4624533d606255f774163990b227f730c
+corpus_136	digest 86 8ec76af23670c7689239ae4107a6556a9f832cd6a13c510b16d39cf4fa8104db
+corpus_136_alternate	digest 86 8ec76af23670c7689239ae4107a6556a9f832cd6a13c510b16d39cf4fa8104db
+corpus_137	digest 98 71d1a2da281f13b68f5359b3c99f0c9a6ff973507205107a7751fc0f276f3e78
+corpus_137_alternate	digest 98 71d1a2da281f13b68f5359b3c99f0c9a6ff973507205107a7751fc0f276f3e78
+corpus_138	digest 98 00d5433b128d0580241e16ffb886702bc48a18453ad1204c77d37ec1e3abbf17
+corpus_138_alternate	digest 98 00d5433b128d0580241e16ffb886702bc48a18453ad1204c77d37ec1e3abbf17
+corpus_139	digest 110 613363925482657f2125021b09c93c3b37254068fa04f6fceee3c5f58a2d796e
+corpus_139_alternate	digest 110 613363925482657f2125021b09c93c3b37254068fa04f6fceee3c5f58a2d796e
+corpus_140	digest 110 3c3a40e07db29bc78935ef3406dbdc4ae44a33cd363f82091593a84675c86c90
+corpus_140_alternate	digest 110 3c3a40e07db29bc78935ef3406dbdc4ae44a33cd363f82091593a84675c86c90
+corpus_141	digest 122 aa5ff02be4784e7857a43df61ebc3f35df4e7128c91974e2a51216a5430a20f8
+corpus_141_alternate	digest 122 aa5ff02be4784e7857a43df61ebc3f35df4e7128c91974e2a51216a5430a20f8
+corpus_142	digest 122 a68ae5c817596c5814c93ef13177e56c6c8992bf582eb7b027464f95f8ee1a48
+corpus_142_alternate	digest 122 a68ae5c817596c5814c93ef13177e56c6c8992bf582eb7b027464f95f8ee1a48
+corpus_143	digest 56 62e4d2e9b4f1a1b12de8b1f0d5c59ab8d28aebf5cd677bdf0bbdd6e7c28c94c3
+corpus_143_alternate	digest 56 62e4d2e9b4f1a1b12de8b1f0d5c59ab8d28aebf5cd677bdf0bbdd6e7c28c94c3
+corpus_144	digest 56 239ede79f131ea39af6bcecebda916e2a228baf6692f9200f81be599a7b87e5c
+corpus_144_alternate	digest 56 239ede79f131ea39af6bcecebda916e2a228baf6692f9200f81be599a7b87e5c
+corpus_145	digest 68 c9ef15cb44d77eb33664edeecb52bf0807676f5c029178fe71d59b5af173f3cf
+corpus_145_alternate	digest 68 c9ef15cb44d77eb33664edeecb52bf0807676f5c029178fe71d59b5af173f3cf
+corpus_146	digest 68 789a9bb933f3417a7cf335d3d4996d5c38bce6f6d73b0e7d9d90e1d00e421922
+corpus_146_alternate	digest 68 789a9bb933f3417a7cf335d3d4996d5c38bce6f6d73b0e7d9d90e1d00e421922
+corpus_147	digest 80 edb2ca92330138d61723df9bd8ff91b789174ede77ecb66572c9a6332a228f4b
+corpus_147_alternate	digest 80 edb2ca92330138d61723df9bd8ff91b789174ede77ecb66572c9a6332a228f4b
+corpus_148	digest 80 ab143927d68290ecac887a6a75b46698ef973c3f0ed295903e4dbc8957c1f02b
+corpus_148_alternate	digest 80 ab143927d68290ecac887a6a75b46698ef973c3f0ed295903e4dbc8957c1f02b
+corpus_149	digest 92 11f8a06b61018d6e4d6e45147caffb630e55093d6c08bc4968a351c5d38638ae
+corpus_149_alternate	digest 92 11f8a06b61018d6e4d6e45147caffb630e55093d6c08bc4968a351c5d38638ae
+corpus_150	digest 92 f3cf75948f62fd857d90d8f4b84c8f50a7934db9ef5c4ac7bcd20c7bbb59411c
+corpus_150_alternate	digest 92 f3cf75948f62fd857d90d8f4b84c8f50a7934db9ef5c4ac7bcd20c7bbb59411c
+corpus_151	digest 104 0338cb902f9e6493b1cc4bb9a79304e81d9518636376759762ef79acffed584b
+corpus_151_alternate	digest 104 0338cb902f9e6493b1cc4bb9a79304e81d9518636376759762ef79acffed584b
+corpus_152	digest 104 088634cc46ff55bb6c0f2c8cd38f173d6b039b0f81424f1b665b453a38cd9a29
+corpus_152_alternate	digest 104 088634cc46ff55bb6c0f2c8cd38f173d6b039b0f81424f1b665b453a38cd9a29
+corpus_153	digest 116 5811a76a6bd35a63579dc22693b2735bd8acbf5e24a6938c68bf3a3e7b3a6a63
+corpus_153_alternate	digest 116 5811a76a6bd35a63579dc22693b2735bd8acbf5e24a6938c68bf3a3e7b3a6a63
+corpus_154	digest 116 70ab651a25041abc7c425c035476c9d34ae652aef06625ea98fd83f24eb368b4
+corpus_154_alternate	digest 116 70ab651a25041abc7c425c035476c9d34ae652aef06625ea98fd83f24eb368b4
+corpus_155	digest 128 5cba61154fd0dd9238f14f460dde56d1714e3d3bd1d0ef700849118aa7b828e2
+corpus_155_alternate	digest 128 5cba61154fd0dd9238f14f460dde56d1714e3d3bd1d0ef700849118aa7b828e2
+corpus_156	digest 50 b15488e82deff12dd19309961b92a3348fde502310288869b52fd4b78d83006c
+corpus_156_alternate	digest 50 b15488e82deff12dd19309961b92a3348fde502310288869b52fd4b78d83006c
+corpus_157	digest 62 517a211b610888e1f8ef8000764f3ddde80a254cdce11cc921ff3f7584597a14
+corpus_157_alternate	digest 62 517a211b610888e1f8ef8000764f3ddde80a254cdce11cc921ff3f7584597a14
+corpus_158	digest 62 08f2732c16455e95cce7b77fb75ac9a6f84617918c47ecf0c22d91df5a31474d
+corpus_158_alternate	digest 62 08f2732c16455e95cce7b77fb75ac9a6f84617918c47ecf0c22d91df5a31474d
+corpus_159	digest 74 7de4a72dd6e9f58d3b73d2881759e1f529343eee7c52390c4ff733a874fd9776
+corpus_159_alternate	digest 74 7de4a72dd6e9f58d3b73d2881759e1f529343eee7c52390c4ff733a874fd9776
+corpus_160	digest 74 c243e62a18ae4bd6029e286af75c763bdab6075fcda78c9e7ede38307a4c8700
+corpus_160_alternate	digest 74 c243e62a18ae4bd6029e286af75c763bdab6075fcda78c9e7ede38307a4c8700
+corpus_161	digest 86 30cabf7bb09642d235c8c14cc6ddda9cb41036590c24259e8d32aa5954e7cee0
+corpus_161_alternate	digest 86 30cabf7bb09642d235c8c14cc6ddda9cb41036590c24259e8d32aa5954e7cee0
+corpus_162	digest 86 72e7ee7f27836f6cd9b0975a0582f586808842885bd66585af8d8a92f4835893
+corpus_162_alternate	digest 86 72e7ee7f27836f6cd9b0975a0582f586808842885bd66585af8d8a92f4835893
+corpus_163	digest 98 8ecc16aeb04ea04fd1e6329cd362ef7f5e1de76c8f4bbe2b7c507a3ce180070d
+corpus_163_alternate	digest 98 8ecc16aeb04ea04fd1e6329cd362ef7f5e1de76c8f4bbe2b7c507a3ce180070d
+corpus_164	digest 98 13d9b833a6966e08d6c505ed12e7b9a9432fa1f976c83e0278a2347d43b486cd
+corpus_164_alternate	digest 98 13d9b833a6966e08d6c505ed12e7b9a9432fa1f976c83e0278a2347d43b486cd
+corpus_165	digest 110 dcfcc76f1ef42f2e10075990f3e122c7386d34c3ff3dd8184da087ac079c164b
+corpus_165_alternate	digest 110 dcfcc76f1ef42f2e10075990f3e122c7386d34c3ff3dd8184da087ac079c164b
+corpus_166	digest 110 b236f9587d4804b5ec129f26af6b293b5b519c15166a396e3bbc52828c533cb8
+corpus_166_alternate	digest 110 b236f9587d4804b5ec129f26af6b293b5b519c15166a396e3bbc52828c533cb8
+corpus_167	digest 122 db556215ccdaba46ef30cc46e649c48e1e056d0ba81a881e595eed4ae7f47e78
+corpus_167_alternate	digest 122 db556215ccdaba46ef30cc46e649c48e1e056d0ba81a881e595eed4ae7f47e78
+corpus_168	digest 122 c07bd87c2c9fe290dd78a2cdb3c7c6666155a7f08aec6788404a9f132e248262
+corpus_168_alternate	digest 122 c07bd87c2c9fe290dd78a2cdb3c7c6666155a7f08aec6788404a9f132e248262
+corpus_169	digest 56 a6e3e46857eb2cbf8055c8bc155e0a09faabc343faa6d3dd32c8087538a6ce0e
+corpus_169_alternate	digest 56 a6e3e46857eb2cbf8055c8bc155e0a09faabc343faa6d3dd32c8087538a6ce0e
+corpus_170	digest 56 a599eaab9fb3df8d08100321a6c30815900ed6159ab610fefe2c01ab8ef276bf
+corpus_170_alternate	digest 56 a599eaab9fb3df8d08100321a6c30815900ed6159ab610fefe2c01ab8ef276bf
+corpus_171	digest 68 1466a7083833e4099926c300abdc0d4c911b35d8f9c5ca159719ee905a965793
+corpus_171_alternate	digest 68 1466a7083833e4099926c300abdc0d4c911b35d8f9c5ca159719ee905a965793
+corpus_172	digest 68 8aea71fac937d0010407dee48c028e748703e6ffc6eea6b990659cd05c7ad0b0
+corpus_172_alternate	digest 68 8aea71fac937d0010407dee48c028e748703e6ffc6eea6b990659cd05c7ad0b0
+corpus_173	digest 80 721adc5bd5c4211e4f89f5c924475c76b994414141067f657a5634c7cad4e4cb
+corpus_173_alternate	digest 80 721adc5bd5c4211e4f89f5c924475c76b994414141067f657a5634c7cad4e4cb
+corpus_174	digest 80 24907ec06410d94bbe99fc26cda650e602e6f50593306afada707f931596661f
+corpus_174_alternate	digest 80 24907ec06410d94bbe99fc26cda650e602e6f50593306afada707f931596661f
+corpus_175	digest 92 45618a362b6725fdbe11bc337cf1b2a5c4aaddadc962b7be5edab3be9323e327
+corpus_175_alternate	digest 92 45618a362b6725fdbe11bc337cf1b2a5c4aaddadc962b7be5edab3be9323e327
+corpus_176	digest 92 8bcaa26c9e15fc8a13d29d567545a3af2f91788cffd519039ae0f3da80063d07
+corpus_176_alternate	digest 92 8bcaa26c9e15fc8a13d29d567545a3af2f91788cffd519039ae0f3da80063d07
+corpus_177	digest 104 9a8ffc97c6e56e812bcd3c367d7c5883fc5e26688f8ca0ca19514ce3cd395d83
+corpus_177_alternate	digest 104 9a8ffc97c6e56e812bcd3c367d7c5883fc5e26688f8ca0ca19514ce3cd395d83
+corpus_178	digest 104 a54d9f1ed0db98bc735218726ae80c6b27d762ff4ac746e2bf40e5cff376c588
+corpus_178_alternate	digest 104 a54d9f1ed0db98bc735218726ae80c6b27d762ff4ac746e2bf40e5cff376c588
+corpus_179	digest 116 f6ed1ec6c6d73e5a4d5782c893450701a0a3ebf2e9b1394b53fd7362df40d980
+corpus_179_alternate	digest 116 f6ed1ec6c6d73e5a4d5782c893450701a0a3ebf2e9b1394b53fd7362df40d980
+corpus_180	digest 116 eee7472182a9ed1715132afd7fb4e4a22c3b92419c2f8941b72595bbd2f6c172
+corpus_180_alternate	digest 116 eee7472182a9ed1715132afd7fb4e4a22c3b92419c2f8941b72595bbd2f6c172
+corpus_181	digest 128 6eea34162c3c3fbcbbfaf622fa25dc3236cc6dce11408d08033db3766b31d718
+corpus_181_alternate	digest 128 6eea34162c3c3fbcbbfaf622fa25dc3236cc6dce11408d08033db3766b31d718
+corpus_182	digest 50 ec19591d5142b2693dc80306727c2723b12cc86f47548024e6fc5acaa98c7e3f
+corpus_182_alternate	digest 50 ec19591d5142b2693dc80306727c2723b12cc86f47548024e6fc5acaa98c7e3f
+corpus_183	digest 62 0dad0c54cae6c17a9d6987f5c56cd6cc638435b2cdf143d3631476b63d144d49
+corpus_183_alternate	digest 62 0dad0c54cae6c17a9d6987f5c56cd6cc638435b2cdf143d3631476b63d144d49
+corpus_184	digest 62 9dbb6d0b06cef63dae7a57c9d2dcb1238460b3cf86d48d7ecad62cc6e0da4c5b
+corpus_184_alternate	digest 62 9dbb6d0b06cef63dae7a57c9d2dcb1238460b3cf86d48d7ecad62cc6e0da4c5b
+corpus_185	digest 74 e515484173744be3105173fda428ae36a2b723f216800bdd84dfbf4dbdd9761d
+corpus_185_alternate	digest 74 e515484173744be3105173fda428ae36a2b723f216800bdd84dfbf4dbdd9761d
+corpus_186	digest 74 d624164ff955e1c15042a133fc1550b0d3b860e43ea3fd846f2b7aca63737aaf
+corpus_186_alternate	digest 74 d624164ff955e1c15042a133fc1550b0d3b860e43ea3fd846f2b7aca63737aaf
+corpus_187	digest 86 c5b8eeebab7051a8b408e7450a86d4e01499be33e7e740c069e282be03703158
+corpus_187_alternate	digest 86 c5b8eeebab7051a8b408e7450a86d4e01499be33e7e740c069e282be03703158
+corpus_188	digest 86 72cd352acedfc73431773b5d24191a917b80c2e39dbe06763267803361c67ffe
+corpus_188_alternate	digest 86 72cd352acedfc73431773b5d24191a917b80c2e39dbe06763267803361c67ffe
+corpus_189	digest 98 7be931d72148729fe295f738949b5f5008679a371e1897a5567e9c22505a1b7f
+corpus_189_alternate	digest 98 7be931d72148729fe295f738949b5f5008679a371e1897a5567e9c22505a1b7f
+corpus_190	digest 98 5109cd23862f16932364695be371925711477341d74431184c8641111fc935b5
+corpus_190_alternate	digest 98 5109cd23862f16932364695be371925711477341d74431184c8641111fc935b5
+corpus_191	digest 110 5d8ac3755efbcfbd86c745f4ff778bc5498f20057dc561e3d9fe749f677b978d
+corpus_191_alternate	digest 110 5d8ac3755efbcfbd86c745f4ff778bc5498f20057dc561e3d9fe749f677b978d
+corpus_192	digest 110 c487cb0b4d594153d54874f2f4347b46fd03dc2f87258269798684a6bdf7e26f
+corpus_192_alternate	digest 110 c487cb0b4d594153d54874f2f4347b46fd03dc2f87258269798684a6bdf7e26f
+corpus_193	digest 122 438776b09443fb162d3f9bf0f275fa5ea860869c521b67d92b6eb167f60e3f5d
+corpus_193_alternate	digest 122 438776b09443fb162d3f9bf0f275fa5ea860869c521b67d92b6eb167f60e3f5d
+corpus_194	digest 122 ddea157e23e53f885e478bad28f525184c5c1efb7861f987b2a1443cab2bf3c7
+corpus_194_alternate	digest 122 ddea157e23e53f885e478bad28f525184c5c1efb7861f987b2a1443cab2bf3c7
+corpus_195	digest 56 4f9a2b04b7801759715ace0112b35a853b1b8e83c9c26399d00e97db36e2763b
+corpus_195_alternate	digest 56 4f9a2b04b7801759715ace0112b35a853b1b8e83c9c26399d00e97db36e2763b
+corpus_196	digest 56 d705ec282a819c4c1898f78e55e27b9c21eacd06797964fe85271d7ce07cee1f
+corpus_196_alternate	digest 56 d705ec282a819c4c1898f78e55e27b9c21eacd06797964fe85271d7ce07cee1f
+corpus_197	digest 68 2f3020eb374b98b8638d67152ee0ff5b37f7dc6e9c82395a0b5f51529dc3815c
+corpus_197_alternate	digest 68 2f3020eb374b98b8638d67152ee0ff5b37f7dc6e9c82395a0b5f51529dc3815c
+corpus_198	digest 68 971a88a84154f1752e1621adcce30130ea891a4db45f25a6315469b29342d161
+corpus_198_alternate	digest 68 971a88a84154f1752e1621adcce30130ea891a4db45f25a6315469b29342d161
+corpus_199	digest 80 eff7cdbad1582f3220e0e05a15c96615b9dffe23a16dd1704200cb95b0fc04ff
+corpus_199_alternate	digest 80 eff7cdbad1582f3220e0e05a15c96615b9dffe23a16dd1704200cb95b0fc04ff
+corpus_200	digest 80 bc4c7629657130e875fbf9c9c16d516d70db14079ebd56ec84238acf19b4de1d
+corpus_200_alternate	digest 80 bc4c7629657130e875fbf9c9c16d516d70db14079ebd56ec84238acf19b4de1d
+corpus_201	digest 92 2895d8cbb83f91b0b9e7e39c3c884470603d4a1ed5141644cf8cd1d8fe7d26df
+corpus_201_alternate	digest 92 2895d8cbb83f91b0b9e7e39c3c884470603d4a1ed5141644cf8cd1d8fe7d26df
+corpus_202	digest 92 f5d864a11b6812a8b33453edb82f473c882307b4a5c7d64c61bae7723432aa77
+corpus_202_alternate	digest 92 f5d864a11b6812a8b33453edb82f473c882307b4a5c7d64c61bae7723432aa77
+corpus_203	digest 104 cf31698261c2b0e9d810ec3ccdf50f5dbdf6bf32f6107559a04c8b38443df519
+corpus_203_alternate	digest 104 cf31698261c2b0e9d810ec3ccdf50f5dbdf6bf32f6107559a04c8b38443df519
+corpus_204	digest 104 71172857c762dec92265b4935d6664e3644b93e78ced7c9a26ee6896c2de3255
+corpus_204_alternate	digest 104 71172857c762dec92265b4935d6664e3644b93e78ced7c9a26ee6896c2de3255
+corpus_205	digest 116 dac6e0f27bc899a43ce6fd53cb91dabe2ad1aede4c944f098b4ba30dc1cae649
+corpus_205_alternate	digest 116 dac6e0f27bc899a43ce6fd53cb91dabe2ad1aede4c944f098b4ba30dc1cae649
+corpus_206	digest 116 fc9ef60de8f1d21de7f7dec63b5a2269d6aeb6c883ec9d68f6c37e18b371ad20
+corpus_206_alternate	digest 116 fc9ef60de8f1d21de7f7dec63b5a2269d6aeb6c883ec9d68f6c37e18b371ad20
+corpus_207	digest 128 6ed2d0d8ac8eb06a40d786e1431bd51292c2db17e0d6ae44ccf1230d79b8010c
+corpus_207_alternate	digest 128 6ed2d0d8ac8eb06a40d786e1431bd51292c2db17e0d6ae44ccf1230d79b8010c
+corpus_208	digest 50 3c709c7245e78d438ff081e83de5d0461c9d5af591e6eeebab9d4e800c28beba
+corpus_208_alternate	digest 50 3c709c7245e78d438ff081e83de5d0461c9d5af591e6eeebab9d4e800c28beba
+corpus_209	digest 62 d27b0f17f709e430ee9717da6829b6afe811917b2ed85f0804f9347487b1b87d
+corpus_209_alternate	digest 62 d27b0f17f709e430ee9717da6829b6afe811917b2ed85f0804f9347487b1b87d
+corpus_210	digest 62 6de16b7cbf391ef2d12948d314a9c11f8698cf27cbf73546ed0758fba4f459db
+corpus_210_alternate	digest 62 6de16b7cbf391ef2d12948d314a9c11f8698cf27cbf73546ed0758fba4f459db
+corpus_211	digest 74 a43972fcec0a8dbba252c3653acbbcbc44fa1b48bce19a7000467c8588ff2c7b
+corpus_211_alternate	digest 74 a43972fcec0a8dbba252c3653acbbcbc44fa1b48bce19a7000467c8588ff2c7b
+corpus_212	digest 74 6c1d2365ec2f12541c1ce4f1e06f21db441355ccfbefe8a3c6fd586867793fcf
+corpus_212_alternate	digest 74 6c1d2365ec2f12541c1ce4f1e06f21db441355ccfbefe8a3c6fd586867793fcf
+corpus_213	digest 86 21a9f970a04b1eac6dd7210a52173d7b70807d148df50299e5607f4e7fb07b31
+corpus_213_alternate	digest 86 21a9f970a04b1eac6dd7210a52173d7b70807d148df50299e5607f4e7fb07b31
+corpus_214	digest 86 760cbed1576f28cfc8bea3bd39fd787e8f2e818d88a864a447e87fb55dc48021
+corpus_214_alternate	digest 86 760cbed1576f28cfc8bea3bd39fd787e8f2e818d88a864a447e87fb55dc48021
+corpus_215	digest 98 8d51d6675b1a53aca6465f5f808b239b28f353887d7ddf6e1feca789479d21ac
+corpus_215_alternate	digest 98 8d51d6675b1a53aca6465f5f808b239b28f353887d7ddf6e1feca789479d21ac
+corpus_216	digest 98 41da5a2ffa880849a215b62115f1f3215e92b9b28aaf794fa91baef64c88ae92
+corpus_216_alternate	digest 98 41da5a2ffa880849a215b62115f1f3215e92b9b28aaf794fa91baef64c88ae92
+corpus_217	digest 110 7c31bb560498c6bc7c9969329a112bd0a5cfe5ebdfa05e52454f97fe15e37f89
+corpus_217_alternate	digest 110 7c31bb560498c6bc7c9969329a112bd0a5cfe5ebdfa05e52454f97fe15e37f89
+corpus_218	digest 110 5d793c72d999c6eb3b85aa013ee3ce89cc98fa135fdbbe5dac6466074b17a94d
+corpus_218_alternate	digest 110 5d793c72d999c6eb3b85aa013ee3ce89cc98fa135fdbbe5dac6466074b17a94d
+corpus_219	digest 122 0eb91bc20e54e2a7e30db2cf4c1d7f09950625a5ff3dd7726e78d0203494398c
+corpus_219_alternate	digest 122 0eb91bc20e54e2a7e30db2cf4c1d7f09950625a5ff3dd7726e78d0203494398c
+corpus_220	digest 122 92b9b8dad9d6f21dbf646c9982237ace29e78a15dc47702e7cf9c57b2109180b
+corpus_220_alternate	digest 122 92b9b8dad9d6f21dbf646c9982237ace29e78a15dc47702e7cf9c57b2109180b
+corpus_221	digest 56 4a574a9ef72f42baed1f2b36c2ec698544eef2090197062dec5afb6d60ec5579
+corpus_221_alternate	digest 56 4a574a9ef72f42baed1f2b36c2ec698544eef2090197062dec5afb6d60ec5579
+corpus_222	digest 56 713e16dce9bdebdad3b80b1c6756bd266c61b8b09bf89324fd9b5c46ac01f414
+corpus_222_alternate	digest 56 713e16dce9bdebdad3b80b1c6756bd266c61b8b09bf89324fd9b5c46ac01f414
+corpus_223	digest 68 db18797eb3d1d00bb33e1835c8455c44af95c02c4f0e02f4b4af957755ad7c67
+corpus_223_alternate	digest 68 db18797eb3d1d00bb33e1835c8455c44af95c02c4f0e02f4b4af957755ad7c67
+corpus_224	digest 68 910c6744248a4b967a041b4f31a07b0cd2612aa9717ba398a22b9b803bc5a431
+corpus_224_alternate	digest 68 910c6744248a4b967a041b4f31a07b0cd2612aa9717ba398a22b9b803bc5a431
+corpus_225	digest 80 378120b3b9f34420d07857cfee26e5daaa0069bc8a9ae2e38b9e6d1745bd407c
+corpus_225_alternate	digest 80 378120b3b9f34420d07857cfee26e5daaa0069bc8a9ae2e38b9e6d1745bd407c
+corpus_226	digest 80 6cda8546b86a61a6892bdfc01e5a3124d44b87b1644eb966e4b3ae534a3a69a8
+corpus_226_alternate	digest 80 6cda8546b86a61a6892bdfc01e5a3124d44b87b1644eb966e4b3ae534a3a69a8
+corpus_227	digest 92 8f4e5760d7131c11db9e11f1b143d2ead8d189a5b061709ad0119fc02d6c2427
+corpus_227_alternate	digest 92 8f4e5760d7131c11db9e11f1b143d2ead8d189a5b061709ad0119fc02d6c2427
+corpus_228	digest 92 8802b471a9c338cee6836dc55fd555d19d5dd2d3de85b62090dccb3ab9e3c852
+corpus_228_alternate	digest 92 8802b471a9c338cee6836dc55fd555d19d5dd2d3de85b62090dccb3ab9e3c852
+corpus_229	digest 104 ca11edeab5a6ef9f078cae2f20eadaf6e9de2e2c6064a8321d6cec9b5ecbe657
+corpus_229_alternate	digest 104 ca11edeab5a6ef9f078cae2f20eadaf6e9de2e2c6064a8321d6cec9b5ecbe657
+corpus_230	digest 104 d2bd2a043ea1e87f8245b03f8be32c78925dc41b7960aaee39411a12666cbf19
+corpus_230_alternate	digest 104 d2bd2a043ea1e87f8245b03f8be32c78925dc41b7960aaee39411a12666cbf19
+corpus_231	digest 116 6694c390b69e5ed2862d36e58b986c14b1bf1732f78cf9666236900f5837c5c7
+corpus_231_alternate	digest 116 6694c390b69e5ed2862d36e58b986c14b1bf1732f78cf9666236900f5837c5c7
+corpus_232	digest 116 e8ee65e61a5429cd92fcd9f7b0c35e9f1a8edbd21bae1dbac9e1565e88899ac0
+corpus_232_alternate	digest 116 e8ee65e61a5429cd92fcd9f7b0c35e9f1a8edbd21bae1dbac9e1565e88899ac0
+corpus_233	digest 128 8c014895d8451588dcd0d843de047b5021385fb9caa1c80dd9b1223418f8bc0a
+corpus_233_alternate	digest 128 8c014895d8451588dcd0d843de047b5021385fb9caa1c80dd9b1223418f8bc0a
+corpus_234	digest 50 20b371ca08f21a615fee7a6833eec39f352ad9f3ab71b206d38e0fa969cd0b2e
+corpus_234_alternate	digest 50 20b371ca08f21a615fee7a6833eec39f352ad9f3ab71b206d38e0fa969cd0b2e
+corpus_235	digest 62 bff85d4c718521032f72c71cbe99b2a15454e7d9e71b82d0755157ed695e677f
+corpus_235_alternate	digest 62 bff85d4c718521032f72c71cbe99b2a15454e7d9e71b82d0755157ed695e677f
+corpus_236	digest 62 02ccc6dfbd820e4689507252228a3a360e0cff9289210eb51a2effdd617ed8ea
+corpus_236_alternate	digest 62 02ccc6dfbd820e4689507252228a3a360e0cff9289210eb51a2effdd617ed8ea
+corpus_237	digest 74 6277571c5e953ebdb741e16e092564c958cc9e317a5318437321bc82443f8f12
+corpus_237_alternate	digest 74 6277571c5e953ebdb741e16e092564c958cc9e317a5318437321bc82443f8f12
+corpus_238	digest 74 97cb700d6c2b7919d0187303dbdb4d5086d9d770cf6dbbd37afcef2cb2829921
+corpus_238_alternate	digest 74 97cb700d6c2b7919d0187303dbdb4d5086d9d770cf6dbbd37afcef2cb2829921
+corpus_239	digest 86 52d3ecea9963a38a9149b41083801a1cbe822e4a55ff6a5f5816fb5bbafa3113
+corpus_239_alternate	digest 86 52d3ecea9963a38a9149b41083801a1cbe822e4a55ff6a5f5816fb5bbafa3113
+corpus_240	digest 86 0bb23d7f223a2c74922cb93f450a4a8204c885d96c4dca5319ea0981732f4de8
+corpus_240_alternate	digest 86 0bb23d7f223a2c74922cb93f450a4a8204c885d96c4dca5319ea0981732f4de8
+corpus_241	digest 98 c8c33088bf8ec5b9dc1a19b507a2fb1ba3bbb94d7980d227e769589ddd176e03
+corpus_241_alternate	digest 98 c8c33088bf8ec5b9dc1a19b507a2fb1ba3bbb94d7980d227e769589ddd176e03
+corpus_242	digest 98 7c188310fabfad3e56050f1c2c22b2e3bb397fa121cf1c62169161f648d3ebfb
+corpus_242_alternate	digest 98 7c188310fabfad3e56050f1c2c22b2e3bb397fa121cf1c62169161f648d3ebfb
+corpus_243	digest 110 f0e0cf37981ec11927849117cba6fdc9375d98c6f1ae40bdf21e4edcc9d11222
+corpus_243_alternate	digest 110 f0e0cf37981ec11927849117cba6fdc9375d98c6f1ae40bdf21e4edcc9d11222
+corpus_244	digest 110 6b668c4c27ffca6dca7a5715c3a28387d65d67e4648b9386cc52ffd7ab8d6d64
+corpus_244_alternate	digest 110 6b668c4c27ffca6dca7a5715c3a28387d65d67e4648b9386cc52ffd7ab8d6d64
+corpus_245	digest 122 061c4252dd56d1a0559aacedcba4309f5abd3240c05b3a593cc6b00d389dca07
+corpus_245_alternate	digest 122 061c4252dd56d1a0559aacedcba4309f5abd3240c05b3a593cc6b00d389dca07
+corpus_246	digest 122 de05e14a60868605ea3fcfaba488b3aea984f25e8a31018d57bceb782c1c54be
+corpus_246_alternate	digest 122 de05e14a60868605ea3fcfaba488b3aea984f25e8a31018d57bceb782c1c54be
+corpus_247	digest 56 dcb64c59b12121420fcdb0feef0d93b64a7aeb5b67d581b7a06ee80ff2cae71f
+corpus_247_alternate	digest 56 dcb64c59b12121420fcdb0feef0d93b64a7aeb5b67d581b7a06ee80ff2cae71f
+corpus_248	digest 56 124c039e57c2341e1a32a32557404492a60ac42581362e5822d737008fc2afc6
+corpus_248_alternate	digest 56 124c039e57c2341e1a32a32557404492a60ac42581362e5822d737008fc2afc6
+corpus_249	digest 68 7f5bdd649b855fe8a38d9126242e1abfc51ea6803ae196854af4ac490735c60c
+corpus_249_alternate	digest 68 7f5bdd649b855fe8a38d9126242e1abfc51ea6803ae196854af4ac490735c60c
+corpus_250	digest 68 ee188a3667102a41babb13f2d2e0a462596853a837355c7f2065fe8d81f170b3
+corpus_250_alternate	digest 68 ee188a3667102a41babb13f2d2e0a462596853a837355c7f2065fe8d81f170b3
+corpus_251	digest 80 f60195d5d219956357c7db546e0a173b5624a36b7f06e8e3cc6eda4911c4c288
+corpus_251_alternate	digest 80 f60195d5d219956357c7db546e0a173b5624a36b7f06e8e3cc6eda4911c4c288
+corpus_252	digest 80 6108218ef7edf604e796010e50fdcfdf4f8f7c19ddc5ccfce48e1e22d5924e6d
+corpus_252_alternate	digest 80 6108218ef7edf604e796010e50fdcfdf4f8f7c19ddc5ccfce48e1e22d5924e6d
+corpus_253	digest 92 76ce9b1b9abcfe756f9cf1bbe12439c4a007872cd7d21040accec2cabc7c483c
+corpus_253_alternate	digest 92 76ce9b1b9abcfe756f9cf1bbe12439c4a007872cd7d21040accec2cabc7c483c
+corpus_254	digest 92 c778a340273762f28a4f43074b4b656539d11b982bb383528b6cbe94f1a074c2
+corpus_254_alternate	digest 92 c778a340273762f28a4f43074b4b656539d11b982bb383528b6cbe94f1a074c2
+corpus_255	digest 104 e9b94515fb5752b925b230e492c398138db98e3768142293789b0794fbb28e18
+corpus_255_alternate	digest 104 e9b94515fb5752b925b230e492c398138db98e3768142293789b0794fbb28e18

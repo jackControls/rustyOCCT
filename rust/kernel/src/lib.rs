@@ -21,10 +21,13 @@
 //! ```
 
 mod algebraic;
+pub mod attributes;
 pub(crate) mod certified;
 pub mod curve;
 mod error;
 mod exact;
+pub mod history;
+pub mod identity;
 pub mod intersection;
 mod interval;
 pub mod math;

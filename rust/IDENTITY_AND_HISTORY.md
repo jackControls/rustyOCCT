@@ -434,6 +434,58 @@ general Boolean.
 * **Native bridge:** extend `occt_brep_check_oracle.cpp` to print
   `BRep_Tool::Tolerance` for each subshape; record as observations per T6.
 
+## Implementation decisions
+
+The contracts above are normative; the data model sketches are not. Where the
+implementation refines a sketch, the refinement and its reason are recorded
+here.
+
+* **Encoding.** `Derivation` also carries the entity kind, so a vertex and an
+  edge derived from the same parent with the same role and ordinal can never
+  share an id. Version 1 of the encoding is documented in `identity.rs` and
+  pinned by `fixtures/identity-vectors.tsv` (11 vectors, plus the published
+  FNV-1a-128 vectors for `""`, `"a"` and `"foobar"`).
+* **Unlabelled parents.** Without labels, a parent is
+  `Parent::Profile { boundary, element }` with the boundary's *stored* index:
+  polygons are stored counter-clockwise with the first input point kept, so
+  labels given in the caller's input order are mapped through that reversal.
+* **Start and end.** Roles `BottomEdge`, `TopEdge`, `BottomVertex` and
+  `TopVertex` mean the extrusion's start and end sides, so swapping the offsets
+  keeps every id. The two seam vertices of a circle share role `SeamVertex`,
+  ordinal 0 on the start side and 1 on the end side.
+* **`Modified { from, to }`.** H5 requires a split followed by a merge of the
+  same pieces to compose to `Modified`, but the merged entity has a new id (I4
+  forbids reusing the split parent's). So `Modified` names both ids. A single
+  operation must keep the id (`modified_id_changed` otherwise); only a
+  composed history (`OperationKind::Composite`) may change it.
+* **Generated dimension rule.** H4 says `Generated` parents have lower or equal
+  dimension, but M3 generates cut edges from walls and cut vertices from
+  vertical edges. The checker enforces the rule both cases satisfy: a
+  generated entity's dimension is at most one more than each parent's (a
+  sweep adds one dimension; an intersection lowers it).
+* **Checker input.** `history::check` takes `EntitySet`s (per body: its id,
+  resolution, and each entity's kind, ordinal, geometry and loop structure),
+  so hand-written histories can be checked before any operation produces
+  them. Split and merge supports are compared exactly: equal surfaces, equal
+  circles, or line pieces whose endpoints lie within the resolution of the
+  whole's infinite line (exact rational arithmetic). The split ordinal check
+  applies to single operations only; composed children keep their own
+  ordinals.
+* **Extra issue kinds.** `modified_id_changed`, `invalid_arity` (a split into
+  fewer than two, a merge of fewer than two, a generation from nothing),
+  `body_mismatch`, `duplicate_id` and `relation_order` (relations not in
+  canonical order) join the contract's list.
+* **Composition limits.** `History::then` maps each input through both
+  histories. A many-to-many relation (for example, a split piece merged with
+  another input) has no single-relation form and is `composition_invalid`.
+  Attribute outcomes are not composed.
+* **Attributes.** `OutcomeResult::Recomputed` records `OnTransform::Recompute`.
+  A merge keeps an attribute only when every parent carries the key with the
+  same value; a missing value counts as unequal. The checker adds
+  `missing_attribute` (an outcome that keeps or copies has no value on its
+  target) and `attribute_on_dropped` (a value survives where every outcome
+  dropped it).
+
 ## Acceptance
 
 Promote a milestone only when all applicable gates pass at one clean
