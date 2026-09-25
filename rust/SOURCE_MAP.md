@@ -433,3 +433,16 @@ parameter identity. Native finite-edge, periodic-edge-range and
 [spline/linear intersections](SPLINE_LINEAR_INTERSECTIONS.md). A reviewed
 native comparison bridge passes on macOS and Linux with reviewed
 differences; acceptance passed at `30c5a247`.
+
+## Generic B-rep validation
+
+The source review covered `BRepCheck_Analyzer` and
+`BRepCheck_{Vertex,Edge,Wire,Face,Shell,Solid}` (with `BRepCheck_ToolSolid`
+and `BRepLib_ValidateEdge`) at `3d097a0328e71b826377d4814ab05ec3c3d23871`.
+Native observations of 52 cases preceded implementation. Rust keeps OCCT's
+per-subshape status model as typed issues on explicit entities. It replaces
+sampled curve/pcurve agreement (23 points by default) with a certified
+whole-range bound and replaces classifier tolerances with certified signs and
+margins. It also validates every supplied entity, not only subshapes of the
+solid. Reviewed differences, including `Closed2d`'s first/last-junction check,
+are recorded in [B-rep validation](BREP_VALIDATION.md).

@@ -30,6 +30,8 @@ mod spline_proximity;
 pub use spline_proximity::check_spline_proximity;
 mod spline_linear;
 pub use spline_linear::check_spline_linear;
+mod brep_validation;
+pub use brep_validation::check_brep_validation;
 mod bezier_editing;
 pub use bezier_editing::{check_bezier_editing, profile_bezier_editing};
 #[path = "../../kernel/tests/support/bezier_reference.rs"]

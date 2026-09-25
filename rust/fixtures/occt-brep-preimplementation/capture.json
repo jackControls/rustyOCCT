@@ -1,0 +1,62 @@
+{
+  "created_at_utc": "2026-09-25T00:40:40.614416+00:00",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "rust_revision": "12098ee3cce53df3b9cb638fdf55bad83764e3d2",
+  "rust_worktree_uncommitted": [
+    "?? rust/fixtures/brep-cases.txt",
+    "?? rust/fixtures/brep-expected.tsv",
+    "?? rust/tools/brep_reference.py",
+    "?? rust/tools/generate_brep_fixtures.py",
+    "?? rust/tools/occt_brep_check_oracle.cpp"
+  ],
+  "rust_brep_validator_implementation_exists": false,
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "probe_source_sha256": "e3b7fdcfa8580cab4fdd79d46b8c1e9c9683cb0e0b88ea745f82e72c514bb4ba",
+  "probe_sha256": "a3cf4f0d8823c085099afab59a9a8aa278d2a868c3937bdf740c1c0230fe1ae7",
+  "generator_sha256": "65641c184d24facbac09ce1f83ebdee9a99f125fb15cae2f1ea8ec796c37be9e",
+  "reference_sha256": "286004991274a5ad9ac26f8957899a0336d899b4786f454b075adec7cdcd59be",
+  "input_sha256": "7d7a9603bf92e31c6e6862a8543484957ef6f1bebf1e027417bb64f8937c38f6",
+  "observations_sha256": "33268dafd5f5c919c55241a1c94c8136390629b40194223c8c4ad2c7aece72da",
+  "expected_sha256": "c4ad46528835fddbde67e26662a3f980621dedbe34abf87665266c338f753ca5",
+  "cases": 52,
+  "unrepresentable_cases": [
+    "box_bad_edge_reference",
+    "box_bad_face_reference"
+  ],
+  "native_version": "OCCT 8.1.0",
+  "loaded_libraries": [
+    {
+      "path": "$SDK/lib/libTKBRep.8.1.0.dylib",
+      "sha256": "26f78e3a27851c43b986812e4c94f364bc71696d72015cac0f268724894a394f"
+    },
+    {
+      "path": "$SDK/lib/libTKG2d.8.1.0.dylib",
+      "sha256": "cbab2a878670278ef1f37a183f2507000d859929aca9355f5a342179af126fc3"
+    },
+    {
+      "path": "$SDK/lib/libTKG3d.8.1.0.dylib",
+      "sha256": "a13258b3c5774536740a095fc6ed0299aec5708022d22751d243d9068f1fb316"
+    },
+    {
+      "path": "$SDK/lib/libTKGeomAlgo.8.1.0.dylib",
+      "sha256": "1a0b73a411217838c8b0304cf9fd96450a80977b4e54fa4709c0bfc7542469c5"
+    },
+    {
+      "path": "$SDK/lib/libTKGeomBase.8.1.0.dylib",
+      "sha256": "829059f561d3ff762c275702e7ff279962a81c1572829a818dfc833ea48b923e"
+    },
+    {
+      "path": "$SDK/lib/libTKMath.8.1.0.dylib",
+      "sha256": "91c41c3ba27496a1159d0a2c5d6f230dce16b93cab39db64427670bc451e1169"
+    },
+    {
+      "path": "$SDK/lib/libTKTopAlgo.8.1.0.dylib",
+      "sha256": "f79a4603eeefb66877106ee19c818228129548bcb815d859c781ca9ba3028090"
+    },
+    {
+      "path": "$SDK/lib/libTKernel.8.1.0.dylib",
+      "sha256": "683cd72b4b55ab98298b8c91a7c867a58663a7e91cec2a2acf6b9627c3c5b932"
+    }
+  ],
+  "path_note": "Library paths are relative to the pinned SDK install prefix ($SDK)."
+}

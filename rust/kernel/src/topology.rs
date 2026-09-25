@@ -7,11 +7,17 @@ use crate::profile::BoundaryKind;
 use crate::{Error, Frame3, Point2, Point3, Profile, Result, Tolerance, Vec3};
 use std::f64::consts::TAU;
 
+mod validate;
+pub use validate::{EdgeEnd, Entity, Issue, IssueKind};
+
 macro_rules! index_type {
     ($name:ident) => {
         #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
         pub struct $name(pub(crate) usize);
         impl $name {
+            pub fn new(index: usize) -> Self {
+                Self(index)
+            }
             pub fn index(self) -> usize {
                 self.0
             }
@@ -40,8 +46,22 @@ impl Orientation {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Curve3 {
-    LineSegment { start: Point3, end: Point3 },
-    Circle { frame: Frame3, radius: f64 },
+    LineSegment {
+        start: Point3,
+        end: Point3,
+    },
+    /// A full turn from the frame's x axis: the arc with start 0 and sweep TAU.
+    Circle {
+        frame: Frame3,
+        radius: f64,
+    },
+    /// frame.origin + radius (cos a x + sin a y), a = start + sweep * fraction.
+    CircularArc {
+        frame: Frame3,
+        radius: f64,
+        start_angle: f64,
+        sweep_angle: f64,
+    },
 }
 
 impl Curve3 {
@@ -51,6 +71,15 @@ impl Curve3 {
             Self::LineSegment { start, end } => *start + (*end - *start) * fraction,
             Self::Circle { frame, radius } => {
                 let (sine, cosine) = (fraction * TAU).sin_cos();
+                frame.point(Point2::new(radius * cosine, radius * sine), 0.0)
+            }
+            Self::CircularArc {
+                frame,
+                radius,
+                start_angle,
+                sweep_angle,
+            } => {
+                let (sine, cosine) = (start_angle + sweep_angle * fraction).sin_cos();
                 frame.point(Point2::new(radius * cosine, radius * sine), 0.0)
             }
         }
@@ -144,7 +173,12 @@ pub struct Coedge {
 pub enum FaceOrigin {
     StartCap,
     EndCap,
-    Wall { boundary: usize, segment: usize },
+    Wall {
+        boundary: usize,
+        segment: usize,
+    },
+    /// Supplied through [`Topology::from_parts`] rather than a builder.
+    External,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -167,9 +201,63 @@ pub struct Topology {
     vertices: Vec<Vertex>,
     edges: Vec<Edge>,
     faces: Vec<Face>,
+    /// The first shell bounds the solid; later shells bound cavities.
+    shells: Vec<Vec<FaceId>>,
+}
+
+/// Unvalidated boundary data for [`Topology::from_parts`].
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct TopologyParts {
+    pub vertices: Vec<Vertex>,
+    pub edges: Vec<Edge>,
+    pub faces: Vec<Face>,
+    pub shells: Vec<Vec<FaceId>>,
+}
+
+impl TopologyParts {
+    /// Every issue of the validation contract; empty means valid.
+    pub fn check(&self, tolerance: Tolerance) -> Vec<Issue> {
+        validate::check(
+            &self.vertices,
+            &self.edges,
+            &self.faces,
+            &self.shells,
+            tolerance,
+        )
+    }
 }
 
 impl Topology {
+    /// Build a topology only if the complete validation contract holds;
+    /// otherwise return every issue found.
+    pub fn from_parts(
+        parts: TopologyParts,
+        tolerance: Tolerance,
+    ) -> std::result::Result<Self, Vec<Issue>> {
+        let issues = parts.check(tolerance);
+        if !issues.is_empty() {
+            return Err(issues);
+        }
+        Ok(Self {
+            vertices: parts.vertices,
+            edges: parts.edges,
+            faces: parts.faces,
+            shells: parts.shells,
+        })
+    }
+    pub fn shells(&self) -> &[Vec<FaceId>] {
+        &self.shells
+    }
+    /// Every issue of the validation contract; empty means valid.
+    pub fn check(&self, tolerance: Tolerance) -> Vec<Issue> {
+        validate::check(
+            &self.vertices,
+            &self.edges,
+            &self.faces,
+            &self.shells,
+            tolerance,
+        )
+    }
     pub fn vertices(&self) -> &[Vertex] {
         &self.vertices
     }
@@ -226,87 +314,13 @@ impl Topology {
                 .sum::<i64>()
     }
 
-    /// Validate connectivity, opposite edge uses, geometric endpoints,
-    /// connectedness and sampled agreement of 3D curves with face pcurves.
-    /// This is not a general self-intersection or sewing/healing algorithm.
+    /// Run the complete validation contract; the error names the first issue.
+    /// See [`Topology::check`] for the complete typed report.
     pub fn validate(&self, tolerance: Tolerance) -> Result<()> {
-        let invalid = Error::InvalidTopology;
-        if self.faces.is_empty() || self.edges.is_empty() || self.vertices.is_empty() {
-            return Err(invalid("empty shell"));
+        match self.check(tolerance).first() {
+            None => Ok(()),
+            Some(issue) => Err(Error::InvalidTopology(issue.kind.name())),
         }
-        let mut vertex_used = vec![false; self.vertices.len()];
-        for vertex in &self.vertices {
-            vertex.position.checked(tolerance)?;
-        }
-        for edge in &self.edges {
-            for (id, fraction) in [(edge.start, 0.0), (edge.end, 1.0)] {
-                let vertex = self.vertex(id).ok_or(invalid("invalid vertex id"))?;
-                let evaluated = edge.curve.point(fraction).checked(tolerance)?;
-                if vertex.position.distance(evaluated) > tolerance.linear() {
-                    return Err(invalid("edge endpoint disagrees with its vertex"));
-                }
-                vertex_used[id.0] = true;
-            }
-        }
-        if vertex_used.contains(&false) {
-            return Err(invalid("unreferenced vertex"));
-        }
-        let mut uses = vec![Vec::new(); self.edges.len()];
-        for (face_index, face) in self.faces.iter().enumerate() {
-            if face.loops.is_empty() {
-                return Err(invalid("face has no boundary"));
-            }
-            for wire in &face.loops {
-                if wire.is_empty() {
-                    return Err(invalid("empty wire"));
-                }
-                for (i, coedge) in wire.iter().enumerate() {
-                    let edge = self.edge(coedge.edge).ok_or(invalid("invalid edge id"))?;
-                    let (_, end) = oriented_vertices(edge, coedge.orientation);
-                    let next = &wire[(i + 1) % wire.len()];
-                    let next_edge = self.edge(next.edge).ok_or(invalid("invalid edge id"))?;
-                    if end != oriented_vertices(next_edge, next.orientation).0 {
-                        return Err(invalid("open wire"));
-                    }
-                    uses[coedge.edge.0].push((face_index, coedge.orientation));
-                    for t in [0.0, 0.25, 0.5, 0.75, 1.0] {
-                        let parameter = if coedge.orientation == Orientation::Forward {
-                            t
-                        } else {
-                            1.0 - t
-                        };
-                        let point = edge.curve.point(parameter).checked(tolerance)?;
-                        let on_face = face
-                            .surface
-                            .point(coedge.pcurve.point(t))
-                            .checked(tolerance)?;
-                        if point.distance(on_face) > tolerance.linear() {
-                            return Err(invalid("pcurve disagrees with 3D edge"));
-                        }
-                    }
-                }
-            }
-        }
-        let mut neighbors = vec![Vec::new(); self.faces.len()];
-        for pair in uses {
-            if pair.len() != 2 || pair[0].1 == pair[1].1 {
-                return Err(invalid("edge must have exactly two opposite uses"));
-            }
-            neighbors[pair[0].0].push(pair[1].0);
-            neighbors[pair[1].0].push(pair[0].0);
-        }
-        let mut seen = vec![false; self.faces.len()];
-        let mut pending = vec![0];
-        while let Some(face) = pending.pop() {
-            if !seen[face] {
-                seen[face] = true;
-                pending.extend(&neighbors[face]);
-            }
-        }
-        if seen.contains(&false) {
-            return Err(invalid("disconnected shell"));
-        }
-        Ok(())
     }
 
     pub(crate) fn prism(
@@ -354,6 +368,7 @@ impl Topology {
                     },
                 },
             ],
+            shells: Vec::new(),
         };
         for (boundary, wire) in profile.boundaries().enumerate() {
             let inner = boundary > 0;
@@ -511,6 +526,7 @@ impl Topology {
                 }
             }
         }
+        topology.shells = vec![topology.face_ids().collect()];
         topology.validate(tolerance)?;
         if topology.euler_characteristic() != 2 - 2 * profile.holes().len() as i64 {
             return Err(Error::InvalidTopology("unexpected shell genus"));
@@ -584,6 +600,9 @@ impl Topology {
                         * orientation.sign()
                         * circle.normal().dot(frame.normal()).signum(),
                 }
+            }
+            Curve3::CircularArc { .. } => {
+                unreachable!("the extrusion builder creates only lines and full circles")
             }
         };
         Coedge {

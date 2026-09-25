@@ -1,0 +1,55 @@
+# name	sorted issues kind:entity separated by ;
+box	
+cylinder	
+plate_square_hole	
+plate_round_hole	
+plate_two_holes	
+tube	
+triangle	
+hexagon	
+stadium	
+concave_notch	
+half_disc	
+box_cavity	
+box_two_cavities	
+cylinder_box_cavity	
+box_rotated	
+cylinder_rotated	
+stadium_rotated	
+box_cavity_far	
+box_small	
+box_face_outside_shell	face_without_shell:face 3;free_edge:edge 1;free_edge:edge 2;free_edge:edge 6;free_edge:edge 7
+box_missing_face	free_edge:edge 1;free_edge:edge 2;free_edge:edge 6;free_edge:edge 7
+cylinder_missing_cap	free_edge:edge 1
+box_flipped_use	open_loop:loop 2.0;pcurve_off_edge:use 2.0.1;same_sense_uses:edge 1
+box_flipped_face	loop_winding:loop 4.0
+box_reversed_face	same_sense_uses:edge 2;same_sense_uses:edge 3;same_sense_uses:edge 8;same_sense_uses:edge 9
+cylinder_reversed_wall	same_sense_uses:edge 0;same_sense_uses:edge 1
+box_moved_vertex	vertex_off_curve:edge 0 start;vertex_off_curve:edge 10 end;vertex_off_curve:edge 4 start
+stadium_moved_vertex	vertex_off_curve:edge 1 start;vertex_off_curve:edge 4 end;vertex_off_curve:edge 6 start
+box_pcurve_shift	pcurve_off_edge:use 2.0.0;uv_gap:use 2.0.0;uv_gap:use 2.0.3
+box_pcurve_shift_below_tolerance	
+cylinder_cap_pcurve_shift	pcurve_off_edge:use 1.0.0
+stadium_arc_pcurve_shift	pcurve_off_edge:use 3.0.0;uv_gap:use 3.0.0;uv_gap:use 3.0.3
+cylinder_swapped_seam_pcurves	uv_gap:use 2.0.0;uv_gap:use 2.0.1;uv_gap:use 2.0.2;uv_gap:use 2.0.3
+cylinder_cap_wrong_pcurve_radius	pcurve_off_edge:use 1.0.0
+box_face_twice	face_reused:face 2;free_edge:edge 0;free_edge:edge 1;free_edge:edge 4;free_edge:edge 5
+box_non_manifold_edges	non_manifold_edge:edge 0;non_manifold_edge:edge 1;non_manifold_edge:edge 4;non_manifold_edge:edge 5
+two_boxes_one_shell	disconnected_shell:shell 0
+cavity_not_inverted	shell_orientation:shell 1
+outer_inverted	shell_orientation:shell 0
+cavity_outside	cavity_outside:shell 1
+nested_cavities	nested_cavity:shell 2
+hole_outside_outline	inner_loop_outside:loop 0.1;inner_loop_outside:loop 1.1
+cavity_face_uses_outer_edge	edge_across_shells:edge 4;free_edge:edge 12;open_loop:loop 8.0;pcurve_off_edge:use 8.0.0
+stadium_arc_sweep_changed	pcurve_off_edge:use 0.0.2;pcurve_off_edge:use 3.0.0;vertex_off_curve:edge 6 end
+box_extra_vertex	unused_vertex:vertex 8
+box_extra_edge	unused_edge:edge 12
+box_empty_shell	empty_shell:shell 1
+box_empty_loop	empty_loop:loop 2.1
+box_bad_edge_reference	reference:use 2.0.0
+box_bad_face_reference	reference:shell 0
+box_zero_length_edge	degenerate_curve:edge 0
+cylinder_zero_radius_surface	degenerate_surface:face 2
+plate_hole_loop_wound_wrong	pcurve_off_edge:use 0.1.0
+box_loose_tolerance_absorbs_shift	

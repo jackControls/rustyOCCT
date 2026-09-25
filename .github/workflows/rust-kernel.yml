@@ -62,6 +62,7 @@ jobs:
           target/math-oracle-venv/bin/python rust/tools/generate_closed_clip_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_affine_parameter_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_spline_linear_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_brep_fixtures.py --check
       - name: Run unchanged upstream tests on both kernels
         run: python3 rust/tools/run_upstream_tests.py --backend both --draw-exe /usr/bin/occt-draw
       - name: Compare line and plane intersections with native OCCT
@@ -206,6 +207,38 @@ jobs:
             target/spline-linear-sdk/*.log
             target/spline-linear-sdk/build/CMakeCache.txt
             target/spline-linear-sdk/build/compile_commands.json
+          if-no-files-found: warn
+
+  pinned-brep-oracle:
+    name: B-rep validation / source-pinned OCCT
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - run: rustup toolchain install stable --profile minimal
+      - name: Install the independent reference validator's arithmetic
+        run: |
+          python3 -m venv target/math-oracle-venv
+          target/math-oracle-venv/bin/python -m pip install --disable-pip-version-check --no-cache-dir --require-hashes -r rust/tools/math-oracle-requirements.txt
+      - name: Fetch the exact reference source
+        run: git fetch --no-tags --depth=1 https://github.com/Open-Cascade-SAS/OCCT.git 3d097a0328e71b826377d4814ab05ec3c3d23871
+      - name: Build the headless BRepCheck SDK with exception checks
+        run: python3 rust/tools/build_pinned_occt.py --output target/brep-sdk --toolkit TKTopAlgo --jobs 2
+      - name: Test deliberate bridge failures and compare every analyzable case
+        run: |
+          target/math-oracle-venv/bin/python rust/tools/test_brep_oracle.py
+          target/math-oracle-venv/bin/python rust/tools/compare_brep.py --occt-root target/brep-sdk/install --sdk-manifest target/brep-sdk/build-manifest.json
+      - name: Preserve source provenance, native observations, and differences
+        if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: source-pinned-brep-results
+          path: |
+            target/brep-oracle/
+            target/brep-sdk/build-manifest.json
+            target/brep-sdk/*.log
+            target/brep-sdk/build/CMakeCache.txt
+            target/brep-sdk/build/compile_commands.json
           if-no-files-found: warn
 
   native:

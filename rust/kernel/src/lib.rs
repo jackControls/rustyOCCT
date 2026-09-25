@@ -21,6 +21,7 @@
 //! ```
 
 mod algebraic;
+pub(crate) mod certified;
 pub mod curve;
 mod error;
 mod exact;

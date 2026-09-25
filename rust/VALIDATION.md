@@ -15,7 +15,7 @@ and insphere, 2,417 independent 2D rational fixtures in all six permutations,
 95 general polynomial-root, 284 spline/plane, 118 spline/quadric, 554 proximity, 684 complete linear-set, 636 exact Bézier curve, 745 tensor-patch and 723 knot-editing fixtures,
 10,000 integer-oracle predicate cases and 256 generated prism invariant cases.
 These tests do not depend on OCCT or an application and run in native debug and
-release CI. These deterministic generated tests are separate from the eighteen
+release CI. These deterministic generated tests are separate from the nineteen
 [coverage-guided fuzz targets and daily retained-corpus campaigns](FUZZING.md).
 
 Exact root-to-root ordering was accepted at revision `de1d1d43`: 122 debug and
@@ -29,6 +29,9 @@ platform/native/fuzz acceptance passed at `d1206b15`. The
 [spline/line and spline/segment capability](SPLINE_LINEAR_INTERSECTIONS.md) adds
 60 complete independent preimages, 79 closed clipping sets, 851 affine root
 orderings, an eighteenth fuzz target and a source-pinned native bridge (23 matches, eight reviewed differences on macOS and Linux); acceptance passed at `30c5a247`.
+[Generic B-rep validation](BREP_VALIDATION.md) adds 54 complete independent
+issue reports, a nineteenth fuzz target and a source-pinned `BRepCheck_Analyzer`
+bridge (44 matches, eight reviewed differences on macOS); acceptance is pending.
 
 `compare_intersections.py` executes native OCCT `IntAna_IntConicQuad` and Rust's
 line/plane primitive on 72 shared well-conditioned cases, comparing intersection
@@ -196,6 +199,7 @@ python3 rust/tools/generate_surface_fixtures.py --check
 target/math-oracle-venv/bin/python rust/tools/generate_spline_linear_fixtures.py --check
 target/math-oracle-venv/bin/python rust/tools/generate_closed_clip_fixtures.py --check
 target/math-oracle-venv/bin/python rust/tools/generate_affine_parameter_fixtures.py --check
+target/math-oracle-venv/bin/python rust/tools/generate_brep_fixtures.py --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo check --workspace --lib --locked --target wasm32-unknown-unknown
 cargo run --locked --example plate
@@ -359,9 +363,10 @@ tensor coefficient identities, exact jets, enclosures and operation sequences.
   edges and 128 holes. This is an initial implementation limit.
 - Topology is immutable and body-local. Indices and `FaceOrigin` do not claim
   persistent naming through arbitrary feature edits or Booleans.
-- The topology validator checks connectivity, opposite uses and analytic curve/
-  surface agreement at fixed parameter samples. Validity also depends on the
-  profile builders. It is not a general B-rep validator, healer or importer.
+- The topology validator certifies the contract in `BREP_VALIDATION.md` for
+  line/arc edges on planes and cylinders. It does not check 2D loop
+  self-intersection or face/face intersection, and it is not a healer or
+  importer.
 - Mass properties are geometric at unit density; density and material metadata
   belong to the application. No strength or manufacturing result is implied.
 
@@ -456,3 +461,13 @@ target checks constructed complete answers. `compare_spline_linear.py` then
 compares native `IntTools_EdgeEdge` observations. See
 [the bridge](SPLINE_LINEAR_INTERSECTIONS.md#native-comparison-bridge).
 No platform acceptance is claimed yet.
+
+## Generic B-rep validation
+
+`generate_brep_fixtures.py --check` rebuilds 54 cases (21 valid) from an
+independent prism builder and mutations, with complete issue lists from the
+separate mpmath reference validator. `brep_validation.rs` requires Rust's
+sorted report to equal each list exactly. The `brep_validation` fuzz target
+mutates valid prisms and cavities into specific invalid shells.
+`compare_brep.py` compares native `BRepCheck_Analyzer` verdicts and status
+classes. See [the bridge](BREP_VALIDATION.md#native-comparison-bridge).

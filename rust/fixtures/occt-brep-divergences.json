@@ -1,0 +1,110 @@
+{
+  "note": "Exact observation fingerprints, separate from matches. Never exempts timeouts, crashes, malformed output or disagreement with the independent reference validator. New platform observations require investigation and explicit additional records.",
+  "reviews": [
+    {
+      "case": "box_pcurve_shift",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "917cd0ca112688d4cc3ec2e45a4a41fec833e1f5af6165527bdcc81587dacaf5",
+      "native_stdout_sha256": "10c70fe3cf3ab26a186deb7630108f2d52ceaf6fa9ffa534ad6295fc4bca69ae",
+      "differences": [
+        "unmatched_uv_gap"
+      ],
+      "reason": "BRepCheck_Wire::Closed2d compares only the 2D junction between the wire's first and last edges, and IsDistanceIn2DTolerance accepts any gap below 1% of the face's UV extent before consulting tolerances. The 1e-3 gaps are accepted; OCCT still rejects the case through InvalidCurveOnSurface on the shifted edge.",
+      "independent_evidence": "The first use of face 2 is (0.001,0.001)->(3.001,0.001) against neighbours ending at (0,0) and starting at (3,0): both junction gaps are 1e-3*sqrt(2) in UV on an orthonormal plane frame, 14142 times the 1e-7 tolerance. The face spans 3 x 1 in UV, so the 1% bound is 0.03 x 0.01.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "stadium_arc_pcurve_shift",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "f654c2730c31da1b3c9249d1d9e8c2c229e2145459dc612c74009ec953ae98d0",
+      "native_stdout_sha256": "08aee5b39d35836dd7550c78152831d37b3529bccca7f450544e2e5c7fa9b239",
+      "differences": [
+        "unmatched_uv_gap"
+      ],
+      "reason": "As for box_pcurve_shift: Closed2d only checks the first/last junction and accepts gaps below 1% of the face's UV extent, so the 5e-4 gaps pass natively; InvalidCurveOnSurface still rejects the case.",
+      "independent_evidence": "The first use of face 3 was shifted by 5e-4 in u: it starts at u=-1.5702963 and ends at u=1.5712963 while its neighbours meet it at -1.5707963 and 1.5707963. The cylinder wall has unit radius, so each gap is 5e-4 in 3D, 5000 times the 1e-7 tolerance.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "box_face_twice",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "a9b0303caf448e727249eeba966f9e8cfd2c46b675edf48fb7eeb16c4d0408fa",
+      "native_stdout_sha256": "ad61588674e207f4db15c51eb4782b7a2fc940ab1d52f38fd3c99dc373e5d1ea",
+      "differences": [
+        "unmatched_free_edge"
+      ],
+      "reason": "TopoDS_Shell keeps the repeated face as one subshape in BRepCheck's edge/face maps, so OCCT reports NotConnected and InvalidImbricationOfShells rather than free edges. The contract excludes a reused face from edge-use counting, so its four edges are reported free in addition to face_reused, which does match the native classes.",
+      "independent_evidence": "The independent reference validator produces the same five issues from the case definition alone: face 2 appears twice in shell 0, and with it excluded, edges 0, 1, 4 and 5 each have a single use.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "cavity_face_uses_outer_edge",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "5171be12fbe2aac306be481fa4c870082691a0cc13d7d270b44c7094879c89c5",
+      "native_stdout_sha256": "9c8a3263d9e487e3ab3f8d56a5106acc37d1205aceaf811dd26eba610f1b5566",
+      "differences": [
+        "inexact_pcurve_encoding"
+      ],
+      "reason": "The mutated use pairs a cavity face with an outer-shell edge of different length. A Geom2d line cannot share that edge's native parameter range at matching speed, so the native construction approximates the pcurve and its statuses are not a verdict on the Rust case. Both verdicts are invalid.",
+      "independent_evidence": "brep_reference.pcurve_encoding marks use 8.0.0 inexact: its UV length differs from the 3D length of edge 4. The reference validator independently reports the shared edge, the free cavity edge, the open loop and the pcurve deviation.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "stadium_arc_sweep_changed",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "c20d952ee8a819b0bcbd4dce3e93dd8b7528c98d59212777e586cc7a22d42c48",
+      "native_stdout_sha256": "61e75f9b9fe83ff548c251de32a8df24fd10f91fc354833b70c8c240b78138e7",
+      "differences": [
+        "inexact_pcurve_encoding",
+        "unmatched_pcurve_off_edge"
+      ],
+      "reason": "The arc edge's sweep was scaled by 0.999 while its pcurves keep the original sweep, so no Geom2d circle can match the new edge parameter at equal speed. The native encoding approximates both pcurves and OCCT only reports the moved end vertex (InvalidPointOnCurve). Both verdicts are invalid.",
+      "independent_evidence": "brep_reference.pcurve_encoding marks uses 0.0.2 and 3.0.0 inexact. With radius 1 and sweep pi*0.999 the arc end misses its vertex by 2*sin(pi*0.0005) = 3.14e-3, and the reference validator finds sampled deviations beyond the 1e-7 tolerance on both uses, which certifies pcurve_off_edge.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "box_extra_vertex",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "164e67295a3107873400e5d7635fad226463cef01026136f749c263e24427446",
+      "native_stdout_sha256": "c3fa3fd525b93b3c27ab881a93cba4f9b115796677d337d7896d113a9591a5b7",
+      "differences": [
+        "verdict"
+      ],
+      "reason": "BRepCheck_Analyzer only visits subshapes of the analyzed solid. An unused vertex is not one (the probe reports it absent), so OCCT finds the solid valid. The Rust contract validates every supplied entity and rejects unused ones.",
+      "independent_evidence": "Vertex 8 at (9,9,9) is referenced by no edge; the reference validator reports exactly unused_vertex:vertex 8 and the remaining box is the valid base case.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "box_extra_edge",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "6b4c2c470f440ce283a9300935c33ea589c3c8f78f71c98fb7012a5e1b12f4f4",
+      "native_stdout_sha256": "c50ad5f5168bcd9ccf0d7cfcebcd9750a25e45935723da1ccad72fffe0971a80",
+      "differences": [
+        "verdict"
+      ],
+      "reason": "BRepCheck_Analyzer only visits subshapes of the analyzed solid. An edge no face uses is not one (the probe reports it absent), so OCCT finds the solid valid. The Rust contract validates every supplied entity and rejects unused ones.",
+      "independent_evidence": "Edge 12 joins vertices 0 and 6 and is used by no face; the reference validator reports exactly unused_edge:edge 12 and the remaining box is the valid base case.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "box_zero_length_edge",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "9f2b7d93ede39a70867b2f0c5719f5a0d72b6054cbdbbe0dbc79497a7790b64d",
+      "native_stdout_sha256": "f6a2e2b1dc21860a3f3a4228ef73bd0f28b1f5ac422a5827a99a95375e648e0e",
+      "differences": [
+        "inexact_pcurve_encoding"
+      ],
+      "reason": "The zero-length edge has no native parameter range of positive length, so its pcurves cannot be encoded at matching speed. OCCT reports InvalidRange and related statuses; the Rust contract stops at degenerate_curve. Both verdicts are invalid.",
+      "independent_evidence": "Edge 0 joins two vertices at the same point; brep_reference.pcurve_encoding marks uses 2.0.3 and 5.0.1 inexact. The reference validator reports degenerate_curve:edge 0 and gates the dependent geometric checks.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}

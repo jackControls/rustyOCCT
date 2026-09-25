@@ -18,7 +18,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear','brep_validation']
 STARTUP_SECONDS = 600
 MAX_STARTUP_SECONDS = 3600
 INPUT_SECONDS = 20
@@ -74,7 +74,17 @@ def seed_corpus(target):
         if not path.exists():
             path.write_bytes(data)
 
-    if target == 'spline_linear':
+    if target == 'brep_validation':
+        # Every mutation on every base feature (none, round hole, square hole,
+        # cavity), outline sizes 3..12 and small, unit and large scales.
+        for mutation in range(16):
+            for feature in range(4):
+                for scale in [0,10,20]:
+                    data=bytearray((j*37+mutation*13+feature*5+scale+1)%256 for j in range(40))
+                    data[:4]=bytes([mutation,(mutation+feature)%10,feature,scale])
+                    save(bytes(data))
+        save(bytes([0]))
+    elif target == 'spline_linear':
         # Known factors, rational polylines, the rational circle and the
         # quadratic retrace, as lines and segments, across the degree range.
         for family in range(4):

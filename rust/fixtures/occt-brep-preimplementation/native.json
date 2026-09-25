@@ -1,0 +1,426 @@
+[
+  {
+    "case": "box",
+    "exit_code": 0,
+    "stdout": "box R 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011513374999999826,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "cylinder",
+    "exit_code": 0,
+    "stdout": "cylinder R 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010927041999998721,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "plate_square_hole",
+    "exit_code": 0,
+    "stdout": "plate_square_hole R 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.01244508399999944,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "plate_round_hole",
+    "exit_code": 0,
+    "stdout": "plate_round_hole R 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.012507792000000961,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "plate_two_holes",
+    "exit_code": 0,
+    "stdout": "plate_two_holes R 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.013045625000003724,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "tube",
+    "exit_code": 0,
+    "stdout": "tube R 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011068542000003845,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "triangle",
+    "exit_code": 0,
+    "stdout": "triangle R 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010314083999993784,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "hexagon",
+    "exit_code": 0,
+    "stdout": "hexagon R 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010368165999999235,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "stadium",
+    "exit_code": 0,
+    "stdout": "stadium R 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010282583999995154,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "concave_notch",
+    "exit_code": 0,
+    "stdout": "concave_notch R 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.01029758299999628,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "half_disc",
+    "exit_code": 0,
+    "stdout": "half_disc R 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.009776333000004911,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "box_cavity",
+    "exit_code": 0,
+    "stdout": "box_cavity R 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011071999999998638,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "box_two_cavities",
+    "exit_code": 0,
+    "stdout": "box_two_cavities R 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010920667000000606,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "cylinder_box_cavity",
+    "exit_code": 0,
+    "stdout": "cylinder_box_cavity R 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010477292000004468,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "box_rotated",
+    "exit_code": 0,
+    "stdout": "box_rotated R 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010479416999999103,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "cylinder_rotated",
+    "exit_code": 0,
+    "stdout": "cylinder_rotated R 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011117999999996186,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "stadium_rotated",
+    "exit_code": 0,
+    "stdout": "stadium_rotated R 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010416292000002159,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "box_cavity_far",
+    "exit_code": 0,
+    "stdout": "box_cavity_far R 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010805582999999785,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "box_small",
+    "exit_code": 0,
+    "stdout": "box_small R 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.009959790999999996,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "box_face_outside_shell",
+    "exit_code": 0,
+    "stdout": "box_face_outside_shell R 0 f3:absent w3.0:absent s0:28\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010229250000001855,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "box_missing_face",
+    "exit_code": 0,
+    "stdout": "box_missing_face R 0 s0:28\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010072208000003968,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "cylinder_missing_cap",
+    "exit_code": 0,
+    "stdout": "cylinder_missing_cap R 0 s0:28\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.00986970800000364,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "box_flipped_use",
+    "exit_code": 0,
+    "stdout": "box_flipped_use R 0 e1:8:11 f2:27 w2.0:32 s0:32\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010482708000004948,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "box_flipped_face",
+    "exit_code": 0,
+    "stdout": "box_flipped_face R 0 f4:32\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010102708999994547,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "box_reversed_face",
+    "exit_code": 0,
+    "stdout": "box_reversed_face R 0 s0:32\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010144582999998875,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "cylinder_reversed_wall",
+    "exit_code": 0,
+    "stdout": "cylinder_reversed_wall R 0 s0:32\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.00969479099999404,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "box_moved_vertex",
+    "exit_code": 0,
+    "stdout": "box_moved_vertex R 0 v0:1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010098124999998959,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "stadium_moved_vertex",
+    "exit_code": 0,
+    "stdout": "stadium_moved_vertex R 0 v1:1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010094999999999743,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "box_pcurve_shift",
+    "exit_code": 0,
+    "stdout": "box_pcurve_shift R 0 e4:8:11 f2:27\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010180083000001616,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "box_pcurve_shift_below_tolerance",
+    "exit_code": 0,
+    "stdout": "box_pcurve_shift_below_tolerance R 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010150250000002359,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "cylinder_cap_pcurve_shift",
+    "exit_code": 0,
+    "stdout": "cylinder_cap_pcurve_shift R 0 e1:8:11 f1:27\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.009989000000004467,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "stadium_arc_pcurve_shift",
+    "exit_code": 0,
+    "stdout": "stadium_arc_pcurve_shift R 0 e6:8:11 f3:27\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010157667000001425,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "cylinder_swapped_seam_pcurves",
+    "exit_code": 0,
+    "stdout": "cylinder_swapped_seam_pcurves R 0 f2:27 w2.0:28\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.009704667000001166,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "cylinder_cap_wrong_pcurve_radius",
+    "exit_code": 0,
+    "stdout": "cylinder_cap_wrong_pcurve_radius R 0 e1:8:11 f1:27\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.009789791999999409,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "box_face_twice",
+    "exit_code": 0,
+    "stdout": "box_face_twice R 0 s0:29 solid:26\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011040792000002853,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "box_non_manifold_edges",
+    "exit_code": 0,
+    "stdout": "box_non_manifold_edges R 0 s0:14\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010717458999998541,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "two_boxes_one_shell",
+    "exit_code": 0,
+    "stdout": "two_boxes_one_shell R 0 s0:29\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010796542000001352,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "cavity_not_inverted",
+    "exit_code": 0,
+    "stdout": "cavity_not_inverted R 0 solid:35\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010511999999998523,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "outer_inverted",
+    "exit_code": 0,
+    "stdout": "outer_inverted R 0 solid:30\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010102500000002124,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "cavity_outside",
+    "exit_code": 0,
+    "stdout": "cavity_outside R 0 solid:30\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010151082999996675,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "nested_cavities",
+    "exit_code": 0,
+    "stdout": "nested_cavities R 0 solid:30\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010622999999995386,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "hole_outside_outline",
+    "exit_code": 0,
+    "stdout": "hole_outside_outline R 0 f0:23 f1:23\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010445499999995889,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "cavity_face_uses_outer_edge",
+    "exit_code": 0,
+    "stdout": "cavity_face_uses_outer_edge R 0 e4:8:11 f8:27 w8.0:18:29 s1:28\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.011108874999997909,
+    "inexact_pcurve_encodings": [
+      "8.0.0"
+    ]
+  },
+  {
+    "case": "stadium_arc_sweep_changed",
+    "exit_code": 0,
+    "stdout": "stadium_arc_sweep_changed R 0 v2:1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.009786540999996873,
+    "inexact_pcurve_encodings": [
+      "0.0.2",
+      "3.0.0"
+    ]
+  },
+  {
+    "case": "box_extra_vertex",
+    "exit_code": 0,
+    "stdout": "box_extra_vertex R 1 v8:absent\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.009792250000003833,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "box_extra_edge",
+    "exit_code": 0,
+    "stdout": "box_extra_edge R 1 e12:absent\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010077500000001294,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "box_empty_shell",
+    "exit_code": 0,
+    "stdout": "box_empty_shell R 0 s1:24\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010439625000003616,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "box_empty_loop",
+    "exit_code": 0,
+    "stdout": "box_empty_loop R 0 f2:27 w2.1:16\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.009777833999997654,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "box_zero_length_edge",
+    "exit_code": 0,
+    "stdout": "box_zero_length_edge R 0 v4:1 e0:15 f2:27 w2.0:15 f5:27 w5.0:15\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.009556666999998242,
+    "inexact_pcurve_encodings": [
+      "2.0.3",
+      "5.0.1"
+    ]
+  },
+  {
+    "case": "cylinder_zero_radius_surface",
+    "exit_code": 0,
+    "stdout": "cylinder_zero_radius_surface R 0 e0:8:11 e1:8:11 e2:9:11 f2:27 w2.0:28\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.009458750000000293,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "plate_hole_loop_wound_wrong",
+    "exit_code": 0,
+    "stdout": "plate_hole_loop_wound_wrong R 0 e12:8:11 f0:27\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.009728084000002468,
+    "inexact_pcurve_encodings": []
+  },
+  {
+    "case": "box_loose_tolerance_absorbs_shift",
+    "exit_code": 0,
+    "stdout": "box_loose_tolerance_absorbs_shift R 1\n",
+    "stderr": "OCCT 8.1.0\n",
+    "seconds": 0.010097541999996906,
+    "inexact_pcurve_encodings": []
+  }
+]

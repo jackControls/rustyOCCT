@@ -14,6 +14,7 @@ coverage feedback. They are distinct from the deterministic invariant tests.
 | `proximity` | All 25 point/line/segment/plane/triangle pairings; arbitrary binary64 coordinates, scaled/coplanar/shared-vertex cases, collapsed segments and invalid inputs | Independent exact membership and supporting-plane certificates prove each returned pair globally minimal; minimal output enclosures, threshold comparisons, operand symmetry, coordinate permutation/vertex reversal and deterministic witnesses |
 | `spline_proximity` | Positive-weight rational space curves through degree 25 with known zero and nonzero minima, nonplanar cylinder curves, rational/irrational factor roots, composed exact knot/degree edits, trimmed/singleton ranges, near-tie parabolas, rational circles and periodic polylines | Complete minimum parameter sets and whole intervals from independent factor and radical signs, a monotone cubic, circle identities and exhaustive rational segment projections; tight parameter/coordinate/distance bounds; exact ties and periodic aliases |
 | `spline_linear` | Known-factor rational Bézier curves through degree 25 with sub-float root pairs, rational polylines with periodic turns, constant spans and retracing, a rational circle against rational slopes, a quadratic retrace, lines/collapsed/reversed segments, invertible integer affine maps, parameter domains through 2^±2048 and exact knot/degree edits | Complete point/interval sets from constructed factors, per-span rational linear inequalities and closed-form quadratic sign functions; exact parameter, coordinate and line-parameter identity within 2^-96 independent brackets; tight or typed unrepresentable views; reversal symmetry, malformed-rational and work-limit rejection |
+| `brep_validation` | Valid star-outline prisms with no hole, round or square holes, or an inverted box cavity merged by fuzz-crate code, at scales through 2^±10 with random frames; one of sixteen mutations: extra vertex/edge, empty shell/loop, bad references, dropped or repeated faces, flipped uses and faces, moved vertices, shifted pcurves, inverted shells and swapped loops | Clean report for every base; exact issue lists for local mutations and a required issue on the mutated entity otherwise; a `10·tol` pcurve shift clean at `100·tol`; deterministic, duplicate-free reports identical to `from_parts` |
 | `modeling` | Valid radial polygons/circles, optional holes, 49 scales, up to eight operations, plus raw invalid input | Repeated rigid transforms, reversed winding/offsets and planar splits; mass/first-moment conservation, topology, classification, bounds and finite positive properties |
 | `curved` | Full binary64 coefficients, centers/radii/axes and line endpoints; scaled integers; exact/neighboring tangencies; generator and point segments | Quadratic root count, multiplicity, exact comparisons, minimal enclosures; circle/sphere/cylinder hits against independent polynomial-sign and axial-projection oracles; endpoint clipping and typed failures |
 | `splines` | Raw binary64 poles/weights/knots, scaled geometry, degree 1..25, repeated knots, periodic seams, full-range wrapped parameters, explicit sides and derivative requests | Exact basis-function derivatives and closed quotient formulas independently check homogeneous pole interpolation; minimal position/derivative bounds; discontinuity, domain, nonfinite and overflow errors |
@@ -58,7 +59,7 @@ coverage percentages or evidence of exhaustive input coverage.
 
 ## Continuing campaigns
 
-[Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all eighteen targets
+[Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all nineteen targets
 for 60 seconds of mutation each on relevant pushes/PRs, and 600 seconds each every day at
 06:23 UTC on the default branch. Manual runs accept 1–3,600 seconds per target.
 GitHub can delay scheduled jobs. The schedule must remain enabled on the fork.
@@ -125,6 +126,10 @@ outer deadline kills the build/fuzzer process group. Corpus replay without any
 subsequent mutation is an incomplete run. An incomplete run, crash,
 timeout, OOM, changed dependency lock or mathematical disagreement fails CI.
 These are harness limits, not kernel production performance guarantees.
+
+B-rep validation inputs use at most 256 bytes and the standard 20-second/2 GiB
+limits. Every prism is built by `Solid::extrude` and validated before mutation,
+so the base's validity is also re-checked on every input.
 
 The surface-knot runner enables the test-only `asan-allocator` feature together
 with AddressSanitizer. At most once per second, after a complete input and all

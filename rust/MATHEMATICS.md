@@ -1088,6 +1088,24 @@ dependence witnesses. Independent Cox/VAS/resultant fixtures verify complete
 minima, tight views and every coefficient of the image construction.
 See [the full contract, proof structure and limits](SPLINE_PROXIMITY.md).
 
+## Certified B-rep validation
+
+A curve-on-surface deviation `D(t) = C(t_edge) - S(P(t))` for line/arc edges
+against plane line/arc pcurves and cylinder line pcurves is a harmonic sum
+`A0 + A1 t + Σ_ω (C_ω cos ωt + S_ω sin ωt)` with exact rational frequencies.
+Equal frequencies are combined, then
+`sup_[0,1] |D| <= sqrt(|A0|² + |A0+A1|²) + Σ_ω sqrt(λmax(Gram(C_ω, S_ω)))`.
+Loop winding is the sign of the closed form of `∮ u dv - v du` over pcurves
+closed by chords. Shell orientation is the sign of Green's volume integral
+`Σ ∫ G dv` with `∂G/∂u = S·(S_u × S_v)`: `G = u(o·(x×y))` on planes and
+`G = r[(o·(y×n)) sin u + (o·(x×n)) cos u + r·det(x,y,n)·u]` on cylinders.
+Cavity containment uses exact ray/plane and ray/cylinder solves. A ray counts
+only when every hit is certifiably farther than twice the tolerance from its
+face's boundary. Every decision runs first in exactness-preserving binary64
+intervals (TwoSum/FMA error signs) and then, if undecided, in rational
+intervals; anything still undecided is reported as uncertified. See
+[the validator's contract and evidence](BREP_VALIDATION.md).
+
 ## Complete spline/line and spline/segment preimages
 
 Closed rational B-spline ranges against infinite lines or closed segments
