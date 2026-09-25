@@ -58,7 +58,7 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
 | Contract / use | Required kernel work | Status |
 | --- | --- | --- |
 | Scene recompute | Owned bodies, feature-local errors, atomic operation results and repeatable replay | Immutable standalone solids and typed errors exist; scene/job adapter planned. |
-| Topology references | Face/edge identities, membership, geometry signatures, generated/modified/deleted mappings | Value ids derived from caller labels and complete checked histories exist for extrusions and rigid transforms (M0–M2 of `IDENTITY_AND_HISTORY.md`, accepted at `34efd36c`). Splits, merges and attributes on real operations (M3–M4) are required before feature migration. |
+| Topology references | Face/edge identities, membership, geometry signatures, generated/modified/deleted mappings | Value ids derived from caller labels and complete checked histories exist for extrusions and rigid transforms (M0–M2 of `IDENTITY_AND_HISTORY.md`, accepted at `34efd36c`). Splits, merges and attributes on real operations (M3–M4) are required before feature migration, on the cell-complex model decided in `TOPOLOGY_MODEL.md` (T1). |
 | Face/edge metadata | Plane, cylinder, cone, circle, curvature, edge lengths and face signatures | Planes/cylinders/circles retained; DTO signatures and additional queries planned. |
 | Measurement | Bounds, mass/area/centroid/inertia, point classification, extrema/closest points | Bounds, mass properties and point classification supported for current prisms; certified linear-set minimum distances exist. Complete point-to-rational-spline minimum sets are implemented and accepted at `d1206b15`. General B-rep and other curved-pair distance/extrema remain planned. |
 | Exact interference | Occurrence transforms, minimum clearance, closest points, overlap volume | Transform, classifier and certified linear-set distance foundations exist. Solid clearance, common-solid and multi-body queries remain planned. |
@@ -103,17 +103,32 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
    to curved geometry and propagate uncertainty through topology changes.
    Continue minimizing fuzz failures. See `MATHEMATICS.md` and `FUZZING.md`.
 2. **Topology invariants and operation history.** Generic B-rep validation
-   now certifies connectivity, orientation, shells, cavities, seams and
+   certifies connectivity, orientation, shells, cavities, seams and
    curve/pcurve/surface consistency for line/arc edges on planes and
-   cylinders, with native, platform and fuzz acceptance at `dff912e5` (see
-   `BREP_VALIDATION.md`); extend it with the geometry. Define generated,
-   modified and deleted mappings with explicit split/merge ambiguity before
-   topology-changing operations. Body-local indices are not persistent names. The identity, history,
-   attribute and enclosure contracts and their milestones M0–M5 are specified
-   in `IDENTITY_AND_HISTORY.md`. M0–M2 are accepted: value ids derived from
-   caller labels, and complete, independently checked histories for
-   extrusions and rigid transforms (`34efd36c`); M3 (the first splits and
-   merges) is next.
+   cylinders (`dff912e5`, `BREP_VALIDATION.md`). Value ids derived from
+   caller labels and complete, independently checked histories exist for
+   extrusions and rigid transforms (M0–M2 of `IDENTITY_AND_HISTORY.md`,
+   accepted at `34efd36c`). The topology model is decided in
+   `TOPOLOGY_MODEL.md`: a cellular partition with regions, stored adjacency,
+   no seams, certified pcurves per fin, one resolution per body, computed
+   body types and versioned operations. The remaining order is fixed:
+   * **T1** migrates the prism model to the cell complex. Expectation: every
+     polygon id, relation, mass property and DRAW result byte-identical;
+     circle prisms lose only seam entities; the validator gains the
+     cell-complex invariants; six new fuzz mutations; native bridges keep
+     their match counts with zero failures.
+   * **M3** adds the height split and stacked fuse on the migrated model:
+     the first `Split`, `Merged` and `Deleted` relations on real bodies,
+     including regions, with a `BRepAlgoAPI_Splitter`/`Fuse` oracle and the
+     self-contained upstream history cases.
+   * **T2** adds the OCCT structure interop: `.brep` converter and writer
+     with native round trips, the count synthesizer behind `nbshapes`, the
+     native selector for index-based picks, and the coverage ledger that
+     labels every upstream assertion model-independent, mapped or lost.
+   * **M4** propagates attributes through every operation by declared
+     policy; **M5** stores computed enclosures on entities and retires every
+     unchecked tolerance comparison.
+   Body-local indices are still not persistent names; only value ids are.
 3. **Reliable geometry and intersections.** Circular arcs, trimmed curves,
    arbitrary face trimming; extend the existing certified
    curve/surface jets with
@@ -123,7 +138,7 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
 4. **Booleans and mechanical features.** Split/classify/assemble solids and
    preserve source history, then fuse/cut/common, many-tool operations, plane
    splits, drilling, revolutions and rib attachment. Cover tangency, coincident
-   faces, tiny edges, periodic seams and disconnected results. Never replace a
+   faces, tiny edges, periodic faces without seams and disconnected results. Never replace a
    failed exact operation with a triangle or bounding-box approximation.
 5. **Interchange, meshing and operational guarantees.** Deflection-controlled
    watertight tessellation, STEP import/export and diagnosis. Begin each as soon

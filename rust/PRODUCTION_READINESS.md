@@ -22,7 +22,9 @@ Promote kernel capabilities only after all applicable gates pass. Use
 | Numerical constructions | Error/residual bounds, conditioning, explicit degeneracy, tolerance propagation through projections/intersections | Exact degree-25 real roots, complete exact linear sets, certified analytic and spline/plane/sphere/cylinder intersections, rational spline curve/surface jets, exact curve/tensor-patch editing, curve/surface knot refinement/removal, exact edited-curve intersection results and complete spline/line and spline/segment preimages exist; general degree elevation passed independent complete-grid/native, sustained fuzz and platform gates at 27647fad; arbitrary face trimming, intersections and topology tolerance propagation pending |
 | Geometric invariants | Analytic cases, conservation, covariance, winding independence, positive mass/inertia, classification consistency | 256 generated prisms, 2,417 rational 2D fixtures, 1,648 spatial predicate fixtures, 963 linear intersections, 448 quadratic roots, 1,092 curved intersections, 1,059 curve and 791 surface spline evaluations, 95 general roots, 284 spline/plane, 118 spline/quadric, 554 exact proximity cases, 684 complete linear sets, 636 exact curve edits, 745 exact surface edits, 723 exact curve knot edits, 1,756 exact surface knot edits, 274 arbitrary rational intersection cases, 60 complete spline/linear preimages, 79 closed clipping sets, 851 affine root orderings, 54 complete B-rep validation reports and 10,000 integer cases run in Cargo tests |
 | Structural validity | Closed oriented shells, curve/pcurve/surface consistency, self-intersection, disconnected regions, cavities and invalid-import diagnosis | Generic certified validation of shells, cavities, orientation, seams and curve/pcurve/surface agreement exists for line/arc edges on planes and cylinders; 2D self-intersection, face/face intersection and healing pending |
-| Stable topology history | Generated/modified/deleted face and edge mappings across kernel operations; explicit split/merge ambiguity | Value ids and complete, independently checked histories exist for extrusions and rigid transforms, with composition, resolution and an attribute checker (M0–M2 of `IDENTITY_AND_HISTORY.md`, accepted at `34efd36c`; native `BRepTools_History` bridge 98/98 on macOS and Linux); splits, merges, attributes on operations and enclosures (M3–M5) pending |
+| Stable topology history | Generated/modified/deleted face and edge mappings across kernel operations; explicit split/merge ambiguity | Value ids and complete, independently checked histories exist for extrusions and rigid transforms, with composition, resolution and an attribute checker (M0–M2 of `IDENTITY_AND_HISTORY.md`, accepted at `34efd36c`; native `BRepTools_History` bridge 98/98 on macOS and Linux); splits, merges, attributes on operations and enclosures (M3–M5) pending, after the cell-complex migration T1 of `TOPOLOGY_MODEL.md` |
+| Structural model evidence | Cell-complex invariants certified by `Topology::check`, an independent reference validator, a mutation catalogue for the model's own failure modes and metamorphic laws needing no oracle | Prism-only validator and 16 mutations exist; regions, fins, periodic loops, vertex loops and their six failure-mode mutations pending (T1) |
+| Retained upstream evidence | Every upstream assertion labelled model-independent, mapped-and-verified or lost; mappings verified natively per case; the aggregate tracked, never a raw pass percentage | Bridge reports pass, unsupported, missing and known-failure only; the ledger, `.brep` round trips, count synthesis and the native selector are T2 of `TOPOLOGY_MODEL.md` |
 | Fuzzing and differential geometry | Structured operation sequences, invalid input, minimized failures, independent oracles and original upstream tests | Nineteen sanitizer/coverage-guided targets (all passed at dff912e5) with daily campaigns and retained corpora, 66 OCCT prisms, 72 native line/plane cases, 174 polynomial/curved cases, 456 curve, 210 surface, 214 spline/plane, 92 spline/quadric, 370 proximity, 433 complete linear-set, 546 Bézier curve, 691 tensor-patch, 667 curve knot-editing and 1,748 surface knot-editing cases (reviewed numerical/contract differences and nonresults reported separately) and three original DRAW cases; a separate source-pinned degree-elevation runtime oracle passes with 187 matches and 80 reviewed discrepancies; full algorithm coverage remains pending |
 | Source and behavior traceability | Pinned source symbols, supported domains, tolerance/error contracts, reviewed divergences | `SOURCE_MAP.md` records OCCT references and independently implemented mathematical algorithms |
 | Failure containment | Atomic operations, bounded work/memory, cancellation, useful error context, no silent approximation | Immutable solid construction, typed errors and profile size limits exist; long-operation cancellation pending |
@@ -58,7 +60,9 @@ step; broader algorithm coverage grows with the kernel.
 
 **Make topology and operation history kernel contracts.** `IDENTITY_AND_HISTORY.md`
 specifies them and their delivery milestones; M0–M2 (ids, histories and
-checkers on extrusions and rigid transforms) are accepted at `34efd36c`. Define operation
+checkers on extrusions and rigid transforms) are accepted at `34efd36c`.
+`TOPOLOGY_MODEL.md` decides the cell-complex model and orders the rest:
+T1 migration, then M3, then T2 interop with M4, then M5. Define operation
 results with generated, modified and deleted mappings before Booleans, fillets
 and shelling. A split or merge need not have a unique surviving face identity;
 return that relationship or ambiguity explicitly. Array positions, approximate
@@ -66,6 +70,15 @@ geometric equality and coincident-looking faces are not persistent identities.
 Check manifoldness and curve/pcurve/surface agreement independently of the
 algorithm that constructed the shape. Sample checks are useful regressions but
 do not prove continuous surface agreement.
+
+**Keep three sources of truth separate.** Mathematics is settled by exact
+arithmetic and independent oracles, never by agreement with OCCT. Structure
+is settled by our own checkers, reference validator and mutation catalogue,
+because no other kernel's tests exercise our model. Behaviour is settled by
+differential evidence on geometry, properties and validity verdicts, through
+mappings verified natively per case. Every operation carries an algorithm
+level and replays at the recorded level, so stored histories stay
+reproducible when algorithms improve.
 
 **Require independent references.** OCCT is a valuable reference, not a proof.
 Keep exact arithmetic oracles, analytic cases and mathematical invariants beside

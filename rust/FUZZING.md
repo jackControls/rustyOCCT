@@ -30,6 +30,12 @@ coverage feedback. They are distinct from the deterministic invariant tests.
 | `roots` | Products of rational/irrational/complex factors through degree 25, repeated roots, closed-domain clipping, power-of-two coefficient scaling and arbitrary binary64 query polynomials | Complete expected root list from known factors; algebraic signs reduce independently in Q(sqrt(d)); multiplicities, cross-equation root ordering and equality against independently constructed factors, minimal enclosures and nonfinite rejection |
 | `spline_intersections` | Rational Bézier curves with known factored plane numerators and squared sphere/cylinder contact equations; weighted rational lines against quadrics; nonperiodic/periodic rational polylines; varying weights, parameter/space scales, oblique planes, tangencies, knots and zero spans; explicit trim bounds, neighboring floats and large periodic offsets | Complete parameter/position bounds from rational Bernstein evaluation, affine span equations, or independent geometric quadratic roots with rational weight-parameter conversion; one-sided orders, crossing/tangent/boundary classification, maximal clipped overlaps, closed seam events and repeated turns |
 
+Planned targets and mutations are specified with their milestones:
+`TOPOLOGY_MODEL.md` adds six cell-complex mutations to `brep_validation`
+and the `brep_io` target (T1, T2); `IDENTITY_AND_HISTORY.md` adds
+`split_merge` (M3), `attributes` (M4) and enclosure mutations (M5). A planned
+target is not evidence until its clean campaign is recorded there.
+
 The rational oracle uses `num-rational` with Gaussian elimination and
 barycentric coordinates, plus polynomial-sign/vertex comparisons and cylinder
 axial projection. Production uses a fixed binary64 integer lattice, determinant

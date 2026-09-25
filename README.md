@@ -22,7 +22,8 @@ Cargo does not build it. Rust work lives on the `rust-kernel` branch, while
 - Exact normal extrusions on arbitrary planes, with signed start/end offsets;
   convenience constructors for boxes and cylinders.
 - Analytic lines, circles, planes and cylinders; shared vertices/edges, oriented
-  face loops, and per-face parameter curves, including cylinder seams.
+  face loops, and per-face parameter curves, including cylinder seams. The
+  decided seamless cell-complex model is in `rust/TOPOLOGY_MODEL.md`.
 - Closed-shell connectivity validation, face provenance, and hole-aware Euler
   characteristic. Body-local indices are not persistent names across edits;
   the planned identity and history contracts are in `rust/IDENTITY_AND_HISTORY.md`.

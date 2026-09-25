@@ -18,9 +18,11 @@ never verified for completeness, and naming lives in the application framework
 as a heuristic re-selection layer. These are retrofit failures. The kernel has
 one builder and no Booleans, so the decisions below are still cheap.
 
-**Status:** M0, M1 and M2 accepted (value ids, complete checked histories
-and the attribute checker, on extrusions and rigid transforms); M3–M5
-pending. Acceptance evidence per milestone is under [Acceptance](#acceptance).
+**Status:** M0, M1 and M2 accepted at `34efd36c` (value ids, complete
+checked histories and the attribute checker, on extrusions and rigid
+transforms). The topology model is decided in `TOPOLOGY_MODEL.md`; its
+migration, T1, precedes M3. M3–M5 pending. Acceptance evidence per milestone
+is under [Acceptance](#acceptance).
 
 ## What the kernel promises, and what it does not
 
@@ -52,6 +54,13 @@ build naming policy on top of kernel tracking. The boundary:
   operation, parent ids, role and canonical ordinal.
 * **History** — the complete list of relations between the input entities and
   output entities of one operation.
+* **Entities with identity** — bodies, bounded regions, faces, edges and
+  vertices. Shells, loops, fins and the infinite void are structure: never
+  named, never journaled (`TOPOLOGY_MODEL.md`).
+* **Algorithm level** — the version of an operation's behaviour. A history
+  records the level it ran at, and the kernel replays an operation at a
+  recorded level. Levels never enter a derivation, so upgrading an algorithm
+  never changes ids.
 * **Resolution** — a body's modelling tolerance, today `Tolerance::linear` and
   `Tolerance::angular` (`math.rs`). It is a contract about what counts as
   distinct. **Enclosure** — a computed bound on where the true geometry lies
@@ -149,6 +158,12 @@ is always answerable, and so that collisions are detectable (I4).
 * **H7. The application resolves through the history only.** There is no API
   that answers "which output face is the old face" other than
   `History::resolve(id) -> Resolution` (Contract 3).
+* **H8. Every operation is versioned.** A `History` records the
+  `AlgorithmLevel` of the operation that produced it. Changing an existing
+  operation's behaviour requires a new level; the previous level stays
+  callable so a stored history replays identically. Levels are not part of
+  `Derivation` (adopted from CGM's software configurations; pending, added in
+  T1).
 
 ### Types
 
@@ -194,6 +209,11 @@ labelled entities as parents:
 
 `Solid::transformed` (`OperationKind::Transform`): every entity `Modified`
 with the same id, in slot order.
+
+After T1 (`TOPOLOGY_MODEL.md`) the circle row changes: the circular edges are
+ring edges with roles `BottomEdge` and `TopEdge`, there is no seam and no seam
+vertex, and the solid region is `Generated` from every boundary label with
+role `Region`. Every polygon id and relation is unchanged by T1.
 
 This replaces `FaceOrigin` as the source of provenance. Keep `FaceOrigin`
 until M1 lands, then derive it from the `Derivation` and remove the field.
@@ -284,27 +304,18 @@ pub struct Policy {
   representable construction is a bug to investigate, never a reason to
   loosen the bound.
 
-## Topology model: decisions deferred, and what must not be foreclosed
+## Topology model: decided
 
-The topology model needs its own discussion before Booleans. The contracts
-above are written to be model-agnostic: ids attach to any entity kind, and
-relations are generic over kinds. Until that discussion concludes, do not
-introduce anything that assumes the current prism-only model. Open decisions,
-with the constraint each contract places on them:
-
-| Decision | Constraint from this guide |
-| --- | --- |
-| Non-manifold and mixed-dimension bodies (Parasolid regions, shells, fins; OCCT compounds) | `Relation` and `Resolution` must not assume manifold solids; add kinds, do not special-case |
-| Sheet and wire bodies | Construction histories must work with no solid output |
-| Degenerate edges and surface poles | Enclosures must be definable for zero-length edges |
-| Periodic seams | Seam edges keep one id with two uses, as today |
-| Per-use pcurves versus shared | Keep per-use pcurves; enclosures are per use |
-| Instancing by location versus copy | Ids must be unique per instance if instancing by copy; if by location, an instance id must combine body id and placement |
-| Tolerant vertices and edges (Parasolid style) versus enclosures | T2 enclosures are the kernel form; a per-entity tolerance on import is an upper bound that becomes an enclosure with provenance `Imported` |
-| Exact rational versus binary64 storage | Derivations never depend on the choice |
-
-Parasolid's data model is public through its XT format; use it as the primary
-comparison in that discussion (see [Native format and XT](#native-format-and-parasolid-xt)).
+The model is decided in `TOPOLOGY_MODEL.md` (D1–D12): a cellular partition of
+space with regions including an infinite void, stored adjacency with fins in
+radial order, ordered loops with vertex loops and zero-loop faces, no seams,
+stored certified pcurves per fin, sense on entities with matter derived from
+regions, one resolution per body with enclosures, no instancing inside
+bodies, computed body types, immutable bodies, C1 within a cell, and blend
+surfaces left open with an extensibility constraint. The contracts here are
+unchanged by it: ids attach to bodies, bounded regions, faces, edges and
+vertices; relations are generic over those kinds; shells, loops and fins have
+no identity. Its migration, T1, precedes M3.
 
 ## Milestones
 
@@ -379,6 +390,12 @@ and checked in under `rust/fixtures/occt-*-preimplementation/`.
   in `upstream-draw.json`; otherwise add derived cases labelled as such, never
   stripped originals.
 
+### T1 — topology model migration
+
+Specified in `TOPOLOGY_MODEL.md`. It replaces seams with periodic loops,
+adds regions, shells with sides, fins and ring edges, and must keep every
+polygon id and relation byte-identical. M3 is built on the migrated model.
+
 ### M3 — first topology-changing operations: height split and stacked fuse
 
 These are deliberately narrow. They exist to exercise `Split`, `Merged`,
@@ -386,16 +403,17 @@ These are deliberately narrow. They exist to exercise `Split`, `Merged`,
 general Boolean.
 
 * `Solid::split_at_height(h)` splits a prism by the plane at offset `h`
-  strictly between its offsets: each wall face and vertical edge `Split` into
-  two (ordinal by axial order), each seam likewise, caps `Unchanged` in their
-  body, two cut faces `Generated` from the plane and the wall set, cut edges
-  `Generated` from walls, cut vertices `Generated` from vertical edges, the
-  input body deleted and two bodies output.
+  strictly between its offsets: the solid region and each wall face and
+  vertical edge `Split` into two (ordinal by axial order), caps and ring
+  edges `Unchanged` in their body, two cut faces `Generated` from the plane
+  and the wall set, cut edges `Generated` from walls (a ring edge for a
+  cylinder wall, with no vertices), cut vertices `Generated` from vertical
+  edges, the input body deleted and two bodies output.
 * `Solid::fuse_stacked(other)` merges two prisms that share a cap exactly
-  (same profile, same frame, adjacent offsets): walls, vertical edges and
-  seams `Merged` pairwise (parents in body order, ordinal 0), the shared caps
-  `Deleted`, the shared cap edges and vertices `Deleted`, outer caps
-  `Unchanged`.
+  (same profile, same frame, adjacent offsets): the two solid regions and,
+  pairwise, walls and vertical edges `Merged` (parents in body order,
+  ordinal 0), the shared caps `Deleted`, the shared cap edges and vertices
+  `Deleted`, outer caps and outer ring edges `Unchanged`.
 * **Fixtures:** independent enumeration of expected relations and of the
   resulting `Topology` structure; every result must pass `Topology::check`.
 * **Fuzz target `split_merge`:** random prism, random split height, then
@@ -549,6 +567,7 @@ say what remains.
   fuzz-synthesized histories, not produced by an operation (M3). Attribute
   storage and outcomes on real operations are M4, and enclosures M5. Ids are
   not yet persisted outside the process (no native format).
+* T1 — pending; recorded in `TOPOLOGY_MODEL.md`
 * M3 — pending
 * M4 — pending
 * M5 — pending
@@ -592,10 +611,10 @@ Feasibility with OCCT as the oracle:
   and classify every other node as `Unsupported` with its name, never as an
   approximation. Intersection curves stored as B-curve charts import with the
   chart's tolerance as an `Imported` enclosure.
-* **Ordering.** The XT reader belongs after the topology model discussion and
-  after the OCCT `.brep` reader in `UPSTREAM_TESTS.md`'s plan, because both
-  readers need the same generic topology builder and the `.brep` reader has a
-  native oracle for every file.
+* **Ordering.** The XT reader belongs after T1 and after the OCCT `.brep`
+  converter of T2 (`TOPOLOGY_MODEL.md`), because both readers need the same
+  generic topology builder and the `.brep` reader has a native oracle for
+  every file.
 
 ## Delivery rules for the implementing agent
 
@@ -614,3 +633,5 @@ Feasibility with OCCT as the oracle:
 * Update this file's [Acceptance](#acceptance) section and the roadmap rows in
   `PORTING.md` and `PRODUCTION_READINESS.md` in the same commit that claims a
   milestone.
+* Never change an existing operation's behaviour without a new algorithm
+  level (H8); the old level stays callable and tested.

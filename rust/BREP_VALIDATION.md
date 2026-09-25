@@ -272,4 +272,7 @@ history are out of scope. Validation cost is not bounded by explicit work
 limits. The curve checks are linear in the number of uses, but the
 combinatorial passes use ordered maps, and containment is linear in faces per
 ray. This validator certifies the supplied boundary; it does not make an
-invalid import valid.
+invalid import valid. The cell-complex model decided in `TOPOLOGY_MODEL.md`
+replaces the shell-set invariants with region, side, radial-order, periodic
+loop and vertex-loop invariants in T1; the complete-issue-list contract and
+the two arithmetic tiers are unchanged.

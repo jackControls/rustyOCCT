@@ -154,3 +154,30 @@ test: classify it outside the headless subset or create a separately attributed
 derived case. Do not use a success percentage across all OCCT suites as the
 readiness metric; measure evidence against the documented kernel capabilities,
 numerical domains and failure contracts independently of any application.
+
+## Structure mapping and the coverage ledger (planned, T2)
+
+The kernel's decided topology model (`TOPOLOGY_MODEL.md`) has no seams,
+degenerate edges or per-entity tolerances, so original assertions that count
+OCCT structure cannot be evaluated on Rust output directly. T2 adds, without
+rewriting any original file:
+
+* a **count synthesizer** behind the Rust adapter's `nbshapes`, reporting the
+  counts OCCT would give for the same body (seams per periodic direction of
+  a wound face, degenerate edges per pole, their vertices, loops as wires);
+* a **native selector** that resolves index-based picks such as `s_5` by
+  running the construction in DRAWEXE and matching that sub-shape's geometry
+  to a Rust entity exactly;
+* a **`.brep` converter and writer** for data-dependent cases, verified by
+  native round trips;
+* a **coverage ledger** in the report: every assertion is labelled
+  `model-independent` (properties, lengths, validity verdicts),
+  `mapped-and-verified` (counts, picks, history kinds and tolerance maxima
+  whose mapping native DRAW confirmed on that case) or `lost` (OCCT-specific
+  structure such as internal orientations, locations and tolerance growth).
+
+A mapping is trusted only on a case where the native backend confirms it;
+otherwise the case is a fingerprinted divergence. Native must still pass
+first, unsupported and missing cases stay non-passes, and the ledger
+aggregate, not a raw pass percentage, is the number `PRODUCTION_READINESS.md`
+gates on.
