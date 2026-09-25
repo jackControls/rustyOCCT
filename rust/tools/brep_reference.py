@@ -20,6 +20,24 @@ import math
 import mpmath as mp
 
 mp.mp.dps = 40
+
+
+# Correctly rounded binary64 trigonometry. Platform libm results can differ in
+# the last bit (macOS and glibc do), which would make the generated fixtures
+# and native inputs depend on the host.
+def cos_rn(x):
+    with mp.workprec(256):
+        return float(mp.cos(mp.mpf(x)))
+
+
+def sin_rn(x):
+    with mp.workprec(256):
+        return float(mp.sin(mp.mpf(x)))
+
+
+def atan2_rn(y, x):
+    with mp.workprec(256):
+        return float(mp.atan2(mp.mpf(y), mp.mpf(x)))
 TAU = 2*math.pi
 
 
@@ -760,7 +778,7 @@ def pcurve_encoding(p, forward, first, last):
         sense, beta = (-1 if speed > 0 else 1), p.start+p.sweep
     beta -= sense*first
     exact = span > 0 and abs(abs(speed)-1) <= 1e-12
-    return ('circle', (*p.center, math.cos(beta), math.sin(beta), p.radius, sense)), exact
+    return ('circle', (*p.center, cos_rn(beta), sin_rn(beta), p.radius, sense)), exact
 
 
 def native(m):

@@ -13,7 +13,7 @@ import math
 from pathlib import Path
 
 from brep_reference import (Arc2, Arc3, Cylinder, Edge, Face, Frame, Line2, Line3, Model,
-                            Plane, TAU, Use, encode, validate)
+                            Plane, TAU, Use, atan2_rn, cos_rn, encode, sin_rn, validate)
 
 ROOT = Path(__file__).resolve().parents[1]
 Z = (0.0, 0.0, 1.0)
@@ -21,7 +21,7 @@ X = (1.0, 0.0, 0.0)
 
 
 def angle_of(p, c):
-    return math.atan2(p[1]-c[1], p[0]-c[0])
+    return atan2_rn(p[1]-c[1], p[0]-c[0])
 
 
 def prism(name, boundaries, z0=0.0, z1=1.0, tolerance=1e-7):
@@ -116,7 +116,7 @@ def rectangle(x0, y0, x1, y1, hole=False):
 
 
 def regular(n, r, c=(0.0, 0.0), hole=False):
-    pts = [(c[0]+r*math.cos(TAU*k/n), c[1]+r*math.sin(TAU*k/n)) for k in range(n)]
+    pts = [(c[0]+r*cos_rn(TAU*k/n), c[1]+r*sin_rn(TAU*k/n)) for k in range(n)]
     if hole:
         pts.reverse()
     return [('line', p) for p in pts]
@@ -161,7 +161,7 @@ def merge(name, *models):
 def transformed(m, name, axis, angle, shift):
     """Rigid rotation about a unit axis, then translation, of every 3D datum."""
     k = [a/math.sqrt(sum(b*b for b in axis)) for a in axis]
-    c, s = math.cos(angle), math.sin(angle)
+    c, s = cos_rn(angle), sin_rn(angle)
     def rot(v):
         kv = sum(a*b for a, b in zip(k, v))
         kx = (k[1]*v[2]-k[2]*v[1], k[2]*v[0]-k[0]*v[2], k[0]*v[1]-k[1]*v[0])

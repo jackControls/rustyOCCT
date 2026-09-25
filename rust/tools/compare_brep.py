@@ -69,8 +69,29 @@ def original_capture():
                       ('observations_sha256', 'native.json'), ('expected_sha256', 'brep-expected.tsv')]:
         if metadata[key] != digest(ORIGINAL/name):
             raise ValueError('original native evidence changed: '+name)
-    if (ORIGINAL/'inputs.txt').read_text() != '\n'.join(text for _, text, _ in native_rows())+'\n':
-        raise ValueError('current native corpus differs from the pre-implementation input bytes')
+    same_inputs((ORIGINAL/'inputs.txt').read_text(), '\n'.join(text for _, text, _ in native_rows())+'\n')
+
+
+# The capture was generated with macOS libm trigonometry. Generation now uses
+# correctly rounded trigonometry so that every host produces the same bytes;
+# that moved a few frame and vertex components of two regular polygons by at
+# most 1.2e-16. Structure must be identical and numbers within this bound.
+NUMBER_DRIFT = 2.0**-50
+
+
+def same_inputs(captured, current):
+    old, new = captured.split(), current.split()
+    if len(old) != len(new):
+        raise ValueError('current native corpus differs structurally from the pre-implementation inputs')
+    for a, b in zip(old, new):
+        if a == b:
+            continue
+        try:
+            x, y = float(a), float(b)
+        except ValueError:
+            raise ValueError(f'current native corpus changed token {a!r} to {b!r}') from None
+        if not abs(x-y) <= NUMBER_DRIFT:
+            raise ValueError(f'current native corpus moved {a} to {b}')
 
 
 def run(executable, text, env):

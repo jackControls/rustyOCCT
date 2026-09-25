@@ -3,12 +3,18 @@
 import unittest
 
 from brep_reference import CORRESPONDING, compare_native, decode_native
-from compare_brep import original_capture, review_for
+from compare_brep import original_capture, review_for, same_inputs
 
 
 class BrepOracle(unittest.TestCase):
     def test_original_observations_and_inputs_remain_unchanged(self):
         original_capture()
+
+    def test_regenerated_inputs_may_only_drift_in_the_last_bits(self):
+        same_inputs('v 0.5 1 2\n', 'v 0.49999999999999994 1 2\n')
+        for bad in ['v 0.5 1 3\n', 'v 0.5 1\n', 'e 0.5 1 2\n', 'v 0.5 1 2 3\n', 'v 0.5 1 nan\n']:
+            with self.assertRaises(ValueError):
+                same_inputs('v 0.5 1 2\n', bad)
 
     def test_native_rows_decode_or_fail(self):
         valid, statuses, absent = decode_native('box_extra_vertex R 1 v8:absent', 'box_extra_vertex')
