@@ -164,7 +164,8 @@ Every report must be deterministic, duplicate-free and identical to
 `from_parts`. A local 300-second development campaign (dirty tree based on
 `12098ee3`, AddressSanitizer, standard 20-second/2 GiB limits) ran 13,807
 mutation executions with 4,408 coverage edges and a 762 MB RSS peak. It
-produced no artifacts.
+produced no artifacts. The clean-revision campaign is recorded under
+[Acceptance](#acceptance).
 
 ## Native OCCT observations
 
@@ -210,7 +211,8 @@ native statuses. For example, `pcurve_off_edge` corresponds to
 process has a 120-second deadline. Timeouts, crashes and malformed output can
 never be reviewed.
 
-On macOS, 44 cases match and 8 are reviewed differences, with no failures.
+On macOS and Linux, 44 cases match and 8 are reviewed differences, with no
+failures.
 `occt-brep-divergences.json` fingerprints each observation with its reason
 and independent evidence:
 
@@ -228,8 +230,39 @@ and independent evidence:
   cavity face using an outer edge. Both verdicts are invalid.
 
 `test_brep_oracle.py` checks malformed native rows, the difference
-classification and the review fingerprint rules. Linux observations need
-their own review records if their output differs.
+classification and the review fingerprint rules. Linux CI builds the same
+pinned SDK (OCCT 8.1.0). Its native output was byte-identical to macOS for
+every case, so the same eight fingerprinted reviews apply and no Linux-only
+record was needed. The slowest Linux native case took 0.007 seconds.
+
+## Acceptance
+
+Revision `dff912e5` passed every gate:
+
+* **Rust kernel workflow:** all ten jobs passed. They cover:
+  * Linux, macOS and Windows debug/release tests
+  * Rust 1.85 and WebAssembly
+  * the original-test bridge, including `generate_brep_fixtures.py --check`
+  * four source-pinned native comparisons
+
+  The B-rep comparison certified all 54 Rust reports: 44 matches, eight
+  reviewed differences and no failures.
+* **Geometry fuzzing workflow:** all nineteen targets passed. The Linux
+  `brep_validation` campaign replayed 775 corpus inputs in 106 seconds, then
+  completed 60.08 seconds of mutation (1,020 executions, 4,499 coverage
+  edges) with a 640 MB RSS peak and no artifacts.
+* **Clean local 600-second campaign** at `24244b2e`, whose kernel and fuzz code
+  are unchanged at `dff912e5` (only the Python generator's rounding,
+  regenerated fixture text and docs changed). It completed 600.09 seconds of
+  mutation after 55.78 seconds of replay, with 23,390 mutation executions,
+  4,533 coverage edges and a 789 MB RSS peak. There were no crash, timeout,
+  OOM, slow-unit or disagreement artifacts.
+
+The two commits after `24244b2e` fix host-dependent fixture generation. The
+first Linux runs regenerated different bytes because of platform libm
+trigonometry and CPython's changed `math.hypot`; see
+[the bridge](#native-comparison-bridge). They are observations of this
+revision and these runners, not portable latency guarantees.
 
 ## Limits
 

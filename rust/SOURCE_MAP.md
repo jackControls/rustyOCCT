@@ -445,4 +445,6 @@ sampled curve/pcurve agreement (23 points by default) with a certified
 whole-range bound and replaces classifier tolerances with certified signs and
 margins. It also validates every supplied entity, not only subshapes of the
 solid. Reviewed differences, including `Closed2d`'s first/last-junction check,
-are recorded in [B-rep validation](BREP_VALIDATION.md).
+are recorded in [B-rep validation](BREP_VALIDATION.md). The bridge passes on
+macOS and Linux with the same reviewed differences; acceptance passed at
+`dff912e5`.

@@ -105,7 +105,8 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
 2. **Topology invariants and operation history.** Generic B-rep validation
    now certifies connectivity, orientation, shells, cavities, seams and
    curve/pcurve/surface consistency for line/arc edges on planes and
-   cylinders (see `BREP_VALIDATION.md`); extend it with the geometry. Define generated,
+   cylinders, with native, platform and fuzz acceptance at `dff912e5` (see
+   `BREP_VALIDATION.md`); extend it with the geometry. Define generated,
    modified and deleted mappings with explicit split/merge ambiguity before
    topology-changing operations. Body-local indices are not persistent names.
 3. **Reliable geometry and intersections.** Circular arcs, trimmed curves,

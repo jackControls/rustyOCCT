@@ -31,7 +31,7 @@ platform/native/fuzz acceptance passed at `d1206b15`. The
 orderings, an eighteenth fuzz target and a source-pinned native bridge (23 matches, eight reviewed differences on macOS and Linux); acceptance passed at `30c5a247`.
 [Generic B-rep validation](BREP_VALIDATION.md) adds 54 complete independent
 issue reports, a nineteenth fuzz target and a source-pinned `BRepCheck_Analyzer`
-bridge (44 matches, eight reviewed differences on macOS); acceptance is pending.
+bridge (44 matches, eight reviewed differences on macOS and Linux); acceptance passed at `dff912e5`.
 
 `compare_intersections.py` executes native OCCT `IntAna_IntConicQuad` and Rust's
 line/plane primitive on 72 shared well-conditioned cases, comparing intersection
