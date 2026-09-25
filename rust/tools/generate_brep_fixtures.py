@@ -13,7 +13,8 @@ import math
 from pathlib import Path
 
 from brep_reference import (Arc2, Arc3, Cylinder, Edge, Face, Frame, Line2, Line3, Model,
-                            Plane, TAU, Use, atan2_rn, cos_rn, encode, sin_rn, validate)
+                            Plane, TAU, Use, atan2_rn, cos_rn, encode, hypot_rn, sin_rn,
+                            validate)
 
 ROOT = Path(__file__).resolve().parents[1]
 Z = (0.0, 0.0, 1.0)
@@ -72,7 +73,7 @@ def prism(name, boundaries, z0=0.0, z1=1.0, tolerance=1e-7):
                 if piece[0] == 'line':
                     m.edges += [Edge(vb[i], vb[j], Line3((p[0], p[1], z0), (q[0], q[1], z0))),
                                 Edge(vt[i], vt[j], Line3((p[0], p[1], z1), (q[0], q[1], z1)))]
-                    length = math.hypot(q[0]-p[0], q[1]-p[1])
+                    length = hypot_rn(q[0]-p[0], q[1]-p[1])
                     t = ((q[0]-p[0])/length, (q[1]-p[1])/length, 0.0)
                     normal = (t[1], -t[0], 0.0)  # t x z
                     wall = Face(Plane(Frame((p[0], p[1], z0), normal, t)), True)
@@ -86,7 +87,7 @@ def prism(name, boundaries, z0=0.0, z1=1.0, tolerance=1e-7):
                     ])
                 else:
                     _, _, c, ccw = piece
-                    r = math.hypot(p[0]-c[0], p[1]-c[1])
+                    r = hypot_rn(p[0]-c[0], p[1]-c[1])
                     a = angle_of(p, c)
                     b = angle_of(q, c)
                     sweep = (b-a) % TAU if ccw else -((a-b) % TAU)

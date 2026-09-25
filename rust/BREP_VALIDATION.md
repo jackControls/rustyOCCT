@@ -192,14 +192,15 @@ never read as a native verdict.
 ## Native comparison bridge
 
 `compare_brep.py` first verifies the SDK manifest, loaded toolkits and the
-unchanged pre-implementation capture. The generator uses correctly rounded
-trigonometry (mpmath, rounded once to binary64) so that every host produces
-the same bytes. Platform libm results differ in the last bit: the first Linux
-CI run regenerated different inputs from the macOS capture. The capture itself
-used macOS libm, so the regenerated native inputs must match it token for
-token, with numbers within `2^-50`. Only components of the triangle and
-hexagon moved, by at most `1.2e-16`, and all 54 expected reports are
-unchanged. The bridge also checks byte-identical regeneration of the
+unchanged pre-implementation capture. The generator computes trigonometry and
+norms with mpmath and rounds each result once to binary64, so every host and
+Python version produces the same bytes. Platform libm results differ in the
+last bit, and CPython 3.10 changed `math.hypot`: the first Linux CI runs
+regenerated different inputs from the macOS capture. The capture itself used
+macOS libm and Python 3.9, so the regenerated native inputs must match it
+token for token, with numbers within `2^-50`. Only components of the triangle,
+hexagon and two-hole plate moved, by at most `2.3e-16`, and all 54 expected
+reports are unchanged. The bridge also checks byte-identical regeneration of the
 fixtures, and that the Rust probe's issue lists equal
 the independent reference's. A case matches when the verdicts agree and every
 Rust issue class with a BRepCheck counterpart has one of its corresponding

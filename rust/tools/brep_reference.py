@@ -22,9 +22,9 @@ import mpmath as mp
 mp.mp.dps = 40
 
 
-# Correctly rounded binary64 trigonometry. Platform libm results can differ in
-# the last bit (macOS and glibc do), which would make the generated fixtures
-# and native inputs depend on the host.
+# Correctly rounded binary64 trigonometry and norms. Platform libm results can
+# differ in the last bit (macOS and glibc do), which would make the generated
+# fixtures and native inputs depend on the host.
 def cos_rn(x):
     with mp.workprec(256):
         return float(mp.cos(mp.mpf(x)))
@@ -33,6 +33,12 @@ def cos_rn(x):
 def sin_rn(x):
     with mp.workprec(256):
         return float(mp.sin(mp.mpf(x)))
+
+
+def hypot_rn(*xs):
+    """Correctly rounded Euclidean norm; math.hypot changed in CPython 3.10."""
+    with mp.workprec(256):
+        return float(mp.sqrt(mp.fsum(mp.mpf(x)**2 for x in xs)))
 
 
 def atan2_rn(y, x):
@@ -766,7 +772,7 @@ def pcurve_encoding(p, forward, first, last):
     if isinstance(p, Line2):
         a, b = (p.start, p.end) if forward else (p.end, p.start)
         d = (b[0]-a[0], b[1]-a[1])
-        length = math.hypot(*d)
+        length = hypot_rn(*d)
         unit = (d[0]/length, d[1]/length) if length else (1.0, 0.0)
         origin = (a[0]-first*unit[0], a[1]-first*unit[1])
         exact = span > 0 and abs(length-span) <= 1e-12*max(1.0, span)
