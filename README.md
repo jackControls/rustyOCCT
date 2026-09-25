@@ -24,7 +24,8 @@ Cargo does not build it. Rust work lives on the `rust-kernel` branch, while
 - Analytic lines, circles, planes and cylinders; shared vertices/edges, oriented
   face loops, and per-face parameter curves, including cylinder seams.
 - Closed-shell connectivity validation, face provenance, and hole-aware Euler
-  characteristic. Body-local indices are not persistent names across edits.
+  characteristic. Body-local indices are not persistent names across edits;
+  the planned identity and history contracts are in `rust/IDENTITY_AND_HISTORY.md`.
 - Volume, surface area, centroid, central inertia tensor, exact bounds, point
   classification, rigid translation and rotation.
 - Explicit tolerances, finite-input and coordinate-resolution checks, and errors
