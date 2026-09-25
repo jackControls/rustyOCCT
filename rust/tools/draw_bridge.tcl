@@ -55,14 +55,18 @@ proc runCommand {command args} {
     if {$::backend eq "rust"} {
         # DRAW permits numeric Tcl expressions, e.g. 2e-7+1e-14. Preserve that
         # behavior through the actual interpreter, not a Python expression parser.
-        if {$command in {box trotate ttranslate}} {
-            set converted [lrange $args 0 0]
-            foreach value [lrange $args 1 end] {
+        # Names precede the numbers; prism's numbers are followed by a mode.
+        set leading {box {1 end} trotate {1 end} ttranslate {1 end} polyline {1 end} prism {2 4}}
+        if {[dict exists $leading $command]} {
+            lassign [dict get $leading $command] first last
+            set converted [lrange $args 0 [expr {$first - 1}]]
+            foreach value [lrange $args $first $last] {
                 if {[catch {interp eval testcase [list expr $value]} number]} {
                     return [unsupportedCommand $command {*}$args]
                 }
                 lappend converted $number
             }
+            if {$last ne "end"} {lappend converted {*}[lrange $args [expr {$last + 1}] end]}
             set args $converted
         }
         set tokens {}
@@ -83,10 +87,17 @@ proc runCommand {command args} {
         set result [uplevel #0 [linsert $args 0 $command]]
     }
     if {$result ne ""} {logPuts $result}
-    if {$command in {checkshape nbshapes vprops sprops isbbinterf}} {incr ::queries}
+    if {$command in {checkshape nbshapes vprops sprops lprops isbbinterf isdeleted}} {incr ::queries}
     # DBRep::Set binds DRAW shape names as Tcl variables as well.
-    if {$command eq "box"} {interp eval testcase [list set [lindex $args 0] [lindex $args 0]]}
-    if {$command eq "copy"} {interp eval testcase [list set [lindex $args 1] [lindex $args 1]]}
+    if {$::backend eq "rust"} {
+        if {$command in {box polyline mkplane prism generated modified}} {
+            interp eval testcase [list set [lindex $args 0] [lindex $args 0]]
+        }
+        if {$command eq "copy"} {interp eval testcase [list set [lindex $args 1] [lindex $args 1]]}
+        if {$command eq "explode"} {
+            foreach name $result {interp eval testcase [list set $name $name]}
+        }
+    }
     return $result
 }
 proc evaluateFile {path} {
@@ -115,7 +126,7 @@ if {[catch {
     interp alias testcase help {} metadata
     interp alias testcase cpulimit {} cpuLimit
     interp alias testcase locate_data_file {} locateData
-    foreach command {box copy ttranslate trotate isdraw whatis checkshape nbshapes vprops sprops isbbinterf explode compound bcommon bfuse restore prism} {
+    foreach command {box copy ttranslate trotate isdraw whatis checkshape nbshapes vprops sprops lprops isbbinterf explode compound bcommon bfuse restore prism polyline mkplane savehistory generated modified isdeleted} {
         interp alias testcase $command {} runCommand $command
     }
     # bugs/begin would load VISUALIZATION only when topology checks are absent.

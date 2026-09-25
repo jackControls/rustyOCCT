@@ -4,6 +4,7 @@
 //! issue on the mutated entity. Cavities and inversions are assembled here,
 //! not by a kernel builder, so shell merging is independent of production.
 use crate::byte;
+use rusty_occt::identity::OperationId;
 use rusty_occt::topology::{
     Curve2, Curve3, Edge, EdgeId, FaceId, Orientation, Topology, TopologyParts, Vertex, VertexId,
 };
@@ -204,12 +205,22 @@ pub fn check_brep_validation(data: &[u8]) {
     };
     let low = -scale * (0.5 + b.unit());
     let high = scale * (0.5 + b.unit());
-    let solid = Solid::extrude(profile, frame, low, high).expect("valid prism");
+    let solid = Solid::extrude_with(OperationId::UNSPECIFIED, profile, frame, low, high)
+        .map(|(s, _)| s)
+        .expect("valid prism");
     let mut parts = parts_of(solid.topology());
     let with_cavity = feature == 3 || mutation == 11;
     if with_cavity {
         let inner = Profile::new(square(0.1 * scale).unwrap(), vec![], tolerance).unwrap();
-        let cavity = Solid::extrude(inner, frame, 0.5 * low, 0.5 * high).expect("valid box");
+        let cavity = Solid::extrude_with(
+            OperationId::UNSPECIFIED,
+            inner,
+            frame,
+            0.5 * low,
+            0.5 * high,
+        )
+        .map(|(s, _)| s)
+        .expect("valid box");
         let mut cavity = parts_of(cavity.topology());
         if mutation != 11 {
             invert(&mut cavity, 0);

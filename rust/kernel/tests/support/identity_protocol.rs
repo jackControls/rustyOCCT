@@ -1,5 +1,6 @@
 //! Case protocol written by rust/tools/identity_reference.py::encode_case, and
 //! entity rows with structural locators found from geometry alone.
+use rusty_occt::history::{History, Relation};
 use rusty_occt::identity::{InputLabel, OperationId, Parent, ProfileElement, Role};
 use rusty_occt::topology::{Curve3, Slot, Surface};
 use rusty_occt::{
@@ -102,9 +103,15 @@ pub fn cases(text: &str) -> Vec<CaseSpec> {
 
 /// The solid before any transform.
 pub fn build(spec: &CaseSpec) -> Solid {
+    build_tracked(spec).0
+}
+
+/// The solid before any transform, with its construction history.
+pub fn build_tracked(spec: &CaseSpec) -> (Solid, History) {
     if let Some((origin, size)) = spec.box_at {
         let o = Point3::new(origin[0], origin[1], origin[2]);
-        return Solid::box_at(o, Vec3::new(size[0], size[1], size[2]), spec.tolerance).unwrap();
+        let size = Vec3::new(size[0], size[1], size[2]);
+        return Solid::box_at_with(spec.operation, o, size, spec.tolerance).unwrap();
     }
     let f = spec.frame;
     let frame = Frame3::new(
@@ -263,4 +270,25 @@ pub fn rows(solid: &Solid) -> Vec<String> {
     }
     out.sort();
     out
+}
+
+/// One relation as fixture text (identity_reference.py::relation_text).
+pub fn relation_text(r: &Relation) -> String {
+    let ids = |v: &[rusty_occt::identity::EntityId]| {
+        v.iter()
+            .map(|i| i.to_string())
+            .collect::<Vec<_>>()
+            .join(",")
+    };
+    match r {
+        Relation::Generated { from, to, role } => {
+            let parents: Vec<String> = from.iter().map(parent_text).collect();
+            format!("generated {} {to} {}", parents.join(","), role_name(*role))
+        }
+        Relation::Modified { from, to } => format!("modified {from} {to}"),
+        Relation::Unchanged { id } => format!("unchanged {id}"),
+        Relation::Deleted { id } => format!("deleted {id}"),
+        Relation::Split { from, into } => format!("split {from} {}", ids(into)),
+        Relation::Merged { from, into } => format!("merged {} {into}", ids(from)),
+    }
 }

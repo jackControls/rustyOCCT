@@ -4,6 +4,7 @@
 //! moving labelled points keep every id; permuting label values permutes ids
 //! bijectively, parent by parent; counts and roles follow the profile.
 use libfuzzer_sys::arbitrary::{Result, Unstructured};
+use rusty_occt::history::History;
 use rusty_occt::identity::{
     Derivation, EntityKind, InputLabel, OperationId, OperationKind, Parent, ProfileElement, Role,
 };
@@ -83,9 +84,9 @@ fn fnv(bytes: &[u8]) -> [u8; 16] {
     h.to_be_bytes()
 }
 
-struct Spec {
-    tolerance: Tolerance,
-    operation: OperationId,
+pub(crate) struct Spec {
+    pub(crate) tolerance: Tolerance,
+    pub(crate) operation: OperationId,
     frame: Frame3,
     start: f64,
     end: f64,
@@ -93,15 +94,15 @@ struct Spec {
     outer: Option<Vec<f64>>,
     holes: Vec<(bool, Point2)>,
     clockwise: bool,
-    labels: Option<Vec<u64>>,
-    transforms: Vec<RigidTransform>,
+    pub(crate) labels: Option<Vec<u64>>,
+    pub(crate) transforms: Vec<RigidTransform>,
 }
 
 fn unit(u: &mut Unstructured) -> Result<f64> {
     Ok(f64::from(u.arbitrary::<u16>()?) / 65535.0)
 }
 
-fn spec(u: &mut Unstructured) -> Result<Option<Spec>> {
+pub(crate) fn spec(u: &mut Unstructured) -> Result<Option<Spec>> {
     let scale = 2f64.powi(u.int_in_range(-8..=8)?);
     let tolerance = Tolerance::new(1e-9 * scale, 1e-12).unwrap();
     let outer = if u.ratio(1, 6)? {
@@ -169,7 +170,17 @@ fn spec(u: &mut Unstructured) -> Result<Option<Spec>> {
 }
 
 /// Build with labels drawn from `pool` in order; `stretch` moves every point.
-fn build(s: &Spec, pool: Option<&[u64]>, stretch: f64, reverse: bool) -> Option<Solid> {
+pub(crate) fn build(s: &Spec, pool: Option<&[u64]>, stretch: f64, reverse: bool) -> Option<Solid> {
+    build_tracked(s, pool, stretch, reverse).map(|(solid, _)| solid)
+}
+
+/// The extrusion and its construction history.
+pub(crate) fn build_tracked(
+    s: &Spec,
+    pool: Option<&[u64]>,
+    stretch: f64,
+    reverse: bool,
+) -> Option<(Solid, History)> {
     let scale = s.tolerance.linear() / 1e-9;
     let mut next = 0;
     let mut take = |n: usize| -> Vec<InputLabel> {
@@ -302,7 +313,10 @@ pub fn check_identity(data: &[u8]) {
     // Rigid motion keeps every id, slot and derivation.
     let mut moved = solid.clone();
     for transform in &s.transforms {
-        if let Ok(next) = moved.transformed(*transform) {
+        if let Ok(next) = moved
+            .transform_with(OperationId::UNSPECIFIED, *transform)
+            .map(|(s, _)| s)
+        {
             assert_eq!(ids(&next), base);
             assert_eq!(next.topology().body_id(), solid.topology().body_id());
             moved = next;

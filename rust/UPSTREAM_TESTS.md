@@ -69,8 +69,11 @@ group, and stale success records are removed before each run.
 | `bugs/modalg_6/bug28189_2` | Unsupported | Pass | Boolean common of wire compounds |
 | `bugs/modalg_6/bug28189_3` | Unsupported | Pass | Boolean union of wire compounds |
 | `bugs/modalg_1/buc60684` | Missing fixture | Missing fixture | External `buc60684a.brep` data |
+| Derived `prism_history_rectangle` | Pass | Pass | Prism history: `generated`, `modified`, `isdeleted` for edges, vertices and the face |
+| Derived `prism_history_reversed_triangle` | Pass | Pass | Prism history against a clockwise profile's normal |
 
 There are **three original geometry tests passing on both backends**, not seven.
+The two derived cases are counted separately (see below).
 The 17 bridge self-tests are separate infrastructure checks; they do not count
 as more upstream coverage. The existing 66-solid / 2,292-classification native
 oracle corpus supplies much broader prism geometry checks independently.
@@ -88,12 +91,37 @@ unsupported/missing/known-failure cases as skipped, never as successful tests.
 The JSON records which cases actually passed original assertions on both sides;
 a Rust-only run makes no new live parity claim.
 
+## Derived cases
+
+No original self-contained test exercises prism history with commands the
+adapter can run (`bugs/modalg_6/bug28261` needs `.brep` data, `revol`,
+Booleans and chamfers). As `IDENTITY_AND_HISTORY.md` requires, derived cases
+live in `fixtures/draw-derived/`, say on their first line that they are not
+original OCCT tests, and are never counted as original upstream passes. The
+manifest records each one's SHA-256 under `derived_sources` and runs it in a
+pinned upstream context (`tests/bugs/modalg_7`: its begin/end scripts and parse
+rules). Reports list them under `derived_cases_passing_on_both_backends`. Both
+must pass on native DRAW too.
+
+They use `prism ... Copy`. Without `Copy`, OCCT builds the prism's end face
+as the start face moved by a location, reusing its `TShape`s. DRAW's
+`nbshapes` counts those shared shapes once (4 vertices, 8 edges and 5 faces
+for a box), while the kernel, like `Copy`, builds distinct end entities.
+Native DRAW with `Copy` reports 8, 12 and 6. The adapter rejects `prism`
+without `Copy`.
+
 ## Deliberate limits
 
 - Rust signatures: positional `box` with three or six numbers, two-name `copy`,
   single-shape `ttranslate`/`trotate`, `checkshape`, unique `nbshapes`, `vprops`
   with optional positive integration epsilon, `isdraw`, the solid identification
-  needed by `checkprops`, and AABB `isbbinterf`. Everything else is unsupported,
+  needed by `checkprops`, and AABB `isbbinterf`. For history: a closed
+  `polyline`, `mkplane` of it, `prism name face dx dy dz Copy` normal to the
+  profile, `explode` of a profile wire or face into edges or vertices,
+  `savehistory`, `generated`, `modified`, `isdeleted`, and `sprops`/`lprops`
+  (mass only) on faces, edges and compounds. `generated` follows OCCT's prism:
+  a profile vertex gives its vertical edge, an edge its wall, the face the
+  solid; the kernel's start/end copies are OCCT's `FirstShape`/`LastShape`. Everything else is unsupported,
   including OBBs, `sprops`, `nbshapes -t`, option-form boxes and visualization.
 - Test geometry remains boxes and rigidly transformed copies. The adapter
   intentionally does not expose every Rust prism capability yet. More command

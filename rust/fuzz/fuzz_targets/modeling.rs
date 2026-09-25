@@ -1,4 +1,5 @@
 #![no_main]
+use rusty_occt::identity::OperationId;
 use rusty_occt::*;
 use rusty_occt_fuzz::{byte, decode};
 use std::f64::consts::TAU;
@@ -46,7 +47,15 @@ libfuzzer_sys::fuzz_target!(|data: &[u8]| {
             Boundary::polygon(p[..3].iter().map(|p| Point2::new(p.x, p.y)).collect(), tol)
         {
             if let Ok(profile) = Profile::new(boundary, vec![], tol) {
-                if let Ok(solid) = Solid::extrude(profile, Frame3::xy(), p[3].z, p[4].z) {
+                if let Ok(solid) = Solid::extrude_with(
+                    OperationId::UNSPECIFIED,
+                    profile,
+                    Frame3::xy(),
+                    p[3].z,
+                    p[4].z,
+                )
+                .map(|(s, _)| s)
+                {
                     solid.topology().validate(tol).unwrap();
                     let mass = solid.mass_properties();
                     assert!(mass.volume.is_finite() && mass.volume > 0.);
@@ -79,7 +88,10 @@ libfuzzer_sys::fuzz_target!(|data: &[u8]| {
     let profile = Profile::new(outer, holes, tolerance).unwrap();
     let start = -scale;
     let end = scale * (1. + byte(data, 28) as f64 / 255.);
-    let mut solid = Solid::extrude(profile, Frame3::xy(), start, end).unwrap();
+    let mut solid =
+        Solid::extrude_with(OperationId::UNSPECIFIED, profile, Frame3::xy(), start, end)
+            .map(|(s, _)| s)
+            .unwrap();
     let original = solid.mass_properties();
     for step in 0..1 + (byte(data, 29) % 8) as usize {
         let offset = 30 + 8 * step;
@@ -105,7 +117,10 @@ libfuzzer_sys::fuzz_target!(|data: &[u8]| {
                 // Probe chosen well away from all boundary tolerance bands.
                 let probe = solid.frame().point(Point2::new(0.25 * scale, 0.), 0.);
                 let classification = solid.classify(probe).unwrap();
-                solid = solid.transformed(transform).unwrap();
+                solid = solid
+                    .transform_with(OperationId::UNSPECIFIED, transform)
+                    .map(|(s, _)| s)
+                    .unwrap();
                 assert_eq!(
                     solid.classify(transform.point(probe)).unwrap(),
                     classification
@@ -122,12 +137,26 @@ libfuzzer_sys::fuzz_target!(|data: &[u8]| {
             }
             2 => {
                 let cut = start + (end - start) * (0.2 + 0.6 * unit(1));
-                let left = Solid::extrude(solid.profile().clone(), solid.frame(), start, cut)
-                    .unwrap()
-                    .mass_properties();
-                let right = Solid::extrude(solid.profile().clone(), solid.frame(), cut, end)
-                    .unwrap()
-                    .mass_properties();
+                let left = Solid::extrude_with(
+                    OperationId::UNSPECIFIED,
+                    solid.profile().clone(),
+                    solid.frame(),
+                    start,
+                    cut,
+                )
+                .map(|(s, _)| s)
+                .unwrap()
+                .mass_properties();
+                let right = Solid::extrude_with(
+                    OperationId::UNSPECIFIED,
+                    solid.profile().clone(),
+                    solid.frame(),
+                    cut,
+                    end,
+                )
+                .map(|(s, _)| s)
+                .unwrap()
+                .mass_properties();
                 close(left.volume + right.volume, original.volume, scale.powi(3));
                 close(
                     left.surface_area + right.surface_area,
@@ -156,7 +185,15 @@ libfuzzer_sys::fuzz_target!(|data: &[u8]| {
                     )
                     .unwrap();
                 }
-                solid = Solid::extrude(profile, solid.frame(), end, start).unwrap();
+                solid = Solid::extrude_with(
+                    OperationId::UNSPECIFIED,
+                    profile,
+                    solid.frame(),
+                    end,
+                    start,
+                )
+                .map(|(s, _)| s)
+                .unwrap();
             }
         }
         validate(&solid, tolerance, scale);

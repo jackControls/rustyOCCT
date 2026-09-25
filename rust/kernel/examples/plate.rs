@@ -1,3 +1,4 @@
+use rusty_occt::identity::OperationId;
 use rusty_occt::{Boundary, Frame3, Point2, Profile, Solid, Tolerance};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -8,7 +9,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map(|(x, y)| Boundary::circle(Point2::new(x, y), 3.0, tolerance))
         .collect::<Result<Vec<_>, _>>()?;
     let profile = Profile::new(outer, holes, tolerance)?;
-    let plate = Solid::extrude(profile, Frame3::xy(), 0.0, 6.0)?;
+    let plate = Solid::extrude_with(OperationId::UNSPECIFIED, profile, Frame3::xy(), 0.0, 6.0)
+        .map(|(s, _)| s)?;
     let mass = plate.mass_properties();
     println!("Plate: 80 x 40 x 6 mm; four exact 6 mm through holes");
     println!("Volume: {:.6} mm^3", mass.volume);

@@ -1,0 +1,44 @@
+puts "Derived case, not an original OCCT test: prism history of a rectangle"
+puts "Written for rusty-occt; see rust/UPSTREAM_TESTS.md (derived cases)."
+
+polyline w 0 0 0 10 0 0 10 5 0 0 5 0 0 0 0
+mkplane f w
+prism p f 0 0 3 Copy
+savehistory h
+
+checkshape p
+checknbshapes p -solid 1 -face 6 -edge 12 -vertex 8
+checkprops p -v 150 -s 190
+
+# A profile edge generates exactly its wall: 10 x 3, then 5 x 3.
+explode w e
+generated g1 h w_1
+checknbshapes g1 -face 1 -wire 1 -edge 4 -vertex 4
+checkprops g1 -s 30
+generated g2 h w_2
+checknbshapes g2 -face 1 -wire 1 -edge 4 -vertex 4
+checkprops g2 -s 15
+generated g3 h w_3
+checkprops g3 -s 30
+
+# Nothing is deleted or modified by a prism.
+if {[isdeleted h w_1] != "Not deleted."} {
+  puts "Error: a profile edge was reported deleted"
+}
+if {[modified m h w_1] != "The shape has not been modified."} {
+  puts "Error: a profile edge was reported modified"
+}
+
+# A profile vertex generates exactly its vertical edge.
+explode w v
+generated gv h w_1
+checknbshapes gv -edge 1 -vertex 2
+checkprops gv -l 3
+if {[isdeleted h w_3] != "Not deleted."} {
+  puts "Error: a profile vertex was reported deleted"
+}
+
+# The profile face generates the solid.
+generated gs h f
+checknbshapes gs -solid 1 -face 6 -edge 12 -vertex 8
+checkprops gs -v 150

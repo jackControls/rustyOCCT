@@ -15,7 +15,7 @@ and insphere, 2,417 independent 2D rational fixtures in all six permutations,
 95 general polynomial-root, 284 spline/plane, 118 spline/quadric, 554 proximity, 684 complete linear-set, 636 exact Bézier curve, 745 tensor-patch and 723 knot-editing fixtures,
 10,000 integer-oracle predicate cases and 256 generated prism invariant cases.
 These tests do not depend on OCCT or an application and run in native debug and
-release CI. These deterministic generated tests are separate from the twenty
+release CI. These deterministic generated tests are separate from the twenty-one
 [coverage-guided fuzz targets and daily retained-corpus campaigns](FUZZING.md).
 
 Exact root-to-root ordering was accepted at revision `de1d1d43`: 122 debug and
@@ -477,6 +477,20 @@ target recomputes ids with its own encoder.
 There is no native bridge for value identity: OCCT has no value ids. A
 `TopoDS_Shape` is the same shape only while it holds the same `TShape` pointer
 and location, so no native observation can confirm or refute an id.
+
+## Operation history
+
+`generate_history_fixtures.py --check` writes the complete relation list of
+every value-identity case from the independent enumeration: each
+construction's `Generated` relations, each rigid motion's `Modified`
+relations, and their composition (114,890 relations). `history.rs` requires
+Rust's canonical relation lists to match, and every history to pass the
+independent checker, before and after composition. The `history` fuzz target
+mutates produced histories. `compare_history.py` maps source-pinned
+`BRepTools_History`/`BRepPrimAPI_MakePrism` observations (captured before
+implementation) to Rust relations by geometry; see
+[identity and history](IDENTITY_AND_HISTORY.md). Two derived DRAW cases check
+`generated`, `modified` and `isdeleted` on both backends.
 
 ## Generic B-rep validation
 

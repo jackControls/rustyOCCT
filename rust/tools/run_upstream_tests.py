@@ -38,20 +38,24 @@ def build_worker():
     raise RuntimeError("Cargo did not report the DRAW worker executable")
 
 
-def source_files(case):
-    """DRAW group/grid begin scripts, the original test, then reverse end scripts."""
+def source_files(case, context=None):
+    """DRAW group/grid begin scripts, the test, then reverse end scripts.
+
+    A derived case (not an original OCCT test) lives outside tests/ and runs
+    in the pinned group/grid `context` (e.g. tests/bugs/modalg_7)."""
     path = ROOT / case
-    directories = list(reversed(path.parent.relative_to(ROOT / "tests").parents))
+    grid = ROOT / (context or str(Path(case).parent))
+    directories = list(reversed(grid.relative_to(ROOT / "tests").parents))
     # Only ancestors below tests/ are groups/grids; tests/begin does not exist.
     directories = [ROOT / "tests" / p for p in directories if str(p) != "."]
-    directories.append(path.parent)
+    directories.append(grid)
     return ([p / "begin" for p in directories if (p / "begin").is_file()]
             + [path]
             + [p / "end" for p in reversed(directories) if (p / "end").is_file()])
 
 
 def run_case(backend, sources, directory, worker=None, draw_exe=None,
-             tclsh="tclsh", timeout=30.0, data_dirs=()):
+             tclsh="tclsh", timeout=30.0, data_dirs=(), names=None):
     directory.mkdir(parents=True, exist_ok=True)
     result_file = directory / "result.txt"
     result_file.unlink(missing_ok=True)  # A crashed rerun must not reuse an old pass.
@@ -59,7 +63,7 @@ def run_case(backend, sources, directory, worker=None, draw_exe=None,
     env = os.environ.copy()
     case_path = next(p for p in sources if p.name not in {"begin", "end"})
     try:
-        group, grid, name = case_path.relative_to(ROOT / "tests").parts
+        group, grid, name = names or case_path.relative_to(ROOT / "tests").parts
     except ValueError:
         group, grid, name = "bugs", "bridge-self-test", case_path.name
     env.update({
@@ -157,6 +161,9 @@ def main():
     for path, expected in manifest["sources"].items():
         if digest(ROOT / path) != expected:
             parser.error(f"pinned upstream source changed: {path}; review before updating the manifest")
+    for path, expected in manifest.get("derived_sources", {}).items():
+        if digest(ROOT / path) != expected:
+            parser.error(f"derived case changed: {path}; review before updating the manifest")
     cases = manifest["cases"]
     if args.case:
         unknown = set(args.case) - {c["path"] for c in cases}
@@ -172,25 +179,35 @@ def main():
     args.output.mkdir(parents=True, exist_ok=True)
     results = []
     for case in cases:
-        sources = source_files(case["path"])
-        group, grid, _ = Path(case["path"]).relative_to("tests").parts
+        derived = case.get("derived", False)
+        if derived and case["path"] not in manifest.get("derived_sources", {}):
+            parser.error(f"unrecorded derived case: {case['path']}")
+        sources = source_files(case["path"], case.get("context") if derived else None)
+        grid_path = Path(case["context"]) if derived else Path(case["path"]).parent
+        group, grid = grid_path.relative_to("tests").parts
+        names = (group, grid, Path(case["path"]).name)
         rules = [p for p in [ROOT / "tests/parse.rules", ROOT / "tests" / group / "parse.rules", ROOT / "tests" / group / grid / "parse.rules"] if p.is_file()]
         for source in sources + rules:
+            if derived and str(source.relative_to(ROOT)) == case["path"]:
+                continue
             if str(source.relative_to(ROOT)) not in manifest["sources"]:
                 parser.error(f"unrecorded upstream context: {source}")
         for backend in backends:
             result = run_case(backend, sources, args.output / backend / case["path"],
                               worker, args.draw_exe, args.tclsh, args.timeout,
-                              [ROOT / "data"] + args.data_dir)
-            result.update(case=case["path"], expected=case[f"expected_{backend}"])
+                              [ROOT / "data"] + args.data_dir, names)
+            result.update(case=case["path"], expected=case[f"expected_{backend}"], derived=derived)
             result["contract_ok"] = result["status"] == result["expected"]
             results.append(result)
             marker = "" if result["contract_ok"] else " [UNEXPECTED]"
             print(f"{backend:4} {result['status']:15} {case['path']}{marker}", flush=True)
     revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     dirty = subprocess.check_output(["git", "status", "--porcelain", "--", "rust", "Cargo.toml", "Cargo.lock"], cwd=ROOT, text=True)
-    paired = [case["path"] for case in cases if len(backends) == 2 and all(
+    paired_all = [case for case in cases if len(backends) == 2 and all(
         r["status"] == "pass" for r in results if r["case"] == case["path"])]
+    # Derived cases are never counted as original upstream passes.
+    paired = [c["path"] for c in paired_all if not c.get("derived")]
+    paired_derived = [c["path"] for c in paired_all if c.get("derived")]
     report = {
         "upstream_revision": manifest["upstream_revision"], "rust_revision": revision,
         "working_tree_changes": dirty.splitlines(), "manifest_sha256": digest(MANIFEST),
@@ -198,6 +215,7 @@ def main():
         "worker_sha256": digest(worker) if worker else None,
         "counts": {b: dict(Counter(r["status"] for r in results if r["backend"] == b)) for b in backends},
         "cases_passing_original_assertions_on_both_backends": paired,
+        "derived_cases_passing_on_both_backends": paired_derived,
         "results": results,
     }
     (args.output / "report.json").write_text(json.dumps(report, indent=2) + "\n")

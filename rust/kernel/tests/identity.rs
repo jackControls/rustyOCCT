@@ -1,6 +1,7 @@
 //! Value ids on extrusions and rigid transforms against the independent
 //! reference (fixtures/identity-*.txt|tsv from tools/generate_identity_fixtures.py).
 #[path = "support/identity_protocol.rs"]
+#[allow(dead_code)]
 mod identity_protocol;
 use identity_protocol::{build, cases, rows};
 use rusty_occt::identity::{fnv1a128, EntityId, InputLabel, OperationId};
@@ -51,7 +52,10 @@ fn every_case_matches_the_independent_ids_and_transforms_keep_them() {
         // Every rigid motion keeps every id, derivation and locator.
         let mut moved = solid.clone();
         for transform in &spec.transforms {
-            moved = moved.transformed(*transform).unwrap();
+            moved = moved
+                .transform_with(OperationId::UNSPECIFIED, *transform)
+                .map(|(s, _)| s)
+                .unwrap();
             assert_eq!(
                 moved.topology().body_id(),
                 solid.topology().body_id(),
@@ -63,7 +67,7 @@ fn every_case_matches_the_independent_ids_and_transforms_keep_them() {
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
     assert_eq!(specs.len(), 546);
-    assert!(entities > 30_000, "{entities}");
+    assert_eq!(entities, 46734);
 }
 
 #[test]
@@ -159,8 +163,12 @@ fn invalid_labels_are_rejected() {
         .with_labels(labels(20, [21, 22, 23, 24], [25, 26, 27, 28]))
         .unwrap();
     let profile = Profile::new(outer, vec![hole], t).unwrap();
-    let a = Solid::extrude_with(OperationId(1), profile.clone(), Frame3::xy(), 0., 1.).unwrap();
-    let b = Solid::extrude_with(OperationId(2), profile, Frame3::xy(), 0., 1.).unwrap();
+    let a = Solid::extrude_with(OperationId(1), profile.clone(), Frame3::xy(), 0., 1.)
+        .unwrap()
+        .0;
+    let b = Solid::extrude_with(OperationId(2), profile, Frame3::xy(), 0., 1.)
+        .unwrap()
+        .0;
     // A different operation id changes every id.
     assert!(a
         .topology()

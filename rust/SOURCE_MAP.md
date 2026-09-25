@@ -448,3 +448,19 @@ solid. Reviewed differences, including `Closed2d`'s first/last-junction check,
 are recorded in [B-rep validation](BREP_VALIDATION.md). The bridge passes on
 macOS and Linux with the same reviewed differences; acceptance passed at
 `dff912e5`.
+
+## Value identity and operation history
+
+The source review for history covered `BRepPrimAPI_MakePrism`
+(`Generated`, `FirstShape`, `LastShape`, `IsDeleted`), `BRepSweep_Prism`,
+`BRepTools_History`, `BRepBuilderAPI_Transform::Modified` and DRAW's
+`BRepTest_SweepCommands.cxx` (`prism`) and `BRepTest_HistoryCommands.cxx`
+(`savehistory`, `generated`, `modified`, `isdeleted`) at
+`3d097a0328e71b826377d4814ab05ec3c3d23871`. Native observations of 98 cases
+preceded implementation. OCCT has no value ids: a shape's identity is its
+`TShape` pointer and location. Rust ids are digests of derivations, and every
+operation returns a complete, independently checked history. Rust reports
+OCCT's first/last shapes as `Generated` with start/end roles, and relates
+bodies by id instead of reporting the solid as generated from the face. See
+[identity and history](IDENTITY_AND_HISTORY.md).
+

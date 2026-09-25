@@ -1,0 +1,29 @@
+puts "Derived case, not an original OCCT test: prism history against the profile normal"
+puts "Written for rusty-occt; see rust/UPSTREAM_TESTS.md (derived cases)."
+
+# A clockwise triangle in z = 2, extruded 4 downward.
+polyline t 0 0 2 0 6 2 8 0 2 0 0 2
+mkplane f t
+prism p f 0 0 -4 Copy
+savehistory h
+
+checkshape p
+checknbshapes p -solid 1 -face 5 -edge 9 -vertex 6
+checkprops p -v 96 -s 144
+
+# Walls: 6 x 4, 10 x 4 and 8 x 4.
+explode t e
+generated a h t_1
+checkprops a -s 24
+generated b h t_2
+checkprops b -s 40
+generated c h t_3
+checkprops c -s 32
+
+explode t v
+generated e h t_2
+checknbshapes e -edge 1 -vertex 2
+checkprops e -l 4
+
+generated s h f
+checkprops s -v 96

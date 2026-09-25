@@ -1,3 +1,4 @@
+use rusty_occt::identity::OperationId;
 use rusty_occt::topology::{FaceId, FaceOrigin, Surface};
 use rusty_occt::*;
 use std::f64::consts::{FRAC_PI_2, PI};
@@ -149,7 +150,15 @@ fn aabb_overlap_is_symmetric_and_respects_both_gaps() {
 #[test]
 fn concave_profile_preserves_the_missing_corner() {
     let outer = polygon(&[[0., 0.], [4., 0.], [4., 1.], [1., 1.], [1., 4.], [0., 4.]]);
-    let solid = Solid::extrude(profile(outer, vec![]), Frame3::xy(), -2., 3.).unwrap();
+    let solid = Solid::extrude_with(
+        OperationId::UNSPECIFIED,
+        profile(outer, vec![]),
+        Frame3::xy(),
+        -2.,
+        3.,
+    )
+    .map(|(s, _)| s)
+    .unwrap();
     let mass = solid.mass_properties();
     close(mass.volume, 35.0);
     close(mass.surface_area, 94.0);
@@ -171,7 +180,9 @@ fn polygon_hole_is_real_topology_and_subtracts_mass() {
         polygon(&[[0., 0.], [10., 0.], [10., 8.], [0., 8.]]),
         vec![polygon(&[[2., 2.], [4., 2.], [4., 4.], [2., 4.]])],
     );
-    let solid = Solid::extrude(p, Frame3::xy(), 0., 5.).unwrap();
+    let solid = Solid::extrude_with(OperationId::UNSPECIFIED, p, Frame3::xy(), 0., 5.)
+        .map(|(s, _)| s)
+        .unwrap();
     let mass = solid.mass_properties();
     close(mass.volume, 380.0);
     close(mass.surface_area, 372.0);
@@ -238,7 +249,15 @@ fn tube_has_inward_hole_wall_and_annular_caps() {
     let t = Tolerance::default();
     let outer = Boundary::circle(Point2::default(), 5., t).unwrap();
     let hole = Boundary::circle(Point2::default(), 3., t).unwrap();
-    let solid = Solid::extrude(profile(outer, vec![hole]), Frame3::xy(), 0., 10.).unwrap();
+    let solid = Solid::extrude_with(
+        OperationId::UNSPECIFIED,
+        profile(outer, vec![hole]),
+        Frame3::xy(),
+        0.,
+        10.,
+    )
+    .map(|(s, _)| s)
+    .unwrap();
     let mass = solid.mass_properties();
     close(mass.volume, 160. * PI);
     close(mass.surface_area, 192. * PI);
@@ -270,7 +289,15 @@ fn plate_with_mixed_holes_has_correct_genus_and_centroid() {
         Boundary::circle(Point2::new(10., 10.), 2., t).unwrap(),
         polygon(&[[28., 8.], [32., 8.], [32., 12.], [28., 12.]]),
     ];
-    let solid = Solid::extrude(profile(outer, holes), Frame3::xy(), -2., 2.).unwrap();
+    let solid = Solid::extrude_with(
+        OperationId::UNSPECIFIED,
+        profile(outer, holes),
+        Frame3::xy(),
+        -2.,
+        2.,
+    )
+    .map(|(s, _)| s)
+    .unwrap();
     let area = 800. - 4. * PI - 16.;
     close(solid.mass_properties().volume, 4. * area);
     point(
@@ -286,8 +313,24 @@ fn winding_and_duplicate_closure_do_not_change_the_solid() {
     let a = polygon(&[[0., 0.], [4., 0.], [4., 3.], [0., 3.]]);
     let b = polygon(&[[0., 0.], [0., 3.], [4., 3.], [4., 0.], [0., 0.]]);
     assert_eq!(a, b);
-    let a = Solid::extrude(profile(a, vec![]), Frame3::xy(), -3., 7.).unwrap();
-    let b = Solid::extrude(profile(b, vec![]), Frame3::xy(), 7., -3.).unwrap();
+    let a = Solid::extrude_with(
+        OperationId::UNSPECIFIED,
+        profile(a, vec![]),
+        Frame3::xy(),
+        -3.,
+        7.,
+    )
+    .map(|(s, _)| s)
+    .unwrap();
+    let b = Solid::extrude_with(
+        OperationId::UNSPECIFIED,
+        profile(b, vec![]),
+        Frame3::xy(),
+        7.,
+        -3.,
+    )
+    .map(|(s, _)| s)
+    .unwrap();
     assert_eq!(a.mass_properties(), b.mass_properties());
     assert_eq!(a.bounds(), b.bounds());
     assert_eq!(
@@ -309,7 +352,10 @@ fn arbitrary_plane_and_rigid_motion_preserve_geometry() {
     let transform = rotation
         .then(RigidTransform::translation(Vec3::new(10., 20., 30.)).unwrap())
         .unwrap();
-    let moved = solid.transformed(transform).unwrap();
+    let moved = solid
+        .transform_with(OperationId::UNSPECIFIED, transform)
+        .map(|(s, _)| s)
+        .unwrap();
     point(moved.mass_properties().centroid, Point3::new(13., 22., 29.));
     point(moved.bounds().min, Point3::new(10., 20., 28.));
     point(moved.bounds().max, Point3::new(16., 24., 30.));
@@ -327,7 +373,10 @@ fn arbitrary_plane_and_rigid_motion_preserve_geometry() {
             .unwrap(),
         Location::Inside
     );
-    let restored = moved.transformed(transform.inverse().unwrap()).unwrap();
+    let restored = moved
+        .transform_with(OperationId::UNSPECIFIED, transform.inverse().unwrap())
+        .map(|(s, _)| s)
+        .unwrap();
     point(
         restored.mass_properties().centroid,
         solid.mass_properties().centroid,
@@ -378,7 +427,15 @@ fn large_translation_does_not_corrupt_local_moments() {
         [1e6 + 2., 1e6 + 4.],
         [1e6, 1e6 + 4.],
     ]);
-    let solid = Solid::extrude(profile(p, vec![]), Frame3::xy(), 0., 6.).unwrap();
+    let solid = Solid::extrude_with(
+        OperationId::UNSPECIFIED,
+        profile(p, vec![]),
+        Frame3::xy(),
+        0.,
+        6.,
+    )
+    .map(|(s, _)| s)
+    .unwrap();
     let reference = Solid::cuboid(2., 4., 6., Tolerance::default()).unwrap();
     close(solid.mass_properties().volume, 48.);
     for i in 0..3 {
@@ -423,7 +480,15 @@ fn rejects_crossing_touching_and_backtracking_polygons() {
 #[test]
 fn accepts_collinear_forward_edges_without_losing_provenance() {
     let p = polygon(&[[0., 0.], [2., 0.], [4., 0.], [4., 3.], [0., 3.]]);
-    let solid = Solid::extrude(profile(p, vec![]), Frame3::xy(), 0., 5.).unwrap();
+    let solid = Solid::extrude_with(
+        OperationId::UNSPECIFIED,
+        profile(p, vec![]),
+        Frame3::xy(),
+        0.,
+        5.,
+    )
+    .map(|(s, _)| s)
+    .unwrap();
     close(solid.mass_properties().volume, 60.);
     assert_eq!(solid.topology().faces().len(), 7);
 }
@@ -459,7 +524,8 @@ fn polygon_hole_in_circle_and_circle_hole_in_concave_polygon() {
         vec![polygon(&[[-1., -1.], [1., -1.], [1., 1.], [-1., 1.]])],
     );
     close(
-        Solid::extrude(p, Frame3::xy(), 0., 1.)
+        Solid::extrude_with(OperationId::UNSPECIFIED, p, Frame3::xy(), 0., 1.)
+            .map(|(s, _)| s)
             .unwrap()
             .mass_properties()
             .volume,
@@ -560,7 +626,15 @@ fn every_wall_normal_points_out_of_material_including_holes() {
         t,
     )
     .unwrap();
-    let solid = Solid::extrude(profile(outer, holes), frame, 3., -2.).unwrap();
+    let solid = Solid::extrude_with(
+        OperationId::UNSPECIFIED,
+        profile(outer, holes),
+        frame,
+        3.,
+        -2.,
+    )
+    .map(|(s, _)| s)
+    .unwrap();
     for (index, face) in solid.topology().faces().iter().enumerate().skip(2) {
         let origin = solid.topology().face_origin(FaceId::new(index));
         let corners = face.loops[0]

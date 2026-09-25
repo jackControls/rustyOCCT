@@ -1,4 +1,5 @@
 //! Test-only text protocol shared with rust/tools/occt_oracle.cpp.
+use rusty_occt::identity::OperationId;
 use rusty_occt::{Boundary, Frame3, Location, Point2, Point3, Profile, Solid, Tolerance, Vec3};
 use std::fmt;
 use std::str::{FromStr, SplitWhitespace};
@@ -72,7 +73,14 @@ pub fn evaluate(text: &str) -> Result<Vec<Observation>, Box<dyn std::error::Erro
         for _ in 1..boundary_count {
             holes.push(input.boundary(tolerance)?);
         }
-        let solid = Solid::extrude(Profile::new(outer, holes, tolerance)?, frame, start, end)?;
+        let solid = Solid::extrude_with(
+            OperationId::UNSPECIFIED,
+            Profile::new(outer, holes, tolerance)?,
+            frame,
+            start,
+            end,
+        )
+        .map(|(s, _)| s)?;
         let mass = solid.mass_properties();
         let bounds = solid.bounds();
         let mut values = vec![mass.volume, mass.surface_area];

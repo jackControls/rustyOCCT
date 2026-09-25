@@ -61,6 +61,26 @@
       "expected_rust": "missing_fixture",
       "expected_occt": "missing_fixture",
       "purpose": "External BRep fixture; availability sentinel, not a pass."
+    },
+    {
+      "path": "rust/fixtures/draw-derived/prism_history_rectangle",
+      "derived": true,
+      "context": "tests/bugs/modalg_7",
+      "expected_rust": "pass",
+      "expected_occt": "pass",
+      "purpose": "Derived: prism history (generated, modified, isdeleted) of a rectangle's edges, vertices and face."
+    },
+    {
+      "path": "rust/fixtures/draw-derived/prism_history_reversed_triangle",
+      "derived": true,
+      "context": "tests/bugs/modalg_7",
+      "expected_rust": "pass",
+      "expected_occt": "pass",
+      "purpose": "Derived: prism history against a clockwise profile's normal."
     }
-  ]
+  ],
+  "derived_sources": {
+    "rust/fixtures/draw-derived/prism_history_rectangle": "4236efd3963fc8c0b885c65887df2f005387cf5e9b021d91b4565db7946a570e",
+    "rust/fixtures/draw-derived/prism_history_reversed_triangle": "0e3fca7528f376334bcafd1dc69587a8990fb7c4ebb528baa0057bc39e5bef6c"
+  }
 }

@@ -1,5 +1,6 @@
 //! Reproducible generated geometry tests. These are mathematical/metamorphic
 //! checks, independent of OCCT and any application document or DTO format.
+use rusty_occt::identity::OperationId;
 use rusty_occt::*;
 use std::f64::consts::TAU;
 
@@ -59,7 +60,10 @@ fn generated_prisms_preserve_geometric_invariants() {
         let frame = Frame3::new(origin, normal, Vec3::X, tolerance).unwrap();
         let low = -scale * (0.5 + rng.unit());
         let high = scale * (0.5 + rng.unit());
-        let solid = Solid::extrude(profile.clone(), frame, low, high).unwrap();
+        let solid =
+            Solid::extrude_with(OperationId::UNSPECIFIED, profile.clone(), frame, low, high)
+                .map(|(s, _)| s)
+                .unwrap();
         let mass = solid.mass_properties();
         solid.topology().validate(tolerance).unwrap();
         assert_eq!(
@@ -73,12 +77,15 @@ fn generated_prisms_preserve_geometric_invariants() {
         // A planar cut conserves volume and first moments; exactly two copies
         // of the cut's material area are introduced into total surface area.
         let cut = low + (high - low) * (0.2 + 0.6 * rng.unit());
-        let first = Solid::extrude(profile.clone(), frame, low, cut)
+        let first = Solid::extrude_with(OperationId::UNSPECIFIED, profile.clone(), frame, low, cut)
+            .map(|(s, _)| s)
             .unwrap()
             .mass_properties();
-        let second = Solid::extrude(profile.clone(), frame, cut, high)
-            .unwrap()
-            .mass_properties();
+        let second =
+            Solid::extrude_with(OperationId::UNSPECIFIED, profile.clone(), frame, cut, high)
+                .map(|(s, _)| s)
+                .unwrap()
+                .mass_properties();
         close(
             first.volume + second.volume,
             mass.volume,
@@ -109,7 +116,8 @@ fn generated_prisms_preserve_geometric_invariants() {
         let mut reordered = vertices;
         reordered.rotate_left(1 + case % (count - 1));
         reordered.reverse();
-        let alternate = Solid::extrude(
+        let alternate = Solid::extrude_with(
+            OperationId::UNSPECIFIED,
             Profile::new(
                 Boundary::polygon(reordered, tolerance).unwrap(),
                 holes,
@@ -120,6 +128,7 @@ fn generated_prisms_preserve_geometric_invariants() {
             high,
             low,
         )
+        .map(|(s, _)| s)
         .unwrap();
         let alternate_mass = alternate.mass_properties();
         close(
@@ -149,7 +158,10 @@ fn generated_prisms_preserve_geometric_invariants() {
                     .unwrap(),
             )
             .unwrap();
-        let moved = solid.transformed(transform).unwrap();
+        let moved = solid
+            .transform_with(OperationId::UNSPECIFIED, transform)
+            .map(|(s, _)| s)
+            .unwrap();
         let moved_mass = moved.mass_properties();
         close(
             moved_mass.volume,

@@ -115,10 +115,28 @@ class BridgeTests(unittest.TestCase):
         result = run_case("rust", [source], directory, worker=Path("/usr/bin/false"))
         self.assertEqual(result["status"], "failed")
 
+    def test_history_assertions_fail_when_wrong(self):
+        prism = "polyline w 0 0 0 10 0 0 10 5 0 0 5 0 0 0 0\nmkplane f w\nprism p f 0 0 3 Copy\nsavehistory h\ncheckshape p\nexplode w e\n"
+        self.expect(prism + "generated g h w_1\ncheckprops g -s 30", "pass")
+        for wrong in ["generated g h w_1\ncheckprops g -s 15",
+                      "generated g h w_1\nchecknbshapes g -face 2",
+                      'if {[isdeleted h w_1] != "Deleted."} {puts "Error: expected deleted"}',
+                      "generated g h f\ncheckprops g -v 151 -deps 1e-9"]:
+            with self.subTest(wrong=wrong):
+                self.expect(prism + wrong, "failed")
+        # History of a wire, and a prism without Copy, are outside the subset.
+        self.expect(prism + "catch {generated g h w}", "unsupported")
+        self.expect(prism + "catch {prism q f 0 0 3}", "unsupported")
+
     def test_upstream_context_order(self):
         self.assertEqual([str(p.relative_to(ROOT)) for p in source_files("tests/bugs/modalg_7/bug29311_5")], [
             "tests/bugs/begin", "tests/bugs/modalg_7/begin",
             "tests/bugs/modalg_7/bug29311_5", "tests/bugs/end",
+        ])
+        derived = source_files("rust/fixtures/draw-derived/prism_history_rectangle", "tests/bugs/modalg_7")
+        self.assertEqual([str(p.relative_to(ROOT)) for p in derived], [
+            "tests/bugs/begin", "tests/bugs/modalg_7/begin",
+            "rust/fixtures/draw-derived/prism_history_rectangle", "tests/bugs/end",
         ])
 
 
