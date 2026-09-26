@@ -537,6 +537,39 @@ fn sub(t: &mut Tokens, word: &str) -> Result<Sub, BrepError> {
     })
 }
 
+/// The root reference. OCCT reads its location with `operator>>` and reads
+/// nothing after it, so a location glued to trailing bytes (`0c`, seen in
+/// upstream test data) counts by its leading digits, as there.
+fn root_sub(t: &mut Tokens, word: &str) -> Result<Sub, BrepError> {
+    let mut chars = word.chars();
+    let orient = match chars.next() {
+        Some('+') => Orient::Forward,
+        Some('-') => Orient::Reversed,
+        Some('i') => Orient::Internal,
+        Some('e') => Orient::External,
+        _ => return Err(t.err("a subshape orientation")),
+    };
+    let shape = chars
+        .as_str()
+        .parse::<usize>()
+        .map_err(|_| t.err("a subshape number"))?;
+    let location = t.next("a location index")?;
+    let digits: String = location
+        .chars()
+        .take_while(|c| c.is_ascii_digit())
+        .collect();
+    let location = digits
+        .parse::<usize>()
+        .ok()
+        .filter(|l| *l <= LIMIT)
+        .ok_or_else(|| t.err("a location index"))?;
+    Ok(Sub {
+        orient,
+        shape,
+        location,
+    })
+}
+
 fn section(t: &mut Tokens, name: &'static str) -> Result<usize, BrepError> {
     t.word(name)?;
     t.count(LIMIT)
@@ -808,7 +841,7 @@ pub fn read(text: &str) -> Result<Document, BrepError> {
         shapes.push(Shape { kind, data, subs });
     }
     let w = t.next("the root shape")?;
-    let root = sub(&mut t, w)?;
+    let root = root_sub(&mut t, w)?;
     if root.shape == 0 || root.shape > n {
         return Err(t.err("a root shape in the list"));
     }

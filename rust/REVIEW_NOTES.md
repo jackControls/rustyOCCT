@@ -257,7 +257,41 @@ converter records that as `Imported` provenance, never as an approximation.
 
 ## Status
 
-* S1 — pending
-* S2 — pending
+* S1 — implemented at `7e463cb2`; gate pending CI. R1: the CI input takes
+  8.0–8.2 s locally under AddressSanitizer (4.1 s without), above
+  20 s ÷ 2.6, so `surface_editing` has the 60-second budget; both inputs are
+  regressions with their times in `fuzz/regressions/README.md`, and
+  `FUZZING.md` states the triage rule. R5: `History::steps`, the
+  `steps_invalid` check and the two-level test in `history_contracts.rs`.
+  R8: the table in `VALIDATION.md`.
+* S2 — implemented; gate pending CI.
+  * R10 deviation: upstream's `locate_data_file` searches every
+    subdirectory level breadth-first (skipping dot-directories), not one
+    level. The bridge now matches upstream exactly, including the case's own
+    `data` folder and the case variables of `_run_test` (`casename`,
+    `imagedir` and the rest, whose absence failed two cases).
+  * R9 and R3 as decided. `restore` also reports a saved curve or surface
+    (another DRAW object type) as `unsupported`. The reader accepts a root
+    location glued to stray bytes and the worker decodes leniently, as OCCT
+    reads nothing after the root: two upstream files need it.
+  * Survey of the 192 restore-only cases with the dataset: native evaluates
+    33, Rust 2, both registered (`bug27264_1` pass, `buc60769`
+    viewer-skipped); `buc60684` is native viewer-skipped, Rust unsupported
+    (`prism` without `Copy`). The ledger has its first mapped-and-verified
+    assertion (`bug27264_1`'s `checknbshapes`). 103 cases need private
+    data.
+  * For S3's priority, what the 31 natively evaluated cases Rust cannot yet
+    run need (a case may need several): free faces 22, B-spline curves on
+    surfaces 18, B-spline curves 16, B-spline surfaces 13, rectangular
+    trimmed surfaces 9, Bézier surfaces 3, tori 3, cones 2, spheres 2,
+    extrusion surfaces 2; two need Booleans. Free faces and B-spline
+    surfaces dominate the data-dependent corpus. Cones, spheres and tori
+    remain first under R6 because `pcone`, `psphere` and `ptorus` dominate
+    the self-contained cases; the data argues for free faces (sheet bodies)
+    early in S4.
+  * U1 is not fully resolved: CI does not fetch the dataset until the user
+    confirms the licence basis recorded under U1. Locally the fetch script
+    verifies the pinned archive; data cases report `not_fetched` on CI,
+    which the contract accepts.
 * S3 — pending
 * S4 — pending

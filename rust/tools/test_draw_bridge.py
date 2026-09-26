@@ -5,7 +5,9 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from run_upstream_tests import ROOT, build_worker, run_case, source_files
+import shutil
+
+from run_upstream_tests import ROOT, build_worker, classify_missing, run_case, source_files
 
 
 BOX_CHECKS = """
@@ -146,6 +148,37 @@ class BridgeTests(unittest.TestCase):
         # A kind that disagrees with the native record, or no record at all.
         self.expect(box + "explode b f\ncheckprops b_1 -s 200\n", "unsupported", extra_env=env)
         self.expect(box + "checkprops b_1 -s 200\n", "unsupported")
+
+    def test_viewer_commands_are_recorded_not_run(self):
+        script = ("box b 1 2 3\ncheckshape b\nvinit\nvdisplay b\nsmallview\n"
+                  "checkview -display b -2d -path ${imagedir}/${test_image}.png\n")
+        result = self.expect(script, "viewer_skipped")
+        self.assertIn("smallview", result["viewer"])
+        # A viewer command does not rescue a failed assertion.
+        self.expect("box b 1 2 3\ncheckprops b -v 7\nvinit\n", "failed")
+
+    def test_data_lookup_searches_every_subdirectory(self):
+        data = self.root / "data-tree"
+        nested = data / "brep" / "deeper"
+        nested.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(ROOT / "data/occ/wedge_ok.brep", nested / "wedge_ok.brep")
+        script = ("restore [locate_data_file wedge_ok.brep] w\ncheckshape w\n"
+                  "checknbshapes w -vertex 8 -edge 12 -face 6 -shell 1 -solid 1\n")
+        self.expect(script, "pass", data_dirs=[data])
+        # Anything else a restored body cannot answer yet is a capability gap.
+        self.expect(script + "vprops w\n", "unsupported", data_dirs=[data])
+
+    def test_restore_reports_constructs_the_kernel_cannot_represent(self):
+        result = self.expect("restore [locate_data_file Ball.brep] b\ncheckshape b\n", "unsupported",
+                             data_dirs=[ROOT / "data"])
+        self.assertIn("SphericalSurface", result["unsupported"])
+
+    def test_missing_data_is_not_fetched_or_private(self):
+        missing = {"status": "missing_fixture", "missing": "secret.brep"}
+        self.assertEqual(classify_missing(dict(missing), None)["status"], "not_fetched")
+        self.assertEqual(classify_missing(dict(missing), {"public.brep"})["status"], "private_data")
+        self.assertEqual(classify_missing(dict(missing), {"secret.brep"})["status"], "missing_fixture")
+        self.assertEqual(classify_missing({"status": "pass"}, None)["status"], "pass")
 
     def test_upstream_context_order(self):
         self.assertEqual([str(p.relative_to(ROOT)) for p in source_files("tests/bugs/modalg_7/bug29311_5")], [

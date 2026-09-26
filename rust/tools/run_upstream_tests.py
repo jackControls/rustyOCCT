@@ -18,6 +18,11 @@ import time
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
+# The public OCCT test dataset, fetched only by fetch_occt_test_data.py and
+# never by this runner (REVIEW_NOTES.md R2).
+DATASET = ROOT / "target/occt-test-data/opencascade-dataset-7.9.0"
+# Statuses that evaluated every geometric assertion on a backend.
+EVALUATED = {"pass", "viewer_skipped"}
 MANIFEST = ROOT / "rust/fixtures/upstream-draw.json"
 HOST = ROOT / "rust/tools/draw_bridge.tcl"
 
@@ -73,6 +78,7 @@ def run_case(backend, sources, directory, worker=None, draw_exe=None,
         "RUSTY_DRAW_SOURCE_COUNT": str(len(sources)),
         "RUSTY_DRAW_DATA_COUNT": str(len(data_dirs)),
         "RUSTY_DRAW_GROUP": group, "RUSTY_DRAW_GRID": grid, "RUSTY_DRAW_CASE": name,
+        "RUSTY_DRAW_CASE_DIR": str(case_path.resolve().parent),
     })
     env.update(extra_env or {})
     env.update({f"RUSTY_DRAW_SOURCE_{i}": str(p.resolve()) for i, p in enumerate(sources)})
@@ -112,12 +118,12 @@ def run_case(backend, sources, directory, worker=None, draw_exe=None,
                 if key in fields:
                     raise ValueError(f"duplicate result field {key}")
                 fields[key] = bytes.fromhex(encoded).decode("utf-8")
-            required = {"status", "backend", "version", "queries", "unsupported", "missing", "error", "commands", "adjudication"}
+            required = {"status", "backend", "version", "queries", "unsupported", "missing", "viewer", "error", "commands", "adjudication"}
             if fields.keys() != required or fields["backend"] != backend:
                 raise ValueError("incomplete or inconsistent result record")
-            if fields["status"] not in {"pass", "failed", "unsupported", "missing_fixture", "unverified", "known_failure", "unexpected_improvement", "skipped"}:
+            if fields["status"] not in {"pass", "viewer_skipped", "failed", "unsupported", "missing_fixture", "unverified", "known_failure", "unexpected_improvement", "skipped"}:
                 raise ValueError("unknown result status")
-            if fields["status"] == "pass" and int(fields["queries"]) <= 0:
+            if fields["status"] in EVALUATED and int(fields["queries"]) <= 0:
                 raise ValueError("pass without geometric observations")
             result.update(fields)
         except (ValueError, UnicodeError) as error:
@@ -148,7 +154,7 @@ MAPPED = {
 UNMAPPED = {
     "checkfreebounds": "free boundaries count seams and degenerate edges",
     "checksection": "section wire and vertex counts follow OCCT's splitting",
-    "checkmaxtol": "per-entity tolerances (enclosures are M5)",
+    "checkmaxtol": "OCCT tolerances are grown requests; enclosures are certified bounds",
     "checkfaults": "per-subshape fault statuses",
     "checkloc": "locations are OCCT structure",
     "checkoverlapedges": "per-edge overlap follows OCCT's edges",
@@ -202,7 +208,7 @@ def classify(kind, line, picks):
 def ledger(manifest):
     import re
     verified = {c["path"] for c in manifest["cases"]
-                if not c.get("derived") and c["expected_rust"] == "pass" and c["expected_occt"] == "pass"}
+                if not c.get("derived") and c["expected_rust"] in EVALUATED and c["expected_occt"] in EVALUATED}
     statuses, kinds, lost = Counter(), {}, Counter()
     survey = Counter()
     rows = []
@@ -235,6 +241,28 @@ def ledger(manifest):
         "by_assertion": {k: dict(sorted(v.items())) for k, v in sorted(kinds.items()) if sum(v.values()) >= 20},
     }
     return summary, rows
+
+
+def dataset_inventory():
+    """File names in the fetched dataset, or None when it is not fetched."""
+    if not DATASET.is_dir():
+        return None
+    return {p.name for p in DATASET.rglob("*") if p.is_file()}
+
+
+def classify_missing(result, inventory):
+    """A missing data file is `not_fetched` without the dataset, and
+    `private_data` when no public file has its name (Open Cascade keeps part
+    of its test data confidential). Both are non-passes. A public file that
+    was not found stays `missing_fixture`: a configuration error."""
+    if result.get("status") != "missing_fixture":
+        return result
+    names = [n for n in result.get("missing", "").split("\n") if n]
+    if inventory is None:
+        result["status"] = "not_fetched"
+    elif names and all(n not in inventory for n in names):
+        result["status"] = "private_data"
+    return result
 
 
 def junit(results, output):
@@ -307,6 +335,7 @@ def main():
     if "rust" in backends and not shutil.which(args.tclsh):
         parser.error("Tcl interpreter unavailable; supply --tclsh")
     worker = build_worker() if "rust" in backends else None
+    inventory = dataset_inventory()
     args.output.mkdir(parents=True, exist_ok=True)
     results = []
     for case in cases:
@@ -323,7 +352,7 @@ def main():
                 continue
             if str(source.relative_to(ROOT)) not in manifest["sources"]:
                 parser.error(f"unrecorded upstream context: {source}")
-        data_dirs = [ROOT / "data"] + args.data_dir
+        data_dirs = [ROOT / "data"] + ([DATASET] if inventory is not None else []) + args.data_dir
         for backend in backends:
             extra_env, note = {}, None
             if backend == "rust" and case.get("selector"):
@@ -350,18 +379,26 @@ def main():
             else:
                 result = run_case(backend, sources, args.output / backend / case["path"],
                                   worker, args.draw_exe, args.tclsh, args.timeout, data_dirs, names, extra_env)
+            result = classify_missing(result, inventory)
             result.update(case=case["path"], expected=case[f"expected_{backend}"], derived=derived)
-            # A Rust-only run cannot select natively; it neither passes nor fails.
-            result["contract_ok"] = result["status"] in {result["expected"], "skipped" if note else None}
+            # A Rust-only run cannot select natively, and without the dataset a
+            # data case cannot run; neither passes nor fails. Expectations are
+            # stated with the dataset present.
+            waived = {"skipped" if note else None,
+                      "not_fetched" if case.get("data") and inventory is None else None}
+            result["contract_ok"] = result["status"] in {result["expected"]} | waived
             results.append(result)
             marker = "" if result["contract_ok"] else " [UNEXPECTED]"
             print(f"{backend:4} {result['status']:15} {case['path']}{marker}", flush=True)
     revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     dirty = subprocess.check_output(["git", "status", "--porcelain", "--", "rust", "Cargo.toml", "Cargo.lock"], cwd=ROOT, text=True)
     paired_all = [case for case in cases if len(backends) == 2 and all(
-        r["status"] == "pass" for r in results if r["case"] == case["path"])]
-    # Derived cases are never counted as original upstream passes.
-    paired = [c["path"] for c in paired_all if not c.get("derived")]
+        r["status"] in EVALUATED for r in results if r["case"] == case["path"])]
+    # Derived cases are never counted as original upstream passes, and a
+    # viewer-skipped case is evaluated but not passed.
+    paired = [c["path"] for c in paired_all if not c.get("derived") and all(
+        r["status"] == "pass" for r in results if r["case"] == c["path"])]
+    evaluated = [c["path"] for c in paired_all if not c.get("derived")]
     paired_derived = [c["path"] for c in paired_all if c.get("derived")]
     report = {
         "upstream_revision": manifest["upstream_revision"], "rust_revision": revision,
@@ -370,6 +407,9 @@ def main():
         "worker_sha256": digest(worker) if worker else None,
         "counts": {b: dict(Counter(r["status"] for r in results if r["backend"] == b)) for b in backends},
         "cases_passing_original_assertions_on_both_backends": paired,
+        # Every geometric assertion evaluated on both (pass or viewer_skipped).
+        "cases_evaluated_on_both_backends": evaluated,
+        "dataset": str(DATASET.relative_to(ROOT)) if inventory is not None else "not fetched",
         "derived_cases_passing_on_both_backends": paired_derived,
         # Mappings a derived case confirms against native DRAW; original
         # assertions count as mapped-and-verified only in their own cases.

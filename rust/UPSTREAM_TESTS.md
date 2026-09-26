@@ -32,6 +32,9 @@ OCCT's installed DRAW executable and modeling plugins. Ordinary Rust tests still
 run on Windows without Tcl or OCCT.
 
 ```sh
+# Fetch and verify OCCT's public test dataset once (never done by the bridge):
+python3 rust/tools/fetch_occt_test_data.py
+
 # Rust only; explicit expected unsupported/missing cases remain non-passes:
 python3 rust/tools/run_upstream_tests.py
 
@@ -48,8 +51,44 @@ RUSTY_TEST_DRAW_EXE=/path/to/DRAWEXE python3 -m unittest discover -s rust/tools 
 The runner discovers `DRAWEXE` or Ubuntu's `occt-draw` on PATH; the macOS
 fallback is `/opt/homebrew/opt/opencascade/bin/DRAWEXE`. Use
 `--case tests/bugs/modalg_7/bug29311_5` to select a registered test,
-`--data-dir /path/to/test-data` for existing fixtures, and `--timeout 30` to set
+`--data-dir /path/to/test-data` for further fixtures, and `--timeout 30` to set
 the per-case time limit. No data files are downloaded automatically.
+
+`locate_data_file` behaves as upstream's (`TestCommands.tcl`): the case's own
+`data` folder first, then `data/` of this repository, the fetched dataset
+(`target/occt-test-data/opencascade-dataset-7.9.0`, when present) and each
+`--data-dir`, each with all of its subdirectories breadth-first, skipping
+dot-directories. A file that cannot be found is `not_fetched` when the
+dataset is absent, `private_data` when no public file has its name (Open
+Cascade keeps part of its test data confidential), and `missing_fixture`
+only when a public file was not found. The case variables upstream's
+`_run_test` sets (`casename`, `groupname`, `gridname`, `dirname`,
+`imagedir`, `test_image`) are set the same way.
+
+**The dataset.** `fetch_occt_test_data.py` downloads
+`opencascade-dataset-7.9.0.tar.xz` from the `V7_9_0_beta2` release of
+Open-Cascade-SAS/OCCT (98,739,184 bytes, SHA-256
+`a92ed91c3271c299287c1c404bb9454d463251094bfc848acc44aee60e6a026c`), the
+file upstream's own CI downloads. It extracts the archive into the ignored
+`target/occt-test-data` (3,388 files, 355 MB) and writes an inventory. It
+verifies an existing archive instead of downloading it again. No file from it
+is committed or redistributed: the archive has no licence file of its own,
+and its basis for use is being an asset of an LGPL-2.1-with-exception release
+published for upstream's tests. Manifest cases that need it are marked
+`"data": true`. Their expectations are stated with the dataset present, and
+without it they report `not_fetched`, which the contract accepts. CI does not
+fetch it yet (see `REVIEW_NOTES.md` U1).
+
+**Viewer commands** are recorded, not run, on both backends. The list is
+`fixtures/draw-viewer-commands.txt`, taken from native DRAW's own command
+groups "AIS Viewer" (without `text2brep`, which builds a shape), "DRAW Graphic
+Commands" and "geometric display commands", plus `disp`, `donly`, `erase`,
+`clear`, `display`, `checkview` and `checkcolor`. A case that would pass and
+recorded any of them reports `viewer_skipped`: every geometric assertion was
+evaluated, the image commands were not. It is not a pass. The ledger counts
+its assertions as it counts a pass's, and no file is edited. `pload` of
+`MODELING`, `VISUALIZATION` or `TOPTEST` is a no-op; any other module is run
+natively and is a capability gap on the Rust adapter.
 
 Reports are written to `target/upstream-tests/report.json`, `junit.xml`, and
 per-case `output.log` files. They record native version/build details, source
@@ -70,15 +109,18 @@ group, and stale success records are removed before each run.
 | `bugs/modalg_6/bug28189_3` | Unsupported | Pass | Boolean union of wire compounds |
 | `bugs/modalg_7/bug29333_1` | Unsupported | Pass | Face fuse, split by an edge, rebuilt with `bbuild` |
 | `bugs/modalg_7/bug29333_2` | Unsupported | Pass | Face split by edges, rebuilt and queried with `modified` |
-| `bugs/modalg_1/buc60684` | Missing fixture | Missing fixture | External `buc60684a.brep` data |
+| `bugs/modalg_1/buc60684` | Unsupported | Viewer skipped | Restores a face and runs `prism` without `Copy`; needs the dataset |
+| `bugs/modalg_6/bug27264_1` | Pass | Pass | Restores a box: `checknbshapes`, `checkprops -s`, `checkshape`; needs the dataset |
+| `bugs/moddata_1/buc60769` | Viewer skipped | Viewer skipped | Restores a solid: `checkshape`; needs the dataset |
 | Derived `prism_history_rectangle` | Pass | Pass | Prism history: `generated`, `modified`, `isdeleted` for edges, vertices and the face |
 | Derived `prism_history_reversed_triangle` | Pass | Pass | Prism history against a clockwise profile's normal |
 | Derived `pcylinder_counts` | Pass | Pass | Seamless cylinder through the count synthesizer: `checkshape`, `checknbshapes`, volume, area and per-use length |
 | Derived `explode_selector` | Pass | Pass | Native selector: a box's faces and edges and a cylinder's faces and rings picked by OCCT index, checked by area, length and centre of gravity; the seam pick is lost |
 
-There are **three original geometry tests passing on both backends**, not nine.
+There are **four original geometry tests passing on both backends** and one
+more evaluated on both with its image commands recorded (`buc60769`).
 The four derived cases are counted separately (see below).
-The 19 bridge self-tests are separate infrastructure checks; they do not count
+The 23 bridge self-tests are separate infrastructure checks; they do not count
 as more upstream coverage. The existing 66-solid / 2,292-classification native
 oracle corpus supplies much broader prism geometry checks independently.
 
@@ -232,7 +274,8 @@ custom `puts "Error..."` report.
   case is registered with its original assertions passing on both backends.
 * `lost`: every other structure-dependent assertion, with its reason: a
   mapping exists but native DRAW has not confirmed it on that case, or none
-  exists (`checkfreebounds`, `checksection`, `checkmaxtol` until M5,
+  exists (`checkfreebounds`, `checksection`, `checkmaxtol` (OCCT's grown
+  tolerances are not the kernel's certified enclosures),
   `checkfaults`, `checkloc`, `checkoverlapedges`, `checkcurveonsurf`,
   `check_fsd`). An assertion that names an exploded sub-shape depends on the
   selector whatever its procedure.
@@ -246,16 +289,16 @@ search patterns; the ledger's are the definition from now on.
 | Status | Assertions |
 | --- | ---: |
 | model-independent | 22,920 |
-| mapped-and-verified | 0 |
-| lost | 12,846 |
+| mapped-and-verified | 1 |
+| lost | 12,845 |
 
 | Lost because | Kind | Assertions |
 | --- | --- | ---: |
-| count synthesizer | mapping unverified | 5,400 |
+| count synthesizer | mapping unverified | 5,399 |
 | per-use length synthesis | mapping unverified | 1,975 |
 | native selector | mapping unverified | 1,578 |
 | section wire and vertex counts follow OCCT's splitting | no mapping | 1,348 |
-| per-entity tolerances (enclosures are M5) | no mapping | 978 |
+| OCCT tolerances are grown requests; enclosures are certified bounds | no mapping | 978 |
 | free boundaries count seams and degenerate edges | no mapping | 765 |
 | per-subshape fault statuses | no mapping | 700 |
 | OCCT persistence formats | no mapping | 75 |
@@ -263,19 +306,43 @@ search patterns; the ledger's are the definition from now on.
 | locations are OCCT structure | no mapping | 5 |
 | per-edge deviations follow OCCT's edges | no mapping | 5 |
 
-No original assertion is mapped-and-verified yet. The three original cases
-that pass on both backends only make model-independent assertions, and no
-other original case with a structure-dependent assertion runs on the adapter.
-Each mapping is confirmed natively on a derived case
-(`mappings_confirmed_natively` in the report: the count synthesizer and
-per-use length on `pcylinder_counts`, the selector on `explode_selector`), but
-derived cases never count toward the ledger.
+The one mapped-and-verified assertion is `bug27264_1`'s `checknbshapes`: a
+restored box through the count synthesizer, confirmed by native DRAW on the
+same case. The other original cases passing on both backends make only
+model-independent assertions. Each mapping is also confirmed natively on a
+derived case (`mappings_confirmed_natively` in the report: the count
+synthesizer and per-use length on `pcylinder_counts`, the selector on
+`explode_selector`), but derived cases never count toward the ledger.
 
-**Data-dependent cases.** The only public data in the repository is
-`data/occ` (37 files). Three original cases name its files: one heal-grid
-data file whose grid runs shape healing, and two viewer cases. Every other
-data-dependent case needs OCCT's external test-data set, which is not in the
-repository and is never downloaded. The adapter therefore has no `restore`
-yet: it arrives with the first original data-dependent case a configured
-`--data-dir` makes runnable on both backends, so that native DRAW confirms it
-in the same change.
+**Data-dependent cases.** `restore` goes through the T2 reader and converter
+(`occt_brep`). A file's compounds stay compounds and each solid becomes a
+body with its OCCT tolerances as `Imported` enclosures. `checkshape`,
+`nbshapes`, `sprops`, `lprops` and `explode` (native selector) work on it.
+`vprops` waits for general mass properties (S3). A construct the kernel cannot
+represent makes the restore `unsupported` by name, and so does a file of
+another DRAW type (a saved curve or surface). A solid the converter builds
+but the validator rejects is a failure.
+
+`survey_upstream_tests.py --restore-only` runs the 192 cases that only
+restore data and run checks on both backends, without registering them. With
+the dataset (2026-09-26):
+
+| Rust / native | Cases |
+| --- | ---: |
+| private data / private data | 98 |
+| unsupported / unsupported (the case needs other commands) | 31 |
+| unsupported / viewer skipped | 26 |
+| unsupported / known failure | 11 |
+| unsupported / unverified | 9 |
+| unsupported / private data | 5 |
+| unsupported / pass | 5 |
+| unsupported / failed | 4 |
+| known failure / known failure | 1 |
+| pass / pass | 1 |
+| viewer skipped / viewer skipped | 1 |
+
+Native DRAW evaluates 33 of them completely; Rust evaluates 2, both now
+registered. What the other 31 need, by construct (a case may need several):
+free faces 22, B-spline curves on surfaces 18, B-spline curves 16, B-spline
+surfaces 13, trimmed surfaces 9, Bézier surfaces 3, tori 3, cones 2,
+spheres 2, extrusion surfaces 2, and one each of the rest. Two need Booleans.

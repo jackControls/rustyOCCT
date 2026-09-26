@@ -22,6 +22,7 @@ basis), and for every solid reached from the root through compounds:
   must reproduce them for every solid it imports.
 """
 from pathlib import Path
+import re
 
 
 class Reader:
@@ -301,7 +302,9 @@ def read(text):
             subs.append((w[0], n-int(w[1:]), r.int()))
         shapes.append((kind, data, subs))
     w = r.word()
-    root = (w[0], n-int(w[1:]), r.int())
+    # operator>> takes the location's leading digits and nothing follows.
+    location = r.word()
+    root = (w[0], n-int(w[1:]), int(re.match(r'\d+', location).group()))
     return locations, tables, shapes, root
 
 

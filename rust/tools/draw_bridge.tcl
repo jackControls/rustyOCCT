@@ -43,12 +43,43 @@ proc cpuLimit {seconds} {
 }
 proc locateData {name} {
     # Data files must already be present. Never download or invent a fixture.
+    # As upstream's locate_data_file (TestCommands.tcl): the case's own data
+    # folder first, then each data directory and all of its subdirectories
+    # breadth-first, skipping those whose names start with a dot (sorted
+    # here, so the choice between equal names is deterministic).
+    set own [file join $::env(RUSTY_DRAW_CASE_DIR) data $name]
+    if {[file isfile $own]} {return [file normalize $own]}
     for {set i 0} {$i < $::env(RUSTY_DRAW_DATA_COUNT)} {incr i} {
-        set path [file join $::env(RUSTY_DRAW_DATA_$i) $name]
-        if {[file isfile $path]} {return $path}
+        set queue [list $::env(RUSTY_DRAW_DATA_$i)]
+        while {[llength $queue] > 0} {
+            set dir [lindex $queue 0]
+            set queue [lrange $queue 1 end]
+            if {[string match .* [file tail $dir]]} {continue}
+            set path [file join $dir $name]
+            if {[file isfile $path]} {return [file normalize $path]}
+            lappend queue {*}[lsort [glob -nocomplain -directory $dir -type d *]]
+        }
     }
     lappend ::missing $name
     error "fixture file could not be found: $name"
+}
+# Viewer commands (REVIEW_NOTES.md R9) are recorded and not run, on both
+# backends: the case then reports viewer_skipped instead of pass.
+set viewer {}
+proc viewerCommand {command args} {
+    lappend ::viewer [join [linsert $args 0 $command] " "]
+    return ""
+}
+proc ploadCommand {args} {
+    # Modelling is always loaded; the viewer's plugin is never needed, since
+    # viewer commands are recorded. Any other module is a capability.
+    foreach module $args {
+        if {$module ni {MODELING VISUALIZATION TOPTEST}} {
+            if {$::backend eq "rust"} {return [unsupportedCommand pload {*}$args]}
+            return [uplevel #0 [linsert $args 0 pload]]
+        }
+    }
+    return ""
 }
 # Native selector (run_upstream_tests.py): record every pick of a native
 # explode as kind, measure and centre of gravity, so the Rust adapter can
@@ -125,7 +156,7 @@ proc runCommand {command args} {
         if {$command in {box pcylinder polyline mkplane prism generated modified}} {
             interp eval testcase [list set [lindex $args 0] [lindex $args 0]]
         }
-        if {$command eq "copy"} {interp eval testcase [list set [lindex $args 1] [lindex $args 1]]}
+        if {$command in {copy restore}} {interp eval testcase [list set [lindex $args 1] [lindex $args 1]]}
         if {$command eq "explode"} {
             foreach name $result {interp eval testcase [list set $name $name]}
         }
@@ -161,9 +192,26 @@ if {[catch {
     foreach command {box copy ttranslate trotate isdraw whatis checkshape nbshapes vprops sprops lprops isbbinterf explode compound bcommon bfuse restore prism polyline mkplane savehistory generated modified isdeleted pcylinder plane mkface line mkedge mkvolume bclearobjects bcleartools baddobjects baddtools bfillds bsplit bbuild} {
         interp alias testcase $command {} runCommand $command
     }
+    # The variables upstream's _run_test (TestCommands.tcl) sets for a case.
+    # The image directory is this case's output directory; viewer commands
+    # are recorded, so nothing is written there.
+    foreach {variable value} [list casename $::env(RUSTY_DRAW_CASE) \
+            groupname $::env(RUSTY_DRAW_GROUP) gridname $::env(RUSTY_DRAW_GRID) \
+            dirname [file join $::env(RUSTY_DRAW_ROOT) tests] test_image $::env(RUSTY_DRAW_CASE) \
+            imagedir [file dirname $::env(RUSTY_DRAW_RESULT)]] {
+        interp eval testcase [list set $variable $value]
+    }
     # bugs/begin would load VISUALIZATION only when topology checks are absent.
     interp eval testcase {set Draw_Groups(TOPOLOGY\ Check\ commands) {checkshape}}
+    interp alias testcase pload {} ploadCommand
     evaluateFile [file join $::env(RUSTY_DRAW_ROOT) resources DrawResources CheckCommands.tcl]
+    # After the check library: checkview and checkcolor are its procedures.
+    set stream [open [file join $::env(RUSTY_DRAW_ROOT) rust fixtures draw-viewer-commands.txt] r]
+    foreach line [split [read $stream] "\n"] {
+        if {$line eq "" || [string index $line 0] eq "#"} {continue}
+        interp alias testcase $line {} viewerCommand $line
+    }
+    close $stream
     for {set i 0} {$i < $::env(RUSTY_DRAW_SOURCE_COUNT)} {incr i} {
         evaluateFile $::env(RUSTY_DRAW_SOURCE_$i)
     }
@@ -196,13 +244,15 @@ if {[regexp {^CASE [^:]+: ([A-Z]+)} $summary all adjudication]} {
 }
 if {$caught ne ""} {set status failed}
 if {$status eq "pass" && $queries == 0} {set status unverified}
+# Every geometric assertion ran; the image commands were only recorded.
+if {$status eq "pass" && [llength $viewer] > 0} {set status viewer_skipped}
 # A missing capability is latched outside the test, even if its Tcl catch hides it.
 if {[llength $unsupported] > 0} {set status unsupported}
 if {[llength $missing] > 0} {set status missing_fixture}
 
 set output [open $::env(RUSTY_DRAW_RESULT) w]
 foreach {key value} [list status $status backend $backend version $version queries $queries \
-    unsupported [join $unsupported "\n"] missing [join $missing "\n"] \
+    unsupported [join $unsupported "\n"] missing [join $missing "\n"] viewer [join $viewer "\n"] \
     error $caught commands [join $commands "\n"] adjudication $summary] {
     puts $output "$key [hex $value]"
 }

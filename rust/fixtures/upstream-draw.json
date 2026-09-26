@@ -9,6 +9,7 @@
     "tests/bugs/modalg_1/begin": "16a2a51b965d83e675a1c75b1aed0eb0de88905d9ffdc81d57466305d0cf9c8a",
     "tests/bugs/modalg_1/buc60684": "771b69a7c29a5140a0fd370d0f17a6a27551b67e8fa19233b48c56f90d4245cb",
     "tests/bugs/modalg_6/begin": "16a2a51b965d83e675a1c75b1aed0eb0de88905d9ffdc81d57466305d0cf9c8a",
+    "tests/bugs/modalg_6/bug27264_1": "ecc5bff3b3d2bea7a6c12b760198e7f669a147d0b94c285d5dc0727cf85eec5d",
     "tests/bugs/modalg_6/bug28189_2": "2b32b4257cfcfc6f7d111d71e7301f089147ebeac7350d145737698185c24418",
     "tests/bugs/modalg_6/bug28189_3": "7fa450c825e67af25b3ec2fe1370555c75ff572ab7303c90134cee595ae5e78b",
     "tests/bugs/modalg_7/begin": "5989051978daa1e26a264a25aa54a6701bb2130c96a593d65b4ccb0ec33374c1",
@@ -18,6 +19,8 @@
     "tests/bugs/modalg_7/bug29311_8": "100684b62c461fe3cd95674bcb5830b79ecca76e890f7294a4226159a30e923a",
     "tests/bugs/modalg_7/bug29333_1": "8c616310a2116ee7be3ec84b2da7b404d23fd794f2729d6c334f8af34ecde671",
     "tests/bugs/modalg_7/bug29333_2": "3d31f3df20765ebfa72990245b68c0591777f15ad81d84cfccb0545928fc5221",
+    "tests/bugs/moddata_1/begin": "5808c58aa3201cb4a5dd9513407fcf273dbc2b2763b2b395c11932a432f2a10b",
+    "tests/bugs/moddata_1/buc60769": "8ece4a587d65d59a1922f08f1898735e6cf01bf2bbc0675b3616dcd129e03400",
     "tests/bugs/parse.rules": "946ccdde3ded0ec98d7559cdfd530afd0e7e4c941524b02b389a739ab86e3db6",
     "tests/parse.rules": "ad8124e361f53b16f5ca3c3f7eec2e18eb855309f38c08ea0ab7ebb2a5971977"
   },
@@ -60,9 +63,10 @@
     },
     {
       "path": "tests/bugs/modalg_1/buc60684",
-      "expected_rust": "missing_fixture",
-      "expected_occt": "missing_fixture",
-      "purpose": "External BRep fixture; availability sentinel, not a pass."
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "Restores a face and extrudes it with prism (no Copy): native evaluates every geometric assertion (its image commands are recorded); a Rust capability sentinel.",
+      "data": true
     },
     {
       "path": "tests/bugs/modalg_7/bug29333_2",
@@ -115,6 +119,20 @@
       "verifies": [
         "native selector"
       ]
+    },
+    {
+      "path": "tests/bugs/modalg_6/bug27264_1",
+      "data": true,
+      "expected_rust": "pass",
+      "expected_occt": "pass",
+      "purpose": "Original restore-and-check case on the public dataset (REVIEW_NOTES.md S2)."
+    },
+    {
+      "path": "tests/bugs/moddata_1/buc60769",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "Original restore-and-check case on the public dataset (REVIEW_NOTES.md S2)."
     }
   ],
   "derived_sources": {
@@ -135,19 +153,20 @@
     },
     "assertions": 35766,
     "statuses": {
-      "lost": 12846,
+      "lost": 12845,
+      "mapped-and-verified": 1,
       "model-independent": 22920
     },
     "lost_by_reason": {
-      "mapping unverified: count synthesizer": 5400,
+      "mapping unverified: count synthesizer": 5399,
       "mapping unverified: native selector": 1578,
       "mapping unverified: per-use length synthesis": 1975,
       "no mapping: OCCT persistence formats": 75,
+      "no mapping: OCCT tolerances are grown requests; enclosures are certified bounds": 978,
       "no mapping: free boundaries count seams and degenerate edges": 765,
       "no mapping: locations are OCCT structure": 5,
       "no mapping: per-edge deviations follow OCCT's edges": 5,
       "no mapping: per-edge overlap follows OCCT's edges": 17,
-      "no mapping: per-entity tolerances (enclosures are M5)": 978,
       "no mapping: per-subshape fault statuses": 700,
       "no mapping: section wire and vertex counts follow OCCT's splitting": 1348
     },
@@ -177,7 +196,8 @@
         "lost": 981
       },
       "checknbshapes": {
-        "lost": 5415
+        "lost": 5414,
+        "mapped-and-verified": 1
       },
       "checkpoint": {
         "model-independent": 42

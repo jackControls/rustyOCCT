@@ -49,13 +49,37 @@ enum Shape {
         end: Point3,
     },
     Sub {
-        solid: Box<Solid>,
+        body: Box<BodyRef>,
         slot: Slot,
+    },
+    /// A solid restored from a `.brep` file by the T2 converter, with the
+    /// resolution its OCCT tolerances give it.
+    Body {
+        body: Box<BodyRef>,
+        resolution: Tolerance,
     },
     Compound(Vec<Shape>),
     /// A native pick with no entity in the cell model (a seam, its vertex),
     /// or none the selector could single out.
     Lost(String),
+}
+
+/// A body's topology and the tag its entities are counted under: a prism's
+/// body id, or a serial for a restored body (imported ids depend only on
+/// entity counts, so two restored bodies may share them).
+#[derive(Clone)]
+struct BodyRef {
+    tag: String,
+    topology: Topology,
+}
+
+impl BodyRef {
+    fn of(solid: &Solid) -> Self {
+        Self {
+            tag: solid.topology().body_id().to_string(),
+            topology: solid.topology().clone(),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -76,6 +100,8 @@ struct Session {
     /// `explode` calls so far; the native selector numbers them alike.
     explodes: usize,
     selector: Option<Vec<Pick>>,
+    /// Restored bodies so far, for their tags.
+    restored: u64,
 }
 
 fn unsupported(args: &[String]) -> Failure {
@@ -214,17 +240,11 @@ struct Parts {
 }
 
 fn collect(shape: &Shape, parts: &mut Parts) {
-    let key = |s: &Solid, slot: Slot| {
-        format!(
-            "{}:{}",
-            s.topology().body_id(),
-            s.topology().id_of(slot).unwrap()
-        )
-    };
+    let key = |b: &BodyRef, slot: Slot| format!("{}:{}", b.tag, b.topology.id_of(slot).unwrap());
     // Lengths sum per occurrence, as OCCT's lprops explores edges; counts are
     // of distinct shapes, as nbshapes reports them.
-    let add_edge = |s: &Solid, e: usize, parts: &mut Parts| {
-        let edge = &s.topology().edges()[e];
+    let add_edge = |s: &BodyRef, e: usize, parts: &mut Parts| {
+        let edge = &s.topology.edges()[e];
         parts.edges.insert(key(s, Slot::Edge(EdgeId::new(e))));
         parts.length += edge_length(&edge.curve);
         for v in [edge.start, edge.end].into_iter().flatten() {
@@ -237,8 +257,8 @@ fn collect(shape: &Shape, parts: &mut Parts) {
                 .insert(format!("{}:seam", key(s, Slot::Edge(EdgeId::new(e)))));
         }
     };
-    let add_face = |s: &Solid, f: usize, parts: &mut Parts| {
-        let t = s.topology();
+    let add_face = |s: &BodyRef, f: usize, parts: &mut Parts| {
+        let t = &s.topology;
         let face = key(s, Slot::Face(FaceId::new(f)));
         if !parts.faces.insert(face.clone()) {
             return;
@@ -289,8 +309,17 @@ fn collect(shape: &Shape, parts: &mut Parts) {
         Shape::Solid(s) => {
             parts.solids += 1;
             parts.volume += s.mass_properties().volume;
-            for f in 0..s.topology().faces().len() {
-                add_face(s, f, parts);
+            let b = BodyRef::of(s);
+            for f in 0..b.topology.faces().len() {
+                add_face(&b, f, parts);
+            }
+        }
+        Shape::Body { body, .. } => {
+            parts.solids += 1;
+            // General mass properties arrive with the cone (REVIEW_NOTES S3).
+            parts.volume = f64::NAN;
+            for f in 0..body.topology.faces().len() {
+                add_face(body, f, parts);
             }
         }
         Shape::Wire(p) => polyline(p, parts, false),
@@ -302,12 +331,12 @@ fn collect(shape: &Shape, parts: &mut Parts) {
             parts.edges.insert(format!("L{}", label.0));
             parts.length += start.distance(*end);
         }
-        Shape::Sub { solid, slot } => match slot {
+        Shape::Sub { body, slot } => match slot {
             Slot::Vertex(v) => {
-                parts.vertices.insert(key(solid, Slot::Vertex(*v)));
+                parts.vertices.insert(key(body, Slot::Vertex(*v)));
             }
-            Slot::Edge(e) => add_edge(solid, e.index(), parts),
-            Slot::Face(f) => add_face(solid, f.index(), parts),
+            Slot::Edge(e) => add_edge(body, e.index(), parts),
+            Slot::Face(f) => add_face(body, f.index(), parts),
             Slot::Region(_) => {}
         },
         Shape::Compound(items) => {
@@ -342,7 +371,7 @@ fn polygon_area(points: &[Point3]) -> f64 {
 
 fn type_name(shape: &Shape) -> &'static str {
     match shape {
-        Shape::Solid(_) => "SOLID",
+        Shape::Solid(_) | Shape::Body { .. } => "SOLID",
         Shape::Wire(_) => "WIRE",
         Shape::Face(_) => "FACE",
         Shape::ProfileVertex { .. } => "VERTEX",
@@ -401,7 +430,7 @@ fn history_output(saved: &Saved, parent: InputLabel, roles: &[Role]) -> Vec<Shap
                 if from == &[Parent::Label(parent)] && roles.contains(role) =>
             {
                 Some(Shape::Sub {
-                    solid: Box::new(saved.output.clone()),
+                    body: Box::new(BodyRef::of(&saved.output)),
                     slot: t.slot_of(*to).unwrap(),
                 })
             }
@@ -551,8 +580,8 @@ fn same_pick(pick: &Pick, mass: f64, centre: Point3) -> bool {
         && pick.centre.distance(centre) <= 1e-7 * scale
 }
 
-fn select(solid: &Solid, pick: &Pick) -> Shape {
-    let t = solid.topology();
+fn select(body: &BodyRef, pick: &Pick) -> Shape {
+    let t = &body.topology;
     let found: Vec<Slot> = match pick.kind.as_str() {
         "face" => (0..t.faces().len())
             .filter(|f| {
@@ -572,7 +601,7 @@ fn select(solid: &Solid, pick: &Pick) -> Shape {
     };
     match found.as_slice() {
         [slot] => Shape::Sub {
-            solid: Box::new(solid.clone()),
+            body: Box::new(body.clone()),
             slot: *slot,
         },
         [] => Shape::Lost(format!(
@@ -584,6 +613,86 @@ fn select(solid: &Solid, pick: &Pick) -> Shape {
             pick.kind
         )),
     }
+}
+
+// ------------------------------------------------------------------ restore
+
+/// A `.brep` file through the T2 reader and converter: its compounds kept
+/// as compounds, each solid a body. Constructs the kernel cannot represent
+/// make the whole restore unsupported, by name; a solid the converter
+/// builds but the validator rejects is an error.
+fn restore(path: &str, serial: &mut u64) -> Result<Shape> {
+    use rusty_occt::occt_brep::{import, read, read::Kind, Rejected};
+    // OCCT reads nothing after the root reference, and some upstream files
+    // carry stray bytes there; decode leniently.
+    let bytes = std::fs::read(path).map_err(|e| error(&format!("restore: {e}")))?;
+    let text = String::from_utf8_lossy(&bytes);
+    // DRAW's restore reads any saved Draw object; only shapes are converted.
+    let kind = text
+        .lines()
+        .map(str::trim)
+        .find(|l| !l.is_empty())
+        .unwrap_or("");
+    if kind != "DBRep_DrawableShape" && !kind.starts_with("CASCADE Topology") {
+        return Err(Failure::Unsupported(format!("restore: a {kind} object")));
+    }
+    let doc = read(&text).map_err(|e| error(&format!("restore: {e}")))?;
+    let imported = import(&doc);
+    if !imported.unsupported.is_empty() {
+        let names: Vec<String> = imported
+            .unsupported
+            .iter()
+            .map(|(k, n)| format!("{k}={n}"))
+            .collect();
+        return Err(Failure::Unsupported(format!(
+            "restore: unsupported constructs {}",
+            names.join(",")
+        )));
+    }
+    let mut solids = imported.solids.into_iter();
+    fn build(
+        doc: &rusty_occt::occt_brep::Document,
+        sub: rusty_occt::occt_brep::read::Sub,
+        solids: &mut std::vec::IntoIter<rusty_occt::occt_brep::ImportedSolid>,
+        serial: &mut u64,
+    ) -> Result<Shape> {
+        let shape = &doc.shapes[sub.shape];
+        match shape.kind {
+            Kind::Compound => Ok(Shape::Compound(
+                shape
+                    .subs
+                    .iter()
+                    .map(|s| build(doc, *s, solids, serial))
+                    .collect::<Result<_>>()?,
+            )),
+            Kind::Solid => {
+                let solid = solids.next().ok_or_else(|| error("restore: solid order"))?;
+                match solid.result {
+                    Ok(topology) => {
+                        *serial += 1;
+                        Ok(Shape::Body {
+                            body: Box::new(BodyRef {
+                                tag: format!("R{serial}"),
+                                topology,
+                            }),
+                            resolution: solid.tolerance,
+                        })
+                    }
+                    Err(Rejected::Invalid { issues, .. }) => Err(error(&format!(
+                        "restore: the validator rejects solid record {}: {}",
+                        solid.record,
+                        issues.first().map(|i| i.to_string()).unwrap_or_default()
+                    ))),
+                    Err(Rejected::Unsupported(names)) => Err(Failure::Unsupported(format!(
+                        "restore: unsupported constructs {}",
+                        names.join(",")
+                    ))),
+                }
+            }
+            _ => Err(Failure::Unsupported("restore: a free shape".into())),
+        }
+    }
+    build(&doc, doc.root, &mut solids, serial)
 }
 
 fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
@@ -703,14 +812,18 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
         "explode" if args.len() == 3 => {
             let polyline = match get(shapes, &args[1])? {
                 Shape::Wire(p) | Shape::Face(p) => p.clone(),
-                Shape::Solid(s) => {
+                shape @ (Shape::Solid(_) | Shape::Body { .. }) => {
+                    let s = match shape {
+                        Shape::Solid(s) => BodyRef::of(s),
+                        Shape::Body { body, .. } => (**body).clone(),
+                        _ => unreachable!("matched above"),
+                    };
                     // DBRep's explode reads the type from its first letter.
                     let kind = match args[2].bytes().next().map(|b| b.to_ascii_lowercase()) {
                         Some(b'f') => "face",
                         Some(b'e') => "edge",
                         _ => return Err(unsupported(args)),
                     };
-                    let s = s.clone();
                     if session.selector.is_none() {
                         session.selector = Some(load_selector()?);
                     }
@@ -822,8 +935,29 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             ))
         }
         "checkshape" if args.len() == 2 => {
-            solid(shapes, &args[1], args)?.topology().validate(t)?;
+            // Every solid of the shape validates against its own resolution.
+            fn bodies<'a>(shape: &'a Shape, out: &mut Vec<(&'a Topology, Tolerance)>) -> bool {
+                match shape {
+                    Shape::Solid(s) => out.push((s.topology(), s.profile().tolerance())),
+                    Shape::Body { body, resolution } => out.push((&body.topology, *resolution)),
+                    Shape::Compound(items) => return items.iter().all(|i| bodies(i, out)),
+                    _ => return false,
+                }
+                true
+            }
+            let mut found = Vec::new();
+            if !bodies(get(shapes, &args[1])?, &mut found) {
+                return Err(unsupported(args));
+            }
+            for (topology, resolution) in found {
+                topology.validate(resolution)?;
+            }
             Ok("This shape seems to be valid".into())
+        }
+        "restore" if args.len() == 3 => {
+            let shape = restore(&args[1], &mut session.restored)?;
+            session.shapes.insert(args[2].clone(), shape);
+            Ok(String::new())
         }
         "nbshapes" if args.len() == 2 => {
             let shape = get(shapes, &args[1])?;
@@ -840,8 +974,13 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             ];
             // A whole solid reports the kernel's synthesized OCCT counts; the
             // per-shape collection must agree with them.
-            if let Shape::Solid(s) = shape {
-                let c = s.topology().occt_counts();
+            let whole = match shape {
+                Shape::Solid(s) => Some(s.topology()),
+                Shape::Body { body, .. } => Some(&body.topology),
+                _ => None,
+            };
+            if let Some(t) = whole {
+                let c = t.occt_counts();
                 let synthesized = [c.vertices, c.edges, c.wires, c.faces, c.shells, c.solids];
                 if counts[..6].iter().map(|(_, n)| *n).ne(synthesized) {
                     return Err(error("shape counts disagree with the count synthesizer"));
@@ -891,17 +1030,17 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
                 (
                     "sprops",
                     Shape::Sub {
-                        solid,
+                        body,
                         slot: Slot::Face(f),
                     },
-                ) => Some(face_centre(solid.topology(), f.index()).1),
+                ) => Some(face_centre(&body.topology, f.index()).1),
                 (
                     "lprops",
                     Shape::Sub {
-                        solid,
+                        body,
                         slot: Slot::Edge(e),
                     },
-                ) => Some(edge_centre(&solid.topology().edges()[e.index()].curve).1),
+                ) => Some(edge_centre(&body.topology.edges()[e.index()].curve).1),
                 _ => None,
             };
             Ok(match centre {
