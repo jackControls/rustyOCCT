@@ -25,7 +25,36 @@
         "fuse_unmatched_native_query"
       ],
       "reason": "ShapeUpgrade_UnifySameDomain merges every pair of same-domain faces and edges it finds. This profile inserts a vertex on the straight segment between hexagon vertices 2 and 3, so the two walls on either side of it are coplanar: native unification merges them into one face and removes the vertical edge through the inserted vertex and its two vertices, in the fuse and in the composed history. The kernel keeps every profile segment and vertex, because ids follow the caller's labels (I3): the inserted vertex and its two segments have their own labels and entities.",
-      "independent_evidence": "The split stage of this case matches natively, with both coplanar walls split separately (14 vertices, 21 edges, 9 faces per piece on both sides). Only the fuse and composed stages differ, and only by that merge: native counts 12 vertices, 18 edges, 8 wires and 8 faces against the kernel's synthesized 14, 21, 9 and 9, that is two vertices, one vertical edge, two cap edges merged into two and one wall fewer. identity-expected.tsv lists separate wall, vertical and vertex ids for labels 99 and 199 of labels_inserted_vertex."
+      "independent_evidence": "The split stage of this case matches natively, with both coplanar walls split separately (14 vertices, 21 edges, 9 faces per piece on both sides). Only the fuse and composed stages differ, and only by that merge: native counts 12 vertices, 18 edges, 8 wires and 8 faces against the kernel's synthesized 14, 21, 9 and 9, that is two vertices, one vertical edge, two cap edges merged into two and one wall fewer. identity-expected.tsv lists separate wall, vertical and vertex ids for labels 99 and 199 of labels_inserted_vertex.",
+      "platform_note": "macOS development machine with the pinned OCCT 8.1.0 SDK."
+    },
+    {
+      "case": "split_labels_inserted_vertex",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "edece2a661aa23e745330634723ac3f3b640af4f21e6c97a3531e0815826c66e",
+      "native_stdout_sha256": "8c6957032a971d6dbba5412839ef7f32f7121a814c4228a1fcac1338bb55dd39",
+      "differences": [
+        "composed_counts",
+        "composed_modified_E",
+        "composed_modified_F",
+        "composed_native_output_unmatched",
+        "composed_rust_output_unmatched",
+        "composed_unchanged_E",
+        "composed_unchanged_V",
+        "composed_unmatched_native_query",
+        "fuse_counts",
+        "fuse_merged_E",
+        "fuse_merged_F",
+        "fuse_native_output_unmatched",
+        "fuse_rust_output_unmatched",
+        "fuse_unchanged_E",
+        "fuse_unchanged_V",
+        "fuse_unmatched_native_query"
+      ],
+      "reason": "ShapeUpgrade_UnifySameDomain merges every pair of same-domain faces and edges it finds. This profile inserts a vertex on the straight segment between hexagon vertices 2 and 3, so the two walls on either side of it are coplanar: native unification merges them into one face and removes the vertical edge through the inserted vertex and its two vertices, in the fuse and in the composed history. The kernel keeps every profile segment and vertex, because ids follow the caller's labels (I3): the inserted vertex and its two segments have their own labels and entities.",
+      "independent_evidence": "The split stage of this case matches natively, with both coplanar walls split separately (14 vertices, 21 edges, 9 faces per piece on both sides). Only the fuse and composed stages differ, and only by that merge: native counts 12 vertices, 18 edges, 8 wires and 8 faces against the kernel's synthesized 14, 21, 9 and 9, that is two vertices, one vertical edge, two cap edges merged into two and one wall fewer. identity-expected.tsv lists separate wall, vertical and vertex ids for labels 99 and 199 of labels_inserted_vertex.",
+      "platform_note": "Linux CI (ubuntu-24.04, the same pinned OCCT 8.1.0 source). Its native output has the same lines and tokens as macOS for every case; numbers differ by at most 1.1e-15 relative (property integration and trigonometry in the last bits), so this case keeps the same differences and the same reason."
     }
   ]
 }
