@@ -334,6 +334,11 @@ trigonometry and CPython's changed `math.hypot`; see
 [the bridge](#native-comparison-bridge). They are observations of this
 revision and these runners, not portable latency guarantees.
 
+The cell-complex migration (T1) was accepted at `e4adb869` with the same
+bridge counts, the synthesized-count checks above, 64 fixture reports and a
+clean 600-second `brep_validation` campaign; the record is in
+`TOPOLOGY_MODEL.md`.
+
 ## Limits
 
 2D loop self-intersection, face/face intersection (which OCCT's BRepCheck does

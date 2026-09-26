@@ -120,7 +120,7 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
      independent reference; six new fuzz mutations; the native bridges keep
      44/8/0 and 98/0/0 through structure-only classification and count
      synthesis; `nbshapes` synthesizes OCCT counts; operations replay at a
-     recorded algorithm level. Acceptance is recorded in `TOPOLOGY_MODEL.md`.
+     recorded algorithm level. Accepted at `e4adb869` (`TOPOLOGY_MODEL.md`).
    * **M3** adds the height split and stacked fuse on the migrated model:
      the first `Split`, `Merged` and `Deleted` relations on real bodies,
      including regions, with a `BRepAlgoAPI_Splitter`/`Fuse` oracle and the

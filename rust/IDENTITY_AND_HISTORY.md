@@ -21,8 +21,8 @@ one builder and no Booleans, so the decisions below are still cheap.
 **Status:** M0, M1 and M2 accepted at `34efd36c` (value ids, complete
 checked histories and the attribute checker, on extrusions and rigid
 transforms). The topology model is decided in `TOPOLOGY_MODEL.md`; its
-migration, T1, is implemented (seamless circle prisms, a region id, algorithm
-levels) and awaits acceptance before M3. M3–M5 pending. Acceptance evidence per milestone
+migration, T1, is accepted at `e4adb869` (seamless circle prisms, a region
+id, algorithm levels). M3–M5 pending. Acceptance evidence per milestone
 is under [Acceptance](#acceptance).
 
 ## What the kernel promises, and what it does not
@@ -578,7 +578,7 @@ say what remains.
   fuzz-synthesized histories, not produced by an operation (M3). Attribute
   storage and outcomes on real operations are M4, and enclosures M5. Ids are
   not yet persisted outside the process (no native format).
-* T1 — pending; recorded in `TOPOLOGY_MODEL.md`
+* **T1 — accepted at `e4adb869`**; the record is in `TOPOLOGY_MODEL.md`.
 * M3 — pending
 * M4 — pending
 * M5 — pending
