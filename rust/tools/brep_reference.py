@@ -276,8 +276,11 @@ def surface_point(s, uv):
 class Harmonic:
     """A(t) = a0 + a1 t + sum over frequencies w of c_w cos(w t) + s_w sin(w t).
 
-    Frequencies are exact binary64 magnitudes. Terms of equal frequency merge;
-    different frequencies are never assumed to cancel.
+    Frequencies are exact binary64 magnitudes. Terms of equal frequency merge.
+    Two terms at nearby frequencies w1 < w2 are Re(z1 e^{i w1 t}) and
+    Re(z2 e^{i w2 t}) with z = c - i s; on [0, 1] their sum is at most the
+    ellipse bound of z1 + z2 plus |z2| (w2 - w1), because |e^{i d t} - 1| <=
+    d t. Adjacent terms by frequency are bounded that way when it is smaller.
     """
     def __init__(self, dim):
         self.a0 = [mp.mpf(0)]*dim
@@ -304,9 +307,25 @@ class Harmonic:
 
     def upper(self):
         bound = max(norm(self.a0), norm(add(self.a0, self.a1)))
-        for c, s in self.terms.values():
+
+        def ellipse(c, s):
             cc, ss, cs = dot(c, c), dot(s, s), dot(c, s)
-            bound += mp.sqrt((cc+ss+mp.sqrt((cc-ss)**2+4*cs*cs))/2)
+            return mp.sqrt((cc+ss+mp.sqrt((cc-ss)**2+4*cs*cs))/2)
+        terms = sorted(self.terms.items())
+        k = 0
+        while k < len(terms):
+            w1, (c1, s1) = terms[k]
+            single = ellipse(c1, s1)
+            if k+1 < len(terms):
+                w2, (c2, s2) = terms[k+1]
+                apart = single+ellipse(c2, s2)
+                paired = ellipse(add(c1, c2), add(s1, s2))+mp.sqrt(dot(c2, c2)+dot(s2, s2))*(w2-w1)
+                if paired < apart:
+                    bound += paired
+                    k += 2
+                    continue
+            bound += single
+            k += 1
         return bound
 
 

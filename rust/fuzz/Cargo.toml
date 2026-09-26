@@ -180,3 +180,10 @@ path = "fuzz_targets/attributes.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "brep_io"
+path = "fuzz_targets/brep_io.rs"
+test = false
+doc = false
+bench = false

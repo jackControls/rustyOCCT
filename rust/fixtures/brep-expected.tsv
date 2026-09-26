@@ -63,3 +63,5 @@ box_vertex_loop_off_surface	vertex_loop_off_surface:loop 1.1
 box_face_without_loops	empty_face:face 3;free_edge:edge 1;free_edge:edge 2;free_edge:edge 6;free_edge:edge 7;loop_without_face:loop slot 3
 cylinder_ring_edge_with_one_vertex	open_loop:loop 0.0;open_loop:loop 2.1;ring_edge_with_vertex:edge 0
 box_shell_not_in_its_region	region_shell_mismatch:shell 0;region_without_shell:region 1
+cylinder_ring_pcurve_printed_period	
+cylinder_ring_pcurve_period_off	pcurve_off_edge:use 2.0.0;uv_gap:use 2.0.0

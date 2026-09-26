@@ -93,8 +93,15 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   line/arc pcurves and cylinder line pcurves. Equal frequencies are combined
   first, so a correctly matched arc cancels exactly. Then
   `sup |D| <= sqrt(|A0|² + |A0+A1|²) + Σ sqrt(λmax(Gram(C_ω, S_ω)))`, since the
-  affine part is convex and each harmonic term is an ellipse. A failure is
-  certified when one of 33 sample points lies beyond tolerance. An arc pcurve
+  affine part is convex and each harmonic term is an ellipse. Terms at
+  nearby but different frequencies `ω1 < ω2` (a circle swept by `2π` against
+  a pcurve spanning OCCT's printed `6.28318530717959`) would each count at
+  full size although they almost cancel. With `z = C - iS`, their sum is
+  `Re(z1 e^{iω1 t} + z2 e^{iω2 t})`, and since `|e^{i(ω2-ω1)t} - 1| <=
+  (ω2-ω1) t`, on `[0, 1]` it is at most the ellipse bound of `z1 + z2` plus
+  `|z2| (ω2 - ω1)`. Terms adjacent by frequency are bounded that way whenever
+  it is smaller. A failure is certified when one of 33 sample points lies
+  beyond tolerance. An arc pcurve
   on a cylinder is not harmonic and can only be certified as a failure.
 * **UV closure.** Consecutive fins meet in UV within tolerance, with cylinder
   angle differences scaled by the radius; the last fin meets the first shifted
@@ -172,16 +179,19 @@ it took about 0.05 seconds.
   seam is kept and rejected as `seam_edge`), and `validate` implements the
   side, region, radial, winding, vertex-loop and region-flux invariants
   independently, with its own `+v` cover-crossing parity on cylinders.
-  `generate_brep_fixtures.py --check` rebuilds 64 cases. 54 come from an
+  `generate_brep_fixtures.py --check` rebuilds 66 cases. 54 come from an
   independent seamed prism builder (19 valid solids and 35 mutations; the
   valid solids include holes, convex and concave arcs, full circles, one and
   two cavities, rotated and far-translated copies and a millimetre-scale
-  box), converted to cells. Ten are cell-model cases with no seamed form: a
-  cylinder parametrized from `π`, a box with a valid vertex loop, and the
-  model's own failure modes (a fin shifted by a period, a flipped winding,
-  fins swapped between edges, a side at the wrong shell, a vertex loop off its
-  surface, a face without loops, a ring edge with one vertex and a shell its
-  region does not list). 23 cases are valid. `brep_validation.rs` requires
+  box), converted to cells. Twelve are cell-model cases with no seamed form: a
+  cylinder parametrized from `π`, a box with a valid vertex loop, a ring
+  pcurve spanning OCCT's printed period `6.28318530717959` (valid only
+  through the near-frequency bound; without it the reference cannot decide),
+  the same pcurve off by `10^-6` of a period, and the model's own failure modes
+  (a fin shifted by a period, a flipped winding, fins swapped between edges, a
+  side at the wrong shell, a vertex loop off its surface, a face without
+  loops, a ring edge with one vertex and a shell its region does not list).
+  24 cases are valid. `brep_validation.rs` requires
   Rust's complete sorted issue list to equal the reference's for every case.
 * The existing prism suites (`invariants`, `occt_regression`, `modeling`)
   build every solid through the new validator.
@@ -335,7 +345,7 @@ trigonometry and CPython's changed `math.hypot`; see
 revision and these runners, not portable latency guarantees.
 
 The cell-complex migration (T1) was accepted at `e4adb869` with the same
-bridge counts, the synthesized-count checks above, 64 fixture reports and a
+bridge counts, the synthesized-count checks above, 66 fixture reports and a
 clean 600-second `brep_validation` campaign; the record is in
 `TOPOLOGY_MODEL.md`.
 

@@ -1,0 +1,46 @@
+puts "Derived case, not an original OCCT test: native selection of exploded sub-shapes"
+puts "Written for rusty-occt; see rust/UPSTREAM_TESTS.md (derived cases)."
+
+# OCCT numbers exploded sub-shapes in its own exploration order. The Rust
+# adapter never reproduces it: the runner records each native pick's measure
+# and centre of gravity, and the adapter selects its entity by that geometry.
+box b 1 2 3 10 20 30
+explode b f
+checkprops b_1 -s 600 -deps 1e-5
+checkgravitycenter b_1 -s 1 12 18 1e-7
+checkprops b_2 -s 600 -deps 1e-5
+checkgravitycenter b_2 -s 11 12 18 1e-7
+checkprops b_3 -s 300 -deps 1e-5
+checkgravitycenter b_3 -s 6 2 18 1e-7
+checkprops b_4 -s 300 -deps 1e-5
+checkgravitycenter b_4 -s 6 22 18 1e-7
+checkprops b_5 -s 200 -deps 1e-5
+checkgravitycenter b_5 -s 6 12 3 1e-7
+checkprops b_6 -s 200 -deps 1e-5
+checkgravitycenter b_6 -s 6 12 33 1e-7
+
+explode b e
+checkprops b_1 -l 30 -deps 1e-5
+checkgravitycenter b_1 -l 1 2 18 1e-7
+checkprops b_8 -l 20 -deps 1e-5
+checkgravitycenter b_8 -l 11 12 3 1e-7
+checkprops b_12 -l 10 -deps 1e-5
+checkgravitycenter b_12 -l 6 22 33 1e-7
+
+# The wall and both caps; area 20 pi and 4 pi.
+pcylinder c 2 5
+explode c f
+checkprops c_1 -s 62.831853071795862 -deps 1e-5
+checkgravitycenter c_1 -s 0 0 2.5 1e-7
+checkprops c_2 -s 12.566370614359172 -deps 1e-5
+checkgravitycenter c_2 -s 0 0 5 1e-7
+checkprops c_3 -s 12.566370614359172 -deps 1e-5
+checkgravitycenter c_3 -s 0 0 0 1e-7
+
+# c_2 is OCCT's seam, which the seamless model does not have; the rings are
+# selected, the seam pick is lost and never used here.
+explode c e
+checkprops c_1 -l 12.566370614359172 -deps 1e-5
+checkgravitycenter c_1 -l 0 0 5 1e-7
+checkprops c_3 -l 12.566370614359172 -deps 1e-5
+checkgravitycenter c_3 -l 0 0 0 1e-7

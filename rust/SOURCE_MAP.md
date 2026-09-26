@@ -496,3 +496,30 @@ reports `Split`, gives each piece its own generated cut face, edges and
 vertices, and splits and merges the solid region. Unification also merges
 coplanar walls of the profile itself, which the kernel keeps (one reviewed
 difference). See [identity and history](IDENTITY_AND_HISTORY.md).
+
+## OCCT `.brep` interop
+
+The source review covered `dox/specification/brep_format.md`,
+`BRepTools_ShapeSet` (geometry and shape records, edge representations,
+`CN` continuity glued to a closed surface's second pcurve),
+`TopTools_ShapeSet` (backward record numbering, flags, orientations),
+`TopTools_LocationSet` (matrix and composite location records),
+`GeomTools_CurveSet`, `GeomTools_Curve2dSet` and `GeomTools_SurfaceSet`
+(every curve and surface record, trimmed curves over a basis, B-spline
+rational and periodic flags), `BRep_Tool::CurveOnSurface` and
+`CurveOnPlane` (the second pcurve serves a reversed seam use; planes may omit
+pcurves) and DRAW's `restore` and `explode` (`DBRep.cxx`: the type from its
+first letter, duplicates skipped in `TopExp_Explorer` order) at
+`3d097a0328e71b826377d4814ab05ec3c3d23871`. Rust's `occt_brep` reads every
+record of versions 1 to 3 and converts only what the cell model represents:
+plane and cylinder faces (direct or indirect), line and circle edges, rigid
+locations. Seams merge into periodic loops by the rule of
+`cell_reference.to_cell`; everything else is reported by name and counted,
+never approximated. The writer emits version 1 and inserts a seam per wound
+face at a `u` where both wound loops have a vertex, with a seam vertex on a
+ring edge. Native observations of the unmodified `data/occ` corpus were
+captured after implementation, unlike every earlier milestone
+(`fixtures/occt-brep-io-capture/NOTES.md`). OCCT's exploration order is never
+reproduced: the DRAW adapter selects picks by native geometry. See
+[validation](VALIDATION.md#occt-brep-interop) and
+[the coverage ledger](UPSTREAM_TESTS.md#structure-mapping-and-the-coverage-ledger).

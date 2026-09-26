@@ -1,0 +1,114 @@
+file	Axis_of_bearing.brep	ConicalSurface=14,SphericalSurface=2,ToroidalSurface=26
+solid	Axis_of_bearing.brep	52	unsupported	10	19	11	11	1	1
+solid	Axis_of_bearing.brep	115	unsupported	12	22	14	12	1	1
+solid	Axis_of_bearing.brep	125	unsupported	2	3	1	1	1	1
+solid	Axis_of_bearing.brep	134	unsupported	2	3	1	1	1	1
+solid	Axis_of_bearing.brep	143	unsupported	2	3	1	1	1	1
+solid	Axis_of_bearing.brep	152	unsupported	2	3	1	1	1	1
+solid	Axis_of_bearing.brep	161	unsupported	2	3	1	1	1	1
+solid	Axis_of_bearing.brep	170	unsupported	2	3	1	1	1	1
+solid	Axis_of_bearing.brep	179	unsupported	2	3	1	1	1	1
+solid	Axis_of_bearing.brep	188	unsupported	2	3	1	1	1	1
+solid	Axis_of_bearing.brep	197	unsupported	2	3	1	1	1	1
+solid	Axis_of_bearing.brep	206	unsupported	2	3	1	1	1	1
+solid	Axis_of_bearing.brep	215	unsupported	2	3	1	1	1	1
+solid	Axis_of_bearing.brep	224	unsupported	2	3	1	1	1	1
+solid	Axis_of_bearing.brep	225	unsupported	0	0	0	0	0	1
+solid	Axis_of_bearing.brep	267	unsupported	8	13	11	8	1	1
+solid	Axis_of_bearing.brep	299	representable	6	9	9	6	1	1
+solid	Axis_of_bearing.brep	371	unsupported	14	22	20	14	1	1
+file	Ball.brep	BSplineCurve=15,BSplineCurve2d=10,BSplineSurface=5,SphericalSurface=3,ToroidalSurface=2,TrimmedCurve2d=5
+solid	Ball.brep	54	unsupported	14	21	9	9	1	1
+solid	Ball.brep	108	unsupported	13	22	8	8	1	1
+file	Bottom.brep	BSplineCurve=361,BSplineCurve2d=302,BSplineSurface=120,ConicalSurface=18,Ellipse2d=2,RectangularTrimmedSurface=4,SphericalSurface=8,ToroidalSurface=78,TrimmedCurve=4,TrimmedCurve2d=90
+solid	Bottom.brep	1818	unsupported	405	751	338	323	1	1
+file	CrankArm.brep	BSplineCurve=56,BSplineCurve2d=5,BSplineSurface=16,ConicalSurface=3,RectangularTrimmedSurface=2,TrimmedCurve=6,TrimmedCurve2d=56
+solid	CrankArm.brep	21	representable	4	6	6	4	1	1
+solid	CrankArm.brep	344	unsupported	84	132	56	49	1	1
+file	MAT.brep	BSplineCurve=4,BSplineSurface=1
+file	MODERN_Chair_1.brep	BSplineCurve2d=40,Ellipse2d=12,SphericalSurface=12,TrimmedCurve=26
+solid	MODERN_Chair_1.brep	97	unsupported	20	40	18	18	1	1
+solid	MODERN_Chair_1.brep	403	unsupported	74	127	51	51	1	1
+solid	MODERN_Chair_1.brep	710	unsupported	74	127	51	51	1	1
+solid	MODERN_Chair_1.brep	810	unsupported	20	40	18	18	1	1
+file	MODERN_Cooker_1.brep	ToroidalSurface=12
+solid	MODERN_Cooker_1.brep	121	representable	36	54	20	20	1	1
+solid	MODERN_Cooker_1.brep	156	representable	12	18	8	8	1	1
+solid	MODERN_Cooker_1.brep	338	unsupported	40	68	38	34	1	1
+file	MODERN_Cooker_1_opened.brep	ToroidalSurface=2
+solid	MODERN_Cooker_1_opened.brep	33	representable	8	12	6	6	1	1
+solid	MODERN_Cooker_1_opened.brep	66	unsupported	6	10	8	7	1	1
+file	MODERN_Exhaust_1.brep	BSplineCurve=8,BSplineCurve2d=22,BSplineSurface=2,Ellipse2d=10,TrimmedCurve=12
+solid	MODERN_Exhaust_1.brep	88	representable	24	36	16	14	1	1
+solid	MODERN_Exhaust_1.brep	258	unsupported	44	68	28	27	1	1
+solid	MODERN_Exhaust_1.brep	348	representable	24	36	16	14	1	1
+file	MODERN_MVCooker_1.brep	-
+solid	MODERN_MVCooker_1.brep	80	representable	24	36	16	15	1	1
+file	MODERN_MVCooker_1_opened.brep	BSplineCurve2d=16,TrimmedCurve=8
+solid	MODERN_MVCooker_1_opened.brep	103	unsupported	24	40	20	18	1	1
+file	MODERN_Refrigerator_1.brep	-
+solid	MODERN_Refrigerator_1.brep	123	representable	32	48	22	20	1	1
+solid	MODERN_Refrigerator_1.brep	148	representable	8	12	6	6	1	1
+file	MODERN_Refrigerator_1_opened.brep	BSplineCurve2d=16,ToroidalSurface=16,TrimmedCurve=8
+solid	MODERN_Refrigerator_1_opened.brep	53	unsupported	12	20	10	10	1	1
+solid	MODERN_Refrigerator_1_opened.brep	108	unsupported	12	20	10	10	1	1
+solid	MODERN_Refrigerator_1_opened.brep	307	unsupported	48	80	34	34	1	1
+solid	MODERN_Refrigerator_1_opened.brep	506	unsupported	48	80	34	34	1	1
+file	MODERN_Sink_1.brep	BSplineCurve=9,BSplineCurve2d=12,BSplineSurface=2,ToroidalSurface=39
+solid	MODERN_Sink_1.brep	808	unsupported	188	323	153	144	1	1
+solid	MODERN_Sink_1.brep	892	representable	24	36	16	14	1	1
+solid	MODERN_Sink_1.brep	969	representable	20	30	12	12	1	1
+file	MODERN_Sink_1_opened.brep	ToroidalSurface=4
+solid	MODERN_Sink_1_opened.brep	32	unsupported	6	10	8	7	1	1
+solid	MODERN_Sink_1_opened.brep	66	unsupported	6	10	8	7	1	1
+solid	MODERN_Sink_1_opened.brep	91	representable	8	12	6	6	1	1
+solid	MODERN_Sink_1_opened.brep	115	representable	8	12	6	6	1	1
+file	MODERN_Table_1.brep	BSplineCurve2d=12,TrimmedCurve=6
+solid	MODERN_Table_1.brep	117	unsupported	26	42	26	22	1	1
+file	Motor-c.brep	BSplineCurve=78,BSplineCurve2d=112,BSplineSurface=10,ConicalSurface=1,SurfaceOfLinearExtrusion=75,ToroidalSurface=5,TrimmedCurve2d=12
+solid	Motor-c.brep	61	representable	16	24	10	10	1	1
+solid	Motor-c.brep	257	unsupported	54	81	29	29	1	1
+solid	Motor-c.brep	378	unsupported	28	44	26	20	1	1
+solid	Motor-c.brep	413	representable	8	12	6	6	1	1
+solid	Motor-c.brep	479	representable	16	24	12	11	1	1
+solid	Motor-c.brep	531	representable	12	18	10	9	1	1
+solid	Motor-c.brep	554	representable	4	6	6	4	1	1
+solid	Motor-c.brep	578	representable	4	6	6	5	1	1
+solid	Motor-c.brep	699	unsupported	33	49	18	18	1	1
+solid	Motor-c.brep	722	representable	4	6	6	4	1	1
+solid	Motor-c.brep	757	representable	8	12	6	6	1	1
+solid	Motor-c.brep	801	representable	8	12	12	9	1	1
+solid	Motor-c.brep	850	representable	12	18	8	8	1	1
+solid	Motor-c.brep	1057	unsupported	50	85	35	34	1	1
+solid	Motor-c.brep	1237	unsupported	48	72	30	27	1	1
+solid	Motor-c.brep	1272	representable	8	12	6	6	1	1
+solid	Motor-c.brep	1370	unsupported	22	33	23	17	1	1
+file	Pump_Nut.brep	BSplineCurve2d=26,ConicalSurface=2,Hyperbola2d=26,ToroidalSurface=2,TrimmedCurve=26
+solid	Pump_Nut.brep	164	unsupported	44	67	27	25	1	1
+file	Pump_TopCover.brep	BSplineCurve=6,BSplineCurve2d=4,BSplineSurface=2,SphericalSurface=4
+solid	Pump_TopCover.brep	45	unsupported	10	16	10	8	1	1
+file	Room.brep	-
+file	Top.brep	BSplineCurve=308,BSplineCurve2d=282,BSplineSurface=107,ConicalSurface=4,SphericalSurface=8,SurfaceOfRevolution=3,ToroidalSurface=71,TrimmedCurve=4,TrimmedCurve2d=61
+solid	Top.brep	1843	unsupported	426	755	337	324	1	1
+file	asahi.brep	-
+file	bottle.brep	BSplineCurve=8,BSplineCurve2d=8,BSplineSurface=2,Ellipse2d=1,RectangularTrimmedSurface=1,SphericalSurface=16,ToroidalSurface=8
+solid	bottle.brep	378	unsupported	75	157	74	71	1	1
+file	edge.brep	-
+file	face.brep	-
+file	face1.brep	-
+file	face2.brep	BSplineCurve=4,BSplineCurve2d=6,BSplineSurface=4,Ellipse2d=2,RectangularTrimmedSurface=1,ToroidalSurface=5,TrimmedCurve=2
+file	fuse.brep	BSplineCurve2d=3,SphericalSurface=1
+file	hammer.brep	BSplineCurve=104,BSplineCurve2d=208,BSplineSurface=45
+file	mal_ecrou.brep	-
+solid	mal_ecrou.brep	8	representable	2	3	3	3	1	1
+file	mal_tige.brep	-
+solid	mal_tige.brep	42	representable	12	18	12	8	1	1
+file	mal_vis.brep	ToroidalSurface=1
+solid	mal_vis.brep	24	unsupported	5	8	7	6	1	1
+file	shell1.brep	BSplineCurve=216,BSplineCurve2d=34,BSplineSurface=99
+file	solid.brep	-
+solid	solid.brep	42	representable	12	18	12	8	1	1
+file	terrain.brep	BSplineCurve=4,BSplineSurface=1
+file	wedge_ok.brep	-
+solid	wedge_ok.brep	33	representable	8	12	6	6	1	1
+file	wing.brep	BSplineCurve=16,BSplineSurface=4

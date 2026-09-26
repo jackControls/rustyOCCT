@@ -128,6 +128,25 @@ class BridgeTests(unittest.TestCase):
         self.expect(prism + "catch {generated g h w}", "unsupported")
         self.expect(prism + "catch {prism q f 0 0 3}", "unsupported")
 
+    def test_native_selector_picks_by_geometry(self):
+        picks = self.root / "picks.txt"
+        # A synthetic native record: explode 1 of a box's faces, deliberately
+        # out of OCCT order, with one pick no face has; explode 2 claims edges.
+        picks.write_text("pick 1 1 face 200 6 12 33\npick 1 2 face 600 1 12 18\n"
+                         "pick 1 3 face 600 1 12 99\npick 2 1 edge 30 1 2 18\n")
+        env = {"RUSTY_DRAW_SELECTOR": str(picks)}
+        box = "box b 1 2 3 10 20 30\nexplode b f\n"
+        self.expect(box + "checkprops b_1 -s 200 -deps 1e-9\ncheckgravitycenter b_1 -s 6 12 33 1e-9\n"
+                    "checkprops b_2 -s 600 -deps 1e-9\ncheckgravitycenter b_2 -s 1 12 18 1e-9\n",
+                    "pass", extra_env=env)
+        # Wrong expectations still fail: selection is not self-confirming.
+        self.expect(box + "checkgravitycenter b_2 -s 11 12 18 1e-9\n", "failed", extra_env=env)
+        # A pick without an entity is lost; using it is a capability gap.
+        self.expect(box + "checkprops b_1 -s 200\nsprops b_3\n", "unsupported", extra_env=env)
+        # A kind that disagrees with the native record, or no record at all.
+        self.expect(box + "explode b f\ncheckprops b_1 -s 200\n", "unsupported", extra_env=env)
+        self.expect(box + "checkprops b_1 -s 200\n", "unsupported")
+
     def test_upstream_context_order(self):
         self.assertEqual([str(p.relative_to(ROOT)) for p in source_files("tests/bugs/modalg_7/bug29311_5")], [
             "tests/bugs/begin", "tests/bugs/modalg_7/begin",

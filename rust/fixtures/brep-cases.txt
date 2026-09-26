@@ -4345,3 +4345,43 @@ s 0 sides 0:B 1:B 2:B 3:B 4:B 5:B wire acorn
 r void 1
 r solid
 end
+case cylinder_ring_pcurve_printed_period
+tolerance 1e-07
+e - - arc 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5 0.0 6.283185307179586 fins 0 3
+e - - arc 0.0 0.0 2.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5 0.0 6.283185307179586 fins 1 2
+l 0
+u 0 R arc 0.0 -0.0 1.5 -6.283185307179586 6.283185307179586
+l 0
+u 1 F arc 0.0 0.0 1.5 0.0 6.283185307179586
+l -1
+u 1 R line 6.283185307179586 2.0 -3.552713678800501e-15 2.0
+l 1
+u 0 F line 0.0 0.0 6.283185307179586 0.0
+f plane 0.0 0.0 0.0 0.0 0.0 -1.0 1.0 0.0 0.0 F 0 1 loops 0
+f plane 0.0 0.0 2.0 0.0 0.0 1.0 1.0 0.0 0.0 F 0 1 loops 1
+f cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5 F 0 1 loops 2 3
+s 1 sides 0:F 1:F 2:F wire acorn
+s 0 sides 0:B 1:B 2:B wire acorn
+r void 1
+r solid 0
+end
+case cylinder_ring_pcurve_period_off
+tolerance 1e-07
+e - - arc 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5 0.0 6.283185307179586 fins 0 3
+e - - arc 0.0 0.0 2.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5 0.0 6.283185307179586 fins 1 2
+l 0
+u 0 R arc 0.0 -0.0 1.5 -6.283185307179586 6.283185307179586
+l 0
+u 1 F arc 0.0 0.0 1.5 0.0 6.283185307179586
+l -1
+u 1 R line 6.283185307179586 2.0 -6.283185306266148e-06 2.0
+l 1
+u 0 F line 0.0 0.0 6.283185307179586 0.0
+f plane 0.0 0.0 0.0 0.0 0.0 -1.0 1.0 0.0 0.0 F 0 1 loops 0
+f plane 0.0 0.0 2.0 0.0 0.0 1.0 1.0 0.0 0.0 F 0 1 loops 1
+f cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5 F 0 1 loops 2 3
+s 1 sides 0:F 1:F 2:F wire acorn
+s 0 sides 0:B 1:B 2:B wire acorn
+r void 1
+r solid 0
+end

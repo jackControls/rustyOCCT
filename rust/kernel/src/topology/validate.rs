@@ -423,11 +423,35 @@ impl<T: Real> Harmonic<T> {
         // max(at0, at1) <= at0 + at1 is looser; use the sum of both ends'
         // squares' root instead: max(a,b) <= sqrt(a^2 + b^2).
         let mut bound = at0.square().add(&at1.square()).sqrt();
-        for (_, cv, sv) in &self.terms {
+        let ellipse = |cv: &V3<T>, sv: &V3<T>| {
             let (cc, ss, cs) = (vdot(cv, cv), vdot(sv, sv), vdot(cv, sv));
             let root = cc.sub(&ss).square().add(&cs.square().mul(&c(4.0))).sqrt();
-            let lambda = cc.add(&ss).add(&root).mul(&c(0.5));
-            bound = bound.add(&lambda.sqrt());
+            cc.add(&ss).add(&root).mul(&c(0.5)).sqrt()
+        };
+        // Two terms at nearby frequencies w1 < w2 are Re(z1 e^{i w1 t}) and
+        // Re(z2 e^{i w2 t}) with z = c - i s; on [0,1] their sum is at most
+        // the ellipse bound of z1 + z2 plus |z2| |w2 - w1|, since
+        // |e^{i d t} - 1| <= |d| t. An arc and its pcurve whose sweeps differ
+        // by a rounding cancel this way; the smaller of the two bounds is used.
+        let mut terms: Vec<&(R, V3<T>, V3<T>)> = self.terms.iter().collect();
+        terms.sort_by(|a, b| a.0.cmp(&b.0));
+        let mut k = 0;
+        while k < terms.len() {
+            let (w1, c1, s1) = terms[k];
+            let single = ellipse(c1, s1);
+            if let Some((w2, c2, s2)) = terms.get(k + 1).copied() {
+                let apart = single.add(&ellipse(c2, s2));
+                let gap = T::from_r(&(w2 - w1));
+                let near = vdot(c2, c2).add(&vdot(s2, s2)).sqrt().mul(&gap);
+                let paired = ellipse(&vadd(c1, c2), &vadd(s1, s2)).add(&near);
+                if paired.cmp(&apart) == Some(Ordering::Less) {
+                    bound = bound.add(&paired);
+                    k += 2;
+                    continue;
+                }
+            }
+            bound = bound.add(&single);
+            k += 1;
         }
         bound
     }

@@ -18,7 +18,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear','brep_validation','identity','history','split_merge','attributes']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear','brep_validation','identity','history','split_merge','attributes','brep_io']
 STARTUP_SECONDS = 600
 MAX_STARTUP_SECONDS = 3600
 INPUT_SECONDS = 20
@@ -74,7 +74,14 @@ def seed_corpus(target):
         if not path.exists():
             path.write_bytes(data)
 
-    if target == 'attributes':
+    if target == 'brep_io':
+        # A prism of the identity structure or an upstream file, then up to
+        # six token and line mutations of its .brep text.
+        for k in range(96):
+            data=bytearray((j*67+k*29+13)%256 for j in range(240))
+            save(bytes(data))
+        save(bytes([0]))
+    elif target == 'attributes':
         # The identity structure, six random policies, random keys and small
         # values, a split height and changes on one piece before the fuse.
         for k in range(96):

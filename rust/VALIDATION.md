@@ -539,10 +539,10 @@ algorithms).
 
 ## Generic B-rep validation
 
-`generate_brep_fixtures.py --check` rebuilds 64 cell-complex cases (23 valid):
+`generate_brep_fixtures.py --check` rebuilds 66 cell-complex cases (24 valid):
 54 converted by rule from an independent seamed prism builder and its
-mutations, and ten cell-model cases for the model's own failure modes, with
-complete issue lists from the separate mpmath reference validators
+mutations, and twelve cell-model cases for the model's own failure modes and
+the near-frequency bound, with complete issue lists from the separate mpmath reference validators
 (`brep_reference.py`, `cell_reference.py`). `brep_validation.rs` requires
 Rust's sorted report to equal each list exactly. The `brep_validation` fuzz
 target mutates valid prisms and cavities into specific invalid complexes.
@@ -550,3 +550,38 @@ target mutates valid prisms and cavities into specific invalid complexes.
 classes on the seamed encodings, sets statuses on native seams aside as
 structure-only and checks the synthesized counts of every valid case. See
 [the bridge](BREP_VALIDATION.md#native-comparison-bridge).
+
+## OCCT `.brep` interop
+
+`brep_io_reference.py` is a separately written reader of the format (from
+`dox/specification/brep_format.md` and the pinned `BRepTools_ShapeSet` and
+`TopTools_LocationSet` sources, without Rust). For every `data/occ` file,
+`generate_brep_io_fixtures.py --check` records the geometry records the
+kernel cannot represent, by name and count. For every solid the root reaches
+through compounds, it records whether its structure is representable, and
+OCCT's distinct subshape counts of the original, seamed solid. `occt_brep.rs`
+requires Rust's import to agree file by file: the same unsupported geometry,
+the same solids, a cell topology exactly for the representable ones (29 of
+77) and synthesized counts equal to the original counts. Every one of the
+546 identity prisms writes, reads back and imports to the same counts with
+bit-identical vertices, twice. Malformed text gives typed errors.
+
+`compare_brep_io.py` builds `occt_brep_io_oracle.cpp` (`BRepTools::Read`,
+`BRepCheck_Analyzer`, `TopExp::MapShapes`, `BRepGProp`) against the pinned
+SDK. It first certifies the independent reader against OCCT: the solids of
+every corpus file, and their counts, must be exactly the reader's (77). Then
+native OCCT reads everything the kernel writes. Each of the 546 prism
+writes must be one valid solid whose counts equal the synthesized counts and
+whose volume, area and centroid equal the kernel's exact mass properties.
+Each of the 29 imported corpus solids, written back, must be one valid solid
+with the original's counts, volume, area and centroid. The worst property
+difference observed is 2.5e-14 relative, against a bound of 1e-11.
+The native observations of the unmodified corpus are pinned in
+`fixtures/occt-brep-io-capture` and must reproduce on every run. They were
+captured after the implementation; `NOTES.md` there records that order break
+and what it does and does not affect. `test_brep_io_oracle.py` checks that
+capture drift, malformed native output and property differences are caught.
+
+The `brep_io` fuzz target mutates written prisms and upstream files token by
+token and line by line: no panic, typed errors, valid imports, and
+round trips of every writable import to identical counts and vertices.

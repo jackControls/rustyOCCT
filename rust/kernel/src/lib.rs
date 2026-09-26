@@ -34,6 +34,7 @@ pub mod identity;
 pub mod intersection;
 mod interval;
 pub mod math;
+pub mod occt_brep;
 pub mod polynomial;
 pub mod predicates;
 mod profile;

@@ -2,15 +2,16 @@
 
 This is the decision record for the kernel's topology model and the delivery
 guide for migrating to it. The decisions were taken on 2026-09-25 after
-comparing OCCT, Parasolid and CGM; T1 is implemented (see
-[Implementation notes](#implementation-notes-t1)), T2 is not. It sits
+comparing OCCT, Parasolid and CGM; T1 and T2 are implemented (see
+[Implementation notes](#implementation-notes-t1) and
+[T2](#implementation-notes-t2)). It sits
 beside `IDENTITY_AND_HISTORY.md`, whose contracts are model-agnostic and whose
 milestones M0–M2 are accepted on the current prism model at `34efd36c`. The
 migration here, **T1**, must land before M3, because M3's first splits and
 merges would otherwise be built on seams that the decided model removes.
 
 **Status:** decided; T1 accepted at `e4adb869` (see
-[Acceptance](#acceptance)); T2 pending.
+[Acceptance](#acceptance)); T2 implemented, acceptance pending.
 
 ## Why this model
 
@@ -415,6 +416,53 @@ reason:
   manifold edge: a cyclic order of two is unchanged, and the fuzz target
   requires exactly that reversal to stay valid. The detectable form, fins
   exchanged between two edges, is the mutation.
+
+## Implementation notes (T2)
+
+* **Order of evidence.** Unlike every earlier milestone, the native
+  observations of the upstream corpus were captured after the reader,
+  converter and writer existed, and the independent Python reader was
+  written by the same author afterwards. The break is recorded in
+  `fixtures/occt-brep-io-capture/NOTES.md`, with what it does and does not
+  affect; it is not repaired.
+* **Converter scope.** `occt_brep::import` converts a solid when every face
+  is a plane or a cylinder (indirect cylinders flip the face sense), every
+  edge a line or circle with both vertices, every orientation forward or
+  reversed and every location rigid. A trimmed line or circle is its basis
+  over a range, and a plane without a pcurve gets one from the edge
+  (`CurveOnPlane`). Each solid becomes its own body: a solid region, the
+  shell with the largest bounding box as its outer shell, and the others as
+  cavities. Compounds are flattened. Free shapes, compsolids, degenerate
+  edges, mesh-only faces and every other curve or surface are reported by
+  name and counted. Degenerate edges belong with surfaces that have poles,
+  which the kernel does not represent yet, so none is dropped into a pole.
+* **Tolerances.** Until M5 an imported body's resolution is its largest
+  vertex, edge or face tolerance (`ImportedSolid::tolerance`). M5 turns
+  per-entity tolerances into `Imported` enclosures.
+* **Writer.** Version 1 text. Each wound face gets one seam at a `u` where
+  both of its wound loops have a vertex, or where a ring loop starts. A ring
+  edge gets a seam vertex there and becomes a closed edge. A face whose wound
+  loops share no such position is `Unwritable`: splitting an edge would
+  change the counts the synthesizer promises. Text is not a fixed point of a
+  round trip, because import numbers entities in discovery order and
+  re-derives plane frames. Round trips compare counts, cells, bit-identical
+  vertices and native properties instead.
+* **Near-frequency bound.** OCCT prints `2π` as `6.28318530717959`. A ring
+  pcurve over that span against a circle swept by `2π` gives two harmonic
+  terms a few ulps apart in frequency, which the validator bounded apart
+  (`2r`) and could not certify. Both validators now pair terms adjacent by
+  frequency (`BREP_VALIDATION.md`), and the importer snaps such spans to
+  `2π`.
+* **Native selector.** Picks are matched by measure and centre of gravity,
+  never by order, and only faces and edges so far. A seam pick is lost.
+* **Ledger.** The statuses and their rules are in `UPSTREAM_TESTS.md`. No
+  original assertion is mapped-and-verified yet; the adapter's `restore`
+  waits for an original data-dependent case that a configured data
+  directory makes runnable on both backends, because `data/occ` alone makes
+  none runnable.
+* **Fuzzing.** The first `brep_io` smoke run found reader references beyond
+  their tables (edge representation and face locations). The reader now
+  range-checks every reference; the input is a retained regression.
 
 ## Acceptance
 

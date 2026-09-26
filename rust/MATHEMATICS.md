@@ -1095,6 +1095,12 @@ against plane line/arc pcurves and cylinder line pcurves is a harmonic sum
 `A0 + A1 t + Σ_ω (C_ω cos ωt + S_ω sin ωt)` with exact rational frequencies.
 Equal frequencies are combined, then
 `sup_[0,1] |D| <= sqrt(|A0|² + |A0+A1|²) + Σ_ω sqrt(λmax(Gram(C_ω, S_ω)))`.
+Two terms at different frequencies `ω1 < ω2` are `Re(z1 e^{iω1 t} + z2
+e^{iω2 t})` with `z = C - iS`; since `|e^{i(ω2-ω1)t} - 1| <= (ω2-ω1) t`, on
+`[0, 1]` their sum is at most the ellipse bound of `z1 + z2` plus
+`|z2| (ω2 - ω1)`. Terms adjacent by frequency use this pair bound whenever it
+is smaller, so a circle against a pcurve whose period differs by a few ulps
+(OCCT prints `2π` as `6.28318530717959`) certifies as it should.
 Loop winding is the sign of the closed form of `∮ u dv - v du` over pcurves
 closed by chords. Shell orientation is the sign of Green's volume integral
 `Σ ∫ G dv` with `∂G/∂u = S·(S_u × S_v)`: `G = u(o·(x×y))` on planes and

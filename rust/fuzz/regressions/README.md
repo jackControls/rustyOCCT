@@ -556,3 +556,12 @@ refinement stopped at isolator width about `2^-604`, just short of the `2^-615`
 needed by the rational-root-theorem candidate. A capped extra bisection to that
 bound (at most 64 steps) recognizes the root before any gcd. The release check
 now takes 1.25 seconds and the local sanitizer target 11.7 seconds.
+
+## B-rep interop: a location index beyond the table
+
+`brep_io/crash-9557e3ae7d308500f8f03642dc84fa23cc1e7438.bin` was found by the
+first local smoke campaign of `brep_io`, before any commit of the target. A
+mutated prism text referenced location 1 while the location table was empty.
+The reader range-checked subshape locations but not those of edge
+representations and faces, so the converter indexed the table out of bounds. The reader now range-checks every curve, pcurve, surface and
+location reference and returns `BrepError::Reference`.

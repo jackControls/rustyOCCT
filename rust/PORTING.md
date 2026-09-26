@@ -129,10 +129,19 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
      difference and no failures on macOS and Linux); the self-contained
      upstream history cases work on faces and are registered as capability
      sentinels. Accepted at `00f0034c` (`IDENTITY_AND_HISTORY.md`).
-   * **T2** adds the OCCT structure interop: `.brep` converter and writer
-     with native round trips, the native selector for index-based picks,
-     degenerate-edge counts for poles, and the coverage ledger that
-     labels every upstream assertion model-independent, mapped or lost.
+   * **T2** adds the OCCT structure interop. Implemented: a `.brep` reader
+     of versions 1 to 3, a converter of plane/cylinder solids into the cell
+     model (everything else named and counted, never approximated) and a
+     version 1 writer. An independent reader certifies the 37-file `data/occ`
+     corpus against native OCCT, and native round trips of 546 prisms and
+     the 29 importable corpus solids give valid solids with equal counts and
+     mass properties. Also a native selector for `explode` picks, the
+     `brep_io` fuzz target, and a coverage ledger over all
+     35,766 upstream assertions
+     (22,920 model-independent, 0 mapped-and-verified,
+     12,846 lost). Degenerate edges belong with the surfaces that
+     have poles, which the kernel does not yet represent. The native
+     observations came after the implementation (recorded).
    * **M4** propagates attributes through every operation by declared
      policy. Implemented: an operation context with the policy table, one
      recorded outcome per input attribute, 33 independent scenarios over the

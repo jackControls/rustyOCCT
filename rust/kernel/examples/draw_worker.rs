@@ -53,6 +53,9 @@ enum Shape {
         slot: Slot,
     },
     Compound(Vec<Shape>),
+    /// A native pick with no entity in the cell model (a seam, its vertex),
+    /// or none the selector could single out.
+    Lost(String),
 }
 
 #[derive(Clone)]
@@ -70,6 +73,9 @@ struct Session {
     last: Option<Saved>,
     next_label: u64,
     next_operation: u64,
+    /// `explode` calls so far; the native selector numbers them alike.
+    explodes: usize,
+    selector: Option<Vec<Pick>>,
 }
 
 fn unsupported(args: &[String]) -> Failure {
@@ -89,6 +95,9 @@ fn numbers(args: &[String]) -> Result<Vec<f64>> {
         .collect()
 }
 fn get<'a>(shapes: &'a BTreeMap<String, Shape>, name: &str) -> Result<&'a Shape> {
+    if let Some(Shape::Lost(why)) = shapes.get(name) {
+        return Err(Failure::Unsupported(format!("{name}: {why}")));
+    }
     shapes
         .get(name)
         .ok_or_else(|| Failure::Error(format!("unknown shape: {name}")))
@@ -307,6 +316,7 @@ fn collect(shape: &Shape, parts: &mut Parts) {
                 collect(item, parts);
             }
         }
+        Shape::Lost(_) => unreachable!("lost picks are never read"),
     }
 }
 
@@ -344,6 +354,7 @@ fn type_name(shape: &Shape) -> &'static str {
             Slot::Region(_) => "SOLID",
         },
         Shape::Compound(_) => "COMPOUND",
+        Shape::Lost(_) => unreachable!("lost picks are never read"),
     }
 }
 
@@ -399,9 +410,188 @@ fn history_output(saved: &Saved, parent: InputLabel, roles: &[Role]) -> Vec<Shap
         .collect()
 }
 
+// ------------------------------------------------------------------ native selector
+//
+// OCCT's exploration order is its own. For `explode` of a kernel solid the
+// runner first runs the test in native DRAW, which records every pick's
+// measure (sprops/lprops mass, printed to 6 significant digits) and centre of
+// gravity (Draw variables, full precision). Each pick selects the one kernel
+// entity with the same kind, measure and centre; a pick with no such entity
+// (a seam) or several is lost, and using it is unsupported.
+
+#[derive(Clone)]
+struct Pick {
+    explode: usize,
+    kind: String,
+    mass: f64,
+    centre: Point3,
+}
+
+fn load_selector() -> Result<Vec<Pick>> {
+    let Ok(path) = std::env::var("RUSTY_DRAW_SELECTOR") else {
+        return Ok(Vec::new());
+    };
+    let text = std::fs::read_to_string(path).map_err(|e| error(&format!("selector: {e}")))?;
+    let mut picks = Vec::new();
+    for line in text.lines() {
+        let w: Vec<&str> = line.split_whitespace().collect();
+        let (Some(&"pick"), Some(explode)) = (w.first(), w.get(1)) else {
+            return Err(error("malformed selector line"));
+        };
+        let explode = explode
+            .parse()
+            .map_err(|_| error("malformed selector line"))?;
+        let n = if w.len() == 8 {
+            numbers(&w[4..].iter().map(|x| x.to_string()).collect::<Vec<_>>())?
+        } else {
+            vec![f64::NAN; 4]
+        };
+        picks.push(Pick {
+            explode,
+            kind: w.get(3).unwrap_or(&"other").to_string(),
+            mass: n[0],
+            centre: Point3::new(n[1], n[2], n[3]),
+        });
+    }
+    Ok(picks)
+}
+
+/// Gauss-Legendre nodes and weights on [0, 1].
+fn gauss() -> Vec<(f64, f64)> {
+    const N: usize = 24;
+    (1..=N)
+        .map(|i| {
+            let mut x = (std::f64::consts::PI * (i as f64 - 0.25) / (N as f64 + 0.5)).cos();
+            let mut d = 0.0;
+            for _ in 0..100 {
+                let (mut p0, mut p1) = (1.0, x);
+                for k in 2..=N {
+                    let p2 = ((2 * k - 1) as f64 * x * p1 - (k - 1) as f64 * p0) / k as f64;
+                    p0 = p1;
+                    p1 = p2;
+                }
+                d = N as f64 * (x * p1 - p0) / (x * x - 1.0);
+                let dx = p1 / d;
+                x -= dx;
+                if dx.abs() < 1e-16 {
+                    break;
+                }
+            }
+            ((1.0 - x) / 2.0, 1.0 / ((1.0 - x * x) * d * d))
+        })
+        .collect()
+}
+
+/// A pcurve's point and derivative at `t` in [0, 1].
+fn pcurve_at(p: &Curve2, t: f64) -> (Point2, Point2) {
+    match p {
+        Curve2::LineSegment { start: a, end: b } => (p.point(t), Point2::new(b.x - a.x, b.y - a.y)),
+        Curve2::CircularArc {
+            radius,
+            start_angle,
+            sweep_angle,
+            ..
+        } => {
+            let (sin, cos) = (start_angle + sweep_angle * t).sin_cos();
+            let k = radius * sweep_angle;
+            (p.point(t), Point2::new(-k * sin, k * cos))
+        }
+    }
+}
+
+/// Area and centre of gravity of a face: -∮ G du over its pcurves for
+/// ∂G/∂v = 1, u, v (planes) or 1, cos u, sin u, v (cylinders). Seams are
+/// vertical, so wound faces need no closing sides.
+fn face_centre(t: &Topology, face: usize) -> (f64, Point3) {
+    let nodes = gauss();
+    let surface = &t.faces()[face].surface;
+    let mut m = [0.0; 4];
+    for fin in t.face_fins(FaceId::new(face)).iter().flatten() {
+        for (x, w) in &nodes {
+            let (q, d) = pcurve_at(&fin.pcurve, *x);
+            let g = match surface {
+                Surface::Plane(_) => [q.y, q.x * q.y, q.y * q.y / 2.0, 0.0],
+                Surface::Cylinder { .. } => {
+                    [q.y, q.y * q.x.cos(), q.y * q.x.sin(), q.y * q.y / 2.0]
+                }
+            };
+            for k in 0..4 {
+                m[k] -= w * g[k] * d.x;
+            }
+        }
+    }
+    match surface {
+        Surface::Plane(_) => (
+            m[0].abs(),
+            surface.point(Point2::new(m[1] / m[0], m[2] / m[0])),
+        ),
+        Surface::Cylinder { frame, radius } => (
+            radius * m[0].abs(),
+            frame.point(
+                Point2::new(radius * m[1] / m[0], radius * m[2] / m[0]),
+                m[3] / m[0],
+            ),
+        ),
+    }
+}
+
+/// Length and centre of gravity of an edge (curves are uniform in their
+/// fraction).
+fn edge_centre(curve: &Curve3) -> (f64, Point3) {
+    let mut c = Vec3::new(0.0, 0.0, 0.0);
+    for (x, w) in gauss() {
+        c = c + (curve.point(x) - Point3::ORIGIN) * w;
+    }
+    (edge_length(curve), Point3::ORIGIN + c)
+}
+
+fn same_pick(pick: &Pick, mass: f64, centre: Point3) -> bool {
+    let scale = 1.0 + pick.centre.distance(Point3::ORIGIN);
+    (pick.mass - mass).abs() <= 1e-5 * pick.mass.abs().max(1.0)
+        && pick.centre.distance(centre) <= 1e-7 * scale
+}
+
+fn select(solid: &Solid, pick: &Pick) -> Shape {
+    let t = solid.topology();
+    let found: Vec<Slot> = match pick.kind.as_str() {
+        "face" => (0..t.faces().len())
+            .filter(|f| {
+                let (m, c) = face_centre(t, *f);
+                same_pick(pick, m, c)
+            })
+            .map(|f| Slot::Face(FaceId::new(f)))
+            .collect(),
+        "edge" => (0..t.edges().len())
+            .filter(|e| {
+                let (m, c) = edge_centre(&t.edges()[*e].curve);
+                same_pick(pick, m, c)
+            })
+            .map(|e| Slot::Edge(EdgeId::new(e)))
+            .collect(),
+        _ => Vec::new(),
+    };
+    match found.as_slice() {
+        [slot] => Shape::Sub {
+            solid: Box::new(solid.clone()),
+            slot: *slot,
+        },
+        [] => Shape::Lost(format!(
+            "native {} pick has no entity in the cell model",
+            pick.kind
+        )),
+        _ => Shape::Lost(format!(
+            "native {} pick matches several entities",
+            pick.kind
+        )),
+    }
+}
+
 fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
     let t = Tolerance::default();
     let command = args.first().map(String::as_str).unwrap_or("");
+    if command == "explode" {
+        session.explodes += 1;
+    }
     let shapes = &mut session.shapes;
     match command {
         "box" if args.len() == 5 || args.len() == 8 => {
@@ -513,6 +703,35 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
         "explode" if args.len() == 3 => {
             let polyline = match get(shapes, &args[1])? {
                 Shape::Wire(p) | Shape::Face(p) => p.clone(),
+                Shape::Solid(s) => {
+                    // DBRep's explode reads the type from its first letter.
+                    let kind = match args[2].bytes().next().map(|b| b.to_ascii_lowercase()) {
+                        Some(b'f') => "face",
+                        Some(b'e') => "edge",
+                        _ => return Err(unsupported(args)),
+                    };
+                    let s = s.clone();
+                    if session.selector.is_none() {
+                        session.selector = Some(load_selector()?);
+                    }
+                    let picks: Vec<&Pick> = session
+                        .selector
+                        .as_ref()
+                        .unwrap()
+                        .iter()
+                        .filter(|p| p.explode == session.explodes)
+                        .collect();
+                    if picks.is_empty() || picks.iter().any(|p| p.kind != kind) {
+                        return Err(unsupported(args));
+                    }
+                    let mut names = Vec::new();
+                    for (k, pick) in picks.iter().enumerate() {
+                        let name = format!("{}_{}", args[1], k + 1);
+                        session.shapes.insert(name.clone(), select(&s, pick));
+                        names.push(name);
+                    }
+                    return Ok(names.join(" "));
+                }
                 _ => return Err(unsupported(args)),
             };
             let n = polyline.points.len();
@@ -662,11 +881,39 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             }
             let shape = get(shapes, &args[1])?;
             let p = parts(shape);
-            Ok(props(if command == "sprops" {
+            let mass = if command == "sprops" {
                 p.area
             } else {
                 p.length
-            }))
+            };
+            // A selected face or edge also reports its centre of gravity.
+            let centre = match (command, shape) {
+                (
+                    "sprops",
+                    Shape::Sub {
+                        solid,
+                        slot: Slot::Face(f),
+                    },
+                ) => Some(face_centre(solid.topology(), f.index()).1),
+                (
+                    "lprops",
+                    Shape::Sub {
+                        solid,
+                        slot: Slot::Edge(e),
+                    },
+                ) => Some(edge_centre(&solid.topology().edges()[e.index()].curve).1),
+                _ => None,
+            };
+            Ok(match centre {
+                Some(c) => format!(
+                    "{}\nCenter of gravity : \nX = {:.17e}\nY = {:.17e}\nZ = {:.17e}\n",
+                    props(mass),
+                    c.x,
+                    c.y,
+                    c.z
+                ),
+                None => props(mass),
+            })
         }
         "isbbinterf" if args.len() == 3 => {
             let a = solid(shapes, &args[1], args)?.bounds();

@@ -98,12 +98,116 @@
       "context": "tests/bugs/modalg_7",
       "expected_rust": "pass",
       "expected_occt": "pass",
-      "purpose": "Derived: cylinder counts (seam edge and vertices) through the count synthesizer, and properties."
+      "purpose": "Derived: cylinder counts (seam edge and vertices) through the count synthesizer, and properties.",
+      "verifies": [
+        "count synthesizer",
+        "per-use length synthesis"
+      ]
+    },
+    {
+      "path": "rust/fixtures/draw-derived/explode_selector",
+      "derived": true,
+      "context": "tests/bugs/modalg_7",
+      "selector": true,
+      "expected_rust": "pass",
+      "expected_occt": "pass",
+      "purpose": "Derived: explode picks of a box and a cylinder selected by native geometry (native selector); the seam pick is lost.",
+      "verifies": [
+        "native selector"
+      ]
     }
   ],
   "derived_sources": {
     "rust/fixtures/draw-derived/prism_history_rectangle": "4236efd3963fc8c0b885c65887df2f005387cf5e9b021d91b4565db7946a570e",
     "rust/fixtures/draw-derived/prism_history_reversed_triangle": "0e3fca7528f376334bcafd1dc69587a8990fb7c4ebb528baa0057bc39e5bef6c",
-    "rust/fixtures/draw-derived/pcylinder_counts": "4a800a919c536fc30b5075a17feb6d114e71c6b27f7fad761f2fdf4737fb1b08"
+    "rust/fixtures/draw-derived/pcylinder_counts": "4a800a919c536fc30b5075a17feb6d114e71c6b27f7fad761f2fdf4737fb1b08",
+    "rust/fixtures/draw-derived/explode_selector": "8c4e6c3812894ee84a42285cbd5859096cb5c5479f05b49382666515aa40e340"
+  },
+  "ledger": {
+    "survey": {
+      "cases": 17879,
+      "load_external_data": 11581,
+      "touch_the_viewer": 7428,
+      "property_assertions": 8469,
+      "subshape_count_assertions": 4735,
+      "validity_assertions": 2726,
+      "tolerance_maxima_assertions": 961
+    },
+    "assertions": 35766,
+    "statuses": {
+      "lost": 12846,
+      "model-independent": 22920
+    },
+    "lost_by_reason": {
+      "mapping unverified: count synthesizer": 5400,
+      "mapping unverified: native selector": 1578,
+      "mapping unverified: per-use length synthesis": 1975,
+      "no mapping: OCCT persistence formats": 75,
+      "no mapping: free boundaries count seams and degenerate edges": 765,
+      "no mapping: locations are OCCT structure": 5,
+      "no mapping: per-edge deviations follow OCCT's edges": 5,
+      "no mapping: per-edge overlap follows OCCT's edges": 17,
+      "no mapping: per-entity tolerances (enclosures are M5)": 978,
+      "no mapping: per-subshape fault statuses": 700,
+      "no mapping: section wire and vertex counts follow OCCT's splitting": 1348
+    },
+    "by_assertion": {
+      "check_attribute": {
+        "model-independent": 28
+      },
+      "check_fsd": {
+        "lost": 75
+      },
+      "checkcolor": {
+        "model-independent": 249
+      },
+      "checkdump": {
+        "model-independent": 52
+      },
+      "checkfaults": {
+        "lost": 700
+      },
+      "checkfreebounds": {
+        "lost": 765
+      },
+      "checklength": {
+        "lost": 249
+      },
+      "checkmaxtol": {
+        "lost": 981
+      },
+      "checknbshapes": {
+        "lost": 5415
+      },
+      "checkpoint": {
+        "model-independent": 42
+      },
+      "checkprops": {
+        "lost": 1743,
+        "model-independent": 7655
+      },
+      "checkreal": {
+        "model-independent": 480
+      },
+      "checksection": {
+        "lost": 1348
+      },
+      "checkshape": {
+        "lost": 223,
+        "model-independent": 4049
+      },
+      "checktrinfo": {
+        "lost": 3,
+        "model-independent": 395
+      },
+      "checkview": {
+        "lost": 227,
+        "model-independent": 6473
+      },
+      "custom": {
+        "lost": 1087,
+        "model-independent": 3317
+      }
+    }
   }
 }

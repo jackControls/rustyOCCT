@@ -74,10 +74,11 @@ group, and stale success records are removed before each run.
 | Derived `prism_history_rectangle` | Pass | Pass | Prism history: `generated`, `modified`, `isdeleted` for edges, vertices and the face |
 | Derived `prism_history_reversed_triangle` | Pass | Pass | Prism history against a clockwise profile's normal |
 | Derived `pcylinder_counts` | Pass | Pass | Seamless cylinder through the count synthesizer: `checkshape`, `checknbshapes`, volume, area and per-use length |
+| Derived `explode_selector` | Pass | Pass | Native selector: a box's faces and edges and a cylinder's faces and rings picked by OCCT index, checked by area, length and centre of gravity; the seam pick is lost |
 
 There are **three original geometry tests passing on both backends**, not nine.
-The three derived cases are counted separately (see below).
-The 18 bridge self-tests are separate infrastructure checks; they do not count
+The four derived cases are counted separately (see below).
+The 19 bridge self-tests are separate infrastructure checks; they do not count
 as more upstream coverage. The existing 66-solid / 2,292-classification native
 oracle corpus supplies much broader prism geometry checks independently.
 
@@ -144,7 +145,9 @@ separate bodies, so compound counts and `generated` results differ by design.
   profile, `explode` of a profile wire or face into edges or vertices,
   `savehistory`, `generated`, `modified`, `isdeleted`, and `sprops`/`lprops`
   (mass only) on faces, edges, solids and compounds, summing lengths per edge
-  use as OCCT's explorer does. `generated` follows OCCT's prism:
+  use as OCCT's explorer does. `explode` of a kernel solid into faces or
+  edges goes through the native selector (below); `sprops` of a selected
+  face and `lprops` of a selected edge also report its centre of gravity. `generated` follows OCCT's prism:
   a profile vertex gives its vertical edge, an edge its wall, the face the
   solid; the kernel's start/end copies are OCCT's `FirstShape`/`LastShape`. Everything else is unsupported,
   including OBBs, `sprops`, `nbshapes -t`, option-form boxes and visualization.
@@ -183,27 +186,96 @@ numerical domains and failure contracts independently of any application.
 ## Structure mapping and the coverage ledger
 
 The kernel's topology model (`TOPOLOGY_MODEL.md`) has no seams, degenerate
-edges or per-entity tolerances, so original assertions that count OCCT
-structure cannot be evaluated on Rust output directly. T1 put a **count
-synthesizer** behind the Rust adapter's `nbshapes`: the counts OCCT would give
-for the same body (a seam per periodic direction of a wound face, a seam
-vertex per ring edge, loops as wires, a wound face's ring loops as one wire;
-degenerate edges per pole join it with the surfaces that have poles). T2 adds,
-without rewriting any original file:
+edges or per-entity tolerances, so original assertions that depend on OCCT's
+structure cannot be evaluated on Rust output directly. None of the mappings
+rewrites an original file.
 
-* a **native selector** that resolves index-based picks such as `s_5` by
-  running the construction in DRAWEXE and matching that sub-shape's geometry
-  to a Rust entity exactly;
-* a **`.brep` converter and writer** for data-dependent cases, verified by
-  native round trips;
-* a **coverage ledger** in the report: every assertion is labelled
-  `model-independent` (properties, lengths, validity verdicts),
-  `mapped-and-verified` (counts, picks, history kinds and tolerance maxima
-  whose mapping native DRAW confirmed on that case) or `lost` (OCCT-specific
-  structure such as internal orientations, locations and tolerance growth).
+* **Count synthesizer** (T1): the adapter's `nbshapes` reports the counts OCCT
+  would give for the same body: a seam per periodic direction of a wound
+  face, a seam vertex per ring edge, loops as wires, a wound face's loops as
+  one wire. Lengths sum per edge use, the seam twice (`lprops`).
+* **Native selector** (T2): for a test registered with `"selector": true`,
+  the runner first runs it in native DRAW with `RUSTY_DRAW_SELECTOR_OUT` set.
+  The host then records every pick of every `explode`: its kind, measure
+  (`sprops`/`lprops`, which DRAW prints to six significant digits) and centre
+  of gravity (Draw variables, full precision). In the Rust run the adapter
+  numbers `explode` calls alike and selects, for each pick, the one kernel
+  entity of that kind whose measure agrees within `1e-5` relative and whose
+  centre agrees within `1e-7` of the centre's scale. It never reproduces
+  OCCT's exploration order. A pick with no entity (a seam) or with several is
+  lost: using it is a capability gap, never a pass. A Rust-only run cannot
+  select and reports such cases as skipped. Only faces and edges are
+  selected; vertex, wire and shell picks are unsupported until a case
+  confirms them.
+* **`.brep` interop** (T2, `occt_brep`): the converter and writer, verified by
+  native round trips in `compare_brep_io.py` (see `VALIDATION.md`).
 
-A mapping is trusted only on a case where the native backend confirms it;
-otherwise the case is a fingerprinted divergence. Native must still pass
-first, unsupported and missing cases stay non-passes, and the ledger
-aggregate, not a raw pass percentage, is the number `PRODUCTION_READINESS.md`
-gates on.
+### The ledger
+
+`run_upstream_tests.py` recomputes the ledger on every run and writes every
+assertion with its status to `target/upstream-tests/ledger.json`; the
+aggregate goes into the report and must equal the `ledger` block in
+`fixtures/upstream-draw.json`. A change fails the contract until it is
+reviewed and recorded with `--write-ledger` (`--ledger` recomputes and checks
+only). The scan covers every case file under `tests/` (the survey's
+17,879); an assertion is a `check*` procedure at a command position or a
+custom `puts "Error..."` report.
+
+* `model-independent`: the value does not depend on how OCCT structures the
+  body. Validity verdicts, volumes, areas, centres, points, real values,
+  images and meshes: `checkshape`, `checkprops` without `-l`, `checkreal`,
+  `checkview`, `checktrinfo`, `checkgravitycenter` and the tests' own
+  helpers and error reports.
+* `mapped-and-verified`: structure-dependent, carried by a mapping (count
+  synthesizer for `checknbshapes`, per-use length for `checkprops -l` and
+  `checklength`, the native selector for any assertion on a pick), and the
+  case is registered with its original assertions passing on both backends.
+* `lost`: every other structure-dependent assertion, with its reason: a
+  mapping exists but native DRAW has not confirmed it on that case, or none
+  exists (`checkfreebounds`, `checksection`, `checkmaxtol` until M5,
+  `checkfaults`, `checkloc`, `checkoverlapedges`, `checkcurveonsurf`,
+  `check_fsd`). An assertion that names an exploded sub-shape depends on the
+  selector whatever its procedure.
+
+Recomputed survey at the pinned revision (17,879 cases): 11,581 load
+external data, 7,428 touch the viewer; property assertions in 8,469 files,
+sub-shape counts in 4,735, validity in 2,726, tolerance maxima in 961. The
+2026-09-25 estimate (11,599; 7,658; 8,415; 4,689; 2,655; 860) used other
+search patterns; the ledger's are the definition from now on.
+
+| Status | Assertions |
+| --- | ---: |
+| model-independent | 22,920 |
+| mapped-and-verified | 0 |
+| lost | 12,846 |
+
+| Lost because | Kind | Assertions |
+| --- | --- | ---: |
+| count synthesizer | mapping unverified | 5,400 |
+| per-use length synthesis | mapping unverified | 1,975 |
+| native selector | mapping unverified | 1,578 |
+| section wire and vertex counts follow OCCT's splitting | no mapping | 1,348 |
+| per-entity tolerances (enclosures are M5) | no mapping | 978 |
+| free boundaries count seams and degenerate edges | no mapping | 765 |
+| per-subshape fault statuses | no mapping | 700 |
+| OCCT persistence formats | no mapping | 75 |
+| per-edge overlap follows OCCT's edges | no mapping | 17 |
+| locations are OCCT structure | no mapping | 5 |
+| per-edge deviations follow OCCT's edges | no mapping | 5 |
+
+No original assertion is mapped-and-verified yet. The three original cases
+that pass on both backends only make model-independent assertions, and no
+other original case with a structure-dependent assertion runs on the adapter.
+Each mapping is confirmed natively on a derived case
+(`mappings_confirmed_natively` in the report: the count synthesizer and
+per-use length on `pcylinder_counts`, the selector on `explode_selector`), but
+derived cases never count toward the ledger.
+
+**Data-dependent cases.** The only public data in the repository is
+`data/occ` (37 files). Three original cases name its files: one heal-grid
+data file whose grid runs shape healing, and two viewer cases. Every other
+data-dependent case needs OCCT's external test-data set, which is not in the
+repository and is never downloaded. The adapter therefore has no `restore`
+yet: it arrives with the first original data-dependent case a configured
+`--data-dir` makes runnable on both backends, so that native DRAW confirms it
+in the same change.

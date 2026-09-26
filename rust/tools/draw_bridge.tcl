@@ -50,8 +50,37 @@ proc locateData {name} {
     lappend ::missing $name
     error "fixture file could not be found: $name"
 }
+# Native selector (run_upstream_tests.py): record every pick of a native
+# explode as kind, measure and centre of gravity, so the Rust adapter can
+# select its own entity by geometry instead of OCCT's exploration order.
+set explodes 0
+proc recordPicks {ordinal arguments names} {
+    set kind other
+    # DBRep's explode reads the type from its first letter.
+    switch -nocase -glob -- [lindex $arguments 1] {
+        f* {set kind face}
+        e* {set kind edge}
+    }
+    set stream [open $::env(RUSTY_DRAW_SELECTOR_OUT) a]
+    set index 0
+    foreach name $names {
+        incr index
+        if {$kind eq "other"} {
+            puts $stream "pick $ordinal $index other"
+            continue
+        }
+        set measure [expr {$kind eq "face" ? "sprops" : "lprops"}]
+        set text [uplevel #0 [list $measure $name _rusty_gx _rusty_gy _rusty_gz]]
+        if {![regexp {Mass +: +([-0-9.+eE]+)} $text all mass]} {error "selector: no mass for $name"}
+        set centre {}
+        foreach axis {_rusty_gx _rusty_gy _rusty_gz} {lappend centre [uplevel #0 [list dval $axis]]}
+        puts $stream "pick $ordinal $index $kind $mass [join $centre { }]"
+    }
+    close $stream
+}
 proc runCommand {command args} {
     lappend ::commands $command
+    if {$command eq "explode"} {incr ::explodes}
     if {$::backend eq "rust"} {
         # DRAW permits numeric Tcl expressions, e.g. 2e-7+1e-14. Preserve that
         # behavior through the actual interpreter, not a Python expression parser.
@@ -85,6 +114,9 @@ proc runCommand {command args} {
         if {$status ne "OK"} {error $result}
     } else {
         set result [uplevel #0 [linsert $args 0 $command]]
+        if {$command eq "explode" && [info exists ::env(RUSTY_DRAW_SELECTOR_OUT)]} {
+            recordPicks $::explodes $args $result
+        }
     }
     if {$result ne ""} {logPuts $result}
     if {$command in {checkshape nbshapes vprops sprops lprops isbbinterf isdeleted}} {incr ::queries}

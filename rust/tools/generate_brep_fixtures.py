@@ -397,6 +397,19 @@ def cell_cases(bases):
         c.edges[0].start = len(c.vertices)-1
     cell('cylinder', 'cylinder_ring_edge_with_one_vertex', one_vertex_ring)
     cell('box', 'box_shell_not_in_its_region', lambda c: c.regions[1].shells.remove(0))
+
+    def wall_period(span):
+        # A ring fin's pcurve spans `span` in u while its circle sweeps 2 pi,
+        # as in OCCT files that print 2 pi as 6.28318530717959.
+        def change(c):
+            wall = next(f for f in c.faces if isinstance(f.surface, Cylinder))
+            k = c.loops[wall.loops[0]].fins[0]
+            p = c.fins[k].pcurve
+            sign = 1 if p.end[0] > p.start[0] else -1
+            c.fins[k].pcurve = Line2(p.start, (p.start[0]+sign*span, p.end[1]))
+        return change
+    cell('cylinder', 'cylinder_ring_pcurve_printed_period', wall_period(6.28318530717959))
+    cell('cylinder', 'cylinder_ring_pcurve_period_off', wall_period(TAU*(1+1e-6)))
     return out
 
 
