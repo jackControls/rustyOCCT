@@ -68,6 +68,7 @@ jobs:
           target/math-oracle-venv/bin/python rust/tools/generate_split_merge_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_attribute_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_brep_io_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_primitive_fixtures.py --check
       - name: Run unchanged upstream tests on both kernels
         run: python3 rust/tools/run_upstream_tests.py --backend both --draw-exe /usr/bin/occt-draw
       - name: Compare line and plane intersections with native OCCT
@@ -302,6 +303,10 @@ jobs:
         run: |
           target/math-oracle-venv/bin/python rust/tools/test_split_merge_oracle.py
           target/math-oracle-venv/bin/python rust/tools/compare_split_merge.py --occt-root target/split-merge-sdk/install --sdk-manifest target/split-merge-sdk/build-manifest.json
+      - name: Test deliberate primitive bridge failures and compare every cone with the reference
+        run: |
+          target/math-oracle-venv/bin/python rust/tools/test_primitive_oracle.py
+          target/math-oracle-venv/bin/python rust/tools/compare_primitives.py --occt-root target/split-merge-sdk/install --sdk-manifest target/split-merge-sdk/build-manifest.json
       - name: Preserve source provenance, native observations, and differences
         if: always()
         uses: actions/upload-artifact@v4.6.2
@@ -309,6 +314,7 @@ jobs:
           name: source-pinned-split-merge-results
           path: |
             target/split-merge-oracle/
+            target/primitive-oracle/
             target/split-merge-sdk/build-manifest.json
             target/split-merge-sdk/*.log
             target/split-merge-sdk/build/CMakeCache.txt

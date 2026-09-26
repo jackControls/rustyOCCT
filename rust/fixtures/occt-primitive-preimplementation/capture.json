@@ -1,0 +1,19 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 BRepPrimAPI BRepCheck_Analyzer BRepGProp",
+  "rust_revision": "21f34dad5442b646eeb359234385d601d7dcd20d",
+  "platform": "darwin",
+  "rust_cone_implementation_exists": false,
+  "rust_worktree_uncommitted": [
+    "?? rust/fixtures/primitive-cases.txt",
+    "?? rust/fixtures/primitive-expected.tsv",
+    "?? rust/tools/compare_primitives.py",
+    "?? rust/tools/generate_primitive_fixtures.py",
+    "?? rust/tools/occt_primitive_oracle.cpp",
+    "?? rust/tools/primitive_reference.py"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "7d7aeab546c8234a09a3bef05a1c43a1644aadb5466885008f623b50a67e60da",
+  "probe_source_sha256": "82d2339c52b9a62a1e52ff8ed866d094bd5590cfd813fba45a81dd1e3b283cd3",
+  "observations_sha256": "df621bb6bd7f8a006409879c071f87ab707b61325c26c5a971cbe235173c7bd8"
+}
