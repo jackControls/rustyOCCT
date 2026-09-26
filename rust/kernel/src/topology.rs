@@ -431,6 +431,45 @@ impl Face {
     }
 }
 
+/// Certified enclosures `[lo, hi]` of a body's mass properties at unit
+/// density (REVIEW_NOTES.md U2): volume, surface area, centre of gravity and
+/// the inertia tensor about it, in world axes.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct MassEnclosure {
+    pub volume: [f64; 2],
+    pub surface_area: [f64; 2],
+    pub centroid: [[f64; 2]; 3],
+    pub inertia: [[[f64; 2]; 3]; 3],
+}
+
+impl MassEnclosure {
+    /// The midpoints of every enclosure.
+    pub fn midpoints(&self) -> crate::MassProperties {
+        let mid = |x: [f64; 2]| 0.5 * x[0] + 0.5 * x[1];
+        crate::MassProperties {
+            volume: mid(self.volume),
+            surface_area: mid(self.surface_area),
+            centroid: Point3::new(
+                mid(self.centroid[0]),
+                mid(self.centroid[1]),
+                mid(self.centroid[2]),
+            ),
+            inertia: std::array::from_fn(|a| std::array::from_fn(|b| mid(self.inertia[a][b]))),
+        }
+    }
+    /// The largest half width, relative to each value's magnitude (at least
+    /// 1 for the centroid, in the body's length unit).
+    pub fn relative_width(&self) -> f64 {
+        let rel = |x: [f64; 2], scale: f64| 0.5 * (x[1] - x[0]) / scale.max(f64::MIN_POSITIVE);
+        let mut worst = rel(self.volume, self.volume[1].abs())
+            .max(rel(self.surface_area, self.surface_area[1].abs()));
+        for c in &self.centroid {
+            worst = worst.max(rel(*c, c[1].abs().max(1.0)));
+        }
+        worst
+    }
+}
+
 /// The counts OCCT's `nbshapes` reports for the same body (a synthesis, see
 /// [`Topology::occt_counts`]).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -869,6 +908,44 @@ impl Topology {
             None => Ok(()),
             Some(issue) => Err(Error::InvalidTopology(issue.kind.name())),
         }
+    }
+
+    /// A reference point for integration: the first vertex, or the first
+    /// face's frame origin.
+    fn reference_point(&self) -> [f64; 3] {
+        if let Some(v) = self.vertices.first() {
+            return v.position.to_array();
+        }
+        match self.faces.first().map(|f| &f.surface) {
+            Some(
+                Surface::Plane(f)
+                | Surface::Cylinder { frame: f, .. }
+                | Surface::Cone { frame: f, .. },
+            ) => f.origin().to_array(),
+            None => [0.0; 3],
+        }
+    }
+    /// Certified mass properties of the body's solid regions (general:
+    /// planes, cylinders and cones; REVIEW_NOTES.md U2). `None` when a face
+    /// cannot be integrated (an arc pcurve on a cylinder or cone) or a
+    /// certified division fails.
+    pub fn mass_enclosure(&self) -> Option<MassEnclosure> {
+        let e = validate::mass(&self.view(), self.reference_point())?;
+        Some(MassEnclosure {
+            volume: e.volume,
+            surface_area: e.area,
+            centroid: e.centroid,
+            inertia: e.inertia,
+        })
+    }
+    /// A face's area and centre of gravity, from certified enclosures.
+    pub fn face_area_and_centre(&self, face: FaceId) -> Option<(f64, Point3)> {
+        let (area, centre) = validate::face_mass(&self.view(), face.0, self.reference_point())?;
+        let mid = |x: [f64; 2]| 0.5 * x[0] + 0.5 * x[1];
+        Some((
+            mid(area),
+            Point3::new(mid(centre[0]), mid(centre[1]), mid(centre[2])),
+        ))
     }
 
     /// Every entity's attributes, by id; each list is sorted by key.
@@ -1322,6 +1399,220 @@ impl Topology {
         if topology.euler_characteristic() != 2 - 2 * profile.holes().len() as i64 {
             return Err(Error::InvalidTopology("unexpected shell genus"));
         }
+        Ok(topology)
+    }
+
+    /// A right circular cone or frustum (S3 of REVIEW_NOTES.md), as
+    /// `BRepPrimAPI_MakeCone(gp_Ax2, bottom, top, height)` makes it: the
+    /// bottom at the frame origin, the top at `height` along its normal, a
+    /// zero radius an apex. The lateral face is a `Cone` surface with v along
+    /// the generatrix from the bottom; a nonzero end is a ring edge bounding
+    /// a disc, a zero end a pole (a vertex loop at the apex). Entities derive
+    /// from the meridian profile `(0, 0), (bottom, 0), (top, height), (0,
+    /// height)` as a revolution: segment 0 (bottom radius) the start cap,
+    /// segment 1 (generatrix) the wall, segment 2 (top radius) the end cap,
+    /// vertex 1 the bottom ring or apex, vertex 2 the top ring or apex.
+    pub(crate) fn cone(
+        frame: Frame3,
+        bottom: f64,
+        top: f64,
+        height: f64,
+        tolerance: Tolerance,
+        operation: OperationId,
+    ) -> Result<Self> {
+        let tol = tolerance.linear();
+        for (value, what) in [
+            (bottom, "cone radius"),
+            (top, "cone radius"),
+            (height, "cone height"),
+        ] {
+            crate::math::finite(value, what)?;
+        }
+        if bottom < 0.0 || top < 0.0 || (bottom > 0.0 && bottom <= tol) || (top > 0.0 && top <= tol)
+        {
+            return Err(Error::Degenerate("cone radius"));
+        }
+        if bottom == top {
+            return Err(Error::OutOfDomain("equal cone radii make a cylinder"));
+        }
+        if height <= tol {
+            return Err(Error::Degenerate("cone height"));
+        }
+        let derive = |entity, role, parents| Derivation {
+            operation,
+            kind: OperationKind::Revolve,
+            entity,
+            role,
+            ordinal: 0,
+            parents,
+        };
+        let meridian = |element| Parent::Profile {
+            boundary: 0,
+            element,
+        };
+        let half_angle = (top - bottom).atan2(height);
+        let slant = height.hypot(top - bottom);
+        let mut topology = Self {
+            vertices: Vec::new(),
+            edges: Vec::new(),
+            fins: Vec::new(),
+            loops: Vec::new(),
+            faces: Vec::new(),
+            shells: Vec::new(),
+            regions: Vec::new(),
+            identity: Identity::new(
+                derive(EntityKind::Body, Role::Body, Vec::new()),
+                Vec::new(),
+                BTreeMap::new(),
+            )?,
+            layout: Vec::new(),
+            attributes: AttributeMap::new(),
+        };
+        let mut derivations: Vec<(Slot, Derivation)> = vec![(
+            Slot::Region(RegionId(1)),
+            derive(
+                EntityKind::Region,
+                Role::Region,
+                vec![meridian(ProfileElement::Boundary)],
+            ),
+        )];
+        let mut wall_loops = Vec::new();
+        // (radius, height, cap role, cap segment, edge role, rim vertex)
+        let ends = [
+            (bottom, 0.0, Role::StartCap, 0, Role::BottomEdge, 1),
+            (top, height, Role::EndCap, 2, Role::TopEdge, 2),
+        ];
+        for (radius, z, cap_role, segment, edge_role, rim) in ends {
+            let upper = z > 0.0;
+            if radius == 0.0 {
+                let apex = topology.add_vertex(frame.point(Point2::default(), z));
+                derivations.push((
+                    Slot::Vertex(apex),
+                    derive(
+                        EntityKind::Vertex,
+                        Role::Apex,
+                        vec![meridian(ProfileElement::Vertex(rim))],
+                    ),
+                ));
+                topology.loops.push(Loop::Vertex(apex));
+                wall_loops.push(LoopId(topology.loops.len() - 1));
+                continue;
+            }
+            let centre = frame.point(Point2::default(), z);
+            let normal = if upper {
+                frame.normal()
+            } else {
+                -frame.normal()
+            };
+            let disc_frame = Frame3::new(centre, normal, frame.x(), tolerance)?;
+            let ring_frame = Frame3::new(centre, frame.normal(), frame.x(), tolerance)?;
+            let ring = topology.add_ring(Curve3::Circle {
+                frame: ring_frame,
+                radius,
+            });
+            derivations.push((
+                Slot::Edge(ring),
+                derive(
+                    EntityKind::Edge,
+                    edge_role,
+                    vec![meridian(ProfileElement::Vertex(rim))],
+                ),
+            ));
+            let disc = FaceId(topology.faces.len());
+            derivations.push((
+                Slot::Face(disc),
+                derive(
+                    EntityKind::Face,
+                    cap_role,
+                    vec![meridian(ProfileElement::Segment(segment))],
+                ),
+            ));
+            topology.faces.push(Face {
+                surface: Surface::Plane(disc_frame),
+                sense: Orientation::Forward,
+                loops: Vec::new(),
+                front: ShellId(0),
+                back: ShellId(1),
+                enclosure: None,
+            });
+            // The bottom disc runs against the ring, the top disc with it.
+            topology.add_cap_loop(disc.0, &[ring], !upper, disc_frame);
+            // The wall: the bottom ring once in +u at v = 0, the top ring once
+            // in -u at v = slant, on the universal cover.
+            let v = if upper { slant } else { 0.0 };
+            let (sense, u0, u1, turns) = if upper {
+                (Orientation::Reversed, TAU, 0.0, -1)
+            } else {
+                (Orientation::Forward, 0.0, TAU, 1)
+            };
+            let fin = Fin {
+                edge: ring,
+                sense,
+                pcurve: Curve2::LineSegment {
+                    start: Point2::new(u0, v),
+                    end: Point2::new(u1, v),
+                },
+                enclosure: None,
+            };
+            wall_loops.push(topology.add_loop(vec![fin], [turns, 0]));
+        }
+        let wall = FaceId(topology.faces.len());
+        derivations.push((
+            Slot::Face(wall),
+            derive(
+                EntityKind::Face,
+                Role::Wall,
+                vec![meridian(ProfileElement::Segment(1))],
+            ),
+        ));
+        topology.faces.push(Face {
+            surface: Surface::Cone {
+                frame,
+                radius: bottom,
+                half_angle,
+            },
+            sense: Orientation::Forward,
+            loops: wall_loops,
+            front: ShellId(0),
+            back: ShellId(1),
+            enclosure: None,
+        });
+        for (k, fin) in topology.fins.iter().enumerate() {
+            topology.edges[fin.edge.0].fins.push(FinId(k));
+        }
+        let fronts = topology.face_ids().map(|f| (f, Side::Front)).collect();
+        let backs = topology.face_ids().map(|f| (f, Side::Back)).collect();
+        topology.shells = vec![
+            Shell {
+                region: RegionId(1),
+                sides: fronts,
+                wire_edges: Vec::new(),
+                acorn_vertices: Vec::new(),
+            },
+            Shell {
+                region: RegionId(0),
+                sides: backs,
+                wire_edges: Vec::new(),
+                acorn_vertices: Vec::new(),
+            },
+        ];
+        topology.regions = vec![
+            Region {
+                kind: RegionKind::Void,
+                shells: vec![ShellId(1)],
+            },
+            Region {
+                kind: RegionKind::Solid,
+                shells: vec![ShellId(0)],
+            },
+        ];
+        topology.identity = Identity::new(
+            derive(EntityKind::Body, Role::Body, Vec::new()),
+            derivations,
+            BTreeMap::new(),
+        )?;
+        topology.measure_enclosures(tolerance)?;
+        topology.validate(tolerance)?;
         Ok(topology)
     }
 

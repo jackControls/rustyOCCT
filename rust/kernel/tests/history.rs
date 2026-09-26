@@ -102,7 +102,7 @@ fn every_history_matches_the_independent_enumeration_and_checks_clean() {
         }
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
-    assert_eq!(relations, 114_270);
+    assert_eq!(relations, 114_336);
 }
 
 #[test]
@@ -111,7 +111,7 @@ fn deprecated_wrappers_discard_the_same_history() {
     let spec = &cases(include_str!("../../fixtures/identity-cases.txt"))[0];
     let (solid, _) = build_tracked(spec);
     let legacy = Solid::extrude(
-        solid.profile().clone(),
+        solid.profile().expect("a prism").clone(),
         solid.frame(),
         solid.start_offset(),
         solid.end_offset(),
@@ -119,7 +119,7 @@ fn deprecated_wrappers_discard_the_same_history() {
     .unwrap();
     assert!(legacy.topology().ids().eq(Solid::extrude_with(
         OperationId::UNSPECIFIED,
-        solid.profile().clone(),
+        solid.profile().expect("a prism").clone(),
         solid.frame(),
         solid.start_offset(),
         solid.end_offset(),
@@ -158,7 +158,7 @@ fn operations_record_their_level_and_replay_at_it() {
     let replayed = Solid::extrude_at(
         construct.level().unwrap(),
         solid.operation(),
-        solid.profile().clone(),
+        solid.profile().expect("a prism").clone(),
         solid.frame(),
         solid.start_offset(),
         solid.end_offset(),
@@ -190,7 +190,7 @@ fn operations_record_their_level_and_replay_at_it() {
             Solid::extrude_at(
                 level,
                 solid.operation(),
-                solid.profile().clone(),
+                solid.profile().expect("a prism").clone(),
                 solid.frame(),
                 solid.start_offset(),
                 solid.end_offset(),

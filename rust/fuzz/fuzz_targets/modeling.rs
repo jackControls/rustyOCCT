@@ -23,7 +23,7 @@ fn validate(solid: &Solid, tolerance: Tolerance, scale: f64) {
     }
     assert_eq!(
         solid.topology().euler_characteristic(),
-        2 - 2 * solid.profile().holes().len() as i64
+        2 - 2 * solid.profile().expect("a prism").holes().len() as i64
     );
     for edge in solid.topology().edges() {
         for t in [0., 0.5, 1.] {
@@ -139,7 +139,7 @@ libfuzzer_sys::fuzz_target!(|data: &[u8]| {
                 let cut = start + (end - start) * (0.2 + 0.6 * unit(1));
                 let left = Solid::extrude_with(
                     OperationId::UNSPECIFIED,
-                    solid.profile().clone(),
+                    solid.profile().expect("a prism").clone(),
                     solid.frame(),
                     start,
                     cut,
@@ -149,7 +149,7 @@ libfuzzer_sys::fuzz_target!(|data: &[u8]| {
                 .mass_properties();
                 let right = Solid::extrude_with(
                     OperationId::UNSPECIFIED,
-                    solid.profile().clone(),
+                    solid.profile().expect("a prism").clone(),
                     solid.frame(),
                     cut,
                     end,
@@ -160,7 +160,7 @@ libfuzzer_sys::fuzz_target!(|data: &[u8]| {
                 close(left.volume + right.volume, original.volume, scale.powi(3));
                 close(
                     left.surface_area + right.surface_area,
-                    original.surface_area + 2. * solid.profile().area(),
+                    original.surface_area + 2. * solid.profile().expect("a prism").area(),
                     scale.powi(2),
                 );
                 for i in 0..3 {
@@ -173,7 +173,7 @@ libfuzzer_sys::fuzz_target!(|data: &[u8]| {
                 }
             }
             _ => {
-                let mut profile = solid.profile().clone();
+                let mut profile = solid.profile().expect("a prism").clone();
                 if let Some(vertices) = profile.outer().polygon_vertices() {
                     let mut reordered = vertices.to_vec();
                     reordered.reverse();

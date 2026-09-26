@@ -10,7 +10,10 @@
 //! mutations 24-26: a missing bound, a bound outside [0, resolution], and a
 //! vertex moved within the resolution but past its measured bound; mutation
 //! 27 places a circle prism far out at a tolerance near the coordinates'
-//! resolution, where construction must fail or enclose within it.
+//! resolution, where construction must fail or enclose within it. Mutation
+//! 28 builds a cone or frustum (S3 of REVIEW_NOTES.md) and moves its pole
+//! along a ruling or off the surface, drops the pole, makes the surface
+//! degenerate or shifts a ring's pcurve, as the cone fixtures do.
 use crate::byte;
 use rusty_occt::identity::OperationId;
 use rusty_occt::topology::{
@@ -283,11 +286,184 @@ fn far_prism(b: &mut Bytes) {
     }
 }
 
+/// A cone or frustum from `Solid::cone_with`, valid with enclosures within
+/// the resolution and certified mass properties, then one mutation with its
+/// predicted issues.
+fn cone(b: &mut Bytes) {
+    let scale = 2.0_f64.powi(i32::from(b.next() % 21) - 10);
+    let tolerance = Tolerance::new(1e-9 * scale, 1e-12).unwrap();
+    let tau = tolerance.linear();
+    let radius = |b: &mut Bytes| {
+        if b.next() % 3 == 0 {
+            0.0
+        } else {
+            scale * (0.1 + b.unit())
+        }
+    };
+    let (bottom, top, height) = (radius(b), radius(b), scale * (0.1 + b.unit()));
+    let normal = Vec3::new(b.signed(), b.signed(), 0.5 + b.unit());
+    let origin = Point3::new(
+        10.0 * scale * b.signed(),
+        10.0 * scale * b.signed(),
+        10.0 * scale * b.signed(),
+    );
+    let Ok(frame) = Frame3::new(origin, normal, Vec3::X, tolerance) else {
+        return;
+    };
+    let Ok((solid, _)) = Solid::cone_with(
+        OperationId::UNSPECIFIED,
+        frame,
+        bottom,
+        top,
+        height,
+        tolerance,
+    ) else {
+        // Equal radii are a cylinder, two apices no solid.
+        assert!(bottom == top, "{bottom} {top} {height}");
+        return;
+    };
+    let t = solid.topology();
+    assert!(t.check(tolerance).is_empty());
+    for e in t
+        .vertices()
+        .iter()
+        .map(|v| v.enclosure)
+        .chain(t.fins().iter().map(|f| f.enclosure))
+        .chain(t.faces().iter().map(|f| f.enclosure))
+    {
+        let e = e.expect("a builder encloses every entity");
+        assert!(e.bound >= 0.0 && e.bound <= tau, "{e:?}");
+    }
+    // The certified volume holds the frustum's, pi h (R^2 + R r + r^2) / 3,
+    // up to the rounding of the stored slant and angle.
+    let m = t.mass_enclosure().expect("certified cone mass properties");
+    let exact = std::f64::consts::PI * height * (bottom * bottom + bottom * top + top * top) / 3.0;
+    assert!(m.volume[0] <= m.volume[1]);
+    assert!(
+        (0.5 * (m.volume[0] + m.volume[1]) - exact).abs() <= 1e-9 * exact,
+        "{m:?} {exact}"
+    );
+    let apices = usize::from(bottom == 0.0) + usize::from(top == 0.0);
+    let c = t.occt_counts();
+    assert_eq!(
+        (c.vertices, c.edges, c.wires, c.faces, c.shells, c.solids),
+        (2, 3, 3 - apices, 3 - apices, 1, 1)
+    );
+    let mut parts = parts_of(t);
+    let fi = (0..parts.faces.len())
+        .find(|f| matches!(parts.faces[*f].surface, Surface::Cone { .. }))
+        .expect("a wall");
+    let loops = parts.faces[fi].loops.clone();
+    let pole = loops
+        .iter()
+        .position(|l| matches!(parts.loops[l.index()], Loop::Vertex(_)));
+    let ring = loops
+        .iter()
+        .position(|l| matches!(parts.loops[l.index()], Loop::Edges { .. }))
+        .expect("a ring loop");
+    let axis = frame.normal();
+    let on_axis = |z: f64| frame.point(Point2::default(), z);
+    let expect = match (b.next() % 6, pole) {
+        (1, Some(li)) => {
+            // Along a ruling towards the other end: on the surface, off
+            // the apex.
+            let Loop::Vertex(v) = parts.loops[loops[li].index()] else {
+                unreachable!("the pole is a vertex loop")
+            };
+            let at = parts.vertices[v.index()].position;
+            let (rim, z) = if at.distance(on_axis(0.0)) < at.distance(on_axis(height)) {
+                (top, height)
+            } else {
+                (bottom, 0.0)
+            };
+            let angle = TAU * b.unit();
+            let target =
+                on_axis(z) + (frame.x() * angle.cos() + axis.cross(frame.x()) * angle.sin()) * rim;
+            let Ok(d) = (target - at).normalized() else {
+                return;
+            };
+            // Declared at the resolution, as the fixtures declare a moved
+            // entity: the surface gap is rounding, the apex 1000 away.
+            parts.vertices[v.index()].position = at + d * (1000.0 * tau);
+            parts.vertices[v.index()].enclosure = Some(Enclosure::computed(tau));
+            Expect::Exactly(vec![format!("pole_off_apex:loop {fi}.{li}")])
+        }
+        (2, Some(li)) => {
+            // Along the axis: off the surface.
+            let Loop::Vertex(v) = parts.loops[loops[li].index()] else {
+                unreachable!("the pole is a vertex loop")
+            };
+            let vertex = &mut parts.vertices[v.index()];
+            vertex.position = vertex.position + axis * (1000.0 * tau);
+            vertex.enclosure = Some(Enclosure::computed(tau));
+            Expect::Contains(
+                vec![format!("vertex_loop_off_surface:loop {fi}.{li}")],
+                vec![],
+            )
+        }
+        (3, Some(li)) => {
+            let slot = loops[li].index();
+            parts.faces[fi].loops.remove(li);
+            let ring = if ring > li { ring - 1 } else { ring };
+            Expect::Contains(
+                vec![
+                    format!("loop_without_face:loop slot {slot}"),
+                    format!("winding_mismatch:loop {fi}.{ring}"),
+                ],
+                vec![],
+            )
+        }
+        (4, _) => {
+            let Surface::Cone { half_angle, .. } = &mut parts.faces[fi].surface else {
+                unreachable!("the wall is a cone")
+            };
+            *half_angle = std::f64::consts::FRAC_PI_2;
+            Expect::Contains(vec![format!("degenerate_surface:face {fi}")], vec![])
+        }
+        (5, _) => {
+            let Loop::Edges { fins, .. } = &parts.loops[loops[ring].index()] else {
+                unreachable!("a ring loop")
+            };
+            let fin = &mut parts.fins[fins[0].index()];
+            fin.pcurve = shift_v(&fin.pcurve, 1000.0 * tau);
+            Expect::Contains(vec![format!("pcurve_off_edge:use {fi}.{ring}.0")], vec![])
+        }
+        _ => Expect::Valid,
+    };
+    verify(report(&parts, tolerance), expect);
+}
+
+fn verify(got: Vec<String>, expect: Expect) {
+    match expect {
+        Expect::Valid => assert_eq!(got, Vec::<String>::new()),
+        Expect::Exactly(mut want) => {
+            want.sort();
+            assert_eq!(got, want);
+        }
+        Expect::Contains(all, any) => {
+            assert!(!got.is_empty());
+            for w in &all {
+                assert!(got.contains(w), "missing {w} in {got:?}");
+            }
+            for group in &any {
+                assert!(
+                    group.iter().any(|w| got.contains(w)),
+                    "none of {group:?} in {got:?}"
+                );
+            }
+        }
+    }
+}
+
 pub fn check_brep_validation(data: &[u8]) {
     let mut b = Bytes(data, 0);
-    let mutation = b.next() % 28;
+    let mutation = b.next() % 29;
     if mutation == 27 {
         far_prism(&mut b);
+        return;
+    }
+    if mutation == 28 {
+        cone(&mut b);
         return;
     }
     if mutation == 16 {
@@ -690,24 +866,5 @@ pub fn check_brep_validation(data: &[u8]) {
             Expect::Valid
         }
     };
-    let got = report(&parts, tolerance);
-    match expect {
-        Expect::Valid => assert_eq!(got, Vec::<String>::new()),
-        Expect::Exactly(mut want) => {
-            want.sort();
-            assert_eq!(got, want);
-        }
-        Expect::Contains(all, any) => {
-            assert!(!got.is_empty());
-            for w in &all {
-                assert!(got.contains(w), "missing {w} in {got:?}");
-            }
-            for group in &any {
-                assert!(
-                    group.iter().any(|w| got.contains(w)),
-                    "none of {group:?} in {got:?}"
-                );
-            }
-        }
-    }
+    verify(report(&parts, tolerance), expect);
 }

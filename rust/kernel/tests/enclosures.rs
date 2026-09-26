@@ -26,7 +26,7 @@ fn bound(s: &Solid, id: EntityId) -> Option<f64> {
 }
 
 fn enclosed(s: &Solid) {
-    let tol = s.profile().tolerance();
+    let tol = s.resolution();
     let t = s.topology();
     let all = t
         .vertices()
@@ -79,6 +79,14 @@ fn bounds_fit_the_resolution_and_never_fall_through_operations() {
         let (moved, h) = solid.transform_with(OperationId(900), turn).unwrap();
         enclosed(&moved);
         pairs += carried(&h, &[&solid], &[&moved]);
+        if spec.cone.is_some() {
+            // Split and fuse rebuild prisms; a cone is outside their domain.
+            assert!(matches!(
+                moved.split_at_height(OperationId(901), moved.end_offset() / 2.0),
+                Err(rusty_occt::Error::OutOfDomain(_))
+            ));
+            continue;
+        }
         let (low, high) = (
             moved.start_offset().min(moved.end_offset()),
             moved.start_offset().max(moved.end_offset()),

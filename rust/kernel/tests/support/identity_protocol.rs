@@ -17,6 +17,8 @@ pub struct CaseSpec {
     pub end: f64,
     pub boundaries: Vec<Boundary>,
     pub box_at: Option<([f64; 3], [f64; 3])>,
+    /// Radii at the frame origin and at the height, and the height.
+    pub cone: Option<[f64; 3]>,
     pub transforms: Vec<RigidTransform>,
 }
 
@@ -41,6 +43,7 @@ pub fn parse(block: &str) -> CaseSpec {
         end: 0.0,
         boundaries: Vec::new(),
         box_at: None,
+        cone: None,
         transforms: Vec::new(),
     };
     for line in block.lines().filter(|l| !l.trim().is_empty()) {
@@ -55,6 +58,7 @@ pub fn parse(block: &str) -> CaseSpec {
             "frame" => spec.frame = std::array::from_fn(|i| f(i + 1)),
             "offsets" => (spec.start, spec.end) = (f(1), f(2)),
             "box" => spec.box_at = Some(([f(1), f(2), f(3)], [f(4), f(5), f(6)])),
+            "cone" => spec.cone = Some([f(1), f(2), f(3)]),
             "boundary" => {
                 let (boundary, rest) = if w[1] == "C" {
                     let b =
@@ -121,6 +125,10 @@ pub fn build_tracked(spec: &CaseSpec) -> (Solid, History) {
         spec.tolerance,
     )
     .unwrap();
+    if let Some([bottom, top, height]) = spec.cone {
+        return Solid::cone_with(spec.operation, frame, bottom, top, height, spec.tolerance)
+            .unwrap();
+    }
     let profile = Profile::new(
         spec.boundaries[0].clone(),
         spec.boundaries[1..].to_vec(),
@@ -148,6 +156,7 @@ pub fn role_name(role: Role) -> &'static str {
         Role::CutFace => "cut_face",
         Role::CutEdge => "cut_edge",
         Role::CutVertex => "cut_vertex",
+        Role::Apex => "apex",
     }
 }
 
@@ -169,7 +178,9 @@ pub fn parent_text(p: &Parent) -> String {
 pub fn rows(solid: &Solid) -> Vec<String> {
     let t = solid.topology();
     let frame = solid.frame();
-    let profile = solid.profile();
+    let Some(profile) = solid.profile() else {
+        return cone_rows(solid);
+    };
     let tolerance = profile.tolerance();
     let sides = [("start", solid.start_offset()), ("end", solid.end_offset())];
     let boundaries: Vec<&Boundary> = std::iter::once(profile.outer())
@@ -292,6 +303,65 @@ pub fn rows(solid: &Solid) -> Vec<String> {
             }
             Slot::Edge(e) => ("edge", edge_loc[e.index()].clone()),
             Slot::Face(f) => ("face", face_loc[f.index()].clone()),
+            Slot::Region(_) => ("region", "region".to_string()),
+        };
+        let parents: Vec<String> = d.parents.iter().map(parent_text).collect();
+        out.push(format!(
+            "{id} {kind} {} {} {} {loc}",
+            role_name(d.role),
+            d.ordinal,
+            parents.join(",")
+        ));
+    }
+    out.sort();
+    out
+}
+
+/// A cone's rows: the apex or ring at each end found by position against
+/// the axis points, the discs by their plane's origin, the wall by its
+/// surface (identity_reference.py::cone_entities).
+fn cone_rows(solid: &Solid) -> Vec<String> {
+    let t = solid.topology();
+    let frame = solid.frame();
+    let scale = solid.bounds().max.distance(solid.bounds().min).max(1.0);
+    let budget = 64.0 * f64::EPSILON * scale;
+    let side = |p: Point3| -> &'static str {
+        let ends = [
+            (
+                "start",
+                frame.point(Point2::default(), solid.start_offset()),
+            ),
+            ("end", frame.point(Point2::default(), solid.end_offset())),
+        ];
+        let found: Vec<_> = ends
+            .iter()
+            .filter(|(_, q)| q.distance(p) <= budget)
+            .collect();
+        assert_eq!(found.len(), 1, "{p:?} is not one axis end");
+        found[0].0
+    };
+    let mut out = Vec::new();
+    for (id, slot) in t.ids() {
+        let d = t.derivation(id).unwrap();
+        assert_eq!(d.id(), id, "derivation must re-hash to its id");
+        assert_eq!(t.slot_of(id), Some(slot));
+        assert_eq!(t.id_of(slot), Some(id));
+        let (kind, loc) = match slot {
+            Slot::Vertex(v) => (
+                "vertex",
+                format!("apex {}", side(t.vertices()[v.index()].position)),
+            ),
+            Slot::Edge(e) => {
+                let Curve3::Circle { frame: circle, .. } = &t.edges()[e.index()].curve else {
+                    panic!("a cone's edges are rings");
+                };
+                ("edge", format!("ring {}", side(circle.origin())))
+            }
+            Slot::Face(f) => match &t.faces()[f.index()].surface {
+                Surface::Plane(plane) => ("face", format!("cap {}", side(plane.origin()))),
+                Surface::Cone { .. } => ("face", "wall".to_string()),
+                other => panic!("unexpected cone face {other:?}"),
+            },
             Slot::Region(_) => ("region", "region".to_string()),
         };
         let parents: Vec<String> = d.parents.iter().map(parent_text).collect();

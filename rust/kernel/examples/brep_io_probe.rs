@@ -28,7 +28,7 @@ fn main() {
         "prisms" => {
             for spec in identity_protocol::cases(&input) {
                 let solid = identity_protocol::build(&spec);
-                let tol = solid.profile().tolerance().linear();
+                let tol = solid.resolution().linear();
                 let text = write(solid.topology(), tol).unwrap();
                 std::fs::write(out.join(format!("{}.brep", spec.name)), text).unwrap();
                 let m = solid.mass_properties();

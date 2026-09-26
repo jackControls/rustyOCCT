@@ -109,6 +109,19 @@
       ]
     },
     {
+      "path": "rust/fixtures/draw-derived/pcone_counts",
+      "derived": true,
+      "context": "tests/bugs/modalg_7",
+      "expected_rust": "pass",
+      "expected_occt": "pass",
+      "purpose": "Derived: cone and frustum counts (seam, seam vertex and the apex's degenerated edge) through the count synthesizer, and certified properties.",
+      "verifies": [
+        "count synthesizer",
+        "per-use length synthesis",
+        "general mass properties"
+      ]
+    },
+    {
       "path": "rust/fixtures/draw-derived/explode_selector",
       "derived": true,
       "context": "tests/bugs/modalg_7",
@@ -139,7 +152,8 @@
     "rust/fixtures/draw-derived/prism_history_rectangle": "4236efd3963fc8c0b885c65887df2f005387cf5e9b021d91b4565db7946a570e",
     "rust/fixtures/draw-derived/prism_history_reversed_triangle": "0e3fca7528f376334bcafd1dc69587a8990fb7c4ebb528baa0057bc39e5bef6c",
     "rust/fixtures/draw-derived/pcylinder_counts": "4a800a919c536fc30b5075a17feb6d114e71c6b27f7fad761f2fdf4737fb1b08",
-    "rust/fixtures/draw-derived/explode_selector": "8c4e6c3812894ee84a42285cbd5859096cb5c5479f05b49382666515aa40e340"
+    "rust/fixtures/draw-derived/explode_selector": "8c4e6c3812894ee84a42285cbd5859096cb5c5479f05b49382666515aa40e340",
+    "rust/fixtures/draw-derived/pcone_counts": "8b326812c28bcd0f62c324607e15c9c1fd59b491e120d3f2554d8dd3aeb978a4"
   },
   "ledger": {
     "survey": {

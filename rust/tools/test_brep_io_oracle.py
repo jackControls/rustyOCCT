@@ -77,8 +77,8 @@ Co
         self.assertEqual(locations[1][3], 10.0)
         self.assertEqual(locations[0][:3], IDENTITY[:3])
         self.assertEqual(tables['Curve2ds'], ['line'])
-        self.assertEqual(tables['Surfaces'], ['ConicalSurface'])
-        self.assertEqual(summary(text), ({'ConicalSurface': 1}, []))
+        self.assertEqual(tables['Surfaces'], ['cone'])
+        self.assertEqual(summary(text), ({}, []))
         with self.assertRaises(Exception):
             read(text.replace('Surfaces 1', 'Surfaces 2'))
 

@@ -1,8 +1,10 @@
 //! Complete histories of extrusions and rigid transforms (M2 of
 //! IDENTITY_AND_HISTORY.md). Every produced history must check clean, resolve
 //! every input and compose associatively; one mutation per input must be
-//! reported with its predicted issue on the mutated relation.
-use crate::identity::{build_tracked, spec};
+//! reported with its predicted issue on the mutated relation. The same bytes
+//! also make a cone (S3), whose construction checks clean, replays at its
+//! level, composes with rigid motions and loses a dropped relation's target.
+use crate::identity::{build_tracked, cone_spec, spec};
 use libfuzzer_sys::arbitrary::Unstructured;
 use rusty_occt::history::{
     check, EntityInfo, EntitySet, Geometry, History, HistoryIssueKind as K, Relation, Resolution,
@@ -50,7 +52,69 @@ fn split_edge(set: &EntitySet, pick: usize) -> Option<(EntityId, EntitySet, [Ent
     Some((**id, out, children))
 }
 
+fn check_cone_history(data: &[u8]) {
+    let mut u = Unstructured::new(data);
+    let Ok(Some(s)) = cone_spec(&mut u) else {
+        return;
+    };
+    let Some((solid, construct)) = s.build(1.0) else {
+        return;
+    };
+    let set = |x: &Solid| x.topology().entity_set(s.tolerance);
+    let first = set(&solid);
+    assert_eq!(check(&[], std::slice::from_ref(&first), &construct), vec![]);
+    assert_eq!(construct.kind, OperationKind::Revolve);
+    assert_eq!(construct.level(), Some(AlgorithmLevel::CURRENT));
+    assert_eq!(
+        Solid::cone_at(
+            AlgorithmLevel::CURRENT,
+            s.operation,
+            s.frame,
+            s.bottom,
+            s.top,
+            s.height,
+            s.tolerance
+        ),
+        Ok((solid.clone(), construct.clone()))
+    );
+    for level in [AlgorithmLevel(0), AlgorithmLevel(2)] {
+        assert!(Solid::cone_at(
+            level,
+            s.operation,
+            s.frame,
+            s.bottom,
+            s.top,
+            s.height,
+            s.tolerance
+        )
+        .is_err());
+    }
+    // Every entity is generated, once.
+    assert_eq!(construct.relations.len(), solid.topology().ids().count());
+    let mut composed = construct.clone();
+    let mut current = solid;
+    for (k, transform) in s.transforms.iter().enumerate() {
+        let Ok((next, h)) = current.transform_with(OperationId(k as u64), *transform) else {
+            break;
+        };
+        assert_eq!(check(&[set(&current)], &[set(&next)], &h), vec![]);
+        composed = composed.then(&h).unwrap();
+        current = next;
+    }
+    assert_eq!(check(&[], &[set(&current)], &composed), vec![]);
+    let n = construct.relations.len();
+    let pick = usize::from(u.arbitrary::<u16>().unwrap_or(0)) % n;
+    let mut h = construct.clone();
+    let gone = h.relations.remove(pick);
+    let issues = kinds(&check(&[], &[first], &h));
+    assert!(
+        has(&issues, K::MissingTarget, gone.targets()[0]),
+        "{issues:?}"
+    );
+}
+
 pub fn check_history(data: &[u8]) {
+    check_cone_history(data);
     let mut u = Unstructured::new(data);
     let Ok(Some(s)) = spec(&mut u) else {
         return;
@@ -72,7 +136,7 @@ pub fn check_history(data: &[u8]) {
     let replayed = Solid::extrude_at(
         construct.level().unwrap(),
         solid.operation(),
-        solid.profile().clone(),
+        solid.profile().expect("a prism").clone(),
         solid.frame(),
         solid.start_offset(),
         solid.end_offset(),

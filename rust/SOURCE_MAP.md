@@ -540,3 +540,25 @@ captured after implementation, unlike every earlier milestone
 reproduced: the DRAW adapter selects picks by native geometry. See
 [validation](VALIDATION.md#occt-brep-interop) and
 [the coverage ledger](UPSTREAM_TESTS.md#structure-mapping-and-the-coverage-ledger).
+
+## Cones (S3)
+
+The source review covered `BRepPrimAPI_MakeCone`, `BRepPrim_Cone` and
+`BRepPrim_OneAxis` (the generatrix from `(R1, 0)` to `(R2, H)`, the lateral
+face's seam at angle 0 along the frame's x, an apex as one vertex with a
+degenerated edge), `Geom_ConicalSurface` and `ElSLib::ConeValue` (the
+parameterization `O + (R + v sin a)(cos u X + sin u Y) + v cos a N`),
+`GeomTools_SurfaceSet` (record 3: location, axis, X, Y, radius,
+semi-angle), `BRepPrimAPI_MakeRevol`, `BRepSweep_Revol`, `BRepSweep_Rotation`
+and `BRepSweep_NumLinearRegularSweep::IsUsed` (the revolve history:
+`IsDeleted` is `!IsUsed`, invariant axis points and edges generate nothing
+or a degenerated edge) and `GeomAdaptor_SurfaceOfRevolution::GetType` (a
+revolved line is a cone only when `|cos a| <= 1 - Precision::Confusion()`)
+at `3d097a0328e71b826377d4814ab05ec3c3d23871`.
+
+| Rust | OCCT | Notes |
+| --- | --- | --- |
+| `Surface::Cone` | [Geom_ConicalSurface.cxx](../src/ModelingData/TKG3d/Geom/Geom_ConicalSurface.cxx) | Same parameterization, `v` along the ruling; the apex is a pole (a vertex loop), not a degenerated edge. |
+| `Solid::cone_with` | [BRepPrimAPI_MakeCone.cxx](../src/ModelingAlgorithms/TKPrim/BRepPrimAPI/BRepPrimAPI_MakeCone.cxx), [BRepPrim_Cone.cxx](../src/ModelingAlgorithms/TKPrim/BRepPrim/BRepPrim_Cone.cxx) | Full turn only; equal radii (a cylinder) and two apices are refused. History as revolving the meridian ([BRepPrimAPI_MakeRevol.cxx](../src/ModelingAlgorithms/TKPrim/BRepPrimAPI/BRepPrimAPI_MakeRevol.cxx)), with the caps and the region reported, which `MakeRevol` reports deleted. |
+| `occt_brep` cones | [GeomTools_SurfaceSet.cxx](../src/ModelingData/TKGeomBase/GeomTools/GeomTools_SurfaceSet.cxx) | The degenerated apex edge becomes the pole and is written back by rule. |
+| Mass properties | [BRepGProp.cxx](../src/ModelingAlgorithms/TKTopAlgo/BRepGProp/BRepGProp.cxx) | Exact integration in certified intervals instead of Gauss quadrature. |

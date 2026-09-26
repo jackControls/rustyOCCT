@@ -118,6 +118,12 @@ def seed_corpus(target):
                     data=bytearray((j*37+mutation*13+feature*5+scale+1)%256 for j in range(40))
                     data[:4]=bytes([mutation,(mutation+feature)%10,feature,scale])
                     save(bytes(data))
+        # Cones (mutation 28): an apex at the top or the base, or a frustum,
+        # with each cone mutation, at small, unit and large scales.
+        for radii in [[1,200,0],[0,1,150],[1,100,1,60]]:
+            for sub in range(6):
+                for scale in [0,10,20]:
+                    save(bytes([28,scale,*radii,120,140,90,200,128,100,160,sub])+bytes((j*37+1)%256 for j in range(16)))
         save(bytes([0]))
     elif target == 'spline_linear':
         # Known factors, rational polylines, the rational circle and the

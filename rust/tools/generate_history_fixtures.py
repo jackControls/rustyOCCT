@@ -3,7 +3,7 @@
 
 For each case in identity-cases.txt, the independent enumeration in
 identity_reference.py gives the construction's relations (every vertex, edge
-and face Generated from its profile element with its role), each rigid
+and face Generated from its profile or meridian element with its role), each rigid
 transform's relations (every entity Modified with its id) and the composed
 history from the construction to the last transform. Relations are listed in
 canonical order. Explicit cases are recorded row by row; the 512 corpus cases

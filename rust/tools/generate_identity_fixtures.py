@@ -3,8 +3,8 @@
 
 identity-vectors.tsv pins the version-1 derivation encoding and FNV-1a-128
 digest on hand-written derivations covering every parent tag, operation kind,
-entity kind and role. identity-cases.txt lists extrusion cases in a text
-protocol; identity-expected.tsv gives, per case, every entity's id, role,
+entity kind and role. identity-cases.txt lists extrusion and cone cases in a
+text protocol; identity-expected.tsv gives, per case, every entity's id, role,
 ordinal, parents and structural locator, computed by identity_reference.py.
 The 512 prisms that mirror the invariants corpus (same xorshift stream and
 structure, correctly rounded trigonometry) are recorded as an FNV-1a-128 digest
@@ -15,7 +15,7 @@ import argparse
 from pathlib import Path
 
 from brep_reference import cos_rn, sin_rn
-from identity_reference import (Boundary, Case, Derivation, encode_case, entity_text,
+from identity_reference import (Boundary, Case, Derivation, encode_case, entities, entity_text,
                                 extrude_entities, fnv128, hexid)
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -143,6 +143,23 @@ def explicit():
     return cases
 
 
+def cones():
+    """Solid::cone_with cases (S3): apices at either end, frusta narrowing
+    and widening, a tilted frame and rigid copies."""
+    tol = 1e-7
+    xy = (0.0, 0.0, 0.0, 0.0, 0.0, 1.0, *X_HINT)
+    tilted = (3.0, -2.0, 5.0, 0.3, -0.4, 0.8, *X_HINT)
+    motions = [('R', (1.0, 2.0, 3.0), (0.0, 0.6, 0.8), 1.1), ('T', (10.0, -20.0, 30.0))]
+    return [
+        Case('cone_apex_top', tol, 21, xy, 0.0, 0.0, [], cone=(2.0, 0.0, 3.0)),
+        Case('cone_apex_bottom', tol, 21, xy, 0.0, 0.0, [], cone=(0.0, 1.5, 2.0)),
+        Case('cone_frustum', tol, 22, tilted, 0.0, 0.0, [], cone=(2.0, 1.0, 3.0)),
+        Case('cone_widening', tol, 22, tilted, 0.0, 0.0, [], cone=(1.0, 2.5, 0.5)),
+        Case('cone_transformed', tol, 23, tilted, 0.0, 0.0, [], motions, cone=(3.0, 0.0, 4.0)),
+        Case('cone_frustum_transformed', tol, 23, xy, 0.0, 0.0, [], motions, cone=(0.75, 3.0, 2.5)),
+    ]
+
+
 def vectors():
     """Hand-written derivations pinning the encoding and digest."""
     e = Derivation(1, 'extrude', 'vertex', 'bottom_vertex', 0, (('label', 7),)).id()
@@ -167,6 +184,9 @@ def vectors():
         ('cut_edge', Derivation(11, 'height_split', 'edge', 'cut_edge', 1, (('entity', e),))),
         ('cut_face', Derivation(11, 'height_split', 'face', 'cut_face', 0, (('entity', e), ('entity', e[::-1])))),
         ('merged', Derivation(12, 'stacked_fuse', 'region', 'region', 0, (('entity', e), ('entity', e[::-1])))),
+        # S3: a cone's apex and its revolved rings.
+        ('revolve_apex', Derivation(21, 'revolve', 'vertex', 'apex', 0, (('profile', 0, 'vertex', 2),))),
+        ('revolve_ring', Derivation(21, 'revolve', 'edge', 'bottom_edge', 0, (('profile', 0, 'vertex', 1),))),
     ]
     rows = ['# name\tencoding hex\tid hex']
     for name, d in items:
@@ -175,8 +195,8 @@ def vectors():
 
 
 def generate():
-    explicit_cases, corpus_cases = explicit(), corpus()
-    cases = explicit_cases+corpus_cases
+    explicit_cases, corpus_cases, cone_cases = explicit(), corpus(), cones()
+    cases = explicit_cases+corpus_cases+cone_cases
     names = [c.name for c in cases]
     assert len(names) == len(set(names))
     expected = ['# case\tid kind role ordinal parents locator (explicit) or digest (corpus)']
@@ -186,11 +206,14 @@ def generate():
     # Corpus digests cover vertices, edges and faces; regions (added by the
     # cell-complex migration) are listed beside them.
     for c in corpus_cases:
-        entities = extrude_entities(c)
-        rows = sorted(entity_text(e) for e in entities if e.kind != 'region')
+        found = extrude_entities(c)
+        rows = sorted(entity_text(e) for e in found if e.kind != 'region')
         digest = fnv128('\n'.join(rows).encode()).hex()
         expected.append(f'{c.name}\tdigest {len(rows)} {digest}')
-        expected += [f'{c.name}\t{entity_text(e)}' for e in entities if e.kind == 'region']
+        expected += [f'{c.name}\t{entity_text(e)}' for e in found if e.kind == 'region']
+    for c in cone_cases:
+        for row in sorted(entity_text(e) for e in entities(c)):
+            expected.append(f'{c.name}\t{row}')
     return cases, {
         'identity-vectors.tsv': vectors(),
         'identity-cases.txt': '\n'.join(encode_case(c) for c in cases)+'\n',

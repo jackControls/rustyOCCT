@@ -192,22 +192,36 @@ fn face_area(t: &Topology, face: usize) -> f64 {
             radius * periodic.abs()
         }
         // Cone faces are measured by the kernel's general mass properties.
-        Surface::Cone { .. } => f64::NAN,
+        Surface::Cone { .. } => t
+            .face_area_and_centre(FaceId::new(face))
+            .map_or(f64::NAN, |(area, _)| area),
     }
 }
 
 /// The seam OCCT's wound faces carry and the kernel does not: its length (the
-/// face's extent across the winding) when the face has one.
+/// face's extent across the winding, to the apex of a pole) when the face
+/// has one. `v` is arc length along a cylinder's or cone's rulings.
 fn seam_length(t: &Topology, face: usize) -> Option<f64> {
     let face = &t.faces()[face];
     let mut wound = false;
     let mut v = (f64::MAX, f64::MIN);
     for l in &face.loops {
-        if let Loop::Edges { fins, winding } = &t.loops()[l.index()] {
-            wound |= winding != &[0, 0];
-            for k in fins {
-                let y = t.fins()[k.index()].pcurve.point(0.0).y;
-                v = (v.0.min(y), v.1.max(y));
+        match &t.loops()[l.index()] {
+            Loop::Edges { fins, winding } => {
+                wound |= winding != &[0, 0];
+                for k in fins {
+                    let y = t.fins()[k.index()].pcurve.point(0.0).y;
+                    v = (v.0.min(y), v.1.max(y));
+                }
+            }
+            Loop::Vertex(_) => {
+                if let Surface::Cone {
+                    radius, half_angle, ..
+                } = face.surface
+                {
+                    let apex = -radius / half_angle.sin();
+                    v = (v.0.min(apex), v.1.max(apex));
+                }
             }
         }
     }
@@ -285,6 +299,14 @@ fn collect(shape: &Shape, parts: &mut Parts) {
             })
             .count();
         parts.wires += unwound;
+        // A cone's pole is OCCT's degenerated edge at the apex vertex, of
+        // no length, in the wound face's wire.
+        for l in &t.faces()[f].loops {
+            if let Loop::Vertex(v) = &t.loops()[l.index()] {
+                parts.vertices.insert(key(s, Slot::Vertex(*v)));
+                parts.edges.insert(format!("{face}:pole"));
+            }
+        }
         // A wound face's two ring loops are one OCCT wire, joined by a seam
         // used in both directions.
         if let Some(length) = seam_length(t, f) {
@@ -318,8 +340,11 @@ fn collect(shape: &Shape, parts: &mut Parts) {
         }
         Shape::Body { body, .. } => {
             parts.solids += 1;
-            // General mass properties arrive with the cone (REVIEW_NOTES S3).
-            parts.volume = f64::NAN;
+            // General certified mass properties (REVIEW_NOTES S3, U2).
+            parts.volume += body
+                .topology
+                .mass_enclosure()
+                .map_or(f64::NAN, |m| m.midpoints().volume);
             for f in 0..body.topology.faces().len() {
                 add_face(body, f, parts);
             }
@@ -545,7 +570,7 @@ fn face_centre(t: &Topology, face: usize) -> (f64, Point3) {
                 Surface::Cylinder { .. } => {
                     [q.y, q.y * q.x.cos(), q.y * q.x.sin(), q.y * q.y / 2.0]
                 }
-                Surface::Cone { .. } => [f64::NAN; 4],
+                Surface::Cone { .. } => [0.0; 4],
             };
             for k in 0..4 {
                 m[k] -= w * g[k] * d.x;
@@ -564,7 +589,9 @@ fn face_centre(t: &Topology, face: usize) -> (f64, Point3) {
                 m[3] / m[0],
             ),
         ),
-        Surface::Cone { .. } => (f64::NAN, Point3::new(f64::NAN, f64::NAN, f64::NAN)),
+        Surface::Cone { .. } => t
+            .face_area_and_centre(FaceId::new(face))
+            .unwrap_or((f64::NAN, Point3::new(f64::NAN, f64::NAN, f64::NAN))),
     }
 }
 
@@ -727,6 +754,21 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
                 t,
             )?;
             let solid = Solid::cylinder(frame, n[0], 0.0, n[1], t)?;
+            shapes.insert(args[1].clone(), Shape::Solid(Box::new(solid)));
+            Ok(String::new())
+        }
+        // `pcone name R1 R2 H`: a cone or frustum on the z axis, the seam
+        // along x (a partial angle is not supported).
+        "pcone" if args.len() == 5 => {
+            let n = numbers(&args[2..])?;
+            let frame = Frame3::new(
+                Point3::ORIGIN,
+                Vec3::new(0.0, 0.0, 1.0),
+                Vec3::new(1.0, 0.0, 0.0),
+                t,
+            )?;
+            let (solid, _) =
+                Solid::cone_with(OperationId::UNSPECIFIED, frame, n[0], n[1], n[2], t)?;
             shapes.insert(args[1].clone(), Shape::Solid(Box::new(solid)));
             Ok(String::new())
         }
@@ -942,7 +984,7 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             // Every solid of the shape validates against its own resolution.
             fn bodies<'a>(shape: &'a Shape, out: &mut Vec<(&'a Topology, Tolerance)>) -> bool {
                 match shape {
-                    Shape::Solid(s) => out.push((s.topology(), s.profile().tolerance())),
+                    Shape::Solid(s) => out.push((s.topology(), s.resolution())),
                     Shape::Body { body, resolution } => out.push((&body.topology, *resolution)),
                     Shape::Compound(items) => return items.iter().all(|i| bodies(i, out)),
                     _ => return false,
@@ -1005,13 +1047,21 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
         }
         "vprops"
             if (args.len() == 2 || args.len() == 3)
-                && matches!(get(shapes, &args[1])?, Shape::Solid(_)) =>
+                && matches!(get(shapes, &args[1])?, Shape::Solid(_) | Shape::Body { .. }) =>
         {
             if args.len() == 3 && numbers(&args[2..])?[0] <= 0.0 {
                 return Err(unsupported(args));
             }
-            // Epsilon controls OCCT quadrature. These box properties are analytic.
-            let m = solid(shapes, &args[1], args)?.mass_properties();
+            // Epsilon controls OCCT quadrature. The kernel's properties are
+            // exact or certified enclosures, reported at their midpoints.
+            let m = match get(shapes, &args[1])? {
+                Shape::Body { body, .. } => body
+                    .topology
+                    .mass_enclosure()
+                    .ok_or_else(|| error("mass properties not certified"))?
+                    .midpoints(),
+                _ => solid(shapes, &args[1], args)?.mass_properties(),
+            };
             Ok(format!("Mass : {:.17e}\n\nCenter of gravity :\nX = {:.17e}\nY = {:.17e}\nZ = {:.17e}\nMatrix of Inertia :\n{:.17e} {:.17e} {:.17e}\n{:.17e} {:.17e} {:.17e}\n{:.17e} {:.17e} {:.17e}\n",
                 m.volume, m.centroid.x, m.centroid.y, m.centroid.z,
                 m.inertia[0][0], m.inertia[0][1], m.inertia[0][2],

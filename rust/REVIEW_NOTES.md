@@ -127,6 +127,21 @@ full local release suite passes at the head.
   subdirectories had to be passed one by one. Match upstream: search each
   `--data-dir` and its immediate subdirectories, so `--data-dir` takes the
   dataset root.
+* **R11. The cone's history capture follows its builder (recorded
+  2026-09-26 by the implementing agent; needs the user's approval under
+  R7).** The cone capture at `dde086c1` observed `BRepPrimAPI_MakeCone`'s
+  structure, `BRepCheck` and `BRepGProp` before any kernel cone code, but no
+  history: `MakeCone` reports none and DRAW `pcone` saves none. The history
+  the kernel reports for a cone is that of revolving its meridian, which
+  OCCT gives through `BRepPrimAPI_MakeRevol`, and that was not captured
+  before the kernel's cone builder and its derivations were written
+  (uncommitted at the time). The `MakeRevol` capture is taken before any of
+  that is committed and before the Python enumeration and the role
+  correspondences exist; its metadata says the builder existed. The sphere
+  and the torus capture history with everything else, before any kernel
+  code. If the user does not accept this, the cone's history bridge is
+  labelled like T2's (captured after implementation) and nothing else
+  changes.
 
 ## Next steps, in order
 
@@ -293,5 +308,20 @@ converter records that as `Imported` provenance, never as an approximation.
     confirms the licence basis recorded under U1. Locally the fetch script
     verifies the pinned archive; data cases report `not_fetched` on CI,
     which the contract accepts.
-* S3 — pending
+* S3 — cone implemented; gate pending CI and the clean campaigns.
+  * Native `MakeCone` capture before any kernel cone code (`dde086c1`);
+    the validator's cone and pole rules against the independent reference
+    (`1a76d29e`, 88 reports).
+  * Builder, ids and history (`Revolve`, role `apex`, the meridian as
+    boundary 0), general certified mass properties (U2: exact integration
+    in the two tiers rather than quadrature, so the error bound is the
+    enclosure itself), `.brep` import and export of cones with OCCT's
+    degenerated apex edge, `pcone` and body properties in the DRAW
+    adapter, the derived case `pcone_counts`, and cones in four fuzz
+    targets.
+  * The `MakeRevol` history capture followed the builder: R11, for the
+    user's decision. 21 matches, one reviewed difference
+    (`nearly_cylinder`: MakeRevol's surface of revolution).
+  * Upstream: one more `data/occ` solid imports (30 of 77); six restore-only
+    cases no longer report cones, none evaluates yet (`UPSTREAM_TESTS.md`).
 * S4 — pending

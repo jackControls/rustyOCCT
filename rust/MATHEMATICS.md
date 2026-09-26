@@ -1130,6 +1130,68 @@ intervals, then exactly. The material-area screen `A ≤ tol · P / 2`
 encloses `π` and the edge-length square roots in rational intervals, and
 counts an undecidable case as degenerate.
 
+## Cones and general mass properties (S3)
+
+A cone face is `S(u, v) = O + ρ(v)(cos u x + sin u y) + v cos a n` with
+`ρ(v) = R + v sin a`, as OCCT's `Geom_ConicalSurface`: `v` is arc length
+along a ruling and the apex is at `v_a = -R / sin a`. Its pcurves live on the
+universal cover in `(u, v)`, like a cylinder's. A UV gap scales `du` by
+`|ρ(v)|` at the larger end, so every pcurve meets the apex at any `u`. A
+point's distance to the (double) cone is the smaller of `|r cos a - R cos a -
+z sin a|` and `|r cos a + R cos a + z sin a|` in the meridian half-plane,
+enclosed in the same two tiers. A line pcurve's deviation is harmonic along a
+ruling (`du = 0`, affine in `t`) and a parallel (`dv = 0`, one frequency);
+anything else is not, and certifies only as a failure, like an arc pcurve on
+a cylinder.
+
+The apex is a pole: a vertex loop of the wall face. On a cone face whose edge
+loops wind once in total (`|Σ w| = 1`), the first vertex loop closes the band
+at the apex, so the windings need not balance. Its vertex must lie on the
+surface and within tolerance of the apex (`pole_off_apex`). The periodic
+area `-∮ v du` adds the pole's term `2π · W · v_a`, with `W` the winding the
+pole closes and `2π` from the certified `π`. Orientation flux on a cone is
+`-∮ F du` with `∂F/∂v = ρ(v) h(u)` and `h(u) = cR + c(O·x cos u + O·y sin
+u) - s O·n` (with `c = cos a`, `s = sin a` and `O` the origin relative to
+the reference). `F` is taken from the apex on a face with a pole, where it
+vanishes (`F = ρ(v)² h(u) / (2s)`), and from `v = 0` elsewhere (`F = (R v + s
+v² / 2) h(u)`). A nearly cylindrical cone's apex is far away (at `s = 2.4e-4`
+it is `4096 R` along the ruling), and starting there would leave two large
+terms of a band's loops to cancel. Along a line pcurve `F` is a quadratic in
+the line's parameter times `cos` and `sin` of `u0 + w`, integrated in closed
+form by the moments `∫ w^k cos(u0 + w) dw` and `∫ w^k sin(u0 + w) dw`, `k ≤
+2`. Cavity containment on a cone face is not yet decided
+(`uncertified_containment`).
+
+General mass properties (REVIEW_NOTES.md U2) apply the divergence theorem to
+every solid region's boundary:
+
+* the volume is `(1/3) ∫ p·N`, the first moments `(1/2) ∫ p_i² N_i`, the
+  second moments `(1/3) ∫ p_i³ N_i`, and the mixed ones `(1/2) ∫ p_i² p_j N_i`
+  (for `xy`, `yz` and `zx`), all with `N = S_u × S_v` and `p` relative to a
+  reference point of the body, so that a far body does not cancel;
+* the area is `∫ |N|` and a face's centre `∫ p |N| / ∫ |N|`. `|N|` is 1 on a
+  plane, `r` on a cylinder and `|ρ(v)|` on a cone, a polynomial in `v` of
+  fixed sign on a face that does not cross the apex;
+* on a plane every integrand is a polynomial in `(u, v)`; on a cylinder or
+  cone a polynomial in `v` times `cos^a u sin^b u`. Green's theorem turns each
+  face integral into `-∮ F du` over the face's loops, closed by their chords,
+  with `F` the integrand's antiderivative in `v`;
+* along a line pcurve this is a polynomial in the line's parameter times
+  `cos` and `sin` of integer multiples of `u`. The exact Fourier expansion of
+  `cos^a sin^b` (rational coefficients) reduces it to the moments `∫ w^j
+  cos(f(u0 + w))`, which obey an exact recursion. Along a plane arc the
+  integrand is a trigonometric polynomial, integrated through the same
+  expansion.
+
+Every step runs in the validator's two tiers, binary64 intervals first and
+then rational intervals, so the results are enclosures with certified error
+bounds, not quadrature estimates. `Topology::mass_enclosure` returns them and
+`Solid::mass_properties` reports a cone's midpoints. On all 546 identity
+prisms the engine agrees with the prism closed forms to `2e-15` relative.
+The 22 cones of `primitive-cases.txt` agree with the independent reference
+(mpmath disc integrals) to `1e-12` of their scale, the bound for the rounded
+frame, angle and slant the kernel stores (`tests/cones.rs`).
+
 ## Complete spline/line and spline/segment preimages
 
 Closed rational B-spline ranges against infinite lines or closed segments

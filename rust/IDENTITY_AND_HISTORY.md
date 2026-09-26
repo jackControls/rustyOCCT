@@ -254,6 +254,21 @@ A split followed by the fuse of its pieces composes to `Modified` for every
 wall, vertical edge and the region and `Unchanged` for the caps and their
 edges and vertices; the cut entities vanish.
 
+`Solid::cone_with(operation, frame, bottom, top, height, tolerance)`
+(`OperationKind::Revolve`, S3 of `REVIEW_NOTES.md`), with the meridian as
+boundary 0: the polygon `(0, 0)`, `(bottom, 0)`, `(top, height)`, `(0,
+height)` in (radius, height), segment *j* from point *j* to *j + 1*. The rim
+points 1 and 2 are the ends of the slant; a zero radius makes that rim point
+the apex (it is not an axis point, 0 or 3). The axis generates nothing.
+
+| Output | Relation |
+| --- | --- |
+| Bottom and top disc | `Generated { from: [segment 0 / 2], role: StartCap / EndCap }` |
+| Wall (the cone face) | `Generated { from: [segment 1], role: Wall }` |
+| Bottom and top ring edge | `Generated { from: [rim point 1 / 2], role: BottomEdge / TopEdge }` |
+| Apex (a vertex, the pole's vertex loop) | `Generated { from: [rim point 1 or 2], role: Apex }` |
+| Solid region | `Generated { from: [the boundary], role: Region }` |
+
 T1 (`TOPOLOGY_MODEL.md`) retired the circle's seam edge and seam vertices and
 their roles `Seam` and `SeamVertex` (their encoding codes stay reserved), and
 added the region row. Every polygon id and relation is unchanged by T1.
@@ -608,6 +623,8 @@ here.
   body, k, [input body])`, the fused body `Derivation(op, StackedFuse, body,
   body, 0, [lower, upper])`. Operation kinds 5 and 6 and roles 14–16 (`cut_face`,
   `cut_edge`, `cut_vertex`) are appended codes; the vectors grew to 17.
+  S3 appended operation kind 7 (`Revolve`) and role 17 (`apex`); the
+  vectors grew to 19.
   Bodies that share an id cannot be fused (I4): two constructions with the
   same operation id and labels have the same ids.
 * **Rebuilt prisms keep ids by slot.** Every body is a prism of its profile,

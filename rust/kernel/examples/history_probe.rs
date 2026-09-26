@@ -17,8 +17,8 @@ use signatures::{body, counts, signature};
 use std::io::Read;
 
 fn locator(s: &Solid, parents: &[Parent]) -> String {
-    let boundaries: Vec<_> = std::iter::once(s.profile().outer())
-        .chain(s.profile().holes())
+    let boundaries: Vec<_> = std::iter::once(s.profile().expect("a prism").outer())
+        .chain(s.profile().expect("a prism").holes())
         .collect();
     if parents.len() > 1
         || matches!(

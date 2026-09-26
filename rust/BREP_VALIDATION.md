@@ -33,7 +33,7 @@ Issue classes:
 | Sides and regions | `side_without_shell`, `side_in_two_shells`, `side_region_mismatch`, `region_without_shell`, `no_infinite_region`, `region_shell_mismatch`, `double_bounding` |
 | Loops and shells | `open_loop`, `winding_mismatch`, `ring_edge_with_vertex`, `ring_edge_open`, `seam_edge`, `free_edge`, `non_manifold_edge`, `same_sense_uses`, `radial_order_inconsistent`, `edge_across_shells`, `disconnected_shell`, `non_manifold_vertex`, `euler` |
 | Definitions | `degenerate_vertex`, `degenerate_curve`, `degenerate_surface`, `degenerate_pcurve` |
-| Certified geometry | `vertex_off_curve`, `vertex_loop_off_surface`, `pcurve_off_edge`, `uv_gap`, `loop_winding`, `inner_loop_outside`, `shell_orientation`, `cavity_outside`, `nested_cavity` |
+| Certified geometry | `vertex_off_curve`, `vertex_loop_off_surface`, `pole_off_apex`, `pcurve_off_edge`, `uv_gap`, `loop_winding`, `inner_loop_outside`, `shell_orientation`, `cavity_outside`, `nested_cavity` |
 | Undecided geometry | `uncertified_vertex_off_curve`, `uncertified_vertex_loop`, `uncertified_pcurve_off_edge`, `uncertified_uv_gap`, `uncertified_loop_winding`, `uncertified_containment`, `uncertified_shell_orientation` |
 
 An out-of-range reference stops validation after the reference pass, since
@@ -51,7 +51,9 @@ A fin's pcurve follows the oriented face, so a reversed fin pairs pcurve
 fraction `t` with edge fraction `1-t`. Outer loops wind counter-clockwise
 about the oriented face normal and inner loops clockwise. Cylinder UV is
 (angle, axial height), and pcurves live on its universal cover: a loop with
-winding number `w` closes with its end `2πw` in `u` after its start.
+winding number `w` closes with its end `2πw` in `u` after its start. Cone UV
+is (angle, arc length along the ruling), as OCCT's `Geom_ConicalSurface`,
+on the same cover; the apex is at `v = -R / sin a` (S3 of `REVIEW_NOTES.md`).
 
 ## Exact combinatorial checks
 
@@ -64,7 +66,10 @@ winding number `w` closes with its end `2πw` in `u` after its start.
   every bounded region has a shell, and region 0 is a void.
 * Each loop of edges closes in 3D vertex order; a ring edge alone closes a
   loop. A ring edge has no vertices and a closed curve. Winding numbers are
-  zero on planes and in `v`; the windings of a cylinder face sum to zero.
+  zero on planes and in `v`; the windings of a cylinder or cone face sum to
+  zero, except on a cone face whose edge loops wind once in total and that
+  has a vertex loop: its first vertex loop is the pole, closing the band at
+  the apex.
 * Around each edge, the regions ahead of and behind its fins, in the stored
   radial order, must alternate. A single fin is `free_edge`, two same-sense
   fins are `same_sense_uses`, two opposite fins out of order are
@@ -86,7 +91,10 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
 * **Definitions.** Finite values, nonzero line length (`|b-a| > tol`), radius
   `> tol`, and `0 < |sweep| <= 2π`.
 * **Vertices.** Each edge end is within tolerance of its vertex, and each
-  vertex loop's vertex within tolerance of its face's surface.
+  vertex loop's vertex within tolerance of its face's surface. A pole's
+  vertex must also be within tolerance of the apex (`pole_off_apex`). The
+  distance to a cone is the smaller of the distances to the two rulings of
+  the meridian half-plane (both nappes).
 * **Curve on surface.** Over a whole use, `D(t) = C(t_edge) - S(P(t))` is a
   harmonic sum: `A0 + A1 t + Σ_ω (C_ω cos ωt + S_ω sin ωt)`, with exact
   rational frequencies. This covers line and arc edges against plane
@@ -102,17 +110,21 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   `|z2| (ω2 - ω1)`. Terms adjacent by frequency are bounded that way whenever
   it is smaller. A failure is certified when one of 33 sample points lies
   beyond tolerance. An arc pcurve
-  on a cylinder is not harmonic and can only be certified as a failure.
+  on a cylinder is not harmonic and can only be certified as a failure. On a
+  cone, a line pcurve is harmonic along a ruling (`du = 0`) or a parallel
+  (`dv = 0`); any other pcurve certifies only as a failure.
 * **UV closure.** Consecutive fins meet in UV within tolerance, with cylinder
-  angle differences scaled by the radius; the last fin meets the first shifted
+  angle differences scaled by the radius and cone ones by `|R + v sin a|` at
+  the larger end (zero at the apex); the last fin meets the first shifted
   by `2πw` in `u`.
 * **Loop winding.** Loops are closed exactly by straight chords between
   consecutive fins (gaps certified to be within tolerance). Twice the signed
   area is the closed form of `∮ u dv - v du`, including the chords. Its sign
   must be positive for an outer loop and negative for an inner loop, relative
-  to the face orientation. On a wound cylinder face the loops have no
-  outer/inner order: the total periodic area `-∮ v du` over all loops must
-  have the face's sign, and each unwound loop the opposite one.
+  to the face orientation. On a wound cylinder or cone face the loops have
+  no outer/inner order: the total periodic area `-∮ v du` over all loops
+  must have the face's sign, and each unwound loop the opposite one. A
+  pole adds `2π · W · v_apex`, `W` the winding it closes.
 * **Inner loops.** The first point of each inner loop must lie inside the outer
   loop. A `+u` ray uses a half-open crossing rule. Arcs are split at their
   `v` extrema `π/2 + kπ`, using a certified `π`, so each piece is monotone.
@@ -120,7 +132,9 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
 * **Region orientation.** The flux of `x/3` through a face is
   `-∮ v f(u) du` over its loops, closed chords included, with
   `f = S·(S_u × S_v)` integrated in `v` from 0: for a plane `f = o·(x×y)`, for
-  a cylinder `f = -r(o·(x×n)) sin u + r(o·(y×n)) cos u + r²·det(x,y,n)`. A
+  a cylinder `f = -r(o·(x×n)) sin u + r(o·(y×n)) cos u + r²·det(x,y,n)`, and
+  for a cone `f = ρ(v) h(u)`, integrated in `v` from the apex on a face with
+  a pole and from 0 otherwise (`MATHEMATICS.md`). A
   shell's flux sums its faces' fluxes, negated for back sides. A bounded
   region's first shell must have positive flux and every other shell
   negative; the infinite void's shells negative.
@@ -136,7 +150,9 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   parity is the same for any watertight surface within tolerance of the
   faces. On a cylinder, a hit is inside the face when the `+v` ray from it
   on the universal cover crosses the face's loops an odd number of times,
-  counting every period alias of a wound loop.
+  counting every period alias of a wound loop. A ray against a cone face is
+  not yet solved, so a body with a cavity and a cone face reports
+  `uncertified_containment`.
 
 ## Two arithmetic tiers
 
@@ -243,7 +259,7 @@ Evidence:
   seam is kept and rejected as `seam_edge`), and `validate` implements the
   side, region, radial, winding, vertex-loop and region-flux invariants
   independently, with its own `+v` cover-crossing parity on cylinders.
-  `generate_brep_fixtures.py --check` rebuilds 76 cases. 54 come from an
+  `generate_brep_fixtures.py --check` rebuilds 88 cases. 54 come from an
   independent seamed prism builder (19 valid solids and 35 mutations; the
   valid solids include holes, convex and concave arcs, full circles, one and
   two cavities, rotated and far-translated copies and a millimetre-scale
@@ -257,7 +273,12 @@ Evidence:
   loops, a ring edge with one vertex and a shell its region does not list).
   Ten more place gaps just inside and just outside the resolution and
   declare enclosures that are missing, out of range or unsound (see
-  [Enclosures](#enclosures-m5)). 27 cases are valid. `brep_validation.rs`
+  [Enclosures](#enclosures-m5)). Twelve are cones (S3), built as cells by an
+  independent cone builder: an apex at the top or the base, frusta
+  narrowing and widening, a rotated frame and a far one, and six mutations
+  (the pole moved along a ruling, off the surface or removed, a ring loop
+  winding twice, a right angle and a ring pcurve shifted in `v`). 33 cases
+  are valid. `brep_validation.rs`
   requires Rust's complete sorted issue list to equal the reference's for
   every case.
 * The existing prism suites (`invariants`, `occt_regression`, `modeling`)
@@ -268,7 +289,7 @@ prisms with no hole, a round (seamless) hole, a square hole or an inverted box
 cavity. Scales range over `2^±10` with random frames and offsets. The cavity
 is merged by fuzz-crate code, not by a kernel builder: its material shell
 joins the body's solid region and its twin bounds a new void region. The
-base must be valid. Then one of 24 mutations must produce its predicted
+base must be valid. Then one of 29 mutations must produce its predicted
 issues:
 
 * an exact report for local changes: an extra vertex, edge, empty shell or
@@ -287,6 +308,15 @@ issues:
 * laws that must stay valid: a vertex loop on a cap, and a two-fin edge's
   radial order reversed (a cyclic order of two is unchanged)
 * for a pcurve shifted by `10·tol`, a clean report at `100·tol`
+* a cone or frustum from `Solid::cone_with` (mutation 28, S3), valid with
+  enclosures within the resolution, certified volume within `1e-9` of
+  `πh(R² + Rr + r²)/3` and synthesized counts `2/3/2/2/1/1` or
+  `2/3/3/3/1/1`, then its pole moved `1000·tol` along a ruling (exactly
+  `pole_off_apex`) or along the axis (`vertex_loop_off_surface`), the pole
+  removed (`loop_without_face` and `winding_mismatch`), a right semi-angle
+  (`degenerate_surface`) or a ring pcurve shifted in `v`
+  (`pcurve_off_edge`); a moved pole is declared at the resolution, as the
+  fixtures declare it
 
 Every report must be deterministic, duplicate-free and identical to
 `from_parts`. A local 300-second development campaign (dirty tree based on

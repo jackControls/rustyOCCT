@@ -15,7 +15,7 @@ use rusty_occt::topology::Slot;
 use rusty_occt::Solid;
 
 fn set(s: &Solid) -> EntitySet {
-    s.topology().entity_set(s.profile().tolerance())
+    s.topology().entity_set(s.resolution())
 }
 
 fn has(issues: &[rusty_occt::history::HistoryIssue], kind: K, id: EntityId) -> bool {
@@ -71,7 +71,7 @@ fn enclosures_carry(h: &History, inputs: &[&Solid], outputs: &[&Solid]) {
         }
     }
     for s in outputs {
-        let tol = s.profile().tolerance().linear();
+        let tol = s.resolution().linear();
         let t = s.topology();
         let all = t
             .vertices()
@@ -247,7 +247,7 @@ pub fn check_split_merge(data: &[u8]) {
     let (start, end) = (parent.start_offset(), parent.end_offset());
     let Ok((above, _)) = Solid::extrude_with(
         OperationId(74),
-        parent.profile().clone(),
+        parent.profile().expect("a prism").clone(),
         parent.frame(),
         end,
         end + (end - start),

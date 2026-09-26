@@ -39,7 +39,7 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
 | noBS-CAD job | Required geometry | Rust status / remaining work |
 | --- | --- | --- |
 | Extrude | Profile and exact planar-face extrusion, offsets, taper, holes, join/cut/intersect | **Partial foundation:** polygon/circle New Body geometry with holes and signed offsets. Need arcs, source-face adapter, taper and Booleans. |
-| Revolve | Trimmed revolutions about sketch axes, partial/full turns, Booleans | Planned. |
+| Revolve | Trimmed revolutions about sketch axes, partial/full turns, Booleans | **Partial foundation:** full-turn cones and frusta about a frame axis (`Solid::cone_with`, S3 of `REVIEW_NOTES.md`), with ids and history as revolving the meridian. Spheres and tori next; general profiles, partial turns and Booleans planned. |
 | Sweep | Analytic/spline paths, frames, orientation modes, transitions and guide rail | Planned. |
 | Loft | Ruled/smooth sections, continuity, centerline and guide rail | Planned. |
 | Rib | Thin profile construction and Boolean attachment | Extrusion foundation only; job planned. |
@@ -59,8 +59,8 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
 | --- | --- | --- |
 | Scene recompute | Owned bodies, feature-local errors, atomic operation results and repeatable replay | Immutable standalone solids and typed errors exist; scene/job adapter planned. |
 | Topology references | Face/edge identities, membership, geometry signatures, generated/modified/deleted mappings | Value ids derived from caller labels and complete checked histories exist for extrusions and rigid transforms (M0–M2 of `IDENTITY_AND_HISTORY.md`, accepted at `34efd36c`), on the cell-complex model (T1, `TOPOLOGY_MODEL.md`), and for the height split and stacked fuse, the first operations that split, merge and delete entities (M3). Attributes propagate through every operation by declared policy with recorded, independently checked outcomes (M4, accepted at `979cf939`), and every entity stores a certified enclosure (M5). |
-| Face/edge metadata | Plane, cylinder, cone, circle, curvature, edge lengths and face signatures | Planes/cylinders/circles retained; DTO signatures and additional queries planned. |
-| Measurement | Bounds, mass/area/centroid/inertia, point classification, extrema/closest points | Bounds, mass properties and point classification supported for current prisms; certified linear-set minimum distances exist. Complete point-to-rational-spline minimum sets are implemented and accepted at `d1206b15`. General B-rep and other curved-pair distance/extrema remain planned. |
+| Face/edge metadata | Plane, cylinder, cone, circle, curvature, edge lengths and face signatures | Planes, cylinders, cones (with the apex as a pole) and circles retained, with certified face areas and centres; DTO signatures and additional queries planned. |
+| Measurement | Bounds, mass/area/centroid/inertia, point classification, extrema/closest points | Bounds, mass properties and point classification supported for current prisms; general mass properties are certified enclosures by exact integration on any body of planes, cylinders and cones (S3); certified linear-set minimum distances exist. Complete point-to-rational-spline minimum sets are implemented and accepted at `d1206b15`. General B-rep and other curved-pair distance/extrema remain planned. |
 | Exact interference | Occurrence transforms, minimum clearance, closest points, overlap volume | Transform, classifier and certified linear-set distance foundations exist. Solid clearance, common-solid and multi-body queries remain planned. |
 | Tessellation | Deflection-controlled watertight triangles, normals, face ranges, shared edge samples | Planned geometry output, independent of any renderer. Preserve f64 exact geometry; f32 output conversion belongs at the adapter boundary. |
 | STL / 3MF | Feed trustworthy tessellation to `nbcad-export` | Keep existing Rust writers; do not port OCCT mesh file writers or build a second export stack. |
@@ -160,6 +160,13 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
      OCCT's own measured deviations were captured before implementation; no
      measured bound falls below them or exceeds OCCT's tolerance. Accepted
      at `0913b5e2`.
+   * **S3** (`REVIEW_NOTES.md`) adds the surfaces of revolution in the
+     order cone, sphere, torus. The cone is implemented: the surface with
+     its apex as a pole, the validator's pole and winding rules, the
+     builder with ids and history, general certified mass properties, the
+     `.brep` converter and writer with OCCT's degenerated edge, `pcone` in
+     the DRAW adapter, native `MakeCone` and `MakeRevol` bridges and fuzz
+     coverage.
    Body-local indices are still not persistent names; only value ids are.
 3. **Reliable geometry and intersections.** Circular arcs, trimmed curves,
    arbitrary face trimming; extend the existing certified

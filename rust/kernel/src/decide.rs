@@ -186,6 +186,40 @@ pub(crate) fn area_is_degenerate(outlines: &[Outline], tolerance: f64) -> bool {
     le(&area, &limit).unwrap_or(true)
 }
 
+/// Where local coordinates `(x, y, z)` lie against the right circular cone or
+/// frustum of radius `bottom` at z = 0 and `top` at z = height: 0 inside, 1
+/// on the boundary within `tolerance`, 2 outside. Exact: the radius at z is
+/// rational in the inputs, and radial distances compare squared. The band
+/// on the lateral face is measured radially.
+pub(crate) fn cone_location(
+    point: [f64; 3],
+    bottom: f64,
+    top: f64,
+    height: f64,
+    tolerance: f64,
+) -> u8 {
+    let [x, y, z] = point.map(q);
+    let (b, t, h, tol) = (q(bottom), q(top), q(height), q(tolerance));
+    if z < -tol.clone() || z > &h + &tol {
+        return 2;
+    }
+    let radius = &b + (&t - &b) * &z / &h;
+    let radial2 = &x * &x + &y * &y;
+    let outer = &radius + &tol;
+    if outer < zero() || radial2 > &outer * &outer {
+        return 2;
+    }
+    let near_end = |end: &R| {
+        let d = &z - end;
+        d <= tol.clone() && -d <= tol.clone()
+    };
+    let inner = &radius - &tol;
+    if near_end(&zero()) || near_end(&h) || inner <= zero() || radial2 >= &inner * &inner {
+        return 1;
+    }
+    0
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

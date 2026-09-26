@@ -7,8 +7,9 @@ counts, BRepGProp mass properties and every face, edge and vertex. Each must
 equal what `primitive_reference.py` derives from the specification alone:
 counts and verdict exactly, numbers within `BOUND` relative to the case's
 size, and faces, edges and vertices as unordered sets matched by geometry.
-With `--rust`, the kernel's cone builder is compared with the same
-expectations (once it exists).
+The kernel's cone builder is compared with the same expectations by
+`rust/kernel/tests/cones.rs`, and its history with MakeRevol's by
+`compare_revolve_history.py`.
 
 `--capture` records the native observations in
 `fixtures/occt-primitive-preimplementation` before any kernel cone code

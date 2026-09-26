@@ -4,8 +4,11 @@
 //! lines. Reading never panics: malformed text is a typed `BrepError`. Every
 //! imported solid validates, and when the writer expresses it, it round-trips
 //! to the same synthesized counts, cell counts and bit-identical vertices.
-//! An unmutated prism always writes and round-trips.
-use crate::identity::{build, spec};
+//! An unmutated prism always writes and round-trips. The same bytes also make
+//! a cone (S3 of REVIEW_NOTES.md), written with OCCT's seam and degenerated
+//! apex edge: it always round-trips, and its mutated text reads, imports and
+//! validates or fails cleanly.
+use crate::identity::{build, cone_spec, spec};
 use libfuzzer_sys::arbitrary::{Result, Unstructured};
 use rusty_occt::occt_brep::{import, read, write};
 use rusty_occt::topology::Topology;
@@ -119,7 +122,39 @@ fn round_trip(t: &Topology, tolerance: f64) -> bool {
     true
 }
 
+/// Mutated text never panics; what imports validates and round-trips.
+fn check_text(text: &str) {
+    let Ok(doc) = read(text) else { return };
+    for solid in import(&doc).solids {
+        if let Ok(t) = &solid.result {
+            assert!(t.check(solid.tolerance).is_empty());
+            let tolerance = solid.tolerance.linear().max(Tolerance::default().linear());
+            round_trip(t, tolerance);
+        }
+    }
+}
+
+fn check_cone(data: &[u8]) {
+    let mut u = Unstructured::new(data);
+    let Ok(Some(s)) = cone_spec(&mut u) else {
+        return;
+    };
+    let Some((solid, _)) = s.build(1.0) else {
+        return;
+    };
+    let tolerance = solid.resolution().linear();
+    assert!(
+        round_trip(solid.topology(), tolerance),
+        "an unmutated cone writes"
+    );
+    let base = write(solid.topology(), tolerance).unwrap();
+    if let Ok(text) = mutate(&mut u, &base) {
+        check_text(&text);
+    }
+}
+
 pub fn check_brep_io(data: &[u8]) {
+    check_cone(data);
     let mut u = Unstructured::new(data);
     let base = if u.ratio(1, 3).unwrap_or(false) {
         UPSTREAM[u.choose_index(UPSTREAM.len()).unwrap_or(0)].to_string()
@@ -128,7 +163,7 @@ pub fn check_brep_io(data: &[u8]) {
         let Some(solid) = build(&s, None, 1.0, false) else {
             return;
         };
-        let tolerance = solid.profile().tolerance().linear();
+        let tolerance = solid.resolution().linear();
         assert!(
             round_trip(solid.topology(), tolerance),
             "an unmutated prism writes"
@@ -143,12 +178,5 @@ pub fn check_brep_io(data: &[u8]) {
             Err(_) => return,
         }
     };
-    let Ok(doc) = read(&text) else { return };
-    for solid in import(&doc).solids {
-        if let Ok(t) = &solid.result {
-            assert!(t.check(solid.tolerance).is_empty());
-            let tolerance = solid.tolerance.linear().max(Tolerance::default().linear());
-            round_trip(t, tolerance);
-        }
-    }
+    check_text(&text);
 }

@@ -24,13 +24,13 @@ FNV_PRIME = 0x0000000001000000000000000000013B
 MASK = (1 << 128)-1
 
 KIND = {'extrude': 1, 'transform': 2, 'external': 3, 'composite': 4, 'height_split': 5,
-        'stacked_fuse': 6}
+        'stacked_fuse': 6, 'revolve': 7}
 ENTITY = {'vertex': 1, 'edge': 2, 'face': 3, 'body': 4, 'region': 5}
 DIMENSION = {'vertex': 0, 'edge': 1, 'face': 2, 'body': 3, 'region': 3}
 ROLE = {'start_cap': 1, 'end_cap': 2, 'wall': 3, 'bottom_edge': 4, 'top_edge': 5,
         'vertical': 6, 'seam': 7, 'bottom_vertex': 8, 'top_vertex': 9,
         'seam_vertex': 10, 'body': 11, 'external': 12, 'region': 13, 'cut_face': 14,
-        'cut_edge': 15, 'cut_vertex': 16}
+        'cut_edge': 15, 'cut_vertex': 16, 'apex': 17}
 ELEMENT = {'boundary': 0, 'segment': 1, 'vertex': 2}
 RELATION = {'unchanged': 1, 'modified': 2, 'generated': 3, 'split': 4, 'merged': 5,
             'deleted': 6}
@@ -137,6 +137,7 @@ class Case:
     boundaries: list             # outer first, then holes
     transforms: list = field(default_factory=list)   # ('T', v3) | ('R', origin, axis, angle)
     box: tuple = None            # (origin3, size3) for Solid::box_at instead of a profile
+    cone: tuple = None           # (r1, r2, height) for Solid::cone_with on the frame
 
 
 def number(x):
@@ -147,6 +148,9 @@ def encode_case(c):
     out = [f'case {c.name} {number(c.tolerance)}', f'op {c.operation}']
     if c.box is not None:
         out.append('box '+' '.join(number(x) for x in (*c.box[0], *c.box[1])))
+    elif c.cone is not None:
+        out.append('frame '+' '.join(number(x) for x in c.frame))
+        out.append('cone '+' '.join(number(x) for x in c.cone))
     else:
         out.append('frame '+' '.join(number(x) for x in c.frame))
         out.append(f'offsets {number(c.start)} {number(c.end)}')
@@ -232,6 +236,42 @@ def extrude_entities(c):
     return ents
 
 
+def cone_entities(c):
+    """Every entity of Solid::cone_with (S3), independently of the Rust
+    builder. The meridian is boundary 0, the polygon (0, 0), (r1, 0),
+    (r2, h), (0, h) in (radius, height) with segment j from point j to j+1:
+    the rim points 1 and 2 revolve into the bottom and top rings, or are
+    apices when their radius is 0; segments 0 and 2 into the discs, segment 1
+    into the wall, the boundary into the solid region. The axis (points 0
+    and 3, segment 3) generates nothing."""
+    op = c.operation
+    r1, r2, _ = c.cone
+    ents = []
+
+    def add(kind, role, parents, locator):
+        ents.append(Entity(kind, Derivation(op, 'revolve', kind, role, 0, tuple(parents)), locator))
+
+    def meridian(element, index):
+        return ('profile', 0, element, index)
+    add('region', 'region', [meridian('boundary', 0)], ('region',))
+    for r, side, cap, segment, edge, rim in ((r1, 'start', 'start_cap', 0, 'bottom_edge', 1),
+                                             (r2, 'end', 'end_cap', 2, 'top_edge', 2)):
+        if r == 0:
+            add('vertex', 'apex', [meridian('vertex', rim)], ('apex', side))
+        else:
+            add('edge', edge, [meridian('vertex', rim)], ('ring', side))
+            add('face', cap, [meridian('segment', segment)], ('cap', side))
+    add('face', 'wall', [meridian('segment', 1)], ('wall',))
+    ids = [e.id for e in ents]
+    assert len(set(ids)) == len(ids), f'{c.name}: id collision'
+    return ents
+
+
+def entities(c):
+    """Every entity of a case's construction."""
+    return cone_entities(c) if c.cone is not None else extrude_entities(c)
+
+
 def body_id(operation, kind='extrude', parents=(), ordinal=0):
     return Derivation(operation, kind, 'body', 'body', ordinal, tuple(parents)).id()
 
@@ -276,12 +316,13 @@ def relation_text(r):
 
 
 def extrude_history(c):
-    rels = [('generated', e.derivation.parents, e.id, e.derivation.role) for e in extrude_entities(c)]
+    """The construction's relations: a prism's or a cone's."""
+    rels = [('generated', e.derivation.parents, e.id, e.derivation.role) for e in entities(c)]
     return sorted(rels, key=relation_sort_key)
 
 
 def transform_history(c):
-    rels = [('modified', e.id, e.id) for e in extrude_entities(c)]
+    rels = [('modified', e.id, e.id) for e in entities(c)]
     return sorted(rels, key=relation_sort_key)
 
 

@@ -466,6 +466,55 @@ reason:
   their tables (edge representation and face locations). The reader now
   range-checks every reference; the input is a retained regression.
 
+## Surfaces of revolution (S3)
+
+S3 of `REVIEW_NOTES.md` adds the surfaces of revolution in the order cone,
+sphere, torus, one per accepted revision (R6).
+
+### Cone
+
+* **Surface.** `Surface::Cone { frame, radius, half_angle }` is OCCT's
+  `Geom_ConicalSurface`: `S(u, v) = O + (R + v sin a)(cos u x + sin u y) +
+  v cos a n`, `v` arc length along a ruling, the apex at `v = -R / sin a`.
+  A valid cone has a finite `R ≥ 0` and `0 < |a| < π/2`. Pcurves live on the
+  universal cover in `(u, v)`, as on a cylinder.
+* **Pole.** The apex is a vertex loop of the wall. On a cone face whose edge
+  loops wind once in total, the first vertex loop is the pole: it closes the
+  band, so the windings need not balance, and its vertex must lie within
+  tolerance of the apex (`pole_off_apex`) as well as on the surface. The
+  periodic area and the orientation flux take the pole into account
+  (`MATHEMATICS.md`). The count synthesizer adds one degenerate edge per
+  pole, as OCCT has.
+* **Builder.** `Solid::cone_with`, `cone_at` and `cone_in` build
+  `BRepPrimAPI_MakeCone(gp_Ax2, bottom, top, height)`: discs, then the wall
+  whose loops are the rings (bottom `+u` at `v = 0`, top `-u` at the slant)
+  and, for a zero radius, the pole. Every entity is generated from its
+  meridian element (`IDENTITY_AND_HISTORY.md`); the history's kind is
+  `Revolve`. Mass properties are the general certified ones (`U2`), and the
+  cone's enclosures are measured like every builder's. Split and fuse
+  rebuild prisms: on a cone they return `OutOfDomain`, and `Solid::profile`
+  is `None`.
+* **Interop.** The reader takes surface record 3 (with an indirect axis
+  becoming the cone about `-N` with `v` and the angle negated) and accepts
+  degenerated edges. In the seam merge `du` is scaled by `|R + v sin a|`,
+  and a run that is exactly one degenerated edge on a cone face becomes the
+  pole's vertex loop. A degenerated edge anywhere else is `DegeneratedEdge`,
+  unsupported. The writer inserts OCCT's structure: the seam from the base
+  ring's seam vertex to the apex, and the degenerated edge (no 3D curve, the
+  pcurve `v = v_apex` over one turn from the seam's `u`, the apex its vertex
+  at both ends).
+* **DRAW.** `pcone name R1 R2 H`, and `vprops`/`sprops` of restored bodies and
+  cone faces through the certified mass properties. The derived case
+  `pcone_counts` checks an apex cone, a frustum and a base apex on both
+  backends.
+* **Evidence.** The native `MakeCone` capture came before any kernel cone
+  code (`fixtures/occt-primitive-preimplementation`). The `MakeRevol` history
+  capture came after the builder was written, before it was committed
+  (`R11`, `fixtures/occt-revolve-history-capture/NOTES.md`). The independent
+  references are `primitive_reference.py` (counts, mass, faces, edges,
+  vertices), the cone rules of `brep_reference.py` and `cell_reference.py`,
+  and `identity_reference.cone_entities`.
+
 ## Acceptance
 
 Record each milestone's clean revision, kernel CI job count, fuzz CI target

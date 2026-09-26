@@ -56,6 +56,16 @@ pub enum Surface {
         y: [f64; 3],
         r: f64,
     },
+    /// `Geom_ConicalSurface`: reference radius `r` in the plane through `p`,
+    /// semi-angle `a`.
+    Cone {
+        p: [f64; 3],
+        n: [f64; 3],
+        x: [f64; 3],
+        y: [f64; 3],
+        r: f64,
+        a: f64,
+    },
     Other(&'static str),
 }
 
@@ -418,8 +428,15 @@ fn surface(t: &mut Tokens) -> Result<Surface, BrepError> {
             }
         }
         3 => {
-            t.skip_reals(14)?;
-            Surface::Other("ConicalSurface")
+            let v = t.reals::<14>()?;
+            Surface::Cone {
+                p: [v[0], v[1], v[2]],
+                n: [v[3], v[4], v[5]],
+                x: [v[6], v[7], v[8]],
+                y: [v[9], v[10], v[11]],
+                r: v[12],
+                a: v[13],
+            }
         }
         4 => {
             t.skip_reals(13)?;

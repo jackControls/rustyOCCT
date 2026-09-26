@@ -2,7 +2,10 @@
 //! An independent byte encoder and FNV-1a-128 recompute every id from its
 //! retained derivation. Rebuilding, rigid motion, reversing the direction and
 //! moving labelled points keep every id; permuting label values permutes ids
-//! bijectively, parent by parent; counts and roles follow the profile.
+//! bijectively, parent by parent; counts and roles follow the profile. The
+//! same bytes also make a cone (S3 of REVIEW_NOTES.md): its entities follow
+//! the meridian (identity_reference.cone_entities), and rebuilding,
+//! stretching and rigid motion keep its ids.
 use libfuzzer_sys::arbitrary::{Result, Unstructured};
 use rusty_occt::history::History;
 use rusty_occt::identity::{
@@ -27,6 +30,7 @@ fn encode(d: &Derivation) -> Vec<u8> {
         OperationKind::Composite => 4,
         OperationKind::HeightSplit => 5,
         OperationKind::StackedFuse => 6,
+        OperationKind::Revolve => 7,
     });
     out.push(match d.entity {
         EntityKind::Vertex => 1,
@@ -52,6 +56,7 @@ fn encode(d: &Derivation) -> Vec<u8> {
         Role::CutFace,
         Role::CutEdge,
         Role::CutVertex,
+        Role::Apex,
     ];
     out.push(roles.iter().position(|r| *r == d.role).unwrap() as u8 + 1);
     out.extend(d.ordinal.to_le_bytes());
@@ -285,7 +290,139 @@ fn id_set(ids: &Ids) -> BTreeSet<String> {
     ids.values().map(|v| v.0.clone()).collect()
 }
 
+/// A cone of `Solid::cone_with`, with rigid motions.
+pub(crate) struct ConeSpec {
+    pub(crate) tolerance: Tolerance,
+    pub(crate) operation: OperationId,
+    pub(crate) frame: Frame3,
+    pub(crate) bottom: f64,
+    pub(crate) top: f64,
+    pub(crate) height: f64,
+    pub(crate) transforms: Vec<RigidTransform>,
+}
+
+impl ConeSpec {
+    pub(crate) fn build(&self, stretch: f64) -> Option<(Solid, History)> {
+        Solid::cone_with(
+            self.operation,
+            self.frame,
+            self.bottom * stretch,
+            self.top * stretch,
+            self.height * stretch,
+            self.tolerance,
+        )
+        .ok()
+    }
+}
+
+pub(crate) fn cone_spec(u: &mut Unstructured) -> Result<Option<ConeSpec>> {
+    let scale = 2f64.powi(u.int_in_range(-8..=8)?);
+    let tolerance = Tolerance::new(1e-9 * scale, 1e-12).unwrap();
+    let radius = |u: &mut Unstructured| -> Result<f64> {
+        Ok(if u.ratio(1, 3)? {
+            0.0
+        } else {
+            scale * (0.1 + unit(u)?)
+        })
+    };
+    let (bottom, top) = (radius(u)?, radius(u)?);
+    let height = scale * (0.1 + unit(u)?);
+    let normal = Vec3::new(2.0 * unit(u)? - 1.0, 2.0 * unit(u)? - 1.0, 0.3 + unit(u)?);
+    let origin = Point3::new(
+        scale * (10.0 * unit(u)? - 5.0),
+        scale * 10.0 * unit(u)?,
+        scale * -3.0 * unit(u)?,
+    );
+    let Ok(frame) = Frame3::new(origin, normal, Vec3::X, tolerance) else {
+        return Ok(None);
+    };
+    let mut transforms = Vec::new();
+    for _ in 0..u.int_in_range(0..=2)? {
+        let axis = Vec3::new(unit(u)? + 0.1, unit(u)? - 0.5, unit(u)? - 0.5);
+        let r = RigidTransform::rotation(Point3::ORIGIN, axis, TAU * unit(u)?).unwrap();
+        let t =
+            RigidTransform::translation(Vec3::new(unit(u)?, unit(u)?, unit(u)?) * (7.0 * scale))
+                .unwrap();
+        transforms.push(r.then(t).unwrap());
+    }
+    Ok(Some(ConeSpec {
+        tolerance,
+        operation: OperationId(u.arbitrary()?),
+        frame,
+        bottom,
+        top,
+        height,
+        transforms,
+    }))
+}
+
+/// The meridian parent every cone entity must have, by role: the rim points
+/// 1 and 2, the radial segments 0 and 2, the slant 1, the boundary.
+fn meridian_parent(role: Role, bottom: f64) -> ProfileElement {
+    match role {
+        Role::Region => ProfileElement::Boundary,
+        Role::Wall => ProfileElement::Segment(1),
+        Role::StartCap => ProfileElement::Segment(0),
+        Role::EndCap => ProfileElement::Segment(2),
+        Role::BottomEdge => ProfileElement::Vertex(1),
+        Role::TopEdge => ProfileElement::Vertex(2),
+        Role::Apex if bottom == 0.0 => ProfileElement::Vertex(1),
+        Role::Apex => ProfileElement::Vertex(2),
+        other => panic!("a cone has no {other:?}"),
+    }
+}
+
+fn check_cone(data: &[u8]) {
+    let mut u = Unstructured::new(data);
+    let Ok(Some(s)) = cone_spec(&mut u) else {
+        return;
+    };
+    let Some((solid, _)) = s.build(1.0) else {
+        // Equal radii are a cylinder; two apices bound nothing.
+        assert_eq!(s.bottom, s.top);
+        return;
+    };
+    let base = ids(&solid);
+    let t = solid.topology();
+    let apices = usize::from(s.bottom == 0.0) + usize::from(s.top == 0.0);
+    let rings = 2 - apices;
+    assert_eq!(t.vertices().len(), apices);
+    assert_eq!(t.edges().len(), rings);
+    assert_eq!(t.faces().len(), 1 + rings);
+    assert_eq!(t.regions().len(), 2);
+    let c = t.occt_counts();
+    assert_eq!(
+        (c.vertices, c.edges, c.wires, c.faces, c.shells, c.solids),
+        (2, 3, 1 + rings, 1 + rings, 1, 1)
+    );
+    for (_, d) in base.values() {
+        assert_eq!(d.kind, OperationKind::Revolve);
+        assert_eq!(d.ordinal, 0);
+        assert_eq!(
+            d.parents,
+            vec![Parent::Profile {
+                boundary: 0,
+                element: meridian_parent(d.role, s.bottom),
+            }]
+        );
+    }
+    // Rebuilding is deterministic; ids ignore the dimensions.
+    assert_eq!(ids(&s.build(1.0).unwrap().0), base);
+    if let Some((stretched, _)) = s.build(1.03) {
+        assert_eq!(ids(&stretched), base, "stretching keeps ids");
+    }
+    let mut moved = solid.clone();
+    for transform in &s.transforms {
+        if let Ok((next, _)) = moved.transform_with(OperationId::UNSPECIFIED, *transform) {
+            assert_eq!(ids(&next), base);
+            assert_eq!(next.topology().body_id(), solid.topology().body_id());
+            moved = next;
+        }
+    }
+}
+
 pub fn check_identity(data: &[u8]) {
+    check_cone(data);
     let mut u = Unstructured::new(data);
     let Ok(Some(s)) = spec(&mut u) else {
         return;

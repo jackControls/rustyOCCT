@@ -2421,3 +2421,36 @@ corpus_255	digest 101 619a1e132feac2a710a4162167f884d6
 corpus_255	59119551231c1316a89428c2d8a56887 region region 0 P0.b0,P1.b0 region
 corpus_255_alternate	digest 101 619a1e132feac2a710a4162167f884d6
 corpus_255_alternate	59119551231c1316a89428c2d8a56887 region region 0 P0.b0,P1.b0 region
+cone_apex_top	1aeb1c09d969cb50e4e9348a62ff0abd region region 0 P0.b0 region
+cone_apex_top	3e88782a876771884ea2a1a3d5720e3e edge bottom_edge 0 P0.v1 ring start
+cone_apex_top	401783e34a35ec20077b4f4c9690aaeb face wall 0 P0.s1 wall
+cone_apex_top	65261ce88b020cef2a0d6a059ec28555 vertex apex 0 P0.v2 apex end
+cone_apex_top	7f5d5b2ceb37a81c803a991b168d8a58 face start_cap 0 P0.s0 cap start
+cone_apex_bottom	1aeb1c09d969cb50e4e9348a62ff0abd region region 0 P0.b0 region
+cone_apex_bottom	401783e34a35ec20077b4f4c9690aaeb face wall 0 P0.s1 wall
+cone_apex_bottom	652d909d97020cef2a0d6a07e99a76c6 vertex apex 0 P0.v1 apex start
+cone_apex_bottom	77e505ff1f72aaadab01034d2ea55026 edge top_edge 0 P0.v2 ring end
+cone_apex_bottom	905199bc3441254563d9b69589803607 face end_cap 0 P0.s2 cap end
+cone_frustum	706352acf91ed1cc9d256a1b9029f856 face end_cap 0 P0.s2 cap end
+cone_frustum	8139c26812284ef580c4878cd7bcde41 face start_cap 0 P0.s0 cap start
+cone_frustum	88cfe66a0ded4c6455fe1d63eb04de37 edge top_edge 0 P0.v2 ring end
+cone_frustum	927282dd42ea64a3ef4f5530bb6a99e6 face wall 0 P0.s1 wall
+cone_frustum	94018e9605b8df3ba82802d97c893693 edge bottom_edge 0 P0.v1 ring start
+cone_frustum	c3a51732ef4b2b7e484abf7c0f583ac0 region region 0 P0.b0 region
+cone_widening	706352acf91ed1cc9d256a1b9029f856 face end_cap 0 P0.s2 cap end
+cone_widening	8139c26812284ef580c4878cd7bcde41 face start_cap 0 P0.s0 cap start
+cone_widening	88cfe66a0ded4c6455fe1d63eb04de37 edge top_edge 0 P0.v2 ring end
+cone_widening	927282dd42ea64a3ef4f5530bb6a99e6 face wall 0 P0.s1 wall
+cone_widening	94018e9605b8df3ba82802d97c893693 edge bottom_edge 0 P0.v1 ring start
+cone_widening	c3a51732ef4b2b7e484abf7c0f583ac0 region region 0 P0.b0 region
+cone_transformed	71dbd1b8b83b1a2205c6ea188b69e087 region region 0 P0.b0 region
+cone_transformed	b4472683955df6aacd4d2207c3053d06 face start_cap 0 P0.s0 cap start
+cone_transformed	cf58393275cd6664a5e9b2037d113ce0 edge bottom_edge 0 P0.v1 ring start
+cone_transformed	e56ad4365f9391d8237a56c16a3c6e1f vertex apex 0 P0.v2 apex end
+cone_transformed	f39be5374e5fb2a7460c6bdad8b1ff55 face wall 0 P0.s1 wall
+cone_frustum_transformed	15ab1567982b457e983656f003f2a0e5 face end_cap 0 P0.s2 cap end
+cone_frustum_transformed	71dbd1b8b83b1a2205c6ea188b69e087 region region 0 P0.b0 region
+cone_frustum_transformed	b4472683955df6aacd4d2207c3053d06 face start_cap 0 P0.s0 cap start
+cone_frustum_transformed	cf58393275cd6664a5e9b2037d113ce0 edge bottom_edge 0 P0.v1 ring start
+cone_frustum_transformed	da89e15e6d98f93bf81397790e95953c edge top_edge 0 P0.v2 ring end
+cone_frustum_transformed	f39be5374e5fb2a7460c6bdad8b1ff55 face wall 0 P0.s1 wall

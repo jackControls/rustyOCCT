@@ -1,9 +1,12 @@
 //! `.brep` solids into the cell model, by the rule of
-//! `rust/tools/cell_reference.py::to_cell`: a seam pair on a cylinder whose
-//! uses run opposite ways, lie one period apart and continue their
+//! `rust/tools/cell_reference.py::to_cell`: a seam pair on a cylinder or cone
+//! whose uses run opposite ways, lie one period apart and continue their
 //! neighbours in UV merges into periodic loops with winding numbers; the
 //! vertices only seams and closed curves use disappear, and closed curves
-//! that lose their vertex become ring edges. Each solid becomes a solid
+//! that lose their vertex become ring edges. On a cone, a run that is one
+//! degenerated edge (OCCT's apex) becomes a vertex loop of its vertex, the
+//! pole (S3 of REVIEW_NOTES.md); a degenerated edge anywhere else is
+//! unsupported. Each solid becomes a solid
 //! region whose outer shell comes first, each shell's opposite sides a void
 //! twin. The result must pass `Topology::from_parts`.
 use super::read::{self, Data, Document, EdgeRep, Kind, Orient, Sub};
@@ -111,7 +114,8 @@ struct SUse {
 struct SEdge {
     start: usize,
     end: usize,
-    curve: Curve3,
+    /// `None` for a degenerated edge.
+    curve: Option<Curve3>,
     /// OCCT's stored edge tolerance.
     tolerance: f64,
 }
@@ -179,9 +183,6 @@ impl Walk<'_> {
         else {
             return self.no("MalformedEdge");
         };
-        if *degenerated {
-            return self.no("DegeneratedEdge");
-        }
         self.tolerance = self.tolerance.max(*tolerance);
         let (mut start, mut end) = (None, None);
         for sub in &shape.subs {
@@ -196,6 +197,22 @@ impl Walk<'_> {
         let (Some(start), Some(end)) = (start, end) else {
             return self.no("EdgeWithoutBothVertices");
         };
+        if *degenerated {
+            // A point in space: its pcurves carry it. Only a cone's pole may
+            // use one (checked with its face).
+            if start != end {
+                return self.no("DegeneratedEdge");
+            }
+            let e = self.edges.len();
+            self.edges.push(SEdge {
+                start,
+                end,
+                curve: None,
+                tolerance: *tolerance,
+            });
+            self.edge_keys.insert(record, t, e);
+            return Some(e);
+        }
         let Some((curve, location_index, range)) = reps.iter().find_map(|r| match r {
             EdgeRep::Curve {
                 curve,
@@ -239,7 +256,7 @@ impl Walk<'_> {
         self.edges.push(SEdge {
             start,
             end,
-            curve,
+            curve: Some(curve),
             tolerance: *tolerance,
         });
         self.edge_keys.insert(record, t, e);
@@ -279,16 +296,20 @@ impl Walk<'_> {
             _ => None,
         });
         let Some((pcurves, [f, mut l])) = rep else {
-            return match surface {
-                Surface::Plane(plane) => Some(on_plane(plane, &self.edges[edge].curve)),
+            return match (surface, &self.edges[edge].curve) {
+                (Surface::Plane(plane), Some(curve)) => Some(on_plane(plane, curve)),
                 _ => self.no("EdgeWithoutPCurve"),
             };
         };
         // A closed circle's sweep was snapped to one turn; its pcurves share
-        // the edge's range (SameRange), so theirs is snapped alike.
-        if matches!(self.edges[edge].curve, Curve3::CircularArc { sweep_angle, .. } if sweep_angle == TAU)
-            && ((l - f) - TAU).abs() <= 1e-12 * TAU
-        {
+        // the edge's range (SameRange), so theirs is snapped alike. So is a
+        // degenerated edge's turn around the apex.
+        let turn = match &self.edges[edge].curve {
+            Some(Curve3::CircularArc { sweep_angle, .. }) => *sweep_angle == TAU,
+            None => true,
+            _ => false,
+        };
+        if turn && ((l - f) - TAU).abs() <= 1e-12 * TAU {
             l = f + TAU;
         }
         // BRep_Tool::CurveOnSurface: the second pcurve of a closed surface
@@ -369,8 +390,26 @@ impl Walk<'_> {
                     radius: *r,
                 }
             }
+            read::Surface::Cone { p, n, x, y, r, a } => {
+                // An indirect axis is the kernel's cone about -N with v and
+                // the semi-angle negated: the same points, the normal inward.
+                indirect = dot(cross(*x, *y), *n) <= 0.0;
+                let axis = if indirect { n.map(|c| -c) } else { *n };
+                Surface::Cone {
+                    frame: Frame3::new(
+                        p3(st.point(*p)),
+                        v3(st.vector(axis)),
+                        v3(st.vector(*x)),
+                        self.placement,
+                    )
+                    .ok()?,
+                    radius: *r,
+                    half_angle: if indirect { -*a } else { *a },
+                }
+            }
             read::Surface::Other(name) => return self.no(name),
         };
+        let cone = matches!(surface, Surface::Cone { .. });
         let mut loops = Vec::new();
         for wire in &shape.subs {
             if doc.shapes[wire.shape].kind != Kind::Wire {
@@ -384,6 +423,9 @@ impl Walk<'_> {
                     compose(e.orient, wire.orient).or_else(|| self.no("InternalOrExternalEdge"))?;
                 let traversal = compose(stored, oriented).expect("forward or reversed");
                 let edge = self.edge(e.shape, &et)?;
+                if self.edges[edge].curve.is_none() && !cone {
+                    return self.no("DegeneratedEdge");
+                }
                 let pcurve =
                     self.pcurve(e.shape, &et, edge, &surface, surface_index, &st, stored)?;
                 let pcurve = if indirect { negate_v(&pcurve) } else { pcurve };
@@ -572,14 +614,30 @@ fn end_of(p: &Curve2) -> Point2 {
 /// indices between them with their windings.
 type SeamRuns = (Vec<usize>, Vec<(Vec<usize>, i32)>);
 
+/// The length of a unit step in `u` at height `v`: the cylinder's radius,
+/// the cone's `|R + v sin a|`.
+fn u_scale(surface: &Surface, v: f64) -> Option<f64> {
+    match surface {
+        Surface::Cylinder { radius, .. } => Some(*radius),
+        Surface::Cone {
+            radius, half_angle, ..
+        } => Some((radius + v * half_angle.sin()).abs()),
+        Surface::Plane(_) => None,
+    }
+}
+
 /// Split one seamed loop into runs between seam uses, each with its winding;
 /// `None` when the loop has no consistent seam pair.
 fn seam_merge(face: &SFace, lp: &[SUse], tol: f64) -> Option<SeamRuns> {
-    let Surface::Cylinder { radius, .. } = face.surface else {
-        return None;
+    let surface = &face.surface;
+    u_scale(surface, 0.0)?;
+    let scale = |a: Point2, b: Point2| {
+        u_scale(surface, a.y)
+            .unwrap_or(0.0)
+            .max(u_scale(surface, b.y).unwrap_or(0.0))
     };
     let close =
-        |a: Point2, b: Point2| ((a.x - b.x) * radius).abs() <= tol && (a.y - b.y).abs() <= tol;
+        |a: Point2, b: Point2| ((a.x - b.x) * scale(a, b)).abs() <= tol && (a.y - b.y).abs() <= tol;
     let mut counts: BTreeMap<usize, usize> = BTreeMap::new();
     for u in lp {
         *counts.entry(u.edge).or_default() += 1;
@@ -607,6 +665,7 @@ fn seam_merge(face: &SFace, lp: &[SUse], tol: f64) -> Option<SeamRuns> {
             return None;
         };
         let shift = sa.x - eb.x;
+        let radius = scale(*sa, *ea);
         if (shift.abs() - TAU).abs() * radius > tol
             || ((ea.x - sb.x) - shift).abs() * radius > tol
             || (sa.y - eb.y).abs() > tol
@@ -644,9 +703,13 @@ fn seam_merge(face: &SFace, lp: &[SUse], tol: f64) -> Option<SeamRuns> {
     }
     let mut out = Vec::new();
     for run in runs {
-        let du = end_of(&lp[run[run.len() - 1]].pcurve).x - start_of(&lp[run[0]].pcurve).x;
+        let (a, b) = (
+            start_of(&lp[run[0]].pcurve),
+            end_of(&lp[run[run.len() - 1]].pcurve),
+        );
+        let du = b.x - a.x;
         let w = (du / TAU).round();
-        if w == 0.0 || (du - w * TAU).abs() * radius > tol {
+        if w == 0.0 || (du - w * TAU).abs() * scale(a, b) > tol {
             return None;
         }
         out.push((run, w as i32));
@@ -654,22 +717,40 @@ fn seam_merge(face: &SFace, lp: &[SUse], tol: f64) -> Option<SeamRuns> {
     Some((seams, out))
 }
 
-/// The cell complex of a seamed solid, by the rule of `to_cell`.
-fn to_cell(walk: Walk, tol: f64) -> TopologyParts {
-    let mut face_loops: Vec<Vec<(Vec<&SUse>, i32)>> = Vec::new();
+/// A loop of the cell complex before numbering: runs of seamed uses with
+/// their winding, or a pole at a seamed vertex.
+enum CellLoop<'a> {
+    Edges(Vec<&'a SUse>, i32),
+    Pole(usize),
+}
+
+/// The cell complex of a seamed solid, by the rule of `to_cell`; the name of
+/// the unsupported construct when a degenerated edge is not a cone's pole.
+fn to_cell(walk: Walk, tol: f64) -> Result<TopologyParts, &'static str> {
+    let mut face_loops: Vec<Vec<CellLoop>> = Vec::new();
     let mut removed = BTreeSet::new();
+    let mut poles = BTreeSet::new();
     for f in &walk.faces {
         let mut loops = Vec::new();
         for lp in &f.loops {
             match (!lp.is_empty()).then(|| seam_merge(f, lp, tol)).flatten() {
                 Some((seams, runs)) => {
                     removed.extend(seams);
-                    loops.extend(
-                        runs.into_iter()
-                            .map(|(run, w)| (run.into_iter().map(|k| &lp[k]).collect(), w)),
-                    );
+                    for (run, w) in runs {
+                        let e = lp[run[0]].edge;
+                        if run.len() == 1 && walk.edges[e].curve.is_none() {
+                            removed.insert(e);
+                            poles.insert(walk.edges[e].start);
+                            loops.push(CellLoop::Pole(walk.edges[e].start));
+                        } else {
+                            loops.push(CellLoop::Edges(
+                                run.into_iter().map(|k| &lp[k]).collect(),
+                                w,
+                            ));
+                        }
+                    }
                 }
-                None => loops.push((lp.iter().collect(), 0)),
+                None => loops.push(CellLoop::Edges(lp.iter().collect(), 0)),
             }
         }
         face_loops.push(loops);
@@ -677,11 +758,17 @@ fn to_cell(walk: Walk, tol: f64) -> TopologyParts {
     let still_used: BTreeSet<usize> = face_loops
         .iter()
         .flatten()
-        .flat_map(|(lp, _)| lp.iter().map(|u| u.edge))
+        .flat_map(|l| match l {
+            CellLoop::Edges(lp, _) => lp.iter().map(|u| u.edge).collect(),
+            CellLoop::Pole(_) => Vec::new(),
+        })
         .collect();
+    if still_used.iter().any(|e| walk.edges[*e].curve.is_none()) {
+        return Err("DegeneratedEdge");
+    }
     removed.retain(|e| !still_used.contains(e));
-    let closed = |c: &Curve3| matches!(c, Curve3::CircularArc { sweep_angle, .. } if sweep_angle.abs() == TAU);
-    let mut other_use = BTreeSet::new();
+    let closed = |c: &Option<Curve3>| matches!(c, Some(Curve3::CircularArc { sweep_angle, .. }) if sweep_angle.abs() == TAU);
+    let mut other_use = poles;
     for (i, e) in walk.edges.iter().enumerate() {
         if !(removed.contains(&i) || closed(&e.curve) && e.start == e.end) {
             other_use.extend([e.start, e.end]);
@@ -731,7 +818,7 @@ fn to_cell(walk: Walk, tol: f64) -> TopologyParts {
             } else {
                 vertex_map.get(&e.end).copied()
             },
-            curve: e.curve.clone(),
+            curve: e.curve.clone().expect("degenerated edges are poles"),
             fins: Vec::new(),
         });
     }
@@ -748,7 +835,15 @@ fn to_cell(walk: Walk, tol: f64) -> TopologyParts {
     for (fi, f) in walk.faces.iter().enumerate() {
         let k = owner.get(&fi).copied().unwrap_or(0);
         let mut loops = Vec::new();
-        for (lp, w) in &face_loops[fi] {
+        for l in &face_loops[fi] {
+            let (lp, w) = match l {
+                CellLoop::Edges(lp, w) => (lp, w),
+                CellLoop::Pole(v) => {
+                    parts.loops.push(Loop::Vertex(vertex_map[v]));
+                    loops.push(LoopId::new(parts.loops.len() - 1));
+                    continue;
+                }
+            };
             let fins = lp
                 .iter()
                 .map(|u| {
@@ -825,7 +920,7 @@ fn to_cell(walk: Walk, tol: f64) -> TopologyParts {
             acorn_vertices: Vec::new(),
         });
     }
-    parts
+    Ok(parts)
 }
 
 fn import_solid(doc: &Document, record: usize, t: &Transform, oriented: Orient) -> ImportedSolid {
@@ -912,7 +1007,16 @@ fn import_solid(doc: &Document, record: usize, t: &Transform, oriented: Orient) 
             .unwrap_or(0);
         walk.shells.swap(0, outer);
     }
-    let parts = to_cell(walk, resolution.linear()).with_measured_enclosures();
+    let parts = match to_cell(walk, resolution.linear()) {
+        Ok(parts) => parts.with_measured_enclosures(),
+        Err(name) => {
+            return ImportedSolid {
+                record,
+                tolerance: resolution,
+                result: Err(Rejected::Unsupported(vec![name])),
+            }
+        }
+    };
     ImportedSolid {
         record,
         tolerance: resolution,

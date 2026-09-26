@@ -24,6 +24,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::f64::consts::TAU;
 use std::fmt;
 
+mod mass;
+pub(crate) use mass::{face_mass, mass};
+
 /// Issue classes of the validation contract.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum IssueKind {
@@ -1312,12 +1315,22 @@ fn line_flux<T: Real>(a: &V2<T>, b: &V2<T>, coeffs: &(T, T, T), plane: bool) -> 
 }
 
 /// On a cone, `S.(S_u x S_v) = rho(v) h(u)` with `rho = R + v sin a` and
-/// `h = A cos u + B sin u + C`; its v-antiderivative from the apex is
-/// `rho^2 / (2 sin a) h(u)`, zero at the pole. This is `-integral of that
-/// du` along a line from a to b, in closed form with the moments
-/// `integral of w^k cos(u0 + w)` and `w^k sin(u0 + w)` for k <= 2; `None`
-/// when du may be zero without being zero.
-fn cone_line_flux<T: Real>(a: &V2<T>, b: &V2<T>, sa: &T, radius: &T, h: &(T, T, T)) -> Option<T> {
+/// `h = A cos u + B sin u + C`. Its v-antiderivative is taken from the apex
+/// on a face with a pole, `rho^2 / (2 sin a) h(u)`, zero at the pole, and
+/// from 0 otherwise, `(R v + v^2 sin a / 2) h(u)`, which needs no division
+/// by `sin a` (a nearly cylindrical cone has its apex far away; any constant
+/// cancels over a band's two loops). This is `-integral of that du` along a
+/// line from a to b, in closed form with the moments `integral of w^k
+/// cos(u0 + w)` and `w^k sin(u0 + w)` for k <= 2; `None` when du may be zero
+/// without being zero.
+fn cone_line_flux<T: Real>(
+    a: &V2<T>,
+    b: &V2<T>,
+    sa: &T,
+    radius: &T,
+    h: &(T, T, T),
+    poled: bool,
+) -> Option<T> {
     let (ha, hb, hc) = h;
     let d = b[0].sub(&a[0]);
     if d.sign()? == Ordering::Equal {
@@ -1338,8 +1351,13 @@ fn cone_line_flux<T: Real>(a: &V2<T>, b: &V2<T>, sa: &T, radius: &T, h: &(T, T, 
     let k0 = k(&jc0, &js0, d.clone());
     let k1 = k(&jc1, &js1, d.square().mul(&c(0.5)));
     let k2 = k(&jc2, &js2, d.square().mul(&d).div(&c(3.0))?);
-    // rho^2 / (2 s) = rho0^2 / (2 s) + rho0 m w + (s m^2 / 2) w^2.
-    let first = rho0.square().div(&sa.mul(&c(2.0)))?.mul(&k0);
+    // F(v0 + m w) = F(v0) + rho0 m w + (s m^2 / 2) w^2.
+    let at_start = if poled {
+        rho0.square().div(&sa.mul(&c(2.0)))?
+    } else {
+        radius.mul(&a[1]).add(&sa.mul(&a[1].square()).mul(&c(0.5)))
+    };
+    let first = at_start.mul(&k0);
     let second = rho0.mul(&m).mul(&k1);
     let third = sa.mul(&m.square()).mul(&c(0.5)).mul(&k2);
     Some(first.add(&second).add(&third).neg())
@@ -1363,6 +1381,8 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
             ca.mul(&vdot(&fr.o, &fr.y)),
             ca.mul(&rad).sub(&sa.mul(&vdot(&fr.o, &fr.n))),
         );
+        // A sound face with a pole winds once in total (pole_position).
+        let poled = loops.iter().map(|lp| lp.winding).sum::<i32>().abs() == 1;
         let mut total = c::<T>(0.0);
         for lp in loops {
             for u in &lp.fins {
@@ -1375,11 +1395,12 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
                     &sa,
                     &rad,
                     &h,
+                    poled,
                 )?;
                 total = total.add(&term);
             }
             for (a, b) in chords::<T>(lp) {
-                total = total.add(&cone_line_flux(&a, &b, &sa, &rad, &h)?);
+                total = total.add(&cone_line_flux(&a, &b, &sa, &rad, &h, poled)?);
             }
         }
         return Some(total);

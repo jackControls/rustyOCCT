@@ -95,10 +95,15 @@ pub fn signature(s: &Solid, slot: Slot) -> String {
                     let c = frame.point(Point2::default(), 0.5 * (v.0 + v.1));
                     format!("F cylinder {:?} {}", radius * periodic.abs(), p3(c))
                 }
-                Surface::Cone { .. } => unreachable!("prism faces are planes and cylinders"),
+                Surface::Cone { .. } => {
+                    let (area, centre) = t
+                        .face_area_and_centre(f)
+                        .expect("a cone face has certified mass properties");
+                    format!("F cone {area:?} {}", p3(centre))
+                }
             }
         }
-        // A prism has one solid region: the body.
+        // A prism or cone has one solid region: the body.
         Slot::Region(_) => mass(s),
     }
 }

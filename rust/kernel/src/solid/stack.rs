@@ -102,7 +102,13 @@ impl Solid {
         let mut children: BTreeMap<EntityId, Vec<EntityId>> = BTreeMap::new();
         let mut pieces = Vec::new();
         for (k, (start, end)) in offsets.into_iter().enumerate() {
-            let mut piece = Self::build(operation, self.profile.clone(), self.frame, start, end)?;
+            let mut piece = Self::build(
+                operation,
+                self.prism_profile()?.clone(),
+                self.frame,
+                start,
+                end,
+            )?;
             same_layout(parent, &piece.topology)?;
             let derive = |entity, role, parents| Derivation {
                 operation,
@@ -214,7 +220,7 @@ impl Solid {
     pub fn fuse_stacked_in(&self, context: &Context, other: &Solid) -> Result<(Solid, History)> {
         let (level, operation) = (context.level, context.operation);
         replayable(level)?;
-        if self.profile != other.profile || self.frame != other.frame {
+        if self.prism_profile()? != other.prism_profile()? || self.frame != other.frame {
             return Err(Error::OutOfDomain(
                 "stacked fuse needs one profile and one frame",
             ));
@@ -234,7 +240,13 @@ impl Solid {
             return Err(Error::InvalidTopology("id collision"));
         }
         same_layout(a, b)?;
-        let mut fused = Self::build(operation, self.profile.clone(), self.frame, start, end)?;
+        let mut fused = Self::build(
+            operation,
+            self.prism_profile()?.clone(),
+            self.frame,
+            start,
+            end,
+        )?;
         same_layout(a, &fused.topology)?;
         let self_is_lower = self.start.min(self.end) < other.start.min(other.end);
         let (lower, upper) = if self_is_lower { (a, b) } else { (b, a) };
@@ -310,7 +322,7 @@ fn debug_check(inputs: &[&Solid], outputs: &[&Solid], history: &History) {
         let sets = |bodies: &[&Solid]| {
             bodies
                 .iter()
-                .map(|s| s.topology.entity_set(s.profile.tolerance()))
+                .map(|s| s.topology.entity_set(s.resolution()))
                 .collect::<Vec<_>>()
         };
         let issues = history::check(&sets(inputs), &sets(outputs), history);

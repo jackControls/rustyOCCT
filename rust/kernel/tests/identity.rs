@@ -72,8 +72,8 @@ fn every_case_matches_the_independent_ids_and_transforms_keep_them() {
         }
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
-    assert_eq!(specs.len(), 546);
-    assert_eq!(entities, 46494);
+    assert_eq!(specs.len(), 552);
+    assert_eq!(entities, 46527);
 }
 
 #[test]

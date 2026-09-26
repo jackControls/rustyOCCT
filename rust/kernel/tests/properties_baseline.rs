@@ -13,6 +13,10 @@ use rusty_occt::identity::OperationId;
 pub fn rows() -> Vec<String> {
     let mut out = Vec::new();
     for spec in cases(include_str!("../../fixtures/identity-cases.txt")) {
+        // The baseline predates cones (S3); it covers the prisms.
+        if spec.cone.is_some() {
+            continue;
+        }
         let mut solid = build(&spec);
         out.push(properties::row(&spec.name, &solid));
         for (k, transform) in spec.transforms.iter().enumerate() {

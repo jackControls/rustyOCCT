@@ -11,7 +11,7 @@ fn every_prism_round_trips_to_the_same_cells_and_text() {
     let mut checked = 0;
     for spec in &specs {
         let solid = identity_protocol::build(spec);
-        let tol = solid.profile().tolerance().linear();
+        let tol = solid.resolution().linear();
         let text = write(solid.topology(), tol).unwrap();
         let doc = read(&text).unwrap();
         let im = import(&doc);
@@ -110,14 +110,13 @@ fn malformed_documents_are_typed_errors_with_their_line() {
     }
 }
 
-const GEOMETRY: [&str; 23] = [
+const GEOMETRY: [&str; 22] = [
     "BSplineCurve",
     "BSplineCurve2d",
     "BSplineSurface",
     "BezierCurve",
     "BezierCurve2d",
     "BezierSurface",
-    "ConicalSurface",
     "Ellipse",
     "Ellipse2d",
     "Hyperbola",
@@ -187,5 +186,5 @@ fn corpus_matches_the_independent_reader() {
             }
         }
     }
-    assert_eq!(imported, 29);
+    assert_eq!(imported, 30);
 }

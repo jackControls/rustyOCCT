@@ -1,9 +1,12 @@
 //! The writer: a cell topology's solid regions as `.brep` version 1 text,
 //! with OCCT's structure inserted by rule. A face that winds around a
-//! cylinder gets one seam at the `u` where its ring loops start: its forward
-//! use (in the unoriented face) at `u0 + 2 pi` going from the lower ring to
-//! the upper one, its reversed use at `u0`; every ring edge gets a vertex
-//! where the seam meets it and becomes a closed edge. Every pcurve shares its
+//! cylinder or cone gets one seam at the `u` where its ring loops start: its
+//! forward use (in the unoriented face) at `u0 + 2 pi` going from the lower
+//! ring to the upper one, its reversed use at `u0`; every ring edge gets a
+//! vertex where the seam meets it and becomes a closed edge. A cone's pole
+//! becomes a degenerated edge at the apex, as `BRepPrim_Cone` builds it: no
+//! 3D curve, the pcurve `v = v_apex` over one turn from `u0`, the apex its
+//! vertex at both ends, and the seam ends there. Every pcurve shares its
 //! edge's parameter, as OCCT's SameParameter edges do.
 use super::BrepError;
 use crate::topology::{
@@ -131,9 +134,9 @@ fn pcurve_record(
             let (du, dv) = (b.x - a.x, b.y - a.y);
             let span = t1 - t0;
             let (dx, dy) = match surface {
-                // On a cylinder a horizontal pcurve runs in u at unit speed
-                // against an angle parameter.
-                Surface::Cylinder { .. } if dv == 0.0 => (du.signum(), 0.0),
+                // On a cylinder or cone a horizontal pcurve runs in u at unit
+                // speed against an angle parameter.
+                Surface::Cylinder { .. } | Surface::Cone { .. } if dv == 0.0 => (du.signum(), 0.0),
                 _ => {
                     let l = du.hypot(dv);
                     (du / l, dv / l)
@@ -196,8 +199,30 @@ struct End {
 }
 
 /// A wound loop: its winding in the unoriented face, its ring edge if it is
-/// one, and otherwise each vertex with its position in the face.
-type WoundLoop = (i32, Option<usize>, Vec<(usize, Point2)>);
+/// one, and otherwise each vertex with its position in the face (a pole's
+/// vertex at any `u`); whether it is a pole.
+type WoundLoop = (i32, Option<usize>, Vec<(usize, Point2)>, bool);
+
+/// A periodic surface's frame, `rho(v)` (the distance from the axis) and the
+/// height along the axis of `v`.
+fn revolved(surface: &Surface) -> Option<(crate::Frame3, f64, f64, f64)> {
+    match surface {
+        Surface::Cylinder { frame, radius } => Some((*frame, *radius, 0.0, 1.0)),
+        Surface::Cone {
+            frame,
+            radius,
+            half_angle,
+        } => Some((*frame, *radius, half_angle.sin(), half_angle.cos())),
+        Surface::Plane(_) => None,
+    }
+}
+
+/// The point at `(u, v)` of a surface `revolved` describes.
+fn revolved_point(r: &(crate::Frame3, f64, f64, f64), u: f64, v: f64) -> Point3 {
+    let (frame, radius, sin, cos) = *r;
+    let rho = radius + v * sin;
+    frame.point(Point2::new(rho * u.cos(), rho * u.sin()), v * cos)
+}
 
 /// A wound face's seam at `u0`, from the loop winding `+u` (in the
 /// unoriented face) to the loop winding `-u`.
@@ -232,14 +257,25 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
     // vertex (a ring loop gets its seam vertex there).
     let mut ring_start: BTreeMap<usize, f64> = BTreeMap::new();
     let mut wound: BTreeMap<usize, Seam> = BTreeMap::new();
+    // A pole per wound cone face: its vertex, `v_apex` and whether it runs
+    // `+u` in the unoriented face.
+    let mut poles: BTreeMap<usize, (usize, f64, bool)> = BTreeMap::new();
     for (fi, face) in t.faces().iter().enumerate() {
-        let Surface::Cylinder { frame, radius } = &face.surface else {
+        let Some(rev) = revolved(&face.surface) else {
             continue;
         };
+        let (frame, _, sin, _) = rev;
+        let rho = |v: f64| (rev.1 + v * sin).abs();
         let flip = face.sense == Orientation::Reversed;
         let mut loops: Vec<WoundLoop> = Vec::new();
+        let mut pole = None;
         for l in &face.loops {
             let Loop::Edges { fins, winding } = &t.loops()[l.index()] else {
+                if let (Loop::Vertex(v), Surface::Cone { .. }, None) =
+                    (&t.loops()[l.index()], &face.surface, pole)
+                {
+                    pole = Some(v.index());
+                }
                 continue;
             };
             if winding[1] != 0 {
@@ -270,10 +306,20 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
             if ring.is_none() && at.len() != fins.len() {
                 return Err(unwritable("a wound loop mixing rings and vertices"));
             }
-            loops.push((if flip { -winding[0] } else { winding[0] }, ring, at));
+            loops.push((if flip { -winding[0] } else { winding[0] }, ring, at, false));
         }
         if loops.is_empty() {
             continue;
+        }
+        // The pole closes a band that winds once: it runs the other way.
+        if let Some(v) = pole {
+            let total: i32 = loops.iter().map(|l| l.0).sum();
+            if total.abs() != 1 {
+                return Err(unwritable("a pole on a face not wound once"));
+            }
+            let apex = -rev.1 / sin;
+            loops.push((-total, None, vec![(v, Point2::new(0.0, apex))], true));
+            poles.insert(fi, (v, apex, -total > 0));
         }
         let (Some(bottom), Some(top), 2) = (
             loops.iter().find(|l| l.0 > 0),
@@ -282,9 +328,9 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
         ) else {
             return Err(unwritable("a wound face without one loop each way"));
         };
-        let same = |a: f64, b: f64| {
-            let d = (a - b).rem_euclid(TAU);
-            d.min(TAU - d) * radius <= tolerance
+        let same = |a: Point2, b: Point2| {
+            let d = (a.x - b.x).rem_euclid(TAU);
+            d.min(TAU - d) * rho(a.y).max(rho(b.y)) <= tolerance
         };
         // The seam position: a vertex both loops have, or any vertex of a
         // loop facing a ring, or where the rings' pcurves start.
@@ -295,14 +341,30 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
                 .find(|f| f.edge.index() == e)
                 .map(|f| f.pcurve.point(0.0).x)
         };
+        // A pole meets the seam anywhere: the other loop decides.
+        let pole_end = |l: &WoundLoop| l.3.then(|| (l.2[0].0, l.2[0].1.y));
         let choice = match (bottom.1, top.1) {
+            _ if bottom.3 || top.3 => {
+                let other = if bottom.3 { top } else { bottom };
+                let at = match other.1 {
+                    Some(e) => ring_u(e).map(|u| (u, None)),
+                    None => other.2.first().map(|(w, q)| (q.x, Some((*w, q.y)))),
+                };
+                at.map(|(u, vertex)| {
+                    if bottom.3 {
+                        (u, pole_end(bottom), vertex)
+                    } else {
+                        (u, vertex, pole_end(top))
+                    }
+                })
+            }
             (Some(e), Some(_)) => ring_u(e).map(|u| (u, None, None)),
             (Some(_), None) => top.2.first().map(|(w, q)| (q.x, None, Some((*w, q.y)))),
             (None, Some(_)) => bottom.2.first().map(|(v, p)| (p.x, Some((*v, p.y)), None)),
             (None, None) => bottom.2.iter().find_map(|(v, p)| {
                 top.2
                     .iter()
-                    .find(|(_, q)| same(p.x, q.x))
+                    .find(|(_, q)| same(*p, *q))
                     .map(|(w, q)| (p.x, Some((*v, p.y)), Some((*w, q.y))))
             }),
         };
@@ -341,7 +403,7 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
                 else {
                     return Err(unwritable("a ring edge that is not a circle"));
                 };
-                if (cr - radius).abs() > tolerance {
+                if (cr - rho(height)).abs() > tolerance {
                     return Err(unwritable("a ring edge off its wall's radius"));
                 }
                 let dir = frame.x() * u0.cos() + frame.normal().cross(frame.x()) * u0.sin();
@@ -387,9 +449,6 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
     }
     // Surfaces.
     for face in t.faces() {
-        if matches!(face.surface, Surface::Cone { .. }) {
-            return Err(unwritable("a cone"));
-        }
         surfaces.push(match &face.surface {
             Surface::Plane(f) => format!(
                 "1 {} {} {} {}",
@@ -406,7 +465,19 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
                 nums(&f.normal().cross(f.x()).to_array()),
                 num(*radius)
             ),
-            Surface::Cone { .. } => unreachable!("refused above"),
+            Surface::Cone {
+                frame: f,
+                radius,
+                half_angle,
+            } => format!(
+                "3 {} {} {} {} {} {}",
+                nums(&f.origin().to_array()),
+                nums(&f.normal().to_array()),
+                nums(&f.x().to_array()),
+                nums(&f.normal().cross(f.x()).to_array()),
+                num(*radius),
+                num(*half_angle)
+            ),
         });
     }
     // Edge geometry and pcurves per face.
@@ -451,11 +522,9 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
     };
     let mut seam_of: BTreeMap<usize, usize> = BTreeMap::new();
     for (fi, seam) in &wound {
-        let Surface::Cylinder { frame, radius } = &t.faces()[*fi].surface else {
-            unreachable!("wound faces are cylinders");
-        };
+        let rev = revolved(&t.faces()[*fi].surface).expect("wound faces are revolved");
         let (u0, low, high) = (seam.u0, seam.bottom.height, seam.top.height);
-        let at = |v: f64| frame.point(Point2::new(radius * u0.cos(), radius * u0.sin()), v);
+        let at = |v: f64| revolved_point(&rev, u0, v);
         let (a, b) = (at(low), at(high));
         let l = b.distance(a);
         if l <= tolerance {
@@ -477,6 +546,20 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
             seam_vertex(&seam.top),
         ));
         seam_of.insert(*fi, edge);
+    }
+    // Degenerated edges: a cone's pole, one turn at v_apex from the seam.
+    let mut pole_edge: BTreeMap<usize, (usize, bool)> = BTreeMap::new();
+    for (fi, (v, apex, forward)) in &poles {
+        let u0 = wound[fi].u0;
+        curves2d.push(format!("1 {} 1 0", nums(&[u0, *apex])));
+        let apex_vertex = vertex_record[v];
+        let edge = records.push(format!(
+            "Ed\n {tol} 1 1 1\n2 {} {} 0 0 {}\n0\n\n0101000\n{{v+{apex_vertex}}} 0 {{v-{apex_vertex}}} 0 *",
+            curves2d.len(),
+            fi + 1,
+            num(TAU),
+        ));
+        pole_edge.insert(*fi, (edge, *forward));
     }
     // Edges.
     let mut edge_record: BTreeMap<usize, usize> = BTreeMap::new();
@@ -513,6 +596,9 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
         let mut loops: Vec<(Vec<(usize, bool)>, i32)> = Vec::new();
         for l in &face.loops {
             let Loop::Edges { fins, winding } = &t.loops()[l.index()] else {
+                if pole_edge.contains_key(&fi) {
+                    continue;
+                }
                 return Err(unwritable("a vertex loop"));
             };
             let mut uses: Vec<(usize, bool)> = fins
@@ -549,15 +635,22 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
                 };
                 uses[at..].iter().chain(&uses[..at]).copied().collect()
             };
-            let (Some((b, _)), Some((u, _))) = (
-                loops.iter().find(|(_, w)| *w > 0),
-                loops.iter().find(|(_, w)| *w < 0),
-            ) else {
+            let pole = pole_edge.get(&fi).copied();
+            let wound_text = |up: bool, end: &End| -> Option<Vec<String>> {
+                if let Some((edge, forward)) = pole.filter(|(_, f)| *f == up) {
+                    let sign = if forward { "+" } else { "-" };
+                    return Some(vec![format!("{{{sign}{edge}}} 0")]);
+                }
+                let (uses, _) = loops.iter().find(|(_, w)| (*w > 0) == up && *w != 0)?;
+                Some(starting(uses, end).iter().map(use_text).collect())
+            };
+            let (Some(b), Some(u)) = (wound_text(true, &seam.bottom), wound_text(false, &seam.top))
+            else {
                 return Err(unwritable("a wound face without both wound loops"));
             };
-            let mut text: Vec<String> = starting(b, &seam.bottom).iter().map(use_text).collect();
+            let mut text = b;
             text.push(format!("{{+{seam_edge}}} 0"));
-            text.extend(starting(u, &seam.top).iter().map(use_text));
+            text.extend(u);
             text.push(format!("{{-{seam_edge}}} 0"));
             wires.push(records.push(format!("Wi\n\n0101100\n{} *", text.join(" "))));
             for (uses, _) in loops.iter().filter(|(_, w)| *w == 0) {

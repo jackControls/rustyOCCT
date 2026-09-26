@@ -70,6 +70,9 @@ pub enum OperationKind {
     HeightSplit,
     /// `Solid::fuse_stacked` (M3).
     StackedFuse,
+    /// A primitive of revolution (`Solid::cone_with`, S3): entities derive
+    /// from its meridian profile.
+    Revolve,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -121,6 +124,8 @@ pub enum Role {
     CutEdge,
     /// A cut face's vertex, generated from the vertical edge it crosses.
     CutVertex,
+    /// A cone's apex: the pole a zero-radius end of its meridian becomes.
+    Apex,
 }
 
 /// A profile boundary, one of its segments, or one of its vertices, by
@@ -188,6 +193,7 @@ fn operation_code(kind: OperationKind) -> u8 {
         OperationKind::Composite => 4,
         OperationKind::HeightSplit => 5,
         OperationKind::StackedFuse => 6,
+        OperationKind::Revolve => 7,
     }
 }
 
@@ -219,16 +225,18 @@ pub(crate) fn role_code(role: Role) -> u8 {
         Role::CutFace => 14,
         Role::CutEdge => 15,
         Role::CutVertex => 16,
+        Role::Apex => 17,
     }
 }
 
-const OPERATIONS: [OperationKind; 6] = [
+const OPERATIONS: [OperationKind; 7] = [
     OperationKind::Extrude,
     OperationKind::Transform,
     OperationKind::External,
     OperationKind::Composite,
     OperationKind::HeightSplit,
     OperationKind::StackedFuse,
+    OperationKind::Revolve,
 ];
 const ENTITIES: [EntityKind; 5] = [
     EntityKind::Vertex,
@@ -237,7 +245,7 @@ const ENTITIES: [EntityKind; 5] = [
     EntityKind::Body,
     EntityKind::Region,
 ];
-const ROLES: [Role; 16] = [
+const ROLES: [Role; 17] = [
     Role::StartCap,
     Role::EndCap,
     Role::Wall,
@@ -254,6 +262,7 @@ const ROLES: [Role; 16] = [
     Role::CutFace,
     Role::CutEdge,
     Role::CutVertex,
+    Role::Apex,
 ];
 
 /// Append one parent's encoding.
@@ -449,7 +458,7 @@ mod tests {
             assert_eq!(id.parse::<EntityId>().unwrap(), derivation.id(), "{name}");
             count += 1;
         }
-        assert_eq!(count, 17);
+        assert_eq!(count, 19);
         // Published FNV-1a-128 test vectors.
         assert_eq!(
             EntityId(fnv1a128(b"")).to_string(),
@@ -490,9 +499,9 @@ mod tests {
             (0, b'X'),
             (4, 2),
             (13, 0),
-            (13, 7),
+            (13, 8),
             (14, 6),
-            (15, 17),
+            (15, 18),
             (24, 9),
             (29, 3),
         ] {

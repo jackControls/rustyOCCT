@@ -26,11 +26,24 @@ pub struct MassProperties {
     pub inertia: [[f64; 3]; 3],
 }
 
-/// An immutable, validated normal extrusion of one planar material region.
+/// How a solid was made: a normal extrusion of a profile, or a right
+/// circular cone or frustum (S3 of REVIEW_NOTES.md).
+#[derive(Debug, Clone, PartialEq)]
+enum Construction {
+    Prism(Box<Profile>),
+    Cone {
+        bottom: f64,
+        top: f64,
+        tolerance: Tolerance,
+    },
+}
+
+/// An immutable, validated normal extrusion of one planar material region,
+/// or a cone or frustum.
 /// The retained construction supports exact queries without a triangle mesh.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Solid {
-    profile: Profile,
+    construction: Construction,
     frame: Frame3,
     start: f64,
     end: f64,
@@ -132,7 +145,7 @@ impl Solid {
     /// Every operation checks its history independently in debug builds.
     fn debug_check(&self, inputs: &[history::EntitySet], history: &History) {
         if cfg!(debug_assertions) {
-            let outputs = [self.topology.entity_set(self.profile.tolerance())];
+            let outputs = [self.topology.entity_set(self.resolution())];
             let issues = history::check(inputs, &outputs, history);
             assert!(
                 issues.is_empty(),
@@ -162,7 +175,7 @@ impl Solid {
         let mass = properties(&profile, frame, low, height)?;
         let topology = Topology::prism(&profile, frame, low, high, start < end, operation)?;
         Ok(Self {
-            profile,
+            construction: Construction::Prism(Box::new(profile)),
             frame,
             start,
             end,
@@ -171,6 +184,158 @@ impl Solid {
             bounds,
             operation,
         })
+    }
+
+    fn build_cone(
+        operation: OperationId,
+        frame: Frame3,
+        bottom: f64,
+        top: f64,
+        height: f64,
+        tolerance: Tolerance,
+    ) -> Result<Self> {
+        tolerance.resolve(&[bottom, top, height])?;
+        let topology = Topology::cone(frame, bottom, top, height, tolerance, operation)?;
+        let (mut min, mut max) = ([f64::INFINITY; 3], [f64::NEG_INFINITY; 3]);
+        let (x, y) = (frame.x().to_array(), frame.y().to_array());
+        for (radius, z) in [(bottom, 0.0), (top, height)] {
+            let centre = frame.point(Point2::default(), z).to_array();
+            for i in 0..3 {
+                let extent = radius * x[i].hypot(y[i]);
+                min[i] = min[i].min(centre[i] - extent);
+                max[i] = max[i].max(centre[i] + extent);
+            }
+        }
+        let bounds = Bounds3 {
+            min: Point3::new(min[0], min[1], min[2]),
+            max: Point3::new(max[0], max[1], max[2]),
+        };
+        bounds.min.checked(tolerance)?;
+        bounds.max.checked(tolerance)?;
+        let mass = topology
+            .mass_enclosure()
+            .ok_or(Error::Unrepresentable("cone mass properties"))?
+            .midpoints();
+        Ok(Self {
+            construction: Construction::Cone {
+                bottom,
+                top,
+                tolerance,
+            },
+            frame,
+            start: 0.0,
+            end: height,
+            topology,
+            mass,
+            bounds,
+            operation,
+        })
+    }
+
+    /// The same construction in another frame.
+    fn rebuilt(&self, operation: OperationId, frame: Frame3) -> Result<Self> {
+        match &self.construction {
+            Construction::Prism(profile) => {
+                Self::build(operation, (**profile).clone(), frame, self.start, self.end)
+            }
+            Construction::Cone {
+                bottom,
+                top,
+                tolerance,
+            } => Self::build_cone(operation, frame, *bottom, *top, self.end, *tolerance),
+        }
+    }
+
+    /// A right circular cone or frustum on the frame's axis (S3 of
+    /// REVIEW_NOTES.md): radius `bottom` at the frame origin and `top` at
+    /// `height` along its normal, a zero radius being an apex, as
+    /// `BRepPrimAPI_MakeCone(gp_Ax2, bottom, top, height)`. Its lateral face
+    /// is a `Cone` surface whose seam OCCT would place along the frame's x.
+    /// Mass properties are the general certified ones (REVIEW_NOTES.md U2).
+    pub fn cone_with(
+        operation: OperationId,
+        frame: Frame3,
+        bottom: f64,
+        top: f64,
+        height: f64,
+        tolerance: Tolerance,
+    ) -> Result<(Self, History)> {
+        Self::cone_in(
+            &Context::new(operation),
+            frame,
+            bottom,
+            top,
+            height,
+            tolerance,
+        )
+    }
+
+    /// [`Solid::cone_with`] at a recorded algorithm level (H8).
+    pub fn cone_at(
+        level: AlgorithmLevel,
+        operation: OperationId,
+        frame: Frame3,
+        bottom: f64,
+        top: f64,
+        height: f64,
+        tolerance: Tolerance,
+    ) -> Result<(Self, History)> {
+        Self::cone_in(
+            &Context::new(operation).at(level),
+            frame,
+            bottom,
+            top,
+            height,
+            tolerance,
+        )
+    }
+
+    /// [`Solid::cone_with`] in an operation context. Every entity is
+    /// generated from its meridian element; nothing carries an attribute.
+    pub fn cone_in(
+        context: &Context,
+        frame: Frame3,
+        bottom: f64,
+        top: f64,
+        height: f64,
+        tolerance: Tolerance,
+    ) -> Result<(Self, History)> {
+        let (level, operation) = (context.level, context.operation);
+        replayable(level)?;
+        let solid = Self::build_cone(operation, frame, bottom, top, height, tolerance)?;
+        let t = &solid.topology;
+        let relations = t
+            .ids()
+            .map(|(id, _)| {
+                let d = t.derivation(id).expect("every id has a derivation");
+                Relation::Generated {
+                    from: d.parents.clone(),
+                    to: id,
+                    role: d.role,
+                }
+            })
+            .collect();
+        let history = History::new(
+            operation,
+            OperationKind::Revolve,
+            Vec::new(),
+            vec![t.body_id()],
+            relations,
+            Vec::new(),
+        )
+        .at_level(level);
+        solid.debug_check(&[], &history);
+        Ok((solid, history))
+    }
+
+    /// Split and fuse rebuild prisms of one profile.
+    pub(crate) fn prism_profile(&self) -> Result<&Profile> {
+        match &self.construction {
+            Construction::Prism(profile) => Ok(profile),
+            Construction::Cone { .. } => Err(Error::OutOfDomain(
+                "split and fuse rebuild prisms; this solid is a cone",
+            )),
+        }
     }
 
     /// Rectangle `[0, width] x [0, depth]` in the XY frame extruded to
@@ -269,8 +434,19 @@ impl Solid {
         Self::extrude_with(operation, profile, frame, start, end)
     }
 
-    pub fn profile(&self) -> &Profile {
-        &self.profile
+    /// The extruded profile; `None` for a cone.
+    pub fn profile(&self) -> Option<&Profile> {
+        match &self.construction {
+            Construction::Prism(profile) => Some(profile),
+            Construction::Cone { .. } => None,
+        }
+    }
+    /// The body's resolution.
+    pub fn resolution(&self) -> Tolerance {
+        match &self.construction {
+            Construction::Prism(profile) => profile.tolerance(),
+            Construction::Cone { tolerance, .. } => *tolerance,
+        }
     }
     pub fn frame(&self) -> Frame3 {
         self.frame
@@ -295,16 +471,31 @@ impl Solid {
     }
 
     pub fn classify(&self, point: Point3) -> Result<Location> {
-        let tolerance = self.profile.tolerance();
+        let tolerance = self.resolution();
         point.checked(tolerance)?;
         let [x, y, z] = self.frame.coordinates(point);
+        let profile = match &self.construction {
+            Construction::Prism(profile) => profile,
+            Construction::Cone { bottom, top, .. } => {
+                let z = finite(z, "axial coordinate")?;
+                let local = [finite(x, "coordinate")?, finite(y, "coordinate")?, z];
+                return Ok(
+                    match decide::cone_location(local, *bottom, *top, self.end, tolerance.linear())
+                    {
+                        0 => Location::Inside,
+                        1 => Location::Boundary,
+                        _ => Location::Outside,
+                    },
+                );
+            }
+        };
         let z = finite(z, "axial coordinate")?;
         let (low, high) = (self.start.min(self.end), self.start.max(self.end));
         let tol = tolerance.linear();
         if decide::sum_gt(&[low, -tol], &[z]) || decide::sum_gt(&[z], &[high, tol]) {
             return Ok(Location::Outside);
         }
-        match self.profile.classify(Point2::new(x, y))? {
+        match profile.classify(Point2::new(x, y))? {
             Location::Outside => Ok(Location::Outside),
             Location::Boundary => Ok(Location::Boundary),
             Location::Inside
@@ -355,13 +546,9 @@ impl Solid {
     ) -> Result<(Self, History)> {
         let (level, operation) = (context.level, context.operation);
         replayable(level)?;
-        let mut solid = Self::build(
+        let mut solid = self.rebuilt(
             self.operation,
-            self.profile.clone(),
-            self.frame
-                .transformed(transform, self.profile.tolerance())?,
-            self.start,
-            self.end,
+            self.frame.transformed(transform, self.resolution())?,
         )?;
         // A rigid copy keeps every id, whatever operation named them.
         solid.topology = solid.topology.with_identity_of(&self.topology);
@@ -382,10 +569,7 @@ impl Solid {
             .try_into()
             .expect("one output");
         solid.topology.set_attributes(moved);
-        solid.debug_check(
-            &[self.topology.entity_set(self.profile.tolerance())],
-            &history,
-        );
+        solid.debug_check(&[self.topology.entity_set(self.resolution())], &history);
         attrs::debug_check_attributes(context, &[self], &[&solid], &history);
         Ok((solid, history))
     }

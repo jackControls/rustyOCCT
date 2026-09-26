@@ -201,7 +201,7 @@ pub fn evaluate(s: &Scenario) -> Vec<(String, String, String)> {
     let mut histories: Vec<Option<History>> = Vec::new();
     let mut out = Vec::new();
     let mut produced = Vec::new();
-    let set = |b: &Solid| b.topology().entity_set(b.profile().tolerance());
+    let set = |b: &Solid| b.topology().entity_set(b.resolution());
     let context = |op: OperationId| {
         Context::new(op)
             .with_policies(&s.policies)
@@ -327,7 +327,7 @@ pub fn evaluate(s: &Scenario) -> Vec<(String, String, String)> {
     }
     for name in produced {
         let b = &bodies[&name];
-        assert!(b.topology().check(b.profile().tolerance()).is_empty());
+        assert!(b.topology().check(b.resolution()).is_empty());
         out.push((
             "body".into(),
             name.clone(),

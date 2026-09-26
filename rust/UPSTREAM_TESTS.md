@@ -115,11 +115,12 @@ group, and stale success records are removed before each run.
 | Derived `prism_history_rectangle` | Pass | Pass | Prism history: `generated`, `modified`, `isdeleted` for edges, vertices and the face |
 | Derived `prism_history_reversed_triangle` | Pass | Pass | Prism history against a clockwise profile's normal |
 | Derived `pcylinder_counts` | Pass | Pass | Seamless cylinder through the count synthesizer: `checkshape`, `checknbshapes`, volume, area and per-use length |
+| Derived `pcone_counts` | Pass | Pass | Cones through the count synthesizer: an apex cone, a frustum and a base apex, each with `checkshape`, `checknbshapes`, volume, area and per-use length (S3) |
 | Derived `explode_selector` | Pass | Pass | Native selector: a box's faces and edges and a cylinder's faces and rings picked by OCCT index, checked by area, length and centre of gravity; the seam pick is lost |
 
 There are **four original geometry tests passing on both backends** and one
 more evaluated on both with its image commands recorded (`buc60769`).
-The four derived cases are counted separately (see below).
+The five derived cases are counted separately (see below).
 The 23 bridge self-tests are separate infrastructure checks; they do not count
 as more upstream coverage. The existing 66-solid / 2,292-classification native
 oracle corpus supplies much broader prism geometry checks independently.
@@ -155,6 +156,13 @@ two vertices, the wall's one wire), which the Rust adapter synthesizes from a
 body with two ring edges and no vertices. Its length assertion is `16π + 10`:
 OCCT's `lprops` sums edges per use, so each circle counts once per face and
 the seam twice.
+
+`pcone_counts` does the same for cones (S3 of `REVIEW_NOTES.md`): OCCT's apex
+cone has 2 vertices (the apex and the base circle's seam vertex), 3 edges
+(the circle, the seam and a degenerated edge at the apex) and 2 wires; the
+kernel's has a ring edge and the apex as a pole. Its lengths are the circles
+twice and the seam twice; the degenerated edge adds nothing. Volumes and
+areas come from the kernel's certified mass properties.
 
 The history cases use `prism ... Copy`. Without `Copy`, OCCT builds the prism's end face
 as the start face moved by a location, reusing its `TShape`s. DRAW's
@@ -346,3 +354,8 @@ registered. What the other 31 need, by construct (a case may need several):
 free faces 22, B-spline curves on surfaces 18, B-spline curves 16, B-spline
 surfaces 13, trimmed surfaces 9, Bézier surfaces 3, tori 3, cones 2,
 spheres 2, extrusion surfaces 2, and one each of the rest. Two need Booleans.
+After the cone (S3), six of these cases no longer report cones. None
+evaluates yet: of the two native DRAW evaluates, `bug485` now needs only
+tori and `bug437` B-spline curves and a free face; `bug497_2` restores
+completely and then needs `bcut`; the other three also need B-spline or
+revolution surfaces.

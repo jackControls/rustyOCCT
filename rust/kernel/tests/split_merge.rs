@@ -72,7 +72,7 @@ mod laws {
     }
 
     fn set(s: &Solid) -> rusty_occt::history::EntitySet {
-        s.topology().entity_set(s.profile().tolerance())
+        s.topology().entity_set(s.resolution())
     }
 
     #[test]
@@ -177,7 +177,7 @@ mod support {
     /// wall surface.
     fn perturbed(name: &str, change: impl Fn(&Surface, f64) -> Surface) -> Vec<K> {
         let parent = base(name);
-        let tol = parent.profile().tolerance();
+        let tol = parent.resolution();
         let ([lower, upper], h) = parent.split_at_height(OperationId(5), 1.25).unwrap();
         let set = |s: &Solid| s.topology().entity_set(tol);
         let mut up: EntitySet = set(&upper);

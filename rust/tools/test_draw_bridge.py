@@ -165,8 +165,10 @@ class BridgeTests(unittest.TestCase):
         script = ("restore [locate_data_file wedge_ok.brep] w\ncheckshape w\n"
                   "checknbshapes w -vertex 8 -edge 12 -face 6 -shell 1 -solid 1\n")
         self.expect(script, "pass", data_dirs=[data])
-        # Anything else a restored body cannot answer yet is a capability gap.
-        self.expect(script + "vprops w\n", "unsupported", data_dirs=[data])
+        # A restored body has certified mass properties (S3); moving it is
+        # still a capability gap.
+        self.expect(script + "vprops w\n", "pass", data_dirs=[data])
+        self.expect(script + "ttranslate w 1 2 3\n", "unsupported", data_dirs=[data])
 
     def test_restore_reports_constructs_the_kernel_cannot_represent(self):
         result = self.expect("restore [locate_data_file Ball.brep] b\ncheckshape b\n", "unsupported",

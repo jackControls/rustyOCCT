@@ -118,7 +118,7 @@ mod laws {
         );
         // An attribute on an id the body does not have is refused.
         let (other, _) =
-            Solid::cuboid_with(OperationId(99), 1.0, 1.0, 1.0, p.profile().tolerance()).unwrap();
+            Solid::cuboid_with(OperationId(99), 1.0, 1.0, 1.0, p.resolution()).unwrap();
         let foreign = other.topology().ids().next().unwrap().0;
         assert!(p
             .with_attribute(
