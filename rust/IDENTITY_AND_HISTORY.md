@@ -693,7 +693,9 @@ Feasibility with OCCT as the oracle:
 * Python fixture generators must round trigonometry and norms once through
   mpmath (`cos_rn`, `sin_rn`, `atan2_rn`, `hypot_rn` in `brep_reference.py`);
   platform libm differs in the last bit and fixture bytes must be identical
-  on every host.
+  on every host. Sum binary64 values left to right (`ltr_sum`), never with
+  `sum()`: Python 3.12 compensates float sums, so the result depends on the
+  interpreter version.
 * Never count a stripped upstream test as an unchanged pass, never widen a
   tolerance to pass a case, never accept a timeout as a review.
 * Update this file's [Acceptance](#acceptance) section and the roadmap rows in

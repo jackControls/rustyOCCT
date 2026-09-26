@@ -307,15 +307,15 @@ def frame_axes(frame):
 
 def rotation(origin, axis, angle):
     """RigidTransform::rotation as a 3x4 row-major matrix."""
-    from brep_reference import cos_rn, sin_rn
+    from brep_reference import cos_rn, ltr_sum, sin_rn
     a = _unit(axis)
     c, s = cos_rn(angle), sin_rn(angle)
     cols = []
     for e in ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)):
         cr = _cross(a, e)
-        d = sum(p*q for p, q in zip(a, e))
+        d = ltr_sum(p*q for p, q in zip(a, e))
         cols.append(tuple(e[i]*c+cr[i]*s+a[i]*(d*(1.0-c)) for i in range(3)))
-    rotated = tuple(sum(cols[j][i]*origin[j] for j in range(3)) for i in range(3))
+    rotated = tuple(ltr_sum(cols[j][i]*origin[j] for j in range(3)) for i in range(3))
     t = tuple(origin[i]-rotated[i] for i in range(3))
     return [[cols[0][i], cols[1][i], cols[2][i], t[i]] for i in range(3)]
 

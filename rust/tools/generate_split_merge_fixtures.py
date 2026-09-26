@@ -19,6 +19,7 @@ import argparse
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
+from brep_reference import ltr_sum
 import generate_identity_fixtures as identity
 from identity_reference import (encode_case, entity_text, fnv128, frame_axes, hexid, native_case,
                                 number, relation_text, stored, transform_matrix)
@@ -183,7 +184,7 @@ def generate():
 # ------------------------------------------------------------------ native rows
 
 def _apply(matrix, p, direction=False):
-    return tuple(sum(matrix[i][j]*p[j] for j in range(3))+(0.0 if direction else matrix[i][3])
+    return tuple(ltr_sum(matrix[i][j]*p[j] for j in range(3))+(0.0 if direction else matrix[i][3])
                  for i in range(3))
 
 

@@ -184,8 +184,18 @@ def mul(a, s):
     return [x*s for x in a]
 
 
+def ltr_sum(xs):
+    """Left-to-right binary64 sum. Python 3.12's sum() compensates float
+    rounding (Neumaier), so it differs from 3.9 in the last bits; fixture and
+    native-input bytes must not depend on the Python version."""
+    total = 0.0
+    for x in xs:
+        total += x
+    return total
+
+
 def dot(a, b):
-    return sum(x*y for x, y in zip(a, b))
+    return ltr_sum(x*y for x, y in zip(a, b))
 
 
 def cross(a, b):
@@ -756,7 +766,7 @@ def edge_range(c):
     """OCCT curve, parameter range, and our fraction -> OCCT parameter."""
     if isinstance(c, Line3):
         d = [b-a for a, b in zip(c.start, c.end)]
-        length = math.sqrt(sum(x*x for x in d))
+        length = math.sqrt(ltr_sum(x*x for x in d))
         unit = [x/length for x in d] if length else [1.0, 0.0, 0.0]
         return ('line', (*c.start, *unit)), 0.0, length
     f = c.frame
