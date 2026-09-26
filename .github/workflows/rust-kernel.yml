@@ -287,6 +287,21 @@ jobs:
       - name: Install Rust
         run: rustup toolchain install stable --profile minimal --component rustfmt --component clippy
       - run: cargo +stable fmt --all --check
+      - name: Record the pre-migration property baseline on this host
+        # The committed baseline is a macOS/aarch64 observation; platform
+        # trigonometry moves the last bits elsewhere. The T1 requirement is
+        # that the migration changes no property on the same host, so the
+        # revision before it writes this host's rows (its own comparison
+        # against the macOS file then fails, which is expected here).
+        if: matrix.os != 'macos-latest'
+        shell: bash
+        run: |
+          git fetch --no-tags --depth=1 origin 26fc457fea07f1e7db7590e3fb64a470c66ff435
+          git worktree add pre-t1 FETCH_HEAD
+          (cd pre-t1 && RUSTY_WRITE_PROPERTY_BASELINE=1 cargo +stable test --locked --release --test properties_baseline) || true
+          # The rows were written by this run, not left from the checkout.
+          test pre-t1/rust/fixtures/prism-properties-baseline.tsv -nt pre-t1/Cargo.toml
+          echo "RUSTY_PROPERTY_BASELINE=../../pre-t1/rust/fixtures/prism-properties-baseline.tsv" >> "$GITHUB_ENV"
       - run: cargo +stable test --workspace --locked
       - run: cargo +stable test --workspace --locked --release
       - name: Verify every Bezier fixture with the second independent oracle

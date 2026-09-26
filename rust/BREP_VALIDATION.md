@@ -74,7 +74,8 @@ winding number `w` closes with its end `2πw` in `u` after its start.
 * Each shell is face-connected. At each vertex, the graph of edges joined by
   consecutive fins around that vertex must be connected, so pinch vertices are
   rejected. Each shell's Euler characteristic `V - E + 2F - L`, with ring
-  edges excluded and every edge loop counted, must be even and at most 2.
+  edges excluded and every loop counted (a vertex loop adds its vertex and
+  its loop), must be even and at most 2.
 
 ## Certified geometric checks
 
