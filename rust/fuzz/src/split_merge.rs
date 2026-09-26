@@ -215,5 +215,8 @@ pub fn check_split_merge(data: &[u8]) {
     let (swapped, h3) = above.fuse_stacked(&parent, OperationId(75)).unwrap();
     assert_eq!(swapped, stacked);
     assert_eq!(h3.relations, h2.relations);
-    assert_eq!(h3.input_bodies, vec![h2.input_bodies[1], h2.input_bodies[0]]);
+    assert_eq!(
+        h3.input_bodies,
+        vec![h2.input_bodies[1], h2.input_bodies[0]]
+    );
 }
