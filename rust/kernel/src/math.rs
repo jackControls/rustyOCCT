@@ -350,17 +350,27 @@ impl Bounds3 {
         }
         // OCCT Bnd_Box.cxx, Bnd_Box::IsOut: finite/non-open fast path.
         // Both gaps contribute, and touching intervals are not separated.
-        let delta = 2.0 * tolerance.linear();
+        let t = tolerance.linear();
         let (a_min, a_max) = (self.min.to_array(), self.max.to_array());
         let (b_min, b_max) = (other.min.to_array(), other.max.to_array());
-        Ok(!(0..3).any(|i| a_min[i] - b_max[i] > delta || b_min[i] - a_max[i] > delta))
+        Ok(!(0..3).any(|i| {
+            crate::decide::sum_gt(&[a_min[i], -b_max[i]], &[t, t])
+                || crate::decide::sum_gt(&[b_min[i], -a_max[i]], &[t, t])
+        }))
     }
 
     pub fn contains(self, point: Point3, tolerance: Tolerance) -> bool {
         let p = point.to_array();
         let lo = self.min.to_array();
         let hi = self.max.to_array();
-        (0..3).all(|i| p[i] >= lo[i] - tolerance.linear && p[i] <= hi[i] + tolerance.linear)
+        let t = tolerance.linear;
+        if !p.iter().chain(&lo).chain(&hi).all(|x| x.is_finite()) {
+            return false;
+        }
+        (0..3).all(|i| {
+            crate::decide::sum_le(&[lo[i], -t], &[p[i]])
+                && crate::decide::sum_le(&[p[i]], &[hi[i], t])
+        })
     }
 }
 

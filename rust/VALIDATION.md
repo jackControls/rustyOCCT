@@ -539,10 +539,11 @@ algorithms).
 
 ## Generic B-rep validation
 
-`generate_brep_fixtures.py --check` rebuilds 66 cell-complex cases (24 valid):
+`generate_brep_fixtures.py --check` rebuilds 76 cell-complex cases (27 valid):
 54 converted by rule from an independent seamed prism builder and its
-mutations, and twelve cell-model cases for the model's own failure modes and
-the near-frequency bound, with complete issue lists from the separate mpmath reference validators
+mutations, and twenty-two cell-model cases for the model's own failure
+modes, the near-frequency bound and enclosures (gaps just inside and outside
+the resolution; missing, out-of-range and unsound bounds), with complete issue lists from the separate mpmath reference validators
 (`brep_reference.py`, `cell_reference.py`). `brep_validation.rs` requires
 Rust's sorted report to equal each list exactly. The `brep_validation` fuzz
 target mutates valid prisms and cavities into specific invalid complexes.
@@ -550,6 +551,19 @@ target mutates valid prisms and cavities into specific invalid complexes.
 classes on the seamed encodings, sets statuses on native seams aside as
 structure-only and checks the synthesized counts of every valid case. See
 [the bridge](BREP_VALIDATION.md#native-comparison-bridge).
+
+Enclosures (M5): every fixture carries bounds that the independent
+reference declares; Rust's report equals the reference's on all 76 cases.
+Measured bounds of the 27 valid cases lie between the reference's certain
+gap and its declared bound (`brep-enclosure-lows.tsv`, within a stated
+frame-rounding allowance). `enclosures.rs` requires every prism of the
+identity corpus to be enclosed within its resolution and no continued
+entity's bound to fall through a transform, split and fuse. The same bridge
+reproduces OCCT's stored tolerances and measured deviations
+(`BRepLib_ValidateEdge`), captured before implementation, and requires the
+kernel's bounds to be at least OCCT's measurements and at most its
+tolerances on the 21 cases valid on both sides. See
+[enclosures](BREP_VALIDATION.md#enclosures-m5).
 
 ## OCCT `.brep` interop
 

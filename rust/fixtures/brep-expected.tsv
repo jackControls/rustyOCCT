@@ -65,3 +65,13 @@ cylinder_ring_edge_with_one_vertex	open_loop:loop 0.0;open_loop:loop 2.1;ring_ed
 box_shell_not_in_its_region	region_shell_mismatch:shell 0;region_without_shell:region 1
 cylinder_ring_pcurve_printed_period	
 cylinder_ring_pcurve_period_off	pcurve_off_edge:use 2.0.0;uv_gap:use 2.0.0
+box_vertex_moved_inside_resolution	
+box_vertex_moved_outside_resolution	vertex_off_curve:edge 0 start;vertex_off_curve:edge 10 end;vertex_off_curve:edge 4 start
+box_vertex_enclosure_unsound	enclosure_unsound:vertex 0
+cylinder_cap_pcurve_inside_resolution	
+cylinder_cap_fin_enclosure_unsound	enclosure_unsound:use 0.0.0
+box_side_pcurve_inside_resolution	
+box_face_enclosure_unsound	enclosure_unsound:face 2
+box_fin_enclosure_missing	enclosure_missing:use 0.0.0
+box_face_enclosure_exceeds_resolution	enclosure_exceeds_resolution:face 0
+box_vertex_enclosure_negative	enclosure_exceeds_resolution:vertex 1

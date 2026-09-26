@@ -6,12 +6,16 @@
 //! independent of production. The cell model's own failure modes
 //! (TOPOLOGY_MODEL.md) are mutations 16-21; the period shift needs a loop of
 //! several fins on a cylinder, which prisms of polygons and circles do not
-//! have, so it mutates the valid stadium fixtures.
+//! have, so it mutates the valid stadium fixtures. Enclosures (M5) are
+//! mutations 24-26: a missing bound, a bound outside [0, resolution], and a
+//! vertex moved within the resolution but past its measured bound; mutation
+//! 27 places a circle prism far out at a tolerance near the coordinates'
+//! resolution, where construction must fail or enclose within it.
 use crate::byte;
 use rusty_occt::identity::OperationId;
 use rusty_occt::topology::{
-    Curve2, Curve3, Edge, EdgeId, FaceId, FinId, Loop, LoopId, Orientation, Region, RegionId,
-    RegionKind, Shell, ShellId, Surface, Topology, TopologyParts, Vertex, VertexId,
+    Curve2, Curve3, Edge, EdgeId, Enclosure, FaceId, FinId, Loop, LoopId, Orientation, Region,
+    RegionId, RegionKind, Shell, ShellId, Surface, Topology, TopologyParts, Vertex, VertexId,
 };
 use rusty_occt::{Boundary, Frame3, Point2, Point3, Profile, Solid, Tolerance, Vec3};
 use std::f64::consts::TAU;
@@ -67,12 +71,15 @@ fn reversed(p: &Curve2) -> Curve2 {
 
 /// Turn a shell's faces inside out: flip each face, and traverse each loop
 /// backwards with every fin and pcurve reversed and its winding negated.
-/// Sides and regions are left as they were.
+/// Sides and regions are left as they were. A reversed arc's start angle
+/// rounds, so the changed fins and faces are measured again, as a builder
+/// would measure its output.
 fn invert(parts: &mut TopologyParts, shell: usize) {
     let faces: Vec<FaceId> = parts.shells[shell].sides.iter().map(|(f, _)| *f).collect();
     for id in faces {
         let face = &mut parts.faces[id.index()];
         face.sense = flip(face.sense);
+        face.enclosure = None;
         for l in face.loops.clone() {
             if let Loop::Edges { fins, winding } = &mut parts.loops[l.index()] {
                 fins.reverse();
@@ -81,10 +88,12 @@ fn invert(parts: &mut TopologyParts, shell: usize) {
                     let fin = &mut parts.fins[k.index()];
                     fin.sense = flip(fin.sense);
                     fin.pcurve = reversed(&fin.pcurve);
+                    fin.enclosure = None;
                 }
             }
         }
     }
+    *parts = std::mem::take(parts).with_measured_enclosures();
 }
 
 fn parts_of(t: &Topology) -> TopologyParts {
@@ -228,9 +237,59 @@ fn stadium(b: &mut Bytes) -> (TopologyParts, Tolerance) {
     (parts, Tolerance::new(tolerance, 1e-12).unwrap())
 }
 
+/// A circle prism far from the origin, at a tolerance a few ulps of its
+/// coordinates: the builder either fails or returns a valid body whose every
+/// enclosure fits the resolution. It never widens a bound to succeed.
+fn far_prism(b: &mut Bytes) {
+    let far = 2.0_f64.powi(i32::from(b.next() % 48));
+    let ulps = f64::from(1 + b.next() % 64);
+    let tolerance = match Tolerance::new(far * f64::EPSILON * ulps, 1e-12) {
+        Ok(t) => t,
+        Err(_) => return,
+    };
+    let radius = 1.0 + b.unit();
+    let Ok(circle) = Boundary::circle(Point2::new(b.signed(), b.signed()), radius, tolerance)
+    else {
+        return;
+    };
+    let Ok(profile) = Profile::new(circle, vec![], tolerance) else {
+        return;
+    };
+    let origin = Point3::new(far * (1.0 + b.unit()), far * b.signed(), far * b.signed());
+    let normal = Vec3::new(b.signed(), b.signed(), 0.5 + b.unit());
+    let Ok(frame) = Frame3::new(origin, normal, Vec3::X, tolerance) else {
+        return;
+    };
+    let Ok((solid, _)) = Solid::extrude_with(
+        OperationId::UNSPECIFIED,
+        profile,
+        frame,
+        0.0,
+        1.0 + b.unit(),
+    ) else {
+        return;
+    };
+    let t = solid.topology();
+    assert!(t.check(tolerance).is_empty());
+    let bounds = t
+        .vertices()
+        .iter()
+        .map(|v| v.enclosure)
+        .chain(t.fins().iter().map(|f| f.enclosure))
+        .chain(t.faces().iter().map(|f| f.enclosure));
+    for e in bounds {
+        let e = e.expect("a builder encloses every entity");
+        assert!(e.bound >= 0.0 && e.bound <= tolerance.linear(), "{e:?}");
+    }
+}
+
 pub fn check_brep_validation(data: &[u8]) {
     let mut b = Bytes(data, 0);
-    let mutation = b.next() % 24;
+    let mutation = b.next() % 28;
+    if mutation == 27 {
+        far_prism(&mut b);
+        return;
+    }
     if mutation == 16 {
         // A period shift of one fin of a multi-fin loop on a cylinder opens
         // the loop at both of its ends.
@@ -347,6 +406,7 @@ pub fn check_brep_validation(data: &[u8]) {
             let n = parts.vertices.len();
             parts.vertices.push(Vertex {
                 position: Point3::new(b.signed(), b.signed(), b.signed()),
+                enclosure: Some(Enclosure::computed(tau)),
             });
             Expect::Exactly(one(format!("unused_vertex:vertex {n}")))
         }
@@ -463,6 +523,11 @@ pub fn check_brep_validation(data: &[u8]) {
             };
             let fin = &mut parts.fins[k.index()];
             fin.pcurve = shift_v(&fin.pcurve, 10.0 * tau);
+            // The moved fin and its face get bounds measured on the moved
+            // geometry; under the original tolerance they exceed it.
+            fin.enclosure = None;
+            parts.faces[fi].enclosure = None;
+            parts = parts.with_measured_enclosures();
             let loose = Tolerance::new(100.0 * tau, 1e-12).unwrap();
             assert_eq!(report(&parts, loose), Vec::<String>::new());
             Expect::Contains(one(format!("pcurve_off_edge:use {fi}.{li}.{ui}")), vec![])
@@ -546,8 +611,11 @@ pub fn check_brep_validation(data: &[u8]) {
             let height = frame.coordinates(plane.origin())[2];
             let lift = if mutation == 20 { 1000.0 * tau } else { 0.0 };
             let n = parts.vertices.len();
+            // One resolution: sound on the cap, and not what an off-surface
+            // vertex loop is reported for.
             parts.vertices.push(Vertex {
                 position: frame.point(clear, height) + plane.normal() * lift,
+                enclosure: Some(Enclosure::computed(tau)),
             });
             parts.loops.push(Loop::Vertex(VertexId::new(n)));
             parts.faces[fi]
@@ -573,6 +641,47 @@ pub fn check_brep_validation(data: &[u8]) {
                 ],
                 vec![],
             )
+        }
+        24 | 25 => {
+            // Remove one bound, or set it outside [0, resolution].
+            let bad = [2.0 * tau, -tau, f64::NAN, f64::INFINITY][b.pick(4)];
+            let (slot, entity) = match b.pick(3) {
+                0 => {
+                    let v = b.pick(parts.vertices.len());
+                    (&mut parts.vertices[v].enclosure, format!("vertex {v}"))
+                }
+                1 => {
+                    let f = b.pick(parts.faces.len());
+                    (&mut parts.faces[f].enclosure, format!("face {f}"))
+                }
+                _ => {
+                    let Some((fi, li, ui, k)) = fin_at(&parts, &mut b) else {
+                        return;
+                    };
+                    (
+                        &mut parts.fins[k.index()].enclosure,
+                        format!("use {fi}.{li}.{ui}"),
+                    )
+                }
+            };
+            if mutation == 24 {
+                *slot = None;
+                Expect::Exactly(one(format!("enclosure_missing:{entity}")))
+            } else {
+                *slot = Some(Enclosure::computed(bad));
+                Expect::Exactly(one(format!("enclosure_exceeds_resolution:{entity}")))
+            }
+        }
+        26 => {
+            // A vertex moved half the resolution: still on its curves' ends
+            // within the resolution, but past its measured bound.
+            let v = b.pick(parts.vertices.len());
+            let d = Vec3::new(b.signed(), b.signed(), b.signed());
+            let Ok(d) = d.normalized() else {
+                return;
+            };
+            parts.vertices[v].position = parts.vertices[v].position + d * (0.5 * tau);
+            Expect::Exactly(one(format!("enclosure_unsound:vertex {v}")))
         }
         _ => {
             // Radial order of a two-fin edge is cyclic: reversing it is no change.

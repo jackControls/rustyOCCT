@@ -256,9 +256,48 @@ impl Surface {
     }
 }
 
+/// Where an enclosure came from (Contract 5 of `IDENTITY_AND_HISTORY.md`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Provenance {
+    /// A certified upper bound computed from the stored geometry, or carried
+    /// from an operation's inputs.
+    Computed,
+    /// A tolerance another system stored (an OCCT `.brep` file); the checker
+    /// still verifies it.
+    Imported,
+}
+
+/// An upper bound on a representation gap, in the body's length unit: for a
+/// vertex, its distance to the ends of its edges' curves (and to the surface
+/// of a vertex loop); for a fin, the distance between the edge curve and the
+/// pcurve's image; for a face, the gaps between consecutive fins in its
+/// parameter space (angles scaled by the radius). It never exceeds the
+/// body's resolution, and `Topology::check` verifies it.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Enclosure {
+    pub bound: f64,
+    pub provenance: Provenance,
+}
+
+impl Enclosure {
+    pub fn computed(bound: f64) -> Self {
+        Self {
+            bound,
+            provenance: Provenance::Computed,
+        }
+    }
+    pub fn imported(bound: f64) -> Self {
+        Self {
+            bound,
+            provenance: Provenance::Imported,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Vertex {
     pub position: Point3,
+    pub enclosure: Option<Enclosure>,
 }
 
 /// A curve bounded by vertices, or a ring edge (a closed curve with neither).
@@ -286,6 +325,7 @@ pub struct Fin {
     /// This edge's curve in the owning face's parameter space, in traversal
     /// order. On a periodic surface it lives in the universal cover.
     pub pcurve: Curve2,
+    pub enclosure: Option<Enclosure>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -351,6 +391,7 @@ pub struct Face {
     pub loops: Vec<LoopId>,
     pub front: ShellId,
     pub back: ShellId,
+    pub enclosure: Option<Enclosure>,
 }
 
 impl Face {
@@ -436,6 +477,30 @@ impl TopologyParts {
     /// Every issue of the validation contract; empty means valid.
     pub fn check(&self, tolerance: Tolerance) -> Vec<Issue> {
         validate::check(&self.view(), tolerance)
+    }
+    /// The same parts with a measured, computed enclosure on every vertex,
+    /// fin and face that has none: a certified upper bound of its gaps from
+    /// the stored geometry. Entities whose gaps have no finite certified bound
+    /// keep none, and [`TopologyParts::check`] reports them.
+    pub fn with_measured_enclosures(mut self) -> Self {
+        let m = validate::measure(&self.view());
+        fill(&mut self.vertices, &m.vertices, |v| &mut v.enclosure);
+        fill(&mut self.fins, &m.fins, |f| &mut f.enclosure);
+        fill(&mut self.faces, &m.faces, |f| &mut f.enclosure);
+        self
+    }
+}
+
+fn fill<T>(
+    items: &mut [T],
+    bounds: &[Option<f64>],
+    slot: impl Fn(&mut T) -> &mut Option<Enclosure>,
+) {
+    for (item, bound) in items.iter_mut().zip(bounds) {
+        let enclosure = slot(item);
+        if enclosure.is_none() {
+            *enclosure = bound.map(Enclosure::computed);
+        }
     }
 }
 
@@ -787,6 +852,44 @@ impl Topology {
         list.sort();
         Ok(self)
     }
+    /// An entity's enclosure bound: a vertex's or face's own, an edge's
+    /// largest over its fins; `None` for regions or entities without one.
+    pub(crate) fn enclosure_bound(&self, id: EntityId) -> Option<f64> {
+        match self.slot_of(id)? {
+            Slot::Vertex(v) => self.vertices[v.0].enclosure.map(|e| e.bound),
+            Slot::Face(f) => self.faces[f.0].enclosure.map(|e| e.bound),
+            Slot::Edge(e) => self.edges[e.0]
+                .fins
+                .iter()
+                .filter_map(|k| self.fins[k.0].enclosure.map(|e| e.bound))
+                .reduce(f64::max),
+            Slot::Region(_) => None,
+        }
+    }
+    /// Raise every vertex, face and fin enclosure to `parents(id)` of its
+    /// entity (an edge's for a fin) where that is larger: an output's bound
+    /// never falls below its inputs' (Contract 5, T5).
+    pub(crate) fn raise_enclosures(&mut self, parents: impl Fn(EntityId) -> Option<f64>) {
+        let raise = |e: &mut Option<Enclosure>, b: Option<f64>| {
+            if let (Some(e), Some(b)) = (e.as_mut(), b) {
+                e.bound = e.bound.max(b);
+            }
+        };
+        let slots: Vec<(EntityId, Slot)> = self.ids().collect();
+        for (id, slot) in slots {
+            let b = parents(id);
+            match slot {
+                Slot::Vertex(v) => raise(&mut self.vertices[v.0].enclosure, b),
+                Slot::Face(f) => raise(&mut self.faces[f.0].enclosure, b),
+                Slot::Edge(e) => {
+                    for k in self.edges[e.0].fins.clone() {
+                        raise(&mut self.fins[k.0].enclosure, b);
+                    }
+                }
+                Slot::Region(_) => {}
+            }
+        }
+    }
     pub(crate) fn set_attributes(&mut self, attributes: AttributeMap) {
         self.attributes = attributes;
     }
@@ -916,6 +1019,7 @@ impl Topology {
             loops: Vec::new(),
             front: ShellId(0),
             back: ShellId(1),
+            enclosure: None,
         };
         let mut topology = Self {
             vertices: Vec::new(),
@@ -1043,6 +1147,7 @@ impl Topology {
                             loops: vec![l],
                             front: ShellId(0),
                             back: ShellId(1),
+                            enclosure: None,
                         });
                     }
                 }
@@ -1091,6 +1196,7 @@ impl Topology {
                         edge,
                         sense,
                         pcurve: Curve2::LineSegment { start, end },
+                        enclosure: None,
                     };
                     let lower = topology.add_loop(
                         vec![fin(
@@ -1119,6 +1225,7 @@ impl Topology {
                         loops: vec![lower, upper],
                         front: ShellId(0),
                         back: ShellId(1),
+                        enclosure: None,
                     });
                 }
             }
@@ -1173,6 +1280,7 @@ impl Topology {
         ) {
             return Err(Error::InvalidTopology("slot without a derivation"));
         }
+        topology.measure_enclosures(tolerance)?;
         topology.validate(tolerance)?;
         if topology.euler_characteristic() != 2 - 2 * profile.holes().len() as i64 {
             return Err(Error::InvalidTopology("unexpected shell genus"));
@@ -1180,9 +1288,31 @@ impl Topology {
         Ok(topology)
     }
 
+    /// A builder's own enclosures: every gap of the constructed geometry,
+    /// measured. A construction that cannot be enclosed within the resolution
+    /// fails; nothing widens to succeed (Contract 5, T4).
+    fn measure_enclosures(&mut self, tolerance: Tolerance) -> Result<()> {
+        let m = validate::measure(&self.view());
+        let bounds = m.vertices.iter().chain(&m.fins).chain(&m.faces);
+        for bound in bounds {
+            match bound {
+                None => return Err(Error::Unrepresentable("an entity's gap enclosure")),
+                Some(b) if *b > tolerance.linear() => return Err(Error::PrecisionLoss),
+                Some(_) => {}
+            }
+        }
+        fill(&mut self.vertices, &m.vertices, |v| &mut v.enclosure);
+        fill(&mut self.fins, &m.fins, |f| &mut f.enclosure);
+        fill(&mut self.faces, &m.faces, |f| &mut f.enclosure);
+        Ok(())
+    }
+
     fn add_vertex(&mut self, position: Point3) -> VertexId {
         let id = VertexId(self.vertices.len());
-        self.vertices.push(Vertex { position });
+        self.vertices.push(Vertex {
+            position,
+            enclosure: None,
+        });
         id
     }
     fn add_edge(
@@ -1279,6 +1409,7 @@ impl Topology {
             edge: id,
             sense,
             pcurve,
+            enclosure: None,
         }
     }
 }

@@ -9,9 +9,9 @@
 use super::read::{self, Data, Document, EdgeRep, Kind, Orient, Sub};
 use super::Transform;
 use crate::topology::{
-    Curve2, Curve3, Edge, EdgeId, Face, FaceId, Fin, FinId, Issue, Loop, LoopId, Orientation,
-    Region, RegionId, RegionKind, Shell, ShellId, Side, Surface, Topology, TopologyParts, Vertex,
-    VertexId,
+    Curve2, Curve3, Edge, EdgeId, Enclosure, Face, FaceId, Fin, FinId, Issue, Loop, LoopId,
+    Orientation, Region, RegionId, RegionKind, Shell, ShellId, Side, Surface, Topology,
+    TopologyParts, Vertex, VertexId,
 };
 use crate::{Frame3, Point2, Point3, Tolerance, Vec3};
 use std::collections::{BTreeMap, BTreeSet};
@@ -112,6 +112,8 @@ struct SEdge {
     start: usize,
     end: usize,
     curve: Curve3,
+    /// OCCT's stored edge tolerance.
+    tolerance: f64,
 }
 struct SFace {
     surface: Surface,
@@ -125,6 +127,8 @@ struct Walk<'a> {
     unsupported: Vec<&'static str>,
     tolerance: f64,
     vertices: Vec<Point3>,
+    /// OCCT's stored tolerance of each vertex.
+    vertex_tolerances: Vec<f64>,
     vertex_keys: Instances,
     edges: Vec<SEdge>,
     edge_keys: Instances,
@@ -156,6 +160,7 @@ impl Walk<'_> {
         self.tolerance = self.tolerance.max(tolerance);
         let v = self.vertices.len();
         self.vertices.push(p3(t.point(point)));
+        self.vertex_tolerances.push(tolerance);
         self.vertex_keys.insert(record, t, v);
         Some(v)
     }
@@ -231,7 +236,12 @@ impl Walk<'_> {
             read::Curve3::Other(name) => return self.no(name),
         };
         let e = self.edges.len();
-        self.edges.push(SEdge { start, end, curve });
+        self.edges.push(SEdge {
+            start,
+            end,
+            curve,
+            tolerance: *tolerance,
+        });
         self.edge_keys.insert(record, t, e);
         Some(e)
     }
@@ -684,10 +694,23 @@ fn to_cell(walk: Walk, tol: f64) -> TopologyParts {
         .collect();
     let mut parts = TopologyParts::default();
     let mut vertex_map = BTreeMap::new();
+    // OCCT accepts a vertex within the larger of its own and each edge's
+    // tolerance (BRepCheck_Vertex); that is the imported claim.
+    let mut claim = walk.vertex_tolerances.clone();
+    for (i, e) in walk.edges.iter().enumerate() {
+        if !removed.contains(&i) {
+            for v in [e.start, e.end] {
+                claim[v] = claim[v].max(e.tolerance);
+            }
+        }
+    }
     for (v, p) in walk.vertices.iter().enumerate() {
         if !drop.contains(&v) {
             vertex_map.insert(v, VertexId::new(parts.vertices.len()));
-            parts.vertices.push(Vertex { position: *p });
+            parts.vertices.push(Vertex {
+                position: *p,
+                enclosure: Some(Enclosure::imported(claim[v])),
+            });
         }
     }
     let mut edge_map = BTreeMap::new();
@@ -737,6 +760,9 @@ fn to_cell(walk: Walk, tol: f64) -> TopologyParts {
                             Orientation::Reversed
                         },
                         pcurve: u.pcurve.clone(),
+                        // BRepCheck_Edge validates every use against the
+                        // edge tolerance.
+                        enclosure: Some(Enclosure::imported(walk.edges[u.edge].tolerance)),
                     });
                     FinId::new(parts.fins.len() - 1)
                 })
@@ -757,6 +783,8 @@ fn to_cell(walk: Walk, tol: f64) -> TopologyParts {
             loops,
             front: ShellId::new(k),
             back: ShellId::new(n + k),
+            // Computed after conversion: OCCT stores no bound on UV closure.
+            enclosure: None,
         });
     }
     for (k, fin) in parts.fins.iter().enumerate() {
@@ -807,6 +835,7 @@ fn import_solid(doc: &Document, record: usize, t: &Transform, oriented: Orient) 
         unsupported: Vec::new(),
         tolerance: 0.0,
         vertices: Vec::new(),
+        vertex_tolerances: Vec::new(),
         vertex_keys: Instances::default(),
         edges: Vec::new(),
         edge_keys: Instances::default(),
@@ -883,7 +912,7 @@ fn import_solid(doc: &Document, record: usize, t: &Transform, oriented: Orient) 
             .unwrap_or(0);
         walk.shells.swap(0, outer);
     }
-    let parts = to_cell(walk, resolution.linear());
+    let parts = to_cell(walk, resolution.linear()).with_measured_enclosures();
     ImportedSolid {
         record,
         tolerance: resolution,

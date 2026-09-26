@@ -497,6 +497,23 @@ vertices, and splits and merges the solid region. Unification also merges
 coplanar walls of the profile itself, which the kernel keeps (one reviewed
 difference). See [identity and history](IDENTITY_AND_HISTORY.md).
 
+## Enclosures
+
+The source review for M5 covered `BRep_Tool::Tolerance`, `BRep_Builder`'s
+`MakeVertex`, `MakeEdge`, `MakeFace` and `UpdateEdge` with
+`BRep_TEdge::UpdateTolerance` (tolerances are stored as requested and only
+grow), `BRepCheck_Vertex` (curve and curve-on-surface ends against
+`max(vertex, edge)` tolerance), `BRepCheck_Edge` and `BRepLib_ValidateEdge`
+(23 control points by default, or `BRepLib_CheckCurveOnSurface`
+maximization) at `3d097a0328e71b826377d4814ab05ec3c3d23871`. Native
+observations of 52 cases preceded implementation
+(`fixtures/occt-enclosure-preimplementation`). OCCT tolerances are requested
+bounds that algorithms grow; kernel enclosures are certified bounds computed
+from the stored geometry, never grown to make a step pass. Imported OCCT
+tolerances become `Imported` enclosures with `BRepCheck`'s acceptance rules,
+and the checker verifies them. See
+[enclosures](BREP_VALIDATION.md#enclosures-m5).
+
 ## OCCT `.brep` interop
 
 The source review covered `dox/specification/brep_format.md`,

@@ -2,8 +2,8 @@
 //! model): arenas in order (vertices, edges, loops with their fins, faces,
 //! shells, regions), shared by the fixture test and the native-comparison probe.
 use rusty_occt::topology::{
-    Curve2, Curve3, Edge, EdgeId, Face, FaceId, Fin, FinId, Loop, LoopId, Orientation, Region,
-    RegionId, RegionKind, Shell, ShellId, Side, Surface, TopologyParts, Vertex, VertexId,
+    Curve2, Curve3, Edge, EdgeId, Enclosure, Face, FaceId, Fin, FinId, Loop, LoopId, Orientation,
+    Region, RegionId, RegionKind, Shell, ShellId, Side, Surface, TopologyParts, Vertex, VertexId,
 };
 use rusty_occt::{Frame3, Point2, Point3, Tolerance, Vec3};
 
@@ -41,6 +41,12 @@ fn section<'a>(w: &[&'a str], key: &str, keys: &[&str]) -> Vec<&'a str> {
         .collect()
 }
 
+/// A declared enclosure: `enc BOUND` (or `enc -`, or no `enc`, for none).
+fn enclosure(w: &[&str]) -> Option<Enclosure> {
+    let at = w.iter().position(|x| *x == "enc")?;
+    (w[at + 1] != "-").then(|| Enclosure::computed(w[at + 1].parse().unwrap()))
+}
+
 /// One case block: its name, linear tolerance and unvalidated parts.
 pub fn parse(block: &str) -> (String, f64, TopologyParts) {
     let mut name = String::new();
@@ -51,7 +57,7 @@ pub fn parse(block: &str) -> (String, f64, TopologyParts) {
         let num = |i: usize| -> f64 { w[i].parse().unwrap() };
         let nums = |a: usize, n: usize| -> Vec<f64> { (a..a + n).map(num).collect() };
         let ids = |key: &str| -> Vec<usize> {
-            section(&w, key, &["fins", "sides", "wire", "acorn", "loops"])
+            section(&w, key, &["fins", "sides", "wire", "acorn", "loops", "enc"])
                 .iter()
                 .map(|x| x.parse().unwrap())
                 .collect()
@@ -61,6 +67,7 @@ pub fn parse(block: &str) -> (String, f64, TopologyParts) {
             "tolerance" => tolerance = num(1),
             "v" => parts.vertices.push(Vertex {
                 position: Point3::new(num(1), num(2), num(3)),
+                enclosure: enclosure(&w),
             }),
             "e" => {
                 let curve = if w[3] == "line" {
@@ -104,6 +111,7 @@ pub fn parse(block: &str) -> (String, f64, TopologyParts) {
                     loops: ids("loops").into_iter().map(LoopId::new).collect(),
                     front: ShellId::new(w[rest + 1].parse().unwrap()),
                     back: ShellId::new(w[rest + 2].parse().unwrap()),
+                    enclosure: enclosure(&w),
                 });
             }
             "l" => {
@@ -138,6 +146,7 @@ pub fn parse(block: &str) -> (String, f64, TopologyParts) {
                     edge: EdgeId::new(w[1].parse().unwrap()),
                     sense: orientation(w[2]),
                     pcurve,
+                    enclosure: enclosure(&w),
                 });
                 if let Some(Loop::Edges { fins, .. }) = parts.loops.last_mut() {
                     fins.push(id);

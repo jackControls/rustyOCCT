@@ -173,6 +173,7 @@ impl Solid {
             Vec::new(),
         );
         history.level = level;
+        super::enclose::carry(&[self], &history, &mut [&mut lower, &mut upper]);
         let [l, u] = propagate(context, &[self], &mut history, &[&lower, &upper])?
             .try_into()
             .expect("two outputs");
@@ -292,6 +293,7 @@ impl Solid {
             Vec::new(),
         );
         history.level = level;
+        super::enclose::carry(&[self, other], &history, &mut [&mut fused]);
         let [f] = propagate(context, &[self, other], &mut history, &[&fused])?
             .try_into()
             .expect("one output");

@@ -1112,6 +1112,24 @@ intervals (TwoSum/FMA error signs) and then, if undecided, in rational
 intervals; anything still undecided is reported as uncertified. See
 [the validator's contract and evidence](BREP_VALIDATION.md).
 
+Stored enclosures (M5) are the upper ends of those same enclosures: for a
+vertex, `sqrt` of the squared distance to each curve end (and to a vertex
+loop's surface); for a fin, the harmonic bound above; for a face, `sqrt` of
+each squared UV gap with `du` scaled by the radius. Each is stored as the
+next binary64 value above the interval's upper end, and at least `2^-80`. A
+later check `d² ≤ b²` (or `sup |D| ≤ b`) is then strict in the tier that
+produced it: `b² − hi(d²) ≥ 2 b ulp(b) > 0` exceeds the width of the
+binary64 enclosure of `b²`, and `(2^-80)² = 2^-160` lies far above the
+rational tier's `2^-192` grid. Tolerance decisions outside the validator
+(T4) take binary64 inputs as exact rationals. Distances compare squared,
+`|p − q|² ≤ (Σ t_i)²` for a threshold `Σ t_i ≥ 0` that is itself an exact
+sum (for example `r + tol` or `max(a, b) − min(a, b) − tol`). A
+point–segment distance uses the exact foot parameter `t = w·d`, with
+`|w|²`, `|p − b|²` or `(w × d)² / |d|²`. These decide first in binary64
+intervals, then exactly. The material-area screen `A ≤ tol · P / 2`
+encloses `π` and the edge-length square roots in rational intervals, and
+counts an undecidable case as degenerate.
+
 ## Complete spline/line and spline/segment preimages
 
 Closed rational B-spline ranges against infinite lines or closed segments

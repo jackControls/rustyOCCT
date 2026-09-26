@@ -27,6 +27,7 @@ mod algebraic;
 pub mod attributes;
 pub(crate) mod certified;
 pub mod curve;
+mod decide;
 mod error;
 mod exact;
 pub mod history;

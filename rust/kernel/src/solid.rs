@@ -1,3 +1,4 @@
+use crate::decide;
 use crate::history::{self, History, Relation};
 use crate::identity::{AlgorithmLevel, EntityId, OperationId, OperationKind};
 use crate::math::finite;
@@ -5,6 +6,7 @@ use crate::profile::BoundaryKind;
 use crate::topology::Topology;
 
 mod attrs;
+mod enclose;
 mod stack;
 use crate::{
     Boundary, Bounds3, Error, Frame3, Location, Point2, Point3, Profile, Result, RigidTransform,
@@ -151,7 +153,7 @@ impl Solid {
         let low = start.min(end);
         let high = start.max(end);
         let height = finite(high - low, "extrusion height")?;
-        if height <= tolerance.linear() {
+        if decide::sum_le(&[high, -low], &[tolerance.linear()]) {
             return Err(Error::Degenerate("extrusion height"));
         }
         let bounds = bounds(&profile, frame, low, high);
@@ -296,16 +298,19 @@ impl Solid {
         let tolerance = self.profile.tolerance();
         point.checked(tolerance)?;
         let [x, y, z] = self.frame.coordinates(point);
+        let z = finite(z, "axial coordinate")?;
         let (low, high) = (self.start.min(self.end), self.start.max(self.end));
-        if z < low - tolerance.linear() || z > high + tolerance.linear() {
+        let tol = tolerance.linear();
+        if decide::sum_gt(&[low, -tol], &[z]) || decide::sum_gt(&[z], &[high, tol]) {
             return Ok(Location::Outside);
         }
         match self.profile.classify(Point2::new(x, y))? {
             Location::Outside => Ok(Location::Outside),
             Location::Boundary => Ok(Location::Boundary),
             Location::Inside
-                if (z - low).abs() <= tolerance.linear()
-                    || (z - high).abs() <= tolerance.linear() =>
+                if [low, high].iter().any(|end| {
+                    decide::sum_le(&[z, -end], &[tol]) && decide::sum_le(&[*end, -z], &[tol])
+                }) =>
             {
                 Ok(Location::Boundary)
             }
@@ -372,6 +377,7 @@ impl Solid {
             Vec::new(),
         );
         history.level = level;
+        enclose::carry(&[self], &history, &mut [&mut solid]);
         let [moved] = attrs::propagate(context, &[self], &mut history, &[&solid])?
             .try_into()
             .expect("one output");

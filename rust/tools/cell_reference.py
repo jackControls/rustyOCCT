@@ -80,6 +80,77 @@ class Cell:
     faces: list = field(default_factory=list)
     shells: list = field(default_factory=list)
     regions: list = field(default_factory=list)
+    # Declared enclosures (M5): ('v', i), ('u', fin) or ('f', i) to a bound,
+    # or to None for a missing one; `declare` fills every absent key.
+    enclosures: dict = field(default_factory=dict)
+
+
+# ---------------------------------------------------------------- enclosures
+
+def gap_bounds(c):
+    """{key: (low, high)} of every vertex, fin and face gap, as `validate`
+    measures them: vertex to curve ends and vertex-loop surfaces, each use's
+    deviation (sampled lower bound, harmonic upper bound or inf where it is
+    not harmonic), and consecutive fins' UV gaps (angles scaled by the
+    radius). Vertex and UV gaps are computed directly, so low equals high."""
+    zero = (mp.mpf(0), mp.mpf(0))
+    out = {('v', i): zero for i in range(len(c.vertices))}
+    out.update({('f', i): zero for i in range(len(c.faces))})
+
+    def raise_to(key, value):
+        try:
+            v = value()
+            low, high = v if isinstance(v, tuple) else (v, v)
+        except (IndexError, TypeError, ZeroDivisionError, ValueError, AttributeError):
+            low, high = mp.mpf(0), mp.inf
+        old = out.get(key, zero)
+        out[key] = (max(old[0], low), max(old[1], high))
+    for e in c.edges:
+        for v, t in ((e.start, 0), (e.end, 1)):
+            if v is not None and 0 <= v < len(c.vertices):
+                raise_to(('v', v), lambda: norm(sub(curve_point(e.curve, t), vec(c.vertices[v]))))
+    for fi, f in enumerate(c.faces):
+        for lid in f.loops:
+            if not 0 <= lid < len(c.loops):
+                continue
+            loop = c.loops[lid]
+            if loop.vertex is not None:
+                if 0 <= loop.vertex < len(c.vertices):
+                    raise_to(('v', loop.vertex), lambda: surface_distance(f.surface, vec(c.vertices[loop.vertex])))
+                continue
+            for ui, k in enumerate(loop.fins):
+                if not 0 <= k < len(c.fins):
+                    continue
+                u = c.fins[k]
+                raise_to(('u', k), lambda: deviation_bounds(c.edges[u.edge].curve, f.surface, u.pcurve, u.forward))
+
+                def gap():
+                    w = loop.fins[(ui+1) % len(loop.fins)]
+                    a, b = pcurve_point(u.pcurve, 1), pcurve_point(c.fins[w].pcurve, 0)
+                    shift = TAU*loop.winding if ui == len(loop.fins)-1 and isinstance(f.surface, Cylinder) else 0
+                    du, dv = a[0]-b[0]-shift, a[1]-b[1]
+                    if isinstance(f.surface, Cylinder):
+                        du *= f.surface.radius
+                    return mp.sqrt(du*du+dv*dv)
+                raise_to(('f', fi), gap)
+    return out
+
+
+def declare(c):
+    """Declare every absent enclosure as a generous, sound bound: twice the
+    highest gap plus 2^-20 of the tolerance, rounded up and capped at the
+    tolerance. (A bound the checker cannot verify is what the mutation cases
+    set explicitly.)"""
+    import math
+    for key, (_, high) in gap_bounds(c).items():
+        if key in c.enclosures:
+            continue
+        if not mp.isfinite(high):
+            c.enclosures[key] = c.tolerance
+            continue
+        bound = math.nextafter(float(2*high+mp.mpf(c.tolerance)*mp.mpf(2)**-20), math.inf)
+        c.enclosures[key] = min(bound, c.tolerance)
+    return c
 
 
 # ---------------------------------------------------------------- conversion
@@ -244,8 +315,9 @@ def encode(c):
     out = [f'case {c.name}', f'tolerance {number(c.tolerance)}']
     frame = lambda f: ' '.join(map(number, (*f.origin, *f.normal, *f.x)))
     ref = lambda v: '-' if v is None else str(v)
-    for v in c.vertices:
-        out.append('v '+' '.join(map(number, v)))
+    enc = lambda key: ' enc '+('-' if c.enclosures.get(key) is None else number(c.enclosures[key]))
+    for i, v in enumerate(c.vertices):
+        out.append('v '+' '.join(map(number, v))+enc(('v', i)))
     for e in c.edges:
         cv = e.curve
         head = f'e {ref(e.start)} {ref(e.end)}'
@@ -265,17 +337,19 @@ def encode(c):
             p = u.pcurve
             o = 'F' if u.forward else 'R'
             if isinstance(p, Line2):
-                out.append(f'u {u.edge} {o} line '+' '.join(map(number, (*p.start, *p.end))))
+                out.append(f'u {u.edge} {o} line '+' '.join(map(number, (*p.start, *p.end)))+enc(('u', k)))
             else:
-                out.append(f'u {u.edge} {o} arc '+' '.join(map(number, (*p.center, p.radius, p.start, p.sweep))))
-    for f in c.faces:
+                out.append(f'u {u.edge} {o} arc '
+                           + ' '.join(map(number, (*p.center, p.radius, p.start, p.sweep)))+enc(('u', k)))
+    for fi, f in enumerate(c.faces):
         s = f.surface
         o = 'F' if f.forward else 'R'
         loops = ' loops'+''.join(f' {l}' for l in f.loops)
         if isinstance(s, Plane):
-            out.append(f'f plane {frame(s.frame)} {o} {f.front} {f.back}{loops}')
+            out.append(f'f plane {frame(s.frame)} {o} {f.front} {f.back}{loops}'+enc(('f', fi)))
         else:
-            out.append(f'f cylinder {frame(s.frame)} {number(s.radius)} {o} {f.front} {f.back}{loops}')
+            out.append(f'f cylinder {frame(s.frame)} {number(s.radius)} {o} {f.front} {f.back}{loops}'
+                       + enc(('f', fi)))
     for s in c.shells:
         sides = ' '.join(f'{f}:{side}' for f, side in s.sides)
         out.append(f's {s.region} sides {sides} wire'+''.join(f' {e}' for e in s.wire_edges)
@@ -575,6 +649,41 @@ def validate(c):
         if not ok:
             issues.append(issue('degenerate_surface', f'face {fi}'))
     geometry_bad = {fi for fi, ok in enumerate(surface_ok) if not ok}
+    # Enclosures (M5): a usable bound lies in [0, tol]; each geometric check
+    # below decides against it first, then against the tolerance.
+    def usable(key, entity):
+        if c.enclosures.get(key) is None:
+            issues.append(issue('enclosure_missing', entity))
+            return None
+        b = c.enclosures[key]
+        if not (0 <= b <= tol):
+            issues.append(issue('enclosure_exceeds_resolution', entity))
+            return None
+        return mp.mpf(b)
+    vertex_bound = [usable(('v', v), f'vertex {v}') for v in range(nv)]
+    face_bound = [usable(('f', fi), f'face {fi}') for fi in range(nf)]
+    fin_bound = {k: usable(('u', k), fin_name(k)) for k in sorted(where, key=lambda k: where[k])}
+
+    def judge(low, high, bound, entity, what):
+        """'within' or 'beyond' the tolerance, reporting the bound's verdict."""
+        if bound is not None:
+            margin_check(low, bound, what)
+            margin_check(high, bound, what)
+            if high <= bound:
+                return 'within'
+        margin_check(low, tol, what)
+        margin_check(high, tol, what)
+        if low > tol:
+            return 'beyond'
+        if high > tol:
+            raise ArithmeticError(f'{c.name}: {what} is too close to tolerance for the oracle')
+        if bound is not None:
+            if low > bound:
+                issues.append(issue('enclosure_unsound', entity))
+            else:
+                raise ArithmeticError(f'{c.name}: {what} is too close to its enclosure for the oracle')
+        return 'within'
+
     for i, e in enumerate(c.edges):
         if not curve_ok[i] or e.start is None or e.end is None:
             continue
@@ -582,8 +691,7 @@ def validate(c):
             if not vertex_ok[v]:
                 continue
             d = norm(sub(curve_point(e.curve, t), vec(c.vertices[v])))
-            margin_check(d, tol, f'vertex on edge {i}')
-            if d > tol:
+            if judge(d, d, vertex_bound[v], f'vertex {v}', f'vertex on edge {i}') == 'beyond':
                 issues.append(issue('vertex_off_curve', f'edge {i} {"start" if end == 0 else "end"}'))
     for fi, f in enumerate(c.faces):
         for li, lid in enumerate(f.loops):
@@ -591,8 +699,8 @@ def validate(c):
             if loop.vertex is not None:
                 if surface_ok[fi] and vertex_ok[loop.vertex]:
                     d = surface_distance(f.surface, vec(c.vertices[loop.vertex]))
-                    margin_check(d, tol, f'{c.name}: vertex loop')
-                    if d > tol:
+                    v = loop.vertex
+                    if judge(d, d, vertex_bound[v], f'vertex {v}', f'{c.name}: vertex loop') == 'beyond':
                         issues.append(issue('vertex_loop_off_surface', f'loop {fi}.{li}'))
                         geometry_bad.add(fi)
                 continue
@@ -606,11 +714,9 @@ def validate(c):
                 if not surface_ok[fi] or not curve_ok[u.edge]:
                     continue
                 low, high = deviation_bounds(c.edges[u.edge].curve, f.surface, u.pcurve, u.forward)
-                if low > tol:
+                if judge(low, high, fin_bound.get(k), ent, f'{c.name}: {ent}') == 'beyond':
                     issues.append(issue('pcurve_off_edge', ent))
                     geometry_bad.add(fi)
-                elif high > tol:
-                    raise ArithmeticError(f'{c.name}: {ent} is too close to tolerance for the oracle')
 
     # UV continuity; the last fin closes on the first shifted by the winding.
     for fi, f in enumerate(c.faces):
@@ -629,8 +735,7 @@ def validate(c):
                 if isinstance(f.surface, Cylinder):
                     du *= f.surface.radius
                 d = mp.sqrt(du*du+dv*dv)
-                margin_check(d, tol, f'{c.name}: uv gap')
-                if d > tol:
+                if judge(d, d, face_bound[fi], f'face {fi}', f'{c.name}: uv gap') == 'beyond':
                     issues.append(issue('uv_gap', f'use {fi}.{li}.{ui}'))
                     geometry_bad.add(fi)
 

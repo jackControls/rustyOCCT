@@ -12,8 +12,8 @@
 //! fraction t with edge fraction 1-t. Outer loops wind counter-clockwise about
 //! the oriented face normal; inner loops wind clockwise.
 use super::{
-    Curve2, Curve3, Edge, Face, Fin, Loop, Orientation, Region, RegionKind, Shell, ShellId, Side,
-    Surface, Vertex,
+    Curve2, Curve3, Edge, Enclosure, Face, Fin, Loop, Orientation, Region, RegionKind, Shell,
+    ShellId, Side, Surface, Vertex,
 };
 use crate::certified::{pi, Fast, Interval as I, Real};
 use crate::{Frame3, Tolerance};
@@ -81,6 +81,11 @@ pub enum IssueKind {
     RadialOrderInconsistent,
     VertexLoopOffSurface,
     UncertifiedVertexLoop,
+    // Enclosures (Contract 5 of IDENTITY_AND_HISTORY.md).
+    EnclosureMissing,
+    EnclosureExceedsResolution,
+    EnclosureUnsound,
+    UncertifiedEnclosure,
 }
 
 impl IssueKind {
@@ -140,6 +145,10 @@ impl IssueKind {
             RadialOrderInconsistent => "radial_order_inconsistent",
             VertexLoopOffSurface => "vertex_loop_off_surface",
             UncertifiedVertexLoop => "uncertified_vertex_loop",
+            EnclosureMissing => "enclosure_missing",
+            EnclosureExceedsResolution => "enclosure_exceeds_resolution",
+            EnclosureUnsound => "enclosure_unsound",
+            UncertifiedEnclosure => "uncertified_enclosure",
         }
     }
 }
@@ -358,6 +367,38 @@ fn within<T: Real>(d2: &T, tol2: &T) -> Verdict {
         // Undecided only if tol2 lies strictly inside: within iff hi <= tol2.
         None => Verdict::Unknown,
     }
+}
+
+/// A distance threshold (a finite binary64 value) and its square, enclosed
+/// in either tier.
+struct Threshold(f64);
+impl Threshold {
+    fn tier<T: Real>(&self) -> (T, T) {
+        let t = T::exact_f64(self.0);
+        let t2 = t.square();
+        (t, t2)
+    }
+}
+
+/// A decision against a stored enclosure, then against the resolution: the
+/// geometric verdict, and the enclosure's verdict when the geometry is within
+/// the resolution (`Beyond`: the bound is unsound; `Unknown`: uncertified).
+fn bounded(
+    bound: Option<f64>,
+    tol: f64,
+    decide: impl Fn(&Threshold) -> Verdict,
+) -> (Verdict, Option<Verdict>) {
+    let tol = Threshold(tol);
+    let Some(b) = bound else {
+        return (decide(&tol), None);
+    };
+    let at_bound = decide(&Threshold(b));
+    if at_bound == Verdict::Within {
+        return (Verdict::Within, None);
+    }
+    let at_tol = decide(&tol);
+    let enclosure = (at_tol == Verdict::Within).then_some(at_bound);
+    (at_tol, enclosure)
 }
 
 /// Run a certified decision with binary64 intervals, then exactly if needed.
@@ -672,24 +713,34 @@ fn fin_vertices(edges: &[Edge], fin: &Fin) -> (Option<usize>, Option<usize>) {
     }
 }
 
-fn vertex_gap<T: Real>(curve: &Curve3, vertex: [f64; 3], t: f64, tol2: &T) -> Verdict {
+/// Squared distance from a vertex to a curve's point at fraction `t`.
+fn vertex_gap2<T: Real>(curve: &Curve3, vertex: [f64; 3], t: f64) -> T {
     let d = vsub(&curve_at::<T>(curve, t), &v3::<T>(vertex));
-    within(&vdot(&d, &d), tol2)
+    vdot(&d, &d)
 }
 
-/// The gap from the end of `p` to the start of `next` shifted by `shift` in u.
-fn uv_gap<T: Real>(s: &Surface, p: &Curve2, next: &Curve2, shift: f64, tol2: &T) -> Verdict {
+fn vertex_gap<T: Real>(curve: &Curve3, vertex: [f64; 3], t: f64, tol2: &T) -> Verdict {
+    within(&vertex_gap2::<T>(curve, vertex, t), tol2)
+}
+
+/// The squared gap from the end of `p` to the start of `next` shifted by
+/// `shift` in u, angles scaled by the radius.
+fn uv_gap2<T: Real>(s: &Surface, p: &Curve2, next: &Curve2, shift: f64) -> T {
     let (a, b) = (pcurve_at::<T>(p, 1.0), pcurve_at::<T>(next, 0.0));
     let mut du = a[0].sub(&b[0].add(&c(shift)));
     if let Surface::Cylinder { radius, .. } = s {
         du = du.mul(&c(*radius));
     }
     let dv = a[1].sub(&b[1]);
-    within(&du.square().add(&dv.square()), tol2)
+    du.square().add(&dv.square())
 }
 
-/// Distance from a point to a surface within tolerance.
-fn on_surface<T: Real>(s: &Surface, p: [f64; 3], tol2: &T) -> Verdict {
+fn uv_gap<T: Real>(s: &Surface, p: &Curve2, next: &Curve2, shift: f64, tol2: &T) -> Verdict {
+    within(&uv_gap2::<T>(s, p, next, shift), tol2)
+}
+
+/// Squared distance from a point to a surface.
+fn surface_gap2<T: Real>(s: &Surface, p: [f64; 3]) -> T {
     let (fr, rel) = match s {
         Surface::Plane(f) | Surface::Cylinder { frame: f, .. } => {
             let fr = frame::<T>(f);
@@ -698,13 +749,129 @@ fn on_surface<T: Real>(s: &Surface, p: [f64; 3], tol2: &T) -> Verdict {
         }
     };
     match s {
-        Surface::Plane(_) => within(&vdot(&rel, &fr.n).square(), tol2),
+        Surface::Plane(_) => vdot(&rel, &fr.n).square(),
         Surface::Cylinder { radius, .. } => {
             let axial = vdot(&rel, &fr.n);
             let radial = vsub(&rel, &vscale(&fr.n, &axial));
-            let d = vdot(&radial, &radial).sqrt().sub(&c(*radius));
-            within(&d.square(), tol2)
+            vdot(&radial, &radial).sqrt().sub(&c(*radius)).square()
         }
+    }
+}
+
+/// Distance from a point to a surface within tolerance.
+fn on_surface<T: Real>(s: &Surface, p: [f64; 3], tol2: &T) -> Verdict {
+    within(&surface_gap2::<T>(s, p), tol2)
+}
+
+// ------------------------------------------------------------------ enclosures
+
+/// The smallest stored bound, 2^-80: its square stays far above the
+/// rational tier's 2^-192 grid, so an exactly zero gap still decides.
+const MIN_BOUND: f64 = 8.271806125530277e-25;
+
+/// A stored bound from a certified upper bound `x >= 0`: the next binary64
+/// value above it, so the checker's comparison is strict and decides in the
+/// same tier, and at least [`MIN_BOUND`].
+fn next_above(x: f64) -> f64 {
+    f64::from_bits(x.to_bits() + 1).max(MIN_BOUND)
+}
+
+/// A certified upper bound of `sqrt(value)`, from binary64 intervals and then
+/// rational ones, or `None` when neither gives a finite bound.
+fn root_bound(fast: impl FnOnce() -> Fast, exact: impl FnOnce() -> I) -> Option<f64> {
+    let hi = fast().sqrt().bounds_f64().1;
+    let hi = if hi.is_finite() {
+        hi
+    } else {
+        exact().sqrt().bounds_f64().1
+    };
+    (hi.is_finite() && hi >= 0.0).then(|| next_above(hi))
+}
+
+/// Measured enclosures: certified upper bounds of every vertex, fin and face
+/// gap of well-formed geometry, `None` where none is finite or the
+/// deviation is not harmonic (an arc pcurve on a cylinder).
+pub(crate) struct Measured {
+    pub vertices: Vec<Option<f64>>,
+    pub fins: Vec<Option<f64>>,
+    pub faces: Vec<Option<f64>>,
+}
+
+pub(crate) fn measure(view: &View) -> Measured {
+    let max = |a: Option<f64>, b: Option<f64>| Some(a?.max(b?));
+    let mut vertices = vec![Some(0.0); view.vertices.len()];
+    for edge in view.edges {
+        for (v, t) in [(edge.start, 0.0), (edge.end, 1.0)] {
+            let Some(v) = v else { continue };
+            let at = view.vertices[v.0].position.to_array();
+            let bound = root_bound(
+                || vertex_gap2::<Fast>(&edge.curve, at, t),
+                || vertex_gap2::<I>(&edge.curve, at, t),
+            );
+            vertices[v.0] = max(vertices[v.0], bound);
+        }
+    }
+    let mut fins = vec![None; view.fins.len()];
+    let mut faces = vec![Some(0.0); view.faces.len()];
+    for (fi, face) in view.faces.iter().enumerate() {
+        for l in &face.loops {
+            match &view.loops[l.0] {
+                Loop::Vertex(v) => {
+                    let at = view.vertices[v.0].position.to_array();
+                    let bound = root_bound(
+                        || surface_gap2::<Fast>(&face.surface, at),
+                        || surface_gap2::<I>(&face.surface, at),
+                    );
+                    vertices[v.0] = max(vertices[v.0], bound);
+                }
+                Loop::Edges {
+                    fins: list,
+                    winding,
+                } => {
+                    for (ui, k) in list.iter().enumerate() {
+                        let u = &view.fins[k.0];
+                        let curve = &view.edges[u.edge.0].curve;
+                        let forward = u.sense == Orientation::Forward;
+                        let harmonic = |h: &mut Harmonic<Fast>| {
+                            add_curve(h, curve, forward);
+                            sub_use(h, &face.surface, &u.pcurve)
+                        };
+                        let mut h = Harmonic::<Fast>::new();
+                        fins[k.0] = if harmonic(&mut h) {
+                            let hi = h.upper().bounds_f64().1;
+                            let hi = if hi.is_finite() {
+                                hi
+                            } else {
+                                let mut h = Harmonic::<I>::new();
+                                add_curve(&mut h, curve, forward);
+                                sub_use(&mut h, &face.surface, &u.pcurve);
+                                h.upper().bounds_f64().1
+                            };
+                            (hi.is_finite() && hi >= 0.0).then(|| next_above(hi))
+                        } else {
+                            None
+                        };
+                        let w = &view.fins[list[(ui + 1) % list.len()].0];
+                        let shift = match face.surface {
+                            Surface::Cylinder { .. } if ui + 1 == list.len() => {
+                                TAU * f64::from(winding[0])
+                            }
+                            _ => 0.0,
+                        };
+                        let gap = root_bound(
+                            || uv_gap2::<Fast>(&face.surface, &u.pcurve, &w.pcurve, shift),
+                            || uv_gap2::<I>(&face.surface, &u.pcurve, &w.pcurve, shift),
+                        );
+                        faces[fi] = max(faces[fi], gap);
+                    }
+                }
+            }
+        }
+    }
+    Measured {
+        vertices,
+        fins,
+        faces,
     }
 }
 
@@ -1381,8 +1548,7 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
     }
     let tol = r(tolerance.linear());
     let tol2 = &tol * &tol;
-    let (fast_tol, fast_tol2) = (Fast::from_r(&tol), Fast::from_r(&tol2));
-    let (exact_tol, exact_tol2) = (I::from_r(&tol), I::from_r(&tol2));
+    let (fast_tol2, exact_tol2) = (Fast::from_r(&tol2), I::from_r(&tol2));
     // Containment rays keep twice the tolerance from face boundaries.
     let (fast_margin2, exact_margin2) = (fast_tol2.mul(&c(4.0)), exact_tol2.mul(&c(4.0)));
 
@@ -1810,6 +1976,49 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
             bad_faces.insert(fi);
         }
     }
+    // Enclosures (M5): a usable one lies in [0, resolution]; the geometric
+    // checks below decide against it first, then against the resolution.
+    let usable = |issues: &mut BTreeSet<Issue>, e: &Option<Enclosure>, entity| match e {
+        None => {
+            add(issues, K::EnclosureMissing, entity);
+            None
+        }
+        Some(e) if !(e.bound >= 0.0 && e.bound <= tolerance.linear()) => {
+            add(issues, K::EnclosureExceedsResolution, entity);
+            None
+        }
+        Some(e) => Some(e.bound),
+    };
+    let vertex_bound: Vec<Option<f64>> = vertices
+        .iter()
+        .enumerate()
+        .map(|(v, x)| usable(&mut issues, &x.enclosure, En::Vertex(v)))
+        .collect();
+    let face_bound: Vec<Option<f64>> = faces
+        .iter()
+        .enumerate()
+        .map(|(fi, f)| usable(&mut issues, &f.enclosure, En::Face(fi)))
+        .collect();
+    let mut fin_bound: Vec<Option<f64>> = vec![None; nfin];
+    let mut fin_seen = vec![false; nfin];
+    for (fi, face) in faces.iter().enumerate() {
+        for (li, l) in face.loops.iter().enumerate() {
+            if let Loop::Edges { fins: list, .. } = &loops[l.0] {
+                for (ui, k) in list.iter().enumerate() {
+                    if !std::mem::replace(&mut fin_seen[k.0], true) {
+                        fin_bound[k.0] =
+                            usable(&mut issues, &fins[k.0].enclosure, En::Use(fi, li, ui));
+                    }
+                }
+            }
+        }
+    }
+    let enclosure_verdict =
+        |issues: &mut BTreeSet<Issue>, bound: Option<Verdict>, entity| match bound {
+            Some(Verdict::Beyond) => add(issues, K::EnclosureUnsound, entity),
+            Some(Verdict::Unknown) => add(issues, K::UncertifiedEnclosure, entity),
+            _ => {}
+        };
     for (i, edge) in edges.iter().enumerate() {
         let (Some(start), Some(end)) = (edge.start, edge.end) else {
             continue;
@@ -1822,11 +2031,16 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                 continue;
             }
             let at = vertices[v].position.to_array();
-            match tiered(
-                Verdict::Unknown,
-                || vertex_gap::<Fast>(&edge.curve, at, t, &fast_tol2),
-                || vertex_gap::<I>(&edge.curve, at, t, &exact_tol2),
-            ) {
+            let decide = |th: &Threshold| {
+                tiered(
+                    Verdict::Unknown,
+                    || vertex_gap::<Fast>(&edge.curve, at, t, &th.tier::<Fast>().1),
+                    || vertex_gap::<I>(&edge.curve, at, t, &th.tier::<I>().1),
+                )
+            };
+            let (verdict, bound) = bounded(vertex_bound[v], tolerance.linear(), decide);
+            enclosure_verdict(&mut issues, bound, En::Vertex(v));
+            match verdict {
                 Verdict::Within => {}
                 Verdict::Beyond => add(&mut issues, K::VertexOffCurve, En::EdgeEnd(i, which)),
                 Verdict::Unknown => add(
@@ -1843,11 +2057,17 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                 Loop::Vertex(v) => {
                     if surface_ok[fi] && vertex_ok[v.0] {
                         let at = vertices[v.0].position.to_array();
-                        match tiered(
-                            Verdict::Unknown,
-                            || on_surface::<Fast>(&face.surface, at, &fast_tol2),
-                            || on_surface::<I>(&face.surface, at, &exact_tol2),
-                        ) {
+                        let decide = |th: &Threshold| {
+                            tiered(
+                                Verdict::Unknown,
+                                || on_surface::<Fast>(&face.surface, at, &th.tier::<Fast>().1),
+                                || on_surface::<I>(&face.surface, at, &th.tier::<I>().1),
+                            )
+                        };
+                        let (verdict, bound) =
+                            bounded(vertex_bound[v.0], tolerance.linear(), decide);
+                        enclosure_verdict(&mut issues, bound, En::Vertex(v.0));
+                        match verdict {
                             Verdict::Within => {}
                             Verdict::Beyond => {
                                 add(&mut issues, K::VertexLoopOffSurface, En::Loop(fi, li));
@@ -1875,29 +2095,22 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                 }
                 let forward = u.sense == Orientation::Forward;
                 let curve = &edges[u.edge.0].curve;
-                match tiered(
-                    Verdict::Unknown,
-                    || {
-                        deviation::<Fast>(
-                            curve,
-                            &face.surface,
-                            &u.pcurve,
-                            forward,
-                            &fast_tol,
-                            &fast_tol2,
-                        )
-                    },
-                    || {
-                        deviation::<I>(
-                            curve,
-                            &face.surface,
-                            &u.pcurve,
-                            forward,
-                            &exact_tol,
-                            &exact_tol2,
-                        )
-                    },
-                ) {
+                let decide = |th: &Threshold| {
+                    tiered(
+                        Verdict::Unknown,
+                        || {
+                            let (t, t2) = th.tier::<Fast>();
+                            deviation::<Fast>(curve, &face.surface, &u.pcurve, forward, &t, &t2)
+                        },
+                        || {
+                            let (t, t2) = th.tier::<I>();
+                            deviation::<I>(curve, &face.surface, &u.pcurve, forward, &t, &t2)
+                        },
+                    )
+                };
+                let (verdict, bound) = bounded(fin_bound[k.0], tolerance.linear(), decide);
+                enclosure_verdict(&mut issues, bound, En::Use(fi, li, ui));
+                match verdict {
                     Verdict::Within => {}
                     Verdict::Beyond => {
                         add(&mut issues, K::PcurveOffEdge, En::Use(fi, li, ui));
@@ -1940,11 +2153,22 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                 } else {
                     0.0
                 };
-                match tiered(
-                    Verdict::Unknown,
-                    || uv_gap::<Fast>(&face.surface, &u.pcurve, &w.pcurve, shift, &fast_tol2),
-                    || uv_gap::<I>(&face.surface, &u.pcurve, &w.pcurve, shift, &exact_tol2),
-                ) {
+                let decide = |th: &Threshold| {
+                    tiered(
+                        Verdict::Unknown,
+                        || {
+                            let t2 = th.tier::<Fast>().1;
+                            uv_gap::<Fast>(&face.surface, &u.pcurve, &w.pcurve, shift, &t2)
+                        },
+                        || {
+                            let t2 = th.tier::<I>().1;
+                            uv_gap::<I>(&face.surface, &u.pcurve, &w.pcurve, shift, &t2)
+                        },
+                    )
+                };
+                let (verdict, bound) = bounded(face_bound[fi], tolerance.linear(), decide);
+                enclosure_verdict(&mut issues, bound, En::Face(fi));
+                match verdict {
                     Verdict::Within => {}
                     Verdict::Beyond => {
                         add(&mut issues, K::UvGap, En::Use(fi, li, ui));
@@ -2211,6 +2435,7 @@ mod tests {
                 start: Point2::new(a.0, a.1),
                 end: Point2::new(b.0, b.1),
             },
+            enclosure: None,
         }
     }
 

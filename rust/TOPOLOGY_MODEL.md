@@ -368,7 +368,8 @@ reason:
 * **Arenas.** `TopologyParts` holds vertices, edges, fins, loops, faces,
   shells and regions; faces list loop ids, loops list fin ids, edges list
   their fins. Pcurves are stored (`DerivedOnPlane` and fin enclosures wait for
-  M5). A loop's winding is `[u, v]`; only `u` on a cylinder may be nonzero.
+  M5; M5 added enclosures on vertices, fins and faces, while `DerivedOnPlane`
+  is still not implemented). A loop's winding is `[u, v]`; only `u` on a cylinder may be nonzero.
 * **Prism layout.** Shell 0 lists every face's front side and belongs to the
   solid region 1; shell 1 lists every back side and belongs to the infinite
   void. A cavity adds its material shell to region 1 and a bounded void
@@ -436,9 +437,10 @@ reason:
   edges, mesh-only faces and every other curve or surface are reported by
   name and counted. Degenerate edges belong with surfaces that have poles,
   which the kernel does not represent yet, so none is dropped into a pole.
-* **Tolerances.** Until M5 an imported body's resolution is its largest
-  vertex, edge or face tolerance (`ImportedSolid::tolerance`). M5 turns
-  per-entity tolerances into `Imported` enclosures.
+* **Tolerances.** An imported body's resolution is its largest vertex,
+  edge or face tolerance (`ImportedSolid::tolerance`). Since M5, each
+  vertex's and fin's OCCT tolerance is its `Imported` enclosure (see
+  `IDENTITY_AND_HISTORY.md`), which the checker verifies.
 * **Writer.** Version 1 text. Each wound face gets one seam at a `u` where
   both of its wound loops have a vertex, or where a ring loop starts. A ring
   edge gets a seam vertex there and becomes a closed edge. A face whose wound

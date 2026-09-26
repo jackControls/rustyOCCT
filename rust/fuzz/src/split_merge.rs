@@ -4,11 +4,14 @@
 //! stacked prisms. Every history checks clean; the split followed by the fuse
 //! resolves every input to `Same`; volumes add up within the rounding of
 //! area x height; every input id resolves, no output id does. One mutation
-//! per input must be reported with its predicted issue.
+//! per input must be reported with its predicted issue. Enclosures (M5, T5)
+//! never fall: every continued entity's bound is at least its parents', and
+//! every bound lies within the resolution.
 use crate::identity::{build, spec};
 use libfuzzer_sys::arbitrary::Unstructured;
 use rusty_occt::history::{check, EntitySet, History, HistoryIssueKind as K, Relation, Resolution};
 use rusty_occt::identity::{EntityId, OperationId};
+use rusty_occt::topology::Slot;
 use rusty_occt::Solid;
 
 fn set(s: &Solid) -> EntitySet {
@@ -34,6 +37,55 @@ fn resolves_exhaustively(h: &History, inputs: &[&Solid], outputs: &[&Solid]) {
     }
 }
 
+/// An entity's enclosure bound: its own, or an edge's largest over its fins.
+fn bound(s: &Solid, id: EntityId) -> Option<f64> {
+    let t = s.topology();
+    match t.slot_of(id)? {
+        Slot::Vertex(v) => t.vertices()[v.index()].enclosure.map(|e| e.bound),
+        Slot::Face(f) => t.faces()[f.index()].enclosure.map(|e| e.bound),
+        Slot::Edge(e) => t.edges()[e.index()]
+            .fins
+            .iter()
+            .filter_map(|k| t.fins()[k.index()].enclosure.map(|e| e.bound))
+            .reduce(f64::max),
+        Slot::Region(_) => None,
+    }
+}
+
+/// T5: no continued entity's bound falls below a parent's; all bounds exist
+/// and fit the resolution.
+fn enclosures_carry(h: &History, inputs: &[&Solid], outputs: &[&Solid]) {
+    let of = |id: EntityId, bodies: &[&Solid]| bodies.iter().find_map(|s| bound(s, id));
+    for r in &h.relations {
+        let pairs: Vec<(EntityId, EntityId)> = match r {
+            Relation::Unchanged { id } => vec![(*id, *id)],
+            Relation::Modified { from, to } => vec![(*from, *to)],
+            Relation::Split { from, into } => into.iter().map(|t| (*from, *t)).collect(),
+            Relation::Merged { from, into } => from.iter().map(|f| (*f, *into)).collect(),
+            _ => Vec::new(),
+        };
+        for (from, to) in pairs {
+            if let (Some(a), Some(b)) = (of(from, inputs), of(to, outputs)) {
+                assert!(b >= a, "{from:?} {a} -> {to:?} {b}");
+            }
+        }
+    }
+    for s in outputs {
+        let tol = s.profile().tolerance().linear();
+        let t = s.topology();
+        let all = t
+            .vertices()
+            .iter()
+            .map(|v| v.enclosure)
+            .chain(t.fins().iter().map(|f| f.enclosure))
+            .chain(t.faces().iter().map(|f| f.enclosure));
+        for e in all {
+            let e = e.expect("every entity is enclosed");
+            assert!(e.bound >= 0.0 && e.bound <= tol, "{e:?}");
+        }
+    }
+}
+
 pub fn check_split_merge(data: &[u8]) {
     let mut u = Unstructured::new(data);
     let Ok(Some(s)) = spec(&mut u) else {
@@ -46,7 +98,8 @@ pub fn check_split_merge(data: &[u8]) {
         return;
     };
     for transform in &s.transforms {
-        if let Ok((moved, _)) = parent.transform_with(OperationId::UNSPECIFIED, *transform) {
+        if let Ok((moved, h)) = parent.transform_with(OperationId::UNSPECIFIED, *transform) {
+            enclosures_carry(&h, &[&parent], &[&moved]);
             parent = moved;
         }
     }
@@ -70,6 +123,7 @@ pub fn check_split_merge(data: &[u8]) {
         vec![]
     );
     resolves_exhaustively(&split, &[&parent], &[&lower, &upper]);
+    enclosures_carry(&split, &[&parent], &[&lower, &upper]);
     let v = parent.mass_properties().volume;
     let sum = lower.mass_properties().volume + upper.mass_properties().volume;
     assert!((sum - v).abs() <= 8.0 * f64::EPSILON * v, "{sum} {v}");
@@ -83,6 +137,7 @@ pub fn check_split_merge(data: &[u8]) {
         vec![]
     );
     resolves_exhaustively(&fuse, &[&lower, &upper], &[&fused]);
+    enclosures_carry(&fuse, &[&lower, &upper], &[&fused]);
     assert_eq!(fused.mass_properties(), parent.mass_properties());
     let both = split.then(&fuse).unwrap();
     assert_eq!(check(&[set(&parent)], &[set(&fused)], &both), vec![]);

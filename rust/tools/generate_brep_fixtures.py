@@ -12,10 +12,10 @@ import copy
 import math
 from pathlib import Path
 
-from cell_reference import encode as encode_cell, to_cell, validate as validate_cell
+from cell_reference import declare, encode as encode_cell, gap_bounds, to_cell, validate as validate_cell
 
 from brep_reference import (Arc2, Arc3, Cylinder, Edge, Face, Frame, Line2, Line3, Model,
-                            Plane, TAU, Use, atan2_rn, cos_rn, encode, hypot_rn, sin_rn,
+                            Plane, TAU, Use, atan2_rn, cos_rn, encode, hypot_rn, number, sin_rn,
                             validate)
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -410,22 +410,76 @@ def cell_cases(bases):
         return change
     cell('cylinder', 'cylinder_ring_pcurve_printed_period', wall_period(6.28318530717959))
     cell('cylinder', 'cylinder_ring_pcurve_period_off', wall_period(TAU*(1+1e-6)))
+
+    # Enclosures (M5): gaps just inside and just outside the resolution, and
+    # declared bounds that are missing, out of range or unsound.
+    def moved_vertex(fraction, bound=None):
+        def change(c):
+            x, y, z = c.vertices[0]
+            c.vertices[0] = (x+fraction*c.tolerance, y, z)
+            if bound is not None:
+                c.enclosures[('v', 0)] = bound*c.tolerance
+        return change
+    cell('box', 'box_vertex_moved_inside_resolution', moved_vertex(0.5))
+    cell('box', 'box_vertex_moved_outside_resolution', moved_vertex(1.5))
+    cell('box', 'box_vertex_enclosure_unsound', moved_vertex(0.5, 0.25))
+
+    def cap_pcurve(fraction, bound=None):
+        def change(c):
+            cap = next(f for f in c.faces if isinstance(f.surface, Plane))
+            k = c.loops[cap.loops[0]].fins[0]
+            p = c.fins[k].pcurve
+            c.fins[k].pcurve = Arc2((p.center[0]+fraction*c.tolerance, p.center[1]), p.radius, p.start, p.sweep)
+            if bound is not None:
+                c.enclosures[('u', k)] = bound*c.tolerance
+        return change
+    cell('cylinder', 'cylinder_cap_pcurve_inside_resolution', cap_pcurve(0.5))
+    cell('cylinder', 'cylinder_cap_fin_enclosure_unsound', cap_pcurve(0.5, 0.25))
+
+    def side_pcurve(fraction, face_bound=None):
+        # One fin of a box side moved in v: its own deviation and both of its
+        # face's junction gaps become `fraction` of the tolerance.
+        def change(c):
+            fi = 2
+            k = c.loops[c.faces[fi].loops[0]].fins[0]
+            p = c.fins[k].pcurve
+            d = fraction*c.tolerance
+            c.fins[k].pcurve = Line2((p.start[0], p.start[1]+d), (p.end[0], p.end[1]+d))
+            if face_bound is not None:
+                c.enclosures[('f', fi)] = face_bound*c.tolerance
+        return change
+    cell('box', 'box_side_pcurve_inside_resolution', side_pcurve(0.5))
+    cell('box', 'box_face_enclosure_unsound', side_pcurve(0.5, 0.1))
+    cell('box', 'box_fin_enclosure_missing', lambda c: c.enclosures.__setitem__(('u', 0), None))
+    cell('box', 'box_face_enclosure_exceeds_resolution',
+         lambda c: c.enclosures.__setitem__(('f', 0), 2*c.tolerance))
+    cell('box', 'box_vertex_enclosure_negative', lambda c: c.enclosures.__setitem__(('v', 1), -c.tolerance))
     return out
 
 
 def generate():
     bases = base_cases()
     models = list(bases.values())+mutations(bases)
-    cells = [to_cell(m) for m in models]+cell_cases(bases)
+    cells = [declare(c) for c in [to_cell(m) for m in models]+cell_cases(bases)]
     names = [c.name for c in cells]
     assert len(names) == len(set(names)), 'duplicate case names'
     text = '\n'.join(encode_cell(c) for c in cells)+'\n'
-    rows = []
+    rows, lows = [], []
     for c in cells:
         issues = validate_cell(c)
         rows.append(c.name+'\t'+';'.join(f'{k}:{e}' for k, e in issues))
+        if not issues:
+            # Certain lower values of every gap of a valid case, rounded down:
+            # a measured enclosure below one is unsound.
+            for (kind, i), (low, _) in sorted(gap_bounds(c).items()):
+                value = float(low)
+                if value > low:
+                    value = math.nextafter(value, -math.inf)
+                lows.append(f'{c.name}\t{kind} {i}\t{number(value)}')
     return models, {'brep-cases.txt': text,
-                    'brep-expected.tsv': '# name\tsorted issues kind:entity separated by ;\n'+'\n'.join(rows)+'\n'}
+                    'brep-expected.tsv': '# name\tsorted issues kind:entity separated by ;\n'+'\n'.join(rows)+'\n',
+                    'brep-enclosure-lows.tsv': '# valid case\tv|u|f index (vertex, fin arena index, face)'
+                    '\tcertain lower value of its gap\n'+'\n'.join(lows)+'\n'}
 
 
 def main():

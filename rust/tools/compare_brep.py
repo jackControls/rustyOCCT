@@ -107,16 +107,23 @@ def decode_tolerances(row, name):
     return out
 
 
-def same_tolerances(captured, current):
-    """Tolerances exactly; measured deviations (numerical maximization) within
-    1e-15 absolute or 1e-9 relative, across platforms."""
+def case_size(m):
+    """The largest coordinate or radius of a model (at least 1)."""
+    return max([abs(x) for v in m.vertices for x in v]
+               + [getattr(e.curve, 'radius', 0.0) for e in m.edges] + [1.0])
+
+
+def same_tolerances(captured, current, allowance=1e-15):
+    """Tolerances exactly; measured deviations within `allowance` (rounding
+    at the case's scale: OCCT evaluates with the platform's libm) or 1e-9
+    relative."""
     if captured.keys() != current.keys():
         return False
     for label, (tol, gap) in captured.items():
         now_tol, now_gap = current[label]
         if tol != now_tol:
             return False
-        if gap is not None and not (abs(gap-now_gap) <= max(1e-15, 1e-9*abs(gap)) or gap != gap and now_gap != now_gap):
+        if gap is not None and not (abs(gap-now_gap) <= max(allowance, 1e-9*abs(gap)) or gap != gap and now_gap != now_gap):
             return False
     return True
 
@@ -136,8 +143,9 @@ def enclosure_capture(tolerances):
     for row in (ENCLOSURES/'native.txt').read_text().splitlines():
         name = row.split()[0]
         captured[name] = decode_tolerances(row, name)
+    sizes = {m.name: case_size(m) for m, _, _ in native_rows()}
     for name, observed in tolerances.items():
-        if name not in captured or not same_tolerances(captured[name], observed):
+        if name not in captured or not same_tolerances(captured[name], observed, sizes[name]*2.0**-46):
             raise ValueError('native tolerance observations of '+name+' differ from the capture')
 
 
@@ -223,6 +231,49 @@ def build(prefix, output, first):
     return executable, env, loaded, command
 
 
+def rust_enclosures():
+    """{case: (vertex, fin, face)} largest measured enclosures of each valid case."""
+    cases = (ROOT/'rust/fixtures/brep-cases.txt').read_text()
+    rows = subprocess.run([str(ROOT/'target/release/examples/brep_validation_probe'), 'enclosures'],
+                          input=cases, text=True, capture_output=True, timeout=600, check=True).stdout
+    out = {}
+    for line in rows.splitlines():
+        name, row = line.split('\t')
+        if row != '-':
+            out[name] = tuple(float(x) for x in row.split())
+    return out
+
+
+def enclosure_differences(m, measured, observed):
+    """T6 of IDENTITY_AND_HISTORY.md on a case valid on both sides: the
+    kernel's measured vertex and fin enclosures are not below OCCT's own
+    measurements of the same gaps (seam structure excluded), up to 2^-46 of
+    the case's size for the frames each side rounds differently; and no
+    enclosure exceeds the tolerance OCCT stores for these exactly
+    representable constructions."""
+    structure = reference.structure_only(m)
+    seams = {int(label[1:]) for label in structure if label[0] == 'e'}
+    allowance = case_size(m)*2.0**-46
+    native_vertex = max([gap for label, (_, gap) in observed.items()
+                         if label[0] == 'v' and label not in structure] + [0.0])
+    native_use = 0.0
+    for label, (_, deviation) in observed.items():
+        if label[0] != 'u':
+            continue
+        f, w, k = (int(x) for x in label[1:].split('.'))
+        if m.faces[f].loops[w][k].edge not in seams:
+            native_use = max(native_use, deviation)
+    stored = min(tol for label, (tol, _) in observed.items() if tol is not None)
+    vertex, fin, face = measured
+    out = []
+    if native_vertex > vertex+allowance or native_use > fin+allowance:
+        out.append('enclosure_below_native_measurement')
+    if max(vertex, fin, face) > stored:
+        out.append('enclosure_above_occt_tolerance')
+    return out, {'native_vertex': native_vertex, 'native_use': native_use, 'occt_tolerance': stored,
+                 'rust': measured, 'allowance': allowance}
+
+
 def rust_issues():
     """Rust issue lists, certified equal to the independent reference validator."""
     subprocess.run(['cargo', '+stable', 'build', '--release', '--locked', '--example', 'brep_validation_probe'],
@@ -262,6 +313,7 @@ def main():
         if text != (ROOT/'rust/fixtures'/name).read_text():
             raise ValueError('independent fixture regeneration changed: '+name)
     issues, counts = rust_issues()
+    enclosures = rust_enclosures()
     cases = native_rows()
     executable, env, loaded, command = build(prefix, output, cases[0][1])
     if args.capture_enclosures:
@@ -273,7 +325,8 @@ def main():
     report = {'source_reference': SOURCE, 'rust_cases_independently_certified': len(issues),
               'not_constructible_natively': [m.name for m in models if not reference.representable(m)],
               'native_timeout_seconds': TIMEOUT, 'native_seconds': {},
-              'structure_only_statuses': {}, 'counts_verified': 0,
+              'structure_only_statuses': {}, 'counts_verified': 0, 'enclosures_compared': 0,
+              'enclosure_observations': {},
               'matches': [], 'reviewed_differences': [], 'failures': []}
     observations = {}
     oracle = None
@@ -309,6 +362,11 @@ def main():
             report['counts_verified'] += 1
             if counts[m.name] != native_counts:
                 differences = sorted(set(differences) | {'synthesized_counts'})
+            found, detail = enclosure_differences(m, enclosures[m.name], tolerances[m.name])
+            report['enclosures_compared'] += 1
+            report['enclosure_observations'][m.name] = detail
+            if found:
+                report['failures'].append({'case': m.name, 'reason': ' '.join(found), 'detail': detail})
         if not differences:
             report['matches'].append(m.name)
             continue
@@ -329,8 +387,8 @@ def main():
     report['tolerance_rows_reproduced'] = len(tolerances)
     write(output/'capture.json', metadata)
     write(output/'report.json', report)
-    print(json.dumps({k: len(v) if isinstance(v, list) else v for k, v in report.items()
-                      if k != 'native_seconds'}, indent=2))
+    print(json.dumps({k: len(v) if isinstance(v, (list, dict)) and k != 'structure_only_statuses' else v
+                      for k, v in report.items() if k != 'native_seconds'}, indent=2))
     if report['failures']:
         raise SystemExit(1)
 

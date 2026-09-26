@@ -23,7 +23,8 @@ checked histories and the attribute checker, on extrusions and rigid
 transforms). The topology model is decided in `TOPOLOGY_MODEL.md`; its
 migration, T1, is accepted at `e4adb869` (seamless circle prisms, a region
 id, algorithm levels). M3 (height split and stacked fuse) is accepted at
-`00f0034c`; M4 (attributes on every operation) is implemented; M5 pending. Acceptance evidence per milestone
+`00f0034c`; M4 (attributes on every operation) is accepted at `979cf939`;
+M5 (enclosures as entity data) is implemented. Acceptance evidence per milestone
 is under [Acceptance](#acceptance).
 
 ## What the kernel promises, and what it does not
@@ -530,6 +531,65 @@ here.
   operation runs `attributes::check` in debug builds. No current operation
   reports `Modified` outside a transform, so `on_modify` is exercised only
   by the checker's hand-written histories (`history_contracts.rs`).
+* **Enclosures (M5).** `Vertex`, `Fin` and `Face` carry
+  `enclosure: Option<Enclosure { bound, provenance }>`, with provenance
+  `Computed` or `Imported`. A vertex's bound covers its distance to the ends
+  of its edges' curves and to the surface of a vertex loop. A fin's covers
+  the distance between the edge curve and the pcurve's image. A face's
+  covers the gaps between consecutive fins in its parameter space, with
+  angles scaled by the radius. The contract sketched an enclosure per fin
+  only; vertices and faces carry the other two gaps T2 names.
+  * *Checking (T3).* `Topology::check` reports `enclosure_missing` and
+    `enclosure_exceeds_resolution` (a bound outside `[0, resolution]`,
+    including NaN). Each certified relation (vertex to curve end, vertex
+    loop to surface, fin deviation, UV junction) is decided against the
+    stored bound first; only if that fails is it decided against the
+    resolution. Beyond the resolution it is the geometric issue as before.
+    Within the resolution but certainly beyond the bound it is
+    `enclosure_unsound`. Undecidable against the bound it is
+    `uncertified_enclosure`, a fourth kind in the pattern of the other
+    `uncertified_*` kinds.
+  * *Measuring.* `TopologyParts::with_measured_enclosures` fills absent
+    bounds with certified upper bounds. They come from the checker's own
+    expressions, the harmonic bound for fins, in binary64 intervals and then
+    rational ones, stored one binary64 step above the interval. Every bound
+    is at least `2^-80`, so an exactly zero gap still decides against the
+    rational tier's `2^-192` grid. The prism builder measures every entity.
+    A gap that cannot be enclosed is `Error::Unrepresentable`, and a bound
+    above the resolution is `Error::PrecisionLoss`. Nothing widens to
+    succeed (T4).
+  * *Propagation (T5).* Every operation rebuilds from the exact profile, so
+    each output entity first carries its own measured bound. Continued
+    entities (`Unchanged`, `Modified`, `Split`, `Merged`) are then raised to
+    their parents' largest bound, so no bound resets below an input's.
+    Generated entities (cut faces, edges and vertices) keep their measured
+    bound. A rigid transform rebuilds in a rounded frame: the rounding moves
+    the body, not the gaps between its curves and surfaces.
+  * *Import.* A `.brep` vertex's bound is `Imported` and equal to the
+    larger of its own and its edges' tolerances, the rule
+    `BRepCheck_Vertex` applies. A fin's bound is its edge's tolerance, as
+    in `BRepCheck_Edge`. OCCT stores nothing for UV closure, so face bounds
+    are measured. All 29 importable corpus solids validate with these
+    claims. The writer still writes the body's resolution as every
+    tolerance, which bounds every enclosure.
+  * *Audit (T4).* Every comparison of a binary64 length against the linear
+    tolerance, and how it is now decided:
+
+    | Site | Decision |
+    | --- | --- |
+    | `Topology::check` (vertex, fin, UV, vertex loop, curve and surface validity, containment) | certified tiers, as since M1 |
+    | `Boundary::polygon`: closing point, edge length, backtracking, self-contact | `decide`: exact point–point and point–segment distances (binary64 intervals, then rationals) |
+    | `Boundary::polygon` and `Profile::new`: material thinner than the tolerance | `decide::area_is_degenerate`: rational intervals with `π`; undecidable counts as degenerate |
+    | `Boundary::rectangle` width and height, `Boundary::circle` radius, `Solid::cuboid` height | the inputs themselves are compared: exact |
+    | `Profile::new` hole contact (polygon, circle–circle, circle–polygon) | `decide`: exact distances against exact sums of radii and tolerance |
+    | `Boundary::locate` (profile classification) | `decide`: exact distances; the ray parity was exact already |
+    | `Solid::extrude` height | `decide::sum_le`: `high - low` exactly |
+    | `Solid::classify` axial range | `decide`: exact sums; the local coordinates themselves come from a binary64 projection, since classification is a query, not a validity decision |
+    | `Bounds3::intersects`, `Bounds3::contains` | `decide`: exact sums (a non-finite point is outside) |
+    | `history::check` supports | exact rationals, as since M2 |
+    | `occt_brep` converter (seam pairing, range snapping) and writer (seam position, ring radius) | heuristics that choose a structure; the certified checker decides every result, so none decides validity |
+    | `Frame3::new` axes | an angular tolerance, outside T4 |
+
 * **Split and fuse ids (M3).** Split children and merged entities keep
   their parent's role; a split child's ordinal is its piece's axial order
   (0 lower, 1 upper), a merged entity's ordinal is 0 and its parents are in
@@ -706,7 +766,27 @@ say what remains.
   attributes on operations are M4 and enclosures M5; composites across two
   algorithm levels are an open item under H8; the `continuity` check of
   `TOPOLOGY_MODEL.md` D11 must land before spline edges or faces.
-* M4 — pending
+* **M4 — accepted at `979cf939`.**
+  * Rust kernel workflow: all twelve jobs passed.
+  * Fuzzing workflow: all twenty-three targets passed. On Linux,
+    `attributes` replayed 97 inputs in 82.9 seconds, then ran 60.09 seconds
+    of mutation (308 executions, 9,010 coverage edges, 732 MB RSS peak)
+    without an artifact.
+  * Fixtures: 33 independent scenarios over 48 keys (`attribute_reference.py`,
+    `generate_attribute_fixtures.py --check`), byte-identical on Python 3.9
+    and 3.12; every outcome and output attribute equals the reference's, and
+    the law tests in `attribute_outcomes.rs` pass.
+  * Native bridge: not applicable. OCCT has no kernel-level attribute
+    propagation; its attributes live in OCAF labels.
+  * Clean local 600-second campaign at `979cf939` (AddressSanitizer,
+    standard 20-second/2 GiB limits): `attributes` completed 600.06 seconds
+    of mutation after 46.8 seconds of replay, with 6,808 executions, 9,445
+    coverage edges and a 974 MB RSS peak, and no crash, timeout, OOM,
+    slow-unit or disagreement artifacts.
+
+  What remains: `on_modify` is exercised only by the checker's
+  hand-written histories until an operation reports `Modified` outside a
+  transform; attribute outcomes are not composed by `History::then`.
 * M5 — pending
 
 ## Native format and Parasolid XT

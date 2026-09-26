@@ -53,7 +53,10 @@ A Rust enclosure must never be smaller than OCCT's measurement of the same
 relation on a case valid on both sides, and it must not exceed OCCT's
 tolerance for these exactly representable constructions (T6). Either
 difference is investigated, never absorbed by loosening a bound.
-`compare_brep.py` requires every later run to reproduce these rows:
-tolerances exactly, measurements within `1e-15` absolute or `1e-9`
-relative, since the exact method's numerical maximization may differ in the
-last bits between platforms.
+`compare_brep.py` requires every later run to reproduce these rows.
+Tolerances must match exactly. Measurements must agree within `2^-46` of the
+case's largest coordinate or radius, or `1e-9` relative. OCCT evaluates
+with the platform's libm, and the first Linux run differed from this macOS
+capture by up to `1.4e-15` in 36 rounding-level measurements (all on
+rotated cases, such as `box_rotated` `u4.0.1`: `1.83e-15` here, `4.44e-16`
+there).

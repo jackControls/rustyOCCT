@@ -165,6 +165,70 @@ with rational intervals only. With the fast tier it takes 0.19 seconds, and no
 decision falls back to rationals. Before this validator, with sampled checks,
 it took about 0.05 seconds.
 
+## Enclosures (M5)
+
+Every vertex, fin and face stores an enclosure: a certified upper bound on
+its gaps (Contract 5 of `IDENTITY_AND_HISTORY.md`). A vertex's covers the
+ends of its edges' curves and the surface of a vertex loop. A fin's covers
+the deviation between the edge curve and the pcurve's image. A face's
+covers the UV gaps between its consecutive fins. Each certified relation
+above is decided against the stored bound first and against the resolution
+only if that fails:
+
+| Against the bound | Against the resolution | Report |
+| --- | --- | --- |
+| within | (not needed) | nothing |
+| beyond or undecided | beyond | the geometric kind (`vertex_off_curve`, `pcurve_off_edge`, `uv_gap`, `vertex_loop_off_surface`) |
+| beyond or undecided | undecided | its `uncertified_*` kind |
+| beyond | within | `enclosure_unsound` |
+| undecided | within | `uncertified_enclosure` |
+
+A missing bound is `enclosure_missing`; one outside `[0, resolution]`
+(including NaN) is `enclosure_exceeds_resolution`. Either way, the relation
+is decided against the resolution alone. Measured bounds
+(`TopologyParts::with_measured_enclosures`, and every builder) use the same
+expressions in the same tiers. Each is stored one binary64 step above its
+interval, and at least `2^-80`, so the checker's comparison is strict and
+decides without falling back.
+
+Evidence:
+
+* `cell_reference.py` declares every fixture's bounds independently: twice
+  its own highest certain gap plus `2^-20` of the tolerance, rounded up and
+  capped at the tolerance, unless a case sets one. It implements the table
+  above. The ten enclosure cases move a box vertex by 0.5 and 1.5
+  resolutions, shift a cylinder cap pcurve or a box side pcurve by half a
+  resolution (valid with generous bounds, unsound with a quarter-resolution
+  fin bound or a tenth-resolution face bound), and remove, double or negate
+  a bound. Rust's issue lists equal the reference's on all 76 cases.
+* `brep-enclosure-lows.tsv` holds the reference's certain lower value of
+  every gap of the 27 valid cases. The kernel's measured bounds on the same
+  parts, with every declared bound removed, must lie between that value and
+  the declared bound, within `2^-46` of the case's size. The reference builds
+  frame axes exactly while the kernel stores them rounded, and binary64
+  intervals widen with the coordinates; the allowance covers both. It is
+  vacuous for rounding-level gaps and strict for the gaps the cases place
+  deliberately (half a resolution, or a pcurve shifted below it).
+* The `brep_validation` fuzz target removes a bound, sets one outside
+  `[0, resolution]` (including NaN and infinity), or moves a vertex by half
+  the resolution: exactly `enclosure_missing`, `enclosure_exceeds_resolution`
+  or `enclosure_unsound` must follow. A circle prism placed up to `2^48`
+  from the origin, at a tolerance of a few ulps there, must either fail
+  construction or enclose every entity within the resolution. The
+  `split_merge` target and `enclosures.rs` require no continued entity's
+  bound to fall through a transform, split or fuse.
+* Native observations (`fixtures/occt-enclosure-preimplementation`) were
+  captured before any enclosure code. On every case valid on both sides,
+  the kernel's measured vertex and fin bounds are not below OCCT's own
+  measurements of the same gaps (`BRepLib_ValidateEdge` exact method, curve
+  ends against vertices; seams excluded). They also never exceed the
+  tolerance OCCT stores (T6). Where OCCT's representation (a line as point,
+  direction and range) has rounding-level gaps that the kernel's segments
+  do not, the same `2^-46` allowance applies. The two cases with real gaps
+  compare strictly: OCCT measures `1.414e-9` and `1.414e-3`, and the kernel
+  bounds are `2.0e-9` and `2.0e-3` (the harmonic bound's affine part is
+  `sqrt(|A0|² + |A0+A1|²)`).
+
 ## Independent evidence
 
 * `brep_reference.py` is a separate Python validator in mpmath. It
@@ -179,11 +243,11 @@ it took about 0.05 seconds.
   seam is kept and rejected as `seam_edge`), and `validate` implements the
   side, region, radial, winding, vertex-loop and region-flux invariants
   independently, with its own `+v` cover-crossing parity on cylinders.
-  `generate_brep_fixtures.py --check` rebuilds 66 cases. 54 come from an
+  `generate_brep_fixtures.py --check` rebuilds 76 cases. 54 come from an
   independent seamed prism builder (19 valid solids and 35 mutations; the
   valid solids include holes, convex and concave arcs, full circles, one and
   two cavities, rotated and far-translated copies and a millimetre-scale
-  box), converted to cells. Twelve are cell-model cases with no seamed form: a
+  box), converted to cells. Twenty-two are cell-model cases with no seamed form: a
   cylinder parametrized from `π`, a box with a valid vertex loop, a ring
   pcurve spanning OCCT's printed period `6.28318530717959` (valid only
   through the near-frequency bound; without it the reference cannot decide),
@@ -191,8 +255,11 @@ it took about 0.05 seconds.
   (a fin shifted by a period, a flipped winding, fins swapped between edges, a
   side at the wrong shell, a vertex loop off its surface, a face without
   loops, a ring edge with one vertex and a shell its region does not list).
-  24 cases are valid. `brep_validation.rs` requires
-  Rust's complete sorted issue list to equal the reference's for every case.
+  Ten more place gaps just inside and just outside the resolution and
+  declare enclosures that are missing, out of range or unsound (see
+  [Enclosures](#enclosures-m5)). 27 cases are valid. `brep_validation.rs`
+  requires Rust's complete sorted issue list to equal the reference's for
+  every case.
 * The existing prism suites (`invariants`, `occt_regression`, `modeling`)
   build every solid through the new validator.
 
@@ -345,14 +412,14 @@ trigonometry and CPython's changed `math.hypot`; see
 revision and these runners, not portable latency guarantees.
 
 The cell-complex migration (T1) was accepted at `e4adb869` with the same
-bridge counts, the synthesized-count checks above, 66 fixture reports and a
+bridge counts, the synthesized-count checks above, 64 fixture reports and a
 clean 600-second `brep_validation` campaign; the record is in
 `TOPOLOGY_MODEL.md`.
 
 ## Limits
 
 2D loop self-intersection, face/face intersection (which OCCT's BRepCheck does
-not check either), tolerance healing, per-entity tolerances and operation
+not check either), tolerance healing and operation
 history are out of scope. Validation cost is not bounded by explicit work
 limits. The curve checks are linear in the number of fins, but the
 combinatorial passes use ordered maps, and containment is linear in faces per
@@ -360,5 +427,5 @@ ray. This validator certifies the supplied boundary; it does not make an
 invalid import valid. Free and non-manifold edges, wire edges and acorn
 vertices are representable but rejected: every current operation requires a
 solid. Faces without loops (closed surfaces), unwound loops on wound faces
-(certified only as `uncertified_containment`), windings in `v` and
-per-entity enclosures wait for the surfaces and operations that need them.
+(certified only as `uncertified_containment`) and windings in `v` wait
+for the surfaces and operations that need them.

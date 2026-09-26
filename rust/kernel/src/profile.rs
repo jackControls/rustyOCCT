@@ -1,3 +1,4 @@
+use crate::decide;
 use crate::identity::InputLabel;
 use crate::math::{finite, sum};
 use crate::predicates::{orient2d_finite, Orientation2};
@@ -68,7 +69,8 @@ impl Boundary {
         for point in &points {
             point.checked(tolerance)?;
         }
-        if points.len() > 1 && points[0].distance(*points.last().unwrap()) <= tolerance.linear() {
+        let tol = tolerance.linear();
+        if points.len() > 1 && decide::distance_le(points[0], *points.last().unwrap(), &[tol]) {
             points.pop();
         }
         if points.len() < 3 {
@@ -80,12 +82,12 @@ impl Boundary {
         let count = points.len();
         for i in 0..count {
             let (a, b, c) = (points[i], points[(i + 1) % count], points[(i + 2) % count]);
-            if a.distance(b) <= tolerance.linear() {
+            if decide::distance_le(a, b, &[tol]) {
                 return Err(Error::Degenerate("polygon edge"));
             }
             // Adjacent edges may continue along a line, but may not double back.
-            if point_segment_distance(a, b, c) <= tolerance.linear()
-                || point_segment_distance(c, a, b) <= tolerance.linear()
+            if decide::segment_distance_le(a, b, c, &[tol])
+                || decide::segment_distance_le(c, a, b, &[tol])
             {
                 return Err(Error::SelfIntersection);
             }
@@ -93,7 +95,7 @@ impl Boundary {
                 if j == i + 1 || (i == 0 && j == count - 1) {
                     continue;
                 }
-                if segments_touch(a, b, points[j], points[(j + 1) % count], tolerance.linear()) {
+                if segments_touch(a, b, points[j], points[(j + 1) % count], tol) {
                     return Err(Error::SelfIntersection);
                 }
             }
@@ -101,7 +103,9 @@ impl Boundary {
         let perimeter = finite(sum(edges(&points).map(|(a, b)| a.distance(b))), "perimeter")?;
         let anchor = points[0];
         let signed_area = sum(edges(&points).map(|(a, b)| orient(anchor, a, b))) * 0.5;
-        if !signed_area.is_finite() || signed_area.abs() <= tolerance.linear() * perimeter * 0.5 {
+        if !signed_area.is_finite()
+            || decide::area_is_degenerate(&[decide::Outline::Polygon(&points)], tol)
+        {
             return Err(Error::Degenerate("polygon area"));
         }
         let reversed = signed_area < 0.0;
@@ -280,10 +284,12 @@ impl Boundary {
     pub(crate) fn locate(&self, point: Point2, tolerance: Tolerance) -> Location {
         match &self.kind {
             BoundaryKind::Circle { center, radius } => {
-                let distance = point.distance(*center) - radius;
-                if distance.abs() <= tolerance.linear() {
+                let tol = tolerance.linear();
+                if decide::distance_le(point, *center, &[*radius, tol])
+                    && decide::distance_ge(point, *center, &[*radius, -tol])
+                {
                     Location::Boundary
-                } else if distance < 0.0 {
+                } else if !decide::distance_ge(point, *center, &[*radius]) {
                     Location::Inside
                 } else {
                     Location::Outside
@@ -292,7 +298,7 @@ impl Boundary {
             BoundaryKind::Polygon(points) => {
                 let mut inside = false;
                 for (a, b) in edges(points) {
-                    if point_segment_distance(point, a, b) <= tolerance.linear() {
+                    if decide::segment_distance_le(point, a, b, &[tolerance.linear()]) {
                         return Location::Boundary;
                     }
                     if (a.y > point.y) != (b.y > point.y) {
@@ -379,7 +385,14 @@ impl Profile {
             .enumerate()
             .map(|(i, b)| signed(i) * b.area()));
         let perimeter = sum(boundaries.iter().map(|b| b.perimeter()));
-        if area <= tolerance.linear() * perimeter * 0.5 {
+        let outlines: Vec<decide::Outline> = boundaries
+            .iter()
+            .map(|b| match &b.kind {
+                BoundaryKind::Polygon(points) => decide::Outline::Polygon(points),
+                BoundaryKind::Circle { radius, .. } => decide::Outline::Circle(*radius),
+            })
+            .collect();
+        if decide::area_is_degenerate(&outlines, tolerance.linear()) {
             return Err(Error::Degenerate("profile material area"));
         }
         let anchor = outer.centroid();
@@ -473,16 +486,6 @@ fn orient(a: Point2, b: Point2, c: Point2) -> f64 {
         Point2::new(c.x - a.x, c.y - a.y),
     )
 }
-fn point_segment_distance(p: Point2, a: Point2, b: Point2) -> f64 {
-    let length = a.distance(b);
-    if length == 0.0 {
-        return p.distance(a);
-    }
-    let ux = (b.x - a.x) / length;
-    let uy = (b.y - a.y) / length;
-    let distance = ((p.x - a.x) * ux + (p.y - a.y) * uy).clamp(0.0, length);
-    (p.x - a.x - distance * ux).hypot(p.y - a.y - distance * uy)
-}
 fn segments_touch(a: Point2, b: Point2, c: Point2, d: Point2, tolerance: f64) -> bool {
     let (ab_c, ab_d, cd_a, cd_b) = (
         orient2d_finite(a, b, c),
@@ -495,11 +498,10 @@ fn segments_touch(a: Point2, b: Point2, c: Point2, d: Point2, tolerance: f64) ->
     };
     let crosses = opposite(ab_c, ab_d) && opposite(cd_a, cd_b);
     crosses
-        || point_segment_distance(a, c, d)
-            .min(point_segment_distance(b, c, d))
-            .min(point_segment_distance(c, a, b))
-            .min(point_segment_distance(d, a, b))
-            <= tolerance
+        || decide::segment_distance_le(a, c, d, &[tolerance])
+        || decide::segment_distance_le(b, c, d, &[tolerance])
+        || decide::segment_distance_le(c, a, b, &[tolerance])
+        || decide::segment_distance_le(d, a, b, &[tolerance])
 }
 fn boundaries_touch(a: &Boundary, b: &Boundary, tolerance: f64) -> bool {
     match (&a.kind, &b.kind) {
@@ -516,15 +518,17 @@ fn boundaries_touch(a: &Boundary, b: &Boundary, tolerance: f64) -> bool {
                 radius: br,
             },
         ) => {
-            let distance = a.distance(*b);
-            distance <= ar + br + tolerance && distance >= (ar - br).abs() - tolerance
+            // |ar - br| exactly: the larger radius minus the smaller.
+            let (big, small) = (ar.max(*br), ar.min(*br));
+            decide::distance_le(*a, *b, &[*ar, *br, tolerance])
+                && decide::distance_ge(*a, *b, &[big, -small, -tolerance])
         }
         (BoundaryKind::Circle { center, radius }, BoundaryKind::Polygon(points))
         | (BoundaryKind::Polygon(points), BoundaryKind::Circle { center, radius }) => edges(points)
             .any(|(a, b)| {
-                let near = point_segment_distance(*center, a, b);
-                let far = center.distance(a).max(center.distance(b));
-                near <= radius + tolerance && far >= radius - tolerance
+                decide::segment_distance_le(*center, a, b, &[*radius, tolerance])
+                    && (decide::distance_ge(*center, a, &[*radius, -tolerance])
+                        || decide::distance_ge(*center, b, &[*radius, -tolerance]))
             }),
     }
 }
