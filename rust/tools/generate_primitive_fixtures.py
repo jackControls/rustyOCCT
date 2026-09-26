@@ -5,8 +5,10 @@ reference (S3).
 primitive-cases.txt lists one cone per line (`cone NAME ox oy oz nx ny nz
 xx xy xz r1 r2 h`, the arguments of BRepPrimAPI_MakeCone with a gp_Ax2);
 sphere-cases.txt one sphere per line (`sphere NAME ox oy oz nx ny nz xx xy
-xz R a1 a2`, BRepPrimAPI_MakeSphere's, latitudes in radians).
-primitive-expected.tsv and sphere-expected.tsv hold, per case, OCCT's
+xz R a1 a2`, BRepPrimAPI_MakeSphere's, latitudes in radians); torus-cases.txt
+one torus per line (`torus NAME ox oy oz nx ny nz xx xy xz R r a1 a2 angle`,
+BRepPrimAPI_MakeTorus's, radians). primitive-expected.tsv, sphere-expected.tsv
+and torus-expected.tsv hold, per case, OCCT's
 distinct subshape counts, the volume, surface area, centre of mass and the
 six entries of the symmetric inertia matrix about it, and every face, edge
 and vertex as `primitive_reference.py` derives them. No kernel or OCCT
@@ -18,8 +20,10 @@ from pathlib import Path
 
 import mpmath as mp
 
-from primitive_reference import (HALF_PI, Cone, Sphere, counts, edges, faces, mass, sphere_counts,
-                                 sphere_edges, sphere_faces, sphere_mass, sphere_vertices, vertices)
+from primitive_reference import (HALF_PI, TWO_PI, Cone, Sphere, Torus, counts, edges, faces, mass,
+                                 sphere_counts, sphere_edges, sphere_faces, sphere_mass, sphere_vertices,
+                                 torus_counts, torus_edges, torus_faces, torus_mass, torus_vertices,
+                                 vertices)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -84,13 +88,49 @@ def spheres():
     return cases
 
 
+def tori():
+    cases = []
+    z, x = (0.0, 0.0, 1.0), (1.0, 0.0, 0.0)
+    o = (0.0, 0.0, 0.0)
+    cases.append(Torus('whole', o, z, x, 3.0, 1.0, 0.0, TWO_PI, TWO_PI))
+    cases.append(Torus('whole_thin', (1.0, 2.0, 3.0), z, x, 10.0, 0.5, 0.0, TWO_PI, TWO_PI))
+    cases.append(Torus('whole_fat', o, z, x, 2.0, 1.75, 0.0, TWO_PI, TWO_PI))
+    cases.append(Torus('millimetre', o, z, x, 0.003, 0.001, 0.0, TWO_PI, TWO_PI))
+    cases.append(Torus('far', (10000.0, -20000.0, 5000.0), z, x, 3.0, 1.0, 0.0, TWO_PI, TWO_PI))
+    cases.append(Torus('outer_half', o, z, x, 3.0, 1.0, -HALF_PI, HALF_PI, TWO_PI))
+    cases.append(Torus('inner_half', o, z, x, 3.0, 1.0, HALF_PI, 3*HALF_PI, TWO_PI))
+    cases.append(Torus('segment', o, z, x, 4.0, 1.5, 0.3, 2.0, TWO_PI))
+    cases.append(Torus('segment_below', o, z, x, 4.0, 1.5, -1.0, 0.5, TWO_PI))
+    cases.append(Torus('quarter_wedge', o, z, x, 3.0, 1.0, 0.0, TWO_PI, HALF_PI))
+    cases.append(Torus('half_wedge', o, z, x, 3.0, 1.0, 0.0, TWO_PI, 2*HALF_PI))
+    cases.append(Torus('wide_wedge', (1.0, 2.0, 3.0), z, x, 5.0, 2.0, 0.0, TWO_PI, 5.0))
+    # Rotated frames from a fixed sequence of directions and x hints.
+    shapes = [(0.0, TWO_PI, TWO_PI), (-HALF_PI, HALF_PI, TWO_PI), (0.0, TWO_PI, 1.25), (0.4, 2.5, TWO_PI),
+              (0.0, TWO_PI, 4.0)]
+    for k in range(10):
+        a, b = 0.29*k+0.15, 0.47*k+0.35
+        normal = (round(math.cos(a)*math.sin(b), 6), round(math.sin(a)*math.sin(b), 6), round(math.cos(b), 6))
+        hint = (round(math.cos(0.9*k+0.1), 6), round(math.sin(0.9*k+0.1), 6), 0.25)
+        if abs(normal[0]*hint[0]+normal[1]*hint[1]+normal[2]*hint[2]) > 0.9:
+            hint = (0.0, 0.0, 1.0)
+        a1, a2, angle = shapes[k % 5]
+        origin = (0.5*k-3.0, 1.5-0.25*k, 0.125*k)
+        cases.append(Torus(f'rotated_{k}', origin, normal, hint, 2.0+0.25*k, 0.5+0.1*k, a1, a2, angle))
+    return cases
+
+
 def encode(c):
+    if isinstance(c, Torus):
+        return ' '.join(['torus', c.name] + [number(v) for v in (*c.origin, *c.normal, *c.x, c.major, c.minor,
+                                                                 c.a1, c.a2, c.angle)])
     if isinstance(c, Sphere):
         return ' '.join(['sphere', c.name] + [number(v) for v in (*c.origin, *c.normal, *c.x, c.radius, c.a1, c.a2)])
     return ' '.join(['cone', c.name] + [number(v) for v in (*c.origin, *c.normal, *c.x, c.r1, c.r2, c.height)])
 
 
 def expected(c):
+    if isinstance(c, Torus):
+        return shape_rows(c, torus_counts(c), torus_mass(c), torus_faces(c), torus_edges(c), torus_vertices(c))
     if isinstance(c, Sphere):
         return shape_rows(c, sphere_counts(c), sphere_mass(c), sphere_faces(c), sphere_edges(c), sphere_vertices(c))
     return shape_rows(c, counts(c), mass(c), faces(c), edges(c), vertices(c))
@@ -112,7 +152,7 @@ def shape_rows(c, counts, mass, faces, edges, vertices):
 
 def generate():
     out = {}
-    for stem, cases in (('primitive', corpus()), ('sphere', spheres())):
+    for stem, cases in (('primitive', corpus()), ('sphere', spheres()), ('torus', tori())):
         out[f'{stem}-cases.txt'] = '\n'.join(encode(c) for c in cases)+'\n'
         out[f'{stem}-expected.tsv'] = ('# case\tkind\tvalues\n'
                                       + '\n'.join(row for c in cases for row in expected(c))+'\n')
@@ -130,7 +170,7 @@ def main():
                 raise SystemExit(f'{name} is stale')
         else:
             path.write_text(text)
-    print(f'{len(corpus())} cones, {len(spheres())} spheres')
+    print(f'{len(corpus())} cones, {len(spheres())} spheres, {len(tori())} tori')
 
 
 if __name__ == '__main__':

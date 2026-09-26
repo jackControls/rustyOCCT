@@ -1,0 +1,24 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 BRepPrimAPI_MakeRevol BRepTools_History",
+  "rust_revision": "d7677e4b865cfe9114391ebcfd3b256e96382625",
+  "platform": "darwin",
+  "rust_torus_implementation_exists": false,
+  "python_history_enumeration_exists": false,
+  "rust_worktree_uncommitted": [
+    " M rust/tools/compare_primitives.py",
+    " M rust/tools/compare_revolve_history.py",
+    " M rust/tools/generate_primitive_fixtures.py",
+    " M rust/tools/occt_primitive_oracle.cpp",
+    " M rust/tools/occt_revolve_oracle.cpp",
+    " M rust/tools/primitive_reference.py",
+    "?? rust/fixtures/occt-primitive-divergences.json",
+    "?? rust/fixtures/occt-torus-preimplementation/",
+    "?? rust/fixtures/torus-cases.txt",
+    "?? rust/fixtures/torus-expected.tsv"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "3ad555496b21141a8fa97f663b0871ed9f4d8fa9e4bd0936da69797900c34276",
+  "probe_source_sha256": "5b1d87c804357b550377b9597e763fa9440435c62f63973dff48464e8fa47c67",
+  "observations_sha256": "5dc467186afc8fe0bbec42a24cbfeef197c4bca3c437a09ef3d55db6e51a6110"
+}

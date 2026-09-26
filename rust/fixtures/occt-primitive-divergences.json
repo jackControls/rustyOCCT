@@ -1,0 +1,18 @@
+{
+  "note": "Exact observation fingerprints, separate from matches. Only mass properties can be reviewed; counts, verdicts, faces, edges and vertices never. New platform observations require investigation and explicit additional records.",
+  "reviews": [
+    {
+      "case": "inner_half",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepPrimAPI BRepCheck_Analyzer BRepGProp",
+      "input_sha256": "8ca31d76b21b876c1f80ae59454e8edc37ba258929cd41057217b78b2be2f186",
+      "native_stdout_sha256": "956d45b208a92cae66a3c01c102d0ccb28522ada2e55f2022dd02089b5ad3c4a",
+      "differences": [
+        "mass_properties"
+      ],
+      "reason": "BRepPrimAPI_MakeTorus(axes, 3, 1, pi/2, 3pi/2, 2pi) is inside out: its meridian ends lower than it starts (BRepPrim_OneAxis::isHeightInverted), and OneAxis compensates only by reversing the start and end faces of a wedge (BRepPrim_OneAxis.cxx lines 546 and 612); a full turn has none, so the shell bounds the complement. BRepCheck_Analyzer does not check solid orientation and reports it valid; BRepGProp integrates over the inverted shell. Counts, faces, edges and vertices match the reference, and the kernel builds the solid the right way out.",
+      "independent_evidence": "The native volume -31.128644766134595 is the reference's 31.12864476613459 negated (Pappus: 2 pi (R 2r - pi r^2 / 2)(R - 4r/(3 pi)) = 31.1286447661346 for R = 3, r = 1), and every inertia entry is negated too, while the surface area 103.19992355679327 equals the reference's (it does not depend on orientation). The centroid, a ratio of two negated integrals, agrees.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}

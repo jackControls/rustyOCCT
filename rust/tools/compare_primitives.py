@@ -2,8 +2,9 @@
 """Source-pinned BRepPrimAPI observations beside the primitive reference (S3).
 
 `occt_primitive_oracle.cpp` builds every cone of `primitive-cases.txt` with
-BRepPrimAPI_MakeCone (`--family cone`) or every sphere of
-`sphere-cases.txt` with BRepPrimAPI_MakeSphere (`--family sphere`) and
+BRepPrimAPI_MakeCone (`--family cone`), every sphere of `sphere-cases.txt`
+with BRepPrimAPI_MakeSphere (`--family sphere`) or every torus of
+`torus-cases.txt` with BRepPrimAPI_MakeTorus (`--family torus`) and
 reports its BRepCheck verdict, distinct subshape
 counts, BRepGProp mass properties and every face, edge and vertex. Each must
 equal what `primitive_reference.py` derives from the specification alone:
@@ -13,9 +14,13 @@ The kernel's cone builder is compared with the same expectations by
 `rust/kernel/tests/cones.rs`, and its history with MakeRevol's by
 `compare_revolve_history.py`.
 
+A difference from the reference needs a fingerprinted review in
+`occt-primitive-divergences.json` (only mass properties can be reviewed).
+
 `--capture` records the native observations in
-`fixtures/occt-primitive-preimplementation` (cones) or
-`fixtures/occt-sphere-preimplementation` (spheres) before any kernel code
+`fixtures/occt-primitive-preimplementation` (cones),
+`fixtures/occt-sphere-preimplementation` (spheres) or
+`fixtures/occt-torus-preimplementation` (tori) before any kernel code
 for that surface exists; every later run must reproduce them.
 """
 import argparse
@@ -27,18 +32,23 @@ import subprocess
 import sys
 
 from build_pinned_occt import SOURCE, digest
-from compare_brep import run, write
+from compare_brep import review_for, run, sha, write
 from compare_degree_elevation import verify_sdk, verify_loaded_libraries
 from compare_occt import ROOT
 import generate_primitive_fixtures
 
 CAPTURE = ROOT/'rust/fixtures/occt-primitive-preimplementation'
+REVIEWS = ROOT/'rust/fixtures/occt-primitive-divergences.json'
+# Only a difference in numbers can be reviewed; structure never.
+REVIEWABLE = {'mass_properties'}
 # Per family: its capture directory, fixture stem and the capture's flag for
 # kernel code of that surface.
 FAMILIES = {
     'cone': (CAPTURE, 'primitive', 'rust_cone_implementation_exists'),
     'sphere': (ROOT/'rust/fixtures/occt-sphere-preimplementation', 'sphere',
                'rust_sphere_implementation_exists'),
+    'torus': (ROOT/'rust/fixtures/occt-torus-preimplementation', 'torus',
+              'rust_torus_implementation_exists'),
 }
 SOURCE_FILE = ROOT/'rust/tools/occt_primitive_oracle.cpp'
 TOOLKITS = ['TKPrim', 'TKTopAlgo', 'TKBRep', 'TKGeomAlgo', 'TKGeomBase', 'TKG3d', 'TKG2d', 'TKMath',
@@ -124,6 +134,9 @@ def parse_expected(text):
 
 
 def sizes(family='cone'):
+    if family == 'torus':
+        return {c.name: max([abs(v) for v in (*c.origin, c.major+c.minor)]+[1.0])
+                for c in generate_primitive_fixtures.tori()}
     if family == 'sphere':
         return {c.name: max([abs(v) for v in (*c.origin, c.radius)]+[1.0])
                 for c in generate_primitive_fixtures.spheres()}
@@ -220,16 +233,28 @@ def main():
     captured = parse_observations((capture/'native.txt').read_text())
     expected = parse_expected(files[f'{stem}-expected.tsv'])
     size = sizes(args.family)
+    reviews = json.loads(REVIEWS.read_text())['reviews'] if REVIEWS.exists() else []
+    blocks = {}
+    for block in record['stdout'].split('end\n'):
+        if block.strip():
+            blocks[block.split()[1]] = block+'end\n'
+    inputs = {line.split()[1]: line for line in cases.splitlines()}
     report = {'source_reference': SOURCE, 'oracle': oracle, 'cases': len(expected), 'matches': [],
-              'failures': []}
+              'reviewed_differences': [], 'failures': []}
     for name in expected:
         found = differences(observed[name], expected[name], size[name])
         # The capture must reproduce within the same bound.
         if differences(observed[name], dict(captured[name], verdict='valid'), size[name]) != [] \
                 and captured[name].get('verdict') == 'valid':
             found = sorted(set(found) | {'capture_not_reproduced'})
-        if found:
-            report['failures'].append({'case': name, 'differences': found, 'native': observed[name]})
+        evidence = {'case': name, 'source_reference': SOURCE, 'oracle': oracle,
+                    'input_sha256': sha(inputs[name]+'\n'), 'native_stdout_sha256': sha(blocks[name]),
+                    'differences': found}
+        review = review_for(evidence, reviews) if found and set(found) <= REVIEWABLE else None
+        if review:
+            report['reviewed_differences'].append(dict(evidence, reason=review['reason']))
+        elif found:
+            report['failures'].append(dict(evidence, native=observed[name]))
         else:
             report['matches'].append(name)
     write(output/'report.json', report)

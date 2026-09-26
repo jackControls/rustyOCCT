@@ -66,6 +66,7 @@ CAPTURE = ROOT/'rust/fixtures/occt-revolve-history-capture'
 FAMILIES = {
     'cone': (CAPTURE, 'primitive'),
     'sphere': (ROOT/'rust/fixtures/occt-sphere-revolve-capture', 'sphere'),
+    'torus': (ROOT/'rust/fixtures/occt-torus-revolve-capture', 'torus'),
 }
 REVIEWS = ROOT/'rust/fixtures/occt-revolve-history-divergences.json'
 REVIEWABLE = {'surface_of_revolution'}
