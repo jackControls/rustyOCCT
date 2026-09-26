@@ -164,7 +164,7 @@ impl Solid {
             });
         }
         let [mut lower, mut upper]: [Solid; 2] = pieces.try_into().expect("two pieces");
-        let mut history = History::new(
+        let history = History::new(
             operation,
             OperationKind::HeightSplit,
             vec![body],
@@ -172,7 +172,7 @@ impl Solid {
             relations,
             Vec::new(),
         );
-        history.level = level;
+        let mut history = history.at_level(level);
         super::enclose::carry(&[self], &history, &mut [&mut lower, &mut upper]);
         let [l, u] = propagate(context, &[self], &mut history, &[&lower, &upper])?
             .try_into()
@@ -284,7 +284,7 @@ impl Solid {
         };
         fused.topology = fused.topology.renamed(body_derivation, named)?;
         fused.operation = operation;
-        let mut history = History::new(
+        let history = History::new(
             operation,
             OperationKind::StackedFuse,
             vec![a.body_id(), b.body_id()],
@@ -292,7 +292,7 @@ impl Solid {
             relations,
             Vec::new(),
         );
-        history.level = level;
+        let mut history = history.at_level(level);
         super::enclose::carry(&[self, other], &history, &mut [&mut fused]);
         let [f] = propagate(context, &[self, other], &mut history, &[&fused])?
             .try_into()

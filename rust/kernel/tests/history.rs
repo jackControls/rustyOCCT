@@ -154,9 +154,9 @@ fn operations_record_their_level_and_replay_at_it() {
     use rusty_occt::{Error, RigidTransform, Vec3};
     let spec = &cases(include_str!("../../fixtures/identity-cases.txt"))[0];
     let (solid, construct) = build_tracked(spec);
-    assert_eq!(construct.level, AlgorithmLevel::CURRENT);
+    assert_eq!(construct.level(), Some(AlgorithmLevel::CURRENT));
     let replayed = Solid::extrude_at(
-        construct.level,
+        construct.level().unwrap(),
         solid.operation(),
         solid.profile().clone(),
         solid.frame(),
@@ -167,10 +167,10 @@ fn operations_record_their_level_and_replay_at_it() {
     assert_eq!(replayed, (solid.clone(), construct));
     let transform = RigidTransform::translation(Vec3::new(1.0, 2.0, 3.0)).unwrap();
     let (moved, h) = solid.transform_with(OperationId(4), transform).unwrap();
-    assert_eq!(h.level, AlgorithmLevel::CURRENT);
+    assert_eq!(h.level(), Some(AlgorithmLevel::CURRENT));
     assert_eq!(
         solid
-            .transform_at(h.level, OperationId(4), transform)
+            .transform_at(h.level().unwrap(), OperationId(4), transform)
             .unwrap(),
         (moved, h)
     );

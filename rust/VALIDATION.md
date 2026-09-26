@@ -599,3 +599,23 @@ capture drift, malformed native output and property differences are caught.
 The `brep_io` fuzz target mutates written prisms and upstream files token by
 token and line by line: no panic, typed errors, valid imports, and
 round trips of every writable import to identical counts and vertices.
+
+## Cross-platform allowances
+
+Every capture compared across hosts is listed here, with its bound and
+why it needs one. A new allowance is added to this table in the change that
+introduces it. Structure, counts, verdicts and issue lists are always exact;
+only numbers carry an allowance.
+
+| Capture | Compared | Allowance | Reason |
+| --- | --- | --- | --- |
+| `occt-brep-preimplementation/inputs.txt` (`compare_brep.py`) | regenerated native inputs against the captured ones | `2^-50` absolute per number | the capture used macOS libm trigonometry; generation now uses correctly rounded trigonometry, which moved a few frame and vertex components of two regular polygons by at most `1.2e-16` |
+| `occt-enclosure-preimplementation/native.txt` (`compare_brep.py`) | OCCT's measured deviations and vertex gaps on each run | `2^-46` × the case's largest coordinate or radius, or `1e-9` relative; stored tolerances exact | OCCT evaluates with the platform's libm; the first Linux run differed from the macOS capture by up to `1.4e-15` in 36 rounding-level measurements, all on rotated cases |
+| `occt-brep-io-capture/native.txt` (`compare_brep_io.py`) | OCCT's volume, area and centroid of the upstream corpus on each run | `1e-11` relative (centroids to the cube root of the volume); verdicts and counts exact | `BRepGProp` integrates with platform trigonometry; the worst difference observed is `9.5e-15` on Linux against the macOS capture |
+| `prism-properties-baseline.tsv` (T1) | kernel mass properties, bounds and classifications before and after the migration | none: each host regenerates its own rows at `26fc457f` and must reproduce them bitwise | frames and rotations use the platform's trigonometry, so rows differ across hosts in the last bits |
+
+Native bridges that compare against reviewed differences use no numeric
+allowance. A review fingerprints the exact native output, so a platform whose
+output differs in the last bits gets its own review with a platform note
+(for example `occt-split-merge-divergences.json`), never a looser bound.
+

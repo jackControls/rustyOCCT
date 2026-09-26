@@ -68,9 +68,9 @@ pub fn check_history(data: &[u8]) {
     assert_eq!(check(&[], &[set(&solid)], &construct), vec![]);
     assert_eq!(construct.kind, OperationKind::Extrude);
     // H8: the construction replays identically at its recorded level.
-    assert_eq!(construct.level, AlgorithmLevel::CURRENT);
+    assert_eq!(construct.level(), Some(AlgorithmLevel::CURRENT));
     let replayed = Solid::extrude_at(
-        construct.level,
+        construct.level().unwrap(),
         solid.operation(),
         solid.profile().clone(),
         solid.frame(),
@@ -103,7 +103,7 @@ pub fn check_history(data: &[u8]) {
         };
         assert_eq!(check(&[set(&current)], &[set(&next)], &h), vec![]);
         assert_eq!(
-            current.transform_at(h.level, OperationId(k as u64), *transform),
+            current.transform_at(h.level().unwrap(), OperationId(k as u64), *transform),
             Ok((next.clone(), h.clone()))
         );
         for (id, _) in current.topology().ids() {

@@ -116,7 +116,7 @@ impl Solid {
                 }
             })
             .collect();
-        let mut history = History::new(
+        let history = History::new(
             operation,
             OperationKind::Extrude,
             Vec::new(),
@@ -124,7 +124,7 @@ impl Solid {
             relations,
             Vec::new(),
         );
-        history.level = level;
+        let history = history.at_level(level);
         solid.debug_check(&[], &history);
         Ok((solid, history))
     }
@@ -366,7 +366,7 @@ impl Solid {
         // A rigid copy keeps every id, whatever operation named them.
         solid.topology = solid.topology.with_identity_of(&self.topology);
         let ids: Vec<EntityId> = self.topology.ids().map(|(id, _)| id).collect();
-        let mut history = History::new(
+        let history = History::new(
             operation,
             OperationKind::Transform,
             vec![self.topology.body_id()],
@@ -376,7 +376,7 @@ impl Solid {
                 .collect(),
             Vec::new(),
         );
-        history.level = level;
+        let mut history = history.at_level(level);
         enclose::carry(&[self], &history, &mut [&mut solid]);
         let [moved] = attrs::propagate(context, &[self], &mut history, &[&solid])?
             .try_into()

@@ -119,10 +119,10 @@ mod laws {
         let parent = &bases()[3];
         let h = 0.5 * (parent.start_offset() + parent.end_offset());
         let ([lower, _], split) = parent.split_at_height(OperationId(5), h).unwrap();
-        assert_eq!(split.level, AlgorithmLevel::CURRENT);
+        assert_eq!(split.level(), Some(AlgorithmLevel::CURRENT));
         assert_eq!(
             parent
-                .split_at_height_at(split.level, OperationId(5), h)
+                .split_at_height_at(split.level().unwrap(), OperationId(5), h)
                 .unwrap()
                 .0[0],
             lower

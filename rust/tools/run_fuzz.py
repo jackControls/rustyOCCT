@@ -24,7 +24,9 @@ MAX_STARTUP_SECONDS = 3600
 INPUT_SECONDS = 20
 # Full tensor coefficient equations and double-axis degree-25 edits are a
 # larger per-input workload. Existing targets keep their original 20s limit.
-TARGET_INPUT_SECONDS = {"surface_knots": 60, "degree_elevation": 60}
+# surface_editing joined on measurement: a CI input took 8.2 s under local
+# AddressSanitizer, above 20 s / 2.6 (fuzz/regressions/README.md).
+TARGET_INPUT_SECONDS = {"surface_knots": 60, "degree_elevation": 60, "surface_editing": 60}
 # Targets whose exact oracles churn enough temporary BigInts that default ASan
 # quarantine and allocator retention, not live data, exhaust the RSS gate.
 ALLOCATOR_TARGETS = {'surface_knots', 'degree_elevation', 'spline_linear'}

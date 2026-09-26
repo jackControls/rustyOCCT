@@ -169,12 +169,17 @@ is always answerable, and so that collisions are detectable (I4).
   T1: `AlgorithmLevel::FIRST` is the only level; `Solid::extrude_at` and
   `Solid::transform_at` replay at a recorded level and reject any level the
   build does not provide. A composed history (`OperationKind::Composite`) is
-  not an operation and is never replayed as one; `History::then` records the
-  level of its last step, which says nothing false only while every step
-  ran at one level. **Open before a second level exists:** a composite across
-  steps at different levels must either record the level of every step it
-  spans or be refused by `then`; the choice, and a test for it, must land
-  with the first new level.
+  not an operation and is never replayed as one. Every history carries
+  `steps: Vec<Step { operation, kind, level }>`: one entry for a single
+  operation, and for a composite the concatenation `History::then` builds, so
+  a composite's level is that list (`REVIEW_NOTES.md` R5, which closed the
+  open item this paragraph used to carry). `History::level()` answers only
+  for a single operation. The checker reports `steps_invalid` for an empty
+  list, a single operation whose step names another operation or kind, a
+  composite of fewer than two steps, a nested composite step, or a
+  composite not ending with the operation it is named after.
+  `history_contracts.rs` composes a history at a synthetic level 2 with
+  steps at level 1, which needs no callable second level.
 
 ### Types
 

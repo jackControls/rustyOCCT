@@ -565,3 +565,25 @@ mutated prism text referenced location 1 while the location table was empty.
 The reader range-checked subshape locations but not those of edge
 representations and faces, so the converter indexed the table out of bounds. The reader now range-checks every curve, pcurve, surface and
 location reference and returns `BrepError::Reference`.
+
+## Surface editing: a completing input past the 20-second limit
+
+`surface_editing/timeout-5cf6cbdd8250eeb22f43e0502d33c014522c1a2b.bin` and
+`surface_editing/slow-unit-f240e0e8b3821b28ef9edb4177bac843e1213cdd.bin` come
+from the push run at `3ba8c1f2`
+([run 36236430909](https://github.com/jackControls/rustyOCCT/actions/runs/36236430909)).
+Neither is a checked-in seed; both came from the evolving CI corpus. On the
+Linux runner under AddressSanitizer the first exceeded the 20-second
+per-input limit and the second took 14 seconds. Both complete without a
+failure or disagreement. Locally on the development Mac:
+
+| Input | Without sanitizer | AddressSanitizer (three runs) |
+| --- | ---: | ---: |
+| `timeout-5cf6…` | 4.06 s | 8.02, 8.20, 8.20 s |
+| `slow-unit-f240…` | | 4.70 s |
+
+8.2 s exceeds 20 s ÷ 2.6 ≈ 7.7 s, the local budget that corresponds to the
+Linux limit, so this is a budget, not a runner fluke. `surface_editing` now
+has the 60-second per-input budget of `surface_knots` and
+`degree_elevation`. No assertion changed.
+

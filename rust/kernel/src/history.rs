@@ -102,15 +102,25 @@ impl Relation {
     }
 }
 
+/// One operation a history covers, with the behaviour version it ran at
+/// (H8).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Step {
+    pub operation: OperationId,
+    pub kind: OperationKind,
+    pub level: AlgorithmLevel,
+}
+
 /// The complete relation list of one operation (or of a composed chain).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct History {
     pub operation: OperationId,
     pub kind: OperationKind,
-    /// The behaviour version the operation ran at (H8). A composition keeps
-    /// the last step's, which is exact only while every step ran at one
-    /// level; composites across levels are an open item (H8).
-    pub level: AlgorithmLevel,
+    /// Every operation the history covers, oldest first: one step for a
+    /// single operation, and the concatenation of both lists for
+    /// [`History::then`]. A composite's level is this list (H8); composites
+    /// are never replayed.
+    pub steps: Vec<Step>,
     pub input_bodies: Vec<EntityId>,
     pub output_bodies: Vec<EntityId>,
     /// Sorted by [`Relation::sort_key`].
@@ -149,12 +159,33 @@ impl History {
         Self {
             operation,
             kind,
-            level: AlgorithmLevel::FIRST,
+            steps: vec![Step {
+                operation,
+                kind,
+                level: AlgorithmLevel::FIRST,
+            }],
             input_bodies,
             output_bodies,
             relations,
             attributes,
         }
+    }
+
+    /// A single operation's level; `None` for a composite, whose level is
+    /// its step list.
+    pub fn level(&self) -> Option<AlgorithmLevel> {
+        match self.steps.as_slice() {
+            [step] if self.kind != OperationKind::Composite => Some(step.level),
+            _ => None,
+        }
+    }
+
+    /// The same single-operation history recorded at `level`.
+    pub fn at_level(mut self, level: AlgorithmLevel) -> Self {
+        for step in &mut self.steps {
+            step.level = level;
+        }
+        self
     }
 
     pub fn resolve(&self, id: EntityId) -> Resolution {
@@ -298,7 +329,7 @@ impl History {
             relations,
             Vec::new(),
         );
-        composed.level = next.level;
+        composed.steps = self.steps.iter().chain(&next.steps).copied().collect();
         Ok(composed)
     }
 }
@@ -438,6 +469,7 @@ pub enum HistoryIssueKind {
     BodyMismatch,
     DuplicateId,
     RelationOrder,
+    StepsInvalid,
 }
 
 impl HistoryIssueKind {
@@ -461,6 +493,7 @@ impl HistoryIssueKind {
             BodyMismatch => "body_mismatch",
             DuplicateId => "duplicate_id",
             RelationOrder => "relation_order",
+            StepsInvalid => "steps_invalid",
         }
     }
 }
@@ -726,6 +759,27 @@ pub fn check(inputs: &[EntitySet], outputs: &[EntitySet], history: &History) -> 
                 }
             }
         }
+    }
+    // H8: a single operation is one step naming it; a composite lists every
+    // step of at least two operations, none itself a composite, ending with
+    // the operation the composite is named after.
+    let steps_ok = match (history.kind, history.steps.as_slice()) {
+        (OperationKind::Composite, steps) => {
+            steps.len() >= 2
+                && steps.iter().all(|s| s.kind != OperationKind::Composite)
+                && steps.last().map(|s| s.operation) == Some(history.operation)
+        }
+        (kind, [step]) => step.kind == kind && step.operation == history.operation,
+        _ => false,
+    };
+    if !steps_ok {
+        let body = history
+            .output_bodies
+            .first()
+            .or(history.input_bodies.first())
+            .copied()
+            .unwrap_or(EntityId([0; 16]));
+        add(K::StepsInvalid, body);
     }
     let keys: Vec<Vec<u8>> = history.relations.iter().map(Relation::sort_key).collect();
     for (k, pair) in keys.windows(2).enumerate() {

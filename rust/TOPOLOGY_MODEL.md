@@ -403,9 +403,9 @@ reason:
 * **Algorithm levels (H8).** `AlgorithmLevel::FIRST` is the only level. The
   `_with` constructors run at `AlgorithmLevel::CURRENT`; `Solid::extrude_at`
   and `Solid::transform_at` replay a recorded level and reject any other with
-  `Error::UnknownAlgorithmLevel`. `History::then` gives a composite the level
-  of its last step, which is exact only while every step ran at one level
-  (open item under H8).
+  `Error::UnknownAlgorithmLevel`. `History::then` first gave a composite the
+  level of its last step; since `REVIEW_NOTES.md` S1 a composite records
+  every step's operation, kind and level (H8 in `IDENTITY_AND_HISTORY.md`).
 * **Bitwise properties per host.** `prism-properties-baseline.tsv` was
   recorded on macOS/aarch64 at `26fc457f`, before any T1 code. Frames and
   rotations use the platform's trigonometry, so Linux and Windows differ from

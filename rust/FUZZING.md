@@ -81,12 +81,22 @@ the corpus but do not publish corpus caches. All runs upload logs, JSON metadata
 corpora, and crash/timeout/OOM artifacts for 30 days, including failed runs.
 Cache eviction does not remove the checked-in fixtures or regressions.
 
-Each input has a 20-second limit, except complete surface-knot and degree-elevation verification,
-which has 60 seconds. All targets retain the 2 GiB process RSS limit. The new
+Each input has a 20-second limit, except complete surface-knot and degree-elevation verification
+and surface editing, which have 60 seconds. All targets retain the 2 GiB process RSS limit. The new
 tensor target checks both axes at degree 25 and every raw-support homogeneous
 equation; the densest retained input takes approximately 23 seconds with
 instrumentation on the development machine. Its larger verification budget is
-explicit in each campaign report. Surface editing
+explicit in each campaign report.
+
+A timeout whose input completes is triaged by measurement, never by
+re-running to green. The input is timed locally with AddressSanitizer. The
+Linux runner is about 2.6 times slower than the development Mac, so if it
+takes more than 20 s ÷ 2.6 there, the target moves to the 60-second
+budget; otherwise the runner was slow and the budget stays. Either way the
+input is retained under `fuzz/regressions` with its measured times.
+`surface_editing` moved on 2026-09-26 (8.2 s locally under the sanitizer).
+
+Surface editing
 and surface knot/degree editing permit 4096 bytes to populate full tensor grids; curve knot editing permits 512 bytes;
 other targets permit 256
 bytes. The modeling harness bounds geometry to 24 vertices and eight operations;

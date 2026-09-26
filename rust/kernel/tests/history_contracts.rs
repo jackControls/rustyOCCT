@@ -5,9 +5,10 @@ use rusty_occt::attributes::{
 };
 use rusty_occt::history::{
     check, EntityInfo, EntitySet, Geometry, History, HistoryIssueKind as K, Relation, Resolution,
+    Step,
 };
 use rusty_occt::identity::{
-    EntityId, EntityKind, OperationId, OperationKind, Parent, ProfileElement, Role,
+    AlgorithmLevel, EntityId, EntityKind, OperationId, OperationKind, Parent, ProfileElement, Role,
 };
 use rusty_occt::topology::{Curve3, Orientation, Surface};
 use rusty_occt::{Frame3, Point3, Tolerance, Vec3};
@@ -503,6 +504,58 @@ fn each_step_and_every_composition_checks_clean() {
             with: vec![id(2)]
         }
     );
+}
+
+/// H8: a composite records every step's level; steps at different levels
+/// compose (no callable second level is needed to prove it), and a malformed
+/// step list is reported.
+#[test]
+fn composites_record_every_step_and_its_level() {
+    let b = bodies();
+    let s = steps();
+    let later = AlgorithmLevel(2);
+    let first = s[0].clone().at_level(later);
+    assert_eq!(first.level(), Some(later));
+    let ab = first.then(&s[1]).unwrap();
+    let abc = ab.then(&s[2]).unwrap();
+    let step = |op, level| Step {
+        operation: OperationId(op),
+        kind: OperationKind::Extrude,
+        level,
+    };
+    let level1 = AlgorithmLevel::FIRST;
+    assert_eq!(ab.steps, vec![step(1, later), step(2, level1)]);
+    assert_eq!(
+        abc.steps,
+        vec![step(1, later), step(2, level1), step(3, level1)]
+    );
+    // Associative in its steps too, and a composite has no single level.
+    assert_eq!(abc, first.then(&s[1].then(&s[2]).unwrap()).unwrap());
+    assert_eq!(abc.level(), None);
+    assert_eq!(check(&b[0..1], &b[3..4], &abc), vec![]);
+    // Malformed lists: empty, a single operation naming another operation or
+    // kind, a composite of one step, or one not ending with its operation.
+    let steps_invalid = |h: &History, from: usize, to: usize| {
+        check(&b[from..=from], &b[to..=to], h)
+            .iter()
+            .any(|i| i.kind == K::StepsInvalid)
+    };
+    let mut bad = s[0].clone();
+    bad.steps.clear();
+    assert!(steps_invalid(&bad, 0, 1));
+    let mut bad = s[0].clone();
+    bad.steps[0].operation = OperationId(99);
+    assert!(steps_invalid(&bad, 0, 1));
+    let mut bad = s[0].clone();
+    bad.steps[0].kind = OperationKind::Transform;
+    assert!(steps_invalid(&bad, 0, 1));
+    let mut bad = abc.clone();
+    bad.steps.truncate(1);
+    assert!(steps_invalid(&bad, 0, 3));
+    let mut bad = abc.clone();
+    bad.steps.reverse();
+    assert!(steps_invalid(&bad, 0, 3));
+    assert!(!steps_invalid(&abc, 0, 3));
 }
 
 #[test]
