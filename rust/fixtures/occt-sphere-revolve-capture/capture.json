@@ -1,0 +1,23 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 BRepPrimAPI_MakeRevol BRepTools_History",
+  "rust_revision": "0c94aa53f0e0fe6deadffb018c799cbdbac96897",
+  "platform": "darwin",
+  "rust_sphere_implementation_exists": false,
+  "python_history_enumeration_exists": false,
+  "rust_worktree_uncommitted": [
+    " M rust/tools/compare_primitives.py",
+    " M rust/tools/compare_revolve_history.py",
+    " M rust/tools/generate_primitive_fixtures.py",
+    " M rust/tools/occt_primitive_oracle.cpp",
+    " M rust/tools/occt_revolve_oracle.cpp",
+    " M rust/tools/primitive_reference.py",
+    "?? rust/fixtures/occt-sphere-preimplementation/",
+    "?? rust/fixtures/sphere-cases.txt",
+    "?? rust/fixtures/sphere-expected.tsv"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "3a9a6f7f5d513afa0f3e0fd9e9b8b794ef35c4071f21e9cfc3b5f0529f6ccc83",
+  "probe_source_sha256": "edb5073ac8e5b8b75718250bb067fe42ea2dddc305b735a2d43b6802cb86514f",
+  "observations_sha256": "e763b3eb2f576efce51f088fb8400f2e66fd1b957090a140bbd81e9b7f83a5f6"
+}

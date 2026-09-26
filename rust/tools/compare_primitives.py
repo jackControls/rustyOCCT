@@ -2,7 +2,9 @@
 """Source-pinned BRepPrimAPI observations beside the primitive reference (S3).
 
 `occt_primitive_oracle.cpp` builds every cone of `primitive-cases.txt` with
-BRepPrimAPI_MakeCone and reports its BRepCheck verdict, distinct subshape
+BRepPrimAPI_MakeCone (`--family cone`) or every sphere of
+`sphere-cases.txt` with BRepPrimAPI_MakeSphere (`--family sphere`) and
+reports its BRepCheck verdict, distinct subshape
 counts, BRepGProp mass properties and every face, edge and vertex. Each must
 equal what `primitive_reference.py` derives from the specification alone:
 counts and verdict exactly, numbers within `BOUND` relative to the case's
@@ -12,8 +14,9 @@ The kernel's cone builder is compared with the same expectations by
 `compare_revolve_history.py`.
 
 `--capture` records the native observations in
-`fixtures/occt-primitive-preimplementation` before any kernel cone code
-exists; every later run must reproduce them.
+`fixtures/occt-primitive-preimplementation` (cones) or
+`fixtures/occt-sphere-preimplementation` (spheres) before any kernel code
+for that surface exists; every later run must reproduce them.
 """
 import argparse
 import json
@@ -30,6 +33,13 @@ from compare_occt import ROOT
 import generate_primitive_fixtures
 
 CAPTURE = ROOT/'rust/fixtures/occt-primitive-preimplementation'
+# Per family: its capture directory, fixture stem and the capture's flag for
+# kernel code of that surface.
+FAMILIES = {
+    'cone': (CAPTURE, 'primitive', 'rust_cone_implementation_exists'),
+    'sphere': (ROOT/'rust/fixtures/occt-sphere-preimplementation', 'sphere',
+               'rust_sphere_implementation_exists'),
+}
 SOURCE_FILE = ROOT/'rust/tools/occt_primitive_oracle.cpp'
 TOOLKITS = ['TKPrim', 'TKTopAlgo', 'TKBRep', 'TKGeomAlgo', 'TKGeomBase', 'TKG3d', 'TKG2d', 'TKMath',
             'TKernel']
@@ -113,7 +123,10 @@ def parse_expected(text):
     return out
 
 
-def sizes():
+def sizes(family='cone'):
+    if family == 'sphere':
+        return {c.name: max([abs(v) for v in (*c.origin, c.radius)]+[1.0])
+                for c in generate_primitive_fixtures.spheres()}
     return {c.name: max([abs(v) for v in (*c.origin, c.r1, c.r2, c.height)]+[1.0])
             for c in generate_primitive_fixtures.corpus()}
 
@@ -159,17 +172,21 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--occt-root', type=Path, required=True)
     parser.add_argument('--sdk-manifest', type=Path, required=True)
-    parser.add_argument('--output', type=Path, default=ROOT/'target/primitive-oracle')
+    parser.add_argument('--output', type=Path, default=None,
+                        help='default target/primitive-oracle (cones) or target/sphere-oracle')
     parser.add_argument('--capture', action='store_true')
+    parser.add_argument('--family', choices=sorted(FAMILIES), default='cone')
     args = parser.parse_args()
-    output = args.output.resolve()
+    capture, stem, flag = FAMILIES[args.family]
+    default = 'primitive-oracle' if args.family == 'cone' else f'{args.family}-oracle'
+    output = (args.output or ROOT/'target'/default).resolve()
     output.mkdir(parents=True, exist_ok=True)
     verify_sdk(args.occt_root.resolve(), args.sdk_manifest)
     files = generate_primitive_fixtures.generate()
     for name, text in files.items():
         if text != (ROOT/'rust/fixtures'/name).read_text():
             raise ValueError('independent fixture regeneration changed: '+name)
-    cases = files['primitive-cases.txt']
+    cases = files[f'{stem}-cases.txt']
     executable, env, loaded, command = build(args.occt_root.resolve(), output)
     record = run(executable, cases.rstrip('\n'), env)
     if record['exit_code'] != 0:
@@ -180,29 +197,29 @@ def main():
                                 capture_output=True, check=True).stdout.splitlines()
         if any(line[3:].startswith('rust/kernel') for line in status):
             raise SystemExit('capture requires a kernel tree without changes')
-        CAPTURE.mkdir(parents=True, exist_ok=True)
-        (CAPTURE/'inputs.txt').write_text(cases)
-        (CAPTURE/'native.txt').write_text(record['stdout'])
-        (CAPTURE/'oracle.cpp').write_text(SOURCE_FILE.read_text())
+        capture.mkdir(parents=True, exist_ok=True)
+        (capture/'inputs.txt').write_text(cases)
+        (capture/'native.txt').write_text(record['stdout'])
+        (capture/'oracle.cpp').write_text(SOURCE_FILE.read_text())
         revision = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True, capture_output=True,
                                   check=True).stdout.strip()
-        write(CAPTURE/'capture.json', {
+        write(capture/'capture.json', {
             'source_reference': SOURCE, 'oracle': oracle, 'rust_revision': revision,
-            'platform': sys.platform, 'rust_cone_implementation_exists': False,
+            'platform': sys.platform, flag: False,
             'rust_worktree_uncommitted': status, 'sdk_manifest_sha256': digest(args.sdk_manifest),
-            'input_sha256': digest(CAPTURE/'inputs.txt'), 'probe_source_sha256': digest(CAPTURE/'oracle.cpp'),
-            'observations_sha256': digest(CAPTURE/'native.txt')})
-    metadata = json.loads((CAPTURE/'capture.json').read_text())
+            'input_sha256': digest(capture/'inputs.txt'), 'probe_source_sha256': digest(capture/'oracle.cpp'),
+            'observations_sha256': digest(capture/'native.txt')})
+    metadata = json.loads((capture/'capture.json').read_text())
     for key, name in [('input_sha256', 'inputs.txt'), ('probe_source_sha256', 'oracle.cpp'),
                       ('observations_sha256', 'native.txt')]:
-        if metadata[key] != digest(CAPTURE/name):
+        if metadata[key] != digest(capture/name):
             raise ValueError('captured evidence changed: '+name)
-    if metadata['rust_cone_implementation_exists'] or (CAPTURE/'inputs.txt').read_text() != cases:
+    if metadata[flag] or (capture/'inputs.txt').read_text() != cases:
         raise ValueError('the capture is not of these cases before implementation')
     observed = parse_observations(record['stdout'])
-    captured = parse_observations((CAPTURE/'native.txt').read_text())
-    expected = parse_expected(files['primitive-expected.tsv'])
-    size = sizes()
+    captured = parse_observations((capture/'native.txt').read_text())
+    expected = parse_expected(files[f'{stem}-expected.tsv'])
+    size = sizes(args.family)
     report = {'source_reference': SOURCE, 'oracle': oracle, 'cases': len(expected), 'matches': [],
               'failures': []}
     for name in expected:

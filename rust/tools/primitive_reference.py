@@ -1,6 +1,7 @@
 """Independent reference for revolved primitives (S3 of REVIEW_NOTES.md): the
 right circular cone and frustum, as `BRepPrimAPI_MakeCone(gp_Ax2, r1, r2, h)`
-and the kernel's cone builder make them.
+and the kernel's cone builder make them, and the sphere and spherical zone,
+as `BRepPrimAPI_MakeSphere(gp_Ax2, R, angle1, angle2)` makes them.
 
 Everything is exact geometry in mpmath from the specification, never from
 either implementation:
@@ -17,6 +18,17 @@ either implementation:
 * every face (type, area, centre of its surface), edge (degenerated or not,
   closed or not, length, the point at its middle parameter) and vertex,
   unordered, to be matched by geometry.
+
+For the sphere, from the source review of `BRepPrim_Sphere` and
+`BRepPrim_OneAxis`: the lateral face is a `Geom_SphericalSurface` on the
+frame, latitudes `angle1 <= v <= angle2` (radians); its meridian is the
+circle about `-y` through `x` and the axis, offset by `2 pi`, so the seam
+edge runs along `x` from `angle1` to `angle2` with its middle at the mean
+latitude. An end at latitude `±pi/2` (the binary64 value, as DRAW converts
+`±90` degrees) is a pole: one vertex and a degenerated edge; any other end is
+a circle closed at its seam vertex, bounding a planar disc. So every sphere
+or zone has 2 vertices and 3 edges, `1 + caps` wires and faces, one shell
+and one solid.
 """
 from dataclasses import dataclass
 
@@ -148,3 +160,87 @@ def vertices(c):
     h = mp.mpf(c.height)
     o, x, y, n = axes(c)
     return [add(o, mul(x, mp.mpf(c.r1))), add(add(o, mul(n, h)), mul(x, mp.mpf(c.r2)))]
+
+
+# ------------------------------------------------------------------ spheres
+
+HALF_PI = 1.5707963267948966
+
+
+@dataclass
+class Sphere:
+    name: str
+    origin: tuple
+    normal: tuple
+    x: tuple
+    radius: float
+    a1: float
+    a2: float
+
+
+def sphere_ends(c):
+    """[(latitude, is a pole)] for the lower and upper end."""
+    return [(c.a1, c.a1 == -HALF_PI), (c.a2, c.a2 == HALF_PI)]
+
+
+def sphere_mass(c):
+    """(volume, area, centroid, inertia matrix about the centroid)."""
+    o, x, y, n = axes(c)
+    R = mp.mpf(c.radius)
+    z1, z2 = R*mp.sin(mp.mpf(c.a1)), R*mp.sin(mp.mpf(c.a2))
+    r2 = lambda z: R**2-z**2
+    span = lambda f: mp.quad(f, [z1, z2])
+    volume = span(lambda z: mp.pi*r2(z))
+    zc = span(lambda z: z*mp.pi*r2(z))/volume
+    caps = sum(mp.pi*r2(R*mp.sin(mp.mpf(a))) for a, pole in sphere_ends(c) if not pole)
+    area = 2*mp.pi*R*(z2-z1)+caps
+    axial = span(lambda z: mp.pi*r2(z)**2/2)
+    transverse = span(lambda z: mp.pi*r2(z)**2/4+(z-zc)**2*mp.pi*r2(z))
+    centre = add(o, mul(n, zc))
+    local = [[transverse, 0, 0], [0, transverse, 0], [0, 0, axial]]
+    basis = [x, y, n]
+    inertia = [[sum(basis[a][i]*local[a][b]*basis[b][j] for a in range(3) for b in range(3))
+                for j in range(3)] for i in range(3)]
+    return volume, area, centre, inertia
+
+
+def sphere_counts(c):
+    caps = sum(1 for _, pole in sphere_ends(c) if not pole)
+    return (2, 3, 1+caps, 1+caps, 1, 1)
+
+
+def sphere_faces(c):
+    o, x, y, n = axes(c)
+    R = mp.mpf(c.radius)
+    z1, z2 = R*mp.sin(mp.mpf(c.a1)), R*mp.sin(mp.mpf(c.a2))
+    # A zone's area is uniform in height (Archimedes).
+    out = [('sphere', 2*mp.pi*R*(z2-z1), add(o, mul(n, (z1+z2)/2)))]
+    for a, pole in sphere_ends(c):
+        if not pole:
+            z = R*mp.sin(mp.mpf(a))
+            out.append(('plane', mp.pi*(R**2-z**2), add(o, mul(n, z))))
+    return out
+
+
+def sphere_edges(c):
+    o, x, y, n = axes(c)
+    R = mp.mpf(c.radius)
+    out = []
+    for a, pole in sphere_ends(c):
+        a = mp.mpf(a)
+        centre = add(o, mul(n, R*mp.sin(a)))
+        if pole:
+            out.append(('degenerated', 'closed', mp.mpf(0), centre))
+        else:
+            r = R*mp.cos(a)
+            out.append(('regular', 'closed', 2*mp.pi*r, sub(centre, mul(x, r))))
+    a1, a2 = mp.mpf(c.a1), mp.mpf(c.a2)
+    m = (a1+a2)/2
+    out.append(('regular', 'open', R*(a2-a1), add(o, add(mul(x, R*mp.cos(m)), mul(n, R*mp.sin(m))))))
+    return out
+
+
+def sphere_vertices(c):
+    o, x, y, n = axes(c)
+    R = mp.mpf(c.radius)
+    return [add(o, add(mul(x, R*mp.cos(mp.mpf(a))), mul(n, R*mp.sin(mp.mpf(a))))) for a, _ in sphere_ends(c)]

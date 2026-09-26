@@ -62,6 +62,11 @@ import generate_primitive_fixtures
 from primitive_reference import axes
 
 CAPTURE = ROOT/'rust/fixtures/occt-revolve-history-capture'
+# Per family: the capture directory and the fixture stem of its cases.
+FAMILIES = {
+    'cone': (CAPTURE, 'primitive'),
+    'sphere': (ROOT/'rust/fixtures/occt-sphere-revolve-capture', 'sphere'),
+}
 REVIEWS = ROOT/'rust/fixtures/occt-revolve-history-divergences.json'
 REVIEWABLE = {'surface_of_revolution'}
 SOURCE_FILE = ROOT/'rust/tools/occt_revolve_oracle.cpp'
@@ -305,40 +310,51 @@ def main():
     parser.add_argument('--sdk-manifest', type=Path, required=True)
     parser.add_argument('--output', type=Path, default=ROOT/'target/revolve-history-oracle')
     parser.add_argument('--capture', action='store_true')
+    parser.add_argument('--capture-only', action='store_true',
+                        help='record the capture and stop (before the kernel can be compared)')
+    parser.add_argument('--family', choices=sorted(FAMILIES), default='cone')
     args = parser.parse_args()
+    capture, stem = FAMILIES[args.family]
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     verify_sdk(args.occt_root.resolve(), args.sdk_manifest)
-    cases = generate_primitive_fixtures.generate()['primitive-cases.txt']
-    if cases != (ROOT/'rust/fixtures/primitive-cases.txt').read_text():
-        raise ValueError('independent fixture regeneration changed: primitive-cases.txt')
+    cases = generate_primitive_fixtures.generate()[f'{stem}-cases.txt']
+    if cases != (ROOT/f'rust/fixtures/{stem}-cases.txt').read_text():
+        raise ValueError(f'independent fixture regeneration changed: {stem}-cases.txt')
     executable, env, loaded, command = build(args.occt_root.resolve(), output)
     record = run(executable, cases.rstrip('\n'), env)
     if record['exit_code'] != 0:
         raise SystemExit('native run failed: '+json.dumps(record)[:2000])
     oracle = next(iter(record['stderr'].splitlines()), None)
-    if args.capture:
+    if args.capture or args.capture_only:
         status = subprocess.run(['git', 'status', '--porcelain', '--', 'rust'], cwd=ROOT, text=True,
                                 capture_output=True, check=True).stdout.splitlines()
-        CAPTURE.mkdir(parents=True, exist_ok=True)
-        (CAPTURE/'inputs.txt').write_text(cases)
-        (CAPTURE/'native.txt').write_text(record['stdout'])
-        (CAPTURE/'oracle.cpp').write_text(SOURCE_FILE.read_text())
+        if args.family != 'cone' and any(line[3:].startswith('rust/kernel') for line in status):
+            raise SystemExit('capture requires a kernel tree without changes')
+        capture.mkdir(parents=True, exist_ok=True)
+        (capture/'inputs.txt').write_text(cases)
+        (capture/'native.txt').write_text(record['stdout'])
+        (capture/'oracle.cpp').write_text(SOURCE_FILE.read_text())
         revision = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True, capture_output=True,
                                   check=True).stdout.strip()
-        write(CAPTURE/'capture.json', {
+        order = ({'rust_cone_builder_uncommitted': True} if args.family == 'cone'
+                 else {f'rust_{args.family}_implementation_exists': False})
+        write(capture/'capture.json', {
             'source_reference': SOURCE, 'oracle': oracle, 'rust_revision': revision,
-            'platform': sys.platform, 'rust_cone_builder_uncommitted': True,
+            'platform': sys.platform, **order,
             'python_history_enumeration_exists': False, 'rust_worktree_uncommitted': status,
-            'sdk_manifest_sha256': digest(args.sdk_manifest), 'input_sha256': digest(CAPTURE/'inputs.txt'),
-            'probe_source_sha256': digest(CAPTURE/'oracle.cpp'),
-            'observations_sha256': digest(CAPTURE/'native.txt')})
-    metadata = json.loads((CAPTURE/'capture.json').read_text())
+            'sdk_manifest_sha256': digest(args.sdk_manifest), 'input_sha256': digest(capture/'inputs.txt'),
+            'probe_source_sha256': digest(capture/'oracle.cpp'),
+            'observations_sha256': digest(capture/'native.txt')})
+        if args.capture_only:
+            print(f'captured {len(cases.splitlines())} {args.family} cases')
+            return
+    metadata = json.loads((capture/'capture.json').read_text())
     for key, name in [('input_sha256', 'inputs.txt'), ('probe_source_sha256', 'oracle.cpp'),
                       ('observations_sha256', 'native.txt')]:
-        if metadata[key] != digest(CAPTURE/name):
+        if metadata[key] != digest(capture/name):
             raise ValueError('captured evidence changed: '+name)
-    if (CAPTURE/'inputs.txt').read_text() != cases:
+    if (capture/'inputs.txt').read_text() != cases:
         raise ValueError('the capture is not of these cases')
     subprocess.run(['cargo', '+stable', 'build', '--release', '--locked', '--example', 'cone_probe'],
                    cwd=ROOT, check=True)
@@ -347,7 +363,7 @@ def main():
     (output/'rust.txt').write_text(probe)
     (output/'native.txt').write_text(record['stdout'])
     native, rust = parse_native(record['stdout']), parse_rust(probe)
-    captured = blocks((CAPTURE/'native.txt').read_text())
+    captured = blocks((capture/'native.txt').read_text())
     observed = blocks(record['stdout'])
     size = compare_primitives.sizes()
     reviews = json.loads(REVIEWS.read_text())['reviews'] if REVIEWS.exists() else []
