@@ -126,8 +126,9 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
      including regions. Implemented: 174 independent scenarios, the
      `split_merge` fuzz target, and a `BRepAlgoAPI_Splitter`/`Fuse` plus
      `ShapeUpgrade_UnifySameDomain` bridge (159 matches, one reviewed
-     difference on the local pinned SDK); the self-contained upstream
-     history cases work on faces and are registered as capability sentinels.
+     difference and no failures on macOS and Linux); the self-contained
+     upstream history cases work on faces and are registered as capability
+     sentinels. Accepted at `00f0034c` (`IDENTITY_AND_HISTORY.md`).
    * **T2** adds the OCCT structure interop: `.brep` converter and writer
      with native round trips, the native selector for index-based picks,
      degenerate-edge counts for poles, and the coverage ledger that

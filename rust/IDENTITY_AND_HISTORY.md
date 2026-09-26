@@ -22,8 +22,8 @@ one builder and no Booleans, so the decisions below are still cheap.
 checked histories and the attribute checker, on extrusions and rigid
 transforms). The topology model is decided in `TOPOLOGY_MODEL.md`; its
 migration, T1, is accepted at `e4adb869` (seamless circle prisms, a region
-id, algorithm levels). M3 (height split and stacked fuse) is implemented;
-M4–M5 pending. Acceptance evidence per milestone
+id, algorithm levels). M3 (height split and stacked fuse) is accepted at
+`00f0034c`; M4–M5 pending. Acceptance evidence per milestone
 is under [Acceptance](#acceptance).
 
 ## What the kernel promises, and what it does not
@@ -167,7 +167,13 @@ is always answerable, and so that collisions are detectable (I4).
   `Derivation` (adopted from CGM's software configurations). Implemented in
   T1: `AlgorithmLevel::FIRST` is the only level; `Solid::extrude_at` and
   `Solid::transform_at` replay at a recorded level and reject any level the
-  build does not provide.
+  build does not provide. A composed history (`OperationKind::Composite`) is
+  not an operation and is never replayed as one; `History::then` records the
+  level of its last step, which says nothing false only while every step
+  ran at one level. **Open before a second level exists:** a composite across
+  steps at different levels must either record the level of every step it
+  spans or be refused by `then`; the choice, and a test for it, must land
+  with the first new level.
 
 ### Types
 
@@ -634,7 +640,47 @@ say what remains.
   storage and outcomes on real operations are M4, and enclosures M5. Ids are
   not yet persisted outside the process (no native format).
 * **T1 — accepted at `e4adb869`**; the record is in `TOPOLOGY_MODEL.md`.
-* M3 — pending
+* **M3 — accepted at `00f0034c`** (the operations are `ab4a426a`; the two
+  later commits change only a Python generator's summation and add a Linux
+  review fingerprint).
+  * Rust kernel workflow: all twelve jobs passed, including the new
+    source-pinned split/fuse comparison.
+  * Fuzzing workflow: all twenty-two targets passed. On Linux, `split_merge`
+    replayed 117 inputs in 257 seconds, then ran 60.07 seconds of mutation
+    (46 executions, 7,590 coverage edges, 621 MB RSS peak); `history` ran
+    932 executions and `identity` 552, all without artifacts. Fuzz builds
+    keep debug assertions, so every split and fuse runs its exact history
+    check: throughput is low, not broken.
+  * Native split/fuse bridge (`compare_split_merge.py`, OCCT 8.1.0 built from
+    the pinned source): 159 matches, 1 reviewed difference and 0 failures on
+    macOS and Linux; the slowest Linux case took 0.091 seconds. The 160
+    scenarios were captured at `8807667c`, before any Rust split or fuse
+    code existed. The reviewed difference is unification merging the two
+    coplanar walls around `labels_inserted_vertex`'s collinear vertex, which
+    the kernel keeps (I3); Linux output has the same tokens as macOS with
+    numbers within 1.1e-15 relative, so it carries its own fingerprint.
+  * Independent fixtures: 174 scenarios (splits, stacked fuses, compositions,
+    a split of a split piece, 13 rejected inputs and 128 corpus prisms), with
+    every relation, composition, body id and entity row, each history also
+    passing the independent checker; law and support tests in
+    `split_merge.rs`. Native inputs and fixtures are byte-identical on
+    Python 3.9 and 3.12.
+  * Upstream tests: the self-contained candidates `bug29333_1` and
+    `bug29333_2` pass on native DRAW and are registered as Rust capability
+    sentinels (they split and fuse faces); no derived split case, since
+    compound counts differ by design.
+  * Clean local 600-second campaign at `ab4a426a`, whose kernel and fuzz
+    code are those of `00f0034c` (AddressSanitizer, standard
+    20-second/2 GiB limits): `split_merge` completed 600.1 seconds of
+    mutation after 149.1 seconds of replay, with 906 executions, 7,813
+    coverage edges and a 699 MB RSS peak, and no crash, timeout, OOM,
+    slow-unit or disagreement artifacts.
+
+  What remains: the split and fuse are deliberately narrow (one prism, a
+  plane normal to it, stacked prisms of one profile), not Booleans;
+  attributes on operations are M4 and enclosures M5; composites across two
+  algorithm levels are an open item under H8; the `continuity` check of
+  `TOPOLOGY_MODEL.md` D11 must land before spline edges or faces.
 * M4 — pending
 * M5 — pending
 

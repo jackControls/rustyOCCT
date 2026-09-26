@@ -107,8 +107,9 @@ impl Relation {
 pub struct History {
     pub operation: OperationId,
     pub kind: OperationKind,
-    /// The behaviour version the operation ran at (H8); a composition keeps
-    /// the last step's.
+    /// The behaviour version the operation ran at (H8). A composition keeps
+    /// the last step's, which is exact only while every step ran at one
+    /// level; composites across levels are an open item (H8).
     pub level: AlgorithmLevel,
     pub input_bodies: Vec<EntityId>,
     pub output_bodies: Vec<EntityId>,

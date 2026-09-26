@@ -401,7 +401,9 @@ reason:
 * **Algorithm levels (H8).** `AlgorithmLevel::FIRST` is the only level. The
   `_with` constructors run at `AlgorithmLevel::CURRENT`; `Solid::extrude_at`
   and `Solid::transform_at` replay a recorded level and reject any other with
-  `Error::UnknownAlgorithmLevel`.
+  `Error::UnknownAlgorithmLevel`. `History::then` gives a composite the level
+  of its last step, which is exact only while every step ran at one level
+  (open item under H8).
 * **Bitwise properties per host.** `prism-properties-baseline.tsv` was
   recorded on macOS/aarch64 at `26fc457f`, before any T1 code. Frames and
   rotations use the platform's trigonometry, so Linux and Windows differ from
@@ -465,7 +467,12 @@ the clean local 600-second campaign, in the style of `BREP_VALIDATION.md`.
   faces (only `uncertified_containment` today), free and non-manifold
   results, and degenerate-edge counts for poles wait for the surfaces and
   operations that need them; the `.brep` interop, native selector and
-  coverage ledger are T2.
+  coverage ledger are T2. The `continuity` check of D11 (C1 at interior
+  knots of every edge and face) is not implemented: lines, arcs, planes and
+  cylinders are C1 by construction, so nothing is unchecked today, but it
+  must land, with its fixtures and a mutation, before the first spline edge
+  or face enters a topology. Composed histories record only their last
+  step's level; see H8 in `IDENTITY_AND_HISTORY.md`.
 * T2 — pending
 
 ## Delivery rules
