@@ -4,11 +4,13 @@ use crate::math::finite;
 use crate::profile::BoundaryKind;
 use crate::topology::Topology;
 
+mod attrs;
 mod stack;
 use crate::{
     Boundary, Bounds3, Error, Frame3, Location, Point2, Point3, Profile, Result, RigidTransform,
     Tolerance,
 };
+pub use attrs::Context;
 
 /// Geometric properties at unit density, evaluated from analytic geometry.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -78,6 +80,26 @@ impl Solid {
         start: f64,
         end: f64,
     ) -> Result<(Self, History)> {
+        Self::extrude_in(
+            &Context::new(operation).at(level),
+            profile,
+            frame,
+            start,
+            end,
+        )
+    }
+
+    /// [`Solid::extrude_with`] in an operation context. A construction has
+    /// no input entities, so it carries no attributes (generation never
+    /// creates any).
+    pub fn extrude_in(
+        context: &Context,
+        profile: Profile,
+        frame: Frame3,
+        start: f64,
+        end: f64,
+    ) -> Result<(Self, History)> {
+        let (level, operation) = (context.level, context.operation);
         replayable(level)?;
         let solid = Self::build(operation, profile, frame, start, end)?;
         let t = &solid.topology;
@@ -316,6 +338,17 @@ impl Solid {
         operation: OperationId,
         transform: RigidTransform,
     ) -> Result<(Self, History)> {
+        self.transform_in(&Context::new(operation).at(level), transform)
+    }
+
+    /// [`Solid::transform_with`] in an operation context: its level, the
+    /// attribute policies and the callback for `Recompute` policies.
+    pub fn transform_in(
+        &self,
+        context: &Context,
+        transform: RigidTransform,
+    ) -> Result<(Self, History)> {
+        let (level, operation) = (context.level, context.operation);
         replayable(level)?;
         let mut solid = Self::build(
             self.operation,
@@ -339,10 +372,15 @@ impl Solid {
             Vec::new(),
         );
         history.level = level;
+        let [moved] = attrs::propagate(context, &[self], &mut history, &[&solid])?
+            .try_into()
+            .expect("one output");
+        solid.topology.set_attributes(moved);
         solid.debug_check(
             &[self.topology.entity_set(self.profile.tolerance())],
             &history,
         );
+        attrs::debug_check_attributes(context, &[self], &[&solid], &history);
         Ok((solid, history))
     }
 }

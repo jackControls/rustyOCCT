@@ -4,7 +4,8 @@
 //! Both rebuild prisms of the same profile and frame, so every output has the
 //! slot layout of its inputs; ids come from the inputs' ids by rule, never from
 //! geometry.
-use super::{replayable, Solid};
+use super::attrs::{debug_check_attributes, propagate};
+use super::{replayable, Context, Solid};
 use crate::history::{self, History, Relation};
 use crate::identity::{
     AlgorithmLevel, Derivation, EntityId, EntityKind, OperationId, OperationKind, Parent, Role,
@@ -67,6 +68,17 @@ impl Solid {
         operation: OperationId,
         height: f64,
     ) -> Result<([Solid; 2], History)> {
+        self.split_at_height_in(&Context::new(operation).at(level), height)
+    }
+
+    /// [`Solid::split_at_height`] in an operation context: its level and the
+    /// attribute policies by which input attributes reach the pieces.
+    pub fn split_at_height_in(
+        &self,
+        context: &Context,
+        height: f64,
+    ) -> Result<([Solid; 2], History)> {
+        let (level, operation) = (context.level, context.operation);
         replayable(level)?;
         let (low, high) = (self.start.min(self.end), self.start.max(self.end));
         // Exact comparisons; NaN fails both.
@@ -151,7 +163,7 @@ impl Solid {
                 _ => Relation::Unchanged { id },
             });
         }
-        let [lower, upper]: [Solid; 2] = pieces.try_into().expect("two pieces");
+        let [mut lower, mut upper]: [Solid; 2] = pieces.try_into().expect("two pieces");
         let mut history = History::new(
             operation,
             OperationKind::HeightSplit,
@@ -161,7 +173,13 @@ impl Solid {
             Vec::new(),
         );
         history.level = level;
+        let [l, u] = propagate(context, &[self], &mut history, &[&lower, &upper])?
+            .try_into()
+            .expect("two outputs");
+        lower.topology.set_attributes(l);
+        upper.topology.set_attributes(u);
         debug_check(&[self], &[&lower, &upper], &history);
+        debug_check_attributes(context, &[self], &[&lower, &upper], &history);
         Ok(([lower, upper], history))
     }
 
@@ -187,6 +205,13 @@ impl Solid {
         other: &Solid,
         operation: OperationId,
     ) -> Result<(Solid, History)> {
+        self.fuse_stacked_in(&Context::new(operation).at(level), other)
+    }
+
+    /// [`Solid::fuse_stacked`] in an operation context: its level and the
+    /// attribute policies by which input attributes reach the fused body.
+    pub fn fuse_stacked_in(&self, context: &Context, other: &Solid) -> Result<(Solid, History)> {
+        let (level, operation) = (context.level, context.operation);
         replayable(level)?;
         if self.profile != other.profile || self.frame != other.frame {
             return Err(Error::OutOfDomain(
@@ -267,7 +292,12 @@ impl Solid {
             Vec::new(),
         );
         history.level = level;
+        let [f] = propagate(context, &[self, other], &mut history, &[&fused])?
+            .try_into()
+            .expect("one output");
+        fused.topology.set_attributes(f);
         debug_check(&[self, other], &[&fused], &history);
+        debug_check_attributes(context, &[self, other], &[&fused], &history);
         Ok((fused, history))
     }
 }

@@ -124,7 +124,7 @@ are independently checked and version-pinned. High-degree native numerical
 differences are [reviewed separately](rust/NATIVE_SPLINE_DIVERGENCES.md); they
 are not counted as parity matches.
 [Sustained fuzzing](rust/FUZZING.md)
-runs twenty-two instrumented targets on pushes/PRs and daily, restoring the evolving
+runs twenty-three instrumented targets on pushes/PRs and daily, restoring the evolving
 corpus and retaining crashes, timeouts and mathematical disagreements.
 
 [Exact edited-curve intersections](rust/EXACT_SPLINE_INTERSECTIONS.md) preserve

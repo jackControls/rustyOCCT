@@ -519,6 +519,24 @@ mutates produced histories. `compare_split_merge.py` maps source-pinned
 to the Rust relations by geometry; see
 [identity and history](IDENTITY_AND_HISTORY.md).
 
+## Attributes through operations
+
+`generate_attribute_fixtures.py --check` writes 33 scenarios: every explicit
+split/fuse scenario of M3 whose steps succeed, each initial body first
+translated, with 48 attribute keys (the 24 policy combinations, each with
+values that agree across split pieces and values that differ between
+separately built bodies) on about a quarter of the entities each. The
+independent `attribute_reference.py` gives every step's outcomes and every
+produced body's attributes; every relation kind meets every applicable
+policy variant (kept, dropped, recomputed, copied, and conflicts from both
+unequal and missing values). `attribute_outcomes.rs` requires them all to
+match and checks the error contracts and determinism; every operation also
+runs the independent `attributes::check` in debug builds. The `attributes`
+fuzz target runs random policies and values through transform, split and
+fuse. There is no native bridge: OCCT has no attribute propagation at kernel
+level (its attributes live in OCAF labels, outside the modelling
+algorithms).
+
 ## Generic B-rep validation
 
 `generate_brep_fixtures.py --check` rebuilds 64 cell-complex cases (23 valid):

@@ -18,7 +18,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear','brep_validation','identity','history','split_merge']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear','brep_validation','identity','history','split_merge','attributes']
 STARTUP_SECONDS = 600
 MAX_STARTUP_SECONDS = 3600
 INPUT_SECONDS = 20
@@ -74,7 +74,14 @@ def seed_corpus(target):
         if not path.exists():
             path.write_bytes(data)
 
-    if target == 'split_merge':
+    if target == 'attributes':
+        # The identity structure, six random policies, random keys and small
+        # values, a split height and changes on one piece before the fuse.
+        for k in range(96):
+            data=bytearray((j*71+k*43+3)%256 for j in range(400))
+            save(bytes(data))
+        save(bytes([0]))
+    elif target == 'split_merge':
         # The identity structure, a split height, one of six history
         # mutations and the stacked fuse of an independent construction.
         for k in range(96):

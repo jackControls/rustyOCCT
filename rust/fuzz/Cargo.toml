@@ -173,3 +173,10 @@ path = "fuzz_targets/split_merge.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "attributes"
+path = "fuzz_targets/attributes.rs"
+test = false
+doc = false
+bench = false

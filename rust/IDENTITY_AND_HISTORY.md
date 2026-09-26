@@ -23,7 +23,7 @@ checked histories and the attribute checker, on extrusions and rigid
 transforms). The topology model is decided in `TOPOLOGY_MODEL.md`; its
 migration, T1, is accepted at `e4adb869` (seamless circle prisms, a region
 id, algorithm levels). M3 (height split and stacked fuse) is accepted at
-`00f0034c`; M4–M5 pending. Acceptance evidence per milestone
+`00f0034c`; M4 (attributes on every operation) is implemented; M5 pending. Acceptance evidence per milestone
 is under [Acceptance](#acceptance).
 
 ## What the kernel promises, and what it does not
@@ -512,6 +512,24 @@ here.
 * **Start and end.** Roles `BottomEdge`, `TopEdge`, `BottomVertex` and
   `TopVertex` mean the extrusion's start and end sides, so swapping the offsets
   keeps every id.
+* **Attributes on operations (M4).** A topology stores opaque attributes
+  by entity id, one value per key (`Topology::attributes`,
+  `Solid::with_attribute`, which refuses an id the body does not have).
+  The operation context is `Context { operation, level, policies,
+  recompute }`; `extrude_in`, `transform_in`, `split_at_height_in` and
+  `fuse_stacked_in` take it, and the earlier `_with` and `_at` forms run
+  with no policies, so they are unchanged for bodies without attributes.
+  Every input attribute gets one outcome from the relation its entity is a
+  source of (`Unchanged` keeps; a transform's `Modified` follows
+  `on_transform`, `Recompute` calling the application's callback; `Split`
+  follows `on_split`; `Merged` follows `on_merge`, where a parent without
+  the key counts as unequal; `Deleted` drops). Outcomes are sorted by key
+  and input id and recorded in the history; generation never creates an
+  attribute. A key without a policy is `Error::MissingAttributePolicy`, a
+  `Recompute` without a callback `Error::MissingRecompute`. Every
+  operation runs `attributes::check` in debug builds. No current operation
+  reports `Modified` outside a transform, so `on_modify` is exercised only
+  by the checker's hand-written histories (`history_contracts.rs`).
 * **Split and fuse ids (M3).** Split children and merged entities keep
   their parent's role; a split child's ordinal is its piece's axial order
   (0 lower, 1 upper), a merged entity's ordinal is 0 and its parents are in

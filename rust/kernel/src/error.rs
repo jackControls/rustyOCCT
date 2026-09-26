@@ -24,6 +24,10 @@ pub enum Error {
     InvalidLabel(&'static str),
     /// An algorithm level this build cannot replay (H8).
     UnknownAlgorithmLevel(u32),
+    /// An input attribute whose key has no policy (contract 4, P2).
+    MissingAttributePolicy(u64),
+    /// A `Recompute` policy met a transform without a recompute callback.
+    MissingRecompute(u64),
 }
 
 impl fmt::Display for Error {
@@ -47,6 +51,8 @@ impl fmt::Display for Error {
             Self::DiscontinuousDerivative => write!(f, "requested derivative is discontinuous at the knot or seam; select a side"),
             Self::InvalidLabel(what) => write!(f, "invalid input labels: {what}"),
             Self::UnknownAlgorithmLevel(level) => write!(f, "algorithm level {level} is not available in this build"),
+            Self::MissingAttributePolicy(key) => write!(f, "attribute key {key} has no policy"),
+            Self::MissingRecompute(key) => write!(f, "attribute key {key} must be recomputed but no callback was given"),
         }
     }
 }

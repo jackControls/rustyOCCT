@@ -15,6 +15,7 @@
 //! regions also have value ids ([`EntityId`]) derived from how they were made
 //! (see `identity.rs`); shells, loops, fins and the infinite void are
 //! structure.
+use crate::attributes::{Attribute, AttributeMap};
 use crate::history::{EntityInfo, EntitySet, Geometry};
 use crate::identity::{
     Derivation, EntityId, EntityKind, InputLabel, OperationId, OperationKind, Parent,
@@ -383,6 +384,9 @@ pub struct Topology {
     identity: Identity,
     /// Where each slot of a builder-made prism sits; empty for `from_parts`.
     layout: Vec<(Slot, Place)>,
+    /// Opaque attributes by entity id (contract 4), each list sorted by key
+    /// with one value per key.
+    attributes: AttributeMap,
 }
 
 /// Where a slot of a prism sits along its axis (M3): on the lower or the
@@ -474,6 +478,7 @@ impl Topology {
             regions: parts.regions,
             identity,
             layout: Vec::new(),
+            attributes: AttributeMap::new(),
         })
     }
     /// The body's id; rigid transforms keep it.
@@ -764,6 +769,27 @@ impl Topology {
         }
     }
 
+    /// Every entity's attributes, by id; each list is sorted by key.
+    pub fn attributes(&self) -> &AttributeMap {
+        &self.attributes
+    }
+    /// The same topology with `attribute` on entity `id`, replacing any
+    /// value under the same key.
+    pub fn with_attribute(mut self, id: EntityId, attribute: Attribute) -> Result<Self> {
+        if self.slot_of(id).is_none() {
+            return Err(Error::OutOfDomain(
+                "attribute on an id the body does not have",
+            ));
+        }
+        let list = self.attributes.entry(id).or_default();
+        list.retain(|a| a.key != attribute.key);
+        list.push(attribute);
+        list.sort();
+        Ok(self)
+    }
+    pub(crate) fn set_attributes(&mut self, attributes: AttributeMap) {
+        self.attributes = attributes;
+    }
     /// Where each slot of a builder-made prism sits, in slot order.
     pub(crate) fn layout(&self) -> &[(Slot, Place)] {
         &self.layout
@@ -778,6 +804,7 @@ impl Topology {
         let named = derivations.len();
         let labels = std::mem::take(&mut self.identity.labels);
         self.identity = Identity::new(body, derivations, labels)?;
+        self.attributes.clear();
         let slots =
             self.vertices.len() + self.edges.len() + self.faces.len() + self.regions.len() - 1;
         if named != slots || self.identity.slots.len() != slots {
@@ -789,6 +816,7 @@ impl Topology {
     pub(crate) fn with_identity_of(mut self, other: &Topology) -> Self {
         debug_assert_eq!(self.layout, other.layout);
         self.identity = other.identity.clone();
+        self.attributes.clear();
         self
     }
 
@@ -906,6 +934,7 @@ impl Topology {
                 BTreeMap::new(),
             )?,
             layout: Vec::new(),
+            attributes: AttributeMap::new(),
         };
         for (boundary, wire) in profile.boundaries().enumerate() {
             let inner = boundary > 0;

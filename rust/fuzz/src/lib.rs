@@ -38,6 +38,8 @@ mod history;
 pub use history::check_history;
 mod split_merge;
 pub use split_merge::check_split_merge;
+mod attributes;
+pub use attributes::check_attributes;
 mod bezier_editing;
 pub use bezier_editing::{check_bezier_editing, profile_bezier_editing};
 #[path = "../../kernel/tests/support/bezier_reference.rs"]

@@ -105,6 +105,9 @@ fn main() {
                     bodies.insert(out.clone(), f);
                     histories.push((vec![a.clone(), b.clone()], vec![out.clone()], h));
                 }
+                Step::Transform { .. } => {
+                    unreachable!("native scenarios have no transform steps")
+                }
                 Step::Compose(i, j) => {
                     let composed = histories[*i].2.then(&histories[*j].2).unwrap();
                     let inputs: Vec<&Solid> = histories[*i].0.iter().map(|n| &bodies[n]).collect();

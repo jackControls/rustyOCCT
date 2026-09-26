@@ -66,6 +66,7 @@ jobs:
           target/math-oracle-venv/bin/python rust/tools/generate_identity_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_history_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_split_merge_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_attribute_fixtures.py --check
       - name: Run unchanged upstream tests on both kernels
         run: python3 rust/tools/run_upstream_tests.py --backend both --draw-exe /usr/bin/occt-draw
       - name: Compare line and plane intersections with native OCCT

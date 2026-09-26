@@ -58,7 +58,7 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
 | Contract / use | Required kernel work | Status |
 | --- | --- | --- |
 | Scene recompute | Owned bodies, feature-local errors, atomic operation results and repeatable replay | Immutable standalone solids and typed errors exist; scene/job adapter planned. |
-| Topology references | Face/edge identities, membership, geometry signatures, generated/modified/deleted mappings | Value ids derived from caller labels and complete checked histories exist for extrusions and rigid transforms (M0–M2 of `IDENTITY_AND_HISTORY.md`, accepted at `34efd36c`), on the cell-complex model (T1, `TOPOLOGY_MODEL.md`), and for the height split and stacked fuse, the first operations that split, merge and delete entities (M3). Attributes on real operations (M4) are required before feature migration. |
+| Topology references | Face/edge identities, membership, geometry signatures, generated/modified/deleted mappings | Value ids derived from caller labels and complete checked histories exist for extrusions and rigid transforms (M0–M2 of `IDENTITY_AND_HISTORY.md`, accepted at `34efd36c`), on the cell-complex model (T1, `TOPOLOGY_MODEL.md`), and for the height split and stacked fuse, the first operations that split, merge and delete entities (M3). Attributes propagate through every operation by declared policy with recorded, independently checked outcomes (M4). |
 | Face/edge metadata | Plane, cylinder, cone, circle, curvature, edge lengths and face signatures | Planes/cylinders/circles retained; DTO signatures and additional queries planned. |
 | Measurement | Bounds, mass/area/centroid/inertia, point classification, extrema/closest points | Bounds, mass properties and point classification supported for current prisms; certified linear-set minimum distances exist. Complete point-to-rational-spline minimum sets are implemented and accepted at `d1206b15`. General B-rep and other curved-pair distance/extrema remain planned. |
 | Exact interference | Occurrence transforms, minimum clearance, closest points, overlap volume | Transform, classifier and certified linear-set distance foundations exist. Solid clearance, common-solid and multi-body queries remain planned. |
@@ -134,7 +134,11 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
      degenerate-edge counts for poles, and the coverage ledger that
      labels every upstream assertion model-independent, mapped or lost.
    * **M4** propagates attributes through every operation by declared
-     policy; **M5** stores computed enclosures on entities and retires every
+     policy. Implemented: an operation context with the policy table, one
+     recorded outcome per input attribute, 33 independent scenarios over the
+     full policy matrix and the `attributes` fuzz target (no native bridge:
+     OCCT has none at kernel level).
+   * **M5** stores computed enclosures on entities and retires every
      unchecked tolerance comparison.
    Body-local indices are still not persistent names; only value ids are.
 3. **Reliable geometry and intersections.** Circular arcs, trimmed curves,
