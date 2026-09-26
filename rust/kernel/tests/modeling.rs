@@ -1,5 +1,5 @@
 use rusty_occt::identity::OperationId;
-use rusty_occt::topology::{FaceId, FaceOrigin, Surface};
+use rusty_occt::topology::{FaceId, FaceOrigin, Loop, Surface};
 use rusty_occt::*;
 use std::f64::consts::{FRAC_PI_2, PI};
 
@@ -204,7 +204,7 @@ fn polygon_hole_is_real_topology_and_subtracts_mass() {
 }
 
 #[test]
-fn cylinder_retains_analytic_circles_and_two_seam_pcurves() {
+fn cylinder_is_seamless_with_ring_edges_and_wound_loops() {
     let solid = Solid::cylinder(Frame3::xy(), 3., 0., 8., Tolerance::default()).unwrap();
     let mass = solid.mass_properties();
     close(mass.volume, 72. * PI);
@@ -212,27 +212,43 @@ fn cylinder_retains_analytic_circles_and_two_seam_pcurves() {
     close(mass.inertia[2][2], 0.5 * mass.volume * 9.);
     close(mass.inertia[0][0], mass.volume * (3. * 9. + 64.) / 12.);
     let topology = solid.topology();
+    // No seam and no vertex: two ring edges bound the three faces.
     assert_eq!(
         (
             topology.vertices().len(),
             topology.edges().len(),
             topology.faces().len()
         ),
-        (2, 3, 3)
+        (0, 2, 3)
     );
-    let seams: Vec<_> = topology
-        .edge_ids()
-        .filter(|e| topology.is_seam(*e) == Some(true))
-        .collect();
-    assert_eq!(seams.len(), 1);
+    assert!(topology
+        .edges()
+        .iter()
+        .all(|e| e.is_ring() && e.fins.len() == 2));
     let face = &topology.faces()[2];
     assert!(matches!(face.surface, Surface::Cylinder { .. }));
-    let uses: Vec<_> = face.loops[0]
+    let windings: Vec<[i32; 2]> = face
+        .loops
         .iter()
-        .filter(|c| c.edge == seams[0])
+        .map(|l| match &topology.loops()[l.index()] {
+            Loop::Edges { winding, .. } => *winding,
+            Loop::Vertex(_) => panic!("no vertex loops"),
+        })
         .collect();
-    assert_eq!(uses.len(), 2);
-    assert_ne!(uses[0].pcurve, uses[1].pcurve);
+    assert_eq!(windings, vec![[1, 0], [-1, 0]]);
+    // OCCT reports the same body with a seam edge and two seam vertices.
+    let counts = topology.occt_counts();
+    assert_eq!(
+        (
+            counts.vertices,
+            counts.edges,
+            counts.wires,
+            counts.faces,
+            counts.shells,
+            counts.solids
+        ),
+        (2, 3, 3, 3, 1, 1)
+    );
     close(face.normal(Point2::new(0., 4.)).x, 1.);
     assert_eq!(
         solid.classify(Point3::new(3., 0., 4.)).unwrap(),
@@ -637,13 +653,18 @@ fn every_wall_normal_points_out_of_material_including_holes() {
     .unwrap();
     for (index, face) in solid.topology().faces().iter().enumerate().skip(2) {
         let origin = solid.topology().face_origin(FaceId::new(index));
-        let corners = face.loops[0]
+        // A planar wall's four corners, or a cylinder wall's two ring-loop starts.
+        let corners = solid
+            .topology()
+            .face_fins(FaceId::new(index))
             .iter()
+            .flatten()
             .map(|c| c.pcurve.point(0.0))
             .collect::<Vec<_>>();
+        let n = corners.len() as f64;
         let uv = Point2::new(
-            corners.iter().map(|p| p.x).sum::<f64>() / 4.,
-            corners.iter().map(|p| p.y).sum::<f64>() / 4.,
+            corners.iter().map(|p| p.x).sum::<f64>() / n,
+            corners.iter().map(|p| p.y).sum::<f64>() / n,
         );
         let on_face = face.surface.point(uv);
         let normal = face.normal(uv);

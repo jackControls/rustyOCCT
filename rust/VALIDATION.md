@@ -465,7 +465,8 @@ No platform acceptance is claimed yet.
 ## Value identity
 
 `generate_identity_fixtures.py --check` pins the derivation encoding and
-FNV-1a-128 digest with 11 vectors, and computes every entity id of 546
+FNV-1a-128 digest with 12 vectors, and computes every entity id (46,494,
+regions included, circles seamless) of 546
 extrusions from an independent Python enumeration: 34 explicit cases (3–12
 sides, circles, 0–3 holes, both directions, clockwise input, labels absent,
 present, permuted, moved and inserted, the eight `box_at` sign combinations and
@@ -483,21 +484,30 @@ and location, so no native observation can confirm or refute an id.
 `generate_history_fixtures.py --check` writes the complete relation list of
 every value-identity case from the independent enumeration: each
 construction's `Generated` relations, each rigid motion's `Modified`
-relations, and their composition (114,890 relations). `history.rs` requires
-Rust's canonical relation lists to match, and every history to pass the
-independent checker, before and after composition. The `history` fuzz target
-mutates produced histories. `compare_history.py` maps source-pinned
+relations, and their composition (114,270 relations since the seamless cell
+model; region relations are listed beside the corpus digests). `history.rs`
+requires Rust's canonical relation lists to match, and every history to pass
+the independent checker, before and after composition, and to replay at its
+recorded algorithm level. The `history` fuzz target mutates produced
+histories. `compare_history.py` maps source-pinned
 `BRepTools_History`/`BRepPrimAPI_MakePrism` observations (captured before
-implementation) to Rust relations by geometry; see
-[identity and history](IDENTITY_AND_HISTORY.md). Two derived DRAW cases check
-`generated`, `modified` and `isdeleted` on both backends.
+implementation) to Rust relations by geometry. OCCT's seams and seam vertices
+are classified structure-only by rule, the solid generated from the face maps
+to the region, and every case's synthesized OCCT counts must equal native's;
+see [identity and history](IDENTITY_AND_HISTORY.md). Two derived DRAW cases
+check `generated`, `modified` and `isdeleted` on both backends, and a third
+checks a seamless `pcylinder` through the count synthesizer.
 
 ## Generic B-rep validation
 
-`generate_brep_fixtures.py --check` rebuilds 54 cases (21 valid) from an
-independent prism builder and mutations, with complete issue lists from the
-separate mpmath reference validator. `brep_validation.rs` requires Rust's
-sorted report to equal each list exactly. The `brep_validation` fuzz target
-mutates valid prisms and cavities into specific invalid shells.
+`generate_brep_fixtures.py --check` rebuilds 64 cell-complex cases (23 valid):
+54 converted by rule from an independent seamed prism builder and its
+mutations, and ten cell-model cases for the model's own failure modes, with
+complete issue lists from the separate mpmath reference validators
+(`brep_reference.py`, `cell_reference.py`). `brep_validation.rs` requires
+Rust's sorted report to equal each list exactly. The `brep_validation` fuzz
+target mutates valid prisms and cavities into specific invalid complexes.
 `compare_brep.py` compares native `BRepCheck_Analyzer` verdicts and status
-classes. See [the bridge](BREP_VALIDATION.md#native-comparison-bridge).
+classes on the seamed encodings, sets statuses on native seams aside as
+structure-only and checks the synthesized counts of every valid case. See
+[the bridge](BREP_VALIDATION.md#native-comparison-bridge).

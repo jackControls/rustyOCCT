@@ -31,7 +31,7 @@ box_pcurve_shift	pcurve_off_edge:use 2.0.0;uv_gap:use 2.0.0;uv_gap:use 2.0.3
 box_pcurve_shift_below_tolerance	
 cylinder_cap_pcurve_shift	pcurve_off_edge:use 1.0.0
 stadium_arc_pcurve_shift	pcurve_off_edge:use 3.0.0;uv_gap:use 3.0.0;uv_gap:use 3.0.3
-cylinder_swapped_seam_pcurves	uv_gap:use 2.0.0;uv_gap:use 2.0.1;uv_gap:use 2.0.2;uv_gap:use 2.0.3
+cylinder_swapped_seam_pcurves	seam_edge:edge 2;uv_gap:use 2.0.0;uv_gap:use 2.0.1;uv_gap:use 2.0.2;uv_gap:use 2.0.3
 cylinder_cap_wrong_pcurve_radius	pcurve_off_edge:use 1.0.0
 box_face_twice	face_reused:face 2;free_edge:edge 0;free_edge:edge 1;free_edge:edge 4;free_edge:edge 5
 box_non_manifold_edges	non_manifold_edge:edge 0;non_manifold_edge:edge 1;non_manifold_edge:edge 4;non_manifold_edge:edge 5
@@ -53,3 +53,13 @@ box_zero_length_edge	degenerate_curve:edge 0
 cylinder_zero_radius_surface	degenerate_surface:face 2
 plate_hole_loop_wound_wrong	pcurve_off_edge:use 0.1.0
 box_loose_tolerance_absorbs_shift	
+cylinder_seamless_at_pi	
+stadium_wall_fin_shifted_by_period	uv_gap:use 3.0.0;uv_gap:use 3.0.3
+cylinder_winding_flipped	uv_gap:use 2.0.0;winding_mismatch:loop 2.0
+box_fins_swapped_between_edges	edge_fins_mismatch:edge 0;edge_fins_mismatch:edge 1
+box_side_wrong_shell	free_edge:edge 0;free_edge:edge 1;free_edge:edge 4;free_edge:edge 5;side_region_mismatch:face 2
+box_vertex_loop	
+box_vertex_loop_off_surface	vertex_loop_off_surface:loop 1.1
+box_face_without_loops	empty_face:face 3;free_edge:edge 1;free_edge:edge 2;free_edge:edge 6;free_edge:edge 7;loop_without_face:loop slot 3
+cylinder_ring_edge_with_one_vertex	open_loop:loop 0.0;open_loop:loop 2.1;ring_edge_with_vertex:edge 0
+box_shell_not_in_its_region	region_shell_mismatch:shell 0;region_without_shell:region 1

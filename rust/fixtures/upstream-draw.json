@@ -77,10 +77,19 @@
       "expected_rust": "pass",
       "expected_occt": "pass",
       "purpose": "Derived: prism history against a clockwise profile's normal."
+    },
+    {
+      "path": "rust/fixtures/draw-derived/pcylinder_counts",
+      "derived": true,
+      "context": "tests/bugs/modalg_7",
+      "expected_rust": "pass",
+      "expected_occt": "pass",
+      "purpose": "Derived: cylinder counts (seam edge and vertices) through the count synthesizer, and properties."
     }
   ],
   "derived_sources": {
     "rust/fixtures/draw-derived/prism_history_rectangle": "4236efd3963fc8c0b885c65887df2f005387cf5e9b021d91b4565db7946a570e",
-    "rust/fixtures/draw-derived/prism_history_reversed_triangle": "0e3fca7528f376334bcafd1dc69587a8990fb7c4ebb528baa0057bc39e5bef6c"
+    "rust/fixtures/draw-derived/prism_history_reversed_triangle": "0e3fca7528f376334bcafd1dc69587a8990fb7c4ebb528baa0057bc39e5bef6c",
+    "rust/fixtures/draw-derived/pcylinder_counts": "4a800a919c536fc30b5075a17feb6d114e71c6b27f7fad761f2fdf4737fb1b08"
   }
 }

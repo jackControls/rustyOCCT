@@ -7,7 +7,9 @@ use libfuzzer_sys::arbitrary::Unstructured;
 use rusty_occt::history::{
     check, EntityInfo, EntitySet, Geometry, History, HistoryIssueKind as K, Relation, Resolution,
 };
-use rusty_occt::identity::{EntityId, EntityKind, OperationId, OperationKind};
+use rusty_occt::identity::{
+    AlgorithmLevel, EntityId, EntityKind, OperationId, OperationKind, Role,
+};
 use rusty_occt::topology::Curve3;
 use rusty_occt::Solid;
 
@@ -55,7 +57,9 @@ pub fn check_history(data: &[u8]) {
     };
     let mutation = u.arbitrary::<u8>().unwrap_or(0) % 7;
     let pick = usize::from(u.arbitrary::<u16>().unwrap_or(0));
-    let Some((solid, construct)) = build_tracked(&s, s.labels.as_deref(), 1.0, false) else {
+    // Either extrusion direction, circles included (seamless ring edges).
+    let reverse = u.arbitrary::<bool>().unwrap_or(false);
+    let Some((solid, construct)) = build_tracked(&s, s.labels.as_deref(), 1.0, reverse) else {
         return;
     };
     let tol = s.tolerance;
@@ -63,6 +67,33 @@ pub fn check_history(data: &[u8]) {
     // The construction and every transform check clean and compose.
     assert_eq!(check(&[], &[set(&solid)], &construct), vec![]);
     assert_eq!(construct.kind, OperationKind::Extrude);
+    // H8: the construction replays identically at its recorded level.
+    assert_eq!(construct.level, AlgorithmLevel::CURRENT);
+    let replayed = Solid::extrude_at(
+        construct.level,
+        solid.operation(),
+        solid.profile().clone(),
+        solid.frame(),
+        solid.start_offset(),
+        solid.end_offset(),
+    )
+    .unwrap();
+    assert_eq!(replayed, (solid.clone(), construct.clone()));
+    // The body's one region is generated from every profile boundary.
+    let regions = construct
+        .relations
+        .iter()
+        .filter(|r| {
+            matches!(
+                r,
+                Relation::Generated {
+                    role: Role::Region,
+                    ..
+                }
+            )
+        })
+        .count();
+    assert_eq!(regions, 1);
     let mut steps = vec![construct.clone()];
     let mut sets = vec![set(&solid)];
     let mut current = solid.clone();
@@ -71,6 +102,10 @@ pub fn check_history(data: &[u8]) {
             break;
         };
         assert_eq!(check(&[set(&current)], &[set(&next)], &h), vec![]);
+        assert_eq!(
+            current.transform_at(h.level, OperationId(k as u64), *transform),
+            Ok((next.clone(), h.clone()))
+        );
         for (id, _) in current.topology().ids() {
             assert_eq!(h.resolve(id), Resolution::Same(id));
         }

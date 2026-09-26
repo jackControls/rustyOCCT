@@ -11,7 +11,10 @@
 //! A use's pcurve follows the oriented face, so a reversed use pairs pcurve
 //! fraction t with edge fraction 1-t. Outer loops wind counter-clockwise about
 //! the oriented face normal; inner loops wind clockwise.
-use super::{Coedge, Curve2, Curve3, Edge, Face, FaceId, Orientation, Surface, Vertex};
+use super::{
+    Curve2, Curve3, Edge, Face, Fin, Loop, Orientation, Region, RegionKind, Shell, ShellId, Side,
+    Surface, Vertex,
+};
 use crate::certified::{pi, Fast, Interval as I, Real};
 use crate::{Frame3, Tolerance};
 use num_bigint::{BigInt, Sign};
@@ -58,6 +61,26 @@ pub enum IssueKind {
     UncertifiedLoopWinding,
     UncertifiedContainment,
     UncertifiedShellOrientation,
+    // Cell-complex structure (TOPOLOGY_MODEL.md).
+    FinWithoutLoop,
+    FinReused,
+    LoopWithoutFace,
+    LoopReused,
+    EdgeFinsMismatch,
+    RingEdgeWithVertex,
+    RingEdgeOpen,
+    SideWithoutShell,
+    SideInTwoShells,
+    SideRegionMismatch,
+    WindingMismatch,
+    DoubleBounding,
+    RegionWithoutShell,
+    NoInfiniteRegion,
+    RegionShellMismatch,
+    SeamEdge,
+    RadialOrderInconsistent,
+    VertexLoopOffSurface,
+    UncertifiedVertexLoop,
 }
 
 impl IssueKind {
@@ -98,6 +121,25 @@ impl IssueKind {
             UncertifiedLoopWinding => "uncertified_loop_winding",
             UncertifiedContainment => "uncertified_containment",
             UncertifiedShellOrientation => "uncertified_shell_orientation",
+            FinWithoutLoop => "fin_without_loop",
+            FinReused => "fin_reused",
+            LoopWithoutFace => "loop_without_face",
+            LoopReused => "loop_reused",
+            EdgeFinsMismatch => "edge_fins_mismatch",
+            RingEdgeWithVertex => "ring_edge_with_vertex",
+            RingEdgeOpen => "ring_edge_open",
+            SideWithoutShell => "side_without_shell",
+            SideInTwoShells => "side_in_two_shells",
+            SideRegionMismatch => "side_region_mismatch",
+            WindingMismatch => "winding_mismatch",
+            DoubleBounding => "double_bounding",
+            RegionWithoutShell => "region_without_shell",
+            NoInfiniteRegion => "no_infinite_region",
+            RegionShellMismatch => "region_shell_mismatch",
+            SeamEdge => "seam_edge",
+            RadialOrderInconsistent => "radial_order_inconsistent",
+            VertexLoopOffSurface => "vertex_loop_off_surface",
+            UncertifiedVertexLoop => "uncertified_vertex_loop",
         }
     }
 }
@@ -118,6 +160,11 @@ pub enum Entity {
     Loop(usize, usize),
     Use(usize, usize, usize),
     Shell(usize),
+    Region(usize),
+    /// A fin that no face's loop reaches, by arena index.
+    FinSlot(usize),
+    /// A loop that no face reaches, by arena index.
+    LoopSlot(usize),
 }
 
 impl fmt::Display for Entity {
@@ -131,6 +178,9 @@ impl fmt::Display for Entity {
             Self::Loop(i, l) => write!(f, "loop {i}.{l}"),
             Self::Use(i, l, u) => write!(f, "use {i}.{l}.{u}"),
             Self::Shell(s) => write!(f, "shell {s}"),
+            Self::Region(r) => write!(f, "region {r}"),
+            Self::FinSlot(k) => write!(f, "fin {k}"),
+            Self::LoopSlot(l) => write!(f, "loop slot {l}"),
         }
     }
 }
@@ -571,12 +621,30 @@ fn pcurve_valid(p: &Curve2) -> bool {
     }
 }
 
-fn use_vertices(edges: &[Edge], u: &Coedge) -> (usize, usize) {
-    let edge = &edges[u.edge.0];
-    if u.orientation == Orientation::Forward {
-        (edge.start.0, edge.end.0)
+/// The arenas of one body, as validated.
+pub(crate) struct View<'a> {
+    pub vertices: &'a [Vertex],
+    pub edges: &'a [Edge],
+    pub fins: &'a [Fin],
+    pub loops: &'a [Loop],
+    pub faces: &'a [Face],
+    pub shells: &'a [Shell],
+    pub regions: &'a [Region],
+}
+
+/// A face's edge loop resolved: its fins in order and its winding in u.
+struct Lp<'a> {
+    fins: Vec<&'a Fin>,
+    winding: i32,
+}
+
+fn fin_vertices(edges: &[Edge], fin: &Fin) -> (Option<usize>, Option<usize>) {
+    let edge = &edges[fin.edge.0];
+    let (a, b) = (edge.start.map(|v| v.0), edge.end.map(|v| v.0));
+    if fin.sense == Orientation::Forward {
+        (a, b)
     } else {
-        (edge.end.0, edge.start.0)
+        (b, a)
     }
 }
 
@@ -585,14 +653,35 @@ fn vertex_gap<T: Real>(curve: &Curve3, vertex: [f64; 3], t: f64, tol2: &T) -> Ve
     within(&vdot(&d, &d), tol2)
 }
 
-fn uv_gap<T: Real>(s: &Surface, p: &Curve2, next: &Curve2, tol2: &T) -> Verdict {
+/// The gap from the end of `p` to the start of `next` shifted by `shift` in u.
+fn uv_gap<T: Real>(s: &Surface, p: &Curve2, next: &Curve2, shift: f64, tol2: &T) -> Verdict {
     let (a, b) = (pcurve_at::<T>(p, 1.0), pcurve_at::<T>(next, 0.0));
-    let mut du = a[0].sub(&b[0]);
+    let mut du = a[0].sub(&b[0].add(&c(shift)));
     if let Surface::Cylinder { radius, .. } = s {
         du = du.mul(&c(*radius));
     }
     let dv = a[1].sub(&b[1]);
     within(&du.square().add(&dv.square()), tol2)
+}
+
+/// Distance from a point to a surface within tolerance.
+fn on_surface<T: Real>(s: &Surface, p: [f64; 3], tol2: &T) -> Verdict {
+    let (fr, rel) = match s {
+        Surface::Plane(f) | Surface::Cylinder { frame: f, .. } => {
+            let fr = frame::<T>(f);
+            let rel = vsub(&v3::<T>(p), &fr.o);
+            (fr, rel)
+        }
+    };
+    match s {
+        Surface::Plane(_) => within(&vdot(&rel, &fr.n).square(), tol2),
+        Surface::Cylinder { radius, .. } => {
+            let axial = vdot(&rel, &fr.n);
+            let radial = vsub(&rel, &vscale(&fr.n, &axial));
+            let d = vdot(&radial, &radial).sqrt().sub(&c(*radius));
+            within(&d.square(), tol2)
+        }
+    }
 }
 
 // ------------------------------------------------------------------ UV geometry
@@ -621,33 +710,60 @@ fn area_term<T: Real>(p: &Curve2) -> T {
     }
 }
 
-/// Twice the signed area of a loop closed by the same straight segments
-/// between consecutive uses as [`crossings`].
-fn loop_area<T: Real>(lp: &[Coedge]) -> T {
-    lp.iter().enumerate().fold(c::<T>(0.0), |acc, (k, u)| {
-        let (a, b) = (
-            pcurve_at::<T>(&u.pcurve, 1.0),
-            pcurve_at::<T>(&lp[(k + 1) % lp.len()].pcurve, 0.0),
-        );
-        let chord = a[0].mul(&b[1]).sub(&b[0].mul(&a[1]));
-        acc.add(&area_term::<T>(&u.pcurve)).add(&chord)
-    })
+/// The chords closing a loop exactly: each fin's end to the next fin's
+/// start, the last shifted by the winding times the period.
+fn chords<T: Real>(lp: &Lp) -> Vec<(V2<T>, V2<T>)> {
+    let n = lp.fins.len();
+    (0..n)
+        .map(|k| {
+            let a = pcurve_at::<T>(&lp.fins[k].pcurve, 1.0);
+            let mut b = pcurve_at::<T>(&lp.fins[(k + 1) % n].pcurve, 0.0);
+            if k == n - 1 && lp.winding != 0 {
+                b[0] = b[0].add(&c(TAU * f64::from(lp.winding)));
+            }
+            (a, b)
+        })
+        .collect()
 }
 
-/// Number of +u ray crossings from p over the given loops; None when a
-/// decision is not certified. Each loop is closed exactly by straight
-/// segments from each use's end to the next use's start (gaps the uv_gap
-/// check certified to be within tolerance), so parity is well defined.
-fn crossings<T: Real>(loops: &[Vec<Coedge>], p: &V2<T>) -> Option<u32> {
+/// Twice the signed area of an unwound loop closed by chords.
+fn loop_area<T: Real>(lp: &Lp) -> T {
+    let mut total = c::<T>(0.0);
+    for u in &lp.fins {
+        total = total.add(&area_term::<T>(&u.pcurve));
+    }
+    for (a, b) in chords::<T>(lp) {
+        total = total.add(&a[0].mul(&b[1]).sub(&b[0].mul(&a[1])));
+    }
+    total
+}
+
+/// -integral of v du over a loop on the universal cover, closed by chords;
+/// seam segments (du = 0) would contribute nothing. Lines only.
+fn periodic_area<T: Real>(lp: &Lp) -> Option<T> {
+    let term = |a: &V2<T>, b: &V2<T>| a[1].add(&b[1]).mul(&c(-0.5)).mul(&b[0].sub(&a[0]));
+    let mut total = c::<T>(0.0);
+    for u in &lp.fins {
+        let Curve2::LineSegment { start, end } = &u.pcurve else {
+            return None;
+        };
+        total = total.add(&term(&[c(start.x), c(start.y)], &[c(end.x), c(end.y)]));
+    }
+    for (a, b) in chords::<T>(lp) {
+        total = total.add(&term(&a, &b));
+    }
+    Some(total)
+}
+
+/// Number of +u ray crossings from p over the given unwound loops (closed by
+/// chords); None when a decision is not certified.
+fn crossings<T: Real>(loops: &[&Lp], p: &V2<T>) -> Option<u32> {
     let mut count = 0;
     for lp in loops {
-        for (k, u) in lp.iter().enumerate() {
-            let next = &lp[(k + 1) % lp.len()];
-            count += segment_crossing(
-                pcurve_at::<T>(&u.pcurve, 1.0),
-                pcurve_at::<T>(&next.pcurve, 0.0),
-                p,
-            )?;
+        for (a, b) in chords::<T>(lp) {
+            count += segment_crossing(a, b, p)?;
+        }
+        for u in &lp.fins {
             count += match &u.pcurve {
                 Curve2::LineSegment { start, end } => {
                     segment_crossing([c(start.x), c(start.y)], [c(end.x), c(end.y)], p)?
@@ -670,11 +786,55 @@ fn crossings<T: Real>(loops: &[Vec<Coedge>], p: &V2<T>) -> Option<u32> {
     Some(count)
 }
 
+/// Crossings of the +v ray from p with the face's line pcurves and chords,
+/// over every u alias k*TAU (a cylinder's universal cover); None when a
+/// decision is not certified or a pcurve is not a line.
+fn cover_crossings<T: Real>(loops: &[&Lp], p: &V2<T>) -> Option<u32> {
+    let mut count = 0;
+    for lp in loops {
+        let mut segments = chords::<T>(lp);
+        for u in &lp.fins {
+            let Curve2::LineSegment { start, end } = &u.pcurve else {
+                return None;
+            };
+            segments.push(([c(start.x), c(start.y)], [c(end.x), c(end.y)]));
+        }
+        for (a, b) in segments {
+            for k in alias_range(&a[0], &b[0], &p[0])? {
+                let u = p[0].sub(&c(TAU * k as f64));
+                // Half-open in u: exactly one end strictly right of u.
+                let (ra, rb) = (above(&a[0], &u)?, above(&b[0], &u)?);
+                if ra == rb {
+                    continue;
+                }
+                let slope = b[1].sub(&a[1]).div(&b[0].sub(&a[0]))?;
+                let v = a[1].add(&u.sub(&a[0]).mul(&slope));
+                match v.sub(&p[1]).sign()? {
+                    Ordering::Greater => count += 1,
+                    Ordering::Less => {}
+                    Ordering::Equal => return None,
+                }
+            }
+        }
+    }
+    Some(count)
+}
+
+/// Every k with p.u - k TAU possibly within the u span of a..b, plus one each
+/// side; None for spans too wide to enumerate.
+fn alias_range<T: Real>(a: &T, b: &T, pu: &T) -> Option<std::ops::RangeInclusive<i64>> {
+    let ((a0, a1), (b0, b1), (p0, p1)) = (a.bounds_f64(), b.bounds_f64(), pu.bounds_f64());
+    let (lo, hi) = (a0.min(b0), a1.max(b1));
+    let kmin = ((p0 - hi) / TAU).floor() - 1.0;
+    let kmax = ((p1 - lo) / TAU).ceil() + 1.0;
+    (kmin.is_finite() && kmax.is_finite() && kmax - kmin <= 64.0)
+        .then_some(kmin as i64..=kmax as i64)
+}
+
 /// Half-open rule: a crossing when exactly one end lies strictly above p.v.
 fn above<T: Real>(v: &T, pv: &T) -> Option<bool> {
     Some(v.sub(pv).sign()? == Ordering::Greater)
 }
-
 fn segment_crossing<T: Real>(a: V2<T>, b: V2<T>, p: &V2<T>) -> Option<u32> {
     let (ua, ub) = (above(&a[1], &p[1])?, above(&b[1], &p[1])?);
     if ua == ub {
@@ -757,78 +917,107 @@ fn arc_crossings<T: Real>(center: [R; 2], rho: &R, start: &R, sweep: &R, p: &V2<
 
 // ------------------------------------------------------------------ volumes
 
-/// Integral over one use of G(u,v) dv, where dG/du = S.(S_u x S_v).
-fn volume_term<T: Real>(s: &Surface, p: &Curve2) -> Option<T> {
-    match s {
+/// -integral of v f(u) du along a line from a to b, where f = A sin u +
+/// B cos u + C (A = B = 0 on a plane); exact closed forms, None when a
+/// cylinder line's du may be zero without being zero.
+fn line_flux<T: Real>(a: &V2<T>, b: &V2<T>, coeffs: &(T, T, T), plane: bool) -> Option<T> {
+    let (ca, cb, cc) = coeffs;
+    let du = b[0].sub(&a[0]);
+    if plane {
+        return Some(cc.mul(&du).mul(&a[1].add(&b[1])).mul(&c(-0.5)));
+    }
+    if du.sign()? == Ordering::Equal {
+        return Some(c(0.0));
+    }
+    let (c0, s0) = T::cos_sin(&a[0]);
+    let (c1, s1) = T::cos_sin(&b[0]);
+    // I0 = integral of f, I1 = integral of s f, over s in [0, du].
+    let i0 = ca
+        .mul(&c0.sub(&c1))
+        .add(&cb.mul(&s1.sub(&s0)))
+        .add(&cc.mul(&du));
+    let i1 = ca
+        .mul(&du.mul(&c1).neg().add(&s1).sub(&s0))
+        .add(&cb.mul(&du.mul(&s1).add(&c1).sub(&c0)))
+        .add(&cc.mul(&du.square()).mul(&c(0.5)));
+    let dv = b[1].sub(&a[1]);
+    Some(a[1].mul(&i0).add(&dv.mul(&i1).div(&du)?).neg())
+}
+
+/// The integral over the face of S.(S_u x S_v) du dv, as -loop integral of
+/// v f(u) du (f does not depend on v), loops closed by chords; their
+/// orientation carries the face's sense.
+fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
+    let (plane, coeffs) = match &face.surface {
         Surface::Plane(f) => {
             let fr = frame::<T>(f);
-            let h = vdot(&fr.o, &vcross(&fr.x, &fr.y));
-            match p {
-                Curve2::LineSegment { start, end } => {
-                    let du = c::<T>(end.x).sub(&c(start.x));
-                    let dv = c::<T>(end.y).sub(&c(start.y));
-                    let mean = c::<T>(start.x).add(&du.mul(&c(0.5)));
-                    Some(h.mul(&dv).mul(&mean))
-                }
+            (true, (c(0.0), c(0.0), vdot(&fr.o, &vcross(&fr.x, &fr.y))))
+        }
+        Surface::Cylinder { frame: f, radius } => {
+            let fr = frame::<T>(f);
+            let rad = c::<T>(*radius);
+            let a = vdot(&fr.o, &vcross(&fr.x, &fr.n));
+            let b = vdot(&fr.o, &vcross(&fr.y, &fr.n));
+            let det = vdot(&fr.x, &vcross(&fr.y, &fr.n));
+            (
+                false,
+                (rad.mul(&a).neg(), rad.mul(&b), rad.square().mul(&det)),
+            )
+        }
+    };
+    let mut total = c::<T>(0.0);
+    for lp in loops {
+        for u in &lp.fins {
+            let term = match &u.pcurve {
+                Curve2::LineSegment { start, end } => line_flux(
+                    &[c(start.x), c(start.y)],
+                    &[c(end.x), c(end.y)],
+                    &coeffs,
+                    plane,
+                )?,
                 Curve2::CircularArc {
                     center,
                     radius,
                     start_angle,
                     sweep_angle,
-                } => {
+                } if plane => {
+                    // h integral of (cy + rho sin t) rho sin t dt.
                     let a0 = c::<T>(*start_angle);
                     let a1 = a0.add(&c(*sweep_angle));
-                    let (_, s0) = T::cos_sin(&a0);
-                    let (_, s1) = T::cos_sin(&a1);
+                    let (c0, _) = T::cos_sin(&a0);
+                    let (c1, _) = T::cos_sin(&a1);
                     let (_, t0) = T::cos_sin(&a0.mul(&c(2.0)));
                     let (_, t1) = T::cos_sin(&a1.mul(&c(2.0)));
                     let rho = c::<T>(*radius);
-                    let first = c::<T>(center.x).mul(&rho).mul(&s1.sub(&s0));
+                    let first = c::<T>(center.y).mul(&rho).mul(&c0.sub(&c1));
                     let second = rho.square().mul(
                         &c::<T>(*sweep_angle)
                             .mul(&c(0.5))
-                            .add(&t1.sub(&t0).mul(&c(0.25))),
+                            .sub(&t1.sub(&t0).mul(&c(0.25))),
                     );
-                    Some(h.mul(&first.add(&second)))
+                    coeffs.2.mul(&first.add(&second))
                 }
-            }
+                Curve2::CircularArc { .. } => return None,
+            };
+            total = total.add(&term);
         }
-        Surface::Cylinder { frame: f, radius } => {
-            let Curve2::LineSegment { start, end } = p else {
-                return None;
-            };
-            let fr = frame::<T>(f);
-            let rad = c::<T>(*radius);
-            let ay = vdot(&fr.o, &vcross(&fr.y, &fr.n));
-            let bx = vdot(&fr.o, &vcross(&fr.x, &fr.n));
-            let det = vdot(&fr.x, &vcross(&fr.y, &fr.n));
-            let (u0, u1) = (r(start.x), r(end.x));
-            let du = &u1 - &u0;
-            let dv = c::<T>(end.y).sub(&c(start.y));
-            let (c0, s0) = T::cos_sin(&c(start.x));
-            let (is, ic) = if du.numer().sign() == Sign::NoSign {
-                (s0, c0)
-            } else {
-                let (c1, s1) = T::cos_sin(&c(end.x));
-                let inv = q::<T>(&(int(1) / &du));
-                (c0.sub(&c1).mul(&inv), s1.sub(&s0).mul(&inv))
-            };
-            let mean_u = q::<T>(&(&u0 + &du / int(2)));
-            let g = ay
-                .mul(&is)
-                .add(&bx.mul(&ic))
-                .add(&rad.mul(&det).mul(&mean_u));
-            Some(rad.mul(&g).mul(&dv))
+        for (a, b) in chords::<T>(lp) {
+            total = total.add(&line_flux(&a, &b, &coeffs, plane)?);
         }
     }
+    Some(total)
 }
 
-fn shell_volume<T: Real>(faces: &[Face], shell: &[FaceId]) -> Option<T> {
+/// A shell's flux: + for front sides, - for back sides. Positive when the
+/// shell encloses its region.
+fn shell_flux<T: Real>(faces: &[Face], resolved: &[Vec<Lp>], shell: &Shell) -> Option<T> {
     let mut total = c::<T>(0.0);
-    for f in shell {
-        for u in faces[f.0].loops.iter().flatten() {
-            total = total.add(&volume_term::<T>(&faces[f.0].surface, &u.pcurve)?);
-        }
+    for (f, side) in &shell.sides {
+        let flux = face_flux::<T>(&faces[f.0], &resolved[f.0])?;
+        total = match side {
+            Side::Front => total.add(&flux),
+            Side::Back => total.sub(&flux),
+        };
     }
     Some(total)
 }
@@ -846,17 +1035,23 @@ const DIRECTIONS: [[i64; 3]; 8] = [
     [-3, -7, 10],
 ];
 
-/// Parity of ray hits from an exact point against a shell; None when every
-/// ray direction meets an uncertified decision. Adjacent faces only meet
-/// within tolerance, so a hit also needs a certified margin `sqrt(margin2)`
-/// from its face's boundary. The parity is then the same for any watertight
-/// surface within tolerance of the faces.
-fn inside<T: Real>(faces: &[Face], shell: &[FaceId], point: &[R; 3], margin2: &T) -> Option<bool> {
+/// Parity of ray hits from an exact point against a shell's faces; None when
+/// every ray direction meets an uncertified decision. Adjacent faces only
+/// meet within tolerance, so a hit also needs a certified margin
+/// `sqrt(margin2)` from its face's boundary. The parity is then the same for
+/// any watertight surface within tolerance of the faces.
+fn inside<T: Real>(
+    faces: &[Face],
+    resolved: &[Vec<Lp>],
+    shell: &Shell,
+    point: &[R; 3],
+    margin2: &T,
+) -> Option<bool> {
     'direction: for d in DIRECTIONS {
         let d: [R; 3] = d.map(int);
         let mut hits = 0;
-        for face_id in shell {
-            match face_hits::<T>(&faces[face_id.0], point, &d, margin2) {
+        for (f, _) in &shell.sides {
+            match face_hits::<T>(&faces[f.0], &resolved[f.0], point, &d, margin2) {
                 Some(n) => hits += n,
                 None => continue 'direction,
             }
@@ -871,7 +1066,14 @@ fn det3(a: &[R; 3], b: &[R; 3], cc: &[R; 3]) -> R {
         + &a[2] * (&b[0] * &cc[1] - &b[1] * &cc[0])
 }
 
-fn face_hits<T: Real>(face: &Face, p: &[R; 3], d: &[R; 3], margin2: &T) -> Option<u32> {
+fn face_hits<T: Real>(
+    face: &Face,
+    loops: &[Lp],
+    p: &[R; 3],
+    d: &[R; 3],
+    margin2: &T,
+) -> Option<u32> {
+    let refs: Vec<&Lp> = loops.iter().collect();
     let exact = |f: &Frame3| {
         (
             f.origin().to_array().map(r),
@@ -906,10 +1108,10 @@ fn face_hits<T: Real>(face: &Face, p: &[R; 3], d: &[R; 3], margin2: &T) -> Optio
                 return Some(0);
             }
             let hit = [q(&u), q(&v)];
-            if !clear_of_boundary(&face.loops, &hit, &c(1.0), margin2)? {
+            if !clear_of_boundary(&refs, &hit, &c(1.0), false, margin2)? {
                 return None;
             }
-            let inside_face = crossings::<T>(&face.loops, &hit)? % 2;
+            let inside_face = crossings::<T>(&refs, &hit)? % 2;
             match t.numer().sign() {
                 // The point lies on the face's plane: harmless only when it is
                 // certainly outside the face region itself.
@@ -948,8 +1150,6 @@ fn face_hits<T: Real>(face: &Face, p: &[R; 3], d: &[R; 3], margin2: &T) -> Optio
             }
             let root = q::<T>(&disc).sqrt();
             let rad_t = c::<T>(*radius);
-            let window = uv_window(&face.loops)?;
-            let (cw, sw) = T::cos_sin(&q(&window));
             let mut count = 0;
             for sign in [-1.0, 1.0] {
                 let t = q::<T>(&-&b)
@@ -963,14 +1163,12 @@ fn face_hits<T: Real>(face: &Face, p: &[R; 3], d: &[R; 3], margin2: &T) -> Optio
                 let alpha = q::<T>(&q0[0]).add(&t.mul(&q(&q1[0])));
                 let beta = q::<T>(&q0[1]).add(&t.mul(&q(&q1[1])));
                 let v = q::<T>(&q0[2]).add(&t.mul(&q(&q1[2])));
-                // Angle relative to the face's UV window center.
-                let ar = alpha.mul(&cw).add(&beta.mul(&sw));
-                let br = beta.mul(&cw).sub(&alpha.mul(&sw));
-                let hit = [q::<T>(&window).add(&T::atan2(&br, &ar)?), v];
-                if !clear_of_boundary(&face.loops, &hit, &rad_t, margin2)? {
+                // Any representative angle: the loops are tested on every alias.
+                let hit = [T::atan2(&beta, &alpha)?, v];
+                if !clear_of_boundary(&refs, &hit, &rad_t, true, margin2)? {
                     return None;
                 }
-                count += crossings::<T>(&face.loops, &hit)? % 2;
+                count += cover_crossings::<T>(&refs, &hit)? % 2;
             }
             Some(count)
         }
@@ -978,24 +1176,26 @@ fn face_hits<T: Real>(face: &Face, p: &[R; 3], d: &[R; 3], margin2: &T) -> Optio
 }
 
 /// Whether a UV point is certainly farther than `sqrt(margin2)` from every
-/// use and closing chord of the loops, with u distances scaled by `su` (the
-/// cylinder radius; one on planes). Some(false) when it may be closer.
+/// fin and closing chord of the loops, with u distances scaled by `su` (the
+/// cylinder radius; one on planes) and, on a periodic surface, every u alias
+/// of each piece considered. Some(false) when it may be closer.
 fn clear_of_boundary<T: Real>(
-    loops: &[Vec<Coedge>],
+    loops: &[&Lp],
     p: &V2<T>,
     su: &T,
+    periodic: bool,
     margin2: &T,
 ) -> Option<bool> {
     let scaled = |a: &V2<T>| [a[0].mul(su), a[1].clone()];
-    let p = scaled(p);
     let far = |d2: &T| d2.cmp(margin2) == Some(Ordering::Greater);
-    let dist2 = |a: &V2<T>| {
-        let (du, dv) = (a[0].sub(&p[0]), a[1].sub(&p[1]));
-        du.square().add(&dv.square())
-    };
     // Squared distance from p to segment ab exceeds margin2.
-    let segment_clear = |a: V2<T>, b: V2<T>| -> Option<bool> {
-        let (a, b) = (scaled(&a), scaled(&b));
+    let segment_clear = |a: &V2<T>, b: &V2<T>, p: &V2<T>| -> Option<bool> {
+        let p = scaled(p);
+        let dist2 = |x: &V2<T>| {
+            let (du, dv) = (x[0].sub(&p[0]), x[1].sub(&p[1]));
+            du.square().add(&dv.square())
+        };
+        let (a, b) = (scaled(a), scaled(b));
         let d = [b[0].sub(&a[0]), b[1].sub(&a[1])];
         let w = [p[0].sub(&a[0]), p[1].sub(&a[1])];
         let len2 = d[0].square().add(&d[1].square());
@@ -1012,19 +1212,34 @@ fn clear_of_boundary<T: Real>(
             along.sign()? == Ordering::Less || along.sub(&len2).sign()? == Ordering::Greater;
         Some(outside && far(&dist2(&a)) && far(&dist2(&b)))
     };
-    for lp in loops {
-        for (k, u) in lp.iter().enumerate() {
-            let next = &lp[(k + 1) % lp.len()];
-            if !segment_clear(pcurve_at(&u.pcurve, 1.0), pcurve_at(&next.pcurve, 0.0))? {
+    let each_alias = |a: &V2<T>, b: &V2<T>| -> Option<bool> {
+        if !periodic {
+            return segment_clear(a, b, p);
+        }
+        for k in alias_range(&a[0], &b[0], &p[0])? {
+            let shifted = [p[0].sub(&c(TAU * k as f64)), p[1].clone()];
+            if !segment_clear(a, b, &shifted)? {
                 return Some(false);
             }
+        }
+        Some(true)
+    };
+    for lp in loops {
+        for (a, b) in chords::<T>(lp) {
+            if !each_alias(&a, &b)? {
+                return Some(false);
+            }
+        }
+        for u in &lp.fins {
             let clear = match &u.pcurve {
                 Curve2::LineSegment { start, end } => {
-                    segment_clear([c(start.x), c(start.y)], [c(end.x), c(end.y)])?
+                    each_alias(&[c(start.x), c(start.y)], &[c(end.x), c(end.y)])?
                 }
                 // Plane arcs only: clear of the whole circle.
+                Curve2::CircularArc { .. } if periodic => return None,
                 Curve2::CircularArc { center, radius, .. } => {
-                    let r0 = dist2(&scaled(&[c(center.x), c(center.y)])).sqrt();
+                    let d = [p[0].sub(&c(center.x)), p[1].sub(&c(center.y))];
+                    let r0 = d[0].square().add(&d[1].square()).sqrt();
                     far(&r0.sub(&c(*radius)).square())
                 }
             };
@@ -1035,57 +1250,106 @@ fn clear_of_boundary<T: Real>(
     }
     Some(true)
 }
-
-/// Midpoint of the u extent of a face's line pcurve endpoints.
-fn uv_window(loops: &[Vec<Coedge>]) -> Option<R> {
-    let mut us: Vec<R> = Vec::new();
-    for u in loops.iter().flatten() {
-        match &u.pcurve {
-            Curve2::LineSegment { start, end } => {
-                us.push(r(start.x));
-                us.push(r(end.x));
-            }
-            Curve2::CircularArc { .. } => return None,
-        }
-    }
-    let lo = us.iter().min()?.clone();
-    let hi = us.iter().max()?.clone();
-    Some((lo + hi) / int(2))
-}
-
 // ------------------------------------------------------------------ the contract
 
-pub(crate) fn check(
-    vertices: &[Vertex],
-    edges: &[Edge],
-    faces: &[Face],
-    shells: &[Vec<FaceId>],
-    tolerance: Tolerance,
-) -> Vec<Issue> {
+fn closed_curve(curve: &Curve3) -> bool {
+    match curve {
+        Curve3::Circle { .. } => true,
+        Curve3::CircularArc { sweep_angle, .. } => sweep_angle.abs() == TAU,
+        Curve3::LineSegment { .. } => false,
+    }
+}
+
+pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
+    let View {
+        vertices,
+        edges,
+        fins,
+        loops,
+        faces,
+        shells,
+        regions,
+    } = *view;
     let mut issues: BTreeSet<Issue> = BTreeSet::new();
     let add = |issues: &mut BTreeSet<Issue>, kind, entity| {
         issues.insert(Issue { kind, entity });
     };
     use Entity as En;
     use IssueKind as K;
-    let (nv, ne, nf) = (vertices.len(), edges.len(), faces.len());
-    for (i, edge) in edges.iter().enumerate() {
-        if edge.start.0 >= nv || edge.end.0 >= nv {
-            add(&mut issues, K::Reference, En::Edge(i));
-        }
-    }
+    let (nv, ne, nfin, nl, nf, ns, nr) = (
+        vertices.len(),
+        edges.len(),
+        fins.len(),
+        loops.len(),
+        faces.len(),
+        shells.len(),
+        regions.len(),
+    );
+    // Fin and loop locations (by first occurrence) name the entities.
+    let mut place: BTreeMap<usize, (usize, usize, usize)> = BTreeMap::new();
+    let mut loop_place: BTreeMap<usize, (usize, usize)> = BTreeMap::new();
     for (fi, face) in faces.iter().enumerate() {
-        for (li, lp) in face.loops.iter().enumerate() {
-            for (ui, u) in lp.iter().enumerate() {
-                if u.edge.0 >= ne {
-                    add(&mut issues, K::Reference, En::Use(fi, li, ui));
+        for (li, l) in face.loops.iter().enumerate() {
+            if l.0 < nl {
+                loop_place.entry(l.0).or_insert((fi, li));
+                if let Loop::Edges { fins: list, .. } = &loops[l.0] {
+                    for (ui, k) in list.iter().enumerate() {
+                        if k.0 < nfin {
+                            place.entry(k.0).or_insert((fi, li, ui));
+                        }
+                    }
                 }
             }
         }
     }
+    let fin_name = |k: usize| match place.get(&k) {
+        Some(&(f, l, u)) => En::Use(f, l, u),
+        None => En::FinSlot(k),
+    };
+    let loop_name = |l: usize| match loop_place.get(&l) {
+        Some(&(f, i)) => En::Loop(f, i),
+        None => En::LoopSlot(l),
+    };
+
+    // ------------------------------------------------ references
+    for (i, edge) in edges.iter().enumerate() {
+        if [edge.start, edge.end].iter().flatten().any(|v| v.0 >= nv)
+            || edge.fins.iter().any(|k| k.0 >= nfin)
+        {
+            add(&mut issues, K::Reference, En::Edge(i));
+        }
+    }
+    for (k, fin) in fins.iter().enumerate() {
+        if fin.edge.0 >= ne {
+            add(&mut issues, K::Reference, fin_name(k));
+        }
+    }
+    for (l, lp) in loops.iter().enumerate() {
+        let bad = match lp {
+            Loop::Edges { fins: list, .. } => list.iter().any(|k| k.0 >= nfin),
+            Loop::Vertex(v) => v.0 >= nv,
+        };
+        if bad {
+            add(&mut issues, K::Reference, loop_name(l));
+        }
+    }
+    for (fi, face) in faces.iter().enumerate() {
+        if face.loops.iter().any(|l| l.0 >= nl) || face.front.0 >= ns || face.back.0 >= ns {
+            add(&mut issues, K::Reference, En::Face(fi));
+        }
+    }
     for (si, shell) in shells.iter().enumerate() {
-        if shell.iter().any(|f| f.0 >= nf) {
+        if shell.region.0 >= nr
+            || shell.sides.iter().any(|(f, _)| f.0 >= nf)
+            || shell.wire_edges.iter().any(|e| e.0 >= ne)
+            || shell.acorn_vertices.iter().any(|v| v.0 >= nv)
+        {
             add(&mut issues, K::Reference, En::Shell(si));
+        }
+    }
+    for (ri, region) in regions.iter().enumerate() {
+        if region.shells.iter().any(|s| s.0 >= ns) {
+            add(&mut issues, K::Reference, En::Region(ri));
         }
     }
     if !issues.is_empty() {
@@ -1098,117 +1362,333 @@ pub(crate) fn check(
     // Containment rays keep twice the tolerance from face boundaries.
     let (fast_margin2, exact_margin2) = (fast_tol2.mul(&c(4.0)), exact_tol2.mul(&c(4.0)));
 
+    // ------------------------------------------------ structure (exact)
+    let mut fin_count = vec![0usize; nfin];
+    for lp in loops {
+        if let Loop::Edges { fins: list, .. } = lp {
+            for k in list {
+                fin_count[k.0] += 1;
+            }
+        }
+    }
+    for (k, n) in fin_count.iter().enumerate() {
+        match n {
+            0 => add(&mut issues, K::FinWithoutLoop, fin_name(k)),
+            1 => {}
+            _ => add(&mut issues, K::FinReused, fin_name(k)),
+        }
+    }
+    let mut loop_count = vec![0usize; nl];
+    for face in faces {
+        for l in &face.loops {
+            loop_count[l.0] += 1;
+        }
+    }
+    for (l, n) in loop_count.iter().enumerate() {
+        match n {
+            0 => add(&mut issues, K::LoopWithoutFace, loop_name(l)),
+            1 => {}
+            _ => add(&mut issues, K::LoopReused, loop_name(l)),
+        }
+    }
+    let mut users: BTreeMap<usize, Vec<usize>> = BTreeMap::new();
+    for (k, fin) in fins.iter().enumerate() {
+        users.entry(fin.edge.0).or_default().push(k);
+    }
+    let sorted = |v: &[usize]| {
+        let mut v = v.to_vec();
+        v.sort_unstable();
+        v
+    };
+    for (i, edge) in edges.iter().enumerate() {
+        let listed: Vec<usize> = edge.fins.iter().map(|k| k.0).collect();
+        if sorted(&listed) != sorted(users.get(&i).map_or(&[][..], Vec::as_slice)) {
+            add(&mut issues, K::EdgeFinsMismatch, En::Edge(i));
+        }
+    }
     let mut used_vertex = vec![false; nv];
     for edge in edges {
-        used_vertex[edge.start.0] = true;
-        used_vertex[edge.end.0] = true;
+        for v in [edge.start, edge.end].into_iter().flatten() {
+            used_vertex[v.0] = true;
+        }
+    }
+    for lp in loops {
+        if let Loop::Vertex(v) = lp {
+            used_vertex[v.0] = true;
+        }
+    }
+    for shell in shells {
+        for v in &shell.acorn_vertices {
+            used_vertex[v.0] = true;
+        }
     }
     for (v, used) in used_vertex.iter().enumerate() {
         if !used {
             add(&mut issues, K::UnusedVertex, En::Vertex(v));
         }
     }
-    let mut uses: BTreeMap<usize, Vec<(usize, bool)>> = BTreeMap::new();
-    for (fi, face) in faces.iter().enumerate() {
-        for lp in &face.loops {
-            for u in lp {
-                uses.entry(u.edge.0)
-                    .or_default()
-                    .push((fi, u.orientation == Orientation::Forward));
-            }
-        }
-    }
-    for i in 0..ne {
-        if !uses.contains_key(&i) {
+    let wire: BTreeSet<usize> = shells
+        .iter()
+        .flat_map(|s| s.wire_edges.iter().map(|e| e.0))
+        .collect();
+    for (i, edge) in edges.iter().enumerate() {
+        if !users.contains_key(&i) && !wire.contains(&i) {
             add(&mut issues, K::UnusedEdge, En::Edge(i));
         }
+        if edge.start.is_none() != edge.end.is_none() {
+            add(&mut issues, K::RingEdgeWithVertex, En::Edge(i));
+        } else if edge.start.is_none() && !closed_curve(&edge.curve) {
+            add(&mut issues, K::RingEdgeOpen, En::Edge(i));
+        }
     }
-    let mut owner: BTreeMap<usize, Vec<usize>> = BTreeMap::new();
+    // Face sides against the shells listing them.
+    let mut listings: BTreeMap<(usize, Side), Vec<usize>> = BTreeMap::new();
     for (si, shell) in shells.iter().enumerate() {
-        if shell.is_empty() {
+        if shell.sides.is_empty() && shell.wire_edges.is_empty() && shell.acorn_vertices.is_empty()
+        {
             add(&mut issues, K::EmptyShell, En::Shell(si));
         }
-        for f in shell {
-            owner.entry(f.0).or_default().push(si);
+        for (f, side) in &shell.sides {
+            listings.entry((f.0, *side)).or_default().push(si);
         }
     }
-    let mut structural_faces = BTreeSet::new();
-    let mut bad_shells: BTreeSet<usize> = BTreeSet::new();
+    let mut side_bad: BTreeSet<usize> = BTreeSet::new();
     for (fi, face) in faces.iter().enumerate() {
-        match owner.get(&fi).map(Vec::len) {
-            None => add(&mut issues, K::FaceWithoutShell, En::Face(fi)),
-            Some(n) if n > 1 => add(&mut issues, K::FaceReused, En::Face(fi)),
-            _ => {}
-        }
-        let mut broken = false;
-        if face.loops.is_empty() {
-            add(&mut issues, K::EmptyFace, En::Face(fi));
-            broken = true;
-        }
-        for (li, lp) in face.loops.iter().enumerate() {
-            if lp.is_empty() {
-                add(&mut issues, K::EmptyLoop, En::Loop(fi, li));
-                structural_faces.insert(fi);
-                broken = true;
-                continue;
-            }
-            let ends: Vec<_> = lp.iter().map(|u| use_vertices(edges, u)).collect();
-            if (0..ends.len()).any(|k| ends[k].1 != ends[(k + 1) % ends.len()].0) {
-                add(&mut issues, K::OpenLoop, En::Loop(fi, li));
-                structural_faces.insert(fi);
-                broken = true;
-            }
-        }
-        if broken {
-            bad_shells.extend(owner.get(&fi).into_iter().flatten().copied());
-        }
-    }
-
-    // Edge accounting over faces owned by exactly one shell.
-    let shell_of: BTreeMap<usize, usize> = owner
-        .iter()
-        .filter(|(_, s)| s.len() == 1)
-        .map(|(f, s)| (*f, s[0]))
-        .collect();
-    for (edge, list) in &uses {
-        let list: Vec<_> = list
-            .iter()
-            .filter(|x| shell_of.contains_key(&x.0))
-            .collect();
-        let set: BTreeSet<usize> = list.iter().map(|x| shell_of[&x.0]).collect();
-        let kind = if set.len() > 1 {
-            Some(K::EdgeAcrossShells)
-        } else if list.len() == 1 {
-            Some(K::FreeEdge)
-        } else if list.len() > 2 {
-            Some(K::NonManifoldEdge)
-        } else if list.len() == 2 && list[0].1 == list[1].1 {
-            Some(K::SameSenseUses)
+        let none = Vec::new();
+        let fr = listings.get(&(fi, Side::Front)).unwrap_or(&none);
+        let bk = listings.get(&(fi, Side::Back)).unwrap_or(&none);
+        let repeated = |v: &Vec<usize>| v.iter().any(|s| v.iter().filter(|t| *t == s).count() > 1);
+        let kind = if fr.is_empty() && bk.is_empty() {
+            Some(K::FaceWithoutShell)
+        } else if fr.len() > 1 || bk.len() > 1 {
+            Some(if repeated(fr) || repeated(bk) {
+                K::FaceReused
+            } else {
+                K::SideInTwoShells
+            })
+        } else if fr.is_empty() || bk.is_empty() {
+            Some(K::SideWithoutShell)
+        } else if fr[0] != face.front.0 || bk[0] != face.back.0 {
+            Some(K::SideRegionMismatch)
         } else {
             None
         };
         if let Some(kind) = kind {
-            add(&mut issues, kind, En::Edge(*edge));
-            bad_shells.extend(set);
+            add(&mut issues, kind, En::Face(fi));
+            side_bad.insert(fi);
         }
     }
-    for (si, shell) in shells.iter().enumerate() {
-        if bad_shells.contains(&si)
-            || shell.is_empty()
-            || shell
+    // Resolved loops per face; winding in u only.
+    let resolved: Vec<Vec<Lp>> = faces
+        .iter()
+        .map(|face| {
+            face.loops
                 .iter()
-                .any(|f| owner.get(&f.0).map_or(0, Vec::len) != 1)
+                .filter_map(|l| match &loops[l.0] {
+                    Loop::Edges {
+                        fins: list,
+                        winding,
+                    } => Some(Lp {
+                        fins: list.iter().map(|k| &fins[k.0]).collect(),
+                        winding: winding[0],
+                    }),
+                    Loop::Vertex(_) => None,
+                })
+                .collect()
+        })
+        .collect();
+    let mut structural_faces = BTreeSet::new();
+    for (fi, face) in faces.iter().enumerate() {
+        if face.loops.is_empty() {
+            add(&mut issues, K::EmptyFace, En::Face(fi));
+            structural_faces.insert(fi);
+        }
+        let periodic = matches!(face.surface, Surface::Cylinder { .. });
+        for (li, l) in face.loops.iter().enumerate() {
+            let Loop::Edges {
+                fins: list,
+                winding,
+            } = &loops[l.0]
+            else {
+                continue;
+            };
+            if list.is_empty() {
+                add(&mut issues, K::EmptyLoop, En::Loop(fi, li));
+                structural_faces.insert(fi);
+                continue;
+            }
+            if winding[1] != 0 || (!periodic && winding[0] != 0) {
+                add(&mut issues, K::WindingMismatch, En::Loop(fi, li));
+                structural_faces.insert(fi);
+            }
+            let ends: Vec<_> = list
+                .iter()
+                .map(|k| fin_vertices(edges, &fins[k.0]))
+                .collect();
+            if ends.len() == 1 && ends[0] == (None, None) {
+                continue;
+            }
+            let open = ends.iter().any(|(a, b)| a.is_none() || b.is_none())
+                || (0..ends.len()).any(|k| ends[k].1 != ends[(k + 1) % ends.len()].0);
+            if open {
+                add(&mut issues, K::OpenLoop, En::Loop(fi, li));
+                structural_faces.insert(fi);
+            }
+        }
+        if periodic {
+            let wound: Vec<i32> = resolved[fi].iter().map(|lp| lp.winding).collect();
+            if wound.iter().any(|w| *w != 0) && wound.iter().sum::<i32>() != 0 {
+                add(&mut issues, K::WindingMismatch, En::Loop(fi, 0));
+                structural_faces.insert(fi);
+            }
+        }
+    }
+    for (ri, region) in regions.iter().enumerate() {
+        let distinct: BTreeSet<usize> = region.shells.iter().map(|s| s.0).collect();
+        if distinct.len() != region.shells.len() {
+            add(&mut issues, K::DoubleBounding, En::Region(ri));
+        }
+        if ri > 0 && region.shells.is_empty() {
+            add(&mut issues, K::RegionWithoutShell, En::Region(ri));
+        }
+    }
+    if regions.first().map(|r| r.kind) != Some(RegionKind::Void) {
+        add(&mut issues, K::NoInfiniteRegion, En::Region(0));
+    }
+    for (si, shell) in shells.iter().enumerate() {
+        if !regions[shell.region.0].shells.contains(&ShellId(si)) {
+            add(&mut issues, K::RegionShellMismatch, En::Shell(si));
+        }
+    }
+    // Seams are forbidden: an edge with two fins in one face.
+    let fin_face: BTreeMap<usize, usize> = place.iter().map(|(k, p)| (*k, p.0)).collect();
+    for (i, list) in &users {
+        let faces_of: Vec<Option<&usize>> = list.iter().map(|k| fin_face.get(k)).collect();
+        let distinct: BTreeSet<_> = faces_of.iter().collect();
+        if distinct.len() != faces_of.len() {
+            add(&mut issues, K::SeamEdge, En::Edge(*i));
+            structural_faces.extend(list.iter().filter_map(|k| fin_face.get(k).copied()));
+        }
+    }
+
+    // Edge accounting: shells must alternate around each edge's fins, in the
+    // stored radial order.
+    let mut bad_shells: BTreeSet<usize> = BTreeSet::new();
+    for (i, edge) in edges.iter().enumerate() {
+        let listed: Vec<usize> = edge.fins.iter().map(|k| k.0).collect();
+        if listed.is_empty()
+            || sorted(&listed) != sorted(users.get(&i).map_or(&[][..], Vec::as_slice))
+        {
+            continue;
+        }
+        let around: Vec<usize> = listed
+            .iter()
+            .copied()
+            .filter(|k| fin_face.get(k).is_some_and(|f| !side_bad.contains(f)))
+            .collect();
+        if around.is_empty() {
+            continue;
+        }
+        let face_of = |k: usize| &faces[fin_face[&k]];
+        let forward = |k: usize| fins[k].sense == Orientation::Forward;
+        let ahead: Vec<usize> = around
+            .iter()
+            .map(|&k| {
+                if forward(k) {
+                    face_of(k).front.0
+                } else {
+                    face_of(k).back.0
+                }
+            })
+            .collect();
+        let behind: Vec<usize> = around
+            .iter()
+            .map(|&k| {
+                if forward(k) {
+                    face_of(k).back.0
+                } else {
+                    face_of(k).front.0
+                }
+            })
+            .collect();
+        let n = around.len();
+        if (0..n).all(|j| ahead[j] == behind[(j + 1) % n]) {
+            continue;
+        }
+        let pairs: BTreeSet<(usize, usize)> = around
+            .iter()
+            .map(|&k| {
+                let f = face_of(k);
+                (f.front.0.min(f.back.0), f.front.0.max(f.back.0))
+            })
+            .collect();
+        let kind = if pairs.len() > 1 {
+            K::EdgeAcrossShells
+        } else if n == 1 {
+            K::FreeEdge
+        } else if n == 2 {
+            if forward(around[0]) == forward(around[1]) {
+                K::SameSenseUses
+            } else {
+                K::RadialOrderInconsistent
+            }
+        } else {
+            K::NonManifoldEdge
+        };
+        add(&mut issues, kind, En::Edge(i));
+        for &k in &around {
+            bad_shells.insert(face_of(k).front.0);
+            bad_shells.insert(face_of(k).back.0);
+        }
+    }
+    for &fi in &structural_faces {
+        bad_shells.insert(faces[fi].front.0);
+        bad_shells.insert(faces[fi].back.0);
+    }
+    // A shell listing exactly the opposite sides of an earlier shell is the
+    // same surface: its shell-level checks are not repeated.
+    let opposite = |side: Side| match side {
+        Side::Front => Side::Back,
+        Side::Back => Side::Front,
+    };
+    let twins: BTreeSet<usize> = (0..ns)
+        .filter(|&si| {
+            let mut mine: Vec<(usize, Side)> = shells[si]
+                .sides
+                .iter()
+                .map(|(f, s)| (f.0, opposite(*s)))
+                .collect();
+            mine.sort();
+            !mine.is_empty()
+                && (0..si).any(|sj| {
+                    let mut theirs: Vec<(usize, Side)> =
+                        shells[sj].sides.iter().map(|(f, s)| (f.0, *s)).collect();
+                    theirs.sort();
+                    theirs == mine
+                })
+        })
+        .collect();
+    let shell_faces =
+        |si: usize| -> Vec<usize> { shells[si].sides.iter().map(|(f, _)| f.0).collect() };
+    for si in 0..ns {
+        if twins.contains(&si) {
+            continue;
+        }
+        let members_list = shell_faces(si);
+        if bad_shells.contains(&si)
+            || members_list.is_empty()
+            || members_list.iter().any(|f| side_bad.contains(f))
         {
             bad_shells.insert(si);
             continue;
         }
-        let members: BTreeSet<usize> = shell.iter().map(|f| f.0).collect();
+        let members: BTreeSet<usize> = members_list.iter().copied().collect();
         let mut adjacency: BTreeMap<usize, BTreeSet<usize>> =
             members.iter().map(|f| (*f, BTreeSet::new())).collect();
-        for list in uses.values() {
+        for list in users.values() {
             let fs: BTreeSet<usize> = list
                 .iter()
-                .map(|x| x.0)
+                .filter_map(|k| fin_face.get(k).copied())
                 .filter(|f| members.contains(f))
                 .collect();
             for a in &fs {
@@ -1225,10 +1705,12 @@ pub(crate) fn check(
         }
         let mut links: BTreeMap<usize, BTreeMap<usize, BTreeSet<usize>>> = BTreeMap::new();
         for f in &members {
-            for lp in &faces[*f].loops {
-                for (k, u) in lp.iter().enumerate() {
-                    let w = &lp[(k + 1) % lp.len()];
-                    let v = use_vertices(edges, u).1;
+            for lp in &resolved[*f] {
+                for (k, u) in lp.fins.iter().enumerate() {
+                    let w = lp.fins[(k + 1) % lp.fins.len()];
+                    let Some(v) = fin_vertices(edges, u).1 else {
+                        continue;
+                    };
                     let g = links.entry(v).or_default();
                     g.entry(u.edge.0).or_default().insert(w.edge.0);
                     g.entry(w.edge.0).or_default().insert(u.edge.0);
@@ -1248,17 +1730,28 @@ pub(crate) fn check(
         }
         let mut vs = BTreeSet::new();
         let mut es = BTreeSet::new();
-        let mut loops = 0i64;
+        let mut loop_total = 0i64;
         for f in &members {
-            loops += faces[*f].loops.len() as i64;
-            for u in faces[*f].loops.iter().flatten() {
-                let (a, b) = use_vertices(edges, u);
-                vs.insert(a);
-                vs.insert(b);
-                es.insert(u.edge.0);
+            for l in &faces[*f].loops {
+                loop_total += 1;
+                match &loops[l.0] {
+                    Loop::Vertex(v) => {
+                        vs.insert(v.0);
+                    }
+                    Loop::Edges { fins: list, .. } => {
+                        for k in list {
+                            let e = fins[k.0].edge.0;
+                            if let (Some(a), Some(b)) = (edges[e].start, edges[e].end) {
+                                vs.insert(a.0);
+                                vs.insert(b.0);
+                                es.insert(e);
+                            }
+                        }
+                    }
+                }
             }
         }
-        let chi = vs.len() as i64 - es.len() as i64 + 2 * members.len() as i64 - loops;
+        let chi = vs.len() as i64 - es.len() as i64 + 2 * members.len() as i64 - loop_total;
         if chi % 2 != 0 || chi > 2 {
             add(&mut issues, K::Euler, En::Shell(si));
             bad_shells.insert(si);
@@ -1294,37 +1787,60 @@ pub(crate) fn check(
         }
     }
     for (i, edge) in edges.iter().enumerate() {
+        let (Some(start), Some(end)) = (edge.start, edge.end) else {
+            continue;
+        };
         if !curve_ok[i] {
             continue;
         }
-        for (end, v, t) in [
-            (EdgeEnd::Start, edge.start.0, 0.0),
-            (EdgeEnd::End, edge.end.0, 1.0),
-        ] {
+        for (which, v, t) in [(EdgeEnd::Start, start.0, 0.0), (EdgeEnd::End, end.0, 1.0)] {
             if !vertex_ok[v] {
                 continue;
             }
-            let gap = |curve: &Curve3| {
-                tiered(
-                    Verdict::Unknown,
-                    || vertex_gap::<Fast>(curve, vertices[v].position.to_array(), t, &fast_tol2),
-                    || vertex_gap::<I>(curve, vertices[v].position.to_array(), t, &exact_tol2),
-                )
-            };
-            match gap(&edge.curve) {
+            let at = vertices[v].position.to_array();
+            match tiered(
+                Verdict::Unknown,
+                || vertex_gap::<Fast>(&edge.curve, at, t, &fast_tol2),
+                || vertex_gap::<I>(&edge.curve, at, t, &exact_tol2),
+            ) {
                 Verdict::Within => {}
-                Verdict::Beyond => add(&mut issues, K::VertexOffCurve, En::EdgeEnd(i, end)),
+                Verdict::Beyond => add(&mut issues, K::VertexOffCurve, En::EdgeEnd(i, which)),
                 Verdict::Unknown => add(
                     &mut issues,
                     K::UncertifiedVertexOffCurve,
-                    En::EdgeEnd(i, end),
+                    En::EdgeEnd(i, which),
                 ),
             }
         }
     }
     for (fi, face) in faces.iter().enumerate() {
-        for (li, lp) in face.loops.iter().enumerate() {
-            for (ui, u) in lp.iter().enumerate() {
+        for (li, l) in face.loops.iter().enumerate() {
+            let list = match &loops[l.0] {
+                Loop::Vertex(v) => {
+                    if surface_ok[fi] && vertex_ok[v.0] {
+                        let at = vertices[v.0].position.to_array();
+                        match tiered(
+                            Verdict::Unknown,
+                            || on_surface::<Fast>(&face.surface, at, &fast_tol2),
+                            || on_surface::<I>(&face.surface, at, &exact_tol2),
+                        ) {
+                            Verdict::Within => {}
+                            Verdict::Beyond => {
+                                add(&mut issues, K::VertexLoopOffSurface, En::Loop(fi, li));
+                                bad_faces.insert(fi);
+                            }
+                            Verdict::Unknown => {
+                                add(&mut issues, K::UncertifiedVertexLoop, En::Loop(fi, li));
+                                bad_faces.insert(fi);
+                            }
+                        }
+                    }
+                    continue;
+                }
+                Loop::Edges { fins: list, .. } => list,
+            };
+            for (ui, k) in list.iter().enumerate() {
+                let u = &fins[k.0];
                 if !pcurve_valid(&u.pcurve) {
                     add(&mut issues, K::DegeneratePcurve, En::Use(fi, li, ui));
                     bad_faces.insert(fi);
@@ -1333,7 +1849,7 @@ pub(crate) fn check(
                 if !surface_ok[fi] || !curve_ok[u.edge.0] {
                     continue;
                 }
-                let forward = u.orientation == Orientation::Forward;
+                let forward = u.sense == Orientation::Forward;
                 let curve = &edges[u.edge.0].curve;
                 match tiered(
                     Verdict::Unknown,
@@ -1375,20 +1891,35 @@ pub(crate) fn check(
             }
         }
     }
+    // UV continuity; the last fin closes on the first shifted by the winding.
     for (fi, face) in faces.iter().enumerate() {
         if !surface_ok[fi] {
             continue;
         }
-        for (li, lp) in face.loops.iter().enumerate() {
-            if lp.iter().any(|u| !pcurve_valid(&u.pcurve)) {
+        let periodic = matches!(face.surface, Surface::Cylinder { .. });
+        for (li, l) in face.loops.iter().enumerate() {
+            let Loop::Edges {
+                fins: list,
+                winding,
+            } = &loops[l.0]
+            else {
+                continue;
+            };
+            if list.iter().any(|k| !pcurve_valid(&fins[k.0].pcurve)) {
                 continue;
             }
-            for (ui, u) in lp.iter().enumerate() {
-                let w = &lp[(ui + 1) % lp.len()];
+            for (ui, k) in list.iter().enumerate() {
+                let u = &fins[k.0];
+                let w = &fins[list[(ui + 1) % list.len()].0];
+                let shift = if ui + 1 == list.len() && periodic {
+                    TAU * f64::from(winding[0])
+                } else {
+                    0.0
+                };
                 match tiered(
                     Verdict::Unknown,
-                    || uv_gap::<Fast>(&face.surface, &u.pcurve, &w.pcurve, &fast_tol2),
-                    || uv_gap::<I>(&face.surface, &u.pcurve, &w.pcurve, &exact_tol2),
+                    || uv_gap::<Fast>(&face.surface, &u.pcurve, &w.pcurve, shift, &fast_tol2),
+                    || uv_gap::<I>(&face.surface, &u.pcurve, &w.pcurve, shift, &exact_tol2),
                 ) {
                     Verdict::Within => {}
                     Verdict::Beyond => {
@@ -1410,88 +1941,172 @@ pub(crate) fn check(
         if bad_faces.contains(&fi) || structural_faces.contains(&fi) || face.loops.is_empty() {
             continue;
         }
-        for (li, lp) in face.loops.iter().enumerate() {
+        let forward = face.sense == Orientation::Forward;
+        let want_outer = if forward {
+            Ordering::Greater
+        } else {
+            Ordering::Less
+        };
+        let want_inner = want_outer.reverse();
+        let edge_loops: Vec<(usize, &Lp)> = face
+            .loops
+            .iter()
+            .enumerate()
+            .filter(|(_, l)| matches!(loops[l.0], Loop::Edges { .. }))
+            .map(|(li, _)| li)
+            .zip(resolved[fi].iter())
+            .collect();
+        let wound = matches!(face.surface, Surface::Cylinder { .. })
+            && edge_loops.iter().any(|(_, lp)| lp.winding != 0);
+        if wound {
+            let total = tiered(
+                None,
+                || {
+                    edge_loops
+                        .iter()
+                        .try_fold(c::<Fast>(0.0), |acc, (_, lp)| {
+                            Some(acc.add(&periodic_area::<Fast>(lp)?))
+                        })?
+                        .sign()
+                },
+                || {
+                    edge_loops
+                        .iter()
+                        .try_fold(c::<I>(0.0), |acc, (_, lp)| {
+                            Some(acc.add(&periodic_area::<I>(lp)?))
+                        })?
+                        .sign()
+                },
+            );
+            match total {
+                Some(s) if s == want_outer => {}
+                Some(_) => {
+                    add(&mut issues, K::LoopWinding, En::Loop(fi, 0));
+                    winding_faces.insert(fi);
+                }
+                None => {
+                    add(&mut issues, K::UncertifiedLoopWinding, En::Loop(fi, 0));
+                    winding_faces.insert(fi);
+                }
+            }
+            for (li, lp) in &edge_loops {
+                if lp.winding != 0 {
+                    continue;
+                }
+                let sign = tiered(
+                    None,
+                    || periodic_area::<Fast>(lp)?.sign(),
+                    || periodic_area::<I>(lp)?.sign(),
+                );
+                match sign {
+                    Some(s) if s == want_inner => {
+                        add(&mut issues, K::UncertifiedContainment, En::Loop(fi, *li));
+                    }
+                    Some(_) => {
+                        add(&mut issues, K::LoopWinding, En::Loop(fi, *li));
+                        winding_faces.insert(fi);
+                    }
+                    None => {
+                        add(&mut issues, K::UncertifiedLoopWinding, En::Loop(fi, *li));
+                        winding_faces.insert(fi);
+                    }
+                }
+            }
+            continue;
+        }
+        for (pos, (li, lp)) in edge_loops.iter().enumerate() {
             let sign = tiered(
                 None,
                 || loop_area::<Fast>(lp).sign(),
                 || loop_area::<I>(lp).sign(),
             );
-            let outer = li == 0;
-            let want = if outer == (face.orientation == Orientation::Forward) {
+            let want = if pos == 0 { want_outer } else { want_inner };
+            match sign {
+                Some(s) if s == want => {}
+                Some(_) => {
+                    add(&mut issues, K::LoopWinding, En::Loop(fi, *li));
+                    winding_faces.insert(fi);
+                }
+                None => {
+                    add(&mut issues, K::UncertifiedLoopWinding, En::Loop(fi, *li));
+                    winding_faces.insert(fi);
+                }
+            }
+        }
+        if let Some((_, outer)) = edge_loops.first() {
+            for (li, lp) in edge_loops.iter().skip(1) {
+                let start = &lp.fins[0].pcurve;
+                let outer = [*outer];
+                match tiered(
+                    None,
+                    || crossings::<Fast>(&outer, &pcurve_at(start, 0.0)),
+                    || crossings::<I>(&outer, &pcurve_at(start, 0.0)),
+                ) {
+                    Some(n) if n % 2 == 1 => {}
+                    Some(_) => add(&mut issues, K::InnerLoopOutside, En::Loop(fi, *li)),
+                    None => add(&mut issues, K::UncertifiedContainment, En::Loop(fi, *li)),
+                }
+            }
+        }
+    }
+
+    // Region orientation and cavity nesting on fully sound shells.
+    bad_faces.extend(structural_faces);
+    bad_faces.extend(winding_faces);
+    bad_faces.extend(side_bad);
+    let sound: BTreeSet<usize> = (0..ns)
+        .filter(|si| {
+            !bad_shells.contains(si)
+                && !twins.contains(si)
+                && !shells[*si].sides.is_empty()
+                && shells[*si]
+                    .sides
+                    .iter()
+                    .all(|(f, _)| !bad_faces.contains(&f.0))
+        })
+        .collect();
+    for (ri, region) in regions.iter().enumerate() {
+        let mut oriented = Vec::new();
+        for (pos, s) in region.shells.iter().enumerate() {
+            let si = s.0;
+            if !sound.contains(&si) {
+                continue;
+            }
+            let sign = tiered(
+                None,
+                || shell_flux::<Fast>(faces, &resolved, &shells[si])?.sign(),
+                || shell_flux::<I>(faces, &resolved, &shells[si])?.sign(),
+            );
+            let want = if ri > 0 && pos == 0 {
                 Ordering::Greater
             } else {
                 Ordering::Less
             };
             match sign {
-                Some(s) if s == want => {}
-                Some(_) => {
-                    add(&mut issues, K::LoopWinding, En::Loop(fi, li));
-                    winding_faces.insert(fi);
-                }
-                None => {
-                    add(&mut issues, K::UncertifiedLoopWinding, En::Loop(fi, li));
-                    winding_faces.insert(fi);
-                }
+                Some(s) if s == want => oriented.push(si),
+                Some(_) => add(&mut issues, K::ShellOrientation, En::Shell(si)),
+                None => add(&mut issues, K::UncertifiedShellOrientation, En::Shell(si)),
             }
         }
-        for li in 1..face.loops.len() {
-            let outer = std::slice::from_ref(&face.loops[0]);
-            let start = &face.loops[li][0].pcurve;
-            match tiered(
-                None,
-                || crossings::<Fast>(outer, &pcurve_at(start, 0.0)),
-                || crossings::<I>(outer, &pcurve_at(start, 0.0)),
-            ) {
-                Some(n) if n % 2 == 1 => {}
-                Some(_) => add(&mut issues, K::InnerLoopOutside, En::Loop(fi, li)),
-                None => add(&mut issues, K::UncertifiedContainment, En::Loop(fi, li)),
-            }
-        }
-    }
-
-    // Shell orientation and cavity nesting on fully sound shells.
-    bad_faces.extend(structural_faces);
-    bad_faces.extend(winding_faces);
-    let sound: Vec<usize> = (0..shells.len())
-        .filter(|si| {
-            !bad_shells.contains(si) && shells[*si].iter().all(|f| !bad_faces.contains(&f.0))
-        })
-        .collect();
-    let mut oriented = Vec::new();
-    for &si in &sound {
-        let sign = tiered(
-            None,
-            || shell_volume::<Fast>(faces, &shells[si])?.sign(),
-            || shell_volume::<I>(faces, &shells[si])?.sign(),
-        );
-        let want = if si == 0 {
-            Ordering::Greater
-        } else {
-            Ordering::Less
+        let Some(outer) = region.shells.first().map(|s| s.0) else {
+            continue;
         };
-        match sign {
-            Some(s) if s == want => oriented.push(si),
-            Some(_) => add(&mut issues, K::ShellOrientation, En::Shell(si)),
-            None => add(&mut issues, K::UncertifiedShellOrientation, En::Shell(si)),
+        if ri == 0 || !oriented.contains(&outer) {
+            continue;
         }
-    }
-    if oriented.first() == Some(&0) {
-        let cavities: Vec<usize> = oriented.iter().copied().filter(|s| *s != 0).collect();
+        let cavities: Vec<usize> = oriented.iter().copied().filter(|s| *s != outer).collect();
         for &si in &cavities {
-            let first = &faces[shells[si][0].0].loops[0][0];
-            let v = use_vertices(edges, first).0;
-            if !vertex_ok[v] {
+            let Some(point) = shell_point(view, &resolved, si, &vertex_ok) else {
                 continue;
-            }
-            let point = vertices[v].position.to_array().map(r);
-            let contained = |shell: &[FaceId]| {
+            };
+            let contained = |shell: usize| {
                 tiered(
                     None,
-                    || inside::<Fast>(faces, shell, &point, &fast_margin2),
-                    || inside::<I>(faces, shell, &point, &exact_margin2),
+                    || inside::<Fast>(faces, &resolved, &shells[shell], &point, &fast_margin2),
+                    || inside::<I>(faces, &resolved, &shells[shell], &point, &exact_margin2),
                 )
             };
-            match contained(&shells[0]) {
+            match contained(outer) {
                 None => {
                     add(&mut issues, K::UncertifiedContainment, En::Shell(si));
                     continue;
@@ -1507,7 +2122,7 @@ pub(crate) fn check(
                 if sj == si {
                     continue;
                 }
-                match contained(&shells[sj]) {
+                match contained(sj) {
                     Some(true) => nested = true,
                     Some(false) => {}
                     None => {
@@ -1523,6 +2138,25 @@ pub(crate) fn check(
         }
     }
     issues.into_iter().collect()
+}
+
+/// A point of a shell: its first face's first fin's start vertex, or the
+/// surface point at that fin's pcurve start when it has no vertex.
+fn shell_point(view: &View, resolved: &[Vec<Lp>], si: usize, vertex_ok: &[bool]) -> Option<[R; 3]> {
+    let f = view.shells[si].sides.first()?.0 .0;
+    let face = &view.faces[f];
+    if let Some(Loop::Vertex(v)) = face.loops.first().map(|l| &view.loops[l.0]) {
+        return Some(view.vertices[v.0].position.to_array().map(r));
+    }
+    let fin = resolved[f].first()?.fins.first()?;
+    match fin_vertices(view.edges, fin).0 {
+        Some(v) if vertex_ok[v] => Some(view.vertices[v].position.to_array().map(r)),
+        Some(_) => None,
+        None => {
+            let p = face.surface.point(fin.pcurve.point(0.0));
+            finite(&p.to_array()).then(|| p.to_array().map(r))
+        }
+    }
 }
 
 fn connected<T: Ord + Copy>(graph: &BTreeMap<T, BTreeSet<T>>) -> bool {
@@ -1545,34 +2179,53 @@ mod tests {
     use crate::topology::EdgeId;
     use crate::Point2;
 
-    fn square() -> Vec<Vec<Coedge>> {
-        let corners = [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)];
-        vec![(0..4)
-            .map(|k| {
-                let (a, b) = (corners[k], corners[(k + 1) % 4]);
-                Coedge {
-                    edge: EdgeId::new(k),
-                    orientation: Orientation::Forward,
-                    pcurve: Curve2::LineSegment {
-                        start: Point2::new(a.0, a.1),
-                        end: Point2::new(b.0, b.1),
-                    },
-                }
-            })
-            .collect()]
+    fn fin(a: (f64, f64), b: (f64, f64)) -> Fin {
+        Fin {
+            edge: EdgeId::new(0),
+            sense: Orientation::Forward,
+            pcurve: Curve2::LineSegment {
+                start: Point2::new(a.0, a.1),
+                end: Point2::new(b.0, b.1),
+            },
+        }
+    }
+
+    fn clear_in(
+        fins: &[Fin],
+        winding: i32,
+        p: (f64, f64),
+        su: f64,
+        periodic: bool,
+        margin: f64,
+    ) -> bool {
+        let lp = Lp {
+            fins: fins.iter().collect(),
+            winding,
+        };
+        let fast = clear_of_boundary::<Fast>(
+            &[&lp],
+            &[c(p.0), c(p.1)],
+            &c(su),
+            periodic,
+            &c::<Fast>(margin).square(),
+        );
+        let exact = clear_of_boundary::<I>(
+            &[&lp],
+            &[c(p.0), c(p.1)],
+            &c(su),
+            periodic,
+            &c::<I>(margin).square(),
+        );
+        assert_eq!(fast, exact, "{p:?}");
+        exact.unwrap()
     }
 
     fn clear(u: f64, v: f64, su: f64, margin: f64) -> bool {
-        let fast = clear_of_boundary::<Fast>(
-            &square(),
-            &[c(u), c(v)],
-            &c(su),
-            &c::<Fast>(margin).square(),
-        );
-        let exact =
-            clear_of_boundary::<I>(&square(), &[c(u), c(v)], &c(su), &c::<I>(margin).square());
-        assert_eq!(fast, exact, "{u} {v}");
-        exact.unwrap()
+        let corners = [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)];
+        let square: Vec<Fin> = (0..4)
+            .map(|k| fin(corners[k], corners[(k + 1) % 4]))
+            .collect();
+        clear_in(&square, 0, (u, v), su, false, margin)
     }
 
     #[test]
@@ -1587,5 +2240,15 @@ mod tests {
         // Cylinder u distances are scaled by the radius.
         assert!(clear(0.5, 0.5, 1.0, 0.4));
         assert!(!clear(0.5, 0.5, 0.1, 0.4));
+    }
+
+    #[test]
+    fn periodic_margins_see_every_alias_of_a_ring_loop() {
+        // A ring loop at v = 0 winding once; a point just below it on the far
+        // side of the period is near an alias, one above the strip is clear.
+        let ring = [fin((0.0, 0.0), (TAU, 0.0))];
+        assert!(!clear_in(&ring, 1, (TAU + 0.5, 1e-9), 1.0, true, 1e-8));
+        assert!(!clear_in(&ring, 1, (-3.0, -1e-9), 1.0, true, 1e-8));
+        assert!(clear_in(&ring, 1, (-3.0, 0.5), 1.0, true, 1e-8));
     }
 }

@@ -7,6 +7,7 @@ mod identity_protocol;
 use identity_protocol::{build_tracked, cases, relation_text};
 use rusty_occt::history::{check, History, Resolution};
 use rusty_occt::identity::{fnv1a128, EntityId, OperationId, OperationKind};
+use rusty_occt::topology::Slot;
 use rusty_occt::Solid;
 use std::collections::BTreeMap;
 
@@ -74,9 +75,21 @@ fn every_history_matches_the_independent_enumeration_and_checks_clean() {
         let want = &expected[&spec.name];
         let matches = match want[0].strip_prefix("digest ") {
             Some(digest) => {
+                // Region relations are listed after the digest, which covers the rest.
+                let regions: Vec<String> = current
+                    .topology()
+                    .ids()
+                    .filter(|(_, slot)| matches!(slot, Slot::Region(_)))
+                    .map(|(id, _)| id.to_string())
+                    .collect();
+                let (regions, rest): (Vec<_>, Vec<_>) = got
+                    .iter()
+                    .cloned()
+                    .partition(|r| r.split(' ').any(|w| regions.iter().any(|id| id == w)));
                 let (count, hash) = digest.split_once(' ').unwrap();
-                count.parse::<usize>().unwrap() == got.len()
-                    && EntityId(fnv1a128(got.join("\n").as_bytes())).to_string() == hash
+                count.parse::<usize>().unwrap() == rest.len()
+                    && EntityId(fnv1a128(rest.join("\n").as_bytes())).to_string() == hash
+                    && regions == want[1..]
             }
             None => got == *want,
         };
@@ -89,7 +102,7 @@ fn every_history_matches_the_independent_enumeration_and_checks_clean() {
         }
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
-    assert_eq!(relations, 114_890);
+    assert_eq!(relations, 114_270);
 }
 
 #[test]
@@ -133,4 +146,57 @@ fn a_construction_cannot_follow_its_own_output() {
     // A construction has no input bodies: it cannot follow a transform.
     assert!(moved.then(&construct).is_err());
     assert!(construct.then(&moved).is_ok());
+}
+
+#[test]
+fn operations_record_their_level_and_replay_at_it() {
+    use rusty_occt::identity::AlgorithmLevel;
+    use rusty_occt::{Error, RigidTransform, Vec3};
+    let spec = &cases(include_str!("../../fixtures/identity-cases.txt"))[0];
+    let (solid, construct) = build_tracked(spec);
+    assert_eq!(construct.level, AlgorithmLevel::CURRENT);
+    let replayed = Solid::extrude_at(
+        construct.level,
+        solid.operation(),
+        solid.profile().clone(),
+        solid.frame(),
+        solid.start_offset(),
+        solid.end_offset(),
+    )
+    .unwrap();
+    assert_eq!(replayed, (solid.clone(), construct));
+    let transform = RigidTransform::translation(Vec3::new(1.0, 2.0, 3.0)).unwrap();
+    let (moved, h) = solid.transform_with(OperationId(4), transform).unwrap();
+    assert_eq!(h.level, AlgorithmLevel::CURRENT);
+    assert_eq!(
+        solid
+            .transform_at(h.level, OperationId(4), transform)
+            .unwrap(),
+        (moved, h)
+    );
+    // No level before the first, and none this build does not provide.
+    for level in [
+        AlgorithmLevel(0),
+        AlgorithmLevel(2),
+        AlgorithmLevel(u32::MAX),
+    ] {
+        assert_eq!(
+            solid
+                .transform_at(level, OperationId(4), transform)
+                .unwrap_err(),
+            Error::UnknownAlgorithmLevel(level.0)
+        );
+        assert_eq!(
+            Solid::extrude_at(
+                level,
+                solid.operation(),
+                solid.profile().clone(),
+                solid.frame(),
+                solid.start_offset(),
+                solid.end_offset(),
+            )
+            .unwrap_err(),
+            Error::UnknownAlgorithmLevel(level.0)
+        );
+    }
 }

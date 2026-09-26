@@ -21,7 +21,8 @@ one builder and no Booleans, so the decisions below are still cheap.
 **Status:** M0, M1 and M2 accepted at `34efd36c` (value ids, complete
 checked histories and the attribute checker, on extrusions and rigid
 transforms). The topology model is decided in `TOPOLOGY_MODEL.md`; its
-migration, T1, precedes M3. M3–M5 pending. Acceptance evidence per milestone
+migration, T1, is implemented (seamless circle prisms, a region id, algorithm
+levels) and awaits acceptance before M3. M3–M5 pending. Acceptance evidence per milestone
 is under [Acceptance](#acceptance).
 
 ## What the kernel promises, and what it does not
@@ -116,7 +117,7 @@ pub struct Derivation {
     pub operation: OperationId,      // caller-supplied, e.g. a feature id
     pub kind: OperationKind,         // Extrude, Transform, HeightSplit, StackedFuse, ...
     pub parents: Vec<Parent>,        // Label(InputLabel) | Entity(EntityId), canonical order
-    pub role: Role,                  // StartCap, EndCap, Wall, BottomEdge, TopEdge, Vertical, Seam, CutFace, ...
+    pub role: Role,                  // StartCap, EndCap, Wall, BottomEdge, TopEdge, Vertical, Region, CutFace, ...
     pub ordinal: u32,                // exact canonical ordinal among same-role siblings
 }
 ```
@@ -162,8 +163,10 @@ is always answerable, and so that collisions are detectable (I4).
   `AlgorithmLevel` of the operation that produced it. Changing an existing
   operation's behaviour requires a new level; the previous level stays
   callable so a stored history replays identically. Levels are not part of
-  `Derivation` (adopted from CGM's software configurations; pending, added in
-  T1).
+  `Derivation` (adopted from CGM's software configurations). Implemented in
+  T1: `AlgorithmLevel::FIRST` is the only level; `Solid::extrude_at` and
+  `Solid::transform_at` replay at a recorded level and reject any level the
+  build does not provide.
 
 ### Types
 
@@ -205,15 +208,15 @@ labelled entities as parents:
 | Bottom and top edge of segment *s* | `Generated { from: [Label(b, s)], role: BottomEdge / TopEdge }` |
 | Vertical edge at vertex *v* | `Generated { from: [Label(b, v)], role: Vertical }` |
 | Bottom and top vertex at *v* | `Generated { from: [Label(b, v)], role: BottomVertex / TopVertex }` |
-| Circle boundary: circular edges, seam edge, cylinder wall, seam vertices | Same pattern with roles `BottomEdge`, `TopEdge`, `Seam`, `Wall`, `SeamVertex` |
+| Circle boundary: ring edges (no vertices) and the seamless cylinder wall | Same pattern with roles `BottomEdge`, `TopEdge`, `Wall` |
+| Solid region | `Generated { from: [every boundary label], role: Region }` |
 
 `Solid::transformed` (`OperationKind::Transform`): every entity `Modified`
 with the same id, in slot order.
 
-After T1 (`TOPOLOGY_MODEL.md`) the circle row changes: the circular edges are
-ring edges with roles `BottomEdge` and `TopEdge`, there is no seam and no seam
-vertex, and the solid region is `Generated` from every boundary label with
-role `Region`. Every polygon id and relation is unchanged by T1.
+T1 (`TOPOLOGY_MODEL.md`) retired the circle's seam edge and seam vertices and
+their roles `Seam` and `SeamVertex` (their encoding codes stay reserved), and
+added the region row. Every polygon id and relation is unchanged by T1.
 
 This replaces `FaceOrigin` as the source of provenance. Keep `FaceOrigin`
 until M1 lands, then derive it from the `Derivation` and remove the field.
@@ -462,16 +465,24 @@ here.
 * **Encoding.** `Derivation` also carries the entity kind, so a vertex and an
   edge derived from the same parent with the same role and ordinal can never
   share an id. Version 1 of the encoding is documented in `identity.rs` and
-  pinned by `fixtures/identity-vectors.tsv` (11 vectors, plus the published
-  FNV-1a-128 vectors for `""`, `"a"` and `"foobar"`).
+  pinned by `fixtures/identity-vectors.tsv` (12 vectors, plus the published
+  FNV-1a-128 vectors for `""`, `"a"` and `"foobar"`). T1 appended entity
+  code 5 (`region`) and role code 13 (`region`), so every earlier vector is
+  unchanged.
 * **Unlabelled parents.** Without labels, a parent is
   `Parent::Profile { boundary, element }` with the boundary's *stored* index:
   polygons are stored counter-clockwise with the first input point kept, so
   labels given in the caller's input order are mapped through that reversal.
 * **Start and end.** Roles `BottomEdge`, `TopEdge`, `BottomVertex` and
   `TopVertex` mean the extrusion's start and end sides, so swapping the offsets
-  keeps every id. The two seam vertices of a circle share role `SeamVertex`,
-  ordinal 0 on the start side and 1 on the end side.
+  keeps every id.
+* **Regions.** A region's dimension is 3 and its parents are the profile's
+  boundaries, whose dimension the checker takes as 2 (a boundary encloses an
+  area), so a region satisfies the generated dimension rule below. Only
+  bounded regions have ids; the infinite void and the twin shell that lists
+  the void's sides are structure. The identity fixtures keep region rows
+  outside the corpus digests, so the digests of vertices, edges and faces
+  stayed comparable across T1.
 * **`Modified { from, to }`.** H5 requires a split followed by a merge of the
   same pieces to compose to `Modified`, but the merged entity has a new id (I4
   forbids reusing the split parent's). So `Modified` names both ids. A single

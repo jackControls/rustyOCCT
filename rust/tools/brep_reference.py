@@ -862,10 +862,30 @@ def decode_native(line, name):
     return words[2] == '1', statuses, absent
 
 
-def compare_native(issues, native, inexact):
-    """Sorted difference classes between a Rust issue list and a native row."""
+def structure_only(m):
+    """Native labels of OCCT structure the seamless model does not have: seam
+    edges (used twice by one loop of a face) and vertices used only by seams
+    and by edges closed on them."""
+    seams = set()
+    for f in m.faces:
+        for loop in f.loops:
+            used = [u.edge for u in loop]
+            seams |= {e for e in used if used.count(e) == 2}
+    labels = {f'e{e}' for e in seams}
+    for v in range(len(m.vertices)):
+        incident = [k for k, e in enumerate(m.edges) if v in (e.start, e.end)]
+        if (incident and any(k in seams for k in incident)
+                and all(k in seams or m.edges[k].start == m.edges[k].end for k in incident)):
+            labels.add(f'v{v}')
+    return labels
+
+
+def compare_native(issues, native, inexact, structure=frozenset()):
+    """Sorted difference classes between a Rust issue list and a native row.
+    Statuses on structure-only labels cannot stand for a Rust issue class."""
     valid, statuses, _ = native
-    reported = set().union(*statuses.values()) if statuses else set()
+    located = [codes for label, codes in statuses.items() if label not in structure]
+    reported = set().union(*located) if located else set()
     differences = set()
     if valid != (not issues):
         differences.add('verdict')

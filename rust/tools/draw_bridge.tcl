@@ -56,7 +56,7 @@ proc runCommand {command args} {
         # DRAW permits numeric Tcl expressions, e.g. 2e-7+1e-14. Preserve that
         # behavior through the actual interpreter, not a Python expression parser.
         # Names precede the numbers; prism's numbers are followed by a mode.
-        set leading {box {1 end} trotate {1 end} ttranslate {1 end} polyline {1 end} prism {2 4}}
+        set leading {box {1 end} trotate {1 end} ttranslate {1 end} polyline {1 end} prism {2 4} pcylinder {1 end}}
         if {[dict exists $leading $command]} {
             lassign [dict get $leading $command] first last
             set converted [lrange $args 0 [expr {$first - 1}]]
@@ -90,7 +90,7 @@ proc runCommand {command args} {
     if {$command in {checkshape nbshapes vprops sprops lprops isbbinterf isdeleted}} {incr ::queries}
     # DBRep::Set binds DRAW shape names as Tcl variables as well.
     if {$::backend eq "rust"} {
-        if {$command in {box polyline mkplane prism generated modified}} {
+        if {$command in {box pcylinder polyline mkplane prism generated modified}} {
             interp eval testcase [list set [lindex $args 0] [lindex $args 0]]
         }
         if {$command eq "copy"} {interp eval testcase [list set [lindex $args 1] [lindex $args 1]]}
@@ -126,7 +126,7 @@ if {[catch {
     interp alias testcase help {} metadata
     interp alias testcase cpulimit {} cpuLimit
     interp alias testcase locate_data_file {} locateData
-    foreach command {box copy ttranslate trotate isdraw whatis checkshape nbshapes vprops sprops lprops isbbinterf explode compound bcommon bfuse restore prism polyline mkplane savehistory generated modified isdeleted} {
+    foreach command {box copy ttranslate trotate isdraw whatis checkshape nbshapes vprops sprops lprops isbbinterf explode compound bcommon bfuse restore prism polyline mkplane savehistory generated modified isdeleted pcylinder} {
         interp alias testcase $command {} runCommand $command
     }
     # bugs/begin would load VISUALIZATION only when topology checks are absent.

@@ -9,6 +9,8 @@
 // reports Generated, Modified and IsRemoved, and MakePrism reports FirstShape
 // and LastShape. Every output subshape is listed with whether any of those
 // queries reaches it. Each transform step reports Modified for every subshape.
+// N rows count distinct subshapes; S rows list the structure-only subshapes
+// of the result (step -) and of each transform step's input.
 // Shapes are printed as geometric signatures; no expected value lives here.
 #include <BRepAdaptor_Curve.hxx>
 #include <BRepAdaptor_Surface.hxx>
@@ -27,6 +29,8 @@
 #include <Standard_Version.hxx>
 #include <NCollection_IndexedMap.hxx>
 #include <TopExp.hxx>
+#include <TopExp_Explorer.hxx>
+#include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 #include <TopTools_ShapeMapHasher.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Edge.hxx>
@@ -90,6 +94,41 @@ std::string signature(const TopoDS_Shape& s) {
 }
 
 using ShapeMap = NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher>;
+
+// OCCT structure a seamless model does not have: seam edges (closed on one of
+// their faces) and vertices used only by seams and by edges closed on them.
+ShapeMap structure_only(const TopoDS_Shape& shape) {
+  ShapeMap seams, out;
+  for (TopExp_Explorer f(shape, TopAbs_FACE); f.More(); f.Next())
+    for (TopExp_Explorer e(f.Current(), TopAbs_EDGE); e.More(); e.Next())
+      if (BRep_Tool::IsClosed(TopoDS::Edge(e.Current()), TopoDS::Face(f.Current()))) {
+        seams.Add(e.Current());
+        out.Add(e.Current());
+      }
+  TopTools_IndexedDataMapOfShapeListOfShape users;
+  TopExp::MapShapesAndAncestors(shape, TopAbs_VERTEX, TopAbs_EDGE, users);
+  for (int i = 1; i <= users.Extent(); ++i) {
+    bool seam = false, only = true;
+    for (const auto& e : users(i)) {
+      const TopoDS_Edge& edge = TopoDS::Edge(e);
+      seam = seam || seams.Contains(e);
+      only = only && (seams.Contains(e) || TopExp::FirstVertex(edge).IsSame(TopExp::LastVertex(edge)));
+    }
+    if (seam && only) out.Add(users.FindKey(i));
+  }
+  return out;
+}
+
+// Distinct subshapes, as DRAW's nbshapes counts them.
+std::string counts(const TopoDS_Shape& shape) {
+  std::string out = "N";
+  for (TopAbs_ShapeEnum type : {TopAbs_VERTEX, TopAbs_EDGE, TopAbs_WIRE, TopAbs_FACE, TopAbs_SHELL, TopAbs_SOLID}) {
+    ShapeMap map;
+    TopExp::MapShapes(shape, type, map);
+    out += " " + std::to_string(map.Extent());
+  }
+  return out;
+}
 
 struct Input {
   std::string label;  // "b vertex j", "b edge j" or "face 0 0"
@@ -202,10 +241,15 @@ int main() {
           out << "O " << signature(map(i)) << ' ' << (reached.Contains(map(i)) ? "direct" : covered.Contains(map(i)) ? "through" : "none")
               << '\n';
       }
+      out << counts(result) << '\n';
+      ShapeMap structure = structure_only(result);
+      for (int i = 1; i <= structure.Extent(); ++i) out << "S - " << signature(structure(i)) << '\n';
       TopoDS_Shape current = result;
       for (size_t k = 0; k < transforms.size(); ++k) {
         BRepBuilderAPI_Transform moved(current, transforms[k], true);
         TopoDS_Shape next = moved.Shape();
+        ShapeMap before = structure_only(current);
+        for (int i = 1; i <= before.Extent(); ++i) out << "S " << k << ' ' << signature(before(i)) << '\n';
         for (TopAbs_ShapeEnum type : {TopAbs_VERTEX, TopAbs_EDGE, TopAbs_FACE}) {
           ShapeMap map;
           TopExp::MapShapes(current, type, map);

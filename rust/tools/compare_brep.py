@@ -4,9 +4,13 @@
 Rust issue lists are first certified equal to the independent reference
 validator. Each representable case is then built natively from explicit OCCT
 rows and analyzed. A case matches when the verdicts agree and every Rust issue
-class with a BRepCheck counterpart has a corresponding native status. Contract
-differences need a fingerprinted review; timeouts, crashes and malformed
-output cannot be reviewed.
+class with a BRepCheck counterpart has a corresponding native status. Native
+seams and the vertices only they use are structure the seamless model does not
+have: statuses on them are set aside by rule (brep_reference.structure_only).
+Every case valid on both sides must also report, through the kernel's count
+synthesis, the distinct subshape counts native OCCT gives its seamed encoding.
+Contract differences need a fingerprinted review of the status row; timeouts,
+crashes and malformed output cannot be reviewed.
 """
 import argparse
 import functools
@@ -145,7 +149,13 @@ def rust_issues():
     if rust.splitlines() != expected:
         raise ValueError('Rust issue lists differ from the independent reference validator')
     rows = (line.split('\t', 1) for line in expected)
-    return {name: [i for i in issues.split(';') if i] for name, issues in rows}
+    issues = {name: [i for i in issues.split(';') if i] for name, issues in rows}
+    counts = subprocess.run([str(ROOT/'target/release/examples/brep_validation_probe'), 'counts'],
+                            input=cases, text=True, capture_output=True, timeout=600, check=True).stdout
+    counts = dict(line.split('\t') for line in counts.splitlines())
+    if {n for n, c in counts.items() if c != '-'} != {n for n, i in issues.items() if not i}:
+        raise ValueError('Rust counts are not reported for exactly the valid cases')
+    return issues, counts
 
 
 def main():
@@ -164,13 +174,14 @@ def main():
     for name, text in files.items():
         if text != (ROOT/'rust/fixtures'/name).read_text():
             raise ValueError('independent fixture regeneration changed: '+name)
-    issues = rust_issues()
+    issues, counts = rust_issues()
     cases = native_rows()
     executable, env, loaded, command = build(prefix, output, cases[0][1])
     reviews = [] if args.strict_native or not REVIEWS.exists() else json.loads(REVIEWS.read_text())['reviews']
     report = {'source_reference': SOURCE, 'rust_cases_independently_certified': len(issues),
               'not_constructible_natively': [m.name for m in models if not reference.representable(m)],
               'native_timeout_seconds': TIMEOUT, 'native_seconds': {},
+              'structure_only_statuses': {}, 'counts_verified': 0,
               'matches': [], 'reviewed_differences': [], 'failures': []}
     observations = {}
     oracle = None
@@ -184,17 +195,32 @@ def main():
             report['failures'].append({'case': m.name, 'reason': reason, 'record': record})
             continue
         oracle = oracle or next(iter(record['stderr'].splitlines()), None)
+        rows = record['stdout'].splitlines()
         try:
-            native = reference.decode_native(record['stdout'].strip(), m.name)
+            if len(rows) != 2 or not rows[1].startswith(f'{m.name} N '):
+                raise ValueError(f'malformed native output for {m.name}')
+            native = reference.decode_native(rows[0].strip(), m.name)
+            native_counts = rows[1].split(maxsplit=2)[2]
         except ValueError as error:
             report['failures'].append({'case': m.name, 'reason': str(error)})
             continue
-        differences = reference.compare_native(issues[m.name], native, inexact)
+        structure = reference.structure_only(m)
+        set_aside = sorted(label for label in native[1] if label in structure)
+        if set_aside:
+            report['structure_only_statuses'][m.name] = set_aside
+        differences = reference.compare_native(issues[m.name], native, inexact, structure)
+        # Count synthesis: a valid seamless body reports the counts OCCT
+        # gives for its seamed encoding.
+        if not issues[m.name] and native[0]:
+            report['counts_verified'] += 1
+            if counts[m.name] != native_counts:
+                differences = sorted(set(differences) | {'synthesized_counts'})
         if not differences:
             report['matches'].append(m.name)
             continue
+        # Reviews fingerprint the status row, which the count row follows.
         evidence = {'case': m.name, 'source_reference': SOURCE, 'oracle': oracle,
-                    'input_sha256': sha(text), 'native_stdout_sha256': sha(record['stdout']),
+                    'input_sha256': sha(text), 'native_stdout_sha256': sha(rows[0]+'\n'),
                     'differences': differences}
         review = review_for(evidence, reviews)
         report['reviewed_differences' if review else 'failures'].append(

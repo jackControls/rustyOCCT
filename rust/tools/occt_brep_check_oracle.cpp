@@ -3,7 +3,7 @@
 // every curve parameter already matches its pcurves (SameParameter), wires are
 // built in the underlying FORWARD face, and a reversed face is reversed last.
 // A seam uses UpdateEdge(E, C_forward, C_reversed, F). No geometry, tolerance
-// or orientation is computed here.
+// or orientation is computed here. A second row counts the distinct subshapes.
 #include <BRepCheck_Analyzer.hxx>
 #include <BRepCheck_ListOfStatus.hxx>
 #include <BRepCheck_Result.hxx>
@@ -17,6 +17,8 @@
 #include <Geom_Plane.hxx>
 #include <Standard_Failure.hxx>
 #include <Standard_Version.hxx>
+#include <TopExp.hxx>
+#include <TopTools_IndexedMapOfShape.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Face.hxx>
@@ -222,6 +224,13 @@ int main() {
       }
       for (size_t i = 0; i < shells.size(); ++i) statuses(out, ana, shells[i], "s" + std::to_string(i));
       statuses(out, ana, solid, "solid");
+      // Distinct subshapes, as DRAW's nbshapes counts them.
+      out << '\n' << name << " N";
+      for (TopAbs_ShapeEnum type : {TopAbs_VERTEX, TopAbs_EDGE, TopAbs_WIRE, TopAbs_FACE, TopAbs_SHELL, TopAbs_SOLID}) {
+        TopTools_IndexedMapOfShape map;
+        TopExp::MapShapes(solid, type, map);
+        out << ' ' << map.Extent();
+      }
       std::cout << out.str() << '\n';
     } catch (const Standard_Failure& failure) {
       std::cout << name << " E native_exception\n";

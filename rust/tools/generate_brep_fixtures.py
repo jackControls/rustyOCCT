@@ -12,6 +12,8 @@ import copy
 import math
 from pathlib import Path
 
+from cell_reference import encode as encode_cell, to_cell, validate as validate_cell
+
 from brep_reference import (Arc2, Arc3, Cylinder, Edge, Face, Frame, Line2, Line3, Model,
                             Plane, TAU, Use, atan2_rn, cos_rn, encode, hypot_rn, sin_rn,
                             validate)
@@ -340,16 +342,75 @@ def flip_loop_geometry(m, fi, li):
             u.pcurve = Arc2(p.center, p.radius, math.pi-p.start, -p.sweep)
 
 
+def cell_cases(bases):
+    """Cell-model cases with no seamed form: the model's own failure modes
+    (TOPOLOGY_MODEL.md) and seamless valid shapes. They have no OCCT rows."""
+    from cell_reference import Loop as CLoop
+    out = []
+
+    def cell(base, name, change):
+        c = to_cell(copy.deepcopy(bases[base]))
+        c.name = name
+        change(c)
+        out.append(c)
+
+    def seam_at_pi(c):
+        # Rotate every circle parametrization by pi: edges, caps and the wall.
+        for e in c.edges:
+            if isinstance(e.curve, Arc3):
+                e.curve = Arc3(e.curve.frame, e.curve.radius, e.curve.start+math.pi, e.curve.sweep)
+        for fin in c.fins:
+            p = fin.pcurve
+            if isinstance(p, Arc2):
+                fin.pcurve = Arc2(p.center, p.radius, p.start+math.pi, p.sweep)
+            else:
+                fin.pcurve = Line2((p.start[0]+math.pi, p.start[1]), (p.end[0]+math.pi, p.end[1]))
+    cell('cylinder', 'cylinder_seamless_at_pi', seam_at_pi)
+
+    def shift_fin_period(c):
+        wall = next(f for f in c.faces if isinstance(f.surface, Cylinder))
+        k = c.loops[wall.loops[0]].fins[0]
+        p = c.fins[k].pcurve
+        c.fins[k].pcurve = Line2((p.start[0]+TAU, p.start[1]), (p.end[0]+TAU, p.end[1]))
+    cell('stadium', 'stadium_wall_fin_shifted_by_period', shift_fin_period)
+    cell('cylinder', 'cylinder_winding_flipped', lambda c: setattr(c.loops[c.faces[2].loops[0]], 'winding', -c.loops[c.faces[2].loops[0]].winding))
+
+    def swap_fins(c):
+        c.edges[0].fins, c.edges[1].fins = c.edges[1].fins, c.edges[0].fins
+    cell('box', 'box_fins_swapped_between_edges', swap_fins)
+    cell('box', 'box_side_wrong_shell', lambda c: setattr(c.faces[2], 'front', c.faces[2].back))
+
+    def vertex_loop(offset):
+        def change(c):
+            top = c.faces[1]
+            z = c.vertices[c.edges[c.fins[c.loops[top.loops[0]].fins[0]].edge].start][2]
+            c.vertices.append((1.0, 1.0, z+offset))
+            c.loops.append(CLoop([], 0, len(c.vertices)-1))
+            top.loops.append(len(c.loops)-1)
+        return change
+    cell('box', 'box_vertex_loop', vertex_loop(0.0))
+    cell('box', 'box_vertex_loop_off_surface', vertex_loop(1e-3))
+    cell('box', 'box_face_without_loops', lambda c: setattr(c.faces[3], 'loops', []))
+
+    def one_vertex_ring(c):
+        c.vertices.append((1.5, 0.0, 0.0))
+        c.edges[0].start = len(c.vertices)-1
+    cell('cylinder', 'cylinder_ring_edge_with_one_vertex', one_vertex_ring)
+    cell('box', 'box_shell_not_in_its_region', lambda c: c.regions[1].shells.remove(0))
+    return out
+
+
 def generate():
     bases = base_cases()
     models = list(bases.values())+mutations(bases)
-    names = [m.name for m in models]
+    cells = [to_cell(m) for m in models]+cell_cases(bases)
+    names = [c.name for c in cells]
     assert len(names) == len(set(names)), 'duplicate case names'
-    text = '\n'.join(encode(m) for m in models)+'\n'
+    text = '\n'.join(encode_cell(c) for c in cells)+'\n'
     rows = []
-    for m in models:
-        issues = validate(m)
-        rows.append(m.name+'\t'+';'.join(f'{k}:{e}' for k, e in issues))
+    for c in cells:
+        issues = validate_cell(c)
+        rows.append(c.name+'\t'+';'.join(f'{k}:{e}' for k, e in issues))
     return models, {'brep-cases.txt': text,
                     'brep-expected.tsv': '# name\tsorted issues kind:entity separated by ;\n'+'\n'.join(rows)+'\n'}
 
@@ -359,8 +420,9 @@ def main():
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
     models, files = generate()
-    valid = sum(1 for row in files['brep-expected.tsv'].splitlines()[1:] if row.endswith('\t'))
-    print(f'{len(models)} cases, {valid} valid')
+    rows = files['brep-expected.tsv'].splitlines()[1:]
+    valid = sum(1 for row in rows if row.endswith('\t'))
+    print(f'{len(rows)} cases ({len(models)} with OCCT rows), {valid} valid')
     for name, contents in files.items():
         path = ROOT/'fixtures'/name
         if args.check:

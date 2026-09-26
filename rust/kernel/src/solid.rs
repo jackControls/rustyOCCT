@@ -1,5 +1,5 @@
 use crate::history::{self, History, Relation};
-use crate::identity::{EntityId, OperationId, OperationKind};
+use crate::identity::{AlgorithmLevel, EntityId, OperationId, OperationKind};
 use crate::math::finite;
 use crate::profile::BoundaryKind;
 use crate::topology::Topology;
@@ -55,6 +55,28 @@ impl Solid {
         start: f64,
         end: f64,
     ) -> Result<(Self, History)> {
+        Self::extrude_at(
+            AlgorithmLevel::CURRENT,
+            operation,
+            profile,
+            frame,
+            start,
+            end,
+        )
+    }
+
+    /// [`Solid::extrude_with`] at a recorded algorithm level (H8), so a
+    /// stored history replays identically; a level this build does not
+    /// provide is an error.
+    pub fn extrude_at(
+        level: AlgorithmLevel,
+        operation: OperationId,
+        profile: Profile,
+        frame: Frame3,
+        start: f64,
+        end: f64,
+    ) -> Result<(Self, History)> {
+        replayable(level)?;
         let solid = Self::build(operation, profile, frame, start, end)?;
         let t = &solid.topology;
         let relations = t
@@ -68,7 +90,7 @@ impl Solid {
                 }
             })
             .collect();
-        let history = History::new(
+        let mut history = History::new(
             operation,
             OperationKind::Extrude,
             Vec::new(),
@@ -76,6 +98,7 @@ impl Solid {
             relations,
             Vec::new(),
         );
+        history.level = level;
         solid.debug_check(&[], &history);
         Ok((solid, history))
     }
@@ -281,6 +304,17 @@ impl Solid {
         operation: OperationId,
         transform: RigidTransform,
     ) -> Result<(Self, History)> {
+        self.transform_at(AlgorithmLevel::CURRENT, operation, transform)
+    }
+
+    /// [`Solid::transform_with`] at a recorded algorithm level (H8).
+    pub fn transform_at(
+        &self,
+        level: AlgorithmLevel,
+        operation: OperationId,
+        transform: RigidTransform,
+    ) -> Result<(Self, History)> {
+        replayable(level)?;
         let solid = Self::build(
             self.operation,
             self.profile.clone(),
@@ -290,7 +324,7 @@ impl Solid {
             self.end,
         )?;
         let ids: Vec<EntityId> = self.topology.ids().map(|(id, _)| id).collect();
-        let history = History::new(
+        let mut history = History::new(
             operation,
             OperationKind::Transform,
             vec![self.topology.body_id()],
@@ -300,11 +334,20 @@ impl Solid {
                 .collect(),
             Vec::new(),
         );
+        history.level = level;
         solid.debug_check(
             &[self.topology.entity_set(self.profile.tolerance())],
             &history,
         );
         Ok((solid, history))
+    }
+}
+
+fn replayable(level: AlgorithmLevel) -> Result<()> {
+    if AlgorithmLevel::REPLAYABLE.contains(&level) {
+        Ok(())
+    } else {
+        Err(Error::UnknownAlgorithmLevel(level.0))
     }
 }
 

@@ -24,11 +24,11 @@ FNV_PRIME = 0x0000000001000000000000000000013B
 MASK = (1 << 128)-1
 
 KIND = {'extrude': 1, 'transform': 2, 'external': 3}
-ENTITY = {'vertex': 1, 'edge': 2, 'face': 3, 'body': 4}
-DIMENSION = {'vertex': 0, 'edge': 1, 'face': 2, 'body': 3}
+ENTITY = {'vertex': 1, 'edge': 2, 'face': 3, 'body': 4, 'region': 5}
+DIMENSION = {'vertex': 0, 'edge': 1, 'face': 2, 'body': 3, 'region': 3}
 ROLE = {'start_cap': 1, 'end_cap': 2, 'wall': 3, 'bottom_edge': 4, 'top_edge': 5,
         'vertical': 6, 'seam': 7, 'bottom_vertex': 8, 'top_vertex': 9,
-        'seam_vertex': 10, 'body': 11, 'external': 12}
+        'seam_vertex': 10, 'body': 11, 'external': 12, 'region': 13}
 ELEMENT = {'boundary': 0, 'segment': 1, 'vertex': 2}
 RELATION = {'unchanged': 1, 'modified': 2, 'generated': 3, 'split': 4, 'merged': 5,
             'deleted': 6}
@@ -205,17 +205,17 @@ def extrude_entities(c):
         cap_parents.append(('label', labels[0]) if labels else ('profile', b, 'boundary', 0))
     add('face', 'start_cap', cap_parents, ('cap', 'start'))
     add('face', 'end_cap', cap_parents, ('cap', 'end'))
+    # The solid region (TOPOLOGY_MODEL.md, T1).
+    add('region', 'region', cap_parents, ('region',))
     for b, boundary in enumerate(boundaries):
         pts, labels = stored(boundary, tol)
         n = 1 if pts is None else len(pts)
         seg = (lambda j: ('label', labels[1][j])) if labels else (lambda j: ('profile', b, 'segment', j))
         vert = (lambda j: ('label', labels[2][j])) if labels else (lambda j: ('profile', b, 'vertex', j))
         if pts is None:
-            add('vertex', 'seam_vertex', [vert(0)], (b, 'vertex', 0, 'start'), 0)
-            add('vertex', 'seam_vertex', [vert(0)], (b, 'vertex', 0, 'end'), 1)
+            # Seamless (T1): two ring edges and the wall; no seam, no vertices.
             add('edge', 'bottom_edge', [seg(0)], (b, 'segment', 0, 'start'))
             add('edge', 'top_edge', [seg(0)], (b, 'segment', 0, 'end'))
-            add('edge', 'seam', [vert(0)], (b, 'vertex', 0, 'both'))
             add('face', 'wall', [seg(0)], (b, 'segment', 0, 'both'))
             continue
         for j in range(n):

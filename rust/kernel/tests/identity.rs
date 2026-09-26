@@ -36,9 +36,15 @@ fn every_case_matches_the_independent_ids_and_transforms_keep_them() {
         let want = &expected[&spec.name];
         let matches = match want[0].strip_prefix("digest ") {
             Some(digest) => {
+                // Region rows are listed after the digest, which covers the rest.
+                let (regions, rest): (Vec<_>, Vec<_>) = got
+                    .iter()
+                    .cloned()
+                    .partition(|r| r.contains(" region region "));
                 let (count, hash) = digest.split_once(' ').unwrap();
-                count.parse::<usize>().unwrap() == got.len()
-                    && EntityId(fnv1a128(got.join("\n").as_bytes())).to_string() == hash
+                count.parse::<usize>().unwrap() == rest.len()
+                    && EntityId(fnv1a128(rest.join("\n").as_bytes())).to_string() == hash
+                    && regions == want[1..]
             }
             None => got == *want,
         };
@@ -67,7 +73,7 @@ fn every_case_matches_the_independent_ids_and_transforms_keep_them() {
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
     assert_eq!(specs.len(), 546);
-    assert_eq!(entities, 46734);
+    assert_eq!(entities, 46494);
 }
 
 #[test]

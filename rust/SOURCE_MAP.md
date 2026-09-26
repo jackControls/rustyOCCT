@@ -25,9 +25,9 @@ translation of the current Rust kernel.
 | `Bounds3::intersects` | [Bnd_Box.cxx](../src/FoundationClasses/TKMath/Bnd/Bnd_Box.cxx), finite/non-open branch of `IsOut` | Ported separation comparisons, sum of both gaps, inclusive touching. No infinite, void or open-bound box representation. This is broad-phase overlap, not exact collision. |
 | `RigidTransform::rotation` | [gp_Trsf.cxx](../src/FoundationClasses/TKMath/gp/gp_Trsf.cxx), axis rotation: translation `origin - R*origin` | Same pivot semantics, independently expressed with Rust vectors. No mirror or scale. Transform tests and native DRAW checks. |
 | `Solid::extrude` | [BRepPrimAPI_MakePrism.cxx](../src/ModelingAlgorithms/TKPrim/BRepPrimAPI/BRepPrimAPI_MakePrism.cxx) and [BRepSweep_Prism.cxx](../src/ModelingAlgorithms/TKPrim/BRepSweep/BRepSweep_Prism.cxx) | Specialized finite normal extrusion of a material profile. Reject thickness at/below linear tolerance, matching the finite prism's vector-length guard. General swept subshapes, oblique/infinite prisms and OCCT history APIs are not implemented. |
-| Cylinder seam topology | [BRepPrim_OneAxis.cxx](../src/ModelingAlgorithms/TKPrim/BRepPrim/BRepPrim_OneAxis.cxx), lateral-face pcurves | Rust retains one shared seam edge with two opposed uses and distinct surface pcurves. This is a specialized builder, not a port of the complete one-axis builder. Topology, normals and 66-solid oracle tests. |
+| Cylinder topology | [BRepPrim_OneAxis.cxx](../src/ModelingAlgorithms/TKPrim/BRepPrim/BRepPrim_OneAxis.cxx), lateral-face pcurves and seam | Deliberately different: the wall has no seam. Two ring edges bound it through ring loops with winding numbers ±1, pcurves on the universal cover (`TOPOLOGY_MODEL.md`). OCCT's seam, seam vertices and their counts are synthesized by `Topology::occt_counts` for comparison only. Topology, normals, 66-solid oracle tests and the native count checks. |
 | Mass, bounds, classification | [BRepGProp.cxx](../src/ModelingAlgorithms/TKTopAlgo/BRepGProp/BRepGProp.cxx), [BRepClass3d_SolidClassifier.cxx](../src/ModelingAlgorithms/TKTopAlgo/BRepClass3d/BRepClass3d_SolidClassifier.cxx), `BRepBndLib::AddOptimal` | Independently derived exact prism formulas and profile classification, checked against these native OCCT APIs. The general algorithms have not been ported. |
-| DRAW adapter | [BRepTest_PrimitiveCommands.cxx](../src/Draw/TKTopTest/BRepTest/BRepTest_PrimitiveCommands.cxx) and [BRepTest_BasicCommands.cxx](../src/Draw/TKTopTest/BRepTest/BRepTest_BasicCommands.cxx) | Small command/signature subset delegates to Rust geometry; Tcl remains the real interpreter. `isbbinterf` uses the finite AABB logic above for box solids. |
+| DRAW adapter | [BRepTest_PrimitiveCommands.cxx](../src/Draw/TKTopTest/BRepTest/BRepTest_PrimitiveCommands.cxx) and [BRepTest_BasicCommands.cxx](../src/Draw/TKTopTest/BRepTest/BRepTest_BasicCommands.cxx) | Small command/signature subset delegates to Rust geometry; Tcl remains the real interpreter. `isbbinterf` uses the finite AABB logic above for box solids. `nbshapes` reports the kernel's synthesized OCCT counts, as `TopExp::MapShapes` would count the seamed body; `lprops` sums per edge use, as `BRepGProp::LinearProperties` explores edges. |
 | Original test judgments | [CheckCommands.tcl](../resources/DrawResources/CheckCommands.tcl), [TestCommands.tcl](../resources/DrawResources/TestCommands.tcl), group/grid `begin`, `end`, `parse.rules` and selected original tests | Execute original files without rewriting expected values. SHA-256 manifest pins every participating upstream file. Known failures, unsupported behavior and absent data are not passes. |
 
 The original copyright/license notices remain in the inherited source. Rust
@@ -449,6 +449,20 @@ are recorded in [B-rep validation](BREP_VALIDATION.md). The bridge passes on
 macOS and Linux with the same reviewed differences; acceptance passed at
 `dff912e5`.
 
+## Cell-complex topology
+
+The model (`TOPOLOGY_MODEL.md`) is decided against OCCT's `TopoDS`
+(orientations, compounds, seams via `BRep_Tool::IsClosed`), Parasolid's
+regions and fins and CGM's cells, and ports none of them. Regions partition
+space, faces have front and back sides listed by shells, fins sit in radial
+order on their edges, and periodic surfaces carry no seams. The native
+bridges keep OCCT's seamed encoding: a seam is an edge closed on its face
+(`BRep_Tool::IsClosed(edge, face)`), and its vertices are those used only by
+seams and by edges closed on them. Those native entities are classified
+structure-only by that rule, and every comparison verifies the rule with the
+synthesized counts (`TopExp::MapShapes` over vertices, edges, wires, faces,
+shells and solids).
+
 ## Value identity and operation history
 
 The source review for history covered `BRepPrimAPI_MakePrism`
@@ -460,7 +474,8 @@ The source review for history covered `BRepPrimAPI_MakePrism`
 preceded implementation. OCCT has no value ids: a shape's identity is its
 `TShape` pointer and location. Rust ids are digests of derivations, and every
 operation returns a complete, independently checked history. Rust reports
-OCCT's first/last shapes as `Generated` with start/end roles, and relates
-bodies by id instead of reporting the solid as generated from the face. See
+OCCT's first/last shapes as `Generated` with start/end roles. The solid
+OCCT generates from the face corresponds to the solid region, generated from
+every boundary label; bodies are related by id. See
 [identity and history](IDENTITY_AND_HISTORY.md).
 

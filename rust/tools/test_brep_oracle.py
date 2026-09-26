@@ -2,8 +2,8 @@
 """Deliberate failures for native BRepCheck decoding, classification and review."""
 import unittest
 
-from brep_reference import CORRESPONDING, compare_native, decode_native
-from compare_brep import original_capture, review_for, same_inputs
+from brep_reference import CORRESPONDING, compare_native, decode_native, structure_only
+from compare_brep import generate, original_capture, review_for, same_inputs
 
 
 class BrepOracle(unittest.TestCase):
@@ -37,6 +37,21 @@ class BrepOracle(unittest.TestCase):
         # Classes without a BRepCheck counterpart compare by verdict only.
         self.assertEqual(compare_native(['euler:shell 0'], row('R 0 s0:29'), []), [])
         self.assertEqual(compare_native(free, row('R 0 s0:28'), ['2.0.1']), ['inexact_pcurve_encoding'])
+
+    def test_structure_only_statuses_cannot_stand_for_an_issue(self):
+        row = lambda text: decode_native('x '+text, 'x')
+        gap = ['uv_gap:fin 3']
+        self.assertEqual(compare_native(gap, row('R 0 e2:28'), []), [])
+        self.assertEqual(compare_native(gap, row('R 0 e2:28'), [], {'e2'}), ['unmatched_uv_gap'])
+        self.assertEqual(compare_native(gap, row('R 0 e2:28 w2.0:28'), [], {'e2'}), [])
+        # A verdict never depends on where the statuses are.
+        self.assertEqual(compare_native([], row('R 0 e2:28'), [], {'e2'}), ['verdict'])
+
+    def test_seams_and_their_vertices_are_structure_only(self):
+        cylinder = next(m for m in generate()[0] if m.name == 'cylinder')
+        self.assertEqual(structure_only(cylinder), {'e2', 'v0', 'v1'})
+        box = next(m for m in generate()[0] if m.name == 'box')
+        self.assertEqual(structure_only(box), set())
 
     def test_correspondence_uses_real_statuses(self):
         # BRepCheck_Status has 37 values; 0 is NoError.

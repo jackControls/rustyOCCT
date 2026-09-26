@@ -2,7 +2,7 @@
 //! entity rows with structural locators found from geometry alone.
 use rusty_occt::history::{History, Relation};
 use rusty_occt::identity::{InputLabel, OperationId, Parent, ProfileElement, Role};
-use rusty_occt::topology::{Curve3, Slot, Surface};
+use rusty_occt::topology::{Curve3, FaceId, Slot, Surface};
 use rusty_occt::{
     Boundary, BoundaryLabels, Frame3, Point2, Point3, Profile, RigidTransform, Solid, Tolerance,
     Vec3,
@@ -144,6 +144,7 @@ pub fn role_name(role: Role) -> &'static str {
         Role::SeamVertex => "seam_vertex",
         Role::Body => "body",
         Role::External => "external",
+        Role::Region => "region",
     }
 }
 
@@ -199,9 +200,37 @@ pub fn rows(solid: &Solid) -> Vec<String> {
         .iter()
         .map(|v| locate_vertex(v.position))
         .collect();
+    // A ring edge has no vertex: find its circle boundary and side from the
+    // circle's centre and height.
+    let locate_ring = |curve: &Curve3| -> String {
+        let Curve3::Circle {
+            frame: circle,
+            radius,
+        } = curve
+        else {
+            panic!("a vertex-less edge must be a full circle");
+        };
+        let mut found = Vec::new();
+        for (b, boundary) in boundaries.iter().enumerate() {
+            let Some((center, r)) = boundary.circle_geometry() else {
+                continue;
+            };
+            for (side, offset) in sides {
+                if frame.point(center, offset).distance(circle.origin()) <= budget && r == *radius {
+                    found.push(format!("{b} segment 0 {side}"));
+                }
+            }
+        }
+        assert_eq!(found.len(), 1, "ring edge matches {found:?}");
+        found.pop().unwrap()
+    };
     let mut edge_loc = Vec::new();
     for edge in t.edges() {
-        let (a, b) = (vertex_loc[edge.start.index()], vertex_loc[edge.end.index()]);
+        let (Some(start), Some(end)) = (edge.start, edge.end) else {
+            edge_loc.push(locate_ring(&edge.curve));
+            continue;
+        };
+        let (a, b) = (vertex_loc[start.index()], vertex_loc[end.index()]);
         let loc = match &edge.curve {
             Curve3::LineSegment { .. } if a.0 == b.0 && a.1 == b.1 && a.2 != b.2 => {
                 format!("{} vertex {} both", a.0, a.1)
@@ -221,10 +250,10 @@ pub fn rows(solid: &Solid) -> Vec<String> {
         edge_loc.push(loc);
     }
     let mut face_loc = Vec::new();
-    for face in t.faces() {
-        let edges: Vec<&String> = face
-            .loops
-            .iter()
+    for (index, face) in t.faces().iter().enumerate() {
+        let edges: Vec<&String> = t
+            .face_fins(FaceId::new(index))
+            .into_iter()
             .flatten()
             .map(|u| &edge_loc[u.edge.index()])
             .collect();
@@ -235,6 +264,7 @@ pub fn rows(solid: &Solid) -> Vec<String> {
             .collect();
         let loc = if edges.iter().all(|l| l.contains(" segment "))
             && face.loops.len() == boundaries.len()
+            && matches!(face.surface, Surface::Plane(_))
         {
             let side = walls[0].split(' ').next_back().unwrap();
             assert!(walls.iter().all(|l| l.ends_with(side)));
@@ -259,6 +289,7 @@ pub fn rows(solid: &Solid) -> Vec<String> {
             }
             Slot::Edge(e) => ("edge", edge_loc[e.index()].clone()),
             Slot::Face(f) => ("face", face_loc[f.index()].clone()),
+            Slot::Region(_) => ("region", "region".to_string()),
         };
         let parents: Vec<String> = d.parents.iter().map(parent_text).collect();
         out.push(format!(

@@ -8,7 +8,7 @@
 //! DRAW does not query; the kernel reports them as generated with their roles.
 use rusty_occt::history::{History, Relation};
 use rusty_occt::identity::{InputLabel, OperationId, Parent, Role};
-use rusty_occt::topology::{Curve2, Curve3, Slot, Surface, Topology};
+use rusty_occt::topology::{Curve2, Curve3, EdgeId, FaceId, Loop, Slot, Surface, Topology};
 use rusty_occt::{
     Boundary, BoundaryLabels, Frame3, Point2, Point3, Profile, RigidTransform, Solid, Tolerance,
     Vec3,
@@ -141,27 +141,40 @@ fn moments(p: &Curve2) -> [f64; 3] {
 }
 
 fn face_area(t: &Topology, face: usize) -> f64 {
-    let face = &t.faces()[face];
-    match face.surface {
-        Surface::Plane(_) => {
-            0.5 * face
-                .loops
-                .iter()
-                .flatten()
-                .map(|u| moments(&u.pcurve)[0])
-                .sum::<f64>()
-                .abs()
-        }
+    let fins = t.face_fins(FaceId::new(face));
+    let fins = fins.iter().flatten();
+    match t.faces()[face].surface {
+        Surface::Plane(_) => 0.5 * fins.map(|u| moments(&u.pcurve)[0]).sum::<f64>().abs(),
+        // Wall pcurves are lines on the universal cover: the area is the
+        // radius times the periodic area -∮ v du, wound loops included.
         Surface::Cylinder { radius, .. } => {
-            let ends: Vec<Point2> = face.loops[0].iter().map(|u| u.pcurve.point(0.0)).collect();
-            let span = |f: fn(&Point2) -> f64| {
-                let v: Vec<f64> = ends.iter().map(f).collect();
-                v.iter().cloned().fold(f64::MIN, f64::max)
-                    - v.iter().cloned().fold(f64::MAX, f64::min)
-            };
-            radius * span(|p| p.x) * span(|p| p.y)
+            let periodic = fins
+                .map(|u| match u.pcurve {
+                    Curve2::LineSegment { start: a, end: b } => -0.5 * (a.y + b.y) * (b.x - a.x),
+                    Curve2::CircularArc { .. } => f64::NAN,
+                })
+                .sum::<f64>();
+            radius * periodic.abs()
         }
     }
+}
+
+/// The seam OCCT's wound faces carry and the kernel does not: its length (the
+/// face's extent across the winding) when the face has one.
+fn seam_length(t: &Topology, face: usize) -> Option<f64> {
+    let face = &t.faces()[face];
+    let mut wound = false;
+    let mut v = (f64::MAX, f64::MIN);
+    for l in &face.loops {
+        if let Loop::Edges { fins, winding } = &t.loops()[l.index()] {
+            wound |= winding != &[0, 0];
+            for k in fins {
+                let y = t.fins()[k.index()].pcurve.point(0.0).y;
+                v = (v.0.min(y), v.1.max(y));
+            }
+        }
+    }
+    wound.then_some(v.1 - v.0)
 }
 
 fn edge_length(curve: &Curve3) -> f64 {
@@ -199,30 +212,54 @@ fn collect(shape: &Shape, parts: &mut Parts) {
             s.topology().id_of(slot).unwrap()
         )
     };
+    // Lengths sum per occurrence, as OCCT's lprops explores edges; counts are
+    // of distinct shapes, as nbshapes reports them.
     let add_edge = |s: &Solid, e: usize, parts: &mut Parts| {
-        let t = s.topology();
-        let edge = &t.edges()[e];
-        if parts
-            .edges
-            .insert(key(s, Slot::Edge(rusty_occt::topology::EdgeId::new(e))))
-        {
-            parts.length += edge_length(&edge.curve);
-        }
-        for v in [edge.start, edge.end] {
+        let edge = &s.topology().edges()[e];
+        parts.edges.insert(key(s, Slot::Edge(EdgeId::new(e))));
+        parts.length += edge_length(&edge.curve);
+        for v in [edge.start, edge.end].into_iter().flatten() {
             parts.vertices.insert(key(s, Slot::Vertex(v)));
+        }
+        // OCCT splits a ring edge at a seam vertex.
+        if edge.is_ring() {
+            parts
+                .vertices
+                .insert(format!("{}:seam", key(s, Slot::Edge(EdgeId::new(e)))));
         }
     };
     let add_face = |s: &Solid, f: usize, parts: &mut Parts| {
         let t = s.topology();
-        if parts
-            .faces
-            .insert(key(s, Slot::Face(rusty_occt::topology::FaceId::new(f))))
-        {
-            parts.area += face_area(t, f);
-            parts.wires += t.faces()[f].loops.len();
-            for u in t.faces()[f].loops.iter().flatten() {
+        let face = key(s, Slot::Face(FaceId::new(f)));
+        if !parts.faces.insert(face.clone()) {
+            return;
+        }
+        parts.area += face_area(t, f);
+        for fins in t.face_fins(FaceId::new(f)) {
+            for u in fins {
                 add_edge(s, u.edge.index(), parts);
             }
+        }
+        let unwound = t.faces()[f]
+            .loops
+            .iter()
+            .filter(|l| {
+                matches!(
+                    &t.loops()[l.index()],
+                    Loop::Edges {
+                        winding: [0, 0],
+                        ..
+                    }
+                )
+            })
+            .count();
+        parts.wires += unwound;
+        // A wound face's two ring loops are one OCCT wire, joined by a seam
+        // used in both directions.
+        if let Some(length) = seam_length(t, f) {
+            parts.wires += 1;
+            parts.edges.insert(format!("{face}:seam"));
+            parts.length += 2.0 * length;
         }
     };
     let polyline = |p: &Polyline, parts: &mut Parts, face: bool| {
@@ -231,9 +268,8 @@ fn collect(shape: &Shape, parts: &mut Parts) {
             parts
                 .vertices
                 .insert(format!("L{}", p.labels.vertices[k].0));
-            if parts.edges.insert(format!("L{}", p.labels.segments[k].0)) {
-                parts.length += p.points[k].distance(p.points[(k + 1) % n]);
-            }
+            parts.edges.insert(format!("L{}", p.labels.segments[k].0));
+            parts.length += p.points[k].distance(p.points[(k + 1) % n]);
         }
         parts.wires += 1;
         if face && parts.faces.insert(format!("L{}", p.labels.boundary.0)) {
@@ -254,9 +290,8 @@ fn collect(shape: &Shape, parts: &mut Parts) {
             parts.vertices.insert(format!("L{}", label.0));
         }
         Shape::ProfileEdge { label, start, end } => {
-            if parts.edges.insert(format!("L{}", label.0)) {
-                parts.length += start.distance(*end);
-            }
+            parts.edges.insert(format!("L{}", label.0));
+            parts.length += start.distance(*end);
         }
         Shape::Sub { solid, slot } => match slot {
             Slot::Vertex(v) => {
@@ -264,6 +299,7 @@ fn collect(shape: &Shape, parts: &mut Parts) {
             }
             Slot::Edge(e) => add_edge(solid, e.index(), parts),
             Slot::Face(f) => add_face(solid, f.index(), parts),
+            Slot::Region(_) => {}
         },
         Shape::Compound(items) => {
             parts.compounds += 1;
@@ -305,6 +341,7 @@ fn type_name(shape: &Shape) -> &'static str {
             Slot::Vertex(_) => "VERTEX",
             Slot::Edge(_) => "EDGE",
             Slot::Face(_) => "FACE",
+            Slot::Region(_) => "SOLID",
         },
         Shape::Compound(_) => "COMPOUND",
     }
@@ -375,6 +412,18 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
                 (Point3::new(n[0], n[1], n[2]), Vec3::new(n[3], n[4], n[5]))
             };
             let solid = Solid::box_at(origin, size, t)?;
+            shapes.insert(args[1].clone(), Shape::Solid(Box::new(solid)));
+            Ok(String::new())
+        }
+        "pcylinder" if args.len() == 4 => {
+            let n = numbers(&args[2..])?;
+            let frame = Frame3::new(
+                Point3::ORIGIN,
+                Vec3::new(0.0, 0.0, 1.0),
+                Vec3::new(1.0, 0.0, 0.0),
+                t,
+            )?;
+            let solid = Solid::cylinder(frame, n[0], 0.0, n[1], t)?;
             shapes.insert(args[1].clone(), Shape::Solid(Box::new(solid)));
             Ok(String::new())
         }
@@ -560,7 +609,7 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
         "nbshapes" if args.len() == 2 => {
             let shape = get(shapes, &args[1])?;
             let p = parts(shape);
-            let counts = [
+            let mut counts = [
                 ("VERTEX", p.vertices.len()),
                 ("EDGE", p.edges.len()),
                 ("WIRE", p.wires),
@@ -570,6 +619,18 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
                 ("COMPSOLID", 0),
                 ("COMPOUND", p.compounds),
             ];
+            // A whole solid reports the kernel's synthesized OCCT counts; the
+            // per-shape collection must agree with them.
+            if let Shape::Solid(s) = shape {
+                let c = s.topology().occt_counts();
+                let synthesized = [c.vertices, c.edges, c.wires, c.faces, c.shells, c.solids];
+                if counts[..6].iter().map(|(_, n)| *n).ne(synthesized) {
+                    return Err(error("shape counts disagree with the count synthesizer"));
+                }
+                for (k, n) in synthesized.into_iter().enumerate() {
+                    counts[k].1 = n;
+                }
+            }
             let mut result = format!("Number of shapes in {}\n", args[1]);
             for (kind, count) in counts {
                 result.push_str(&format!(" {kind:<10}: {count}\n"));

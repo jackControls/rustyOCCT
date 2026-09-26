@@ -1,60 +1,80 @@
 # Generic B-rep validation
 
-`Topology::from_parts` builds a topology from caller-supplied vertices, edges,
-faces and shells only when the complete validation contract holds. Otherwise
-it returns **every** issue found, each with its offending entity.
-`TopologyParts::check` and `Topology::check` return the same list without
-constructing anything, and `Topology::validate` reports the first issue as an
-`InvalidTopology` error. The prism builders now use the same validator in
-place of the earlier sampled curve/pcurve checks.
+`Topology::from_parts` builds a cell complex (`TOPOLOGY_MODEL.md`) from
+caller-supplied vertices, edges, fins, loops, faces, shells and regions only
+when the complete validation contract holds. Otherwise it returns **every**
+issue found, each with its offending entity. `TopologyParts::check` and
+`Topology::check` return the same list without constructing anything, and
+`Topology::validate` reports the first issue as an `InvalidTopology` error.
+The prism builders use the same validator.
 
-Supported geometry is what the kernel's topology can represent: line segments
-and circular arcs (`Curve3::CircularArc`, with the full circle as a `TAU`
-sweep) in 3D, line and arc pcurves, and plane and cylinder surfaces. Any
-number of shells is accepted. The first bounds the solid and later ones are
-cavities.
+Supported geometry is what the kernel's topology can represent: line segments,
+circular arcs and full circles (`Curve3::Circle`, the curve of a ring edge) in
+3D, line and arc pcurves, and plane and cylinder surfaces. Space is
+partitioned into regions: region 0 is the infinite void, and every bounded
+region, solid or void, lists its shells, the first outer and the others
+cavities. Each face has a front and a back side; its oriented normal points
+from the front side's region to the back side's. Each side is listed by one
+shell. Cylinders carry no seams: a wall that closes around the axis is bounded
+by ring loops with winding numbers.
 
 ## Result contract
 
 An `Issue` is an `IssueKind` and an `Entity`. It displays as `kind:entity`,
-e.g. `pcurve_off_edge:use 2.0.1` for face 2, loop 0, use 1. Loops and uses are
-indexed within their face. The list is sorted and free of duplicates. Issue
-classes:
+e.g. `pcurve_off_edge:use 2.0.1` for face 2, loop 0, fin 1. Loops and fins
+are indexed within their face; a fin or loop that no face reaches is named by
+its arena index (`fin 7`, `loop slot 3`). Shells and regions are named by
+index (`shell 1`, `region 2`). The list is sorted and free of duplicates.
+Issue classes:
 
 | Class | Kinds |
 | --- | --- |
-| References and usage | `reference`, `unused_vertex`, `unused_edge`, `face_without_shell`, `face_reused`, `empty_face`, `empty_loop`, `empty_shell` |
-| Loops and shells | `open_loop`, `free_edge`, `non_manifold_edge`, `same_sense_uses`, `edge_across_shells`, `disconnected_shell`, `non_manifold_vertex`, `euler` |
+| References and usage | `reference`, `unused_vertex`, `unused_edge`, `face_without_shell`, `face_reused`, `empty_face`, `empty_loop`, `empty_shell`, `fin_without_loop`, `fin_reused`, `loop_without_face`, `loop_reused`, `edge_fins_mismatch` |
+| Sides and regions | `side_without_shell`, `side_in_two_shells`, `side_region_mismatch`, `region_without_shell`, `no_infinite_region`, `region_shell_mismatch`, `double_bounding` |
+| Loops and shells | `open_loop`, `winding_mismatch`, `ring_edge_with_vertex`, `ring_edge_open`, `seam_edge`, `free_edge`, `non_manifold_edge`, `same_sense_uses`, `radial_order_inconsistent`, `edge_across_shells`, `disconnected_shell`, `non_manifold_vertex`, `euler` |
 | Definitions | `degenerate_vertex`, `degenerate_curve`, `degenerate_surface`, `degenerate_pcurve` |
-| Certified geometry | `vertex_off_curve`, `pcurve_off_edge`, `uv_gap`, `loop_winding`, `inner_loop_outside`, `shell_orientation`, `cavity_outside`, `nested_cavity` |
-| Undecided geometry | `uncertified_vertex_off_curve`, `uncertified_pcurve_off_edge`, `uncertified_uv_gap`, `uncertified_loop_winding`, `uncertified_containment`, `uncertified_shell_orientation` |
+| Certified geometry | `vertex_off_curve`, `vertex_loop_off_surface`, `pcurve_off_edge`, `uv_gap`, `loop_winding`, `inner_loop_outside`, `shell_orientation`, `cavity_outside`, `nested_cavity` |
+| Undecided geometry | `uncertified_vertex_off_curve`, `uncertified_vertex_loop`, `uncertified_pcurve_off_edge`, `uncertified_uv_gap`, `uncertified_loop_winding`, `uncertified_containment`, `uncertified_shell_orientation` |
 
 An out-of-range reference stops validation after the reference pass, since
 nothing else can be indexed safely. Other failures gate only the checks that
 depend on them. A degenerate curve skips its vertex and pcurve checks. A face
-with a structural or geometric issue skips winding. A shell with an issue
-skips orientation and containment. This gating is part of the contract, so the
+with a structural, side or geometric issue skips winding. A shell with an
+issue skips orientation and containment. A shell listing exactly the opposite
+sides of an earlier shell (the void's view of the same surface) is that
+shell's twin, and its shell-level checks are not repeated. This gating is part of the contract, so the
 independent reference validator reproduces complete issue lists, not just
 verdicts.
 
 Conventions: every curve and pcurve uses a normalized fraction `t` in `[0,1]`.
-A use's pcurve follows the oriented face, so a reversed use pairs pcurve
+A fin's pcurve follows the oriented face, so a reversed fin pairs pcurve
 fraction `t` with edge fraction `1-t`. Outer loops wind counter-clockwise
 about the oriented face normal and inner loops clockwise. Cylinder UV is
-(angle, axial height).
+(angle, axial height), and pcurves live on its universal cover: a loop with
+winding number `w` closes with its end `2πw` in `u` after its start.
 
 ## Exact combinatorial checks
 
-* Every vertex, edge and face is used; each face belongs to exactly one shell;
-  no face, loop or shell is empty.
-* Each loop closes in 3D vertex order.
-* Within each shell, every edge has exactly two uses with opposite senses. One
-  use is `free_edge`, and more than two is `non_manifold_edge`. A seam is two
-  uses in one face. An edge used by two shells is `edge_across_shells`.
+* Every vertex, edge and face is used, every fin is in exactly one loop and
+  every loop in exactly one face, and each edge lists exactly the fins that
+  name it. No loop or shell is empty; a face with no loops is `empty_face`
+  (a closed surface without boundary is not yet representable).
+* Each face side is listed by exactly one shell, the one the face records for
+  that side. Each shell is listed by its region, no region lists a shell twice,
+  every bounded region has a shell, and region 0 is a void.
+* Each loop of edges closes in 3D vertex order; a ring edge alone closes a
+  loop. A ring edge has no vertices and a closed curve. Winding numbers are
+  zero on planes and in `v`; the windings of a cylinder face sum to zero.
+* Around each edge, the regions ahead of and behind its fins, in the stored
+  radial order, must alternate. A single fin is `free_edge`, two same-sense
+  fins are `same_sense_uses`, two opposite fins out of order are
+  `radial_order_inconsistent`, more are `non_manifold_edge`, and fins between
+  different shell pairs are `edge_across_shells`. Two fins of one edge in one
+  face are a seam, which this model forbids (`seam_edge`).
 * Each shell is face-connected. At each vertex, the graph of edges joined by
-  consecutive uses around that vertex must be connected, so pinch vertices are
-  rejected. Each shell's Euler characteristic `V - E + 2F - L` must be even
-  and at most 2.
+  consecutive fins around that vertex must be connected, so pinch vertices are
+  rejected. Each shell's Euler characteristic `V - E + 2F - L`, with ring
+  edges excluded and every edge loop counted, must be even and at most 2.
 
 ## Certified geometric checks
 
@@ -64,7 +84,8 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
 
 * **Definitions.** Finite values, nonzero line length (`|b-a| > tol`), radius
   `> tol`, and `0 < |sweep| <= 2π`.
-* **Vertices.** Each edge end is within tolerance of its vertex.
+* **Vertices.** Each edge end is within tolerance of its vertex, and each
+  vertex loop's vertex within tolerance of its face's surface.
 * **Curve on surface.** Over a whole use, `D(t) = C(t_edge) - S(P(t))` is a
   harmonic sum: `A0 + A1 t + Σ_ω (C_ω cos ωt + S_ω sin ωt)`, with exact
   rational frequencies. This covers line and arc edges against plane
@@ -74,23 +95,29 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   affine part is convex and each harmonic term is an ellipse. A failure is
   certified when one of 33 sample points lies beyond tolerance. An arc pcurve
   on a cylinder is not harmonic and can only be certified as a failure.
-* **UV closure.** Consecutive uses meet in UV within tolerance, with cylinder
-  angle differences scaled by the radius.
+* **UV closure.** Consecutive fins meet in UV within tolerance, with cylinder
+  angle differences scaled by the radius; the last fin meets the first shifted
+  by `2πw` in `u`.
 * **Loop winding.** Loops are closed exactly by straight chords between
-  consecutive uses (gaps certified to be within tolerance). Twice the signed
+  consecutive fins (gaps certified to be within tolerance). Twice the signed
   area is the closed form of `∮ u dv - v du`, including the chords. Its sign
   must be positive for an outer loop and negative for an inner loop, relative
-  to the face orientation.
+  to the face orientation. On a wound cylinder face the loops have no
+  outer/inner order: the total periodic area `-∮ v du` over all loops must
+  have the face's sign, and each unwound loop the opposite one.
 * **Inner loops.** The first point of each inner loop must lie inside the outer
   loop. A `+u` ray uses a half-open crossing rule. Arcs are split at their
   `v` extrema `π/2 + kπ`, using a certified `π`, so each piece is monotone.
-* **Shell orientation.** Green's theorem gives the signed volume. Each use
-  contributes `∫ G dv` with `∂G/∂u = S·(S_u × S_v)`. For a plane,
-  `G = u (o·(x×y))`. For a cylinder,
-  `G = r[a_y sin u + b_x cos u + r·det(x,y,n)·u]`, with `a_y = o·(y×n)` and
-  `b_x = o·(x×n)`. The outer shell's volume must be positive and each
-  cavity's negative.
-* **Cavities.** A cavity vertex must lie inside the outer shell and outside
+  An unwound loop on a wound face is `uncertified_containment` for now.
+* **Region orientation.** The flux of `x/3` through a face is
+  `-∮ v f(u) du` over its loops, closed chords included, with
+  `f = S·(S_u × S_v)` integrated in `v` from 0: for a plane `f = o·(x×y)`, for
+  a cylinder `f = -r(o·(x×n)) sin u + r(o·(y×n)) cos u + r²·det(x,y,n)`. A
+  shell's flux sums its faces' fluxes, negated for back sides. A bounded
+  region's first shell must have positive flux and every other shell
+  negative; the infinite void's shells negative.
+* **Cavities.** A cavity's point (its first fin's start, or the surface point
+  there for a ring fin) must lie inside its region's outer shell and outside
   every other cavity. Rays from that exact point in up to eight fixed integer
   directions are intersected with each face by exact Cramer solves (planes)
   or an exact quadratic (cylinders). A direction counts only when every hit is
@@ -99,7 +126,9 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   only meet within tolerance, so without this margin, a ray through a shared
   edge could fall between the two faces' closed UV regions. With it, the
   parity is the same for any watertight surface within tolerance of the
-  faces.
+  faces. On a cylinder, a hit is inside the face when the `+v` ray from it
+  on the universal cover crosses the face's loops an odd number of times,
+  counting every period alias of a wound loop.
 
 ## Two arithmetic tiers
 
@@ -135,29 +164,50 @@ it took about 0.05 seconds.
   formulas, certifies failures on 257 samples instead of 33, integrates loop
   areas by Gauss–Legendre quadrature, decides inner loops by a winding-angle
   integral and uses its own ray parity for cavities. Its sign decisions keep
-  explicit margins far above mpmath's working precision. `generate_brep_fixtures.py
-  --check` rebuilds 54 cases from an independent prism builder: 19 valid
-  solids and 35 mutations. The valid solids include holes, convex and concave
-  arcs, full circles with seams, one and two cavities, rotated and
-  far-translated copies and a millimetre-scale box. Two mutations remain valid
-  (a shift below tolerance, and a looser tolerance absorbing a larger shift),
-  so 21 cases are valid. `brep_validation.rs` requires Rust's complete sorted
-  issue list to equal the reference's for every case.
+  explicit margins far above mpmath's working precision. `cell_reference.py`
+  extends it to the cell model: `to_cell` converts a seamed model by rule
+  (a seam pair on a cylinder merges only when its two fins run opposite ways,
+  lie exactly one period apart and continue their neighbours in UV; any other
+  seam is kept and rejected as `seam_edge`), and `validate` implements the
+  side, region, radial, winding, vertex-loop and region-flux invariants
+  independently, with its own `+v` cover-crossing parity on cylinders.
+  `generate_brep_fixtures.py --check` rebuilds 64 cases. 54 come from an
+  independent seamed prism builder (19 valid solids and 35 mutations; the
+  valid solids include holes, convex and concave arcs, full circles, one and
+  two cavities, rotated and far-translated copies and a millimetre-scale
+  box), converted to cells. Ten are cell-model cases with no seamed form: a
+  cylinder parametrized from `π`, a box with a valid vertex loop, and the
+  model's own failure modes (a fin shifted by a period, a flipped winding,
+  fins swapped between edges, a side at the wrong shell, a vertex loop off its
+  surface, a face without loops, a ring edge with one vertex and a shell its
+  region does not list). 23 cases are valid. `brep_validation.rs` requires
+  Rust's complete sorted issue list to equal the reference's for every case.
 * The existing prism suites (`invariants`, `occt_regression`, `modeling`)
   build every solid through the new validator.
 
 The nineteenth fuzz target, `brep_validation`, builds valid star-outline
-prisms with no hole, a round hole, a square hole or an inverted box cavity.
-Scales range over `2^±10` with random frames and offsets. The cavity is merged
-and inverted by fuzz-crate code, not by a kernel builder. The base must be
-valid. Then one of sixteen mutations must produce its predicted issues:
+prisms with no hole, a round (seamless) hole, a square hole or an inverted box
+cavity. Scales range over `2^±10` with random frames and offsets. The cavity
+is merged by fuzz-crate code, not by a kernel builder: its material shell
+joins the body's solid region and its twin bounds a new void region. The
+base must be valid. Then one of 24 mutations must produce its predicted
+issues:
 
 * an exact report for local changes: an extra vertex, edge, empty shell or
   empty loop, a bad edge reference, an inverted outer shell or an uninverted
   cavity
-* a required issue on the mutated entity for the others: a face dropped from
-  or repeated in its shell, a flipped use, a moved vertex, a shifted pcurve, a
-  flipped face or swapped outer and inner loops
+* a required issue on the mutated entity for the others: a face whose sides
+  leave their shells or repeated in one, a flipped fin, a moved vertex, a
+  shifted pcurve, a flipped face or swapped outer and inner loops
+* the cell model's failure modes (`TOPOLOGY_MODEL.md`): a wall fin shifted by
+  one to three periods (on the stadium fixtures, the only prisms with
+  multi-fin loops on a cylinder: `uv_gap` at both of its ends), a flipped ring
+  loop winding (`uv_gap` and `winding_mismatch`), two edges' fin lists
+  exchanged (`edge_fins_mismatch` on both), a front side recorded at the back
+  shell (`side_region_mismatch`), a vertex loop off its surface, and an open
+  face's only loop removed (`empty_face` and `loop_without_face`)
+* laws that must stay valid: a vertex loop on a cap, and a two-fin edge's
+  radial order reversed (a cyclic order of two is unchanged)
 * for a pcurve shifted by `10·tol`, a clean report at `100·tol`
 
 Every report must be deterministic, duplicate-free and identical to
@@ -188,7 +238,10 @@ orientation itself. Rust fractions become OCCT parameters with matching speed:
 
 Seams use `UpdateEdge(E, C_forward, C_reversed, F)`. Where a mutated pcurve
 cannot match its edge's speed, the use is marked inexact, and that case is
-never read as a native verdict.
+never read as a native verdict. The native rows stay seamed: they are built
+from the seamed models, and the Rust side validates their converted cells. The
+oracle's second row per case counts the solid's distinct vertices, edges,
+wires, faces, shells and solids, as DRAW's `nbshapes` does.
 
 ## Native comparison bridge
 
@@ -211,8 +264,22 @@ native statuses. For example, `pcurve_off_edge` corresponds to
 process has a 120-second deadline. Timeouts, crashes and malformed output can
 never be reviewed.
 
+Two rules bridge the seamed and seamless encodings (`TOPOLOGY_MODEL.md`).
+Native seam edges (used twice by one loop) and the vertices only seams and
+edges closed on them use are **structure-only**
+(`brep_reference.structure_only`): their statuses cannot stand for a Rust
+issue class. Every case valid on both sides is then checked by **count
+synthesis**: the kernel's `Topology::occt_counts` of the Rust cell (one seam
+per wound face, one seam vertex per ring edge, one wire per wound face plus
+one per unwound loop) must equal the native count row exactly. Reviews
+fingerprint the status row, which the count row follows, so the eight
+existing reviews still bind the same native observations.
+
 On macOS and Linux, 44 cases match and 8 are reviewed differences, with no
-failures.
+failures. After the cell-model migration (T1) the same counts hold. The only
+structure-only status is the seam's `InvalidCurveOnSurface` on the zero-radius
+cylinder, whose Rust issue (`degenerate_surface`) compares by verdict; all 21
+cases valid on both sides agree on the synthesized counts.
 `occt-brep-divergences.json` fingerprints each observation with its reason
 and independent evidence:
 
@@ -230,7 +297,9 @@ and independent evidence:
   cavity face using an outer edge. Both verdicts are invalid.
 
 `test_brep_oracle.py` checks malformed native rows, the difference
-classification and the review fingerprint rules. Linux CI builds the same
+classification, the structure-only rule (a seam status cannot match an issue;
+a cylinder's seam and seam vertices are structure-only, a box has none) and
+the review fingerprint rules. Linux CI builds the same
 pinned SDK (OCCT 8.1.0). Its native output was byte-identical to macOS for
 every case, so the same eight fingerprinted reviews apply and no Linux-only
 record was needed. The slowest Linux native case took 0.007 seconds.
@@ -269,10 +338,11 @@ revision and these runners, not portable latency guarantees.
 2D loop self-intersection, face/face intersection (which OCCT's BRepCheck does
 not check either), tolerance healing, per-entity tolerances and operation
 history are out of scope. Validation cost is not bounded by explicit work
-limits. The curve checks are linear in the number of uses, but the
+limits. The curve checks are linear in the number of fins, but the
 combinatorial passes use ordered maps, and containment is linear in faces per
 ray. This validator certifies the supplied boundary; it does not make an
-invalid import valid. The cell-complex model decided in `TOPOLOGY_MODEL.md`
-replaces the shell-set invariants with region, side, radial-order, periodic
-loop and vertex-loop invariants in T1; the complete-issue-list contract and
-the two arithmetic tiers are unchanged.
+invalid import valid. Free and non-manifold edges, wire edges and acorn
+vertices are representable but rejected: every current operation requires a
+solid. Faces without loops (closed surfaces), unwound loops on wound faces
+(certified only as `uncertified_containment`), windings in `v` and
+per-entity enclosures wait for the surfaces and operations that need them.

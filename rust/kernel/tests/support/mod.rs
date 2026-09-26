@@ -111,6 +111,7 @@ pub fn evaluate(text: &str) -> Result<Vec<Observation>, Box<dyn std::error::Erro
         .map(|(s, _)| s)?;
         let mass = solid.mass_properties();
         let bounds = solid.bounds();
+        let counts = solid.topology().occt_counts();
         let mut values = vec![mass.volume, mass.surface_area];
         values.extend(
             mass.centroid
@@ -121,9 +122,10 @@ pub fn evaluate(text: &str) -> Result<Vec<Observation>, Box<dyn std::error::Erro
                 .chain(mass.inertia.into_iter().flatten()),
         );
         values.extend([
-            solid.topology().vertices().len() as f64,
-            solid.topology().edges().len() as f64,
-            solid.topology().faces().len() as f64,
+            // The counts OCCT reports for the same body, seams synthesized.
+            counts.vertices as f64,
+            counts.edges as f64,
+            counts.faces as f64,
         ]);
         let queries: usize = input.token()?;
         for _ in 0..queries {

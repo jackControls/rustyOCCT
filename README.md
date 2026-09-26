@@ -21,12 +21,13 @@ Cargo does not build it. Rust work lives on the `rust-kernel` branch, while
   disjoint polygonal or circular holes.
 - Exact normal extrusions on arbitrary planes, with signed start/end offsets;
   convenience constructors for boxes and cylinders.
-- Analytic lines, circles, planes and cylinders; shared vertices/edges, oriented
-  face loops, and per-face parameter curves, including cylinder seams. The
-  decided seamless cell-complex model is in `rust/TOPOLOGY_MODEL.md`.
-- Closed-shell connectivity validation, face provenance, and hole-aware Euler
-  characteristic. Body-local indices are not persistent names across edits;
-  the planned identity and history contracts are in `rust/IDENTITY_AND_HISTORY.md`.
+- Analytic lines, circles, planes and cylinders in a seamless cell complex
+  (`rust/TOPOLOGY_MODEL.md`): regions, shells with face sides, loops of fins in
+  radial order on shared edges, ring edges and winding numbers on cylinders,
+  with OCCT's seamed counts synthesized for comparison.
+- Certified cell-complex validation, value ids and complete, checked
+  histories for extrusions and rigid transforms, replayable at a recorded
+  algorithm level (`rust/BREP_VALIDATION.md`, `rust/IDENTITY_AND_HISTORY.md`).
 - Volume, surface area, centroid, central inertia tensor, exact bounds, point
   classification, rigid translation and rotation.
 - Explicit tolerances, finite-input and coordinate-resolution checks, and errors
@@ -122,7 +123,7 @@ are independently checked and version-pinned. High-degree native numerical
 differences are [reviewed separately](rust/NATIVE_SPLINE_DIVERGENCES.md); they
 are not counted as parity matches.
 [Sustained fuzzing](rust/FUZZING.md)
-runs sixteen instrumented targets on pushes/PRs and daily, restoring the evolving
+runs twenty-one instrumented targets on pushes/PRs and daily, restoring the evolving
 corpus and retaining crashes, timeouts and mathematical disagreements.
 
 [Exact edited-curve intersections](rust/EXACT_SPLINE_INTERSECTIONS.md) preserve

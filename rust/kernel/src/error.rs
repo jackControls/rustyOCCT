@@ -22,6 +22,8 @@ pub enum Error {
     OutOfDomain(&'static str),
     DiscontinuousDerivative,
     InvalidLabel(&'static str),
+    /// An algorithm level this build cannot replay (H8).
+    UnknownAlgorithmLevel(u32),
 }
 
 impl fmt::Display for Error {
@@ -44,6 +46,7 @@ impl fmt::Display for Error {
             Self::OutOfDomain(what) => write!(f, "outside the supported domain: {what}"),
             Self::DiscontinuousDerivative => write!(f, "requested derivative is discontinuous at the knot or seam; select a side"),
             Self::InvalidLabel(what) => write!(f, "invalid input labels: {what}"),
+            Self::UnknownAlgorithmLevel(level) => write!(f, "algorithm level {level} is not available in this build"),
         }
     }
 }

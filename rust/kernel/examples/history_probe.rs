@@ -2,14 +2,15 @@
 //! blocks (tools/identity_reference.py::encode_case) and prints each
 //! construction relation with its parent's profile locator and a geometric
 //! signature of its target, then every transform step's before/after pairs,
-//! in the signature format of rust/tools/occt_history_oracle.cpp.
+//! in the signature format of rust/tools/occt_history_oracle.cpp. A region
+//! is signed as its body; `C` rows are the synthesized OCCT counts.
 #[path = "../tests/support/identity_protocol.rs"]
 #[allow(dead_code)]
 mod identity_protocol;
 use identity_protocol::{cases, role_name};
 use rusty_occt::history::Relation;
 use rusty_occt::identity::{OperationId, Parent, ProfileElement};
-use rusty_occt::topology::{Curve2, Curve3, Slot, Surface, Topology};
+use rusty_occt::topology::{Curve2, Curve3, Slot, Surface};
 use rusty_occt::{Point2, Point3, RigidTransform, Solid, Vec3};
 use std::io::Read;
 
@@ -54,7 +55,8 @@ fn moments(p: &Curve2) -> [f64; 3] {
     }
 }
 
-fn signature(t: &Topology, slot: Slot) -> String {
+fn signature(s: &Solid, slot: Slot) -> String {
+    let t = s.topology();
     match slot {
         Slot::Vertex(v) => format!("V {}", p3(t.vertices()[v.index()].position)),
         Slot::Edge(e) => {
@@ -73,39 +75,57 @@ fn signature(t: &Topology, slot: Slot) -> String {
         }
         Slot::Face(f) => {
             let face = &t.faces()[f.index()];
-            let mut m = [0.0; 3];
-            for u in face.loops.iter().flatten() {
-                let x = moments(&u.pcurve);
-                (0..3).for_each(|i| m[i] += x[i]);
-            }
+            let fins = t.face_fins(f);
+            let fins = fins.iter().flatten();
             match face.surface {
                 Surface::Plane(frame) => {
+                    let mut m = [0.0; 3];
+                    for u in fins {
+                        let x = moments(&u.pcurve);
+                        (0..3).for_each(|i| m[i] += x[i]);
+                    }
                     let (area, cu, cv) = (0.5 * m[0], m[1] / m[0], m[2] / m[0]);
                     let c = frame.point(Point2::new(cu, cv), 0.0);
                     format!("F plane {:?} {}", area.abs(), p3(c))
                 }
                 Surface::Cylinder { frame, radius } => {
-                    // A full-turn wall: its centroid is on the axis.
-                    let ends: Vec<Point2> =
-                        face.loops[0].iter().map(|u| u.pcurve.point(0.0)).collect();
-                    let (u0, u1) = ends
-                        .iter()
-                        .fold((f64::MAX, f64::MIN), |a, p| (a.0.min(p.x), a.1.max(p.x)));
-                    let (v0, v1) = ends
-                        .iter()
-                        .fold((f64::MAX, f64::MIN), |a, p| (a.0.min(p.y), a.1.max(p.y)));
-                    let area = radius * (u1 - u0) * (v1 - v0);
-                    let c = frame.point(Point2::default(), 0.5 * (v0 + v1));
-                    format!("F cylinder {area:?} {}", p3(c))
+                    // A full-turn wall of two ring loops: its area is the
+                    // radius times the periodic area -∮ v du, its centroid on
+                    // the axis at mid height.
+                    let (mut periodic, mut v) = (0.0, (f64::MAX, f64::MIN));
+                    for u in fins {
+                        let Curve2::LineSegment { start: a, end: b } = u.pcurve else {
+                            unreachable!("prism walls have line pcurves");
+                        };
+                        periodic -= 0.5 * (a.y + b.y) * (b.x - a.x);
+                        v = (v.0.min(a.y), v.1.max(a.y));
+                    }
+                    let c = frame.point(Point2::default(), 0.5 * (v.0 + v.1));
+                    format!("F cylinder {:?} {}", radius * periodic.abs(), p3(c))
                 }
             }
         }
+        // A prism has one solid region: the body.
+        Slot::Region(_) => mass(s),
     }
 }
 
-fn body(s: &Solid) -> String {
+fn mass(s: &Solid) -> String {
     let m = s.mass_properties();
-    format!("B S {:?} {}", m.volume, p3(m.centroid))
+    format!("S {:?} {}", m.volume, p3(m.centroid))
+}
+
+fn body(s: &Solid) -> String {
+    format!("B {}", mass(s))
+}
+
+/// The counts OCCT reports for the same body, seams synthesized.
+fn counts(s: &Solid) -> String {
+    let c = s.topology().occt_counts();
+    format!(
+        "C {} {} {} {} {} {}",
+        c.vertices, c.edges, c.wires, c.faces, c.shells, c.solids
+    )
 }
 
 fn locator(s: &Solid, parents: &[Parent]) -> String {
@@ -190,10 +210,11 @@ fn main() {
                 role_name(*role),
                 d.ordinal,
                 locator(&solid, from),
-                signature(t, t.slot_of(*to).unwrap())
+                signature(&solid, t.slot_of(*to).unwrap())
             );
         }
         println!("{}", body(&solid));
+        println!("{}", counts(&solid));
         for (k, transform) in transforms.iter().enumerate() {
             let (next, h) = solid
                 .transform_with(OperationId(k as u64), *transform)
@@ -202,8 +223,8 @@ fn main() {
                 let Relation::Modified { from, to } = r else {
                     unreachable!("a rigid motion only modifies");
                 };
-                let before = signature(solid.topology(), solid.topology().slot_of(*from).unwrap());
-                let after = signature(next.topology(), next.topology().slot_of(*to).unwrap());
+                let before = signature(&solid, solid.topology().slot_of(*from).unwrap());
+                let after = signature(&next, next.topology().slot_of(*to).unwrap());
                 println!("T {k} {before} -> {after}");
             }
             println!("{}", body(&next));

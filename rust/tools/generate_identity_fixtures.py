@@ -157,6 +157,7 @@ def vectors():
         ('seam_vertex_end', Derivation(5, 'extrude', 'vertex', 'seam_vertex', 1, (('label', 3),))),
         ('entity_parent', Derivation(9, 'transform', 'edge', 'top_edge', 2**32-1, (('entity', e),))),
         ('external', Derivation(0, 'external', 'face', 'external', 17, ())),
+        ('region', Derivation(8, 'extrude', 'region', 'region', 0, (('label', 1), ('profile', 1, 'boundary', 0)))),
         ('body', Derivation(42, 'extrude', 'body', 'body', 0, ())),
         ('many_parents', Derivation(3, 'extrude', 'face', 'start_cap', 0,
                                     tuple(('label', 10+k) for k in range(8)))),
@@ -176,10 +177,14 @@ def generate():
     for c in explicit_cases:
         for row in sorted(entity_text(e) for e in extrude_entities(c)):
             expected.append(f'{c.name}\t{row}')
+    # Corpus digests cover vertices, edges and faces; regions (added by the
+    # cell-complex migration) are listed beside them.
     for c in corpus_cases:
-        rows = sorted(entity_text(e) for e in extrude_entities(c))
+        entities = extrude_entities(c)
+        rows = sorted(entity_text(e) for e in entities if e.kind != 'region')
         digest = fnv128('\n'.join(rows).encode()).hex()
         expected.append(f'{c.name}\tdigest {len(rows)} {digest}')
+        expected += [f'{c.name}\t{entity_text(e)}' for e in entities if e.kind == 'region']
     return cases, {
         'identity-vectors.tsv': vectors(),
         'identity-cases.txt': '\n'.join(encode_case(c) for c in cases)+'\n',

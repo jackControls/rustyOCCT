@@ -8,9 +8,10 @@
 //! "what became of this id" without ever choosing a survivor.
 use crate::attributes::AttributeOutcome;
 use crate::identity::{
-    encode_parents, role_code, EntityId, EntityKind, OperationId, OperationKind, Parent, Role,
+    encode_parents, role_code, AlgorithmLevel, EntityId, EntityKind, OperationId, OperationKind,
+    Parent, Role,
 };
-use crate::topology::{Curve3, Orientation, Surface};
+use crate::topology::{Curve3, Orientation, RegionKind, Surface};
 use crate::{Point3, Tolerance};
 use num_rational::BigRational as R;
 use std::collections::{BTreeMap, BTreeSet};
@@ -106,6 +107,9 @@ impl Relation {
 pub struct History {
     pub operation: OperationId,
     pub kind: OperationKind,
+    /// The behaviour version the operation ran at (H8); a composition keeps
+    /// the last step's.
+    pub level: AlgorithmLevel,
     pub input_bodies: Vec<EntityId>,
     pub output_bodies: Vec<EntityId>,
     /// Sorted by [`Relation::sort_key`].
@@ -144,6 +148,7 @@ impl History {
         Self {
             operation,
             kind,
+            level: AlgorithmLevel::FIRST,
             input_bodies,
             output_bodies,
             relations,
@@ -284,14 +289,16 @@ impl History {
                 role: *role,
             });
         }
-        Ok(History::new(
+        let mut composed = History::new(
             next.operation,
             OperationKind::Composite,
             self.input_bodies.clone(),
             next.output_bodies.clone(),
             relations,
             Vec::new(),
-        ))
+        );
+        composed.level = next.level;
+        Ok(composed)
     }
 }
 
@@ -361,6 +368,8 @@ pub enum Geometry {
         surface: Surface,
         orientation: Orientation,
     },
+    /// A bounded region; its structure lists its shells' face sides.
+    Region(RegionKind),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -370,6 +379,7 @@ pub enum Family {
     Circle,
     Plane,
     Cylinder,
+    Region,
 }
 
 impl Geometry {
@@ -383,6 +393,7 @@ impl Geometry {
                 ..
             } => Family::Plane,
             Self::Surface { .. } => Family::Cylinder,
+            Self::Region(_) => Family::Region,
         }
     }
 }
@@ -531,6 +542,7 @@ fn same_support(piece: &Geometry, whole: &Geometry, tol: f64) -> bool {
             circle_of(c).is_some() && circle_of(c) == circle_of(d)
         }
         (Geometry::Surface { .. }, Geometry::Surface { .. }) => piece == whole,
+        (Geometry::Region(a), Geometry::Region(b)) => a == b,
         _ => false,
     }
 }

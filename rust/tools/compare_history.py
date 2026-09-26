@@ -6,19 +6,26 @@ Rust histories are first certified equal to the independent enumeration
 implementation, the native probe's BRepTools_History and MakePrism queries
 are mapped to Rust relations by documented role correspondences:
 
-    profile vertex: Generated -> Vertical (Seam on a circle),
-                    FirstShape -> BottomVertex (SeamVertex 0),
-                    LastShape  -> TopVertex (SeamVertex 1)
+    profile vertex: Generated -> Vertical, FirstShape -> BottomVertex,
+                    LastShape  -> TopVertex
     profile edge:   Generated -> Wall, FirstShape -> BottomEdge,
                     LastShape -> TopEdge
     profile face:   FirstShape -> StartCap, LastShape -> EndCap,
-                    Generated -> the output body (Rust relates bodies by id)
+                    Generated -> the solid region (signed as the body)
 
-A case matches when every native query has exactly one Rust relation with an
-equal geometric signature, every Rust relation is reached, every native
-output is covered, entity counts agree, and each transform step's
-before/after pairs correspond one to one. Differences need a fingerprinted
-review; timeouts, crashes and malformed output are never reviewable.
+OCCT's seams and the vertices only they use (S rows: edges closed on a face,
+vertices used only by those and by edges closed on them) are structure the
+seamless cell model does not have. Queries, outputs and transform pairs that
+reach them are classified structure-only by that rule, and the rule is
+verified on every case by count synthesis: the kernel's synthesized OCCT
+counts of the Rust body equal the native N row.
+
+A case matches when every other native query has exactly one Rust relation
+with an equal geometric signature, every Rust relation is reached, every
+native output is covered, entity counts agree, and each transform step's
+before/after pairs (the region's against the native bodies) correspond one to
+one. Differences need a fingerprinted review; timeouts, crashes and malformed
+output are never reviewable.
 """
 import argparse
 import functools
@@ -48,9 +55,9 @@ TIMEOUT = 120
 RELATIVE = 1e-9
 
 NATIVE_ROLE = {
-    ('vertex', 'gen'): {('vertical', None), ('seam', None)},
-    ('vertex', 'first'): {('bottom_vertex', None), ('seam_vertex', 0)},
-    ('vertex', 'last'): {('top_vertex', None), ('seam_vertex', 1)},
+    ('vertex', 'gen'): {('vertical', None)},
+    ('vertex', 'first'): {('bottom_vertex', None)},
+    ('vertex', 'last'): {('top_vertex', None)},
     ('edge', 'gen'): {('wall', None)},
     ('edge', 'first'): {('bottom_edge', None)},
     ('edge', 'last'): {('top_edge', None)},
@@ -103,7 +110,7 @@ def parse_native(stdout, name):
     if not lines or not lines[0].startswith(f'R {name} ') or lines[-1] != 'end':
         raise ValueError(f'malformed native output for {name}')
     out = {'valid': lines[0].split()[2] == '1', 'queries': [], 'outputs': [], 'bodies': [],
-           'transforms': {}}
+           'transforms': {}, 'counts': None, 'structure': {}}
     i = 1
     while i < len(lines)-1:
         w = lines[i].split()
@@ -116,6 +123,10 @@ def parse_native(stdout, name):
             out['outputs'].append((' '.join(w[1:-1]), w[-1]))
         elif w[0] == 'B':
             out['bodies'].append((' '.join(w[1:-1]), w[-1] == '1'))
+        elif w[0] == 'N':
+            out['counts'] = ' '.join(w[1:])
+        elif w[0] == 'S':
+            out['structure'].setdefault(w[1], set()).add(' '.join(w[2:]))
         elif w[0] == 'T':
             k, arrow = int(w[1]), w.index('->')
             before, count = ' '.join(w[2:arrow]), int(w[arrow+1])
@@ -133,7 +144,9 @@ def parse_rust(text):
     for line in text.splitlines():
         w = line.split()
         if w[0] == 'R':
-            current = cases[w[1]] = {'relations': [], 'bodies': [], 'transforms': {}}
+            current = cases[w[1]] = {'relations': [], 'bodies': [], 'transforms': {}, 'counts': None}
+        elif w[0] == 'C':
+            current['counts'] = ' '.join(w[1:])
         elif w[0] == 'G':
             bar = w.index('|')
             current['relations'].append((w[1], int(w[2]), ' '.join(w[3:bar]), ' '.join(w[bar+1:])))
@@ -183,13 +196,24 @@ def compare(native, rust):
         diffs.add('native_invalid')
     if any(state != 'direct' for _, state in native['outputs']):
         diffs.add('native_history_incomplete')
+    structure = native['structure'].get('-', set())
+    if native['counts'] is None or native['counts'] != rust['counts']:
+        diffs.add('synthesized_counts')
     reached = set()
     for label, query, sig in native['queries']:
         if query == 'deleted':
             diffs.add('native_deleted')
             continue
+        if sig in structure:
+            continue
         element = label.split()[1] if not label.startswith('face') else 'face'
         if (element, query) == ('face', 'gen'):
+            regions = [k for k, (role, _, loc, _) in enumerate(rust['relations'])
+                       if role == 'region' and loc == label]
+            if len(regions) != 1 or not same(sig, rust['relations'][regions[0]][3], scale):
+                diffs.add('region_signature')
+            else:
+                reached.add(regions[0])
             if not same(sig, rust['bodies'][0], scale):
                 diffs.add('body_signature')
             continue
@@ -208,13 +232,21 @@ def compare(native, rust):
     if len(reached) != len(rust['relations']):
         diffs.add('unreached_rust_relation')
     for t in ('V', 'E', 'F'):
-        count = sum(1 for sig, _ in native['outputs'] if sig.startswith(t+' '))
+        count = sum(1 for sig, _ in native['outputs'] if sig.startswith(t+' ') and sig not in structure)
         if count != sum(1 for *_, s in rust['relations'] if s.startswith(t+' ')):
             diffs.add(f'count_{t}')
     if sorted(native['transforms']) != sorted(rust['transforms']):
         diffs.add('transform_steps')
     for k, pairs in native['transforms'].items():
-        mine = list(rust['transforms'].get(k, []))
+        skipped = native['structure'].get(str(k), set())
+        pairs = [(before, images) for before, images in pairs if before not in skipped]
+        mine = [(b, a) for b, a in rust['transforms'].get(k, []) if not b.startswith('S ')]
+        # The region moves with the body.
+        for b, a in rust['transforms'].get(k, []):
+            if b.startswith('S ') and not (k+1 < len(native['bodies'])
+                                           and same(b, native['bodies'][k][0], scale)
+                                           and same(a, native['bodies'][k+1][0], scale)):
+                diffs.add(f'transform{k}_region')
         if any(len(images) != 1 for _, images in pairs) or len(pairs) != len(mine):
             diffs.add(f'transform{k}_arity')
             continue
@@ -303,7 +335,7 @@ def main():
     reviews = [] if args.strict_native or not REVIEWS.exists() else json.loads(REVIEWS.read_text())['reviews']
     report = {'source_reference': SOURCE, 'cases': len(cases), 'native_timeout_seconds': TIMEOUT,
               'native_comparison_budget': {'relative': RELATIVE}, 'native_seconds': {},
-              'matches': [], 'reviewed_differences': [], 'failures': []}
+              'structure_only_entities': {}, 'matches': [], 'reviewed_differences': [], 'failures': []}
     observations, oracle = {}, None
     for c, text in zip(cases, rows):
         record = run(executable, text, env)
@@ -316,7 +348,10 @@ def main():
             continue
         oracle = oracle or next(iter(record['stderr'].splitlines()), None)
         try:
-            differences = compare(parse_native(record['stdout'], c.name), rust[c.name])
+            parsed = parse_native(record['stdout'], c.name)
+            differences = compare(parsed, rust[c.name])
+            if parsed['structure'].get('-'):
+                report['structure_only_entities'][c.name] = len(parsed['structure']['-'])
         except (ValueError, IndexError) as error:
             report['failures'].append({'case': c.name, 'reason': str(error)})
             continue
@@ -334,7 +369,7 @@ def main():
                 'loaded_libraries': loaded, 'build_command': command}
     write(output/'capture.json', metadata)
     write(output/'report.json', report)
-    print(json.dumps({k: len(v) if isinstance(v, list) else v for k, v in report.items()
+    print(json.dumps({k: len(v) if isinstance(v, (list, dict)) else v for k, v in report.items()
                       if k != 'native_seconds'}, indent=2))
     if report['failures']:
         raise SystemExit(1)

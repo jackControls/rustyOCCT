@@ -44,5 +44,5 @@ fn complete_issue_sets_match_the_independent_oracle() {
         checked += 1;
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
-    assert_eq!((checked, valid), (expected.len(), 21));
+    assert_eq!((checked, valid), (expected.len(), 23));
 }

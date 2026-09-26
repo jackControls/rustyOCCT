@@ -103,27 +103,31 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
    to curved geometry and propagate uncertainty through topology changes.
    Continue minimizing fuzz failures. See `MATHEMATICS.md` and `FUZZING.md`.
 2. **Topology invariants and operation history.** Generic B-rep validation
-   certifies connectivity, orientation, shells, cavities, seams and
-   curve/pcurve/surface consistency for line/arc edges on planes and
-   cylinders (`dff912e5`, `BREP_VALIDATION.md`). Value ids derived from
+   certifies connectivity, orientation, regions, sides, radial order,
+   periodic loops, vertex loops, cavities and curve/pcurve/surface
+   consistency for line/arc/circle edges on planes and cylinders
+   (`dff912e5`, then the cell model; `BREP_VALIDATION.md`). Value ids derived from
    caller labels and complete, independently checked histories exist for
    extrusions and rigid transforms (M0–M2 of `IDENTITY_AND_HISTORY.md`,
    accepted at `34efd36c`). The topology model is decided in
    `TOPOLOGY_MODEL.md`: a cellular partition with regions, stored adjacency,
    no seams, certified pcurves per fin, one resolution per body, computed
    body types and versioned operations. The remaining order is fixed:
-   * **T1** migrates the prism model to the cell complex. Expectation: every
-     polygon id, relation, mass property and DRAW result byte-identical;
-     circle prisms lose only seam entities; the validator gains the
-     cell-complex invariants; six new fuzz mutations; native bridges keep
-     their match counts with zero failures.
+   * **T1** migrates the prism model to the cell complex. Implemented:
+     every polygon id and relation and every mass property, bound and
+     classification is bitwise unchanged; circle prisms lost only seam
+     entities; the validator has the cell-complex invariants with an
+     independent reference; six new fuzz mutations; the native bridges keep
+     44/8/0 and 98/0/0 through structure-only classification and count
+     synthesis; `nbshapes` synthesizes OCCT counts; operations replay at a
+     recorded algorithm level. Acceptance is recorded in `TOPOLOGY_MODEL.md`.
    * **M3** adds the height split and stacked fuse on the migrated model:
      the first `Split`, `Merged` and `Deleted` relations on real bodies,
      including regions, with a `BRepAlgoAPI_Splitter`/`Fuse` oracle and the
      self-contained upstream history cases.
    * **T2** adds the OCCT structure interop: `.brep` converter and writer
-     with native round trips, the count synthesizer behind `nbshapes`, the
-     native selector for index-based picks, and the coverage ledger that
+     with native round trips, the native selector for index-based picks,
+     degenerate-edge counts for poles, and the coverage ledger that
      labels every upstream assertion model-independent, mapped or lost.
    * **M4** propagates attributes through every operation by declared
      policy; **M5** stores computed enclosures on entities and retires every

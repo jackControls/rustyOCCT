@@ -71,10 +71,11 @@ group, and stale success records are removed before each run.
 | `bugs/modalg_1/buc60684` | Missing fixture | Missing fixture | External `buc60684a.brep` data |
 | Derived `prism_history_rectangle` | Pass | Pass | Prism history: `generated`, `modified`, `isdeleted` for edges, vertices and the face |
 | Derived `prism_history_reversed_triangle` | Pass | Pass | Prism history against a clockwise profile's normal |
+| Derived `pcylinder_counts` | Pass | Pass | Seamless cylinder through the count synthesizer: `checkshape`, `checknbshapes`, volume, area and per-use length |
 
 There are **three original geometry tests passing on both backends**, not seven.
-The two derived cases are counted separately (see below).
-The 17 bridge self-tests are separate infrastructure checks; they do not count
+The three derived cases are counted separately (see below).
+The 18 bridge self-tests are separate infrastructure checks; they do not count
 as more upstream coverage. The existing 66-solid / 2,292-classification native
 oracle corpus supplies much broader prism geometry checks independently.
 
@@ -103,7 +104,14 @@ pinned upstream context (`tests/bugs/modalg_7`: its begin/end scripts and parse
 rules). Reports list them under `derived_cases_passing_on_both_backends`. Both
 must pass on native DRAW too.
 
-They use `prism ... Copy`. Without `Copy`, OCCT builds the prism's end face
+`pcylinder_counts` checks the seamless cylinder against OCCT's seamed one:
+native `checknbshapes` counts 2 vertices, 3 edges and 3 wires (the seam, its
+two vertices, the wall's one wire), which the Rust adapter synthesizes from a
+body with two ring edges and no vertices. Its length assertion is `16π + 10`:
+OCCT's `lprops` sums edges per use, so each circle counts once per face and
+the seam twice.
+
+The history cases use `prism ... Copy`. Without `Copy`, OCCT builds the prism's end face
 as the start face moved by a location, reusing its `TShape`s. DRAW's
 `nbshapes` counts those shared shapes once (4 vertices, 8 edges and 5 faces
 for a box), while the kernel, like `Copy`, builds distinct end entities.
@@ -112,14 +120,17 @@ without `Copy`.
 
 ## Deliberate limits
 
-- Rust signatures: positional `box` with three or six numbers, two-name `copy`,
-  single-shape `ttranslate`/`trotate`, `checkshape`, unique `nbshapes`, `vprops`
+- Rust signatures: positional `box` with three or six numbers, `pcylinder name
+  radius height` on the default axis, two-name `copy`, single-shape
+  `ttranslate`/`trotate`, `checkshape`, unique `nbshapes` with synthesized
+  seams and seam vertices (`Topology::occt_counts` for whole solids), `vprops`
   with optional positive integration epsilon, `isdraw`, the solid identification
   needed by `checkprops`, and AABB `isbbinterf`. For history: a closed
   `polyline`, `mkplane` of it, `prism name face dx dy dz Copy` normal to the
   profile, `explode` of a profile wire or face into edges or vertices,
   `savehistory`, `generated`, `modified`, `isdeleted`, and `sprops`/`lprops`
-  (mass only) on faces, edges and compounds. `generated` follows OCCT's prism:
+  (mass only) on faces, edges, solids and compounds, summing lengths per edge
+  use as OCCT's explorer does. `generated` follows OCCT's prism:
   a profile vertex gives its vertical edge, an edge its wall, the face the
   solid; the kernel's start/end copies are OCCT's `FirstShape`/`LastShape`. Everything else is unsupported,
   including OBBs, `sprops`, `nbshapes -t`, option-form boxes and visualization.
@@ -155,16 +166,17 @@ derived case. Do not use a success percentage across all OCCT suites as the
 readiness metric; measure evidence against the documented kernel capabilities,
 numerical domains and failure contracts independently of any application.
 
-## Structure mapping and the coverage ledger (planned, T2)
+## Structure mapping and the coverage ledger
 
-The kernel's decided topology model (`TOPOLOGY_MODEL.md`) has no seams,
-degenerate edges or per-entity tolerances, so original assertions that count
-OCCT structure cannot be evaluated on Rust output directly. T2 adds, without
-rewriting any original file:
+The kernel's topology model (`TOPOLOGY_MODEL.md`) has no seams, degenerate
+edges or per-entity tolerances, so original assertions that count OCCT
+structure cannot be evaluated on Rust output directly. T1 put a **count
+synthesizer** behind the Rust adapter's `nbshapes`: the counts OCCT would give
+for the same body (a seam per periodic direction of a wound face, a seam
+vertex per ring edge, loops as wires, a wound face's ring loops as one wire;
+degenerate edges per pole join it with the surfaces that have poles). T2 adds,
+without rewriting any original file:
 
-* a **count synthesizer** behind the Rust adapter's `nbshapes`, reporting the
-  counts OCCT would give for the same body (seams per periodic direction of
-  a wound face, degenerate edges per pole, their vertices, loops as wires);
 * a **native selector** that resolves index-based picks such as `s_5` by
   running the construction in DRAWEXE and matching that sub-shape's geometry
   to a Rust entity exactly;

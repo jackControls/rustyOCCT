@@ -2,14 +2,15 @@
 
 This is the decision record for the kernel's topology model and the delivery
 guide for migrating to it. The decisions were taken on 2026-09-25 after
-comparing OCCT, Parasolid and CGM; nothing below is implemented yet. It sits
+comparing OCCT, Parasolid and CGM; T1 is implemented (see
+[Implementation notes](#implementation-notes-t1)), T2 is not. It sits
 beside `IDENTITY_AND_HISTORY.md`, whose contracts are model-agnostic and whose
 milestones M0–M2 are accepted on the current prism model at `34efd36c`. The
 migration here, **T1**, must land before M3, because M3's first splits and
 merges would otherwise be built on seams that the decided model removes.
 
-**Status:** decided; T1 and T2 pending. Record acceptance evidence under
-[Acceptance](#acceptance).
+**Status:** decided; T1 implemented, its acceptance recorded under
+[Acceptance](#acceptance); T2 pending.
 
 ## Why this model
 
@@ -357,6 +358,54 @@ dependencies:
 | T2 OCCT interop and ledger | T1, M3 for split fixtures | data-dependent upstream cases, measurable retained evidence |
 | M4 attributes on operations | M3 | application colours, names, PMI links through Booleans |
 | M5 enclosures as data | T1 | Contract 5 complete, `enclosure_*` kinds |
+
+## Implementation notes (T1)
+
+Where the implementation refines the sketches above, the refinement and its
+reason:
+
+* **Arenas.** `TopologyParts` holds vertices, edges, fins, loops, faces,
+  shells and regions; faces list loop ids, loops list fin ids, edges list
+  their fins. Pcurves are stored (`DerivedOnPlane` and fin enclosures wait for
+  M5). A loop's winding is `[u, v]`; only `u` on a cylinder may be nonzero.
+* **Prism layout.** Shell 0 lists every face's front side and belongs to the
+  solid region 1; shell 1 lists every back side and belongs to the infinite
+  void. A cavity adds its material shell to region 1 and a bounded void
+  region whose shell lists the opposite sides. A shell listing exactly the
+  opposite sides of an earlier shell is its twin; shell-level checks (face
+  connectivity, Euler, orientation, containment) run once per surface.
+* **Region orientation** is a flux sign per shell: `-∮ v f(u) du` per face in
+  closed form, negated for back sides, positive for a bounded region's first
+  shell and negative for the others. Cavity containment keeps the ray parity
+  of the earlier validator, re-expressed per region, and gains a `+v`
+  cover-crossing test on cylinders that counts every period alias of a wound
+  loop.
+* **Retired kinds.** The seam cases of `same_sense_uses` became `seam_edge`,
+  since this model forbids seams; `cavity_outside` and `nested_cavity` stay,
+  re-expressed through regions.
+* **Structure-only vertices.** The rule "vertices used only by such edges"
+  would keep OCCT's seam vertex, which its circles also use. The bridges
+  classify a vertex as structure-only when every edge using it is a seam or
+  an edge closed on that vertex, and at least one is a seam. Count synthesis
+  verifies the rule on every case.
+* **Count synthesis in T1.** `Topology::occt_counts` (one seam per wound face
+  and periodic direction, one seam vertex per ring edge used by a wound loop,
+  a wire per unwound loop plus one per wound face, shells and solids from
+  solid regions) landed with T1, since the bridges verify with it and the
+  derived `pcylinder` case needs it. Degenerate edges for poles join it with
+  the surfaces that have poles (T2).
+* **Fixture layout.** Region rows of `identity-expected.tsv` and region
+  relations of `history-expected.tsv` are listed beside the corpus digests
+  rather than inside them, so the vertex, edge and face digests of polygon
+  corpora are byte-identical across T1 and prove the first requirement.
+* **Algorithm levels (H8).** `AlgorithmLevel::FIRST` is the only level. The
+  `_with` constructors run at `AlgorithmLevel::CURRENT`; `Solid::extrude_at`
+  and `Solid::transform_at` replay a recorded level and reject any other with
+  `Error::UnknownAlgorithmLevel`.
+* **Radial order law.** "Swap two fins around an edge" cannot be detected on a
+  manifold edge: a cyclic order of two is unchanged, and the fuzz target
+  requires exactly that reversal to stay valid. The detectable form, fins
+  exchanged between two edges, is the mutation.
 
 ## Acceptance
 

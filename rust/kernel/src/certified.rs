@@ -429,6 +429,8 @@ pub(crate) trait Real: Clone + std::fmt::Debug {
     /// Enlarge by +-w.
     fn widen(&self, w: &R) -> Self;
     fn atan2(y: &Self, x: &Self) -> Option<Self>;
+    /// Outward binary64 bounds of the enclosure.
+    fn bounds_f64(&self) -> (f64, f64);
 }
 
 impl Real for Interval {
@@ -482,6 +484,10 @@ impl Real for Interval {
     }
     fn atan2(y: &Self, x: &Self) -> Option<Self> {
         atan2(y, x)
+    }
+    fn bounds_f64(&self) -> (f64, f64) {
+        let f = Fast::from_interval(self);
+        (f.lo, f.hi)
     }
 }
 
@@ -664,6 +670,9 @@ impl Real for Fast {
             Some(Interval::new(R::from_float(f.lo)?, R::from_float(f.hi)?))
         };
         Some(Self::from_interval(&atan2(&to(y)?, &to(x)?)?))
+    }
+    fn bounds_f64(&self) -> (f64, f64) {
+        (self.lo, self.hi)
     }
 }
 

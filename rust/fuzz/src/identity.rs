@@ -31,6 +31,7 @@ fn encode(d: &Derivation) -> Vec<u8> {
         EntityKind::Edge => 2,
         EntityKind::Face => 3,
         EntityKind::Body => 4,
+        EntityKind::Region => 5,
     });
     let roles = [
         Role::StartCap,
@@ -45,6 +46,7 @@ fn encode(d: &Derivation) -> Vec<u8> {
         Role::SeamVertex,
         Role::Body,
         Role::External,
+        Role::Region,
     ];
     out.push(roles.iter().position(|r| *r == d.role).unwrap() as u8 + 1);
     out.extend(d.ordinal.to_le_bytes());
@@ -265,7 +267,8 @@ fn ids(solid: &Solid) -> Ids {
         assert_eq!(d.operation, solid.operation());
         out.insert(slot, (id.to_string(), d));
     }
-    let total = t.vertices().len() + t.edges().len() + t.faces().len();
+    // Every bounded region has an id; the infinite void is no entity.
+    let total = t.vertices().len() + t.edges().len() + t.faces().len() + t.regions().len() - 1;
     assert_eq!(out.len(), total, "every slot has an id");
     let distinct: BTreeSet<&String> = out.values().map(|v| &v.0).collect();
     assert_eq!(distinct.len(), total, "ids are unique");
@@ -293,9 +296,32 @@ pub fn check_identity(data: &[u8]) {
         s.outer.as_ref().map_or(0, Vec::len) + 4 * s.holes.iter().filter(|h| h.0).count();
     let circles = usize::from(s.outer.is_none()) + s.holes.iter().filter(|h| !h.0).count();
     let t = solid.topology();
-    assert_eq!(t.vertices().len(), 2 * polygon_sides + 2 * circles);
-    assert_eq!(t.edges().len(), 3 * polygon_sides + 3 * circles);
+    // A circle sweeps two ring edges and one seamless wall, no vertices.
+    assert_eq!(t.vertices().len(), 2 * polygon_sides);
+    assert_eq!(t.edges().len(), 3 * polygon_sides + 2 * circles);
     assert_eq!(t.faces().len(), 2 + polygon_sides + circles);
+    assert_eq!(t.regions().len(), 2);
+    // OCCT's encoding adds a seam and a seam vertex per ring edge per circle.
+    let c = t.occt_counts();
+    assert_eq!(
+        (c.vertices, c.edges, c.wires, c.faces, c.shells, c.solids),
+        (
+            2 * polygon_sides + 2 * circles,
+            3 * polygon_sides + 3 * circles,
+            2 * boundaries + polygon_sides + circles,
+            2 + polygon_sides + circles,
+            1,
+            1
+        )
+    );
+    let regions: Vec<&Derivation> = base
+        .values()
+        .map(|v| &v.1)
+        .filter(|d| d.role == Role::Region)
+        .collect();
+    assert_eq!(regions.len(), 1);
+    assert_eq!(regions[0].entity, EntityKind::Region);
+    assert_eq!(regions[0].parents.len(), boundaries);
     let caps: Vec<&Derivation> = base
         .values()
         .map(|v| &v.1)

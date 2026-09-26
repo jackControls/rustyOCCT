@@ -14,7 +14,8 @@ import argparse
 from pathlib import Path
 
 import generate_identity_fixtures as identity
-from identity_reference import extrude_history, fnv128, relation_text, transform_history
+from identity_reference import (extrude_entities, extrude_history, fnv128, hexid, relation_text,
+                                transform_history)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -39,8 +40,14 @@ def generate():
     for c in cases:
         steps = rows(c)
         if c.name.startswith('corpus_'):
-            text = '\n'.join(f'{s} {r}' for s, r in steps)
-            expected.append(f'{c.name}\tdigest\t{len(steps)} {fnv128(text.encode()).hex()}')
+            # Digests cover vertex, edge and face relations; region relations
+            # (added by the cell-complex migration) are listed beside them.
+            regions = {hexid(e.id) for e in extrude_entities(c) if e.kind == 'region'}
+            is_region = lambda r: any(i in r.split() for i in regions)
+            kept = [(s, r) for s, r in steps if not is_region(r)]
+            text = '\n'.join(f'{s} {r}' for s, r in kept)
+            expected.append(f'{c.name}\tdigest\t{len(kept)} {fnv128(text.encode()).hex()}')
+            expected += [f'{c.name}\t{s}\t{r}' for s, r in steps if is_region(r)]
         else:
             expected += [f'{c.name}\t{s}\t{r}' for s, r in steps]
     return cases, {'history-expected.tsv': '\n'.join(expected)+'\n'}

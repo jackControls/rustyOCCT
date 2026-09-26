@@ -32,6 +32,22 @@ pub struct EntityId(pub [u8; 16]);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct InputLabel(pub u64);
 
+/// The version of an operation's behaviour (H8). A history records the
+/// level it ran at; changing an operation's behaviour requires a new level,
+/// and the previous level stays callable. Levels never enter a derivation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct AlgorithmLevel(pub u32);
+
+impl AlgorithmLevel {
+    /// The first recorded level, introduced with the cell-complex model; no
+    /// earlier behaviour is replayable.
+    pub const FIRST: Self = Self(1);
+    /// The level new operations run at.
+    pub const CURRENT: Self = Self::FIRST;
+    /// Every level this build replays, oldest first.
+    pub const REPLAYABLE: &'static [Self] = &[Self::FIRST];
+}
+
 /// A caller-supplied operation identity, e.g. an application feature id.
 /// Convenience constructors without one use [`OperationId::UNSPECIFIED`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
@@ -58,6 +74,8 @@ pub enum EntityKind {
     Edge,
     Face,
     Body,
+    /// A bounded region of space (TOPOLOGY_MODEL.md).
+    Region,
 }
 
 impl EntityKind {
@@ -67,7 +85,7 @@ impl EntityKind {
             Self::Vertex => 0,
             Self::Edge => 1,
             Self::Face => 2,
-            Self::Body => 3,
+            Self::Body | Self::Region => 3,
         }
     }
 }
@@ -82,12 +100,17 @@ pub enum Role {
     BottomEdge,
     TopEdge,
     Vertical,
+    /// Retired by the seamless cell model (TOPOLOGY_MODEL.md, T1); its code
+    /// stays reserved so encodings never change meaning.
     Seam,
     BottomVertex,
     TopVertex,
+    /// Retired with `Seam`; its code stays reserved.
     SeamVertex,
     Body,
     External,
+    /// A bounded region, generated from every boundary of its profile.
+    Region,
 }
 
 /// A profile boundary, one of its segments, or one of its vertices, by
@@ -111,15 +134,23 @@ pub enum Parent {
 }
 
 impl Parent {
-    /// Dimension of the parent, for history dimension checks: a boundary or
-    /// segment is a curve, a vertex a point. Entity parents use their kind.
+    /// Dimension of the parent, for history dimension checks: a boundary
+    /// stands for the planar region it encloses, a segment is a curve, a
+    /// vertex a point. Entity and label parents are resolved elsewhere.
     pub fn profile_dimension(self) -> Option<u8> {
         match self {
             Self::Profile {
                 element: ProfileElement::Vertex(_),
                 ..
             } => Some(0),
-            Self::Profile { .. } => Some(1),
+            Self::Profile {
+                element: ProfileElement::Segment(_),
+                ..
+            } => Some(1),
+            Self::Profile {
+                element: ProfileElement::Boundary,
+                ..
+            } => Some(2),
             _ => None,
         }
     }
@@ -154,6 +185,7 @@ fn entity_code(kind: EntityKind) -> u8 {
         EntityKind::Edge => 2,
         EntityKind::Face => 3,
         EntityKind::Body => 4,
+        EntityKind::Region => 5,
     }
 }
 
@@ -171,6 +203,7 @@ pub(crate) fn role_code(role: Role) -> u8 {
         Role::SeamVertex => 10,
         Role::Body => 11,
         Role::External => 12,
+        Role::Region => 13,
     }
 }
 
@@ -180,13 +213,14 @@ const OPERATIONS: [OperationKind; 4] = [
     OperationKind::External,
     OperationKind::Composite,
 ];
-const ENTITIES: [EntityKind; 4] = [
+const ENTITIES: [EntityKind; 5] = [
     EntityKind::Vertex,
     EntityKind::Edge,
     EntityKind::Face,
     EntityKind::Body,
+    EntityKind::Region,
 ];
-const ROLES: [Role; 12] = [
+const ROLES: [Role; 13] = [
     Role::StartCap,
     Role::EndCap,
     Role::Wall,
@@ -199,6 +233,7 @@ const ROLES: [Role; 12] = [
     Role::SeamVertex,
     Role::Body,
     Role::External,
+    Role::Region,
 ];
 
 /// Append one parent's encoding.
@@ -394,7 +429,7 @@ mod tests {
             assert_eq!(id.parse::<EntityId>().unwrap(), derivation.id(), "{name}");
             count += 1;
         }
-        assert_eq!(count, 11);
+        assert_eq!(count, 12);
         // Published FNV-1a-128 test vectors.
         assert_eq!(
             EntityId(fnv1a128(b"")).to_string(),
@@ -436,8 +471,8 @@ mod tests {
             (4, 2),
             (13, 0),
             (13, 5),
-            (14, 5),
-            (15, 13),
+            (14, 6),
+            (15, 14),
             (24, 9),
             (29, 3),
         ] {

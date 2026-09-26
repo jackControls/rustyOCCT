@@ -1,0 +1,13 @@
+puts "Derived case, not an original OCCT test: cylinder structure counts"
+puts "Written for rusty-occt; see rust/UPSTREAM_TESTS.md (derived cases)."
+
+# OCCT's cylinder has a seam edge and two seam vertices; the kernel's
+# seamless cylinder reports these counts through its count synthesizer.
+pcylinder c 2 5
+checkshape c
+checknbshapes c -solid 1 -shell 1 -face 3 -wire 3 -edge 3 -vertex 2
+
+# Volume 20 pi and area 28 pi (native DRAW prints six significant digits). OCCT's lprops sums edge lengths per face use:
+# each circle twice and the seam twice, 16 pi + 10.
+checkprops c -v 62.831853071795862 -s 87.964594300514207 -deps 1e-5
+checkprops c -l 60.26548245743669 -deps 1e-5
