@@ -23,8 +23,8 @@ checked histories and the attribute checker, on extrusions and rigid
 transforms). The topology model is decided in `TOPOLOGY_MODEL.md`; its
 migration, T1, is accepted at `e4adb869` (seamless circle prisms, a region
 id, algorithm levels). M3 (height split and stacked fuse) is accepted at
-`00f0034c`; M4 (attributes on every operation) is accepted at `979cf939`;
-M5 (enclosures as entity data) is implemented. Acceptance evidence per milestone
+`00f0034c`; M4 (attributes on every operation) is accepted at `979cf939`,
+and M5 (enclosures as entity data) at `0913b5e2`. Acceptance evidence per milestone
 is under [Acceptance](#acceptance).
 
 ## What the kernel promises, and what it does not
@@ -787,7 +787,40 @@ say what remains.
   What remains: `on_modify` is exercised only by the checker's
   hand-written histories until an operation reports `Modified` outside a
   transform; attribute outcomes are not composed by `History::then`.
-* M5 — pending
+* **M5 — accepted at `0913b5e2`.** The native observations
+  (`fixtures/occt-enclosure-preimplementation`) were captured at `2d060fe9`,
+  before any enclosure code.
+  * Rust kernel workflow: all twelve jobs passed, including Rust 1.85,
+    Windows and WebAssembly. On Linux the B-rep bridge kept 44 matches, 8
+    reviewed differences and no failures, reproduced all 52 tolerance
+    rows, and compared the enclosures of all 21 cases valid on both sides:
+    none below OCCT's measurement, none above its tolerance. The first Linux
+    run at `2d060fe9` showed OCCT's rounding-level measurements differing
+    from the macOS capture by up to `1.4e-15`; the reproduction rule now
+    allows `2^-46` of the case's size, and the notes record it.
+  * Fuzzing workflow: all twenty-four targets passed. On Linux
+    `brep_validation` replayed 1,737 inputs in 362.4 seconds, then ran 60.07
+    seconds of mutation (390 executions, 8,115 edges, 749 MB); `split_merge`
+    replayed 186 in 488.8 seconds, then 60.08 seconds (38 executions, 9,023
+    edges, 638 MB). No artifact.
+  * Fixtures: 76 B-rep reports (27 valid, ten enclosure cases) and 1,083
+    certain gap values regenerate byte-identically on Python 3.9 and 3.12.
+    Rust's reports equal the reference's, and its measured bounds lie
+    between each gap and its declared bound (`brep_validation.rs`).
+    `enclosures.rs` holds the T5 law over the 546 identity prisms through a
+    transform, split and fuse.
+  * Clean local 600-second campaigns at `0913b5e2` (AddressSanitizer,
+    standard 20-second/2 GiB limits): `brep_validation` completed 600.04
+    seconds of mutation after 11.1 seconds of replay (15,278 executions,
+    8,232 edges, 730 MB peak); `split_merge` 600.08 seconds after 72.1
+    (957 executions, 8,981 edges, 675 MB). There were no crash, timeout,
+    OOM, slow-unit or disagreement artifacts.
+
+  What remains: the writer records the resolution, not each enclosure, as
+  every OCCT tolerance. `DerivedOnPlane` pcurves and enclosures of
+  surfaces with poles wait for the geometry that needs them. The D11
+  continuity check and the H8 composite-level rule remain open (see
+  above).
 
 ## Native format and Parasolid XT
 

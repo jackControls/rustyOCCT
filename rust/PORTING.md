@@ -141,7 +141,8 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
      (22,920 model-independent, 0 mapped-and-verified,
      12,846 lost). Degenerate edges belong with the surfaces that
      have poles, which the kernel does not yet represent. The native
-     observations came after the implementation (recorded).
+     observations came after the implementation (recorded). Accepted at
+     `0913b5e2`.
    * **M4** propagates attributes through every operation by declared
      policy. Implemented: an operation context with the policy table, one
      recorded outcome per input attribute, 33 independent scenarios over the
@@ -157,7 +158,8 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
      exact (the T4 audit). Also 76 independent fixture reports with ten
      enclosure cases and four new fuzz mutations. Native tolerances and
      OCCT's own measured deviations were captured before implementation; no
-     measured bound falls below them or exceeds OCCT's tolerance.
+     measured bound falls below them or exceeds OCCT's tolerance. Accepted
+     at `0913b5e2`.
    Body-local indices are still not persistent names; only value ids are.
 3. **Reliable geometry and intersections.** Circular arcs, trimmed curves,
    arbitrary face trimming; extend the existing certified

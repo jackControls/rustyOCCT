@@ -11,7 +11,7 @@ migration here, **T1**, must land before M3, because M3's first splits and
 merges would otherwise be built on seams that the decided model removes.
 
 **Status:** decided; T1 accepted at `e4adb869` (see
-[Acceptance](#acceptance)); T2 implemented, acceptance pending.
+[Acceptance](#acceptance)); T2 accepted at `0913b5e2`.
 
 ## Why this model
 
@@ -523,7 +523,39 @@ the clean local 600-second campaign, in the style of `BREP_VALIDATION.md`.
   must land, with its fixtures and a mutation, before the first spline edge
   or face enters a topology. Composed histories record only their last
   step's level; see H8 in `IDENTITY_AND_HISTORY.md`.
-* T2 — pending
+* **T2 — accepted at `0913b5e2`** (first pushed at `cb57697b`, whose kernel
+  workflow also passed; `0913b5e2` adds M5, which gives imported vertices
+  and fins their OCCT tolerances as enclosures).
+  * Rust kernel workflow: all twelve jobs passed. On Linux the interop
+    bridge certified the independent reader on all 77 corpus solids. OCCT
+    read back all 546 prisms and all 29 imported corpus solids as valid,
+    with equal counts and properties (worst difference `9.5e-15`, bound
+    `1e-11`); 575 matches, no reviewed differences, no failures. On macOS the
+    worst difference was `2.5e-14`. The original-test bridge passed
+    `explode_selector` on the Rust adapter and on Ubuntu's DRAW. The
+    coverage ledger equals the recorded one.
+  * Fuzzing workflow: all twenty-four targets passed. On Linux `brep_io`
+    replayed 423 inputs in 110.0 seconds, then ran 60.08 seconds of
+    mutation (539 executions, 9,540 coverage edges, 664 MB RSS peak) without
+    an artifact.
+  * Fixtures: `brep-io-expected.tsv` (37 files, 77 solids, 29
+    representable) regenerates byte-identically on Python 3.9 and 3.12, and
+    `occt_brep.rs` agrees with it on every file and solid.
+  * Order of evidence: the native corpus observations were captured after
+    implementation, as recorded in `fixtures/occt-brep-io-capture/NOTES.md`.
+  * Clean local 600-second campaign at `0913b5e2` (AddressSanitizer,
+    standard 20-second/2 GiB limits): `brep_io` completed 600.03 seconds of
+    mutation after 40.6 seconds of replay, with 15,855 executions, 10,163
+    coverage edges and a 997 MB RSS peak, and no crash, timeout, OOM,
+    slow-unit or disagreement artifacts. The earlier smoke campaign's crash
+    (a reference beyond its table) is fixed and retained as a regression.
+
+  What remains: no original upstream assertion is mapped-and-verified yet
+  (0 of 35,766). Data-dependent original cases wait for OCCT's external
+  test data, and the adapter's `restore` for the first of them. The selector
+  handles faces and edges only. Surfaces with poles, and so degenerate
+  edges, are not representable, and neither are splines, cones, spheres and
+  tori.
 
 ## Delivery rules
 
