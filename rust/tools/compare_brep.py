@@ -30,6 +30,9 @@ import brep_reference as reference
 import generate_brep_fixtures
 
 ORIGINAL = ROOT/'rust/fixtures/occt-brep-preimplementation'
+# M5: BRep_Tool::Tolerance and OCCT's own measured deviations, captured
+# before any Rust enclosure existed.
+ENCLOSURES = ROOT/'rust/fixtures/occt-enclosure-preimplementation'
 REVIEWS = ROOT/'rust/fixtures/occt-brep-divergences.json'
 SOURCE_FILE = ROOT/'rust/tools/occt_brep_check_oracle.cpp'
 TOOLKITS = ['TKTopAlgo', 'TKBRep', 'TKGeomAlgo', 'TKGeomBase', 'TKG3d', 'TKG2d', 'TKMath', 'TKernel']
@@ -81,6 +84,88 @@ def original_capture():
 # that moved a few frame and vertex components of two regular polygons by at
 # most 1.2e-16. Structure must be identical and numbers within this bound.
 NUMBER_DRIFT = 2.0**-50
+
+
+def decode_tolerances(row, name):
+    """{label: (tolerance or None, measured or None)} from a `T` row: vertices
+    `vI:tol:gap`, edges `eI:tol`, uses `uF.W.K:deviation`, faces `fI:tol`."""
+    words = row.split()
+    if words[:2] != [name, 'T']:
+        raise ValueError('malformed tolerance row for '+name)
+    out = {}
+    for word in words[2:]:
+        label, *values = word.split(':')
+        numbers = [float(v) for v in values]
+        if label[0] == 'v' and len(numbers) == 2:
+            out[label] = (numbers[0], numbers[1])
+        elif label[0] in 'ef' and len(numbers) == 1:
+            out[label] = (numbers[0], None)
+        elif label[0] == 'u' and len(numbers) == 1:
+            out[label] = (None, numbers[0])
+        else:
+            raise ValueError(f'malformed tolerance entry {word!r} for {name}')
+    return out
+
+
+def same_tolerances(captured, current):
+    """Tolerances exactly; measured deviations (numerical maximization) within
+    1e-15 absolute or 1e-9 relative, across platforms."""
+    if captured.keys() != current.keys():
+        return False
+    for label, (tol, gap) in captured.items():
+        now_tol, now_gap = current[label]
+        if tol != now_tol:
+            return False
+        if gap is not None and not (abs(gap-now_gap) <= max(1e-15, 1e-9*abs(gap)) or gap != gap and now_gap != now_gap):
+            return False
+    return True
+
+
+def enclosure_capture(tolerances):
+    """The M5 pre-implementation observations are unchanged and reproduce."""
+    metadata = json.loads((ENCLOSURES/'capture.json').read_text())
+    if (metadata['source_reference'] != SOURCE or metadata['rust_enclosure_implementation_exists']
+            or any(line[3:].startswith('rust/kernel') for line in metadata['rust_worktree_uncommitted'])):
+        raise ValueError('enclosure capture was not a clean pre-implementation reference')
+    for key, name in [('input_sha256', 'inputs.txt'), ('probe_source_sha256', 'oracle.cpp'),
+                      ('observations_sha256', 'native.txt')]:
+        if metadata[key] != digest(ENCLOSURES/name):
+            raise ValueError('enclosure evidence changed: '+name)
+    same_inputs((ENCLOSURES/'inputs.txt').read_text(), '\n'.join(text for _, text, _ in native_rows())+'\n')
+    captured = {}
+    for row in (ENCLOSURES/'native.txt').read_text().splitlines():
+        name = row.split()[0]
+        captured[name] = decode_tolerances(row, name)
+    for name, observed in tolerances.items():
+        if name not in captured or not same_tolerances(captured[name], observed):
+            raise ValueError('native tolerance observations of '+name+' differ from the capture')
+
+
+def capture_enclosures(executable, env, oracle_source, sdk_manifest):
+    """Record the tolerance rows of every native case (run once, before M5)."""
+    cases = native_rows()
+    rows = []
+    for m, text, _ in cases:
+        record = run(executable, text, env)
+        lines = record['stdout'].splitlines()
+        if record['exit_code'] != 0 or len(lines) != 3:
+            raise ValueError('native capture failed for '+m.name)
+        decode_tolerances(lines[2], m.name)
+        rows.append(lines[2])
+    ENCLOSURES.mkdir(parents=True, exist_ok=True)
+    (ENCLOSURES/'inputs.txt').write_text('\n'.join(text for _, text, _ in cases)+'\n')
+    (ENCLOSURES/'native.txt').write_text('\n'.join(rows)+'\n')
+    (ENCLOSURES/'oracle.cpp').write_text(oracle_source.read_text())
+    status = subprocess.run(['git', 'status', '--porcelain', '--', 'rust'], cwd=ROOT, text=True,
+                            capture_output=True, check=True).stdout.splitlines()
+    revision = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True, capture_output=True,
+                              check=True).stdout.strip()
+    write(ENCLOSURES/'capture.json', {
+        'source_reference': SOURCE, 'rust_revision': revision, 'platform': sys.platform,
+        'rust_enclosure_implementation_exists': False, 'rust_worktree_uncommitted': status,
+        'sdk_manifest_sha256': digest(sdk_manifest), 'input_sha256': digest(ENCLOSURES/'inputs.txt'),
+        'probe_source_sha256': digest(ENCLOSURES/'oracle.cpp'),
+        'observations_sha256': digest(ENCLOSURES/'native.txt')})
 
 
 def same_inputs(captured, current):
@@ -164,6 +249,8 @@ def main():
     parser.add_argument('--sdk-manifest', type=Path, required=True)
     parser.add_argument('--output', type=Path, default=ROOT/'target/brep-oracle')
     parser.add_argument('--strict-native', action='store_true')
+    parser.add_argument('--capture-enclosures', action='store_true',
+                        help='record the M5 tolerance observations (before implementation only)')
     args = parser.parse_args()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -177,6 +264,11 @@ def main():
     issues, counts = rust_issues()
     cases = native_rows()
     executable, env, loaded, command = build(prefix, output, cases[0][1])
+    if args.capture_enclosures:
+        capture_enclosures(executable, env, SOURCE_FILE, args.sdk_manifest)
+        print('captured', len(cases), 'tolerance rows')
+        return
+    tolerances = {}
     reviews = [] if args.strict_native or not REVIEWS.exists() else json.loads(REVIEWS.read_text())['reviews']
     report = {'source_reference': SOURCE, 'rust_cases_independently_certified': len(issues),
               'not_constructible_natively': [m.name for m in models if not reference.representable(m)],
@@ -197,8 +289,10 @@ def main():
         oracle = oracle or next(iter(record['stderr'].splitlines()), None)
         rows = record['stdout'].splitlines()
         try:
-            if len(rows) != 2 or not rows[1].startswith(f'{m.name} N '):
+            if (len(rows) != 3 or not rows[1].startswith(f'{m.name} N ')
+                    or not rows[2].startswith(f'{m.name} T ')):
                 raise ValueError(f'malformed native output for {m.name}')
+            tolerances[m.name] = decode_tolerances(rows[2], m.name)
             native = reference.decode_native(rows[0].strip(), m.name)
             native_counts = rows[1].split(maxsplit=2)[2]
         except ValueError as error:
@@ -230,6 +324,9 @@ def main():
                 'source_sha256': digest(SOURCE_FILE), 'probe_sha256': digest(executable),
                 'observations_sha256': digest(output/'native.json'),
                 'loaded_libraries': loaded, 'build_command': command}
+    # The M5 observations must reproduce whatever the Rust side does.
+    enclosure_capture(tolerances)
+    report['tolerance_rows_reproduced'] = len(tolerances)
     write(output/'capture.json', metadata)
     write(output/'report.json', report)
     print(json.dumps({k: len(v) if isinstance(v, list) else v for k, v in report.items()

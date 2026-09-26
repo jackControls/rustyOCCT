@@ -1,0 +1,15 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "rust_revision": "cb57697b5acad7270fdc054e0c5ff81eba57054f",
+  "platform": "darwin",
+  "rust_enclosure_implementation_exists": false,
+  "rust_worktree_uncommitted": [
+    " M rust/tools/compare_brep.py",
+    " M rust/tools/occt_brep_check_oracle.cpp",
+    "?? rust/fixtures/occt-enclosure-preimplementation/"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "ff7e6cfeec096026b0b112d2b2229ebe88558f7a4e7735b81695a116be9418b7",
+  "probe_source_sha256": "bd88636fce163adfff6644edb5c8e9bec3ca097a91e46ed69e82bf5d33b71040",
+  "observations_sha256": "e8ca910207fe2625e62b011e7658b98dca0713a25ef0a9a4141a58ce4dfa8d9c"
+}

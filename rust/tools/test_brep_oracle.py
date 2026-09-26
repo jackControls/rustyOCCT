@@ -3,7 +3,8 @@
 import unittest
 
 from brep_reference import CORRESPONDING, compare_native, decode_native, structure_only
-from compare_brep import generate, original_capture, review_for, same_inputs
+from compare_brep import (decode_tolerances, enclosure_capture, generate, original_capture, review_for,
+                          same_inputs, same_tolerances)
 
 
 class BrepOracle(unittest.TestCase):
@@ -57,6 +58,24 @@ class BrepOracle(unittest.TestCase):
         # BRepCheck_Status has 37 values; 0 is NoError.
         for kind, codes in CORRESPONDING.items():
             self.assertTrue(codes and all(0 < c < 37 for c in codes), kind)
+
+    def test_tolerance_rows_decode_or_fail(self):
+        row = 'x T v0:1e-07:0 e0:1e-07 u0.0.0:3.7e-16 f0:1e-07'
+        self.assertEqual(decode_tolerances(row, 'x'),
+                         {'v0': (1e-7, 0.0), 'e0': (1e-7, None), 'u0.0.0': (None, 3.7e-16), 'f0': (1e-7, None)})
+        for bad in ['y T v0:1:0', 'x N v0:1:0', 'x T v0:1', 'x T e0:1:2', 'x T u0:a', 'x T q0:1']:
+            with self.assertRaises(ValueError):
+                decode_tolerances(bad, 'x')
+
+    def test_tolerance_observations_are_reproduced_or_refused(self):
+        base = {'v0': (1e-7, 0.0), 'u0.0.0': (None, 3.7e-16), 'u0.0.1': (None, 2.0)}
+        self.assertTrue(same_tolerances(base, dict(base, **{'u0.0.0': (None, 4.5e-16)})))
+        self.assertTrue(same_tolerances(base, dict(base, **{'u0.0.1': (None, 2.0*(1+5e-10))})))
+        for changed in [{'v0': (2e-7, 0.0)}, {'u0.0.1': (None, 2.0*(1+1e-8))}, {'u0.0.0': (None, 2e-15)}]:
+            self.assertFalse(same_tolerances(base, dict(base, **changed)))
+        self.assertFalse(same_tolerances(base, {'v0': (1e-7, 0.0)}))
+        with self.assertRaises(ValueError):
+            enclosure_capture({'box': {'v0': (1.0, 0.0)}})
 
     def test_review_requires_rationale_and_exact_fingerprint(self):
         evidence = {'case': 'x', 'native_stdout_sha256': 'a', 'differences': ['verdict']}
