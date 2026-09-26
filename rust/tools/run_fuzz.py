@@ -21,6 +21,9 @@ FUZZ = ROOT/'rust/fuzz'
 TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear','brep_validation','identity','history','split_merge','attributes','brep_io']
 STARTUP_SECONDS = 600
 MAX_STARTUP_SECONDS = 3600
+# surface_knots' retained CI corpus replays slower than the cap allows: 2,766 s
+# for 564 inputs at 1a76d29e, over 3,600 s for 577 at 0c94aa53 (REVIEW_NOTES R12).
+TARGET_MAX_STARTUP_SECONDS = {"surface_knots": 7200}
 INPUT_SECONDS = 20
 # Full tensor coefficient equations and double-axis degree-25 edits are a
 # larger per-input workload. Existing targets keep their original 20s limit.
@@ -40,13 +43,13 @@ def shutdown_budget(input_seconds):
     return MUTATION_DEPTH * input_seconds + 5
 
 
-def startup_budget(corpus_files, input_seconds=INPUT_SECONDS):
+def startup_budget(corpus_files, input_seconds=INPUT_SECONDS, cap=MAX_STARTUP_SECONDS):
     # Exact-arithmetic seeds have widely varying costs. An assumed average
     # cost can reject an otherwise legal corpus before mutation ever starts.
     # Reserve build time and each input's configured budget (including the
     # initial empty input), capped at one hour. Every input keeps its own
     # timeout; replay never borrows the requested mutation duration.
-    return min(MAX_STARTUP_SECONDS, STARTUP_SECONDS+input_seconds*(corpus_files+1))
+    return min(cap, STARTUP_SECONDS+input_seconds*(corpus_files+1))
 
 
 def sanitizer_build_args(target):
@@ -469,7 +472,8 @@ def main():
                 input_seconds=TARGET_INPUT_SECONDS.get(target,INPUT_SECONDS)
                 shutdown_seconds=shutdown_budget(input_seconds)
                 initial_corpus_files=len(list(corpora[target].iterdir()))
-                startup_seconds=startup_budget(initial_corpus_files,input_seconds)
+                startup_seconds=startup_budget(initial_corpus_files,input_seconds,
+                                               TARGET_MAX_STARTUP_SECONDS.get(target,MAX_STARTUP_SECONDS))
                 timer=MutationBudget(log_path,stop_file,args.seconds,startup_seconds=startup_seconds,shutdown_seconds=shutdown_seconds)
                 command = ['cargo',f'+{args.toolchain}','fuzz','run',target,str(corpora[target]),
                     '--fuzz-dir',str(FUZZ),*sanitizer_build_args(target),'--',

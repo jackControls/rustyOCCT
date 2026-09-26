@@ -142,6 +142,23 @@ full local release suite passes at the head.
   code. If the user does not accept this, the cone's history bridge is
   labelled like T2's (captured after implementation) and nothing else
   changes.
+* **R12. Retained fuzz corpora grow without bound (recorded 2026-09-26 by
+  the implementing agent; the lasting fix needs the user's decision).** The
+  push campaign at `0c94aa53` failed `surface_knots` because its corpus
+  replay no longer fit the 3,600-second startup cap: 2,766 s for 564 inputs
+  at `1a76d29e`, over 3,600 s for 577 at `0c94aa53`, with no input over its
+  60-second limit (slowest 32 s). Nothing in `surface_knots` changed; the CI
+  cache retains every input libFuzzer adds. Interim, as R1 did for
+  `surface_editing`: `surface_knots` gets a 7,200-second startup cap
+  (`TARGET_MAX_STARTUP_SECONDS`) and the fuzz job 195 minutes. The lasting
+  fix is to minimize retained corpora (`-merge=1` into a fresh directory,
+  for example weekly) so replay stays bounded; it costs one more replay per
+  minimization and drops inputs that add no coverage. The same push also
+  showed the cone checks slowing `identity`, `history` and `brep_io`
+  replay (about 2 s per input under Linux AddressSanitizer). That was the
+  cone's mass engine, not a budget: it is now 20 to 40 times faster
+  (shared trigonometric moments, memoized exact dyadic Fourier
+  coefficients).
 
 ## Next steps, in order
 

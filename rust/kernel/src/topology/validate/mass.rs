@@ -107,16 +107,32 @@ fn integrands<K: Ord + Copy, T: Real>(
 }
 
 /// The exact Fourier expansion of `cos^a x sin^b x`: `(f, alpha, beta)` for
-/// `alpha cos(f x) + beta sin(f x)`, `f >= 0`.
-fn fourier(a: u8, b: u8) -> Vec<(i64, R, R)> {
+/// `alpha cos(f x) + beta sin(f x)`, `f >= 0`. Every coefficient is a sum of
+/// at most `2^(a+b)` terms `+-1 / 2^(a+b)`, a dyadic rational with a
+/// numerator below `2^(a+b)`, so binary64 holds it exactly for `a + b <= 52`
+/// (the integrands here have `a + b <= 8`). Memoized per thread.
+/// `(frequency, cos coefficient, sin coefficient)` terms of one expansion.
+type Expansion = std::rc::Rc<Vec<(i64, f64, f64)>>;
+
+fn fourier(a: u8, b: u8) -> Expansion {
+    assert!(
+        u32::from(a) + u32::from(b) <= 52,
+        "exact dyadic coefficients"
+    );
+    thread_local! {
+        static MEMO: std::cell::RefCell<BTreeMap<(u8, u8), Expansion>> =
+            const { std::cell::RefCell::new(BTreeMap::new()) };
+    }
+    if let Some(hit) = MEMO.with(|m| m.borrow().get(&(a, b)).cloned()) {
+        return hit;
+    }
     // Frequency to (cos, sin) coefficients, negative frequencies allowed.
-    let mut terms: BTreeMap<i64, (R, R)> = BTreeMap::new();
-    terms.insert(0, (int(1), int(0)));
-    let half = R::new(1.into(), 2.into());
-    let step = |terms: &BTreeMap<i64, (R, R)>, by_sin: bool| {
-        let mut out: BTreeMap<i64, (R, R)> = BTreeMap::new();
-        let mut put = |f: i64, cs: R, sn: R| {
-            let e = out.entry(f).or_insert((int(0), int(0)));
+    let mut terms: BTreeMap<i64, (f64, f64)> = BTreeMap::new();
+    terms.insert(0, (1.0, 0.0));
+    let step = |terms: &BTreeMap<i64, (f64, f64)>, by_sin: bool| {
+        let mut out: BTreeMap<i64, (f64, f64)> = BTreeMap::new();
+        let mut put = |f: i64, cs: f64, sn: f64| {
+            let e = out.entry(f).or_insert((0.0, 0.0));
             e.0 += cs;
             e.1 += sn;
         };
@@ -124,13 +140,13 @@ fn fourier(a: u8, b: u8) -> Vec<(i64, R, R)> {
             if by_sin {
                 // cos(fx) sin x = [sin((f+1)x) - sin((f-1)x)] / 2
                 // sin(fx) sin x = [cos((f-1)x) - cos((f+1)x)] / 2
-                put(f + 1, -sn * &half, cs * &half);
-                put(f - 1, sn * &half, -(cs * &half));
+                put(f + 1, -sn * 0.5, cs * 0.5);
+                put(f - 1, sn * 0.5, -(cs * 0.5));
             } else {
                 // cos(fx) cos x = [cos((f+1)x) + cos((f-1)x)] / 2
                 // sin(fx) cos x = [sin((f+1)x) + sin((f-1)x)] / 2
-                put(f + 1, cs * &half, sn * &half);
-                put(f - 1, cs * &half, sn * &half);
+                put(f + 1, cs * 0.5, sn * 0.5);
+                put(f - 1, cs * 0.5, sn * 0.5);
             }
         }
         out
@@ -142,26 +158,31 @@ fn fourier(a: u8, b: u8) -> Vec<(i64, R, R)> {
         terms = step(&terms, true);
     }
     // Fold negative frequencies: cos(-gx) = cos(gx), sin(-gx) = -sin(gx).
-    let mut folded: BTreeMap<i64, (R, R)> = BTreeMap::new();
+    let mut folded: BTreeMap<i64, (f64, f64)> = BTreeMap::new();
     for (f, (cs, sn)) in terms {
         let (g, sn) = if f < 0 { (-f, -sn) } else { (f, sn) };
-        let e = folded.entry(g).or_insert((int(0), int(0)));
+        let e = folded.entry(g).or_insert((0.0, 0.0));
         e.0 += cs;
-        e.1 += if g == 0 { int(0) } else { sn };
+        e.1 += if g == 0 { 0.0 } else { sn };
     }
-    folded
-        .into_iter()
-        .filter(|(_, (cs, sn))| *cs != int(0) || *sn != int(0))
-        .map(|(f, (cs, sn))| (f, cs, sn))
-        .collect()
+    let out: Expansion = std::rc::Rc::new(
+        folded
+            .into_iter()
+            .filter(|(_, (cs, sn))| *cs != 0.0 || *sn != 0.0)
+            .map(|(f, (cs, sn))| (f, cs, sn))
+            .collect(),
+    );
+    MEMO.with(|m| m.borrow_mut().insert((a, b), out.clone()));
+    out
 }
 
-fn binomial(n: u32, k: u32) -> R {
-    let mut out = int(1);
-    for i in 0..k {
-        out = out * int(i64::from(n - i)) / int(i64::from(i + 1));
+/// `C(n, k)`, exact in binary64 for the small `n` here.
+fn binomial(n: u32, k: u32) -> f64 {
+    let mut out = 1u64;
+    for i in 0..u64::from(k) {
+        out = out * (u64::from(n) - i) / (i + 1);
     }
-    out
+    out as f64
 }
 
 /// `integral over [0, 1] of the polynomial with these coefficients`.
@@ -207,16 +228,16 @@ fn planar_line<T: Real>(f: &Planar<T>, a: &V2<T>, b: &V2<T>) -> Option<T> {
 /// `integral over [t0, t0 + sweep] of cos^p t sin^q t dt`, exactly.
 fn trig_integral<T: Real>(cos_power: u8, sin_power: u8, t0: &T, t1: &T) -> Option<T> {
     let mut total = c::<T>(0.0);
-    for (f, alpha, beta) in fourier(cos_power, sin_power) {
+    for &(f, alpha, beta) in fourier(cos_power, sin_power).iter() {
         if f == 0 {
-            total = total.add(&q::<T>(&alpha).mul(&t1.sub(t0)));
+            total = total.add(&c::<T>(alpha).mul(&t1.sub(t0)));
             continue;
         }
         let g = c::<T>(f as f64);
         let (c0, s0) = T::cos_sin(&t0.mul(&g));
         let (c1, s1) = T::cos_sin(&t1.mul(&g));
-        let cos_part = q::<T>(&alpha).mul(&s1.sub(&s0));
-        let sin_part = q::<T>(&beta).mul(&c0.sub(&c1));
+        let cos_part = c::<T>(alpha).mul(&s1.sub(&s0));
+        let sin_part = c::<T>(beta).mul(&c0.sub(&c1));
         total = total.add(&cos_part.add(&sin_part).div(&g)?);
     }
     Some(total)
@@ -259,16 +280,19 @@ fn planar_arc<T: Real>(
 }
 
 /// `-integral of F du` along the line from `a` to `b` on a surface of
-/// revolution; `None` when `du` may be zero without being zero.
-fn rev_line<T: Real>(f: &Rev<T>, a: &V2<T>, b: &V2<T>) -> Option<T> {
+/// revolution, for every `F` of `fs` at once (they share the line's
+/// trigonometric values and moments); `None` when `du` may be zero without
+/// being zero.
+fn rev_lines<T: Real>(fs: &[Rev<T>], a: &V2<T>, b: &V2<T>) -> Option<Vec<T>> {
     let d = b[0].sub(&a[0]);
     if d.sign()? == Ordering::Equal {
-        return Some(c(0.0));
+        return Some(vec![c(0.0); fs.len()]);
     }
     let m = b[1].sub(&a[1]).div(&d)?;
-    let mut total = c::<T>(0.0);
+    let mut ends: BTreeMap<i64, (T, T, T, T)> = BTreeMap::new();
     let mut cache: BTreeMap<(i64, u32), (T, T)> = BTreeMap::new();
-    // J(f, j) = (integral over [0, d] of w^j cos(f(u0 + w)), ... sin ...).
+    // J(f, j) = (integral over [0, d] of w^j cos(f(u0 + w)), ... sin ...),
+    // by the recursion on j from the endpoint values.
     let mut moments = |f: i64, j: u32| -> Option<(T, T)> {
         if let Some(x) = cache.get(&(f, j)) {
             return Some(x.clone());
@@ -278,8 +302,15 @@ fn rev_line<T: Real>(f: &Rev<T>, a: &V2<T>, b: &V2<T>) -> Option<T> {
             (power.div(&c(f64::from(j) + 1.0))?, c(0.0))
         } else {
             let g = c::<T>(f as f64);
-            let (c0, s0) = T::cos_sin(&a[0].mul(&g));
-            let (c1, s1) = T::cos_sin(&b[0].mul(&g));
+            let (c0, s0, c1, s1) = match ends.get(&f) {
+                Some(x) => x.clone(),
+                None => {
+                    let (c0, s0) = T::cos_sin(&a[0].mul(&g));
+                    let (c1, s1) = T::cos_sin(&b[0].mul(&g));
+                    ends.insert(f, (c0.clone(), s0.clone(), c1.clone(), s1.clone()));
+                    (c0, s0, c1, s1)
+                }
+            };
             let mut cs = s1.sub(&s0).div(&g)?;
             let mut sn = c0.sub(&c1).div(&g)?;
             let mut power = c::<T>(1.0);
@@ -296,20 +327,36 @@ fn rev_line<T: Real>(f: &Rev<T>, a: &V2<T>, b: &V2<T>) -> Option<T> {
         cache.insert((f, j), out.clone());
         Some(out)
     };
-    for ((k, p, qq), x) in f {
-        // v^k = (v0 + m w)^k = sum over j of C(k, j) v0^(k-j) m^j w^j.
-        for j in 0..=u32::from(*k) {
-            let coef = q::<T>(&binomial(u32::from(*k), j))
-                .mul(&(0..u32::from(*k) - j).fold(c::<T>(1.0), |acc, _| acc.mul(&a[1])))
-                .mul(&(0..j).fold(c::<T>(1.0), |acc, _| acc.mul(&m)));
-            for (freq, alpha, beta) in fourier(*p, *qq) {
-                let (jc, js) = moments(freq, j)?;
-                let term = q::<T>(&alpha).mul(&jc).add(&q::<T>(&beta).mul(&js));
+    // v^k = (v0 + m w)^k = sum over j of C(k, j) v0^(k-j) m^j w^j.
+    let mut v0_powers = vec![c::<T>(1.0)];
+    let mut m_powers = vec![c::<T>(1.0)];
+    let mut out = Vec::with_capacity(fs.len());
+    for f in fs {
+        let mut total = c::<T>(0.0);
+        for ((k, p, qq), x) in f {
+            let k = usize::from(*k);
+            while v0_powers.len() <= k {
+                let next = v0_powers.last().expect("one").mul(&a[1]);
+                v0_powers.push(next);
+                let next = m_powers.last().expect("one").mul(&m);
+                m_powers.push(next);
+            }
+            let expansion = fourier(*p, *qq);
+            for j in 0..=k {
+                let coef = c::<T>(binomial(k as u32, j as u32))
+                    .mul(&v0_powers[k - j])
+                    .mul(&m_powers[j]);
+                let mut term = c::<T>(0.0);
+                for &(freq, alpha, beta) in expansion.iter() {
+                    let (jc, js) = moments(freq, j as u32)?;
+                    term = term.add(&c::<T>(alpha).mul(&jc).add(&c::<T>(beta).mul(&js)));
+                }
                 total = total.add(&x.mul(&coef).mul(&term));
             }
         }
+        out.push(total.neg());
     }
-    Some(total.neg())
+    Some(out)
 }
 
 /// The fourteen face integrals over the face region (loops carry its
@@ -434,15 +481,12 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
                     let Curve2::LineSegment { start, end } = &u.pcurve else {
                         return None;
                     };
-                    let values: [Option<T>; TERMS] = std::array::from_fn(|k| {
-                        rev_line(&anti[k], &[c(start.x), c(start.y)], &[c(end.x), c(end.y)])
-                    });
-                    accumulate(values.try_map_all()?);
+                    let values =
+                        rev_lines(&anti, &[c(start.x), c(start.y)], &[c(end.x), c(end.y)])?;
+                    accumulate(values.try_into().ok()?);
                 }
                 for (a, b) in chords::<T>(lp) {
-                    let values: [Option<T>; TERMS] =
-                        std::array::from_fn(|k| rev_line(&anti[k], &a, &b));
-                    accumulate(values.try_map_all()?);
+                    accumulate(rev_lines(&anti, &a, &b)?.try_into().ok()?);
                 }
             }
         }

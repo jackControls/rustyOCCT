@@ -17,6 +17,10 @@ class FuzzRunnerTests(unittest.TestCase):
         self.assertEqual(run_fuzz.startup_budget(100000),3600)
         self.assertEqual(run_fuzz.startup_budget(10,60),1260)
         self.assertEqual(run_fuzz.startup_budget(385,60),3600)
+        # surface_knots' larger cap (REVIEW_NOTES R12).
+        cap=run_fuzz.TARGET_MAX_STARTUP_SECONDS['surface_knots']
+        self.assertEqual(run_fuzz.startup_budget(577,60,cap),7200)
+        self.assertEqual(run_fuzz.startup_budget(100,60,cap),6660)
         with tempfile.TemporaryDirectory() as directory:
             directory=Path(directory); log_path=directory/'log'
             log_path.write_text('#649 INITED cov: 12\n')

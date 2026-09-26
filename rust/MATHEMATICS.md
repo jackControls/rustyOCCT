@@ -1178,8 +1178,10 @@ every solid region's boundary:
   with `F` the integrand's antiderivative in `v`;
 * along a line pcurve this is a polynomial in the line's parameter times
   `cos` and `sin` of integer multiples of `u`. The exact Fourier expansion of
-  `cos^a sin^b` (rational coefficients) reduces it to the moments `∫ w^j
-  cos(f(u0 + w))`, which obey an exact recursion. Along a plane arc the
+  `cos^a sin^b` (dyadic coefficients with numerators below `2^(a+b)`, held
+  exactly in binary64 and memoized) reduces it to the moments `∫ w^j
+  cos(f(u0 + w))`, which obey an exact recursion; all fourteen integrands of
+  a line share its trigonometric values and moments. Along a plane arc the
   integrand is a trigonometric polynomial, integrated through the same
   expansion.
 
