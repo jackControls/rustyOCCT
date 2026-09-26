@@ -21,16 +21,17 @@ Height split at offset h, strictly inside the prism, with operation id `op`:
     * the input body is replaced by two bodies,
       Derivation(op, height_split, body, body, piece ordinal, [Entity(input)]).
 
-Stacked fuse of bodies a and b (in that order), which must have the same
-tolerance, profile (points and labels), frame and transforms, the same
-direction and adjacent offsets (a.end == b.start or b.end == a.start):
+Stacked fuse of bodies a and b, which must have the same tolerance, profile
+(points and labels), frame and transforms, the same direction and adjacent
+offsets (a.end == b.start or b.end == a.start). Parents are in axial order
+(the lower body first), so the result does not depend on the call order:
     * walls, vertical edges and regions pair by locator and are `Merged`
       into Derivation(op, stacked_fuse, kind, same role, 0,
-      [Entity(from a), Entity(from b)]);
+      [Entity(from lower), Entity(from upper)]);
     * the shared cap sides of both bodies (caps, cap edges, cap vertices)
       are `Deleted`;
     * the outer sides stay `Unchanged`;
-    * the body is Derivation(op, stacked_fuse, body, body, 0, [a, b]);
+    * the body is Derivation(op, stacked_fuse, body, body, 0, [lower, upper]);
     * bodies that share an id (the same construction twice) are rejected.
 """
 from dataclasses import dataclass, replace
@@ -163,11 +164,11 @@ def fuse(a, b, op):
         raise Rejected('not adjacent')
     case = replace(ca, start=start, end=end)
     lower, upper = (a, b) if _low_high(ca)[0] < _low_high(cb)[0] else (b, a)
-    in_b = {e.locator: e for e in b.entities}
+    in_upper = {e.locator: e for e in upper.entities}
     ents, relations = [], []
-    for e in a.entities:
+    for e in lower.entities:
         if _swept(e):
-            other = in_b[e.locator]
+            other = in_upper[e.locator]
             d = e.derivation
             merged = Entity(e.kind, Derivation(op, 'stacked_fuse', e.kind, d.role, 0,
                                                (('entity', e.id), ('entity', other.id))), e.locator)
@@ -182,7 +183,7 @@ def fuse(a, b, op):
                 relations.append(('unchanged', e.id, e.id))
             else:
                 relations.append(('deleted', e.id))
-    fused = Body(case, body_id(op, 'stacked_fuse', [('entity', a.id), ('entity', b.id)]), ents)
+    fused = Body(case, body_id(op, 'stacked_fuse', [('entity', lower.id), ('entity', upper.id)]), ents)
     _unique([fused])
     return fused, sorted(relations, key=relation_sort_key)
 

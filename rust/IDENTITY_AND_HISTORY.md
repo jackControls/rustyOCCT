@@ -239,7 +239,7 @@ the same profile and frame, the same direction and exactly adjacent offsets:
 
 | Input or output | Relation |
 | --- | --- |
-| Walls, vertical edges, solid regions of both bodies | pairwise `Merged { from: [self's, other's] }`, ordinal 0, the same role |
+| Walls, vertical edges, solid regions of both bodies | pairwise `Merged { from: [lower body's, upper body's] }`, ordinal 0, the same role |
 | The shared caps with their edges and vertices | `Deleted` |
 | The outer caps with their edges and vertices | `Unchanged` |
 | Bodies | both replaced by the fused body |
@@ -442,14 +442,16 @@ general Boolean.
 * `Solid::split_at_height(h)` splits a prism by the plane at offset `h`
   strictly between its offsets: the solid region and each wall face and
   vertical edge `Split` into two (ordinal by axial order), caps and ring
-  edges `Unchanged` in their body, two cut faces `Generated` from the plane
-  and the wall set, cut edges `Generated` from walls (a ring edge for a
+  edges `Unchanged` in their body, two cut faces `Generated` from the wall
+  set (the plane is an operation parameter, not an entity, so it is no
+  parent; the operation id carries it), cut edges `Generated` from walls (a ring edge for a
   cylinder wall, with no vertices), cut vertices `Generated` from vertical
   edges, the input body deleted and two bodies output.
 * `Solid::fuse_stacked(other)` merges two prisms that share a cap exactly
   (same profile, same frame, adjacent offsets): the two solid regions and,
-  pairwise, walls and vertical edges `Merged` (parents in body order,
-  ordinal 0), the shared caps `Deleted`, the shared cap edges and vertices
+  pairwise, walls and vertical edges `Merged` (parents in axial order, the
+  lower body's first, so the ids do not depend on the call order; ordinal
+  0), the shared caps `Deleted`, the shared cap edges and vertices
   `Deleted`, outer caps and outer ring edges `Unchanged`.
 * **Fixtures:** independent enumeration of expected relations and of the
   resulting `Topology` structure; every result must pass `Topology::check`.
@@ -513,10 +515,15 @@ here.
 * **Split and fuse ids (M3).** Split children and merged entities keep
   their parent's role; a split child's ordinal is its piece's axial order
   (0 lower, 1 upper), a merged entity's ordinal is 0 and its parents are in
-  body order. The cut face's parents are every wall of the input in slot
-  (profile) order. Piece bodies are `Derivation(op, HeightSplit, body, body,
-  k, [input body])`, the fused body `Derivation(op, StackedFuse, body, body,
-  0, [a, b])`. Operation kinds 5 and 6 and roles 14–16 (`cut_face`,
+  axial order (the lower body's first). The call order of `fuse_stacked`
+  therefore changes no id; only the history's input bodies keep it. (M3 was
+  first accepted with parents in call order; the order was canonicalised on
+  the same branch before any release, so no stored history predates it.)
+  The cut face's parents are every wall of the input in slot (profile)
+  order; the cutting plane is a parameter of the operation, not an entity,
+  so it is no parent. Piece bodies are `Derivation(op, HeightSplit, body,
+  body, k, [input body])`, the fused body `Derivation(op, StackedFuse, body,
+  body, 0, [lower, upper])`. Operation kinds 5 and 6 and roles 14–16 (`cut_face`,
   `cut_edge`, `cut_vertex`) are appended codes; the vectors grew to 17.
   Bodies that share an id cannot be fused (I4): two constructions with the
   same operation id and labels have the same ids.

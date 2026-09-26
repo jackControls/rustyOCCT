@@ -171,7 +171,8 @@ impl Solid {
     /// exactly). The result spans both.
     ///
     /// History (`OperationKind::StackedFuse`): walls, vertical edges and the
-    /// solid regions pair up and are `Merged` (parents in body order, ordinal
+    /// solid regions pair up and are `Merged` (parents in axial order, the
+    /// lower body's first, so the ids do not depend on the call order; ordinal
     /// 0, same role); the shared caps with their edges and vertices are
     /// `Deleted`; the outer ends stay `Unchanged`. Bodies that share an id
     /// cannot be combined (I4).
@@ -216,12 +217,12 @@ impl Solid {
         for &(slot, place) in fused.topology.layout() {
             let d = match place {
                 Place::Swept => {
-                    let from = vec![id_of(a, slot), id_of(b, slot)];
+                    let from = vec![id_of(lower, slot), id_of(upper, slot)];
                     let d = Derivation {
                         operation,
                         kind: OperationKind::StackedFuse,
                         entity: kind_of(slot),
-                        role: derivation_of(a, slot).role,
+                        role: derivation_of(lower, slot).role,
                         ordinal: 0,
                         parents: from.iter().copied().map(Parent::Entity).collect(),
                     };
@@ -250,7 +251,10 @@ impl Solid {
             entity: EntityKind::Body,
             role: Role::Body,
             ordinal: 0,
-            parents: vec![Parent::Entity(a.body_id()), Parent::Entity(b.body_id())],
+            parents: vec![
+                Parent::Entity(lower.body_id()),
+                Parent::Entity(upper.body_id()),
+            ],
         };
         fused.topology = fused.topology.renamed(body_derivation, named)?;
         fused.operation = operation;

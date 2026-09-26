@@ -124,7 +124,8 @@ def explicit():
     out.append(stacked('fuse_circle', 'circle', (0.0, 4.0), (4.0, 4.5)))
     out.append(stacked('fuse_holes_3_labelled', 'holes_3_labelled', (0.0, 3.0), (3.0, 4.5)))
     out.append(stacked('fuse_transformed', 'transformed_copy', (-1.0, 0.5), (0.5, 2.0)))
-    # Fusing the pieces in the other body order is a fuse, not an inverse.
+    # The other call order gives the same fused body (parents are in axial
+    # order), but the fuse no longer chains after the split's output order.
     c = by['holes_3']
     out.append(Scenario('split_then_fuse_upper_first', tol, [('P', c)], [
         ('split', 'P', 1.25, 101, 'L', 'U'), ('fuse', 'U', 'L', 102, 'F')]))

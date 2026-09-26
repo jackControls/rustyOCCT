@@ -504,7 +504,7 @@ checks a seamless `pcylinder` through the count synthesizer.
 independent enumeration in `split_merge_reference.py`: every explicit identity
 prism split, fused back, composed and its upper piece split again; stacked
 fuses of separate constructions (increasing and decreasing, circles, labelled
-holes, rigid copies, either body order); 13 rejected splits and fuses (heights
+holes, rigid copies, either call order, which gives the same ids); 13 rejected splits and fuses (heights
 at, outside or within the tolerance of an end; gaps, overlaps, opposite
 directions, other profiles, labels or frames, and bodies sharing ids); and
 128 corpus prisms split at xorshift heights and fused back. `split_merge.rs`

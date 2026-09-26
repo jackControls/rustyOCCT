@@ -97,6 +97,10 @@ mod laws {
                 Resolution::Unknown
             );
             let (fused, fuse) = lower.fuse_stacked(&upper, OperationId(6)).unwrap();
+            // Parents are in axial order: the call order changes no id.
+            let (again, other) = upper.fuse_stacked(&lower, OperationId(6)).unwrap();
+            assert_eq!(again, fused);
+            assert_eq!(other.relations, fuse.relations);
             assert_eq!(fused.mass_properties(), parent.mass_properties());
             assert_eq!(fused.bounds(), parent.bounds());
             let both = split.then(&fuse).unwrap();

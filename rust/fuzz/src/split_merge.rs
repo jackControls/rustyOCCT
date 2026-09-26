@@ -211,8 +211,9 @@ pub fn check_split_merge(data: &[u8]) {
         (va + vb - vs).abs() <= 8.0 * f64::EPSILON * vs,
         "{va} {vb} {vs}"
     );
-    // Body order is kept: the other order is a different fuse with other ids.
-    let (swapped, _) = above.fuse_stacked(&parent, OperationId(75)).unwrap();
-    assert_ne!(swapped.topology().body_id(), stacked.topology().body_id());
-    assert_eq!(swapped.mass_properties(), stacked.mass_properties());
+    // Parents are in axial order: the call order changes no id.
+    let (swapped, h3) = above.fuse_stacked(&parent, OperationId(75)).unwrap();
+    assert_eq!(swapped, stacked);
+    assert_eq!(h3.relations, h2.relations);
+    assert_eq!(h3.input_bodies, vec![h2.input_bodies[1], h2.input_bodies[0]]);
 }
