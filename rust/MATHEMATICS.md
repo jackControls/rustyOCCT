@@ -1128,3 +1128,32 @@ binary integer gcd. Rational-root recognition adds the rational root theorem
 candidate `ceil(lead·lower)/lead`, which is unique once the isolator is
 narrower than `1/|lead|`, and still requires an exact zero check. Both change
 cost only, not results.
+
+## Exact support of split and merged pieces
+
+The history checker (`history::check`) decides whether a split child or a
+merged parent lies on the support of the whole with exact rational arithmetic
+on the binary64 inputs, within the body's resolution `t`:
+
+* a point `p` is within `t` of the line through `a` and `b` when
+  `|(b - a) x (p - a)|^2 <= t^2 |b - a|^2`;
+* a point `q` is within `t` of the plane through `o` with normal `n` when
+  `((q - o) . n)^2 <= t^2 |n|^2`, and of the axis through `o` with direction
+  `n` when `|(q - o) x n|^2 <= t^2 |n|^2`;
+* a plane piece (origin `o'`, normal `n'`) must face the whole's normal
+  (`n' . n > 0`), and every end `p` of its line boundary edges, projected onto
+  the piece's own plane as `q = p - ((p - o') . n' / n' . n') n'`, must lie
+  within `t` of the whole plane. The signed distance to the whole plane is
+  affine on the piece's plane, so its maximum over the face is attained on the
+  projected boundary; a circular boundary edge must have a normal exactly
+  parallel to both planes (`m x n' = m x n = 0`) and its projected centre
+  within `t`;
+* a cylinder piece must have an axis exactly parallel to the whole's, with
+  `s = t - |r' - r| >= 0` and a point of its axis within `s` of the whole's
+  axis (`|(p - o) x n|^2 <= s^2 |n|^2`): parallel axes at distance `d` and
+  radii differing by `e` keep the surfaces within `d + e <= t` of each other
+  everywhere. The builder's pieces share the whole's axis direction bit for
+  bit.
+
+Nothing else counts as the same support, so a split along a slightly rotated
+plane or a merge of non-coplanar walls is reported, never absorbed.

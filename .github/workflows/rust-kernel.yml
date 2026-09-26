@@ -65,6 +65,7 @@ jobs:
           target/math-oracle-venv/bin/python rust/tools/generate_brep_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_identity_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_history_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_split_merge_fixtures.py --check
       - name: Run unchanged upstream tests on both kernels
         run: python3 rust/tools/run_upstream_tests.py --backend both --draw-exe /usr/bin/occt-draw
       - name: Compare line and plane intersections with native OCCT
@@ -273,6 +274,38 @@ jobs:
             target/history-sdk/*.log
             target/history-sdk/build/CMakeCache.txt
             target/history-sdk/build/compile_commands.json
+          if-no-files-found: warn
+
+  pinned-split-merge-oracle:
+    name: Height split and stacked fuse / source-pinned OCCT
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - run: rustup toolchain install stable --profile minimal
+      - name: Install the independent reference's arithmetic
+        run: |
+          python3 -m venv target/math-oracle-venv
+          target/math-oracle-venv/bin/python -m pip install --disable-pip-version-check --no-cache-dir --require-hashes -r rust/tools/math-oracle-requirements.txt
+      - name: Fetch the exact reference source
+        run: git fetch --no-tags --depth=1 https://github.com/Open-Cascade-SAS/OCCT.git 3d097a0328e71b826377d4814ab05ec3c3d23871
+      - name: Build the headless Boolean SDK with exception checks
+        run: python3 rust/tools/build_pinned_occt.py --output target/split-merge-sdk --toolkit TKBO --toolkit TKPrim --jobs 2
+      - name: Test deliberate bridge failures and compare every captured split and fuse
+        run: |
+          target/math-oracle-venv/bin/python rust/tools/test_split_merge_oracle.py
+          target/math-oracle-venv/bin/python rust/tools/compare_split_merge.py --occt-root target/split-merge-sdk/install --sdk-manifest target/split-merge-sdk/build-manifest.json
+      - name: Preserve source provenance, native observations, and differences
+        if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: source-pinned-split-merge-results
+          path: |
+            target/split-merge-oracle/
+            target/split-merge-sdk/build-manifest.json
+            target/split-merge-sdk/*.log
+            target/split-merge-sdk/build/CMakeCache.txt
+            target/split-merge-sdk/build/compile_commands.json
           if-no-files-found: warn
 
   native:

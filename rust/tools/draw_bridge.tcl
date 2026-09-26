@@ -126,7 +126,7 @@ if {[catch {
     interp alias testcase help {} metadata
     interp alias testcase cpulimit {} cpuLimit
     interp alias testcase locate_data_file {} locateData
-    foreach command {box copy ttranslate trotate isdraw whatis checkshape nbshapes vprops sprops lprops isbbinterf explode compound bcommon bfuse restore prism polyline mkplane savehistory generated modified isdeleted pcylinder} {
+    foreach command {box copy ttranslate trotate isdraw whatis checkshape nbshapes vprops sprops lprops isbbinterf explode compound bcommon bfuse restore prism polyline mkplane savehistory generated modified isdeleted pcylinder plane mkface line mkedge mkvolume bclearobjects bcleartools baddobjects baddtools bfillds bsplit bbuild} {
         interp alias testcase $command {} runCommand $command
     }
     # bugs/begin would load VISUALIZATION only when topology checks are absent.

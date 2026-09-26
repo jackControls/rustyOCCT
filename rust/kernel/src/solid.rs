@@ -3,6 +3,8 @@ use crate::identity::{AlgorithmLevel, EntityId, OperationId, OperationKind};
 use crate::math::finite;
 use crate::profile::BoundaryKind;
 use crate::topology::Topology;
+
+mod stack;
 use crate::{
     Boundary, Bounds3, Error, Frame3, Location, Point2, Point3, Profile, Result, RigidTransform,
     Tolerance,
@@ -315,7 +317,7 @@ impl Solid {
         transform: RigidTransform,
     ) -> Result<(Self, History)> {
         replayable(level)?;
-        let solid = Self::build(
+        let mut solid = Self::build(
             self.operation,
             self.profile.clone(),
             self.frame
@@ -323,6 +325,8 @@ impl Solid {
             self.start,
             self.end,
         )?;
+        // A rigid copy keeps every id, whatever operation named them.
+        solid.topology = solid.topology.with_identity_of(&self.topology);
         let ids: Vec<EntityId> = self.topology.ids().map(|(id, _)| id).collect();
         let mut history = History::new(
             operation,

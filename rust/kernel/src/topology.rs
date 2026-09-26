@@ -381,6 +381,28 @@ pub struct Topology {
     /// regions[0] is the infinite void.
     regions: Vec<Region>,
     identity: Identity,
+    /// Where each slot of a builder-made prism sits; empty for `from_parts`.
+    layout: Vec<(Slot, Place)>,
+}
+
+/// Where a slot of a prism sits along its axis (M3): on the lower or the
+/// upper end, or spanning the prism.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Place {
+    Low(End),
+    High(End),
+    /// A wall, a vertical edge or the solid region.
+    Swept,
+}
+
+/// An entity on one end of a prism, with the swept entity it bounds.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum End {
+    Cap,
+    /// A cap edge and the wall it bounds.
+    Edge(FaceId),
+    /// A cap vertex and the vertical edge through it.
+    Vertex(EdgeId),
 }
 
 /// Unvalidated boundary data for [`Topology::from_parts`].
@@ -451,6 +473,7 @@ impl Topology {
             shells: parts.shells,
             regions: parts.regions,
             identity,
+            layout: Vec::new(),
         })
     }
     /// The body's id; rigid transforms keep it.
@@ -501,7 +524,8 @@ impl Topology {
                     segment: segment as usize,
                 }
             }
-            _ => FaceOrigin::External,
+            Role::External => FaceOrigin::External,
+            _ => return None,
         })
     }
     /// Every entity with identity as the history checker sees it.
@@ -740,6 +764,34 @@ impl Topology {
         }
     }
 
+    /// Where each slot of a builder-made prism sits, in slot order.
+    pub(crate) fn layout(&self) -> &[(Slot, Place)] {
+        &self.layout
+    }
+    /// The same structure under new ids: every slot gets the given
+    /// derivation; a repeated id or an unnamed slot is an error.
+    pub(crate) fn renamed(
+        mut self,
+        body: Derivation,
+        derivations: Vec<(Slot, Derivation)>,
+    ) -> Result<Self> {
+        let named = derivations.len();
+        let labels = std::mem::take(&mut self.identity.labels);
+        self.identity = Identity::new(body, derivations, labels)?;
+        let slots =
+            self.vertices.len() + self.edges.len() + self.faces.len() + self.regions.len() - 1;
+        if named != slots || self.identity.slots.len() != slots {
+            return Err(Error::InvalidTopology("slot without a derivation"));
+        }
+        Ok(self)
+    }
+    /// The same structure with the ids of `other`, a rigid copy of it.
+    pub(crate) fn with_identity_of(mut self, other: &Topology) -> Self {
+        debug_assert_eq!(self.layout, other.layout);
+        self.identity = other.identity.clone();
+        self
+    }
+
     pub(crate) fn prism(
         profile: &Profile,
         frame: Frame3,
@@ -778,6 +830,11 @@ impl Topology {
             )
         };
         let mut derivations: Vec<(Slot, Derivation)> = Vec::new();
+        let mut layout: Vec<(Slot, Place)> = vec![
+            (Slot::Face(FaceId(0)), Place::Low(End::Cap)),
+            (Slot::Face(FaceId(1)), Place::High(End::Cap)),
+            (Slot::Region(RegionId(1)), Place::Swept),
+        ];
         let mut labels = BTreeMap::new();
         let mut cap_parents = Vec::new();
         for (b, wire) in profile.boundaries().enumerate() {
@@ -848,6 +905,7 @@ impl Topology {
                 Vec::new(),
                 BTreeMap::new(),
             )?,
+            layout: Vec::new(),
         };
         for (boundary, wire) in profile.boundaries().enumerate() {
             let inner = boundary > 0;
@@ -891,7 +949,20 @@ impl Topology {
                     let vertical = (0..count)
                         .map(|i| topology.add_line(bottom[i], top[i]))
                         .collect::<Vec<_>>();
+                    // The walls of this boundary follow the faces made so far.
+                    let wall = |j: usize| FaceId(topology.faces.len() + j);
                     for j in 0..count {
+                        layout.extend([
+                            (
+                                Slot::Vertex(bottom[j]),
+                                Place::Low(End::Vertex(vertical[j])),
+                            ),
+                            (Slot::Vertex(top[j]), Place::High(End::Vertex(vertical[j]))),
+                            (Slot::Edge(bottom_edges[j]), Place::Low(End::Edge(wall(j)))),
+                            (Slot::Edge(top_edges[j]), Place::High(End::Edge(wall(j)))),
+                            (Slot::Edge(vertical[j]), Place::Swept),
+                            (Slot::Face(wall(j)), Place::Swept),
+                        ]);
                         let (v, e) = (EntityKind::Vertex, EntityKind::Edge);
                         derivations.push((
                             Slot::Vertex(bottom[j]),
@@ -969,6 +1040,12 @@ impl Topology {
                         radius: *radius,
                     });
                     let e = EntityKind::Edge;
+                    let wall = FaceId(topology.faces.len());
+                    layout.extend([
+                        (Slot::Edge(bottom), Place::Low(End::Edge(wall))),
+                        (Slot::Edge(top), Place::High(End::Edge(wall))),
+                        (Slot::Face(wall), Place::Swept),
+                    ]);
                     derivations.push((Slot::Edge(bottom), derive(e, low_edge, 0, vec![seg(0)])));
                     derivations.push((Slot::Edge(top), derive(e, high_edge, 0, vec![seg(0)])));
                     derivations.push((
@@ -1051,6 +1128,8 @@ impl Topology {
             derivations,
             labels,
         )?;
+        layout.sort_by_key(|(slot, _)| *slot);
+        topology.layout = layout;
         let identity = &topology.identity;
         if (
             identity.vertices.len(),

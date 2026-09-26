@@ -530,9 +530,142 @@ fn circle_of(c: &Curve3) -> Option<(crate::Frame3, f64)> {
     }
 }
 
-/// `piece` lies on the support (infinite curve or whole surface) of `whole`.
-fn same_support(piece: &Geometry, whole: &Geometry, tol: f64) -> bool {
-    match (piece, whole) {
+fn exact(v: [f64; 3]) -> Option<[R; 3]> {
+    let [x, y, z] = v.map(r);
+    Some([x?, y?, z?])
+}
+
+fn dot(a: &[R; 3], b: &[R; 3]) -> R {
+    &a[0] * &b[0] + &a[1] * &b[1] + &a[2] * &b[2]
+}
+
+fn cross(a: &[R; 3], b: &[R; 3]) -> [R; 3] {
+    [
+        &a[1] * &b[2] - &a[2] * &b[1],
+        &a[2] * &b[0] - &a[0] * &b[2],
+        &a[0] * &b[1] - &a[1] * &b[0],
+    ]
+}
+
+fn minus(a: &[R; 3], b: &[R; 3]) -> [R; 3] {
+    [&a[0] - &b[0], &a[1] - &b[1], &a[2] - &b[2]]
+}
+
+/// Exact: point p lies within tol of the line through o with direction n.
+fn on_axis(p: Point3, o: &[R; 3], n: &[R; 3], tol: &R) -> Option<bool> {
+    let c = cross(&minus(&exact(p.to_array())?, o), n);
+    Some(dot(&c, &c) <= tol * tol * dot(n, n))
+}
+
+/// A face `piece` (boundary edges looked up in `edges`) lies on the surface
+/// of `whole`, facing the same way. A plane piece faces the whole's normal,
+/// and its boundary projected onto its own plane lies within tol of the
+/// whole plane: line ends, and circles with normals exactly parallel to
+/// both planes by their centres (the distance to the whole plane is affine
+/// on the piece's plane, so the projected boundary bounds the face). A
+/// cylinder piece has an exactly parallel axis whose distance from the
+/// whole's axis plus the radius difference is within tol, so the two surfaces
+/// are within tol everywhere. Anything else is not the same support.
+fn same_surface(piece: &EntityInfo, whole: &Geometry, tol: f64, edges: &Entities) -> Option<bool> {
+    let (
+        Geometry::Surface {
+            surface: a,
+            orientation: oa,
+        },
+        Geometry::Surface {
+            surface: b,
+            orientation: ob,
+        },
+    ) = (&piece.geometry, whole)
+    else {
+        return Some(false);
+    };
+    if oa != ob {
+        return Some(false);
+    }
+    let tol = r(tol)?;
+    let zero = R::from_integer(0.into());
+    match (a, b) {
+        (Surface::Plane(fa), Surface::Plane(fb)) => {
+            let (na, nb) = (
+                exact(fa.normal().to_array())?,
+                exact(fb.normal().to_array())?,
+            );
+            let (oa, ob) = (
+                exact(fa.origin().to_array())?,
+                exact(fb.origin().to_array())?,
+            );
+            if dot(&na, &nb) <= zero || piece.structure.is_empty() {
+                return Some(false);
+            }
+            // A boundary point projected onto the piece's own plane.
+            let on_piece = |p: Point3| -> Option<[R; 3]> {
+                let p = exact(p.to_array())?;
+                let k = dot(&minus(&p, &oa), &na) / dot(&na, &na);
+                Some([
+                    &p[0] - &k * &na[0],
+                    &p[1] - &k * &na[1],
+                    &p[2] - &k * &na[2],
+                ])
+            };
+            let within = |q: [R; 3]| {
+                let d = dot(&minus(&q, &ob), &nb);
+                &d * &d <= &tol * &tol * dot(&nb, &nb)
+            };
+            for (edge, _) in piece.structure.iter().flatten() {
+                let ok = match &edges.get(edge)?.0.geometry {
+                    Geometry::Curve(Curve3::LineSegment { start, end }) => {
+                        within(on_piece(*start)?) && within(on_piece(*end)?)
+                    }
+                    Geometry::Curve(c) => {
+                        // Only a circle parallel to both planes projects to
+                        // a circle whose distance is its centre's.
+                        let (frame, _) = circle_of(c)?;
+                        let m = exact(frame.normal().to_array())?;
+                        cross(&m, &na).iter().all(|x| *x == zero)
+                            && cross(&m, &nb).iter().all(|x| *x == zero)
+                            && within(on_piece(frame.origin())?)
+                    }
+                    _ => false,
+                };
+                if !ok {
+                    return Some(false);
+                }
+            }
+            Some(true)
+        }
+        (
+            Surface::Cylinder {
+                frame: fa,
+                radius: ra,
+            },
+            Surface::Cylinder {
+                frame: fb,
+                radius: rb,
+            },
+        ) => {
+            let (na, nb) = (
+                exact(fa.normal().to_array())?,
+                exact(fb.normal().to_array())?,
+            );
+            // Axis distance plus radius difference within tol keeps the
+            // surfaces within tol of each other everywhere.
+            let dr = r(*ra)? - r(*rb)?;
+            let slack = &tol - if dr < zero { -dr } else { dr };
+            Some(
+                slack >= zero
+                    && cross(&na, &nb).iter().all(|x| *x == zero)
+                    && on_axis(fa.origin(), &exact(fb.origin().to_array())?, &nb, &slack)?,
+            )
+        }
+        _ => Some(false),
+    }
+}
+
+/// `piece` lies on the support (infinite curve, surface or region kind) of
+/// `whole`; `edges` holds the piece's boundary edges.
+fn same_support(piece: &EntityInfo, whole: &Geometry, tol: f64, edges: &Entities) -> bool {
+    match (&piece.geometry, whole) {
         (Geometry::Point(p), Geometry::Point(q)) => near(*p, *q, tol),
         (
             Geometry::Curve(Curve3::LineSegment { start, end }),
@@ -541,7 +674,9 @@ fn same_support(piece: &Geometry, whole: &Geometry, tol: f64) -> bool {
         (Geometry::Curve(c), Geometry::Curve(d)) => {
             circle_of(c).is_some() && circle_of(c) == circle_of(d)
         }
-        (Geometry::Surface { .. }, Geometry::Surface { .. }) => piece == whole,
+        (Geometry::Surface { .. }, Geometry::Surface { .. }) => {
+            same_surface(piece, whole, tol, edges).unwrap_or(false)
+        }
         (Geometry::Region(a), Geometry::Region(b)) => a == b,
         _ => false,
     }
@@ -677,7 +812,7 @@ pub fn check(inputs: &[EntitySet], outputs: &[EntitySet], history: &History) -> 
                         if let Some(b) = output(child) {
                             if a.kind != b.kind {
                                 add(K::DimensionMismatch, *child);
-                            } else if !same_support(&b.geometry, &a.geometry, tol) {
+                            } else if !same_support(b, &a.geometry, tol, &outs) {
                                 add(K::SplitSupportDiffers, *child);
                             }
                             if !composite && b.ordinal != k as u32 {
@@ -701,7 +836,7 @@ pub fn check(inputs: &[EntitySet], outputs: &[EntitySet], history: &History) -> 
                         if let Some(a) = input(parent) {
                             if a.kind != b.kind {
                                 add(K::DimensionMismatch, *parent);
-                            } else if !same_support(&a.geometry, &b.geometry, tol) {
+                            } else if !same_support(a, &b.geometry, tol, &ins) {
                                 add(K::MergedSupportDiffers, *parent);
                             }
                         }

@@ -68,12 +68,14 @@ group, and stale success records are removed before each run.
 | `bugs/modalg_7/bug29311_8` | Unsupported | Pass | Oriented boxes, a capability sentinel |
 | `bugs/modalg_6/bug28189_2` | Unsupported | Pass | Boolean common of wire compounds |
 | `bugs/modalg_6/bug28189_3` | Unsupported | Pass | Boolean union of wire compounds |
+| `bugs/modalg_7/bug29333_1` | Unsupported | Pass | Face fuse, split by an edge, rebuilt with `bbuild` |
+| `bugs/modalg_7/bug29333_2` | Unsupported | Pass | Face split by edges, rebuilt and queried with `modified` |
 | `bugs/modalg_1/buc60684` | Missing fixture | Missing fixture | External `buc60684a.brep` data |
 | Derived `prism_history_rectangle` | Pass | Pass | Prism history: `generated`, `modified`, `isdeleted` for edges, vertices and the face |
 | Derived `prism_history_reversed_triangle` | Pass | Pass | Prism history against a clockwise profile's normal |
 | Derived `pcylinder_counts` | Pass | Pass | Seamless cylinder through the count synthesizer: `checkshape`, `checknbshapes`, volume, area and per-use length |
 
-There are **three original geometry tests passing on both backends**, not seven.
+There are **three original geometry tests passing on both backends**, not nine.
 The three derived cases are counted separately (see below).
 The 18 bridge self-tests are separate infrastructure checks; they do not count
 as more upstream coverage. The existing 66-solid / 2,292-classification native
@@ -117,6 +119,18 @@ as the start face moved by a location, reusing its `TShape`s. DRAW's
 for a box), while the kernel, like `Copy`, builds distinct end entities.
 Native DRAW with `Copy` reports 8, 12 and 6. The adapter rejects `prism`
 without `Copy`.
+
+The two `bug29333` cases are the self-contained history candidates for M3's
+split and fuse (`IDENTITY_AND_HISTORY.md`). They split and fuse faces made by
+`plane`, `mkface`, `line` and `mkedge`, which the Rust adapter cannot build, so
+they are capability sentinels: native DRAW must pass them, and Rust reports
+them unsupported. `bug21264` also uses splits and Booleans but needs test-local
+procedures and general Booleans; it is not registered. The host forwards
+their commands to either backend; the Rust worker rejects them. No derived
+split or fuse case is registered: OCCT shares a split's cut face and section
+edges between the two solids of its compound, while the kernel's pieces are
+separate bodies, so compound counts and `generated` results differ by design.
+`compare_split_merge.py` compares every split and fuse relation instead.
 
 ## Deliberate limits
 

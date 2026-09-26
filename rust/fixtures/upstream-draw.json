@@ -16,6 +16,8 @@
     "tests/bugs/modalg_7/bug29311_6": "9edfc48c936e355a0d1e8b6a69d2cff05113ac4af64a471b8a14d71c18e2c9fd",
     "tests/bugs/modalg_7/bug29311_7": "f6936da6f89e34f03d2988aa7c9cf00237eb0cdf3f679ee636d643cb84c4cfd8",
     "tests/bugs/modalg_7/bug29311_8": "100684b62c461fe3cd95674bcb5830b79ecca76e890f7294a4226159a30e923a",
+    "tests/bugs/modalg_7/bug29333_1": "8c616310a2116ee7be3ec84b2da7b404d23fd794f2729d6c334f8af34ecde671",
+    "tests/bugs/modalg_7/bug29333_2": "3d31f3df20765ebfa72990245b68c0591777f15ad81d84cfccb0545928fc5221",
     "tests/bugs/parse.rules": "946ccdde3ded0ec98d7559cdfd530afd0e7e4c941524b02b389a739ab86e3db6",
     "tests/parse.rules": "ad8124e361f53b16f5ca3c3f7eec2e18eb855309f38c08ea0ab7ebb2a5971977"
   },
@@ -61,6 +63,18 @@
       "expected_rust": "missing_fixture",
       "expected_occt": "missing_fixture",
       "purpose": "External BRep fixture; availability sentinel, not a pass."
+    },
+    {
+      "path": "tests/bugs/modalg_7/bug29333_2",
+      "expected_rust": "unsupported",
+      "expected_occt": "pass",
+      "purpose": "Face split by edges, then rebuilt and queried with modified. Capability sentinel for M3: faces from mkface, lines and edges are outside the prism adapter."
+    },
+    {
+      "path": "tests/bugs/modalg_7/bug29333_1",
+      "expected_rust": "unsupported",
+      "expected_occt": "pass",
+      "purpose": "Face fuse, split by an edge and rebuilt with bbuild; history is not consulted beyond counts. Capability sentinel for M3: the adapter has no face-level Booleans."
     },
     {
       "path": "rust/fixtures/draw-derived/prism_history_rectangle",

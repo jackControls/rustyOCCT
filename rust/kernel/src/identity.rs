@@ -66,6 +66,10 @@ pub enum OperationKind {
     External,
     /// A history composed with `History::then`; never part of a derivation.
     Composite,
+    /// `Solid::split_at_height` (M3).
+    HeightSplit,
+    /// `Solid::fuse_stacked` (M3).
+    StackedFuse,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -111,6 +115,12 @@ pub enum Role {
     External,
     /// A bounded region, generated from every boundary of its profile.
     Region,
+    /// A height split's cut face, generated from every wall.
+    CutFace,
+    /// A cut face's edge, generated from the wall it crosses.
+    CutEdge,
+    /// A cut face's vertex, generated from the vertical edge it crosses.
+    CutVertex,
 }
 
 /// A profile boundary, one of its segments, or one of its vertices, by
@@ -176,6 +186,8 @@ fn operation_code(kind: OperationKind) -> u8 {
         OperationKind::Transform => 2,
         OperationKind::External => 3,
         OperationKind::Composite => 4,
+        OperationKind::HeightSplit => 5,
+        OperationKind::StackedFuse => 6,
     }
 }
 
@@ -204,14 +216,19 @@ pub(crate) fn role_code(role: Role) -> u8 {
         Role::Body => 11,
         Role::External => 12,
         Role::Region => 13,
+        Role::CutFace => 14,
+        Role::CutEdge => 15,
+        Role::CutVertex => 16,
     }
 }
 
-const OPERATIONS: [OperationKind; 4] = [
+const OPERATIONS: [OperationKind; 6] = [
     OperationKind::Extrude,
     OperationKind::Transform,
     OperationKind::External,
     OperationKind::Composite,
+    OperationKind::HeightSplit,
+    OperationKind::StackedFuse,
 ];
 const ENTITIES: [EntityKind; 5] = [
     EntityKind::Vertex,
@@ -220,7 +237,7 @@ const ENTITIES: [EntityKind; 5] = [
     EntityKind::Body,
     EntityKind::Region,
 ];
-const ROLES: [Role; 13] = [
+const ROLES: [Role; 16] = [
     Role::StartCap,
     Role::EndCap,
     Role::Wall,
@@ -234,6 +251,9 @@ const ROLES: [Role; 13] = [
     Role::Body,
     Role::External,
     Role::Region,
+    Role::CutFace,
+    Role::CutEdge,
+    Role::CutVertex,
 ];
 
 /// Append one parent's encoding.
@@ -429,7 +449,7 @@ mod tests {
             assert_eq!(id.parse::<EntityId>().unwrap(), derivation.id(), "{name}");
             count += 1;
         }
-        assert_eq!(count, 12);
+        assert_eq!(count, 17);
         // Published FNV-1a-128 test vectors.
         assert_eq!(
             EntityId(fnv1a128(b"")).to_string(),
@@ -470,9 +490,9 @@ mod tests {
             (0, b'X'),
             (4, 2),
             (13, 0),
-            (13, 5),
+            (13, 7),
             (14, 6),
-            (15, 14),
+            (15, 17),
             (24, 9),
             (29, 3),
         ] {

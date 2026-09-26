@@ -23,12 +23,14 @@ FNV_OFFSET = 0x6c62272e07bb014262b821756295c58d
 FNV_PRIME = 0x0000000001000000000000000000013B
 MASK = (1 << 128)-1
 
-KIND = {'extrude': 1, 'transform': 2, 'external': 3}
+KIND = {'extrude': 1, 'transform': 2, 'external': 3, 'composite': 4, 'height_split': 5,
+        'stacked_fuse': 6}
 ENTITY = {'vertex': 1, 'edge': 2, 'face': 3, 'body': 4, 'region': 5}
 DIMENSION = {'vertex': 0, 'edge': 1, 'face': 2, 'body': 3, 'region': 3}
 ROLE = {'start_cap': 1, 'end_cap': 2, 'wall': 3, 'bottom_edge': 4, 'top_edge': 5,
         'vertical': 6, 'seam': 7, 'bottom_vertex': 8, 'top_vertex': 9,
-        'seam_vertex': 10, 'body': 11, 'external': 12, 'region': 13}
+        'seam_vertex': 10, 'body': 11, 'external': 12, 'region': 13, 'cut_face': 14,
+        'cut_edge': 15, 'cut_vertex': 16}
 ELEMENT = {'boundary': 0, 'segment': 1, 'vertex': 2}
 RELATION = {'unchanged': 1, 'modified': 2, 'generated': 3, 'split': 4, 'merged': 5,
             'deleted': 6}

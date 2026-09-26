@@ -479,3 +479,20 @@ OCCT generates from the face corresponds to the solid region, generated from
 every boundary label; bodies are related by id. See
 [identity and history](IDENTITY_AND_HISTORY.md).
 
+## Height split and stacked fuse
+
+The source review covered `BRepAlgoAPI_Splitter` (`BOPAlgo_Splitter`),
+`BOPAlgo_Builder::PrepareHistory`, `LocGenerated` and `LocModified`
+(`BOPAlgo_Builder_4.cxx`), `BRepAlgoAPI_Fuse`,
+`ShapeUpgrade_UnifySameDomain::History`, `BRepTools_History::Merge` and DRAW's
+`bapisplit`, `bapibop` (`BOPTest_APICommands.cxx`) and `unifysamedom`
+(`SWDRAW_ShapeUpgrade.cxx`) at `3d097a0328e71b826377d4814ab05ec3c3d23871`.
+Native observations of 160 scenarios preceded implementation. Rust does not
+port the general Boolean builder: `Solid::split_at_height` and
+`Solid::fuse_stacked` rebuild prisms of one profile and frame and name every
+entity from the inputs by rule. OCCT reports a split parent as `Modified`
+into its pieces, shares one cut face between them and relates solids; Rust
+reports `Split`, gives each piece its own generated cut face, edges and
+vertices, and splits and merges the solid region. Unification also merges
+coplanar walls of the profile itself, which the kernel keeps (one reviewed
+difference). See [identity and history](IDENTITY_AND_HISTORY.md).

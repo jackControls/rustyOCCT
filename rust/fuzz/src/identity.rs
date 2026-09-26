@@ -25,6 +25,8 @@ fn encode(d: &Derivation) -> Vec<u8> {
         OperationKind::Transform => 2,
         OperationKind::External => 3,
         OperationKind::Composite => 4,
+        OperationKind::HeightSplit => 5,
+        OperationKind::StackedFuse => 6,
     });
     out.push(match d.entity {
         EntityKind::Vertex => 1,
@@ -47,6 +49,9 @@ fn encode(d: &Derivation) -> Vec<u8> {
         Role::Body,
         Role::External,
         Role::Region,
+        Role::CutFace,
+        Role::CutEdge,
+        Role::CutVertex,
     ];
     out.push(roles.iter().position(|r| *r == d.role).unwrap() as u8 + 1);
     out.extend(d.ordinal.to_le_bytes());

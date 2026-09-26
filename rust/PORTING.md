@@ -58,7 +58,7 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
 | Contract / use | Required kernel work | Status |
 | --- | --- | --- |
 | Scene recompute | Owned bodies, feature-local errors, atomic operation results and repeatable replay | Immutable standalone solids and typed errors exist; scene/job adapter planned. |
-| Topology references | Face/edge identities, membership, geometry signatures, generated/modified/deleted mappings | Value ids derived from caller labels and complete checked histories exist for extrusions and rigid transforms (M0–M2 of `IDENTITY_AND_HISTORY.md`, accepted at `34efd36c`). Splits, merges and attributes on real operations (M3–M4) are required before feature migration, on the cell-complex model decided in `TOPOLOGY_MODEL.md` (T1). |
+| Topology references | Face/edge identities, membership, geometry signatures, generated/modified/deleted mappings | Value ids derived from caller labels and complete checked histories exist for extrusions and rigid transforms (M0–M2 of `IDENTITY_AND_HISTORY.md`, accepted at `34efd36c`), on the cell-complex model (T1, `TOPOLOGY_MODEL.md`), and for the height split and stacked fuse, the first operations that split, merge and delete entities (M3). Attributes on real operations (M4) are required before feature migration. |
 | Face/edge metadata | Plane, cylinder, cone, circle, curvature, edge lengths and face signatures | Planes/cylinders/circles retained; DTO signatures and additional queries planned. |
 | Measurement | Bounds, mass/area/centroid/inertia, point classification, extrema/closest points | Bounds, mass properties and point classification supported for current prisms; certified linear-set minimum distances exist. Complete point-to-rational-spline minimum sets are implemented and accepted at `d1206b15`. General B-rep and other curved-pair distance/extrema remain planned. |
 | Exact interference | Occurrence transforms, minimum clearance, closest points, overlap volume | Transform, classifier and certified linear-set distance foundations exist. Solid clearance, common-solid and multi-body queries remain planned. |
@@ -123,8 +123,11 @@ mean that the complete noBS-CAD job or its DTO adapter has been implemented.
      recorded algorithm level. Accepted at `e4adb869` (`TOPOLOGY_MODEL.md`).
    * **M3** adds the height split and stacked fuse on the migrated model:
      the first `Split`, `Merged` and `Deleted` relations on real bodies,
-     including regions, with a `BRepAlgoAPI_Splitter`/`Fuse` oracle and the
-     self-contained upstream history cases.
+     including regions. Implemented: 174 independent scenarios, the
+     `split_merge` fuzz target, and a `BRepAlgoAPI_Splitter`/`Fuse` plus
+     `ShapeUpgrade_UnifySameDomain` bridge (159 matches, one reviewed
+     difference on the local pinned SDK); the self-contained upstream
+     history cases work on faces and are registered as capability sentinels.
    * **T2** adds the OCCT structure interop: `.brep` converter and writer
      with native round trips, the native selector for index-based picks,
      degenerate-edge counts for poles, and the coverage ledger that

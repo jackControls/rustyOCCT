@@ -145,6 +145,9 @@ pub fn role_name(role: Role) -> &'static str {
         Role::Body => "body",
         Role::External => "external",
         Role::Region => "region",
+        Role::CutFace => "cut_face",
+        Role::CutEdge => "cut_edge",
+        Role::CutVertex => "cut_vertex",
     }
 }
 

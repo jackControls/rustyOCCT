@@ -161,6 +161,12 @@ def vectors():
         ('body', Derivation(42, 'extrude', 'body', 'body', 0, ())),
         ('many_parents', Derivation(3, 'extrude', 'face', 'start_cap', 0,
                                     tuple(('label', 10+k) for k in range(8)))),
+        # M3: split children, cut entities and merged entities.
+        ('split_child', Derivation(11, 'height_split', 'face', 'wall', 1, (('entity', e),))),
+        ('cut_vertex', Derivation(11, 'height_split', 'vertex', 'cut_vertex', 0, (('entity', e),))),
+        ('cut_edge', Derivation(11, 'height_split', 'edge', 'cut_edge', 1, (('entity', e),))),
+        ('cut_face', Derivation(11, 'height_split', 'face', 'cut_face', 0, (('entity', e), ('entity', e[::-1])))),
+        ('merged', Derivation(12, 'stacked_fuse', 'region', 'region', 0, (('entity', e), ('entity', e[::-1])))),
     ]
     rows = ['# name\tencoding hex\tid hex']
     for name, d in items:

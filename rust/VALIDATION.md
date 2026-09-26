@@ -465,7 +465,7 @@ No platform acceptance is claimed yet.
 ## Value identity
 
 `generate_identity_fixtures.py --check` pins the derivation encoding and
-FNV-1a-128 digest with 12 vectors, and computes every entity id (46,494,
+FNV-1a-128 digest with 17 vectors, and computes every entity id (46,494,
 regions included, circles seamless) of 546
 extrusions from an independent Python enumeration: 34 explicit cases (3–12
 sides, circles, 0–3 holes, both directions, clockwise input, labels absent,
@@ -497,6 +497,27 @@ to the region, and every case's synthesized OCCT counts must equal native's;
 see [identity and history](IDENTITY_AND_HISTORY.md). Two derived DRAW cases
 check `generated`, `modified` and `isdeleted` on both backends, and a third
 checks a seamless `pcylinder` through the count synthesizer.
+
+## Height split and stacked fuse
+
+`generate_split_merge_fixtures.py --check` writes 174 scenarios from the
+independent enumeration in `split_merge_reference.py`: every explicit identity
+prism split, fused back, composed and its upper piece split again; stacked
+fuses of separate constructions (increasing and decreasing, circles, labelled
+holes, rigid copies, either body order); 13 rejected splits and fuses (heights
+at, outside or within the tolerance of an end; gaps, overlaps, opposite
+directions, other profiles, labels or frames, and bodies sharing ids); and
+128 corpus prisms split at xorshift heights and fused back. `split_merge.rs`
+requires every relation, composition, output body id and entity row to match,
+every history to pass the independent checker and every output to pass
+`Topology::check`; law tests check volume conservation, exhaustive
+resolution, fused properties equal to the original prism's, ids kept through
+rigid motion and replay at the recorded level. The `split_merge` fuzz target
+mutates produced histories. `compare_split_merge.py` maps source-pinned
+`BRepAlgoAPI_Splitter` and `BRepAlgoAPI_Fuse` plus
+`ShapeUpgrade_UnifySameDomain` observations (captured before implementation)
+to the Rust relations by geometry; see
+[identity and history](IDENTITY_AND_HISTORY.md).
 
 ## Generic B-rep validation
 

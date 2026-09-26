@@ -18,7 +18,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear','brep_validation','identity','history']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear','brep_validation','identity','history','split_merge']
 STARTUP_SECONDS = 600
 MAX_STARTUP_SECONDS = 3600
 INPUT_SECONDS = 20
@@ -74,7 +74,14 @@ def seed_corpus(target):
         if not path.exists():
             path.write_bytes(data)
 
-    if target == 'history':
+    if target == 'split_merge':
+        # The identity structure, a split height, one of six history
+        # mutations and the stacked fuse of an independent construction.
+        for k in range(96):
+            data=bytearray((j*83+k*41+5)%256 for j in range(200))
+            save(bytes(data))
+        save(bytes([0]))
+    elif target == 'history':
         # The identity structure plus one of seven history mutations.
         for k in range(112):
             data=bytearray((j*89+k*37+11)%256 for j in range(176))
@@ -89,7 +96,7 @@ def seed_corpus(target):
     elif target == 'brep_validation':
         # Every mutation on every base feature (none, round hole, square hole,
         # cavity), outline sizes 3..12 and small, unit and large scales.
-        for mutation in range(16):
+        for mutation in range(24):
             for feature in range(4):
                 for scale in [0,10,20]:
                     data=bytearray((j*37+mutation*13+feature*5+scale+1)%256 for j in range(40))

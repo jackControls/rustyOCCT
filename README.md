@@ -26,8 +26,9 @@ Cargo does not build it. Rust work lives on the `rust-kernel` branch, while
   radial order on shared edges, ring edges and winding numbers on cylinders,
   with OCCT's seamed counts synthesized for comparison.
 - Certified cell-complex validation, value ids and complete, checked
-  histories for extrusions and rigid transforms, replayable at a recorded
-  algorithm level (`rust/BREP_VALIDATION.md`, `rust/IDENTITY_AND_HISTORY.md`).
+  histories for extrusions, rigid transforms, height splits and stacked
+  fuses, replayable at a recorded algorithm level (`rust/BREP_VALIDATION.md`,
+  `rust/IDENTITY_AND_HISTORY.md`).
 - Volume, surface area, centroid, central inertia tensor, exact bounds, point
   classification, rigid translation and rotation.
 - Explicit tolerances, finite-input and coordinate-resolution checks, and errors
@@ -123,7 +124,7 @@ are independently checked and version-pinned. High-degree native numerical
 differences are [reviewed separately](rust/NATIVE_SPLINE_DIVERGENCES.md); they
 are not counted as parity matches.
 [Sustained fuzzing](rust/FUZZING.md)
-runs twenty-one instrumented targets on pushes/PRs and daily, restoring the evolving
+runs twenty-two instrumented targets on pushes/PRs and daily, restoring the evolving
 corpus and retaining crashes, timeouts and mathematical disagreements.
 
 [Exact edited-curve intersections](rust/EXACT_SPLINE_INTERSECTIONS.md) preserve

@@ -22,7 +22,8 @@ one builder and no Booleans, so the decisions below are still cheap.
 checked histories and the attribute checker, on extrusions and rigid
 transforms). The topology model is decided in `TOPOLOGY_MODEL.md`; its
 migration, T1, is accepted at `e4adb869` (seamless circle prisms, a region
-id, algorithm levels). M3–M5 pending. Acceptance evidence per milestone
+id, algorithm levels). M3 (height split and stacked fuse) is implemented;
+M4–M5 pending. Acceptance evidence per milestone
 is under [Acceptance](#acceptance).
 
 ## What the kernel promises, and what it does not
@@ -213,6 +214,33 @@ labelled entities as parents:
 
 `Solid::transformed` (`OperationKind::Transform`): every entity `Modified`
 with the same id, in slot order.
+
+`Solid::split_at_height(operation, h)` (`OperationKind::HeightSplit`), for
+`h` strictly between the offsets; pieces in axial order (0 lower, 1 upper),
+each extruded in the input's direction:
+
+| Input or output | Relation |
+| --- | --- |
+| Cap, cap edges and cap vertices of each end | `Unchanged` in the piece that keeps that end |
+| Wall, vertical edge, solid region | `Split { into: [child 0, child 1] }`, children with the parent's role |
+| Each piece's cut face | `Generated { from: [every wall], role: CutFace }`, ordinal = piece |
+| Each piece's cut edge of wall *w* | `Generated { from: [w], role: CutEdge }` |
+| Each piece's cut vertex on vertical edge *v* | `Generated { from: [v], role: CutVertex }` |
+| Bodies | the input body replaced by the two piece bodies |
+
+`Solid::fuse_stacked(other, operation)` (`OperationKind::StackedFuse`), for
+the same profile and frame, the same direction and exactly adjacent offsets:
+
+| Input or output | Relation |
+| --- | --- |
+| Walls, vertical edges, solid regions of both bodies | pairwise `Merged { from: [self's, other's] }`, ordinal 0, the same role |
+| The shared caps with their edges and vertices | `Deleted` |
+| The outer caps with their edges and vertices | `Unchanged` |
+| Bodies | both replaced by the fused body |
+
+A split followed by the fuse of its pieces composes to `Modified` for every
+wall, vertical edge and the region and `Unchanged` for the caps and their
+edges and vertices; the cut entities vanish.
 
 T1 (`TOPOLOGY_MODEL.md`) retired the circle's seam edge and seam vertices and
 their roles `Seam` and `SeamVertex` (their encoding codes stay reserved), and
@@ -476,6 +504,33 @@ here.
 * **Start and end.** Roles `BottomEdge`, `TopEdge`, `BottomVertex` and
   `TopVertex` mean the extrusion's start and end sides, so swapping the offsets
   keeps every id.
+* **Split and fuse ids (M3).** Split children and merged entities keep
+  their parent's role; a split child's ordinal is its piece's axial order
+  (0 lower, 1 upper), a merged entity's ordinal is 0 and its parents are in
+  body order. The cut face's parents are every wall of the input in slot
+  (profile) order. Piece bodies are `Derivation(op, HeightSplit, body, body,
+  k, [input body])`, the fused body `Derivation(op, StackedFuse, body, body,
+  0, [a, b])`. Operation kinds 5 and 6 and roles 14–16 (`cut_face`,
+  `cut_edge`, `cut_vertex`) are appended codes; the vectors grew to 17.
+  Bodies that share an id cannot be fused (I4): two constructions with the
+  same operation id and labels have the same ids.
+* **Rebuilt prisms keep ids by slot.** Every body is a prism of its profile,
+  so split, fuse and rigid motion rebuild it with the prism builder and then
+  name each slot from the inputs (`Topology::renamed`, `with_identity_of`).
+  The builder records where each slot sits (lower end, upper end, spanning);
+  the layout of a piece or fused body equals its input's. A rigid copy of a
+  piece therefore keeps the piece's ids. `face_origin` answers only for
+  construction roles; a piece's provenance is its history.
+* **Support of split and merged faces.** A piece of a wall is anchored at its
+  own lower end, so its plane or cylinder frame differs from the whole's by
+  the rounding of the new origin and normal. The checker therefore compares
+  surface supports geometrically and exactly: a plane piece faces the whole's
+  normal and its boundary, projected onto its own plane, lies within the
+  resolution of the whole plane (the distance to a plane is affine on the
+  piece's plane, so the projected boundary bounds the face); a cylinder piece has an exactly parallel axis whose distance from the
+  whole's axis plus the radius difference is within tol, so the surfaces
+  stay within tol. Anything else is not the same support. Line pieces and
+  circles are compared as before (`MATHEMATICS.md`).
 * **Regions.** A region's dimension is 3 and its parents are the profile's
   boundaries, whose dimension the checker takes as 2 (a boundary encloses an
   area), so a region satisfies the generated dimension rule below. Only
