@@ -341,4 +341,18 @@ converter records that as `Imported` provenance, never as an approximation.
     (`nearly_cylinder`: MakeRevol's surface of revolution).
   * Upstream: one more `data/occ` solid imports (30 of 77); six restore-only
     cases no longer report cones, none evaluates yet (`UPSTREAM_TESTS.md`).
+  * Clean local 600-second campaigns at `166fc905` (the cone with the fast
+    mass engine), AddressSanitizer, standard limits: `brep_validation`
+    9,644 executions after 140 s of replay, `identity` 2,013 after 24 s,
+    `history` 7,493 after 8 s, `brep_io` 10,091 after 6 s; no artifact.
+    At `0c94aa53` CI failed only the revolve bridge's Linux fingerprint (now
+    reviewed) and the `identity` and `surface_knots` replays (R12).
+  * Sphere implemented after its native captures (`3641a2f7`, before any
+    kernel sphere code): the whole sphere as the first face without loops,
+    poles on the band's side, loops through a pole, the builder, ids,
+    history (22 of 22 matches with `MakeRevol`), mass, interop (fourteen
+    more `data/occ` solids import, 44 of 77), `psphere`, `psphere_counts`
+    and fuzz. `bugs/modalg_6/bug27264_2` passes on both backends: the
+    ledger has 2 mapped-and-verified assertions. Gate pending CI and the
+    campaigns.
 * S4 — pending

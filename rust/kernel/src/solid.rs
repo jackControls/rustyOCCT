@@ -26,14 +26,21 @@ pub struct MassProperties {
     pub inertia: [[f64; 3]; 3],
 }
 
-/// How a solid was made: a normal extrusion of a profile, or a right
-/// circular cone or frustum (S3 of REVIEW_NOTES.md).
+/// How a solid was made: a normal extrusion of a profile, a right circular
+/// cone or frustum, or a sphere or zone (S3 of REVIEW_NOTES.md).
 #[derive(Debug, Clone, PartialEq)]
 enum Construction {
     Prism(Box<Profile>),
     Cone {
         bottom: f64,
         top: f64,
+        tolerance: Tolerance,
+    },
+    /// The latitudes of its ends; `start` and `end` are their heights.
+    Sphere {
+        radius: f64,
+        low: f64,
+        high: f64,
         tolerance: Tolerance,
     },
 }
@@ -243,7 +250,168 @@ impl Solid {
                 top,
                 tolerance,
             } => Self::build_cone(operation, frame, *bottom, *top, self.end, *tolerance),
+            Construction::Sphere {
+                radius,
+                low,
+                high,
+                tolerance,
+            } => Self::build_sphere(operation, frame, *radius, *low, *high, *tolerance),
         }
+    }
+
+    fn build_sphere(
+        operation: OperationId,
+        frame: Frame3,
+        radius: f64,
+        low: f64,
+        high: f64,
+        tolerance: Tolerance,
+    ) -> Result<Self> {
+        tolerance.resolve(&[radius])?;
+        let topology = Topology::sphere(frame, radius, low, high, tolerance, operation)?;
+        let (start, end) = (radius * low.sin(), radius * high.sin());
+        let (start, end) = (
+            if low == -std::f64::consts::FRAC_PI_2 {
+                -radius
+            } else {
+                start
+            },
+            if high == std::f64::consts::FRAC_PI_2 {
+                radius
+            } else {
+                end
+            },
+        );
+        // The zone lies within the hull of discs of its largest radius at
+        // both ends (the radius is largest at the equator when it is in).
+        let widest = if low <= 0.0 && 0.0 <= high {
+            radius
+        } else {
+            (radius * low.cos()).max(radius * high.cos())
+        };
+        let (mut min, mut max) = ([f64::INFINITY; 3], [f64::NEG_INFINITY; 3]);
+        let (x, y) = (frame.x().to_array(), frame.y().to_array());
+        for z in [start, end] {
+            let centre = frame.point(Point2::default(), z).to_array();
+            for i in 0..3 {
+                let extent = widest * x[i].hypot(y[i]);
+                min[i] = min[i].min(centre[i] - extent);
+                max[i] = max[i].max(centre[i] + extent);
+            }
+        }
+        let bounds = Bounds3 {
+            min: Point3::new(min[0], min[1], min[2]),
+            max: Point3::new(max[0], max[1], max[2]),
+        };
+        bounds.min.checked(tolerance)?;
+        bounds.max.checked(tolerance)?;
+        let mass = topology
+            .mass_enclosure()
+            .ok_or(Error::Unrepresentable("sphere mass properties"))?
+            .midpoints();
+        Ok(Self {
+            construction: Construction::Sphere {
+                radius,
+                low,
+                high,
+                tolerance,
+            },
+            frame,
+            start,
+            end,
+            topology,
+            mass,
+            bounds,
+            operation,
+        })
+    }
+
+    /// A sphere or spherical zone on the frame (S3 of REVIEW_NOTES.md):
+    /// centre at the frame origin, latitudes `low < high` in
+    /// `[-pi/2, pi/2]` (radians) about its normal, an end at `+-pi/2` a pole,
+    /// as `BRepPrimAPI_MakeSphere(gp_Ax2, radius, low, high)`. A whole sphere
+    /// is one face without loops. Mass properties are the general certified
+    /// ones.
+    pub fn sphere_with(
+        operation: OperationId,
+        frame: Frame3,
+        radius: f64,
+        low: f64,
+        high: f64,
+        tolerance: Tolerance,
+    ) -> Result<(Self, History)> {
+        Self::sphere_in(
+            &Context::new(operation),
+            frame,
+            radius,
+            low,
+            high,
+            tolerance,
+        )
+    }
+
+    /// [`Solid::sphere_with`] at a recorded algorithm level (H8).
+    pub fn sphere_at(
+        level: AlgorithmLevel,
+        operation: OperationId,
+        frame: Frame3,
+        radius: f64,
+        low: f64,
+        high: f64,
+        tolerance: Tolerance,
+    ) -> Result<(Self, History)> {
+        Self::sphere_in(
+            &Context::new(operation).at(level),
+            frame,
+            radius,
+            low,
+            high,
+            tolerance,
+        )
+    }
+
+    /// [`Solid::sphere_with`] in an operation context. Every entity is
+    /// generated from its meridian element; nothing carries an attribute.
+    pub fn sphere_in(
+        context: &Context,
+        frame: Frame3,
+        radius: f64,
+        low: f64,
+        high: f64,
+        tolerance: Tolerance,
+    ) -> Result<(Self, History)> {
+        let (level, operation) = (context.level, context.operation);
+        replayable(level)?;
+        let solid = Self::build_sphere(operation, frame, radius, low, high, tolerance)?;
+        let history = solid.revolve_history(level);
+        solid.debug_check(&[], &history);
+        Ok((solid, history))
+    }
+
+    /// A revolved primitive's construction history: every entity generated
+    /// from its meridian element.
+    fn revolve_history(&self, level: AlgorithmLevel) -> History {
+        let t = &self.topology;
+        let relations = t
+            .ids()
+            .map(|(id, _)| {
+                let d = t.derivation(id).expect("every id has a derivation");
+                Relation::Generated {
+                    from: d.parents.clone(),
+                    to: id,
+                    role: d.role,
+                }
+            })
+            .collect();
+        History::new(
+            self.operation,
+            OperationKind::Revolve,
+            Vec::new(),
+            vec![t.body_id()],
+            relations,
+            Vec::new(),
+        )
+        .at_level(level)
     }
 
     /// A right circular cone or frustum on the frame's axis (S3 of
@@ -303,27 +471,7 @@ impl Solid {
         let (level, operation) = (context.level, context.operation);
         replayable(level)?;
         let solid = Self::build_cone(operation, frame, bottom, top, height, tolerance)?;
-        let t = &solid.topology;
-        let relations = t
-            .ids()
-            .map(|(id, _)| {
-                let d = t.derivation(id).expect("every id has a derivation");
-                Relation::Generated {
-                    from: d.parents.clone(),
-                    to: id,
-                    role: d.role,
-                }
-            })
-            .collect();
-        let history = History::new(
-            operation,
-            OperationKind::Revolve,
-            Vec::new(),
-            vec![t.body_id()],
-            relations,
-            Vec::new(),
-        )
-        .at_level(level);
+        let history = solid.revolve_history(level);
         solid.debug_check(&[], &history);
         Ok((solid, history))
     }
@@ -334,6 +482,9 @@ impl Solid {
             Construction::Prism(profile) => Ok(profile),
             Construction::Cone { .. } => Err(Error::OutOfDomain(
                 "split and fuse rebuild prisms; this solid is a cone",
+            )),
+            Construction::Sphere { .. } => Err(Error::OutOfDomain(
+                "split and fuse rebuild prisms; this solid is a sphere",
             )),
         }
     }
@@ -438,14 +589,16 @@ impl Solid {
     pub fn profile(&self) -> Option<&Profile> {
         match &self.construction {
             Construction::Prism(profile) => Some(profile),
-            Construction::Cone { .. } => None,
+            Construction::Cone { .. } | Construction::Sphere { .. } => None,
         }
     }
     /// The body's resolution.
     pub fn resolution(&self) -> Tolerance {
         match &self.construction {
             Construction::Prism(profile) => profile.tolerance(),
-            Construction::Cone { tolerance, .. } => *tolerance,
+            Construction::Cone { tolerance, .. } | Construction::Sphere { tolerance, .. } => {
+                *tolerance
+            }
         }
     }
     pub fn frame(&self) -> Frame3 {
@@ -482,6 +635,26 @@ impl Solid {
                 return Ok(
                     match decide::cone_location(local, *bottom, *top, self.end, tolerance.linear())
                     {
+                        0 => Location::Inside,
+                        1 => Location::Boundary,
+                        _ => Location::Outside,
+                    },
+                );
+            }
+            Construction::Sphere { radius, .. } => {
+                let local = [
+                    finite(x, "coordinate")?,
+                    finite(y, "coordinate")?,
+                    finite(z, "axial coordinate")?,
+                ];
+                return Ok(
+                    match decide::sphere_location(
+                        local,
+                        *radius,
+                        self.start,
+                        self.end,
+                        tolerance.linear(),
+                    ) {
                         0 => Location::Inside,
                         1 => Location::Boundary,
                         _ => Location::Outside,

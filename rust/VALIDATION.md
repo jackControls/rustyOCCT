@@ -539,13 +539,14 @@ algorithms).
 
 ## Generic B-rep validation
 
-`generate_brep_fixtures.py --check` rebuilds 88 cell-complex cases (33 valid):
+`generate_brep_fixtures.py --check` rebuilds 102 cell-complex cases (40 valid):
 54 converted by rule from an independent seamed prism builder and its
 mutations, twenty-two cell-model cases for the model's own failure
 modes, the near-frequency bound and enclosures (gaps just inside and outside
-the resolution; missing, out-of-range and unsound bounds), and twelve cones
+the resolution; missing, out-of-range and unsound bounds), twelve cones
 (six valid, six mutations of the pole, the winding, the angle and a ring
-pcurve), with complete issue lists from the separate mpmath reference validators
+pcurve) and fourteen spheres (seven valid, the whole sphere among them, and
+seven mutations), with complete issue lists from the separate mpmath reference validators
 (`brep_reference.py`, `cell_reference.py`). `brep_validation.rs` requires
 Rust's sorted report to equal each list exactly. The `brep_validation` fuzz
 target mutates valid prisms and cavities into specific invalid complexes.
@@ -555,8 +556,8 @@ structure-only and checks the synthesized counts of every valid case. See
 [the bridge](BREP_VALIDATION.md#native-comparison-bridge).
 
 Enclosures (M5): every fixture carries bounds that the independent
-reference declares; Rust's report equals the reference's on all 88 cases.
-Measured bounds of the 33 valid cases lie between the reference's certain
+reference declares; Rust's report equals the reference's on all 102 cases.
+Measured bounds of the 40 valid cases lie between the reference's certain
 gap and its declared bound (`brep-enclosure-lows.tsv`, within a stated
 frame-rounding allowance). `enclosures.rs` requires every prism of the
 identity corpus to be enclosed within its resolution and no continued
@@ -577,9 +578,11 @@ kernel cannot represent, by name and count. For every solid the root reaches
 through compounds, it records whether its structure is representable, and
 OCCT's distinct subshape counts of the original, seamed solid. `occt_brep.rs`
 requires Rust's import to agree file by file: the same unsupported geometry,
-the same solids, a cell topology exactly for the representable ones (30 of
-77, one with cones since S3) and synthesized counts equal to the original
-counts. Every one of the 552 identity cases (546 prisms and six cones)
+the same solids, a cell topology exactly for the representable ones (44 of
+77: one more with cones and fourteen with spheres since S3, twelve of them
+whole spheres and two with loops through a pole) and synthesized counts
+equal to the original counts. Every one of the 558 identity cases (546
+prisms, six cones and six spheres)
 writes, reads back and imports to the same counts with bit-identical
 vertices, twice. Malformed text gives typed errors.
 
@@ -587,10 +590,10 @@ vertices, twice. Malformed text gives typed errors.
 `BRepCheck_Analyzer`, `TopExp::MapShapes`, `BRepGProp`) against the pinned
 SDK. It first certifies the independent reader against OCCT: the solids of
 every corpus file, and their counts, must be exactly the reader's (77). Then
-native OCCT reads everything the kernel writes. Each of the 552 identity
+native OCCT reads everything the kernel writes. Each of the 558 identity
 writes must be one valid solid whose counts equal the synthesized counts and
 whose volume, area and centroid equal the kernel's mass properties (exact for
-prisms, certified midpoints for cones). Each of the 30 imported corpus
+prisms, certified midpoints for cones and spheres). Each of the 44 imported corpus
 solids, written back, must be one valid solid with the original's counts,
 volume, area and centroid. The worst property
 difference observed is 2.5e-14 relative, against a bound of 1e-11.
@@ -625,6 +628,14 @@ round trips of every writable import to identical counts and vertices.
   `occt-revolve-history-divergences.json`). `test_revolve_history.py`
   checks the failure classes. The capture's order is recorded under R11 of
   `REVIEW_NOTES.md`.
+* Spheres follow the same pattern: 22 spheres and zones in
+  `sphere-cases.txt` against `primitive_reference.py` (`tests/spheres.rs`),
+  `compare_primitives.py --family sphere` (22 matches, worst `6.7e-15`) and
+  `compare_revolve_history.py --family sphere` (22 matches, no difference),
+  both captured before any kernel sphere code; six identity spheres; the
+  derived case `psphere_counts`; and the original case
+  `bugs/modalg_6/bug27264_2` (a restored whole sphere) passing on both
+  backends.
 * The identity and history fixtures add six cones (`cone_entities`); the
   `.brep` round trips and the native interop bridge include them; the
   derived DRAW case `pcone_counts` passes on both backends; and the
@@ -645,6 +656,8 @@ only numbers carry an allowance.
 | `occt-brep-io-capture/native.txt` (`compare_brep_io.py`) | OCCT's volume, area and centroid of the upstream corpus on each run | `1e-11` relative (centroids to the cube root of the volume); verdicts and counts exact | `BRepGProp` integrates with platform trigonometry; the worst difference observed is `9.5e-15` on Linux against the macOS capture |
 | `occt-primitive-preimplementation/native.txt` (`compare_primitives.py`) | OCCT's counts, properties, faces, edges and vertices of the 22 cones on each run | the bridge's own `1e-9` of the case's size (squared or cubed for areas and volumes, `size^5` for inertia); verdicts and counts exact | `BRepGProp` and the subshape points use platform trigonometry |
 | `occt-revolve-history-capture/native.txt` (`compare_revolve_history.py`) | every number of each case's native block on each run | `2^-40` × the case's size or the value; every word otherwise exact | the signatures use platform trigonometry (circle points, face centres) |
+| `occt-sphere-preimplementation/native.txt` (`compare_primitives.py --family sphere`) | OCCT's counts, properties, faces, edges and vertices of the 22 spheres on each run | the bridge's own `1e-9` of the case's size, as for the cones | as for the cones |
+| `occt-sphere-revolve-capture/native.txt` (`compare_revolve_history.py --family sphere`) | every number of each case's native block on each run | `2^-40` × the case's size or the value | as for the cones |
 | `prism-properties-baseline.tsv` (T1) | kernel mass properties, bounds and classifications before and after the migration | none: each host regenerates its own rows at `26fc457f` and must reproduce them bitwise | frames and rotations use the platform's trigonometry, so rows differ across hosts in the last bits |
 
 Native bridges that compare against reviewed differences use no numeric

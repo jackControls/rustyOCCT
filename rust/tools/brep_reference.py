@@ -119,9 +119,18 @@ class Cone:
     half_angle: float
 
 
+@dataclass
+class Sphere:
+    """S(u, v) = O + R (cos v (cos u x + sin u y) + sin v n): v the latitude
+    in [-pi/2, pi/2], as in OCCT's Geom_SphericalSurface; the poles are at
+    v = +-pi/2."""
+    frame: Frame
+    radius: float
+
+
 def periodic(s):
-    """Surfaces periodic in u (angle): cylinders and cones."""
-    return isinstance(s, (Cylinder, Cone))
+    """Surfaces periodic in u (angle): cylinders, cones and spheres."""
+    return isinstance(s, (Cylinder, Cone, Sphere))
 
 
 def apex_v(s):
@@ -137,6 +146,8 @@ def u_scale(s, v):
     """Length per unit of u at parameter v: the radius there."""
     if isinstance(s, Cylinder):
         return mp.mpf(s.radius)
+    if isinstance(s, Sphere):
+        return mp.mpf(s.radius)*mp.cos(mp.mpf(v))
     return mp.mpf(s.radius)+mp.sin(mp.mpf(s.half_angle))*mp.mpf(v)
 
 
@@ -271,6 +282,7 @@ def surface_valid(s, tol):
         # between 0 and a right angle in magnitude.
         return (frame_ok and math.isfinite(s.radius) and s.radius >= 0 and math.isfinite(s.half_angle)
                 and 0 < abs(s.half_angle) < math.pi/2)
+    # Planes need nothing more; cylinders and spheres a radius above tolerance.
     return frame_ok and (isinstance(s, Plane) or (math.isfinite(s.radius) and s.radius > tol))
 
 
@@ -310,6 +322,10 @@ def surface_point(s, uv):
         rho = mp.mpf(s.radius)+mp.sin(a)*v
         radial = add(mul(x, rho*mp.cos(u)), mul(y, rho*mp.sin(u)))
         return add(add(o, radial), mul(n, mp.cos(a)*v))
+    if isinstance(s, Sphere):
+        R = mp.mpf(s.radius)
+        radial = add(mul(x, R*mp.cos(v)*mp.cos(u)), mul(y, R*mp.cos(v)*mp.sin(u)))
+        return add(add(o, radial), mul(n, R*mp.sin(v)))
     radial = add(mul(x, s.radius*mp.cos(u)), mul(y, s.radius*mp.sin(u)))
     return add(add(o, radial), mul(n, v))
 
@@ -416,6 +432,24 @@ def use_harmonic(s, p, h, sign):
             rho = mp.mpf(s.radius)+sa*v0
             h.affine(add(o, mul(n, ca*v0)), [0, 0, 0], sign)
             h.rotating(u0, du, mul(x, rho), mul(y, rho), sign)
+            return True
+        return False
+    if isinstance(s, Sphere):
+        # A meridian (du = 0) is a great-circle arc in v, a parallel (dv = 0)
+        # a circle in u; nothing else is harmonic.
+        if not isinstance(p, Line2):
+            return False
+        u0, v0 = mp.mpf(p.start[0]), mp.mpf(p.start[1])
+        du, dv = mp.mpf(p.end[0])-u0, mp.mpf(p.end[1])-v0
+        R = mp.mpf(s.radius)
+        if du == 0:
+            e = add(mul(x, mp.cos(u0)), mul(y, mp.sin(u0)))
+            h.affine(o, [0, 0, 0], sign)
+            h.rotating(v0, dv, mul(e, R), mul(n, R), sign)
+            return True
+        if dv == 0:
+            h.affine(add(o, mul(n, R*mp.sin(v0))), [0, 0, 0], sign)
+            h.rotating(u0, du, mul(x, R*mp.cos(v0)), mul(y, R*mp.cos(v0)), sign)
             return True
         return False
     if isinstance(p, Line2):

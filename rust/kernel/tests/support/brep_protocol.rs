@@ -105,6 +105,15 @@ pub fn parse(block: &str) -> (String, f64, TopologyParts) {
                         },
                         13,
                     )
+                } else if w[1] == "sphere" {
+                    let v = nums(2, 10);
+                    (
+                        Surface::Sphere {
+                            frame: frame(&v),
+                            radius: v[9],
+                        },
+                        12,
+                    )
                 } else {
                     let v = nums(2, 10);
                     (

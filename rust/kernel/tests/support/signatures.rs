@@ -95,11 +95,16 @@ pub fn signature(s: &Solid, slot: Slot) -> String {
                     let c = frame.point(Point2::default(), 0.5 * (v.0 + v.1));
                     format!("F cylinder {:?} {}", radius * periodic.abs(), p3(c))
                 }
-                Surface::Cone { .. } => {
+                Surface::Cone { .. } | Surface::Sphere { .. } => {
+                    let kind = if matches!(face.surface, Surface::Cone { .. }) {
+                        "cone"
+                    } else {
+                        "sphere"
+                    };
                     let (area, centre) = t
                         .face_area_and_centre(f)
-                        .expect("a cone face has certified mass properties");
-                    format!("F cone {area:?} {}", p3(centre))
+                        .expect("a revolved face has certified mass properties");
+                    format!("F {kind} {area:?} {}", p3(centre))
                 }
             }
         }

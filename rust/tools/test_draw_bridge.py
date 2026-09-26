@@ -173,7 +173,9 @@ class BridgeTests(unittest.TestCase):
     def test_restore_reports_constructs_the_kernel_cannot_represent(self):
         result = self.expect("restore [locate_data_file Ball.brep] b\ncheckshape b\n", "unsupported",
                              data_dirs=[ROOT / "data"])
-        self.assertIn("SphericalSurface", result["unsupported"])
+        # Spheres and cones are representable since S3; its B-splines are not.
+        self.assertIn("BSplineSurface", result["unsupported"])
+        self.assertNotIn("SphericalSurface", result["unsupported"])
 
     def test_missing_data_is_not_fetched_or_private(self):
         missing = {"status": "missing_fixture", "missing": "secret.brep"}

@@ -18,7 +18,7 @@ import copy
 
 import mpmath as mp
 
-from brep_reference import (Arc2, Arc3, cos_rn, sin_rn, Cone, Cylinder, Line2, Line3, Plane, TAU, add, apex,
+from brep_reference import (Arc2, Arc3, cos_rn, sin_rn, Cone, Cylinder, Line2, Line3, Plane, Sphere, TAU, add, apex,
                             apex_v, axes, cross, periodic, u_scale,
                             curve_point, curve_valid, deviation_bounds, dot, finite, margin_check,
                             mul, norm, number, pcurve_point, pcurve_valid, sub, surface_point,
@@ -119,7 +119,7 @@ def gap_bounds(c):
                 if 0 <= loop.vertex < len(c.vertices):
                     raise_to(('v', loop.vertex), lambda: surface_distance(f.surface, vec(c.vertices[loop.vertex])))
                     if pole_loop(c, f) == lid:
-                        raise_to(('v', loop.vertex), lambda: norm(sub(vec(c.vertices[loop.vertex]), apex(f.surface))))
+                        raise_to(('v', loop.vertex), lambda: norm(sub(vec(c.vertices[loop.vertex]), pole_point(c, f))))
                 continue
             for ui, k in enumerate(loop.fins):
                 if not 0 <= k < len(c.fins):
@@ -157,14 +157,37 @@ def declare(c):
 
 
 def pole_loop(c, f):
-    """The loop id of a cone face's pole: its first vertex loop, when its edge
-    loops wind once in total (the pole closes the band at the apex)."""
-    if not isinstance(f.surface, Cone):
+    """The loop id of a cone's or sphere's pole: its first vertex loop, when
+    its edge loops wind once in total (the pole closes the band)."""
+    if not isinstance(f.surface, (Cone, Sphere)):
         return None
-    edge_loops = [c.loops[l] for l in f.loops if 0 <= l < len(c.loops) and c.loops[l].vertex is None]
-    if abs(sum(l.winding for l in edge_loops)) != 1:
+    if abs(face_turns(c, f)) != 1:
         return None
     return next((l for l in f.loops if 0 <= l < len(c.loops) and c.loops[l].vertex is not None), None)
+
+
+def face_turns(c, f):
+    return sum(c.loops[l].winding for l in f.loops if 0 <= l < len(c.loops) and c.loops[l].vertex is None)
+
+
+def pole_north(c, f):
+    """The material lies left of a loop's traversal: a band winding +u on a
+    forward face closes at its larger v."""
+    return (face_turns(c, f) > 0) == f.forward
+
+
+def pole_v(c, f):
+    if isinstance(f.surface, Sphere):
+        return mp.pi/2 if pole_north(c, f) else -mp.pi/2
+    return apex_v(f.surface)
+
+
+def pole_point(c, f):
+    s = f.surface
+    if isinstance(s, Sphere):
+        o, x, y, n = axes(s.frame)
+        return add(o, mul(n, mp.mpf(s.radius)*(1 if pole_north(c, f) else -1)))
+    return apex(s)
 
 
 # ---------------------------------------------------------------- conversion
@@ -364,6 +387,9 @@ def encode(c):
         elif isinstance(s, Cone):
             out.append(f'f cone {frame(s.frame)} {number(s.radius)} {number(s.half_angle)} {o} {f.front} {f.back}'
                        f'{loops}'+enc(('f', fi)))
+        elif isinstance(s, Sphere):
+            out.append(f'f sphere {frame(s.frame)} {number(s.radius)} {o} {f.front} {f.back}{loops}'
+                       + enc(('f', fi)))
         else:
             out.append(f'f cylinder {frame(s.frame)} {number(s.radius)} {o} {f.front} {f.back}{loops}'
                        + enc(('f', fi)))
@@ -498,7 +524,8 @@ def validate(c):
             continue
         side_bad.add(fi)
     for fi, f in enumerate(c.faces):
-        if not f.loops:
+        # A sphere without loops is the whole closed surface.
+        if not f.loops and not isinstance(f.surface, Sphere):
             issues.append(issue('empty_face', f'face {fi}'))
         for li, lid in enumerate(f.loops):
             loop = c.loops[lid]
@@ -520,7 +547,7 @@ def validate(c):
             # loop at the apex) closes a band that winds once.
             wound = [c.loops[lid].winding for lid in f.loops if c.loops[lid].vertex is None]
             total = sum(wound)
-            if total != 0 and not (isinstance(f.surface, Cone) and abs(total) == 1
+            if total != 0 and not (isinstance(f.surface, (Cone, Sphere)) and abs(total) == 1
                                    and pole_loop(c, f) is not None):
                 issues.append(issue('winding_mismatch', f'loop {fi}.0'))
     for ri, r in enumerate(c.regions):
@@ -725,7 +752,7 @@ def validate(c):
                         issues.append(issue('vertex_loop_off_surface', f'loop {fi}.{li}'))
                         geometry_bad.add(fi)
                     elif pole_loop(c, f) == lid:
-                        d = norm(sub(vec(c.vertices[v]), apex(f.surface)))
+                        d = norm(sub(vec(c.vertices[v]), pole_point(c, f)))
                         if judge(d, d, vertex_bound[v], f'vertex {v}', f'{c.name}: pole') == 'beyond':
                             issues.append(issue('pole_off_apex', f'loop {fi}.{li}'))
                             geometry_bad.add(fi)
@@ -776,7 +803,7 @@ def validate(c):
             total = sum(periodic_area(c, l) for l in loops)
             if pole_loop(c, f) is not None:
                 # The pole is the line v = v_apex traversed against the band.
-                total += 2*mp.pi*sum(l.winding for l in loops if l.vertex is None)*apex_v(f.surface)
+                total += 2*mp.pi*sum(l.winding for l in loops if l.vertex is None)*pole_v(c, f)
             if total*sense <= 0:
                 issues.append(issue('loop_winding', f'loop {fi}.0'))
             for li, l in enumerate(loops):
@@ -862,6 +889,8 @@ def surface_distance(s, p):
         r = norm(sub(rel, mul(n, z)))
         R = mp.mpf(s.radius)
         return min(abs(r*mp.cos(a)-R*mp.cos(a)-z*mp.sin(a)), abs(r*mp.cos(a)+R*mp.cos(a)+z*mp.sin(a)))
+    if isinstance(s, Sphere):
+        return abs(norm(rel)-s.radius)
     radial = sub(rel, mul(n, dot(rel, n)))
     return abs(norm(radial)-s.radius)
 
@@ -869,6 +898,9 @@ def surface_distance(s, p):
 def shell_point(c, si, vertex_ok):
     """A point of the shell: its first face's first fin's start."""
     f = c.faces[c.shells[si].sides[0][0]]
+    if not f.loops:
+        # A face without loops (a whole sphere): its point at (0, 0).
+        return surface_point(f.surface, (mp.mpf(0), mp.mpf(0)))
     loop = c.loops[f.loops[0]]
     if loop.vertex is not None:
         return vec(c.vertices[loop.vertex])
@@ -938,6 +970,13 @@ def face_flux(c, f):
         ox, oy, on = dot(o, x), dot(o, y), dot(o, n)
         hu = lambda u: ca*R+ca*(ox*mp.cos(u)+oy*mp.sin(u))-sa*on
         G = lambda u, v: (R+sa*v)**2/(2*sa)*hu(u)
+    elif isinstance(s, Sphere):
+        # S.(S_u x S_v) = R^2 cos v (O.q + R), q the unit radial direction;
+        # its v-antiderivative from the south pole, in closed form.
+        R = mp.mpf(s.radius)
+        ox, oy, on = dot(o, x), dot(o, y), dot(o, n)
+        G = lambda u, v: R**2*((ox*mp.cos(u)+oy*mp.sin(u))*((v+mp.pi/2)/2+mp.sin(2*v)/4)
+                               + on*(mp.sin(v)**2-1)/2+R*(mp.sin(v)+1))
     elif isinstance(s, Plane):
         h = dot(o, cross(x, y))
         G = lambda u, v, h=h: v*h
@@ -947,6 +986,15 @@ def face_flux(c, f):
         det = dot(x, cross(y, n))
         G = lambda u, v, r=r, a=a, b=b, det=det: v*(r*(-mp.sin(u)*a+mp.cos(u)*b)+r*r*det)
     total = mp.mpf(0)
+    if isinstance(s, Sphere):
+        # The north pole's line bounds the cover when the face reaches it:
+        # a whole sphere, or a band closed there. From the south pole, G
+        # vanishes at the south pole.
+        north = lambda: mp.quad(lambda u: G(u, mp.pi/2), [0, mp.pi, 2*mp.pi])
+        if not any(c.loops[l].vertex is None for l in f.loops):
+            total += north() if f.forward else -north()
+        elif pole_loop(c, f) is not None and pole_north(c, f):
+            total += face_turns(c, f)*north()
     for lid in f.loops:
         loop = c.loops[lid]
         if loop.vertex is not None:
@@ -985,7 +1033,7 @@ def inside(c, si, point):
     for fi, _ in c.shells[si].sides:
         face = c.faces[fi]
         s = face.surface
-        if isinstance(s, Cone):
+        if isinstance(s, (Cone, Sphere)):
             return None
         o, x, y, n = axes(s.frame)
         rel = sub(point, o)

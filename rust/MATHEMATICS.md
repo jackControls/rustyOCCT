@@ -1194,6 +1194,33 @@ The 22 cones of `primitive-cases.txt` agree with the independent reference
 (mpmath disc integrals) to `1e-12` of their scale, the bound for the rounded
 frame, angle and slant the kernel stores (`tests/cones.rs`).
 
+### Spheres
+
+A sphere face is `S(u, v) = O + R (cos v e(u) + sin v n)` with
+`e(u) = cos u x + sin u y`; `S_u × S_v = R² cos v q` with `q` the outward
+radial direction, so `|N| = R² cos v` and the u-scale of a UV gap is
+`|R cos v|`, zero at the poles `v = ±π/2`. A pole closing a band is on the
+band's material side: the material lies left of the traversal, so a band
+winding `+u` on a forward face closes at the north pole. Along a meridian
+the deviation is one rotating term of frequency `dv` in the plane of `e(u0)`
+and `n`; along a parallel, one of frequency `du` in the plane of `x` and
+`y`.
+
+The mass integrands (and the orientation flux `S·N`) are sums of
+`cos^a u sin^b u cos^c v sin^d v`. `F(u, v)`, the antiderivative in `v`
+from the pole on a face with one and from the south pole otherwise, is
+never expanded: along a parallel `v = v0`, `F(u, v0)` is a trigonometric
+polynomial in `u` whose coefficients are the exact integrals of
+`cos^c sin^d` over `[lower, v0]`, integrated in `u` by the same Fourier
+expansion; along a meridian `-∮ F du` is zero; along any other segment (a
+chord closing a gap), its value lies in `-du` times `F` over the segment's
+bounding box, since the mean value of `F` on the segment does. A whole
+sphere has no loops: on the universal cover its region is bounded by the
+two pole lines, of which only the north one contributes, `∫ F(u, π/2) du`
+over one turn, with the face's sense. The independent reference integrates
+its own closed form of the flux, `G(u, v) = R²[A(u)((v + π/2)/2 + sin 2v/4)
++ (O·n)(sin² v - 1)/2 + R (sin v + 1)]`, by quadrature.
+
 ## Complete spline/line and spline/segment preimages
 
 Closed rational B-spline ranges against infinite lines or closed segments

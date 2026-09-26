@@ -127,6 +127,12 @@ def seed_corpus(target):
             for sub in range(6):
                 for scale in [0,10,20]:
                     save(bytes([28,scale,*radii,120,140,90,200,128,100,160,sub])+bytes((j*37+1)%256 for j in range(16)))
+        # Spheres (mutation 29): whole, a pole at either end, or a zone, with
+        # each sphere mutation.
+        for shape in range(4):
+            for sub in range(6):
+                for scale in [0,10,20]:
+                    save(bytes([29,scale,90,shape,150,140,90,200,128,100,160,sub])+bytes((j*37+1)%256 for j in range(16)))
         save(bytes([0]))
     elif target == 'spline_linear':
         # Known factors, rational polylines, the rational circle and the

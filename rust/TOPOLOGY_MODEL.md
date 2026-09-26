@@ -515,6 +515,50 @@ sphere, torus, one per accepted revision (R6).
   vertices), the cone rules of `brep_reference.py` and `cell_reference.py`,
   and `identity_reference.cone_entities`.
 
+### Sphere
+
+* **Surface.** `Surface::Sphere { frame, radius }` is OCCT's
+  `Geom_SphericalSurface`: `S(u, v) = O + R (cos v (cos u x + sin u y) +
+  sin v n)`, `v` the latitude, the poles at `v = ±π/2`. `S_u × S_v = R² cos v`
+  times the outward radial direction.
+* **The first zero-loop face.** A whole sphere is one face without edge
+  loops, a closed surface; `empty_face` is reported only on other surfaces.
+  Its count synthesis is OCCT's one wire: a seam from pole to pole, a
+  degenerated edge at each pole and their two vertices.
+* **Poles.** On a sphere face whose edge loops wind once in total, the first
+  vertex loop is the pole on the band's material side: the material lies
+  left of a loop's traversal, so a band winding `+u` on a forward face
+  closes at the north pole (`v = π/2`), otherwise at the south pole. The
+  pole's vertex must be within tolerance of that pole (`pole_off_apex`, as
+  for a cone's apex). A loop may also pass through a pole: consecutive fins
+  meet at the pole vertex with different `u`, a UV gap of no length there
+  (`|R cos v| = 0`) closed by a chord along the pole's line; OCCT has a
+  degenerated edge there, and the count synthesizer counts it.
+* **Builder.** `Solid::sphere_with`, `sphere_at` and `sphere_in` build
+  `BRepPrimAPI_MakeSphere(gp_Ax2, R, low, high)` for latitudes
+  `-π/2 <= low < high <= π/2`, an end at `±π/2` (the binary64 value) being a
+  pole: discs at the other ends, then the wall with its rings and, when
+  exactly one end is a pole, that pole. Ids follow the meridian as for the
+  cone, the arc being segment 1 and a pole's vertex having role `pole`.
+  Split and fuse return `OutOfDomain`.
+* **Mass properties.** On a sphere the integrands are trigonometric in both
+  `u` and `v`; `-∮ F du` is exact along parallels (`F(u, v0)` collapses to a
+  trigonometric polynomial in `u`), zero along meridians, and enclosed along
+  any other line (a chord) by the interval of `F` over its bounding box. The
+  whole sphere is bounded on the cover by the north pole's line
+  (`MATHEMATICS.md`).
+* **Interop.** The reader takes surface record 4; a sphere bounded only by
+  its poles imports as the whole sphere, and a degenerated edge among other
+  uses is dropped (the loop passes through the pole). The writer writes the
+  whole sphere's seam as a meridian circle, its poles' vertices and
+  degenerated edges, and a degenerated edge at every pole pass.
+* **DRAW.** `psphere name R [angle1 angle2]` (degrees) and the derived case
+  `psphere_counts`. The original case `bugs/modalg_6/bug27264_2` (a restored
+  whole sphere) now passes on both backends.
+* **Evidence.** Both native captures, `MakeSphere` and `MakeRevol`, came
+  before any kernel sphere code (`fixtures/occt-sphere-preimplementation`,
+  `fixtures/occt-sphere-revolve-capture`).
+
 ## Acceptance
 
 Record each milestone's clean revision, kernel CI job count, fuzz CI target

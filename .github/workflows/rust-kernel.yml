@@ -307,11 +307,13 @@ jobs:
         run: |
           target/math-oracle-venv/bin/python rust/tools/test_primitive_oracle.py
           target/math-oracle-venv/bin/python rust/tools/compare_primitives.py --occt-root target/split-merge-sdk/install --sdk-manifest target/split-merge-sdk/build-manifest.json
+          target/math-oracle-venv/bin/python rust/tools/compare_primitives.py --family sphere --occt-root target/split-merge-sdk/install --sdk-manifest target/split-merge-sdk/build-manifest.json
       - name: Test deliberate revolve history failures and compare cone histories with MakeRevol
         if: ${{ !cancelled() }}
         run: |
           target/math-oracle-venv/bin/python rust/tools/test_revolve_history.py
           target/math-oracle-venv/bin/python rust/tools/compare_revolve_history.py --occt-root target/split-merge-sdk/install --sdk-manifest target/split-merge-sdk/build-manifest.json
+          target/math-oracle-venv/bin/python rust/tools/compare_revolve_history.py --family sphere --occt-root target/split-merge-sdk/install --sdk-manifest target/split-merge-sdk/build-manifest.json
       - name: Preserve source provenance, native observations, and differences
         if: always()
         uses: actions/upload-artifact@v4.6.2
@@ -321,6 +323,8 @@ jobs:
             target/split-merge-oracle/
             target/primitive-oracle/
             target/revolve-history-oracle/
+            target/sphere-oracle/
+            target/sphere-revolve-oracle/
             target/split-merge-sdk/build-manifest.json
             target/split-merge-sdk/*.log
             target/split-merge-sdk/build/CMakeCache.txt

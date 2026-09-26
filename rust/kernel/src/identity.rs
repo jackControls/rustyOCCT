@@ -126,6 +126,8 @@ pub enum Role {
     CutVertex,
     /// A cone's apex: the pole a zero-radius end of its meridian becomes.
     Apex,
+    /// A sphere's pole closing a zone at one end (S3).
+    Pole,
 }
 
 /// A profile boundary, one of its segments, or one of its vertices, by
@@ -226,6 +228,7 @@ pub(crate) fn role_code(role: Role) -> u8 {
         Role::CutEdge => 15,
         Role::CutVertex => 16,
         Role::Apex => 17,
+        Role::Pole => 18,
     }
 }
 
@@ -245,7 +248,7 @@ const ENTITIES: [EntityKind; 5] = [
     EntityKind::Body,
     EntityKind::Region,
 ];
-const ROLES: [Role; 17] = [
+const ROLES: [Role; 18] = [
     Role::StartCap,
     Role::EndCap,
     Role::Wall,
@@ -263,6 +266,7 @@ const ROLES: [Role; 17] = [
     Role::CutEdge,
     Role::CutVertex,
     Role::Apex,
+    Role::Pole,
 ];
 
 /// Append one parent's encoding.
@@ -458,7 +462,7 @@ mod tests {
             assert_eq!(id.parse::<EntityId>().unwrap(), derivation.id(), "{name}");
             count += 1;
         }
-        assert_eq!(count, 19);
+        assert_eq!(count, 20);
         // Published FNV-1a-128 test vectors.
         assert_eq!(
             EntityId(fnv1a128(b"")).to_string(),
@@ -501,7 +505,7 @@ mod tests {
             (13, 0),
             (13, 8),
             (14, 6),
-            (15, 18),
+            (15, 19),
             (24, 9),
             (29, 3),
         ] {

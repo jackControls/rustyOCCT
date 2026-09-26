@@ -15,7 +15,7 @@ import argparse
 from pathlib import Path
 
 from brep_reference import cos_rn, sin_rn
-from identity_reference import (Boundary, Case, Derivation, encode_case, entities, entity_text,
+from identity_reference import (HALF_PI, Boundary, Case, Derivation, encode_case, entities, entity_text,
                                 extrude_entities, fnv128, hexid)
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -160,6 +160,23 @@ def cones():
     ]
 
 
+def spheres():
+    """Solid::sphere_with cases (S3): the whole sphere, hemispheres with a
+    pole at either end, a zone, a tilted frame and rigid copies."""
+    tol = 1e-7
+    xy = (0.0, 0.0, 0.0, 0.0, 0.0, 1.0, *X_HINT)
+    tilted = (3.0, -2.0, 5.0, 0.3, -0.4, 0.8, *X_HINT)
+    motions = [('R', (1.0, 2.0, 3.0), (0.0, 0.6, 0.8), 1.1), ('T', (10.0, -20.0, 30.0))]
+    return [
+        Case('sphere_whole', tol, 31, xy, 0.0, 0.0, [], sphere=(2.0, -HALF_PI, HALF_PI)),
+        Case('sphere_upper', tol, 31, xy, 0.0, 0.0, [], sphere=(1.5, 0.0, HALF_PI)),
+        Case('sphere_lower', tol, 32, tilted, 0.0, 0.0, [], sphere=(1.5, -HALF_PI, 0.0)),
+        Case('sphere_zone', tol, 32, tilted, 0.0, 0.0, [], sphere=(3.0, -0.5, 0.7)),
+        Case('sphere_transformed', tol, 33, tilted, 0.0, 0.0, [], motions, sphere=(1.25, -HALF_PI, 0.3)),
+        Case('sphere_whole_transformed', tol, 33, xy, 0.0, 0.0, [], motions, sphere=(0.5, -HALF_PI, HALF_PI)),
+    ]
+
+
 def vectors():
     """Hand-written derivations pinning the encoding and digest."""
     e = Derivation(1, 'extrude', 'vertex', 'bottom_vertex', 0, (('label', 7),)).id()
@@ -187,6 +204,7 @@ def vectors():
         # S3: a cone's apex and its revolved rings.
         ('revolve_apex', Derivation(21, 'revolve', 'vertex', 'apex', 0, (('profile', 0, 'vertex', 2),))),
         ('revolve_ring', Derivation(21, 'revolve', 'edge', 'bottom_edge', 0, (('profile', 0, 'vertex', 1),))),
+        ('revolve_pole', Derivation(31, 'revolve', 'vertex', 'pole', 0, (('profile', 0, 'vertex', 2),))),
     ]
     rows = ['# name\tencoding hex\tid hex']
     for name, d in items:
@@ -195,7 +213,7 @@ def vectors():
 
 
 def generate():
-    explicit_cases, corpus_cases, cone_cases = explicit(), corpus(), cones()
+    explicit_cases, corpus_cases, cone_cases = explicit(), corpus(), cones()+spheres()
     cases = explicit_cases+corpus_cases+cone_cases
     names = [c.name for c in cases]
     assert len(names) == len(set(names))

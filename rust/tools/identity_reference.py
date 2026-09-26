@@ -30,7 +30,7 @@ DIMENSION = {'vertex': 0, 'edge': 1, 'face': 2, 'body': 3, 'region': 3}
 ROLE = {'start_cap': 1, 'end_cap': 2, 'wall': 3, 'bottom_edge': 4, 'top_edge': 5,
         'vertical': 6, 'seam': 7, 'bottom_vertex': 8, 'top_vertex': 9,
         'seam_vertex': 10, 'body': 11, 'external': 12, 'region': 13, 'cut_face': 14,
-        'cut_edge': 15, 'cut_vertex': 16, 'apex': 17}
+        'cut_edge': 15, 'cut_vertex': 16, 'apex': 17, 'pole': 18}
 ELEMENT = {'boundary': 0, 'segment': 1, 'vertex': 2}
 RELATION = {'unchanged': 1, 'modified': 2, 'generated': 3, 'split': 4, 'merged': 5,
             'deleted': 6}
@@ -138,6 +138,7 @@ class Case:
     transforms: list = field(default_factory=list)   # ('T', v3) | ('R', origin, axis, angle)
     box: tuple = None            # (origin3, size3) for Solid::box_at instead of a profile
     cone: tuple = None           # (r1, r2, height) for Solid::cone_with on the frame
+    sphere: tuple = None         # (radius, low, high) for Solid::sphere_with on the frame
 
 
 def number(x):
@@ -151,6 +152,9 @@ def encode_case(c):
     elif c.cone is not None:
         out.append('frame '+' '.join(number(x) for x in c.frame))
         out.append('cone '+' '.join(number(x) for x in c.cone))
+    elif c.sphere is not None:
+        out.append('frame '+' '.join(number(x) for x in c.frame))
+        out.append('sphere '+' '.join(number(x) for x in c.sphere))
     else:
         out.append('frame '+' '.join(number(x) for x in c.frame))
         out.append(f'offsets {number(c.start)} {number(c.end)}')
@@ -267,9 +271,50 @@ def cone_entities(c):
     return ents
 
 
+HALF_PI = 1.5707963267948966
+
+
+def sphere_entities(c):
+    """Every entity of Solid::sphere_with (S3), independently of the Rust
+    builder. The meridian is boundary 0 as for the cone: points (0, z1),
+    (r1, z1), (r2, z2), (0, z2), the arc from point 1 to point 2 being
+    segment 1. An end at latitude +-pi/2 (the binary64 value) is a pole: its
+    rim point is a vertex (role pole) when the other end is not a pole, and
+    nothing when both are (the whole sphere has no loops); any other end
+    gives a ring and a disc."""
+    op = c.operation
+    _, low, high = c.sphere
+    ends = [(low, low == -HALF_PI, 'start', 'start_cap', 0, 'bottom_edge', 1),
+            (high, high == HALF_PI, 'end', 'end_cap', 2, 'top_edge', 2)]
+    poles = sum(1 for e in ends if e[1])
+    ents = []
+
+    def add(kind, role, parents, locator):
+        ents.append(Entity(kind, Derivation(op, 'revolve', kind, role, 0, tuple(parents)), locator))
+
+    def meridian(element, index):
+        return ('profile', 0, element, index)
+    add('region', 'region', [meridian('boundary', 0)], ('region',))
+    for _, pole, side, cap, segment, edge, rim in ends:
+        if pole:
+            if poles == 1:
+                add('vertex', 'pole', [meridian('vertex', rim)], ('pole', side))
+        else:
+            add('edge', edge, [meridian('vertex', rim)], ('ring', side))
+            add('face', cap, [meridian('segment', segment)], ('cap', side))
+    add('face', 'wall', [meridian('segment', 1)], ('wall',))
+    ids = [e.id for e in ents]
+    assert len(set(ids)) == len(ids), f'{c.name}: id collision'
+    return ents
+
+
 def entities(c):
     """Every entity of a case's construction."""
-    return cone_entities(c) if c.cone is not None else extrude_entities(c)
+    if c.cone is not None:
+        return cone_entities(c)
+    if c.sphere is not None:
+        return sphere_entities(c)
+    return extrude_entities(c)
 
 
 def body_id(operation, kind='extrude', parents=(), ordinal=0):

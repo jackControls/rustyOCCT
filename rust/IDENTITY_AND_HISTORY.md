@@ -269,6 +269,12 @@ the apex (it is not an axis point, 0 or 3). The axis generates nothing.
 | Apex (a vertex, the pole's vertex loop) | `Generated { from: [rim point 1 or 2], role: Apex }` |
 | Solid region | `Generated { from: [the boundary], role: Region }` |
 
+`Solid::sphere_with(operation, frame, radius, low, high, tolerance)` is the
+same with the arc from rim point 1 to rim point 2 as segment 1. An end at a
+pole generates, from its rim point, a vertex of role `Pole` when the other
+end is not a pole, and nothing when both are: the whole sphere is its wall
+and region.
+
 T1 (`TOPOLOGY_MODEL.md`) retired the circle's seam edge and seam vertices and
 their roles `Seam` and `SeamVertex` (their encoding codes stay reserved), and
 added the region row. Every polygon id and relation is unchanged by T1.
@@ -623,8 +629,8 @@ here.
   body, k, [input body])`, the fused body `Derivation(op, StackedFuse, body,
   body, 0, [lower, upper])`. Operation kinds 5 and 6 and roles 14–16 (`cut_face`,
   `cut_edge`, `cut_vertex`) are appended codes; the vectors grew to 17.
-  S3 appended operation kind 7 (`Revolve`) and role 17 (`apex`); the
-  vectors grew to 19.
+  S3 appended operation kind 7 (`Revolve`) and roles 17 (`apex`) and 18
+  (`pole`); the vectors grew to 20.
   Bodies that share an id cannot be fused (I4): two constructions with the
   same operation id and labels have the same ids.
 * **Rebuilt prisms keep ids by slot.** Every body is a prism of its profile,

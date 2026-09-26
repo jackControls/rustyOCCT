@@ -245,6 +245,13 @@ pub enum Surface {
         radius: f64,
         half_angle: f64,
     },
+    /// `O + radius (cos v (cos u x + sin u y) + sin v n)`: u the longitude,
+    /// v the latitude in `[-pi/2, pi/2]`, as OCCT's `Geom_SphericalSurface`;
+    /// the poles are at `v = +-pi/2`.
+    Sphere {
+        frame: Frame3,
+        radius: f64,
+    },
 }
 
 impl Surface {
@@ -265,6 +272,13 @@ impl Surface {
                     uv.y * half_angle.cos(),
                 )
             }
+            Self::Sphere { frame, radius } => {
+                let rho = radius * uv.y.cos();
+                frame.point(
+                    Point2::new(rho * uv.x.cos(), rho * uv.x.sin()),
+                    radius * uv.y.sin(),
+                )
+            }
         }
     }
     /// The unit normal of the parametrization, `S_u x S_v` normalized; on a
@@ -279,9 +293,14 @@ impl Surface {
                 let radial = frame.x() * uv.x.cos() + frame.y() * uv.x.sin();
                 radial * half_angle.cos() - frame.normal() * half_angle.sin()
             }
+            // Outward, away from the poles.
+            Self::Sphere { frame, .. } => {
+                let radial = frame.x() * uv.x.cos() + frame.y() * uv.x.sin();
+                radial * uv.y.cos() + frame.normal() * uv.y.sin()
+            }
         }
     }
-    /// Periodic in u (an angle): cylinders and cones.
+    /// Periodic in u (an angle): cylinders, cones and spheres.
     pub fn is_periodic(&self) -> bool {
         !matches!(self, Self::Plane(_))
     }
@@ -860,6 +879,7 @@ impl Topology {
         let mut degenerate = 0;
         let mut seam_vertices = std::collections::BTreeSet::new();
         let mut wires = 0;
+        let mut closed_vertices = 0;
         for face in &self.faces {
             let mut wound = [false, false];
             for l in &face.loops {
@@ -881,9 +901,24 @@ impl Topology {
             }
             seams += wound.iter().filter(|w| **w).count();
             wires += usize::from(wound.iter().any(|w| *w));
-            // OCCT closes a cone's band at the apex with a degenerated edge.
+            // OCCT closes a cone's or sphere's band at the pole with a
+            // degenerated edge, and has one wherever a loop passes through
+            // a pole.
             if validate::pole_position(face, &self.loops).is_some() {
                 degenerate += 1;
+            }
+            degenerate += self.pole_passes(face);
+            // A whole sphere (no edge loops) is OCCT's one wire: a seam from
+            // pole to pole and a degenerated edge at each pole, their vertices.
+            let whole = face
+                .loops
+                .iter()
+                .all(|l| matches!(self.loops[l.0], Loop::Vertex(_)));
+            if whole && matches!(face.surface, Surface::Sphere { .. }) {
+                seams += 1;
+                degenerate += 2;
+                wires += 1;
+                closed_vertices += 2;
             }
         }
         let solid: Vec<&Region> = self
@@ -892,13 +927,48 @@ impl Topology {
             .filter(|r| r.kind == RegionKind::Solid)
             .collect();
         OcctCounts {
-            vertices: self.vertices.len() + seam_vertices.len(),
+            vertices: self.vertices.len() + seam_vertices.len() + closed_vertices,
             edges: self.edges.len() + seams + degenerate,
             wires,
             faces: self.faces.len(),
             shells: solid.iter().map(|r| r.shells.len()).sum(),
             solids: solid.len(),
         }
+    }
+
+    /// How often a face's edge loops pass through a pole of its cone or
+    /// sphere: consecutive fins meeting there with different `u` (OCCT
+    /// joins them by a degenerated edge; the cell model's UV gap there has
+    /// no length).
+    pub fn pole_passes(&self, face: &Face) -> usize {
+        let poles: Vec<f64> = match face.surface {
+            Surface::Sphere { .. } => {
+                vec![std::f64::consts::FRAC_PI_2, -std::f64::consts::FRAC_PI_2]
+            }
+            Surface::Cone {
+                radius, half_angle, ..
+            } => vec![-radius / half_angle.sin()],
+            _ => return 0,
+        };
+        let mut passes = 0;
+        for l in &face.loops {
+            let Loop::Edges { fins, .. } = &self.loops[l.0] else {
+                continue;
+            };
+            for (k, f) in fins.iter().enumerate() {
+                let next = &fins[(k + 1) % fins.len()];
+                let a = self.fins[f.0].pcurve.point(1.0);
+                let b = self.fins[next.0].pcurve.point(0.0);
+                let at_pole = poles
+                    .iter()
+                    .any(|p| (a.y - p).abs() <= 1e-12 * p.abs().max(1.0));
+                let du = (a.x - b.x).rem_euclid(std::f64::consts::TAU);
+                if at_pole && du.min(std::f64::consts::TAU - du) > 1e-9 {
+                    passes += 1;
+                }
+            }
+        }
+        passes
     }
 
     /// Run the complete validation contract; the error names the first issue.
@@ -920,7 +990,8 @@ impl Topology {
             Some(
                 Surface::Plane(f)
                 | Surface::Cylinder { frame: f, .. }
-                | Surface::Cone { frame: f, .. },
+                | Surface::Cone { frame: f, .. }
+                | Surface::Sphere { frame: f, .. },
             ) => f.origin().to_array(),
             None => [0.0; 3],
         }
@@ -1579,6 +1650,226 @@ impl Topology {
         });
         for (k, fin) in topology.fins.iter().enumerate() {
             topology.edges[fin.edge.0].fins.push(FinId(k));
+        }
+        let fronts = topology.face_ids().map(|f| (f, Side::Front)).collect();
+        let backs = topology.face_ids().map(|f| (f, Side::Back)).collect();
+        topology.shells = vec![
+            Shell {
+                region: RegionId(1),
+                sides: fronts,
+                wire_edges: Vec::new(),
+                acorn_vertices: Vec::new(),
+            },
+            Shell {
+                region: RegionId(0),
+                sides: backs,
+                wire_edges: Vec::new(),
+                acorn_vertices: Vec::new(),
+            },
+        ];
+        topology.regions = vec![
+            Region {
+                kind: RegionKind::Void,
+                shells: vec![ShellId(1)],
+            },
+            Region {
+                kind: RegionKind::Solid,
+                shells: vec![ShellId(0)],
+            },
+        ];
+        topology.identity = Identity::new(
+            derive(EntityKind::Body, Role::Body, Vec::new()),
+            derivations,
+            BTreeMap::new(),
+        )?;
+        topology.measure_enclosures(tolerance)?;
+        topology.validate(tolerance)?;
+        Ok(topology)
+    }
+
+    /// A sphere or spherical zone on the frame (S3 of REVIEW_NOTES.md), as
+    /// `BRepPrimAPI_MakeSphere(gp_Ax2, radius, low, high)` makes it: the
+    /// latitudes `-pi/2 <= low < high <= pi/2` in radians, an end at `+-pi/2`
+    /// (the binary64 value) being a pole. Faces are the discs of the ends that
+    /// are not poles, then the wall. The wall's loops are the rings (bottom
+    /// `+u` at `v = low`, top `-u` at `v = high`) and, when exactly one end
+    /// is a pole, that pole as a vertex loop; a whole sphere has no loops.
+    /// Entities derive from the meridian as for the cone, the arc being
+    /// segment 1 and a pole's vertex having role `Pole`.
+    pub(crate) fn sphere(
+        frame: Frame3,
+        radius: f64,
+        low: f64,
+        high: f64,
+        tolerance: Tolerance,
+        operation: OperationId,
+    ) -> Result<Self> {
+        let tol = tolerance.linear();
+        for (value, what) in [
+            (radius, "sphere radius"),
+            (low, "sphere latitude"),
+            (high, "sphere latitude"),
+        ] {
+            crate::math::finite(value, what)?;
+        }
+        let half = std::f64::consts::FRAC_PI_2;
+        if radius <= tol {
+            return Err(Error::Degenerate("sphere radius"));
+        }
+        if !(-half..=half).contains(&low) || !(-half..=half).contains(&high) || low >= high {
+            return Err(Error::OutOfDomain(
+                "sphere latitudes must satisfy -pi/2 <= low < high <= pi/2",
+            ));
+        }
+        let ends = [
+            (low, low == -half, Role::StartCap, 0, Role::BottomEdge, 1),
+            (high, high == half, Role::EndCap, 2, Role::TopEdge, 2),
+        ];
+        let heights = [radius * low.sin(), radius * high.sin()];
+        if heights[1] - heights[0] <= tol {
+            return Err(Error::Degenerate("sphere zone height"));
+        }
+        for (latitude, pole, ..) in ends {
+            if !pole && radius * latitude.cos() <= tol {
+                return Err(Error::Degenerate("sphere cap radius"));
+            }
+        }
+        let derive = |entity, role, parents| Derivation {
+            operation,
+            kind: OperationKind::Revolve,
+            entity,
+            role,
+            ordinal: 0,
+            parents,
+        };
+        let meridian = |element| Parent::Profile {
+            boundary: 0,
+            element,
+        };
+        let mut topology = Self {
+            vertices: Vec::new(),
+            edges: Vec::new(),
+            fins: Vec::new(),
+            loops: Vec::new(),
+            faces: Vec::new(),
+            shells: Vec::new(),
+            regions: Vec::new(),
+            identity: Identity::new(
+                derive(EntityKind::Body, Role::Body, Vec::new()),
+                Vec::new(),
+                BTreeMap::new(),
+            )?,
+            layout: Vec::new(),
+            attributes: AttributeMap::new(),
+        };
+        let mut derivations: Vec<(Slot, Derivation)> = vec![(
+            Slot::Region(RegionId(1)),
+            derive(
+                EntityKind::Region,
+                Role::Region,
+                vec![meridian(ProfileElement::Boundary)],
+            ),
+        )];
+        let poles = ends.iter().filter(|e| e.1).count();
+        let mut wall_loops = Vec::new();
+        for (k, (latitude, pole, cap_role, segment, edge_role, rim)) in ends.into_iter().enumerate()
+        {
+            let upper = k == 1;
+            let z = heights[k];
+            if pole {
+                // A pole is a vertex only when it closes a band: a whole
+                // sphere has no loops.
+                if poles == 1 {
+                    let at = topology.add_vertex(
+                        frame.point(Point2::default(), if upper { radius } else { -radius }),
+                    );
+                    derivations.push((
+                        Slot::Vertex(at),
+                        derive(
+                            EntityKind::Vertex,
+                            Role::Pole,
+                            vec![meridian(ProfileElement::Vertex(rim))],
+                        ),
+                    ));
+                    topology.loops.push(Loop::Vertex(at));
+                    wall_loops.push(LoopId(topology.loops.len() - 1));
+                }
+                continue;
+            }
+            let ring_radius = radius * latitude.cos();
+            let centre = frame.point(Point2::default(), z);
+            let normal = if upper {
+                frame.normal()
+            } else {
+                -frame.normal()
+            };
+            let disc_frame = Frame3::new(centre, normal, frame.x(), tolerance)?;
+            let ring_frame = Frame3::new(centre, frame.normal(), frame.x(), tolerance)?;
+            let ring = topology.add_ring(Curve3::Circle {
+                frame: ring_frame,
+                radius: ring_radius,
+            });
+            derivations.push((
+                Slot::Edge(ring),
+                derive(
+                    EntityKind::Edge,
+                    edge_role,
+                    vec![meridian(ProfileElement::Vertex(rim))],
+                ),
+            ));
+            let disc = FaceId(topology.faces.len());
+            derivations.push((
+                Slot::Face(disc),
+                derive(
+                    EntityKind::Face,
+                    cap_role,
+                    vec![meridian(ProfileElement::Segment(segment))],
+                ),
+            ));
+            topology.faces.push(Face {
+                surface: Surface::Plane(disc_frame),
+                sense: Orientation::Forward,
+                loops: Vec::new(),
+                front: ShellId(0),
+                back: ShellId(1),
+                enclosure: None,
+            });
+            topology.add_cap_loop(disc.0, &[ring], !upper, disc_frame);
+            let (sense, u0, u1, turns) = if upper {
+                (Orientation::Reversed, TAU, 0.0, -1)
+            } else {
+                (Orientation::Forward, 0.0, TAU, 1)
+            };
+            let fin = Fin {
+                edge: ring,
+                sense,
+                pcurve: Curve2::LineSegment {
+                    start: Point2::new(u0, latitude),
+                    end: Point2::new(u1, latitude),
+                },
+                enclosure: None,
+            };
+            wall_loops.push(topology.add_loop(vec![fin], [turns, 0]));
+        }
+        let wall = FaceId(topology.faces.len());
+        derivations.push((
+            Slot::Face(wall),
+            derive(
+                EntityKind::Face,
+                Role::Wall,
+                vec![meridian(ProfileElement::Segment(1))],
+            ),
+        ));
+        topology.faces.push(Face {
+            surface: Surface::Sphere { frame, radius },
+            sense: Orientation::Forward,
+            loops: wall_loops,
+            front: ShellId(0),
+            back: ShellId(1),
+            enclosure: None,
+        });
+        for (k, fin) in topology.fins.iter().enumerate() {
+            topology.edges[fin.edge.index()].fins.push(FinId(k));
         }
         let fronts = topology.face_ids().map(|f| (f, Side::Front)).collect();
         let backs = topology.face_ids().map(|f| (f, Side::Back)).collect();

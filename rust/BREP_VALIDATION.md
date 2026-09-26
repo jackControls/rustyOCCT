@@ -54,6 +54,8 @@ about the oriented face normal and inner loops clockwise. Cylinder UV is
 winding number `w` closes with its end `2πw` in `u` after its start. Cone UV
 is (angle, arc length along the ruling), as OCCT's `Geom_ConicalSurface`,
 on the same cover; the apex is at `v = -R / sin a` (S3 of `REVIEW_NOTES.md`).
+Sphere UV is (longitude, latitude), the poles at `v = ±π/2`; a sphere face
+without edge loops is the whole sphere.
 
 ## Exact combinatorial checks
 
@@ -67,9 +69,11 @@ on the same cover; the apex is at `v = -R / sin a` (S3 of `REVIEW_NOTES.md`).
 * Each loop of edges closes in 3D vertex order; a ring edge alone closes a
   loop. A ring edge has no vertices and a closed curve. Winding numbers are
   zero on planes and in `v`; the windings of a cylinder or cone face sum to
-  zero, except on a cone face whose edge loops wind once in total and that
-  has a vertex loop: its first vertex loop is the pole, closing the band at
-  the apex.
+  zero, except on a cone or sphere face whose edge loops wind once in total
+  and that has a vertex loop: its first vertex loop is the pole, closing the
+  band at the apex, or at the sphere's pole on the band's material side (a
+  band winding `+u` on a forward face closes at the north pole). A face
+  without loops is `empty_face` unless it is a sphere.
 * Around each edge, the regions ahead of and behind its fins, in the stored
   radial order, must alternate. A single fin is `free_edge`, two same-sense
   fins are `same_sense_uses`, two opposite fins out of order are
@@ -92,9 +96,9 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   `> tol`, and `0 < |sweep| <= 2π`.
 * **Vertices.** Each edge end is within tolerance of its vertex, and each
   vertex loop's vertex within tolerance of its face's surface. A pole's
-  vertex must also be within tolerance of the apex (`pole_off_apex`). The
-  distance to a cone is the smaller of the distances to the two rulings of
-  the meridian half-plane (both nappes).
+  vertex must also be within tolerance of the apex or pole (`pole_off_apex`).
+  The distance to a cone is the smaller of the distances to the two rulings
+  of the meridian half-plane (both nappes); to a sphere, `||p - O| - R|`.
 * **Curve on surface.** Over a whole use, `D(t) = C(t_edge) - S(P(t))` is a
   harmonic sum: `A0 + A1 t + Σ_ω (C_ω cos ωt + S_ω sin ωt)`, with exact
   rational frequencies. This covers line and arc edges against plane
@@ -112,11 +116,14 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   beyond tolerance. An arc pcurve
   on a cylinder is not harmonic and can only be certified as a failure. On a
   cone, a line pcurve is harmonic along a ruling (`du = 0`) or a parallel
-  (`dv = 0`); any other pcurve certifies only as a failure.
+  (`dv = 0`); any other pcurve certifies only as a failure. The same holds
+  on a sphere, where a meridian (`du = 0`) is a great-circle arc in `v` and
+  a parallel a circle in `u`.
 * **UV closure.** Consecutive fins meet in UV within tolerance, with cylinder
-  angle differences scaled by the radius and cone ones by `|R + v sin a|` at
-  the larger end (zero at the apex); the last fin meets the first shifted
-  by `2πw` in `u`.
+  angle differences scaled by the radius, cone ones by `|R + v sin a|` and
+  sphere ones by `|R cos v|` at the larger end (zero at an apex or pole, so a
+  loop may pass through a pole); the last fin meets the first shifted by
+  `2πw` in `u`.
 * **Loop winding.** Loops are closed exactly by straight chords between
   consecutive fins (gaps certified to be within tolerance). Twice the signed
   area is the closed form of `∮ u dv - v du`, including the chords. Its sign
@@ -124,7 +131,7 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   to the face orientation. On a wound cylinder or cone face the loops have
   no outer/inner order: the total periodic area `-∮ v du` over all loops
   must have the face's sign, and each unwound loop the opposite one. A
-  pole adds `2π · W · v_apex`, `W` the winding it closes.
+  pole adds `2π · W · v_pole`, `W` the winding it closes.
 * **Inner loops.** The first point of each inner loop must lie inside the outer
   loop. A `+u` ray uses a half-open crossing rule. Arcs are split at their
   `v` extrema `π/2 + kπ`, using a certified `π`, so each piece is monotone.
@@ -134,7 +141,9 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   `f = S·(S_u × S_v)` integrated in `v` from 0: for a plane `f = o·(x×y)`, for
   a cylinder `f = -r(o·(x×n)) sin u + r(o·(y×n)) cos u + r²·det(x,y,n)`, and
   for a cone `f = ρ(v) h(u)`, integrated in `v` from the apex on a face with
-  a pole and from 0 otherwise (`MATHEMATICS.md`). A
+  a pole and from 0 otherwise, and on a sphere `f = R² cos v (O·q + R)`,
+  from the pole or the south pole, a whole sphere adding its north pole's
+  line (`MATHEMATICS.md`). A
   shell's flux sums its faces' fluxes, negated for back sides. A bounded
   region's first shell must have positive flux and every other shell
   negative; the infinite void's shells negative.
@@ -150,9 +159,10 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   parity is the same for any watertight surface within tolerance of the
   faces. On a cylinder, a hit is inside the face when the `+v` ray from it
   on the universal cover crosses the face's loops an odd number of times,
-  counting every period alias of a wound loop. A ray against a cone face is
-  not yet solved, so a body with a cavity and a cone face reports
-  `uncertified_containment`.
+  counting every period alias of a wound loop. A ray against a cone or
+  sphere face is not yet solved, so a body with a cavity and such a face
+  reports `uncertified_containment`. A cavity whose first face is a whole
+  sphere takes its point at `(0, 0)`.
 
 ## Two arithmetic tiers
 
@@ -259,7 +269,7 @@ Evidence:
   seam is kept and rejected as `seam_edge`), and `validate` implements the
   side, region, radial, winding, vertex-loop and region-flux invariants
   independently, with its own `+v` cover-crossing parity on cylinders.
-  `generate_brep_fixtures.py --check` rebuilds 88 cases. 54 come from an
+  `generate_brep_fixtures.py --check` rebuilds 102 cases. 54 come from an
   independent seamed prism builder (19 valid solids and 35 mutations; the
   valid solids include holes, convex and concave arcs, full circles, one and
   two cavities, rotated and far-translated copies and a millimetre-scale
@@ -277,8 +287,13 @@ Evidence:
   independent cone builder: an apex at the top or the base, frusta
   narrowing and widening, a rotated frame and a far one, and six mutations
   (the pole moved along a ruling, off the surface or removed, a ring loop
-  winding twice, a right angle and a ring pcurve shifted in `v`). 33 cases
-  are valid. `brep_validation.rs`
+  winding twice, a right angle and a ring pcurve shifted in `v`). Fourteen
+  are spheres from an independent sphere builder: the whole sphere, both
+  hemispheres, a zone, rotated and far copies, a whole sphere with an
+  immersed vertex (valid), and seven mutations (the pole at the other pole
+  or off the surface or removed, a ring winding twice, a zero radius, a
+  whole sphere turned inside out and a ring pcurve shifted). 40 cases are
+  valid. `brep_validation.rs`
   requires Rust's complete sorted issue list to equal the reference's for
   every case.
 * The existing prism suites (`invariants`, `occt_regression`, `modeling`)
@@ -289,7 +304,7 @@ prisms with no hole, a round (seamless) hole, a square hole or an inverted box
 cavity. Scales range over `2^±10` with random frames and offsets. The cavity
 is merged by fuzz-crate code, not by a kernel builder: its material shell
 joins the body's solid region and its twin bounds a new void region. The
-base must be valid. Then one of 29 mutations must produce its predicted
+base must be valid. Then one of 30 mutations must produce its predicted
 issues:
 
 * an exact report for local changes: an extra vertex, edge, empty shell or
@@ -317,6 +332,10 @@ issues:
   (`degenerate_surface`) or a ring pcurve shifted in `v`
   (`pcurve_off_edge`); a moved pole is declared at the resolution, as the
   fixtures declare it
+* a whole sphere, hemisphere or zone (mutation 29) with the same checks and
+  its pole moved over the sphere or along the axis, removed, a zero radius,
+  a ring pcurve shifted, or a whole sphere turned inside out
+  (`shell_orientation`)
 
 Every report must be deterministic, duplicate-free and identical to
 `from_parts`. A local 300-second development campaign (dirty tree based on

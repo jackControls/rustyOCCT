@@ -134,9 +134,13 @@ fn pcurve_record(
             let (du, dv) = (b.x - a.x, b.y - a.y);
             let span = t1 - t0;
             let (dx, dy) = match surface {
-                // On a cylinder or cone a horizontal pcurve runs in u at unit
-                // speed against an angle parameter.
-                Surface::Cylinder { .. } | Surface::Cone { .. } if dv == 0.0 => (du.signum(), 0.0),
+                // On a cylinder, cone or sphere a horizontal pcurve runs in u
+                // at unit speed against an angle parameter.
+                Surface::Cylinder { .. } | Surface::Cone { .. } | Surface::Sphere { .. }
+                    if dv == 0.0 =>
+                {
+                    (du.signum(), 0.0)
+                }
                 _ => {
                     let l = du.hypot(dv);
                     (du / l, dv / l)
@@ -177,18 +181,21 @@ fn pcurve_record(
                 num(*radius)
             )
         }
-        (Surface::Cylinder { .. } | Surface::Cone { .. }, Curve2::CircularArc { .. }) => {
-            return Err(unwritable("an arc pcurve on a cylinder or cone"))
-        }
+        (
+            Surface::Cylinder { .. } | Surface::Cone { .. } | Surface::Sphere { .. },
+            Curve2::CircularArc { .. },
+        ) => return Err(unwritable("an arc pcurve on a cylinder, cone or sphere")),
     })
 }
 
-/// Where a seam meets a wound loop: an existing vertex, or the seam vertex
-/// of a ring edge.
+/// Where a seam meets a wound loop: an existing vertex, the seam vertex of
+/// a ring edge, or a pole vertex the topology does not have (a whole
+/// sphere's), by index into the extra vertices.
 #[derive(Clone, Copy)]
 enum Vertex {
     Shared(usize),
     Ring(usize),
+    Pole(usize),
 }
 
 #[derive(Clone, Copy)]
@@ -203,25 +210,93 @@ struct End {
 /// vertex at any `u`); whether it is a pole.
 type WoundLoop = (i32, Option<usize>, Vec<(usize, Point2)>, bool);
 
-/// A periodic surface's frame, `rho(v)` (the distance from the axis) and the
-/// height along the axis of `v`.
-fn revolved(surface: &Surface) -> Option<(crate::Frame3, f64, f64, f64)> {
-    match surface {
-        Surface::Cylinder { frame, radius } => Some((*frame, *radius, 0.0, 1.0)),
+/// Whether consecutive fins meeting at `a` and `b` pass through a pole of
+/// the face's cone or sphere (a different `u` on the pole's line), where
+/// OCCT has a degenerated edge (as `Topology::pole_passes` counts them).
+fn pole_pass(surface: &Surface, a: Point2, b: Point2) -> bool {
+    let poles: Vec<f64> = match surface {
+        Surface::Sphere { .. } => vec![std::f64::consts::FRAC_PI_2, -std::f64::consts::FRAC_PI_2],
         Surface::Cone {
-            frame,
-            radius,
-            half_angle,
-        } => Some((*frame, *radius, half_angle.sin(), half_angle.cos())),
-        Surface::Plane(_) => None,
-    }
+            radius, half_angle, ..
+        } => vec![-radius / half_angle.sin()],
+        _ => return false,
+    };
+    let at_pole = poles
+        .iter()
+        .any(|p| (a.y - p).abs() <= 1e-12 * p.abs().max(1.0));
+    let du = (a.x - b.x).rem_euclid(TAU);
+    at_pole && du.min(TAU - du) > 1e-9
 }
 
-/// The point at `(u, v)` of a surface `revolved` describes.
-fn revolved_point(r: &(crate::Frame3, f64, f64, f64), u: f64, v: f64) -> Point3 {
-    let (frame, radius, sin, cos) = *r;
-    let rho = radius + v * sin;
-    frame.point(Point2::new(rho * u.cos(), rho * u.sin()), v * cos)
+/// A surface of revolution: its frame and meridian.
+#[derive(Clone, Copy)]
+enum Revolved {
+    /// `rho(v) = radius + v sin`, height `v cos` (a cylinder has `sin = 0`).
+    Ruled {
+        frame: crate::Frame3,
+        radius: f64,
+        sin: f64,
+        cos: f64,
+    },
+    /// `rho(v) = radius cos v`, height `radius sin v`.
+    Sphere { frame: crate::Frame3, radius: f64 },
+}
+
+impl Revolved {
+    fn of(surface: &Surface) -> Option<Self> {
+        match surface {
+            Surface::Cylinder { frame, radius } => Some(Self::Ruled {
+                frame: *frame,
+                radius: *radius,
+                sin: 0.0,
+                cos: 1.0,
+            }),
+            Surface::Cone {
+                frame,
+                radius,
+                half_angle,
+            } => Some(Self::Ruled {
+                frame: *frame,
+                radius: *radius,
+                sin: half_angle.sin(),
+                cos: half_angle.cos(),
+            }),
+            Surface::Sphere { frame, radius } => Some(Self::Sphere {
+                frame: *frame,
+                radius: *radius,
+            }),
+            Surface::Plane(_) => None,
+        }
+    }
+    fn frame(&self) -> crate::Frame3 {
+        match self {
+            Self::Ruled { frame, .. } | Self::Sphere { frame, .. } => *frame,
+        }
+    }
+    /// `(rho, height)` at `v`.
+    fn meridian(&self, v: f64) -> (f64, f64) {
+        match *self {
+            Self::Ruled {
+                radius, sin, cos, ..
+            } => (radius + v * sin, v * cos),
+            Self::Sphere { radius, .. } => (radius * v.cos(), radius * v.sin()),
+        }
+    }
+    fn point(&self, u: f64, v: f64) -> Point3 {
+        let (rho, height) = self.meridian(v);
+        self.frame()
+            .point(Point2::new(rho * u.cos(), rho * u.sin()), height)
+    }
+    /// `v` of the pole a band closes: a cone's apex, a sphere's north pole
+    /// when the band winds `+u` in the unoriented face, else its south pole.
+    fn pole_v(&self, north: bool) -> Option<f64> {
+        match *self {
+            Self::Ruled { radius, sin, .. } if sin != 0.0 => Some(-radius / sin),
+            Self::Ruled { .. } => None,
+            Self::Sphere { .. } if north => Some(std::f64::consts::FRAC_PI_2),
+            Self::Sphere { .. } => Some(-std::f64::consts::FRAC_PI_2),
+        }
+    }
 }
 
 /// A wound face's seam at `u0`, from the loop winding `+u` (in the
@@ -257,21 +332,23 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
     // vertex (a ring loop gets its seam vertex there).
     let mut ring_start: BTreeMap<usize, f64> = BTreeMap::new();
     let mut wound: BTreeMap<usize, Seam> = BTreeMap::new();
-    // A pole per wound cone face: its vertex, `v_apex` and whether it runs
-    // `+u` in the unoriented face.
-    let mut poles: BTreeMap<usize, (usize, f64, bool)> = BTreeMap::new();
+    // The poles of each wound face: the vertex, `v` of the pole and whether
+    // its degenerated edge runs `+u` in the unoriented face.
+    let mut poles: BTreeMap<usize, Vec<(Vertex, f64, bool)>> = BTreeMap::new();
+    // Pole points the topology has no vertex for (a whole sphere's).
+    let mut extra: Vec<Point3> = Vec::new();
     for (fi, face) in t.faces().iter().enumerate() {
-        let Some(rev) = revolved(&face.surface) else {
+        let Some(rev) = Revolved::of(&face.surface) else {
             continue;
         };
-        let (frame, _, sin, _) = rev;
-        let rho = |v: f64| (rev.1 + v * sin).abs();
+        let frame = rev.frame();
+        let rho = |v: f64| rev.meridian(v).0.abs();
         let flip = face.sense == Orientation::Reversed;
         let mut loops: Vec<WoundLoop> = Vec::new();
         let mut pole = None;
         for l in &face.loops {
             let Loop::Edges { fins, winding } = &t.loops()[l.index()] else {
-                if let (Loop::Vertex(v), Surface::Cone { .. }, None) =
+                if let (Loop::Vertex(v), Surface::Cone { .. } | Surface::Sphere { .. }, None) =
                     (&t.loops()[l.index()], &face.surface, pole)
                 {
                     pole = Some(v.index());
@@ -309,6 +386,41 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
             loops.push((if flip { -winding[0] } else { winding[0] }, ring, at, false));
         }
         if loops.is_empty() {
+            // A whole sphere (no edge loops at all): a seam at u = 0 from its
+            // south pole to its north pole, each with a degenerated edge (as
+            // BRepPrim_Sphere).
+            let edge_loops = face
+                .loops
+                .iter()
+                .any(|l| matches!(t.loops()[l.index()], Loop::Edges { .. }));
+            if let (Revolved::Sphere { .. }, None, false) = (rev, pole, edge_loops) {
+                let half = std::f64::consts::FRAC_PI_2;
+                let (south, north) = (extra.len(), extra.len() + 1);
+                extra.push(rev.point(0.0, -half));
+                extra.push(rev.point(0.0, half));
+                // In the unoriented face the south pole's line runs +u.
+                poles.insert(
+                    fi,
+                    vec![
+                        (Vertex::Pole(south), -half, true),
+                        (Vertex::Pole(north), half, false),
+                    ],
+                );
+                wound.insert(
+                    fi,
+                    Seam {
+                        u0: 0.0,
+                        bottom: End {
+                            vertex: Vertex::Pole(south),
+                            height: -half,
+                        },
+                        top: End {
+                            vertex: Vertex::Pole(north),
+                            height: half,
+                        },
+                    },
+                );
+            }
             continue;
         }
         // The pole closes a band that winds once: it runs the other way.
@@ -317,9 +429,11 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
             if total.abs() != 1 {
                 return Err(unwritable("a pole on a face not wound once"));
             }
-            let apex = -rev.1 / sin;
+            let Some(apex) = rev.pole_v(total > 0) else {
+                return Err(unwritable("a pole on a cylinder"));
+            };
             loops.push((-total, None, vec![(v, Point2::new(0.0, apex))], true));
-            poles.insert(fi, (v, apex, -total > 0));
+            poles.insert(fi, vec![(Vertex::Shared(v), apex, -total > 0)]);
         }
         let (Some(bottom), Some(top), 2) = (
             loops.iter().find(|l| l.0 > 0),
@@ -447,6 +561,7 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
         let p = curve_at(&t.edges()[*e].curve, *start);
         ring_vertex.insert(*e, vertex(p, &mut records));
     }
+    let extra_vertex: Vec<usize> = extra.iter().map(|p| vertex(*p, &mut records)).collect();
     // Surfaces.
     for face in t.faces() {
         surfaces.push(match &face.surface {
@@ -477,6 +592,14 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
                 nums(&f.normal().cross(f.x()).to_array()),
                 num(*radius),
                 num(*half_angle)
+            ),
+            Surface::Sphere { frame: f, radius } => format!(
+                "4 {} {} {} {} {}",
+                nums(&f.origin().to_array()),
+                nums(&f.normal().to_array()),
+                nums(&f.x().to_array()),
+                nums(&f.normal().cross(f.x()).to_array()),
+                num(*radius)
             ),
         });
     }
@@ -516,50 +639,79 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
         }
     }
     // Seam edges: from the bottom loop's seam vertex to the top one's.
-    let seam_vertex = |end: &End| match end.vertex {
+    let record_of = |vertex: Vertex| match vertex {
         Vertex::Shared(v) => vertex_record[&v],
         Vertex::Ring(e) => ring_vertex[&e],
+        Vertex::Pole(k) => extra_vertex[k],
     };
+    let seam_vertex = |end: &End| record_of(end.vertex);
     let mut seam_of: BTreeMap<usize, usize> = BTreeMap::new();
     for (fi, seam) in &wound {
-        let rev = revolved(&t.faces()[*fi].surface).expect("wound faces are revolved");
+        let rev = Revolved::of(&t.faces()[*fi].surface).expect("wound faces are revolved");
         let (u0, low, high) = (seam.u0, seam.bottom.height, seam.top.height);
-        let at = |v: f64| revolved_point(&rev, u0, v);
-        let (a, b) = (at(low), at(high));
-        let l = b.distance(a);
-        if l <= tolerance {
+        let (a, b) = (rev.point(u0, low), rev.point(u0, high));
+        if b.distance(a) <= tolerance {
             return Err(unwritable("a wound face of no height at its seam"));
         }
-        let d = (b - a) * (1.0 / l);
-        let dv = (high - low).signum();
-        curves.push(format!("1 {} {}", nums(&a.to_array()), nums(&d.to_array())));
+        // The seam's 3D curve and range: a ruling from low to high at unit
+        // speed, or on a sphere the meridian circle in the angle v itself.
+        let range = match rev {
+            Revolved::Ruled { .. } => {
+                let l = b.distance(a);
+                let d = (b - a) * (1.0 / l);
+                curves.push(format!("1 {} {}", nums(&a.to_array()), nums(&d.to_array())));
+                let dv = (high - low).signum();
+                curves2d.push(format!("1 {} 0 {}", nums(&[u0 + TAU, low]), num(dv)));
+                curves2d.push(format!("1 {} 0 {}", nums(&[u0, low]), num(dv)));
+                [0.0, l]
+            }
+            Revolved::Sphere { frame, radius } => {
+                if high <= low {
+                    return Err(unwritable("a sphere seam running down"));
+                }
+                let e = frame.x() * u0.cos() + frame.normal().cross(frame.x()) * u0.sin();
+                let n = frame.normal();
+                curves.push(format!(
+                    "2 {} {} {} {} {}",
+                    nums(&frame.origin().to_array()),
+                    nums(&e.cross(n).to_array()),
+                    nums(&e.to_array()),
+                    nums(&n.to_array()),
+                    num(radius)
+                ));
+                curves2d.push(format!("1 {} 0 1", nums(&[u0 + TAU, 0.0])));
+                curves2d.push(format!("1 {} 0 1", nums(&[u0, 0.0])));
+                [low, high]
+            }
+        };
         let c3 = curves.len();
-        curves2d.push(format!("1 {} 0 {}", nums(&[u0 + TAU, low]), num(dv)));
-        curves2d.push(format!("1 {} 0 {}", nums(&[u0, low]), num(dv)));
         let (p1, p2) = (curves2d.len() - 1, curves2d.len());
         let edge = records.push(format!(
-            "Ed\n {tol} 1 1 0\n1 {c3} 0 0 {}\n3 {p1} {p2} CN {} 0 0 {}\n0\n\n0101000\n{{v+{}}} 0 {{v-{}}} 0 *",
-            num(l),
+            "Ed\n {tol} 1 1 0\n1 {c3} 0 {}\n3 {p1} {p2} CN {} 0 {}\n0\n\n0101000\n{{v+{}}} 0 {{v-{}}} 0 *",
+            nums(&range),
             fi + 1,
-            num(l),
+            nums(&range),
             seam_vertex(&seam.bottom),
             seam_vertex(&seam.top),
         ));
         seam_of.insert(*fi, edge);
     }
-    // Degenerated edges: a cone's pole, one turn at v_apex from the seam.
-    let mut pole_edge: BTreeMap<usize, (usize, bool)> = BTreeMap::new();
-    for (fi, (v, apex, forward)) in &poles {
+    // Degenerated edges: a cone's or sphere's poles, one turn at the pole's
+    // v from the seam.
+    let mut pole_edge: BTreeMap<usize, Vec<(usize, bool)>> = BTreeMap::new();
+    for (fi, list) in &poles {
         let u0 = wound[fi].u0;
-        curves2d.push(format!("1 {} 1 0", nums(&[u0, *apex])));
-        let apex_vertex = vertex_record[v];
-        let edge = records.push(format!(
-            "Ed\n {tol} 1 1 1\n2 {} {} 0 0 {}\n0\n\n0101000\n{{v+{apex_vertex}}} 0 {{v-{apex_vertex}}} 0 *",
-            curves2d.len(),
-            fi + 1,
-            num(TAU),
-        ));
-        pole_edge.insert(*fi, (edge, *forward));
+        for (v, apex, forward) in list {
+            curves2d.push(format!("1 {} 1 0", nums(&[u0, *apex])));
+            let apex_vertex = record_of(*v);
+            let edge = records.push(format!(
+                "Ed\n {tol} 1 1 1\n2 {} {} 0 0 {}\n0\n\n0101000\n{{v+{apex_vertex}}} 0 {{v-{apex_vertex}}} 0 *",
+                curves2d.len(),
+                fi + 1,
+                num(TAU),
+            ));
+            pole_edge.entry(*fi).or_default().push((edge, *forward));
+        }
     }
     // Edges.
     let mut edge_record: BTreeMap<usize, usize> = BTreeMap::new();
@@ -601,13 +753,45 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
                 }
                 return Err(unwritable("a vertex loop"));
             };
-            let mut uses: Vec<(usize, bool)> = fins
-                .iter()
-                .map(|k| {
-                    let f = &t.fins()[k.index()];
-                    (f.edge.index(), (f.sense == Orientation::Forward) != flip)
-                })
-                .collect();
+            // In the oriented face, each fin and, where the loop passes
+            // through a pole, OCCT's degenerated edge from one fin's end to
+            // the next one's start along the pole's line.
+            let mut uses: Vec<(usize, bool)> = Vec::new();
+            for (k, fk) in fins.iter().enumerate() {
+                let f = &t.fins()[fk.index()];
+                uses.push((f.edge.index(), f.sense == Orientation::Forward));
+                let next = &t.fins()[fins[(k + 1) % fins.len()].index()];
+                let (a, b) = (f.pcurve.point(1.0), next.pcurve.point(0.0));
+                if !pole_pass(&face.surface, a, b) {
+                    continue;
+                }
+                if winding[0] != 0 || seam_of.contains_key(&fi) {
+                    return Err(unwritable("a loop through a pole on a wound face"));
+                }
+                let edge = &t.edges()[f.edge.index()];
+                let end = if f.sense == Orientation::Forward {
+                    edge.end
+                } else {
+                    edge.start
+                };
+                let Some(v) = end else {
+                    return Err(unwritable("a ring edge through a pole"));
+                };
+                let du = b.x - a.x;
+                curves2d.push(format!("1 {} {} 0", nums(&[a.x, a.y]), num(du.signum())));
+                let at = vertex_record[&v.index()];
+                let record = records.push(format!(
+                    "Ed\n {tol} 1 1 1\n2 {} {} 0 0 {}\n0\n\n0101000\n{{v+{at}}} 0 {{v-{at}}} 0 *",
+                    curves2d.len(),
+                    fi + 1,
+                    num(du.abs()),
+                ));
+                let key = t.edges().len() + edge_record.len();
+                edge_record.insert(key, record);
+                uses.push((key, true));
+            }
+            let mut uses: Vec<(usize, bool)> =
+                uses.into_iter().map(|(e, fwd)| (e, fwd != flip)).collect();
             if flip {
                 uses.reverse();
             }
@@ -623,7 +807,7 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
             let seam = &wound[&fi];
             let starting = |uses: &[(usize, bool)], end: &End| -> Vec<(usize, bool)> {
                 let at = match end.vertex {
-                    Vertex::Ring(_) => 0,
+                    Vertex::Ring(_) | Vertex::Pole(_) => 0,
                     Vertex::Shared(v) => uses
                         .iter()
                         .position(|(e, fwd)| {
@@ -635,10 +819,10 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
                 };
                 uses[at..].iter().chain(&uses[..at]).copied().collect()
             };
-            let pole = pole_edge.get(&fi).copied();
+            let face_poles = pole_edge.get(&fi).cloned().unwrap_or_default();
             let wound_text = |up: bool, end: &End| -> Option<Vec<String>> {
-                if let Some((edge, forward)) = pole.filter(|(_, f)| *f == up) {
-                    let sign = if forward { "+" } else { "-" };
+                if let Some((edge, forward)) = face_poles.iter().find(|(_, f)| *f == up) {
+                    let sign = if *forward { "+" } else { "-" };
                     return Some(vec![format!("{{{sign}{edge}}} 0")]);
                 }
                 let (uses, _) = loops.iter().find(|(_, w)| (*w > 0) == up && *w != 0)?;

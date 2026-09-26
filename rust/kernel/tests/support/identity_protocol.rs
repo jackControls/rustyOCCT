@@ -19,6 +19,8 @@ pub struct CaseSpec {
     pub box_at: Option<([f64; 3], [f64; 3])>,
     /// Radii at the frame origin and at the height, and the height.
     pub cone: Option<[f64; 3]>,
+    /// Radius and the latitudes of the ends (radians).
+    pub sphere: Option<[f64; 3]>,
     pub transforms: Vec<RigidTransform>,
 }
 
@@ -44,6 +46,7 @@ pub fn parse(block: &str) -> CaseSpec {
         boundaries: Vec::new(),
         box_at: None,
         cone: None,
+        sphere: None,
         transforms: Vec::new(),
     };
     for line in block.lines().filter(|l| !l.trim().is_empty()) {
@@ -59,6 +62,7 @@ pub fn parse(block: &str) -> CaseSpec {
             "offsets" => (spec.start, spec.end) = (f(1), f(2)),
             "box" => spec.box_at = Some(([f(1), f(2), f(3)], [f(4), f(5), f(6)])),
             "cone" => spec.cone = Some([f(1), f(2), f(3)]),
+            "sphere" => spec.sphere = Some([f(1), f(2), f(3)]),
             "boundary" => {
                 let (boundary, rest) = if w[1] == "C" {
                     let b =
@@ -129,6 +133,10 @@ pub fn build_tracked(spec: &CaseSpec) -> (Solid, History) {
         return Solid::cone_with(spec.operation, frame, bottom, top, height, spec.tolerance)
             .unwrap();
     }
+    if let Some([radius, low, high]) = spec.sphere {
+        return Solid::sphere_with(spec.operation, frame, radius, low, high, spec.tolerance)
+            .unwrap();
+    }
     let profile = Profile::new(
         spec.boundaries[0].clone(),
         spec.boundaries[1..].to_vec(),
@@ -157,6 +165,7 @@ pub fn role_name(role: Role) -> &'static str {
         Role::CutEdge => "cut_edge",
         Role::CutVertex => "cut_vertex",
         Role::Apex => "apex",
+        Role::Pole => "pole",
     }
 }
 
@@ -317,9 +326,10 @@ pub fn rows(solid: &Solid) -> Vec<String> {
     out
 }
 
-/// A cone's rows: the apex or ring at each end found by position against
-/// the axis points, the discs by their plane's origin, the wall by its
-/// surface (identity_reference.py::cone_entities).
+/// A cone's or sphere's rows: the apex (pole) or ring at each end found by
+/// position against the axis points, the discs by their plane's origin, the
+/// wall by its surface (identity_reference.py::cone_entities and
+/// sphere_entities).
 fn cone_rows(solid: &Solid) -> Vec<String> {
     let t = solid.topology();
     let frame = solid.frame();
@@ -347,19 +357,26 @@ fn cone_rows(solid: &Solid) -> Vec<String> {
         assert_eq!(t.slot_of(id), Some(slot));
         assert_eq!(t.id_of(slot), Some(id));
         let (kind, loc) = match slot {
-            Slot::Vertex(v) => (
-                "vertex",
-                format!("apex {}", side(t.vertices()[v.index()].position)),
-            ),
+            Slot::Vertex(v) => {
+                let sphere = t
+                    .faces()
+                    .iter()
+                    .any(|f| matches!(f.surface, Surface::Sphere { .. }));
+                let name = if sphere { "pole" } else { "apex" };
+                (
+                    "vertex",
+                    format!("{name} {}", side(t.vertices()[v.index()].position)),
+                )
+            }
             Slot::Edge(e) => {
                 let Curve3::Circle { frame: circle, .. } = &t.edges()[e.index()].curve else {
-                    panic!("a cone's edges are rings");
+                    panic!("a revolved primitive's edges are rings");
                 };
                 ("edge", format!("ring {}", side(circle.origin())))
             }
             Slot::Face(f) => match &t.faces()[f.index()].surface {
                 Surface::Plane(plane) => ("face", format!("cap {}", side(plane.origin()))),
-                Surface::Cone { .. } => ("face", "wall".to_string()),
+                Surface::Cone { .. } | Surface::Sphere { .. } => ("face", "wall".to_string()),
                 other => panic!("unexpected cone face {other:?}"),
             },
             Slot::Region(_) => ("region", "region".to_string()),

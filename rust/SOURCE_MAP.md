@@ -562,3 +562,19 @@ at `3d097a0328e71b826377d4814ab05ec3c3d23871`.
 | `Solid::cone_with` | [BRepPrimAPI_MakeCone.cxx](../src/ModelingAlgorithms/TKPrim/BRepPrimAPI/BRepPrimAPI_MakeCone.cxx), [BRepPrim_Cone.cxx](../src/ModelingAlgorithms/TKPrim/BRepPrim/BRepPrim_Cone.cxx) | Full turn only; equal radii (a cylinder) and two apices are refused. History as revolving the meridian ([BRepPrimAPI_MakeRevol.cxx](../src/ModelingAlgorithms/TKPrim/BRepPrimAPI/BRepPrimAPI_MakeRevol.cxx)), with the caps and the region reported, which `MakeRevol` reports deleted. |
 | `occt_brep` cones | [GeomTools_SurfaceSet.cxx](../src/ModelingData/TKGeomBase/GeomTools/GeomTools_SurfaceSet.cxx) | The degenerated apex edge becomes the pole and is written back by rule. |
 | Mass properties | [BRepGProp.cxx](../src/ModelingAlgorithms/TKTopAlgo/BRepGProp/BRepGProp.cxx) | Exact integration in certified intervals instead of Gauss quadrature. |
+
+## Spheres (S3)
+
+The source review covered `BRepPrimAPI_MakeSphere` and `BRepPrim_Sphere`
+(the meridian circle about `-y` through `x`, offset `2π`; latitudes
+`angle1..angle2`; an end at `±π/2` a pole with a degenerated edge, others a
+circle bounding a disc), `Geom_SphericalSurface` and `ElSLib::SphereValue`
+(`O + R (cos v (cos u X + sin u Y) + sin v N)`), `GeomTools_SurfaceSet`
+record 4, and DRAW's `psphere` (angles in degrees, converted by
+`* M_PI / 180`), at `3d097a0328e71b826377d4814ab05ec3c3d23871`.
+
+| Rust | OCCT | Notes |
+| --- | --- | --- |
+| `Surface::Sphere` | [Geom_SphericalSurface.cxx](../src/ModelingData/TKG3d/Geom/Geom_SphericalSurface.cxx) | Same parameterization; a whole sphere is a face without loops, a pole closing a band a vertex loop. |
+| `Solid::sphere_with` | [BRepPrimAPI_MakeSphere.cxx](../src/ModelingAlgorithms/TKPrim/BRepPrimAPI/BRepPrimAPI_MakeSphere.cxx), [BRepPrim_Sphere.cxx](../src/ModelingAlgorithms/TKPrim/BRepPrim/BRepPrim_Sphere.cxx) | Full longitude only. History as revolving the meridian, the arc generating the wall. |
+| `occt_brep` spheres | [GeomTools_SurfaceSet.cxx](../src/ModelingData/TKGeomBase/GeomTools/GeomTools_SurfaceSet.cxx) | Poles and passes through them are OCCT's degenerated edges, rebuilt by rule when writing. |

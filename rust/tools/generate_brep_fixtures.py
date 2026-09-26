@@ -14,7 +14,7 @@ from pathlib import Path
 
 from cell_reference import declare, encode as encode_cell, gap_bounds, to_cell, validate as validate_cell
 
-from brep_reference import (Arc2, Arc3, Cone, Cylinder, Edge, Face, Frame, Line2, Line3, Model,
+from brep_reference import (Arc2, Arc3, Cone, Cylinder, Edge, Face, Frame, Line2, Line3, Model, Sphere,
                             Plane, TAU, Use, atan2_rn, cos_rn, encode, hypot_rn, number, sin_rn,
                             validate)
 
@@ -385,6 +385,54 @@ def cone_cell(name, origin, normal, hint, r1, r2, h, tolerance=1e-7):
     return c
 
 
+HALF_PI = 1.5707963267948966
+
+
+def sphere_cell(name, origin, normal, hint, radius, low, high, tolerance=1e-7):
+    """A sphere or zone as the kernel's sphere builder makes it, in the cell
+    model: the lateral face on a Sphere surface, ring edges at latitudes that
+    are not poles bounding discs, a pole (a vertex loop) when exactly one end
+    is one, and no loops at all for the whole sphere."""
+    from cell_reference import Cell, CEdge, CFace, Fin as CFin, Loop as CLoop, Region, Shell
+    from brep_reference import axes
+    c = Cell(name, tolerance)
+    frame = Frame(origin, normal, hint)
+    o, x, y, n = [tuple(float(v) for v in a) for a in axes(frame)]
+    lateral = CFace(Sphere(frame, radius), True, [], 0, 1)
+    faces = [lateral]
+    ends = [(low, low == -HALF_PI, False), (high, high == HALF_PI, True)]
+    poles = sum(1 for _, pole, _ in ends if pole)
+    for a, pole, up in ends:
+        if pole:
+            if poles == 1:
+                c.vertices.append(tuple(o[i]+(radius if up else -radius)*n[i] for i in range(3)))
+                c.loops.append(CLoop([], 0, len(c.vertices)-1))
+                lateral.loops.append(len(c.loops)-1)
+            continue
+        z, r = radius*sin_rn(a), radius*cos_rn(a)
+        centre = tuple(o[i]+z*n[i] for i in range(3))
+        e = len(c.edges)
+        c.edges.append(CEdge(None, None, Arc3(Frame(centre, normal, hint), r, 0.0, TAU)))
+        disc = CFace(Plane(Frame(centre, normal if up else tuple(-v for v in n), hint)), True, [], 0, 1)
+        k = len(c.fins)
+        if up:
+            c.fins.append(CFin(e, True, Arc2((0.0, 0.0), r, 0.0, TAU)))
+            c.fins.append(CFin(e, False, Line2((TAU, a), (0.0, a))))
+        else:
+            c.fins.append(CFin(e, False, Arc2((0.0, 0.0), r, -TAU, TAU)))
+            c.fins.append(CFin(e, True, Line2((0.0, a), (TAU, a))))
+        c.edges[e].fins = [k, k+1]
+        c.loops.append(CLoop([k], 0))
+        disc.loops.append(len(c.loops)-1)
+        c.loops.append(CLoop([k+1], -1 if up else 1))
+        lateral.loops.append(len(c.loops)-1)
+        faces.append(disc)
+    c.faces = faces
+    c.shells = [Shell(1, [(f, 'F') for f in range(len(faces))]), Shell(0, [(f, 'B') for f in range(len(faces))])]
+    c.regions = [Region('void', [1]), Region('solid', [0])]
+    return c
+
+
 def cell_cases(bases):
     """Cell-model cases with no seamed form: the model's own failure modes
     (TOPOLOGY_MODEL.md) and seamless valid shapes. They have no OCCT rows."""
@@ -538,6 +586,42 @@ def cell_cases(bases):
         p = c.fins[k].pcurve
         c.fins[k].pcurve = Line2((p.start[0], p.start[1]+1e-3), (p.end[0], p.end[1]+1e-3))
     cone_case('cone_frustum', 'cone_lateral_pcurve_shift', shift_lateral)
+
+    # Spheres (S3): the whole sphere (no loops), hemispheres with a pole at
+    # either end, a zone, rotated and far copies, and the failure modes.
+    spheres = {
+        'sphere_whole': sphere_cell('sphere_whole', (0.0, 0.0, 0.0), z, x, 2.0, -HALF_PI, HALF_PI),
+        'sphere_upper': sphere_cell('sphere_upper', (0.0, 0.0, 0.0), z, x, 1.5, 0.0, HALF_PI),
+        'sphere_lower': sphere_cell('sphere_lower', (1.0, 2.0, 3.0), z, x, 1.5, -HALF_PI, 0.0),
+        'sphere_zone': sphere_cell('sphere_zone', (0.0, 0.0, 0.0), z, x, 3.0, -0.5, 0.7),
+        'sphere_rotated': sphere_cell('sphere_rotated', (0.5, -1.0, 2.0), (0.3, -0.4, 0.8), (1.0, 0.2, 0.0),
+                                      1.25, -HALF_PI, 0.3),
+        'sphere_far': sphere_cell('sphere_far', (10000.0, -20000.0, 5000.0), z, x, 2.0, -HALF_PI, HALF_PI),
+    }
+    out.extend(spheres.values())
+
+    def sphere_case(base, name, change):
+        c = copy.deepcopy(spheres[base])
+        c.name = name
+        change(c)
+        out.append(c)
+    # The pole at the other pole: on the surface, off the band's pole.
+    sphere_case('sphere_upper', 'sphere_pole_wrong_side', move_pole((0.0, 0.0, -3.0)))
+    sphere_case('sphere_upper', 'sphere_pole_off_surface', move_pole((0.0, 0.0, 1e-3)))
+    sphere_case('sphere_upper', 'sphere_pole_missing',
+                lambda c: c.faces[0].loops.remove(next(l for l in c.faces[0].loops if c.loops[l].vertex is not None)))
+    sphere_case('sphere_zone', 'sphere_winding_twice', lambda c: setattr(c.loops[c.faces[0].loops[0]], 'winding', 2))
+    sphere_case('sphere_whole', 'sphere_zero_radius', lambda c: setattr(c.faces[0].surface, 'radius', 0.0))
+    sphere_case('sphere_whole', 'sphere_whole_reversed', lambda c: setattr(c.faces[0], 'forward', False))
+    sphere_case('sphere_zone', 'sphere_ring_pcurve_shift', shift_lateral)
+
+    def immersed_vertex(c):
+        # A vertex loop on a whole sphere closes no band: an immersed vertex.
+        from cell_reference import Loop as CLoop
+        c.vertices.append((0.0, 0.0, 2.0))
+        c.loops.append(CLoop([], 0, len(c.vertices)-1))
+        c.faces[0].loops.append(len(c.loops)-1)
+    sphere_case('sphere_whole', 'sphere_whole_vertex_loop', immersed_vertex)
     return out
 
 

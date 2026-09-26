@@ -110,7 +110,7 @@ fn malformed_documents_are_typed_errors_with_their_line() {
     }
 }
 
-const GEOMETRY: [&str; 22] = [
+const GEOMETRY: [&str; 21] = [
     "BSplineCurve",
     "BSplineCurve2d",
     "BSplineSurface",
@@ -127,7 +127,6 @@ const GEOMETRY: [&str; 22] = [
     "Parabola",
     "Parabola2d",
     "RectangularTrimmedSurface",
-    "SphericalSurface",
     "SurfaceOfLinearExtrusion",
     "SurfaceOfRevolution",
     "ToroidalSurface",
@@ -186,5 +185,5 @@ fn corpus_matches_the_independent_reader() {
             }
         }
     }
-    assert_eq!(imported, 30);
+    assert_eq!(imported, 44);
 }

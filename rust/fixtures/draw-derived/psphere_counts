@@ -1,0 +1,28 @@
+puts "Derived case, not an original OCCT test: sphere structure counts"
+puts "Written for rusty-occt; see rust/UPSTREAM_TESTS.md (derived cases)."
+
+# OCCT's whole sphere has two pole vertices, a seam from pole to pole and a
+# degenerated edge at each pole, in one wire; the kernel's whole sphere is
+# one face without loops, and its count synthesizer reports OCCT's structure.
+psphere s 2
+checkshape s
+checknbshapes s -solid 1 -shell 1 -face 1 -wire 1 -edge 3 -vertex 2
+
+# Volume 32 pi / 3 and area 16 pi. OCCT's lprops sums edge lengths per face
+# use: the seam (half a great circle) twice, the degenerated edges nothing.
+checkprops s -v 33.510321638291128 -s 50.265482457436692 -deps 1e-5
+checkprops s -l 12.566370614359173 -deps 1e-5
+
+# A hemisphere: a disc, a circle, the seam and the north pole.
+psphere h 1.5 0 90
+checkshape h
+checknbshapes h -solid 1 -shell 1 -face 2 -wire 2 -edge 3 -vertex 2
+checkprops h -v 7.0685834705770348 -s 21.205750411731104 -deps 1e-5
+checkprops h -l 23.561944901923449 -deps 1e-5
+
+# A zone between two discs.
+psphere z 3 -30 40
+checkshape z
+checknbshapes z -solid 1 -shell 1 -face 3 -wire 3 -edge 3 -vertex 2
+checkprops z -v 85.891162798762128 -s 102.42092749527385 -deps 1e-5
+checkprops z -l 68.857966552502493 -deps 1e-5

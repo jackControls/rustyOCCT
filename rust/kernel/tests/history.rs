@@ -102,7 +102,7 @@ fn every_history_matches_the_independent_enumeration_and_checks_clean() {
         }
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
-    assert_eq!(relations, 114_336);
+    assert_eq!(relations, 114_382);
 }
 
 #[test]

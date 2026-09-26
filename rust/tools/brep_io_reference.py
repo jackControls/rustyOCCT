@@ -9,13 +9,15 @@ surface's continuity may be glued to the second pcurve number (`6CN`).
 
 For every file it reports the geometry records the kernel cannot represent
 (by the kernel's names: every curve, 2D curve and surface other than a line,
-a circle, a plane, a cylinder or a cone; a trimmed line or circle counts as
-its basis), and for every solid reached from the root through compounds:
+a circle, a plane, a cylinder, a cone or a sphere; a trimmed line or circle
+counts as its basis), and for every solid reached from the root through
+compounds:
 
-* whether its structure is representable: plane, cylinder and cone faces
-  (direct or indirect), edges that have a forward and a reversed vertex and
-  a line or circle 3D curve, or are degenerated with one vertex at both
-  ends and bound only cone faces (a cone's apex, S3 of REVIEW_NOTES.md), a
+* whether its structure is representable: plane, cylinder, cone and sphere
+  faces (direct or indirect), edges that have a forward and a reversed
+  vertex and a line or circle 3D curve, or are degenerated with one vertex
+  at both ends and bound only cone and sphere faces (a pole, S3 of
+  REVIEW_NOTES.md), a
   pcurve on every non-plane face they bound, forward or reversed
   orientations only, and rigid locations;
 * OCCT's own distinct subshape counts of the original, seamed solid
@@ -114,15 +116,15 @@ def surface(r):
     if kind == 2:
         r.reals(13)
         return 'cylinder'
-    names = {4: 'SphericalSurface', 5: 'ToroidalSurface'}
+    names = {5: 'ToroidalSurface'}
     if kind == 3:
         r.reals(14)
         return 'cone'
-    if kind == 5:
-        r.reals(14)
-        return names[kind]
     if kind == 4:
         r.reals(13)
+        return 'sphere'
+    if kind == 5:
+        r.reals(14)
         return names[kind]
     if kind == 6:
         r.reals(3)
@@ -320,7 +322,7 @@ def summary(text):
     unsupported = {}
     for name in ('Curves', 'Curve2ds', 'Surfaces'):
         for kind in tables[name]:
-            if kind not in ('line', 'circle', 'plane', 'cylinder', 'cone'):
+            if kind not in ('line', 'circle', 'plane', 'cylinder', 'cone', 'sphere'):
                 unsupported[kind] = unsupported.get(kind, 0)+1
     solids = []
     stack = [(root, IDENTITY, '+')]
@@ -365,7 +367,7 @@ def solid(shapes, tables, loc, record, t):
                 continue
             mark('Fa', f, ft)
             surf = tables['Surfaces'][data[0]-1] if data[0] else None
-            if surf not in ('plane', 'cylinder', 'cone'):
+            if surf not in ('plane', 'cylinder', 'cone', 'sphere'):
                 ok = False
             for wo, w, wl in wires:
                 wt = matmul(ft, loc(wl))
@@ -382,7 +384,7 @@ def solid(shapes, tables, loc, record, t):
                     curves = [x[1] for x in reps if x[0] == 'curve']
                     if degenerated:
                         ends = [(v, matmul(et, loc(vl))) for _, v, vl in shapes[e][2]]
-                        if surf != 'cone' or len(ends) != 2 or ends[0][0] != ends[1][0] \
+                        if surf not in ('cone', 'sphere') or len(ends) != 2 or ends[0][0] != ends[1][0] \
                                 or not near(ends[0][1], ends[1][1]):
                             ok = False
                     elif not curves or tables['Curves'][curves[0]-1] not in ('line', 'circle'):

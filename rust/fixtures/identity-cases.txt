@@ -4075,3 +4075,37 @@ cone 0.75 3.0 2.5
 transform R 1.0 2.0 3.0 0.0 0.6 0.8 1.1
 transform T 10.0 -20.0 30.0
 end
+case sphere_whole 1e-07
+op 31
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+end
+case sphere_upper 1e-07
+op 31
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.5 0.0 1.5707963267948966
+end
+case sphere_lower 1e-07
+op 32
+frame 3.0 -2.0 5.0 0.3 -0.4 0.8 1.0 0.0 0.0
+sphere 1.5 -1.5707963267948966 0.0
+end
+case sphere_zone 1e-07
+op 32
+frame 3.0 -2.0 5.0 0.3 -0.4 0.8 1.0 0.0 0.0
+sphere 3.0 -0.5 0.7
+end
+case sphere_transformed 1e-07
+op 33
+frame 3.0 -2.0 5.0 0.3 -0.4 0.8 1.0 0.0 0.0
+sphere 1.25 -1.5707963267948966 0.3
+transform R 1.0 2.0 3.0 0.0 0.6 0.8 1.1
+transform T 10.0 -20.0 30.0
+end
+case sphere_whole_transformed 1e-07
+op 33
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 0.5 -1.5707963267948966 1.5707963267948966
+transform R 1.0 2.0 3.0 0.0 0.6 0.8 1.1
+transform T 10.0 -20.0 30.0
+end

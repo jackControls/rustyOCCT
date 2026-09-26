@@ -220,6 +220,35 @@ pub(crate) fn cone_location(
     0
 }
 
+/// Where a point (in the sphere's frame) lies against a sphere or zone of
+/// `radius` between the axial heights `low` and `high` (at a pole, `-radius`
+/// or `radius`): 0 inside, 1 on the boundary within `tolerance`, 2 outside.
+/// Exact: distances compare squared.
+pub(crate) fn sphere_location(
+    point: [f64; 3],
+    radius: f64,
+    low: f64,
+    high: f64,
+    tolerance: f64,
+) -> u8 {
+    let [x, y, z] = point.map(q);
+    let (r, lo, hi, tol) = (q(radius), q(low), q(high), q(tolerance));
+    let d2 = &x * &x + &y * &y + &z * &z;
+    let outer = &r + &tol;
+    if d2 > &outer * &outer || z < &lo - &tol || z > &hi + &tol {
+        return 2;
+    }
+    let near = |end: &R| {
+        let d = &z - end;
+        d <= tol.clone() && -d <= tol.clone()
+    };
+    let inner = &r - &tol;
+    if near(&lo) || near(&hi) || inner <= zero() || d2 >= &inner * &inner {
+        return 1;
+    }
+    0
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

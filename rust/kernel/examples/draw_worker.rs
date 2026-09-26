@@ -8,7 +8,9 @@
 //! DRAW does not query; the kernel reports them as generated with their roles.
 use rusty_occt::history::{History, Relation};
 use rusty_occt::identity::{InputLabel, OperationId, Parent, Role};
-use rusty_occt::topology::{Curve2, Curve3, EdgeId, FaceId, Loop, Slot, Surface, Topology};
+use rusty_occt::topology::{
+    Curve2, Curve3, EdgeId, FaceId, Loop, Orientation, Slot, Surface, Topology,
+};
 use rusty_occt::{
     Boundary, BoundaryLabels, Frame3, Point2, Point3, Profile, RigidTransform, Solid, Tolerance,
     Vec3,
@@ -191,18 +193,44 @@ fn face_area(t: &Topology, face: usize) -> f64 {
                 .sum::<f64>();
             radius * periodic.abs()
         }
-        // Cone faces are measured by the kernel's general mass properties.
-        Surface::Cone { .. } => t
+        // Cone and sphere faces are measured by the kernel's general mass
+        // properties.
+        Surface::Cone { .. } | Surface::Sphere { .. } => t
             .face_area_and_centre(FaceId::new(face))
             .map_or(f64::NAN, |(area, _)| area),
     }
 }
 
-/// The seam OCCT's wound faces carry and the kernel does not: its length (the
-/// face's extent across the winding, to the apex of a pole) when the face
-/// has one. `v` is arc length along a cylinder's or cone's rulings.
-fn seam_length(t: &Topology, face: usize) -> Option<f64> {
+/// A whole sphere: a sphere face without edge loops (OCCT's one wire of a
+/// seam and two degenerated edges at its pole vertices).
+fn whole_sphere(t: &Topology, face: usize) -> bool {
     let face = &t.faces()[face];
+    matches!(face.surface, Surface::Sphere { .. })
+        && face
+            .loops
+            .iter()
+            .all(|l| matches!(t.loops()[l.index()], Loop::Vertex(_)))
+}
+
+/// The seam OCCT's wound faces carry and the kernel does not: its length (the
+/// face's extent across the winding, to the apex or pole of a pole) when the
+/// face has one. `v` is arc length along a cylinder's or cone's rulings and
+/// the angle on a sphere's meridian.
+fn seam_length(t: &Topology, face: usize) -> Option<f64> {
+    if let (true, Surface::Sphere { radius, .. }) =
+        (whole_sphere(t, face), &t.faces()[face].surface)
+    {
+        return Some(std::f64::consts::PI * radius);
+    }
+    let face = &t.faces()[face];
+    let turns: i32 = face
+        .loops
+        .iter()
+        .filter_map(|l| match &t.loops()[l.index()] {
+            Loop::Edges { winding, .. } => Some(winding[0]),
+            Loop::Vertex(_) => None,
+        })
+        .sum();
     let mut wound = false;
     let mut v = (f64::MAX, f64::MIN);
     for l in &face.loops {
@@ -215,17 +243,31 @@ fn seam_length(t: &Topology, face: usize) -> Option<f64> {
                 }
             }
             Loop::Vertex(_) => {
-                if let Surface::Cone {
-                    radius, half_angle, ..
-                } = face.surface
-                {
-                    let apex = -radius / half_angle.sin();
-                    v = (v.0.min(apex), v.1.max(apex));
+                let pole = match face.surface {
+                    Surface::Cone {
+                        radius, half_angle, ..
+                    } => Some(-radius / half_angle.sin()),
+                    // The pole on the band's material side.
+                    Surface::Sphere { .. } => {
+                        Some(if (turns > 0) == (face.sense == Orientation::Forward) {
+                            std::f64::consts::FRAC_PI_2
+                        } else {
+                            -std::f64::consts::FRAC_PI_2
+                        })
+                    }
+                    _ => None,
+                };
+                if let Some(p) = pole {
+                    v = (v.0.min(p), v.1.max(p));
                 }
             }
         }
     }
-    wound.then_some(v.1 - v.0)
+    let scale = match face.surface {
+        Surface::Sphere { radius, .. } => radius,
+        _ => 1.0,
+    };
+    wound.then_some(scale * (v.1 - v.0))
 }
 
 fn edge_length(curve: &Curve3) -> f64 {
@@ -299,12 +341,23 @@ fn collect(shape: &Shape, parts: &mut Parts) {
             })
             .count();
         parts.wires += unwound;
-        // A cone's pole is OCCT's degenerated edge at the apex vertex, of
-        // no length, in the wound face's wire.
+        // A cone's or sphere's pole is OCCT's degenerated edge at the pole
+        // vertex, of no length, in the wound face's wire; so is each pass of
+        // a loop through a pole, and a whole sphere has two, at vertices of
+        // their own.
         for l in &t.faces()[f].loops {
             if let Loop::Vertex(v) = &t.loops()[l.index()] {
                 parts.vertices.insert(key(s, Slot::Vertex(*v)));
                 parts.edges.insert(format!("{face}:pole"));
+            }
+        }
+        for k in 0..t.pole_passes(&t.faces()[f]) {
+            parts.edges.insert(format!("{face}:pass{k}"));
+        }
+        if whole_sphere(t, f) {
+            for end in ["south", "north"] {
+                parts.vertices.insert(format!("{face}:{end}"));
+                parts.edges.insert(format!("{face}:{end}"));
             }
         }
         // A wound face's two ring loops are one OCCT wire, joined by a seam
@@ -570,7 +623,7 @@ fn face_centre(t: &Topology, face: usize) -> (f64, Point3) {
                 Surface::Cylinder { .. } => {
                     [q.y, q.y * q.x.cos(), q.y * q.x.sin(), q.y * q.y / 2.0]
                 }
-                Surface::Cone { .. } => [0.0; 4],
+                Surface::Cone { .. } | Surface::Sphere { .. } => [0.0; 4],
             };
             for k in 0..4 {
                 m[k] -= w * g[k] * d.x;
@@ -589,7 +642,7 @@ fn face_centre(t: &Topology, face: usize) -> (f64, Point3) {
                 m[3] / m[0],
             ),
         ),
-        Surface::Cone { .. } => t
+        Surface::Cone { .. } | Surface::Sphere { .. } => t
             .face_area_and_centre(FaceId::new(face))
             .unwrap_or((f64::NAN, Point3::new(f64::NAN, f64::NAN, f64::NAN))),
     }
@@ -769,6 +822,26 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             )?;
             let (solid, _) =
                 Solid::cone_with(OperationId::UNSPECIFIED, frame, n[0], n[1], n[2], t)?;
+            shapes.insert(args[1].clone(), Shape::Solid(Box::new(solid)));
+            Ok(String::new())
+        }
+        // `psphere name R [angle1 angle2]`: a sphere or zone about the z
+        // axis, latitudes in degrees (a partial longitude is not supported).
+        "psphere" if args.len() == 3 || args.len() == 5 => {
+            let n = numbers(&args[2..])?;
+            let frame = Frame3::new(
+                Point3::ORIGIN,
+                Vec3::new(0.0, 0.0, 1.0),
+                Vec3::new(1.0, 0.0, 0.0),
+                t,
+            )?;
+            let (low, high) = if n.len() == 3 {
+                (n[1].to_radians(), n[2].to_radians())
+            } else {
+                (-std::f64::consts::FRAC_PI_2, std::f64::consts::FRAC_PI_2)
+            };
+            let (solid, _) =
+                Solid::sphere_with(OperationId::UNSPECIFIED, frame, n[0], low, high, t)?;
             shapes.insert(args[1].clone(), Shape::Solid(Box::new(solid)));
             Ok(String::new())
         }

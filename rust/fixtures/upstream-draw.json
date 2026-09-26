@@ -10,6 +10,7 @@
     "tests/bugs/modalg_1/buc60684": "771b69a7c29a5140a0fd370d0f17a6a27551b67e8fa19233b48c56f90d4245cb",
     "tests/bugs/modalg_6/begin": "16a2a51b965d83e675a1c75b1aed0eb0de88905d9ffdc81d57466305d0cf9c8a",
     "tests/bugs/modalg_6/bug27264_1": "ecc5bff3b3d2bea7a6c12b760198e7f669a147d0b94c285d5dc0727cf85eec5d",
+    "tests/bugs/modalg_6/bug27264_2": "2daf28576e5426677317117aee70378eb6dde825e14464c5203a90336e8d1e6a",
     "tests/bugs/modalg_6/bug28189_2": "2b32b4257cfcfc6f7d111d71e7301f089147ebeac7350d145737698185c24418",
     "tests/bugs/modalg_6/bug28189_3": "7fa450c825e67af25b3ec2fe1370555c75ff572ab7303c90134cee595ae5e78b",
     "tests/bugs/modalg_7/begin": "5989051978daa1e26a264a25aa54a6701bb2130c96a593d65b4ccb0ec33374c1",
@@ -122,6 +123,19 @@
       ]
     },
     {
+      "path": "rust/fixtures/draw-derived/psphere_counts",
+      "derived": true,
+      "context": "tests/bugs/modalg_7",
+      "expected_rust": "pass",
+      "expected_occt": "pass",
+      "purpose": "Derived: whole sphere, hemisphere and zone counts (seam, pole vertices and degenerated edges) through the count synthesizer, and certified properties.",
+      "verifies": [
+        "count synthesizer",
+        "per-use length synthesis",
+        "general mass properties"
+      ]
+    },
+    {
       "path": "rust/fixtures/draw-derived/explode_selector",
       "derived": true,
       "context": "tests/bugs/modalg_7",
@@ -146,6 +160,13 @@
       "expected_rust": "viewer_skipped",
       "expected_occt": "viewer_skipped",
       "purpose": "Original restore-and-check case on the public dataset (REVIEW_NOTES.md S2)."
+    },
+    {
+      "path": "tests/bugs/modalg_6/bug27264_2",
+      "data": true,
+      "expected_rust": "pass",
+      "expected_occt": "pass",
+      "purpose": "Original restore-and-check case on the public dataset: a whole sphere restored, counted and measured (S3 of REVIEW_NOTES.md)."
     }
   ],
   "derived_sources": {
@@ -153,7 +174,8 @@
     "rust/fixtures/draw-derived/prism_history_reversed_triangle": "0e3fca7528f376334bcafd1dc69587a8990fb7c4ebb528baa0057bc39e5bef6c",
     "rust/fixtures/draw-derived/pcylinder_counts": "4a800a919c536fc30b5075a17feb6d114e71c6b27f7fad761f2fdf4737fb1b08",
     "rust/fixtures/draw-derived/explode_selector": "8c4e6c3812894ee84a42285cbd5859096cb5c5479f05b49382666515aa40e340",
-    "rust/fixtures/draw-derived/pcone_counts": "8b326812c28bcd0f62c324607e15c9c1fd59b491e120d3f2554d8dd3aeb978a4"
+    "rust/fixtures/draw-derived/pcone_counts": "8b326812c28bcd0f62c324607e15c9c1fd59b491e120d3f2554d8dd3aeb978a4",
+    "rust/fixtures/draw-derived/psphere_counts": "67e36b8192db4fb52c5acb4db455695595cc3beff03c01bfea20939047ce2927"
   },
   "ledger": {
     "survey": {
@@ -167,12 +189,12 @@
     },
     "assertions": 35766,
     "statuses": {
-      "lost": 12845,
-      "mapped-and-verified": 1,
+      "lost": 12844,
+      "mapped-and-verified": 2,
       "model-independent": 22920
     },
     "lost_by_reason": {
-      "mapping unverified: count synthesizer": 5399,
+      "mapping unverified: count synthesizer": 5398,
       "mapping unverified: native selector": 1578,
       "mapping unverified: per-use length synthesis": 1975,
       "no mapping: OCCT persistence formats": 75,
@@ -210,8 +232,8 @@
         "lost": 981
       },
       "checknbshapes": {
-        "lost": 5414,
-        "mapped-and-verified": 1
+        "lost": 5413,
+        "mapped-and-verified": 2
       },
       "checkpoint": {
         "model-independent": 42

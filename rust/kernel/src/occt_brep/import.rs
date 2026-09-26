@@ -3,10 +3,12 @@
 //! whose uses run opposite ways, lie one period apart and continue their
 //! neighbours in UV merges into periodic loops with winding numbers; the
 //! vertices only seams and closed curves use disappear, and closed curves
-//! that lose their vertex become ring edges. On a cone, a run that is one
-//! degenerated edge (OCCT's apex) becomes a vertex loop of its vertex, the
-//! pole (S3 of REVIEW_NOTES.md); a degenerated edge anywhere else is
-//! unsupported. Each solid becomes a solid
+//! that lose their vertex become ring edges. On a cone or sphere, a run that
+//! is one degenerated edge (OCCT's pole) becomes a vertex loop of its vertex
+//! (S3 of REVIEW_NOTES.md), a sphere bounded only by poles is the whole
+//! sphere without loops, and a degenerated edge among other uses is dropped:
+//! the loop passes through the pole. A degenerated edge on another surface
+//! is unsupported. Each solid becomes a solid
 //! region whose outer shell comes first, each shell's opposite sides a void
 //! twin. The result must pass `Topology::from_parts`.
 use super::read::{self, Data, Document, EdgeRep, Kind, Orient, Sub};
@@ -407,9 +409,25 @@ impl Walk<'_> {
                     half_angle: if indirect { -*a } else { *a },
                 }
             }
+            read::Surface::Sphere { p, n, x, y, r } => {
+                // An indirect axis is the kernel's sphere about -N with v
+                // negated, as for the cylinder.
+                indirect = dot(cross(*x, *y), *n) <= 0.0;
+                let axis = if indirect { n.map(|c| -c) } else { *n };
+                Surface::Sphere {
+                    frame: Frame3::new(
+                        p3(st.point(*p)),
+                        v3(st.vector(axis)),
+                        v3(st.vector(*x)),
+                        self.placement,
+                    )
+                    .ok()?,
+                    radius: *r,
+                }
+            }
             read::Surface::Other(name) => return self.no(name),
         };
-        let cone = matches!(surface, Surface::Cone { .. });
+        let cone = matches!(surface, Surface::Cone { .. } | Surface::Sphere { .. });
         let mut loops = Vec::new();
         for wire in &shape.subs {
             if doc.shapes[wire.shape].kind != Kind::Wire {
@@ -615,13 +633,14 @@ fn end_of(p: &Curve2) -> Point2 {
 type SeamRuns = (Vec<usize>, Vec<(Vec<usize>, i32)>);
 
 /// The length of a unit step in `u` at height `v`: the cylinder's radius,
-/// the cone's `|R + v sin a|`.
+/// the cone's `|R + v sin a|`, the sphere's `|R cos v|`.
 fn u_scale(surface: &Surface, v: f64) -> Option<f64> {
     match surface {
         Surface::Cylinder { radius, .. } => Some(*radius),
         Surface::Cone {
             radius, half_angle, ..
         } => Some((radius + v * half_angle.sin()).abs()),
+        Surface::Sphere { radius, .. } => Some((radius * v.cos()).abs()),
         Surface::Plane(_) => None,
     }
 }
@@ -717,6 +736,30 @@ fn seam_merge(face: &SFace, lp: &[SUse], tol: f64) -> Option<SeamRuns> {
     Some((seams, out))
 }
 
+/// The uses of a run, a degenerated edge among others dropped: the loop
+/// passes through the pole at its vertex, where the UV gap in `u` has no
+/// length (`rho = 0`) and the closing chord takes the degenerated edge's
+/// place. The vertex stays, used by the neighbours.
+fn through_poles<'a>(
+    walk: &Walk,
+    uses: impl Iterator<Item = &'a SUse>,
+    removed: &mut BTreeSet<usize>,
+) -> Vec<&'a SUse> {
+    let uses: Vec<&SUse> = uses.collect();
+    if uses.len() < 2 {
+        return uses;
+    }
+    uses.into_iter()
+        .filter(|u| {
+            let degenerated = walk.edges[u.edge].curve.is_none();
+            if degenerated {
+                removed.insert(u.edge);
+            }
+            !degenerated
+        })
+        .collect()
+}
+
 /// A loop of the cell complex before numbering: runs of seamed uses with
 /// their winding, or a pole at a seamed vertex.
 enum CellLoop<'a> {
@@ -740,17 +783,32 @@ fn to_cell(walk: Walk, tol: f64) -> Result<TopologyParts, &'static str> {
                         let e = lp[run[0]].edge;
                         if run.len() == 1 && walk.edges[e].curve.is_none() {
                             removed.insert(e);
-                            poles.insert(walk.edges[e].start);
                             loops.push(CellLoop::Pole(walk.edges[e].start));
                         } else {
                             loops.push(CellLoop::Edges(
-                                run.into_iter().map(|k| &lp[k]).collect(),
+                                through_poles(&walk, run.into_iter().map(|k| &lp[k]), &mut removed),
                                 w,
                             ));
                         }
                     }
                 }
-                None => loops.push(CellLoop::Edges(lp.iter().collect(), 0)),
+                None => loops.push(CellLoop::Edges(
+                    through_poles(&walk, lp.iter(), &mut removed),
+                    0,
+                )),
+            }
+        }
+        // A sphere bounded only by its poles is the whole sphere: no loops,
+        // and its pole vertices go with their degenerated edges. Any other
+        // pole is a vertex loop.
+        let whole = matches!(f.surface, Surface::Sphere { .. })
+            && loops.iter().all(|l| matches!(l, CellLoop::Pole(_)));
+        if whole {
+            loops.clear();
+        }
+        for l in &loops {
+            if let CellLoop::Pole(v) = l {
+                poles.insert(*v);
             }
         }
         face_loops.push(loops);

@@ -1,6 +1,7 @@
 //! Test-only protocol for compare_revolve_history.py. Reads
 //! `primitive-cases.txt` lines (`cone NAME ox oy oz nx ny nz xx xy xz r1 r2
-//! h`), builds each with `Solid::cone_with` and prints the synthesized OCCT
+//! h`) or `sphere-cases.txt` lines (`sphere NAME ... R a1 a2`), builds each
+//! with `Solid::cone_with` or `Solid::sphere_with` and prints the synthesized OCCT
 //! counts (`C`), every construction relation with its meridian parent, role
 //! and a geometric signature of its target (`G`) in the format of
 //! rust/tools/occt_revolve_oracle.cpp, and the body (`B`).
@@ -30,8 +31,11 @@ fn main() {
             tol,
         )
         .unwrap();
-        let (solid, history) =
-            Solid::cone_with(OperationId(1), frame, n[9], n[10], n[11], tol).unwrap();
+        let (solid, history) = if w[0] == "sphere" {
+            Solid::sphere_with(OperationId(1), frame, n[9], n[10], n[11], tol).unwrap()
+        } else {
+            Solid::cone_with(OperationId(1), frame, n[9], n[10], n[11], tol).unwrap()
+        };
         println!("case {}", w[1]);
         println!("{}", counts(&solid));
         for r in &history.relations {

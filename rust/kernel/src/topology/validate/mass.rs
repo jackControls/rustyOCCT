@@ -28,6 +28,9 @@ const TERMS: usize = 14;
 type Planar<T> = BTreeMap<(u8, u8), T>;
 /// `sum of c v^k cos^a u sin^b u` on a surface of revolution, keyed `(k, a, b)`.
 type Rev<T> = BTreeMap<(u8, u8, u8), T>;
+/// `sum of c cos^a u sin^b u cos^c v sin^d v` on a sphere, keyed
+/// `(a, b, c, d)`.
+type Sph<T> = BTreeMap<(u8, u8, u8, u8), T>;
 
 fn add_to<K: Ord + Copy, T: Real>(map: &mut BTreeMap<K, T>, key: K, value: T) {
     let entry = map.entry(key).or_insert_with(|| c(0.0));
@@ -49,6 +52,16 @@ fn rev_mul<T: Real>(a: &Rev<T>, b: &Rev<T>) -> Rev<T> {
     for ((k, i, j), x) in a {
         for ((l, m, n), y) in b {
             add_to(&mut out, (k + l, i + m, j + n), x.mul(y));
+        }
+    }
+    out
+}
+
+fn sph_mul<T: Real>(a: &Sph<T>, b: &Sph<T>) -> Sph<T> {
+    let mut out = BTreeMap::new();
+    for ((i, j, k, l), x) in a {
+        for ((m, n, o, p), y) in b {
+            add_to(&mut out, (i + m, j + n, k + o, l + p), x.mul(y));
         }
     }
     out
@@ -359,6 +372,173 @@ fn rev_lines<T: Real>(fs: &[Rev<T>], a: &V2<T>, b: &V2<T>) -> Option<Vec<T>> {
     Some(out)
 }
 
+/// An enclosure of every point of the segment between two enclosed values.
+fn hull<T: Real>(a: &T, b: &T) -> T {
+    let mid = a.add(b).mul(&c(0.5));
+    let half = b.sub(a).mul(&c(0.5));
+    let mid_half = half.midpoint();
+    let magnitude = if mid_half < int(0) {
+        -mid_half
+    } else {
+        mid_half
+    };
+    let reach = magnitude + half.radius();
+    mid.widen(&reach)
+}
+
+/// `-integral of F du` for `u` from `u0` to `u1` at a fixed `v0`, for every
+/// `F(u, v) = integral from lower to v of f dv` of `fs`: `F(u, v0)` is a
+/// trigonometric polynomial in `u`, integrated exactly.
+fn sph_parallel<T: Real>(fs: &[Sph<T>], u0: &T, u1: &T, v0: &T, lower: &T) -> Option<Vec<T>> {
+    let mut in_v: BTreeMap<(u8, u8), T> = BTreeMap::new();
+    let mut in_u: BTreeMap<(u8, u8), T> = BTreeMap::new();
+    let mut out = Vec::with_capacity(fs.len());
+    for f in fs {
+        let mut collapsed: BTreeMap<(u8, u8), T> = BTreeMap::new();
+        for ((a, b, cc, d), x) in f {
+            let tv = match in_v.get(&(*cc, *d)) {
+                Some(t) => t.clone(),
+                None => {
+                    let t = trig_integral::<T>(*cc, *d, lower, v0)?;
+                    in_v.insert((*cc, *d), t.clone());
+                    t
+                }
+            };
+            add_to(&mut collapsed, (*a, *b), x.mul(&tv));
+        }
+        let mut total = c::<T>(0.0);
+        for ((a, b), y) in collapsed {
+            let tu = match in_u.get(&(a, b)) {
+                Some(t) => t.clone(),
+                None => {
+                    let t = trig_integral::<T>(a, b, u0, u1)?;
+                    in_u.insert((a, b), t.clone());
+                    t
+                }
+            };
+            total = total.add(&y.mul(&tu));
+        }
+        out.push(total.neg());
+    }
+    Some(out)
+}
+
+/// `-integral of F du` along the line from `a` to `b` on a sphere, for every
+/// `F(u, v) = integral from lower to v of f dv` of `fs`. A meridian
+/// (`du = 0`) contributes nothing and a parallel (`dv = 0`) is exact; any
+/// other line (a chord closing a gap) is enclosed by `-du` times `F` over the
+/// segment's bounding box, which contains the mean value of `F`.
+fn sph_lines<T: Real>(fs: &[Sph<T>], a: &V2<T>, b: &V2<T>, lower: &T) -> Option<Vec<T>> {
+    let du = b[0].sub(&a[0]);
+    if du.sign()? == Ordering::Equal {
+        return Some(vec![c(0.0); fs.len()]);
+    }
+    let dv = b[1].sub(&a[1]);
+    if dv.sign() == Some(Ordering::Equal) {
+        return sph_parallel(fs, &a[0], &b[0], &a[1], lower);
+    }
+    let (uu, vv) = (hull(&a[0], &b[0]), hull(&a[1], &b[1]));
+    let (cu, su) = T::cos_sin(&uu);
+    let power = |x: &T, n: u8| (0..n).fold(c::<T>(1.0), |acc, _| acc.mul(x));
+    let mut out = Vec::with_capacity(fs.len());
+    for f in fs {
+        let mut total = c::<T>(0.0);
+        for ((i, j, k, l), x) in f {
+            let tv = trig_integral::<T>(*k, *l, lower, &vv)?;
+            total = total.add(&x.mul(&power(&cu, *i)).mul(&power(&su, *j)).mul(&tv));
+        }
+        out.push(total.mul(&du).neg());
+    }
+    Some(out)
+}
+
+/// The sphere's integrands from `p = d + R q` and `N = R^2 cos v q`, `q` the
+/// unit radial direction, and `|N| = R^2 cos v`.
+fn sphere_terms<T: Real>(fr: &FrameV<T>, radius: f64, d: &V3<T>) -> [Sph<T>; TERMS] {
+    let rad = c::<T>(radius);
+    let r2 = rad.square();
+    let p: [Sph<T>; 3] = std::array::from_fn(|i| {
+        [
+            ((0, 0, 0, 0), d[i].clone()),
+            ((1, 0, 1, 0), rad.mul(&fr.x[i])),
+            ((0, 1, 1, 0), rad.mul(&fr.y[i])),
+            ((0, 0, 0, 1), rad.mul(&fr.n[i])),
+        ]
+        .into_iter()
+        .collect()
+    });
+    let n: [Sph<T>; 3] = std::array::from_fn(|i| {
+        [
+            ((1, 0, 2, 0), r2.mul(&fr.x[i])),
+            ((0, 1, 2, 0), r2.mul(&fr.y[i])),
+            ((0, 0, 1, 1), r2.mul(&fr.n[i])),
+        ]
+        .into_iter()
+        .collect()
+    });
+    let norm: Sph<T> = [((0, 0, 1, 0), r2)].into_iter().collect();
+    integrands(&p, &n, &norm, sph_mul)
+}
+
+/// `-loop integral of F du` over a sphere face's loops (closed by chords) for
+/// every integrand of `fs`. `F` starts at the pole on a face with one, and
+/// at the south pole otherwise; a face without loops is the whole sphere,
+/// bounded on the cover by the north pole's line.
+fn sphere_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>]) -> Option<Vec<T>> {
+    let turns: i32 = loops.iter().map(|lp| lp.winding).sum();
+    let lower = if turns.abs() == 1 {
+        pole_v::<T>(&face.surface, pole_north(turns, face.sense))?
+    } else {
+        half_pi::<T>().neg()
+    };
+    let mut totals = vec![c::<T>(0.0); fs.len()];
+    let mut accumulate = |values: Vec<T>| {
+        for (t, v) in totals.iter_mut().zip(values) {
+            *t = t.add(&v);
+        }
+    };
+    if loops.is_empty() {
+        let two_pi = T::from_r(&(pi().midpoint() * int(2))).widen(&(pi().radius() * int(2)));
+        let whole = sph_parallel(fs, &two_pi, &c(0.0), &half_pi(), &lower)?;
+        let sign = if face.sense == Orientation::Forward {
+            1.0
+        } else {
+            -1.0
+        };
+        accumulate(whole.iter().map(|x| x.mul(&c(sign))).collect());
+    }
+    for lp in loops {
+        for u in &lp.fins {
+            let Curve2::LineSegment { start, end } = &u.pcurve else {
+                return None;
+            };
+            accumulate(sph_lines(
+                fs,
+                &[c(start.x), c(start.y)],
+                &[c(end.x), c(end.y)],
+                &lower,
+            )?);
+        }
+        for (a, b) in chords::<T>(lp) {
+            accumulate(sph_lines(fs, &a, &b, &lower)?);
+        }
+    }
+    Some(totals)
+}
+
+/// The orientation flux of a sphere face: the integral of `S.(S_u x S_v)`
+/// over it, `S` in absolute coordinates (as `face_flux`).
+pub(super) fn sphere_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
+    let Surface::Sphere { frame: f, radius } = &face.surface else {
+        return None;
+    };
+    let fr = frame::<T>(f);
+    let terms = sphere_terms(&fr, *radius, &fr.o);
+    // S.N = 3 times the volume integrand.
+    let flux = scaled(&terms[0], &c(3.0));
+    sphere_face(face, loops, &[flux])?.pop()
+}
+
 /// The fourteen face integrals over the face region (loops carry its
 /// orientation, as in `face_flux`), relative to `reference`.
 fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Option<[T; TERMS]> {
@@ -420,6 +600,12 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
                     accumulate(values.try_map_all()?);
                 }
             }
+        }
+        Surface::Sphere { frame: f, radius } => {
+            let fr = frame::<T>(f);
+            let d = vsub(&fr.o, reference);
+            let terms = sphere_terms(&fr, *radius, &d);
+            accumulate(sphere_face(face, loops, &terms)?.try_into().ok()?);
         }
         Surface::Cylinder { frame: f, radius }
         | Surface::Cone {

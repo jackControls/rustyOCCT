@@ -87,3 +87,17 @@ cone_pole_missing	loop_without_face:loop slot 2;winding_mismatch:loop 0.0
 cone_winding_twice	uv_gap:use 0.0.0;winding_mismatch:loop 0.0
 cone_right_angle	degenerate_surface:face 0
 cone_lateral_pcurve_shift	pcurve_off_edge:use 0.0.0
+sphere_whole	
+sphere_upper	
+sphere_lower	
+sphere_zone	
+sphere_rotated	
+sphere_far	
+sphere_pole_wrong_side	pole_off_apex:loop 0.1
+sphere_pole_off_surface	vertex_loop_off_surface:loop 0.1
+sphere_pole_missing	loop_without_face:loop slot 2;winding_mismatch:loop 0.0
+sphere_winding_twice	uv_gap:use 0.0.0;winding_mismatch:loop 0.0
+sphere_zero_radius	degenerate_surface:face 0
+sphere_whole_reversed	shell_orientation:shell 0
+sphere_ring_pcurve_shift	pcurve_off_edge:use 0.0.0
+sphere_whole_vertex_loop	

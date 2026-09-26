@@ -5,7 +5,8 @@
 //! bijectively, parent by parent; counts and roles follow the profile. The
 //! same bytes also make a cone (S3 of REVIEW_NOTES.md): its entities follow
 //! the meridian (identity_reference.cone_entities), and rebuilding,
-//! stretching and rigid motion keep its ids.
+//! stretching and rigid motion keep its ids. So do a sphere's or zone's.
+
 use libfuzzer_sys::arbitrary::{Result, Unstructured};
 use rusty_occt::history::History;
 use rusty_occt::identity::{
@@ -57,6 +58,7 @@ fn encode(d: &Derivation) -> Vec<u8> {
         Role::CutEdge,
         Role::CutVertex,
         Role::Apex,
+        Role::Pole,
     ];
     out.push(roles.iter().position(|r| *r == d.role).unwrap() as u8 + 1);
     out.extend(d.ordinal.to_le_bytes());
@@ -356,6 +358,124 @@ pub(crate) fn cone_spec(u: &mut Unstructured) -> Result<Option<ConeSpec>> {
     }))
 }
 
+/// A sphere or zone of `Solid::sphere_with`, with rigid motions.
+pub(crate) struct SphereSpec {
+    pub(crate) tolerance: Tolerance,
+    pub(crate) operation: OperationId,
+    pub(crate) frame: Frame3,
+    pub(crate) radius: f64,
+    pub(crate) low: f64,
+    pub(crate) high: f64,
+    pub(crate) transforms: Vec<RigidTransform>,
+}
+
+impl SphereSpec {
+    pub(crate) fn build(&self, stretch: f64) -> Option<(Solid, History)> {
+        Solid::sphere_with(
+            self.operation,
+            self.frame,
+            self.radius * stretch,
+            self.low,
+            self.high,
+            self.tolerance,
+        )
+        .ok()
+    }
+}
+
+pub(crate) fn sphere_spec(u: &mut Unstructured) -> Result<Option<SphereSpec>> {
+    let half = std::f64::consts::FRAC_PI_2;
+    let scale = 2f64.powi(u.int_in_range(-8..=8)?);
+    let tolerance = Tolerance::new(1e-9 * scale, 1e-12).unwrap();
+    let radius = scale * (0.2 + unit(u)?);
+    let latitude = |u: &mut Unstructured| -> Result<f64> { Ok(1.4 * unit(u)? - 0.7) };
+    let (low, high) = match u.int_in_range(0..=3)? {
+        0 => (-half, half),
+        1 => (-half, latitude(u)?),
+        2 => (latitude(u)?, half),
+        _ => {
+            let a = latitude(u)?;
+            (a, a + 0.1 + 0.7 * unit(u)?)
+        }
+    };
+    let normal = Vec3::new(2.0 * unit(u)? - 1.0, 2.0 * unit(u)? - 1.0, 0.3 + unit(u)?);
+    let origin = Point3::new(
+        scale * (10.0 * unit(u)? - 5.0),
+        scale * 10.0 * unit(u)?,
+        scale * -3.0 * unit(u)?,
+    );
+    let Ok(frame) = Frame3::new(origin, normal, Vec3::X, tolerance) else {
+        return Ok(None);
+    };
+    let mut transforms = Vec::new();
+    for _ in 0..u.int_in_range(0..=2)? {
+        let axis = Vec3::new(unit(u)? + 0.1, unit(u)? - 0.5, unit(u)? - 0.5);
+        let r = RigidTransform::rotation(Point3::ORIGIN, axis, TAU * unit(u)?).unwrap();
+        let t =
+            RigidTransform::translation(Vec3::new(unit(u)?, unit(u)?, unit(u)?) * (7.0 * scale))
+                .unwrap();
+        transforms.push(r.then(t).unwrap());
+    }
+    Ok(Some(SphereSpec {
+        tolerance,
+        operation: OperationId(u.arbitrary()?),
+        frame,
+        radius,
+        low,
+        high,
+        transforms,
+    }))
+}
+
+fn check_sphere(data: &[u8]) {
+    let half = std::f64::consts::FRAC_PI_2;
+    let mut u = Unstructured::new(data);
+    let Ok(Some(s)) = sphere_spec(&mut u) else {
+        return;
+    };
+    let (solid, _) = s.build(1.0).expect("a sphere within its domain builds");
+    let base = ids(&solid);
+    let t = solid.topology();
+    let poles = usize::from(s.low == -half) + usize::from(s.high == half);
+    let rings = 2 - poles;
+    // A pole is a vertex only when it closes a band; the whole sphere has
+    // none.
+    assert_eq!(t.vertices().len(), usize::from(poles == 1));
+    assert_eq!(t.edges().len(), rings);
+    assert_eq!(t.faces().len(), 1 + rings);
+    let c = t.occt_counts();
+    assert_eq!(
+        (c.vertices, c.edges, c.wires, c.faces, c.shells, c.solids),
+        (2, 3, 1 + rings, 1 + rings, 1, 1)
+    );
+    for (_, d) in base.values() {
+        assert_eq!(d.kind, OperationKind::Revolve);
+        let want = match d.role {
+            Role::Pole if s.low == -half => ProfileElement::Vertex(1),
+            Role::Pole => ProfileElement::Vertex(2),
+            role => meridian_parent(role, 1.0),
+        };
+        assert_eq!(
+            d.parents,
+            vec![Parent::Profile {
+                boundary: 0,
+                element: want,
+            }]
+        );
+    }
+    assert_eq!(ids(&s.build(1.0).unwrap().0), base);
+    if let Some((stretched, _)) = s.build(1.03) {
+        assert_eq!(ids(&stretched), base, "stretching keeps ids");
+    }
+    let mut moved = solid.clone();
+    for transform in &s.transforms {
+        if let Ok((next, _)) = moved.transform_with(OperationId::UNSPECIFIED, *transform) {
+            assert_eq!(ids(&next), base);
+            moved = next;
+        }
+    }
+}
+
 /// The meridian parent every cone entity must have, by role: the rim points
 /// 1 and 2, the radial segments 0 and 2, the slant 1, the boundary.
 fn meridian_parent(role: Role, bottom: f64) -> ProfileElement {
@@ -423,6 +543,7 @@ fn check_cone(data: &[u8]) {
 
 pub fn check_identity(data: &[u8]) {
     check_cone(data);
+    check_sphere(data);
     let mut u = Unstructured::new(data);
     let Ok(Some(s)) = spec(&mut u) else {
         return;

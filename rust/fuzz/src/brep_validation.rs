@@ -13,7 +13,9 @@
 //! resolution, where construction must fail or enclose within it. Mutation
 //! 28 builds a cone or frustum (S3 of REVIEW_NOTES.md) and moves its pole
 //! along a ruling or off the surface, drops the pole, makes the surface
-//! degenerate or shifts a ring's pcurve, as the cone fixtures do.
+//! degenerate or shifts a ring's pcurve, as the cone fixtures do. Mutation
+//! 29 does the same for a whole sphere, a hemisphere or a zone, and turns a
+//! whole sphere inside out.
 use crate::byte;
 use rusty_occt::identity::OperationId;
 use rusty_occt::topology::{
@@ -433,6 +435,159 @@ fn cone(b: &mut Bytes) {
     verify(report(&parts, tolerance), expect);
 }
 
+/// A sphere, hemisphere or zone from `Solid::sphere_with`, valid with
+/// enclosures within the resolution and certified mass properties, then one
+/// mutation with its predicted issues.
+fn sphere(b: &mut Bytes) {
+    let half = std::f64::consts::FRAC_PI_2;
+    let scale = 2.0_f64.powi(i32::from(b.next() % 21) - 10);
+    let tolerance = Tolerance::new(1e-9 * scale, 1e-12).unwrap();
+    let tau = tolerance.linear();
+    let radius = scale * (0.2 + b.unit());
+    let (low, high) = match b.next() % 4 {
+        0 => (-half, half),
+        1 => (-half, 1.4 * b.unit() - 0.7),
+        2 => (1.4 * b.unit() - 0.7, half),
+        _ => {
+            let a = 1.2 * b.unit() - 1.3;
+            (a, a + 0.1 + b.unit())
+        }
+    };
+    let normal = Vec3::new(b.signed(), b.signed(), 0.5 + b.unit());
+    let origin = Point3::new(
+        10.0 * scale * b.signed(),
+        10.0 * scale * b.signed(),
+        10.0 * scale * b.signed(),
+    );
+    let Ok(frame) = Frame3::new(origin, normal, Vec3::X, tolerance) else {
+        return;
+    };
+    let (solid, _) = Solid::sphere_with(
+        OperationId::UNSPECIFIED,
+        frame,
+        radius,
+        low,
+        high,
+        tolerance,
+    )
+    .expect("a sphere zone within its domain builds");
+    let t = solid.topology();
+    assert!(t.check(tolerance).is_empty());
+    for e in t
+        .vertices()
+        .iter()
+        .map(|v| v.enclosure)
+        .chain(t.fins().iter().map(|f| f.enclosure))
+        .chain(t.faces().iter().map(|f| f.enclosure))
+    {
+        let e = e.expect("a builder encloses every entity");
+        assert!(e.bound > 0.0 && e.bound <= tau, "{e:?}");
+    }
+    // The certified volume holds the zone's, pi (R^2 (z2 - z1) - (z2^3 - z1^3) / 3).
+    let height = |a: f64| {
+        if a == half {
+            radius
+        } else if a == -half {
+            -radius
+        } else {
+            radius * a.sin()
+        }
+    };
+    let (z1, z2) = (height(low), height(high));
+    let exact =
+        std::f64::consts::PI * (radius * radius * (z2 - z1) - (z2.powi(3) - z1.powi(3)) / 3.0);
+    let m = t
+        .mass_enclosure()
+        .expect("certified sphere mass properties");
+    assert!(
+        (0.5 * (m.volume[0] + m.volume[1]) - exact).abs() <= 1e-9 * exact,
+        "{m:?} {exact}"
+    );
+    let caps = usize::from(low != -half) + usize::from(high != half);
+    let c = t.occt_counts();
+    assert_eq!(
+        (c.vertices, c.edges, c.wires, c.faces, c.shells, c.solids),
+        (2, 3, 1 + caps, 1 + caps, 1, 1)
+    );
+    let mut parts = parts_of(t);
+    let fi = (0..parts.faces.len())
+        .find(|f| matches!(parts.faces[*f].surface, Surface::Sphere { .. }))
+        .expect("a wall");
+    let loops = parts.faces[fi].loops.clone();
+    let pole = loops
+        .iter()
+        .position(|l| matches!(parts.loops[l.index()], Loop::Vertex(_)));
+    let ring = loops
+        .iter()
+        .position(|l| matches!(parts.loops[l.index()], Loop::Edges { .. }));
+    let axis = frame.normal();
+    let expect = match (b.next() % 6, pole, ring) {
+        (1, Some(li), _) => {
+            // Over the sphere to another point of it: on the surface, off
+            // the band's pole.
+            let Loop::Vertex(v) = parts.loops[loops[li].index()] else {
+                unreachable!("the pole is a vertex loop")
+            };
+            let at = parts.vertices[v.index()].position;
+            let angle = TAU * b.unit();
+            let side = frame.x() * angle.cos() + axis.cross(frame.x()) * angle.sin();
+            let moved = frame.origin() + side * radius;
+            if moved.distance(at) <= 1000.0 * tau {
+                return;
+            }
+            parts.vertices[v.index()].position = moved;
+            parts.vertices[v.index()].enclosure = Some(Enclosure::computed(tau));
+            Expect::Exactly(vec![format!("pole_off_apex:loop {fi}.{li}")])
+        }
+        (2, Some(li), _) => {
+            let Loop::Vertex(v) = parts.loops[loops[li].index()] else {
+                unreachable!("the pole is a vertex loop")
+            };
+            let vertex = &mut parts.vertices[v.index()];
+            vertex.position = vertex.position + axis * (1000.0 * tau);
+            vertex.enclosure = Some(Enclosure::computed(tau));
+            Expect::Contains(
+                vec![format!("vertex_loop_off_surface:loop {fi}.{li}")],
+                vec![],
+            )
+        }
+        (3, Some(li), Some(ring)) => {
+            let slot = loops[li].index();
+            parts.faces[fi].loops.remove(li);
+            let ring = if ring > li { ring - 1 } else { ring };
+            Expect::Contains(
+                vec![
+                    format!("loop_without_face:loop slot {slot}"),
+                    format!("winding_mismatch:loop {fi}.{ring}"),
+                ],
+                vec![],
+            )
+        }
+        (4, _, _) => {
+            let Surface::Sphere { radius, .. } = &mut parts.faces[fi].surface else {
+                unreachable!("the wall is a sphere")
+            };
+            *radius = 0.0;
+            Expect::Contains(vec![format!("degenerate_surface:face {fi}")], vec![])
+        }
+        (5, _, Some(ring)) => {
+            let Loop::Edges { fins, .. } = &parts.loops[loops[ring].index()] else {
+                unreachable!("a ring loop")
+            };
+            let fin = &mut parts.fins[fins[0].index()];
+            fin.pcurve = shift_v(&fin.pcurve, 1000.0 * tau / radius);
+            Expect::Contains(vec![format!("pcurve_off_edge:use {fi}.{ring}.0")], vec![])
+        }
+        (5, _, None) => {
+            // A whole sphere turned inside out.
+            parts.faces[fi].sense = Orientation::Reversed;
+            Expect::Exactly(vec!["shell_orientation:shell 0".to_string()])
+        }
+        _ => Expect::Valid,
+    };
+    verify(report(&parts, tolerance), expect);
+}
+
 fn verify(got: Vec<String>, expect: Expect) {
     match expect {
         Expect::Valid => assert_eq!(got, Vec::<String>::new()),
@@ -457,13 +612,17 @@ fn verify(got: Vec<String>, expect: Expect) {
 
 pub fn check_brep_validation(data: &[u8]) {
     let mut b = Bytes(data, 0);
-    let mutation = b.next() % 29;
+    let mutation = b.next() % 30;
     if mutation == 27 {
         far_prism(&mut b);
         return;
     }
     if mutation == 28 {
         cone(&mut b);
+        return;
+    }
+    if mutation == 29 {
+        sphere(&mut b);
         return;
     }
     if mutation == 16 {

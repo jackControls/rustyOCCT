@@ -66,6 +66,14 @@ pub enum Surface {
         r: f64,
         a: f64,
     },
+    /// `Geom_SphericalSurface` of radius `r` about `p`.
+    Sphere {
+        p: [f64; 3],
+        n: [f64; 3],
+        x: [f64; 3],
+        y: [f64; 3],
+        r: f64,
+    },
     Other(&'static str),
 }
 
@@ -439,8 +447,14 @@ fn surface(t: &mut Tokens) -> Result<Surface, BrepError> {
             }
         }
         4 => {
-            t.skip_reals(13)?;
-            Surface::Other("SphericalSurface")
+            let v = t.reals::<13>()?;
+            Surface::Sphere {
+                p: [v[0], v[1], v[2]],
+                n: [v[3], v[4], v[5]],
+                x: [v[6], v[7], v[8]],
+                y: [v[9], v[10], v[11]],
+                r: v[12],
+            }
         }
         5 => {
             t.skip_reals(14)?;

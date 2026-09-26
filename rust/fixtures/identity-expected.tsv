@@ -2454,3 +2454,28 @@ cone_frustum_transformed	b4472683955df6aacd4d2207c3053d06 face start_cap 0 P0.s0
 cone_frustum_transformed	cf58393275cd6664a5e9b2037d113ce0 edge bottom_edge 0 P0.v1 ring start
 cone_frustum_transformed	da89e15e6d98f93bf81397790e95953c edge top_edge 0 P0.v2 ring end
 cone_frustum_transformed	f39be5374e5fb2a7460c6bdad8b1ff55 face wall 0 P0.s1 wall
+sphere_whole	24cc241947a2ef7721178e8ac7bfaffd face wall 0 P0.s1 wall
+sphere_whole	60d613f70a6f104643a9aeec950d995f region region 0 P0.b0 region
+sphere_upper	008878146f10a33480f4d4b36c1eed88 edge bottom_edge 0 P0.v1 ring start
+sphere_upper	24cc241947a2ef7721178e8ac7bfaffd face wall 0 P0.s1 wall
+sphere_upper	5e4f22aafdc1be79a7d3ca42dd7473b2 vertex pole 0 P0.v2 pole end
+sphere_upper	60d613f70a6f104643a9aeec950d995f region region 0 P0.b0 region
+sphere_upper	e57765658ea1337aa85844b7b212edae face start_cap 0 P0.s0 cap start
+sphere_lower	09bc8915b007d1694f61f9cd65a74aed edge top_edge 0 P0.v2 ring end
+sphere_lower	2d8056bab1ede1d0e0ab0b687d95435c face end_cap 0 P0.s2 cap end
+sphere_lower	7dba6c939bf91af63d0972b17084ce78 face wall 0 P0.s1 wall
+sphere_lower	af2a0fe159e74ea91e225796d34f00f8 vertex pole 0 P0.v1 pole start
+sphere_lower	d6c54e8b711ff771b2a231b4758fe052 region region 0 P0.b0 region
+sphere_zone	09bc8915b007d1694f61f9cd65a74aed edge top_edge 0 P0.v2 ring end
+sphere_zone	2d8056bab1ede1d0e0ab0b687d95435c face end_cap 0 P0.s2 cap end
+sphere_zone	431916ea48130a8eabc05b76beda8cd5 edge bottom_edge 0 P0.v1 ring start
+sphere_zone	7dba6c939bf91af63d0972b17084ce78 face wall 0 P0.s1 wall
+sphere_zone	8f021472e4bb30a4ab944059e9e26cff face start_cap 0 P0.s0 cap start
+sphere_zone	d6c54e8b711ff771b2a231b4758fe052 region region 0 P0.b0 region
+sphere_transformed	1d5f983808fde34e2e2dd379f22ac2fa edge top_edge 0 P0.v2 ring end
+sphere_transformed	86ad146e0748c816593c4e674ccb19a7 face wall 0 P0.s1 wall
+sphere_transformed	a89d47963f00c51081085f7006622adb vertex pole 0 P0.v1 pole start
+sphere_transformed	d6e72a46f154013bb59ab5b03fbaa4c3 face end_cap 0 P0.s2 cap end
+sphere_transformed	ea8f51edf2dafe86986bc380cb367409 region region 0 P0.b0 region
+sphere_whole_transformed	86ad146e0748c816593c4e674ccb19a7 face wall 0 P0.s1 wall
+sphere_whole_transformed	ea8f51edf2dafe86986bc380cb367409 region region 0 P0.b0 region

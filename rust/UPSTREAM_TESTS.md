@@ -111,16 +111,18 @@ group, and stale success records are removed before each run.
 | `bugs/modalg_7/bug29333_2` | Unsupported | Pass | Face split by edges, rebuilt and queried with `modified` |
 | `bugs/modalg_1/buc60684` | Unsupported | Viewer skipped | Restores a face and runs `prism` without `Copy`; needs the dataset |
 | `bugs/modalg_6/bug27264_1` | Pass | Pass | Restores a box: `checknbshapes`, `checkprops -s`, `checkshape`; needs the dataset |
+| `bugs/modalg_6/bug27264_2` | Pass | Pass | Restores a whole sphere: `checknbshapes`, `checkprops -s`, `checkshape`; needs the dataset (S3) |
 | `bugs/moddata_1/buc60769` | Viewer skipped | Viewer skipped | Restores a solid: `checkshape`; needs the dataset |
 | Derived `prism_history_rectangle` | Pass | Pass | Prism history: `generated`, `modified`, `isdeleted` for edges, vertices and the face |
 | Derived `prism_history_reversed_triangle` | Pass | Pass | Prism history against a clockwise profile's normal |
 | Derived `pcylinder_counts` | Pass | Pass | Seamless cylinder through the count synthesizer: `checkshape`, `checknbshapes`, volume, area and per-use length |
+| Derived `psphere_counts` | Pass | Pass | Spheres through the count synthesizer: a whole sphere (no loops; OCCT's seam, two pole vertices and degenerated edges), a hemisphere and a zone, with `checkshape`, `checknbshapes`, volume, area and per-use length (S3) |
 | Derived `pcone_counts` | Pass | Pass | Cones through the count synthesizer: an apex cone, a frustum and a base apex, each with `checkshape`, `checknbshapes`, volume, area and per-use length (S3) |
 | Derived `explode_selector` | Pass | Pass | Native selector: a box's faces and edges and a cylinder's faces and rings picked by OCCT index, checked by area, length and centre of gravity; the seam pick is lost |
 
-There are **four original geometry tests passing on both backends** and one
+There are **five original geometry tests passing on both backends** and one
 more evaluated on both with its image commands recorded (`buc60769`).
-The five derived cases are counted separately (see below).
+The six derived cases are counted separately (see below).
 The 23 bridge self-tests are separate infrastructure checks; they do not count
 as more upstream coverage. The existing 66-solid / 2,292-classification native
 oracle corpus supplies much broader prism geometry checks independently.
@@ -297,12 +299,12 @@ search patterns; the ledger's are the definition from now on.
 | Status | Assertions |
 | --- | ---: |
 | model-independent | 22,920 |
-| mapped-and-verified | 1 |
-| lost | 12,845 |
+| mapped-and-verified | 2 |
+| lost | 12,844 |
 
 | Lost because | Kind | Assertions |
 | --- | --- | ---: |
-| count synthesizer | mapping unverified | 5,399 |
+| count synthesizer | mapping unverified | 5,398 |
 | per-use length synthesis | mapping unverified | 1,975 |
 | native selector | mapping unverified | 1,578 |
 | section wire and vertex counts follow OCCT's splitting | no mapping | 1,348 |
@@ -314,9 +316,10 @@ search patterns; the ledger's are the definition from now on.
 | locations are OCCT structure | no mapping | 5 |
 | per-edge deviations follow OCCT's edges | no mapping | 5 |
 
-The one mapped-and-verified assertion is `bug27264_1`'s `checknbshapes`: a
-restored box through the count synthesizer, confirmed by native DRAW on the
-same case. The other original cases passing on both backends make only
+The two mapped-and-verified assertions are `bug27264_1`'s and
+`bug27264_2`'s `checknbshapes`: a restored box and, since the sphere (S3), a
+restored whole sphere, both through the count synthesizer and confirmed by
+native DRAW on the same case. The other original cases passing on both backends make only
 model-independent assertions. Each mapping is also confirmed natively on a
 derived case (`mappings_confirmed_natively` in the report: the count
 synthesizer and per-use length on `pcylinder_counts`, the selector on
@@ -358,4 +361,6 @@ After the cone (S3), six of these cases no longer report cones. None
 evaluates yet: of the two native DRAW evaluates, `bug485` now needs only
 tori and `bug437` B-spline curves and a free face; `bug497_2` restores
 completely and then needs `bcut`; the other three also need B-spline or
-revolution surfaces.
+revolution surfaces. After the sphere, `bug27264_2` (a restored whole
+sphere) passes on both backends and is registered; spheres no longer
+appear among the unsupported constructs.
