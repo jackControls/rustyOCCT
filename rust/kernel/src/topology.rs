@@ -237,6 +237,14 @@ pub enum Surface {
         frame: Frame3,
         radius: f64,
     },
+    /// `O + (radius + v sin a)(cos u x + sin u y) + v cos a n` with `a` the
+    /// half angle, `0 < |a| < pi/2`: v runs along the generatrix, as in
+    /// OCCT's `Geom_ConicalSurface`, and the apex is at `v = -radius / sin a`.
+    Cone {
+        frame: Frame3,
+        radius: f64,
+        half_angle: f64,
+    },
 }
 
 impl Surface {
@@ -246,13 +254,36 @@ impl Surface {
             Self::Cylinder { frame, radius } => {
                 frame.point(Point2::new(radius * uv.x.cos(), radius * uv.x.sin()), uv.y)
             }
+            Self::Cone {
+                frame,
+                radius,
+                half_angle,
+            } => {
+                let rho = radius + uv.y * half_angle.sin();
+                frame.point(
+                    Point2::new(rho * uv.x.cos(), rho * uv.x.sin()),
+                    uv.y * half_angle.cos(),
+                )
+            }
         }
     }
+    /// The unit normal of the parametrization, `S_u x S_v` normalized; on a
+    /// cone, for the nappe where `radius + v sin a` is positive.
     pub fn normal(&self, uv: Point2) -> Vec3 {
         match self {
             Self::Plane(frame) => frame.normal(),
             Self::Cylinder { frame, .. } => frame.x() * uv.x.cos() + frame.y() * uv.x.sin(),
+            Self::Cone {
+                frame, half_angle, ..
+            } => {
+                let radial = frame.x() * uv.x.cos() + frame.y() * uv.x.sin();
+                radial * half_angle.cos() - frame.normal() * half_angle.sin()
+            }
         }
+    }
+    /// Periodic in u (an angle): cylinders and cones.
+    pub fn is_periodic(&self) -> bool {
+        !matches!(self, Self::Plane(_))
     }
 }
 
@@ -781,11 +812,13 @@ impl Topology {
     /// The counts OCCT's `nbshapes` would report for this body, synthesized
     /// by rule (TOPOLOGY_MODEL.md, T2): each face with loops winding a
     /// periodic direction gets one seam edge per such direction, and each
-    /// ring edge those loops use gets one seam vertex; a face's wound loops
-    /// form one wire and every other edge loop its own wire; shells and
-    /// solids are those of solid regions.
+    /// ring edge those loops use gets one seam vertex; a cone face's pole
+    /// gets one degenerated edge (its vertex is the pole's); a face's wound
+    /// loops form one wire and every other edge loop its own wire; shells
+    /// and solids are those of solid regions.
     pub fn occt_counts(&self) -> OcctCounts {
         let mut seams = 0;
+        let mut degenerate = 0;
         let mut seam_vertices = std::collections::BTreeSet::new();
         let mut wires = 0;
         for face in &self.faces {
@@ -809,6 +842,10 @@ impl Topology {
             }
             seams += wound.iter().filter(|w| **w).count();
             wires += usize::from(wound.iter().any(|w| *w));
+            // OCCT closes a cone's band at the apex with a degenerated edge.
+            if validate::pole_position(face, &self.loops).is_some() {
+                degenerate += 1;
+            }
         }
         let solid: Vec<&Region> = self
             .regions
@@ -817,7 +854,7 @@ impl Topology {
             .collect();
         OcctCounts {
             vertices: self.vertices.len() + seam_vertices.len(),
-            edges: self.edges.len() + seams,
+            edges: self.edges.len() + seams + degenerate,
             wires,
             faces: self.faces.len(),
             shells: solid.iter().map(|r| r.shells.len()).sum(),

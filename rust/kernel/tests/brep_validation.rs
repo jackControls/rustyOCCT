@@ -44,7 +44,7 @@ fn complete_issue_sets_match_the_independent_oracle() {
         checked += 1;
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
-    assert_eq!((checked, valid), (expected.len(), 27));
+    assert_eq!((checked, valid), (expected.len(), 33));
 }
 
 /// Measured enclosures (M5) of every valid case: never below the reference's
@@ -135,7 +135,7 @@ fn measured_enclosures_lie_between_the_reference_gap_and_its_declared_bound() {
         }
     }
     assert_eq!(compared, lows.values().map(Vec::len).sum::<usize>());
-    assert_eq!(lows.len(), 27);
+    assert_eq!(lows.len(), 33);
     // The gaps moved half the resolution compare without the allowance
     // mattering: a vertex, a cap fin, and a side fin with its face.
     assert!(strict >= 4, "{strict}");

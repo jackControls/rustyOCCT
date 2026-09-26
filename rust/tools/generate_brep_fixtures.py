@@ -14,7 +14,7 @@ from pathlib import Path
 
 from cell_reference import declare, encode as encode_cell, gap_bounds, to_cell, validate as validate_cell
 
-from brep_reference import (Arc2, Arc3, Cylinder, Edge, Face, Frame, Line2, Line3, Model,
+from brep_reference import (Arc2, Arc3, Cone, Cylinder, Edge, Face, Frame, Line2, Line3, Model,
                             Plane, TAU, Use, atan2_rn, cos_rn, encode, hypot_rn, number, sin_rn,
                             validate)
 
@@ -342,6 +342,49 @@ def flip_loop_geometry(m, fi, li):
             u.pcurve = Arc2(p.center, p.radius, math.pi-p.start, -p.sweep)
 
 
+def cone_cell(name, origin, normal, hint, r1, r2, h, tolerance=1e-7):
+    """A cone or frustum as the kernel's cone builder makes it, in the cell
+    model: the lateral face on a Cone surface (v along the generatrix from
+    the base), ring edges bounding discs at nonzero ends, and a pole (a
+    vertex loop at the apex) at a zero-radius end."""
+    from cell_reference import Cell, CEdge, CFace, Fin as CFin, Loop as CLoop, Region, Shell
+    c = Cell(name, tolerance)
+    frame = Frame(origin, normal, hint)
+    from brep_reference import axes
+    o, x, y, n = [tuple(float(v) for v in a) for a in axes(frame)]
+    length = hypot_rn(h, r2-r1)
+    angle = atan2_rn(r2-r1, h)
+    top = tuple(o[i]+h*n[i] for i in range(3))
+    lateral = CFace(Cone(frame, r1, angle), True, [], 0, 1)
+    faces = [lateral]
+    for r, centre, up, v in ((r1, o, False, 0.0), (r2, top, True, length)):
+        if r == 0:
+            c.vertices.append(centre)
+            c.loops.append(CLoop([], 0, len(c.vertices)-1))
+            lateral.loops.append(len(c.loops)-1)
+            continue
+        e = len(c.edges)
+        c.edges.append(CEdge(None, None, Arc3(Frame(centre, normal, hint), r, 0.0, TAU)))
+        disc = CFace(Plane(Frame(centre, normal if up else tuple(-v for v in n), hint)), True, [], 0, 1)
+        k = len(c.fins)
+        if up:
+            c.fins.append(CFin(e, True, Arc2((0.0, 0.0), r, 0.0, TAU)))
+            c.fins.append(CFin(e, False, Line2((TAU, v), (0.0, v))))
+        else:
+            c.fins.append(CFin(e, False, Arc2((0.0, 0.0), r, -TAU, TAU)))
+            c.fins.append(CFin(e, True, Line2((0.0, v), (TAU, v))))
+        c.edges[e].fins = [k, k+1]
+        c.loops.append(CLoop([k], 0))
+        disc.loops.append(len(c.loops)-1)
+        c.loops.append(CLoop([k+1], -1 if up else 1))
+        lateral.loops.append(len(c.loops)-1)
+        faces.append(disc)
+    c.faces = faces
+    c.shells = [Shell(1, [(f, 'F') for f in range(len(faces))]), Shell(0, [(f, 'B') for f in range(len(faces))])]
+    c.regions = [Region('void', [1]), Region('solid', [0])]
+    return c
+
+
 def cell_cases(bases):
     """Cell-model cases with no seamed form: the model's own failure modes
     (TOPOLOGY_MODEL.md) and seamless valid shapes. They have no OCCT rows."""
@@ -454,6 +497,47 @@ def cell_cases(bases):
     cell('box', 'box_face_enclosure_exceeds_resolution',
          lambda c: c.enclosures.__setitem__(('f', 0), 2*c.tolerance))
     cell('box', 'box_vertex_enclosure_negative', lambda c: c.enclosures.__setitem__(('v', 1), -c.tolerance))
+
+    # Cones (S3): poles at either end, frustums, rotated and far copies, and
+    # the pole's own failure modes.
+    z, x = (0.0, 0.0, 1.0), (1.0, 0.0, 0.0)
+    cones = {
+        'cone_apex': cone_cell('cone_apex', (0.0, 0.0, 0.0), z, x, 2.0, 0.0, 3.0),
+        'cone_apex_at_base': cone_cell('cone_apex_at_base', (0.0, 0.0, 0.0), z, x, 0.0, 1.5, 2.0),
+        'cone_frustum': cone_cell('cone_frustum', (1.0, 2.0, 3.0), z, x, 2.0, 1.0, 3.0),
+        'cone_widening': cone_cell('cone_widening', (0.0, 0.0, 0.0), z, x, 1.0, 2.5, 0.5),
+        'cone_rotated': cone_cell('cone_rotated', (0.5, -1.0, 2.0), (0.3, -0.4, 0.8), (1.0, 0.2, 0.0), 1.25, 0.0, 2.0),
+        'cone_far': cone_cell('cone_far', (10000.0, -20000.0, 5000.0), z, x, 2.0, 0.5, 3.0),
+    }
+    out.extend(cones.values())
+
+    def cone_case(base, name, change):
+        c = copy.deepcopy(cones[base])
+        c.name = name
+        change(c)
+        out.append(c)
+
+    def pole(c):
+        return next(l for l in c.loops if l.vertex is not None)
+
+    def move_pole(offset):
+        def change(c):
+            v = pole(c).vertex
+            c.vertices[v] = tuple(a+b for a, b in zip(c.vertices[v], offset))
+        return change
+    # Along the generatrix (still on the surface), and radially off it.
+    cone_case('cone_apex', 'cone_pole_off_apex', move_pole((2.0*1e-3/3.605551275463989, 0.0, -3.0*1e-3/3.605551275463989)))
+    cone_case('cone_apex', 'cone_pole_off_surface', move_pole((1e-3, 0.0, 0.0)))
+    cone_case('cone_apex', 'cone_pole_missing',
+              lambda c: c.faces[0].loops.remove(next(l for l in c.faces[0].loops if c.loops[l].vertex is not None)))
+    cone_case('cone_frustum', 'cone_winding_twice', lambda c: setattr(c.loops[c.faces[0].loops[0]], 'winding', 2))
+    cone_case('cone_apex', 'cone_right_angle', lambda c: setattr(c.faces[0].surface, 'half_angle', math.pi/2))
+
+    def shift_lateral(c):
+        k = c.loops[c.faces[0].loops[0]].fins[0]
+        p = c.fins[k].pcurve
+        c.fins[k].pcurve = Line2((p.start[0], p.start[1]+1e-3), (p.end[0], p.end[1]+1e-3))
+    cone_case('cone_frustum', 'cone_lateral_pcurve_shift', shift_lateral)
     return out
 
 

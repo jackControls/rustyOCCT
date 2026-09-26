@@ -174,8 +174,8 @@ fn pcurve_record(
                 num(*radius)
             )
         }
-        (Surface::Cylinder { .. }, Curve2::CircularArc { .. }) => {
-            return Err(unwritable("an arc pcurve on a cylinder"))
+        (Surface::Cylinder { .. } | Surface::Cone { .. }, Curve2::CircularArc { .. }) => {
+            return Err(unwritable("an arc pcurve on a cylinder or cone"))
         }
     })
 }
@@ -387,6 +387,9 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
     }
     // Surfaces.
     for face in t.faces() {
+        if matches!(face.surface, Surface::Cone { .. }) {
+            return Err(unwritable("a cone"));
+        }
         surfaces.push(match &face.surface {
             Surface::Plane(f) => format!(
                 "1 {} {} {} {}",
@@ -403,6 +406,7 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
                 nums(&f.normal().cross(f.x()).to_array()),
                 num(*radius)
             ),
+            Surface::Cone { .. } => unreachable!("refused above"),
         });
     }
     // Edge geometry and pcurves per face.

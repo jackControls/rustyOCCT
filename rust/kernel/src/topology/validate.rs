@@ -86,6 +86,8 @@ pub enum IssueKind {
     EnclosureExceedsResolution,
     EnclosureUnsound,
     UncertifiedEnclosure,
+    // Poles (REVIEW_NOTES.md S3).
+    PoleOffApex,
 }
 
 impl IssueKind {
@@ -149,6 +151,7 @@ impl IssueKind {
             EnclosureExceedsResolution => "enclosure_exceeds_resolution",
             EnclosureUnsound => "enclosure_unsound",
             UncertifiedEnclosure => "uncertified_enclosure",
+            PoleOffApex => "pole_off_apex",
         }
     }
 }
@@ -350,7 +353,85 @@ fn surface_at<T: Real>(s: &Surface, uv: &V2<T>) -> V3<T> {
             let radial = vadd(&vscale(&fr.x, &rad.mul(&co)), &vscale(&fr.y, &rad.mul(&si)));
             vadd(&vadd(&fr.o, &radial), &vscale(&fr.n, &uv[1]))
         }
+        Surface::Cone {
+            frame: f,
+            radius,
+            half_angle,
+        } => {
+            let fr = frame::<T>(f);
+            let (ca, sa) = T::cos_sin(&c(*half_angle));
+            let (co, si) = cos_sin_i(&uv[0]);
+            let rho = c::<T>(*radius).add(&sa.mul(&uv[1]));
+            let radial = vadd(&vscale(&fr.x, &rho.mul(&co)), &vscale(&fr.y, &rho.mul(&si)));
+            vadd(&vadd(&fr.o, &radial), &vscale(&fr.n, &ca.mul(&uv[1])))
+        }
     }
+}
+
+/// A cone's apex parameter `v = -radius / sin a`; `None` for another surface
+/// or when the division is not certain.
+fn apex_v<T: Real>(s: &Surface) -> Option<T> {
+    let Surface::Cone {
+        radius, half_angle, ..
+    } = s
+    else {
+        return None;
+    };
+    let (_, sa) = T::cos_sin(&c(*half_angle));
+    c::<T>(*radius).neg().div(&sa)
+}
+
+/// A cone's apex.
+fn apex_point<T: Real>(s: &Surface) -> Option<V3<T>> {
+    let Surface::Cone {
+        frame: f,
+        half_angle,
+        ..
+    } = s
+    else {
+        return None;
+    };
+    let fr = frame::<T>(f);
+    let (ca, _) = T::cos_sin(&c(*half_angle));
+    Some(vadd(&fr.o, &vscale(&fr.n, &ca.mul(&apex_v::<T>(s)?))))
+}
+
+/// The length per unit of u at parameter v: a cylinder's radius, a cone's
+/// `radius + v sin a`.
+fn u_scale<T: Real>(s: &Surface, v: &T) -> Option<T> {
+    match s {
+        Surface::Plane(_) => None,
+        Surface::Cylinder { radius, .. } => Some(c(*radius)),
+        Surface::Cone {
+            radius, half_angle, ..
+        } => {
+            let (_, sa) = T::cos_sin(&c(*half_angle));
+            Some(c::<T>(*radius).add(&sa.mul(v)))
+        }
+    }
+}
+
+/// The position in `face.loops` of a cone face's pole: its first vertex loop,
+/// when its edge loops wind once in total, so the pole closes the band at
+/// the apex (REVIEW_NOTES.md S3).
+pub(crate) fn pole_position(face: &Face, loops: &[Loop]) -> Option<usize> {
+    if !matches!(face.surface, Surface::Cone { .. }) {
+        return None;
+    }
+    let total: i32 = face
+        .loops
+        .iter()
+        .filter_map(|l| match loops.get(l.0) {
+            Some(Loop::Edges { winding, .. }) => Some(winding[0]),
+            _ => None,
+        })
+        .sum();
+    if total.abs() != 1 {
+        return None;
+    }
+    face.loops
+        .iter()
+        .position(|l| matches!(loops.get(l.0), Some(Loop::Vertex(_))))
 }
 
 /// Certified three-valued comparison of a squared quantity with tol^2.
@@ -589,6 +670,47 @@ fn sub_use<T: Real>(h: &mut Harmonic<T>, s: &Surface, p: &Curve2) -> bool {
             true
         }
         (Surface::Cylinder { .. }, Curve2::CircularArc { .. }) => false,
+        // Harmonic along a ruling (du = 0) or a parallel (dv = 0) only.
+        (
+            Surface::Cone {
+                frame: f,
+                radius,
+                half_angle,
+            },
+            Curve2::LineSegment { start, end },
+        ) => {
+            let fr = frame::<T>(f);
+            let (ca, sa) = T::cos_sin(&c(*half_angle));
+            let (du, dv) = (r(end.x) - r(start.x), r(end.y) - r(start.y));
+            let zero = int(0);
+            let v0 = c::<T>(start.y);
+            let rho0 = c::<T>(*radius).add(&sa.mul(&v0));
+            if du == zero {
+                let (co, si) = T::cos_sin(&c(start.x));
+                let e = vadd(&vscale(&fr.x, &co), &vscale(&fr.y, &si));
+                let base = vadd(
+                    &fr.o,
+                    &vadd(&vscale(&e, &rho0), &vscale(&fr.n, &ca.mul(&v0))),
+                );
+                let dvt = c::<T>(end.y).sub(&v0);
+                let slope = vadd(&vscale(&e, &sa.mul(&dvt)), &vscale(&fr.n, &ca.mul(&dvt)));
+                h.affine(&base, &slope, false);
+                true
+            } else if dv == zero {
+                h.affine(&vadd(&fr.o, &vscale(&fr.n, &ca.mul(&v0))), &zero3(), false);
+                h.rotating(
+                    &c(start.x),
+                    &du,
+                    &vscale(&fr.x, &rho0),
+                    &vscale(&fr.y, &rho0),
+                    false,
+                );
+                true
+            } else {
+                false
+            }
+        }
+        (Surface::Cone { .. }, Curve2::CircularArc { .. }) => false,
     }
 }
 
@@ -664,6 +786,17 @@ fn surface_valid(s: &Surface, tol: &R) -> bool {
     match s {
         Surface::Plane(_) => true,
         Surface::Cylinder { radius, .. } => radius.is_finite() && r(*radius) > *tol,
+        // A cone may be given at its apex (radius 0); its angle is strictly
+        // between 0 and a right angle in magnitude.
+        Surface::Cone {
+            radius, half_angle, ..
+        } => {
+            radius.is_finite()
+                && *radius >= 0.0
+                && half_angle.is_finite()
+                && *half_angle != 0.0
+                && half_angle.abs() < std::f64::consts::FRAC_PI_2
+        }
     }
 }
 
@@ -728,8 +861,8 @@ fn vertex_gap<T: Real>(curve: &Curve3, vertex: [f64; 3], t: f64, tol2: &T) -> Ve
 fn uv_gap2<T: Real>(s: &Surface, p: &Curve2, next: &Curve2, shift: f64) -> T {
     let (a, b) = (pcurve_at::<T>(p, 1.0), pcurve_at::<T>(next, 0.0));
     let mut du = a[0].sub(&b[0].add(&c(shift)));
-    if let Surface::Cylinder { radius, .. } = s {
-        du = du.mul(&c(*radius));
+    if let Some(scale) = u_scale::<T>(s, &a[1]) {
+        du = du.mul(&scale);
     }
     let dv = a[1].sub(&b[1]);
     du.square().add(&dv.square())
@@ -739,28 +872,54 @@ fn uv_gap<T: Real>(s: &Surface, p: &Curve2, next: &Curve2, shift: f64, tol2: &T)
     within(&uv_gap2::<T>(s, p, next, shift), tol2)
 }
 
-/// Squared distance from a point to a surface.
-fn surface_gap2<T: Real>(s: &Surface, p: [f64; 3]) -> T {
-    let (fr, rel) = match s {
-        Surface::Plane(f) | Surface::Cylinder { frame: f, .. } => {
-            let fr = frame::<T>(f);
-            let rel = vsub(&v3::<T>(p), &fr.o);
-            (fr, rel)
-        }
+/// Squared distances from a point to the surface's pieces; the distance to
+/// the surface is the smallest. One piece for a plane or cylinder; for a
+/// cone the two generatrix lines of the meridian half-plane (both nappes):
+/// `r cos a - R cos a - z sin a` and `r cos a + R cos a + z sin a`.
+fn surface_gap2<T: Real>(s: &Surface, p: [f64; 3]) -> Vec<T> {
+    let (Surface::Plane(f) | Surface::Cylinder { frame: f, .. } | Surface::Cone { frame: f, .. }) =
+        s;
+    let fr = frame::<T>(f);
+    let rel = vsub(&v3::<T>(p), &fr.o);
+    let axial = vdot(&rel, &fr.n);
+    let radial = || {
+        let radial = vsub(&rel, &vscale(&fr.n, &axial));
+        vdot(&radial, &radial).sqrt()
     };
     match s {
-        Surface::Plane(_) => vdot(&rel, &fr.n).square(),
-        Surface::Cylinder { radius, .. } => {
-            let axial = vdot(&rel, &fr.n);
-            let radial = vsub(&rel, &vscale(&fr.n, &axial));
-            vdot(&radial, &radial).sqrt().sub(&c(*radius)).square()
+        Surface::Plane(_) => vec![axial.square()],
+        Surface::Cylinder { radius, .. } => vec![radial().sub(&c(*radius)).square()],
+        Surface::Cone {
+            radius, half_angle, ..
+        } => {
+            let (ca, sa) = T::cos_sin(&c(*half_angle));
+            let rc = radial().mul(&ca);
+            let shift = c::<T>(*radius).mul(&ca).add(&axial.mul(&sa));
+            vec![rc.sub(&shift).square(), rc.add(&shift).square()]
         }
     }
 }
 
-/// Distance from a point to a surface within tolerance.
+/// Distance from a point to a surface within tolerance: within when any
+/// piece is, beyond when every piece is.
 fn on_surface<T: Real>(s: &Surface, p: [f64; 3], tol2: &T) -> Verdict {
-    within(&surface_gap2::<T>(s, p), tol2)
+    let verdicts: Vec<Verdict> = surface_gap2::<T>(s, p)
+        .iter()
+        .map(|d2| within(d2, tol2))
+        .collect();
+    if verdicts.contains(&Verdict::Within) {
+        Verdict::Within
+    } else if verdicts.iter().all(|v| *v == Verdict::Beyond) {
+        Verdict::Beyond
+    } else {
+        Verdict::Unknown
+    }
+}
+
+/// Squared distance from a point to a cone's apex.
+fn apex_gap2<T: Real>(s: &Surface, p: [f64; 3]) -> Option<T> {
+    let d = vsub(&v3::<T>(p), &apex_point::<T>(s)?);
+    Some(vdot(&d, &d))
 }
 
 // ------------------------------------------------------------------ enclosures
@@ -818,11 +977,29 @@ pub(crate) fn measure(view: &View) -> Measured {
             match &view.loops[l.0] {
                 Loop::Vertex(v) => {
                     let at = view.vertices[v.0].position.to_array();
-                    let bound = root_bound(
-                        || surface_gap2::<Fast>(&face.surface, at),
-                        || surface_gap2::<I>(&face.surface, at),
-                    );
+                    // The nearest piece of the surface: the smallest bound.
+                    let pieces = surface_gap2::<Fast>(&face.surface, at).len();
+                    let bound = (0..pieces)
+                        .map(|k| {
+                            root_bound(
+                                || surface_gap2::<Fast>(&face.surface, at).swap_remove(k),
+                                || surface_gap2::<I>(&face.surface, at).swap_remove(k),
+                            )
+                        })
+                        .fold(None, |a: Option<f64>, b| match (a, b) {
+                            (Some(a), Some(b)) => Some(a.min(b)),
+                            (a, b) => a.or(b),
+                        });
                     vertices[v.0] = max(vertices[v.0], bound);
+                    // A pole also stays at the apex.
+                    let pole = pole_position(face, view.loops).map(|p| face.loops[p]);
+                    if pole == Some(*l) {
+                        let apex = root_bound(
+                            || apex_gap2::<Fast>(&face.surface, at).unwrap_or(c(f64::INFINITY)),
+                            || apex_gap2::<I>(&face.surface, at).unwrap_or(c(f64::MAX)),
+                        );
+                        vertices[v.0] = max(vertices[v.0], apex);
+                    }
                 }
                 Loop::Edges {
                     fins: list,
@@ -852,11 +1029,10 @@ pub(crate) fn measure(view: &View) -> Measured {
                             None
                         };
                         let w = &view.fins[list[(ui + 1) % list.len()].0];
-                        let shift = match face.surface {
-                            Surface::Cylinder { .. } if ui + 1 == list.len() => {
-                                TAU * f64::from(winding[0])
-                            }
-                            _ => 0.0,
+                        let shift = if face.surface.is_periodic() && ui + 1 == list.len() {
+                            TAU * f64::from(winding[0])
+                        } else {
+                            0.0
                         };
                         let gap = root_bound(
                             || uv_gap2::<Fast>(&face.surface, &u.pcurve, &w.pcurve, shift),
@@ -1135,10 +1311,79 @@ fn line_flux<T: Real>(a: &V2<T>, b: &V2<T>, coeffs: &(T, T, T), plane: bool) -> 
     Some(a[1].mul(&i0).add(&dv.mul(&i1).div(&du)?).neg())
 }
 
+/// On a cone, `S.(S_u x S_v) = rho(v) h(u)` with `rho = R + v sin a` and
+/// `h = A cos u + B sin u + C`; its v-antiderivative from the apex is
+/// `rho^2 / (2 sin a) h(u)`, zero at the pole. This is `-integral of that
+/// du` along a line from a to b, in closed form with the moments
+/// `integral of w^k cos(u0 + w)` and `w^k sin(u0 + w)` for k <= 2; `None`
+/// when du may be zero without being zero.
+fn cone_line_flux<T: Real>(a: &V2<T>, b: &V2<T>, sa: &T, radius: &T, h: &(T, T, T)) -> Option<T> {
+    let (ha, hb, hc) = h;
+    let d = b[0].sub(&a[0]);
+    if d.sign()? == Ordering::Equal {
+        return Some(c(0.0));
+    }
+    let m = b[1].sub(&a[1]).div(&d)?;
+    let rho0 = radius.add(&sa.mul(&a[1]));
+    let (c0, s0) = T::cos_sin(&a[0]);
+    let (c1, s1) = T::cos_sin(&b[0]);
+    // Moments over w in [0, d] of cos(u0 + w) and sin(u0 + w).
+    let jc0 = s1.sub(&s0);
+    let js0 = c0.sub(&c1);
+    let jc1 = d.mul(&s1).add(&c1).sub(&c0);
+    let js1 = d.mul(&c1).neg().add(&s1).sub(&s0);
+    let jc2 = d.square().mul(&s1).sub(&js1.mul(&c(2.0)));
+    let js2 = d.square().mul(&c1).neg().add(&jc1.mul(&c(2.0)));
+    let k = |jc: &T, js: &T, power: T| ha.mul(jc).add(&hb.mul(js)).add(&hc.mul(&power));
+    let k0 = k(&jc0, &js0, d.clone());
+    let k1 = k(&jc1, &js1, d.square().mul(&c(0.5)));
+    let k2 = k(&jc2, &js2, d.square().mul(&d).div(&c(3.0))?);
+    // rho^2 / (2 s) = rho0^2 / (2 s) + rho0 m w + (s m^2 / 2) w^2.
+    let first = rho0.square().div(&sa.mul(&c(2.0)))?.mul(&k0);
+    let second = rho0.mul(&m).mul(&k1);
+    let third = sa.mul(&m.square()).mul(&c(0.5)).mul(&k2);
+    Some(first.add(&second).add(&third).neg())
+}
+
 /// The integral over the face of S.(S_u x S_v) du dv, as -loop integral of
 /// v f(u) du (f does not depend on v), loops closed by chords; their
 /// orientation carries the face's sense.
 fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
+    if let Surface::Cone {
+        frame: f,
+        radius,
+        half_angle,
+    } = &face.surface
+    {
+        let fr = frame::<T>(f);
+        let (ca, sa) = T::cos_sin(&c(*half_angle));
+        let rad = c::<T>(*radius);
+        let h = (
+            ca.mul(&vdot(&fr.o, &fr.x)),
+            ca.mul(&vdot(&fr.o, &fr.y)),
+            ca.mul(&rad).sub(&sa.mul(&vdot(&fr.o, &fr.n))),
+        );
+        let mut total = c::<T>(0.0);
+        for lp in loops {
+            for u in &lp.fins {
+                let Curve2::LineSegment { start, end } = &u.pcurve else {
+                    return None;
+                };
+                let term = cone_line_flux(
+                    &[c(start.x), c(start.y)],
+                    &[c(end.x), c(end.y)],
+                    &sa,
+                    &rad,
+                    &h,
+                )?;
+                total = total.add(&term);
+            }
+            for (a, b) in chords::<T>(lp) {
+                total = total.add(&cone_line_flux(&a, &b, &sa, &rad, &h)?);
+            }
+        }
+        return Some(total);
+    }
     let (plane, coeffs) = match &face.surface {
         Surface::Plane(f) => {
             let fr = frame::<T>(f);
@@ -1155,6 +1400,7 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
                 (rad.mul(&a).neg(), rad.mul(&b), rad.square().mul(&det)),
             )
         }
+        Surface::Cone { .. } => unreachable!("handled above"),
     };
     let mut total = c::<T>(0.0);
     for lp in loops {
@@ -1264,6 +1510,10 @@ fn face_hits<T: Real>(
     d: &[R; 3],
     margin2: &T,
 ) -> Option<u32> {
+    // Rays against cones are not decided yet: the containment is uncertified.
+    if matches!(face.surface, Surface::Cone { .. }) {
+        return None;
+    }
     let refs: Vec<&Lp> = loops.iter().collect();
     let exact = |f: &Frame3| {
         (
@@ -1274,6 +1524,7 @@ fn face_hits<T: Real>(
         )
     };
     match &face.surface {
+        Surface::Cone { .. } => None,
         Surface::Plane(f) => {
             let (o, x, y, _) = exact(f);
             let qv: [R; 3] = std::array::from_fn(|i| &p[i] - &o[i]);
@@ -1693,7 +1944,7 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
             add(&mut issues, K::EmptyFace, En::Face(fi));
             structural_faces.insert(fi);
         }
-        let periodic = matches!(face.surface, Surface::Cylinder { .. });
+        let periodic = face.surface.is_periodic();
         for (li, l) in face.loops.iter().enumerate() {
             let Loop::Edges {
                 fins: list,
@@ -1726,8 +1977,12 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
             }
         }
         if periodic {
+            // Windings balance, except on a cone where one pole (a vertex
+            // loop at the apex) closes a band that winds once.
             let wound: Vec<i32> = resolved[fi].iter().map(|lp| lp.winding).collect();
-            if wound.iter().any(|w| *w != 0) && wound.iter().sum::<i32>() != 0 {
+            let total = wound.iter().sum::<i32>();
+            let poled = total.abs() == 1 && pole_position(face, loops).is_some();
+            if wound.iter().any(|w| *w != 0) && total != 0 && !poled {
                 add(&mut issues, K::WindingMismatch, En::Loop(fi, 0));
                 structural_faces.insert(fi);
             }
@@ -2068,6 +2323,45 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                             bounded(vertex_bound[v.0], tolerance.linear(), decide);
                         enclosure_verdict(&mut issues, bound, En::Vertex(v.0));
                         match verdict {
+                            Verdict::Within if pole_position(face, loops) == Some(li) => {
+                                // A pole must also sit at the apex.
+                                let decide = |th: &Threshold| {
+                                    let apex = |t2: Option<Verdict>| t2.unwrap_or(Verdict::Unknown);
+                                    tiered(
+                                        Verdict::Unknown,
+                                        || {
+                                            apex(
+                                                apex_gap2::<Fast>(&face.surface, at)
+                                                    .map(|d| within(&d, &th.tier::<Fast>().1)),
+                                            )
+                                        },
+                                        || {
+                                            apex(
+                                                apex_gap2::<I>(&face.surface, at)
+                                                    .map(|d| within(&d, &th.tier::<I>().1)),
+                                            )
+                                        },
+                                    )
+                                };
+                                let (verdict, bound) =
+                                    bounded(vertex_bound[v.0], tolerance.linear(), decide);
+                                enclosure_verdict(&mut issues, bound, En::Vertex(v.0));
+                                match verdict {
+                                    Verdict::Within => {}
+                                    Verdict::Beyond => {
+                                        add(&mut issues, K::PoleOffApex, En::Loop(fi, li));
+                                        bad_faces.insert(fi);
+                                    }
+                                    Verdict::Unknown => {
+                                        add(
+                                            &mut issues,
+                                            K::UncertifiedVertexLoop,
+                                            En::Loop(fi, li),
+                                        );
+                                        bad_faces.insert(fi);
+                                    }
+                                }
+                            }
                             Verdict::Within => {}
                             Verdict::Beyond => {
                                 add(&mut issues, K::VertexLoopOffSurface, En::Loop(fi, li));
@@ -2133,7 +2427,7 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
         if !surface_ok[fi] {
             continue;
         }
-        let periodic = matches!(face.surface, Surface::Cylinder { .. });
+        let periodic = face.surface.is_periodic();
         for (li, l) in face.loops.iter().enumerate() {
             let Loop::Edges {
                 fins: list,
@@ -2204,27 +2498,35 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
             .map(|(li, _)| li)
             .zip(resolved[fi].iter())
             .collect();
-        let wound = matches!(face.surface, Surface::Cylinder { .. })
-            && edge_loops.iter().any(|(_, lp)| lp.winding != 0);
+        let wound = face.surface.is_periodic() && edge_loops.iter().any(|(_, lp)| lp.winding != 0);
         if wound {
+            // A pole is the line v = v_apex traversed against the band: it
+            // adds 2 pi W v_apex, W the edge loops' total winding.
+            let pole = pole_position(face, loops).is_some();
+            let turns: i32 = edge_loops.iter().map(|(_, lp)| lp.winding).sum();
+            fn pole_term<T: Real>(s: &Surface, turns: i32) -> Option<T> {
+                let two_pi =
+                    T::from_r(&(pi().midpoint() * int(2))).widen(&(pi().radius() * int(2)));
+                Some(two_pi.mul(&c(f64::from(turns))).mul(&apex_v::<T>(s)?))
+            }
+            fn total<T: Real>(
+                s: &Surface,
+                loops: &[(usize, &Lp)],
+                pole: bool,
+                turns: i32,
+            ) -> Option<T> {
+                let mut sum = loops.iter().try_fold(c::<T>(0.0), |acc, (_, lp)| {
+                    Some(acc.add(&periodic_area::<T>(lp)?))
+                })?;
+                if pole {
+                    sum = sum.add(&pole_term::<T>(s, turns)?);
+                }
+                Some(sum)
+            }
             let total = tiered(
                 None,
-                || {
-                    edge_loops
-                        .iter()
-                        .try_fold(c::<Fast>(0.0), |acc, (_, lp)| {
-                            Some(acc.add(&periodic_area::<Fast>(lp)?))
-                        })?
-                        .sign()
-                },
-                || {
-                    edge_loops
-                        .iter()
-                        .try_fold(c::<I>(0.0), |acc, (_, lp)| {
-                            Some(acc.add(&periodic_area::<I>(lp)?))
-                        })?
-                        .sign()
-                },
+                || total::<Fast>(&face.surface, &edge_loops, pole, turns)?.sign(),
+                || total::<I>(&face.surface, &edge_loops, pole, turns)?.sign(),
             );
             match total {
                 Some(s) if s == want_outer => {}

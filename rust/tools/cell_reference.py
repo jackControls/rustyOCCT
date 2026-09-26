@@ -18,7 +18,8 @@ import copy
 
 import mpmath as mp
 
-from brep_reference import (Arc2, Arc3, cos_rn, sin_rn, Cylinder, Line2, Line3, Plane, TAU, add, axes, cross,
+from brep_reference import (Arc2, Arc3, cos_rn, sin_rn, Cone, Cylinder, Line2, Line3, Plane, TAU, add, apex,
+                            apex_v, axes, cross, periodic, u_scale,
                             curve_point, curve_valid, deviation_bounds, dot, finite, margin_check,
                             mul, norm, number, pcurve_point, pcurve_valid, sub, surface_point,
                             surface_valid, vec)
@@ -117,6 +118,8 @@ def gap_bounds(c):
             if loop.vertex is not None:
                 if 0 <= loop.vertex < len(c.vertices):
                     raise_to(('v', loop.vertex), lambda: surface_distance(f.surface, vec(c.vertices[loop.vertex])))
+                    if pole_loop(c, f) == lid:
+                        raise_to(('v', loop.vertex), lambda: norm(sub(vec(c.vertices[loop.vertex]), apex(f.surface))))
                 continue
             for ui, k in enumerate(loop.fins):
                 if not 0 <= k < len(c.fins):
@@ -127,10 +130,10 @@ def gap_bounds(c):
                 def gap():
                     w = loop.fins[(ui+1) % len(loop.fins)]
                     a, b = pcurve_point(u.pcurve, 1), pcurve_point(c.fins[w].pcurve, 0)
-                    shift = TAU*loop.winding if ui == len(loop.fins)-1 and isinstance(f.surface, Cylinder) else 0
+                    shift = TAU*loop.winding if ui == len(loop.fins)-1 and periodic(f.surface) else 0
                     du, dv = a[0]-b[0]-shift, a[1]-b[1]
-                    if isinstance(f.surface, Cylinder):
-                        du *= f.surface.radius
+                    if periodic(f.surface):
+                        du *= u_scale(f.surface, a[1])
                     return mp.sqrt(du*du+dv*dv)
                 raise_to(('f', fi), gap)
     return out
@@ -151,6 +154,17 @@ def declare(c):
         bound = math.nextafter(float(2*high+mp.mpf(c.tolerance)*mp.mpf(2)**-20), math.inf)
         c.enclosures[key] = min(bound, c.tolerance)
     return c
+
+
+def pole_loop(c, f):
+    """The loop id of a cone face's pole: its first vertex loop, when its edge
+    loops wind once in total (the pole closes the band at the apex)."""
+    if not isinstance(f.surface, Cone):
+        return None
+    edge_loops = [c.loops[l] for l in f.loops if 0 <= l < len(c.loops) and c.loops[l].vertex is None]
+    if abs(sum(l.winding for l in edge_loops)) != 1:
+        return None
+    return next((l for l in f.loops if 0 <= l < len(c.loops) and c.loops[l].vertex is not None), None)
 
 
 # ---------------------------------------------------------------- conversion
@@ -347,6 +361,9 @@ def encode(c):
         loops = ' loops'+''.join(f' {l}' for l in f.loops)
         if isinstance(s, Plane):
             out.append(f'f plane {frame(s.frame)} {o} {f.front} {f.back}{loops}'+enc(('f', fi)))
+        elif isinstance(s, Cone):
+            out.append(f'f cone {frame(s.frame)} {number(s.radius)} {number(s.half_angle)} {o} {f.front} {f.back}'
+                       f'{loops}'+enc(('f', fi)))
         else:
             out.append(f'f cylinder {frame(s.frame)} {number(s.radius)} {o} {f.front} {f.back}{loops}'
                        + enc(('f', fi)))
@@ -491,16 +508,20 @@ def validate(c):
             if not loop.fins:
                 issues.append(issue('empty_loop', name))
                 continue
-            if not isinstance(f.surface, Cylinder) and loop.winding != 0:
+            if not periodic(f.surface) and loop.winding != 0:
                 issues.append(issue('winding_mismatch', name))
             ends = [fin_vertices(c, k) for k in loop.fins]
             if len(ends) == 1 and ends[0] == (None, None):
                 continue
             if any(None in e for e in ends) or any(ends[k][1] != ends[(k+1) % len(ends)][0] for k in range(len(ends))):
                 issues.append(issue('open_loop', name))
-        if isinstance(f.surface, Cylinder):
+        if periodic(f.surface):
+            # Windings balance, except on a cone where one pole (a vertex
+            # loop at the apex) closes a band that winds once.
             wound = [c.loops[lid].winding for lid in f.loops if c.loops[lid].vertex is None]
-            if any(wound) and sum(wound) != 0:
+            total = sum(wound)
+            if total != 0 and not (isinstance(f.surface, Cone) and abs(total) == 1
+                                   and pole_loop(c, f) is not None):
                 issues.append(issue('winding_mismatch', f'loop {fi}.0'))
     for ri, r in enumerate(c.regions):
         if len(set(r.shells)) != len(r.shells):
@@ -703,6 +724,11 @@ def validate(c):
                     if judge(d, d, vertex_bound[v], f'vertex {v}', f'{c.name}: vertex loop') == 'beyond':
                         issues.append(issue('vertex_loop_off_surface', f'loop {fi}.{li}'))
                         geometry_bad.add(fi)
+                    elif pole_loop(c, f) == lid:
+                        d = norm(sub(vec(c.vertices[v]), apex(f.surface)))
+                        if judge(d, d, vertex_bound[v], f'vertex {v}', f'{c.name}: pole') == 'beyond':
+                            issues.append(issue('pole_off_apex', f'loop {fi}.{li}'))
+                            geometry_bad.add(fi)
                 continue
             for ui, k in enumerate(loop.fins):
                 u = c.fins[k]
@@ -730,10 +756,10 @@ def validate(c):
                 last = ui == len(loop.fins)-1
                 w = loop.fins[(ui+1) % len(loop.fins)]
                 a, b = pcurve_point(c.fins[k].pcurve, 1), pcurve_point(c.fins[w].pcurve, 0)
-                shift = TAU*loop.winding if last and isinstance(f.surface, Cylinder) else 0
+                shift = TAU*loop.winding if last and periodic(f.surface) else 0
                 du, dv = a[0]-b[0]-shift, a[1]-b[1]
-                if isinstance(f.surface, Cylinder):
-                    du *= f.surface.radius
+                if periodic(f.surface):
+                    du *= u_scale(f.surface, a[1])
                 d = mp.sqrt(du*du+dv*dv)
                 if judge(d, d, face_bound[fi], f'face {fi}', f'{c.name}: uv gap') == 'beyond':
                     issues.append(issue('uv_gap', f'use {fi}.{li}.{ui}'))
@@ -745,9 +771,12 @@ def validate(c):
             continue
         loops = [c.loops[lid] for lid in f.loops]
         sense = 1 if f.forward else -1
-        wound = isinstance(f.surface, Cylinder) and any(l.winding for l in loops)
+        wound = periodic(f.surface) and any(l.winding for l in loops)
         if wound:
             total = sum(periodic_area(c, l) for l in loops)
+            if pole_loop(c, f) is not None:
+                # The pole is the line v = v_apex traversed against the band.
+                total += 2*mp.pi*sum(l.winding for l in loops if l.vertex is None)*apex_v(f.surface)
             if total*sense <= 0:
                 issues.append(issue('loop_winding', f'loop {fi}.0'))
             for li, l in enumerate(loops):
@@ -797,9 +826,25 @@ def validate(c):
             point = shell_point(c, si, vertex_ok)
             if point is None:
                 continue
-            if not inside(c, outer, point):
+            # Rays against cones are not decided yet (None): uncertified.
+            outside = inside(c, outer, point)
+            if outside is None:
+                issues.append(issue('uncertified_containment', f'shell {si}'))
+                continue
+            if not outside:
                 issues.append(issue('cavity_outside', f'shell {si}'))
-            elif any(inside(c, sj, point) for sj in cavities if sj != si):
+                continue
+            nested = False
+            for sj in cavities:
+                if sj == si:
+                    continue
+                found = inside(c, sj, point)
+                if found is None:
+                    issues.append(issue('uncertified_containment', f'shell {si}'))
+                    nested = False
+                    break
+                nested = nested or found
+            if nested:
                 issues.append(issue('nested_cavity', f'shell {si}'))
     return sorted(set(issues))
 
@@ -809,6 +854,14 @@ def surface_distance(s, p):
     rel = sub(p, o)
     if isinstance(s, Plane):
         return abs(dot(rel, n))
+    if isinstance(s, Cone):
+        # Distance to the generatrix lines of both nappes in the meridian
+        # half-plane: r c - R c - z s and r c + R c + z s.
+        a = mp.mpf(s.half_angle)
+        z = dot(rel, n)
+        r = norm(sub(rel, mul(n, z)))
+        R = mp.mpf(s.radius)
+        return min(abs(r*mp.cos(a)-R*mp.cos(a)-z*mp.sin(a)), abs(r*mp.cos(a)+R*mp.cos(a)+z*mp.sin(a)))
     radial = sub(rel, mul(n, dot(rel, n)))
     return abs(norm(radial)-s.radius)
 
@@ -877,14 +930,22 @@ def face_flux(c, f):
     face sense)."""
     s = f.surface
     o, x, y, n = axes(s.frame)
-    if isinstance(s, Plane):
+    if isinstance(s, Cone):
+        # S.(S_u x S_v) = rho(v) h(u); its v-antiderivative from the apex is
+        # rho(v)^2 / (2 sin a) h(u), zero at the pole.
+        a = mp.mpf(s.half_angle)
+        sa, ca, R = mp.sin(a), mp.cos(a), mp.mpf(s.radius)
+        ox, oy, on = dot(o, x), dot(o, y), dot(o, n)
+        hu = lambda u: ca*R+ca*(ox*mp.cos(u)+oy*mp.sin(u))-sa*on
+        G = lambda u, v: (R+sa*v)**2/(2*sa)*hu(u)
+    elif isinstance(s, Plane):
         h = dot(o, cross(x, y))
-        g = lambda u: h
+        G = lambda u, v, h=h: v*h
     else:
         r = mp.mpf(s.radius)
         a, b = dot(o, cross(x, n)), dot(o, cross(y, n))
         det = dot(x, cross(y, n))
-        g = lambda u, r=r, a=a, b=b, det=det: r*(-mp.sin(u)*a+mp.cos(u)*b)+r*r*det
+        G = lambda u, v, r=r, a=a, b=b, det=det: v*(r*(-mp.sin(u)*a+mp.cos(u)*b)+r*r*det)
     total = mp.mpf(0)
     for lid in f.loops:
         loop = c.loops[lid]
@@ -899,11 +960,11 @@ def face_flux(c, f):
                 else:
                     ang = mp.mpf(p.start)+mp.mpf(p.sweep)*t
                     du = -p.radius*mp.sin(ang)*p.sweep
-                return -q[1]*g(q[0])*du
+                return -G(q[0], q[1])*du
             total += mp.quad(integrand, [0, mp.mpf(1)/4, mp.mpf(1)/2, mp.mpf(3)/4, 1])
         for a0, b0 in chords:
             if b0[0] != a0[0]:
-                total += mp.quad(lambda t: -((a0[1]+(b0[1]-a0[1])*t)*g(a0[0]+(b0[0]-a0[0])*t))*(b0[0]-a0[0]), [0, 1])
+                total += mp.quad(lambda t: -G(a0[0]+(b0[0]-a0[0])*t, a0[1]+(b0[1]-a0[1])*t)*(b0[0]-a0[0]), [0, 1])
     return total
 
 
@@ -924,6 +985,8 @@ def inside(c, si, point):
     for fi, _ in c.shells[si].sides:
         face = c.faces[fi]
         s = face.surface
+        if isinstance(s, Cone):
+            return None
         o, x, y, n = axes(s.frame)
         rel = sub(point, o)
         if isinstance(s, Plane):

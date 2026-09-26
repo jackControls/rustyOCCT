@@ -110,6 +110,37 @@ class Cylinder:
 
 
 @dataclass
+class Cone:
+    """S(u, v) = O + (R + v sin a) (cos u x + sin u y) + v cos a n: v runs
+    along the generatrix, as in OCCT's Geom_ConicalSurface; the apex is at
+    v = -R / sin a."""
+    frame: Frame
+    radius: float
+    half_angle: float
+
+
+def periodic(s):
+    """Surfaces periodic in u (angle): cylinders and cones."""
+    return isinstance(s, (Cylinder, Cone))
+
+
+def apex_v(s):
+    return -mp.mpf(s.radius)/mp.sin(mp.mpf(s.half_angle))
+
+
+def apex(s):
+    o, x, y, n = axes(s.frame)
+    return add(o, mul(n, mp.cos(mp.mpf(s.half_angle))*apex_v(s)))
+
+
+def u_scale(s, v):
+    """Length per unit of u at parameter v: the radius there."""
+    if isinstance(s, Cylinder):
+        return mp.mpf(s.radius)
+    return mp.mpf(s.radius)+mp.sin(mp.mpf(s.half_angle))*mp.mpf(v)
+
+
+@dataclass
 class Face:
     surface: object
     forward: bool
@@ -235,6 +266,11 @@ def curve_valid(c, tol):
 
 def surface_valid(s, tol):
     frame_ok = finite((*s.frame.origin, *s.frame.normal, *s.frame.x)) and axes(s.frame) is not None
+    if isinstance(s, Cone):
+        # A cone may be given at its apex (radius 0); its angle is strictly
+        # between 0 and a right angle in magnitude.
+        return (frame_ok and math.isfinite(s.radius) and s.radius >= 0 and math.isfinite(s.half_angle)
+                and 0 < abs(s.half_angle) < math.pi/2)
     return frame_ok and (isinstance(s, Plane) or (math.isfinite(s.radius) and s.radius > tol))
 
 
@@ -269,6 +305,11 @@ def surface_point(s, uv):
     u, v = uv
     if isinstance(s, Plane):
         return add(o, add(mul(x, u), mul(y, v)))
+    if isinstance(s, Cone):
+        a = mp.mpf(s.half_angle)
+        rho = mp.mpf(s.radius)+mp.sin(a)*v
+        radial = add(mul(x, rho*mp.cos(u)), mul(y, rho*mp.sin(u)))
+        return add(add(o, radial), mul(n, mp.cos(a)*v))
     radial = add(mul(x, s.radius*mp.cos(u)), mul(y, s.radius*mp.sin(u)))
     return add(add(o, radial), mul(n, v))
 
@@ -358,6 +399,25 @@ def use_harmonic(s, p, h, sign):
             h.affine(add(o, add(mul(x, c[0]), mul(y, c[1]))), [0, 0, 0], sign)
             h.rotating(mp.mpf(p.start), mp.mpf(p.sweep), mul(x, p.radius), mul(y, p.radius), sign)
         return True
+    if isinstance(s, Cone):
+        # Harmonic only along a ruling (du = 0) or a parallel (dv = 0).
+        if not isinstance(p, Line2):
+            return False
+        u0, v0 = mp.mpf(p.start[0]), mp.mpf(p.start[1])
+        du, dv = mp.mpf(p.end[0])-u0, mp.mpf(p.end[1])-v0
+        a = mp.mpf(s.half_angle)
+        sa, ca = mp.sin(a), mp.cos(a)
+        if du == 0:
+            e = add(mul(x, mp.cos(u0)), mul(y, mp.sin(u0)))
+            h.affine(add(o, add(mul(e, mp.mpf(s.radius)+sa*v0), mul(n, ca*v0))),
+                     add(mul(e, sa*dv), mul(n, ca*dv)), sign)
+            return True
+        if dv == 0:
+            rho = mp.mpf(s.radius)+sa*v0
+            h.affine(add(o, mul(n, ca*v0)), [0, 0, 0], sign)
+            h.rotating(u0, du, mul(x, rho), mul(y, rho), sign)
+            return True
+        return False
     if isinstance(p, Line2):
         u0, v0 = mp.mpf(p.start[0]), mp.mpf(p.start[1])
         du, dv = mp.mpf(p.end[0])-u0, mp.mpf(p.end[1])-v0

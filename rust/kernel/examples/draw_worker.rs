@@ -191,6 +191,8 @@ fn face_area(t: &Topology, face: usize) -> f64 {
                 .sum::<f64>();
             radius * periodic.abs()
         }
+        // Cone faces are measured by the kernel's general mass properties.
+        Surface::Cone { .. } => f64::NAN,
     }
 }
 
@@ -543,6 +545,7 @@ fn face_centre(t: &Topology, face: usize) -> (f64, Point3) {
                 Surface::Cylinder { .. } => {
                     [q.y, q.y * q.x.cos(), q.y * q.x.sin(), q.y * q.y / 2.0]
                 }
+                Surface::Cone { .. } => [f64::NAN; 4],
             };
             for k in 0..4 {
                 m[k] -= w * g[k] * d.x;
@@ -561,6 +564,7 @@ fn face_centre(t: &Topology, face: usize) -> (f64, Point3) {
                 m[3] / m[0],
             ),
         ),
+        Surface::Cone { .. } => (f64::NAN, Point3::new(f64::NAN, f64::NAN, f64::NAN)),
     }
 }
 

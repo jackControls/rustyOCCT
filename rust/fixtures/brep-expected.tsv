@@ -75,3 +75,15 @@ box_face_enclosure_unsound	enclosure_unsound:face 2
 box_fin_enclosure_missing	enclosure_missing:use 0.0.0
 box_face_enclosure_exceeds_resolution	enclosure_exceeds_resolution:face 0
 box_vertex_enclosure_negative	enclosure_exceeds_resolution:vertex 1
+cone_apex	
+cone_apex_at_base	
+cone_frustum	
+cone_widening	
+cone_rotated	
+cone_far	
+cone_pole_off_apex	pole_off_apex:loop 0.1
+cone_pole_off_surface	vertex_loop_off_surface:loop 0.1
+cone_pole_missing	loop_without_face:loop slot 2;winding_mismatch:loop 0.0
+cone_winding_twice	uv_gap:use 0.0.0;winding_mismatch:loop 0.0
+cone_right_angle	degenerate_surface:face 0
+cone_lateral_pcurve_shift	pcurve_off_edge:use 0.0.0

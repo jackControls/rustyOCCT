@@ -95,6 +95,16 @@ pub fn parse(block: &str) -> (String, f64, TopologyParts) {
             "f" => {
                 let (surface, rest) = if w[1] == "plane" {
                     (Surface::Plane(frame(&nums(2, 9))), 11)
+                } else if w[1] == "cone" {
+                    let v = nums(2, 11);
+                    (
+                        Surface::Cone {
+                            frame: frame(&v),
+                            radius: v[9],
+                            half_angle: v[10],
+                        },
+                        13,
+                    )
                 } else {
                     let v = nums(2, 10);
                     (

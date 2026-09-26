@@ -95,6 +95,7 @@ pub fn signature(s: &Solid, slot: Slot) -> String {
                     let c = frame.point(Point2::default(), 0.5 * (v.0 + v.1));
                     format!("F cylinder {:?} {}", radius * periodic.abs(), p3(c))
                 }
+                Surface::Cone { .. } => unreachable!("prism faces are planes and cylinders"),
             }
         }
         // A prism has one solid region: the body.
