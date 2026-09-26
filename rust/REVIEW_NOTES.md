@@ -59,12 +59,12 @@ full local release suite passes at the head.
   regression under `rust/fuzz/regressions` with the measured times, and add
   to `FUZZING.md` the rule that a timeout whose input completes is triaged by
   this measurement. Never re-run to green.
-* **R2. Test data is fetched by a separate, pinned step, never by the bridge
-  and never committed.** `rust/tools/fetch_occt_test_data.py` downloads the
+* **R2. Test data is fetched by a separate, pinned step, never by the bridge,
+  never by CI, and never committed.** `rust/tools/fetch_occt_test_data.py` downloads the
   public dataset into an ignored `target/occt-test-data`, verifies a recorded
   SHA-256, and prints the file inventory. The runner distinguishes
   `not-fetched` from `private-data` (a file absent from the public dataset);
-  both are non-passes. CI use is a user decision (U1).
+  both are non-passes. Local use only; CI never downloads it (U1).
 * **R3. `restore` is a thin call into the T2 reader and converter.** It
   reports unsupported constructs by name as the interop already does; a case
   whose file is unsupported is `Unsupported`, not a failure. Every restored
@@ -209,11 +209,15 @@ and projection, then Booleans. Not scoped here.
   * local copy: `target/occt-test-data/opencascade-dataset-7.9.0` (ignored);
     22 GiB were free locally, so it was not necessary to use `jackgpu`, which
     was on the subnet but not answering.
-  Rule for S2: the fetch script pins this URL, size and SHA-256, extracts
-  into `target/occt-test-data`, never commits a file, and CI caches the
-  archive by its SHA-256 once the user confirms the basis above. A missing
-  file is `private-data` when its name is absent from the archive inventory
-  and `not-fetched` when the archive is absent.
+  **Decided 2026-09-26: local only, no CI.** The fetch script pins this URL,
+  size and SHA-256, extracts into `target/occt-test-data` and never commits
+  a file; it is run by a developer, never by a workflow. CI continues to
+  report every data-dependent case as `not-fetched`, and the ledger records
+  the local run separately with the dataset's SHA-256 so a local
+  mapped-and-verified count is never mistaken for a CI one. A missing file
+  is `private-data` when its name is absent from the archive inventory and
+  `not-fetched` when the archive is absent. Revisit CI use only when the
+  user says so.
 * **U2. Mass properties: certified error bounds.** General mass properties
   arrive with the cone as surface integrals with certified quadrature and a
   bound that feeds the enclosure contract; the prism closed forms stay.
