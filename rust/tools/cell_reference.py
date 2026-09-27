@@ -132,7 +132,8 @@ def gap_bounds(c):
                 if not 0 <= k < len(c.fins):
                     continue
                 u = c.fins[k]
-                raise_to(('u', k), lambda: use_bounds(c.edges[u.edge].curve, f.surface, u.pcurve, u.forward))
+                raise_to(('u', k), lambda: use_bounds(c.edges[u.edge].curve, f.surface, u.pcurve, u.forward,
+                                                      c.tolerance))
 
                 def gap():
                     w = loop.fins[(ui+1) % len(loop.fins)]
@@ -149,10 +150,13 @@ def gap_bounds(c):
     return out
 
 
-def use_bounds(curve, s, p, forward):
-    """A use's deviation bounds: exact for a rational spline use."""
+def use_bounds(curve, s, p, forward, tol):
+    """A use's deviation bounds: exact for a rational spline use, by Taylor
+    bounds for another."""
     if spline_use(curve, s, p):
         bounds = spline_deviation(curve, s, p, forward)
+        if bounds is None:
+            bounds = taylor_deviation(curve, s, p, forward, tol)
         if bounds is not None:
             return bounds
     return deviation_bounds(curve, s, p, forward)
@@ -213,7 +217,7 @@ def pole_point(c, f):
 
 def closed_curve(c):
     if isinstance(c, BSpline3):
-        return c.basis.periodic  # a spline ring edge is periodic
+        return spline.closed_period(c)  # a spline ring edge is a full period
     return isinstance(c, Arc3) and abs(c.sweep) == TAU
 
 
@@ -832,6 +836,9 @@ def validate(c):
                 if spline_use(c.edges[u.edge].curve, f.surface, u.pcurve):
                     bounds = spline_deviation(c.edges[u.edge].curve, f.surface, u.pcurve, u.forward)
                     if bounds is None:
+                        bounds = taylor_deviation(c.edges[u.edge].curve, f.surface, u.pcurve, u.forward,
+                                                  c.tolerance)
+                    if bounds is None:
                         issues.append(issue('uncertified_pcurve_off_edge', ent))
                         geometry_bad.add(fi)
                         continue
@@ -919,10 +926,7 @@ def validate(c):
                 issues.append(issue('loop_winding', f'loop {fi}.{li}'))
         for li, l in edge_loops[1:]:
             point = pcurve_point(c.fins[l.fins[0]].pcurve, 0)
-            if any(isinstance(c.fins[k].pcurve, BSpline2) for k in edge_loops[0][1].fins):
-                # Crossings with a spline pcurve are not decided yet.
-                issues.append(issue('uncertified_containment', f'loop {fi}.{li}'))
-            elif winding(c, edge_loops[0][1], point) == 0:
+            if winding(c, edge_loops[0][1], point) == 0:
                 issues.append(issue('inner_loop_outside', f'loop {fi}.{li}'))
 
     # Region orientation and cavity nesting, for fully sound shells.
@@ -1067,6 +1071,134 @@ def spline_deviation(curve, s, p, forward):
     return (low, mp.mpf(0)) if low < mp.mpf('1e-25') else (low, mp.inf)
 
 
+def _point_jet(curve, t):
+    """(point, derivative) of a line, arc or spline at fraction t (mp)."""
+    t = mp.mpf(t)
+    if isinstance(curve, (Line2, Line3)):
+        a, b = vec(curve.start), vec(curve.end)
+        return add(a, mul(sub(b, a), t)), sub(b, a)
+    if isinstance(curve, (BSpline2, BSpline3)):
+        q, d = spline.curve_jet_mp(curve, t)
+        return list(q), list(d)
+    theta = mp.mpf(curve.start)+mp.mpf(curve.sweep)*t
+    sw, r = mp.mpf(curve.sweep), mp.mpf(curve.radius)
+    if isinstance(curve, Arc3):
+        o, x, y, _ = axes(curve.frame)
+    else:
+        o, x, y = vec(curve.center), [mp.mpf(1), mp.mpf(0)], [mp.mpf(0), mp.mpf(1)]
+    return (add(o, add(mul(x, r*mp.cos(theta)), mul(y, r*mp.sin(theta)))),
+            add(mul(x, -r*sw*mp.sin(theta)), mul(y, r*sw*mp.cos(theta))))
+
+
+def _interval_jet(curve, t):
+    """(value, first, second derivative) of a curve over the interval t."""
+    iv = mp.iv
+    if isinstance(curve, (Line2, Line3)):
+        a, b = [iv.mpf(x) for x in curve.start], [iv.mpf(x) for x in curve.end]
+        return [x+(y-x)*t for x, y in zip(a, b)], [y-x for x, y in zip(a, b)], [iv.mpf(0)]*len(a)
+    if isinstance(curve, (BSpline2, BSpline3)):
+        return spline.spline_jet2_iv(curve, t)
+    theta = iv.mpf(curve.start)+iv.mpf(curve.sweep)*t
+    sw, r = iv.mpf(curve.sweep), iv.mpf(curve.radius)
+    if isinstance(curve, Arc3):
+        o, x, y, _ = axes(curve.frame)
+        o, x, y = [[iv.mpf(z) for z in v] for v in (o, x, y)]
+    else:
+        o, x, y = [iv.mpf(z) for z in curve.center], [iv.mpf(1), iv.mpf(0)], [iv.mpf(0), iv.mpf(1)]
+    co, si = iv.cos(theta), iv.sin(theta)
+    return ([a+r*(b*co+c*si) for a, b, c in zip(o, x, y)],
+            [r*sw*(-b*si+c*co) for b, c in zip(x, y)],
+            [-r*sw*sw*(b*co+c*si) for b, c in zip(x, y)])
+
+
+def _surface_jet(s, u, v, interval):
+    """S, S_u, S_v (point, mp) or all six partials over a box (intervals)."""
+    if isinstance(s, BSplineSurface):
+        if interval:
+            return spline.surface_jet2_iv(s, u, v)
+        return [list(x) for x in spline.surface_jet_mp(s, u, v)]
+    ar = mp.iv if interval else mp
+    o, x, y, n = [[ar.mpf(z) for z in w] for w in axes(s.frame)]
+    co, si = ar.cos(u), ar.sin(u)
+    e = [a*co+b*si for a, b in zip(x, y)]
+    e1 = [b*co-a*si for a, b in zip(x, y)]
+    comb = lambda *terms: [sum(k*w[i] for w, k in terms) for i in range(3)]
+    zero = [ar.mpf(0)]*3
+    if isinstance(s, Plane):
+        jet = [comb((o, 1), (x, u), (y, v)), x, y, zero, zero, zero]
+    elif isinstance(s, Cylinder):
+        r = ar.mpf(s.radius)
+        jet = [comb((o, 1), (e, r), (n, v)), comb((e1, r)), n, comb((e, -r)), zero, zero]
+    elif isinstance(s, Cone):
+        a = ar.mpf(s.half_angle)
+        ca, sa = ar.cos(a), ar.sin(a)
+        rho = ar.mpf(s.radius)+sa*v
+        jet = [comb((o, 1), (e, rho), (n, ca*v)), comb((e1, rho)), comb((e, sa), (n, ca)), comb((e, -rho)),
+               comb((e1, sa)), zero]
+    elif isinstance(s, Sphere):
+        r = ar.mpf(s.radius)
+        cv, sv = ar.cos(v), ar.sin(v)
+        jet = [comb((o, 1), (e, r*cv), (n, r*sv)), comb((e1, r*cv)), comb((e, -r*sv), (n, r*cv)),
+               comb((e, -r*cv)), comb((e1, -r*sv)), comb((e, -r*cv), (n, -r*sv))]
+    else:
+        big, small = ar.mpf(s.major), ar.mpf(s.minor)
+        cv, sv = ar.cos(v), ar.sin(v)
+        rho = big+small*cv
+        jet = [comb((o, 1), (e, rho), (n, small*sv)), comb((e1, rho)), comb((e, -small*sv), (n, small*cv)),
+               comb((e, -rho)), comb((e1, -small*sv)), comb((e, -small*cv), (n, -small*sv))]
+    return jet if interval else jet[:3]
+
+
+def _upper(v):
+    """An upper bound of the norm of a vector of intervals."""
+    return mp.sqrt(sum(max(abs(x.a), abs(x.b))**2 for x in v))
+
+
+def taylor_deviation(curve, s, p, forward, tol):
+    """(low, high) of a use by second-order Taylor bounds on bisected pieces
+    of the use's fraction, with interval jets: |D| <= |D(m)| + |D'(m)| h/2 +
+    sup|D''| h^2/8. None on a periodic spline surface, as in the kernel."""
+    if isinstance(s, BSplineSurface) and (s.u.periodic or s.v.periodic):
+        return None
+    cuts = {F(0), F(1)}
+    if isinstance(p, BSpline2):
+        cuts |= set(spline.knot_fractions(p))
+    if isinstance(curve, BSpline3):
+        cuts |= {k if forward else 1-k for k in spline.knot_fractions(curve)}
+    cuts = sorted(cuts)
+    sign = 1 if forward else -1
+    edge_at = lambda t: t if forward else 1-t
+    low, high = mp.mpf(0), mp.mpf(0)
+    stack = [(t0, t1, 0) for t0, t1 in zip(cuts, cuts[1:])]
+    while stack:
+        t0, t1, depth = stack.pop()
+        m, h = (t0+t1)/2, t1-t0
+        cm, c1 = _point_jet(curve, mp_of(edge_at(m)))
+        pm, p1 = _point_jet(p, mp_of(m))
+        sm = _surface_jet(s, pm[0], pm[1], False)
+        d0 = sub(cm, sm[0])
+        d1 = [sign*a-b*p1[0]-c*p1[1] for a, b, c in zip(c1, sm[1], sm[2])]
+        lo_edge, hi_edge = sorted((edge_at(t0), edge_at(t1)))
+        box_t = mp.iv.mpf([mp_of(lo_edge), mp_of(hi_edge)])
+        _, _, c2 = _interval_jet(curve, box_t)
+        pv, pd1, pd2 = _interval_jet(p, mp.iv.mpf([mp_of(t0), mp_of(t1)]))
+        jet = _surface_jet(s, pv[0], pv[1], True)
+        if jet is None:
+            return None
+        _, su, sv, suu, suv, svv = jet
+        d2 = [c-(a*pd1[0]**2+2*b*pd1[0]*pd1[1]+cc*pd1[1]**2+d*pd2[0]+e*pd2[1])
+              for c, a, b, cc, d, e in zip(c2, suu, suv, svv, su, sv)]
+        point = norm(d0)
+        low = max(low, point)
+        bound = point+norm(d1)*mp_of(h)/2+_upper(d2)*mp_of(h)**2/8
+        if bound > mp.mpf(tol)/4 and depth < 14 and point <= mp.mpf(tol):
+            m = (t0+t1)/2
+            stack += [(t0, m, depth+1), (m, t1, depth+1)]
+            continue
+        high = max(high, bound)
+    return low, high
+
+
 def spline_face_flux(c, f):
     """The flux of a face on a spline surface by nested quadrature: G(u, v)
     = integral of S.(S_u x S_v) in v from the domain's start, then -loop
@@ -1196,7 +1328,9 @@ def periodic_area(c, loop):
     for p in pieces:
         def f(t, p=p):
             q = pcurve_point(p, t)
-            if isinstance(p, Line2):
+            if isinstance(p, BSpline2):
+                du = spline.curve_jet_mp(p, t)[1][0]
+            elif isinstance(p, Line2):
                 du = mp.mpf(p.end[0])-mp.mpf(p.start[0])
             else:
                 a = mp.mpf(p.start)+mp.mpf(p.sweep)*t
@@ -1214,6 +1348,9 @@ def periodic_area_v(c, loop):
     pieces, chords = loop_points(c, loop)
     total = mp.mpf(0)
     for p in pieces:
+        if isinstance(p, BSpline2):
+            total += mp.quad(lambda t, p=p: (lambda q, d: q[0]*d[1])(*spline.curve_jet_mp(p, t)), [0, 1])
+            continue
         total += (mp.mpf(p.start[0])+mp.mpf(p.end[0]))/2*(mp.mpf(p.end[1])-mp.mpf(p.start[1]))
     for a, b in chords:
         total += (a[0]+b[0])/2*(b[1]-a[1])
@@ -1232,6 +1369,14 @@ def face_flux(c, f):
     s = f.surface
     if isinstance(s, BSplineSurface):
         return spline_face_flux(c, f)
+    # On an analytic curved surface the kernel integrates a spline pcurve
+    # only on a cylinder and only at constant u (it adds nothing there).
+    if not isinstance(s, Plane):
+        for lid in f.loops:
+            for k in c.loops[lid].fins:
+                p = c.fins[k].pcurve
+                if isinstance(p, BSpline2) and (not isinstance(s, Cylinder) or len({q[0] for q in p.poles}) > 1):
+                    return None
     o, x, y, n = axes(s.frame)
     if isinstance(s, Cone):
         # S.(S_u x S_v) = rho(v) h(u); its v-antiderivative from the apex is

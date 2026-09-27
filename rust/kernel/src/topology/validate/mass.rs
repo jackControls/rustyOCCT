@@ -238,6 +238,44 @@ fn planar_line<T: Real>(f: &Planar<T>, a: &V2<T>, b: &V2<T>) -> Option<T> {
     Some(total.mul(&du).neg())
 }
 
+/// `-integral of f du` along a spline pcurve: on each Bézier piece with
+/// homogeneous `(U, V, W)`, `f(U/W, V/W) du = F̂ (U' W - U W') / W^(d+2)`
+/// with `F̂ = Σ f_ij U^i V^j W^(d-i-j)`, `d` the total degree, enclosed by
+/// `bernstein::quotient_integral`.
+fn planar_spline<T: Real>(
+    f: &Planar<T>,
+    curve: &crate::topology::SplineSpan<crate::BSplineCurve2>,
+) -> Option<T> {
+    use super::bernstein::{
+        derivative, difference, power, product, quotient_integral, scaled, span_arcs, sum,
+    };
+    let d = f.keys().map(|(i, j)| usize::from(i + j)).max().unwrap_or(0);
+    let mut total = c::<T>(0.0);
+    for (_, _, arc) in &span_arcs(curve)? {
+        let poles = arc.homogeneous_poles();
+        let uniform = poles.iter().all(|p| p[3] == poles[0][3]);
+        let [u, v, w]: [Vec<T>; 3] =
+            [0, 1, 3].map(|k| poles.iter().map(|p| T::from_r(&p[k])).collect());
+        let mut hat = vec![c::<T>(0.0)];
+        for ((i, j), x) in f {
+            let (i, j) = (usize::from(*i), usize::from(*j));
+            let term = product(
+                &product(&power(&u, i), &power(&v, j)),
+                &power(&w, d - i - j),
+            );
+            hat = sum(&hat, &scaled(&term, x));
+        }
+        let du = difference(&product(&derivative(&u), &w), &product(&u, &derivative(&w)));
+        total = total.add(&quotient_integral(
+            &product(&hat, &du),
+            &w,
+            (d + 2) as i32,
+            uniform,
+        )?);
+    }
+    Some(total.neg())
+}
+
 /// `integral over [t0, t0 + sweep] of cos^p t sin^q t dt`, exactly.
 fn trig_integral<T: Real>(cos_power: u8, sin_power: u8, t0: &T, t1: &T) -> Option<T> {
     let mut total = c::<T>(0.0);
@@ -638,12 +676,14 @@ pub(super) fn sphere_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
 /// The fourteen face integrals over the face region (loops carry its
 /// orientation, as in `face_flux`), relative to `reference`.
 fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Option<[T; TERMS]> {
-    // Spline geometry is not integrated before the rest of S4.
+    // Spline pcurves are integrated on planes (S4d); spline surfaces and
+    // spline pcurves on curved surfaces are not yet.
     if matches!(face.surface, Surface::BSpline(_))
-        || loops
-            .iter()
-            .flat_map(|lp| &lp.fins)
-            .any(|u| matches!(u.pcurve, Curve2::BSpline(_)))
+        || (!matches!(face.surface, Surface::Plane(_))
+            && loops
+                .iter()
+                .flat_map(|lp| &lp.fins)
+                .any(|u| matches!(u.pcurve, Curve2::BSpline(_))))
     {
         return None;
     }
@@ -696,7 +736,7 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
                             *start_angle,
                             *sweep_angle,
                         ),
-                        Curve2::BSpline(_) => None,
+                        Curve2::BSpline(spline) => planar_spline(&anti[k], spline),
                     });
                     accumulate(values.try_map_all()?);
                 }

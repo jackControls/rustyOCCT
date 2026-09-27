@@ -144,11 +144,11 @@ fn line_arc(a: [f64; 3], b: [f64; 3]) -> Arcs {
     vec![(exact(0), exact(1), arc)]
 }
 
-pub(super) fn spline_arcs(curve: &crate::BSplineCurve3) -> Option<Arcs> {
+pub(super) fn spline_arcs(curve: &crate::BSplineCurve3, range: [f64; 2]) -> Option<Arcs> {
     let exact = curve.to_exact();
-    let [a, b] = exact.domain().clone();
+    let (a, b) = (r(range[0]), r(range[1]));
     let span = &b - &a;
-    let arcs = exact.bezier_arcs().ok()?;
+    let arcs = exact.bezier_arcs_in(&a, &b).ok()?;
     Some(
         arcs.into_iter()
             .map(|arc| {
@@ -159,10 +159,15 @@ pub(super) fn spline_arcs(curve: &crate::BSplineCurve3) -> Option<Arcs> {
     )
 }
 
+/// A spline pcurve's exact arcs over its range.
+pub(super) fn span_arcs(span: &crate::topology::SplineSpan<crate::BSplineCurve2>) -> Option<Arcs> {
+    spline_arcs(span.curve().as_curve3(), span.range())
+}
+
 pub(super) fn curve_arcs(curve: &Curve3) -> Option<Arcs> {
     match curve {
         Curve3::LineSegment { start, end } => Some(line_arc(start.to_array(), end.to_array())),
-        Curve3::BSpline(spline) => spline_arcs(spline),
+        Curve3::BSpline(span) => spline_arcs(span.curve(), span.range()),
         _ => None,
     }
 }
@@ -172,7 +177,7 @@ pub(super) fn pcurve_arcs(p: &Curve2) -> Option<Arcs> {
         Curve2::LineSegment { start, end } => {
             Some(line_arc([start.x, start.y, 0.0], [end.x, end.y, 0.0]))
         }
-        Curve2::BSpline(spline) => spline_arcs(spline.as_curve3()),
+        Curve2::BSpline(span) => span_arcs(span),
         Curve2::CircularArc { .. } => None,
     }
 }
@@ -250,11 +255,11 @@ pub(super) fn quotient_integral<T: Real>(
 /// `∫ M/W^k` over a spline pcurve, `M` built from the homogeneous Bernstein
 /// coordinates `(U, V, W)` of each Bézier piece.
 pub(super) fn rational_integral<T: Real>(
-    curve: &crate::BSplineCurve2,
+    curve: &crate::topology::SplineSpan<crate::BSplineCurve2>,
     k: i32,
     integrand: impl Fn(&Bern<T>, &Bern<T>, &Bern<T>) -> Bern<T>,
 ) -> Option<T> {
-    let arcs = spline_arcs(curve.as_curve3())?;
+    let arcs = span_arcs(curve)?;
     let mut total = T::exact_f64(0.0);
     for (_, _, arc) in &arcs {
         let poles = arc.homogeneous_poles();
@@ -267,16 +272,102 @@ pub(super) fn rational_integral<T: Real>(
 
 /// Twice the signed area `∮ (u dv - v du)` of a spline pcurve: on a piece
 /// `u = U/W`, `v = V/W`, the integrand is `(U V' - V U')/W^2`.
-pub(super) fn twice_area<T: Real>(curve: &crate::BSplineCurve2) -> Option<T> {
+pub(super) fn twice_area<T: Real>(
+    curve: &crate::topology::SplineSpan<crate::BSplineCurve2>,
+) -> Option<T> {
     rational_integral(curve, 2, |u, v, _| {
         difference(&product(u, &derivative(v)), &product(v, &derivative(u)))
     })
 }
 
+/// `∮ u dv` of a spline pcurve: `U (V' W - V W') / W^3`.
+pub(super) fn u_dv<T: Real>(
+    curve: &crate::topology::SplineSpan<crate::BSplineCurve2>,
+) -> Option<T> {
+    rational_integral(curve, 3, |u: &Bern<T>, v: &Bern<T>, w: &Bern<T>| {
+        let dv = difference(&product(&derivative(v), w), &product(v, &derivative(w)));
+        product(u, &dv)
+    })
+}
+
 /// `-∮ v du` of a spline pcurve: `-V (U' W - U W') / W^3`.
-pub(super) fn minus_v_du<T: Real>(curve: &crate::BSplineCurve2) -> Option<T> {
+pub(super) fn minus_v_du<T: Real>(
+    curve: &crate::topology::SplineSpan<crate::BSplineCurve2>,
+) -> Option<T> {
     rational_integral(curve, 3, |u: &Bern<T>, v: &Bern<T>, w: &Bern<T>| {
         let du = difference(&product(&derivative(u), w), &product(u, &derivative(w)));
         product(v, &du).iter().map(|x| x.neg()).collect()
     })
+}
+
+/// The parity of the crossings of the ray `u > p.u`, `v = p.v` with a spline
+/// pcurve, counted half-open at `v = p.v` as for segments (`above` is
+/// `v > p.v`). A piece certainly right of the point contributes whether its
+/// ends lie on different sides, whatever its shape; a piece certainly left,
+/// above or below contributes nothing; any other piece is halved exactly,
+/// up to twelve times. `None` when a piece stays undecided (the pcurve
+/// passes through or next to the point).
+pub(super) fn crossing_parity<T: Real>(
+    curve: &crate::topology::SplineSpan<crate::BSplineCurve2>,
+    p: &[T; 2],
+) -> Option<u32> {
+    use std::cmp::Ordering::{Greater, Less};
+    let arcs = span_arcs(curve)?;
+    let above = |v: &R| -> Option<bool> { Some(c::<T>(v).sub(&p[1]).sign()? == Greater) };
+    let mut parity = 0;
+    for (_, _, arc) in &arcs {
+        let h = arc.homogeneous_poles();
+        let piece: [Vec<R>; 3] = [0, 1, 3].map(|k| h.iter().map(|q| q[k].clone()).collect());
+        let mut stack = vec![(piece, 0)];
+        while let Some(([u, v, w], depth)) = stack.pop() {
+            let points: Vec<(R, R)> = (0..w.len())
+                .map(|i| (&u[i] / &w[i], &v[i] / &w[i]))
+                .collect();
+            // Certain sides of the control hull, and so of the piece.
+            let all = |f: &dyn Fn(&(R, R)) -> Option<bool>| -> Option<bool> {
+                let mut out = true;
+                for q in &points {
+                    out &= f(q)?;
+                }
+                Some(out)
+            };
+            let side_u =
+                |q: &(R, R), want: std::cmp::Ordering| c::<T>(&q.0).cmp(&p[0]).map(|o| o == want);
+            let side_v =
+                |q: &(R, R), want: std::cmp::Ordering| c::<T>(&q.1).cmp(&p[1]).map(|o| o == want);
+            let left = all(&|q| side_u(q, Less)).unwrap_or(false);
+            let over = all(&|q| side_v(q, Greater)).unwrap_or(false);
+            let under = all(&|q| side_v(q, Less)).unwrap_or(false);
+            if left || over || under {
+                continue;
+            }
+            if all(&|q| side_u(q, Greater)).unwrap_or(false) {
+                let first = above(&points[0].1)?;
+                let last = above(&points[points.len() - 1].1)?;
+                parity ^= u32::from(first != last);
+                continue;
+            }
+            if depth == 12 {
+                return None;
+            }
+            let halves3 = |x: &Vec<R>| {
+                let mut row = x.clone();
+                let two = exact(2);
+                let (mut l, mut r) = (vec![row[0].clone()], vec![row[row.len() - 1].clone()]);
+                while row.len() > 1 {
+                    row = row.windows(2).map(|w| (&w[0] + &w[1]) / &two).collect();
+                    l.push(row[0].clone());
+                    r.push(row[row.len() - 1].clone());
+                }
+                r.reverse();
+                (l, r)
+            };
+            let (ua, ub) = halves3(&u);
+            let (va, vb) = halves3(&v);
+            let (wa, wb) = halves3(&w);
+            stack.push(([ua, va, wa], depth + 1));
+            stack.push(([ub, vb, wb], depth + 1));
+        }
+    }
+    Some(parity)
 }

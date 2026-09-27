@@ -1293,6 +1293,32 @@ patch, a polynomial (or, for a rational pcurve, a quotient by a power of
 `P_w`) integrated as above. The reference integrates the same flux by
 nested Gauss-Legendre quadrature of the exact surface derivatives.
 
+**Taylor enclosures.** Every other spline use is bounded piece by piece,
+in the piece's own parameter `τ` in `[0, 1]`:
+`|D(τ)| <= |D(½)| + |D'(½)|/2 + sup|D''|/8`, with
+`D' = C' - S_u P_u' - S_v P_v'` and
+`D'' = C'' - (S_uu P_u'^2 + 2 S_uv P_u' P_v' + S_vv P_v'^2 + S_u P_u'' + S_v P_v'')`.
+The terms at `½` are tight enclosures; `D''` is enclosed over the piece:
+by the certified trigonometry for lines, arcs and the analytic surfaces,
+and for splines by the hulls of exact Bézier derivative nets through the
+quotient rule (a spline surface over the pcurve's box, the hull over the
+patches it meets: the surface is C1 across a knot line (R4) and piecewise
+C2, so the remainder bound holds). A piece is halved until the bound meets
+the tolerance (fourteen times in binary64 intervals, six exactly); a
+midpoint beyond it certifies a failure. For a valid use `D(½)` and `D'(½)`
+are rounding-small and the remainder shrinks as `h^3`. The reference bounds
+the same form on bisected pieces with `mpmath` interval de Boor
+evaluation.
+
+**Containment parity.** The `+u` ray from a point crosses a spline pcurve
+an odd number of times exactly when a certain partition says so: a piece
+whose control points lie certainly right of the point contributes whether
+its ends lie on different sides of `v = p_v` (half-open, as for segments),
+whatever its shape; a piece certainly left, above or below contributes
+nothing; any other piece is halved exactly, up to twelve times, and a
+pcurve through the point stays undecided. The reference integrates the
+winding angle instead.
+
 ## C1 of spline cells (R4)
 
 A cell is C1 in its own parameterisation (U3 of `REVIEW_NOTES.md`). For a

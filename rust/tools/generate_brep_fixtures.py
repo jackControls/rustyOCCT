@@ -838,6 +838,33 @@ def spline_cases(bases):
     cell('box', 'spline_edge_rational_not_c1', rational(False))
     cell('box', 'spline_edge_degenerate', edge_spline(0, [F(0)]*5))
 
+    # Ranges (S4e): a line spline three times the edge's length, over the
+    # range [1, 2] that is the edge itself (valid); with a corner knot at
+    # 0.5 outside the range, neither tested nor used (valid); and a cap's
+    # pcurve likewise.
+    long_basis = Basis(2, [0.0, 1.0, 2.0, 3.0], [3, 1, 1, 3])
+    long_line = [F(-1), F(-1, 2), F(1, 2), F(3, 2), F(2)]
+    corner_basis = Basis(2, [0.0, 0.5, 1.0, 2.0, 3.0], [3, 2, 1, 1, 3])
+    corner_line = [F(-1), F(-3, 4), F(-1, 2), F(-1, 4), F(1, 2), F(3, 2), F(2)]
+
+    def ranged_edge(fractions, basis, kink=False):
+        def change(c):
+            e = c.edges[0]
+            poles = along(c.vertices[e.start], c.vertices[e.end], fractions)
+            if kink:
+                x, y, z = poles[2]
+                poles[2] = (x, y+0.25, z)
+            e.curve = BSpline3(basis, poles, [1.0]*len(poles), (1.0, 2.0))
+        return change
+    cell('box', 'spline_edge_range', ranged_edge(long_line, long_basis))
+    cell('box', 'spline_edge_range_corner_outside', ranged_edge(corner_line, corner_basis, kink=True))
+
+    def ranged_pcurve(c):
+        k = c.loops[c.faces[1].loops[0]].fins[0]
+        p = c.fins[k].pcurve
+        c.fins[k].pcurve = BSpline2(long_basis, along(p.start, p.end, long_line), [1.0]*5, (1.0, 2.0))
+    cell('box', 'spline_pcurve_range', ranged_pcurve)
+
     # A ring edge: a periodic quadratic of period 3 with every knot of
     # multiplicity 2; its poles 0, 2 and 4 lie on the curve (at 0, 1, 2),
     # each the midpoint of its neighbours for C1. Moving pole 0 breaks only
@@ -893,9 +920,9 @@ def spline_cases(bases):
     cell('box', 'spline_pcurve_degenerate', pcurve_spline([F(0)]*5))
 
     # The top cap's surface as a spline: biquadratic, a knot of
-    # multiplicity 2 at 1/2 in u, its rows lines at uniform speed (C1) or
-    # one row kinked; its cap pcurves meet exactly, so only the pcurves'
-    # agreement with the edges is uncertified. A vertex loop on it is too.
+    # multiplicity 2 at 1.5 in u, its rows lines at uniform speed (C1, and
+    # the plane itself, so the cap stays valid with its line pcurves across
+    # the knot line) or one row kinked. A vertex loop on it is uncertified.
     def surface_spline(kinked=False, vertex_loop=False):
         def change(c):
             fractions = QUADRATIC_LINE
@@ -905,7 +932,10 @@ def spline_cases(bases):
                     if kinked and i == 1 and fv == 0:
                         fu = QUADRATIC_KINK[1]
                     rows.append(exact((3*fu, 2*fv, F(1))))
-            c.faces[1].surface = BSplineSurface(QUADRATIC, Basis(2, [0.0, 1.0], [3, 3]), rows, [1.0]*len(rows))
+            # Over the cap's own (x, y): u in [0, 3] with the knot 1.5, v in
+            # [0, 2]; the Greville poles make S(u, v) = (u, v, 1) exactly.
+            c.faces[1].surface = BSplineSurface(Basis(2, [0.0, 1.5, 3.0], [3, 2, 3]), Basis(2, [0.0, 2.0], [3, 3]),
+                                                rows, [1.0]*len(rows))
             if vertex_loop:
                 from cell_reference import Loop as CLoop
                 c.vertices.append((1.0, 1.0, 1.0))
@@ -915,6 +945,15 @@ def spline_cases(bases):
     cell('box', 'spline_face_c1', surface_spline())
     cell('box', 'spline_face_not_c1', surface_spline(kinked=True))
     cell('box', 'spline_face_vertex_loop', surface_spline(vertex_loop=True))
+
+    # Containment against a spline side (S4c): a hole inside the bulge's
+    # spline region, and one just outside it.
+    quadratic = Basis(2, [0.0, 1.0], [3, 3])
+    bulge = [('line', (0.0, 0.0)), ('spline', (3.0, 0.0), [(4.0, 1.0)], quadratic, None),
+             ('line', (3.0, 2.0)), ('line', (0.0, 2.0))]
+    for name, x0 in (('spline_bulge_hole_inside', 3.125), ('spline_bulge_hole_outside', 3.625)):
+        m = prism(name, [bulge, rectangle(x0, 0.875, x0+0.25, 1.125, hole=True)])
+        out.append(to_cell(m))
     return out
 
 

@@ -3,7 +3,8 @@
 //! shells, regions), shared by the fixture test and the native-comparison probe.
 use rusty_occt::topology::{
     Curve2, Curve3, Edge, EdgeId, Enclosure, Face, FaceId, Fin, FinId, Loop, LoopId, Orientation,
-    Region, RegionId, RegionKind, Shell, ShellId, Side, Surface, TopologyParts, Vertex, VertexId,
+    Region, RegionId, RegionKind, Shell, ShellId, Side, SplineDomain, SplineSpan, Surface,
+    TopologyParts, Vertex, VertexId,
 };
 use rusty_occt::{
     BSplineCurve2, BSplineCurve3, BSplineSurface3, Frame3, KnotVector, Point2, Point3, Tolerance,
@@ -36,6 +37,17 @@ fn control(w: &[&str], at: &mut usize, dim: usize) -> (Vec<Vec<f64>>, Vec<f64>) 
     (poles, weights)
 }
 
+/// The curve over an optional `range FIRST LAST` at `w[at]`, else whole.
+fn span<C: SplineDomain>(w: &[&str], at: usize, curve: C) -> SplineSpan<C> {
+    if w.get(at) == Some(&"range") {
+        let first = w[at + 1].parse().unwrap();
+        let last = w[at + 2].parse().unwrap();
+        SplineSpan::new(curve, first, last).expect("fixture ranges are valid")
+    } else {
+        SplineSpan::whole(curve)
+    }
+}
+
 /// A spline edge after the word `bspline` at `w[at - 1]`.
 fn spline3(w: &[&str], mut at: usize) -> Curve3 {
     let (degree, periodic, knots, mults) = basis(w, &mut at);
@@ -44,28 +56,26 @@ fn spline3(w: &[&str], mut at: usize) -> Curve3 {
         .iter()
         .map(|p| Point3::new(p[0], p[1], p[2]))
         .collect();
-    Curve3::BSpline(
-        if periodic {
-            BSplineCurve3::new_periodic(degree, poles, Some(weights), knots, mults)
-        } else {
-            BSplineCurve3::new(degree, poles, Some(weights), knots, mults)
-        }
-        .expect("fixture splines are valid"),
-    )
+    let curve = if periodic {
+        BSplineCurve3::new_periodic(degree, poles, Some(weights), knots, mults)
+    } else {
+        BSplineCurve3::new(degree, poles, Some(weights), knots, mults)
+    }
+    .expect("fixture splines are valid");
+    Curve3::BSpline(span(w, at, curve))
 }
 
 fn spline2(w: &[&str], mut at: usize) -> Curve2 {
     let (degree, periodic, knots, mults) = basis(w, &mut at);
     let (poles, weights) = control(w, &mut at, 2);
     let poles = poles.iter().map(|p| Point2::new(p[0], p[1])).collect();
-    Curve2::BSpline(
-        if periodic {
-            BSplineCurve2::new_periodic(degree, poles, Some(weights), knots, mults)
-        } else {
-            BSplineCurve2::new(degree, poles, Some(weights), knots, mults)
-        }
-        .expect("fixture splines are valid"),
-    )
+    let curve = if periodic {
+        BSplineCurve2::new_periodic(degree, poles, Some(weights), knots, mults)
+    } else {
+        BSplineCurve2::new(degree, poles, Some(weights), knots, mults)
+    }
+    .expect("fixture splines are valid");
+    Curve2::BSpline(span(w, at, curve))
 }
 
 /// A spline surface after `bspline` at `w[at - 1]`, and the index after it.

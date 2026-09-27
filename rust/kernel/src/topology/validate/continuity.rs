@@ -10,24 +10,42 @@ use crate::{BSplineCurve3, BSplineSurface3};
 use num_rational::BigRational as R;
 
 /// The knots of multiplicity equal to the degree that a C1 test must
-/// remove: every knot strictly inside a nonperiodic domain (an unclamped
-/// basis has knots beyond it), and every knot of a periodic one, its seam
-/// included (its last knot is the seam's copy).
-fn tested(curve: &ExactBSplineCurve3) -> Vec<R> {
+/// remove: those strictly inside the range `[first, last]` (an unclamped
+/// basis has knots beyond its domain, a trimmed edge beyond its range), and
+/// on a closed period also the knot at the range's ends, where the ring
+/// joins. A periodic knot counts at every translate by the period, reduced
+/// to the base period for the removal.
+fn tested(curve: &ExactBSplineCurve3, first: &R, last: &R, closed: bool) -> Vec<R> {
     let (knots, mults) = (curve.knots(), curve.multiplicities());
     let [a, b] = curve.domain();
     let n = knots.len();
-    (0..n)
-        .filter(|&i| {
-            if curve.is_periodic() {
-                i + 1 < n
-            } else {
-                knots[i] > *a && knots[i] < *b
+    let mut out = Vec::new();
+    for i in 0..n {
+        if mults[i] < curve.degree() {
+            continue;
+        }
+        let k = &knots[i];
+        if !curve.is_periodic() {
+            if k > first && k < last {
+                out.push(k.clone());
             }
-        })
-        .filter(|&i| mults[i] >= curve.degree())
-        .map(|i| knots[i].clone())
-        .collect()
+            continue;
+        }
+        if i + 1 == n {
+            continue; // the seam's copy
+        }
+        let period = b - a;
+        // The translates of k in [first, last].
+        let mut t = k - ((k - first) / &period).floor() * &period;
+        while t <= *last {
+            if (t > *first && t < *last) || (closed && (t == *first || t == *last)) {
+                out.push(k.clone());
+                break;
+            }
+            t += &period;
+        }
+    }
+    out
 }
 
 /// One exact removal at `u`, down to `degree - 1`. A small periodic basis
@@ -54,13 +72,14 @@ fn c1_at(curve: &ExactBSplineCurve3, u: &R) -> bool {
         .unwrap_or(false)
 }
 
-fn exact_c1(curve: &ExactBSplineCurve3) -> bool {
-    tested(curve).iter().all(|u| c1_at(curve, u))
-}
-
-/// C1 over the whole curve, in its own parameter.
-pub(crate) fn curve_c1(curve: &BSplineCurve3) -> bool {
-    exact_c1(&curve.to_exact())
+/// C1 over the range, in the curve's own parameter.
+pub(crate) fn curve_c1(curve: &BSplineCurve3, range: [f64; 2], closed: bool) -> bool {
+    let exact = curve.to_exact();
+    let first = R::from_float(range[0]).expect("finite range");
+    let last = R::from_float(range[1]).expect("finite range");
+    tested(&exact, &first, &last, closed)
+        .iter()
+        .all(|u| c1_at(&exact, u))
 }
 
 /// C1 across every knot line of the surface, in both parameters.
@@ -71,7 +90,9 @@ pub(crate) fn surface_c1(surface: &BSplineSurface3) -> bool {
         let Some(first) = rows.first() else {
             return true;
         };
-        tested(first)
+        // Every knot of the whole surface.
+        let [lo, hi] = first.domain().clone();
+        tested(first, &lo, &hi, first.is_periodic())
             .iter()
             .all(|u| rows.iter().all(|row| c1_at(row, u)))
     })

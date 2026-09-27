@@ -174,13 +174,87 @@ pub enum Curve3 {
         start_angle: f64,
         sweep_angle: f64,
     },
-    /// A rational B-spline over its whole domain, the edge fraction mapped
-    /// affinely onto it (S4 of REVIEW_NOTES.md). A ring edge's is periodic.
-    BSpline(BSplineCurve3),
+    /// A rational B-spline over a range, the edge fraction mapped affinely
+    /// onto it (S4 of REVIEW_NOTES.md). A ring edge's is a full period.
+    BSpline(SplineSpan<BSplineCurve3>),
+}
+
+/// A spline over a closed range of its parameter: its whole domain when the
+/// kernel builds it, a sub-range (or, periodic, any range of at most one
+/// period) when a file trims it. An edge or pcurve fraction maps affinely
+/// onto the range (S4 of REVIEW_NOTES.md).
+#[derive(Debug, Clone, PartialEq)]
+pub struct SplineSpan<C> {
+    curve: C,
+    range: [f64; 2],
+}
+
+/// The parameter domain and periodicity of a spline curve.
+pub trait SplineDomain {
+    fn domain(&self) -> (f64, f64);
+    fn is_periodic(&self) -> bool;
+}
+impl SplineDomain for BSplineCurve3 {
+    fn domain(&self) -> (f64, f64) {
+        BSplineCurve3::domain(self)
+    }
+    fn is_periodic(&self) -> bool {
+        BSplineCurve3::is_periodic(self)
+    }
+}
+impl SplineDomain for BSplineCurve2 {
+    fn domain(&self) -> (f64, f64) {
+        self.as_curve3().domain()
+    }
+    fn is_periodic(&self) -> bool {
+        self.as_curve3().is_periodic()
+    }
+}
+
+impl<C: SplineDomain> SplineSpan<C> {
+    /// The whole domain.
+    pub fn whole(curve: C) -> Self {
+        let (a, b) = curve.domain();
+        Self {
+            curve,
+            range: [a, b],
+        }
+    }
+    /// `first < last`, finite; inside the domain, or of at most one period
+    /// on a periodic curve.
+    pub fn new(curve: C, first: f64, last: f64) -> Result<Self> {
+        let (a, b) = curve.domain();
+        let fits = if curve.is_periodic() {
+            crate::spline::rational(last) - crate::spline::rational(first)
+                <= crate::spline::rational(b) - crate::spline::rational(a)
+        } else {
+            a <= first && last <= b
+        };
+        if !(first.is_finite() && last.is_finite() && first < last && fits) {
+            return Err(Error::OutOfDomain("spline range"));
+        }
+        Ok(Self {
+            curve,
+            range: [first, last],
+        })
+    }
+    pub fn curve(&self) -> &C {
+        &self.curve
+    }
+    pub fn range(&self) -> [f64; 2] {
+        self.range
+    }
+    /// A full period of a periodic curve: closed, its ends joined inside.
+    pub fn is_closed_period(&self) -> bool {
+        let (a, b) = self.curve.domain();
+        self.curve.is_periodic()
+            && crate::spline::rational(self.range[1]) - crate::spline::rational(self.range[0])
+                == crate::spline::rational(b) - crate::spline::rational(a)
+    }
 }
 
 /// The spline parameter of an edge or pcurve fraction: affine onto the
-/// domain, its ends exact.
+/// range, its ends exact.
 pub(crate) fn spline_parameter((a, b): (f64, f64), fraction: f64) -> f64 {
     if fraction >= 1.0 {
         b
@@ -209,8 +283,9 @@ impl Curve3 {
                 let (sine, cosine) = (start_angle + sweep_angle * fraction).sin_cos();
                 frame.point(Point2::new(radius * cosine, radius * sine), 0.0)
             }
-            Self::BSpline(curve) => curve
-                .point(spline_parameter(curve.domain(), fraction))
+            Self::BSpline(span) => span
+                .curve()
+                .point(spline_parameter(span.range().into(), fraction))
                 .expect("a finite spline evaluates in its domain"),
         }
     }
@@ -228,9 +303,9 @@ pub enum Curve2 {
         start_angle: f64,
         sweep_angle: f64,
     },
-    /// A planar rational B-spline in the face's (u, v) over its whole
-    /// domain, the fraction mapped affinely onto it (S4).
-    BSpline(BSplineCurve2),
+    /// A planar rational B-spline in the face's (u, v) over a range, the
+    /// fraction mapped affinely onto it (S4).
+    BSpline(SplineSpan<BSplineCurve2>),
 }
 
 impl Curve2 {
@@ -249,8 +324,9 @@ impl Curve2 {
                 let (sine, cosine) = (start_angle + sweep_angle * fraction).sin_cos();
                 Point2::new(center.x + radius * cosine, center.y + radius * sine)
             }
-            Self::BSpline(curve) => curve
-                .point(spline_parameter(curve.as_curve3().domain(), fraction))
+            Self::BSpline(span) => span
+                .curve()
+                .point(spline_parameter(span.range().into(), fraction))
                 .expect("a finite spline evaluates in its domain"),
         }
     }

@@ -29,6 +29,7 @@ mod continuity;
 mod mass;
 mod spline_deviation;
 mod spline_flux;
+mod spline_taylor;
 pub(crate) use mass::{face_mass, mass};
 
 /// Issue classes of the validation contract.
@@ -307,10 +308,10 @@ fn arc_of(c: &Curve3) -> Option<(&Frame3, f64, f64, f64)> {
 
 /// A spline's exact point at an edge or pcurve fraction, the parameter
 /// `a + t (b - a)` exact (its ends exactly the domain's).
-fn spline_point(curve: &crate::BSplineCurve3, t: f64) -> [R; 3] {
+fn spline_point(curve: &crate::BSplineCurve3, range: [f64; 2], t: f64) -> [R; 3] {
     use crate::curve::{DerivativeOrder, KnotSide};
     let exact = curve.to_exact();
-    let [a, b] = exact.domain().clone();
+    let (a, b) = (r(range[0]), r(range[1]));
     let u = if t == 0.0 {
         a
     } else if t == 1.0 {
@@ -326,6 +327,19 @@ fn spline_point(curve: &crate::BSplineCurve3, t: f64) -> [R; 3] {
         .clone()
 }
 
+/// Whether every pole of a spline pcurve has the same u, so that `du` is
+/// identically zero along it.
+fn constant_u(spline: &super::SplineSpan<crate::BSplineCurve2>) -> bool {
+    let poles = spline.curve().poles();
+    poles.iter().all(|p| p.x == poles[0].x)
+}
+
+/// How a spline use's deviation is decided (S4b).
+enum SplineUse {
+    Exact(Box<spline_deviation::Exact>),
+    Taylor(Box<spline_taylor::Taylor>),
+}
+
 /// Whether a use involves spline geometry, which only the endpoint and
 /// continuity checks certify before the rest of S4.
 fn spline_use(curve: &Curve3, s: &Surface, p: &Curve2) -> bool {
@@ -336,7 +350,7 @@ fn spline_use(curve: &Curve3, s: &Surface, p: &Curve2) -> bool {
 
 fn curve_at<T: Real>(curve: &Curve3, t: f64) -> V3<T> {
     match curve {
-        Curve3::BSpline(spline) => spline_point(spline, t).map(|x| q::<T>(&x)),
+        Curve3::BSpline(span) => spline_point(span.curve(), span.range(), t).map(|x| q::<T>(&x)),
         Curve3::LineSegment { start, .. } if t == 0.0 => v3::<T>(start.to_array()),
         Curve3::LineSegment { end, .. } if t == 1.0 => v3::<T>(end.to_array()),
         Curve3::LineSegment { start, end } => {
@@ -359,7 +373,7 @@ fn curve_at<T: Real>(curve: &Curve3, t: f64) -> V3<T> {
 fn pcurve_at<T: Real>(p: &Curve2, t: f64) -> V2<T> {
     match p {
         Curve2::BSpline(spline) => {
-            let [x, y, _] = spline_point(spline.as_curve3(), t);
+            let [x, y, _] = spline_point(spline.curve().as_curve3(), spline.range(), t);
             [q(&x), q(&y)]
         }
         Curve2::LineSegment { start, .. } if t == 0.0 => [c(start.x), c(start.y)],
@@ -1005,8 +1019,8 @@ fn curve_valid(curve: &Curve3, tol: &R, fast_tol2: &Fast, exact_tol2: &I) -> boo
         }
         // Degenerate when every pole lies within tolerance of the first:
         // the whole curve then lies within tolerance of a point.
-        Curve3::BSpline(spline) => {
-            let poles = spline.poles();
+        Curve3::BSpline(span) => {
+            let poles = span.curve().poles();
             let first = poles[0].to_array().map(r);
             poles.iter().any(|p| {
                 let d: [R; 3] = std::array::from_fn(|i| r(p.to_array()[i]) - &first[i]);
@@ -1069,8 +1083,8 @@ fn pcurve_valid(p: &Curve2) -> bool {
                 && sweep_angle.abs() <= TAU
         }
         // Degenerate when every pole is the first.
-        Curve2::BSpline(spline) => {
-            let poles = spline.poles();
+        Curve2::BSpline(span) => {
+            let poles = span.curve().poles();
             poles.iter().any(|p| (p.x, p.y) != (poles[0].x, poles[0].y))
         }
     }
@@ -1312,9 +1326,22 @@ pub(crate) fn measure(view: &View) -> Measured {
                         };
                         let mut h = Harmonic::<Fast>::new();
                         fins[k.0] = if spline_use(curve, &face.surface, &u.pcurve) {
-                            spline_deviation::rational_use(curve, &face.surface, &u.pcurve, forward)
-                                .and_then(|exact| exact.upper_bound())
-                                .map(next_above)
+                            match spline_deviation::rational_use(
+                                curve,
+                                &face.surface,
+                                &u.pcurve,
+                                forward,
+                            ) {
+                                Some(exact) => exact.upper_bound(),
+                                None => spline_taylor::taylor_use(
+                                    curve,
+                                    &face.surface,
+                                    &u.pcurve,
+                                    forward,
+                                )
+                                .and_then(|taylor| taylor.upper_bound()),
+                            }
+                            .map(next_above)
                         } else if harmonic(&mut h) {
                             let hi = h.upper().bounds_f64().1;
                             let hi = if hi.is_finite() {
@@ -1418,10 +1445,13 @@ fn periodic_area<T: Real>(lp: &Lp) -> Option<T> {
     let term = |a: &V2<T>, b: &V2<T>| a[1].add(&b[1]).mul(&c(-0.5)).mul(&b[0].sub(&a[0]));
     let mut total = c::<T>(0.0);
     for u in &lp.fins {
-        let Curve2::LineSegment { start, end } = &u.pcurve else {
-            return None;
-        };
-        total = total.add(&term(&[c(start.x), c(start.y)], &[c(end.x), c(end.y)]));
+        total = total.add(&match &u.pcurve {
+            Curve2::LineSegment { start, end } => {
+                term(&[c(start.x), c(start.y)], &[c(end.x), c(end.y)])
+            }
+            Curve2::BSpline(spline) => bernstein::minus_v_du(spline)?,
+            Curve2::CircularArc { .. } => return None,
+        });
     }
     for (a, b) in chords::<T>(lp) {
         total = total.add(&term(&a, &b));
@@ -1435,10 +1465,13 @@ fn periodic_area_v<T: Real>(lp: &Lp) -> Option<T> {
     let term = |a: &V2<T>, b: &V2<T>| a[0].add(&b[0]).mul(&c(0.5)).mul(&b[1].sub(&a[1]));
     let mut total = c::<T>(0.0);
     for u in &lp.fins {
-        let Curve2::LineSegment { start, end } = &u.pcurve else {
-            return None;
-        };
-        total = total.add(&term(&[c(start.x), c(start.y)], &[c(end.x), c(end.y)]));
+        total = total.add(&match &u.pcurve {
+            Curve2::LineSegment { start, end } => {
+                term(&[c(start.x), c(start.y)], &[c(end.x), c(end.y)])
+            }
+            Curve2::BSpline(spline) => bernstein::u_dv(spline)?,
+            Curve2::CircularArc { .. } => return None,
+        });
     }
     for (a, b) in chords::<T>(lp) {
         total = total.add(&term(&a, &b));
@@ -1471,7 +1504,7 @@ fn crossings<T: Real>(loops: &[&Lp], p: &V2<T>) -> Option<u32> {
                     &r(*sweep_angle),
                     p,
                 )?,
-                Curve2::BSpline(_) => return None,
+                Curve2::BSpline(spline) => bernstein::crossing_parity(spline, p)?,
             };
         }
     }
@@ -1790,6 +1823,8 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
                 Curve2::BSpline(spline) if plane => {
                     coeffs.2.mul(&bernstein::minus_v_du::<T>(spline)?)
                 }
+                // A spline pcurve of constant u adds nothing to -∮ v f(u) du.
+                Curve2::BSpline(spline) if constant_u(spline) => c(0.0),
                 Curve2::CircularArc { .. } | Curve2::BSpline(_) => return None,
             };
             total = total.add(&term);
@@ -2063,8 +2098,8 @@ fn closed_curve(curve: &Curve3) -> bool {
         Curve3::Circle { .. } => true,
         Curve3::CircularArc { sweep_angle, .. } => sweep_angle.abs() == TAU,
         Curve3::LineSegment { .. } => false,
-        // A spline ring edge must be periodic; its seam is tested for C1.
-        Curve3::BSpline(spline) => spline.is_periodic(),
+        // A spline ring edge is a full period; its seam is tested for C1.
+        Curve3::BSpline(span) => span.is_closed_period(),
     }
 }
 
@@ -2606,7 +2641,7 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
     // C1 in each cell's own parameterisation (R4): exact, never uncertified.
     for (i, edge) in edges.iter().enumerate() {
         if let Curve3::BSpline(spline) = &edge.curve {
-            if !continuity::curve_c1(spline) {
+            if !continuity::curve_c1(spline.curve(), spline.range(), spline.is_closed_period()) {
                 add(&mut issues, K::EdgeNotC1, En::Edge(i));
             }
         }
@@ -2624,7 +2659,11 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
             };
             for (ui, k) in list.iter().enumerate() {
                 if let Curve2::BSpline(spline) = &fins[k.0].pcurve {
-                    if !continuity::curve_c1(spline.as_curve3()) {
+                    if !continuity::curve_c1(
+                        spline.curve().as_curve3(),
+                        spline.range(),
+                        spline.is_closed_period(),
+                    ) {
                         add(&mut issues, K::PcurveNotC1, En::Use(fi, li, ui));
                         bad_faces.insert(fi);
                     }
@@ -2793,24 +2832,35 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                 let curve = &edges[u.edge.0].curve;
                 // Spline uses whose factors are all rational are decided by
                 // exact composition (S4b); the others are not yet.
-                let exact = if spline_use(curve, &face.surface, &u.pcurve) {
+                // Spline uses are decided by exact composition where every
+                // factor is rational, by Taylor enclosures otherwise (S4b).
+                let spline = if spline_use(curve, &face.surface, &u.pcurve) {
                     match spline_deviation::rational_use(curve, &face.surface, &u.pcurve, forward) {
-                        Some(exact) => Some(exact),
-                        None => {
-                            add(
-                                &mut issues,
-                                K::UncertifiedPcurveOffEdge,
-                                En::Use(fi, li, ui),
-                            );
-                            bad_faces.insert(fi);
-                            continue;
-                        }
+                        Some(exact) => Some(SplineUse::Exact(Box::new(exact))),
+                        None => match spline_taylor::taylor_use(
+                            curve,
+                            &face.surface,
+                            &u.pcurve,
+                            forward,
+                        ) {
+                            Some(taylor) => Some(SplineUse::Taylor(Box::new(taylor))),
+                            None => {
+                                add(
+                                    &mut issues,
+                                    K::UncertifiedPcurveOffEdge,
+                                    En::Use(fi, li, ui),
+                                );
+                                bad_faces.insert(fi);
+                                continue;
+                            }
+                        },
                     }
                 } else {
                     None
                 };
-                let decide = |th: &Threshold| match &exact {
-                    Some(exact) => exact.decide(th.0),
+                let decide = |th: &Threshold| match &spline {
+                    Some(SplineUse::Exact(exact)) => exact.decide(th.0),
+                    Some(SplineUse::Taylor(taylor)) => taylor.decide(th.0),
                     None => tiered(
                         Verdict::Unknown,
                         || {

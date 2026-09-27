@@ -44,7 +44,7 @@ fn complete_issue_sets_match_the_independent_oracle() {
         checked += 1;
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
-    assert_eq!((checked, valid), (expected.len(), 53));
+    assert_eq!((checked, valid), (expected.len(), 60));
 }
 
 /// Measured enclosures (M5) of every valid case: never below the reference's
@@ -135,8 +135,35 @@ fn measured_enclosures_lie_between_the_reference_gap_and_its_declared_bound() {
         }
     }
     assert_eq!(compared, lows.values().map(Vec::len).sum::<usize>());
-    assert_eq!(lows.len(), 53);
+    assert_eq!(lows.len(), 60);
     // The gaps moved half the resolution compare without the allowance
     // mattering: a vertex, a cap fin, and a side fin with its face.
     assert!(strict >= 4, "{strict}");
+}
+
+/// Mass properties integrate spline pcurves on planes (S4d): the box with a
+/// cap's line pcurve given as an equivalent quadratic spline keeps the box's
+/// volume, area and centroid, enclosed; a spline surface is not integrated
+/// yet.
+#[test]
+fn spline_pcurves_on_planes_integrate() {
+    let case = |name: &str| {
+        let block = include_str!("../../fixtures/brep-cases.txt")
+            .split("\nend")
+            .find(|b| b.trim().lines().next() == Some(&format!("case {name}")))
+            .unwrap();
+        let (_, tolerance, parts) = parse(block.trim());
+        rusty_occt::topology::Topology::from_parts(parts, Tolerance::new(tolerance, 1e-12).unwrap())
+            .expect("a valid case")
+    };
+    let m = case("spline_pcurve_c1")
+        .mass_enclosure()
+        .expect("integrated");
+    let within = |x: [f64; 2], want: f64| x[0] <= want && want <= x[1] && x[1] - x[0] <= 1e-9;
+    assert!(within(m.volume, 6.0), "{:?}", m.volume);
+    assert!(within(m.surface_area, 22.0), "{:?}", m.surface_area);
+    for (c, want) in m.centroid.iter().zip([1.5, 1.0, 0.5]) {
+        assert!(within(*c, want), "{c:?}");
+    }
+    assert!(case("spline_bulge").mass_enclosure().is_none());
 }

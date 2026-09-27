@@ -843,7 +843,10 @@ def winding(loop, point):
     for u in loop:
         def dtheta(t, p=u.pcurve):
             q = pcurve_point(p, t)
-            if isinstance(p, Line2):
+            if isinstance(p, BSpline2):
+                q, d = spline.curve_jet_mp(p, t)
+                q, d = list(q), list(d)
+            elif isinstance(p, Line2):
                 d = sub(vec(p.end), vec(p.start))
             else:
                 a = mp.mpf(p.start)+mp.mpf(p.sweep)*t
@@ -962,8 +965,9 @@ def edge_range(c):
     """OCCT curve, parameter range, and our fraction -> OCCT parameter."""
     if isinstance(c, BSpline3):
         # The whole domain, the fraction mapped affinely onto it.
-        words = spline.encode_curve(c, number).split()[1:]
-        return ('bspline', tuple(words)), c.basis.knots[0], c.basis.knots[-1]
+        words = spline.encode_curve(c, number, with_range=False).split()[1:]
+        a, e = spline.span_of(c)
+        return ('bspline', tuple(words)), float(a), float(e)
     if isinstance(c, Line3):
         d = [b-a for a, b in zip(c.start, c.end)]
         length = math.sqrt(ltr_sum(x*x for x in d))
@@ -985,7 +989,7 @@ def pcurve_encoding(p, forward, first, last):
         if q is None:
             return ('bspline', ()), False
         q, exact = spline.reparameterized(q, first, last)
-        return ('bspline', tuple(spline.encode_curve(q, number).split()[1:])), exact
+        return ('bspline', tuple(spline.encode_curve(q, number, with_range=False).split()[1:])), exact
     span = last-first
     if isinstance(p, Line2):
         a, b = (p.start, p.end) if forward else (p.end, p.start)

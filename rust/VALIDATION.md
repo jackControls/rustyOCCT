@@ -539,7 +539,7 @@ algorithms).
 
 ## Generic B-rep validation
 
-`generate_brep_fixtures.py --check` rebuilds 145 cell-complex cases (53 valid):
+`generate_brep_fixtures.py --check` rebuilds 150 cell-complex cases (60 valid):
 54 converted by rule from an independent seamed prism builder and its
 mutations, twenty-two cell-model cases for the model's own failure
 modes, the near-frequency bound and enclosures (gaps just inside and outside
@@ -560,8 +560,8 @@ structure-only and checks the synthesized counts of every valid case. See
 [the bridge](BREP_VALIDATION.md#native-comparison-bridge).
 
 Enclosures (M5): every fixture carries bounds that the independent
-reference declares; Rust's report equals the reference's on all 145 cases.
-Measured bounds of the 53 valid cases lie between the reference's certain
+reference declares; Rust's report equals the reference's on all 150 cases.
+Measured bounds of the 60 valid cases lie between the reference's certain
 gap and its declared bound (`brep-enclosure-lows.tsv`, within a stated
 frame-rounding allowance). `enclosures.rs` requires every prism of the
 identity corpus to be enclosed within its resolution and no continued

@@ -263,6 +263,15 @@ Decisions for the rest of S4, recorded before its code (2026-09-26):
   rational case, `mpmath` interval arithmetic otherwise.
 * **UV gaps on spline surfaces** are measured in 3D, `|S(a) - S(b)|` from
   exact evaluations, instead of by a length scale.
+* **Spline edges and pcurves carry a range (decided 2026-09-27, before
+  S4e).** In the `data/occ` corpus 999 spline edges use their curve's whole
+  domain, but 200 use a sub-range and 251 more are trimmed curves; trimming
+  a spline exactly yields poles binary64 cannot hold. So `Curve3::BSpline`
+  and `Curve2::BSpline` hold a `SplineSpan`, the curve and a closed range
+  inside its domain (the whole domain when the kernel builds it), the
+  fraction mapped affinely onto the range. R4 then tests the knots strictly
+  inside the range: the cell's parameterisation is the range. A surface is
+  still tested over its whole domain.
 
 ### After S4
 
@@ -449,6 +458,12 @@ converter records that as `Imported` provenance, never as an approximation.
     integrates by quadrature. Six spline cases are now valid, two of them
     spline models that native OCCT also finds valid with the same counts and
     enclosures within its measurements; `brep_validation` mutation 32 moves
-    them by exact similarities. Still to do in S4b-d: the interval path for
-    spline geometry on analytic curved surfaces, arcs and pcurves across
-    knot lines; rational surfaces' flux; containment; mass properties.
+    them by exact similarities.
+  * S4b-d, second part: Taylor enclosures for every other spline use
+    (`validate/spline_taylor.rs`), containment by exact parity, periodic
+    areas, a cylinder's flux with constant-u spline pcurves, mass
+    properties with spline pcurves on planes, and `SplineSpan` ranges (the
+    corpus trims 451 spline edges). 60 fixture cases are valid. Still to
+    do: rational spline surfaces' flux, mass properties on spline surfaces
+    and with spline pcurves on curved surfaces, periodic spline surfaces,
+    and S4e.

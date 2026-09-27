@@ -61,7 +61,9 @@ closes shifted by `(2πwu, 2πwv)`; a torus face without edge loops is the
 whole torus. A spline edge (`Curve3::BSpline`) or pcurve (`Curve2::BSpline`)
 spans its whole domain, the fraction mapped affinely onto it; a spline face
 (`Surface::BSpline`) uses its own `(u, v)` and its loops do not wind yet
-(R4 of `REVIEW_NOTES.md`).
+(R4 of `REVIEW_NOTES.md`). A spline edge or pcurve is a `SplineSpan`: the
+curve over a range, its whole domain when the kernel builds it, a sub-range
+when a file trims it.
 
 ## Exact combinatorial checks
 
@@ -196,18 +198,22 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   edge, a line or spline pcurve, a plane or spline surface) is decided by
   exact composition (S4b, `MATHEMATICS.md`), provided each common Bézier
   piece of a spline pcurve on a spline surface lies in one patch by its
-  control points and the composed degree is at most 96; any other use with
-  spline geometry is `uncertified_pcurve_off_edge`. A spline pcurve's share
-  of a loop's signed area is enclosed (S4c); containment of an inner loop in
-  an outer loop with a spline pcurve is `uncertified_containment`. The
-  orientation flux of a plane face with spline pcurves, and of a face on a
-  nonrational, nonperiodic spline surface whose pcurve pieces each lie in
-  one patch, is enclosed (S4d); on any other spline surface the shell's
-  orientation is `uncertified_shell_orientation`. A UV gap on a spline
-  surface is decided only when exactly zero (`uncertified_uv_gap`
-  otherwise, a surface without a length scale), a vertex loop on one is
-  `uncertified_vertex_loop`, and mass properties with spline geometry are
-  `None` so far.
+  control points and the composed degree is at most 96. Every other use
+  with spline geometry (an arc, an analytic curved surface, a pcurve across
+  a knot line) is decided by second-order Taylor enclosures on halved
+  pieces; only a periodic spline surface leaves it
+  `uncertified_pcurve_off_edge`. A spline pcurve's share of a loop's signed
+  area and periodic areas are enclosed, and its crossings of a containment
+  ray are counted by parity on exact halvings (S4c). The orientation flux of
+  a plane face with spline pcurves, of a cylinder face whose spline pcurves
+  keep a constant `u`, and of a face on a nonrational, nonperiodic spline
+  surface whose pcurve pieces each lie in one patch, is enclosed (S4d);
+  otherwise the shell's orientation is `uncertified_shell_orientation`. A UV
+  gap on a spline surface is decided only when exactly zero
+  (`uncertified_uv_gap` otherwise, a surface without a length scale), a
+  vertex loop on one is `uncertified_vertex_loop`. Mass properties
+  integrate spline pcurves on planes; with a spline surface or a spline
+  pcurve on a curved surface they are `None` so far.
 
 ## Two arithmetic tiers
 
@@ -314,7 +320,7 @@ Evidence:
   seam is kept and rejected as `seam_edge`), and `validate` implements the
   side, region, radial, winding, vertex-loop and region-flux invariants
   independently, with its own `+v` cover-crossing parity on cylinders.
-  `generate_brep_fixtures.py --check` rebuilds 145 cases. 54 come from an
+  `generate_brep_fixtures.py --check` rebuilds 150 cases. 54 come from an
   independent seamed prism builder (19 valid solids and 35 mutations; the
   valid solids include holes, convex and concave arcs, full circles, one and
   two cavities, rotated and far-translated copies and a millimetre-scale
@@ -349,10 +355,12 @@ Evidence:
   a C1 seam or a broken one, a small periodic basis whose removal needs a
   refinement first, a nonperiodic ring edge, spline pcurves, spline faces
   (C1, broken, with a vertex loop) and degenerate spline edges and
-  pcurves. Ten are the spline models of S4 (`spline_models()`, with OCCT
+  pcurves, three spline ranges (an edge and a pcurve trimmed from a
+  longer line spline, one with a corner knot outside its range), and two
+  holes against a spline side (inside and outside). Ten are the spline models of S4 (`spline_models()`, with OCCT
   rows for `compare_brep.py --family spline`): prisms with a spline side
   and a ruled spline wall, and a stadium with spline geometry on its
-  cylinder, with their mutations. 53 cases are valid. `brep_validation.rs`
+  cylinder, with their mutations. 60 cases are valid. `brep_validation.rs`
   requires Rust's complete sorted issue list to equal the reference's for
   every case.
 * The existing prism suites (`invariants`, `occt_regression`, `modeling`)
@@ -407,11 +415,12 @@ issues:
   grid step, exactly one more issue, `edge_not_c1`, `pcurve_not_c1` or
   `face_not_c1` (the uses' deviations set aside: the grid poles leave the
   prism's geometry)
-* a valid spline prism of the fixtures moved by `p -> s p + t`, `s` a power
-  of two and `t` dyadic (mutation 32, S4b-d), which must stay valid, then a
-  cap's spline pcurve shifted by `1000·tol` (`pcurve_off_edge`) or by
-  `0.001·tol` (at most `enclosure_unsound`), or the ruled wall reversed
-  (`loop_winding`)
+* a valid spline fixture (the spline prisms, by exact composition, and
+  the stadiums with spline geometry on their cylinder, by Taylor
+  enclosures) moved by `p -> s p + t`, `s` a power of two and `t` dyadic
+  (mutation 32, S4b-d), which must stay valid, then its first spline use's
+  pcurve shifted by `1000·tol` (`pcurve_off_edge`) or by `0.001·tol` (at
+  most `enclosure_unsound`), or a ruled wall reversed (`loop_winding`)
 
 Every report must be deterministic, duplicate-free and identical to
 `from_parts`. A local 300-second development campaign (dirty tree based on

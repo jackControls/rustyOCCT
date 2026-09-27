@@ -29,7 +29,8 @@ use crate::byte;
 use rusty_occt::identity::OperationId;
 use rusty_occt::topology::{
     Curve2, Curve3, Edge, EdgeId, Enclosure, FaceId, FinId, Loop, LoopId, Orientation, Region,
-    RegionId, RegionKind, Shell, ShellId, Surface, Topology, TopologyParts, Vertex, VertexId,
+    RegionId, RegionKind, Shell, ShellId, SplineSpan, Surface, Topology, TopologyParts, Vertex,
+    VertexId,
 };
 use rusty_occt::{
     BSplineCurve2, BSplineCurve3, BSplineSurface3, Boundary, Frame3, KnotVector, Point2, Point3,
@@ -770,8 +771,7 @@ fn knot_basis(p: usize) -> (Vec<f64>, Vec<usize>) {
 
 /// Mutation 31 (R4): a star prism whose line edge, line pcurve or plane
 /// becomes a spline, C1 at a knot repeated to its degree, then broken there.
-/// Apart from the uses' deviations, the broken report has exactly one more
-/// issue than the C1 one.
+/// The C1 report has no continuity issue, the broken one exactly one.
 fn spline(b: &mut Bytes) {
     let count = 3 + usize::from(b.next() % 10);
     let scale = 2.0_f64.powi(i32::from(b.next() % 21) - 10);
@@ -832,7 +832,7 @@ fn spline(b: &mut Bytes) {
                     .collect();
                 let curve = BSplineCurve3::new(p, poles, None, knots.clone(), mults.clone())
                     .expect("a valid spline");
-                version.edges[e].curve = Curve3::BSpline(curve);
+                version.edges[e].curve = Curve3::BSpline(SplineSpan::whole(curve));
             }
             format!("edge_not_c1:edge {e}")
         }
@@ -851,7 +851,7 @@ fn spline(b: &mut Bytes) {
                 let poles = poles.iter().map(|q| Point2::new(q[0], q[1])).collect();
                 let curve = BSplineCurve2::new(p, poles, None, knots.clone(), mults.clone())
                     .expect("a valid spline");
-                version.fins[k.index()].pcurve = Curve2::BSpline(curve);
+                version.fins[k.index()].pcurve = Curve2::BSpline(SplineSpan::whole(curve));
             }
             format!("pcurve_not_c1:use {fi}.{li}.{ui}")
         }
@@ -889,36 +889,47 @@ fn spline(b: &mut Bytes) {
         }
     };
     let [smooth, broken] = versions;
-    // The splines' grid poles leave the prism's geometry by up to half a
-    // grid step, far beyond tolerance: their deviations (certified or not,
-    // S4b) are set aside, and continuity alone is compared.
-    let strip = |issues: Vec<String>| -> Vec<String> {
+    // The splines' grid poles leave the prism's geometry, so their uses'
+    // deviations and what follows from them (S4b) may differ between the
+    // two: continuity alone is compared.
+    let continuity = |issues: Vec<String>| -> Vec<String> {
         issues
             .into_iter()
-            .filter(|i| !i.contains("pcurve_off_edge"))
+            .filter(|i| i.contains("_not_c1"))
             .collect()
     };
-    let smooth = strip(report(&smooth, tolerance));
-    assert!(
-        smooth.iter().all(|i| !i.contains("_not_c1")),
-        "an exact repeat is C1: {smooth:?}"
-    );
-    let mut want = smooth.clone();
-    want.push(issue);
-    want.sort();
-    assert_eq!(strip(report(&broken, tolerance)), want);
+    assert_eq!(continuity(report(&smooth, tolerance)), Vec::<String>::new());
+    assert_eq!(continuity(report(&broken, tolerance)), vec![issue]);
 }
 
-/// A spline prism of the fixtures under `p -> s p + t`, `s` a power of two
-/// and `t` dyadic: every relation stays exact. Plane frames keep their axes;
-/// pcurves on planes scale, and on the ruled wall so does `v` (its knots
+/// A spline fixture under `p -> s p + t`, `s` a power of two and `t`
+/// dyadic: every relation stays exact. Plane and cylinder frames keep their
+/// axes; radii scale; pcurves on planes scale, on a cylinder only in `v`
+/// (the angle stays), and on a ruled spline wall only in `v` (its knots
 /// included).
 fn similar(parts: &mut TopologyParts, s: f64, t: [f64; 3]) {
     let map = |p: Point3| Point3::new(s * p.x + t[0], s * p.y + t[1], s * p.z + t[2]);
+    let moved =
+        |f: &Frame3| Frame3::new(map(f.origin()), f.normal(), f.x(), Tolerance::default()).unwrap();
     let scaled = |e: &mut Option<Enclosure>| {
         if let Some(e) = e {
             e.bound *= s;
         }
+    };
+    let spline3 = |c: &BSplineCurve3, poles: Vec<Point3>| {
+        let build = if c.is_periodic() {
+            BSplineCurve3::new_periodic
+        } else {
+            BSplineCurve3::new
+        };
+        build(
+            c.degree(),
+            poles,
+            Some(c.weights().to_vec()),
+            c.knots().to_vec(),
+            c.multiplicities().to_vec(),
+        )
+        .unwrap()
     };
     for v in &mut parts.vertices {
         v.position = map(v.position);
@@ -930,36 +941,46 @@ fn similar(parts: &mut TopologyParts, s: f64, t: [f64; 3]) {
                 start: map(*start),
                 end: map(*end),
             },
+            Curve3::Circle { frame, radius } => Curve3::Circle {
+                frame: moved(frame),
+                radius: radius * s,
+            },
+            Curve3::CircularArc {
+                frame,
+                radius,
+                start_angle,
+                sweep_angle,
+            } => Curve3::CircularArc {
+                frame: moved(frame),
+                radius: radius * s,
+                start_angle: *start_angle,
+                sweep_angle: *sweep_angle,
+            },
             Curve3::BSpline(c) => {
-                let poles = c.poles().iter().map(|p| map(*p)).collect();
-                Curve3::BSpline(
-                    BSplineCurve3::new(
-                        c.degree(),
-                        poles,
-                        Some(c.weights().to_vec()),
-                        c.knots().to_vec(),
-                        c.multiplicities().to_vec(),
-                    )
-                    .unwrap(),
-                )
+                let moved = spline3(
+                    c.curve(),
+                    c.curve().poles().iter().map(|p| map(*p)).collect(),
+                );
+                let [first, last] = c.range();
+                Curve3::BSpline(SplineSpan::new(moved, first, last).unwrap())
             }
-            _ => unreachable!("spline prisms have lines and splines"),
         };
     }
-    let mut on_wall = vec![false; parts.loops.len()];
+    // How each loop's pcurves scale: both coordinates, or only v.
+    let mut only_v = vec![false; parts.loops.len()];
     for f in &mut parts.faces {
         scaled(&mut f.enclosure);
+        let v_only = !matches!(f.surface, Surface::Plane(_));
+        for l in &f.loops {
+            only_v[l.index()] = v_only;
+        }
         f.surface = match &f.surface {
-            Surface::Plane(frame) => {
-                let tol = Tolerance::default();
-                Surface::Plane(
-                    Frame3::new(map(frame.origin()), frame.normal(), frame.x(), tol).unwrap(),
-                )
-            }
+            Surface::Plane(frame) => Surface::Plane(moved(frame)),
+            Surface::Cylinder { frame, radius } => Surface::Cylinder {
+                frame: moved(frame),
+                radius: radius * s,
+            },
             Surface::BSpline(q) => {
-                for l in &f.loops {
-                    on_wall[l.index()] = true;
-                }
                 let v = q.v_knots();
                 let v = KnotVector::new(
                     v.degree(),
@@ -973,7 +994,7 @@ fn similar(parts: &mut TopologyParts, s: f64, t: [f64; 3]) {
                         .unwrap(),
                 )
             }
-            _ => unreachable!("spline prisms have planes and a spline wall"),
+            _ => unreachable!("spline fixtures have planes, cylinders and ruled walls"),
         };
     }
     for (l, lp) in parts.loops.iter().enumerate() {
@@ -984,7 +1005,7 @@ fn similar(parts: &mut TopologyParts, s: f64, t: [f64; 3]) {
             let fin = &mut parts.fins[k.index()];
             scaled(&mut fin.enclosure);
             let point = |p: Point2| {
-                if on_wall[l] {
+                if only_v[l] {
                     Point2::new(p.x, s * p.y)
                 } else {
                     Point2::new(s * p.x, s * p.y)
@@ -995,10 +1016,25 @@ fn similar(parts: &mut TopologyParts, s: f64, t: [f64; 3]) {
                     start: point(*start),
                     end: point(*end),
                 },
-                Curve2::BSpline(c) => {
+                Curve2::CircularArc {
+                    center,
+                    radius,
+                    start_angle,
+                    sweep_angle,
+                } => {
+                    assert!(!only_v[l], "arcs are cap pcurves");
+                    Curve2::CircularArc {
+                        center: point(*center),
+                        radius: radius * s,
+                        start_angle: *start_angle,
+                        sweep_angle: *sweep_angle,
+                    }
+                }
+                Curve2::BSpline(span) => {
+                    let (c, [first, last]) = (span.curve(), span.range());
                     let c3 = c.as_curve3();
                     let poles = c.poles().into_iter().map(point).collect();
-                    Curve2::BSpline(
+                    Curve2::BSpline(respan(
                         BSplineCurve2::new(
                             c3.degree(),
                             poles,
@@ -1007,19 +1043,65 @@ fn similar(parts: &mut TopologyParts, s: f64, t: [f64; 3]) {
                             c3.multiplicities().to_vec(),
                         )
                         .unwrap(),
-                    )
+                        first,
+                        last,
+                    ))
                 }
-                _ => unreachable!("spline prisms have line and spline pcurves"),
             };
         }
     }
 }
 
-/// Mutation 32 (S4b-d): a valid spline prism of the fixtures, moved exactly,
-/// is valid; then one mutation with its predicted issues.
+/// A rebuilt pcurve over the range of the one it replaces.
+fn respan(curve: BSplineCurve2, first: f64, last: f64) -> SplineSpan<BSplineCurve2> {
+    SplineSpan::new(curve, first, last).unwrap()
+}
+
+/// The pcurve moved by `d` in u (along a plane's x, or around a cylinder,
+/// which is the same distance for a unit radius times the radius).
+fn shifted(p: &Curve2, d: f64) -> Curve2 {
+    match p {
+        Curve2::LineSegment { start, end } => Curve2::LineSegment {
+            start: Point2::new(start.x + d, start.y),
+            end: Point2::new(end.x + d, end.y),
+        },
+        Curve2::BSpline(span) => {
+            let (c, [first, last]) = (span.curve(), span.range());
+            let c3 = c.as_curve3();
+            let poles = c
+                .poles()
+                .iter()
+                .map(|q| Point2::new(q.x + d, q.y))
+                .collect();
+            Curve2::BSpline(respan(
+                BSplineCurve2::new(
+                    c3.degree(),
+                    poles,
+                    Some(c3.weights().to_vec()),
+                    c3.knots().to_vec(),
+                    c3.multiplicities().to_vec(),
+                )
+                .unwrap(),
+                first,
+                last,
+            ))
+        }
+        Curve2::CircularArc { .. } => unreachable!("spline uses have line or spline pcurves"),
+    }
+}
+
+/// Mutation 32 (S4b-d): a valid spline fixture (spline prisms by exact
+/// composition, a stadium with spline geometry on its cylinder by Taylor
+/// enclosures), moved exactly, is valid; then one mutation with its
+/// predicted issues.
 fn spline_prism(b: &mut Bytes) {
     let text = include_str!("../../fixtures/brep-cases.txt");
-    let names = ["case spline_bulge", "case spline_cubic_bulge"];
+    let names = [
+        "case spline_bulge",
+        "case spline_cubic_bulge",
+        "case spline_stadium_pcurve",
+        "case spline_stadium_edge",
+    ];
     let blocks: Vec<&str> = text
         .split("\nend")
         .filter(|x| names.contains(&x.trim().lines().next().unwrap_or("")))
@@ -1030,77 +1112,66 @@ fn spline_prism(b: &mut Bytes) {
     similar(&mut parts, s, t);
     let tolerance = Tolerance::new(tol * s, 1e-12).unwrap();
     assert_eq!(report(&parts, tolerance), Vec::<String>::new());
-    // The top cap's spline pcurve and its position.
-    let top = 1;
-    let Loop::Edges { fins, .. } = &parts.loops[parts.faces[top].loops[0].index()] else {
-        unreachable!("an edge loop")
-    };
-    let (ui, k) = fins
-        .iter()
-        .enumerate()
-        .find(|(_, k)| matches!(parts.fins[k.index()].pcurve, Curve2::BSpline(_)))
-        .map(|(ui, k)| (ui, *k))
-        .expect("a spline pcurve on the top cap");
-    let shift = |parts: &mut TopologyParts, d: f64| {
-        let Curve2::BSpline(c) = &parts.fins[k.index()].pcurve else {
-            unreachable!("a spline pcurve")
-        };
-        let c3 = c.as_curve3();
-        let poles = c
-            .poles()
-            .iter()
-            .map(|p| Point2::new(p.x + d, p.y))
-            .collect();
-        parts.fins[k.index()].pcurve = Curve2::BSpline(
-            BSplineCurve2::new(
-                c3.degree(),
-                poles,
-                Some(c3.weights().to_vec()),
-                c3.knots().to_vec(),
-                c3.multiplicities().to_vec(),
-            )
-            .unwrap(),
-        );
+    // The first use with spline geometry, and its position.
+    let mut target = None;
+    'faces: for (fi, face) in parts.faces.iter().enumerate() {
+        for (li, l) in face.loops.iter().enumerate() {
+            let Loop::Edges { fins, .. } = &parts.loops[l.index()] else {
+                continue;
+            };
+            for (ui, k) in fins.iter().enumerate() {
+                let fin = &parts.fins[k.index()];
+                let spline = matches!(fin.pcurve, Curve2::BSpline(_))
+                    || matches!(parts.edges[fin.edge.index()].curve, Curve3::BSpline(_))
+                    || matches!(face.surface, Surface::BSpline(_));
+                if spline {
+                    target = Some((fi, li, ui, *k));
+                    break 'faces;
+                }
+            }
+        }
+    }
+    let (fi, li, ui, k) = target.expect("a spline use");
+    // On a cylinder u is an angle: divide by the radius.
+    let per_u = match &parts.faces[fi].surface {
+        Surface::Cylinder { radius, .. } => 1.0 / radius,
+        _ => 1.0,
     };
     let tau = tolerance.linear();
-    let expect = match b.next() % 3 {
-        0 => {
-            shift(&mut parts, 1000.0 * tau);
-            Expect::Contains(vec![format!("pcurve_off_edge:use {top}.0.{ui}")], vec![])
-        }
-        1 => {
-            // Within the resolution but beyond the declared enclosures (the
-            // fixtures declare about 1e-6 of it): at most those enclosures
-            // are unsound.
-            shift(&mut parts, 0.001 * tau);
-            Expect::Contains(vec![], vec![])
-        }
-        _ => {
-            let wall = (0..parts.faces.len())
-                .find(|f| matches!(parts.faces[*f].surface, Surface::BSpline(_)))
-                .unwrap();
+    let wall =
+        (0..parts.faces.len()).find(|f| matches!(parts.faces[*f].surface, Surface::BSpline(_)));
+    let got = match (b.next() % 3, wall) {
+        (2, Some(wall)) => {
             parts.faces[wall].sense = match parts.faces[wall].sense {
                 Orientation::Forward => Orientation::Reversed,
                 Orientation::Reversed => Orientation::Forward,
             };
-            Expect::Contains(vec![format!("loop_winding:loop {wall}.0")], vec![])
+            let got = report(&parts, tolerance);
+            let want = format!("loop_winding:loop {wall}.0");
+            assert!(got.contains(&want), "missing {want} in {got:?}");
+            return;
         }
-    };
-    let got = report(&parts, tolerance);
-    match expect {
-        Expect::Contains(want, _) if !want.is_empty() => {
-            for w in want {
-                assert!(got.contains(&w), "missing {w} in {got:?}");
-            }
+        (0, _) => {
+            parts.fins[k.index()].pcurve =
+                shifted(&parts.fins[k.index()].pcurve, 1000.0 * tau * per_u);
+            let got = report(&parts, tolerance);
+            let want = format!("pcurve_off_edge:use {fi}.{li}.{ui}");
+            assert!(got.contains(&want), "missing {want} in {got:?}");
+            return;
         }
         _ => {
-            // Within the resolution: only the use's enclosure may object.
-            assert!(
-                got.iter().all(|i| i.starts_with("enclosure_unsound")),
-                "{got:?}"
-            );
+            // Within the resolution but beyond the declared enclosures (the
+            // fixtures declare about 1e-6 of it): at most those enclosures
+            // are unsound.
+            parts.fins[k.index()].pcurve =
+                shifted(&parts.fins[k.index()].pcurve, 0.001 * tau * per_u);
+            report(&parts, tolerance)
         }
-    }
+    };
+    assert!(
+        got.iter().all(|i| i.starts_with("enclosure_unsound")),
+        "{got:?}"
+    );
 }
 
 fn verify(got: Vec<String>, expect: Expect) {
