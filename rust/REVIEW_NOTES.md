@@ -940,6 +940,16 @@ the first fixture, never deferred.
     reviewed differences (missed tangent points, one approximated sample);
     the fuzz target samples every component. Gate pending CI, the schedule
     replay and the clean campaign.
-  * S7b.2 (cones), S7b.3 (tori), S7c and S7d pending.
+  * S7b.2 implemented: the extended reference and a second native capture
+    of 15 cylinder/cone and sphere/cone pairs came before any kernel cone
+    code (`9d764085`); the sphere/cone loops in closed form, the
+    cylinder/cone roots by certified subdivision (mean-value enclosure,
+    budget, per-piece rational fallback, bisection to a few ulps); the
+    kernel inside the reference on all 35; the bridge gives 31 matches and 4
+    reviewed differences. `analytic_intersections` keeps allocation stacks to
+    five frames (AddressSanitizer's stack depot otherwise outgrew the 2 GB
+    gate). Two cones and a cone whose rational apex is on a sphere stay
+    `NotConic`.
+  * S7b.3 (tori), unbounded components (two cones), S7c and S7d pending.
 * S8 — pending
 * S9 — pending

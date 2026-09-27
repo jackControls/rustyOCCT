@@ -556,7 +556,11 @@ contain the reference's loop ranges, ends, ring and node points, to put a
 loop's middle within `1e-12`, to be independent of argument order and to
 keep sampled points on both surfaces. `compare_procedural_intersections.py`
 reproduces the pre-implementation `GeomInt_IntSS` capture: 17 matches, 3
-reviewed differences, the kernel inside the reference on all 20.
+reviewed differences, the kernel inside the reference on all 20. S7b.2 adds
+15 cylinder/cone and sphere/cone cases and a second capture taken before any
+kernel cone code: 31 matches and 4 reviewed differences over the 35, the
+kernel inside the reference on all 35, loop ends narrowed to a few units in
+the last place.
 
 ## Height split and stacked fuse
 

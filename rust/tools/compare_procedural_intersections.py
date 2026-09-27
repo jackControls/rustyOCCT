@@ -180,7 +180,7 @@ def differences(name, surfaces, native):
 
 
 def rust_rows():
-    """{case: (kind, [(lo, hi)])} from the kernel's probe."""
+    """{case: [(kind, [(lo, hi)])]} from the kernel's probe, one per row."""
     subprocess.run(['cargo', '+stable', 'build', '--release', '--locked', '--example',
                     'procedural_intersection_probe'], cwd=ROOT, check=True)
     text = (ROOT/'rust/fixtures/procedural-intersection-cases.txt').read_text()
@@ -189,35 +189,35 @@ def rust_rows():
     out = {}
     for line in rows.splitlines():
         w = line.split()
-        v = [float(x) for x in w[2:]] if w[1] not in ('error',) else []
-        out[w[0]] = (w[1], list(zip(v[::2], v[1::2])))
+        v = [float(x) for x in w[2:]] if w[1] != 'error' else []
+        out.setdefault(w[0], []).append((w[1], list(zip(v[::2], v[1::2]))))
     return out
 
 
 def rust_differences(rust, expected):
-    """The kernel against the reference: its class, every exact reference
-    number inside the kernel's enclosure (up to 1e-25 relative, the
-    printing), a loop's middle within 1e-12."""
-    kind, got = rust
-    want = expected[0] if isinstance(expected[0], str) else expected[0][0]
-    if kind != want:
+    """The kernel against the reference, row by row: its kinds, every exact
+    reference number inside the kernel's enclosure (up to 1e-25 relative,
+    the printing), a loop's middle within 1e-12."""
+    want = [e if isinstance(e, str) else e[0] for e in expected]
+    if [k for k, _ in rust] != want:
         return ['rust_class']
-    if kind == 'empty':
-        return []
-    # The reference's numbers as it prints them (exact zeros as zero).
-    numbers = []
-    for part in expected[0][1:]:
-        numbers += [float(ref.number(x)) for x in (part if isinstance(part, list) else [part])]
-    if len(numbers) != len(got):
-        return ['rust_values']
-    inside = lambda k: got[k][0]-1e-25*abs(numbers[k]) <= numbers[k] <= got[k][1]+1e-25*abs(numbers[k])
-    exact = range(len(numbers)) if kind != 'loop' else range(8)
-    if not all(inside(k) for k in exact):
-        return ['rust_outside_reference']
-    if kind == 'loop':
-        scale = max([1.0]+[abs(x) for x in numbers])
-        if any(abs((got[k][0]+got[k][1])/2-numbers[k]) > 1e-12*scale for k in range(8, 14)):
-            return ['rust_loop_middle']
+    for (kind, got), row in zip(rust, expected):
+        if kind == 'empty':
+            continue
+        # The reference's numbers as it prints them (exact zeros as zero).
+        numbers = []
+        for part in row[1:]:
+            numbers += [float(ref.number(x)) for x in (part if isinstance(part, list) else [part])]
+        if len(numbers) != len(got):
+            return ['rust_values']
+        inside = lambda k: got[k][0]-1e-25*abs(numbers[k]) <= numbers[k] <= got[k][1]+1e-25*abs(numbers[k])
+        exact = range(len(numbers)) if kind != 'loop' else range(8)
+        if not all(inside(k) for k in exact):
+            return ['rust_outside_reference']
+        if kind == 'loop':
+            scale = max([1.0]+[abs(x) for x in numbers])
+            if any(abs((got[k][0]+got[k][1])/2-numbers[k]) > 1e-12*scale for k in range(8, 14)):
+                return ['rust_loop_middle']
     return []
 
 

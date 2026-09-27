@@ -4,7 +4,8 @@
 //! the reference's order, every number as `lo hi`: `loop` (the range's two
 //! enclosures, the points at each end, the points on both branches at the
 //! range's middle), `rings` (points at 0 and pi on each branch) or
-//! `figure_eight` (the node, and the points opposite it on each branch).
+//! `figure_eight` (the node, and the points opposite it on each branch); a
+//! curve of several loops prints one `loop` row each.
 use rusty_occt::intersection::{
     surface_surface, AnalyticItem, Branch, Component, SurfaceIntersection,
 };
@@ -25,6 +26,11 @@ fn surface(words: &[&str]) -> Surface {
         "cylinder" => Surface::Cylinder {
             frame,
             radius: v[9],
+        },
+        "cone" => Surface::Cone {
+            frame,
+            radius: v[9],
+            half_angle: v[10],
         },
         _ => Surface::Sphere {
             frame,
@@ -64,33 +70,37 @@ fn main() {
             }
             Ok(SurfaceIntersection::Procedural(c)) => {
                 let at = |u: [f64; 2], b| c.point_at(u, b).unwrap().to_vec();
-                let mut values: Vec<[f64; 2]> = Vec::new();
-                let kind = match c.components() {
-                    [Component::Loop { u }] => {
-                        values.extend(u);
-                        values.extend(at(u[0], Branch::Plus));
-                        values.extend(at(u[1], Branch::Plus));
-                        let mid = 0.25 * (u[0][0] + u[0][1] + u[1][0] + u[1][1]);
-                        values.extend(at([mid, mid], Branch::Plus));
-                        values.extend(at([mid, mid], Branch::Minus));
-                        "loop"
-                    }
+                match c.components() {
                     [Component::Ring { .. }, Component::Ring { .. }] => {
+                        let mut values = Vec::new();
                         for u in [[0.0, 0.0], PI] {
                             values.extend(at(u, Branch::Plus));
                             values.extend(at(u, Branch::Minus));
                         }
-                        "rings"
+                        println!("{name} rings {}", text(&values));
                     }
                     [Component::FigureEight { node }] => {
-                        values.extend(at(*node, Branch::Plus));
+                        let mut values = at(*node, Branch::Plus);
                         values.extend(at([0.0, 0.0], Branch::Plus));
                         values.extend(at([0.0, 0.0], Branch::Minus));
-                        "figure_eight"
+                        println!("{name} figure_eight {}", text(&values));
                     }
-                    other => panic!("{name}: {other:?}"),
-                };
-                println!("{name} {kind} {}", text(&values));
+                    loops => {
+                        // One row per loop, in order.
+                        for comp in loops {
+                            let Component::Loop { u } = comp else {
+                                panic!("{name}: {comp:?} among loops");
+                            };
+                            let mut values: Vec<[f64; 2]> = u.to_vec();
+                            values.extend(at(u[0], Branch::Plus));
+                            values.extend(at(u[1], Branch::Plus));
+                            let mid = 0.25 * (u[0][0] + u[0][1] + u[1][0] + u[1][1]);
+                            values.extend(at([mid, mid], Branch::Plus));
+                            values.extend(at([mid, mid], Branch::Minus));
+                            println!("{name} loop {}", text(&values));
+                        }
+                    }
+                }
             }
             other => println!("{name} error {other:?}"),
         }

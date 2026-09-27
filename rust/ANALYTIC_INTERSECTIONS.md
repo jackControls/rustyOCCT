@@ -108,6 +108,42 @@ figure-eight's points containing the reference's, the loop's middle within
 reviewed differences (two missed tangent points, one sample `2.3e-5` off near
 Viviani's node), and the kernel inside the reference on all 20.
 
+## Curves with a cone (S7b.2)
+
+A sphere and a cone (the centre off the axis) and a cylinder and a cone
+(axes not coaxial) are procedural curves too; two cones and a cone whose
+rational apex lies on a sphere stay `NotConic` (a later part of S7b).
+
+* **Sphere and cone.** Parameterised on the cone's rulings through its apex
+  `V`: `V + v d(u)`, `d(u) = cos h a + sin h (cos u x + sin u y)`, `x`
+  towards the centre. Then `A = 1`, `C = |V - c|^2 - R^2` is constant and
+  `B(u) = b0 + b1 cos u` a sinusoid: the apex inside the sphere gives two
+  rings (one on each nappe); outside, loops where `B > sqrt(C)` or
+  `B < -sqrt(C)`, a `cos u` threshold each, so their ends are `arccos` in
+  closed form (a loop around `u = 0` is `[-t, t]`, around `u = pi`
+  `[t, 2 pi - t]`), or two rings when `B` stays beyond `sqrt(C)`.
+* **Cylinder and cone.** Parameterised on the cylinder, `A` constant.
+  `D(u)` has no convenient closed form: its roots are isolated by certified
+  subdivision (binary64 intervals, a piece they cannot settle again in
+  rational intervals) with the mean-value enclosure `D(m) + D'(piece)
+  (piece - m)` and a work budget, each certified root then narrowed by
+  bisection on certain signs to a few units in the last place. Loops lie
+  between consecutive roots where `D > 0`, two rings where `D > 0`
+  throughout. A double root (a tangency) cannot be certified and is
+  `ComputationLimit`; it cannot occur exactly with a binary64 half-angle.
+
+Evidence: 15 more fixture cases (`ck_`, `ks_`: crossing, parallel, skew and
+tilted axes, a miss, rings, two loops, an irrational apex, the apex inside
+the sphere, two loops on both nappes, a near-tangent sphere), the reference
+extended with the cone's parameterisation, and a second `GeomInt_IntSS`
+capture taken before any kernel cone code
+(`fixtures/occt-procedural-cone-preimplementation`): 14 native matches and
+one reviewed difference (samples of the near-tangent loops, ill-conditioned,
+`1.55e-6` from the exact curve), and the kernel inside the reference on all
+15. Native samples are compared by closest-point distance: near a loop's end
+the branches are vertical in the ruled parameterisation, so a sample's own
+angle is not its nearest parameter.
+
 ## Evidence
 
 * **Independent reference.** `analytic_intersection_reference.py` computes

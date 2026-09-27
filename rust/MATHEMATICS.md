@@ -1501,6 +1501,25 @@ where `A v^2 + 2 B v + C = 0` and the curve is `v = (-B +- sqrt(D)) / A`,
 * **Enclosures.** `t = arccos c = atan2(sqrt(1 - c^2), c)` in rational
   intervals (`certified::atan2`); points `P(u) + v a` with `cos u`, `sin u`
   and the square root enclosed, binary64 intervals first.
+* **A sphere and a cone (S7b.2).** On the cone's rulings through the apex
+  `V`, `d(u) = cos h a + sin h (cos u x + sin u y)` is a unit vector, so
+  `A = 1`, `C = |V - c|^2 - R^2` and, with `x` towards the centre,
+  `B(u) = (V - c) . d(u) = b0 + b1 cos u`, `b0 = cos h (V - c) . a`,
+  `b1 = sin h (V - c) . x`. `D = B^2 - C > 0` where `B > sqrt(C)` or
+  `B < -sqrt(C)`: `cos u > k` or `cos u < k` with
+  `k = (+-sqrt(C) - b0) / b1` (the inequality reversing with the sign of
+  `b1`), an arc `[-arccos k, arccos k]` or `[arccos k, 2 pi - arccos k]`, or
+  nothing, or the whole turn.
+* **A cylinder and a cone (S7b.2).** The cone is `f(p) = cos^2 h |p - V|^2 -
+  ((p - V) . a2)^2` about its apex (both nappes), so with the cylinder's
+  ruling `A = cos^2 h - (a . a2)^2` is constant and `D = B^2 - A C` a
+  trigonometric polynomial of degree two in `u`; `D' = 2 B B' - A C'` with
+  `B' = Q(P', a)`, `C' = 2 Q(P', P - V)`. Over a piece `U` with middle `m`,
+  `D(U) is in D(m) + D'(U) (U - m)` (the mean-value form), whose width is
+  `|D'| |U|`: beside a nearly tangent loop, where `D` dips quadratically,
+  the natural interval extension needs pieces as small as the square of
+  their distance from the loop, the mean-value form only as small as the
+  distance.
 
 ## C1 of spline cells (R4)
 

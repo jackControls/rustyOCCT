@@ -1,6 +1,7 @@
-//! S7b.1: procedural intersection curves of two cylinders with crossing axes
-//! and of a cylinder and a sphere off its axis, against the independent
-//! reference (`fixtures/procedural-intersection-*.txt|tsv` from
+//! S7b.1 and S7b.2: procedural intersection curves of two cylinders with
+//! crossing axes, a cylinder and a sphere off its axis, a cylinder and a cone
+//! (axes not coaxial) and a sphere and a cone (the centre off the axis),
+//! against the independent reference (`fixtures/procedural-intersection-*.txt|tsv` from
 //! `tools/generate_procedural_intersection_fixtures.py`).
 use rusty_occt::intersection::{
     surface_surface, AnalyticItem, Branch, Component, ProceduralCurve, SurfaceIntersection,
@@ -22,6 +23,11 @@ fn surface(words: &[&str]) -> Surface {
         "cylinder" => Surface::Cylinder {
             frame,
             radius: v[9],
+        },
+        "cone" => Surface::Cone {
+            frame,
+            radius: v[9],
+            half_angle: v[10],
         },
         _ => Surface::Sphere {
             frame,
@@ -49,17 +55,18 @@ fn cases() -> Vec<(String, Surface, Surface)> {
         .collect()
 }
 
-fn expected() -> BTreeMap<String, Vec<f64>> {
-    let mut out = BTreeMap::new();
+/// Each case's rows: kind and numbers, in the reference's order.
+fn expected() -> BTreeMap<String, Vec<(String, Vec<f64>)>> {
+    let mut out: BTreeMap<String, Vec<(String, Vec<f64>)>> = BTreeMap::new();
     for line in include_str!("../../fixtures/procedural-intersection-expected.tsv")
         .lines()
         .skip(1)
     {
         let (name, row) = line.split_once('\t').unwrap();
         let mut w = row.split(' ');
-        let kind = w.next().unwrap();
+        let kind = w.next().unwrap().to_string();
         let numbers: Vec<f64> = w.map(|x| x.parse().unwrap()).collect();
-        out.insert(format!("{name}\t{kind}"), numbers);
+        out.entry(name.into()).or_default().push((kind, numbers));
     }
     out
 }
@@ -78,61 +85,36 @@ fn close3(e: [[f64; 2]; 3], x: &[f64], scale: f64) -> bool {
 /// The enclosure of pi as binary64 bounds.
 const PI: [f64; 2] = [std::f64::consts::PI, 3.1415926535897936];
 
-fn check(
-    name: &str,
-    got: &SurfaceIntersection,
-    want: &BTreeMap<String, Vec<f64>>,
-) -> Result<(), String> {
-    let row = |kind: &str| want.get(&format!("{name}\t{kind}"));
+fn check(got: &SurfaceIntersection, rows: &[(String, Vec<f64>)]) -> Result<(), String> {
+    let kinds: Vec<&str> = rows.iter().map(|(k, _)| k.as_str()).collect();
     match got {
-        SurfaceIntersection::Empty if row("empty").is_some() => Ok(()),
-        SurfaceIntersection::Items(items) => {
-            let p = row("point").ok_or("a point where the reference has none")?;
-            match items.as_slice() {
-                [AnalyticItem::Point(e)] if contains3(*e, p) => Ok(()),
-                other => Err(format!("{other:?} for point {p:?}")),
-            }
-        }
-        SurfaceIntersection::Procedural(c) => check_curve(c, row),
-        other => Err(format!("{other:?}")),
+        SurfaceIntersection::Empty if kinds == ["empty"] => Ok(()),
+        SurfaceIntersection::Items(items) => match (items.as_slice(), rows) {
+            ([AnalyticItem::Point(e)], [(k, p)]) if k == "point" && contains3(*e, p) => Ok(()),
+            (other, _) => Err(format!("{other:?} for {kinds:?}")),
+        },
+        SurfaceIntersection::Procedural(c) => check_curve(c, rows),
+        other => Err(format!("{other:?} for {kinds:?}")),
     }
 }
 
-fn check_curve<'a>(
-    c: &ProceduralCurve,
-    row: impl Fn(&str) -> Option<&'a Vec<f64>>,
-) -> Result<(), String> {
+fn check_curve(c: &ProceduralCurve, rows: &[(String, Vec<f64>)]) -> Result<(), String> {
     let at = |u: [f64; 2], b| c.point_at(u, b).map_err(|e| e.to_string());
+    let row_kinds: Vec<&str> = rows.iter().map(|(k, _)| k.as_str()).collect();
     match c.components() {
-        [Component::Loop { u }] => {
-            let r = row("loop").ok_or("a loop where the reference has none")?;
-            let (u0, u1) = (r[0], r[1]);
-            if !contains(u[0], u0) || !contains(u[1], u1) {
-                return Err(format!("loop range {u:?} for {u0}, {u1}"));
-            }
-            // The ends: the curve's point over each root's enclosure.
-            if !contains3(at(u[0], Branch::Plus)?, &r[2..5])
-                || !contains3(at(u[1], Branch::Plus)?, &r[5..8])
-            {
-                return Err("loop ends".into());
-            }
-            // The middle, at the reference's parameter rounded to binary64.
-            let mid = 0.5 * u0 + 0.5 * u1;
-            let scale = r.iter().fold(1.0f64, |a, x| a.max(x.abs()));
-            if !close3(at([mid, mid], Branch::Plus)?, &r[8..11], scale)
-                || !close3(at([mid, mid], Branch::Minus)?, &r[11..14], scale)
-            {
-                return Err("loop middle".into());
-            }
-            Ok(())
-        }
+        // Two rings are one row, by their points at 0 and pi.
         [Component::Ring {
             branch: Branch::Plus,
         }, Component::Ring {
             branch: Branch::Minus,
         }] => {
-            let r = row("rings").ok_or("rings where the reference has none")?;
-            for (k, (u, b)) in [
+            let [(k, r)] = rows else {
+                return Err(format!("rings for {row_kinds:?}"));
+            };
+            if k != "rings" {
+                return Err(format!("rings for {k}"));
+            }
+            for (n, (u, b)) in [
                 ([0.0, 0.0], Branch::Plus),
                 ([0.0, 0.0], Branch::Minus),
                 (PI, Branch::Plus),
@@ -141,27 +123,67 @@ fn check_curve<'a>(
             .into_iter()
             .enumerate()
             {
-                if !contains3(at(u, b)?, &r[3 * k..3 * k + 3]) {
-                    return Err(format!("ring point {k}"));
+                if !contains3(at(u, b)?, &r[3 * n..3 * n + 3]) {
+                    return Err(format!("ring point {n}"));
                 }
             }
             Ok(())
         }
         [Component::FigureEight { node }] => {
-            let r = row("figure_eight").ok_or("a figure-eight where the reference has none")?;
+            let [(k, r)] = rows else {
+                return Err(format!("a figure-eight for {row_kinds:?}"));
+            };
+            if k != "figure_eight" {
+                return Err(format!("a figure-eight for {k}"));
+            }
             if !contains3(at(*node, Branch::Plus)?, &r[0..3]) {
                 return Err("node".into());
             }
             // Opposite the node.
-            let opposite = if node[0] == 0.0 { PI } else { [0.0, 0.0] };
-            if !contains3(at(opposite, Branch::Plus)?, &r[3..6])
-                || !contains3(at(opposite, Branch::Minus)?, &r[6..9])
+            if !contains3(at([0.0, 0.0], Branch::Plus)?, &r[3..6])
+                || !contains3(at([0.0, 0.0], Branch::Minus)?, &r[6..9])
             {
                 return Err("opposite the node".into());
             }
             Ok(())
         }
-        other => Err(format!("components {other:?}")),
+        // Each loop its own row, in order.
+        loops => {
+            if loops.len() != rows.len() || row_kinds.iter().any(|k| *k != "loop") {
+                return Err(format!("{loops:?} for {row_kinds:?}"));
+            }
+            for (comp, (_, r)) in loops.iter().zip(rows) {
+                let Component::Loop { u } = comp else {
+                    return Err(format!("{comp:?} among loops"));
+                };
+                let (u0, u1) = (r[0], r[1]);
+                if !contains(u[0], u0) || !contains(u[1], u1) {
+                    return Err(format!("loop range {u:?} for {u0}, {u1}"));
+                }
+                // Tight: a loop's ends are narrowed to a few units in the
+                // last place.
+                if u.iter()
+                    .any(|[lo, hi]| hi - lo > 1e-12 * lo.abs().max(hi.abs()).max(1.0))
+                {
+                    return Err(format!("wide loop range {u:?}"));
+                }
+                // The ends: the curve's point over each root's enclosure.
+                if !contains3(at(u[0], Branch::Plus)?, &r[2..5])
+                    || !contains3(at(u[1], Branch::Plus)?, &r[5..8])
+                {
+                    return Err("loop ends".into());
+                }
+                // The middle, at the reference's parameter rounded to binary64.
+                let mid = 0.5 * u0 + 0.5 * u1;
+                let scale = r.iter().fold(1.0f64, |a, x| a.max(x.abs()));
+                if !close3(at([mid, mid], Branch::Plus)?, &r[8..11], scale)
+                    || !close3(at([mid, mid], Branch::Minus)?, &r[11..14], scale)
+                {
+                    return Err("loop middle".into());
+                }
+            }
+            Ok(())
+        }
     }
 }
 
@@ -172,13 +194,13 @@ fn every_case_matches_the_exact_reference() {
     let mut failures = Vec::new();
     for (name, a, b) in &all {
         let got = surface_surface(a, b).unwrap_or_else(|e| panic!("{name}: {e}"));
-        if let Err(why) = check(name, &got, &want) {
+        if let Err(why) = check(&got, &want[name]) {
             failures.push(format!("{name}: {why}"));
         }
         assert_eq!(surface_surface(b, a).unwrap(), got, "{name}: order");
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
-    assert_eq!(all.len(), 20);
+    assert_eq!(all.len(), 35);
 }
 
 /// Points along every component lie on both surfaces.
@@ -236,6 +258,18 @@ fn distance(s: &Surface, p: Vec3) -> f64 {
         }
         Surface::Sphere { frame, radius } => {
             ((p - (frame.origin() - Point3::ORIGIN)).length() - radius).abs()
+        }
+        Surface::Cone {
+            frame,
+            radius,
+            half_angle,
+        } => {
+            let rel = p - (frame.origin() - Point3::ORIGIN);
+            let h = rel.dot(frame.normal());
+            let rho = (rel - frame.normal() * h).length();
+            let (s, c) = half_angle.sin_cos();
+            let shift = radius * c + h * s;
+            (rho * c - shift).abs().min((rho * c + shift).abs())
         }
         _ => unreachable!(),
     }

@@ -36,7 +36,16 @@ TARGET_INPUT_SECONDS = {"surface_knots": 60, "degree_elevation": 60, "surface_ed
 # quarantine and allocator retention, not live data, exhaust the RSS gate.
 # brep_validation joined in S4d: a 180 s campaign reached 2,064 MB after
 # replay while the input it stopped on alone runs in 66 ms.
-ALLOCATOR_TARGETS = {'surface_knots', 'degree_elevation', 'spline_linear', 'brep_validation'}
+# analytic_intersections joined in S7b.2: a 300 s campaign stopped at the
+# 2,048 MB RSS limit on two planes (0.011 s alone), after rational-interval
+# cone isolation had churned temporary BigInts.
+ALLOCATOR_TARGETS = {'surface_knots', 'degree_elevation', 'spline_linear', 'brep_validation',
+                     'analytic_intersections'}
+# Targets whose allocation stack traces are kept to five frames: with the
+# default thirty, AddressSanitizer's stack depot grew analytic_intersections
+# to 1,489 MB in 120 s (33 MB without a sanitizer); five frames keep it at
+# 227 MB and still name each allocation's site in a report.
+SHORT_STACK_TARGETS = {'analytic_intersections'}
 # The pinned libFuzzer checks stop_file between MutateAndTestOne batches,
 # not between each callback. Keep its default mutation sequence length.
 MUTATION_DEPTH = 5
@@ -71,6 +80,9 @@ def campaign_environment(target, base):
         # other sanitizer options and all other targets remain unchanged.
         options=env.get('ASAN_OPTIONS','')
         env['ASAN_OPTIONS']=options+(':' if options else '')+'quarantine_size_mb=64'
+    if target in SHORT_STACK_TARGETS:
+        options=env.get('ASAN_OPTIONS','')
+        env['ASAN_OPTIONS']=options+(':' if options else '')+'malloc_context_size=5'
     return env
 
 
