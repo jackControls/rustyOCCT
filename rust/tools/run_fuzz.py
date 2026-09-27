@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import platform
 import re
+import shutil
 import signal
 import subprocess
 import tempfile
@@ -458,6 +459,48 @@ def statistics(text):
             'peak_rss_mb':int(peak[-1]) if peak else None}
 
 
+def max_len(target):
+    return 4096 if target in ["surface_editing", "surface_knots", "degree_elevation"] else 512 if target == "knot_editing" else 256
+
+
+def merge_command(target, toolchain, fresh, corpus, artifacts):
+    # libFuzzer's -merge=1 keeps, in `fresh`, a subset of `corpus` with the
+    # same coverage (REVIEW_NOTES R12); each input keeps its own limits.
+    input_seconds=TARGET_INPUT_SECONDS.get(target,INPUT_SECONDS)
+    return ['cargo',f'+{toolchain}','fuzz','run',target,str(fresh),str(corpus),
+            '--fuzz-dir',str(FUZZ),*sanitizer_build_args(target),'--',
+            '-merge=1',f'-timeout={input_seconds}','-rss_limit_mb=2048',f'-max_len={max_len(target)}',
+            f'-artifact_prefix={artifacts}/','-print_final_stats=1']
+
+
+def minimize(target, toolchain, corpus, output, env):
+    """Merge `corpus` into a fresh directory and replace it only when the
+    merge completed: an interrupted or failed merge leaves it untouched."""
+    artifacts=FUZZ/'artifacts'/target
+    artifacts.mkdir(parents=True,exist_ok=True)
+    fresh=corpus.parent/f'.{target}-minimized'
+    if fresh.exists(): shutil.rmtree(fresh)
+    fresh.mkdir()
+    before=len(list(corpus.iterdir()))
+    input_seconds=TARGET_INPUT_SECONDS.get(target,INPUT_SECONDS)
+    budget=startup_budget(before,input_seconds,TARGET_MAX_STARTUP_SECONDS.get(target,MAX_STARTUP_SECONDS))
+    log_path=output/f'{target}-minimize.log'
+    started=time.monotonic()
+    command=merge_command(target,toolchain,fresh,corpus,artifacts)
+    with log_path.open('w') as log:
+        code=run_process(command,log,budget,campaign_environment(target,env))
+    after=len(list(fresh.iterdir()))
+    replaced=code==0 and after>0
+    if replaced:
+        shutil.rmtree(corpus)
+        fresh.rename(corpus)
+    else:
+        shutil.rmtree(fresh)
+    return {'target':target,'exit_code':code,'elapsed_seconds':round(time.monotonic()-started,2),
+            'budget_seconds':budget,'corpus_files_before':before,'corpus_files_after':after if replaced else before,
+            'replaced':replaced,'artifacts':[p.name for p in sorted(artifacts.iterdir())],'command':command}
+
+
 def resource_limits_satisfied(report):
     # The runtime alarm is asynchronous: a callback can exceed its configured
     # limit and still return success between alarm ticks. Check final evidence.
@@ -474,6 +517,8 @@ def main():
     parser.add_argument('--seed',type=int,default=0,help='0 asks libFuzzer for a random seed; the log records it')
     parser.add_argument('--seed-only',action='store_true')
     parser.add_argument('--report-dir',type=Path,default=ROOT/'target/fuzz-reports')
+    parser.add_argument('--minimize',action='store_true',
+                        help='merge each seeded corpus into a minimal one instead of fuzzing (R12)')
     args = parser.parse_args()
     if not 1 <= args.seconds <= 3600: parser.error('--seconds must be in [1,3600]')
     targets = args.target or TARGETS
@@ -493,7 +538,15 @@ def main():
         locked = (FUZZ/'Cargo.lock').read_bytes()
         summary['lock_sha256'] = hashlib.sha256(locked).hexdigest()
         env = dict(os.environ,CARGO_NET_OFFLINE='true')
-        for target in targets:
+        if args.minimize:
+            summary['mode']='minimize'
+            for target in targets:
+                print(f'Minimizing the {target} corpus',flush=True)
+                report=minimize(target,args.toolchain,corpora[target],output,env)
+                summary['targets'].append(report)
+                failed |= not report['replaced'] or (FUZZ/'Cargo.lock').read_bytes() != locked
+                print(json.dumps(report),flush=True)
+        for target in [] if args.minimize else targets:
             artifacts = FUZZ/'artifacts'/target
             artifacts.mkdir(parents=True,exist_ok=True)
             log_path = output/f'{target}.log'
@@ -513,7 +566,7 @@ def main():
                 command = ['cargo',f'+{args.toolchain}','fuzz','run',target,str(corpora[target]),
                     '--fuzz-dir',str(FUZZ),*sanitizer_build_args(target),'--',
                     '-max_total_time=0',f'-stop_file={stop_file}',f'-mutate_depth={MUTATION_DEPTH}',f'-timeout={input_seconds}','-rss_limit_mb=2048',
-                    f'-max_len={4096 if target in ["surface_editing", "surface_knots", "degree_elevation"] else 512 if target == "knot_editing" else 256}',f'-seed={args.seed}',f'-artifact_prefix={artifacts}/','-print_final_stats=1']
+                    f'-max_len={max_len(target)}',f'-seed={args.seed}',f'-artifact_prefix={artifacts}/','-print_final_stats=1']
                 with log_path.open('w') as log:
                     campaign_env=campaign_environment(target,env)
                     code = run_process(command,log,startup_seconds+args.seconds+shutdown_seconds,campaign_env,timer.tick,timer.deadline)

@@ -767,7 +767,7 @@ the clean local 600-second campaign, in the style of `BREP_VALIDATION.md`.
     8 s (11,173, 815 MB), `brep_io` 10,091 after 6 s (11,996, 767 MB); no
     artifact.
   * Order of evidence: the `MakeRevol` history capture came after the
-    builder was written (R11 of `REVIEW_NOTES.md`, for the user).
+    builder was written (R11 of `REVIEW_NOTES.md`, accepted by the user).
 * **S3 sphere — accepted at `059616f9`** (the sphere is `d7677e4b`, after
   its native captures `3641a2f7`; `059616f9` adds only the torus's native
   captures and tools, no kernel or fuzz source).

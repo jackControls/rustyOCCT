@@ -51,6 +51,36 @@ class FuzzRunnerTests(unittest.TestCase):
             else:
                 self.assertEqual(args[2:],[])
 
+    def test_minimization_merges_with_each_targets_limits(self):
+        command=run_fuzz.merge_command('surface_knots','nightly',Path('new'),Path('old'),Path('art'))
+        self.assertEqual(command[:7],['cargo','+nightly','fuzz','run','surface_knots','new','old'])
+        tail=command[command.index('--')+1:]
+        self.assertIn('-merge=1',tail)
+        self.assertIn('-timeout=60',tail)
+        self.assertIn('-rss_limit_mb=2048',tail)
+        self.assertIn('-max_len=4096',tail)
+        self.assertIn('--features',command)
+        self.assertIn('-timeout=20',run_fuzz.merge_command('brep_io','n',Path('a'),Path('b'),Path('c')))
+
+    def test_failed_minimization_keeps_the_corpus(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory=Path(directory); corpus=directory/'corpus'/'brep_io'; corpus.mkdir(parents=True)
+            for k in range(3): (corpus/f'input{k}').write_bytes(bytes([k]))
+            with patch('run_fuzz.FUZZ',directory), patch('run_fuzz.run_process',return_value=1):
+                report=run_fuzz.minimize('brep_io','n',corpus,directory,{})
+            self.assertFalse(report['replaced'])
+            self.assertEqual(sorted(p.name for p in corpus.iterdir()),['input0','input1','input2'])
+            self.assertFalse((corpus.parent/'.brep_io-minimized').exists())
+
+            def merged(command,log,timeout,env):
+                (Path(command[5])/'input1').write_bytes(b'\x01')
+                return 0
+            with patch('run_fuzz.FUZZ',directory), patch('run_fuzz.run_process',side_effect=merged):
+                report=run_fuzz.minimize('brep_io','n',corpus,directory,{})
+            self.assertTrue(report['replaced'])
+            self.assertEqual((report['corpus_files_before'],report['corpus_files_after']),(3,1))
+            self.assertEqual([p.name for p in corpus.iterdir()],['input1'])
+
     def test_requires_completed_mutation_after_corpus_replay(self):
         text = '#99\tINITED cov: 12 ft: 50\n#102\tDONE cov: 14\nstat::number_of_executed_units: 102\n'
         self.assertEqual(run_fuzz.statistics(text),{

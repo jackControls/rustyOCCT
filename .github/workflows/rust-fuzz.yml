@@ -9,12 +9,18 @@ on:
     paths: ['Cargo.toml', 'Cargo.lock', 'rust/**', '.github/workflows/rust-fuzz.yml']
   schedule:
     - cron: '23 6 * * *'
+    # Weekly: minimise every retained corpus instead of fuzzing (REVIEW_NOTES R12).
+    - cron: '41 2 * * 0'
   workflow_dispatch:
     inputs:
       seconds:
         description: Seconds per target (1–3600)
         default: '600'
         required: true
+      minimize:
+        description: Minimise the retained corpora instead of fuzzing
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -39,6 +45,8 @@ jobs:
       FUZZ_TARGET: ${{ matrix.target }}
       EVENT: ${{ github.event_name }}
       REQUESTED_SECONDS: ${{ inputs.seconds }}
+      SCHEDULE: ${{ github.event.schedule }}
+      MINIMIZE: ${{ inputs.minimize }}
     steps:
       - uses: actions/checkout@v4.2.2
       - name: Install pinned fuzz toolchain
@@ -60,6 +68,10 @@ jobs:
           restore-keys: corpus-v1-${{ matrix.target }}-
       - name: Run sanitizer and mathematical oracle campaign
         run: |
+          if [ "$SCHEDULE" = '41 2 * * 0' ] || [ "$MINIMIZE" = true ]; then
+            python3 rust/tools/run_fuzz.py --target "$FUZZ_TARGET" --toolchain "$NIGHTLY" --minimize
+            exit
+          fi
           seconds=60
           if [ "$EVENT" = schedule ]; then seconds=600; fi
           if [ "$EVENT" = workflow_dispatch ]; then seconds="$REQUESTED_SECONDS"; fi

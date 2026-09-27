@@ -147,6 +147,15 @@ General root products reach degree 25. An
 outer deadline kills the build/fuzzer process group. Corpus replay without any
 subsequent mutation is an incomplete run. An incomplete run, crash,
 timeout, OOM, changed dependency lock or mathematical disagreement fails CI.
+Retained corpora are minimised weekly (R12 of `REVIEW_NOTES.md`): on Sundays
+the fuzzing workflow runs `run_fuzz.py --minimize` instead of a campaign. It
+seeds each corpus as usual, merges it into a fresh directory with libFuzzer's
+`-merge=1` under the target's own input and 2 GiB limits and startup budget,
+and replaces the corpus only when the merge completes; the cache then keeps
+the smaller corpus. Inputs that add no coverage are dropped; retained
+regressions are re-seeded on every run. Locally the `brep_io` corpus went
+from 1,872 inputs to 1,108 in 190 s.
+
 These are harness limits, not kernel production performance guarantees.
 
 B-rep validation inputs use at most 256 bytes and the standard 20-second/2 GiB

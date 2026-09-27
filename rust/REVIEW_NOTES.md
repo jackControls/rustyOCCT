@@ -129,8 +129,8 @@ full local release suite passes at the head.
   `--data-dir` and its immediate subdirectories, so `--data-dir` takes the
   dataset root.
 * **R11. The cone's history capture follows its builder (recorded
-  2026-09-26 by the implementing agent; needs the user's approval under
-  R7).** The cone capture at `dde086c1` observed `BRepPrimAPI_MakeCone`'s
+  2026-09-26 by the implementing agent; accepted by the user on
+  2026-09-27).** The cone capture at `dde086c1` observed `BRepPrimAPI_MakeCone`'s
   structure, `BRepCheck` and `BRepGProp` before any kernel cone code, but no
   history: `MakeCone` reports none and DRAW `pcone` saves none. The history
   the kernel reports for a cone is that of revolving its meridian, which
@@ -144,7 +144,8 @@ full local release suite passes at the head.
   labelled like T2's (captured after implementation) and nothing else
   changes.
 * **R12. Retained fuzz corpora grow without bound (recorded 2026-09-26 by
-  the implementing agent; the lasting fix needs the user's decision).** The
+  the implementing agent; the user chose weekly minimisation on
+  2026-09-27, see Status).** The
   push campaign at `0c94aa53` failed `surface_knots` because its corpus
   replay no longer fit the 3,600-second startup cap: 2,766 s for 564 inputs
   at `1a76d29e`, over 3,600 s for 577 at `0c94aa53`, with no input over its
@@ -447,8 +448,8 @@ converter records that as `Imported` provenance, never as an approximation.
     degenerated apex edge, `pcone` and body properties in the DRAW
     adapter, the derived case `pcone_counts`, and cones in four fuzz
     targets.
-  * The `MakeRevol` history capture followed the builder: R11, for the
-    user's decision. 21 matches, one reviewed difference
+  * The `MakeRevol` history capture followed the builder: R11, accepted
+    by the user. 21 matches, one reviewed difference
     (`nearly_cylinder`: MakeRevol's surface of revolution).
   * Upstream: one more `data/occ` solid imports (30 of 77); six restore-only
     cases no longer report cones, none evaluates yet (`UPSTREAM_TESTS.md`).
@@ -541,17 +542,18 @@ converter records that as `Imported` provenance, never as an approximation.
     `spline_rounded_corner_far`, and the rational corner stays out of
     mutation 32 (seconds per input under AddressSanitizer).
 
-### Open for the user (2026-09-27)
+### Answered by the user (2026-09-27)
 
-* **U1:** the dataset stays local-only as decided; whether its licence basis
-  (an asset of an LGPL-2.1-with-exception release, consumed by upstream's
-  own CI) is enough to fetch it on CI.
-* **R11:** accept the cone's `MakeRevol` history capture as taken (after the
-  builder was written, before it was committed), or label that bridge as
-  captured after implementation.
-* **R12:** minimise retained fuzz corpora periodically (`-merge=1` into a
-  fresh directory), or keep the per-target startup caps.
-* **S4 decisions taken by the agent:** periodic spline surfaces and seams on
-  spline surfaces stay unsupported; spline mass enclosures are first order
-  where not exact (the rational corner's volume within 5%, its inertia far
-  more loosely), a higher-order certified quadrature being later work.
+* **U1:** the dataset stays local-only; CI does not fetch it.
+* **R11:** the cone's `MakeRevol` history capture is accepted as taken
+  (after the builder was written, before it was committed).
+* **R12:** retained corpora are minimised periodically: `run_fuzz.py
+  --minimize` merges each seeded corpus into a fresh directory with
+  libFuzzer's `-merge=1` under the target's own input and memory limits and
+  replaces it only when the merge completes; the fuzzing workflow runs it
+  instead of a campaign every Sunday (and on dispatch with `minimize`), and
+  the cache keeps the result. Locally the `brep_io` corpus went from 1,872
+  inputs to 1,108 in 190 s. The per-target startup caps stay as a backstop.
+* **S4:** periodic spline surfaces and seams on spline surfaces stay
+  unsupported, and spline mass enclosures stay first order where not exact;
+  a higher-order certified quadrature is later work.

@@ -15,8 +15,8 @@ the kernel's cone builder and its derivations written but uncommitted
 (`capture.json` lists the worktree). It was taken before the Python
 enumeration of cone entities (`identity_reference.cone_entities`) and before
 the role correspondences of `compare_revolve_history.py` were written, and
-the builder was not changed after it. R11 records the deviation from R7 for
-the user's decision.
+the builder was not changed after it. R11 records the deviation from R7; the
+user accepted the capture as taken on 2026-09-27.
 
 ## OCCT source review
 
