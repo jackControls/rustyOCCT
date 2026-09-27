@@ -249,6 +249,33 @@ pub(crate) fn sphere_location(
     0
 }
 
+/// Where a point (in the torus's frame) lies against a whole ring torus:
+/// 0 inside, 1 on the boundary within `tolerance`, 2 outside. Exact: with
+/// `rho` the distance from the axis, the distance to the core circle is at
+/// most `d` exactly when `rho^2 + R^2 + z^2 - d^2 <= 2 R rho`, decided by
+/// squaring (`d = r - tol`, `r + tol`).
+pub(crate) fn torus_location(point: [f64; 3], major: f64, minor: f64, tolerance: f64) -> u8 {
+    let [x, y, z] = point.map(q);
+    let (big, r, tol) = (q(major), q(minor), q(tolerance));
+    let rho2 = &x * &x + &y * &y;
+    let base = &rho2 + &big * &big + &z * &z;
+    // (rho - R)^2 + z^2 <= d^2  <=>  base - d^2 <= 2 R rho. On a ring torus
+    // R > r + tol >= d, so base - d^2 > 0 and both sides square.
+    let inside = |d: &R| -> bool {
+        let lhs = &base - d * d;
+        &lhs * &lhs <= R::from_integer(4.into()) * &big * &big * &rho2
+    };
+    let outer = &r + &tol;
+    if !inside(&outer) {
+        return 2;
+    }
+    let inner = &r - &tol;
+    if inner <= zero() || !inside(&inner) {
+        return 1;
+    }
+    0
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

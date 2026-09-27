@@ -139,6 +139,7 @@ class Case:
     box: tuple = None            # (origin3, size3) for Solid::box_at instead of a profile
     cone: tuple = None           # (r1, r2, height) for Solid::cone_with on the frame
     sphere: tuple = None         # (radius, low, high) for Solid::sphere_with on the frame
+    torus: tuple = None          # (major, minor, low, high, angle) for Solid::torus_with
 
 
 def number(x):
@@ -155,6 +156,9 @@ def encode_case(c):
     elif c.sphere is not None:
         out.append('frame '+' '.join(number(x) for x in c.frame))
         out.append('sphere '+' '.join(number(x) for x in c.sphere))
+    elif c.torus is not None:
+        out.append('frame '+' '.join(number(x) for x in c.frame))
+        out.append('torus '+' '.join(number(x) for x in c.torus))
     else:
         out.append('frame '+' '.join(number(x) for x in c.frame))
         out.append(f'offsets {number(c.start)} {number(c.end)}')
@@ -308,8 +312,46 @@ def sphere_entities(c):
     return ents
 
 
+TWO_PI = 6.283185307179586
+
+
+def torus_entities(c):
+    """Every entity of Solid::torus_with (S3), independently of the Rust
+    builder, on the cone's meridian convention (the tube's arc from latitude
+    low to high is segment 1): a whole torus is its wall and region; a
+    v-segment has rings from rim points 1 and 2 and discs from segments 0 and
+    2; a wedge has discs from the boundary (the meridian's start and end
+    copies) and the tube's circles from the arc (segment 1's copies)."""
+    op = c.operation
+    _, _, low, high, angle = c.torus
+    closed, turn = high-low == TWO_PI, angle == TWO_PI
+    ents = []
+
+    def add(kind, role, parents, locator):
+        ents.append(Entity(kind, Derivation(op, 'revolve', kind, role, 0, tuple(parents)), locator))
+
+    def meridian(element, index):
+        return ('profile', 0, element, index)
+    add('region', 'region', [meridian('boundary', 0)], ('region',))
+    if not closed:
+        for side, cap, segment, edge, rim in (('start', 'start_cap', 0, 'bottom_edge', 1),
+                                              ('end', 'end_cap', 2, 'top_edge', 2)):
+            add('edge', edge, [meridian('vertex', rim)], ('ring', side))
+            add('face', cap, [meridian('segment', segment)], ('cap', side))
+    elif not turn:
+        for side, cap, edge in (('start', 'start_cap', 'bottom_edge'), ('end', 'end_cap', 'top_edge')):
+            add('edge', edge, [meridian('segment', 1)], ('ring', side))
+            add('face', cap, [meridian('boundary', 0)], ('cap', side))
+    add('face', 'wall', [meridian('segment', 1)], ('wall',))
+    ids = [e.id for e in ents]
+    assert len(set(ids)) == len(ids), f'{c.name}: id collision'
+    return ents
+
+
 def entities(c):
     """Every entity of a case's construction."""
+    if c.torus is not None:
+        return torus_entities(c)
     if c.cone is not None:
         return cone_entities(c)
     if c.sphere is not None:

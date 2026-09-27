@@ -117,12 +117,13 @@ group, and stale success records are removed before each run.
 | Derived `prism_history_reversed_triangle` | Pass | Pass | Prism history against a clockwise profile's normal |
 | Derived `pcylinder_counts` | Pass | Pass | Seamless cylinder through the count synthesizer: `checkshape`, `checknbshapes`, volume, area and per-use length |
 | Derived `psphere_counts` | Pass | Pass | Spheres through the count synthesizer: a whole sphere (no loops; OCCT's seam, two pole vertices and degenerated edges), a hemisphere and a zone, with `checkshape`, `checknbshapes`, volume, area and per-use length (S3) |
+| Derived `ptorus_counts` | Pass | Pass | Tori through the count synthesizer: a whole torus (no loops; OCCT's two seams through one vertex), a v-segment and a wedge, with `checkshape`, `checknbshapes`, volume, area and per-use length (S3) |
 | Derived `pcone_counts` | Pass | Pass | Cones through the count synthesizer: an apex cone, a frustum and a base apex, each with `checkshape`, `checknbshapes`, volume, area and per-use length (S3) |
 | Derived `explode_selector` | Pass | Pass | Native selector: a box's faces and edges and a cylinder's faces and rings picked by OCCT index, checked by area, length and centre of gravity; the seam pick is lost |
 
 There are **five original geometry tests passing on both backends** and one
 more evaluated on both with its image commands recorded (`buc60769`).
-The six derived cases are counted separately (see below).
+The seven derived cases are counted separately (see below).
 The 23 bridge self-tests are separate infrastructure checks; they do not count
 as more upstream coverage. The existing 66-solid / 2,292-classification native
 oracle corpus supplies much broader prism geometry checks independently.
@@ -363,4 +364,7 @@ tori and `bug437` B-spline curves and a free face; `bug497_2` restores
 completely and then needs `bcut`; the other three also need B-spline or
 revolution surfaces. After the sphere, `bug27264_2` (a restored whole
 sphere) passes on both backends and is registered; spheres no longer
-appear among the unsupported constructs.
+appear among the unsupported constructs. After the torus, `bug485` restores
+completely and now needs only `bfuse`; `bug327_3` and `bug27782` no longer
+report tori; `bug503`'s one torus is a horn torus (`NonRingToroidalSurface`,
+not representable). No further case evaluates on the Rust backend.

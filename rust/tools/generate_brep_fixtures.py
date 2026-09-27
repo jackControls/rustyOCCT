@@ -12,9 +12,11 @@ import copy
 import math
 from pathlib import Path
 
+import mpmath as mp
+
 from cell_reference import declare, encode as encode_cell, gap_bounds, to_cell, validate as validate_cell
 
-from brep_reference import (Arc2, Arc3, Cone, Cylinder, Edge, Face, Frame, Line2, Line3, Model, Sphere,
+from brep_reference import (Arc2, Arc3, Cone, Cylinder, Edge, Face, Frame, Line2, Line3, Model, Sphere, Torus,
                             Plane, TAU, Use, atan2_rn, cos_rn, encode, hypot_rn, number, sin_rn,
                             validate)
 
@@ -433,6 +435,78 @@ def sphere_cell(name, origin, normal, hint, radius, low, high, tolerance=1e-7):
     return c
 
 
+def torus_cell(name, origin, normal, hint, major, minor, low, high, angle, tolerance=1e-7):
+    """A torus, v-segment or wedge as the kernel's torus builder makes it, in
+    the cell model: the whole torus without loops; a v-segment's latitude
+    rings bounding discs, its wall reversed when the meridian arc bulges
+    toward the axis; a wedge's tube circles at u = 0 and u = angle bounding
+    discs, its wall wound in v."""
+    from cell_reference import Cell, CEdge, CFace, Fin as CFin, Loop as CLoop, Region, Shell
+    from brep_reference import axes
+    c = Cell(name, tolerance)
+    frame = Frame(origin, normal, hint)
+    o, x, y, n = [tuple(float(v) for v in a) for a in axes(frame)]
+    closed, turn = high-low == TAU, angle == TAU
+    # The meridian region between the arc and the axis runs counterclockwise
+    # when its signed area (the integral of rho dz along the arc) is positive.
+    area = mp.quad(lambda v: (major+minor*mp.cos(v))*minor*mp.cos(v), [low, high])
+    lateral = CFace(Torus(frame, major, minor), closed or area > 0, [], 0, 1)
+    faces = [lateral]
+    if not closed:
+        heights = (minor*sin_rn(low), minor*sin_rn(high))
+        for k, a in enumerate((low, high)):
+            z, rho = heights[k], major+minor*cos_rn(a)
+            lower = z < heights[1-k]
+            centre = tuple(o[i]+z*n[i] for i in range(3))
+            e = len(c.edges)
+            c.edges.append(CEdge(None, None, Arc3(Frame(centre, normal, hint), rho, 0.0, TAU)))
+            disc = CFace(Plane(Frame(centre, tuple(-v for v in n) if lower else n, hint)), True, [], 0, 1)
+            kk = len(c.fins)
+            if lower:
+                c.fins.append(CFin(e, False, Arc2((0.0, 0.0), rho, -TAU, TAU)))
+            else:
+                c.fins.append(CFin(e, True, Arc2((0.0, 0.0), rho, 0.0, TAU)))
+            # +u at the low end on a forward wall; the wall's traversal
+            # runs the other way round when it is reversed.
+            plus = (k == 0) == lateral.forward
+            if plus:
+                c.fins.append(CFin(e, True, Line2((0.0, a), (TAU, a))))
+            else:
+                c.fins.append(CFin(e, False, Line2((TAU, a), (0.0, a))))
+            c.edges[e].fins = [kk, kk+1]
+            c.loops.append(CLoop([kk], 0))
+            disc.loops.append(len(c.loops)-1)
+            c.loops.append(CLoop([kk+1], 1 if plus else -1))
+            lateral.loops.append(len(c.loops)-1)
+            faces.append(disc)
+    elif not turn:
+        for u, end in ((0.0, False), (angle, True)):
+            e_u = tuple(x[i]*cos_rn(u)+y[i]*sin_rn(u) for i in range(3))
+            tangent = tuple(-x[i]*sin_rn(u)+y[i]*cos_rn(u) for i in range(3))
+            centre = tuple(o[i]+major*e_u[i] for i in range(3))
+            ring_normal = tuple(-t for t in tangent)
+            e = len(c.edges)
+            c.edges.append(CEdge(None, None, Arc3(Frame(centre, ring_normal, e_u), minor, 0.0, TAU)))
+            disc = CFace(Plane(Frame(centre, tangent if end else ring_normal, e_u)), True, [], 0, 1)
+            kk = len(c.fins)
+            if end:
+                c.fins.append(CFin(e, False, Arc2((0.0, 0.0), minor, -TAU, TAU)))
+                c.fins.append(CFin(e, True, Line2((u, 0.0), (u, TAU))))
+            else:
+                c.fins.append(CFin(e, True, Arc2((0.0, 0.0), minor, 0.0, TAU)))
+                c.fins.append(CFin(e, False, Line2((u, TAU), (u, 0.0))))
+            c.edges[e].fins = [kk, kk+1]
+            c.loops.append(CLoop([kk], 0))
+            disc.loops.append(len(c.loops)-1)
+            c.loops.append(CLoop([kk+1], 0, winding_v=1 if end else -1))
+            lateral.loops.append(len(c.loops)-1)
+            faces.append(disc)
+    c.faces = faces
+    c.shells = [Shell(1, [(f, 'F') for f in range(len(faces))]), Shell(0, [(f, 'B') for f in range(len(faces))])]
+    c.regions = [Region('void', [1]), Region('solid', [0])]
+    return c
+
+
 def cell_cases(bases):
     """Cell-model cases with no seamed form: the model's own failure modes
     (TOPOLOGY_MODEL.md) and seamless valid shapes. They have no OCCT rows."""
@@ -622,6 +696,42 @@ def cell_cases(bases):
         c.loops.append(CLoop([], 0, len(c.vertices)-1))
         c.faces[0].loops.append(len(c.loops)-1)
     sphere_case('sphere_whole', 'sphere_whole_vertex_loop', immersed_vertex)
+    # A v winding on a sphere is structurally wrong.
+    sphere_case('sphere_zone', 'sphere_winding_in_v', lambda c: setattr(c.loops[c.faces[0].loops[0]], 'winding_v', 1))
+
+    # Tori (S3): the whole torus, the outer and inner halves (the inner one's
+    # wall reversed), a general segment, wedges, rotated and far copies, and
+    # the failure modes of windings in v.
+    tori = {
+        'torus_whole': torus_cell('torus_whole', (0.0, 0.0, 0.0), z, x, 3.0, 1.0, 0.0, TAU, TAU),
+        'torus_outer_half': torus_cell('torus_outer_half', (0.0, 0.0, 0.0), z, x, 3.0, 1.0, -HALF_PI, HALF_PI, TAU),
+        'torus_inner_half': torus_cell('torus_inner_half', (0.0, 0.0, 0.0), z, x, 3.0, 1.0, HALF_PI, 3*HALF_PI,
+                                       TAU),
+        'torus_segment': torus_cell('torus_segment', (1.0, 2.0, 3.0), z, x, 4.0, 1.5, 0.3, 2.0, TAU),
+        'torus_wedge': torus_cell('torus_wedge', (0.0, 0.0, 0.0), z, x, 3.0, 1.0, 0.0, TAU, HALF_PI),
+        'torus_wide_wedge': torus_cell('torus_wide_wedge', (0.5, -1.0, 2.0), (0.3, -0.4, 0.8), (1.0, 0.2, 0.0),
+                                       5.0, 2.0, 0.0, TAU, 5.0),
+        'torus_far': torus_cell('torus_far', (10000.0, -20000.0, 5000.0), z, x, 3.0, 1.0, 0.0, TAU, TAU),
+    }
+    out.extend(tori.values())
+
+    def torus_case(base, name, change):
+        c = copy.deepcopy(tori[base])
+        c.name = name
+        change(c)
+        out.append(c)
+    wall_loop = lambda c, k: c.loops[c.faces[0].loops[k]]
+    torus_case('torus_wedge', 'torus_winding_v_twice', lambda c: setattr(wall_loop(c, 1), 'winding_v', 2))
+    torus_case('torus_wedge', 'torus_winding_v_unbalanced', lambda c: setattr(wall_loop(c, 0), 'winding_v', 1))
+
+    def shift_meridian(c):
+        k = wall_loop(c, 0).fins[0]
+        p = c.fins[k].pcurve
+        c.fins[k].pcurve = Line2((p.start[0]+1e-3, p.start[1]), (p.end[0]+1e-3, p.end[1]))
+    torus_case('torus_wedge', 'torus_meridian_pcurve_shift', shift_meridian)
+    torus_case('torus_whole', 'torus_whole_reversed', lambda c: setattr(c.faces[0], 'forward', False))
+    torus_case('torus_whole', 'torus_spindle', lambda c: setattr(c.faces[0].surface, 'minor', 3.5))
+    torus_case('torus_inner_half', 'torus_inner_half_wall_forward', lambda c: setattr(c.faces[0], 'forward', True))
     return out
 
 

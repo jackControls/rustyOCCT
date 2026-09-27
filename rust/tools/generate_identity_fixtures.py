@@ -177,6 +177,24 @@ def spheres():
     ]
 
 
+def tori():
+    """Solid::torus_with cases (S3): the whole torus, both halves, a wedge,
+    a tilted frame and rigid copies."""
+    from identity_reference import TWO_PI
+    tol = 1e-7
+    xy = (0.0, 0.0, 0.0, 0.0, 0.0, 1.0, *X_HINT)
+    tilted = (3.0, -2.0, 5.0, 0.3, -0.4, 0.8, *X_HINT)
+    motions = [('R', (1.0, 2.0, 3.0), (0.0, 0.6, 0.8), 1.1), ('T', (10.0, -20.0, 30.0))]
+    return [
+        Case('torus_whole', tol, 41, xy, 0.0, 0.0, [], torus=(3.0, 1.0, 0.0, TWO_PI, TWO_PI)),
+        Case('torus_outer_half', tol, 41, xy, 0.0, 0.0, [], torus=(3.0, 1.0, -HALF_PI, HALF_PI, TWO_PI)),
+        Case('torus_inner_half', tol, 42, tilted, 0.0, 0.0, [], torus=(3.0, 1.0, HALF_PI, 3*HALF_PI, TWO_PI)),
+        Case('torus_wedge', tol, 42, tilted, 0.0, 0.0, [], torus=(3.0, 1.0, 0.0, TWO_PI, HALF_PI)),
+        Case('torus_wedge_transformed', tol, 43, tilted, 0.0, 0.0, [], motions, torus=(5.0, 2.0, 0.0, TWO_PI, 5.0)),
+        Case('torus_whole_transformed', tol, 43, xy, 0.0, 0.0, [], motions, torus=(2.0, 0.5, 0.0, TWO_PI, TWO_PI)),
+    ]
+
+
 def vectors():
     """Hand-written derivations pinning the encoding and digest."""
     e = Derivation(1, 'extrude', 'vertex', 'bottom_vertex', 0, (('label', 7),)).id()
@@ -213,7 +231,7 @@ def vectors():
 
 
 def generate():
-    explicit_cases, corpus_cases, cone_cases = explicit(), corpus(), cones()+spheres()
+    explicit_cases, corpus_cases, cone_cases = explicit(), corpus(), cones()+spheres()+tori()
     cases = explicit_cases+corpus_cases+cone_cases
     names = [c.name for c in cases]
     assert len(names) == len(set(names))

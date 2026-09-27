@@ -4,7 +4,7 @@
 //! reported with its predicted issue on the mutated relation. The same bytes
 //! also make a cone (S3), whose construction checks clean, replays at its
 //! level, composes with rigid motions and loses a dropped relation's target.
-use crate::identity::{build_tracked, cone_spec, spec, sphere_spec};
+use crate::identity::{build_tracked, cone_spec, spec, sphere_spec, torus_spec};
 use libfuzzer_sys::arbitrary::Unstructured;
 use rusty_occt::history::{
     check, EntityInfo, EntitySet, Geometry, History, HistoryIssueKind as K, Relation, Resolution,
@@ -162,9 +162,60 @@ fn check_sphere_history(data: &[u8]) {
     );
 }
 
+/// A torus's construction does the same.
+fn check_torus_history(data: &[u8]) {
+    let mut u = Unstructured::new(data);
+    let Ok(Some(s)) = torus_spec(&mut u) else {
+        return;
+    };
+    let Some((solid, construct)) = s.build(1.0) else {
+        return;
+    };
+    let set = |x: &Solid| x.topology().entity_set(s.tolerance);
+    let first = set(&solid);
+    assert_eq!(check(&[], std::slice::from_ref(&first), &construct), vec![]);
+    assert_eq!(construct.kind, OperationKind::Revolve);
+    assert_eq!(
+        Solid::torus_at(
+            AlgorithmLevel::CURRENT,
+            s.operation,
+            s.frame,
+            s.major,
+            s.minor,
+            s.low,
+            s.high,
+            s.angle,
+            s.tolerance
+        ),
+        Ok((solid.clone(), construct.clone()))
+    );
+    assert_eq!(construct.relations.len(), solid.topology().ids().count());
+    let mut composed = construct.clone();
+    let mut current = solid;
+    for (k, transform) in s.transforms.iter().enumerate() {
+        let Ok((next, h)) = current.transform_with(OperationId(k as u64), *transform) else {
+            break;
+        };
+        assert_eq!(check(&[set(&current)], &[set(&next)], &h), vec![]);
+        composed = composed.then(&h).unwrap();
+        current = next;
+    }
+    assert_eq!(check(&[], &[set(&current)], &composed), vec![]);
+    let n = construct.relations.len();
+    let pick = usize::from(u.arbitrary::<u16>().unwrap_or(0)) % n;
+    let mut h = construct.clone();
+    let gone = h.relations.remove(pick);
+    let issues = kinds(&check(&[], &[first], &h));
+    assert!(
+        has(&issues, K::MissingTarget, gone.targets()[0]),
+        "{issues:?}"
+    );
+}
+
 pub fn check_history(data: &[u8]) {
     check_cone_history(data);
     check_sphere_history(data);
+    check_torus_history(data);
     let mut u = Unstructured::new(data);
     let Ok(Some(s)) = spec(&mut u) else {
         return;

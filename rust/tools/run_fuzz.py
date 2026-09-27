@@ -133,6 +133,13 @@ def seed_corpus(target):
             for sub in range(6):
                 for scale in [0,10,20]:
                     save(bytes([29,scale,90,shape,150,140,90,200,128,100,160,sub])+bytes((j*37+1)%256 for j in range(16)))
+        # Tori (mutation 30): whole, a wedge, outer and inner segments, with
+        # each torus mutation.
+        for shape in range(4):
+            for sub in range(5):
+                for scale in [0,10,20]:
+                    extra=[[],[150],[150,140],[150,140]][shape]
+                    save(bytes([30,scale,90,120,shape]+extra+[140,90,200,128,100,160,sub])+bytes((j*37+1)%256 for j in range(16)))
         save(bytes([0]))
     elif target == 'spline_linear':
         # Known factors, rational polylines, the rational circle and the

@@ -55,7 +55,10 @@ winding number `w` closes with its end `2πw` in `u` after its start. Cone UV
 is (angle, arc length along the ruling), as OCCT's `Geom_ConicalSurface`,
 on the same cover; the apex is at `v = -R / sin a` (S3 of `REVIEW_NOTES.md`).
 Sphere UV is (longitude, latitude), the poles at `v = ±π/2`; a sphere face
-without edge loops is the whole sphere.
+without edge loops is the whole sphere. Torus UV is (longitude, the tube's
+angle from the outer equator), periodic in both: a loop winding `[wu, wv]`
+closes shifted by `(2πwu, 2πwv)`; a torus face without edge loops is the
+whole torus.
 
 ## Exact combinatorial checks
 
@@ -72,8 +75,9 @@ without edge loops is the whole sphere.
   zero, except on a cone or sphere face whose edge loops wind once in total
   and that has a vertex loop: its first vertex loop is the pole, closing the
   band at the apex, or at the sphere's pole on the band's material side (a
-  band winding `+u` on a forward face closes at the north pole). A face
-  without loops is `empty_face` unless it is a sphere.
+  band winding `+u` on a forward face closes at the north pole). Windings in
+  `v` are allowed only on a torus, where they must sum to zero. A face
+  without loops is `empty_face` unless it is a sphere or a torus.
 * Around each edge, the regions ahead of and behind its fins, in the stored
   radial order, must alternate. A single fin is `free_edge`, two same-sense
   fins are `same_sense_uses`, two opposite fins out of order are
@@ -98,7 +102,8 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   vertex loop's vertex within tolerance of its face's surface. A pole's
   vertex must also be within tolerance of the apex or pole (`pole_off_apex`).
   The distance to a cone is the smaller of the distances to the two rulings
-  of the meridian half-plane (both nappes); to a sphere, `||p - O| - R|`.
+  of the meridian half-plane (both nappes); to a sphere, `||p - O| - R|`;
+  to a torus, the distance to its central circle less `r`.
 * **Curve on surface.** Over a whole use, `D(t) = C(t_edge) - S(P(t))` is a
   harmonic sum: `A0 + A1 t + Σ_ω (C_ω cos ωt + S_ω sin ωt)`, with exact
   rational frequencies. This covers line and arc edges against plane
@@ -118,12 +123,15 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   cone, a line pcurve is harmonic along a ruling (`du = 0`) or a parallel
   (`dv = 0`); any other pcurve certifies only as a failure. The same holds
   on a sphere, where a meridian (`du = 0`) is a great-circle arc in `v` and
-  a parallel a circle in `u`.
+  a parallel a circle in `u`, and on a torus, where a meridian is a circle
+  of the tube in `v`. A ring torus (`R - r > tol`) is required
+  (`degenerate_surface`).
 * **UV closure.** Consecutive fins meet in UV within tolerance, with cylinder
   angle differences scaled by the radius, cone ones by `|R + v sin a|` and
-  sphere ones by `|R cos v|` at the larger end (zero at an apex or pole, so a
-  loop may pass through a pole); the last fin meets the first shifted by
-  `2πw` in `u`.
+  sphere ones by `|R cos v|` and torus ones by `R + r cos v` at the larger
+  end (zero at an apex or pole, so a loop may pass through a pole), torus
+  `v` differences by `r`; the last fin meets the first shifted by `2πw` in
+  `u` (and `2πw_v` in `v` on a torus).
 * **Loop winding.** Loops are closed exactly by straight chords between
   consecutive fins (gaps certified to be within tolerance). Twice the signed
   area is the closed form of `∮ u dv - v du`, including the chords. Its sign
@@ -131,7 +139,9 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   to the face orientation. On a wound cylinder or cone face the loops have
   no outer/inner order: the total periodic area `-∮ v du` over all loops
   must have the face's sign, and each unwound loop the opposite one. A
-  pole adds `2π · W · v_pole`, `W` the winding it closes.
+  pole adds `2π · W · v_pole`, `W` the winding it closes. On a torus face
+  wound in `v` the same holds for `∮ u dv`; a face wound in both directions
+  is `uncertified_loop_winding`.
 * **Inner loops.** The first point of each inner loop must lie inside the outer
   loop. A `+u` ray uses a half-open crossing rule. Arcs are split at their
   `v` extrema `π/2 + kπ`, using a certified `π`, so each piece is monotone.
@@ -143,7 +153,10 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   for a cone `f = ρ(v) h(u)`, integrated in `v` from the apex on a face with
   a pole and from 0 otherwise, and on a sphere `f = R² cos v (O·q + R)`,
   from the pole or the south pole, a whole sphere adding its north pole's
-  line (`MATHEMATICS.md`). A
+  line; on a torus `f = r (R + r cos v)(A(u) cos v + (O·n) sin v + R cos v
+  + r)`, `A(u) = O·x cos u + O·y sin u`, integrated in `v` from 0, or for
+  loops wound in `v` integrated in `u` from 0 and taken `∮ · dv`; a whole
+  torus's flux is `6π²Rr²` with the face's sense (`MATHEMATICS.md`). A
   shell's flux sums its faces' fluxes, negated for back sides. A bounded
   region's first shell must have positive flux and every other shell
   negative; the infinite void's shells negative.
@@ -159,9 +172,9 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   parity is the same for any watertight surface within tolerance of the
   faces. On a cylinder, a hit is inside the face when the `+v` ray from it
   on the universal cover crosses the face's loops an odd number of times,
-  counting every period alias of a wound loop. A ray against a cone or
-  sphere face is not yet solved, so a body with a cavity and such a face
-  reports `uncertified_containment`. A cavity whose first face is a whole
+  counting every period alias of a wound loop. A ray against a cone,
+  sphere or torus face is not yet solved, so a body with a cavity and such
+  a face reports `uncertified_containment`. A cavity whose first face is a whole
   sphere takes its point at `(0, 0)`.
 
 ## Two arithmetic tiers
@@ -269,7 +282,7 @@ Evidence:
   seam is kept and rejected as `seam_edge`), and `validate` implements the
   side, region, radial, winding, vertex-loop and region-flux invariants
   independently, with its own `+v` cover-crossing parity on cylinders.
-  `generate_brep_fixtures.py --check` rebuilds 102 cases. 54 come from an
+  `generate_brep_fixtures.py --check` rebuilds 116 cases. 54 come from an
   independent seamed prism builder (19 valid solids and 35 mutations; the
   valid solids include holes, convex and concave arcs, full circles, one and
   two cavities, rotated and far-translated copies and a millimetre-scale
@@ -292,8 +305,13 @@ Evidence:
   hemispheres, a zone, rotated and far copies, a whole sphere with an
   immersed vertex (valid), and seven mutations (the pole at the other pole
   or off the surface or removed, a ring winding twice, a zero radius, a
-  whole sphere turned inside out and a ring pcurve shifted). 40 cases are
-  valid. `brep_validation.rs`
+  whole sphere turned inside out and a ring pcurve shifted), and one
+  sphere loop winding in `v`. Thirteen are tori from an independent torus
+  builder: the whole torus, the outer and inner halves, a segment, two
+  wedges and a far copy, and six mutations (a meridian loop winding twice or
+  unbalanced in `v`, a meridian pcurve shifted, a whole torus inside out, a
+  spindle torus and the inner half with its wall forward, as OCCT builds
+  it). 47 cases are valid. `brep_validation.rs`
   requires Rust's complete sorted issue list to equal the reference's for
   every case.
 * The existing prism suites (`invariants`, `occt_regression`, `modeling`)
@@ -304,7 +322,7 @@ prisms with no hole, a round (seamless) hole, a square hole or an inverted box
 cavity. Scales range over `2^±10` with random frames and offsets. The cavity
 is merged by fuzz-crate code, not by a kernel builder: its material shell
 joins the body's solid region and its twin bounds a new void region. The
-base must be valid. Then one of 30 mutations must produce its predicted
+base must be valid. Then one of 31 mutations must produce its predicted
 issues:
 
 * an exact report for local changes: an extra vertex, edge, empty shell or
@@ -336,6 +354,11 @@ issues:
   its pole moved over the sphere or along the axis, removed, a zero radius,
   a ring pcurve shifted, or a whole sphere turned inside out
   (`shell_orientation`)
+* a whole torus, v-segment or wedge (mutation 30) with the same checks, a
+  volume within `1e-9` of Pappus's for a full tube, and a ring or meridian
+  loop winding twice (`winding_mismatch`), a ring pcurve shifted off the
+  tube (`pcurve_off_edge`), the tube reaching the axis
+  (`degenerate_surface`) or a whole torus turned inside out
 
 Every report must be deterministic, duplicate-free and identical to
 `from_parts`. A local 300-second development campaign (dirty tree based on

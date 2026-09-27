@@ -128,9 +128,23 @@ class Sphere:
     radius: float
 
 
+@dataclass
+class Torus:
+    """S(u, v) = O + (R + r cos v)(cos u x + sin u y) + r sin v n: a ring
+    torus, periodic in u and v, as in OCCT's Geom_ToroidalSurface."""
+    frame: Frame
+    major: float
+    minor: float
+
+
 def periodic(s):
-    """Surfaces periodic in u (angle): cylinders, cones and spheres."""
-    return isinstance(s, (Cylinder, Cone, Sphere))
+    """Surfaces periodic in u (angle): cylinders, cones, spheres and tori."""
+    return isinstance(s, (Cylinder, Cone, Sphere, Torus))
+
+
+def periodic_v(s):
+    """Surfaces periodic in v too: tori."""
+    return isinstance(s, Torus)
 
 
 def apex_v(s):
@@ -142,12 +156,24 @@ def apex(s):
     return add(o, mul(n, mp.cos(mp.mpf(s.half_angle))*apex_v(s)))
 
 
+def v_scale(s):
+    """Length per unit of v: 1 along rulings, a sphere's radius, a torus's
+    minor radius."""
+    if isinstance(s, Sphere):
+        return mp.mpf(s.radius)
+    if isinstance(s, Torus):
+        return mp.mpf(s.minor)
+    return mp.mpf(1)
+
+
 def u_scale(s, v):
     """Length per unit of u at parameter v: the radius there."""
     if isinstance(s, Cylinder):
         return mp.mpf(s.radius)
     if isinstance(s, Sphere):
         return mp.mpf(s.radius)*mp.cos(mp.mpf(v))
+    if isinstance(s, Torus):
+        return mp.mpf(s.major)+mp.mpf(s.minor)*mp.cos(mp.mpf(v))
     return mp.mpf(s.radius)+mp.sin(mp.mpf(s.half_angle))*mp.mpf(v)
 
 
@@ -282,6 +308,10 @@ def surface_valid(s, tol):
         # between 0 and a right angle in magnitude.
         return (frame_ok and math.isfinite(s.radius) and s.radius >= 0 and math.isfinite(s.half_angle)
                 and 0 < abs(s.half_angle) < math.pi/2)
+    if isinstance(s, Torus):
+        # A ring torus: the tube above tolerance and clear of the axis.
+        return (frame_ok and math.isfinite(s.major) and math.isfinite(s.minor) and s.minor > tol
+                and mp.mpf(s.major)-mp.mpf(s.minor) > tol)
     # Planes need nothing more; cylinders and spheres a radius above tolerance.
     return frame_ok and (isinstance(s, Plane) or (math.isfinite(s.radius) and s.radius > tol))
 
@@ -326,6 +356,10 @@ def surface_point(s, uv):
         R = mp.mpf(s.radius)
         radial = add(mul(x, R*mp.cos(v)*mp.cos(u)), mul(y, R*mp.cos(v)*mp.sin(u)))
         return add(add(o, radial), mul(n, R*mp.sin(v)))
+    if isinstance(s, Torus):
+        rho = mp.mpf(s.major)+mp.mpf(s.minor)*mp.cos(v)
+        radial = add(mul(x, rho*mp.cos(u)), mul(y, rho*mp.sin(u)))
+        return add(add(o, radial), mul(n, mp.mpf(s.minor)*mp.sin(v)))
     radial = add(mul(x, s.radius*mp.cos(u)), mul(y, s.radius*mp.sin(u)))
     return add(add(o, radial), mul(n, v))
 
@@ -450,6 +484,25 @@ def use_harmonic(s, p, h, sign):
         if dv == 0:
             h.affine(add(o, mul(n, R*mp.sin(v0))), [0, 0, 0], sign)
             h.rotating(u0, du, mul(x, R*mp.cos(v0)), mul(y, R*mp.cos(v0)), sign)
+            return True
+        return False
+    if isinstance(s, Torus):
+        # A meridian (du = 0) is an arc of the tube's circle about
+        # O + R e(u0); a parallel (dv = 0) a circle about the axis.
+        if not isinstance(p, Line2):
+            return False
+        u0, v0 = mp.mpf(p.start[0]), mp.mpf(p.start[1])
+        du, dv = mp.mpf(p.end[0])-u0, mp.mpf(p.end[1])-v0
+        R, r = mp.mpf(s.major), mp.mpf(s.minor)
+        if du == 0:
+            e = add(mul(x, mp.cos(u0)), mul(y, mp.sin(u0)))
+            h.affine(add(o, mul(e, R)), [0, 0, 0], sign)
+            h.rotating(v0, dv, mul(e, r), mul(n, r), sign)
+            return True
+        if dv == 0:
+            rho = R+r*mp.cos(v0)
+            h.affine(add(o, mul(n, r*mp.sin(v0))), [0, 0, 0], sign)
+            h.rotating(u0, du, mul(x, rho), mul(y, rho), sign)
             return True
         return False
     if isinstance(p, Line2):

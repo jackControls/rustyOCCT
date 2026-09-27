@@ -121,6 +121,7 @@ const GEOMETRY: [&str; 21] = [
     "Ellipse2d",
     "Hyperbola",
     "Hyperbola2d",
+    "NonRingToroidalSurface",
     "OffsetCurve",
     "OffsetCurve2d",
     "OffsetSurface",
@@ -129,7 +130,6 @@ const GEOMETRY: [&str; 21] = [
     "RectangularTrimmedSurface",
     "SurfaceOfLinearExtrusion",
     "SurfaceOfRevolution",
-    "ToroidalSurface",
     "TrimmedCurve",
     "TrimmedCurve2d",
 ];
@@ -185,5 +185,5 @@ fn corpus_matches_the_independent_reader() {
             }
         }
     }
-    assert_eq!(imported, 44);
+    assert_eq!(imported, 54);
 }

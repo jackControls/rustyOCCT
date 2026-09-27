@@ -105,6 +105,16 @@ pub fn parse(block: &str) -> (String, f64, TopologyParts) {
                         },
                         13,
                     )
+                } else if w[1] == "torus" {
+                    let v = nums(2, 11);
+                    (
+                        Surface::Torus {
+                            frame: frame(&v),
+                            major: v[9],
+                            minor: v[10],
+                        },
+                        13,
+                    )
                 } else if w[1] == "sphere" {
                     let v = nums(2, 10);
                     (
@@ -136,7 +146,10 @@ pub fn parse(block: &str) -> (String, f64, TopologyParts) {
             "l" => {
                 parts.loops.push(Loop::Edges {
                     fins: Vec::new(),
-                    winding: [w[1].parse().unwrap(), 0],
+                    winding: [
+                        w[1].parse().unwrap(),
+                        w.get(2).map_or(0, |x| x.parse().unwrap()),
+                    ],
                 });
             }
             "lv" => {

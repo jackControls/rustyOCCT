@@ -186,7 +186,7 @@ def main():
     parser.add_argument('--occt-root', type=Path, required=True)
     parser.add_argument('--sdk-manifest', type=Path, required=True)
     parser.add_argument('--output', type=Path, default=None,
-                        help='default target/primitive-oracle (cones) or target/sphere-oracle')
+                        help='default target/primitive-oracle (cones) or target/<family>-oracle')
     parser.add_argument('--capture', action='store_true')
     parser.add_argument('--family', choices=sorted(FAMILIES), default='cone')
     args = parser.parse_args()

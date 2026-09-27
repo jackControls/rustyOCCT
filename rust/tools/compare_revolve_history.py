@@ -59,7 +59,7 @@ from compare_degree_elevation import verify_sdk
 from compare_occt import ROOT
 import compare_primitives
 import generate_primitive_fixtures
-from primitive_reference import HALF_PI, Sphere, axes
+from primitive_reference import HALF_PI, TWO_PI, Sphere, Torus, axes
 
 CAPTURE = ROOT/'rust/fixtures/occt-revolve-history-capture'
 # Per family: the capture directory and the fixture stem of its cases.
@@ -157,8 +157,12 @@ def same(a, b, size):
 
 
 def ends(c):
-    """The meridian's rim points ((r1, z1), (r2, z2)) of a cone or sphere;
-    a zero radius is an apex or pole."""
+    """The meridian's rim points ((r1, z1), (r2, z2)) of a cone, sphere or
+    torus; a zero radius is an apex or pole."""
+    if isinstance(c, Torus):
+        R, r = mp.mpf(c.major), mp.mpf(c.minor)
+        rim = lambda a: (R+r*mp.cos(mp.mpf(a)), r*mp.sin(mp.mpf(a)))
+        return rim(c.a1), rim(c.a2)
     if isinstance(c, Sphere):
         R = mp.mpf(c.radius)
         rim = lambda a: ((0, R*(1 if a > 0 else -1)) if abs(a) == HALF_PI
@@ -178,8 +182,9 @@ def meridian(c, size):
         r = mp.sqrt(max(sum(d[i]**2 for i in range(3))-z**2, 0))
         near = lambda a, b: abs(a-b) <= BOUND*size
         found = [k for k, (rk, zk) in enumerate([(0, z1), (r1, z1), (r2, h), (0, h)]) if near(r, rk) and near(z, zk)]
-        # An apex is its rim point.
-        found = [k for k in found if not (k == 0 and 1 in found) and not (k == 3 and 2 in found)]
+        # An apex is its rim point; a closed meridian's one point is rim 1.
+        found = [k for k in found if not (k == 0 and 1 in found) and not (k == 3 and 2 in found)
+                 and not (k == 2 and 1 in found)]
         return found[0] if len(found) == 1 else None
     return index
 
@@ -228,7 +233,9 @@ def compare(c, native, rust, size):
     degenerated = native['degenerated']
     in_result = [sig for sig, _ in native['outputs']]
     pole_role = 'pole' if isinstance(c, Sphere) else 'apex'
-    wall = 'F sphere' if isinstance(c, Sphere) else 'F cone'
+    wall = {Sphere: 'F sphere', Torus: 'F torus'}.get(type(c), 'F cone')
+    closed = isinstance(c, Torus) and c.a2-c.a1 == TWO_PI
+    wedge = closed and c.angle != TWO_PI
     for label, query, sig in native['queries']:
         element, k = labels[label]
         parent = f'P0.{element}{k}'
@@ -236,6 +243,14 @@ def compare(c, native, rust, size):
             hit = None
             if element == 'v' and sig[0] == 'E circle':
                 hit = find(parent, sig)
+                # A torus's point on a closed meridian sweeps its seam in v:
+                # structure.
+                if hit is None and closed and any(same(sig, s_, size) for s_ in structure):
+                    stats['structure'] += 1
+                    continue
+            elif element == 'b' and sig[0] == 'S' and wedge:
+                # A wedge (not closed) generates its solid from the face.
+                hit = find(parent, sig, 'region')
             elif element == 'v' and sig[0] == 'E degenerated':
                 hit = find(parent, ('V', sig[1]), pole_role)
                 # A whole sphere has no pole vertices: its degenerated edges
@@ -259,6 +274,11 @@ def compare(c, native, rust, size):
         elif query in ('first', 'last'):
             if sig is None:
                 failures.add('null_first_or_last')
+            elif wedge and element in ('s', 'b') and find(parent, sig) is not None:
+                # A wedge's first and last shapes: its end circles (from the
+                # arc) and discs (from the face).
+                reached[find(parent, sig)] = True
+                stats['mapped'] += 1
             elif element == 'v' and find(parent, sig, pole_role) is not None:
                 # The apex or pole: OCCT's structure rule lists it, as only
                 # the seam and the degenerated edge use it; the kernel's pole.
@@ -275,8 +295,13 @@ def compare(c, native, rust, size):
     # Deleted: the axis, the radial segments and the face, exactly.
     deleted = sorted(labels[label] for label in native['deleted'])
     (r1, _), (r2, _) = ends(c)
-    expected_deleted = sorted([('b', 0), ('s', 3)]+[('s', s) for s, r in ((0, r1), (2, r2)) if r != 0]
-                              + [('v', v) for v, r in ((0, r1), (3, r2)) if r != 0])
+    if closed:
+        # One point and one circle: a full turn deletes the face, a wedge
+        # nothing.
+        expected_deleted = [] if wedge else [('b', 0)]
+    else:
+        expected_deleted = sorted([('b', 0), ('s', 3)]+[('s', s) for s, r in ((0, r1), (2, r2)) if r != 0]
+                                  + [('v', v) for v, r in ((0, r1), (3, r2)) if r != 0])
     if deleted != expected_deleted:
         failures.add('deleted_set')
     # The kernel's caps and region against the outputs no query reaches.
@@ -339,7 +364,7 @@ def main():
     parser.add_argument('--occt-root', type=Path, required=True)
     parser.add_argument('--sdk-manifest', type=Path, required=True)
     parser.add_argument('--output', type=Path, default=None,
-                        help='default target/revolve-history-oracle or target/sphere-revolve-oracle')
+                        help='default target/revolve-history-oracle (cones) or target/<family>-revolve-oracle')
     parser.add_argument('--capture', action='store_true')
     parser.add_argument('--capture-only', action='store_true',
                         help='record the capture and stop (before the kernel can be compared)')
@@ -402,8 +427,8 @@ def main():
     inputs = {line.split()[1]: line for line in cases.splitlines()}
     report = {'source_reference': SOURCE, 'oracle': oracle, 'cases': len(size), 'matches': [],
               'reviewed_differences': [], 'failures': [], 'classified': {}}
-    corpus = (generate_primitive_fixtures.spheres() if args.family == 'sphere'
-              else generate_primitive_fixtures.corpus())
+    corpus = {'sphere': generate_primitive_fixtures.spheres, 'torus': generate_primitive_fixtures.tori}.get(
+        args.family, generate_primitive_fixtures.corpus)()
     for c in corpus:
         found, stats = compare(c, native[c.name], rust[c.name], size[c.name])
         if not reproduces(observed[c.name], captured[c.name], size[c.name]):

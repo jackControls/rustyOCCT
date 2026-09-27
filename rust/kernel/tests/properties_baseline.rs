@@ -14,7 +14,7 @@ pub fn rows() -> Vec<String> {
     let mut out = Vec::new();
     for spec in cases(include_str!("../../fixtures/identity-cases.txt")) {
         // The baseline predates cones (S3); it covers the prisms.
-        if spec.cone.is_some() || spec.sphere.is_some() {
+        if spec.cone.is_some() || spec.sphere.is_some() || spec.torus.is_some() {
             continue;
         }
         let mut solid = build(&spec);

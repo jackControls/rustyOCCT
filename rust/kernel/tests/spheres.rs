@@ -121,6 +121,7 @@ fn spheres_match_the_independent_reference() {
                 Surface::Cone { .. } => "cone",
                 Surface::Cylinder { .. } => "cylinder",
                 Surface::Sphere { .. } => "sphere",
+                Surface::Torus { .. } => "torus",
             };
             let (a, centre) = t.face_area_and_centre(FaceId::new(f)).expect("face");
             let k = faces

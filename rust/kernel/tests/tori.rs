@@ -1,10 +1,10 @@
-//! The cone builder (S3 of REVIEW_NOTES.md) against the independent
+//! The torus builder (S3 of REVIEW_NOTES.md) against the independent
 //! primitive reference: OCCT's synthesized counts, certified mass
-//! properties, faces (type, area, centre), ring edges (length, point at the
-//! middle parameter) and apex vertices, for every cone of
-//! `primitive-cases.txt`. The kernel stores rounded frame axes, angle and
-//! slant, so numbers compare within 1e-12 of the case's scale; the mass
-//! enclosures themselves are certified for the stored geometry.
+//! properties, faces (type, area, centre) and ring edges (length, point at
+//! the middle parameter), for every whole torus, v-segment and wedge of
+//! `torus-cases.txt`. The kernel stores rounded frame axes and cap heights,
+//! so numbers compare within 1e-12 of the case's scale; the mass enclosures
+//! themselves are certified for the stored geometry.
 use rusty_occt::identity::OperationId;
 use rusty_occt::topology::{Curve3, FaceId, Surface};
 use rusty_occt::{Frame3, Point3, Solid, Tolerance, Vec3};
@@ -22,7 +22,7 @@ struct Expected {
 
 fn expected() -> BTreeMap<String, Expected> {
     let mut out: BTreeMap<String, Expected> = BTreeMap::new();
-    for line in include_str!("../../fixtures/primitive-expected.tsv").lines() {
+    for line in include_str!("../../fixtures/torus-expected.tsv").lines() {
         if line.starts_with('#') {
             continue;
         }
@@ -56,10 +56,10 @@ fn near(a: [f64; 3], b: [f64; 3], scale: f64) -> bool {
 }
 
 #[test]
-fn cones_match_the_independent_reference() {
+fn tori_match_the_independent_reference() {
     let want = expected();
     let mut checked = 0;
-    for line in include_str!("../../fixtures/primitive-cases.txt").lines() {
+    for line in include_str!("../../fixtures/torus-cases.txt").lines() {
         let w: Vec<&str> = line.split_whitespace().collect();
         let n: Vec<f64> = w[2..].iter().map(|x| x.parse().unwrap()).collect();
         let name = w[1];
@@ -72,11 +72,12 @@ fn cones_match_the_independent_reference() {
             tol,
         )
         .unwrap();
-        let (solid, _) = Solid::cone_with(OperationId(1), frame, n[9], n[10], n[11], tol)
-            .unwrap_or_else(|err| panic!("{name}: {err}"));
+        let (solid, _) =
+            Solid::torus_with(OperationId(1), frame, n[9], n[10], n[11], n[12], n[13], tol)
+                .unwrap_or_else(|err| panic!("{name}: {err}"));
         let t = solid.topology();
         assert!(t.check(tol).is_empty(), "{name}: {:?}", t.check(tol));
-        let size = [n[0], n[1], n[2], n[9], n[10], n[11], 1.0]
+        let size = [n[0], n[1], n[2], n[9] + n[10], 1.0]
             .iter()
             .fold(0.0f64, |m, x| m.max(x.abs()));
         let c = t.occt_counts();
@@ -138,7 +139,7 @@ fn cones_match_the_independent_reference() {
         // Ring edges (OCCT's seam and degenerated edge are its structure).
         for edge in t.edges() {
             let Curve3::Circle { radius, .. } = edge.curve else {
-                panic!("{name}: a cone's edges are rings");
+                panic!("{name}: a torus's edges are rings");
             };
             let mid = edge.curve.point(0.5).to_array();
             let length = std::f64::consts::TAU * radius;
@@ -155,7 +156,7 @@ fn cones_match_the_independent_reference() {
                 e.vertices
                     .iter()
                     .any(|p| near(v.position.to_array(), *p, size)),
-                "{name}: apex {:?}",
+                "{name}: pole {:?}",
                 v.position
             );
         }

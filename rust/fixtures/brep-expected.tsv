@@ -101,3 +101,17 @@ sphere_zero_radius	degenerate_surface:face 0
 sphere_whole_reversed	shell_orientation:shell 0
 sphere_ring_pcurve_shift	pcurve_off_edge:use 0.0.0
 sphere_whole_vertex_loop	
+sphere_winding_in_v	uv_gap:use 0.0.0;winding_mismatch:loop 0.0
+torus_whole	
+torus_outer_half	
+torus_inner_half	
+torus_segment	
+torus_wedge	
+torus_wide_wedge	
+torus_far	
+torus_winding_v_twice	uv_gap:use 0.1.0;winding_mismatch:loop 0.0
+torus_winding_v_unbalanced	uv_gap:use 0.0.0;winding_mismatch:loop 0.0
+torus_meridian_pcurve_shift	pcurve_off_edge:use 0.0.0
+torus_whole_reversed	shell_orientation:shell 0
+torus_spindle	degenerate_surface:face 0
+torus_inner_half_wall_forward	loop_winding:loop 0.0

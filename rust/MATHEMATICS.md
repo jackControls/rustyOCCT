@@ -1221,6 +1221,36 @@ over one turn, with the face's sense. The independent reference integrates
 its own closed form of the flux, `G(u, v) = R²[A(u)((v + π/2)/2 + sin 2v/4)
 + (O·n)(sin² v - 1)/2 + R (sin v + 1)]`, by quadrature.
 
+### Tori
+
+A torus face is `S(u, v) = O + (R + r cos v) e(u) + r sin v n`, a ring
+torus (`R > r`); `S_u × S_v = r (R + r cos v) q` with `q = cos v e(u) +
+sin v n` the tube's outward normal, so the UV-gap scales are `R + r cos v`
+in `u` and `r` in `v`. Both parameters are periodic: a loop winding
+`[wu, wv]` closes shifted by `(2πwu, 2πwv)`, and the windings in `v`
+balance. Along a meridian (`du = 0`) the deviation is one rotating term of
+frequency `dv` in the plane of `e(u0)` and `n` about the tube's centre;
+along a parallel, one of frequency `du`.
+
+The integrands are sums of `cos^a u sin^b u cos^c v sin^d v`, as on the
+sphere. Loops winding in `u`, or none, take `-∮ F du` with `F` the
+antiderivative in `v` from 0: exact along parallels, zero along meridians,
+enclosed along chords. Loops winding in `v` (a wedge's wall) take `∮ G dv`
+with `G` the antiderivative in `u` from 0, the same routine with the
+parameters exchanged: exact along meridians, zero along parallels. The
+whole torus has no loops; on the cover its region is the period square, and
+by Green's theorem its integral is `∫ F(u, 2π) du` over one turn, with the
+face's sense. The orientation flux is `r (R + r cos v)(A(u) cos v + (O·n)
+sin v + R cos v + r)` with `A(u) = O·x cos u + O·y sin u`; over the whole
+torus `A` integrates to nothing and the flux is `6π²Rr²`, three times the
+volume `2π²Rr²`. The independent reference integrates closed forms of both
+antiderivatives by quadrature (`cell_reference.py`), and
+`primitive_reference.py` the partial revolution's moments in closed form
+(Pappus's theorems for the tube's disc or the meridian region).
+
+The 22 tori of `torus-cases.txt` agree with the reference to `1e-12` of
+their scale (`tests/tori.rs`).
+
 ## Complete spline/line and spline/segment preimages
 
 Closed rational B-spline ranges against infinite lines or closed segments

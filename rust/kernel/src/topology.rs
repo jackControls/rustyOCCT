@@ -252,6 +252,15 @@ pub enum Surface {
         frame: Frame3,
         radius: f64,
     },
+    /// `O + (major + minor cos v)(cos u x + sin u y) + minor sin v n`: a ring
+    /// torus (`major > minor`), u the longitude, v the angle round the tube
+    /// from its outer equator, as OCCT's `Geom_ToroidalSurface`. Periodic in
+    /// both; loops may wind in u or in v.
+    Torus {
+        frame: Frame3,
+        major: f64,
+        minor: f64,
+    },
 }
 
 impl Surface {
@@ -279,6 +288,17 @@ impl Surface {
                     radius * uv.y.sin(),
                 )
             }
+            Self::Torus {
+                frame,
+                major,
+                minor,
+            } => {
+                let rho = major + minor * uv.y.cos();
+                frame.point(
+                    Point2::new(rho * uv.x.cos(), rho * uv.x.sin()),
+                    minor * uv.y.sin(),
+                )
+            }
         }
     }
     /// The unit normal of the parametrization, `S_u x S_v` normalized; on a
@@ -293,14 +313,18 @@ impl Surface {
                 let radial = frame.x() * uv.x.cos() + frame.y() * uv.x.sin();
                 radial * half_angle.cos() - frame.normal() * half_angle.sin()
             }
-            // Outward, away from the poles.
-            Self::Sphere { frame, .. } => {
+            // Outward, away from the poles, or from the tube's core circle.
+            Self::Sphere { frame, .. } | Self::Torus { frame, .. } => {
                 let radial = frame.x() * uv.x.cos() + frame.y() * uv.x.sin();
                 radial * uv.y.cos() + frame.normal() * uv.y.sin()
             }
         }
     }
-    /// Periodic in u (an angle): cylinders, cones and spheres.
+    /// Periodic in v too: a torus.
+    pub fn is_periodic_v(&self) -> bool {
+        matches!(self, Self::Torus { .. })
+    }
+    /// Periodic in u (an angle): cylinders, cones, spheres and tori.
     pub fn is_periodic(&self) -> bool {
         !matches!(self, Self::Plane(_))
     }
@@ -920,6 +944,13 @@ impl Topology {
                 wires += 1;
                 closed_vertices += 2;
             }
+            // A whole torus is OCCT's one wire of its two seams (the meridian
+            // and latitude circles through one vertex).
+            if whole && matches!(face.surface, Surface::Torus { .. }) {
+                seams += 2;
+                wires += 1;
+                closed_vertices += 1;
+            }
         }
         let solid: Vec<&Region> = self
             .regions
@@ -991,7 +1022,8 @@ impl Topology {
                 Surface::Plane(f)
                 | Surface::Cylinder { frame: f, .. }
                 | Surface::Cone { frame: f, .. }
-                | Surface::Sphere { frame: f, .. },
+                | Surface::Sphere { frame: f, .. }
+                | Surface::Torus { frame: f, .. },
             ) => f.origin().to_array(),
             None => [0.0; 3],
         }
@@ -1863,6 +1895,308 @@ impl Topology {
         topology.faces.push(Face {
             surface: Surface::Sphere { frame, radius },
             sense: Orientation::Forward,
+            loops: wall_loops,
+            front: ShellId(0),
+            back: ShellId(1),
+            enclosure: None,
+        });
+        for (k, fin) in topology.fins.iter().enumerate() {
+            topology.edges[fin.edge.index()].fins.push(FinId(k));
+        }
+        let fronts = topology.face_ids().map(|f| (f, Side::Front)).collect();
+        let backs = topology.face_ids().map(|f| (f, Side::Back)).collect();
+        topology.shells = vec![
+            Shell {
+                region: RegionId(1),
+                sides: fronts,
+                wire_edges: Vec::new(),
+                acorn_vertices: Vec::new(),
+            },
+            Shell {
+                region: RegionId(0),
+                sides: backs,
+                wire_edges: Vec::new(),
+                acorn_vertices: Vec::new(),
+            },
+        ];
+        topology.regions = vec![
+            Region {
+                kind: RegionKind::Void,
+                shells: vec![ShellId(1)],
+            },
+            Region {
+                kind: RegionKind::Solid,
+                shells: vec![ShellId(0)],
+            },
+        ];
+        topology.identity = Identity::new(
+            derive(EntityKind::Body, Role::Body, Vec::new()),
+            derivations,
+            BTreeMap::new(),
+        )?;
+        topology.measure_enclosures(tolerance)?;
+        topology.validate(tolerance)?;
+        Ok(topology)
+    }
+
+    /// A torus, v-segment or wedge on the frame (S3 of REVIEW_NOTES.md), as
+    /// `BRepPrimAPI_MakeTorus(gp_Ax2, major, minor, low, high, angle)` makes
+    /// it: the tube's latitudes `low..high` revolved by `angle`. A whole torus
+    /// (`high - low` and `angle` both the binary64 2 pi) is one face without
+    /// loops. A v-segment (a full turn) has rings at `low` and `high`
+    /// bounding discs, the wall wound in u and reversed when its meridian arc
+    /// bulges toward the axis (the solid is the revolved region between the
+    /// arc and the axis). A wedge (the whole tube from `v = 0`, `0 < angle <
+    /// 2 pi`) has the tube's circles at `u = 0` and `u = angle` bounding
+    /// discs, the wall wound in v. Ids follow the meridian as for the cone;
+    /// a wedge's discs come from the boundary and its circles from the arc
+    /// (the start and end copies of segment 1, as a prism's cap edges).
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn torus(
+        frame: Frame3,
+        major: f64,
+        minor: f64,
+        low: f64,
+        high: f64,
+        angle: f64,
+        tolerance: Tolerance,
+        operation: OperationId,
+    ) -> Result<Self> {
+        let tol = tolerance.linear();
+        for (value, what) in [
+            (major, "torus radius"),
+            (minor, "torus radius"),
+            (low, "torus latitude"),
+            (high, "torus latitude"),
+            (angle, "torus angle"),
+        ] {
+            crate::math::finite(value, what)?;
+        }
+        if minor <= tol || major - minor <= tol {
+            return Err(Error::Degenerate("torus radii (a ring torus)"));
+        }
+        let closed = high - low == TAU;
+        let turn = angle == TAU;
+        if !(low < high && high - low <= TAU && angle > 0.0 && angle <= TAU) {
+            return Err(Error::OutOfDomain(
+                "torus latitudes must satisfy low < high <= low + 2 pi, angle in (0, 2 pi]",
+            ));
+        }
+        if !closed && !turn {
+            return Err(Error::OutOfDomain("a torus segment of a partial turn"));
+        }
+        if !turn && low != 0.0 {
+            return Err(Error::OutOfDomain("a torus wedge starts its tube at v = 0"));
+        }
+        let derive = |entity, role, parents| Derivation {
+            operation,
+            kind: OperationKind::Revolve,
+            entity,
+            role,
+            ordinal: 0,
+            parents,
+        };
+        let meridian = |element| Parent::Profile {
+            boundary: 0,
+            element,
+        };
+        let mut topology = Self {
+            vertices: Vec::new(),
+            edges: Vec::new(),
+            fins: Vec::new(),
+            loops: Vec::new(),
+            faces: Vec::new(),
+            shells: Vec::new(),
+            regions: Vec::new(),
+            identity: Identity::new(
+                derive(EntityKind::Body, Role::Body, Vec::new()),
+                Vec::new(),
+                BTreeMap::new(),
+            )?,
+            layout: Vec::new(),
+            attributes: AttributeMap::new(),
+        };
+        let mut derivations: Vec<(Slot, Derivation)> = vec![(
+            Slot::Region(RegionId(1)),
+            derive(
+                EntityKind::Region,
+                Role::Region,
+                vec![meridian(ProfileElement::Boundary)],
+            ),
+        )];
+        let mut wall_loops = Vec::new();
+        let mut wall_sense = Orientation::Forward;
+        if !closed {
+            // A v-segment: the meridian region between the arc and the axis
+            // runs counterclockwise (the arc bulges away from the axis, the
+            // wall's normal points out) exactly when its signed area is
+            // positive; its boundary must be simple, the arc's lower end
+            // below its upper one in that direction.
+            let area = minor * major * (high.sin() - low.sin())
+                + minor
+                    * minor
+                    * ((high - low) / 2.0 + ((2.0 * high).sin() - (2.0 * low).sin()) / 4.0);
+            let (z_low, z_high) = (minor * low.sin(), minor * high.sin());
+            if area.abs() <= tol * tol || (z_high - z_low).abs() <= tol {
+                return Err(Error::Degenerate("torus segment"));
+            }
+            if (area > 0.0) != (z_high > z_low) {
+                return Err(Error::OutOfDomain(
+                    "a torus segment whose meridian boundary is not simple",
+                ));
+            }
+            wall_sense = if area > 0.0 {
+                Orientation::Forward
+            } else {
+                Orientation::Reversed
+            };
+            let ends = [
+                (low, z_low, Role::StartCap, 0, Role::BottomEdge, 1, false),
+                (high, z_high, Role::EndCap, 2, Role::TopEdge, 2, true),
+            ];
+            for (latitude, z, cap_role, segment, edge_role, rim, upper_end) in ends {
+                let ring_radius = major + minor * latitude.cos();
+                let centre = frame.point(Point2::default(), z);
+                let lower = if upper_end { z < z_low } else { z < z_high };
+                let normal = if lower {
+                    -frame.normal()
+                } else {
+                    frame.normal()
+                };
+                let disc_frame = Frame3::new(centre, normal, frame.x(), tolerance)?;
+                let ring_frame = Frame3::new(centre, frame.normal(), frame.x(), tolerance)?;
+                let ring = topology.add_ring(Curve3::Circle {
+                    frame: ring_frame,
+                    radius: ring_radius,
+                });
+                derivations.push((
+                    Slot::Edge(ring),
+                    derive(
+                        EntityKind::Edge,
+                        edge_role,
+                        vec![meridian(ProfileElement::Vertex(rim))],
+                    ),
+                ));
+                let disc = FaceId(topology.faces.len());
+                derivations.push((
+                    Slot::Face(disc),
+                    derive(
+                        EntityKind::Face,
+                        cap_role,
+                        vec![meridian(ProfileElement::Segment(segment))],
+                    ),
+                ));
+                topology.faces.push(Face {
+                    surface: Surface::Plane(disc_frame),
+                    sense: Orientation::Forward,
+                    loops: Vec::new(),
+                    front: ShellId(0),
+                    back: ShellId(1),
+                    enclosure: None,
+                });
+                topology.add_cap_loop(disc.0, &[ring], lower, disc_frame);
+                // In the oriented wall: +u at low and -u at high for a
+                // forward wall, the other way round for a reversed one.
+                let plus = upper_end == (wall_sense == Orientation::Reversed);
+                let (sense, u0, u1, turns) = if plus {
+                    (Orientation::Forward, 0.0, TAU, 1)
+                } else {
+                    (Orientation::Reversed, TAU, 0.0, -1)
+                };
+                let fin = Fin {
+                    edge: ring,
+                    sense,
+                    pcurve: Curve2::LineSegment {
+                        start: Point2::new(u0, latitude),
+                        end: Point2::new(u1, latitude),
+                    },
+                    enclosure: None,
+                };
+                wall_loops.push(topology.add_loop(vec![fin], [turns, 0]));
+            }
+        } else if !turn {
+            // A wedge: the tube's circles at u = 0 and u = angle, each
+            // bounding a disc in its meridian half-plane.
+            let e = |u: f64| frame.x() * u.cos() + frame.normal().cross(frame.x()) * u.sin();
+            let ends = [
+                (0.0, Role::StartCap, Role::BottomEdge, false),
+                (angle, Role::EndCap, Role::TopEdge, true),
+            ];
+            for (u, cap_role, edge_role, end) in ends {
+                let radial = e(u);
+                let centre = frame.origin() + radial * major;
+                // The circle's parameter is v: x-axis e(u), y-axis n.
+                let circle_normal = radial.cross(frame.normal());
+                let ring_frame = Frame3::new(centre, circle_normal, radial, tolerance)?;
+                let ring = topology.add_ring(Curve3::Circle {
+                    frame: ring_frame,
+                    radius: minor,
+                });
+                derivations.push((
+                    Slot::Edge(ring),
+                    derive(
+                        EntityKind::Edge,
+                        edge_role,
+                        vec![meridian(ProfileElement::Segment(1))],
+                    ),
+                ));
+                // Outward: back along -u at the start, on along +u at the end.
+                let tangent = frame.normal().cross(radial);
+                let outward = if end { tangent } else { -tangent };
+                let disc_frame = Frame3::new(centre, outward, radial, tolerance)?;
+                let disc = FaceId(topology.faces.len());
+                derivations.push((
+                    Slot::Face(disc),
+                    derive(
+                        EntityKind::Face,
+                        cap_role,
+                        vec![meridian(ProfileElement::Boundary)],
+                    ),
+                ));
+                topology.faces.push(Face {
+                    surface: Surface::Plane(disc_frame),
+                    sense: Orientation::Forward,
+                    loops: Vec::new(),
+                    front: ShellId(0),
+                    back: ShellId(1),
+                    enclosure: None,
+                });
+                topology.add_cap_loop(disc.0, &[ring], end, disc_frame);
+                // The region [0, angle] x [0, 2 pi] of the wall: up in v at
+                // u = angle, down at u = 0.
+                let (sense, v0, v1, turns) = if end {
+                    (Orientation::Forward, 0.0, TAU, 1)
+                } else {
+                    (Orientation::Reversed, TAU, 0.0, -1)
+                };
+                let fin = Fin {
+                    edge: ring,
+                    sense,
+                    pcurve: Curve2::LineSegment {
+                        start: Point2::new(u, v0),
+                        end: Point2::new(u, v1),
+                    },
+                    enclosure: None,
+                };
+                wall_loops.push(topology.add_loop(vec![fin], [0, turns]));
+            }
+        }
+        let wall = FaceId(topology.faces.len());
+        derivations.push((
+            Slot::Face(wall),
+            derive(
+                EntityKind::Face,
+                Role::Wall,
+                vec![meridian(ProfileElement::Segment(1))],
+            ),
+        ));
+        topology.faces.push(Face {
+            surface: Surface::Torus {
+                frame,
+                major,
+                minor,
+            },
+            sense: wall_sense,
             loops: wall_loops,
             front: ShellId(0),
             back: ShellId(1),

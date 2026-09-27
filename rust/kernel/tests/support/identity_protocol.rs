@@ -21,6 +21,8 @@ pub struct CaseSpec {
     pub cone: Option<[f64; 3]>,
     /// Radius and the latitudes of the ends (radians).
     pub sphere: Option<[f64; 3]>,
+    /// Major and minor radii, the tube's latitudes and the turn (radians).
+    pub torus: Option<[f64; 5]>,
     pub transforms: Vec<RigidTransform>,
 }
 
@@ -47,6 +49,7 @@ pub fn parse(block: &str) -> CaseSpec {
         box_at: None,
         cone: None,
         sphere: None,
+        torus: None,
         transforms: Vec::new(),
     };
     for line in block.lines().filter(|l| !l.trim().is_empty()) {
@@ -63,6 +66,7 @@ pub fn parse(block: &str) -> CaseSpec {
             "box" => spec.box_at = Some(([f(1), f(2), f(3)], [f(4), f(5), f(6)])),
             "cone" => spec.cone = Some([f(1), f(2), f(3)]),
             "sphere" => spec.sphere = Some([f(1), f(2), f(3)]),
+            "torus" => spec.torus = Some([f(1), f(2), f(3), f(4), f(5)]),
             "boundary" => {
                 let (boundary, rest) = if w[1] == "C" {
                     let b =
@@ -132,6 +136,19 @@ pub fn build_tracked(spec: &CaseSpec) -> (Solid, History) {
     if let Some([bottom, top, height]) = spec.cone {
         return Solid::cone_with(spec.operation, frame, bottom, top, height, spec.tolerance)
             .unwrap();
+    }
+    if let Some([major, minor, low, high, angle]) = spec.torus {
+        return Solid::torus_with(
+            spec.operation,
+            frame,
+            major,
+            minor,
+            low,
+            high,
+            angle,
+            spec.tolerance,
+        )
+        .unwrap();
     }
     if let Some([radius, low, high]) = spec.sphere {
         return Solid::sphere_with(spec.operation, frame, radius, low, high, spec.tolerance)
@@ -347,6 +364,21 @@ fn cone_rows(solid: &Solid) -> Vec<String> {
             .iter()
             .filter(|(_, q)| q.distance(p) <= budget)
             .collect();
+        if found.is_empty() {
+            // A torus wedge's circles and discs sit on the tube's core
+            // circle: at u = 0 (the frame's x) the start, else the end.
+            if let Some(major) = t.faces().iter().find_map(|f| match f.surface {
+                Surface::Torus { major, .. } => Some(major),
+                _ => None,
+            }) {
+                let start = frame.origin() + frame.x() * major;
+                return if start.distance(p) <= budget {
+                    "start"
+                } else {
+                    "end"
+                };
+            }
+        }
         assert_eq!(found.len(), 1, "{p:?} is not one axis end");
         found[0].0
     };
@@ -376,7 +408,9 @@ fn cone_rows(solid: &Solid) -> Vec<String> {
             }
             Slot::Face(f) => match &t.faces()[f.index()].surface {
                 Surface::Plane(plane) => ("face", format!("cap {}", side(plane.origin()))),
-                Surface::Cone { .. } | Surface::Sphere { .. } => ("face", "wall".to_string()),
+                Surface::Cone { .. } | Surface::Sphere { .. } | Surface::Torus { .. } => {
+                    ("face", "wall".to_string())
+                }
                 other => panic!("unexpected cone face {other:?}"),
             },
             Slot::Region(_) => ("region", "region".to_string()),

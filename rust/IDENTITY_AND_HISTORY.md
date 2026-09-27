@@ -275,6 +275,15 @@ pole generates, from its rim point, a vertex of role `Pole` when the other
 end is not a pole, and nothing when both are: the whole sphere is its wall
 and region.
 
+`Solid::torus_with(operation, frame, major, minor, low, high, angle,
+tolerance)` is the same for a v-segment (a full turn of the tube's arc from
+rim point 1 to rim point 2): rings from the rim points, discs from segments
+0 and 2, the wall from the arc. A wedge (the whole tube, a partial turn) is
+revolved like a prism is extruded: its discs are the meridian's start and
+end copies (`StartCap`/`EndCap` from the boundary) and its circles the arc's
+(`BottomEdge`/`TopEdge` from segment 1). The whole torus is its wall and
+region.
+
 T1 (`TOPOLOGY_MODEL.md`) retired the circle's seam edge and seam vertices and
 their roles `Seam` and `SeamVertex` (their encoding codes stay reserved), and
 added the region row. Every polygon id and relation is unchanged by T1.

@@ -182,9 +182,12 @@ fn pcurve_record(
             )
         }
         (
-            Surface::Cylinder { .. } | Surface::Cone { .. } | Surface::Sphere { .. },
+            Surface::Cylinder { .. }
+            | Surface::Cone { .. }
+            | Surface::Sphere { .. }
+            | Surface::Torus { .. },
             Curve2::CircularArc { .. },
-        ) => return Err(unwritable("an arc pcurve on a cylinder, cone or sphere")),
+        ) => return Err(unwritable("an arc pcurve on a periodic surface")),
     })
 }
 
@@ -240,6 +243,12 @@ enum Revolved {
     },
     /// `rho(v) = radius cos v`, height `radius sin v`.
     Sphere { frame: crate::Frame3, radius: f64 },
+    /// `rho(v) = major + minor cos v`, height `minor sin v`.
+    Torus {
+        frame: crate::Frame3,
+        major: f64,
+        minor: f64,
+    },
 }
 
 impl Revolved {
@@ -265,12 +274,23 @@ impl Revolved {
                 frame: *frame,
                 radius: *radius,
             }),
+            Surface::Torus {
+                frame,
+                major,
+                minor,
+            } => Some(Self::Torus {
+                frame: *frame,
+                major: *major,
+                minor: *minor,
+            }),
             Surface::Plane(_) => None,
         }
     }
     fn frame(&self) -> crate::Frame3 {
         match self {
-            Self::Ruled { frame, .. } | Self::Sphere { frame, .. } => *frame,
+            Self::Ruled { frame, .. } | Self::Sphere { frame, .. } | Self::Torus { frame, .. } => {
+                *frame
+            }
         }
     }
     /// `(rho, height)` at `v`.
@@ -280,6 +300,7 @@ impl Revolved {
                 radius, sin, cos, ..
             } => (radius + v * sin, v * cos),
             Self::Sphere { radius, .. } => (radius * v.cos(), radius * v.sin()),
+            Self::Torus { major, minor, .. } => (major + minor * v.cos(), minor * v.sin()),
         }
     }
     fn point(&self, u: f64, v: f64) -> Point3 {
@@ -295,6 +316,7 @@ impl Revolved {
             Self::Ruled { .. } => None,
             Self::Sphere { .. } if north => Some(std::f64::consts::FRAC_PI_2),
             Self::Sphere { .. } => Some(-std::f64::consts::FRAC_PI_2),
+            Self::Torus { .. } => None,
         }
     }
 }
@@ -305,6 +327,15 @@ struct Seam {
     u0: f64,
     bottom: End,
     top: End,
+}
+
+/// A torus face's seam in v: a latitude arc at `v0` over `range` in u, from
+/// the `-v` loop's seam vertex to the `+v` loop's.
+struct VSeam {
+    v0: f64,
+    from: Vertex,
+    to: Vertex,
+    range: [f64; 2],
 }
 
 struct Records {
@@ -356,7 +387,11 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
                 continue;
             };
             if winding[1] != 0 {
-                return Err(unwritable("a winding in v"));
+                // A torus wound in v has its seam in v (below).
+                if matches!(rev, Revolved::Torus { .. }) && winding[0] == 0 {
+                    continue;
+                }
+                return Err(unwritable("a winding in v and u"));
             }
             if winding[0] == 0 {
                 continue;
@@ -545,6 +580,94 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
             },
         );
     }
+    // Seams in v (a torus): a face wound in v gets a latitude seam at the v0
+    // where its ring loops start, from the -v loop's seam vertex to the +v
+    // loop's (the rectangle's bottom, its forward use at v0); a whole torus
+    // gets both seams through one vertex of its own.
+    let mut vseams: BTreeMap<usize, VSeam> = BTreeMap::new();
+    let mut whole_tori: BTreeMap<usize, usize> = BTreeMap::new();
+    for (fi, face) in t.faces().iter().enumerate() {
+        let Surface::Torus {
+            frame,
+            major,
+            minor,
+        } = &face.surface
+        else {
+            continue;
+        };
+        let flip = face.sense == Orientation::Reversed;
+        let (mut plus, mut minus, mut edge_loops) = (None, None, false);
+        for l in &face.loops {
+            let Loop::Edges { fins, winding } = &t.loops()[l.index()] else {
+                continue;
+            };
+            edge_loops = true;
+            if winding[1] == 0 {
+                continue;
+            }
+            let first = &t.fins()[fins[0].index()];
+            let e = first.edge.index();
+            if winding[1].abs() != 1 || fins.len() != 1 || !t.edges()[e].is_ring() {
+                return Err(unwritable("a loop winding in v that is not one ring"));
+            }
+            let start = first.pcurve.point(0.0);
+            let wv = if flip { -winding[1] } else { winding[1] };
+            if wv > 0 {
+                plus = Some((e, start));
+            } else {
+                minus = Some((e, start));
+            }
+        }
+        if !edge_loops {
+            whole_tori.insert(fi, extra.len());
+            extra.push(face.surface.point(Point2::default()));
+            continue;
+        }
+        let (Some(plus), Some(minus)) = (plus, minus) else {
+            continue;
+        };
+        let v0 = plus.1.y.rem_euclid(TAU);
+        let (u_from, u_to) = (minus.1.x, plus.1.x);
+        if u_to <= u_from {
+            return Err(unwritable("a torus wedge running backwards in u"));
+        }
+        for (e, at) in [plus, minus] {
+            let (Curve3::Circle {
+                frame: cf,
+                radius: cr,
+            }
+            | Curve3::CircularArc {
+                frame: cf,
+                radius: cr,
+                ..
+            }) = &t.edges()[e].curve
+            else {
+                return Err(unwritable("a ring edge that is not a circle"));
+            };
+            if (cr - minor).abs() > tolerance {
+                return Err(unwritable("a ring edge off its tube's radius"));
+            }
+            let dir = face.surface.point(Point2::new(at.x, v0)) - cf.origin();
+            let ny = cf.normal().cross(cf.x());
+            let mut angle = dir.dot(ny).atan2(dir.dot(cf.x()));
+            if let Curve3::CircularArc { sweep_angle, .. } = &t.edges()[e].curve {
+                if *sweep_angle < 0.0 {
+                    angle = -angle;
+                }
+            }
+            ring_start.entry(e).or_insert(angle);
+        }
+        let _ = (frame, major);
+        vseams.insert(
+            fi,
+            VSeam {
+                v0,
+                from: Vertex::Ring(minus.0),
+                to: Vertex::Ring(plus.0),
+                range: [u_from, u_to],
+            },
+        );
+    }
     // Vertices, then seam vertices of ring edges.
     let mut vertex_record: BTreeMap<usize, usize> = BTreeMap::new();
     let vertex = |p: Point3, records: &mut Records| {
@@ -592,6 +715,19 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
                 nums(&f.normal().cross(f.x()).to_array()),
                 num(*radius),
                 num(*half_angle)
+            ),
+            Surface::Torus {
+                frame: f,
+                major,
+                minor,
+            } => format!(
+                "5 {} {} {} {} {} {}",
+                nums(&f.origin().to_array()),
+                nums(&f.normal().to_array()),
+                nums(&f.x().to_array()),
+                nums(&f.normal().cross(f.x()).to_array()),
+                num(*major),
+                num(*minor)
             ),
             Surface::Sphere { frame: f, radius } => format!(
                 "4 {} {} {} {} {}",
@@ -665,15 +801,22 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
                 curves2d.push(format!("1 {} 0 {}", nums(&[u0, low]), num(dv)));
                 [0.0, l]
             }
-            Revolved::Sphere { frame, radius } => {
+            Revolved::Sphere { frame, .. } | Revolved::Torus { frame, .. } => {
                 if high <= low {
-                    return Err(unwritable("a sphere seam running down"));
+                    return Err(unwritable("a seam running down"));
                 }
                 let e = frame.x() * u0.cos() + frame.normal().cross(frame.x()) * u0.sin();
                 let n = frame.normal();
+                // The meridian circle: the sphere's, or the tube's about
+                // O + major e(u0); its parameter is v.
+                let (centre, radius) = match rev {
+                    Revolved::Torus { major, minor, .. } => (frame.origin() + e * major, minor),
+                    Revolved::Sphere { radius, .. } => (frame.origin(), radius),
+                    Revolved::Ruled { .. } => unreachable!("ruled seams are lines"),
+                };
                 curves.push(format!(
                     "2 {} {} {} {} {}",
-                    nums(&frame.origin().to_array()),
+                    nums(&centre.to_array()),
                     nums(&e.cross(n).to_array()),
                     nums(&e.to_array()),
                     nums(&n.to_array()),
@@ -695,6 +838,86 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
             seam_vertex(&seam.top),
         ));
         seam_of.insert(*fi, edge);
+    }
+    // Seams in v and whole tori.
+    let latitude = |frame: crate::Frame3, major: f64, minor: f64, v: f64| {
+        let centre = frame.origin() + frame.normal() * (minor * v.sin());
+        format!(
+            "2 {} {} {} {} {}",
+            nums(&centre.to_array()),
+            nums(&frame.normal().to_array()),
+            nums(&frame.x().to_array()),
+            nums(&frame.normal().cross(frame.x()).to_array()),
+            num(major + minor * v.cos())
+        )
+    };
+    let mut vseam_of: BTreeMap<usize, usize> = BTreeMap::new();
+    for (fi, seam) in &vseams {
+        let Surface::Torus {
+            frame,
+            major,
+            minor,
+        } = &t.faces()[*fi].surface
+        else {
+            unreachable!("v seams are on tori");
+        };
+        curves.push(latitude(*frame, *major, *minor, seam.v0));
+        let c3 = curves.len();
+        curves2d.push(format!("1 {} 1 0", nums(&[0.0, seam.v0])));
+        curves2d.push(format!("1 {} 1 0", nums(&[0.0, seam.v0 + TAU])));
+        let (p1, p2) = (curves2d.len() - 1, curves2d.len());
+        let edge = records.push(format!(
+            "Ed\n {tol} 1 1 0\n1 {c3} 0 {}\n3 {p1} {p2} CN {} 0 {}\n0\n\n0101000\n{{v+{}}} 0 {{v-{}}} 0 *",
+            nums(&seam.range),
+            fi + 1,
+            nums(&seam.range),
+            record_of(seam.from),
+            record_of(seam.to),
+        ));
+        vseam_of.insert(*fi, edge);
+    }
+    let mut torus_seams: BTreeMap<usize, (usize, usize)> = BTreeMap::new();
+    for (fi, k) in &whole_tori {
+        let Surface::Torus {
+            frame,
+            major,
+            minor,
+        } = &t.faces()[*fi].surface
+        else {
+            unreachable!("whole tori");
+        };
+        let at = extra_vertex[*k];
+        let full = nums(&[0.0, TAU]);
+        // The meridian circle at u = 0 (parameter v), its forward use at
+        // u = 2 pi; the latitude circle at v = 0 (parameter u), its forward
+        // use at v = 0 (as BRepPrim_OneAxis builds them).
+        let centre = frame.origin() + frame.x() * *major;
+        curves.push(format!(
+            "2 {} {} {} {} {}",
+            nums(&centre.to_array()),
+            nums(&frame.x().cross(frame.normal()).to_array()),
+            nums(&frame.x().to_array()),
+            nums(&frame.normal().to_array()),
+            num(*minor)
+        ));
+        let cu = curves.len();
+        curves2d.push(format!("1 {} 0 1", nums(&[TAU, 0.0])));
+        curves2d.push("1 0 0 0 1".to_string());
+        let (pu1, pu2) = (curves2d.len() - 1, curves2d.len());
+        let u_seam = records.push(format!(
+            "Ed\n {tol} 1 1 0\n1 {cu} 0 {full}\n3 {pu1} {pu2} CN {} 0 {full}\n0\n\n0101000\n{{v+{at}}} 0 {{v-{at}}} 0 *",
+            fi + 1,
+        ));
+        curves.push(latitude(*frame, *major, *minor, 0.0));
+        let cv = curves.len();
+        curves2d.push("1 0 0 1 0".to_string());
+        curves2d.push(format!("1 {} 1 0", nums(&[0.0, TAU])));
+        let (pv1, pv2) = (curves2d.len() - 1, curves2d.len());
+        let v_seam = records.push(format!(
+            "Ed\n {tol} 1 1 0\n1 {cv} 0 {full}\n3 {pv1} {pv2} CN {} 0 {full}\n0\n\n0101000\n{{v+{at}}} 0 {{v-{at}}} 0 *",
+            fi + 1,
+        ));
+        torus_seams.insert(*fi, (u_seam, v_seam));
     }
     // Degenerated edges: a cone's or sphere's poles, one turn at the pole's
     // v from the seam.
@@ -801,7 +1024,37 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
         let use_text = |(e, fwd): &(usize, bool)| {
             format!("{{{}{}}} 0", if *fwd { "+" } else { "-" }, edge_record[e])
         };
-        if let Some(seam_edge) = seam_of.get(&fi) {
+        if let Some((u_seam, v_seam)) = torus_seams.get(&fi) {
+            wires.push(records.push(format!(
+                "Wi\n\n0101100\n{{+{v_seam}}} 0 {{+{u_seam}}} 0 {{-{v_seam}}} 0 {{-{u_seam}}} 0 *"
+            )));
+        } else if let Some(seam_edge) = vseam_of.get(&fi) {
+            // One wire: the seam at v0 from the -v ring to the +v ring, the +v
+            // ring, the seam back at v0 + 2 pi, the -v ring.
+            let ring_use = |up: bool| -> Option<String> {
+                face.loops.iter().find_map(|l| match &t.loops()[l.index()] {
+                    Loop::Edges { fins, winding } if winding[1] != 0 => {
+                        let wv = if flip { -winding[1] } else { winding[1] };
+                        let f = &t.fins()[fins[0].index()];
+                        let fwd = (f.sense == Orientation::Forward) != flip;
+                        ((wv > 0) == up).then(|| {
+                            format!(
+                                "{{{}{}}} 0",
+                                if fwd { "+" } else { "-" },
+                                edge_record[&f.edge.index()]
+                            )
+                        })
+                    }
+                    _ => None,
+                })
+            };
+            let (Some(up), Some(down)) = (ring_use(true), ring_use(false)) else {
+                return Err(unwritable("a torus wedge without both rings"));
+            };
+            wires.push(records.push(format!(
+                "Wi\n\n0101100\n{{+{seam_edge}}} 0 {up} {{-{seam_edge}}} 0 {down} *"
+            )));
+        } else if let Some(seam_edge) = seam_of.get(&fi) {
             // One wire: the bottom loop (+u) from the seam vertex, the seam
             // up, the top loop (-u) from its seam vertex, the seam down.
             let seam = &wound[&fi];

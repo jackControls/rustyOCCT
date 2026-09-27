@@ -66,6 +66,16 @@ pub enum Surface {
         r: f64,
         a: f64,
     },
+    /// `Geom_ToroidalSurface`: the tube of radius `minor` about the circle of
+    /// radius `major` round `n` through `p`.
+    Torus {
+        p: [f64; 3],
+        n: [f64; 3],
+        x: [f64; 3],
+        y: [f64; 3],
+        major: f64,
+        minor: f64,
+    },
     /// `Geom_SphericalSurface` of radius `r` about `p`.
     Sphere {
         p: [f64; 3],
@@ -457,8 +467,20 @@ fn surface(t: &mut Tokens) -> Result<Surface, BrepError> {
             }
         }
         5 => {
-            t.skip_reals(14)?;
-            Surface::Other("ToroidalSurface")
+            let v = t.reals::<14>()?;
+            // Only a ring torus: a horn or spindle torus touches or crosses
+            // its axis.
+            if v[12] <= v[13] {
+                return Ok(Surface::Other("NonRingToroidalSurface"));
+            }
+            Surface::Torus {
+                p: [v[0], v[1], v[2]],
+                n: [v[3], v[4], v[5]],
+                x: [v[6], v[7], v[8]],
+                y: [v[9], v[10], v[11]],
+                major: v[12],
+                minor: v[13],
+            }
         }
         6 => {
             t.skip_reals(3)?;

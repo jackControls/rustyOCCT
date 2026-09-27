@@ -2479,3 +2479,31 @@ sphere_transformed	d6e72a46f154013bb59ab5b03fbaa4c3 face end_cap 0 P0.s2 cap end
 sphere_transformed	ea8f51edf2dafe86986bc380cb367409 region region 0 P0.b0 region
 sphere_whole_transformed	86ad146e0748c816593c4e674ccb19a7 face wall 0 P0.s1 wall
 sphere_whole_transformed	ea8f51edf2dafe86986bc380cb367409 region region 0 P0.b0 region
+torus_whole	b7dd5350008c04e6344771173bd8ca4f face wall 0 P0.s1 wall
+torus_whole	d989942c450ef4aad64e8854d4da2ce1 region region 0 P0.b0 region
+torus_outer_half	08176928ea973e0b90a5d8602ec8556b face end_cap 0 P0.s2 cap end
+torus_outer_half	153349456a35e6f8acda9480880531ba edge bottom_edge 0 P0.v1 ring start
+torus_outer_half	4e8fd71a0241201e0938f629e13873a2 edge top_edge 0 P0.v2 ring end
+torus_outer_half	b7dd5350008c04e6344771173bd8ca4f face wall 0 P0.s1 wall
+torus_outer_half	d989942c450ef4aad64e8854d4da2ce1 region region 0 P0.b0 region
+torus_outer_half	f7232a99a18dc0e2ad06bae5bbd5a9bc face start_cap 0 P0.s0 cap start
+torus_inner_half	06af889ca90ee22f7400cefe4c074c84 region region 0 P0.b0 region
+torus_inner_half	0a385249f9407d6a1c1b76fb60b2b94a face wall 0 P0.s1 wall
+torus_inner_half	a1b0b42897cb0880515e6e1c8301f983 edge top_edge 0 P0.v2 ring end
+torus_inner_half	ace25c548f969b57a3885392148651df edge bottom_edge 0 P0.v1 ring start
+torus_inner_half	e8292219af74ea92c9f18be6357217ba face end_cap 0 P0.s2 cap end
+torus_inner_half	f8ff91d4c87e67bbad90a9577d04fda5 face start_cap 0 P0.s0 cap start
+torus_wedge	06af889ca90ee22f7400cefe4c074c84 region region 0 P0.b0 region
+torus_wedge	0a385249f9407d6a1c1b76fb60b2b94a face wall 0 P0.s1 wall
+torus_wedge	7f46994deccb0880515e65a3f107c5f1 edge top_edge 0 P0.s1 ring end
+torus_wedge	a15d3d3342969b57a38850bb672058f2 edge bottom_edge 0 P0.s1 ring start
+torus_wedge	ed895a1d937e67bbad90a685654ee79a face start_cap 0 P0.b0 cap start
+torus_wedge	f3907266cc74ea92c9f18eb3b7784ae3 face end_cap 0 P0.b0 cap end
+torus_wedge_transformed	37832da780b40f70fa1946a480037275 face start_cap 0 P0.b0 cap start
+torus_wedge_transformed	6092fbcc1232dba8d0d17c077eb5055b region region 0 P0.b0 region
+torus_wedge_transformed	6b61b4a404b5cb6d72d88da57dfa1eb9 face wall 0 P0.s1 wall
+torus_wedge_transformed	8209948731815e44c50275ed27348d20 face end_cap 0 P0.b0 cap end
+torus_wedge_transformed	83af4a91d19bdbd504219c6e7e32011d edge bottom_edge 0 P0.s1 ring start
+torus_wedge_transformed	a5c5ee7727676eac564b8785f44a941e edge top_edge 0 P0.s1 ring end
+torus_whole_transformed	6092fbcc1232dba8d0d17c077eb5055b region region 0 P0.b0 region
+torus_whole_transformed	6b61b4a404b5cb6d72d88da57dfa1eb9 face wall 0 P0.s1 wall

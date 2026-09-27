@@ -95,11 +95,11 @@ pub fn signature(s: &Solid, slot: Slot) -> String {
                     let c = frame.point(Point2::default(), 0.5 * (v.0 + v.1));
                     format!("F cylinder {:?} {}", radius * periodic.abs(), p3(c))
                 }
-                Surface::Cone { .. } | Surface::Sphere { .. } => {
-                    let kind = if matches!(face.surface, Surface::Cone { .. }) {
-                        "cone"
-                    } else {
-                        "sphere"
+                Surface::Cone { .. } | Surface::Sphere { .. } | Surface::Torus { .. } => {
+                    let kind = match face.surface {
+                        Surface::Cone { .. } => "cone",
+                        Surface::Sphere { .. } => "sphere",
+                        _ => "torus",
                     };
                     let (area, centre) = t
                         .face_area_and_centre(f)

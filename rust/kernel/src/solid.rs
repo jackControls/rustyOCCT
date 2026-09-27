@@ -27,7 +27,8 @@ pub struct MassProperties {
 }
 
 /// How a solid was made: a normal extrusion of a profile, a right circular
-/// cone or frustum, or a sphere or zone (S3 of REVIEW_NOTES.md).
+/// cone or frustum, a sphere or zone, or a torus, v-segment or wedge (S3 of
+/// REVIEW_NOTES.md).
 #[derive(Debug, Clone, PartialEq)]
 enum Construction {
     Prism(Box<Profile>),
@@ -41,6 +42,16 @@ enum Construction {
         radius: f64,
         low: f64,
         high: f64,
+        tolerance: Tolerance,
+    },
+    /// The tube's latitudes and the turn; `start` and `end` are the heights
+    /// of a v-segment's ends.
+    Torus {
+        major: f64,
+        minor: f64,
+        low: f64,
+        high: f64,
+        angle: f64,
         tolerance: Tolerance,
     },
 }
@@ -256,7 +267,154 @@ impl Solid {
                 high,
                 tolerance,
             } => Self::build_sphere(operation, frame, *radius, *low, *high, *tolerance),
+            Construction::Torus {
+                major,
+                minor,
+                low,
+                high,
+                angle,
+                tolerance,
+            } => Self::build_torus(
+                operation, frame, *major, *minor, *low, *high, *angle, *tolerance,
+            ),
         }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn build_torus(
+        operation: OperationId,
+        frame: Frame3,
+        major: f64,
+        minor: f64,
+        low: f64,
+        high: f64,
+        angle: f64,
+        tolerance: Tolerance,
+    ) -> Result<Self> {
+        tolerance.resolve(&[major, minor])?;
+        let topology =
+            Topology::torus(frame, major, minor, low, high, angle, tolerance, operation)?;
+        let (start, end) = if high - low == std::f64::consts::TAU {
+            (0.0, 0.0)
+        } else {
+            (minor * low.sin(), minor * high.sin())
+        };
+        // Within the whole torus's box: the discs of radius major + minor at
+        // heights -minor and minor.
+        let (mut min, mut max) = ([f64::INFINITY; 3], [f64::NEG_INFINITY; 3]);
+        let (x, y) = (frame.x().to_array(), frame.y().to_array());
+        for z in [-minor, minor] {
+            let centre = frame.point(Point2::default(), z).to_array();
+            for i in 0..3 {
+                let extent = (major + minor) * x[i].hypot(y[i]);
+                min[i] = min[i].min(centre[i] - extent);
+                max[i] = max[i].max(centre[i] + extent);
+            }
+        }
+        let bounds = Bounds3 {
+            min: Point3::new(min[0], min[1], min[2]),
+            max: Point3::new(max[0], max[1], max[2]),
+        };
+        bounds.min.checked(tolerance)?;
+        bounds.max.checked(tolerance)?;
+        let mass = topology
+            .mass_enclosure()
+            .ok_or(Error::Unrepresentable("torus mass properties"))?
+            .midpoints();
+        Ok(Self {
+            construction: Construction::Torus {
+                major,
+                minor,
+                low,
+                high,
+                angle,
+                tolerance,
+            },
+            frame,
+            start,
+            end,
+            topology,
+            mass,
+            bounds,
+            operation,
+        })
+    }
+
+    /// A torus, v-segment or wedge on the frame (S3 of REVIEW_NOTES.md):
+    /// the tube of radius `minor` about the circle of radius `major` round
+    /// the frame's normal, its latitudes `low..high` (radians, from the
+    /// outer equator towards the normal) revolved by `angle` from the frame's
+    /// x, as `BRepPrimAPI_MakeTorus(gp_Ax2, major, minor, low, high, angle)`.
+    /// A whole torus is one face without loops; a v-segment is a full turn,
+    /// a wedge the whole tube from `v = 0`; both at once are out of domain.
+    /// Mass properties are the general certified ones.
+    #[allow(clippy::too_many_arguments)]
+    pub fn torus_with(
+        operation: OperationId,
+        frame: Frame3,
+        major: f64,
+        minor: f64,
+        low: f64,
+        high: f64,
+        angle: f64,
+        tolerance: Tolerance,
+    ) -> Result<(Self, History)> {
+        Self::torus_in(
+            &Context::new(operation),
+            frame,
+            major,
+            minor,
+            low,
+            high,
+            angle,
+            tolerance,
+        )
+    }
+
+    /// [`Solid::torus_with`] at a recorded algorithm level (H8).
+    #[allow(clippy::too_many_arguments)]
+    pub fn torus_at(
+        level: AlgorithmLevel,
+        operation: OperationId,
+        frame: Frame3,
+        major: f64,
+        minor: f64,
+        low: f64,
+        high: f64,
+        angle: f64,
+        tolerance: Tolerance,
+    ) -> Result<(Self, History)> {
+        Self::torus_in(
+            &Context::new(operation).at(level),
+            frame,
+            major,
+            minor,
+            low,
+            high,
+            angle,
+            tolerance,
+        )
+    }
+
+    /// [`Solid::torus_with`] in an operation context. Every entity is
+    /// generated from its meridian element; nothing carries an attribute.
+    #[allow(clippy::too_many_arguments)]
+    pub fn torus_in(
+        context: &Context,
+        frame: Frame3,
+        major: f64,
+        minor: f64,
+        low: f64,
+        high: f64,
+        angle: f64,
+        tolerance: Tolerance,
+    ) -> Result<(Self, History)> {
+        let (level, operation) = (context.level, context.operation);
+        replayable(level)?;
+        let solid = Self::build_torus(operation, frame, major, minor, low, high, angle, tolerance)?;
+        let history = solid.revolve_history(level);
+        solid.debug_check(&[], &history);
+        Ok((solid, history))
     }
 
     fn build_sphere(
@@ -486,6 +644,9 @@ impl Solid {
             Construction::Sphere { .. } => Err(Error::OutOfDomain(
                 "split and fuse rebuild prisms; this solid is a sphere",
             )),
+            Construction::Torus { .. } => Err(Error::OutOfDomain(
+                "split and fuse rebuild prisms; this solid is a torus",
+            )),
         }
     }
 
@@ -589,16 +750,18 @@ impl Solid {
     pub fn profile(&self) -> Option<&Profile> {
         match &self.construction {
             Construction::Prism(profile) => Some(profile),
-            Construction::Cone { .. } | Construction::Sphere { .. } => None,
+            Construction::Cone { .. }
+            | Construction::Sphere { .. }
+            | Construction::Torus { .. } => None,
         }
     }
     /// The body's resolution.
     pub fn resolution(&self) -> Tolerance {
         match &self.construction {
             Construction::Prism(profile) => profile.tolerance(),
-            Construction::Cone { tolerance, .. } | Construction::Sphere { tolerance, .. } => {
-                *tolerance
-            }
+            Construction::Cone { tolerance, .. }
+            | Construction::Sphere { tolerance, .. }
+            | Construction::Torus { tolerance, .. } => *tolerance,
         }
     }
     pub fn frame(&self) -> Frame3 {
@@ -635,6 +798,32 @@ impl Solid {
                 return Ok(
                     match decide::cone_location(local, *bottom, *top, self.end, tolerance.linear())
                     {
+                        0 => Location::Inside,
+                        1 => Location::Boundary,
+                        _ => Location::Outside,
+                    },
+                );
+            }
+            Construction::Torus {
+                major,
+                minor,
+                low,
+                high,
+                angle,
+                ..
+            } => {
+                if high - low != std::f64::consts::TAU || *angle != std::f64::consts::TAU {
+                    return Err(Error::OutOfDomain(
+                        "classification of a torus segment or wedge",
+                    ));
+                }
+                let local = [
+                    finite(x, "coordinate")?,
+                    finite(y, "coordinate")?,
+                    finite(z, "axial coordinate")?,
+                ];
+                return Ok(
+                    match decide::torus_location(local, *major, *minor, tolerance.linear()) {
                         0 => Location::Inside,
                         1 => Location::Boundary,
                         _ => Location::Outside,

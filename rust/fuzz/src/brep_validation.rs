@@ -15,7 +15,9 @@
 //! along a ruling or off the surface, drops the pole, makes the surface
 //! degenerate or shifts a ring's pcurve, as the cone fixtures do. Mutation
 //! 29 does the same for a whole sphere, a hemisphere or a zone, and turns a
-//! whole sphere inside out.
+//! whole sphere inside out. Mutation 30 builds a whole torus, a v-segment or
+//! a wedge and breaks its windings in v, shifts a ring's pcurve, makes the
+//! tube reach the axis or turns a whole torus inside out.
 use crate::byte;
 use rusty_occt::identity::OperationId;
 use rusty_occt::topology::{
@@ -588,6 +590,137 @@ fn sphere(b: &mut Bytes) {
     verify(report(&parts, tolerance), expect);
 }
 
+/// A whole torus, v-segment or wedge from `Solid::torus_with`, valid with
+/// enclosures within the resolution and certified mass properties, then one
+/// mutation with its predicted issues.
+fn torus(b: &mut Bytes) {
+    let scale = 2.0_f64.powi(i32::from(b.next() % 21) - 10);
+    let tolerance = Tolerance::new(1e-9 * scale, 1e-12).unwrap();
+    let tau = tolerance.linear();
+    let minor = scale * (0.2 + b.unit());
+    let major = minor + scale * (0.2 + b.unit());
+    let (low, high, angle) = match b.next() % 4 {
+        0 => (0.0, TAU, TAU),
+        1 => (0.0, TAU, 0.3 + 5.5 * b.unit()),
+        // Outer and inner halves of the tube, each a simple meridian region.
+        2 => {
+            let a = 1.2 * b.unit() - 1.4;
+            (a, a + 0.2 + 1.2 * b.unit(), TAU)
+        }
+        _ => {
+            let a = 1.8 + 1.0 * b.unit();
+            (a, a + 0.2 + 1.2 * b.unit(), TAU)
+        }
+    };
+    let normal = Vec3::new(b.signed(), b.signed(), 0.5 + b.unit());
+    let origin = Point3::new(
+        10.0 * scale * b.signed(),
+        10.0 * scale * b.signed(),
+        10.0 * scale * b.signed(),
+    );
+    let Ok(frame) = Frame3::new(origin, normal, Vec3::X, tolerance) else {
+        return;
+    };
+    let Ok((solid, _)) = Solid::torus_with(
+        OperationId::UNSPECIFIED,
+        frame,
+        major,
+        minor,
+        low,
+        high,
+        angle,
+        tolerance,
+    ) else {
+        // A segment whose meridian boundary is not simple is refused.
+        assert!(high - low != TAU, "{low} {high} {angle}");
+        return;
+    };
+    let t = solid.topology();
+    assert!(t.check(tolerance).is_empty());
+    for e in t
+        .vertices()
+        .iter()
+        .map(|v| v.enclosure)
+        .chain(t.fins().iter().map(|f| f.enclosure))
+        .chain(t.faces().iter().map(|f| f.enclosure))
+    {
+        let e = e.expect("a builder encloses every entity");
+        assert!(e.bound > 0.0 && e.bound <= tau, "{e:?}");
+    }
+    let m = t.mass_enclosure().expect("certified torus mass properties");
+    if high - low == TAU {
+        // Pappus: the tube's disc revolved by the angle.
+        let exact = angle * major * std::f64::consts::PI * minor * minor;
+        assert!(
+            (0.5 * (m.volume[0] + m.volume[1]) - exact).abs() <= 1e-9 * exact,
+            "{m:?} {exact}"
+        );
+    }
+    let c = t.occt_counts();
+    let whole = high - low == TAU && angle == TAU;
+    assert_eq!(
+        (c.vertices, c.edges, c.wires, c.faces, c.shells, c.solids),
+        if whole {
+            (1, 2, 1, 1, 1, 1)
+        } else {
+            (2, 3, 3, 3, 1, 1)
+        }
+    );
+    let mut parts = parts_of(t);
+    let fi = (0..parts.faces.len())
+        .find(|f| matches!(parts.faces[*f].surface, Surface::Torus { .. }))
+        .expect("a wall");
+    let loops = parts.faces[fi].loops.clone();
+    let expect = match (b.next() % 5, loops.first().copied()) {
+        (1, Some(l)) => {
+            // A ring loop winding twice.
+            let Loop::Edges { winding, .. } = &mut parts.loops[l.index()] else {
+                unreachable!("ring loops")
+            };
+            let w = if winding[0] != 0 {
+                &mut winding[0]
+            } else {
+                &mut winding[1]
+            };
+            *w *= 2;
+            Expect::Contains(vec![format!("winding_mismatch:loop {fi}.0")], vec![])
+        }
+        (2, Some(l)) => {
+            let Loop::Edges { fins, winding } = &parts.loops[l.index()] else {
+                unreachable!("ring loops")
+            };
+            // Off the tube: in u across a meridian, in v across a parallel.
+            let (du, dv) = if winding[1] != 0 {
+                (1000.0 * tau / major, 0.0)
+            } else {
+                (0.0, 1000.0 * tau / minor)
+            };
+            let fin = &mut parts.fins[fins[0].index()];
+            let Curve2::LineSegment { start, end } = fin.pcurve else {
+                unreachable!("line pcurves")
+            };
+            fin.pcurve = Curve2::LineSegment {
+                start: Point2::new(start.x + du, start.y + dv),
+                end: Point2::new(end.x + du, end.y + dv),
+            };
+            Expect::Contains(vec![format!("pcurve_off_edge:use {fi}.0.0")], vec![])
+        }
+        (3, _) => {
+            let Surface::Torus { minor, major, .. } = &mut parts.faces[fi].surface else {
+                unreachable!("the wall is a torus")
+            };
+            *minor = *major;
+            Expect::Contains(vec![format!("degenerate_surface:face {fi}")], vec![])
+        }
+        (4, None) => {
+            parts.faces[fi].sense = Orientation::Reversed;
+            Expect::Exactly(vec!["shell_orientation:shell 0".to_string()])
+        }
+        _ => Expect::Valid,
+    };
+    verify(report(&parts, tolerance), expect);
+}
+
 fn verify(got: Vec<String>, expect: Expect) {
     match expect {
         Expect::Valid => assert_eq!(got, Vec::<String>::new()),
@@ -612,7 +745,7 @@ fn verify(got: Vec<String>, expect: Expect) {
 
 pub fn check_brep_validation(data: &[u8]) {
     let mut b = Bytes(data, 0);
-    let mutation = b.next() % 30;
+    let mutation = b.next() % 31;
     if mutation == 27 {
         far_prism(&mut b);
         return;
@@ -623,6 +756,10 @@ pub fn check_brep_validation(data: &[u8]) {
     }
     if mutation == 29 {
         sphere(&mut b);
+        return;
+    }
+    if mutation == 30 {
+        torus(&mut b);
         return;
     }
     if mutation == 16 {

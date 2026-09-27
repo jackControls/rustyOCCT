@@ -377,6 +377,19 @@ fn surface_at<T: Real>(s: &Surface, uv: &V2<T>) -> V3<T> {
             let radial = vadd(&vscale(&fr.x, &rho.mul(&co)), &vscale(&fr.y, &rho.mul(&si)));
             vadd(&vadd(&fr.o, &radial), &vscale(&fr.n, &rad.mul(&sv)))
         }
+        Surface::Torus {
+            frame: f,
+            major,
+            minor,
+        } => {
+            let fr = frame::<T>(f);
+            let (co, si) = cos_sin_i(&uv[0]);
+            let (cv, sv) = T::cos_sin(&uv[1]);
+            let r = c::<T>(*minor);
+            let rho = c::<T>(*major).add(&r.mul(&cv));
+            let radial = vadd(&vscale(&fr.x, &rho.mul(&co)), &vscale(&fr.y, &rho.mul(&si)));
+            vadd(&vadd(&fr.o, &radial), &vscale(&fr.n, &r.mul(&sv)))
+        }
     }
 }
 
@@ -459,7 +472,8 @@ fn face_turns(face: &Face, loops: &[Loop]) -> i32 {
 }
 
 /// The length per unit of u at parameter v: a cylinder's radius, a cone's
-/// `radius + v sin a`, a sphere's `radius cos v`.
+/// `radius + v sin a`, a sphere's `radius cos v`, a torus's
+/// `major + minor cos v`.
 fn u_scale<T: Real>(s: &Surface, v: &T) -> Option<T> {
     match s {
         Surface::Plane(_) => None,
@@ -471,6 +485,19 @@ fn u_scale<T: Real>(s: &Surface, v: &T) -> Option<T> {
             Some(c::<T>(*radius).add(&sa.mul(v)))
         }
         Surface::Sphere { radius, .. } => Some(c::<T>(*radius).mul(&T::cos_sin(v).0)),
+        Surface::Torus { major, minor, .. } => {
+            Some(c::<T>(*major).add(&c::<T>(*minor).mul(&T::cos_sin(v).0)))
+        }
+    }
+}
+
+/// The length per unit of v: 1 along a cylinder's or cone's rulings, a
+/// sphere's radius, a torus's minor radius.
+fn v_scale(s: &Surface) -> f64 {
+    match s {
+        Surface::Sphere { radius, .. } => *radius,
+        Surface::Torus { minor, .. } => *minor,
+        _ => 1.0,
     }
 }
 
@@ -811,6 +838,53 @@ fn sub_use<T: Real>(h: &mut Harmonic<T>, s: &Surface, p: &Curve2) -> bool {
             }
         }
         (Surface::Sphere { .. }, Curve2::CircularArc { .. }) => false,
+        // A meridian (du = 0) is an arc of the tube's circle about
+        // O + major e(u0); a parallel (dv = 0) a circle about the axis.
+        (
+            Surface::Torus {
+                frame: f,
+                major,
+                minor,
+            },
+            Curve2::LineSegment { start, end },
+        ) => {
+            let fr = frame::<T>(f);
+            let (big, tube) = (c::<T>(*major), c::<T>(*minor));
+            let (du, dv) = (r(end.x) - r(start.x), r(end.y) - r(start.y));
+            let zero = int(0);
+            if du == zero {
+                let (co, si) = T::cos_sin(&c(start.x));
+                let e = vadd(&vscale(&fr.x, &co), &vscale(&fr.y, &si));
+                h.affine(&vadd(&fr.o, &vscale(&e, &big)), &zero3(), false);
+                h.rotating(
+                    &c(start.y),
+                    &dv,
+                    &vscale(&e, &tube),
+                    &vscale(&fr.n, &tube),
+                    false,
+                );
+                true
+            } else if dv == zero {
+                let (cv, sv) = T::cos_sin(&c(start.y));
+                let rho = big.add(&tube.mul(&cv));
+                h.affine(
+                    &vadd(&fr.o, &vscale(&fr.n, &tube.mul(&sv))),
+                    &zero3(),
+                    false,
+                );
+                h.rotating(
+                    &c(start.x),
+                    &du,
+                    &vscale(&fr.x, &rho),
+                    &vscale(&fr.y, &rho),
+                    false,
+                );
+                true
+            } else {
+                false
+            }
+        }
+        (Surface::Torus { .. }, Curve2::CircularArc { .. }) => false,
     }
 }
 
@@ -898,6 +972,14 @@ fn surface_valid(s: &Surface, tol: &R) -> bool {
                 && half_angle.abs() < std::f64::consts::FRAC_PI_2
         }
         Surface::Sphere { radius, .. } => radius.is_finite() && r(*radius) > *tol,
+        // A ring torus: the tube's radius above tolerance and clear of the
+        // axis.
+        Surface::Torus { major, minor, .. } => {
+            major.is_finite()
+                && minor.is_finite()
+                && r(*minor) > *tol
+                && r(*major) - r(*minor) > *tol
+        }
     }
 }
 
@@ -931,10 +1013,12 @@ pub(crate) struct View<'a> {
     pub regions: &'a [Region],
 }
 
-/// A face's edge loop resolved: its fins in order and its winding in u.
+/// A face's edge loop resolved: its fins in order and its windings in u
+/// and v.
 struct Lp<'a> {
     fins: Vec<&'a Fin>,
     winding: i32,
+    winding_v: i32,
 }
 
 fn fin_vertices(edges: &[Edge], fin: &Fin) -> (Option<usize>, Option<usize>) {
@@ -959,17 +1043,17 @@ fn vertex_gap<T: Real>(curve: &Curve3, vertex: [f64; 3], t: f64, tol2: &T) -> Ve
 
 /// The squared gap from the end of `p` to the start of `next` shifted by
 /// `shift` in u, angles scaled by the radius.
-fn uv_gap2<T: Real>(s: &Surface, p: &Curve2, next: &Curve2, shift: f64) -> T {
+fn uv_gap2<T: Real>(s: &Surface, p: &Curve2, next: &Curve2, shift: [f64; 2]) -> T {
     let (a, b) = (pcurve_at::<T>(p, 1.0), pcurve_at::<T>(next, 0.0));
-    let mut du = a[0].sub(&b[0].add(&c(shift)));
+    let mut du = a[0].sub(&b[0].add(&c(shift[0])));
     if let Some(scale) = u_scale::<T>(s, &a[1]) {
         du = du.mul(&scale);
     }
-    let dv = a[1].sub(&b[1]);
+    let dv = a[1].sub(&b[1].add(&c(shift[1]))).mul(&c(v_scale(s)));
     du.square().add(&dv.square())
 }
 
-fn uv_gap<T: Real>(s: &Surface, p: &Curve2, next: &Curve2, shift: f64, tol2: &T) -> Verdict {
+fn uv_gap<T: Real>(s: &Surface, p: &Curve2, next: &Curve2, shift: [f64; 2], tol2: &T) -> Verdict {
     within(&uv_gap2::<T>(s, p, next, shift), tol2)
 }
 
@@ -981,7 +1065,8 @@ fn surface_gap2<T: Real>(s: &Surface, p: [f64; 3]) -> Vec<T> {
     let (Surface::Plane(f)
     | Surface::Cylinder { frame: f, .. }
     | Surface::Cone { frame: f, .. }
-    | Surface::Sphere { frame: f, .. }) = s;
+    | Surface::Sphere { frame: f, .. }
+    | Surface::Torus { frame: f, .. }) = s;
     let fr = frame::<T>(f);
     let rel = vsub(&v3::<T>(p), &fr.o);
     let axial = vdot(&rel, &fr.n);
@@ -1003,6 +1088,15 @@ fn surface_gap2<T: Real>(s: &Surface, p: [f64; 3]) -> Vec<T> {
         Surface::Sphere { radius, .. } => {
             let dist = vdot(&rel, &rel).sqrt();
             vec![dist.sub(&c(*radius)).square()]
+        }
+        // The distance to the tube's core circle, less the minor radius.
+        Surface::Torus { major, minor, .. } => {
+            let to_core = radial()
+                .sub(&c(*major))
+                .square()
+                .add(&axial.square())
+                .sqrt();
+            vec![to_core.sub(&c(*minor)).square()]
         }
     }
 }
@@ -1143,9 +1237,9 @@ pub(crate) fn measure(view: &View) -> Measured {
                         };
                         let w = &view.fins[list[(ui + 1) % list.len()].0];
                         let shift = if face.surface.is_periodic() && ui + 1 == list.len() {
-                            TAU * f64::from(winding[0])
+                            [TAU * f64::from(winding[0]), TAU * f64::from(winding[1])]
                         } else {
-                            0.0
+                            [0.0, 0.0]
                         };
                         let gap = root_bound(
                             || uv_gap2::<Fast>(&face.surface, &u.pcurve, &w.pcurve, shift),
@@ -1201,6 +1295,9 @@ fn chords<T: Real>(lp: &Lp) -> Vec<(V2<T>, V2<T>)> {
             if k == n - 1 && lp.winding != 0 {
                 b[0] = b[0].add(&c(TAU * f64::from(lp.winding)));
             }
+            if k == n - 1 && lp.winding_v != 0 {
+                b[1] = b[1].add(&c(TAU * f64::from(lp.winding_v)));
+            }
             (a, b)
         })
         .collect()
@@ -1222,6 +1319,23 @@ fn loop_area<T: Real>(lp: &Lp) -> T {
 /// seam segments (du = 0) would contribute nothing. Lines only.
 fn periodic_area<T: Real>(lp: &Lp) -> Option<T> {
     let term = |a: &V2<T>, b: &V2<T>| a[1].add(&b[1]).mul(&c(-0.5)).mul(&b[0].sub(&a[0]));
+    let mut total = c::<T>(0.0);
+    for u in &lp.fins {
+        let Curve2::LineSegment { start, end } = &u.pcurve else {
+            return None;
+        };
+        total = total.add(&term(&[c(start.x), c(start.y)], &[c(end.x), c(end.y)]));
+    }
+    for (a, b) in chords::<T>(lp) {
+        total = total.add(&term(&a, &b));
+    }
+    Some(total)
+}
+
+/// The integral of u dv over a loop on the universal cover, closed by chords:
+/// the periodic area of a loop winding in v (on a torus). Lines only.
+fn periodic_area_v<T: Real>(lp: &Lp) -> Option<T> {
+    let term = |a: &V2<T>, b: &V2<T>| a[0].add(&b[0]).mul(&c(0.5)).mul(&b[1].sub(&a[1]));
     let mut total = c::<T>(0.0);
     for u in &lp.fins {
         let Curve2::LineSegment { start, end } = &u.pcurve else {
@@ -1477,7 +1591,7 @@ fn cone_line_flux<T: Real>(
 /// v f(u) du (f does not depend on v), loops closed by chords; their
 /// orientation carries the face's sense.
 fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
-    if matches!(face.surface, Surface::Sphere { .. }) {
+    if matches!(face.surface, Surface::Sphere { .. } | Surface::Torus { .. }) {
         return mass::sphere_flux(face, loops);
     }
     if let Surface::Cone {
@@ -1534,7 +1648,9 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
                 (rad.mul(&a).neg(), rad.mul(&b), rad.square().mul(&det)),
             )
         }
-        Surface::Cone { .. } | Surface::Sphere { .. } => unreachable!("handled above"),
+        Surface::Cone { .. } | Surface::Sphere { .. } | Surface::Torus { .. } => {
+            unreachable!("handled above")
+        }
     };
     let mut total = c::<T>(0.0);
     for lp in loops {
@@ -1646,7 +1762,10 @@ fn face_hits<T: Real>(
 ) -> Option<u32> {
     // Rays against cones and spheres are not decided yet: the containment
     // is uncertified.
-    if matches!(face.surface, Surface::Cone { .. } | Surface::Sphere { .. }) {
+    if matches!(
+        face.surface,
+        Surface::Cone { .. } | Surface::Sphere { .. } | Surface::Torus { .. }
+    ) {
         return None;
     }
     let refs: Vec<&Lp> = loops.iter().collect();
@@ -1659,7 +1778,7 @@ fn face_hits<T: Real>(
         )
     };
     match &face.surface {
-        Surface::Cone { .. } | Surface::Sphere { .. } => None,
+        Surface::Cone { .. } | Surface::Sphere { .. } | Surface::Torus { .. } => None,
         Surface::Plane(f) => {
             let (o, x, y, _) = exact(f);
             let qv: [R; 3] = std::array::from_fn(|i| &p[i] - &o[i]);
@@ -2067,6 +2186,7 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                     } => Some(Lp {
                         fins: list.iter().map(|k| &fins[k.0]).collect(),
                         winding: winding[0],
+                        winding_v: winding[1],
                     }),
                     Loop::Vertex(_) => None,
                 })
@@ -2075,8 +2195,10 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
         .collect();
     let mut structural_faces = BTreeSet::new();
     for (fi, face) in faces.iter().enumerate() {
-        // A sphere without loops is the whole closed surface.
-        if face.loops.is_empty() && !matches!(face.surface, Surface::Sphere { .. }) {
+        // A sphere or torus without loops is the whole closed surface.
+        if face.loops.is_empty()
+            && !matches!(face.surface, Surface::Sphere { .. } | Surface::Torus { .. })
+        {
             add(&mut issues, K::EmptyFace, En::Face(fi));
             structural_faces.insert(fi);
         }
@@ -2094,7 +2216,8 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                 structural_faces.insert(fi);
                 continue;
             }
-            if winding[1] != 0 || (!periodic && winding[0] != 0) {
+            if (winding[1] != 0 && !face.surface.is_periodic_v()) || (!periodic && winding[0] != 0)
+            {
                 add(&mut issues, K::WindingMismatch, En::Loop(fi, li));
                 structural_faces.insert(fi);
             }
@@ -2118,7 +2241,8 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
             let wound: Vec<i32> = resolved[fi].iter().map(|lp| lp.winding).collect();
             let total = wound.iter().sum::<i32>();
             let poled = total.abs() == 1 && pole_position(face, loops).is_some();
-            if wound.iter().any(|w| *w != 0) && total != 0 && !poled {
+            let total_v: i32 = resolved[fi].iter().map(|lp| lp.winding_v).sum();
+            if (wound.iter().any(|w| *w != 0) && total != 0 && !poled) || total_v != 0 {
                 add(&mut issues, K::WindingMismatch, En::Loop(fi, 0));
                 structural_faces.insert(fi);
             }
@@ -2580,9 +2704,9 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                 let u = &fins[k.0];
                 let w = &fins[list[(ui + 1) % list.len()].0];
                 let shift = if ui + 1 == list.len() && periodic {
-                    TAU * f64::from(winding[0])
+                    [TAU * f64::from(winding[0]), TAU * f64::from(winding[1])]
                 } else {
-                    0.0
+                    [0.0, 0.0]
                 };
                 let decide = |th: &Threshold| {
                     tiered(
@@ -2636,6 +2760,63 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
             .zip(resolved[fi].iter())
             .collect();
         let wound = face.surface.is_periodic() && edge_loops.iter().any(|(_, lp)| lp.winding != 0);
+        let wound_v =
+            face.surface.is_periodic_v() && edge_loops.iter().any(|(_, lp)| lp.winding_v != 0);
+        if wound && wound_v {
+            // A face wound in both directions (a torus knot): not decided.
+            add(&mut issues, K::UncertifiedLoopWinding, En::Loop(fi, 0));
+            winding_faces.insert(fi);
+            continue;
+        }
+        if wound_v {
+            // The periodic area in v, the integral of u dv, has the face's
+            // sign over all loops; each unwound loop the opposite one.
+            fn total_v<T: Real>(loops: &[(usize, &Lp)]) -> Option<T> {
+                loops.iter().try_fold(c::<T>(0.0), |acc, (_, lp)| {
+                    Some(acc.add(&periodic_area_v::<T>(lp)?))
+                })
+            }
+            let total = tiered(
+                None,
+                || total_v::<Fast>(&edge_loops)?.sign(),
+                || total_v::<I>(&edge_loops)?.sign(),
+            );
+            match total {
+                Some(s) if s == want_outer => {}
+                Some(_) => {
+                    add(&mut issues, K::LoopWinding, En::Loop(fi, 0));
+                    winding_faces.insert(fi);
+                }
+                None => {
+                    add(&mut issues, K::UncertifiedLoopWinding, En::Loop(fi, 0));
+                    winding_faces.insert(fi);
+                }
+            }
+            for (li, lp) in &edge_loops {
+                if lp.winding_v != 0 {
+                    continue;
+                }
+                let sign = tiered(
+                    None,
+                    || periodic_area_v::<Fast>(lp)?.sign(),
+                    || periodic_area_v::<I>(lp)?.sign(),
+                );
+                match sign {
+                    Some(s) if s == want_inner => {
+                        add(&mut issues, K::UncertifiedContainment, En::Loop(fi, *li));
+                    }
+                    Some(_) => {
+                        add(&mut issues, K::LoopWinding, En::Loop(fi, *li));
+                        winding_faces.insert(fi);
+                    }
+                    None => {
+                        add(&mut issues, K::UncertifiedLoopWinding, En::Loop(fi, *li));
+                        winding_faces.insert(fi);
+                    }
+                }
+            }
+            continue;
+        }
         if wound {
             // A pole is the line v = v_apex traversed against the band: it
             // adds 2 pi W v_apex, W the edge loops' total winding.
@@ -2900,6 +3081,7 @@ mod tests {
         let lp = Lp {
             fins: fins.iter().collect(),
             winding,
+            winding_v: 0,
         };
         let fast = clear_of_boundary::<Fast>(
             &[&lp],

@@ -8,7 +8,7 @@
 //! a cone (S3 of REVIEW_NOTES.md), written with OCCT's seam and degenerated
 //! apex edge: it always round-trips, and its mutated text reads, imports and
 //! validates or fails cleanly.
-use crate::identity::{build, cone_spec, spec, sphere_spec};
+use crate::identity::{build, cone_spec, spec, sphere_spec, torus_spec};
 use libfuzzer_sys::arbitrary::{Result, Unstructured};
 use rusty_occt::occt_brep::{import, read, write};
 use rusty_occt::topology::Topology;
@@ -172,9 +172,29 @@ fn check_sphere(data: &[u8]) {
     }
 }
 
+fn check_torus(data: &[u8]) {
+    let mut u = Unstructured::new(data);
+    let Ok(Some(s)) = torus_spec(&mut u) else {
+        return;
+    };
+    let Some((solid, _)) = s.build(1.0) else {
+        return;
+    };
+    let tolerance = solid.resolution().linear();
+    assert!(
+        round_trip(solid.topology(), tolerance),
+        "an unmutated torus writes"
+    );
+    let base = write(solid.topology(), tolerance).unwrap();
+    if let Ok(text) = mutate(&mut u, &base) {
+        check_text(&text);
+    }
+}
+
 pub fn check_brep_io(data: &[u8]) {
     check_cone(data);
     check_sphere(data);
+    check_torus(data);
     let mut u = Unstructured::new(data);
     let base = if u.ratio(1, 3).unwrap_or(false) {
         UPSTREAM[u.choose_index(UPSTREAM.len()).unwrap_or(0)].to_string()

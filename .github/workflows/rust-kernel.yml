@@ -303,17 +303,19 @@ jobs:
         run: |
           target/math-oracle-venv/bin/python rust/tools/test_split_merge_oracle.py
           target/math-oracle-venv/bin/python rust/tools/compare_split_merge.py --occt-root target/split-merge-sdk/install --sdk-manifest target/split-merge-sdk/build-manifest.json
-      - name: Test deliberate primitive bridge failures and compare every cone with the reference
+      - name: Test deliberate primitive bridge failures and compare every cone, sphere and torus with the reference
         run: |
           target/math-oracle-venv/bin/python rust/tools/test_primitive_oracle.py
           target/math-oracle-venv/bin/python rust/tools/compare_primitives.py --occt-root target/split-merge-sdk/install --sdk-manifest target/split-merge-sdk/build-manifest.json
           target/math-oracle-venv/bin/python rust/tools/compare_primitives.py --family sphere --occt-root target/split-merge-sdk/install --sdk-manifest target/split-merge-sdk/build-manifest.json
-      - name: Test deliberate revolve history failures and compare cone histories with MakeRevol
+          target/math-oracle-venv/bin/python rust/tools/compare_primitives.py --family torus --occt-root target/split-merge-sdk/install --sdk-manifest target/split-merge-sdk/build-manifest.json
+      - name: Test deliberate revolve history failures and compare cone, sphere and torus histories with MakeRevol
         if: ${{ !cancelled() }}
         run: |
           target/math-oracle-venv/bin/python rust/tools/test_revolve_history.py
           target/math-oracle-venv/bin/python rust/tools/compare_revolve_history.py --occt-root target/split-merge-sdk/install --sdk-manifest target/split-merge-sdk/build-manifest.json
           target/math-oracle-venv/bin/python rust/tools/compare_revolve_history.py --family sphere --occt-root target/split-merge-sdk/install --sdk-manifest target/split-merge-sdk/build-manifest.json
+          target/math-oracle-venv/bin/python rust/tools/compare_revolve_history.py --family torus --occt-root target/split-merge-sdk/install --sdk-manifest target/split-merge-sdk/build-manifest.json
       - name: Preserve source provenance, native observations, and differences
         if: always()
         uses: actions/upload-artifact@v4.6.2
@@ -325,6 +327,8 @@ jobs:
             target/revolve-history-oracle/
             target/sphere-oracle/
             target/sphere-revolve-oracle/
+            target/torus-oracle/
+            target/torus-revolve-oracle/
             target/split-merge-sdk/build-manifest.json
             target/split-merge-sdk/*.log
             target/split-merge-sdk/build/CMakeCache.txt

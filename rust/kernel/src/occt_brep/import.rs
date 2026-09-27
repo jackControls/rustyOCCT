@@ -425,6 +425,30 @@ impl Walk<'_> {
                     radius: *r,
                 }
             }
+            read::Surface::Torus {
+                p,
+                n,
+                x,
+                y,
+                major,
+                minor,
+            } => {
+                // An indirect axis is the kernel's torus about -N with v
+                // negated, as for the cylinder.
+                indirect = dot(cross(*x, *y), *n) <= 0.0;
+                let axis = if indirect { n.map(|c| -c) } else { *n };
+                Surface::Torus {
+                    frame: Frame3::new(
+                        p3(st.point(*p)),
+                        v3(st.vector(axis)),
+                        v3(st.vector(*x)),
+                        self.placement,
+                    )
+                    .ok()?,
+                    major: *major,
+                    minor: *minor,
+                }
+            }
             read::Surface::Other(name) => return self.no(name),
         };
         let cone = matches!(surface, Surface::Cone { .. } | Surface::Sphere { .. });
@@ -629,11 +653,12 @@ fn end_of(p: &Curve2) -> Point2 {
 }
 
 /// A seamed loop split at its seams: the seam edges, and the runs of use
-/// indices between them with their windings.
-type SeamRuns = (Vec<usize>, Vec<(Vec<usize>, i32)>);
+/// indices between them with their windings in u and v.
+type SeamRuns = (Vec<usize>, Vec<(Vec<usize>, [i32; 2])>);
 
 /// The length of a unit step in `u` at height `v`: the cylinder's radius,
-/// the cone's `|R + v sin a|`, the sphere's `|R cos v|`.
+/// the cone's `|R + v sin a|`, the sphere's `|R cos v|`, the torus's
+/// `R + r cos v`.
 fn u_scale(surface: &Surface, v: f64) -> Option<f64> {
     match surface {
         Surface::Cylinder { radius, .. } => Some(*radius),
@@ -641,22 +666,38 @@ fn u_scale(surface: &Surface, v: f64) -> Option<f64> {
             radius, half_angle, ..
         } => Some((radius + v * half_angle.sin()).abs()),
         Surface::Sphere { radius, .. } => Some((radius * v.cos()).abs()),
+        Surface::Torus { major, minor, .. } => Some(major + minor * v.cos()),
         Surface::Plane(_) => None,
     }
 }
 
-/// Split one seamed loop into runs between seam uses, each with its winding;
-/// `None` when the loop has no consistent seam pair.
+/// The length of a unit step in `v`: a sphere's radius, a torus's minor
+/// radius, 1 along rulings.
+fn v_scale(surface: &Surface) -> f64 {
+    match surface {
+        Surface::Sphere { radius, .. } => *radius,
+        Surface::Torus { minor, .. } => *minor,
+        _ => 1.0,
+    }
+}
+
+/// Split one seamed loop into runs between seam uses, each with its
+/// windings; `None` when the loop has no consistent seam pair. A seam pair's
+/// uses lie one period apart in u, or on a torus in v. A torus loop of seams
+/// only, in both directions, is the whole torus (no runs).
 fn seam_merge(face: &SFace, lp: &[SUse], tol: f64) -> Option<SeamRuns> {
     let surface = &face.surface;
     u_scale(surface, 0.0)?;
+    let torus = matches!(surface, Surface::Torus { .. });
+    let vs = v_scale(surface);
     let scale = |a: Point2, b: Point2| {
         u_scale(surface, a.y)
             .unwrap_or(0.0)
             .max(u_scale(surface, b.y).unwrap_or(0.0))
     };
-    let close =
-        |a: Point2, b: Point2| ((a.x - b.x) * scale(a, b)).abs() <= tol && (a.y - b.y).abs() <= tol;
+    let close = |a: Point2, b: Point2| {
+        ((a.x - b.x) * scale(a, b)).abs() <= tol && ((a.y - b.y) * vs).abs() <= tol
+    };
     let mut counts: BTreeMap<usize, usize> = BTreeMap::new();
     for u in lp {
         *counts.entry(u.edge).or_default() += 1;
@@ -670,6 +711,7 @@ fn seam_merge(face: &SFace, lp: &[SUse], tol: f64) -> Option<SeamRuns> {
         return None;
     }
     let n = lp.len();
+    let (mut in_u, mut in_v) = (false, false);
     for &e in &seams {
         let at: Vec<usize> = (0..n).filter(|k| lp[*k].edge == e).collect();
         let (ua, ub) = (&lp[at[0]], &lp[at[1]]);
@@ -683,15 +725,18 @@ fn seam_merge(face: &SFace, lp: &[SUse], tol: f64) -> Option<SeamRuns> {
         else {
             return None;
         };
-        let shift = sa.x - eb.x;
+        let shift = (sa.x - eb.x, sa.y - eb.y);
         let radius = scale(*sa, *ea);
-        if (shift.abs() - TAU).abs() * radius > tol
-            || ((ea.x - sb.x) - shift).abs() * radius > tol
-            || (sa.y - eb.y).abs() > tol
-            || (ea.y - sb.y).abs() > tol
-        {
+        let same = ((ea.x - sb.x) - shift.0).abs() * radius <= tol
+            && ((ea.y - sb.y) - shift.1).abs() * vs <= tol;
+        let period_u = (shift.0.abs() - TAU).abs() * radius <= tol && (shift.1 * vs).abs() <= tol;
+        let period_v =
+            torus && (shift.0 * radius).abs() <= tol && (shift.1.abs() - TAU).abs() * vs <= tol;
+        if !same || !(period_u || period_v) {
             return None;
         }
+        in_u |= period_u;
+        in_v |= period_v;
         for k in at {
             let (prev, next) = (&lp[(k + n - 1) % n], &lp[(k + 1) % n]);
             if !close(end_of(&prev.pcurve), start_of(&lp[k].pcurve))
@@ -718,7 +763,7 @@ fn seam_merge(face: &SFace, lp: &[SUse], tol: f64) -> Option<SeamRuns> {
         runs.push(run);
     }
     if runs.is_empty() {
-        return None;
+        return (torus && in_u && in_v).then_some((seams, Vec::new()));
     }
     let mut out = Vec::new();
     for run in runs {
@@ -726,12 +771,15 @@ fn seam_merge(face: &SFace, lp: &[SUse], tol: f64) -> Option<SeamRuns> {
             start_of(&lp[run[0]].pcurve),
             end_of(&lp[run[run.len() - 1]].pcurve),
         );
-        let du = b.x - a.x;
-        let w = (du / TAU).round();
-        if w == 0.0 || (du - w * TAU).abs() * scale(a, b) > tol {
+        let (du, dv) = (b.x - a.x, b.y - a.y);
+        let (wu, wv) = ((du / TAU).round(), (dv / TAU).round());
+        if (wu == 0.0 && wv == 0.0)
+            || (du - wu * TAU).abs() * scale(a, b) > tol
+            || (dv - wv * TAU).abs() * vs > tol
+        {
             return None;
         }
-        out.push((run, w as i32));
+        out.push((run, [wu as i32, wv as i32]));
     }
     Some((seams, out))
 }
@@ -763,7 +811,7 @@ fn through_poles<'a>(
 /// A loop of the cell complex before numbering: runs of seamed uses with
 /// their winding, or a pole at a seamed vertex.
 enum CellLoop<'a> {
-    Edges(Vec<&'a SUse>, i32),
+    Edges(Vec<&'a SUse>, [i32; 2]),
     Pole(usize),
 }
 
@@ -794,7 +842,7 @@ fn to_cell(walk: Walk, tol: f64) -> Result<TopologyParts, &'static str> {
                 }
                 None => loops.push(CellLoop::Edges(
                     through_poles(&walk, lp.iter(), &mut removed),
-                    0,
+                    [0, 0],
                 )),
             }
         }
@@ -920,10 +968,7 @@ fn to_cell(walk: Walk, tol: f64) -> Result<TopologyParts, &'static str> {
                     FinId::new(parts.fins.len() - 1)
                 })
                 .collect();
-            parts.loops.push(Loop::Edges {
-                fins,
-                winding: [*w, 0],
-            });
+            parts.loops.push(Loop::Edges { fins, winding: *w });
             loops.push(LoopId::new(parts.loops.len() - 1));
         }
         parts.faces.push(Face {

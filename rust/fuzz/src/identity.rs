@@ -5,7 +5,8 @@
 //! bijectively, parent by parent; counts and roles follow the profile. The
 //! same bytes also make a cone (S3 of REVIEW_NOTES.md): its entities follow
 //! the meridian (identity_reference.cone_entities), and rebuilding,
-//! stretching and rigid motion keep its ids. So do a sphere's or zone's.
+//! stretching and rigid motion keep its ids. So do a sphere's or zone's, and
+//! a torus's, v-segment's or wedge's (identity_reference.torus_entities).
 
 use libfuzzer_sys::arbitrary::{Result, Unstructured};
 use rusty_occt::history::History;
@@ -476,6 +477,143 @@ fn check_sphere(data: &[u8]) {
     }
 }
 
+/// A torus, v-segment or wedge of `Solid::torus_with`, with rigid motions.
+pub(crate) struct TorusSpec {
+    pub(crate) tolerance: Tolerance,
+    pub(crate) operation: OperationId,
+    pub(crate) frame: Frame3,
+    pub(crate) major: f64,
+    pub(crate) minor: f64,
+    pub(crate) low: f64,
+    pub(crate) high: f64,
+    pub(crate) angle: f64,
+    pub(crate) transforms: Vec<RigidTransform>,
+}
+
+impl TorusSpec {
+    pub(crate) fn build(&self, stretch: f64) -> Option<(Solid, History)> {
+        Solid::torus_with(
+            self.operation,
+            self.frame,
+            self.major * stretch,
+            self.minor * stretch,
+            self.low,
+            self.high,
+            self.angle,
+            self.tolerance,
+        )
+        .ok()
+    }
+
+    pub(crate) fn closed(&self) -> bool {
+        self.high - self.low == TAU
+    }
+}
+
+pub(crate) fn torus_spec(u: &mut Unstructured) -> Result<Option<TorusSpec>> {
+    let scale = 2f64.powi(u.int_in_range(-8..=8)?);
+    let tolerance = Tolerance::new(1e-9 * scale, 1e-12).unwrap();
+    let minor = scale * (0.2 + unit(u)?);
+    let major = minor + scale * (0.1 + unit(u)?);
+    let (low, high, angle) = match u.int_in_range(0..=2)? {
+        0 => (0.0, TAU, TAU),
+        1 => (0.0, TAU, 0.2 + 5.9 * unit(u)?),
+        _ => {
+            let a = TAU * unit(u)? - std::f64::consts::PI;
+            (a, a + 0.1 + 5.9 * unit(u)?, TAU)
+        }
+    };
+    let normal = Vec3::new(2.0 * unit(u)? - 1.0, 2.0 * unit(u)? - 1.0, 0.3 + unit(u)?);
+    let origin = Point3::new(
+        scale * (10.0 * unit(u)? - 5.0),
+        scale * 10.0 * unit(u)?,
+        scale * -3.0 * unit(u)?,
+    );
+    let Ok(frame) = Frame3::new(origin, normal, Vec3::X, tolerance) else {
+        return Ok(None);
+    };
+    let mut transforms = Vec::new();
+    for _ in 0..u.int_in_range(0..=2)? {
+        let axis = Vec3::new(unit(u)? + 0.1, unit(u)? - 0.5, unit(u)? - 0.5);
+        let r = RigidTransform::rotation(Point3::ORIGIN, axis, TAU * unit(u)?).unwrap();
+        let t =
+            RigidTransform::translation(Vec3::new(unit(u)?, unit(u)?, unit(u)?) * (7.0 * scale))
+                .unwrap();
+        transforms.push(r.then(t).unwrap());
+    }
+    Ok(Some(TorusSpec {
+        tolerance,
+        operation: OperationId(u.arbitrary()?),
+        frame,
+        major,
+        minor,
+        low,
+        high,
+        angle,
+        transforms,
+    }))
+}
+
+fn check_torus(data: &[u8]) {
+    let mut u = Unstructured::new(data);
+    let Ok(Some(s)) = torus_spec(&mut u) else {
+        return;
+    };
+    let Some((solid, _)) = s.build(1.0) else {
+        // Only a segment whose meridian boundary is not simple is refused.
+        assert!(!s.closed());
+        return;
+    };
+    let base = ids(&solid);
+    let t = solid.topology();
+    let whole = s.closed() && s.angle == TAU;
+    let sides = if whole { 0 } else { 2 };
+    assert_eq!(t.vertices().len(), 0);
+    assert_eq!(t.edges().len(), sides);
+    assert_eq!(t.faces().len(), 1 + sides);
+    let c = t.occt_counts();
+    assert_eq!(
+        (c.vertices, c.edges, c.wires, c.faces, c.shells, c.solids),
+        if whole {
+            (1, 2, 1, 1, 1, 1)
+        } else {
+            (2, 3, 3, 3, 1, 1)
+        }
+    );
+    for (_, d) in base.values() {
+        assert_eq!(d.kind, OperationKind::Revolve);
+        assert_eq!(d.ordinal, 0);
+        // A segment's sides come from its rim points and radial segments,
+        // a wedge's from the arc and the whole meridian.
+        let want = match (d.role, s.closed()) {
+            (Role::Region, _) | (Role::StartCap | Role::EndCap, true) => ProfileElement::Boundary,
+            (Role::Wall, _) | (Role::BottomEdge | Role::TopEdge, true) => {
+                ProfileElement::Segment(1)
+            }
+            (role, false) => meridian_parent(role, 1.0),
+            (other, true) => panic!("a torus wedge has no {other:?}"),
+        };
+        assert_eq!(
+            d.parents,
+            vec![Parent::Profile {
+                boundary: 0,
+                element: want,
+            }]
+        );
+    }
+    assert_eq!(ids(&s.build(1.0).unwrap().0), base);
+    if let Some((stretched, _)) = s.build(1.03) {
+        assert_eq!(ids(&stretched), base, "stretching keeps ids");
+    }
+    let mut moved = solid.clone();
+    for transform in &s.transforms {
+        if let Ok((next, _)) = moved.transform_with(OperationId::UNSPECIFIED, *transform) {
+            assert_eq!(ids(&next), base);
+            moved = next;
+        }
+    }
+}
+
 /// The meridian parent every cone entity must have, by role: the rim points
 /// 1 and 2, the radial segments 0 and 2, the slant 1, the boundary.
 fn meridian_parent(role: Role, bottom: f64) -> ProfileElement {
@@ -544,6 +682,7 @@ fn check_cone(data: &[u8]) {
 pub fn check_identity(data: &[u8]) {
     check_cone(data);
     check_sphere(data);
+    check_torus(data);
     let mut u = Unstructured::new(data);
     let Ok(Some(s)) = spec(&mut u) else {
         return;

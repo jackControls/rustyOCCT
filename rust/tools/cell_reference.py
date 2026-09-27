@@ -18,8 +18,9 @@ import copy
 
 import mpmath as mp
 
-from brep_reference import (Arc2, Arc3, cos_rn, sin_rn, Cone, Cylinder, Line2, Line3, Plane, Sphere, TAU, add, apex,
-                            apex_v, axes, cross, periodic, u_scale,
+from brep_reference import (Arc2, Arc3, cos_rn, sin_rn, Cone, Cylinder, Line2, Line3, Plane, Sphere, TAU, Torus,
+                            add, apex, periodic_v,
+                            apex_v, axes, cross, periodic, u_scale, v_scale,
                             curve_point, curve_valid, deviation_bounds, dot, finite, margin_check,
                             mul, norm, number, pcurve_point, pcurve_valid, sub, surface_point,
                             surface_valid, vec)
@@ -45,6 +46,7 @@ class Loop:
     fins: list = field(default_factory=list)   # fin ids; empty with vertex set means a vertex loop
     winding: int = 0                           # turns in u on a cylinder
     vertex: object = None
+    winding_v: int = 0                         # turns in v (a torus)
 
 
 @dataclass
@@ -130,10 +132,13 @@ def gap_bounds(c):
                 def gap():
                     w = loop.fins[(ui+1) % len(loop.fins)]
                     a, b = pcurve_point(u.pcurve, 1), pcurve_point(c.fins[w].pcurve, 0)
-                    shift = TAU*loop.winding if ui == len(loop.fins)-1 and periodic(f.surface) else 0
-                    du, dv = a[0]-b[0]-shift, a[1]-b[1]
+                    last = ui == len(loop.fins)-1
+                    shift = TAU*loop.winding if last and periodic(f.surface) else 0
+                    shift_v = TAU*loop.winding_v if last and periodic(f.surface) else 0
+                    du, dv = a[0]-b[0]-shift, a[1]-b[1]-shift_v
                     if periodic(f.surface):
                         du *= u_scale(f.surface, a[1])
+                        dv *= v_scale(f.surface)
                     return mp.sqrt(du*du+dv*dv)
                 raise_to(('f', fi), gap)
     return out
@@ -368,7 +373,7 @@ def encode(c):
         if loop.vertex is not None:
             out.append(f'lv {loop.vertex}')
             continue
-        out.append(f'l {loop.winding}')
+        out.append(f'l {loop.winding}' + (f' {loop.winding_v}' if loop.winding_v else ''))
         for k in loop.fins:
             u = c.fins[k]
             p = u.pcurve
@@ -390,6 +395,9 @@ def encode(c):
         elif isinstance(s, Sphere):
             out.append(f'f sphere {frame(s.frame)} {number(s.radius)} {o} {f.front} {f.back}{loops}'
                        + enc(('f', fi)))
+        elif isinstance(s, Torus):
+            out.append(f'f torus {frame(s.frame)} {number(s.major)} {number(s.minor)} {o} {f.front} {f.back}'
+                       f'{loops}'+enc(('f', fi)))
         else:
             out.append(f'f cylinder {frame(s.frame)} {number(s.radius)} {o} {f.front} {f.back}{loops}'
                        + enc(('f', fi)))
@@ -524,8 +532,8 @@ def validate(c):
             continue
         side_bad.add(fi)
     for fi, f in enumerate(c.faces):
-        # A sphere without loops is the whole closed surface.
-        if not f.loops and not isinstance(f.surface, Sphere):
+        # A sphere or torus without loops is the whole closed surface.
+        if not f.loops and not isinstance(f.surface, (Sphere, Torus)):
             issues.append(issue('empty_face', f'face {fi}'))
         for li, lid in enumerate(f.loops):
             loop = c.loops[lid]
@@ -535,7 +543,7 @@ def validate(c):
             if not loop.fins:
                 issues.append(issue('empty_loop', name))
                 continue
-            if not periodic(f.surface) and loop.winding != 0:
+            if (not periodic(f.surface) and loop.winding != 0) or (not periodic_v(f.surface) and loop.winding_v != 0):
                 issues.append(issue('winding_mismatch', name))
             ends = [fin_vertices(c, k) for k in loop.fins]
             if len(ends) == 1 and ends[0] == (None, None):
@@ -547,8 +555,9 @@ def validate(c):
             # loop at the apex) closes a band that winds once.
             wound = [c.loops[lid].winding for lid in f.loops if c.loops[lid].vertex is None]
             total = sum(wound)
-            if total != 0 and not (isinstance(f.surface, (Cone, Sphere)) and abs(total) == 1
-                                   and pole_loop(c, f) is not None):
+            total_v = sum(c.loops[lid].winding_v for lid in f.loops if c.loops[lid].vertex is None)
+            if (total != 0 and not (isinstance(f.surface, (Cone, Sphere)) and abs(total) == 1
+                                    and pole_loop(c, f) is not None)) or total_v != 0:
                 issues.append(issue('winding_mismatch', f'loop {fi}.0'))
     for ri, r in enumerate(c.regions):
         if len(set(r.shells)) != len(r.shells):
@@ -784,9 +793,11 @@ def validate(c):
                 w = loop.fins[(ui+1) % len(loop.fins)]
                 a, b = pcurve_point(c.fins[k].pcurve, 1), pcurve_point(c.fins[w].pcurve, 0)
                 shift = TAU*loop.winding if last and periodic(f.surface) else 0
-                du, dv = a[0]-b[0]-shift, a[1]-b[1]
+                shift_v = TAU*loop.winding_v if last and periodic(f.surface) else 0
+                du, dv = a[0]-b[0]-shift, a[1]-b[1]-shift_v
                 if periodic(f.surface):
                     du *= u_scale(f.surface, a[1])
+                    dv *= v_scale(f.surface)
                 d = mp.sqrt(du*du+dv*dv)
                 if judge(d, d, face_bound[fi], f'face {fi}', f'{c.name}: uv gap') == 'beyond':
                     issues.append(issue('uv_gap', f'use {fi}.{li}.{ui}'))
@@ -799,6 +810,21 @@ def validate(c):
         loops = [c.loops[lid] for lid in f.loops]
         sense = 1 if f.forward else -1
         wound = periodic(f.surface) and any(l.winding for l in loops)
+        wound_v = periodic_v(f.surface) and any(l.winding_v for l in loops)
+        if wound and wound_v:
+            issues.append(issue('uncertified_loop_winding', f'loop {fi}.0'))
+            continue
+        if wound_v:
+            total = sum(periodic_area_v(c, l) for l in loops if l.vertex is None)
+            if total*sense <= 0:
+                issues.append(issue('loop_winding', f'loop {fi}.0'))
+            for li, l in enumerate(loops):
+                if l.winding_v == 0 and l.vertex is None:
+                    if periodic_area_v(c, l)*sense >= 0:
+                        issues.append(issue('loop_winding', f'loop {fi}.{li}'))
+                    else:
+                        issues.append(issue('uncertified_containment', f'loop {fi}.{li}'))
+            continue
         if wound:
             total = sum(periodic_area(c, l) for l in loops)
             if pole_loop(c, f) is not None:
@@ -891,6 +917,10 @@ def surface_distance(s, p):
         return min(abs(r*mp.cos(a)-R*mp.cos(a)-z*mp.sin(a)), abs(r*mp.cos(a)+R*mp.cos(a)+z*mp.sin(a)))
     if isinstance(s, Sphere):
         return abs(norm(rel)-s.radius)
+    if isinstance(s, Torus):
+        z = dot(rel, n)
+        rho = norm(sub(rel, mul(n, z)))
+        return abs(mp.sqrt((rho-s.major)**2+z**2)-s.minor)
     radial = sub(rel, mul(n, dot(rel, n)))
     return abs(norm(radial)-s.radius)
 
@@ -919,7 +949,7 @@ def loop_points(c, loop):
         a = pcurve_point(pieces[j], 1)
         b = pcurve_point(pieces[(j+1) % len(pieces)], 0)
         if j == len(pieces)-1:
-            b = [b[0]+TAU*loop.winding, b[1]]
+            b = [b[0]+TAU*loop.winding, b[1]+TAU*loop.winding_v]
         chords.append((a, b))
     return pieces, chords
 
@@ -951,6 +981,18 @@ def periodic_area(c, loop):
     return total
 
 
+def periodic_area_v(c, loop):
+    """Integral of u dv on the universal cover, closed by chords: the
+    periodic area of a loop winding in v. Lines only on a torus."""
+    pieces, chords = loop_points(c, loop)
+    total = mp.mpf(0)
+    for p in pieces:
+        total += (mp.mpf(p.start[0])+mp.mpf(p.end[0]))/2*(mp.mpf(p.end[1])-mp.mpf(p.start[1]))
+    for a, b in chords:
+        total += (a[0]+b[0])/2*(b[1]-a[1])
+    return total
+
+
 def winding(c, loop, point):
     from brep_reference import winding as seamed_winding, Use
     return seamed_winding([Use(c.fins[k].edge, c.fins[k].forward, c.fins[k].pcurve) for k in loop.fins], point)
@@ -977,6 +1019,35 @@ def face_flux(c, f):
         ox, oy, on = dot(o, x), dot(o, y), dot(o, n)
         G = lambda u, v: R**2*((ox*mp.cos(u)+oy*mp.sin(u))*((v+mp.pi/2)/2+mp.sin(2*v)/4)
                                + on*(mp.sin(v)**2-1)/2+R*(mp.sin(v)+1))
+    elif isinstance(s, Torus):
+        # S.(S_u x S_v) = r (R + r cos v)(A(u) cos v + (O.n) sin v + R cos v + r)
+        # with A(u) = O.x cos u + O.y sin u; its antiderivative in v from 0
+        # (G) and in u from 0 (H), in closed form.
+        R, r = mp.mpf(s.major), mp.mpf(s.minor)
+        ox, oy, on = dot(o, x), dot(o, y), dot(o, n)
+        A = lambda u: ox*mp.cos(u)+oy*mp.sin(u)
+        c2 = lambda v: v/2+mp.sin(2*v)/4
+        G = lambda u, v: r*(R*A(u)*mp.sin(v)+R*on*(1-mp.cos(v))+R*R*mp.sin(v)+R*r*v+r*A(u)*c2(v)
+                            + r*on*mp.sin(v)**2/2+r*R*c2(v)+r*r*mp.sin(v))
+        H = lambda u, v: r*((R*mp.cos(v)+r*mp.cos(v)**2)*(ox*mp.sin(u)+oy*(1-mp.cos(u)))
+                            + u*(R*on*mp.sin(v)+R*R*mp.cos(v)+R*r+r*on*mp.cos(v)*mp.sin(v)
+                                 + r*R*mp.cos(v)**2+r*r*mp.cos(v)))
+        edge_loops = [c.loops[l] for l in f.loops if c.loops[l].vertex is None]
+        if not edge_loops:
+            # The whole torus: A integrates to nothing over a turn.
+            whole = 6*mp.pi**2*R*r*r
+            return whole if f.forward else -whole
+        if any(l.winding_v for l in edge_loops):
+            total = mp.mpf(0)
+            for loop in edge_loops:
+                pieces, chords = loop_points(c, loop)
+                segments = [(p.start, p.end) for p in pieces]+chords
+                for a0, b0 in segments:
+                    a0, b0 = [mp.mpf(t) for t in a0], [mp.mpf(t) for t in b0]
+                    if b0[1] != a0[1]:
+                        total += mp.quad(lambda t: H(a0[0]+(b0[0]-a0[0])*t, a0[1]+(b0[1]-a0[1])*t)*(b0[1]-a0[1]),
+                                         [0, mp.mpf(1)/2, 1])
+            return total
     elif isinstance(s, Plane):
         h = dot(o, cross(x, y))
         G = lambda u, v, h=h: v*h
@@ -1033,7 +1104,7 @@ def inside(c, si, point):
     for fi, _ in c.shells[si].sides:
         face = c.faces[fi]
         s = face.surface
-        if isinstance(s, (Cone, Sphere)):
+        if isinstance(s, (Cone, Sphere, Torus)):
             return None
         o, x, y, n = axes(s.frame)
         rel = sub(point, o)

@@ -195,7 +195,7 @@ fn face_area(t: &Topology, face: usize) -> f64 {
         }
         // Cone and sphere faces are measured by the kernel's general mass
         // properties.
-        Surface::Cone { .. } | Surface::Sphere { .. } => t
+        Surface::Cone { .. } | Surface::Sphere { .. } | Surface::Torus { .. } => t
             .face_area_and_centre(FaceId::new(face))
             .map_or(f64::NAN, |(area, _)| area),
     }
@@ -221,6 +221,24 @@ fn seam_length(t: &Topology, face: usize) -> Option<f64> {
         (whole_sphere(t, face), &t.faces()[face].surface)
     {
         return Some(std::f64::consts::PI * radius);
+    }
+    // A torus wound in v: its seam is the latitude arc at the rings' v over
+    // their u range.
+    if let Surface::Torus { major, minor, .. } = t.faces()[face].surface {
+        let mut u = (f64::MAX, f64::MIN);
+        let mut v0 = None;
+        for l in &t.faces()[face].loops {
+            if let Loop::Edges { fins, winding } = &t.loops()[l.index()] {
+                if winding[1] != 0 {
+                    let p = t.fins()[fins[0].index()].pcurve.point(0.0);
+                    u = (u.0.min(p.x), u.1.max(p.x));
+                    v0 = Some(p.y);
+                }
+            }
+        }
+        if let Some(v0) = v0 {
+            return Some((u.1 - u.0) * (major + minor * v0.cos()));
+        }
     }
     let face = &t.faces()[face];
     let turns: i32 = face
@@ -265,6 +283,7 @@ fn seam_length(t: &Topology, face: usize) -> Option<f64> {
     }
     let scale = match face.surface {
         Surface::Sphere { radius, .. } => radius,
+        Surface::Torus { minor, .. } => minor,
         _ => 1.0,
     };
     wound.then_some(scale * (v.1 - v.0))
@@ -359,6 +378,21 @@ fn collect(shape: &Shape, parts: &mut Parts) {
                 parts.vertices.insert(format!("{face}:{end}"));
                 parts.edges.insert(format!("{face}:{end}"));
             }
+        }
+        // A whole torus: one vertex and two seams (the meridian and the
+        // latitude circles), each used twice in its one wire.
+        if let (Surface::Torus { major, minor, .. }, true) = (
+            &t.faces()[f].surface,
+            t.faces()[f]
+                .loops
+                .iter()
+                .all(|l| matches!(t.loops()[l.index()], Loop::Vertex(_))),
+        ) {
+            parts.vertices.insert(format!("{face}:corner"));
+            parts.edges.insert(format!("{face}:u-seam"));
+            parts.edges.insert(format!("{face}:v-seam"));
+            parts.wires += 1;
+            parts.length += 2.0 * TAU * minor + 2.0 * TAU * (major + minor);
         }
         // A wound face's two ring loops are one OCCT wire, joined by a seam
         // used in both directions.
@@ -623,7 +657,7 @@ fn face_centre(t: &Topology, face: usize) -> (f64, Point3) {
                 Surface::Cylinder { .. } => {
                     [q.y, q.y * q.x.cos(), q.y * q.x.sin(), q.y * q.y / 2.0]
                 }
-                Surface::Cone { .. } | Surface::Sphere { .. } => [0.0; 4],
+                Surface::Cone { .. } | Surface::Sphere { .. } | Surface::Torus { .. } => [0.0; 4],
             };
             for k in 0..4 {
                 m[k] -= w * g[k] * d.x;
@@ -642,7 +676,7 @@ fn face_centre(t: &Topology, face: usize) -> (f64, Point3) {
                 m[3] / m[0],
             ),
         ),
-        Surface::Cone { .. } | Surface::Sphere { .. } => t
+        Surface::Cone { .. } | Surface::Sphere { .. } | Surface::Torus { .. } => t
             .face_area_and_centre(FaceId::new(face))
             .unwrap_or((f64::NAN, Point3::new(f64::NAN, f64::NAN, f64::NAN))),
     }
@@ -842,6 +876,36 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             };
             let (solid, _) =
                 Solid::sphere_with(OperationId::UNSPECIFIED, frame, n[0], low, high, t)?;
+            shapes.insert(args[1].clone(), Shape::Solid(Box::new(solid)));
+            Ok(String::new())
+        }
+        // `ptorus name R1 R2 [angle1 angle2] [angle]`: a torus about the z
+        // axis, angles in degrees (a segment and a wedge at once are out of
+        // the kernel's domain).
+        "ptorus" if (4..=7).contains(&args.len()) => {
+            let n = numbers(&args[2..])?;
+            let frame = Frame3::new(
+                Point3::ORIGIN,
+                Vec3::new(0.0, 0.0, 1.0),
+                Vec3::new(1.0, 0.0, 0.0),
+                t,
+            )?;
+            let (low, high, angle) = match n.len() {
+                2 => (0.0, TAU, TAU),
+                3 => (0.0, TAU, n[2].to_radians()),
+                4 => (n[2].to_radians(), n[3].to_radians(), TAU),
+                _ => (n[2].to_radians(), n[3].to_radians(), n[4].to_radians()),
+            };
+            let (solid, _) = Solid::torus_with(
+                OperationId::UNSPECIFIED,
+                frame,
+                n[0],
+                n[1],
+                low,
+                high,
+                angle,
+                t,
+            )?;
             shapes.insert(args[1].clone(), Shape::Solid(Box::new(solid)));
             Ok(String::new())
         }

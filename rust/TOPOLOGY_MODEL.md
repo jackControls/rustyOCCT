@@ -559,6 +559,57 @@ sphere, torus, one per accepted revision (R6).
   before any kernel sphere code (`fixtures/occt-sphere-preimplementation`,
   `fixtures/occt-sphere-revolve-capture`).
 
+### Torus
+
+* **Surface.** `Surface::Torus { frame, major, minor }` is OCCT's
+  `Geom_ToroidalSurface`: `S(u, v) = O + (R + r cos v)(cos u x + sin u y) +
+  r sin v n`, a ring torus (`R - r > tol`); a horn or spindle torus is
+  `degenerate_surface`, and the reader reports it as
+  `NonRingToroidalSurface`, unsupported. `S_u × S_v = r (R + r cos v)` times
+  the tube's outward normal.
+* **Windings in `v`.** A torus is the one surface periodic in both
+  parameters: a loop winds `[wu, wv]` and closes shifted by `(2πwu, 2πwv)`.
+  Windings in `v` are `winding_mismatch` on every other surface, and on a
+  torus they must balance. A face wound in `v` (a wedge's wall, bounded by
+  two meridian circles) has no outer/inner order: the periodic area `∮ u dv`
+  over all loops has the face's sign, each unwound loop the opposite one. A
+  face wound in both directions (a torus knot) is
+  `uncertified_loop_winding`. UV gaps scale `du` by `R + r cos v` and `dv`
+  by `r`.
+* **Whole torus.** One face without loops, as the whole sphere. Its count
+  synthesis is OCCT's one wire of two seams (the meridian and the latitude
+  circle through one vertex).
+* **Builder.** `Solid::torus_with`, `torus_at` and `torus_in` build
+  `BRepPrimAPI_MakeTorus(gp_Ax2, R, r, low, high, angle)` for the whole
+  torus (`high - low` and `angle` the binary64 `2π`), a v-segment (a full
+  turn of latitudes `low..high`: rings at both ends bounding discs, the wall
+  wound in `u`) or a wedge (the whole tube from `v = 0` revolved by
+  `0 < angle < 2π`: the tube's circles at both ends bounding discs, the wall
+  wound in `v`). A segment of a partial turn is `OutOfDomain`, as is a
+  segment whose meridian region (between the arc and the axis) is not
+  simple. A v-segment is the revolved region between its arc and the axis,
+  so its wall is reversed when the arc bulges toward the axis: OCCT's
+  `inner_half` has the wall forward and is inside out (a reviewed native
+  difference). Ids follow the meridian as for the cone; a wedge's discs come
+  from the boundary and its circles from the arc (segment 1's start and end
+  copies, as a prism's cap edges). Split and fuse return `OutOfDomain`.
+* **Mass properties.** The integrands are trigonometric in `u` and `v`.
+  Loops wound in `u`, or none, integrate `-∮ F du` with `F` from `v = 0`;
+  loops wound in `v` integrate `∮ G dv` with `G` from `u = 0`, the same
+  routine with `u` and `v` exchanged. The whole torus is bounded on the
+  cover by both periods (`MATHEMATICS.md`).
+* **Interop.** The reader takes surface record 5 (an indirect axis negates
+  `v`); the seam merge joins seams in `u` and in `v`, and a torus bounded
+  only by its two seams imports as the whole torus. The writer writes a
+  wound face's seam in each wound direction (a latitude circle for `u`, a
+  meridian circle for `v`) and the whole torus's two seams through one
+  vertex.
+* **DRAW.** `ptorus name R r [angle1 angle2] [angle]` (degrees) and the
+  derived case `ptorus_counts`.
+* **Evidence.** Both native captures, `MakeTorus` and `MakeRevol`, came
+  before any kernel torus code (`fixtures/occt-torus-preimplementation`,
+  `fixtures/occt-torus-revolve-capture`).
+
 ## Acceptance
 
 Record each milestone's clean revision, kernel CI job count, fuzz CI target

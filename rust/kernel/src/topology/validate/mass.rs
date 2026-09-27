@@ -480,16 +480,64 @@ fn sphere_terms<T: Real>(fr: &FrameV<T>, radius: f64, d: &V3<T>) -> [Sph<T>; TER
     integrands(&p, &n, &norm, sph_mul)
 }
 
-/// `-loop integral of F du` over a sphere face's loops (closed by chords) for
-/// every integrand of `fs`. `F` starts at the pole on a face with one, and
-/// at the south pole otherwise; a face without loops is the whole sphere,
-/// bounded on the cover by the north pole's line.
-fn sphere_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>]) -> Option<Vec<T>> {
+/// The torus's integrands from `p = d + (R + r cos v) e(u) + r sin v n`,
+/// `N = r (R + r cos v) q` (`q = cos v e(u) + sin v n`, outward from the
+/// tube) and `|N| = r (R + r cos v)`.
+fn torus_terms<T: Real>(fr: &FrameV<T>, major: f64, minor: f64, d: &V3<T>) -> [Sph<T>; TERMS] {
+    let (big, r) = (c::<T>(major), c::<T>(minor));
+    let (rr, rbig) = (r.square(), r.mul(&big));
+    let p: [Sph<T>; 3] = std::array::from_fn(|i| {
+        [
+            ((0, 0, 0, 0), d[i].clone()),
+            ((1, 0, 0, 0), big.mul(&fr.x[i])),
+            ((1, 0, 1, 0), r.mul(&fr.x[i])),
+            ((0, 1, 0, 0), big.mul(&fr.y[i])),
+            ((0, 1, 1, 0), r.mul(&fr.y[i])),
+            ((0, 0, 0, 1), r.mul(&fr.n[i])),
+        ]
+        .into_iter()
+        .collect()
+    });
+    let n: [Sph<T>; 3] = std::array::from_fn(|i| {
+        [
+            ((1, 0, 1, 0), rbig.mul(&fr.x[i])),
+            ((1, 0, 2, 0), rr.mul(&fr.x[i])),
+            ((0, 1, 1, 0), rbig.mul(&fr.y[i])),
+            ((0, 1, 2, 0), rr.mul(&fr.y[i])),
+            ((0, 0, 0, 1), rbig.mul(&fr.n[i])),
+            ((0, 0, 1, 1), rr.mul(&fr.n[i])),
+        ]
+        .into_iter()
+        .collect()
+    });
+    let norm: Sph<T> = [((0, 0, 0, 0), rbig), ((0, 0, 1, 0), rr)]
+        .into_iter()
+        .collect();
+    integrands(&p, &n, &norm, sph_mul)
+}
+
+/// The integral of every integrand of `fs` over a sphere or torus face (its
+/// loops, closed by chords, carry the orientation). Loops winding in `u` or
+/// none: `-loop integral of F du`, `F` from the pole on a face with one, the
+/// south pole on another sphere face, `v = 0` on a torus. Loops winding in
+/// `v` (a torus): `loop integral of G dv`, `G` from `u = 0`: the same
+/// routine with `u` and `v` exchanged (a meridian then integrates exactly, a
+/// parallel contributes nothing). No edge loops: the whole surface, bounded
+/// on the cover by the north pole's line (a sphere) or by both periods (a
+/// torus).
+fn trig_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>]) -> Option<Vec<T>> {
+    let torus = matches!(face.surface, Surface::Torus { .. });
     let turns: i32 = loops.iter().map(|lp| lp.winding).sum();
-    let lower = if turns.abs() == 1 {
-        pole_v::<T>(&face.surface, pole_north(turns, face.sense))?
+    let wound_u = loops.iter().any(|lp| lp.winding != 0);
+    let wound_v = loops.iter().any(|lp| lp.winding_v != 0);
+    if wound_u && wound_v {
+        return None;
+    }
+    let two_pi = T::from_r(&(pi().midpoint() * int(2))).widen(&(pi().radius() * int(2)));
+    let sign = if face.sense == Orientation::Forward {
+        1.0
     } else {
-        half_pi::<T>().neg()
+        -1.0
     };
     let mut totals = vec![c::<T>(0.0); fs.len()];
     let mut accumulate = |values: Vec<T>| {
@@ -498,15 +546,53 @@ fn sphere_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>]) -> Option<Vec<
         }
     };
     if loops.is_empty() {
-        let two_pi = T::from_r(&(pi().midpoint() * int(2))).widen(&(pi().radius() * int(2)));
-        let whole = sph_parallel(fs, &two_pi, &c(0.0), &half_pi(), &lower)?;
-        let sign = if face.sense == Orientation::Forward {
-            1.0
+        let whole = if torus {
+            sph_parallel(fs, &two_pi, &c(0.0), &two_pi, &c(0.0))?
         } else {
-            -1.0
+            sph_parallel(fs, &two_pi, &c(0.0), &half_pi(), &half_pi::<T>().neg())?
         };
         accumulate(whole.iter().map(|x| x.mul(&c(sign))).collect());
+        return Some(totals);
     }
+    if wound_v {
+        // Exchange u and v: keys (a, b, c, d) -> (c, d, a, b), points
+        // (u, v) -> (v, u); the routine then gives -loop integral of G dv.
+        let swapped: Vec<Sph<T>> = fs
+            .iter()
+            .map(|f| {
+                f.iter()
+                    .map(|((a, b, cc, d), x)| ((*cc, *d, *a, *b), x.clone()))
+                    .collect()
+            })
+            .collect();
+        let flip = |p: &V2<T>| -> V2<T> { [p[1].clone(), p[0].clone()] };
+        for lp in loops {
+            for u in &lp.fins {
+                let Curve2::LineSegment { start, end } = &u.pcurve else {
+                    return None;
+                };
+                let values = sph_lines(
+                    &swapped,
+                    &[c(start.y), c(start.x)],
+                    &[c(end.y), c(end.x)],
+                    &c(0.0),
+                )?;
+                accumulate(values.iter().map(|x| x.neg()).collect());
+            }
+            for (a, b) in chords::<T>(lp) {
+                let values = sph_lines(&swapped, &flip(&a), &flip(&b), &c(0.0))?;
+                accumulate(values.iter().map(|x| x.neg()).collect());
+            }
+        }
+        return Some(totals);
+    }
+    let lower = if torus {
+        c(0.0)
+    } else if turns.abs() == 1 {
+        pole_v::<T>(&face.surface, pole_north(turns, face.sense))?
+    } else {
+        half_pi::<T>().neg()
+    };
     for lp in loops {
         for u in &lp.fins {
             let Curve2::LineSegment { start, end } = &u.pcurve else {
@@ -526,17 +612,27 @@ fn sphere_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>]) -> Option<Vec<
     Some(totals)
 }
 
-/// The orientation flux of a sphere face: the integral of `S.(S_u x S_v)`
-/// over it, `S` in absolute coordinates (as `face_flux`).
+/// The orientation flux of a sphere or torus face: the integral of
+/// `S.(S_u x S_v)` over it, `S` in absolute coordinates (as `face_flux`).
 pub(super) fn sphere_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
-    let Surface::Sphere { frame: f, radius } = &face.surface else {
-        return None;
+    let terms = match &face.surface {
+        Surface::Sphere { frame: f, radius } => {
+            let fr = frame::<T>(f);
+            sphere_terms(&fr, *radius, &fr.o)
+        }
+        Surface::Torus {
+            frame: f,
+            major,
+            minor,
+        } => {
+            let fr = frame::<T>(f);
+            torus_terms(&fr, *major, *minor, &fr.o)
+        }
+        _ => return None,
     };
-    let fr = frame::<T>(f);
-    let terms = sphere_terms(&fr, *radius, &fr.o);
     // S.N = 3 times the volume integrand.
     let flux = scaled(&terms[0], &c(3.0));
-    sphere_face(face, loops, &[flux])?.pop()
+    trig_face(face, loops, &[flux])?.pop()
 }
 
 /// The fourteen face integrals over the face region (loops carry its
@@ -605,7 +701,17 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
             let fr = frame::<T>(f);
             let d = vsub(&fr.o, reference);
             let terms = sphere_terms(&fr, *radius, &d);
-            accumulate(sphere_face(face, loops, &terms)?.try_into().ok()?);
+            accumulate(trig_face(face, loops, &terms)?.try_into().ok()?);
+        }
+        Surface::Torus {
+            frame: f,
+            major,
+            minor,
+        } => {
+            let fr = frame::<T>(f);
+            let d = vsub(&fr.o, reference);
+            let terms = torus_terms(&fr, *major, *minor, &d);
+            accumulate(trig_face(face, loops, &terms)?.try_into().ok()?);
         }
         Surface::Cylinder { frame: f, radius }
         | Surface::Cone {
@@ -706,6 +812,7 @@ fn resolved<'a>(view: &View<'a>) -> Vec<Vec<Lp<'a>>> {
                     } => Some(Lp {
                         fins: list.iter().map(|k| &view.fins[k.0]).collect(),
                         winding: winding[0],
+                        winding_v: winding[1],
                     }),
                     Loop::Vertex(_) => None,
                 })

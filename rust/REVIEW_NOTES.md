@@ -325,7 +325,7 @@ converter records that as `Imported` provenance, never as an approximation.
     confirms the licence basis recorded under U1. Locally the fetch script
     verifies the pinned archive; data cases report `not_fetched` on CI,
     which the contract accepts.
-* S3 — cone implemented; gate pending CI and the clean campaigns.
+* S3 — cone, sphere and torus implemented; gate pending CI and the clean campaigns.
   * Native `MakeCone` capture before any kernel cone code (`dde086c1`);
     the validator's cone and pole rules against the independent reference
     (`1a76d29e`, 88 reports).
@@ -355,4 +355,14 @@ converter records that as `Imported` provenance, never as an approximation.
     and fuzz. `bugs/modalg_6/bug27264_2` passes on both backends: the
     ledger has 2 mapped-and-verified assertions. Gate pending CI and the
     campaigns.
+  * Torus implemented after its native captures (`059616f9`, before any
+    kernel torus code; OCCT's `inner_half` is inside out, reviewed):
+    windings in `v`, the whole torus without loops, v-segments and wedges,
+    the builder, ids, history (22 of 22 matches with `MakeRevol`), mass
+    (the u↔v exchanged routine for loops wound in `v`), interop (ten more
+    `data/occ` solids import, 54 of 77; horn and spindle tori are
+    `NonRingToroidalSurface`), `ptorus`, `ptorus_counts` and fuzz
+    (`brep_validation` mutation 30, tori in `identity`, `history` and
+    `brep_io`). `bug485` now restores and needs only `bfuse`. Gate pending
+    CI and the campaigns.
 * S4 — pending

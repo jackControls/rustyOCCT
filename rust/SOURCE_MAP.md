@@ -578,3 +578,20 @@ record 4, and DRAW's `psphere` (angles in degrees, converted by
 | `Surface::Sphere` | [Geom_SphericalSurface.cxx](../src/ModelingData/TKG3d/Geom/Geom_SphericalSurface.cxx) | Same parameterization; a whole sphere is a face without loops, a pole closing a band a vertex loop. |
 | `Solid::sphere_with` | [BRepPrimAPI_MakeSphere.cxx](../src/ModelingAlgorithms/TKPrim/BRepPrimAPI/BRepPrimAPI_MakeSphere.cxx), [BRepPrim_Sphere.cxx](../src/ModelingAlgorithms/TKPrim/BRepPrim/BRepPrim_Sphere.cxx) | Full longitude only. History as revolving the meridian, the arc generating the wall. |
 | `occt_brep` spheres | [GeomTools_SurfaceSet.cxx](../src/ModelingData/TKGeomBase/GeomTools/GeomTools_SurfaceSet.cxx) | Poles and passes through them are OCCT's degenerated edges, rebuilt by rule when writing. |
+
+## Tori (S3)
+
+The source review covered `BRepPrimAPI_MakeTorus` and `BRepPrim_Torus`
+(the minor circle about `O + R x` in the half-plane of `x` and the axis,
+latitudes `angle1..angle2` revolved by `angle`), `BRepPrim_OneAxis` (a
+closed meridian has no top or bottom face; a partial turn adds the end
+faces; `isHeightInverted` reverses only a wedge's end faces),
+`Geom_ToroidalSurface` and `ElSLib::TorusValue`, `GeomTools_SurfaceSet`
+record 5, and DRAW's `ptorus`, at
+`3d097a0328e71b826377d4814ab05ec3c3d23871`.
+
+| Rust | OCCT | Notes |
+| --- | --- | --- |
+| `Surface::Torus` | [Geom_ToroidalSurface.cxx](../src/ModelingData/TKG3d/Geom/Geom_ToroidalSurface.cxx) | Same parameterization; ring tori only; a whole torus is a face without loops, loops may wind in `v`. |
+| `Solid::torus_with` | [BRepPrimAPI_MakeTorus.cxx](../src/ModelingAlgorithms/TKPrim/BRepPrimAPI/BRepPrimAPI_MakeTorus.cxx), [BRepPrim_Torus.cxx](../src/ModelingAlgorithms/TKPrim/BRepPrim/BRepPrim_Torus.cxx), [BRepPrim_OneAxis.cxx](../src/ModelingAlgorithms/TKPrim/BRepPrim/BRepPrim_OneAxis.cxx) | The whole torus, v-segments (full turn) and wedges (whole tube from `v = 0`); a segment of a partial turn is refused. The wall faces out: OCCT's inner half is inside out. History as revolving the meridian. |
+| `occt_brep` tori | [GeomTools_SurfaceSet.cxx](../src/ModelingData/TKGeomBase/GeomTools/GeomTools_SurfaceSet.cxx) | Seams in `u` and `v` merged on import and rebuilt by rule when writing; horn and spindle tori unsupported. |
