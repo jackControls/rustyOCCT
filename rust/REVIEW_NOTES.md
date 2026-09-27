@@ -397,6 +397,133 @@ The cost is that imported curves joined with different speeds show one more
 vertex than in the source system when the ratio is not rational; the
 converter records that as `Imported` provenance, never as an approximation.
 
+## Review of S1–S4 (2026-09-27, head `a7301d68`)
+
+All four steps are done and recorded, with captures before code except the
+cone's `MakeRevol` history (R11, accepted by the user). Both workflows are
+green through `cde6d254`; the head's runs are queued; the full local release
+suite passes at the head. The kernel is 29.5k lines with 14.7k lines of
+tests, 20.4k lines of Python references and bridges, 162 fixture files and
+24 fuzz targets. Cones, spheres and tori exist with poles, zero-loop faces
+and `v` windings; spline cells exist with the C1 check; general mass
+properties are certified; 60 of the 77 `data/occ` solids import (58
+certified); the ledger has its first 2 mapped-and-verified assertions.
+
+Findings that shape the next moves:
+
+* **F7. CI time is now dominated by corpus replay.** The fuzz workflow takes
+  74–82 minutes per push; `surface_knots` alone replays 614 retained inputs
+  for 4,286 s of its 4,422 s and mutates for 60 s. The kernel workflow takes
+  64 minutes because of the Windows job. Weekly minimisation (R12) helps
+  but cannot change the ratio: replay of exact tensor inputs is the cost.
+* **F8. Spline mass enclosures are first order.** Areas of nonrational
+  spline walls are enclosed within 0.2–0.6%, the rational corner's volume
+  within 5%. Recorded honestly and decided as later work; not yet
+  production-grade for measurement.
+* **F9. Profiles still accept only polygons and circles.** Arcs exist in
+  the topology and the validator's fixtures but not in `Boundary`, so the
+  application's first job, Extrude of a sketch with arcs and fillets, cannot
+  run.
+* **F10. The data corpus is blocked mostly by sheet bodies.** The S2 survey
+  of restore-only cases native evaluates but Rust cannot: free faces 22,
+  spline curves on surfaces 18, spline curves 16, spline surfaces 13,
+  trimmed surfaces 9. S4 removed the spline blockers; free faces, that is
+  bodies without a solid region, are the largest remaining one, and the
+  model already allows them (D1, D9).
+
+## Next moves (2026-09-27)
+
+Ordered by dependency and value. Each ships the full pattern and records its
+acceptance in the guide that owns it.
+
+### S5 — arcs in profiles and prisms
+
+`Boundary` gains circular-arc segments beside lines, tangent or not, for
+outlines and holes; prism walls on arcs are partial cylinder faces with two
+vertical edges (no wrap), caps get arc edges. Ids and history keep the
+segment roles; the interop maps arcs both ways; `profile`-built cases in
+the DRAW adapter; the `MakePrism` bridge extended; the neutral generator's
+existing arc prisms become builder fixtures. Value: the Extrude job takes
+real sketches. Gate: polygon and circle ids byte-identical again.
+
+### S6 — sheet and wire bodies
+
+Bodies without a solid region: a planar face from a profile, a face on any
+supported surface with loops, wires. `Topology::check` classifies them
+(D9); the history treats a face body like any other; the `.brep` converter
+imports free faces and shells, which unblocks the largest group of data
+cases; `mkface`, `mkplane` and `mkedge` in the adapter. Value: ledger, and
+the tools that later operations need (a face as a splitting tool).
+
+### S7 — intersections of the analytic family (PORTING step 3)
+
+Curve/curve, curve/surface and surface/surface for planes, cylinders,
+cones, spheres and tori, certified, with the existing exact modules
+extended: plane/quadric intersections are exact conics; quadric/quadric
+intersections are space curves that are not splines. Decision U7 below
+chooses their representation. Every result carries enclosures; every
+degeneracy (tangency, coincidence, containment) is a declared case with a
+fixture; native `IntTools`/`GeomAPI` bridges and the `lowalgos` upstream
+group. This is the mathematical core Booleans stand on.
+
+### S8 — general planar split and face trimming (SplitBody job)
+
+Split any supported solid by an arbitrary plane: face/plane intersection
+curves, loop splitting on the universal cover, region classification, the
+`Split`, `Generated` and `Deleted` relations M3 introduced but on real
+geometry. Native `BRepAlgoAPI_Splitter` bridge; upstream `bsplit` cases.
+The first general topology-changing algorithm, and the rehearsal for S9.
+
+### S9 — Booleans for the analytic family (Combine job)
+
+Fuse, cut and common: intersect faces (S7), split (S8), classify by
+regions, assemble shells and regions, report complete histories with the
+split and merge relations. Native `BOPAlgo` bridge; the `boolean` group has
+1,291 fully covered data cases and thousands of self-contained ones, the
+ledger's largest lever. Tangent and coincident faces are declared cases from
+the first fixture, never deferred.
+
+### Parallel tracks
+
+* **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
+  regression and new seed; the daily schedule replays everything; the heavy
+  exact targets run on schedule only; Windows runs a smoke subset per push
+  and the full suite nightly. The gates do not change: acceptance still
+  needs the full replay, on the schedule run of the accepted revision.
+* **Higher-order certified quadrature** for spline mass properties, to bring
+  F8 from 5% to the enclosure widths of the analytic family.
+* **Tessellation**, deflection-controlled and watertight, once S5 lands;
+  the application needs it for display and it needs nothing from S7–S9.
+* **STEP import**, after S6, reusing the converter architecture, with the
+  OCCT STEP reader as the native oracle.
+
+### Decisions pending from the user
+
+* **U6.** Approve the CI budget policy above? **Answered 2026-09-27: yes.**
+  Per-push fuzz runs replay every checked-in regression, every seed added
+  since the last schedule run and a bounded random sample of the rest, then
+  mutate; the daily schedule replays everything; `surface_knots`,
+  `degree_elevation` and `surface_editing` run on schedule only, their
+  regressions still replayed per push; Windows runs a smoke subset per push
+  and the full suite nightly. Acceptance still requires the full replay green
+  on the schedule run of the accepted revision, plus the clean local
+  600-second campaign. Record the sampling rule and its seed in `FUZZING.md`
+  so a per-push run is reproducible.
+* **U7.** Intersection curves that are not conics or splines: procedural
+  cells that evaluate through their two surfaces with certified enclosures
+  (as CGM's edge curves and Parasolid's SP-curves do), approximated by
+  splines only for interchange with the approximation's bound recorded; or
+  spline approximations as the kernel's own representation, as OCCT does.
+  **Answered 2026-09-27: procedural.** Record as D13 in `TOPOLOGY_MODEL.md`:
+  an intersection edge stores its two surfaces and a certified
+  parameterisation, evaluates by a certified iteration with an enclosure,
+  lies on both faces by definition so its pcurves are exact projections,
+  and is approximated by a spline only for tessellation and interchange,
+  with the approximation's bound recorded beside it. Conics and splines
+  stay explicit where the intersection is one.
+* **U8.** S5 before S6, application value first; or S6 before S5, upstream
+  evidence and Boolean tools first. **Answered 2026-09-27: S5 then S6.**
+
 ## Status
 
 * S1 — **done**, accepted at `7e463cb2` (record in
@@ -557,3 +684,8 @@ converter records that as `Imported` provenance, never as an approximation.
 * **S4:** periodic spline surfaces and seams on spline surfaces stay
   unsupported, and spline mass enclosures stay first order where not exact;
   a higher-order certified quadrature is later work.
+* S5 — pending
+* S6 — pending
+* S7 — pending
+* S8 — pending
+* S9 — pending
