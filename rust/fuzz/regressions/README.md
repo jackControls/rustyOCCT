@@ -3,6 +3,21 @@
 The runner seeds every `*.bin` under the matching target directory. Keep original
 artifact bytes and names so campaign evidence remains traceable.
 
+## B-rep validation: a far, small spline prism
+
+`brep_validation/slow-unit-47bdac9ab6a50070d76f4f45029d0419a26705eb.bin` was
+saved during corpus replay in [campaign 36302492715](https://github.com/jackControls/rustyOCCT/actions/runs/36302492715)
+at `ac92ec89`, a slow-unit diagnostic (14 seconds on Linux) with no wrong
+answer, sanitizer failure or timeout. It is mutation 32 on the cubic bulge
+(S4), moved by `p -> 2^-10 p + (-7.5625, 4.5, 0.0625)`, then a pcurve shifted
+within the resolution: four validations (the determinism check, the
+constructor, the mutation's) and the certified mass properties. Local
+AddressSanitizer replay took about 4.6 seconds per execution, most of it in
+the exact deviation composition of the moved spline uses (wide exact
+rationals from the scale and the offset), within the `20 s / 2.6` triage
+rule; reusing the report's constructed topology for the mass check brought it
+to about 4.1 seconds. The 20-second input limit is unchanged.
+
 ## Proximity: full-exponent triangle pairs
 
 `proximity/slow-unit-1052e64729cba6e7060eca6bb910717b1678903a.bin` was saved during

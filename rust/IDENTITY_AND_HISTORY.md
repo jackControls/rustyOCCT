@@ -859,6 +859,16 @@ say what remains.
   surfaces with poles wait for the geometry that needs them. The D11
   continuity check and the H8 composite-level rule remain open (see
   above; both since closed, by R4 and R5 of `REVIEW_NOTES.md`).
+* **S1 of `REVIEW_NOTES.md` — accepted at `7e463cb2`.** Both workflows
+  were green at that revision: the Rust kernel workflow's twelve jobs and
+  the fuzzing workflow's twenty-four targets. R5: every step of a
+  composite history records its level (`History::steps`), `steps_invalid`
+  rejects a malformed list, and `history_contracts.rs` covers a two-level
+  composition. R1: the `surface_editing` CI timeout input takes 8.0–8.2 s
+  locally under AddressSanitizer, above `20 s / 2.6`, so that target has
+  the 60-second budget; both inputs are retained regressions with their
+  times (`fuzz/regressions/README.md`), and `FUZZING.md` states the triage
+  rule. R8: the platform allowance table in `VALIDATION.md`.
 
 ## Native format and Parasolid XT
 

@@ -16,7 +16,7 @@ use super::bernstein::{
     c, derivative, difference, lift, pcurve_arcs, piece_of, power, product, quotient_integral, r,
     ratio, scaled, sum, Bern,
 };
-use super::spline_taylor::{lift_patches_about, spline_jet, Patch as Jets, SurfaceJet};
+use super::spline_taylor::{lift_patches_about, spline_jet1, Patch as Jets};
 use super::Lp;
 use crate::certified::Real;
 use crate::surface::ExactBezierSurface3;
@@ -24,6 +24,9 @@ use crate::topology::Curve2;
 use crate::BSplineSurface3;
 use num_rational::BigRational as R;
 use std::cmp::Ordering;
+
+/// `S` (relative to the integration's origin), `S_u` and `S_v` over a box.
+type Jet1<T> = [[T; 3]; 3];
 
 /// A tensor Bernstein polynomial, `[i][j]` in `u` then `v`.
 type Tensor<T> = Vec<Vec<T>>;
@@ -188,30 +191,28 @@ fn column<T: Real>(h: &Tensor<T>) -> Bern<T> {
 
 /// `K(ū(τ), v̄(τ)) P_w^(m + n)` for homogeneous local coordinates
 /// `(Ū, V̄, P_w)` with `ū = Ū/P_w`.
-fn composed<T: Real>(k: &Tensor<T>, big_u: &Bern<T>, big_v: &Bern<T>, pw: &Bern<T>) -> Bern<T> {
-    let (m, n) = (k.len() - 1, k[0].len() - 1);
-    let (rest_u, rest_v) = (difference(pw, big_u), difference(pw, big_v));
+/// The Bernstein basis of degree `m` in the homogeneous local coordinate
+/// `X` (with `P_w - X` its complement), each `C(m, i) X^i (P_w - X)^(m-i)`.
+fn basis<T: Real>(m: usize, x: &Bern<T>, rest: &Bern<T>) -> Vec<Bern<T>> {
     let binomial = |n: usize, i: usize| {
         (0..i).fold(ratio(1, 1), |acc, j| {
             acc * ratio((n - j) as i64, (j + 1) as i64)
         })
     };
-    let bu: Vec<Bern<T>> = (0..=m)
+    (0..=m)
         .map(|i| {
             scaled(
-                &product(&power(big_u, i), &power(&rest_u, m - i)),
+                &product(&power(x, i), &power(rest, m - i)),
                 &c(&binomial(m, i)),
             )
         })
-        .collect();
-    let bv: Vec<Bern<T>> = (0..=n)
-        .map(|j| {
-            scaled(
-                &product(&power(big_v, j), &power(&rest_v, n - j)),
-                &c(&binomial(n, j)),
-            )
-        })
-        .collect();
+        .collect()
+}
+
+/// `K(ū(τ), v̄(τ)) P_w^(m + n)` from the bases of `ū` and `v̄` of the
+/// tensor's degrees.
+fn composed<T: Real>(k: &Tensor<T>, bu: &[Bern<T>], bv: &[Bern<T>]) -> Bern<T> {
+    let (m, n) = (k.len() - 1, k[0].len() - 1);
     let mut out = vec![T::exact_f64(0.0)];
     for i in 0..=m {
         let row = (0..=n).fold(vec![T::exact_f64(0.0)], |acc, j| {
@@ -257,12 +258,25 @@ fn piece_integrals<T: Real>(patch: &Patch<T>, uv: &[Bern<T>; 3], uniform: bool) 
         &product(&derivative(&big_u), pw),
         &product(&big_u, &derivative(pw)),
     );
+    // The integrands share degrees: each basis is formed once per piece.
+    let (rest_u, rest_v) = (difference(pw, &big_u), difference(pw, &big_v));
+    let mut bases_u: std::collections::BTreeMap<usize, Vec<Bern<T>>> = Default::default();
+    let mut bases_v: std::collections::BTreeMap<usize, Vec<Bern<T>>> = Default::default();
+    for g in &patch.g {
+        let (m, n) = (g.len() - 1, g[0].len() - 1);
+        bases_u
+            .entry(m)
+            .or_insert_with(|| basis(m, &big_u, &rest_u));
+        bases_v
+            .entry(n)
+            .or_insert_with(|| basis(n, &big_v, &rest_v));
+    }
     patch
         .g
         .iter()
         .map(|g| {
             let (m, n) = (g.len() - 1, g[0].len() - 1);
-            let k = composed(g, &big_u, &big_v, pw);
+            let k = composed(g, &bases_u[&m], &bases_v[&n]);
             let integrand: Bern<T> = product(&k, &du).iter().map(|x| x.neg()).collect();
             quotient_integral(&integrand, pw, (m + n + 2) as i32, uniform)
         })
@@ -403,7 +417,7 @@ fn enclosed_green<T: Real>(
     loops: &[Lp],
     origin: &[T; 3],
     count: usize,
-    f: &dyn Fn(&SurfaceJet<T>) -> Option<Vec<T>>,
+    f: &dyn Fn(&Jet1<T>) -> Option<Vec<T>>,
 ) -> Option<Vec<T>> {
     if surface.u_knots().is_periodic() || surface.v_knots().is_periodic() {
         return None;
@@ -419,7 +433,7 @@ fn enclosed_green<T: Real>(
         .map(|k| &va + (&vb - &va) * ratio(k as i64, STRIPS as i64))
         .collect();
     let at = |u: &T, v: &T| -> Option<Vec<T>> {
-        let mut jet = spline_jet(&patches, u, v)?;
+        let mut jet = spline_jet1(&patches, u, v)?;
         for (x, r) in jet[0].iter_mut().zip(&rest) {
             *x = x.add(r);
         }
@@ -501,8 +515,8 @@ pub(super) fn enclosed_face_flux<T: Real>(
     loops: &[Lp],
     origin: &[T; 3],
 ) -> Option<T> {
-    let flux = |jet: &SurfaceJet<T>| {
-        let [p, su, sv, ..] = jet;
+    let flux = |jet: &Jet1<T>| {
+        let [p, su, sv] = jet;
         let n = cross(su, sv);
         Some(vec![p[0]
             .mul(&n[0])
@@ -528,8 +542,8 @@ pub(super) fn spline_face_integrals<T: Real>(
     loops: &[Lp],
     origin: &[T; 3],
 ) -> Option<Vec<T>> {
-    let terms = |jet: &SurfaceJet<T>, all: bool| {
-        let [p, su, sv, ..] = jet;
+    let terms = |jet: &Jet1<T>, all: bool| {
+        let [p, su, sv] = jet;
         let n = cross(su, sv);
         let norm = n[0].square().add(&n[1].square()).add(&n[2].square()).sqrt();
         let values = super::mass::point_integrands(p, &n, &norm);

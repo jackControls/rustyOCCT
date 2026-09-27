@@ -478,6 +478,23 @@ fn restricted<T: Real>(coeffs: &[T], a: &T, b: &T) -> Vec<T> {
 /// A spline surface's jet over a box: the hull over the patches it meets,
 /// each restricted to the box and enclosed by its derivative nets.
 pub(super) fn spline_jet<T: Real>(patches: &[Patch<T>], u: &T, v: &T) -> Option<SurfaceJet<T>> {
+    spline_jet_to(patches, u, v, true)
+}
+
+/// `S`, `S_u` and `S_v` of a spline surface over a box, as `spline_jet`
+/// without the second derivatives (the flux and mass strips need none).
+pub(super) fn spline_jet1<T: Real>(patches: &[Patch<T>], u: &T, v: &T) -> Option<[[T; 3]; 3]> {
+    let [s, su, sv, ..] = spline_jet_to(patches, u, v, false)?;
+    Some([s, su, sv])
+}
+
+/// The jet over a box; its second derivatives are zero unless `second`.
+fn spline_jet_to<T: Real>(
+    patches: &[Patch<T>],
+    u: &T,
+    v: &T,
+    second: bool,
+) -> Option<SurfaceJet<T>> {
     let (ua, ub) = u.bounds_f64();
     let (va, vb) = v.bounds_f64();
     let mut out: Option<SurfaceJet<T>> = None;
@@ -492,7 +509,7 @@ pub(super) fn spline_jet<T: Real>(patches: &[Patch<T>], u: &T, v: &T) -> Option<
         {
             continue;
         }
-        let jet = patch_jet(q, u, v)?;
+        let jet = patch_jet(q, u, v, second)?;
         out = Some(match out {
             None => jet,
             Some(acc) => {
@@ -504,7 +521,7 @@ pub(super) fn spline_jet<T: Real>(patches: &[Patch<T>], u: &T, v: &T) -> Option<
 }
 
 /// The enclosure of a patch's jet over the box, in global parameters.
-fn patch_jet<T: Real>(q: &Patch<T>, u: &T, v: &T) -> Option<SurfaceJet<T>> {
+fn patch_jet<T: Real>(q: &Patch<T>, u: &T, v: &T, second: bool) -> Option<SurfaceJet<T>> {
     let [[u0, u1], [v0, v1]] = &q.lifted;
     let (wu, wv) = (u1.sub(u0), v1.sub(v0));
     // The box in local coordinates, clipped to the patch except past the
@@ -546,6 +563,17 @@ fn patch_jet<T: Real>(q: &Patch<T>, u: &T, v: &T) -> Option<SurfaceJet<T>> {
     // patch's local derivatives divided by its widths).
     let partials = |k: usize| -> Option<[T; 6]> {
         let [h, hu, hv, huu, huv, hvv] = &q.partials[k];
+        if !second {
+            let zero = T::exact_f64(0.0);
+            return Some([
+                flat(h),
+                flat(hu).div(&wu)?,
+                flat(hv).div(&wv)?,
+                zero.clone(),
+                zero.clone(),
+                zero,
+            ]);
+        }
         Some([
             flat(h),
             flat(hu).div(&wu)?,

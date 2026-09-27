@@ -216,6 +216,11 @@ enum Expect {
 }
 
 fn report(parts: &TopologyParts, tolerance: Tolerance) -> Vec<String> {
+    report_topology(parts, tolerance).0
+}
+
+/// `report`, with the topology it constructed when the parts are valid.
+fn report_topology(parts: &TopologyParts, tolerance: Tolerance) -> (Vec<String>, Option<Topology>) {
     let issues = parts.check(tolerance);
     // Deterministic, duplicate-free, and consistent with the constructor.
     assert_eq!(issues, parts.check(tolerance));
@@ -224,11 +229,17 @@ fn report(parts: &TopologyParts, tolerance: Tolerance) -> Vec<String> {
     let count = names.len();
     names.dedup();
     assert_eq!(count, names.len(), "duplicate issues {names:?}");
-    match Topology::from_parts(parts.clone(), tolerance) {
-        Ok(_) => assert!(names.is_empty()),
-        Err(e) => assert_eq!(e, issues),
-    }
-    names
+    let topology = match Topology::from_parts(parts.clone(), tolerance) {
+        Ok(t) => {
+            assert!(names.is_empty());
+            Some(t)
+        }
+        Err(e) => {
+            assert_eq!(e, issues);
+            None
+        }
+    };
+    (names, topology)
 }
 
 /// A face, a loop position in it, a fin position in that loop, and the fin.
@@ -1114,7 +1125,8 @@ fn spline_prism(b: &mut Bytes) {
     let t = [0, 1, 2].map(|_| f64::from(b.next()) / 16.0 - 8.0);
     similar(&mut parts, s, t);
     let tolerance = Tolerance::new(tol * s, 1e-12).unwrap();
-    assert_eq!(report(&parts, tolerance), Vec::<String>::new());
+    let (issues, topology) = report_topology(&parts, tolerance);
+    assert_eq!(issues, Vec::<String>::new());
     let want: Vec<f64> = include_str!("../../fixtures/brep-spline-mass.tsv")
         .lines()
         .find_map(|l| l.strip_prefix(&format!("{name}\t")))
@@ -1122,8 +1134,8 @@ fn spline_prism(b: &mut Bytes) {
         .split(' ')
         .map(|x| x.parse().unwrap())
         .collect();
-    let m = Topology::from_parts(parts.clone(), tolerance)
-        .unwrap()
+    let m = topology
+        .expect("a valid moved fixture")
         .mass_enclosure()
         .expect("integrated");
     let inside = |[lo, hi]: [f64; 2], x: f64, scale: f64| {

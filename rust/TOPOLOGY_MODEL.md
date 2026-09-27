@@ -11,7 +11,8 @@ migration here, **T1**, must land before M3, because M3's first splits and
 merges would otherwise be built on seams that the decided model removes.
 
 **Status:** decided; T1 accepted at `e4adb869` (see
-[Acceptance](#acceptance)); T2 accepted at `0913b5e2`.
+[Acceptance](#acceptance)); T2 accepted at `0913b5e2`; the surfaces of
+revolution (S3) and spline cells (S4) accepted by `ac92ec89`.
 
 ## Why this model
 
@@ -747,6 +748,87 @@ the clean local 600-second campaign, in the style of `BREP_VALIDATION.md`.
   handles faces and edges only. Surfaces with poles, and so degenerate
   edges, are not representable, and neither are splines, cones, spheres and
   tori.
+
+* **S3 cone — accepted at `166fc905`** (the cone is `0c94aa53`; its native
+  `MakeCone` capture `dde086c1` and validation rules `1a76d29e` came before
+  it). The first push at `0c94aa53` failed only the revolve bridge's Linux
+  fingerprint (reviewed in `166fc905`) and the `identity` and
+  `surface_knots` replay budgets (R12); `166fc905` also shares the mass
+  engine's trigonometric moments.
+  * Both workflows passed at `166fc905`: twelve kernel jobs (the primitive
+    bridge 22 of 22 cones against the independent reference, worst
+    `4.9e-15`; the revolve history bridge 21 matches and one reviewed
+    difference, `nearly_cylinder`; the B-rep bridge 44/8/0) and twenty-four
+    fuzz targets.
+  * Clean local 600-second campaigns at `166fc905` (AddressSanitizer,
+    standard 20-second/2 GiB limits): `brep_validation` 9,644 mutation
+    executions after 140 s of replay (10,112 edges, 684 MB peak),
+    `identity` 2,013 after 24 s (10,074, 734 MB), `history` 7,493 after
+    8 s (11,173, 815 MB), `brep_io` 10,091 after 6 s (11,996, 767 MB); no
+    artifact.
+  * Order of evidence: the `MakeRevol` history capture came after the
+    builder was written (R11 of `REVIEW_NOTES.md`, for the user).
+* **S3 sphere — accepted at `059616f9`** (the sphere is `d7677e4b`, after
+  its native captures `3641a2f7`; `059616f9` adds only the torus's native
+  captures and tools, no kernel or fuzz source).
+  * `d7677e4b`'s kernel workflow passed and its fuzzing run was cancelled by
+    the next push; both passed at `059616f9` (twelve and twenty-four), with
+    the sphere primitive bridge 22 of 22 (worst `6.7e-15`) and the sphere
+    revolve bridge 22 of 22.
+  * Clean local 600-second campaigns at `d7677e4b` (the same kernel and fuzz
+    sources): `brep_validation` 12,537 executions after 62 s of replay
+    (11,064 edges, 767 MB), `identity` 3,645 after 16 s (10,948, 829 MB),
+    `history` 7,700 after 9 s (12,086, 880 MB), `brep_io` 11,797 after 5 s
+    (13,151, 805 MB); no artifact.
+  * Upstream: `bugs/modalg_6/bug27264_2` (a restored whole sphere) passes on
+    both backends and is registered; the ledger has 2 mapped-and-verified
+    assertions.
+* **S3 torus — accepted at `ac92ec89`, with S4** (the torus is `e2e7c200`,
+  after its native captures `059616f9`). `e2e7c200`'s kernel workflow
+  failed only on the Linux observation of OCCT's inside-out inner half,
+  reviewed in `896606bc`, where both workflows passed (twelve and
+  twenty-four; the torus primitive and revolve bridges 22 of 22 each).
+  `896606bc` already carried R4, so the torus's clean campaigns at
+  `e2e7c200` (`brep_validation` 17,019 executions, `identity` 2,964,
+  `history` 6,290, `brep_io` 9,345; no artifact) predate that code, and the
+  gate closes at `ac92ec89` with S4's evidence below.
+* **R4 (S4) — accepted at `ac92ec89`.** The continuity check is `395bc3e8`;
+  both workflows passed at its descendant `896606bc`, which adds only the
+  S4a spline capture and a torus review. Its fixtures (nineteen spline cells,
+  mutation 31) and campaigns are part of S4's record.
+* **S4 — accepted at `ac92ec89`** (S4a capture `85b324e6` and the S4d
+  `BRepGProp` capture `fc389e8d`, each before the kernel code they observe;
+  S4b-d `38725497`, `e7c2a682`; S4b-e `79422a58`; spline mass `ac92ec89`).
+  * Rust kernel workflow: all twelve jobs passed (run 36302492680). On Linux
+    the spline bridge had 7 matches, 3 reviewed differences and no failures,
+    reproduced the ten S4a and ten S4d rows, and found OCCT's properties in
+    the kernel's enclosures for all five models valid on both sides; the
+    prism bridge kept 44/8/0 and the interop bridge 622/0/0 (58 written
+    corpus solids, worst property difference `4.4e-14`).
+  * Fuzzing workflow: all twenty-four targets passed (run 36302492715). On
+    Linux `brep_validation` replayed 2,371 inputs in 920 s, then ran 60.08 s
+    of mutation (221 executions, 17,559 edges, 1,001 MB); one replayed input
+    was a 14-second slow-unit diagnostic, triaged and retained after this
+    revision (`fuzz/regressions/README.md`: about 4.1 s locally under
+    AddressSanitizer once the mass check reuses the report's topology).
+    `brep_io` replayed 1,659 in 470 s, then 60.09 s (300 executions, 18,573
+    edges, 856 MB).
+  * Fixtures: 152 B-rep reports (63 valid), the spline masses of the sixteen
+    valid spline cases and `brep-io-expected.tsv` (77 solids, 60
+    representable, 58 certified) regenerate byte-identically on Python 3.9
+    and 3.12.
+  * Clean local 600-second campaigns at `ac92ec89` (AddressSanitizer,
+    standard 20-second/2 GiB limits, `brep_validation` with the allocator
+    purge): `brep_validation` 4,266 mutation executions after 249 s of
+    replay (17,856 edges, 1,285 MB), `identity` 2,730 after 218 s (12,254,
+    990 MB), `history` 6,224 after 110 s (12,985, 938 MB), `brep_io` 8,318
+    after 109 s (18,805, 1,137 MB); no artifact. Earlier smoke campaigns
+    found the far, small rational corner (fixed in `ac92ec89`, fixture
+    `spline_rounded_corner_far`) and the RSS growth that moved
+    `brep_validation` to the allocator targets.
+  * Decisions taken during S4 (in `REVIEW_NOTES.md`): periodic spline
+    surfaces and seams on spline surfaces stay unsupported; spline mass
+    enclosures are first order where not exact.
 
 ## Delivery rules
 

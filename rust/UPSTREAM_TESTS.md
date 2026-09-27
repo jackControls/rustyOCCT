@@ -326,6 +326,15 @@ derived case (`mappings_confirmed_natively` in the report: the count
 synthesizer and per-use length on `pcylinder_counts`, the selector on
 `explode_selector`), but derived cases never count toward the ledger.
 
+**S2 of `REVIEW_NOTES.md` — accepted at `1a76d29e`.** S2 (the fetch
+script, `restore` through the `.brep` converter, the viewer-skipped and
+not-fetched statuses, the recorded ledger) is `21f34dad`, whose kernel
+workflow passed; its fuzzing run was cancelled by the next push. Both
+workflows passed at `1a76d29e`, which adds only the cone's validation
+rules (S3): twelve kernel jobs, including this bridge on the Rust adapter
+and native DRAW with the recorded ledger, and twenty-four fuzz targets. No
+workflow downloads the dataset; data cases report `not_fetched` on CI.
+
 **Data-dependent cases.** `restore` goes through the T2 reader and converter
 (`occt_brep`). A file's compounds stay compounds and each solid becomes a
 body with its OCCT tolerances as `Imported` enclosures. `checkshape`,

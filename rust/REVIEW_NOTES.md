@@ -6,7 +6,8 @@ the implementing agent to read and execute. It complements
 contracts or acceptance records. When a step below is accepted, record the
 evidence in the guide that owns it and mark the step here as done.
 
-**Reviewed state:** head `3ba8c1f2` on 2026-09-26. M0–M5 and T1–T2 are
+**Reviewed state:** head `3ba8c1f2` on 2026-09-26. S1–S4 are done
+(2026-09-27, see Status); what remains open for the user is listed there. M0–M5 and T1–T2 are
 implemented, pushed and accepted; both workflows are green at `0913b5e2`; the
 full local release suite passes at the head.
 
@@ -397,14 +398,15 @@ converter records that as `Imported` provenance, never as an approximation.
 
 ## Status
 
-* S1 — implemented at `7e463cb2`; gate pending CI. R1: the CI input takes
+* S1 — **done**, accepted at `7e463cb2` (record in
+  `IDENTITY_AND_HISTORY.md`). R1: the CI input takes
   8.0–8.2 s locally under AddressSanitizer (4.1 s without), above
   20 s ÷ 2.6, so `surface_editing` has the 60-second budget; both inputs are
   regressions with their times in `fuzz/regressions/README.md`, and
   `FUZZING.md` states the triage rule. R5: `History::steps`, the
   `steps_invalid` check and the two-level test in `history_contracts.rs`.
   R8: the table in `VALIDATION.md`.
-* S2 — implemented; gate pending CI.
+* S2 — **done**, accepted at `1a76d29e` (record in `UPSTREAM_TESTS.md`).
   * R10 deviation: upstream's `locate_data_file` searches every
     subdirectory level breadth-first (skipping dot-directories), not one
     level. The bridge now matches upstream exactly, including the case's own
@@ -433,7 +435,8 @@ converter records that as `Imported` provenance, never as an approximation.
     confirms the licence basis recorded under U1. Locally the fetch script
     verifies the pinned archive; data cases report `not_fetched` on CI,
     which the contract accepts.
-* S3 — cone, sphere and torus implemented; gate pending CI and the clean campaigns.
+* S3 — **done**: cone accepted at `166fc905`, sphere at `059616f9`, torus at
+  `ac92ec89` (records in `TOPOLOGY_MODEL.md`).
   * Native `MakeCone` capture before any kernel cone code (`dde086c1`);
     the validator's cone and pole rules against the independent reference
     (`1a76d29e`, 88 reports).
@@ -461,8 +464,7 @@ converter records that as `Imported` provenance, never as an approximation.
     history (22 of 22 matches with `MakeRevol`), mass, interop (fourteen
     more `data/occ` solids import, 44 of 77), `psphere`, `psphere_counts`
     and fuzz. `bugs/modalg_6/bug27264_2` passes on both backends: the
-    ledger has 2 mapped-and-verified assertions. Gate pending CI and the
-    campaigns.
+    ledger has 2 mapped-and-verified assertions. Accepted at `059616f9`.
   * Torus implemented after its native captures (`059616f9`, before any
     kernel torus code; OCCT's `inner_half` is inside out, reviewed):
     windings in `v`, the whole torus without loops, v-segments and wedges,
@@ -471,9 +473,10 @@ converter records that as `Imported` provenance, never as an approximation.
     `data/occ` solids import, 54 of 77; horn and spindle tori are
     `NonRingToroidalSurface`), `ptorus`, `ptorus_counts` and fuzz
     (`brep_validation` mutation 30, tori in `identity`, `history` and
-    `brep_io`). `bug485` now restores and needs only `bfuse`. Gate pending
-    CI and the campaigns.
-* S4 — R4 implemented; gate pending CI and the clean campaigns.
+    `brep_io`). `bug485` now restores and needs only `bfuse`. Accepted at
+    `ac92ec89`.
+* S4 — **done**: R4 and S4 accepted at `ac92ec89` (records in
+  `TOPOLOGY_MODEL.md`).
   * Spline variants in the topology (`Curve3::BSpline`, `Curve2::BSpline`
     with the new `BSplineCurve2`, `Surface::BSpline`); `edge_not_c1`,
     `pcurve_not_c1` and `face_not_c1` by exact removal
@@ -537,3 +540,18 @@ converter records that as `Imported` provenance, never as an approximation.
     relative to a point of the loop or face; the case is the fixture
     `spline_rounded_corner_far`, and the rational corner stays out of
     mutation 32 (seconds per input under AddressSanitizer).
+
+### Open for the user (2026-09-27)
+
+* **U1:** the dataset stays local-only as decided; whether its licence basis
+  (an asset of an LGPL-2.1-with-exception release, consumed by upstream's
+  own CI) is enough to fetch it on CI.
+* **R11:** accept the cone's `MakeRevol` history capture as taken (after the
+  builder was written, before it was committed), or label that bridge as
+  captured after implementation.
+* **R12:** minimise retained fuzz corpora periodically (`-merge=1` into a
+  fresh directory), or keep the per-target startup caps.
+* **S4 decisions taken by the agent:** periodic spline surfaces and seams on
+  spline surfaces stay unsupported; spline mass enclosures are first order
+  where not exact (the rational corner's volume within 5%, its inertia far
+  more loosely), a higher-order certified quadrature being later work.
