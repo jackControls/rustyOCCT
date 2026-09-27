@@ -93,6 +93,16 @@ violates it without re-deriving the reasoning.
   Parasolid and CGM, but undecided. The `Surface` representation must remain
   extensible with a certified evaluation contract. *Forbids:* approximating a
   fillet to a B-spline as the only representation.
+* **D13. Intersection curves are procedural** (U7 of `REVIEW_NOTES.md`,
+  answered 2026-09-27). An intersection edge whose curve is neither a conic
+  nor a spline stores its two surfaces and a certified parameterisation, and
+  evaluates by a certified iteration with an enclosure, as CGM's edge
+  curves and Parasolid's SP-curves do. It lies on both faces by definition,
+  so its pcurves are exact projections. It is approximated by a spline only
+  for tessellation and interchange, with the approximation's bound recorded
+  beside it. Conics and splines stay explicit where the intersection is one.
+  *Forbids:* a spline approximation as the kernel's own representation of
+  an intersection curve.
 
 Two contracts from CGM are adopted into the identity guide rather than here:
 every operation carries an algorithm level and replays at the recorded level

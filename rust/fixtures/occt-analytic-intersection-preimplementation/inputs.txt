@@ -1,0 +1,268 @@
+case pp_line
+surface plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+surface plane 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+end
+case pp_tilted
+surface plane 1.0 2.0 3.0 0.0 0.6 0.8 1.0 -0.0 0.0
+surface plane 0.0 0.0 0.0 0.7071067811865475 0.7071067811865475 0.0 -0.7071067811865476 0.7071067811865476 0.0
+end
+case pp_parallel
+surface plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+surface plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+end
+case pp_same
+surface plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+surface plane 5.0 -3.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+end
+case pp_same_opposite
+surface plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+surface plane 2.0 7.0 0.0 0.0 0.0 -1.0 1.0 0.0 0.0
+end
+case pp_near_parallel
+surface plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+surface plane 0.0 0.0 1.0 9.313225746154785e-10 0.0 1.0 1.0 0.0 -9.313225746154785e-10
+end
+case ps_circle
+surface plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+surface sphere 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case ps_tangent
+surface plane 0.0 0.0 2.0 0.0 0.0 1.0 1.0 0.0 0.0
+surface sphere 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case ps_miss
+surface plane 0.0 0.0 3.0 0.0 0.0 1.0 1.0 0.0 0.0
+surface sphere 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case ps_near_tangent
+surface plane 0.0 0.0 1.9999999990686774 0.0 0.0 1.0 1.0 0.0 0.0
+surface sphere 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case ps_tilted
+surface plane 1.0 2.0 3.0 0.0 0.6 0.8 1.0 -0.0 0.0
+surface sphere 1.0 1.5 3.25 0.0 0.0 1.0 1.0 0.0 0.0 4.0
+end
+case ps_through_centre
+surface plane 1.0 1.0 1.0 0.0 0.6 0.8 1.0 -0.0 0.0
+surface sphere 1.0 1.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0 3.0
+end
+case pc_perpendicular
+surface plane 0.0 0.0 2.0 0.0 0.0 1.0 1.0 0.0 0.0
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5
+end
+case pc_oblique
+surface plane 0.0 0.0 2.0 0.0 0.6 0.8 1.0 -0.0 0.0
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5
+end
+case pc_parallel_two
+surface plane 0.0 0.0 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+surface cylinder 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 1.0
+end
+case pc_parallel_tangent
+surface plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+surface cylinder 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 1.0
+end
+case pc_parallel_miss
+surface plane 0.0 0.0 2.0 0.0 0.0 1.0 1.0 0.0 0.0
+surface cylinder 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 1.0
+end
+case pc_axis_in_plane
+surface plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+surface cylinder 0.0 3.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 1.0
+end
+case pc_parallel_tilted
+surface plane 1.0 2.0 3.0 0.0 0.6 0.8 1.0 -0.0 0.0
+surface cylinder 1.0 2.0 3.0 0.0 0.8 -0.6 1.0 0.0 0.0 2.0
+end
+case pc_near_parallel
+surface plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+surface cylinder 0.0 0.0 0.5 1.0 0.0 9.313225746154785e-10 0.0 1.0 -0.0 1.0
+end
+case pc_near_perpendicular
+surface plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+surface cylinder 0.0 0.0 0.0 9.313225746154785e-10 0.0 1.0 1.0 0.0 -9.313225746154785e-10 1.0
+end
+case pk_circle
+surface plane 0.0 0.0 2.0 0.0 0.0 1.0 1.0 0.0 0.0
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 0.5
+end
+case pk_circle_other_nappe
+surface plane 0.0 0.0 -5.0 0.0 0.0 1.0 1.0 0.0 0.0
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 0.5
+end
+case pk_ellipse
+surface plane 0.0 0.0 2.0 0.0 0.2873478855663454 0.9578262852211513 1.0 -0.0 0.0
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 0.5
+end
+case pk_hyperbola
+surface plane 0.0 0.0 2.0 0.0 0.9950371902099893 0.09950371902099893 1.0 -0.0 0.0
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 0.5
+end
+case pk_axis_plane
+surface plane 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 0.5
+end
+case pk_apex_point
+surface plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
+end
+case pk_apex_shallow
+surface plane 0.0 0.0 0.0 0.0 0.19611613513818402 0.9805806756909201 1.0 -0.0 0.0
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
+end
+case pk_apex_steep
+surface plane 0.0 0.0 0.0 0.0 0.9805806756909201 0.19611613513818402 1.0 -0.0 0.0
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
+end
+case pk_apex_circle
+surface plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
+end
+case pk_near_parabola
+surface plane 0.0 0.0 3.0 0.8775825618903728 0.0 -0.479425538604203 0.0 1.0 0.0
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 0.5
+end
+case pk_tilted
+surface plane 1.0 2.0 3.0 0.0 0.6 0.8 1.0 -0.0 0.0
+surface cone 1.0 2.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.75 0.3
+end
+case ss_circle
+surface sphere 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+surface sphere 2.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case ss_external_tangent
+surface sphere 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface sphere 3.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case ss_internal_tangent
+surface sphere 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 3.0
+surface sphere 1.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case ss_disjoint
+surface sphere 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface sphere 5.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case ss_contained
+surface sphere 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0
+surface sphere 1.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case ss_same
+surface sphere 1.0 2.0 3.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+surface sphere 1.0 2.0 3.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case ss_concentric
+surface sphere 1.0 2.0 3.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+surface sphere 1.0 2.0 3.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case ss_tilted
+surface sphere 1.0 2.0 3.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5
+surface sphere 2.0 3.5 2.25 0.0 0.0 1.0 1.0 0.0 0.0 1.75
+end
+case ss_near_tangent
+surface sphere 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface sphere 2.9999999990686774 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case cc_parallel_two
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface cylinder 1.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case cc_parallel_external
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface cylinder 3.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case cc_parallel_internal
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 3.0
+surface cylinder 1.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case cc_parallel_miss
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface cylinder 5.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case cc_coaxial_same
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface cylinder 0.0 0.0 7.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case cc_coaxial_other
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface cylinder 0.0 0.0 7.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case cc_parallel_tilted
+surface cylinder 1.0 2.0 3.0 0.0 0.6 0.8 1.0 -0.0 0.0 1.0
+surface cylinder 1.0 2.0 4.5 0.0 0.6 0.8 1.0 -0.0 0.0 1.25
+end
+case cc_equal_cross
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface cylinder 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 1.0
+end
+case cc_equal_cross_oblique
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface cylinder 0.0 0.0 2.0 0.7071067811865475 0.0 0.7071067811865475 0.0 1.0 -0.0 1.0
+end
+case cc_unequal_cross
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface cylinder 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 0.5
+end
+case cc_skew
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface cylinder 0.0 0.5 0.0 1.0 0.0 0.0 0.0 1.0 0.0 1.0
+end
+case cc_near_parallel
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface cylinder 1.0 0.0 0.0 9.313225746154785e-10 0.0 1.0 1.0 0.0 -9.313225746154785e-10 1.0
+end
+case cs_two_circles
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface sphere 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case cs_tangent
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface sphere 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case cs_miss
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface sphere 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0 0.5
+end
+case cs_tilted
+surface cylinder 1.0 2.0 3.0 0.0 0.6 0.8 1.0 -0.0 0.0 1.0
+surface sphere 1.0 2.0 3.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case cs_off_axis
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface sphere 0.5 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case ks_two_circles
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
+surface sphere 0.0 0.0 3.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case ks_through_apex
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
+surface sphere 0.0 0.0 2.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case ks_off_axis
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 0.5
+surface sphere 0.5 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case ck_two_circles
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 0.5
+end
+case ck_parallel_off_axis
+surface cylinder 0.5 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 0.5
+end
+case kk_two_circles
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 0.5
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.3
+end
+case kk_same
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 0.5
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 0.5
+end
+case kk_other_origin
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 0.5
+surface cone 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5 0.5
+end
+case kk_crossing
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 0.5
+surface cone 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 1.0 0.5
+end

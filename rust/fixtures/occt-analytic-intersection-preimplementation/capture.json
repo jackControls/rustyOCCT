@@ -1,0 +1,22 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 IntAna_QuadQuadGeo",
+  "platform": "darwin",
+  "rust_revision": "a608a3c27b2f3696e6c8f2f4faa4ada0d4c66948",
+  "rust_analytic_intersection_exists": false,
+  "rust_worktree_uncommitted": [
+    " M rust/REVIEW_NOTES.md",
+    " M rust/TOPOLOGY_MODEL.md",
+    "?? rust/fixtures/analytic-intersection-cases.txt",
+    "?? rust/fixtures/analytic-intersection-expected.tsv",
+    "?? rust/fixtures/occt-analytic-intersection-preimplementation/",
+    "?? rust/tools/analytic_intersection_reference.py",
+    "?? rust/tools/compare_analytic_intersections.py",
+    "?? rust/tools/generate_analytic_intersection_fixtures.py",
+    "?? rust/tools/occt_analytic_intersection_oracle.cpp"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "0d0a8b52a235239ed3bdeba380b9bffa09d5a7bef5103a791d1dcff2a3738284",
+  "probe_source_sha256": "965e0df8e4bbb9a733c50705db339d2c82088be11e0ecdf1e89e01185f637bdd",
+  "observations_sha256": "702cf3653f71c495dbb6211a5c8c6c4a91c4e7efd934e4187f3e5196aa05b63c"
+}

@@ -543,6 +543,51 @@ degeneracy (tangency, coincidence, containment) is a declared case with a
 fixture; native `IntTools`/`GeomAPI` bridges and the `lowalgos` upstream
 group. This is the mathematical core Booleans stand on.
 
+Decisions for S7, recorded before its code (2026-09-27):
+
+* **Order.** S7a: surface pairs whose intersection is a point, lines or a
+  conic (plane/plane, plane with a cylinder, cone or sphere, sphere/sphere,
+  and the quadric pairs `IntAna_QuadQuadGeo` solves in closed form:
+  coaxial, parallel-axis and common-apex configurations). S7b: the other
+  quadric pairs and every torus pair, as procedural curves (D13). S7c:
+  curve/surface for lines, circles and the S7a conics against every
+  analytic surface. S7d: curve/curve. The `lowalgos` upstream group closes
+  the step.
+* **Exact geometry, exact degeneracy.** A surface is the exact point set its
+  stored binary64 data define: a plane through the stored origin with the
+  stored normal, a cylinder, cone, sphere or torus about the line through
+  the stored origin along the stored normal, normalised exactly (the
+  projector `n n^T / |n|^2` is rational), with the stored radii and angle.
+  (The validator's distances use the stored normal as if unit; the two
+  differ by rounding, far inside any tolerance, but only the normalised
+  sets are the intended quadrics exactly.) A cone's `cos a` and `sin a` are
+  transcendental for every nonzero binary64 angle, so a plane is never
+  exactly parallel to a generatrix: an exact parabola never occurs, and a
+  plane/cone intersection is an ellipse, a hyperbola, lines through a
+  rational apex, a point or a circle. A configuration is degenerate (parallel, coaxial, tangent, coincident,
+  through an apex) only when it is exactly: every such decision is an exact
+  predicate on the stored data, as in `decide.rs`. A near-degenerate input
+  gets the generic result (a very eccentric ellipse, two very close lines)
+  with its enclosures. Merging within a tolerance belongs to the face
+  algorithms of S8 and S9, which have bounded faces and a resolution.
+  `IntAna_QuadQuadGeo` snaps with angular and linear tolerances; where it
+  does, the difference is a reviewed native difference.
+* **Results.** Surfaces are the topology's `Surface` values. A result is
+  empty, coincident, a finite set of points, or curves: lines, circles,
+  ellipses, parabolas and hyperbolas (S7a), procedural curves (S7b). Each
+  curve's canonical parameters (a point and unit directions, radii or
+  semi-axes, a focal distance) are returned in binary64 with certified
+  intervals containing the exact values; points likewise. Canonical forms
+  fix every sign and ordering (for example an ellipse's major axis first,
+  its direction's first nonzero coordinate positive), so an independent
+  reference can check the intervals.
+* **Evidence first.** An independent reference (`analytic_intersection_
+  reference.py`, mpmath at 60 digits from the same binary64 inputs)
+  classifies every fixture case and computes its canonical parameters; a
+  native `IntAna_QuadQuadGeo` and `GeomAPI_IntSS` capture of the same cases
+  is taken before any kernel intersection code. Fixtures declare every
+  degeneracy class with at least one exact and one near case.
+
 ### S8 — general planar split and face trimming (SplitBody job)
 
 Split any supported solid by an arbitrary plane: face/plane intersection

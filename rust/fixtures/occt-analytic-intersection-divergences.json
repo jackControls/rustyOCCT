@@ -1,0 +1,53 @@
+{
+  "note": "Reviewed IntAna_QuadQuadGeo differences from the exact S7a reference: each snaps a near-degenerate configuration with its tolerances.",
+  "reviews": [
+    {
+      "case": "pc_near_parallel",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 IntAna_QuadQuadGeo",
+      "native_sha256": "1687f0db0697cda3a57b5d4fe9cfb8f27639569108c964da3f34d908d0d89a38",
+      "differences": [
+        "items"
+      ],
+      "reason": "IntAna_QuadQuadGeo::Perform(gp_Pln, gp_Cylinder) treats the axis as parallel to the plane when the sine of its deviation from the plane lies within Tol of Tol (|sin(d) - Tol| < Tol): it then widens the angular tolerance to 2 sin(d) and returns two lines. The kernel intersects the exact surfaces (REVIEW_NOTES S7) and returns the exact section, a very elongated ellipse.",
+      "independent_evidence": "The cylinder's axis (1, 0, 2^-30) makes an angle of 2^-30 = 9.3e-10 rad with the plane z = 0, so sin(d) = 9.3e-10 and |sin(d) - 1e-7| = 9.9e-8 < 1e-7. The exact section of a radius-1 cylinder by a plane at that angle is an ellipse with semi-axes 1 and 1/sin(d) = 1.07e9 centred where the axis meets the plane, x = -0.5 / 2^-30; the reference gives exactly that.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "pc_near_perpendicular",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 IntAna_QuadQuadGeo",
+      "native_sha256": "69e37acf7ed28db9ba6c25c4cdd847580c21ea2ff869cfdb55ef020f1a4c7eca",
+      "differences": [
+        "items"
+      ],
+      "reason": "IntAna_QuadQuadGeo::Perform(gp_Pln, gp_Cylinder) returns a circle when |normal x axis| < Tol / radius. The kernel returns the exact section, an ellipse whose semi-major axis exceeds the radius by a relative 4.3e-19.",
+      "independent_evidence": "The axis (2^-30, 0, 1) is 2^-30 = 9.3e-10 rad off the plane's normal, below 1e-7 / 1; the exact semi-major axis is 1 / cos(2^-30) = 1 + 4.3e-19.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "pk_near_parabola",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 IntAna_QuadQuadGeo",
+      "native_sha256": "b922f220530e11a3a05f6dd905df223ba7ed7c44854884e23ba3d5f5bc2321d4",
+      "differences": [
+        "items"
+      ],
+      "reason": "IntAna_QuadQuadGeo::Perform(gp_Pln, gp_Cone) returns a parabola when |cos(t + a)| < Tolang, t the angle between the plane normal and the axis and a the half-angle. A plane is never exactly parallel to a generatrix of a cone with a binary64 half-angle (cos a and sin a are transcendental), so the kernel returns the exact section: here a hyperbola whose centre is 3.5e16 away.",
+      "independent_evidence": "The plane's normal is (cos 0.5, 0, -sin 0.5) rounded to binary64, perpendicular to the generatrix direction (sin 0.5, 0, cos 0.5) up to rounding; |cos(t + a)| is about 1e-17, far below 1e-12. The reference, at 80 digits, finds the section's quadratic with coefficients of opposite sign: a hyperbola.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "cc_near_parallel",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 IntAna_QuadQuadGeo",
+      "native_sha256": "62df20836f606ee954851d570c0c63e2dadb2351312d781655efc5c47afcb80f",
+      "differences": [
+        "items"
+      ],
+      "reason": "IntAna_QuadQuadGeo's AxeOperator refines each axis direction (RefineDir): a direction with a coordinate exactly +-1 has its other coordinates below RealEpsilon relative set to zero, so both axes become exactly parallel and the result is two lines. The kernel intersects the exact cylinders: equal radii with coplanar crossing axes, two ellipses.",
+      "independent_evidence": "The second axis (2^-30, 0, 1) is stored by Frame3::new as (9.3e-10, 0, 1.0): its z coordinate rounds to exactly 1, so RefineDir zeroes its x coordinate. The axes are coplanar (both in y = 0) and cross at z = -2^30; the radii are both 1, so the section is two ellipses in the bisector planes, as the reference gives.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}
