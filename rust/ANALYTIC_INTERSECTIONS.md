@@ -63,6 +63,51 @@ unit normal `n`, `cos b = n . a` (the unit axis), `D = (V - o) . n` and
 coordinates along `e1` and `n x e1` about the foot of `V`, with
 `A = cos^2(b) - sin^2(a)` and `s0 = -D cos(b) sin(b) / A` (`MATHEMATICS.md`).
 
+## Procedural curves (S7b.1)
+
+Two cylinders with crossing axes (other than S7a's equal radii through a
+common point) and a cylinder and a sphere off its axis meet in a curve that is
+not a conic: `SurfaceIntersection::Procedural(ProceduralCurve)`, D13's
+procedural curve. It keeps both surfaces and is parameterised on the ruled
+one (the thinner cylinder; of equal ones the first by stored normal, then
+origin; the cylinder of a cylinder/sphere pair) by the angle `u` of its
+ruling in an exactly orthonormal frame whose `x` points along the common
+normal towards the other axis (towards the sphere's centre). A ruling meets
+the other quadric where `A v^2 + 2 B(u) v + C(u) = 0`, so each `u` gives the
+points of two branches, `v = (-B +- sqrt(D)) / A`.
+
+* **Classes.** Exact rational predicates on the stored data: for two
+  cylinders the squared axes' distance `d^2` against `(r1 + r2)^2` (empty,
+  a tangent point) and `(r1 - r2)^2` (a figure-eight when equal, two rings
+  around the thinner cylinder below); for a sphere its radius against
+  `|e - r|` and `e + r`, `e` the centre's distance from the axis (empty, a
+  tangent point, a loop, Viviani's figure-eight, two rings).
+* **Components.** A `Loop` over `[-t, t]` (both branches, joined at its ends),
+  two `Ring`s (one branch each over a whole turn) or a `FigureEight` (both
+  branches touching at the node, `u = pi`). In the canonical frame the
+  discriminant has a closed form (`MATHEMATICS.md`), so `t = arccos c` is one
+  certified arctangent.
+* **Points.** `ProceduralCurve::point_at(u, branch)` encloses the points for
+  every parameter in an enclosure of `u`: binary64 intervals, rational ones
+  when those cannot decide or are wider than `1e-12` relative (near a loop's
+  end, where the square root of a small discriminant widens them). An error
+  where the ruling certainly misses the other surface. The pcurve on the
+  ruled surface is `(u, v)` exactly.
+
+Evidence: `procedural_intersection_reference.py` (exact classes, 80-digit
+roots by dense sampling and `findroot`, points) and 20 fixture cases with
+every class exact and near (`procedural-intersection-*.txt|tsv`);
+`procedural_intersections.rs` requires the class, loop ranges containing the
+reference's, the curve's points at the loop's ends, the rings' and the
+figure-eight's points containing the reference's, the loop's middle within
+`1e-12`, order independence and sampled points on both surfaces;
+`GeomInt_IntSS` was captured before any kernel code
+(`fixtures/occt-procedural-intersection-preimplementation`) and
+`compare_procedural_intersections.py` finds every native sample within
+`1e-6` of the exact curve and every component covered in 17 cases, with 3
+reviewed differences (two missed tangent points, one sample `3.3e-5` off near
+Viviani's node), and the kernel inside the reference on all 20.
+
 ## Evidence
 
 * **Independent reference.** `analytic_intersection_reference.py` computes

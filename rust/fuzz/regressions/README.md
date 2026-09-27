@@ -602,3 +602,18 @@ Linux limit, so this is a budget, not a runner fluke. `surface_editing` now
 has the 60-second per-input budget of `surface_knots` and
 `degree_elevation`. No assertion changed.
 
+
+## Analytic intersections: a nearly tangent cylinder and sphere
+
+`analytic_intersections/timeout-6b3c325edc7880d84c46ffe7154a5bfcdbde2276.bin`
+was found by a local 120-second campaign before S7b.1 was committed: a
+cylinder of radius 4.125 about the axis `(3, 3, 3)` and a sphere of the same
+radius whose centre is offset from the axis by `8.25` along the frame's `x`
+(rounded): nearly tangent from outside, a loop about `1e-8` wide. The first
+implementation isolated the loop's ends by subdividing the discriminant in
+binary64 intervals and then in rational ones, with the natural interval
+extension: beside a nearly tangent loop that needs pieces as small as the
+square of their distance from it, and the input did not finish in 600 s. The
+discriminant has a closed form in the canonical frame, so the ends are now
+`+-arccos c` by one certified arctangent; the input replays in 0.09 s
+without a sanitizer.

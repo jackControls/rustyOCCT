@@ -10,9 +10,10 @@ the squared distance of the axes `d^2` against `(r1 + r2)^2` and
 from the axis against `|e - r|` and `e + r` (compared through squares). The
 curve is parameterised on the ruled surface (the thinner cylinder; the
 cylinder of a cylinder/sphere pair) by the angle `u` of its ruling in the
-canonical frame: `x` the unit common normal of the axes (or the unit
-direction from the axis towards the sphere's centre), `y = a x x` with `a`
-the unit axis. A ruling `o + r (cos u x + sin u y) + v a` meets the other
+canonical frame: `x` the unit common normal of the axes pointing towards
+the other axis (or the unit direction from the axis towards the sphere's
+centre), `y = a x x` with `a` the unit axis; of two equal cylinders the
+ruled one comes first by its stored normal, then origin. A ruling `o + r (cos u x + sin u y) + v a` meets the other
 quadric where `A v^2 + 2 B(u) v + C(u) = 0`; the curve is
 `v = (-B +- sqrt(D)) / A`, `D = B^2 - A C`. The reference finds the roots of
 `D` by dense 80-digit sampling and `findroot`, checks their number against
@@ -38,6 +39,7 @@ import mpmath as mp
 
 import analytic_intersection_reference as ana
 from analytic_intersection_reference import cross, dot, mpf, scale, sub, zero
+from identity_reference import frame_axes
 
 mp.mp.dps = 80
 
@@ -192,7 +194,14 @@ def curve(s1, s2):
         if F(s1.radius) == F(s2.radius) and dot(sub(o2, o1), cross(a1, a2)) == 0:
             return None        # S7a's ellipses
         cls = classify_cylinders(s1, s2)
-        ruled, other = (s1, s2) if F(s1.radius) <= F(s2.radius) else (s2, s1)
+        # The thinner cylinder; of equal ones the first by its stored normal,
+        # then origin (independent of argument order).
+        key = lambda s: (*frame_axes(s.frame)[3], *frame_axes(s.frame)[0])
+        if F(s1.radius) != F(s2.radius):
+            first = F(s1.radius) < F(s2.radius)
+        else:
+            first = key(s1) <= key(s2)
+        ruled, other = (s1, s2) if first else (s2, s1)
         o, a = ruled.axes()
         oo, ao = other.axes()
         m = cross(a, ao)

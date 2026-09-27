@@ -129,7 +129,11 @@ pub enum SurfaceIntersection {
     Same,
     /// Points, lines and conics, canonically ordered.
     Items(Vec<AnalyticItem>),
-    /// A curve that is not a conic (procedural, S7b).
+    /// A procedural curve (D13, S7b): two cylinders with crossing axes, a
+    /// cylinder and a sphere off its axis.
+    Procedural(Box<super::procedural::ProceduralCurve>),
+    /// A curve that is not a conic, of a pair not yet parameterised (cones
+    /// and tori, S7b.2 and S7b.3).
     NotConic,
 }
 
@@ -336,6 +340,7 @@ impl Q {
 /// whose intersection is not a conic are [`SurfaceIntersection::NotConic`];
 /// a spline surface is out of domain.
 pub fn surface_surface(a: &Surface, b: &Surface) -> Result<SurfaceIntersection> {
+    let (sa, sb) = (a, b);
     let (Some(mut a), Some(mut b)) = (Q::of(a), Q::of(b)) else {
         if matches!(a, Surface::BSpline(_)) || matches!(b, Surface::BSpline(_)) {
             return Err(Error::OutOfDomain(
@@ -369,6 +374,18 @@ pub fn surface_surface(a: &Surface, b: &Surface) -> Result<SurfaceIntersection> 
             }
         }
     };
+    if let Out::NotConic = items {
+        match super::procedural::intersect(sa, sb)? {
+            Some(super::procedural::Found::Empty) => return Ok(SurfaceIntersection::Empty),
+            Some(super::procedural::Found::Point(p)) => {
+                return Ok(SurfaceIntersection::Items(vec![AnalyticItem::Point(p)]))
+            }
+            Some(super::procedural::Found::Curve(c)) => {
+                return Ok(SurfaceIntersection::Procedural(c))
+            }
+            None => {}
+        }
+    }
     Ok(match items {
         Out::Items(mut items) => {
             let key = |x: &AnalyticItem| {

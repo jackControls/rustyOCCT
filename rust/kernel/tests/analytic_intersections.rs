@@ -73,7 +73,9 @@ fn matches(got: &SurfaceIntersection, want: &[String]) -> Result<(), String> {
     match (got, words.as_slice()) {
         (SurfaceIntersection::Empty, ["empty"])
         | (SurfaceIntersection::Same, ["same"])
-        | (SurfaceIntersection::NotConic, ["not_conic"]) => Ok(()),
+        | (SurfaceIntersection::NotConic, ["not_conic"])
+        // A procedural curve (S7b) is not a conic.
+        | (SurfaceIntersection::Procedural(_), ["not_conic"]) => Ok(()),
         (SurfaceIntersection::Items(items), _) if items.len() == want.len() => {
             for (item, row) in items.iter().zip(want) {
                 let mut w = row.split(' ');
@@ -281,6 +283,11 @@ fn translations_move_the_items() {
                 for (p, q) in x.iter().zip(y) {
                     assert_eq!(p.kind(), q.kind(), "{name}");
                 }
+            }
+            // A procedural curve carries its (moved) surfaces: its
+            // components are the same.
+            (SurfaceIntersection::Procedural(x), SurfaceIntersection::Procedural(y)) => {
+                assert_eq!(x.components().len(), y.components().len(), "{name}");
             }
             _ => assert_eq!(before, after, "{name}"),
         }

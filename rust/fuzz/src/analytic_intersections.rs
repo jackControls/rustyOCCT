@@ -6,8 +6,13 @@
 //! only by a certified comparison it cannot decide; it is symmetric in its
 //! arguments; every enclosure is ordered; every returned point, line and
 //! conic lies on both surfaces; and an exact dyadic translation moves every
-//! item with the surfaces.
-use rusty_occt::intersection::{surface_surface, AnalyticItem, SurfaceIntersection};
+//! item with the surfaces. A procedural curve (S7b.1: cylinders with
+//! crossing axes, a cylinder and a sphere off its axis) is the same whatever
+//! the argument order, and points along every loop, ring and figure-eight
+//! lie on both surfaces.
+use rusty_occt::intersection::{
+    surface_surface, AnalyticItem, Branch, Component, SurfaceIntersection,
+};
 use rusty_occt::topology::Surface;
 use rusty_occt::{Error, Frame3, Point3, RigidTransform, Tolerance, Vec3};
 
@@ -225,6 +230,45 @@ pub fn check_analytic_intersections(data: &[u8]) {
             }
         }
         _ => assert_eq!(result, swapped, "symmetric"),
+    }
+    // A procedural curve (S7b.1): points along every component lie on both
+    // surfaces.
+    if let SurfaceIntersection::Procedural(c) = &result {
+        for comp in c.components() {
+            let (params, branches): (Vec<f64>, &[Branch]) = match comp {
+                Component::Loop { u } => {
+                    let (lo, hi) = (u[0][1], u[1][0]);
+                    (
+                        (1..8)
+                            .map(|k| lo + (hi - lo) * f64::from(k) / 8.0)
+                            .collect(),
+                        &[Branch::Plus, Branch::Minus],
+                    )
+                }
+                Component::Ring { branch } => (
+                    (0..8).map(|k| -3.0 + 0.75 * f64::from(k)).collect(),
+                    std::slice::from_ref(branch),
+                ),
+                Component::FigureEight { .. } => (
+                    (0..8).map(|k| -3.0 + 0.75 * f64::from(k)).collect(),
+                    &[Branch::Plus, Branch::Minus],
+                ),
+            };
+            for t in params {
+                for branch in branches {
+                    let Ok(e) = c.point_at([t, t], *branch) else {
+                        panic!("a parameter inside a component is on the curve");
+                    };
+                    let p = Vec3::new(mid(e[0]), mid(e[1]), mid(e[2]));
+                    let scale = p.length().max(1.0) * 8.0;
+                    for s in [&s1, &s2] {
+                        let gap = distance(s, p);
+                        assert!(gap <= 1e-9 * scale, "{gap} off {s:?} at {t}");
+                    }
+                }
+            }
+        }
+        return;
     }
     let SurfaceIntersection::Items(items) = &result else {
         return;

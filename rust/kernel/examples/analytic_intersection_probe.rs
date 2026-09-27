@@ -48,7 +48,9 @@ fn main() {
         match surface_surface(&a, &b) {
             Ok(SurfaceIntersection::Empty) => println!("{name} empty"),
             Ok(SurfaceIntersection::Same) => println!("{name} same"),
-            Ok(SurfaceIntersection::NotConic) => println!("{name} not_conic"),
+            Ok(SurfaceIntersection::NotConic | SurfaceIntersection::Procedural(_)) => {
+                println!("{name} not_conic")
+            }
             Ok(SurfaceIntersection::Items(items)) => {
                 for item in items {
                     let values: Vec<String> = item

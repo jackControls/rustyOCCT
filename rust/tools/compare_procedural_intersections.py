@@ -11,7 +11,10 @@ curve, and every component of the reference curve (a loop, each ring) must
 carry native samples; an empty or single-point reference must be matched by
 no line or by a point at it. `--capture` records the native observations
 before any kernel code for these pairs exists; later runs must reproduce
-them. Differences need a fingerprinted review.
+them. Differences need a fingerprinted review. The kernel's certified curves
+(`procedural_intersection_probe`) must have the reference's class and
+components, contain its loop ranges, ends and ring and node points, and put
+the middle of each loop within 1e-12 of the reference's.
 """
 import argparse
 import json
@@ -131,6 +134,48 @@ def differences(name, surfaces, native):
     return out
 
 
+def rust_rows():
+    """{case: (kind, [(lo, hi)])} from the kernel's probe."""
+    subprocess.run(['cargo', '+stable', 'build', '--release', '--locked', '--example',
+                    'procedural_intersection_probe'], cwd=ROOT, check=True)
+    text = (ROOT/'rust/fixtures/procedural-intersection-cases.txt').read_text()
+    rows = subprocess.run([str(ROOT/'target/release/examples/procedural_intersection_probe')], input=text,
+                          text=True, capture_output=True, timeout=600, check=True).stdout
+    out = {}
+    for line in rows.splitlines():
+        w = line.split()
+        v = [float(x) for x in w[2:]] if w[1] not in ('error',) else []
+        out[w[0]] = (w[1], list(zip(v[::2], v[1::2])))
+    return out
+
+
+def rust_differences(rust, expected):
+    """The kernel against the reference: its class, every exact reference
+    number inside the kernel's enclosure (up to 1e-25 relative, the
+    printing), a loop's middle within 1e-12."""
+    kind, got = rust
+    want = expected[0] if isinstance(expected[0], str) else expected[0][0]
+    if kind != want:
+        return ['rust_class']
+    if kind == 'empty':
+        return []
+    # The reference's numbers as it prints them (exact zeros as zero).
+    numbers = []
+    for part in expected[0][1:]:
+        numbers += [float(ref.number(x)) for x in (part if isinstance(part, list) else [part])]
+    if len(numbers) != len(got):
+        return ['rust_values']
+    inside = lambda k: got[k][0]-1e-25*abs(numbers[k]) <= numbers[k] <= got[k][1]+1e-25*abs(numbers[k])
+    exact = range(len(numbers)) if kind != 'loop' else range(8)
+    if not all(inside(k) for k in exact):
+        return ['rust_outside_reference']
+    if kind == 'loop':
+        scale = max([1.0]+[abs(x) for x in numbers])
+        if any(abs((got[k][0]+got[k][1])/2-numbers[k]) > 1e-12*scale for k in range(8, 14)):
+            return ['rust_loop_middle']
+    return []
+
+
 def capture(executable, env, text, sdk_manifest):
     record = run(executable, text, env)
     if record['exit_code'] != 0:
@@ -203,9 +248,15 @@ def main():
     oracle = next(iter(record['stderr'].splitlines()), None)
     reviews = [] if args.strict_native or not REVIEWS.exists() else json.loads(REVIEWS.read_text())['reviews']
     report = {'source_reference': SOURCE, 'oracle': oracle, 'cases': 0, 'native_samples': 0,
-              'matches': [], 'reviewed_differences': [], 'failures': []}
+              'rust_within_reference': 0, 'matches': [], 'reviewed_differences': [], 'failures': []}
+    rust = rust_rows()
     for name, a, b in fixtures.cases():
         report['cases'] += 1
+        wrong = rust_differences(rust[name], ref.rows(*surfaces_of(name, a, b)))
+        if wrong:
+            report['failures'].append({'case': name, 'reason': ' '.join(wrong), 'rust': rust[name]})
+            continue
+        report['rust_within_reference'] += 1
         native = observed[name]
         report['native_samples'] += sum(len(l) for l in native[1])+len(native[2])
         found = differences(name, surfaces_of(name, a, b), native)

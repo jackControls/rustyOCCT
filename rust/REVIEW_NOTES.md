@@ -609,6 +609,12 @@ Decisions for S7b, recorded before its code (2026-09-27):
   radii. The roots of `D` (a loop's ends) are then simple: each is certified
   by a sign change of `D` and a derivative bounded away from zero, and their
   number must be the class's, or the result is `ComputationLimit`.
+  *Amended in implementation:* in the canonical frame `D` has a closed form
+  (Lagrange's identity for two cylinders, the centre's distance for a
+  sphere), so a loop's ends are `+-arccos c` by one certified arctangent. The
+  subdivision first implemented took over 600 s on a nearly tangent pair the
+  fuzz target found (`fuzz/regressions/README.md`); S7b.2's cones, which have
+  no such form, keep subdivision with a mean-value enclosure and a budget.
 * **Order.** S7b.1: cylinder/cylinder and cylinder/sphere. S7b.2: pairs with
   a cone (transcendental coefficients: the classes come from certified root
   counts, exact only where the apex is rational). S7b.3: tori, by their
@@ -896,6 +902,14 @@ the first fixture, never deferred.
     differences (IntAna's snapping of near-degenerate configurations); the
     `analytic_intersections` fuzz target. Gate pending CI, the schedule
     replay and the clean campaign.
-  * S7b (procedural curves, tori), S7c and S7d pending.
+  * S7b.1 implemented: the exact reference and the native `GeomInt_IntSS`
+    capture of 20 cylinder/cylinder and cylinder/sphere pairs came before
+    any kernel procedural code (`0893aec3`); `ProceduralCurve` with loops,
+    rings and figure-eights, certified points on both branches; the kernel
+    inside the reference on all 20; the bridge gives 17 matches and 3
+    reviewed differences (missed tangent points, one approximated sample);
+    the fuzz target samples every component. Gate pending CI, the schedule
+    replay and the clean campaign.
+  * S7b.2 (cones), S7b.3 (tori), S7c and S7d pending.
 * S8 — pending
 * S9 — pending

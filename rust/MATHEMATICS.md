@@ -1478,6 +1478,30 @@ axis.
   `tan a` parts agree separately (the same surface); a rational apex on the
   other surface is a point.
 
+## Procedural intersection curves (S7b.1)
+
+On the ruled cylinder (axis `a` unit, radius `r`), in the frame whose `x` is
+the unit common normal towards the other surface, a ruling
+`P(u) + v a`, `P(u) = o + r (cos u x + sin u y)`, meets the other quadric
+where `A v^2 + 2 B v + C = 0` and the curve is `v = (-B +- sqrt(D)) / A`,
+`D = B^2 - A C`.
+
+* **Two cylinders.** With the other axis `a2` (unit), `M = 1 - a2 a2^T`,
+  `A = |M a|^2 = |a x a2|^2`, `B = M(P - o2, a)`, `C = |M (P - o2)|^2 - r2^2`.
+  Lagrange's identity gives `A |M w|^2 - (M w . M a)^2 = |M a x M w|^2 =
+  (w . (a2 x a))^2` for `w = P - o2`, and in this frame
+  `w . (a2 x a) / |a2 x a| = r cos u - d` with `d` the axes' distance, so
+  `D = A (r2^2 - (r cos u - d)^2)`. The curve exists where
+  `d - r2 < r cos u < d + r2`; with `r <= r2` the upper bound always holds,
+  so a loop is `cos u > c = (d - r2) / r`, two rings `c < -1`, a
+  figure-eight `c = -1` and a tangent point `c = 1`.
+* **A cylinder and a sphere.** `A = 1`, `D = R^2 - dist(c, ruling)^2 =
+  R^2 - e^2 - r^2 + 2 e r cos u` with `e` the centre's distance from the axis
+  (`x` points towards it): a loop is `cos u > c = (e^2 + r^2 - R^2) / (2 e r)`.
+* **Enclosures.** `t = arccos c = atan2(sqrt(1 - c^2), c)` in rational
+  intervals (`certified::atan2`); points `P(u) + v a` with `cos u`, `sin u`
+  and the square root enclosed, binary64 intervals first.
+
 ## C1 of spline cells (R4)
 
 A cell is C1 in its own parameterisation (U3 of `REVIEW_NOTES.md`). For a

@@ -548,6 +548,16 @@ differences (near-degenerate configurations IntAna snaps), the kernel inside
 the reference on all 67 and within `1e-9` of OCCT on the 43 matching cases
 with items (`ANALYTIC_INTERSECTIONS.md`).
 
+S7b.1: `generate_procedural_intersection_fixtures.py --check` writes 20
+cylinder/cylinder and cylinder/sphere pairs (every class exact and near) and
+their rows from `procedural_intersection_reference.py`;
+`procedural_intersections.rs` requires the kernel's procedural curves to
+contain the reference's loop ranges, ends, ring and node points, to put a
+loop's middle within `1e-12`, to be independent of argument order and to
+keep sampled points on both surfaces. `compare_procedural_intersections.py`
+reproduces the pre-implementation `GeomInt_IntSS` capture: 17 matches, 3
+reviewed differences, the kernel inside the reference on all 20.
+
 ## Height split and stacked fuse
 
 `generate_split_merge_fixtures.py --check` writes 174 scenarios from the
