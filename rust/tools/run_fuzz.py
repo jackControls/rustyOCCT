@@ -32,7 +32,9 @@ INPUT_SECONDS = 20
 TARGET_INPUT_SECONDS = {"surface_knots": 60, "degree_elevation": 60, "surface_editing": 60}
 # Targets whose exact oracles churn enough temporary BigInts that default ASan
 # quarantine and allocator retention, not live data, exhaust the RSS gate.
-ALLOCATOR_TARGETS = {'surface_knots', 'degree_elevation', 'spline_linear'}
+# brep_validation joined in S4d: a 180 s campaign reached 2,064 MB after
+# replay while the input it stopped on alone runs in 66 ms.
+ALLOCATOR_TARGETS = {'surface_knots', 'degree_elevation', 'spline_linear', 'brep_validation'}
 # The pinned libFuzzer checks stop_file between MutateAndTestOne batches,
 # not between each callback. Keep its default mutation sequence length.
 MUTATION_DEPTH = 5

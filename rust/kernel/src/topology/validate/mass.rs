@@ -81,6 +81,54 @@ fn summed<K: Ord + Copy, T: Real>(parts: &[BTreeMap<K, T>]) -> BTreeMap<K, T> {
     out
 }
 
+/// The fourteen integrands at a point (or over a box): position `p`
+/// relative to the reference, parametric normal `n` and `|n|`, in the order
+/// of `integrands`.
+pub(super) fn point_integrands<T: Real>(p: &[T; 3], n: &[T; 3], norm: &T) -> [T; TERMS] {
+    let third = T::from_r(&R::new(1.into(), 3.into()));
+    let half = c::<T>(0.5);
+    let sq = |i: usize| p[i].square();
+    let volume = p[0]
+        .mul(&n[0])
+        .add(&p[1].mul(&n[1]))
+        .add(&p[2].mul(&n[2]))
+        .mul(&third);
+    let first = |i: usize| sq(i).mul(&n[i]).mul(&half);
+    let second = |i: usize| sq(i).mul(&p[i]).mul(&n[i]).mul(&third);
+    let mixed = |i: usize, j: usize| sq(i).mul(&p[j]).mul(&n[i]).mul(&half);
+    [
+        volume,
+        first(0),
+        first(1),
+        first(2),
+        second(0),
+        second(1),
+        second(2),
+        mixed(0, 1),
+        mixed(1, 2),
+        mixed(2, 0),
+        norm.clone(),
+        p[0].mul(norm),
+        p[1].mul(norm),
+        p[2].mul(norm),
+    ]
+}
+
+/// `sum of c v^k cos^a u sin^b u` over boxes.
+fn rev_eval<T: Real>(f: &Rev<T>, u: &T, v: &T) -> T {
+    let (co, si) = T::cos_sin(u);
+    let power = |x: &T, n: u8| (0..n).fold(c::<T>(1.0), |acc, _| acc.mul(x));
+    let mut total = c::<T>(0.0);
+    for ((k, a, b), x) in f {
+        total = total.add(
+            &x.mul(&power(v, *k))
+                .mul(&power(&co, *a))
+                .mul(&power(&si, *b)),
+        );
+    }
+    total
+}
+
 /// The fourteen integrands from the position `p` relative to the reference,
 /// the parametric normal `N = S_u x S_v` and `|N|`, all polynomials of one
 /// kind.
@@ -245,6 +293,7 @@ fn planar_line<T: Real>(f: &Planar<T>, a: &V2<T>, b: &V2<T>) -> Option<T> {
 fn planar_spline<T: Real>(
     f: &Planar<T>,
     curve: &crate::topology::SplineSpan<crate::BSplineCurve2>,
+    about: &[R; 2],
 ) -> Option<T> {
     use super::bernstein::{
         derivative, difference, power, product, quotient_integral, scaled, span_arcs, sum,
@@ -254,8 +303,16 @@ fn planar_spline<T: Real>(
     for (_, _, arc) in &span_arcs(curve)? {
         let poles = arc.homogeneous_poles();
         let uniform = poles.iter().all(|p| p[3] == poles[0][3]);
-        let [u, v, w]: [Vec<T>; 3] =
-            [0, 1, 3].map(|k| poles.iter().map(|p| T::from_r(&p[k])).collect());
+        // Translated by `-about`, exactly: `U - a W`, `V - b W`.
+        let [u, v, w]: [Vec<T>; 3] = [0, 1, 3].map(|k| {
+            poles
+                .iter()
+                .map(|p| match k {
+                    0 | 1 => T::from_r(&(&p[k] - &about[k] * &p[3])),
+                    _ => T::from_r(&p[k]),
+                })
+                .collect()
+        });
         let mut hat = vec![c::<T>(0.0)];
         for ((i, j), x) in f {
             let (i, j) = (usize::from(*i), usize::from(*j));
@@ -298,19 +355,16 @@ fn trig_integral<T: Real>(cos_power: u8, sin_power: u8, t0: &T, t1: &T) -> Optio
 /// `v = cy + r sin t`, so `-F du = F r sin t dt`.
 fn planar_arc<T: Real>(
     f: &Planar<T>,
-    center: [f64; 2],
+    center: [T; 2],
     radius: f64,
     start: f64,
     sweep: f64,
 ) -> Option<T> {
     let rad = c::<T>(radius);
     // Polynomials in (cos t, sin t).
-    let u: Planar<T> = [((0, 0), c(center[0])), ((1, 0), rad.clone())]
-        .into_iter()
-        .collect();
-    let v: Planar<T> = [((0, 0), c(center[1])), ((0, 1), rad.clone())]
-        .into_iter()
-        .collect();
+    let [cu, cv] = center;
+    let u: Planar<T> = [((0, 0), cu), ((1, 0), rad.clone())].into_iter().collect();
+    let v: Planar<T> = [((0, 0), cv), ((0, 1), rad.clone())].into_iter().collect();
     let pow = |base: &Planar<T>, n: u8| {
         let mut out: Planar<T> = [((0, 0), c(1.0))].into_iter().collect();
         for _ in 0..n {
@@ -690,12 +744,12 @@ fn sph_antiderivative<T: Real>(f: &Sph<T>, u: &T, v: &T, lower: &T) -> Option<T>
 }
 
 /// The orientation flux of a sphere or torus face: the integral of
-/// `S.(S_u x S_v)` over it, `S` in absolute coordinates (as `face_flux`).
-pub(super) fn sphere_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
+/// `(S - origin).(S_u x S_v)` over it (as `face_flux`).
+pub(super) fn sphere_flux<T: Real>(face: &Face, loops: &[Lp], origin: &V3<T>) -> Option<T> {
     let terms = match &face.surface {
         Surface::Sphere { frame: f, radius } => {
             let fr = frame::<T>(f);
-            sphere_terms(&fr, *radius, &fr.o)
+            sphere_terms(&fr, *radius, &vsub(&fr.o, origin))
         }
         Surface::Torus {
             frame: f,
@@ -703,7 +757,7 @@ pub(super) fn sphere_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
             minor,
         } => {
             let fr = frame::<T>(f);
-            torus_terms(&fr, *major, *minor, &fr.o)
+            torus_terms(&fr, *major, *minor, &vsub(&fr.o, origin))
         }
         _ => return None,
     };
@@ -715,19 +769,6 @@ pub(super) fn sphere_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
 /// The fourteen face integrals over the face region (loops carry its
 /// orientation, as in `face_flux`), relative to `reference`.
 fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Option<[T; TERMS]> {
-    // Spline pcurves are integrated on planes, spheres and tori (S4d);
-    // spline surfaces and spline pcurves on cylinders and cones are not yet.
-    if matches!(face.surface, Surface::BSpline(_))
-        || (matches!(
-            face.surface,
-            Surface::Cylinder { .. } | Surface::Cone { .. }
-        ) && loops
-            .iter()
-            .flat_map(|lp| &lp.fins)
-            .any(|u| matches!(u.pcurve, Curve2::BSpline(_))))
-    {
-        return None;
-    }
     let mut totals: [T; TERMS] = std::array::from_fn(|_| c(0.0));
     let mut accumulate = |values: [T; TERMS]| {
         for (t, v) in totals.iter_mut().zip(values) {
@@ -737,7 +778,21 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
     match &face.surface {
         Surface::Plane(f) => {
             let fr = frame::<T>(f);
-            let d = vsub(&fr.o, reference);
+            // In UV relative to a point of the face (exact, `(u0, v0)`),
+            // so a face far from its frame's origin keeps its enclosures at
+            // its own scale: `p = O + u0 X + v0 Y - reference + u' X + v' Y`.
+            let o: [R; 2] = match loops.first().and_then(|lp| lp.fins.first()) {
+                Some(u) => pcurve_at::<T>(&u.pcurve, 0.0).map(|x| x.midpoint()),
+                None => [R::from_integer(0.into()), R::from_integer(0.into())],
+            };
+            let (ou, ov) = (T::from_r(&o[0]), T::from_r(&o[1]));
+            let d: V3<T> = std::array::from_fn(|i| {
+                fr.o[i]
+                    .sub(&reference[i])
+                    .add(&ou.mul(&fr.x[i]))
+                    .add(&ov.mul(&fr.y[i]))
+            });
+            let at = |x: f64, y: f64| [c::<T>(x).sub(&ou), c::<T>(y).sub(&ov)];
             let p: [Planar<T>; 3] = std::array::from_fn(|i| {
                 [
                     ((0, 0), d[i].clone()),
@@ -763,7 +818,7 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
                 for u in &lp.fins {
                     let values: [Option<T>; TERMS] = std::array::from_fn(|k| match &u.pcurve {
                         Curve2::LineSegment { start, end } => {
-                            planar_line(&anti[k], &[c(start.x), c(start.y)], &[c(end.x), c(end.y)])
+                            planar_line(&anti[k], &at(start.x, start.y), &at(end.x, end.y))
                         }
                         Curve2::CircularArc {
                             center,
@@ -772,16 +827,18 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
                             sweep_angle,
                         } => planar_arc(
                             &anti[k],
-                            [center.x, center.y],
+                            at(center.x, center.y),
                             *radius,
                             *start_angle,
                             *sweep_angle,
                         ),
-                        Curve2::BSpline(spline) => planar_spline(&anti[k], spline),
+                        Curve2::BSpline(spline) => planar_spline(&anti[k], spline, &o),
                     });
                     accumulate(values.try_map_all()?);
                 }
                 for (a, b) in chords::<T>(lp) {
+                    let shift = |x: &V2<T>| [x[0].sub(&ou), x[1].sub(&ov)];
+                    let (a, b) = (shift(&a), shift(&b));
                     let values: [Option<T>; TERMS] =
                         std::array::from_fn(|k| planar_line(&anti[k], &a, &b));
                     accumulate(values.try_map_all()?);
@@ -804,7 +861,10 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
             let terms = torus_terms(&fr, *major, *minor, &d);
             accumulate(trig_face(face, loops, &terms)?.try_into().ok()?);
         }
-        Surface::BSpline(_) => return None,
+        Surface::BSpline(surface) => {
+            let values = super::spline_flux::spline_face_integrals(surface, loops, reference)?;
+            accumulate(values.try_into().ok()?);
+        }
         Surface::Cylinder { frame: f, radius }
         | Surface::Cone {
             frame: f, radius, ..
@@ -862,11 +922,22 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
                 .collect::<Option<_>>()?;
             for lp in loops {
                 for u in &lp.fins {
-                    let Curve2::LineSegment { start, end } = &u.pcurve else {
-                        return None;
+                    let values = match &u.pcurve {
+                        Curve2::LineSegment { start, end } => {
+                            rev_lines(&anti, &[c(start.x), c(start.y)], &[c(end.x), c(end.y)])?
+                        }
+                        // -∫ F(u, v) du along a spline, enclosed (S4d).
+                        Curve2::BSpline(spline) => {
+                            let g = |uu: &T, v: &T| {
+                                Some(anti.iter().map(|f| rev_eval(f, uu, v)).collect())
+                            };
+                            super::bernstein::green_integrals(spline, super::SPLINE_DEPTH, &g)?
+                                .iter()
+                                .map(|x| x.neg())
+                                .collect()
+                        }
+                        Curve2::CircularArc { .. } => return None,
                     };
-                    let values =
-                        rev_lines(&anti, &[c(start.x), c(start.y)], &[c(end.x), c(end.y)])?;
                     accumulate(values.try_into().ok()?);
                 }
                 for (a, b) in chords::<T>(lp) {

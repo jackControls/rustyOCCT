@@ -1472,12 +1472,16 @@ pub(crate) fn measure(view: &View) -> Measured {
 
 // ------------------------------------------------------------------ UV geometry
 
-/// Twice the signed area contribution: integral of (u dv - v du).
-fn area_term<T: Real>(p: &Curve2) -> T {
+/// Twice the signed area contribution relative to the point `o` (exact):
+/// integral of ((u - o_u) dv - (v - o_v) du).
+fn area_term<T: Real>(p: &Curve2, o: &[R; 2]) -> T {
+    let (ou, ov) = (T::from_r(&o[0]), T::from_r(&o[1]));
     match p {
-        Curve2::LineSegment { start, end } => c::<T>(start.x)
-            .mul(&c(end.y))
-            .sub(&c::<T>(end.x).mul(&c(start.y))),
+        Curve2::LineSegment { start, end } => {
+            let (su, sv) = (c::<T>(start.x).sub(&ou), c::<T>(start.y).sub(&ov));
+            let (eu, ev) = (c::<T>(end.x).sub(&ou), c::<T>(end.y).sub(&ov));
+            su.mul(&ev).sub(&eu.mul(&sv))
+        }
         Curve2::CircularArc {
             center,
             radius,
@@ -1489,12 +1493,13 @@ fn area_term<T: Real>(p: &Curve2) -> T {
             let ((c0, s0), (c1, s1)) = (T::cos_sin(&a0), T::cos_sin(&a1));
             let rho = c::<T>(*radius);
             let linear = c::<T>(center.x)
+                .sub(&ou)
                 .mul(&s1.sub(&s0))
-                .sub(&c::<T>(center.y).mul(&c1.sub(&c0)));
+                .sub(&c::<T>(center.y).sub(&ov).mul(&c1.sub(&c0)));
             rho.mul(&linear).add(&rho.square().mul(&c(*sweep_angle)))
         }
         // Undecidable (a weight not certainly positive): any sign.
-        Curve2::BSpline(spline) => bernstein::twice_area(spline)
+        Curve2::BSpline(spline) => bernstein::twice_area(spline, o)
             .unwrap_or_else(|| T::exact_f64(0.0).widen(&R::from_integer(BigInt::from(1) << 1000))),
     }
 }
@@ -1520,12 +1525,22 @@ fn chords<T: Real>(lp: &Lp) -> Vec<(V2<T>, V2<T>)> {
 
 /// Twice the signed area of an unwound loop closed by chords.
 fn loop_area<T: Real>(lp: &Lp) -> T {
+    // Relative to a point of the loop (any exact point gives the same
+    // closed integral), so a loop far from the UV origin keeps its
+    // enclosures at its own scale.
+    let o: [R; 2] = match lp.fins.first() {
+        Some(u) => pcurve_at::<T>(&u.pcurve, 0.0).map(|x| x.midpoint()),
+        None => [R::from_integer(0.into()), R::from_integer(0.into())],
+    };
+    let (ou, ov) = (T::from_r(&o[0]), T::from_r(&o[1]));
     let mut total = c::<T>(0.0);
     for u in &lp.fins {
-        total = total.add(&area_term::<T>(&u.pcurve));
+        total = total.add(&area_term::<T>(&u.pcurve, &o));
     }
     for (a, b) in chords::<T>(lp) {
-        total = total.add(&a[0].mul(&b[1]).sub(&b[0].mul(&a[1])));
+        let (au, av) = (a[0].sub(&ou), a[1].sub(&ov));
+        let (bu, bv) = (b[0].sub(&ou), b[1].sub(&ov));
+        total = total.add(&au.mul(&bv).sub(&bu.mul(&av)));
     }
     total
 }
@@ -1809,18 +1824,19 @@ fn cone_line_flux<T: Real>(
     Some(first.add(&second).add(&third).neg())
 }
 
-/// The integral over the face of S.(S_u x S_v) du dv, as -loop integral of
-/// v f(u) du (f does not depend on v), loops closed by chords; their
-/// orientation carries the face's sense.
-fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
+/// The integral over the face of (S - origin).(S_u x S_v) du dv, as -loop
+/// integral of v f(u) du (f does not depend on v), loops closed by chords;
+/// their orientation carries the face's sense. A shell's faces share the
+/// origin, a point of the shell, so a far body's fluxes do not cancel.
+fn face_flux<T: Real>(face: &Face, loops: &[Lp], origin: &V3<T>) -> Option<T> {
     if let Surface::BSpline(spline) = &face.surface {
         // Exact on a nonrational surface with pieces inside patches,
         // enclosed otherwise.
-        return spline_flux::spline_face_flux(spline, loops)
-            .or_else(|| spline_flux::enclosed_face_flux(spline, loops));
+        return spline_flux::spline_face_flux(spline, loops, origin)
+            .or_else(|| spline_flux::enclosed_face_flux(spline, loops, origin));
     }
     if matches!(face.surface, Surface::Sphere { .. } | Surface::Torus { .. }) {
-        return mass::sphere_flux(face, loops);
+        return mass::sphere_flux(face, loops, origin);
     }
     if let Surface::Cone {
         frame: f,
@@ -1829,12 +1845,13 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
     } = &face.surface
     {
         let fr = frame::<T>(f);
+        let o = vsub(&fr.o, origin);
         let (ca, sa) = T::cos_sin(&c(*half_angle));
         let rad = c::<T>(*radius);
         let h = (
-            ca.mul(&vdot(&fr.o, &fr.x)),
-            ca.mul(&vdot(&fr.o, &fr.y)),
-            ca.mul(&rad).sub(&sa.mul(&vdot(&fr.o, &fr.n))),
+            ca.mul(&vdot(&o, &fr.x)),
+            ca.mul(&vdot(&o, &fr.y)),
+            ca.mul(&rad).sub(&sa.mul(&vdot(&o, &fr.n))),
         );
         // A sound face with a pole winds once in total (pole_position).
         let poled = loops.iter().map(|lp| lp.winding).sum::<i32>().abs() == 1;
@@ -1898,13 +1915,15 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
     let (plane, coeffs) = match &face.surface {
         Surface::Plane(f) => {
             let fr = frame::<T>(f);
-            (true, (c(0.0), c(0.0), vdot(&fr.o, &vcross(&fr.x, &fr.y))))
+            let o = vsub(&fr.o, origin);
+            (true, (c(0.0), c(0.0), vdot(&o, &vcross(&fr.x, &fr.y))))
         }
         Surface::Cylinder { frame: f, radius } => {
             let fr = frame::<T>(f);
+            let o = vsub(&fr.o, origin);
             let rad = c::<T>(*radius);
-            let a = vdot(&fr.o, &vcross(&fr.x, &fr.n));
-            let b = vdot(&fr.o, &vcross(&fr.y, &fr.n));
+            let a = vdot(&o, &vcross(&fr.x, &fr.n));
+            let b = vdot(&o, &vcross(&fr.y, &fr.n));
             let det = vdot(&fr.x, &vcross(&fr.y, &fr.n));
             (
                 false,
@@ -1918,11 +1937,19 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
     };
     let mut total = c::<T>(0.0);
     for lp in loops {
+        // On a plane `∮ du = 0` around the closed loop, so `v` is taken
+        // relative to a point of the loop: a loop far from the UV origin
+        // keeps its enclosures at its own scale.
+        let v0: R = match lp.fins.first() {
+            Some(u) if plane => pcurve_at::<T>(&u.pcurve, 0.0)[1].midpoint(),
+            _ => R::from_integer(0.into()),
+        };
+        let shift = T::from_r(&v0);
         for u in &lp.fins {
             let term = match &u.pcurve {
                 Curve2::LineSegment { start, end } => line_flux(
-                    &[c(start.x), c(start.y)],
-                    &[c(end.x), c(end.y)],
+                    &[c(start.x), c::<T>(start.y).sub(&shift)],
+                    &[c(end.x), c::<T>(end.y).sub(&shift)],
                     &coeffs,
                     plane,
                 )?,
@@ -1940,7 +1967,7 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
                     let (_, t0) = T::cos_sin(&a0.mul(&c(2.0)));
                     let (_, t1) = T::cos_sin(&a1.mul(&c(2.0)));
                     let rho = c::<T>(*radius);
-                    let first = c::<T>(center.y).mul(&rho).mul(&c0.sub(&c1));
+                    let first = c::<T>(center.y).sub(&shift).mul(&rho).mul(&c0.sub(&c1));
                     let second = rho.square().mul(
                         &c::<T>(*sweep_angle)
                             .mul(&c(0.5))
@@ -1950,7 +1977,10 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
                 }
                 // On a plane, `h (-∮ v du)`.
                 Curve2::BSpline(spline) if plane => {
-                    coeffs.2.mul(&bernstein::minus_v_du::<T>(spline)?)
+                    let about = [R::from_integer(0.into()), v0.clone()];
+                    coeffs
+                        .2
+                        .mul(&bernstein::minus_v_du_about::<T>(spline, &about)?)
                 }
                 // A spline pcurve of constant u adds nothing to -∮ v f(u) du.
                 Curve2::BSpline(spline) if constant_u(spline) => c(0.0),
@@ -1967,6 +1997,10 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
             total = total.add(&term);
         }
         for (a, b) in chords::<T>(lp) {
+            let (a, b) = (
+                [a[0].clone(), a[1].sub(&shift)],
+                [b[0].clone(), b[1].sub(&shift)],
+            );
             let term = match line_flux(&a, &b, &coeffs, plane) {
                 Some(term) => term,
                 None => {
@@ -1988,12 +2022,46 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
     Some(total)
 }
 
+/// The origin of a shell's fluxes: any point works (the divergence of
+/// `S - origin` is 3), and a vertex of the shell keeps every face's
+/// integrand at the body's own scale; a shell without vertices takes its
+/// first surface's frame origin or first pole.
+fn shell_origin(view: &View, resolved: &[Vec<Lp>], shell: &Shell) -> [f64; 3] {
+    for (f, _) in &shell.sides {
+        for lp in &resolved[f.0] {
+            for fin in &lp.fins {
+                let edge = &view.edges[fin.edge.0];
+                if let Some(v) = edge.start.or(edge.end) {
+                    return view.vertices[v.0].position.to_array();
+                }
+            }
+        }
+    }
+    match shell.sides.first().map(|(f, _)| &view.faces[f.0].surface) {
+        Some(
+            Surface::Plane(f)
+            | Surface::Cylinder { frame: f, .. }
+            | Surface::Cone { frame: f, .. }
+            | Surface::Sphere { frame: f, .. }
+            | Surface::Torus { frame: f, .. },
+        ) => f.origin().to_array(),
+        Some(Surface::BSpline(s)) => s.poles()[0].to_array(),
+        None => [0.0; 3],
+    }
+}
+
 /// A shell's flux: + for front sides, - for back sides. Positive when the
 /// shell encloses its region.
-fn shell_flux<T: Real>(faces: &[Face], resolved: &[Vec<Lp>], shell: &Shell) -> Option<T> {
+fn shell_flux<T: Real>(
+    faces: &[Face],
+    resolved: &[Vec<Lp>],
+    shell: &Shell,
+    origin: [f64; 3],
+) -> Option<T> {
+    let origin = v3::<T>(origin);
     let mut total = c::<T>(0.0);
     for (f, side) in &shell.sides {
-        let flux = face_flux::<T>(&faces[f.0], &resolved[f.0])?;
+        let flux = face_flux::<T>(&faces[f.0], &resolved[f.0], &origin)?;
         total = match side {
             Side::Front => total.add(&flux),
             Side::Back => total.sub(&flux),
@@ -3309,10 +3377,11 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
             if !sound.contains(&si) {
                 continue;
             }
+            let origin = shell_origin(view, &resolved, &shells[si]);
             let sign = tiered(
                 None,
-                || shell_flux::<Fast>(faces, &resolved, &shells[si])?.sign(),
-                || shell_flux::<I>(faces, &resolved, &shells[si])?.sign(),
+                || shell_flux::<Fast>(faces, &resolved, &shells[si], origin)?.sign(),
+                || shell_flux::<I>(faces, &resolved, &shells[si], origin)?.sign(),
             );
             let want = if ri > 0 && pos == 0 {
                 Ordering::Greater

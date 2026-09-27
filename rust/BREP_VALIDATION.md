@@ -218,8 +218,16 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   outside it is on the boundary patch's polynomial extension, as OCCT
   evaluates it); an inexact end leaves it `uncertified_uv_gap`. A vertex
   loop on a spline surface is `uncertified_vertex_loop`. Mass properties
-  integrate spline pcurves on planes, spheres and tori; with a spline
-  surface or a spline pcurve on a cylinder or cone they are `None` so far.
+  are enclosed with every spline geometry except a periodic spline surface
+  (S4d): exactly along spline pcurves on planes; by the Green integral
+  along spline pcurves on cylinders, cones, spheres and tori; on a
+  nonrational spline surface the volume and moments exactly (their
+  integrands are tensor polynomials) and the area terms by strips; on a
+  rational one every term by strips. The Green integral and the strips are
+  first order: on the fixtures the nonrational walls' areas are enclosed
+  within 0.2–0.6%, and the rational corner's volume within 5% and its
+  inertia far more loosely (the shift to the centroid multiplies the
+  moments' widths).
 
 ## Two arithmetic tiers
 
@@ -326,7 +334,7 @@ Evidence:
   seam is kept and rejected as `seam_edge`), and `validate` implements the
   side, region, radial, winding, vertex-loop and region-flux invariants
   independently, with its own `+v` cover-crossing parity on cylinders.
-  `generate_brep_fixtures.py --check` rebuilds 151 cases. 54 come from an
+  `generate_brep_fixtures.py --check` rebuilds 152 cases. 54 come from an
   independent seamed prism builder (19 valid solids and 35 mutations; the
   valid solids include holes, convex and concave arcs, full circles, one and
   two cavities, rotated and far-translated copies and a millimetre-scale
@@ -355,7 +363,7 @@ Evidence:
   wedges and a far copy, and six mutations (a meridian loop winding twice or
   unbalanced in `v`, a meridian pcurve shifted, a whole torus inside out, a
   spindle torus and the inner half with its wall forward, as OCCT builds
-  it). Twenty are spline cells (R4) on the box and cylinder: C1 and
+  it). Twenty-one are spline cells (R4) on the box and cylinder: C1 and
   broken knots on a quadratic, a linear, a rational and an unclamped edge
   (whose knots beyond its domain are not tested), periodic ring edges with
   a C1 seam or a broken one, a small periodic basis whose removal needs a
@@ -363,13 +371,21 @@ Evidence:
   (C1, broken, with a vertex loop) and degenerate spline edges and
   pcurves, three spline ranges (an edge and a pcurve trimmed from a
   longer line spline, one with a corner knot outside its range), a pcurve
-  running against its spline's parameter, and two
-  holes against a spline side (inside and outside). Ten are the spline models of S4 (`spline_models()`, with OCCT
+  running against its spline's parameter, two
+  holes against a spline side (inside and outside), and the rational
+  rounded corner shrunk by `2^-10` far from the origin (a fuzz finding,
+  S4d). Ten are the spline models of S4 (`spline_models()`, with OCCT
   rows for `compare_brep.py --family spline`): prisms with a spline side
   and a ruled spline wall, and a stadium with spline geometry on its
-  cylinder, with their mutations. 62 cases are valid. `brep_validation.rs`
+  cylinder, with their mutations. 63 cases are valid. `brep_validation.rs`
   requires Rust's complete sorted issue list to equal the reference's for
-  every case.
+  every case. For the sixteen valid spline cases, `cell_reference.mass_properties`
+  integrates volume, area, centroid and inertia by Green's theorem in UV
+  with nested Gauss–Legendre quadrature of the exact surface jets
+  (`brep-spline-mass.tsv`, twenty digits; the bulge's area is its closed
+  form `40/3 + 8 + √2 + asinh 1` to all of them), and
+  `spline_mass_encloses_the_reference` requires every kernel enclosure to
+  contain them.
 * The existing prism suites (`invariants`, `occt_regression`, `modeling`)
   build every solid through the new validator.
 
@@ -425,7 +441,9 @@ issues:
 * a valid spline fixture (the spline prisms, by exact composition, and
   the stadiums with spline geometry on their cylinder, by Taylor
   enclosures) moved by `p -> s p + t`, `s` a power of two and `t` dyadic
-  (mutation 32, S4b-d), which must stay valid, then its first spline use's
+  (mutation 32, S4b-d), which must stay valid with a volume and centroid
+  enclosing the reference's, moved (the rational corner included), then its
+  first spline use's
   pcurve shifted by `1000·tol` (`pcurve_off_edge`) or by `0.001·tol` (at
   most `enclosure_unsound`), or a ruled wall reversed (`loop_winding`)
 
@@ -522,6 +540,21 @@ the review fingerprint rules. Linux CI builds the same
 pinned SDK (OCCT 8.1.0). Its native output was byte-identical to macOS for
 every case, so the same eight fingerprinted reviews apply and no Linux-only
 record was needed. The slowest Linux native case took 0.007 seconds.
+
+`compare_brep.py --family spline` runs the ten spline models of S4 against
+their pre-implementation captures: the S4a rows (statuses, counts,
+tolerances and deviations) and the S4d `BRepGProp` rows
+(`occt-spline-properties`), both reproduced on every run. It has 7 matches
+and 3 reviewed differences: `spline_c0_bulge` (BRepCheck has no continuity
+status; the kernel reports the C0 knot), and the two shifted pcurves (the
+edge's `InvalidCurveOnSurface` makes `BRepCheck_Analyzer` skip the wire
+checks and mark the face `UnorientableShape`, and `Closed2d` accepts the
+gaps under its 1% rule, as for the prism shifts). For the five models
+valid on both sides, the kernel's enclosures are at least OCCT's measured
+deviations and at most its tolerances, and its certified volume, area,
+centroid and inertia contain `BRepGProp`'s values within OCCT's error
+estimate plus `1e-8` relative: OCCT's area of `spline_bulge` is `1.7e-9`
+relative from the closed form while it estimates `2e-16`.
 
 ## Acceptance
 

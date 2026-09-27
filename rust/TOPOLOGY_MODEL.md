@@ -629,6 +629,10 @@ interop.
   containment parity and orientation fluxes with spline geometry
   (`BREP_VALIDATION.md`, `MATHEMATICS.md`). Periodic spline surfaces are
   not certified.
+* **Mass properties.** Enclosed with every spline geometry but a periodic
+  spline surface (S4d): exact volume and moments on nonrational spline
+  surfaces, first-order enclosures (strips, Green integrals) for areas, for
+  rational surfaces and along spline pcurves on curved surfaces.
 * **Interop.** The reader takes curve record 7, 2D curve record 7 and
   surface record 9; a trimmed curve (record 8) whose basis is a line,
   circle or B-spline reads as its basis, the edge's range bounding the part
@@ -643,13 +647,15 @@ interop.
   not writable.
 * **Evidence.** The native observations of the spline models came before
   any kernel code certified spline geometry
-  (`fixtures/occt-spline-preimplementation`); `compare_brep.py --family
-  spline` requires them to reproduce and compares verdicts, status classes,
-  counts and enclosures (7 matches, 3 reviewed differences: BRepCheck has
-  no continuity status, and a shifted pcurve's gap is masked by its edge's
-  status). The independent references are `spline_cell_reference.py`
-  (spans, jets, exact and interval evaluation), the spline rules of
-  `cell_reference.py`, and `brep_io_reference.py` for the records.
+  (`fixtures/occt-spline-preimplementation`), and `BRepGProp`'s properties
+  before any kernel code integrated them (`fixtures/occt-spline-properties`);
+  `compare_brep.py --family spline` requires both to reproduce and compares
+  verdicts, status classes, counts, enclosures and mass properties (7
+  matches, 3 reviewed differences: BRepCheck has no continuity status, and
+  a shifted pcurve's gap is masked by its edge's status). The independent references are `spline_cell_reference.py`
+  (spans, jets, exact and interval evaluation), the spline rules and
+  `mass_properties` of `cell_reference.py`, and `brep_io_reference.py` for
+  the records.
 
 ## Acceptance
 

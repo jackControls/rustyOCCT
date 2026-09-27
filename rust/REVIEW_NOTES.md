@@ -302,7 +302,9 @@ Decisions for the rest of S4, recorded before its code (2026-09-26):
   are wide (their widths are recorded); a higher-order certified quadrature
   is later work, not S4. The bridge requires every kernel enclosure of a
   spline model valid on both sides to contain OCCT's value up to OCCT's own
-  error estimate and `1e-9` relative. The reference integrates the same
+  error estimate and `1e-9` relative (amended after the capture to `1e-8`:
+  OCCT's area of `spline_bulge` is `1.7e-9` relative from its closed form
+  while estimating `2e-16`, `occt-spline-properties/NOTES.md`). The reference integrates the same
   properties of every valid spline fixture case by nested Gauss–Legendre
   quadrature (`cell_reference.py`), and `brep_validation.rs` requires the
   kernel's enclosures to contain them.
@@ -517,5 +519,21 @@ converter records that as `Imported` provenance, never as an approximation.
     (`uncertified_containment`) are pinned. The restore-only survey after
     S4 reports no B-spline construct; it found the importer panicking on
     `bug21246`'s internal edges and faces (fixed, with a test and a fuzz
-    mutation). Still to do: mass properties with spline surfaces and with
-    spline pcurves on cylinders and cones.
+    mutation).
+  * S4d, mass: `BRepGProp` captured first (`fc389e8d`), then mass
+    properties with every spline geometry but a periodic spline surface, as
+    decided above; the reference's quadrature (`brep-spline-mass.tsv`, 16
+    valid spline cases) lies in every kernel enclosure, and so do OCCT's
+    properties of the five spline models valid on both sides. Enclosure
+    widths on the models: volume `3e-14`–`5e-14` on nonrational walls and
+    `0.31` (5%) on the rational corner, area `0.05`–`0.13` on nonrational
+    walls. Mutation 32 checks moved models' volumes and centroids. Its
+    first campaign found the rational corner, shrunk by `2^-10` and moved
+    8 away, with an undecided shell orientation after minutes in the exact
+    tier: rational jets enclosed as `X(box)/w(box)` in absolute coordinates
+    lose the body's scale. Fluxes are now taken relative to a vertex of the
+    shell, the strips lift patches translated to it exactly (`X - r w`),
+    and loop areas, plane fluxes and plane mass integrals run in UV
+    relative to a point of the loop or face; the case is the fixture
+    `spline_rounded_corner_far`, and the rational corner stays out of
+    mutation 32 (seconds per input under AddressSanitizer).

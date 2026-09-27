@@ -3,7 +3,10 @@
 //! `counts` argument each valid case's synthesized OCCT counts (vertices,
 //! edges, wires, faces, shells, solids) and `-` for an invalid one, or with
 //! `enclosures` each valid case's largest measured vertex, fin and face
-//! enclosure (M5) of its parts with every declared bound removed.
+//! enclosure (M5) of its parts with every declared bound removed, or with
+//! `mass` each valid case's certified mass enclosure (volume, area,
+//! centroid, inertia about it row by row, each as `lo hi`) and `-` when it
+//! is invalid or not integrated.
 #[path = "../tests/support/brep_protocol.rs"]
 mod brep_protocol;
 use rusty_occt::topology::Topology;
@@ -14,6 +17,7 @@ fn main() {
     let mode = std::env::args().nth(1);
     let counts = mode.as_deref() == Some("counts");
     let enclosures = mode.as_deref() == Some("enclosures");
+    let mass = mode.as_deref() == Some("mass");
     let mut input = String::new();
     std::io::stdin().read_to_string(&mut input).unwrap();
     for block in input.split("\nend").filter(|b| !b.trim().is_empty()) {
@@ -55,6 +59,26 @@ fn main() {
                 )
             } else {
                 "-".into()
+            };
+            println!("{name}\t{row}");
+            continue;
+        }
+        if mass {
+            let row = match Topology::from_parts(parts, tolerance)
+                .ok()
+                .and_then(|t| t.mass_enclosure())
+            {
+                Some(m) => {
+                    let mut values = vec![m.volume, m.surface_area];
+                    values.extend(m.centroid);
+                    values.extend(m.inertia.iter().flatten().copied());
+                    values
+                        .iter()
+                        .map(|[lo, hi]| format!("{lo:?} {hi:?}"))
+                        .collect::<Vec<_>>()
+                        .join(" ")
+                }
+                None => "-".into(),
             };
             println!("{name}\t{row}");
             continue;

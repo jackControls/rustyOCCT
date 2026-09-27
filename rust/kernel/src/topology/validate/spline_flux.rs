@@ -1,19 +1,22 @@
-//! The orientation flux `∫∫ S·(S_u × S_v) du dv` of a face on a nonrational
-//! spline surface (S4d of REVIEW_NOTES.md). On each Bézier patch, in local
-//! coordinates `(ū, v̄)` on the unit square, the integrand `X·(X_ū × X_v̄)`
-//! (poles divided by the common weight) is a tensor Bernstein polynomial;
-//! its antiderivative `H(ū, v̄)` from `v̄ = 0`, plus the full columns
-//! below the patch, `G = Σ H(ū, 1) + H(ū, v̄)`, is the global
-//! antiderivative in `v` in local units. By Green's theorem the flux is
-//! `-∮ G dū` along the face's loops, each piece in one patch: a line pcurve
-//! is split exactly where it crosses a patch boundary, a spline pcurve's
-//! Bézier piece must lie in one patch by its control points, and a chord's
-//! ends must certainly share a patch. A rational surface, a periodic one or
-//! a piece across a patch boundary is not decided.
+//! Green's theorem on spline surfaces (S4d of REVIEW_NOTES.md): the
+//! orientation flux `∫∫ S·(S_u × S_v) du dv` of a face, and its mass
+//! integrands. On a nonrational surface, on each Bézier patch in local
+//! coordinates `(ū, v̄)` on the unit square, an integrand polynomial in the
+//! position `X` (poles divided by the common weight) and `X_ū × X_v̄` is a
+//! tensor Bernstein polynomial; its antiderivative `H(ū, v̄)` from
+//! `v̄ = 0`, plus the full columns below the patch, `G = Σ H(ū, 1) +
+//! H(ū, v̄)`, is the global antiderivative in `v` in local units. The
+//! integral is `-∮ G dū` along the face's loops, each piece in one patch: a
+//! line pcurve is split exactly where it crosses a patch boundary, a spline
+//! pcurve's Bézier piece must lie in one patch by its control points, and a
+//! chord's ends must certainly share a patch. Otherwise (a rational surface,
+//! a piece across a patch boundary, an integrand with `|N|`) the
+//! antiderivative is enclosed over strips of the `v` domain.
 use super::bernstein::{
     c, derivative, difference, lift, pcurve_arcs, piece_of, power, product, quotient_integral, r,
     ratio, scaled, sum, Bern,
 };
+use super::spline_taylor::{lift_patches_about, spline_jet, Patch as Jets, SurfaceJet};
 use super::Lp;
 use crate::certified::Real;
 use crate::surface::ExactBezierSurface3;
@@ -73,8 +76,12 @@ fn partial_v<T: Real>(a: &Tensor<T>) -> Tensor<T> {
     a.iter().map(derivative).collect()
 }
 
-/// The patch's flux antiderivative `H(ū, v̄) = ∫_0^v̄ X·(X_ū × X_v̄) ds`.
-fn antiderivative<T: Real>(patch: &ExactBezierSurface3) -> Tensor<T> {
+/// The position relative to `origin` and the parametric normal
+/// `X_ū × X_v̄` of a nonrational patch, as tensors in local coordinates.
+fn patch_frame<T: Real>(
+    patch: &ExactBezierSurface3,
+    origin: &[T; 3],
+) -> ([Tensor<T>; 3], [Tensor<T>; 3]) {
     let [du, dv] = patch.degrees();
     let poles = patch.homogeneous_poles();
     let x: [Tensor<T>; 3] = std::array::from_fn(|k| {
@@ -83,7 +90,7 @@ fn antiderivative<T: Real>(patch: &ExactBezierSurface3) -> Tensor<T> {
                 (0..=dv)
                     .map(|j| {
                         let p = &poles[i * (dv + 1) + j];
-                        c(&(&p[k] / &p[3]))
+                        c::<T>(&(&p[k] / &p[3])).sub(&origin[k])
                     })
                     .collect()
             })
@@ -91,22 +98,75 @@ fn antiderivative<T: Real>(patch: &ExactBezierSurface3) -> Tensor<T> {
     });
     let xu = x.clone().map(|t| partial_u(&t));
     let xv = x.clone().map(|t| partial_v(&t));
-    let neg = |t: Tensor<T>| -> Tensor<T> {
-        t.into_iter()
-            .map(|row| row.into_iter().map(|q| q.neg()).collect())
-            .collect()
-    };
     let cross: [Tensor<T>; 3] = std::array::from_fn(|k| {
         let (a, b) = ((k + 1) % 3, (k + 2) % 3);
         tensor_sum(
             &tensor_product(&xu[a], &xv[b]),
-            &neg(tensor_product(&xu[b], &xv[a])),
+            &tensor_scaled(&tensor_product(&xu[b], &xv[a]), &T::exact_f64(-1.0)),
         )
     });
-    let f = (1..3).fold(tensor_product(&x[0], &cross[0]), |acc, k| {
-        tensor_sum(&acc, &tensor_product(&x[k], &cross[k]))
+    (x, cross)
+}
+
+fn tensor_scaled<T: Real>(t: &Tensor<T>, s: &T) -> Tensor<T> {
+    t.iter()
+        .map(|row| row.iter().map(|q| q.mul(s)).collect())
+        .collect()
+}
+
+/// The flux integrand `(X - origin)·(X_ū × X_v̄)` of a patch.
+fn flux_integrand<T: Real>(patch: &ExactBezierSurface3, origin: &[T; 3]) -> Vec<Tensor<T>> {
+    let (x, n) = patch_frame::<T>(patch, origin);
+    let f = (1..3).fold(tensor_product(&x[0], &n[0]), |acc, k| {
+        tensor_sum(&acc, &tensor_product(&x[k], &n[k]))
     });
-    // ∫_0^v̄ Σ c_j B_j^n = Σ_k (Σ_{j<k} c_j)/(n+1) B_k^{n+1}.
+    vec![f]
+}
+
+/// The ten volume and moment integrands of the mass properties (the
+/// polynomial ones, in `mass.rs`'s order) of a patch, relative to `origin`.
+fn moment_integrands<T: Real>(patch: &ExactBezierSurface3, origin: &[T; 3]) -> Vec<Tensor<T>> {
+    let (p, n) = patch_frame(patch, origin);
+    let third = c::<T>(&ratio(1, 3));
+    let half = T::exact_f64(0.5);
+    let sq = |i: usize| tensor_product(&p[i], &p[i]);
+    let volume = tensor_scaled(
+        &tensor_sum(
+            &tensor_sum(&tensor_product(&p[0], &n[0]), &tensor_product(&p[1], &n[1])),
+            &tensor_product(&p[2], &n[2]),
+        ),
+        &third,
+    );
+    let first = |i: usize| tensor_scaled(&tensor_product(&sq(i), &n[i]), &half);
+    let second = |i: usize| {
+        tensor_scaled(
+            &tensor_product(&tensor_product(&sq(i), &p[i]), &n[i]),
+            &third,
+        )
+    };
+    let mixed = |i: usize, j: usize| {
+        tensor_scaled(
+            &tensor_product(&tensor_product(&sq(i), &p[j]), &n[i]),
+            &half,
+        )
+    };
+    vec![
+        volume,
+        first(0),
+        first(1),
+        first(2),
+        second(0),
+        second(1),
+        second(2),
+        mixed(0, 1),
+        mixed(1, 2),
+        mixed(2, 0),
+    ]
+}
+
+/// `H(ū, v̄) = ∫_0^v̄ f(ū, s) ds` along every row:
+/// `∫_0^v̄ Σ c_j B_j^n = Σ_k (Σ_{j<k} c_j)/(n+1) B_k^{n+1}`.
+fn v_antiderivative<T: Real>(f: &Tensor<T>) -> Tensor<T> {
     f.iter()
         .map(|row| {
             let scale = c::<T>(&ratio(1, row.len() as i64));
@@ -164,12 +224,12 @@ fn composed<T: Real>(k: &Tensor<T>, big_u: &Bern<T>, big_v: &Bern<T>, pw: &Bern<
 
 struct Patch<T> {
     domain: [[R; 2]; 2],
-    /// `H` plus the full columns below, as `G` in local units.
-    g: Tensor<T>,
+    /// `H` plus the full columns below, as `G` in local units, per
+    /// integrand.
+    g: Vec<Tensor<T>>,
 }
 
-/// One homogeneous `(U, V, W)` piece in global `(u, v)`, as exact
-/// Bernstein coordinates, with its exact hull for locating its patch.
+/// The patch holding every one of a piece's points, if any.
 fn locate<'a, T: Real>(patches: &'a [Patch<T>], points: &[(R, R)]) -> Option<&'a Patch<T>> {
     patches.iter().find(|p| {
         let [[u0, u1], [v0, v1]] = &p.domain;
@@ -179,8 +239,10 @@ fn locate<'a, T: Real>(patches: &'a [Patch<T>], points: &[(R, R)]) -> Option<&'a
     })
 }
 
-/// `-∫ G dū` along one piece in one patch.
-fn piece_flux<T: Real>(patch: &Patch<T>, uv: &[Bern<T>; 3], uniform: bool) -> Option<T> {
+/// `-∫ G dū` along one piece in one patch, for every integrand. The piece
+/// is homogeneous `(U, V, W)` in global `(u, v)`, as exact Bernstein
+/// coordinates.
+fn piece_integrals<T: Real>(patch: &Patch<T>, uv: &[Bern<T>; 3], uniform: bool) -> Option<Vec<T>> {
     let [[u0, u1], [v0, v1]] = &patch.domain;
     let [pu, pv, pw] = uv;
     let local = |x: &Bern<T>, lo: &R, hi: &R| {
@@ -190,37 +252,60 @@ fn piece_flux<T: Real>(patch: &Patch<T>, uv: &[Bern<T>; 3], uniform: bool) -> Op
         )
     };
     let (big_u, big_v) = (local(pu, u0, u1), local(pv, v0, v1));
-    let (m, n) = (patch.g.len() - 1, patch.g[0].len() - 1);
-    let k = composed(&patch.g, &big_u, &big_v, pw);
     // dū = (Ū' W - Ū W') / W^2.
     let du = difference(
         &product(&derivative(&big_u), pw),
         &product(&big_u, &derivative(pw)),
     );
-    let integrand: Bern<T> = product(&k, &du).iter().map(|x| x.neg()).collect();
-    quotient_integral(&integrand, pw, (m + n + 2) as i32, uniform)
+    patch
+        .g
+        .iter()
+        .map(|g| {
+            let (m, n) = (g.len() - 1, g[0].len() - 1);
+            let k = composed(g, &big_u, &big_v, pw);
+            let integrand: Bern<T> = product(&k, &du).iter().map(|x| x.neg()).collect();
+            quotient_integral(&integrand, pw, (m + n + 2) as i32, uniform)
+        })
+        .collect()
 }
 
-/// The flux of a face on a nonrational, nonperiodic spline surface, or
-/// `None` when it is not decided.
-pub(super) fn spline_face_flux<T: Real>(surface: &BSplineSurface3, loops: &[Lp]) -> Option<T> {
+fn add_all<T: Real>(total: &mut Option<Vec<T>>, values: Vec<T>) {
+    *total = Some(match total.take() {
+        None => values,
+        Some(t) => t.iter().zip(&values).map(|(a, b)| a.add(b)).collect(),
+    });
+}
+
+/// `-∮ G dū` of the integrands `integrands(patch)` over a face on a
+/// nonrational, nonperiodic spline surface, exactly up to the tier's
+/// rounding, or `None` when a piece does not lie in one patch.
+fn exact_green<T: Real>(
+    surface: &BSplineSurface3,
+    loops: &[Lp],
+    integrands: &dyn Fn(&ExactBezierSurface3) -> Vec<Tensor<T>>,
+) -> Option<Vec<T>> {
     if surface.is_rational() || surface.u_knots().is_periodic() || surface.v_knots().is_periodic() {
         return None;
     }
     let bezier = surface.bezier_patches().ok()?;
+    let anti: Vec<Vec<Tensor<T>>> = bezier
+        .iter()
+        .map(|q| integrands(q).iter().map(v_antiderivative).collect())
+        .collect();
     let mut patches: Vec<Patch<T>> = Vec::new();
-    for q in &bezier {
-        let h = antiderivative::<T>(q);
+    for (q, h) in bezier.iter().zip(&anti) {
         // The columns below: patches of the same u-span with lower v.
         let [us, vs] = q.domain().clone();
-        let mut g = h;
-        for below in &bezier {
+        let mut g = h.clone();
+        for (below, hb) in bezier.iter().zip(&anti) {
             let [bu, bv] = below.domain();
             if *bu == us && bv[1] <= vs[0] {
-                let col = column(&antiderivative::<T>(below));
-                for (row, x) in g.iter_mut().zip(&col) {
-                    for y in row.iter_mut() {
-                        *y = y.add(x);
+                for (gk, hk) in g.iter_mut().zip(hb) {
+                    let col = column(hk);
+                    for (row, x) in gk.iter_mut().zip(&col) {
+                        for y in row.iter_mut() {
+                            *y = y.add(x);
+                        }
                     }
                 }
             }
@@ -230,7 +315,7 @@ pub(super) fn spline_face_flux<T: Real>(surface: &BSplineSurface3, loops: &[Lp])
             g,
         });
     }
-    let mut total = T::exact_f64(0.0);
+    let mut total: Option<Vec<T>> = None;
     for lp in loops {
         for fin in &lp.fins {
             let arcs = pcurve_arcs(&fin.pcurve)?;
@@ -266,7 +351,7 @@ pub(super) fn spline_face_flux<T: Real>(surface: &BSplineSurface3, loops: &[Lp])
                 let patch = locate(&patches, &points)?;
                 let uniform = piece[3].iter().all(|x| *x == piece[3][0]);
                 let uv = [lift(&piece[0]), lift(&piece[1]), lift(&piece[3])];
-                total = total.add(&piece_flux(patch, &uv, uniform)?);
+                add_all(&mut total, piece_integrals(patch, &uv, uniform)?);
             }
         }
         // Chords closing the loop's gaps: their ends must certainly share a
@@ -285,10 +370,21 @@ pub(super) fn spline_face_flux<T: Real>(surface: &BSplineSurface3, loops: &[Lp])
                 vec![a[1].clone(), b[1].clone()],
                 one,
             ];
-            total = total.add(&piece_flux(patch, &uv, true)?);
+            add_all(&mut total, piece_integrals(patch, &uv, true)?);
         }
     }
-    Some(total)
+    let count = patches.first()?.g.len();
+    Some(total.unwrap_or_else(|| vec![T::exact_f64(0.0); count]))
+}
+
+/// The flux of a face on a nonrational, nonperiodic spline surface
+/// relative to `origin`, or `None` when it is not decided.
+pub(super) fn spline_face_flux<T: Real>(
+    surface: &BSplineSurface3,
+    loops: &[Lp],
+    origin: &[T; 3],
+) -> Option<T> {
+    exact_green(surface, loops, &|q| flux_integrand(q, origin))?.pop()
 }
 
 /// Strips of the `v` domain for the enclosed flux.
@@ -296,60 +392,73 @@ const STRIPS: usize = 32;
 /// Pieces of each line or spline pcurve piece for the enclosed flux.
 const PIECES: usize = 5;
 
-/// The flux of a face on any nonperiodic spline surface (rational, or with
-/// pcurve pieces across patches), enclosed (S4d): with
-/// `f = S·(S_u × S_v)` enclosed over boxes from the surfaces' jets (the
-/// quotient rule covers weights), the antiderivative in `v` from the
-/// domain's start over a box is the sum over the strips below it of
-/// `Δs f(box × strip)` plus the partial strip, and the face's flux is
-/// `-∮ G du`, enclosed piece by piece. Widths are `O(Δs)` and `O(h)`.
-pub(super) fn enclosed_face_flux<T: Real>(surface: &BSplineSurface3, loops: &[Lp]) -> Option<T> {
-    use super::spline_taylor::{lift_patches, spline_jet, Patch};
+/// `-∮ G du` of the integrands `f(jet)` (from a surface jet over a box)
+/// over a face on any nonperiodic spline surface (rational, or with pcurve
+/// pieces across patches), enclosed (S4d): the antiderivative in `v` from
+/// the domain's start over a box is the sum over the strips below it of
+/// `Δs f(box × strip)` plus the partial strip, and `-∮ G du` is enclosed
+/// piece by piece. Widths are `O(Δs)` and `O(h)`.
+fn enclosed_green<T: Real>(
+    surface: &BSplineSurface3,
+    loops: &[Lp],
+    origin: &[T; 3],
+    count: usize,
+    f: &dyn Fn(&SurfaceJet<T>) -> Option<Vec<T>>,
+) -> Option<Vec<T>> {
     if surface.u_knots().is_periodic() || surface.v_knots().is_periodic() {
         return None;
     }
-    let patches: Vec<Patch<T>> = lift_patches(&surface.bezier_patches().ok()?);
+    // The jets' position is relative to `origin` (a point: its midpoint,
+    // plus the zero remainder).
+    let centre: [R; 3] = std::array::from_fn(|k| origin[k].midpoint());
+    let rest: [T; 3] = std::array::from_fn(|k| c::<T>(&centre[k]).sub(&origin[k]));
+    let patches: Vec<Jets<T>> = lift_patches_about(&surface.bezier_patches().ok()?, Some(&centre));
     let ((_, _), (va, vb)) = surface.domain();
     let (va, vb) = (r(va), r(vb));
     let edges: Vec<R> = (0..=STRIPS)
         .map(|k| &va + (&vb - &va) * ratio(k as i64, STRIPS as i64))
         .collect();
-    let f = |u: &T, v: &T| -> Option<T> {
-        let [s, su, sv, ..] = spline_jet(&patches, u, v)?;
-        let n: [T; 3] = std::array::from_fn(|k| {
-            let (a, b) = ((k + 1) % 3, (k + 2) % 3);
-            su[a].mul(&sv[b]).sub(&su[b].mul(&sv[a]))
-        });
-        Some(s[0].mul(&n[0]).add(&s[1].mul(&n[1])).add(&s[2].mul(&n[2])))
+    let at = |u: &T, v: &T| -> Option<Vec<T>> {
+        let mut jet = spline_jet(&patches, u, v)?;
+        for (x, r) in jet[0].iter_mut().zip(&rest) {
+            *x = x.add(r);
+        }
+        f(&jet)
+    };
+    let axpy = |total: &mut Vec<T>, values: Vec<T>, s: &T| {
+        for (t, x) in total.iter_mut().zip(values) {
+            *t = t.add(&x.mul(s));
+        }
     };
     // G over a box: whole strips below the box's lowest v, then the part
     // from that strip's start to its highest v.
-    let g = |u: &T, v: &T| -> Option<T> {
+    let g = |u: &T, v: &T| -> Option<Vec<T>> {
         let (lo, hi) = super::bernstein::ends(v);
-        let mut total = T::exact_f64(0.0);
+        let mut total = vec![T::exact_f64(0.0); count];
         // Below the domain's start, G is negative: minus the integral up
         // to it.
         if lo < edges[0] {
             let top = hi.clone().min(edges[0].clone());
             let below = c::<T>(&lo).union(&c(&edges[0]));
             let length = c::<T>(&(&lo - &edges[0])).union(&c(&(&top - &edges[0])));
-            total = total.add(&f(u, &below)?.mul(&length));
+            axpy(&mut total, at(u, &below)?, &length);
         }
         let mut k = 0;
         while k < STRIPS && edges[k + 1] <= lo {
             let strip = c::<T>(&edges[k]).union(&c(&edges[k + 1]));
-            total = total.add(&f(u, &strip)?.mul(&c(&(&edges[k + 1] - &edges[k]))));
+            axpy(&mut total, at(u, &strip)?, &c(&(&edges[k + 1] - &edges[k])));
             k += 1;
         }
         let start = edges[k.min(STRIPS)].clone();
         if hi > start {
             let rest = c::<T>(&start).union(&c(&hi));
             let length = T::exact_f64(0.0).union(&c(&(&hi - &start)));
-            total = total.add(&f(u, &rest)?.mul(&length));
+            axpy(&mut total, at(u, &rest)?, &length);
         }
         Some(total)
     };
-    let mut total = T::exact_f64(0.0);
+    let mut total = vec![T::exact_f64(0.0); count];
+    let minus_one = T::exact_f64(-1.0);
     for lp in loops {
         for fin in &lp.fins {
             match &fin.pcurve {
@@ -365,18 +474,76 @@ pub(super) fn enclosed_face_flux<T: Real>(surface: &BSplineSurface3, loops: &[Lp
                         let du = c::<T>(&(&q[0] - &p[0]));
                         let bu = c::<T>(&p[0]).union(&c(&q[0]));
                         let bv = c::<T>(&p[1]).union(&c(&q[1]));
-                        total = total.add(&g(&bu, &bv)?.mul(&du).neg());
+                        axpy(&mut total, g(&bu, &bv)?, &du.neg());
                     }
                 }
                 Curve2::BSpline(spline) => {
-                    total = total.add(&super::bernstein::green_integral(spline, PIECES, &g)?.neg());
+                    let values = super::bernstein::green_integrals(spline, PIECES, &g)?;
+                    axpy(&mut total, values, &minus_one);
                 }
                 Curve2::CircularArc { .. } => return None,
             }
         }
         for (a, b) in super::chords::<T>(lp) {
-            total = total.add(&super::chord_enclosure(&a, &b, &g)?);
+            // -du times G over the chord's box, which holds its mean.
+            let du = b[0].sub(&a[0]);
+            let values = g(&a[0].union(&b[0]), &a[1].union(&b[1]))?;
+            axpy(&mut total, values, &du.neg());
         }
     }
     Some(total)
+}
+
+/// The flux of a face on any nonperiodic spline surface relative to
+/// `origin`, enclosed by strips (S4d).
+pub(super) fn enclosed_face_flux<T: Real>(
+    surface: &BSplineSurface3,
+    loops: &[Lp],
+    origin: &[T; 3],
+) -> Option<T> {
+    let flux = |jet: &SurfaceJet<T>| {
+        let [p, su, sv, ..] = jet;
+        let n = cross(su, sv);
+        Some(vec![p[0]
+            .mul(&n[0])
+            .add(&p[1].mul(&n[1]))
+            .add(&p[2].mul(&n[2]))])
+    };
+    enclosed_green(surface, loops, origin, 1, &flux)?.pop()
+}
+
+fn cross<T: Real>(a: &[T; 3], b: &[T; 3]) -> [T; 3] {
+    std::array::from_fn(|k| {
+        let (i, j) = ((k + 1) % 3, (k + 2) % 3);
+        a[i].mul(&b[j]).sub(&a[j].mul(&b[i]))
+    })
+}
+
+/// The fourteen mass integrals of a face on a nonperiodic spline surface
+/// relative to `origin` (S4d): on a nonrational surface whose pieces each
+/// lie in one patch, the ten volume and moment terms exactly and the four
+/// with `|N|` by strips; otherwise all fourteen by strips.
+pub(super) fn spline_face_integrals<T: Real>(
+    surface: &BSplineSurface3,
+    loops: &[Lp],
+    origin: &[T; 3],
+) -> Option<Vec<T>> {
+    let terms = |jet: &SurfaceJet<T>, all: bool| {
+        let [p, su, sv, ..] = jet;
+        let n = cross(su, sv);
+        let norm = n[0].square().add(&n[1].square()).add(&n[2].square()).sqrt();
+        let values = super::mass::point_integrands(p, &n, &norm);
+        Some(if all {
+            values.to_vec()
+        } else {
+            values[10..].to_vec()
+        })
+    };
+    if let Some(mut exact) = exact_green(surface, loops, &|q| moment_integrands(q, origin)) {
+        exact.extend(enclosed_green(surface, loops, origin, 4, &|jet| {
+            terms(jet, false)
+        })?);
+        return Some(exact);
+    }
+    enclosed_green(surface, loops, origin, 14, &|jet| terms(jet, true))
 }

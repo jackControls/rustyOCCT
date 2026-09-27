@@ -16,7 +16,8 @@ import mpmath as mp
 
 from fractions import Fraction as F
 
-from cell_reference import declare, encode as encode_cell, gap_bounds, to_cell, validate as validate_cell
+from cell_reference import (declare, encode as encode_cell, gap_bounds, mass_properties, to_cell,
+                            validate as validate_cell)
 import spline_cell_reference as spline
 from spline_cell_reference import Basis, BSpline2, BSpline3, BSplineSurface
 
@@ -963,6 +964,15 @@ def spline_cases(bases):
     for name, x0 in (('spline_bulge_hole_inside', 3.125), ('spline_bulge_hole_outside', 3.625)):
         m = prism(name, [bulge, rectangle(x0, 0.875, x0+0.25, 1.125, hole=True)])
         out.append(to_cell(m))
+    # S4d: the rational rounded corner shrunk by 2^-10 and moved to about
+    # (-7.6, 4.5, 0.06), exactly (a brep_validation fuzz input): enclosed
+    # from absolute rational jets, its flux's sign was undecided.
+    k, (tx, ty, tz) = 2.0**-10, (-7.5625, 4.5, 0.0625)
+    at = lambda p: (tx+k*p[0], ty+k*p[1])
+    far = [('line', at((0.0, 0.0))), ('line', at((3.0, 0.0))),
+           ('spline', at((3.0, 1.5)), [at((3.0, 2.0))], quadratic, [1.0, 0.7071067811865476, 1.0]),
+           ('line', at((2.5, 2.0))), ('line', at((0.0, 2.0)))]
+    out.append(to_cell(prism('spline_rounded_corner_far', [far], tz-0.5*k, tz+0.5*k, tolerance=1e-7*k)))
     return out
 
 
@@ -1044,10 +1054,18 @@ def generate():
     names = [c.name for c in cells]
     assert len(names) == len(set(names)), 'duplicate case names'
     text = '\n'.join(encode_cell(c) for c in cells)+'\n'
-    rows, lows = [], []
+    rows, lows, masses = [], [], []
     for c in cells:
         issues = validate_cell(c)
         rows.append(c.name+'\t'+';'.join(f'{k}:{e}' for k, e in issues))
+        if not issues and c.name.startswith('spline_'):
+            # S4d: the mass properties of every valid spline case.
+            props = mass_properties(c)
+            if props is not None:
+                values = [props['volume'], props['area'], *props['centroid'], *sum(props['inertia'], [])]
+                # Quadrature noise far below any enclosure's width reads 0.
+                masses.append(c.name+'\t'+' '.join('0' if abs(x) < 1e-25 else mp.nstr(x, 20)
+                                                     for x in values))
         if not issues:
             # Certain lower values of every gap of a valid case, rounded down:
             # a measured enclosure below one is unsound.
@@ -1059,7 +1077,9 @@ def generate():
     return models, {'brep-cases.txt': text,
                     'brep-expected.tsv': '# name\tsorted issues kind:entity separated by ;\n'+'\n'.join(rows)+'\n',
                     'brep-enclosure-lows.tsv': '# valid case\tv|u|f index (vertex, fin arena index, face)'
-                    '\tcertain lower value of its gap\n'+'\n'.join(lows)+'\n'}
+                    '\tcertain lower value of its gap\n'+'\n'.join(lows)+'\n',
+                    'brep-spline-mass.tsv': '# valid spline case\tvolume, area, centroid, inertia about it'
+                    ' (row-major), by nested Gauss-Legendre quadrature\n'+'\n'.join(masses)+'\n'}
 
 
 def main():

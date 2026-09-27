@@ -356,6 +356,17 @@ pub(super) struct Patch<T> {
 }
 
 pub(super) fn lift_patches<T: Real>(patches: &[ExactBezierSurface3]) -> Vec<Patch<T>> {
+    lift_patches_about(patches, None)
+}
+
+/// `lift_patches` with the surface translated by `-origin` first, exactly
+/// (`X - origin w` on the homogeneous poles): a rational patch's jets are
+/// quotients of enclosures, whose widths grow with `|S|`, so integrands
+/// relative to a point near the body stay at its own scale.
+pub(super) fn lift_patches_about<T: Real>(
+    patches: &[ExactBezierSurface3],
+    origin: Option<&[R; 3]>,
+) -> Vec<Patch<T>> {
     let bound = |axis: usize, side: usize| {
         let values = patches.iter().map(|q| q.domain()[axis][side].clone());
         if side == 0 {
@@ -368,7 +379,7 @@ pub(super) fn lift_patches<T: Real>(patches: &[ExactBezierSurface3]) -> Vec<Patc
     patches
         .iter()
         .map(|q| {
-            let mut p = lift_patch(q);
+            let mut p = lift_patch(q, origin);
             p.open = std::array::from_fn(|axis| {
                 std::array::from_fn(|side| {
                     Some(&q.domain()[axis][side]) == outer[axis][side].as_ref()
@@ -379,9 +390,16 @@ pub(super) fn lift_patches<T: Real>(patches: &[ExactBezierSurface3]) -> Vec<Patc
         .collect()
 }
 
-fn lift_patch<T: Real>(q: &ExactBezierSurface3) -> Patch<T> {
+fn lift_patch<T: Real>(q: &ExactBezierSurface3, origin: Option<&[R; 3]>) -> Patch<T> {
     let [du, dv] = q.degrees();
-    let poles = q.homogeneous_poles();
+    let mut poles = q.homogeneous_poles().to_vec();
+    if let Some(o) = origin {
+        for p in &mut poles {
+            for k in 0..3 {
+                p[k] = &p[k] - &o[k] * &p[3];
+            }
+        }
+    }
     let domain = q.domain();
     let d_u = |a: &Vec<Vec<T>>| -> Vec<Vec<T>> {
         if a.len() == 1 {

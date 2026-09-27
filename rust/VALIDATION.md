@@ -539,7 +539,7 @@ algorithms).
 
 ## Generic B-rep validation
 
-`generate_brep_fixtures.py --check` rebuilds 151 cell-complex cases (62 valid):
+`generate_brep_fixtures.py --check` rebuilds 152 cell-complex cases (63 valid):
 54 converted by rule from an independent seamed prism builder and its
 mutations, twenty-two cell-model cases for the model's own failure
 modes, the near-frequency bound and enclosures (gaps just inside and outside
@@ -547,10 +547,13 @@ the resolution; missing, out-of-range and unsound bounds), twelve cones
 (six valid, six mutations of the pole, the winding, the angle and a ring
 pcurve), fifteen spheres (seven valid, the whole sphere among them, and
 eight mutations) and thirteen tori (seven valid: the whole torus, both
-halves, a segment, two wedges and a far copy; six mutations) and twenty
+halves, a segment, two wedges and a far copy; six mutations) and twenty-one
 spline cells (R4: C1 and broken knots on edges, pcurves and faces, periodic
-seams, degenerate splines, ranges and a reversed pcurve) and ten spline
-models with native rows (six valid, as natively), with complete issue lists from the separate mpmath reference validators
+seams, degenerate splines, ranges, a reversed pcurve and a far, small rational corner) and ten spline
+models with native rows (six valid, as natively); for the sixteen valid
+spline cases, volume, area, centroid and inertia by nested Gauss–Legendre
+quadrature (`brep-spline-mass.tsv`), which the kernel's certified mass
+enclosures must contain, with complete issue lists from the separate mpmath reference validators
 (`brep_reference.py`, `cell_reference.py`). `brep_validation.rs` requires
 Rust's sorted report to equal each list exactly. The `brep_validation` fuzz
 target mutates valid prisms and cavities into specific invalid complexes.
@@ -560,8 +563,8 @@ structure-only and checks the synthesized counts of every valid case. See
 [the bridge](BREP_VALIDATION.md#native-comparison-bridge).
 
 Enclosures (M5): every fixture carries bounds that the independent
-reference declares; Rust's report equals the reference's on all 151 cases.
-Measured bounds of the 62 valid cases lie between the reference's certain
+reference declares; Rust's report equals the reference's on all 152 cases.
+Measured bounds of the 63 valid cases lie between the reference's certain
 gap and its declared bound (`brep-enclosure-lows.tsv`, within a stated
 frame-rounding allowance). `enclosures.rs` requires every prism of the
 identity corpus to be enclosed within its resolution and no continued
@@ -571,6 +574,10 @@ reproduces OCCT's stored tolerances and measured deviations
 kernel's bounds to be at least OCCT's measurements and at most its
 tolerances on the 21 cases valid on both sides. See
 [enclosures](BREP_VALIDATION.md#enclosures-m5).
+`compare_brep.py --family spline` does the same for the spline models, and
+also requires the kernel's mass enclosures to contain `BRepGProp`'s
+properties, captured before any kernel code integrated spline surfaces
+(7 matches, 3 reviewed differences).
 
 ## OCCT `.brep` interop
 

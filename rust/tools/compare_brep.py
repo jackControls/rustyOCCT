@@ -374,6 +374,36 @@ def rust_enclosures():
     return out
 
 
+def rust_masses():
+    """{case: [(lo, hi)] * 16} certified mass enclosures of each valid case
+    the kernel integrates: volume, area, centroid, inertia about it."""
+    cases = (ROOT/'rust/fixtures/brep-cases.txt').read_text()
+    rows = subprocess.run([str(ROOT/'target/release/examples/brep_validation_probe'), 'mass'],
+                          input=cases, text=True, capture_output=True, timeout=600, check=True).stdout
+    out = {}
+    for line in rows.splitlines():
+        name, row = line.split('\t')
+        if row != '-':
+            values = [float(x) for x in row.split()]
+            out[name] = list(zip(values[::2], values[1::2]))
+    return out
+
+
+def mass_differences(enclosure, native):
+    """S4d: each certified kernel enclosure contains OCCT's value, up to
+    OCCT's own relative error estimate plus 1e-8 relative (OCCT's area of
+    spline_bulge is 1.7e-9 relative from the closed form while estimating
+    2e-16; `occt-spline-properties/NOTES.md`)."""
+    values = [native['volume'], native['area'], *native['centre'], *sum(native['inertia'], [])]
+    scale = max(abs(x) for x in values) or 1.0
+    allowance = (1e-8+max(native['volume_error'], native['area_error']))*scale
+    labels = ['volume', 'area', 'cx', 'cy', 'cz']+[f'I{a}{b}' for a in 'xyz' for b in 'xyz']
+    found = [label for label, (lo, hi), x in zip(labels, enclosure, values)
+             if not lo-allowance <= x <= hi+allowance]
+    widths = {label: hi-lo for label, (lo, hi) in zip(labels, enclosure)}
+    return found, widths
+
+
 def enclosure_differences(m, measured, observed):
     """T6 of IDENTITY_AND_HISTORY.md on a case valid on both sides: the
     kernel's measured vertex and fin enclosures are not below OCCT's own
@@ -452,6 +482,7 @@ def main():
             raise ValueError('independent fixture regeneration changed: '+name)
     issues, counts = rust_issues()
     enclosures = rust_enclosures()
+    masses = rust_masses()
     cases = spline_rows() if spline else native_rows()
     executable, env, loaded, command = build(prefix, output, cases[0][1])
     if args.capture_splines:
@@ -475,7 +506,7 @@ def main():
               'not_constructible_natively': [m.name for m in models if not reference.representable(m)],
               'native_timeout_seconds': TIMEOUT, 'native_seconds': {},
               'structure_only_statuses': {}, 'counts_verified': 0, 'enclosures_compared': 0,
-              'enclosure_observations': {},
+              'enclosure_observations': {}, 'properties_compared': 0, 'property_enclosure_widths': {},
               'matches': [], 'reviewed_differences': [], 'failures': []}
     observations = {}
     native_lines = {}
@@ -522,6 +553,16 @@ def main():
             report['enclosure_observations'][m.name] = detail
             if found:
                 report['failures'].append({'case': m.name, 'reason': ' '.join(found), 'detail': detail})
+            if spline:
+                if m.name not in masses:
+                    report['failures'].append({'case': m.name, 'reason': 'mass not integrated'})
+                else:
+                    found, widths = mass_differences(masses[m.name], properties[m.name])
+                    report['properties_compared'] += 1
+                    report['property_enclosure_widths'][m.name] = widths
+                    if found:
+                        report['failures'].append({'case': m.name, 'reason': 'mass outside: '+' '.join(found),
+                                                   'enclosure': masses[m.name], 'native': properties[m.name]})
         if not differences:
             report['matches'].append(m.name)
             continue

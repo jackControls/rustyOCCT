@@ -1343,6 +1343,34 @@ pcurve, 32 pieces each give `-Δu G(box)`; along a spline pcurve the Green
 integral above. Widths are `O(Δs + h)`: enough for the sign of a shell's
 flux, which is all the orientation check needs.
 
+**Scale, not position.** An enclosure of a rational quotient over a box,
+`X(box)/w(box)`, has a width proportional to `|X/w|`, not to the body's
+size, and the same holds for `u dv - v du` far from the UV origin. So every
+shell's flux is `∮ (S - r)·N` with `r` a vertex of the shell (the
+divergence of `S - r` is 3 whatever `r`), the strips lift the patches
+translated to `r` exactly (`X - r w` on the homogeneous poles), a loop's
+signed area is taken about a point of the loop, and a plane's flux and
+mass integrals run in UV about a point of the loop or face (on a plane
+`∮ du = 0` around a closed loop, and the mass integrands change variables
+exactly). A body a few units from the origin but `10^-3` across is then
+decided as at the origin.
+
+**Mass properties with spline geometry.** The fourteen integrands of the
+general mass properties (volume, first and second moments, area and face
+centre, U2) follow the flux's two routes. On a nonrational patch the
+position `p = X - r` (the poles minus the reference, a Bernstein partition
+of unity) and `N = X_ū × X_v̄` are tensor polynomials, so the ten volume
+and moment integrands (`p·N/3`, `p_i^2 N_i/2`, `p_i^3 N_i/3`,
+`p_i^2 p_j N_i/2`) are too, and each is integrated exactly by the column
+antiderivatives above. `|N|` is not polynomial: the area and face-centre
+terms, and every term on a rational surface, use the strips, with the
+integrands enclosed from the jets (`|N|` by the interval square root).
+Along a spline pcurve on a cylinder or cone each term's antiderivative
+`F` (a polynomial in `v` times `cos^a u sin^b u`) is enclosed over the
+pieces' boxes by the Green integral. The reference integrates the same
+properties by Green's theorem with nested Gauss–Legendre quadrature of the
+exact surface jets, broken at knots.
+
 **UV gaps on spline surfaces.** A spline surface has no length scale, so
 the gap between consecutive pcurves' ends is measured in 3D: both ends
 exact (a line's end, a spline's clamped end), each surface point evaluated

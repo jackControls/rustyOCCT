@@ -1264,6 +1264,125 @@ def spline_face_flux(c, f):
     return total
 
 
+def face_mass_terms(c, f, ref):
+    """The fourteen mass integrals of a face relative to `ref`, in the
+    kernel's order (volume, first moments, second moments, mixed moments
+    xy, yz, zx, |N| and the face centre's three p|N|), by Green's theorem
+    in UV with nested Gauss-Legendre quadrature of the exact surface jets:
+    G(u, v) = integral of the integrands in v from the domain's start (0 on
+    an analytic surface, broken at knots on a spline one), then -loop
+    integral of G du. None where the kernel's route has no counterpart
+    here: a periodic spline surface, a loop winding in v, a face whose
+    windings do not cancel, an arc pcurve on a curved surface."""
+    s = f.surface
+    if isinstance(s, BSplineSurface):
+        if s.u.periodic or s.v.periodic:
+            return None
+        _, _, (va, vb) = s.v.flat()
+        breaks_v = [va]+[F(k) for k in s.v.knots if va < F(k) < vb]
+    elif isinstance(s, (Plane, Cylinder, Cone)):
+        breaks_v = [F(0)]
+    else:
+        return None
+    loops = [c.loops[lid] for lid in f.loops if c.loops[lid].vertex is None]
+    if any(lp.winding_v for lp in loops) or sum(lp.winding for lp in loops):
+        return None
+    ref = [mp.mpf(x) for x in ref]
+
+    def density(u, v):
+        pnt, su, sv = _surface_jet(s, u, v, False)
+        p = [a-b for a, b in zip(pnt, ref)]
+        n = [su[1]*sv[2]-su[2]*sv[1], su[2]*sv[0]-su[0]*sv[2], su[0]*sv[1]-su[1]*sv[0]]
+        size = mp.sqrt(sum(x*x for x in n))
+        sq = [x*x for x in p]
+        return ([sum(a*b for a, b in zip(p, n))/3]
+                + [sq[i]*n[i]/2 for i in range(3)]
+                + [sq[i]*p[i]*n[i]/3 for i in range(3)]
+                + [sq[i]*p[j]*n[i]/2 for i, j in ((0, 1), (1, 2), (2, 0))]
+                + [size]+[x*size for x in p])
+
+    def G(u, v):
+        cuts = [mp_of(k) for k in breaks_v]
+        # Below the first break the integral runs backwards.
+        points = [x for x in cuts if x < v]+[v] if v >= cuts[0] else [cuts[0], v]
+        total = [mp.mpf(0)]*14
+        for a, b in zip(points, points[1:]):
+            part = gauss_terms(lambda w: density(u, w), a, b)
+            total = [x+y for x, y in zip(total, part)]
+        return total
+
+    total = [mp.mpf(0)]*14
+    for loop in loops:
+        pieces, chords = loop_points(c, loop)
+        for k in loop.fins:
+            p = c.fins[k].pcurve
+            if isinstance(p, Arc2) and not isinstance(s, Plane):
+                return None
+            cuts = spline_cuts(None, s, p, True)
+            for t0, t1 in zip(cuts, cuts[1:]):
+
+                def integrand(t, p=p):
+                    if isinstance(p, BSpline2):
+                        q, d = spline.curve_jet_mp(p, t)
+                        du = d[0]
+                    elif isinstance(p, Line2):
+                        q = pcurve_point(p, t)
+                        du = mp.mpf(p.end[0])-mp.mpf(p.start[0])
+                    else:
+                        q = pcurve_point(p, t)
+                        a = mp.mpf(p.start)+mp.mpf(p.sweep)*t
+                        du = -p.radius*mp.sin(a)*p.sweep
+                    return [-x*du for x in G(q[0], q[1])]
+                part = gauss_terms(integrand, mp_of(t0), mp_of(t1))
+                total = [x+y for x, y in zip(total, part)]
+        for a0, b0 in chords:
+            if b0[0] != a0[0]:
+                part = gauss_terms(lambda t: [-x*(b0[0]-a0[0]) for x in
+                                              G(a0[0]+(b0[0]-a0[0])*t, a0[1]+(b0[1]-a0[1])*t)], 0, 1)
+                total = [x+y for x, y in zip(total, part)]
+    return total
+
+
+def mass_properties(c):
+    """Volume, surface area, centroid and the inertia matrix about it
+    (products of inertia negated, as OCCT's MatrixOfInertia) of the solid
+    regions, from `face_mass_terms`; None when a face is not integrated."""
+    ref = c.vertices[0] if c.vertices else (0.0, 0.0, 0.0)
+    region = [mp.mpf(0)]*10
+    area = mp.mpf(0)
+    counted = set()
+    for r in c.regions:
+        if r.kind != 'solid':
+            continue
+        for si in r.shells:
+            for fi, side in c.shells[si].sides:
+                terms = face_mass_terms(c, c.faces[fi], ref)
+                if terms is None:
+                    return None
+                sign = 1 if side == 'F' else -1
+                region = [x+sign*y for x, y in zip(region, terms[:10])]
+                if fi not in counted:
+                    counted.add(fi)
+                    area += abs(terms[10])
+    volume, mx, my, mz, sxx, syy, szz, sxy, syz, sxz = region
+    centre = [mx/volume, my/volume, mz/volume]
+    j = [[sxx, sxy, sxz], [sxy, syy, syz], [sxz, syz, szz]]
+    trace = sxx+syy+szz
+    c2 = sum(x*x for x in centre)
+    inertia = [[(trace if a == b else 0)-j[a][b]-volume*((c2 if a == b else 0)-centre[a]*centre[b])
+                for b in range(3)] for a in range(3)]
+    return {'volume': volume, 'area': area, 'centroid': [x+mp.mpf(r) for x, r in zip(centre, ref)],
+            'inertia': inertia}
+
+
+def gauss_terms(f, a, b):
+    """`gauss` of a vector-valued integrand."""
+    nodes = _gauss_nodes(mp.mp.prec)
+    half, mid = (mp.mpf(b)-mp.mpf(a))/2, (mp.mpf(b)+mp.mpf(a))/2
+    values = [f(mid+half*x) for x, _ in nodes]
+    return [half*mp.fsum(w*v[k] for (_, w), v in zip(nodes, values)) for k in range(len(values[0]))]
+
+
 def gauss(f, a, b):
     """Gauss-Legendre quadrature on [a, b] with mpmath's 24 fixed nodes:
     exact for the polynomial integrands of nonrational patches up to degree

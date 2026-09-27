@@ -1233,10 +1233,10 @@ impl Topology {
             None => [0.0; 3],
         }
     }
-    /// Certified mass properties of the body's solid regions (general:
-    /// planes, cylinders and cones; REVIEW_NOTES.md U2). `None` when a face
-    /// cannot be integrated (an arc pcurve on a cylinder or cone) or a
-    /// certified division fails.
+    /// Certified mass properties of the body's solid regions (general, U2
+    /// and S4d of REVIEW_NOTES.md). `None` when a face cannot be integrated
+    /// (an arc pcurve on a curved surface, a periodic spline surface, a
+    /// spline piece whose enclosure fails) or a certified division fails.
     pub fn mass_enclosure(&self) -> Option<MassEnclosure> {
         let e = validate::mass(&self.view(), self.reference_point())?;
         Some(MassEnclosure {

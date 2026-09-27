@@ -44,7 +44,7 @@ fn complete_issue_sets_match_the_independent_oracle() {
         checked += 1;
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
-    assert_eq!((checked, valid), (expected.len(), 62));
+    assert_eq!((checked, valid), (expected.len(), 63));
 }
 
 /// Measured enclosures (M5) of every valid case: never below the reference's
@@ -135,7 +135,7 @@ fn measured_enclosures_lie_between_the_reference_gap_and_its_declared_bound() {
         }
     }
     assert_eq!(compared, lows.values().map(Vec::len).sum::<usize>());
-    assert_eq!(lows.len(), 62);
+    assert_eq!(lows.len(), 63);
     // The gaps moved half the resolution compare without the allowance
     // mattering: a vertex, a cap fin, and a side fin with its face.
     assert!(strict >= 4, "{strict}");
@@ -143,8 +143,7 @@ fn measured_enclosures_lie_between_the_reference_gap_and_its_declared_bound() {
 
 /// Mass properties integrate spline pcurves on planes (S4d): the box with a
 /// cap's line pcurve given as an equivalent quadratic spline keeps the box's
-/// volume, area and centroid, enclosed; a spline surface is not integrated
-/// yet.
+/// volume, area and centroid, enclosed.
 #[test]
 fn spline_pcurves_on_planes_integrate() {
     let case = |name: &str| {
@@ -165,5 +164,46 @@ fn spline_pcurves_on_planes_integrate() {
     for (c, want) in m.centroid.iter().zip([1.5, 1.0, 0.5]) {
         assert!(within(*c, want), "{c:?}");
     }
-    assert!(case("spline_bulge").mass_enclosure().is_none());
+}
+
+/// Every valid spline case's certified mass enclosure (S4d) contains the
+/// independent reference's quadrature (`brep-spline-mass.tsv`): volume,
+/// area, centroid and the inertia about it.
+#[test]
+fn spline_mass_encloses_the_reference() {
+    let cases = include_str!("../../fixtures/brep-cases.txt");
+    let mut checked = 0;
+    for line in include_str!("../../fixtures/brep-spline-mass.tsv")
+        .lines()
+        .skip(1)
+    {
+        let (name, values) = line.split_once('\t').unwrap();
+        let want: Vec<f64> = values.split(' ').map(|x| x.parse().unwrap()).collect();
+        let block = cases
+            .split("\nend")
+            .find(|b| b.trim().lines().next() == Some(&format!("case {name}")))
+            .unwrap();
+        let (_, tolerance, parts) = parse(block.trim());
+        let t = rusty_occt::topology::Topology::from_parts(
+            parts,
+            Tolerance::new(tolerance, 1e-12).unwrap(),
+        )
+        .expect("a valid case");
+        let m = t
+            .mass_enclosure()
+            .unwrap_or_else(|| panic!("{name}: integrated"));
+        let mut got = vec![m.volume, m.surface_area];
+        got.extend(m.centroid);
+        got.extend(m.inertia.iter().flatten().copied());
+        assert_eq!(got.len(), want.len(), "{name}");
+        for (k, ([lo, hi], x)) in got.iter().zip(&want).enumerate() {
+            let slack = 1e-12 * x.abs().max(1.0);
+            assert!(
+                lo - slack <= *x && *x <= hi + slack,
+                "{name} value {k}: {x} outside [{lo}, {hi}]"
+            );
+        }
+        checked += 1;
+    }
+    assert_eq!(checked, 16);
 }

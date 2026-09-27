@@ -140,6 +140,7 @@ spline_face_not_c1	face_not_c1:face 1;pcurve_off_edge:use 1.0.0;pcurve_off_edge:
 spline_face_vertex_loop	uncertified_vertex_loop:loop 1.1
 spline_bulge_hole_inside	
 spline_bulge_hole_outside	inner_loop_outside:loop 0.1;inner_loop_outside:loop 1.1
+spline_rounded_corner_far	
 spline_bulge	
 spline_cubic_bulge	
 spline_c0_bulge	edge_not_c1:edge 6;edge_not_c1:edge 7;face_not_c1:face 3;pcurve_not_c1:use 0.0.2;pcurve_not_c1:use 1.0.1

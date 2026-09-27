@@ -1092,8 +1092,11 @@ fn shifted(p: &Curve2, d: f64) -> Curve2 {
 
 /// Mutation 32 (S4b-d): a valid spline fixture (spline prisms by exact
 /// composition, a stadium with spline geometry on its cylinder by Taylor
-/// enclosures), moved exactly, is valid; then one mutation with its
-/// predicted issues.
+/// enclosures), moved exactly, is valid, and its certified volume and
+/// centroid contain the independent reference's, moved; then one mutation
+/// with its predicted issues. The rational corner is too slow here under
+/// AddressSanitizer (seconds per input); the fixture
+/// `spline_rounded_corner_far` pins the far, small case this found.
 fn spline_prism(b: &mut Bytes) {
     let text = include_str!("../../fixtures/brep-cases.txt");
     let names = [
@@ -1106,12 +1109,42 @@ fn spline_prism(b: &mut Bytes) {
         .split("\nend")
         .filter(|x| names.contains(&x.trim().lines().next().unwrap_or("")))
         .collect();
-    let (_, tol, mut parts) = brep_protocol::parse(blocks[b.pick(blocks.len())].trim());
+    let (name, tol, mut parts) = brep_protocol::parse(blocks[b.pick(blocks.len())].trim());
     let s = 2.0_f64.powi(i32::from(b.next() % 21) - 10);
     let t = [0, 1, 2].map(|_| f64::from(b.next()) / 16.0 - 8.0);
     similar(&mut parts, s, t);
     let tolerance = Tolerance::new(tol * s, 1e-12).unwrap();
     assert_eq!(report(&parts, tolerance), Vec::<String>::new());
+    let want: Vec<f64> = include_str!("../../fixtures/brep-spline-mass.tsv")
+        .lines()
+        .find_map(|l| l.strip_prefix(&format!("{name}\t")))
+        .expect("a reference row")
+        .split(' ')
+        .map(|x| x.parse().unwrap())
+        .collect();
+    let m = Topology::from_parts(parts.clone(), tolerance)
+        .unwrap()
+        .mass_enclosure()
+        .expect("integrated");
+    let inside = |[lo, hi]: [f64; 2], x: f64, scale: f64| {
+        let slack = 1e-12 * scale;
+        lo - slack <= x && x <= hi + slack
+    };
+    let size = s + t.iter().fold(0.0_f64, |a, x| a.max(x.abs()));
+    assert!(
+        inside(m.volume, want[0] * s.powi(3), s.powi(3) * want[0]),
+        "{name}: {:?} {}",
+        m.volume,
+        want[0] * s.powi(3)
+    );
+    for k in 0..3 {
+        let c = want[2 + k] * s + t[k];
+        assert!(
+            inside(m.centroid[k], c, size),
+            "{name}: {:?} {c}",
+            m.centroid[k]
+        );
+    }
     // The first use with spline geometry, and its position.
     let mut target = None;
     'faces: for (fi, face) in parts.faces.iter().enumerate() {

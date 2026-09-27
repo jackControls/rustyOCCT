@@ -335,23 +335,46 @@ pub(super) fn rational_integral<T: Real>(
     k: i32,
     integrand: impl Fn(&Bern<T>, &Bern<T>, &Bern<T>) -> Bern<T>,
 ) -> Option<T> {
+    rational_integral_about(curve, k, &[ratio(0, 1), ratio(0, 1)], integrand)
+}
+
+/// `rational_integral` with the pcurve translated by `-about` first,
+/// exactly (`U - a W`, `V - b W`): enclosures of far pieces keep the
+/// pieces' own scale.
+pub(super) fn rational_integral_about<T: Real>(
+    curve: &crate::topology::SplineSpan<crate::BSplineCurve2>,
+    k: i32,
+    about: &[R; 2],
+    integrand: impl Fn(&Bern<T>, &Bern<T>, &Bern<T>) -> Bern<T>,
+) -> Option<T> {
     let arcs = span_arcs(curve)?;
     let mut total = T::exact_f64(0.0);
     for (_, _, arc) in &arcs {
         let poles = arc.homogeneous_poles();
         let uniform = poles.iter().all(|p| p[3] == poles[0][3]);
-        let [u, v, w]: [Bern<T>; 3] = [0, 1, 3].map(|k| poles.iter().map(|p| c(&p[k])).collect());
+        let shifted = |k: usize| -> Bern<T> {
+            poles
+                .iter()
+                .map(|p| match k {
+                    0 | 1 => c(&(&p[k] - &about[k] * &p[3])),
+                    _ => c(&p[k]),
+                })
+                .collect()
+        };
+        let [u, v, w]: [Bern<T>; 3] = [shifted(0), shifted(1), shifted(3)];
         total = total.add(&quotient_integral(&integrand(&u, &v, &w), &w, k, uniform)?);
     }
     Some(total)
 }
 
-/// Twice the signed area `∮ (u dv - v du)` of a spline pcurve: on a piece
-/// `u = U/W`, `v = V/W`, the integrand is `(U V' - V U')/W^2`.
+/// Twice the signed area `∮ (u dv - v du)` of a spline pcurve relative to
+/// `about`: on a piece `u = U/W`, `v = V/W`, the integrand is
+/// `(U V' - V U')/W^2`.
 pub(super) fn twice_area<T: Real>(
     curve: &crate::topology::SplineSpan<crate::BSplineCurve2>,
+    about: &[R; 2],
 ) -> Option<T> {
-    rational_integral(curve, 2, |u, v, _| {
+    rational_integral_about(curve, 2, about, |u, v, _| {
         difference(&product(u, &derivative(v)), &product(v, &derivative(u)))
     })
 }
@@ -370,7 +393,15 @@ pub(super) fn u_dv<T: Real>(
 pub(super) fn minus_v_du<T: Real>(
     curve: &crate::topology::SplineSpan<crate::BSplineCurve2>,
 ) -> Option<T> {
-    rational_integral(curve, 3, |u: &Bern<T>, v: &Bern<T>, w: &Bern<T>| {
+    minus_v_du_about(curve, &[ratio(0, 1), ratio(0, 1)])
+}
+
+/// `minus_v_du` of the pcurve translated by `-about`.
+pub(super) fn minus_v_du_about<T: Real>(
+    curve: &crate::topology::SplineSpan<crate::BSplineCurve2>,
+    about: &[R; 2],
+) -> Option<T> {
+    rational_integral_about(curve, 3, about, |u: &Bern<T>, v: &Bern<T>, w: &Bern<T>| {
         let du = difference(&product(&derivative(u), w), &product(u, &derivative(w)));
         product(v, &du).iter().map(|x| x.neg()).collect()
     })
@@ -460,8 +491,19 @@ pub(super) fn green_integral<T: Real>(
     depth: usize,
     f: &dyn Fn(&T, &T) -> Option<T>,
 ) -> Option<T> {
+    let terms = green_integrals(curve, depth, &|u: &T, v: &T| Some(vec![f(u, v)?]))?;
+    terms.into_iter().next()
+}
+
+/// `green_integral` of several functions at once (the mass integrands),
+/// sharing the pieces and their boxes.
+pub(super) fn green_integrals<T: Real>(
+    curve: &crate::topology::SplineSpan<crate::BSplineCurve2>,
+    depth: usize,
+    f: &dyn Fn(&T, &T) -> Option<Vec<T>>,
+) -> Option<Vec<T>> {
     let hull = |xs: &[T]| xs[1..].iter().fold(xs[0].clone(), |acc, x| acc.union(x));
-    let mut total = T::exact_f64(0.0);
+    let mut totals: Option<Vec<T>> = None;
     for (_, _, arc) in &span_arcs(curve)? {
         let poles = arc.homogeneous_poles();
         let coords: [Bern<T>; 3] = [0, 1, 3].map(|k| poles.iter().map(|p| c(&p[k])).collect());
@@ -487,8 +529,12 @@ pub(super) fn green_integral<T: Real>(
             let du = hull(&du).div(&wb.square())?;
             // The piece is 2^-(depth - d) of the arc; P_u' is in the piece's
             // own parameter, so the enclosure is the piece's integral.
-            total = total.add(&f(&bu, &bv)?.mul(&du));
+            let values: Vec<T> = f(&bu, &bv)?.iter().map(|x| x.mul(&du)).collect();
+            totals = Some(match totals {
+                None => values,
+                Some(t) => t.iter().zip(&values).map(|(a, b)| a.add(b)).collect(),
+            });
         }
     }
-    Some(total)
+    totals
 }
