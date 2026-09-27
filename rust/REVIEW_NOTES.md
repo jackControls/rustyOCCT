@@ -684,6 +684,9 @@ the first fixture, never deferred.
 * **S4:** periodic spline surfaces and seams on spline surfaces stay
   unsupported, and spline mass enclosures stay first order where not exact;
   a higher-order certified quadrature is later work.
+* U6 (parallel track) — implemented: per-push sampled replay with a
+  manifest of the last full replay, schedule-only exact tensor targets,
+  Windows smoke per push and a nightly kernel schedule (`FUZZING.md`).
 * S5 — pending
 * S6 — pending
 * S7 — pending

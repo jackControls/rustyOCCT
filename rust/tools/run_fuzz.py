@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import random
 import re
 import shutil
 import signal
@@ -366,6 +367,49 @@ def seed_corpus(target):
     return corpus
 
 
+# U6 of REVIEW_NOTES.md: a per-push run replays every checked-in regression,
+# every input added since the last full (schedule) replay and a seeded random
+# sample of this many others; the schedule replays everything.
+SAMPLE_SIZE = 64
+# Exact tensor targets whose replay dominates CI (F7): per push they replay
+# their regressions only; they fuzz on the schedule.
+SCHEDULE_ONLY_TARGETS = {'surface_knots', 'degree_elevation', 'surface_editing'}
+
+
+def manifest_path(target):
+    # Beside the corpus, not in it: libFuzzer reads every file of a corpus.
+    return FUZZ/'corpus'/f'{target}.replayed'
+
+
+def regression_names(target):
+    regressions = FUZZ/'regressions'/target
+    if not regressions.exists():
+        return set()
+    return {hashlib.sha256(path.read_bytes()).hexdigest() for path in regressions.glob('*.bin')}
+
+
+def write_manifest(target, corpus):
+    manifest_path(target).write_text(''.join(p.name+'\n' for p in sorted(corpus.iterdir())))
+
+
+def replay_plan(target, corpus, sample_seed, size=SAMPLE_SIZE):
+    """(corpus file names to replay, evidence). Without a manifest every
+    input is new, so the plan is the whole corpus."""
+    names = sorted(p.name for p in corpus.iterdir())
+    manifest = manifest_path(target)
+    if not manifest.exists():
+        return names, {'replay':'sample','manifest':False,'sample_seed':sample_seed,
+                       'regressions':0,'new_since_full_replay':len(names),'sampled':0}
+    replayed = set(manifest.read_text().split())
+    regressions = regression_names(target) & set(names)
+    new = [n for n in names if n not in replayed]
+    rest = [n for n in names if n in replayed and n not in regressions]
+    sampled = random.Random(sample_seed).sample(rest, min(size, len(rest)))
+    chosen = sorted(regressions | set(new) | set(sampled))
+    return chosen, {'replay':'sample','manifest':True,'sample_seed':sample_seed,
+                    'regressions':len(regressions),'new_since_full_replay':len(new),'sampled':len(sampled)}
+
+
 def version(command, cwd=ROOT):
     return subprocess.check_output(command,cwd=cwd,text=True,stderr=subprocess.STDOUT).strip()
 
@@ -494,11 +538,32 @@ def minimize(target, toolchain, corpus, output, env):
     if replaced:
         shutil.rmtree(corpus)
         fresh.rename(corpus)
+        # The merge ran every kept input: a full replay.
+        write_manifest(target,corpus)
     else:
         shutil.rmtree(fresh)
     return {'target':target,'exit_code':code,'elapsed_seconds':round(time.monotonic()-started,2),
             'budget_seconds':budget,'corpus_files_before':before,'corpus_files_after':after if replaced else before,
             'replaced':replaced,'artifacts':[p.name for p in sorted(artifacts.iterdir())],'command':command}
+
+
+def replay_regressions(target, toolchain, output, env):
+    """Run every checked-in regression once, with the target's limits."""
+    files=sorted((FUZZ/'regressions'/target).glob('*.bin')) if (FUZZ/'regressions'/target).exists() else []
+    report={'target':target,'mode':'regressions','regressions':len(files)}
+    if not files:
+        return dict(report,exit_code=0)
+    input_seconds=TARGET_INPUT_SECONDS.get(target,INPUT_SECONDS)
+    artifacts=FUZZ/'artifacts'/target
+    artifacts.mkdir(parents=True,exist_ok=True)
+    command=['cargo',f'+{toolchain}','fuzz','run',target,*map(str,files),'--fuzz-dir',str(FUZZ),
+             *sanitizer_build_args(target),'--',f'-timeout={input_seconds}','-rss_limit_mb=2048',
+             f'-artifact_prefix={artifacts}/']
+    log_path=output/f'{target}-regressions.log'
+    started=time.monotonic()
+    with log_path.open('w') as log:
+        code=run_process(command,log,STARTUP_SECONDS+input_seconds*(len(files)+1),campaign_environment(target,env))
+    return dict(report,exit_code=code,elapsed_seconds=round(time.monotonic()-started,2),command=command)
 
 
 def resource_limits_satisfied(report):
@@ -519,7 +584,19 @@ def main():
     parser.add_argument('--report-dir',type=Path,default=ROOT/'target/fuzz-reports')
     parser.add_argument('--minimize',action='store_true',
                         help='merge each seeded corpus into a minimal one instead of fuzzing (R12)')
+    parser.add_argument('--replay',choices=['full','sample'],default='full',
+                        help='replay the whole corpus, or the per-push sample of U6')
+    parser.add_argument('--sample-seed',type=int,default=0,help='the per-push sample\'s seed (recorded)')
+    parser.add_argument('--regressions-only',action='store_true',
+                        help='replay the checked-in regressions and stop (schedule-only targets per push)')
+    parser.add_argument('--per-push',action='store_true',
+                        help='U6: regressions only for schedule-only targets, a sampled replay otherwise')
     args = parser.parse_args()
+    if args.per_push:
+        if set(args.target or TARGETS) <= SCHEDULE_ONLY_TARGETS:
+            args.regressions_only = True
+        else:
+            args.replay = 'sample'
     if not 1 <= args.seconds <= 3600: parser.error('--seconds must be in [1,3600]')
     targets = args.target or TARGETS
     corpora = {target: seed_corpus(target) for target in targets}
@@ -546,7 +623,14 @@ def main():
                 summary['targets'].append(report)
                 failed |= not report['replaced'] or (FUZZ/'Cargo.lock').read_bytes() != locked
                 print(json.dumps(report),flush=True)
-        for target in [] if args.minimize else targets:
+        if args.regressions_only:
+            summary['mode']='regressions'
+            for target in targets:
+                report=replay_regressions(target,args.toolchain,output,env)
+                summary['targets'].append(report)
+                failed |= report['exit_code'] != 0 or (FUZZ/'Cargo.lock').read_bytes() != locked
+                print(json.dumps(report),flush=True)
+        for target in [] if args.minimize or args.regressions_only else targets:
             artifacts = FUZZ/'artifacts'/target
             artifacts.mkdir(parents=True,exist_ok=True)
             log_path = output/f'{target}.log'
@@ -559,22 +643,37 @@ def main():
                 stop_file=Path(control)/'stop'
                 input_seconds=TARGET_INPUT_SECONDS.get(target,INPUT_SECONDS)
                 shutdown_seconds=shutdown_budget(input_seconds)
-                initial_corpus_files=len(list(corpora[target].iterdir()))
+                corpus=corpora[target]
+                if args.replay=='sample':
+                    chosen,replay=replay_plan(target,corpus,args.sample_seed)
+                    run_corpus=corpus.parent/f'.{target}-sample'
+                    if run_corpus.exists(): shutil.rmtree(run_corpus)
+                    run_corpus.mkdir()
+                    for name in chosen:
+                        shutil.copyfile(corpus/name,run_corpus/name)
+                else:
+                    run_corpus,replay=corpus,{'replay':'full'}
+                initial_corpus_files=len(list(run_corpus.iterdir()))
                 startup_seconds=startup_budget(initial_corpus_files,input_seconds,
                                                TARGET_MAX_STARTUP_SECONDS.get(target,MAX_STARTUP_SECONDS))
                 timer=MutationBudget(log_path,stop_file,args.seconds,startup_seconds=startup_seconds,shutdown_seconds=shutdown_seconds)
-                command = ['cargo',f'+{args.toolchain}','fuzz','run',target,str(corpora[target]),
+                command = ['cargo',f'+{args.toolchain}','fuzz','run',target,str(run_corpus),
                     '--fuzz-dir',str(FUZZ),*sanitizer_build_args(target),'--',
                     '-max_total_time=0',f'-stop_file={stop_file}',f'-mutate_depth={MUTATION_DEPTH}',f'-timeout={input_seconds}','-rss_limit_mb=2048',
                     f'-max_len={max_len(target)}',f'-seed={args.seed}',f'-artifact_prefix={artifacts}/','-print_final_stats=1']
                 with log_path.open('w') as log:
                     campaign_env=campaign_environment(target,env)
                     code = run_process(command,log,startup_seconds+args.seconds+shutdown_seconds,campaign_env,timer.tick,timer.deadline)
+                if run_corpus != corpus:
+                    # A sampled run's new inputs are new only against its
+                    # sample; the retained corpus grows on full replays.
+                    shutil.rmtree(run_corpus)
             text = log_path.read_text(errors='replace')
             report = {'target':target,'exit_code':code,'elapsed_seconds':round(time.monotonic()-started,2),
                 'input_limit_seconds':input_seconds,
                 'mutation_depth':MUTATION_DEPTH,
                 'initial_corpus_files':initial_corpus_files,
+                **replay,
                 'allocator_cleanup_during_replay':target in ALLOCATOR_TARGETS,
                 'sanitizer_options':campaign_env.get('ASAN_OPTIONS'),
                 **timer.evidence(),
@@ -583,7 +682,10 @@ def main():
                 'artifacts':[p.name for p in sorted(artifacts.iterdir())], 'command':command}
             summary['targets'].append(report)
             # An exit without a completed campaign is not a successful fuzz run.
-            failed |= code != 0 or not report['startup_budget_completed'] or not report['mutation_budget_completed'] or not report['mutation_executions'] or report['mutation_executions'] < 0 or not resource_limits_satisfied(report) or (FUZZ/'Cargo.lock').read_bytes() != locked
+            target_failed = code != 0 or not report['startup_budget_completed'] or not report['mutation_budget_completed'] or not report['mutation_executions'] or report['mutation_executions'] < 0 or not resource_limits_satisfied(report) or (FUZZ/'Cargo.lock').read_bytes() != locked
+            if args.replay=='full' and not target_failed:
+                write_manifest(target,corpus)
+            failed |= target_failed
             print(json.dumps(report),flush=True)
     finally:
         summary['passed'] = len(summary['targets']) == len(targets) and not failed

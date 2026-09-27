@@ -7,6 +7,9 @@ on:
   pull_request:
     branches: [rust-kernel]
     paths: ['Cargo.toml', 'Cargo.lock', 'rust/**', 'tests/**', 'resources/DrawResources/**', '.github/workflows/rust-kernel.yml']
+  # Nightly: every job in full, Windows included (REVIEW_NOTES U6).
+  schedule:
+    - cron: '7 4 * * *'
   workflow_dispatch:
 
 permissions:
@@ -344,18 +347,26 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+    env:
+      # U6: per push, Windows runs a smoke subset (release library and the
+      # modelling, validation and interop suites); the nightly schedule and
+      # dispatches run everything.
+      SMOKE: ${{ matrix.os == 'windows-latest' && github.event_name != 'schedule' && github.event_name != 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v4.2.2
       - name: Install Rust
         run: rustup toolchain install stable --profile minimal --component rustfmt --component clippy
       - run: cargo +stable fmt --all --check
+      - name: Windows smoke subset
+        if: env.SMOKE == 'true'
+        run: cargo +stable test --locked --release --lib --test modeling --test brep_validation --test occt_brep --test history_contracts
       - name: Record the pre-migration property baseline on this host
         # The committed baseline is a macOS/aarch64 observation; platform
         # trigonometry moves the last bits elsewhere. The T1 requirement is
         # that the migration changes no property on the same host, so the
         # revision before it writes this host's rows (its own comparison
         # against the macOS file then fails, which is expected here).
-        if: matrix.os != 'macos-latest'
+        if: matrix.os != 'macos-latest' && env.SMOKE != 'true'
         shell: bash
         run: |
           git fetch --no-tags --depth=1 origin 26fc457fea07f1e7db7590e3fb64a470c66ff435
@@ -364,8 +375,10 @@ jobs:
           # The rows were written by this run, not left from the checkout.
           test pre-t1/rust/fixtures/prism-properties-baseline.tsv -nt pre-t1/Cargo.toml
           echo "RUSTY_PROPERTY_BASELINE=../../pre-t1/rust/fixtures/prism-properties-baseline.tsv" >> "$GITHUB_ENV"
-      - run: cargo +stable test --workspace --locked
-      - run: cargo +stable test --workspace --locked --release
+      - if: env.SMOKE != 'true'
+        run: cargo +stable test --workspace --locked
+      - if: env.SMOKE != 'true'
+        run: cargo +stable test --workspace --locked --release
       - name: Verify every Bezier fixture with the second independent oracle
         if: matrix.os == 'ubuntu-latest'
         env:
@@ -391,8 +404,10 @@ jobs:
         env:
           RUSTY_VERIFY_ALL_DEGREE_ORACLES: '1'
         run: cargo +stable test --locked --release --test degree_elevation
-      - run: cargo +stable clippy --workspace --all-targets --locked -- -D warnings
-      - run: cargo +stable run --locked --example plate
+      - if: env.SMOKE != 'true'
+        run: cargo +stable clippy --workspace --all-targets --locked -- -D warnings
+      - if: env.SMOKE != 'true'
+        run: cargo +stable run --locked --example plate
 
   wasm:
     name: WebAssembly library

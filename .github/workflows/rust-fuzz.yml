@@ -66,16 +66,29 @@ jobs:
           path: rust/fuzz/corpus/${{ matrix.target }}
           key: corpus-v1-${{ matrix.target }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: corpus-v1-${{ matrix.target }}-
+      - name: Restore the last full replay's manifest
+        uses: actions/cache/restore@v4.2.3
+        with:
+          path: rust/fuzz/corpus/${{ matrix.target }}.replayed
+          key: replayed-v1-${{ matrix.target }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: replayed-v1-${{ matrix.target }}-
       - name: Run sanitizer and mathematical oracle campaign
         run: |
           if [ "$SCHEDULE" = '41 2 * * 0' ] || [ "$MINIMIZE" = true ]; then
             python3 rust/tools/run_fuzz.py --target "$FUZZ_TARGET" --toolchain "$NIGHTLY" --minimize
             exit
           fi
-          seconds=60
-          if [ "$EVENT" = schedule ]; then seconds=600; fi
-          if [ "$EVENT" = workflow_dispatch ]; then seconds="$REQUESTED_SECONDS"; fi
-          python3 rust/tools/run_fuzz.py --target "$FUZZ_TARGET" --seconds "$seconds" --toolchain "$NIGHTLY"
+          if [ "$EVENT" = schedule ]; then
+            python3 rust/tools/run_fuzz.py --target "$FUZZ_TARGET" --seconds 600 --toolchain "$NIGHTLY"
+          elif [ "$EVENT" = workflow_dispatch ]; then
+            python3 rust/tools/run_fuzz.py --target "$FUZZ_TARGET" --seconds "$REQUESTED_SECONDS" --toolchain "$NIGHTLY"
+          else
+            # U6: regressions, inputs new since the last full replay and a
+            # sample seeded by the run id; schedule-only targets replay their
+            # regressions only (FUZZING.md).
+            python3 rust/tools/run_fuzz.py --target "$FUZZ_TARGET" --seconds 60 --toolchain "$NIGHTLY" \
+              --per-push --sample-seed "$GITHUB_RUN_ID"
+          fi
       - name: Preserve campaign evidence and reproducer inputs
         if: always()
         uses: actions/upload-artifact@v4.6.2
@@ -93,3 +106,9 @@ jobs:
         with:
           path: rust/fuzz/corpus/${{ matrix.target }}
           key: corpus-v1-${{ matrix.target }}-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Retain the full replay's manifest
+        if: always() && github.event_name != 'pull_request' && hashFiles(format('rust/fuzz/corpus/{0}.replayed', matrix.target)) != ''
+        uses: actions/cache/save@v4.2.3
+        with:
+          path: rust/fuzz/corpus/${{ matrix.target }}.replayed
+          key: replayed-v1-${{ matrix.target }}-${{ github.run_id }}-${{ github.run_attempt }}

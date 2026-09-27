@@ -81,6 +81,35 @@ class FuzzRunnerTests(unittest.TestCase):
             self.assertEqual((report['corpus_files_before'],report['corpus_files_after']),(3,1))
             self.assertEqual([p.name for p in corpus.iterdir()],['input1'])
 
+    def test_push_replay_takes_regressions_new_inputs_and_a_seeded_sample(self):
+        import hashlib
+        with tempfile.TemporaryDirectory() as directory:
+            directory=Path(directory)
+            corpus=directory/'corpus'/'brep_io'; corpus.mkdir(parents=True)
+            regressions=directory/'regressions'/'brep_io'; regressions.mkdir(parents=True)
+            (regressions/'r.bin').write_bytes(b'regression')
+            names=[f'{k:03}' for k in range(200)]
+            for name in names: (corpus/name).write_bytes(name.encode())
+            regression=hashlib.sha256(b'regression').hexdigest()
+            (corpus/regression).write_bytes(b'regression')
+            with patch('run_fuzz.FUZZ',directory):
+                # No manifest: everything is new, so the whole corpus replays.
+                chosen,evidence=run_fuzz.replay_plan('brep_io',corpus,7)
+                self.assertEqual(len(chosen),201)
+                self.assertFalse(evidence['manifest'])
+                run_fuzz.write_manifest('brep_io',corpus)
+                for name in ['new1','new2']: (corpus/name).write_bytes(name.encode())
+                chosen,evidence=run_fuzz.replay_plan('brep_io',corpus,7)
+                again,_=run_fuzz.replay_plan('brep_io',corpus,7)
+                other,_=run_fuzz.replay_plan('brep_io',corpus,8)
+            self.assertEqual(chosen,again)
+            self.assertNotEqual(chosen,other)
+            self.assertIn(regression,chosen)
+            self.assertTrue({'new1','new2'} <= set(chosen))
+            self.assertEqual(len(chosen),1+2+run_fuzz.SAMPLE_SIZE)
+            self.assertEqual((evidence['regressions'],evidence['new_since_full_replay'],evidence['sampled']),
+                             (1,2,run_fuzz.SAMPLE_SIZE))
+
     def test_requires_completed_mutation_after_corpus_replay(self):
         text = '#99\tINITED cov: 12 ft: 50\n#102\tDONE cov: 14\nstat::number_of_executed_units: 102\n'
         self.assertEqual(run_fuzz.statistics(text),{

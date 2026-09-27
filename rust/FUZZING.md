@@ -147,6 +147,25 @@ General root products reach degree 25. An
 outer deadline kills the build/fuzzer process group. Corpus replay without any
 subsequent mutation is an incomplete run. An incomplete run, crash,
 timeout, OOM, changed dependency lock or mathematical disagreement fails CI.
+**Per-push and scheduled runs (U6 of `REVIEW_NOTES.md`).** The daily
+schedule replays every retained input, then mutates for 600 seconds, and on
+success records the replayed corpus in a manifest (`corpus/<target>.replayed`,
+cached beside the corpus). A push or pull request instead runs
+`run_fuzz.py --per-push --sample-seed <run id>`: it replays every checked-in
+regression, every input absent from the manifest (seeds added since the last
+full replay) and `SAMPLE_SIZE` (64) others drawn by `random.Random(seed)` from
+the sorted remaining names, then mutates for 60 seconds. The seed is the
+workflow's run id and every report records it with the counts of each group,
+so `run_fuzz.py --replay sample --sample-seed <id>` on the same corpus and
+manifest replays the same inputs. Without a manifest the whole corpus
+replays. A sampled run's new inputs are not retained (they are new only
+against the sample); the corpus grows on full replays. `surface_knots`,
+`degree_elevation` and `surface_editing` replay only their regressions per
+push (`--regressions-only`) and fuzz on the schedule. Acceptance still needs
+the full replay green on the schedule run of the accepted revision, plus the
+clean local 600-second campaign. Locally, a sampled `brep_io` run replayed 65
+inputs in 5.6 s where the full corpus took 126 s.
+
 Retained corpora are minimised weekly (R12 of `REVIEW_NOTES.md`): on Sundays
 the fuzzing workflow runs `run_fuzz.py --minimize` instead of a campaign. It
 seeds each corpus as usual, merges it into a fresh directory with libFuzzer's
