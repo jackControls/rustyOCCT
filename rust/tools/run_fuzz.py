@@ -20,7 +20,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear','brep_validation','identity','history','split_merge','attributes','brep_io']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear','brep_validation','identity','history','split_merge','attributes','brep_io','analytic_intersections']
 STARTUP_SECONDS = 600
 MAX_STARTUP_SECONDS = 3600
 # surface_knots' retained CI corpus replays slower than the cap allows: 2,766 s
@@ -83,6 +83,15 @@ def seed_corpus(target):
         if not path.exists():
             path.write_bytes(data)
 
+    if target == 'analytic_intersections':
+        # Every kind pair (plane, cylinder, cone, sphere) in every mode
+        # (independent, parallel, coaxial, tangent offset, shared origin).
+        for k1 in range(4):
+            for k2 in range(4):
+                for mode in range(5):
+                    data = bytearray((j*43+k1*11+k2*7+mode*3+1)%256 for j in range(24))
+                    data[:3] = bytes([k1, k2, mode])
+                    save(bytes(data))
     if target == 'brep_io':
         # A prism of the identity structure or an upstream file, then up to
         # six token and line mutations of its .brep text.

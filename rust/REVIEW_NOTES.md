@@ -857,6 +857,15 @@ the first fixture, never deferred.
     in `occt_brep.rs`, and twelve restore-only DRAW cases whose free faces
     the validator rejects are failures (`UPSTREAM_TESTS.md`); spline wires
     are not measured.
-* S7 — pending
+* S7 — in progress.
+  * D13 recorded in `TOPOLOGY_MODEL.md`; the S7 decisions above.
+  * S7a implemented (`ANALYTIC_INTERSECTIONS.md`): the exact reference and
+    the native `IntAna_QuadQuadGeo` capture of 67 cases came before any
+    kernel intersection code (`943463ea`); the kernel's closed forms contain
+    the reference on all 67; the bridge gives 63 matches and 4 reviewed
+    differences (IntAna's snapping of near-degenerate configurations); the
+    `analytic_intersections` fuzz target. Gate pending CI, the schedule
+    replay and the clean campaign.
+  * S7b (procedural curves, tori), S7c and S7d pending.
 * S8 — pending
 * S9 — pending

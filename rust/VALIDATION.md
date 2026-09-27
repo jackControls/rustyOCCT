@@ -532,6 +532,22 @@ frames, rigid copies) and their ids from `identity_reference.sheet_entities`;
 rigid motions to match. The derived DRAW case `faces_and_edges` (`mkface` on
 a plane and a cylinder, `mkedge` on a line and a circle, `mkplane` of a
 profile wire with arcs) passes on both backends.
+## Analytic surface intersections (S7a)
+
+`generate_analytic_intersection_fixtures.py --check` writes 67 surface pairs
+with an exact and a near case of every degeneracy class and their canonical
+results from `analytic_intersection_reference.py` (exact rationals, 80-digit
+mpmath, a different method from the kernel's closed forms), and each
+surface's stored normal. `analytic_intersections.rs` requires the kernel to
+store the same normals, to contain every reference number in its enclosures,
+to be symmetric, to keep enclosures within four units in the last place, to
+return curves on both surfaces and to move items with translations.
+`compare_analytic_intersections.py` reproduces the pre-implementation
+`IntAna_QuadQuadGeo` capture and compares: 63 matches, 4 reviewed
+differences (near-degenerate configurations IntAna snaps), the kernel inside
+the reference on all 67 and within `1e-9` of OCCT on the 43 matching cases
+with items (`ANALYTIC_INTERSECTIONS.md`).
+
 ## Height split and stacked fuse
 
 `generate_split_merge_fixtures.py --check` writes 174 scenarios from the

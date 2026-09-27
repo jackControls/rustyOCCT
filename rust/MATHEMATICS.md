@@ -1432,6 +1432,52 @@ length `2 pi R`, `pi` enclosed by its certified value, and its centre is
 native comparison requires it to contain `BRepGProp`'s value up to `1e-9`
 of the row's magnitude (OCCT's own integration error on spline faces).
 
+## Analytic surface intersections (S7a)
+
+Surfaces are exact point sets of their stored data, with axes normalised
+exactly: `|p - o|^2 - ((p - o) . a)^2 / |a|^2 = r^2` for a cylinder, a
+rational quadric; a cone's `rho cos a = +-(r cos a + h sin a)` (both
+nappes) with `h` along the unit axis, transcendental through `cos a` and
+`sin a`. Degeneracies are exact rational predicates: `n1 x n2 = 0` for
+parallel planes, `a . n = 0` and `a x n = 0` for a cylinder's axis parallel
+or normal to a plane, `|off|^2 / |n|^2` against `r^2` for tangency,
+coplanar axes by a triple product, a cone's apex through a plane only when
+the apex is rational (radius zero at the origin) or the plane contains the
+axis.
+
+* **Plane/cylinder.** The axis meets the plane at `c + a lambda`,
+  `lambda = (o - c) . n / (a . n)`; the section is an ellipse with semi-minor
+  `r` along `a x n` and semi-major `r |a| |n| / |a . n|` along
+  `n x (a x n)`.
+* **Plane/cone.** With the apex `V = c - a r / (|a| tan a)`, the plane's unit
+  normal `n`, `cos b = n . a / |a|`, `sin b = |e1| / |a|` for the axis's
+  projection `e1` on the plane, and `D = (V - o) . n`, a point
+  `V - D n + s u1 + t u2` (`u1 = e1 / |e1|`, `u2 = n x u1`) lies on the cone
+  when `|u|^2 cos^2 a = (u . a)^2 / |a|^2`, that is
+  `A (s - s0)^2 + cos^2(a) t^2 + K = 0` with `A = cos^2 b - sin^2 a`,
+  `s0 = -D cos b sin b / A` and `K = -D^2 cos^2 a sin^2 a / A` (the
+  constant simplifies because `(cos^2 a - cos^2 b)(cos^2 b - sin^2 a) -
+  cos^2 b sin^2 b = -cos^2 a sin^2 a`). `A > 0` is an ellipse with semi-axes
+  `|D cos a sin a| / A` along `u1` and `|D sin a| / sqrt(A)` along `u2` (the
+  first is the larger since `A <= cos^2 a`); `A < 0` a hyperbola with the
+  same expressions as semi-transverse and semi-conjugate axes; `A = 0` is
+  impossible. Through the apex (`D = 0`), `A > 0` leaves the apex and `A < 0`
+  two generatrices `cos p u1 +- sin p u2`, `cos p = cos a / sin b`.
+* **Sphere/sphere and parallel cylinders.** The radical plane (or line):
+  the centre `c1 + d k`, `k = (|d|^2 + r1^2 - r2^2) / (2 |d|^2)`, radius
+  squared `r1^2 - k^2 |d|^2`, all rational; tangency when it is zero.
+* **Crossing cylinders of equal radius.** The two ellipses lie in the planes
+  through the crossing point spanned by the common normal and a bisector
+  `u1 +- u2`, with normal `u1 -+ u2`: semi-minor `r` along the common
+  normal, semi-major `r` over the cosine between an axis and that normal.
+* **Coaxial pairs.** With `h` along the common axis, a cylinder is
+  `rho = r`, a cone `rho = c + t h` (`t = tan a`), a sphere
+  `rho^2 = R^2 - (h - h0)^2`; circles lie where `rho1 = +-rho2`, solved as
+  linear or quadratic equations in `h`. Equal slopes decide exactly (the
+  same half-angle); constants agree exactly only when the rational and the
+  `tan a` parts agree separately (the same surface); a rational apex on the
+  other surface is a point.
+
 ## C1 of spline cells (R4)
 
 A cell is C1 in its own parameterisation (U3 of `REVIEW_NOTES.md`). For a

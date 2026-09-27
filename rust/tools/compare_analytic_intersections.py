@@ -10,6 +10,9 @@ with their first nonzero coordinate positive, a hyperbola's two branches
 one item) and compared with the reference: the same items, numbers within
 1e-9 of each item's magnitude. `--capture` records the native observations
 before any kernel intersection code exists; later runs must reproduce them.
+The kernel's certified results (`analytic_intersection_probe`) must have the
+reference's items with every reference number inside its enclosure, and,
+where native OCCT agrees with the reference, lie within 1e-9 of OCCT's.
 Differences need a fingerprinted review (IntAna snaps near-degenerate
 configurations with its angular and linear tolerances).
 """
@@ -162,6 +165,42 @@ def captured(observed):
             raise ValueError('native observation of '+name+' differs from the capture')
 
 
+def rust_rows():
+    """{case: 'empty' | 'same' | 'not_conic' | [(kind, [(lo, hi)])]} from
+    the kernel's probe."""
+    subprocess.run(['cargo', '+stable', 'build', '--release', '--locked', '--example',
+                    'analytic_intersection_probe'], cwd=ROOT, check=True)
+    text = (ROOT/'rust/fixtures/analytic-intersection-cases.txt').read_text()
+    rows = subprocess.run([str(ROOT/'target/release/examples/analytic_intersection_probe')], input=text,
+                          text=True, capture_output=True, timeout=600, check=True).stdout
+    out = {}
+    for line in rows.splitlines():
+        w = line.split()
+        if w[1] in ('empty', 'same', 'not_conic', 'error'):
+            out[w[0]] = w[1]
+            continue
+        v = [float(x) for x in w[2:]]
+        out.setdefault(w[0], []).append((w[1], list(zip(v[::2], v[1::2]))))
+    return out
+
+
+def rust_differences(rust, expected):
+    """The kernel against the reference: the same items, every reference
+    number inside the kernel's enclosure (up to 1e-25 relative, the
+    reference's printing)."""
+    words = [e for e in expected if isinstance(e, str)]
+    if words:
+        return [] if rust == words[0] else ['rust_classification']
+    if isinstance(rust, str) or [k for k, _ in rust] != [e[0] for e in expected]:
+        return ['rust_items']
+    for (kind, enclosure), e in zip(rust, expected):
+        for (lo, hi), x in zip(enclosure, flat(e)):
+            slack = 1e-25*abs(x)
+            if not lo-slack <= x <= hi+slack:
+                return ['rust_outside_reference']
+    return []
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--occt-root', type=Path, required=True)
@@ -191,14 +230,34 @@ def main():
     captured(observed)
     oracle = next(iter(record['stderr'].splitlines()), None)
     reviews = [] if args.strict_native or not REVIEWS.exists() else json.loads(REVIEWS.read_text())['reviews']
-    report = {'source_reference': SOURCE, 'oracle': oracle, 'cases': 0, 'matches': [],
-              'reviewed_differences': [], 'failures': []}
+    report = {'source_reference': SOURCE, 'oracle': oracle, 'cases': 0, 'rust_within_reference': 0,
+              'rust_near_native': 0, 'matches': [], 'reviewed_differences': [], 'failures': []}
+    rust = rust_rows()
     for name, a, b in fixtures.cases():
         report['cases'] += 1
         expected = reference_items(name, a, b)
         kind, items = observed[name]
+        wrong = rust_differences(rust.get(name), expected)
+        if wrong:
+            # The kernel's certified result is never reviewable.
+            report['failures'].append({'case': name, 'reason': ' '.join(wrong), 'rust': rust.get(name),
+                                       'reference': [ref.text(e) for e in expected]})
+            continue
+        report['rust_within_reference'] += 1
         found = differences(expected, kind, items)
         if not found:
+            # Where OCCT agrees with the reference, the kernel's midpoints
+            # agree with OCCT too.
+            if not isinstance(rust.get(name), str):
+                got = ref.canonical(items)
+                for (_, enclosure), g in zip(rust[name], got):
+                    gv = flat(g)
+                    scale = max([1.0]+[abs(x) for x in gv])
+                    if any(abs((lo+hi)/2-x) > BOUND*scale for (lo, hi), x in zip(enclosure, gv)):
+                        report['failures'].append({'case': name, 'reason': 'rust far from native'})
+                        break
+                else:
+                    report['rust_near_native'] += 1
             report['matches'].append(name)
             continue
         evidence = {'case': name, 'source_reference': SOURCE, 'oracle': oracle,

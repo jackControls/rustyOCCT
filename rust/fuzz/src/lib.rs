@@ -42,6 +42,8 @@ mod attributes;
 pub use attributes::check_attributes;
 mod brep_io;
 pub use brep_io::check_brep_io;
+mod analytic_intersections;
+pub use analytic_intersections::check_analytic_intersections;
 mod bezier_editing;
 pub use bezier_editing::{check_bezier_editing, profile_bezier_editing};
 #[path = "../../kernel/tests/support/bezier_reference.rs"]

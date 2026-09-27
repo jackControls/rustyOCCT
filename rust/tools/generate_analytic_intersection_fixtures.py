@@ -6,19 +6,25 @@ pairs that are not (S7b).
 `analytic-intersection-cases.txt` lists each case's two surfaces as
 `surface KIND ox oy oz nx ny nz xx xy xz [radius [half-angle]]` (the frame
 as `Frame3::new` takes it); `analytic-intersection-expected.tsv` gives each
-case's canonical items from `analytic_intersection_reference.py`. Every
+case's canonical items from `analytic_intersection_reference.py`, and
+`analytic-intersection-frames.tsv` each surface's stored unit normal as the
+reference computes `Frame3::new`'s (the kernel must store the same bits:
+inputs are chosen so that it does, e.g. `(0, 3, 4)` rather than
+`(0, 0.6, 0.8)`, whose normalisation depends on the platform's hypot). Every
 degeneracy class has an exact case (the predicate holds on the stored
 binary64 data) and a near one. No Rust result supplies an expectation.
 """
 import argparse
 from pathlib import Path
+import struct
 
 import analytic_intersection_reference as ref
+from identity_reference import frame_axes
 
 ROOT = Path(__file__).resolve().parents[1]
 Z, X, Y = (0.0, 0.0, 1.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)
-TILT = (0.0, 0.6, 0.8)
-TILT_ACROSS = (0.0, 0.8, -0.6)
+TILT = (0.0, 3.0, 4.0)
+TILT_ACROSS = (0.0, 4.0, -3.0)
 
 
 def plane(o, n, x=None):
@@ -136,14 +142,19 @@ def encode(name, *surfaces):
 
 def generate():
     blocks, rows = [], ['# case\tcanonical item (S7a, analytic_intersection_reference.py)']
+    frames = ['# case\tsurface\tstored unit normal (the reference\'s Frame3::new, as hex bits)']
     for name, a, b in cases():
         block = encode(name, a, b)
         blocks.append(block+'\nend')
         _, surfaces = ref.parse(block)
         for item in ref.canonical(ref.intersect(*surfaces)):
             rows.append(f'{name}\t{ref.text(item)}')
+        for k, surface in enumerate(surfaces):
+            _, _, _, n = frame_axes(surface.frame)
+            frames.append(f'{name}\t{k}\t'+' '.join(struct.pack('>d', v).hex() for v in n))
     return {'analytic-intersection-cases.txt': '\n'.join(blocks)+'\n',
-            'analytic-intersection-expected.tsv': '\n'.join(rows)+'\n'}
+            'analytic-intersection-expected.tsv': '\n'.join(rows)+'\n',
+            'analytic-intersection-frames.tsv': '\n'.join(frames)+'\n'}
 
 
 def main():

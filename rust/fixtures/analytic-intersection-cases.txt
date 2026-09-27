@@ -3,7 +3,7 @@ surface plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
 surface plane 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
 end
 case pp_tilted
-surface plane 1.0 2.0 3.0 0.0 0.6 0.8 1.0 0.0 0.0
+surface plane 1.0 2.0 3.0 0.0 3.0 4.0 1.0 0.0 0.0
 surface plane 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 0.0
 end
 case pp_parallel
@@ -39,11 +39,11 @@ surface plane 0.0 0.0 1.9999999990686774 0.0 0.0 1.0 1.0 0.0 0.0
 surface sphere 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
 end
 case ps_tilted
-surface plane 1.0 2.0 3.0 0.0 0.6 0.8 1.0 0.0 0.0
+surface plane 1.0 2.0 3.0 0.0 3.0 4.0 1.0 0.0 0.0
 surface sphere 1.0 1.5 3.25 0.0 0.0 1.0 1.0 0.0 0.0 4.0
 end
 case ps_through_centre
-surface plane 1.0 1.0 1.0 0.0 0.6 0.8 1.0 0.0 0.0
+surface plane 1.0 1.0 1.0 0.0 3.0 4.0 1.0 0.0 0.0
 surface sphere 1.0 1.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0 3.0
 end
 case pc_perpendicular
@@ -51,7 +51,7 @@ surface plane 0.0 0.0 2.0 0.0 0.0 1.0 1.0 0.0 0.0
 surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5
 end
 case pc_oblique
-surface plane 0.0 0.0 2.0 0.0 0.6 0.8 1.0 0.0 0.0
+surface plane 0.0 0.0 2.0 0.0 3.0 4.0 1.0 0.0 0.0
 surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5
 end
 case pc_parallel_two
@@ -71,8 +71,8 @@ surface plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
 surface cylinder 0.0 3.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 1.0
 end
 case pc_parallel_tilted
-surface plane 1.0 2.0 3.0 0.0 0.6 0.8 1.0 0.0 0.0
-surface cylinder 1.0 2.0 3.0 0.0 0.8 -0.6 1.0 0.0 0.0 2.0
+surface plane 1.0 2.0 3.0 0.0 3.0 4.0 1.0 0.0 0.0
+surface cylinder 1.0 2.0 3.0 0.0 4.0 -3.0 1.0 0.0 0.0 2.0
 end
 case pc_near_parallel
 surface plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
@@ -123,7 +123,7 @@ surface plane 0.0 0.0 3.0 0.8775825618903728 0.0 -0.479425538604203 0.0 1.0 0.0
 surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 0.5
 end
 case pk_tilted
-surface plane 1.0 2.0 3.0 0.0 0.6 0.8 1.0 0.0 0.0
+surface plane 1.0 2.0 3.0 0.0 3.0 4.0 1.0 0.0 0.0
 surface cone 1.0 2.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.75 0.3
 end
 case ss_circle
@@ -187,8 +187,8 @@ surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
 surface cylinder 0.0 0.0 7.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
 end
 case cc_parallel_tilted
-surface cylinder 1.0 2.0 3.0 0.0 0.6 0.8 1.0 0.0 0.0 1.0
-surface cylinder 1.0 2.0 4.5 0.0 0.6 0.8 1.0 0.0 0.0 1.25
+surface cylinder 1.0 2.0 3.0 0.0 3.0 4.0 1.0 0.0 0.0 1.0
+surface cylinder 1.0 2.0 4.5 0.0 3.0 4.0 1.0 0.0 0.0 1.25
 end
 case cc_equal_cross
 surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
@@ -223,7 +223,7 @@ surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
 surface sphere 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0 0.5
 end
 case cs_tilted
-surface cylinder 1.0 2.0 3.0 0.0 0.6 0.8 1.0 0.0 0.0 1.0
+surface cylinder 1.0 2.0 3.0 0.0 3.0 4.0 1.0 0.0 0.0 1.0
 surface sphere 1.0 2.0 3.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
 end
 case cs_off_axis
