@@ -362,7 +362,35 @@ def summary(text):
     return unsupported, solids
 
 
+def free_shapes(text):
+    """S6: [(record, kind, representable, counts)] of every shell, face,
+    wire, edge and vertex reached from the root outside a solid, in the
+    root's order, kind one of Sh, Fa, Wi, Ed, Ve."""
+    locations, tables, shapes, root = read(text)
+    loc = lambda i: IDENTITY if i == 0 else locations[i-1]
+    out = []
+    stack = [(root, IDENTITY, '+')]
+    while stack:
+        (o, index, l), parent, orient = stack.pop()
+        t = matmul(parent, loc(l))
+        kind, _, subs = shapes[index]
+        if o not in '+-' or not rigid(t):
+            continue
+        if kind == 'Co':
+            for s in reversed(subs):
+                stack.append((s, t, o))
+        elif kind in ('Sh', 'Fa', 'Wi', 'Ed', 'Ve'):
+            out.append((index, kind)+body(shapes, tables, loc, index, t))
+    return out
+
+
 def solid(shapes, tables, loc, record, t):
+    return body(shapes, tables, loc, record, t)
+
+
+def body(shapes, tables, loc, record, t):
+    """(representable, OCCT's distinct subshape counts) of a solid, or (S6)
+    of a free shell, face, wire, edge or vertex reached from the root."""
     ok = True
     seen = {k: [] for k in ('Ve', 'Ed', 'Wi', 'Fa', 'Sh', 'So')}
 
@@ -371,71 +399,104 @@ def solid(shapes, tables, loc, record, t):
             return False
         seen[kind].append((index, m))
         return True
-    mark('So', record, t)
-    shells = shapes[record][2]
-    if not shells:
-        ok = False
-    for o, s, l in shells:
-        st = matmul(t, loc(l))
-        if o not in '+-' or shapes[s][0] != 'Sh':
+
+    def vertex(v, vt):
+        mark('Ve', v, vt)
+
+    def edge(e, et, surf=None, data=None, ft=None):
+        nonlocal ok
+        mark('Ed', e, et)
+        degenerated, reps = shapes[e][1]
+        curves = [x[1] for x in reps if x[0] == 'curve']
+        if degenerated:
+            ends = [(v, matmul(et, loc(vl))) for _, v, vl in shapes[e][2]]
+            if surf not in ('cone', 'sphere') or len(ends) != 2 or ends[0][0] != ends[1][0] \
+                    or not near(ends[0][1], ends[1][1]):
+                ok = False
+        elif not curves or kind_of(tables['Curves'][curves[0]-1]) not in ('line', 'circle', 'bspline'):
             ok = False
-            continue
-        mark('Sh', s, st)
-        for fo, f, fl in shapes[s][2]:
-            ft = matmul(st, loc(fl))
-            kind, data, wires = shapes[f]
-            if fo not in '+-' or kind != 'Fa' or data is None:
+        elif not in_range(tables['Curves'][curves[0]-1], [x for x in reps if x[0] == 'curve'][0][3]):
+            ok = False  # BSplineRangeOutsideDomain
+        if data is not None:
+            on = [x for x in reps if x[0] == 'pcurve' and x[2] == data[0]
+                  and near(matmul(et, loc(x[3])), matmul(ft, loc(data[1])))]
+            if on:
+                if any(kind_of(tables['Curve2ds'][p-1]) not in ('line', 'circle', 'bspline')
+                       for p in on[0][1]):
+                    ok = False
+                elif not all(in_range(tables['Curve2ds'][p-1], on[0][4]) for p in on[0][1]):
+                    ok = False  # BSplineRangeOutsideDomain
+            elif surf != 'plane':
+                ok = False
+        orients = sorted(vo for vo, _, _ in shapes[e][2])
+        if orients != ['+', '-']:
+            ok = False
+        for vo, v, vl in shapes[e][2]:
+            vertex(v, matmul(et, loc(vl)))
+
+    def face(f, ft):
+        nonlocal ok
+        kind, data, wires = shapes[f]
+        if kind != 'Fa' or data is None:
+            ok = False
+            return
+        mark('Fa', f, ft)
+        record = tables['Surfaces'][data[0]-1] if data[0] else None
+        surf = kind_of(record)
+        if surf not in ('plane', 'cylinder', 'cone', 'sphere', 'torus', 'bspline'):
+            ok = False
+        if surf == 'bspline' and record[1]:
+            ok = False  # PeriodicBSplineSurface
+        face_edges = []
+        for wo, w, wl in wires:
+            wt = matmul(ft, loc(wl))
+            if wo not in '+-' or shapes[w][0] != 'Wi':
                 ok = False
                 continue
-            mark('Fa', f, ft)
-            record = tables['Surfaces'][data[0]-1] if data[0] else None
-            surf = kind_of(record)
-            if surf not in ('plane', 'cylinder', 'cone', 'sphere', 'torus', 'bspline'):
-                ok = False
-            if surf == 'bspline' and record[1]:
-                ok = False  # PeriodicBSplineSurface
-            face_edges = []
-            for wo, w, wl in wires:
-                wt = matmul(ft, loc(wl))
-                if wo not in '+-' or shapes[w][0] != 'Wi':
+            mark('Wi', w, wt)
+            for eo, e, el in shapes[w][2]:
+                if eo not in '+-':
                     ok = False
-                    continue
-                mark('Wi', w, wt)
-                for eo, e, el in shapes[w][2]:
-                    et = matmul(wt, loc(el))
-                    if eo not in '+-':
-                        ok = False
-                    mark('Ed', e, et)
-                    degenerated, reps = shapes[e][1]
-                    curves = [x[1] for x in reps if x[0] == 'curve']
-                    if degenerated:
-                        ends = [(v, matmul(et, loc(vl))) for _, v, vl in shapes[e][2]]
-                        if surf not in ('cone', 'sphere') or len(ends) != 2 or ends[0][0] != ends[1][0] \
-                                or not near(ends[0][1], ends[1][1]):
-                            ok = False
-                    elif not curves or kind_of(tables['Curves'][curves[0]-1]) not in ('line', 'circle', 'bspline'):
-                        ok = False
-                    elif not in_range(tables['Curves'][curves[0]-1], [x for x in reps if x[0] == 'curve'][0][3]):
-                        ok = False  # BSplineRangeOutsideDomain
-                    face_edges.append(e)
-                    on = [x for x in reps if x[0] == 'pcurve' and x[2] == data[0]
-                          and near(matmul(et, loc(x[3])), matmul(ft, loc(data[1])))]
-                    if on:
-                        if any(kind_of(tables['Curve2ds'][p-1]) not in ('line', 'circle', 'bspline')
-                               for p in on[0][1]):
-                            ok = False
-                        elif not all(in_range(tables['Curve2ds'][p-1], on[0][4]) for p in on[0][1]):
-                            ok = False  # BSplineRangeOutsideDomain
-                    elif surf != 'plane':
-                        ok = False
-                    orients = sorted(vo for vo, _, _ in shapes[e][2])
-                    if orients != ['+', '-']:
-                        ok = False
-                    for vo, v, vl in shapes[e][2]:
-                        mark('Ve', v, matmul(et, loc(vl)))
-            # A seam (an edge used twice by the face) on a spline surface.
-            if surf == 'bspline' and len(face_edges) != len(set(face_edges)):
-                ok = False  # SeamOnBSplineSurface
+                edge(e, matmul(wt, loc(el)), surf, data, ft)
+                face_edges.append(e)
+        # A seam (an edge used twice by the face) on a spline surface.
+        if surf == 'bspline' and len(face_edges) != len(set(face_edges)):
+            ok = False  # SeamOnBSplineSurface
+
+    def shell(sh, st):
+        nonlocal ok
+        mark('Sh', sh, st)
+        for fo, f, fl in shapes[sh][2]:
+            if fo not in '+-':
+                ok = False
+                continue
+            face(f, matmul(st, loc(fl)))
+
+    kind = shapes[record][0]
+    if kind == 'So':
+        mark('So', record, t)
+        shells = shapes[record][2]
+        if not shells:
+            ok = False
+        for o, sh, l in shells:
+            if o not in '+-' or shapes[sh][0] != 'Sh':
+                ok = False
+                continue
+            shell(sh, matmul(t, loc(l)))
+    elif kind == 'Sh':
+        shell(record, t)
+    elif kind == 'Fa':
+        face(record, t)
+    elif kind == 'Wi':
+        mark('Wi', record, t)
+        for eo, e, el in shapes[record][2]:
+            if eo not in '+-':
+                ok = False
+            edge(e, matmul(t, loc(el)))
+    elif kind == 'Ed':
+        edge(record, t)
+    elif kind == 'Ve':
+        vertex(record, t)
     counts = tuple(len(seen[k]) for k in ('Ve', 'Ed', 'Wi', 'Fa', 'Sh', 'So'))
     return ok, counts
 

@@ -1,0 +1,22 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "rust_revision": "4592ef6ce59b524db2e85811e41c390c22809a5f",
+  "platform": "darwin",
+  "rust_sheet_implementation_exists": false,
+  "rust_worktree_uncommitted": [
+    " M rust/REVIEW_NOTES.md",
+    " M rust/fixtures/brep-cases.txt",
+    " M rust/fixtures/brep-enclosure-lows.tsv",
+    " M rust/fixtures/brep-expected.tsv",
+    " M rust/tools/brep_reference.py",
+    " M rust/tools/cell_reference.py",
+    " M rust/tools/compare_brep.py",
+    " M rust/tools/generate_brep_fixtures.py",
+    " M rust/tools/occt_brep_check_oracle.cpp",
+    "?? rust/fixtures/occt-sheet-preimplementation/"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "b1ac4f1bf61d5c6b287b635d83c1c617f4d09e07763ce1b8a0ca5e867b70cc3f",
+  "probe_source_sha256": "92131a5c210e5ec55e8950e8662d99b23dc7b6e66c32802c59eb3cfd9b9fd584",
+  "observations_sha256": "2749bcd69e061fe0aa7a382357ee61e6cf9fc381da884af5a45b032f0d98bec0"
+}

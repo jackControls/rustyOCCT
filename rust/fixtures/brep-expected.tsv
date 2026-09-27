@@ -151,3 +151,21 @@ spline_bulge_wall_reversed	loop_winding:loop 3.0
 spline_stadium_pcurve	
 spline_stadium_pcurve_shift	pcurve_off_edge:use 3.0.1;uv_gap:use 3.0.0;uv_gap:use 3.0.1
 spline_stadium_edge	
+sheet_square	
+sheet_square_bottom	
+sheet_round_hole	
+sheet_stadium	
+sheet_half_disc	
+sheet_cylinder_patch	
+sheet_spline_wall	
+sheet_open_box	
+shell_box	
+shell_cylinder	
+wire_square	
+wire_circle	
+wire_open	
+wire_edge	
+acorn_point	
+sheet_square_vertex_moved	vertex_off_curve:edge 0 start;vertex_off_curve:edge 3 end
+sheet_open_box_pcurve_shift	pcurve_off_edge:use 0.0.0;uv_gap:use 0.0.0;uv_gap:use 0.0.3
+wire_disconnected	disconnected_shell:shell 0;unused_edge:edge 1;unused_edge:edge 3

@@ -196,6 +196,11 @@ class Model:
     edges: list = field(default_factory=list)
     faces: list = field(default_factory=list)
     shells: list = field(default_factory=list)
+    # S6: 'solid' (shells bound a solid), 'sheet' (faces or an open shell,
+    # both sides void), 'shell' (a closed shell bounding a void), 'wire'
+    # (the edges listed in `wire`, in order) or 'acorn' (vertex 0).
+    kind: str = 'solid'
+    wire: list = field(default_factory=list)
 
 
 # ---------------------------------------------------------------- protocol
@@ -1043,6 +1048,20 @@ def native(m):
                 out.append(f'u {u.edge} {o} {pk} '+' '.join(words))
     for s in m.shells:
         out.append('s '+' '.join(map(str, s)))
+    # S6: what OCCT checks when it is not a solid of the shells.
+    kind = getattr(m, 'kind', 'solid')
+    if kind == 'wire' and len(m.wire) == 1:
+        # One edge is a free edge, as the kernel counts it.
+        out.append('result edge')
+    elif kind == 'wire':
+        out.append('W '+' '.join(map(str, m.wire)))
+        out.append('result wire')
+    elif kind == 'acorn':
+        out.append('result vertex')
+    elif kind == 'shell' or (kind == 'sheet' and m.shells):
+        out.append('result shell')
+    elif kind == 'sheet':
+        out.append('result face')
     out.append('end')
     return '\n'.join(out), inexact
 

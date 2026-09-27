@@ -1046,11 +1046,96 @@ def spline_models():
     return models
 
 
+def extract(m, name, face_ids, kind):
+    """S6: the faces `face_ids` of a model as a sheet ('sheet': a free face,
+    or an open shell of several) or a closed shell without a solid
+    ('shell'), with the edges and vertices they use."""
+    edges = sorted({u.edge for fi in face_ids for loop in m.faces[fi].loops for u in loop})
+    emap = {e: i for i, e in enumerate(edges)}
+    verts = sorted({v for e in edges for v in (m.edges[e].start, m.edges[e].end)})
+    vmap = {v: i for i, v in enumerate(verts)}
+    out = Model(name, m.tolerance, kind=kind)
+    out.vertices = [m.vertices[v] for v in verts]
+    out.edges = [Edge(vmap[m.edges[e].start], vmap[m.edges[e].end], m.edges[e].curve) for e in edges]
+    for fi in face_ids:
+        f = m.faces[fi]
+        out.faces.append(Face(f.surface, f.forward,
+                              [[Use(emap[u.edge], u.forward, u.pcurve) for u in loop] for loop in f.loops]))
+    out.shells = [] if kind == 'sheet' and len(face_ids) == 1 else [list(range(len(face_ids)))]
+    return out
+
+
+def wire_of(m, name, edge_ids):
+    """S6: the edges `edge_ids` of a model, in order, as a wire body."""
+    verts = sorted({v for e in edge_ids for v in (m.edges[e].start, m.edges[e].end)})
+    vmap = {v: i for i, v in enumerate(verts)}
+    out = Model(name, m.tolerance, kind='wire')
+    out.vertices = [m.vertices[v] for v in verts]
+    out.edges = [Edge(vmap[m.edges[e].start], vmap[m.edges[e].end], m.edges[e].curve) for e in edge_ids]
+    out.wire = list(range(len(edge_ids)))
+    return out
+
+
+def sheet_models():
+    """S6: sheets (free faces and open shells), closed shells without a
+    solid, wires and an acorn, cut from the neutral prisms, with their
+    explicit OCCT rows (compare_brep.py --family sheet), and mutations."""
+    box = prism('box', [rectangle(0, 0, 3, 2)])
+    plate = prism('plate', [rectangle(0, 0, 4, 3), [('circle', (2.0, 1.5), 0.75, False)]], 0.0, 0.5)
+    stadium_prism = prism('stadium', [stadium(3.0, 1.0)], 0.0, 1.0)
+    half = prism('half_disc', [[('line', (-1.0, 0.0)), ('arc', (1.0, 0.0), (0.0, 0.0), True)]], 0.0, 0.4)
+    cylinder = prism('cylinder', [[('circle', (0.0, 0.0), 1.5, True)]], 0.0, 2.0)
+    quadratic = Basis(2, [0.0, 1.0], [3, 3])
+    bulge = prism('bulge', [[('line', (0.0, 0.0)), ('spline', (3.0, 0.0), [(4.0, 1.0)], quadratic, None),
+                             ('line', (3.0, 2.0)), ('line', (0.0, 2.0))]])
+    models = [
+        extract(box, 'sheet_square', [1], 'sheet'),
+        extract(box, 'sheet_square_bottom', [0], 'sheet'),
+        extract(plate, 'sheet_round_hole', [1], 'sheet'),
+        extract(stadium_prism, 'sheet_stadium', [1], 'sheet'),
+        extract(half, 'sheet_half_disc', [1], 'sheet'),
+        # A partial cylinder: the stadium's first arc wall.
+        extract(stadium_prism, 'sheet_cylinder_patch', [3], 'sheet'),
+        # The spline wall of the bulge.
+        extract(bulge, 'sheet_spline_wall', [3], 'sheet'),
+        # An open box: every face but the top.
+        extract(box, 'sheet_open_box', [0, 2, 3, 4, 5], 'sheet'),
+        # Closed shells bounding a void.
+        extract(box, 'shell_box', [0, 1, 2, 3, 4, 5], 'shell'),
+        extract(cylinder, 'shell_cylinder', [0, 1, 2], 'shell'),
+        # Wires: the box's bottom edges, a circle, a line-arc-line run.
+        wire_of(box, 'wire_square', [4, 6, 8, 10]),
+        wire_of(cylinder, 'wire_circle', [0]),
+        wire_of(stadium_prism, 'wire_open', [4, 6, 8]),
+        wire_of(box, 'wire_edge', [4]),
+    ]
+    acorn = Model('acorn_point', 1e-7, kind='acorn')
+    acorn.vertices = [(1.0, 2.0, 3.0)]
+    models.append(acorn)
+    base = {m.name: m for m in models}
+
+    def mutated(name, source, change):
+        m = copy.deepcopy(base[source])
+        m.name = name
+        change(m)
+        models.append(m)
+    mutated('sheet_square_vertex_moved', 'sheet_square',
+            lambda m: m.vertices.__setitem__(0, (m.vertices[0][0]+1e-3, m.vertices[0][1], m.vertices[0][2])))
+
+    def shift(m):
+        u = m.faces[0].loops[0][0]
+        u.pcurve = Line2((u.pcurve.start[0]+1e-3, u.pcurve.start[1]), (u.pcurve.end[0]+1e-3, u.pcurve.end[1]))
+    mutated('sheet_open_box_pcurve_shift', 'sheet_open_box', shift)
+    # Two edges that share no vertex.
+    mutated('wire_disconnected', 'wire_square', lambda m: setattr(m, 'wire', [0, 2]))
+    return models
+
+
 def generate():
     bases = base_cases()
     models = list(bases.values())+mutations(bases)
     cells = [declare(c) for c in [to_cell(m) for m in models]+cell_cases(bases)
-             + [to_cell(m) for m in spline_models()]]
+             + [to_cell(m) for m in spline_models()]+[to_cell(m) for m in sheet_models()]]
     names = [c.name for c in cells]
     assert len(names) == len(set(names)), 'duplicate case names'
     text = '\n'.join(encode_cell(c) for c in cells)+'\n'

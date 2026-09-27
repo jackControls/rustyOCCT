@@ -40,6 +40,9 @@ SPLINES = ROOT/'rust/fixtures/occt-spline-preimplementation'
 # S4d: BRepGProp properties of the spline models, captured before any kernel
 # code integrates a spline surface or a spline pcurve on a cylinder or cone.
 PROPERTIES = ROOT/'rust/fixtures/occt-spline-properties'
+# S6: native observations of sheets, closed shells without a solid, wires
+# and an acorn, captured before any kernel code accepts them.
+SHEETS = ROOT/'rust/fixtures/occt-sheet-preimplementation'
 SOURCE_FILE = ROOT/'rust/tools/occt_brep_check_oracle.cpp'
 TOOLKITS = ['TKTopAlgo', 'TKBRep', 'TKGeomAlgo', 'TKGeomBase', 'TKG3d', 'TKG2d', 'TKMath', 'TKernel']
 # Every preflight case finished within 0.02 s; the deadline only bounds hangs.
@@ -75,6 +78,74 @@ def native_rows():
 def spline_rows():
     """The same for the spline models (S4)."""
     return [(m, *reference.native(m)) for m in generate_brep_fixtures.spline_models()]
+
+
+def sheet_rows():
+    """The same for the sheet, shell, wire and acorn models (S6)."""
+    return [(m, *reference.native(m)) for m in generate_brep_fixtures.sheet_models()]
+
+
+def decode_measure(row, name):
+    """A G row: the area or length and its centre (S6)."""
+    words = row.split()
+    if words[:2] != [name, 'G'] or len(words) != 6:
+        raise ValueError('malformed measure row for '+name)
+    return [float(w) for w in words[2:]]
+
+
+def capture_sheets(executable, env, oracle_source, sdk_manifest):
+    """Record every native row of the S6 models before any kernel code
+    accepts them."""
+    rows = []
+    for m, text, _ in sheet_rows():
+        record = run(executable, text, env)
+        lines = record['stdout'].splitlines()
+        if record['exit_code'] != 0 or len(lines) != 4:
+            raise ValueError('native sheet capture failed for '+m.name+': '+record['stderr'])
+        decode_tolerances(lines[2], m.name)
+        decode_measure(lines[3], m.name)
+        rows.extend(lines)
+    SHEETS.mkdir(parents=True, exist_ok=True)
+    (SHEETS/'inputs.txt').write_text('\n'.join(text for _, text, _ in sheet_rows())+'\n')
+    (SHEETS/'native.txt').write_text('\n'.join(rows)+'\n')
+    (SHEETS/'oracle.cpp').write_text(oracle_source.read_text())
+    status = subprocess.run(['git', 'status', '--porcelain', '--', 'rust'], cwd=ROOT, text=True,
+                            capture_output=True, check=True).stdout.splitlines()
+    revision = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True, capture_output=True,
+                              check=True).stdout.strip()
+    write(SHEETS/'capture.json', {
+        'source_reference': SOURCE, 'rust_revision': revision, 'platform': sys.platform,
+        'rust_sheet_implementation_exists': False, 'rust_worktree_uncommitted': status,
+        'sdk_manifest_sha256': digest(sdk_manifest), 'input_sha256': digest(SHEETS/'inputs.txt'),
+        'probe_source_sha256': digest(SHEETS/'oracle.cpp'),
+        'observations_sha256': digest(SHEETS/'native.txt')})
+
+
+def sheet_capture(observed):
+    """The S6 observations are unchanged and reproduce: statuses and counts
+    exactly, tolerances as for M5, measures within 1e-9 relative."""
+    metadata = json.loads((SHEETS/'capture.json').read_text())
+    if (metadata['source_reference'] != SOURCE or metadata['rust_sheet_implementation_exists']
+            or any(line[3:].startswith('rust/kernel') for line in metadata['rust_worktree_uncommitted'])):
+        raise ValueError('sheet capture was not a clean pre-implementation reference')
+    for key, name in [('input_sha256', 'inputs.txt'), ('probe_source_sha256', 'oracle.cpp'),
+                      ('observations_sha256', 'native.txt')]:
+        if metadata[key] != digest(SHEETS/name):
+            raise ValueError('sheet evidence changed: '+name)
+    same_inputs((SHEETS/'inputs.txt').read_text(), '\n'.join(text for _, text, _ in sheet_rows())+'\n')
+    lines = (SHEETS/'native.txt').read_text().splitlines()
+    sizes = {m.name: case_size(m) for m, _, _ in sheet_rows()}
+    for k in range(0, len(lines), 4):
+        name = lines[k].split()[0]
+        now = observed.get(name)
+        if now is None or now[:2] != lines[k:k+2]:
+            raise ValueError('native sheet observations of '+name+' differ from the capture')
+        if not same_tolerances(decode_tolerances(lines[k+2], name), decode_tolerances(now[2], name),
+                               sizes[name]*2.0**-46):
+            raise ValueError('native sheet tolerance observations of '+name+' differ from the capture')
+        was, got = decode_measure(lines[k+3], name), decode_measure(now[3], name)
+        if any(abs(a-b) > 1e-9*max(1.0, abs(a)) for a, b in zip(was, got)):
+            raise ValueError('native sheet measures of '+name+' differ from the capture')
 
 
 def capture_splines(executable, env, oracle_source, sdk_manifest):
@@ -462,8 +533,10 @@ def main():
     parser.add_argument('--strict-native', action='store_true')
     parser.add_argument('--capture-enclosures', action='store_true',
                         help='record the M5 tolerance observations (before implementation only)')
-    parser.add_argument('--family', choices=['prism', 'spline'], default='prism',
-                        help='the pinned prism corpus, or the spline models of S4')
+    parser.add_argument('--family', choices=['prism', 'spline', 'sheet'], default='prism',
+                        help='the pinned prism corpus, the spline models of S4 or the sheets of S6')
+    parser.add_argument('--capture-sheets', action='store_true',
+                        help='record the S6 sheet observations (before implementation only)')
     parser.add_argument('--capture-splines', action='store_true',
                         help='record the S4a spline observations (before implementation only)')
     parser.add_argument('--capture-properties', action='store_true',
@@ -474,7 +547,13 @@ def main():
     prefix = args.occt_root.resolve()
     verify_sdk(prefix, args.sdk_manifest)
     spline = args.family == 'spline'
-    if not spline:
+    sheet = args.family == 'sheet'
+    if args.capture_sheets:
+        executable, env, _, _ = build(prefix, output, sheet_rows()[0][1])
+        capture_sheets(executable, env, SOURCE_FILE, args.sdk_manifest)
+        print('captured', len(sheet_rows()), 'sheet cases')
+        return
+    if not spline and not sheet:
         original_capture()
     models, files = generate()
     for name, text in files.items():
@@ -483,7 +562,7 @@ def main():
     issues, counts = rust_issues()
     enclosures = rust_enclosures()
     masses = rust_masses()
-    cases = spline_rows() if spline else native_rows()
+    cases = spline_rows() if spline else sheet_rows() if sheet else native_rows()
     executable, env, loaded, command = build(prefix, output, cases[0][1])
     if args.capture_splines:
         capture_splines(executable, env, SOURCE_FILE, args.sdk_manifest)
@@ -495,7 +574,7 @@ def main():
         return
     if spline:
         env = dict(env, BREP_ORACLE_PROPERTIES='1')
-    properties = {}
+    properties, measures = {}, {}
     if args.capture_enclosures:
         capture_enclosures(executable, env, SOURCE_FILE, args.sdk_manifest)
         print('captured', len(cases), 'tolerance rows')
@@ -528,6 +607,11 @@ def main():
                 if len(rows) != 4:
                     raise ValueError(f'malformed native output for {m.name}')
                 properties[m.name] = decode_properties(rows.pop(), m.name)
+            if sheet:
+                if len(rows) != 4:
+                    raise ValueError(f'malformed native output for {m.name}')
+                measures[m.name] = decode_measure(rows[3], m.name)
+                rows = rows[:3]
             if (len(rows) != 3 or not rows[1].startswith(f'{m.name} N ')
                     or not rows[2].startswith(f'{m.name} T ')):
                 raise ValueError(f'malformed native output for {m.name}')
@@ -584,6 +668,9 @@ def main():
         spline_capture(native_lines)
         properties_capture(properties)
         report['properties_rows_reproduced'] = len(properties)
+    elif sheet:
+        sheet_capture(native_lines)
+        report['measure_rows_reproduced'] = len(measures)
     else:
         enclosure_capture(tolerances)
     report['tolerance_rows_reproduced'] = len(tolerances)

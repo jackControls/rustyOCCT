@@ -31,6 +31,7 @@ from build_pinned_occt import SOURCE, digest
 from compare_brep import review_for, run, sha, write
 from compare_degree_elevation import verify_sdk, verify_loaded_libraries
 from compare_occt import ROOT
+import brep_io_reference
 import generate_brep_io_fixtures
 
 CAPTURE = ROOT/'rust/fixtures/occt-brep-io-capture'
@@ -38,6 +39,10 @@ REVIEWS = ROOT/'rust/fixtures/occt-brep-io-divergences.json'
 SOURCE_FILE = ROOT/'rust/tools/occt_brep_io_oracle.cpp'
 CORPUS = ROOT/'data/occ'
 TOOLKITS = ['TKTopAlgo', 'TKBRep', 'TKGeomAlgo', 'TKGeomBase', 'TKG3d', 'TKG2d', 'TKMath', 'TKernel']
+# S6: the corpus's free shapes, read natively before any kernel code imports
+# them (a separate probe: the T2 capture pins SOURCE_FILE's text).
+FREE_SOURCE = ROOT/'rust/tools/occt_free_shape_oracle.cpp'
+FREE_CAPTURE = ROOT/'rust/fixtures/occt-free-shape-capture'
 # Both native runs together took under a second; the deadline only bounds hangs.
 TIMEOUT = 600
 # The worst observed difference was 2.5e-14: volume and area relative to
@@ -45,11 +50,11 @@ TIMEOUT = 600
 PROPERTY_BOUND = 1e-11
 
 
-def build(prefix, output):
+def build(prefix, output, source=SOURCE_FILE, name='oracle'):
     include, lib = prefix/'include/opencascade', prefix/'lib'
-    executable = output/'oracle'
+    executable = output/name
     command = shlex.split(os.environ.get('CXX', 'c++'))+[
-        '-std=c++17', '-O2', str(SOURCE_FILE), '-I'+str(include), '-L'+str(lib),
+        '-std=c++17', '-O2', str(source), '-I'+str(include), '-L'+str(lib),
         '-Wl,-rpath,'+str(lib), '-o', str(executable)]+['-l'+name for name in TOOLKITS]
     built = subprocess.run(command, text=True, capture_output=True)
     (output/'native-build.log').write_text(built.stdout+built.stderr)
@@ -88,6 +93,62 @@ def parse(stdout, paths):
     if list(out) != [str(p) for p in paths]:
         raise ValueError('native output does not cover every input in order')
     return out
+
+
+def parse_free(stdout, paths):
+    """{path: [(type, verdict, counts, [mass, cx, cy, cz])]} in input order."""
+    out, current = {}, None
+    for line in stdout.splitlines():
+        words = line.split()
+        if words[0] == 'F':
+            if len(words) != 3 or not words[2].isdigit():
+                raise ValueError('native could not read '+line)
+            current = out.setdefault(words[1], [])
+        elif words[0] == 'X' and current is not None and len(words) == 13:
+            current.append((words[1], words[2], tuple(int(w) for w in words[3:9]),
+                            [float(w) for w in words[9:]]))
+        else:
+            raise ValueError('malformed native line '+line)
+    if list(out) != [str(p) for p in paths]:
+        raise ValueError('native output does not cover every input in order')
+    return out
+
+
+def capture_free(prefix, output, sdk_manifest):
+    """Record the corpus's free shapes natively (S6), certify the
+    independent reader's enumeration of them (types and counts) against it,
+    before any kernel code imports them."""
+    executable, env, _, _ = build(prefix, output, FREE_SOURCE, 'free-oracle')
+    corpus = sorted(CORPUS.glob('*.brep'))
+    record = run(executable, '\n'.join(str(p) for p in corpus), env)
+    if record['exit_code'] != 0:
+        raise SystemExit('native free-shape run failed: '+json.dumps(record)[:2000])
+    observed = {Path(k).name: v for k, v in parse_free(record['stdout'], corpus).items()}
+    for path in corpus:
+        ours = [(k, c) for _, k, _, c in brep_io_reference.free_shapes(path.read_text(errors='replace'))]
+        theirs = [(k, c) for k, _, c, _ in observed[path.name]]
+        if ours != theirs:
+            raise ValueError('the independent reader disagrees with OCCT on the free shapes of '+path.name)
+    lines = []
+    for name, shapes in observed.items():
+        lines.append(f'F {name} {len(shapes)}')
+        lines += [' '.join(['X', k, v, *map(str, c), *map(repr, m)]) for k, v, c, m in shapes]
+    FREE_CAPTURE.mkdir(parents=True, exist_ok=True)
+    (FREE_CAPTURE/'native.txt').write_text('\n'.join(lines)+'\n')
+    (FREE_CAPTURE/'oracle.cpp').write_text(FREE_SOURCE.read_text())
+    status = subprocess.run(['git', 'status', '--porcelain', '--', 'rust'], cwd=ROOT, text=True,
+                            capture_output=True, check=True).stdout.splitlines()
+    revision = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True, capture_output=True,
+                              check=True).stdout.strip()
+    write(FREE_CAPTURE/'capture.json', {
+        'source_reference': SOURCE, 'oracle': next(iter(record['stderr'].splitlines()), None),
+        'platform': sys.platform, 'rust_revision': revision,
+        'rust_free_shape_import_exists': False, 'rust_worktree_uncommitted': status,
+        'sdk_manifest_sha256': digest(sdk_manifest),
+        'probe_source_sha256': digest(FREE_CAPTURE/'oracle.cpp'),
+        'observations_sha256': digest(FREE_CAPTURE/'native.txt'),
+        'inputs_sha256': {p.name: digest(p) for p in corpus}})
+    return sum(len(v) for v in observed.values())
 
 
 def close(a, b):
@@ -177,11 +238,16 @@ def main():
     parser.add_argument('--strict-native', action='store_true')
     parser.add_argument('--capture', action='store_true',
                         help='write the corpus observations to the capture directory instead of checking them')
+    parser.add_argument('--capture-free', action='store_true',
+                        help='record the corpus free shapes (S6, before implementation only)')
     args = parser.parse_args()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     prefix = args.occt_root.resolve()
     verify_sdk(prefix, args.sdk_manifest)
+    if args.capture_free:
+        print('captured', capture_free(prefix, output, args.sdk_manifest), 'free shapes')
+        return
     reference = reference_rows()
     executable, env, loaded, command = build(prefix, output)
     corpus = sorted(CORPUS.glob('*.brep'))

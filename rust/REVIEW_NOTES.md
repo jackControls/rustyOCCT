@@ -490,6 +490,48 @@ imports free faces and shells, which unblocks the largest group of data
 cases; `mkface`, `mkplane` and `mkedge` in the adapter. Value: ledger, and
 the tools that later operations need (a face as a splitting tool).
 
+Decisions for S6, recorded before its code (2026-09-27):
+
+* **Classes (D9).** `Topology::class()` computes `Solid` (every bounded
+  region solid, every face between a solid and a void, no wire edges or
+  acorn vertices), `Sheet` (faces only, no solid region: each face between
+  void regions, possibly the same one), `Wire` (wire edges only), `Acorn`
+  (acorn vertices only) or `General`. Nothing stores it.
+* **Sheets.** An open sheet's faces have both sides in one shell of the
+  infinite void: the radial alternation holds with one fin per boundary
+  edge, so an open boundary is not a free edge, and there is no
+  orientation flux to decide. A closed shell without a solid bounds a
+  bounded void region, oriented and contained as a solid's shell is. Every
+  face-level check (loops, pcurves, gaps, windings, continuity, enclosures)
+  is unchanged. A shell is still one connected component; a body of
+  several components is several bodies (as import makes one body per
+  solid).
+* **Wires and acorns.** A wire body is one shell of the infinite void
+  listing connected wire edges (no fins), each with its curve's checks; an
+  acorn body lists one vertex. Their vertex gaps are certified as edges'.
+* **Builders.** `Body::face_from_profile` (a planar face with the profile's
+  loops) and `Body::wire_from_boundary` (the boundary's edges and
+  vertices), with new operation kinds `MakeFace` and `MakeWire` and roles
+  `Face`, `Edge` and `Vertex` from the profile's elements, in the identity
+  encoding and its independent reference; rigid motions keep their ids.
+  Mass properties of a sheet are its area and centre, of a wire its length
+  and centre.
+* **Interop.** The reader turns free faces and shells into sheet bodies,
+  free wires and edges into wire bodies and free vertices into acorns; the
+  writer writes them back as OCCT faces, shells, wires and vertices;
+  synthesized counts follow OCCT's: a sheet of one face counts as a free
+  face (no shell), of several as one shell; a wire of one edge as a free
+  edge (no wire), of several as one wire (so an imported one-face shell or
+  one-edge wire counts differently, a reviewed difference if it occurs).
+* **Evidence first.** The independent validator (`cell_reference.py`)
+  learns sheets, wires and acorns, the generator adds such cases and their
+  mutations, and native `BRepCheck`, counts and `BRepGProp` properties of
+  them, and the corpus's free shapes read natively, are captured before any
+  kernel code accepts them.
+* **DRAW.** `plane`, `cylinder`, `line` and `circle` objects, `mkface` and
+  `mkedge` on them, `mkplane` of profile faces with arcs, and
+  `checkshape`, `nbshapes`, `sprops` and `lprops` of sheets and wires.
+
 ### S7 — intersections of the analytic family (PORTING step 3)
 
 Curve/curve, curve/surface and surface/surface for planes, cylinders,

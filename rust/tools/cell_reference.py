@@ -388,9 +388,24 @@ def to_cell(m):
     for fid, fin in enumerate(cell.fins):
         if 0 <= fin.edge < len(cell.edges):
             cell.edges[fin.edge].fins.append(fid)
+    kind = getattr(m, 'kind', 'solid')
+    if kind == 'sheet':
+        # S6: both sides of every face in one shell of the infinite void.
+        for f in cell.faces:
+            f.front = f.back = 0
+        cell.shells = [Shell(0, [(fi, side) for fi in range(len(cell.faces)) for side in 'FB'])]
+        cell.regions = [Region('void', [0])]
+        return cell
+    if kind in ('wire', 'acorn'):
+        cell.shells = [Shell(0, [], [edge_map.get(e, e) for e in m.wire] if kind == 'wire' else [],
+                             [0] if kind == 'acorn' else [])]
+        cell.regions = [Region('void', [0])]
+        return cell
     # Region 0 is the infinite void (the outer shell's twin), region 1 the
-    # solid, then one bounded void region per non-empty cavity.
-    cell.regions = [Region('void', [twins[0]] if 0 in twins else []), Region('solid', list(range(n)))]
+    # solid (a bounded void for a closed shell without one, S6), then one
+    # bounded void region per non-empty cavity.
+    cell.regions = [Region('void', [twins[0]] if 0 in twins else []),
+                    Region('void' if kind == 'shell' else 'solid', list(range(n)))]
     cell.shells = [Shell(1, [(f, 'F') for f in s]) for s in old]
     for k, t in sorted(twins.items(), key=lambda kv: kv[1]):
         if k == 0:
@@ -471,6 +486,27 @@ def encode(c):
 
 
 # ---------------------------------------------------------------- validator
+
+def body_class(c):
+    """D9 (S6): solid, sheet, wire, acorn or general, from the regions and
+    what the shells list."""
+    wires = any(s.wire_edges for s in c.shells)
+    acorns = any(s.acorns for s in c.shells)
+    solid = [r for r in c.regions if r.kind == 'solid']
+    kind = lambda shell: c.regions[c.shells[shell].region].kind
+    if c.faces and not wires and not acorns:
+        sides = [(kind(f.front), kind(f.back)) for f in c.faces]
+        if solid and all(sorted(p) == ['solid', 'void'] for p in sides):
+            return 'solid'
+        if not solid:
+            return 'sheet'
+    if not c.faces and not solid:
+        if wires and not acorns:
+            return 'wire'
+        if acorns and not wires and sum(len(s.acorns) for s in c.shells) == 1:
+            return 'acorn'
+    return 'general'
+
 
 def issue(kind, entity):
     return (kind, entity)
@@ -742,9 +778,37 @@ def validate(c):
                         vs |= {edge.start, edge.end}
                         es.add(c.fins[k].edge)
         chi = len(vs)-len(es)+2*len(members)-loops
-        if chi % 2 or chi > 2:
+        # A sheet's two sides make no closed surface of its faces (S6).
+        if not two_sided(c, si) and (chi % 2 or chi > 2):
             issues.append(issue('euler', f'shell {si}'))
             bad_shells.add(si)
+
+    # Wire edges and acorn vertices (S6): a wire edge has no fins, an acorn
+    # vertex bounds nothing else, and a shell's wire edges and acorns are
+    # connected through their vertices.
+    edge_users = {v for e in c.edges for v in (e.start, e.end) if v is not None}
+    loop_vertices = {l.vertex for l in c.loops if l.vertex is not None}
+    for si, sh in enumerate(c.shells):
+        for e in sh.wire_edges:
+            if c.edges[e].fins or e in users:
+                issues.append(issue('wire_edge_with_fins', f'edge {e}'))
+        for v in sh.acorns:
+            if v in edge_users or v in loop_vertices:
+                issues.append(issue('acorn_vertex_used', f'vertex {v}'))
+        # A shell of wire edges and acorns alone is connected through their
+        # vertices (a mixed general body is not constrained here).
+        if (sh.wire_edges or sh.acorns) and not sh.sides:
+            parts = [('e', e) for e in sh.wire_edges]+[('v', v) for v in sh.acorns]
+            ends = lambda p: ({c.edges[p[1]].start, c.edges[p[1]].end} - {None}) if p[0] == 'e' else {p[1]}
+            seen, stack = {parts[0]}, [parts[0]]
+            while stack:
+                p = stack.pop()
+                for q in parts:
+                    if q not in seen and ends(p) & ends(q):
+                        seen.add(q)
+                        stack.append(q)
+            if len(seen) != len(parts):
+                issues.append(issue('disconnected_shell', f'shell {si}'))
 
     # ------------------------------------------------ certified-in-production geometry
     vertex_ok = []
@@ -954,7 +1018,8 @@ def validate(c):
     bad_faces = (geometry_bad | structural_faces | side_bad
                  | {int(ent.split()[1].split('.')[0]) for k, ent in issues if k == 'loop_winding'})
     sound = {si for si in range(ns) if si not in bad_shells and si not in twins
-             and shell_faces(si) and not (set(shell_faces(si)) & bad_faces)}
+             and shell_faces(si) and not (set(shell_faces(si)) & bad_faces)
+             and set(shell_faces(si)) - two_sided(c, si)}
     for ri, r in enumerate(c.regions):
         oriented = []
         for pos, si in enumerate(r.shells):
@@ -1600,10 +1665,20 @@ def face_flux(c, f):
     return total
 
 
+def two_sided(c, si):
+    """The faces the shell lists on both sides (a sheet's, S6)."""
+    sides = c.shells[si].sides
+    return {f for f, side in sides if (f, opposite(side)) in sides}
+
+
 def shell_flux(c, si):
-    """None when a face's flux is not decided (S4d)."""
+    """None when a face's flux is not decided (S4d). A face the shell lists
+    on both sides adds nothing (S6)."""
     total = mp.mpf(0)
+    both = two_sided(c, si)
     for f, side in c.shells[si].sides:
+        if f in both:
+            continue
         flux = face_flux(c, c.faces[f])
         if flux is None:
             return None
