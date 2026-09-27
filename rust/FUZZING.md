@@ -159,7 +159,12 @@ the sorted remaining names, then mutates for 60 seconds. The seed is the
 workflow's run id and every report records it with the counts of each group,
 so `run_fuzz.py --replay sample --sample-seed <id>` on the same corpus and
 manifest replays the same inputs. Without a manifest the whole corpus
-replays. A sampled run's new inputs are not retained (they are new only
+replays. Campaigns pass `-reload=0`: libFuzzer otherwise rereads the corpus
+directory every second and reruns every file newer than its first read that
+added no coverage, outside the stop-file check. The first per-push runs after
+U6 (`88ae24df`) copied a whole corpus into the sample directory with fresh
+modification times and overran the shutdown grace on thirteen targets
+(exit 124, no findings); the sample now keeps each seed's time as well. A sampled run's new inputs are not retained (they are new only
 against the sample); the corpus grows on full replays. `surface_knots`,
 `degree_elevation` and `surface_editing` replay only their regressions per
 push (`--regressions-only`) and fuzz on the schedule. Acceptance still needs

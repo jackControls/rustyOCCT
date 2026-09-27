@@ -665,8 +665,10 @@ def main():
                     run_corpus=corpus.parent/f'.{target}-sample'
                     if run_corpus.exists(): shutil.rmtree(run_corpus)
                     run_corpus.mkdir()
+                    # Keep each seed's modification time: libFuzzer rereads
+                    # corpus files newer than its first read.
                     for name in chosen:
-                        shutil.copyfile(corpus/name,run_corpus/name)
+                        shutil.copy2(corpus/name,run_corpus/name)
                 else:
                     run_corpus,replay=corpus,{'replay':'full'}
                 initial_corpus_files=len(list(run_corpus.iterdir()))
@@ -675,7 +677,7 @@ def main():
                 timer=MutationBudget(log_path,stop_file,args.seconds,startup_seconds=startup_seconds,shutdown_seconds=shutdown_seconds)
                 command = ['cargo',f'+{args.toolchain}','fuzz','run',target,str(run_corpus),
                     '--fuzz-dir',str(FUZZ),*sanitizer_build_args(target),'--',
-                    '-max_total_time=0',f'-stop_file={stop_file}',f'-mutate_depth={MUTATION_DEPTH}',f'-timeout={input_seconds}','-rss_limit_mb=2048',
+                    '-max_total_time=0',f'-stop_file={stop_file}',f'-mutate_depth={MUTATION_DEPTH}',f'-timeout={input_seconds}','-rss_limit_mb=2048','-reload=0',
                     f'-max_len={max_len(target)}',f'-seed={args.seed}',f'-artifact_prefix={artifacts}/','-print_final_stats=1']
                 with log_path.open('w') as log:
                     campaign_env=campaign_environment(target,env)
