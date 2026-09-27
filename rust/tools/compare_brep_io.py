@@ -59,7 +59,7 @@ PROPERTY_BOUND = 1e-11
 MEASURE_BOUND = 1e-9
 
 
-def build(prefix, output, source=SOURCE_FILE, name='oracle'):
+def build(prefix, output, source=SOURCE_FILE, name='oracle', required=('TKTopAlgo', 'TKBRep')):
     include, lib = prefix/'include/opencascade', prefix/'lib'
     executable = output/name
     command = shlex.split(os.environ.get('CXX', 'c++'))+[
@@ -80,7 +80,8 @@ def build(prefix, output, source=SOURCE_FILE, name='oracle'):
                                      check=True, env=env).stdout
     (output/'loaded-libraries.txt').write_text(loaded_text)
     loaded = verify_loaded_libraries(loaded_text, lib, sys.platform)
-    for toolkit in ['TKTopAlgo', 'TKBRep']:
+    # The toolkits the probe uses (a linker with --as-needed drops the rest).
+    for toolkit in required:
         if not any(Path(p['path']).name.startswith('lib'+toolkit+'.') for p in loaded):
             raise ValueError('missing loaded library: '+toolkit)
     return executable, env, loaded, command

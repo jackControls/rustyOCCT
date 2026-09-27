@@ -286,7 +286,7 @@ def main():
     for name, text in fixtures.generate().items():
         if text != (ROOT/'rust/fixtures'/name).read_text():
             raise ValueError('independent fixture regeneration changed: '+name)
-    executable, env, loaded, command = build(prefix, output, SOURCE_FILE, 'procedural-oracle')
+    executable, env, loaded, command = build(prefix, output, SOURCE_FILE, 'procedural-oracle', ('TKGeomAlgo',))
     text = native_input()
     if args.capture:
         capture(executable, env, args.capture, args.sdk_manifest)
