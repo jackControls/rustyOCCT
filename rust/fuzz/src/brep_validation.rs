@@ -1241,7 +1241,66 @@ fn verify(got: Vec<String>, expect: Expect) {
     }
 }
 
+/// S6: a valid sheet, shell, wire or acorn model, moved exactly, stays
+/// valid with its class and counts, and its certified measure is the
+/// original's moved (the two enclosures, one mapped, overlap); a wire
+/// without one of its edges reports that edge unused.
+fn sheets(b: &mut Bytes) {
+    let blocks: Vec<&str> = include_str!("../../fixtures/brep-cases.txt")
+        .split("\nend")
+        .map(str::trim)
+        .filter(|x| {
+            ["case sheet_", "case shell_", "case wire_", "case acorn_"]
+                .iter()
+                .any(|p| x.starts_with(p))
+        })
+        .collect();
+    let (_, tol, parts) = brep_protocol::parse(blocks[b.pick(blocks.len())]);
+    let tolerance = Tolerance::new(tol, 1e-12).unwrap();
+    let (issues, Some(before)) = report_topology(&parts, tolerance) else {
+        // The three mutations among the models.
+        return;
+    };
+    assert_eq!(issues, Vec::<String>::new());
+    let s = 2.0_f64.powi(i32::from(b.next() % 21) - 10);
+    let t = [0, 1, 2].map(|_| f64::from(b.next()) / 16.0 - 8.0);
+    let mut moved = parts.clone();
+    similar(&mut moved, s, t);
+    let (issues, after) = report_topology(&moved, Tolerance::new(tol * s, 1e-12).unwrap());
+    assert_eq!(issues, Vec::<String>::new());
+    let after = after.unwrap();
+    assert_eq!(after.class(), before.class());
+    assert_eq!(after.occt_counts(), before.occt_counts());
+    if let (Some(m0), Some(m1)) = (before.measure_enclosure(), after.measure_enclosure()) {
+        // An area scales by s^2, a length by s; a centre maps.
+        let power = if before.faces().is_empty() { 1 } else { 2 };
+        let k = s.powi(power);
+        let overlap = |[lo, hi]: [f64; 2], [a, b]: [f64; 2]| {
+            let slack = 1e-12 * a.abs().max(b.abs()).max(lo.abs()).max(hi.abs()).max(1.0);
+            lo <= b + slack && a <= hi + slack
+        };
+        assert!(overlap([m0.measure[0] * k, m0.measure[1] * k], m1.measure));
+        for i in 0..3 {
+            let c = [m0.centre[i][0] * s + t[i], m0.centre[i][1] * s + t[i]];
+            assert!(overlap(c, m1.centre[i]), "centre {i}");
+        }
+    }
+    // A wire of several edges without its last: that edge is unused.
+    if let Some(shell) = parts.shells.iter().position(|x| x.wire_edges.len() > 1) {
+        let mut cut = parts;
+        let e = cut.shells[shell].wire_edges.pop().unwrap();
+        let got = report(&cut, tolerance);
+        let want = format!("unused_edge:edge {}", e.index());
+        assert!(got.contains(&want), "missing {want} in {got:?}");
+    }
+}
+
 pub fn check_brep_validation(data: &[u8]) {
+    if data.first() == Some(&b'W') {
+        // S6: sheets, wires and acorns.
+        sheets(&mut Bytes(data, 1));
+        return;
+    }
     let mut b = Bytes(data, 0);
     let mutation = b.next() % 33;
     if mutation == 27 {

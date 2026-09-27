@@ -654,6 +654,71 @@ so the Extrude job takes sketches with fillets and slots.
   `identity-arc-expected.tsv`); the builder reproduces the neutral
   generator's stadium, notch and half disc.
 
+## Sheets, wires and acorns (S6)
+
+S6 of `REVIEW_NOTES.md` admits bodies without a solid region: faces and
+shells, wires and single vertices. The cell model already had their slots
+(shells list wire edges and acorn vertices); S6 validates, builds, measures,
+imports and writes them.
+
+* **Classes (D9).** `Topology::class()` computes `Solid` (faces only, each
+  between a solid and a void region), `Sheet` (faces only, no solid region),
+  `Wire` (wire edges only), `Acorn` (one vertex) or `General`; nothing stores
+  it. The independent reference computes the same class
+  (`cell_reference.body_class`) for every valid fixture
+  (`brep-classes.tsv`).
+* **Validation.** An open sheet's faces have both sides in one shell of the
+  infinite void: such two-sided faces carry no orientation flux and their
+  shell no Euler condition, but a sound shell still needs one one-sided face
+  more than it has two-sided ones, so a solid's shell never degenerates to
+  a sheet. A closed shell without a solid bounds a bounded void region and
+  is checked as a solid's shell. A wire edge may have no fin
+  (`wire_edge_with_fins` otherwise) and an acorn vertex no edge
+  (`acorn_vertex_used`); their curves and vertex gaps are checked as edges'.
+  Every face-level check is unchanged.
+* **Counts.** OCCT closes every closed edge at a vertex, so every ring edge
+  counts one vertex, whatever it bounds (a cylinder's seam, a disc, a circle
+  wire). Without a solid, a sheet of one face is a free face (no shell), of
+  several one shell per face-bearing shell, twins counted once; a wire of
+  one edge is a free edge (no wire), of several one wire. An imported
+  one-face shell or one-edge wire would count differently; none occurs in
+  the corpus.
+* **Measures.** `Topology::measure_enclosure()` is a sheet's area, a wire's
+  length (zero for an acorn) and the centre, certified: faces through the
+  mass module's face integrals, lines and arcs in closed form, a full circle
+  with the certified `pi`. A wire with a spline edge is not measured.
+* **Builders.** `Body::face_from_profile_with` makes one planar face on the
+  profile's frame bounded by every boundary; `Body::wire_from_boundary_with`
+  one closed wire of a boundary's edges in stored order. Their operation
+  kinds are `MakeFace` and `MakeWire`, the roles `Face` (from every
+  boundary), `Edge` (from its segment) and `Vertex` (from its point), so a
+  face body's entities derive from the same profile elements as a prism's
+  start cap, bottom edges and bottom vertices. Rigid motions rebuild in the
+  moved frame and keep every id.
+* **Interop.** The reader imports every shell, face, wire, edge and vertex
+  reached from the root outside a solid (`Import::free`): a shell is closed
+  when every edge with a curve is used exactly twice, else a sheet. On a
+  spline face, as on a plane, the loop enclosing the largest UV area comes
+  first (OCCT stores wires in any order; a hammer face had its hole first).
+  The writer writes a body without a solid as its closed shells, its face or
+  open shell, its edge or wire (each edge oriented to continue the last) or
+  its vertex; a ring edge no seam meets is closed at the start of its
+  record. A spline with more poles than `MAX_POLES` is reported as
+  `BSplineControlDataLimit`, and the independent reader models the limit.
+* **Evidence.** Native `BRepCheck`, counts and `BRepGProp` of eighteen
+  sheet, shell, wire and acorn models (`fixtures/occt-sheet-preimplementation`)
+  and of the corpus's 6,223 free shapes (`fixtures/occt-free-shape-capture`)
+  were captured before any kernel code accepted them. `compare_brep.py
+  --family sheet` gives 17 matches and 1 reviewed difference (the open
+  box's shifted pcurve, the prism shifts' Closed2d rule) with 15 counts and
+  15 measures verified; `compare_brep_io.py` imports 6,188 free shapes with
+  OCCT's counts and certified measures containing OCCT's, reads all of them
+  back natively valid with equal properties, and reads the eleven face and
+  wire bodies of `identity-sheet-cases.txt` back. The hammer's 31 faces the
+  validator rejects though BRepCheck accepts them (C0 spline surfaces,
+  pcurves certified farther from their edges than OCCT's stored tolerance,
+  uses the exact tiers leave undecided) are pinned in `occt_brep.rs`.
+
 ## Spline cells (S4)
 
 S4 of `REVIEW_NOTES.md` adds B-spline edges, pcurves and faces: R4's

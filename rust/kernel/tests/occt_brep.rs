@@ -1,9 +1,69 @@
 //! OCCT `.brep` interop (T2): the reader's typed errors, the writer and the
 //! round trip of every prism fixture through the cell model.
+#[path = "support/brep_protocol.rs"]
+mod brep_protocol;
 #[path = "support/identity_protocol.rs"]
 #[allow(dead_code)]
 mod identity_protocol;
 use rusty_occt::occt_brep::{import, read, write, BrepError};
+use rusty_occt::topology::Topology;
+use rusty_occt::Tolerance;
+use std::collections::BTreeMap;
+
+/// S6: written and read back, a body without a solid is one free shape of
+/// the same class and counts, its vertices bit for bit.
+fn free_round_trip(name: &str, t: &Topology, tol: f64) {
+    let text = write(t, tol).unwrap_or_else(|e| panic!("{name}: {e}"));
+    let im = import(&read(&text).unwrap());
+    assert!(im.unsupported.is_empty(), "{name}: {:?}", im.unsupported);
+    assert!(im.solids.is_empty(), "{name}");
+    assert_eq!(im.free.len(), 1, "{name}");
+    let back = im.free[0]
+        .result
+        .as_ref()
+        .unwrap_or_else(|e| panic!("{name}: {e:?}"));
+    assert_eq!(back.class(), t.class(), "{name}");
+    assert_eq!(back.occt_counts(), t.occt_counts(), "{name}");
+    let bits = |t: &Topology| {
+        let mut v: Vec<[u64; 3]> = t
+            .vertices()
+            .iter()
+            .map(|v| v.position.to_array().map(f64::to_bits))
+            .collect();
+        v.sort();
+        v
+    };
+    // A ring edge is closed at a vertex in the file and comes back a ring
+    // (import canonicalises closed edges whose vertex nothing else uses).
+    let rings = |t: &Topology| t.edges().iter().filter(|e| e.is_ring()).count();
+    if rings(t) + rings(back) == 0 {
+        assert_eq!(bits(back), bits(t), "{name}");
+    }
+}
+
+#[test]
+fn face_and_wire_bodies_and_free_cases_round_trip() {
+    let specs = identity_protocol::cases(include_str!("../../fixtures/identity-sheet-cases.txt"));
+    for spec in &specs {
+        let (body, _) = identity_protocol::build_body(spec);
+        free_round_trip(&spec.name, body.topology(), body.resolution().linear());
+    }
+    let mut free = 0;
+    for block in include_str!("../../fixtures/brep-cases.txt")
+        .split("\nend")
+        .filter(|b| !b.trim().is_empty())
+    {
+        let (name, tolerance, parts) = brep_protocol::parse(block.trim());
+        let Ok(t) = Topology::from_parts(parts, Tolerance::new(tolerance, 1e-12).unwrap()) else {
+            continue;
+        };
+        if t.class().name() != "solid" {
+            free_round_trip(&name, &t, tolerance);
+            free += 1;
+        }
+    }
+    assert_eq!((specs.len(), free), (11, 15));
+}
 
 #[test]
 fn every_prism_round_trips_to_the_same_cells_and_text() {
@@ -190,6 +250,8 @@ fn corpus_matches_the_independent_reader() {
         match row[0] {
             "file" => files.push((row[1], row[2], Vec::new())),
             "solid" => files.last_mut().unwrap().2.push(row[2..].to_vec()),
+            // Free shapes (S6): `corpus_free_shapes_match_the_independent_reader`.
+            "free" => {}
             other => panic!("row kind {other}"),
         }
     }
@@ -197,7 +259,9 @@ fn corpus_matches_the_independent_reader() {
     let mut not_certified: Vec<(String, String, Vec<&'static str>)> = Vec::new();
     for (name, geometry, solids) in &files {
         let text = std::fs::read_to_string(format!("{root}{name}")).unwrap();
-        let im = import(&read(&text).unwrap_or_else(|e| panic!("{name}: {e}")));
+        let im = import(&solids_only(
+            read(&text).unwrap_or_else(|e| panic!("{name}: {e}")),
+        ));
         let names: Vec<String> = im
             .unsupported
             .iter()
@@ -262,3 +326,173 @@ fn corpus_matches_the_independent_reader() {
         .collect();
     assert_eq!(not_certified, pinned);
 }
+
+/// The document without the free shapes directly under its root compound:
+/// the solids' test needs only the solids and the geometry names (free
+/// shapes have their own test).
+fn solids_only(mut doc: rusty_occt::occt_brep::Document) -> rusty_occt::occt_brep::Document {
+    use rusty_occt::occt_brep::read::Kind;
+    let root = doc.root.shape;
+    if doc.shapes[root].kind == Kind::Compound {
+        let kept: Vec<_> = doc.shapes[root]
+            .subs
+            .iter()
+            .filter(|s| {
+                matches!(
+                    doc.shapes[s.shape].kind,
+                    Kind::Solid | Kind::CompSolid | Kind::Compound
+                )
+            })
+            .copied()
+            .collect();
+        doc.shapes[root].subs = kept;
+    }
+    doc
+}
+
+/// The free shapes of a document (S6), the root compound's children
+/// imported in parallel chunks (each chunk re-rooted at a compound of its
+/// children, so every shape keeps its placement).
+fn free_shapes(doc: &rusty_occt::occt_brep::Document) -> Vec<rusty_occt::occt_brep::ImportedFree> {
+    use rusty_occt::occt_brep::read::{Data, Kind, Shape, Sub};
+    let root = doc.shapes[doc.root.shape].clone();
+    if root.kind != Kind::Compound || root.subs.len() < 2 {
+        return import(doc).free;
+    }
+    let threads = std::thread::available_parallelism().map_or(4, |n| n.get());
+    let chunk = root.subs.len().div_ceil(threads);
+    std::thread::scope(|scope| {
+        let handles: Vec<_> = root
+            .subs
+            .chunks(chunk)
+            .map(|subs| {
+                let mut part = doc.clone();
+                part.shapes.push(Shape {
+                    kind: Kind::Compound,
+                    data: Data::None,
+                    subs: subs.to_vec(),
+                });
+                part.root = Sub {
+                    shape: part.shapes.len() - 1,
+                    ..doc.root
+                };
+                scope.spawn(move || import(&part).free)
+            })
+            .collect();
+        handles
+            .into_iter()
+            .flat_map(|h| h.join().unwrap())
+            .collect()
+    })
+}
+
+/// S6: every free shell, face, wire, edge and vertex of the corpus the
+/// independent reader calls representable imports with OCCT's counts (as
+/// the reader states them) and round-trips through the writer, or is one of
+/// the pinned faces the validator rejects; every other one is unsupported.
+#[test]
+fn corpus_free_shapes_match_the_independent_reader() {
+    let root = concat!(env!("CARGO_MANIFEST_DIR"), "/../../data/occ/");
+    let mut rows: BTreeMap<&str, Vec<Vec<&str>>> = BTreeMap::new();
+    for line in include_str!("../../fixtures/brep-io-expected.tsv").lines() {
+        let row: Vec<&str> = line.split('\t').collect();
+        if row[0] == "free" {
+            rows.entry(row[1]).or_default().push(row[2..].to_vec());
+        }
+    }
+    let kind_name = |k: rusty_occt::occt_brep::read::Kind| {
+        use rusty_occt::occt_brep::read::Kind;
+        match k {
+            Kind::Shell => "Sh",
+            Kind::Face => "Fa",
+            Kind::Wire => "Wi",
+            Kind::Edge => "Ed",
+            Kind::Vertex => "Ve",
+            other => panic!("not a free kind: {other:?}"),
+        }
+    };
+    let (mut imported, mut rejected) = (BTreeMap::new(), Vec::new());
+    for (name, expected) in &rows {
+        let text = std::fs::read_to_string(format!("{root}{name}")).unwrap();
+        let doc = read(&text).unwrap();
+        let free = free_shapes(&doc);
+        assert_eq!(free.len(), expected.len(), "{name}");
+        for (shape, row) in free.iter().zip(expected) {
+            assert_eq!(
+                (shape.record.to_string().as_str(), kind_name(shape.kind)),
+                (row[0], row[1]),
+                "{name}"
+            );
+            match (&shape.result, row[2]) {
+                (Ok(t), "representable") => {
+                    let c = t.occt_counts();
+                    let got = [c.vertices, c.edges, c.wires, c.faces, c.shells, c.solids]
+                        .map(|n| n.to_string());
+                    assert_eq!(got.as_slice(), &row[3..], "{name} {}", row[0]);
+                    let text = write(t, shape.tolerance.linear())
+                        .unwrap_or_else(|e| panic!("{name} {}: {e}", row[0]));
+                    let again = import(&read(&text).unwrap());
+                    let back = again.free[0]
+                        .result
+                        .as_ref()
+                        .unwrap_or_else(|e| panic!("{name} {} written back: {e:?}", row[0]));
+                    assert_eq!(back.occt_counts(), c, "{name} {}", row[0]);
+                    *imported.entry(row[1]).or_insert(0) += 1;
+                }
+                (Err(rusty_occt::occt_brep::Rejected::Unsupported(_)), "unsupported") => {}
+                (Err(rusty_occt::occt_brep::Rejected::Invalid { issues, .. }), "representable") => {
+                    let mut kinds: Vec<&'static str> =
+                        issues.iter().map(|i| i.kind.name()).collect();
+                    kinds.sort_unstable();
+                    kinds.dedup();
+                    rejected.push(format!("{name} {} {}", row[0], kinds.join(",")));
+                }
+                (result, verdict) => panic!("{name} {}: {verdict} but {result:?}", row[0]),
+            }
+        }
+    }
+    assert_eq!(
+        imported,
+        BTreeMap::from([("Ed", 2829), ("Fa", 25), ("Sh", 1), ("Ve", 3333)])
+    );
+    // The hammer's faces the validator rejects though BRepCheck accepts them
+    // (rust/fixtures/occt-free-shape-capture/NOTES.md): C0 spline surfaces
+    // (the kernel requires C1, S4), pcurves certified farther from their
+    // edges than OCCT's stored tolerance (which its sampling does not see),
+    // and uses the exact tiers leave undecided.
+    assert_eq!(rejected, HAMMER_REJECTED);
+}
+
+const HAMMER_REJECTED: [&str; 31] = [
+    "hammer.brep 9 enclosure_unsound,face_not_c1",
+    "hammer.brep 13 enclosure_unsound,face_not_c1,pcurve_off_edge",
+    "hammer.brep 23 face_not_c1,pcurve_off_edge",
+    "hammer.brep 28 enclosure_unsound,face_not_c1",
+    "hammer.brep 35 face_not_c1",
+    "hammer.brep 43 face_not_c1,uncertified_pcurve_off_edge",
+    "hammer.brep 50 enclosure_unsound,face_not_c1",
+    "hammer.brep 57 face_not_c1,uncertified_pcurve_off_edge",
+    "hammer.brep 67 enclosure_unsound,face_not_c1",
+    "hammer.brep 77 enclosure_unsound,face_not_c1,pcurve_off_edge",
+    "hammer.brep 84 face_not_c1,pcurve_off_edge,uncertified_pcurve_off_edge",
+    "hammer.brep 91 enclosure_unsound,face_not_c1",
+    "hammer.brep 101 face_not_c1,uncertified_pcurve_off_edge",
+    "hammer.brep 106 uncertified_pcurve_off_edge",
+    "hammer.brep 109 face_not_c1,pcurve_off_edge",
+    "hammer.brep 113 enclosure_unsound,face_not_c1,pcurve_off_edge",
+    "hammer.brep 116 face_not_c1,pcurve_off_edge,uncertified_pcurve_off_edge",
+    "hammer.brep 119 enclosure_unsound,face_not_c1",
+    "hammer.brep 121 uncertified_pcurve_off_edge",
+    "hammer.brep 138 face_not_c1",
+    "hammer.brep 191 pcurve_off_edge",
+    "hammer.brep 232 uncertified_pcurve_off_edge",
+    "hammer.brep 234 enclosure_unsound,pcurve_off_edge",
+    "hammer.brep 237 face_not_c1",
+    "hammer.brep 246 face_not_c1,pcurve_off_edge,uncertified_pcurve_off_edge",
+    "hammer.brep 249 enclosure_unsound,face_not_c1,pcurve_off_edge",
+    "hammer.brep 251 enclosure_unsound,face_not_c1,pcurve_off_edge",
+    "hammer.brep 253 enclosure_unsound,face_not_c1",
+    "hammer.brep 255 enclosure_unsound,face_not_c1,pcurve_off_edge",
+    "hammer.brep 258 face_not_c1,uncertified_pcurve_off_edge",
+    "hammer.brep 260 uncertified_pcurve_off_edge",
+];

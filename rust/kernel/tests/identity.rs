@@ -3,7 +3,7 @@
 #[path = "support/identity_protocol.rs"]
 #[allow(dead_code)]
 mod identity_protocol;
-use identity_protocol::{build, cases, rows};
+use identity_protocol::{body_rows, build, build_body, cases, rows};
 use rusty_occt::identity::{fnv1a128, EntityId, InputLabel, OperationId};
 use rusty_occt::{Boundary, BoundaryLabels, Error, Frame3, Point2, Profile, Solid, Tolerance};
 use std::collections::BTreeMap;
@@ -113,6 +113,63 @@ fn arc_prisms_match_the_independent_ids() {
         }
     }
     assert_eq!(specs.len(), 13);
+}
+
+/// S6: face and wire bodies get the ids the independent reference
+/// enumerates, validate as sheets and wires, and keep every id through rigid
+/// motions.
+#[test]
+fn face_and_wire_bodies_match_the_independent_ids() {
+    let mut expected: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for line in include_str!("../../fixtures/identity-sheet-expected.tsv")
+        .lines()
+        .filter(|l| !l.starts_with('#'))
+    {
+        let (case, row) = line.split_once('\t').unwrap();
+        expected
+            .entry(case.to_string())
+            .or_default()
+            .push(row.to_string());
+    }
+    let specs = cases(include_str!("../../fixtures/identity-sheet-cases.txt"));
+    assert_eq!(specs.len(), expected.len());
+    for spec in &specs {
+        let (body, history) = build_body(spec);
+        let t = body.topology();
+        assert_eq!(t.check(spec.tolerance), Vec::new(), "{}", spec.name);
+        let class = if spec.make.as_deref() == Some("face") {
+            "sheet"
+        } else {
+            "wire"
+        };
+        assert_eq!(body.class().name(), class, "{}", spec.name);
+        assert!(body.measure().is_some(), "{}", spec.name);
+        // OCCT closes a closed edge at a vertex: a disc is one vertex, edge,
+        // wire and face; a circle wire one vertex and edge (a free edge).
+        let c = t.occt_counts();
+        let counts = (c.vertices, c.edges, c.wires, c.faces, c.shells, c.solids);
+        match spec.name.as_str() {
+            "face_disc" => assert_eq!(counts, (1, 1, 1, 1, 0, 0)),
+            "wire_circle" => assert_eq!(counts, (1, 1, 0, 0, 0, 0)),
+            "face_square" => assert_eq!(counts, (4, 4, 1, 1, 0, 0)),
+            "wire_square" => assert_eq!(counts, (4, 4, 1, 0, 0, 0)),
+            _ => {}
+        }
+        assert_eq!(history.relations.len(), t.ids().count(), "{}", spec.name);
+        let got = body_rows(&body);
+        assert_eq!(got, expected[&spec.name], "{}", spec.name);
+        let mut moved = body.clone();
+        for transform in &spec.transforms {
+            moved = moved
+                .transform_with(OperationId::UNSPECIFIED, *transform)
+                .map(|(b, _)| b)
+                .unwrap();
+            assert_eq!(moved.topology().body_id(), t.body_id(), "{}", spec.name);
+            assert_eq!(moved.topology().check(spec.tolerance), Vec::new());
+            assert_eq!(body_rows(&moved), got, "{}: transform", spec.name);
+        }
+    }
+    assert_eq!(specs.len(), 11);
 }
 
 #[test]

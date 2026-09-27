@@ -937,7 +937,7 @@ impl Solid {
     }
 }
 
-fn replayable(level: AlgorithmLevel) -> Result<()> {
+pub(crate) fn replayable(level: AlgorithmLevel) -> Result<()> {
     if AlgorithmLevel::REPLAYABLE.contains(&level) {
         Ok(())
     } else {

@@ -1,0 +1,74 @@
+case face_square 1e-07
+op 41
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+make face
+boundary P 4 -4.0 -4.0 4.0 -4.0 4.0 4.0 -4.0 4.0
+end
+case face_square_labelled 1e-07
+op 41
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+make face
+boundary P 4 -4.0 -4.0 4.0 -4.0 4.0 4.0 -4.0 4.0 labels 100 101 102 103 104 | 105 106 107 108
+end
+case face_disc 1e-07
+op 41
+frame 3.0 -2.0 5.0 0.3 -0.4 0.8 1.0 0.0 0.0
+make face
+boundary C 1.0 2.0 3.0
+end
+case face_stadium 1e-07
+op 42
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+make face
+boundary S 4 0.0 -1.0 L 3.0 -1.0 A 3.0 0.0 1.0 1 3.0 1.0 L 0.0 1.0 A 0.0 0.0 1.0 1
+end
+case face_clockwise_labelled 1e-07
+op 42
+frame 3.0 -2.0 5.0 0.3 -0.4 0.8 1.0 0.0 0.0
+make face
+boundary S 4 0.0 0.0 L 0.0 4.0 L 4.0 4.0 A 2.0 2.0 2.8284271247461903 0 4.0 0.0 L labels 200 201 202 203 204 | 205 206 207 208
+end
+case face_holes 1e-07
+op 43
+frame 3.0 -2.0 5.0 0.3 -0.4 0.8 1.0 0.0 0.0
+make face
+boundary P 4 -10.0 -10.0 10.0 -10.0 10.0 10.0 -10.0 10.0
+boundary P 4 -7.0 -7.0 -3.0 -7.0 -3.0 -3.0 -7.0 -3.0 labels 300 301 302 303 304 | 305 306 307 308
+boundary C 5.0 5.0 1.5
+boundary S 4 0.0 -1.0 L 3.0 -1.0 A 3.0 0.0 1.0 1 3.0 1.0 L 0.0 1.0 A 0.0 0.0 1.0 1
+end
+case face_transformed 1e-07
+op 44
+frame 3.0 -2.0 5.0 0.3 -0.4 0.8 1.0 0.0 0.0
+make face
+boundary P 4 -10.0 -10.0 10.0 -10.0 10.0 10.0 -10.0 10.0
+boundary P 4 -7.0 -7.0 -3.0 -7.0 -3.0 -3.0 -7.0 -3.0 labels 300 301 302 303 304 | 305 306 307 308
+transform R 1.0 2.0 3.0 0.0 0.6 0.8 1.1
+transform T 10.0 -20.0 30.0
+end
+case wire_square 1e-07
+op 45
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+make wire
+boundary P 4 -4.0 -4.0 4.0 -4.0 4.0 4.0 -4.0 4.0
+end
+case wire_circle 1e-07
+op 45
+frame 3.0 -2.0 5.0 0.3 -0.4 0.8 1.0 0.0 0.0
+make wire
+boundary C 1.0 2.0 3.0
+end
+case wire_clockwise_labelled 1e-07
+op 46
+frame 3.0 -2.0 5.0 0.3 -0.4 0.8 1.0 0.0 0.0
+make wire
+boundary S 4 0.0 0.0 L 0.0 4.0 L 4.0 4.0 A 2.0 2.0 2.8284271247461903 0 4.0 0.0 L labels 200 201 202 203 204 | 205 206 207 208
+end
+case wire_transformed 1e-07
+op 47
+frame 3.0 -2.0 5.0 0.3 -0.4 0.8 1.0 0.0 0.0
+make wire
+boundary S 4 0.0 -1.0 L 3.0 -1.0 A 3.0 0.0 1.0 1 3.0 1.0 L 0.0 1.0 A 0.0 0.0 1.0 1
+transform R 1.0 2.0 3.0 0.0 0.6 0.8 1.1
+transform T 10.0 -20.0 30.0
+end

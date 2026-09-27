@@ -11,7 +11,12 @@ exactly the reader's. The kernel then writes
   surface area and centroid equal the kernel's exact mass properties;
 * every data/occ solid it imports: OCCT must read the written text as one
   valid solid with the original's counts (as the reader states them) and the
-  original's volume, surface area and centroid.
+  original's volume, surface area and centroid;
+* (S6) every free shell, face, wire, edge and vertex of data/occ it imports,
+  with OCCT's counts of the original and a certified area or length and
+  centre containing OCCT's (rust/fixtures/occt-free-shape-capture), and every
+  face and wire body of identity-sheet-cases.txt: OCCT must read each written
+  file as one valid free shape with those counts and properties.
 
 The native observations of the unmodified upstream files were captured
 after the kernel's reader existed (rust/fixtures/occt-brep-io-capture/NOTES.md);
@@ -48,6 +53,10 @@ TIMEOUT = 600
 # The worst observed difference was 2.5e-14: volume and area relative to
 # themselves, centroids relative to the cube root of the volume.
 PROPERTY_BOUND = 1e-11
+# S6: OCCT integrates spline faces with a relative error near 1e-9
+# (occt-sheet-preimplementation/NOTES.md); the kernel's enclosures must
+# contain its areas, lengths and centres up to that.
+MEASURE_BOUND = 1e-9
 
 
 def build(prefix, output, source=SOURCE_FILE, name='oracle'):
@@ -151,6 +160,50 @@ def capture_free(prefix, output, sdk_manifest):
     return sum(len(v) for v in observed.values())
 
 
+def free_capture(observed):
+    """The S6 native observations of the corpus's free shapes are unchanged:
+    types, verdicts and counts exactly, properties within MEASURE_BOUND."""
+    metadata = json.loads((FREE_CAPTURE/'capture.json').read_text())
+    if metadata['source_reference'] != SOURCE or metadata['rust_free_shape_import_exists']:
+        raise ValueError('free-shape capture is not a clean pre-implementation reference')
+    for key, name in [('probe_source_sha256', 'oracle.cpp'), ('observations_sha256', 'native.txt')]:
+        if metadata[key] != digest(FREE_CAPTURE/name):
+            raise ValueError('captured free-shape evidence changed: '+name)
+    if (FREE_CAPTURE/'oracle.cpp').read_text() != FREE_SOURCE.read_text():
+        raise ValueError('the free-shape oracle differs from the captured one')
+    captured, current = {}, None
+    for line in (FREE_CAPTURE/'native.txt').read_text().splitlines():
+        w = line.split()
+        if w[0] == 'F':
+            current = captured.setdefault(w[1], [])
+        else:
+            current.append((w[1], w[2], tuple(int(x) for x in w[3:9]), [float(x) for x in w[9:]]))
+    if set(captured) != set(observed):
+        raise ValueError('free-shape capture does not cover the corpus')
+    for name, shapes in captured.items():
+        now = observed[name]
+        if [x[:3] for x in now] != [x[:3] for x in shapes] or any(
+                measure_apart(a[3], b[3]) for a, b in zip(now, shapes)):
+            raise ValueError('native free-shape observation of '+name+' differs from the capture')
+    return captured
+
+
+def measure_apart(a, b):
+    """Whether two [area or length, cx, cy, cz] rows differ by more than
+    MEASURE_BOUND of the larger row's largest magnitude."""
+    scale = max([1.0]+[abs(x) for x in a+b])
+    return any(abs(x-y) > MEASURE_BOUND*scale for x, y in zip(a, b))
+
+
+def measure_outside(enclosure, native):
+    """The labels of a certified [lo, hi] measure row that do not contain
+    OCCT's value, up to MEASURE_BOUND of its largest magnitude (OCCT's own
+    integration error)."""
+    allowance = MEASURE_BOUND*max([1.0]+[abs(x) for x in native])
+    return [label for label, (lo, hi), x in zip(['measure', 'cx', 'cy', 'cz'], enclosure, native)
+            if not lo-allowance <= x <= hi+allowance]
+
+
 def close(a, b):
     """Relative agreement of [volume, area, cx, cy, cz]."""
     scale = max(1.0, abs(b[0]))**(1/3)
@@ -183,22 +236,40 @@ def rust_outputs(output):
     for line in corpus_rows.splitlines():
         w = line.split()
         imported[(w[0], int(w[1]))] = tuple(int(x) for x in w[2:8])
-    return prism, prisms, imported, written
+    # S6: free shapes and face and wire bodies, with certified measures.
+    measure = lambda w: None if w == ['-'] else list(zip(map(float, w[::2]), map(float, w[1::2])))
+    free_rows = subprocess.run([probe, 'free', str(written)], input=corpus, text=True,
+                               capture_output=True, timeout=600, check=True).stdout
+    free = {}
+    for line in free_rows.splitlines():
+        w = line.split()
+        free[(w[0], int(w[1]))] = (w[2], tuple(int(x) for x in w[3:9]), measure(w[9:]))
+    body_rows = subprocess.run([probe, 'bodies', str(prisms)],
+                               input=(ROOT/'rust/fixtures/identity-sheet-cases.txt').read_text(), text=True,
+                               capture_output=True, timeout=600, check=True).stdout
+    bodies = {}
+    for line in body_rows.splitlines():
+        w = line.split()
+        bodies[w[0]] = (tuple(int(x) for x in w[1:7]), measure(w[7:]))
+    return prism, prisms, imported, written, free, bodies
 
 
 def reference_rows():
-    """The committed independent fixture, regenerated: {file: [(record, verdict, counts)]}."""
+    """The committed independent fixture, regenerated: {file: [(record, verdict, counts)]},
+    and (S6) {file: [(record, kind, verdict, counts)]} of its free shapes."""
     text = generate_brep_io_fixtures.rows()
     if text != (ROOT/'rust/fixtures/brep-io-expected.tsv').read_text():
         raise ValueError('independent fixture regeneration changed: brep-io-expected.tsv')
-    files = {}
+    files, free = {}, {}
     for line in text.splitlines():
         w = line.split('\t')
         if w[0] == 'file':
-            files[w[1]] = []
+            files[w[1]], free[w[1]] = [], []
+        elif w[0] == 'free':
+            free[w[1]].append((int(w[2]), w[3], w[4], tuple(int(x) for x in w[5:11])))
         else:
             files[w[1]].append((int(w[2]), w[3], tuple(int(x) for x in w[4:10])))
-    return files
+    return files, free
 
 
 def original_capture(observed):
@@ -248,8 +319,9 @@ def main():
     if args.capture_free:
         print('captured', capture_free(prefix, output, args.sdk_manifest), 'free shapes')
         return
-    reference = reference_rows()
+    reference, reference_free = reference_rows()
     executable, env, loaded, command = build(prefix, output)
+    free_executable, free_env, _, _ = build(prefix, output, FREE_SOURCE, 'free-oracle')
     corpus = sorted(CORPUS.glob('*.brep'))
     record = run(executable, '\n'.join(str(p) for p in corpus), env)
     if record['exit_code'] != 0:
@@ -271,10 +343,17 @@ def main():
             'observations_sha256': digest(CAPTURE/'native.txt'),
             'inputs_sha256': {p.name: digest(p) for p in corpus}})
     original_capture(observed)
-    prism, prisms, imported, written = rust_outputs(output)
+    corpus_free = run(free_executable, '\n'.join(str(p) for p in corpus), free_env)
+    if corpus_free['exit_code'] != 0:
+        raise SystemExit('native free-shape run failed: '+json.dumps(corpus_free)[:2000])
+    observed_free = {Path(k).name: v for k, v in parse_free(corpus_free['stdout'], corpus).items()}
+    free_capture(observed_free)
+    prism, prisms, imported, written, free, bodies = rust_outputs(output)
     reviews = [] if args.strict_native or not REVIEWS.exists() else json.loads(REVIEWS.read_text())['reviews']
     report = {'source_reference': SOURCE, 'oracle': oracle, 'corpus_files': len(corpus),
               'reader_solids_certified': 0, 'prisms_verified': 0, 'written_solids_verified': 0,
+              'reader_free_certified': 0, 'free_imported': 0, 'free_rejected_by_validator': [],
+              'free_measures_contained': 0, 'written_free_verified': 0, 'bodies_verified': 0,
               'worst_property_difference': 0.0, 'matches': [], 'reviewed_differences': [], 'failures': []}
 
     # The independent reader against native OCCT, file by file.
@@ -295,6 +374,72 @@ def main():
         report['failures'].append({'case': 'corpus', 'reason': 'imported solids differ from the representable ones',
                                    'imported': sorted(map(list, imported)),
                                    'representable': sorted(map(list, representable))})
+
+    # S6: the reader's free shapes against native OCCT, then the kernel's
+    # imports against both.
+    representable_free = {}
+    for name, shapes in reference_free.items():
+        native = observed_free[name]
+        if [(k, c) for _, k, _, c in shapes] != [(k, c) for k, _, c, _ in native]:
+            report['failures'].append({'case': name, 'reason': 'reader free shapes differ from native'})
+            continue
+        report['reader_free_certified'] += len(shapes)
+        for (r, k, verdict, c), (_, _, _, props) in zip(shapes, native):
+            if verdict == 'representable':
+                representable_free[(name, r)] = (k, c, props)
+    if not set(free) <= set(representable_free):
+        report['failures'].append({'case': 'corpus', 'reason': 'imported free shapes the reader does not represent',
+                                   'extra': sorted(map(list, set(free)-set(representable_free)))})
+    # Representable but rejected by the validator: pinned with their issue
+    # kinds in occt_brep.rs (the hammer's faces).
+    report['free_rejected_by_validator'] = sorted(f'{n}-{r}' for n, r in set(representable_free)-set(free))
+    for key, (kind, counts, enclosure) in sorted(free.items()):
+        if key not in representable_free:
+            continue
+        k, c, props = representable_free[key]
+        found = [] if (kind, counts) == (k, c) else ['kind_or_counts']
+        found += ['not measured'] if enclosure is None else measure_outside(enclosure, props)
+        report['free_imported'] += 1
+        if found:
+            report['failures'].append({'case': f'{key[0]}-free-{key[1]}', 'reason': ' '.join(found),
+                                       'rust': [kind, counts, enclosure], 'native': [k, c, props]})
+        else:
+            report['free_measures_contained'] += 1
+    free_targets = [(f'written {n}-free-{r}', written/f'{n}-free-{r}.brep', representable_free[(n, r)][1],
+                     representable_free[(n, r)][2], None)
+                    for (n, r) in free if (n, r) in representable_free]
+    free_targets += [(f'body {name}', prisms/f'{name}.brep', counts, None, enclosure)
+                     for name, (counts, enclosure) in bodies.items()]
+    paths = [p for _, p, _, _, _ in free_targets]
+    written_free = run(free_executable, '\n'.join(map(str, paths)), free_env)
+    if written_free['exit_code'] != 0:
+        raise SystemExit('native run on written free shapes failed: '+json.dumps(written_free)[:2000])
+    native_free = parse_free(written_free['stdout'], paths)
+    for case, path, counts, props, enclosure in free_targets:
+        shapes = native_free[str(path)]
+        differences = []
+        if len(shapes) != 1:
+            differences.append('shape_count')
+        else:
+            _, verdict, got, got_props = shapes[0]
+            if verdict != 'valid':
+                differences.append('brepcheck_invalid')
+            if got != counts:
+                differences.append('counts')
+            if props is not None and measure_apart(got_props, props):
+                differences.append('properties')
+            if enclosure is not None and measure_outside(enclosure, got_props):
+                differences.append('measure_outside')
+        if not differences:
+            report['matches'].append(case)
+            report['bodies_verified' if case.startswith('body') else 'written_free_verified'] += 1
+            continue
+        text = path.read_text()
+        evidence = {'case': case, 'source_reference': SOURCE, 'oracle': oracle, 'input_sha256': sha(text),
+                    'native_stdout_sha256': sha(json.dumps(shapes)), 'differences': differences}
+        review = review_for(evidence, reviews)
+        report['reviewed_differences' if review else 'failures'].append(
+            review or dict(evidence, native=shapes, expected=[counts, props, enclosure]))
 
     # Written files: prisms against exact properties, corpus solids against
     # their originals.
@@ -340,7 +485,8 @@ def main():
                 'loaded_libraries': loaded, 'build_command': command}
     write(output/'capture.json', metadata)
     write(output/'report.json', report)
-    print(json.dumps({k: len(v) if isinstance(v, list) else v for k, v in report.items()}, indent=2))
+    print(json.dumps({k: len(v) if isinstance(v, list) and k != 'free_rejected_by_validator' else v
+                      for k, v in report.items()}, indent=2))
     if report['failures']:
         raise SystemExit(1)
 

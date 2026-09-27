@@ -639,7 +639,21 @@ here.
   body, 0, [lower, upper])`. Operation kinds 5 and 6 and roles 14–16 (`cut_face`,
   `cut_edge`, `cut_vertex`) are appended codes; the vectors grew to 17.
   S3 appended operation kind 7 (`Revolve`) and roles 17 (`apex`) and 18
-  (`pole`); the vectors grew to 20.
+  (`pole`); the vectors grew to 20. S6 appended operation kinds 8
+  (`MakeFace`) and 9 (`MakeWire`) and roles 19 (`face`), 20 (`edge`) and 21
+  (`vertex`); the vectors grew to 23.
+* **Face and wire bodies (S6).** `Body::face_from_profile_with` derives its
+  face from every boundary (as a prism's caps), each edge from its segment
+  and each vertex from its point, all with ordinal 0 and the operation kind
+  `MakeFace`; `Body::wire_from_boundary_with` derives the edges and vertices
+  of its one boundary alike with `MakeWire`. Labels decide as for prisms. The
+  construction history generates every entity from its parents with its
+  role; a rigid motion rebuilds in the moved frame and reports every entity
+  `Modified` with its id. The independent reference enumerates both
+  (`identity_reference.sheet_entities`, `identity-sheet-cases.txt`,
+  `identity-sheet-expected.tsv`), and the `identity` fuzz target checks that
+  a profile's face body shares its parents with the prism's start cap,
+  bottom edges and bottom vertices.
   Bodies that share an id cannot be fused (I4): two constructions with the
   same operation id and labels have the same ids.
 * **Rebuilt prisms keep ids by slot.** Every body is a prism of its profile,

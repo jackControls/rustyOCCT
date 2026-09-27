@@ -238,7 +238,8 @@ jobs:
           target/math-oracle-venv/bin/python rust/tools/test_brep_oracle.py
           target/math-oracle-venv/bin/python rust/tools/compare_brep.py --occt-root target/brep-sdk/install --sdk-manifest target/brep-sdk/build-manifest.json
           target/math-oracle-venv/bin/python rust/tools/compare_brep.py --family spline --output target/spline-brep-oracle --occt-root target/brep-sdk/install --sdk-manifest target/brep-sdk/build-manifest.json
-      - name: Test deliberate interop bridge failures and read back every written solid
+          target/math-oracle-venv/bin/python rust/tools/compare_brep.py --family sheet --output target/sheet-brep-oracle --occt-root target/brep-sdk/install --sdk-manifest target/brep-sdk/build-manifest.json
+      - name: Test deliberate interop bridge failures and read back every written solid and free shape
         run: |
           target/math-oracle-venv/bin/python rust/tools/test_brep_io_oracle.py
           target/math-oracle-venv/bin/python rust/tools/compare_brep_io.py --occt-root target/brep-sdk/install --sdk-manifest target/brep-sdk/build-manifest.json
@@ -250,6 +251,7 @@ jobs:
           path: |
             target/brep-oracle/
             target/spline-brep-oracle/
+            target/sheet-brep-oracle/
             target/brep-io-oracle/
             target/brep-sdk/build-manifest.json
             target/brep-sdk/*.log

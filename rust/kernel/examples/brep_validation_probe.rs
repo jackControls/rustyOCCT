@@ -6,7 +6,9 @@
 //! enclosure (M5) of its parts with every declared bound removed, or with
 //! `mass` each valid case's certified mass enclosure (volume, area,
 //! centroid, inertia about it row by row, each as `lo hi`) and `-` when it
-//! is invalid or not integrated.
+//! is invalid or not integrated, or with `measure` each valid case's class
+//! and, for a sheet, wire or acorn, its certified area or length and centre
+//! (S6, each as `lo hi`).
 #[path = "../tests/support/brep_protocol.rs"]
 mod brep_protocol;
 use rusty_occt::topology::Topology;
@@ -18,6 +20,7 @@ fn main() {
     let counts = mode.as_deref() == Some("counts");
     let enclosures = mode.as_deref() == Some("enclosures");
     let mass = mode.as_deref() == Some("mass");
+    let measure = mode.as_deref() == Some("measure");
     let mut input = String::new();
     std::io::stdin().read_to_string(&mut input).unwrap();
     for block in input.split("\nend").filter(|b| !b.trim().is_empty()) {
@@ -79,6 +82,22 @@ fn main() {
                         .join(" ")
                 }
                 None => "-".into(),
+            };
+            println!("{name}\t{row}");
+            continue;
+        }
+        if measure {
+            let row = match Topology::from_parts(parts, tolerance) {
+                Ok(t) => {
+                    let mut row = t.class().name().to_string();
+                    if let Some(m) = t.measure_enclosure() {
+                        for [lo, hi] in std::iter::once(m.measure).chain(m.centre) {
+                            row += &format!(" {lo:?} {hi:?}");
+                        }
+                    }
+                    row
+                }
+                Err(_) => "-".into(),
             };
             println!("{name}\t{row}");
             continue;

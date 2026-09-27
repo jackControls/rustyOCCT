@@ -1413,6 +1413,25 @@ into parts monotone in `y`; a part between heights on either side of the
 point's crosses once, right of the point when `±sqrt(r² - (y - cy)²) >
 x - cx`, the sign by the half it runs on, decided by squaring.
 
+## Measures of sheets and wires (S6)
+
+A sheet's area and centre sum its faces' `|N|` and `p |N|` integrals from
+the certified mass module, each face's area taken positive and its moment
+with the same sign, and divide in the certified tiers. A wire's length and
+first moment about the body's reference point `r` are closed forms per edge:
+a segment `a b` has length `|b - a|` and moment `|b - a| ((a + b) / 2 - r)`;
+an arc of radius `R` about `o` in the frame `(x, y)` from angle `a0` through
+the sweep `s` has length `R |s|` and moment
+
+    R sign(s) ( (o - r) s + R ((sin a1 - sin a0) x + (cos a0 - cos a1) y) ),
+    a1 = a0 + s,
+
+with `cos` and `sin` enclosed by the certified series; a whole circle has
+length `2 pi R`, `pi` enclosed by its certified value, and its centre is
+`o`. An acorn measures zero at its vertex. Every result is an enclosure; the
+native comparison requires it to contain `BRepGProp`'s value up to `1e-9`
+of the row's magnitude (OCCT's own integration error on spline faces).
+
 ## C1 of spline cells (R4)
 
 A cell is C1 in its own parameterisation (U3 of `REVIEW_NOTES.md`). For a

@@ -10,7 +10,11 @@
 //! And a filleted rectangle with an optional notch (S5): arcs exactly on
 //! their circles, valid, a polygon's counts, ids kept through reversal and
 //! rigid motion, the closed-form area and mass inside the certified
-//! enclosure, and points classified by the arcs.
+//! enclosure, and points classified by the arcs. The profile's face body
+//! and its outer boundary's wire body (S6) derive from the same elements as
+//! the prism's start cap, bottom edges and bottom vertices, validate as a
+//! sheet and a wire with OCCT's counts, keep their ids through rigid motion,
+//! and enclose the profile's area.
 
 use libfuzzer_sys::arbitrary::{Result, Unstructured};
 use rusty_occt::history::History;
@@ -19,8 +23,8 @@ use rusty_occt::identity::{
 };
 use rusty_occt::topology::Slot;
 use rusty_occt::{
-    Boundary, BoundaryLabels, Frame3, Location, Point2, Point3, Profile, RigidTransform, Segment,
-    Solid, Tolerance, Vec3,
+    Body, Boundary, BoundaryLabels, Frame3, Location, Point2, Point3, Profile, RigidTransform,
+    Segment, Solid, Tolerance, Vec3,
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::f64::consts::TAU;
@@ -37,6 +41,8 @@ fn encode(d: &Derivation) -> Vec<u8> {
         OperationKind::HeightSplit => 5,
         OperationKind::StackedFuse => 6,
         OperationKind::Revolve => 7,
+        OperationKind::MakeFace => 8,
+        OperationKind::MakeWire => 9,
     });
     out.push(match d.entity {
         EntityKind::Vertex => 1,
@@ -64,6 +70,9 @@ fn encode(d: &Derivation) -> Vec<u8> {
         Role::CutVertex,
         Role::Apex,
         Role::Pole,
+        Role::Face,
+        Role::Edge,
+        Role::Vertex,
     ];
     out.push(roles.iter().position(|r| *r == d.role).unwrap() as u8 + 1);
     out.extend(d.ordinal.to_le_bytes());
@@ -911,6 +920,7 @@ pub fn check_identity(data: &[u8]) {
         return;
     };
     let base = ids(&solid);
+    check_bodies(&solid, &base, &s.transforms);
     // Counts and roles follow the profile structure.
     let boundaries = 1 + s.holes.len();
     let polygon_sides: usize =
@@ -991,4 +1001,102 @@ pub fn check_identity(data: &[u8]) {
         let unlabelled = ids(&build(&s, None, 1.0, false).unwrap());
         assert!(id_set(&unlabelled).is_disjoint(&id_set(&base)));
     }
+}
+
+fn body_ids(body: &Body) -> Ids {
+    let t = body.topology();
+    let mut out = BTreeMap::new();
+    for (id, slot) in t.ids() {
+        let d = t.derivation(id).unwrap().clone();
+        assert_eq!(fnv(&encode(&d)), id.0, "{d:?}");
+        assert_eq!(t.slot_of(id), Some(slot));
+        assert_eq!(d.operation, body.operation());
+        out.insert(slot, (id.to_string(), d));
+    }
+    let total = t.vertices().len() + t.edges().len() + t.faces().len();
+    assert_eq!(out.len(), total, "every slot has an id");
+    out
+}
+
+/// The parents of every derivation of a role, sorted.
+fn parents_of(ids: &Ids, role: Role) -> Vec<Vec<Parent>> {
+    let mut out: Vec<Vec<Parent>> = ids
+        .values()
+        .filter(|v| v.1.role == role)
+        .map(|v| v.1.parents.clone())
+        .collect();
+    out.sort();
+    out
+}
+
+/// S6: the prism's profile as a face body and its outer boundary as a wire.
+fn check_bodies(solid: &Solid, prism: &Ids, transforms: &[RigidTransform]) {
+    let profile = solid.profile().unwrap().clone();
+    let tolerance = profile.tolerance();
+    let op = solid.operation();
+    // The prism validated, so its start cap's face does.
+    let (face, history) = Body::face_from_profile_with(op, profile.clone(), solid.frame())
+        .expect("the prism's profile makes a face");
+    let t = face.topology();
+    assert_eq!(t.check(tolerance), Vec::new());
+    assert_eq!(face.class().name(), "sheet");
+    assert_eq!(history.relations.len(), t.ids().count());
+    let ids = body_ids(&face);
+    assert!(ids.values().all(|v| v.1.kind == OperationKind::MakeFace));
+    // The same elements as the prism's start cap, bottom (start-side) edges
+    // and vertices, whichever way it was extruded.
+    assert_eq!(
+        parents_of(&ids, Role::Face),
+        parents_of(prism, Role::StartCap)
+    );
+    assert_eq!(
+        parents_of(&ids, Role::Edge),
+        parents_of(prism, Role::BottomEdge)
+    );
+    assert_eq!(
+        parents_of(&ids, Role::Vertex),
+        parents_of(prism, Role::BottomVertex)
+    );
+    let boundaries = 1 + profile.holes().len();
+    let rings = t.edges().iter().filter(|e| e.is_ring()).count();
+    let c = t.occt_counts();
+    assert_eq!(
+        (c.vertices, c.edges, c.wires, c.faces, c.shells, c.solids),
+        (
+            t.vertices().len() + rings,
+            t.edges().len(),
+            boundaries,
+            1,
+            0,
+            0
+        )
+    );
+    let area = profile.area();
+    let m = face.measure().expect("a planar face integrates");
+    let slack = 1e-12 * area.abs().max(1e-300);
+    assert!(m.measure[0] - slack <= area && area <= m.measure[1] + slack);
+    let mut moved = face.clone();
+    for transform in transforms {
+        if let Ok((next, _)) = moved.transform_with(OperationId::UNSPECIFIED, *transform) {
+            assert_eq!(body_ids(&next), ids);
+            moved = next;
+        }
+    }
+    let (wire, _) =
+        Body::wire_from_boundary_with(op, profile.outer().clone(), solid.frame(), tolerance)
+            .expect("the outer boundary makes a wire");
+    let w = wire.topology();
+    assert_eq!(w.check(tolerance), Vec::new());
+    assert_eq!(wire.class().name(), "wire");
+    let wire_ids = body_ids(&wire);
+    assert!(wire_ids
+        .values()
+        .all(|v| v.1.kind == OperationKind::MakeWire && v.1.role != Role::Face));
+    let c = w.occt_counts();
+    let n = w.edges().len();
+    assert_eq!(
+        (c.edges, c.wires, c.faces, c.shells),
+        (n, usize::from(n > 1), 0, 0)
+    );
+    assert!(wire.measure().is_some());
 }

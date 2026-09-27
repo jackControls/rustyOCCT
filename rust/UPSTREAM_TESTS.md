@@ -120,10 +120,12 @@ group, and stale success records are removed before each run.
 | Derived `ptorus_counts` | Pass | Pass | Tori through the count synthesizer: a whole torus (no loops; OCCT's two seams through one vertex), a v-segment and a wedge, with `checkshape`, `checknbshapes`, volume, area and per-use length (S3) |
 | Derived `pcone_counts` | Pass | Pass | Cones through the count synthesizer: an apex cone, a frustum and a base apex, each with `checkshape`, `checknbshapes`, volume, area and per-use length (S3) |
 | Derived `explode_selector` | Pass | Pass | Native selector: a box's faces and edges and a cylinder's faces and rings picked by OCCT index, checked by area, length and centre of gravity; the seam pick is lost |
+| Derived `profile_arcs` | Pass | Pass | Prisms of `profile` sketches with arcs: tangent half circles, fillets and a clockwise notch; counts and volumes (S5) |
+| Derived `faces_and_edges` | Pass | Pass | Free faces and edges on DRAW geometry: `mkface` on a plane and a cylinder (a patch and the whole band), `mkedge` on a line and a circle, `mkplane` of a `profile` wire with arcs; `checkshape`, `checknbshapes`, areas and lengths (S6) |
 
 There are **five original geometry tests passing on both backends** and one
 more evaluated on both with its image commands recorded (`buc60769`).
-The eight derived cases are counted separately (see below).
+The nine derived cases are counted separately (see below).
 The 23 bridge self-tests are separate infrastructure checks; they do not count
 as more upstream coverage. The existing 66-solid / 2,292-classification native
 oracle corpus supplies much broader prism geometry checks independently.
@@ -174,6 +176,17 @@ rectangle with a concave notch with upstream's `profile` sketch command (tangent
 `BRepTest_CurveCommands.cxx`'s `profile` exactly for `F`, `O`, `P`, `X`,
 `Y`, `L`, `T`, `R`, `D`, `I`, `C` and `W`; `S` (another face's surface) and
 open wires (`WW`) are unsupported.
+
+`faces_and_edges` (S6) makes free faces and edges on DRAW's geometric
+objects: `plane`, `cylinder`, `line` and `circle` (3D, with DRAW's automatic
+X direction), `mkface` of a plane rectangle (a face body of the kernel's
+`Body::face_from_profile`), of a cylinder patch and of the whole band (OCCT
+closes it with a seam and a vertex on each circle; the kernel's band has two
+ring edges and wound loops), `mkedge` of a line segment, an arc and a whole
+circle (one vertex), and `mkplane` of a `profile` wire with arcs. It checks
+counts (a free face has no shell, a free edge no wire), areas and lengths on
+both backends. `mkface` with a wire, unbounded surfaces and 2D curves are
+unsupported.
 
 The history cases use `prism ... Copy`. Without `Copy`, OCCT builds the prism's end face
 as the start face moved by a location, reusing its `TShape`s. DRAW's
@@ -396,3 +409,37 @@ forward or reversed); it now reports them unsupported by name
 reader does, and `occt_brep.rs` and the `brep_io` fuzz target make
 references internal or external. No further case evaluates on the Rust
 backend.
+
+After S6 `restore` imports free shells, faces, wires, edges and vertices;
+no restore-only case reports free faces any more. The survey (2026-09-27):
+
+| Rust / native | Cases |
+| --- | ---: |
+| private data / private data | 98 |
+| unsupported / unsupported | 31 |
+| unsupported / viewer skipped | 20 |
+| unsupported / known failure | 10 |
+| failed / viewer skipped | 6 |
+| unsupported / private data | 5 |
+| unsupported / unverified | 4 |
+| unverified / unverified | 3 |
+| unsupported / failed | 3 |
+| failed / unverified | 2 |
+| failed / pass | 2 |
+| pass / pass | 2 |
+| unsupported / pass | 2 |
+| failed / known failure, failed / failed, known failure / known failure, viewer skipped / viewer skipped | 1 each |
+
+Twelve cases now restore their free faces and fail on Rust: the validator
+rejects a face OCCT accepts, and a restore the validator rejects is a
+failure. Each rejection was inspected: uv gaps and pcurves off their edges
+beyond the stored tolerance (`OCC221`, `OCC302a`, `OCC399`, `OCC446d`,
+`OCC889`, `OCC25558_faulty`, `bug24035`, `bug28499`; up to 0.049 in UV), a
+zero-length edge (`OCC432`), a spline face whose only loop runs clockwise
+(`OCC161`), a sphere lune whose loop passes both poles between two uses of
+one seam (`OCC35`, the pinned `Ball.brep` limitation) and bug 28385's
+deliberately degenerate face (two parallel lines one apart closed by
+vertices of tolerance 1). None is an import error; they stay failures. What the restores still need, by
+construct: rectangular trimmed surfaces 13, degenerated edges outside a
+pole 5, ellipses 5, extrusion and revolution surfaces, trimmed curves and
+periodic spline surfaces 4 each.

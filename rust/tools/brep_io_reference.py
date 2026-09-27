@@ -88,10 +88,16 @@ def kind_of(x):
     return x[0] if isinstance(x, tuple) else x
 
 
+# The kernel's documented resource limit on spline control data
+# (`rusty_occt::spline::MAX_POLES`): a spline with more poles is not
+# representable (BSplineControlDataLimit).
+MAX_POLES = 4096
+
+
 def bspline(r, dim):
-    """('bspline', first, last, periodic): a B-spline curve record's domain,
-    read as GeomTools prints it (poles with weights when rational, knots
-    with multiplicities)."""
+    """('bspline', first, last, periodic, poles): a B-spline curve record's
+    domain and pole count, read as GeomTools prints it (poles with weights
+    when rational, knots with multiplicities)."""
     rational, periodic, degree, poles, knots = (r.int() for _ in range(5))
     r.reals(poles*(dim+1 if rational else dim))
     ks = []
@@ -99,9 +105,9 @@ def bspline(r, dim):
         k = r.real()
         ks.append((k, r.int()))
     if periodic:
-        return ('bspline', ks[0][0], ks[-1][0], True)
+        return ('bspline', ks[0][0], ks[-1][0], True, poles)
     flat = [k for k, m in ks for _ in range(m)]
-    return ('bspline', flat[degree], flat[len(flat)-degree-1], False)
+    return ('bspline', flat[degree], flat[len(flat)-degree-1], False, poles)
 
 
 def curve2(r):
@@ -163,7 +169,7 @@ def surface(r):
         r.reals(nu*nv*(4 if ru or rv else 3)+2*(ku+kv))
         # A periodic spline surface would need windings with its domain's
         # period; the kernel reports it by name.
-        return ('bspline', bool(pu or pv))
+        return ('bspline', bool(pu or pv), nu*nv)
     if kind == 10:
         r.reals(4)
         surface(r)
@@ -417,6 +423,8 @@ def body(shapes, tables, loc, record, t):
             ok = False
         elif not in_range(tables['Curves'][curves[0]-1], [x for x in reps if x[0] == 'curve'][0][3]):
             ok = False  # BSplineRangeOutsideDomain
+        elif too_many_poles(tables['Curves'][curves[0]-1]):
+            ok = False  # BSplineControlDataLimit
         if data is not None:
             on = [x for x in reps if x[0] == 'pcurve' and x[2] == data[0]
                   and near(matmul(et, loc(x[3])), matmul(ft, loc(data[1])))]
@@ -426,6 +434,8 @@ def body(shapes, tables, loc, record, t):
                     ok = False
                 elif not all(in_range(tables['Curve2ds'][p-1], on[0][4]) for p in on[0][1]):
                     ok = False  # BSplineRangeOutsideDomain
+                elif any(too_many_poles(tables['Curve2ds'][p-1]) for p in on[0][1]):
+                    ok = False  # BSplineControlDataLimit
             elif surf != 'plane':
                 ok = False
         orients = sorted(vo for vo, _, _ in shapes[e][2])
@@ -447,6 +457,8 @@ def body(shapes, tables, loc, record, t):
             ok = False
         if surf == 'bspline' and record[1]:
             ok = False  # PeriodicBSplineSurface
+        if surf == 'bspline' and too_many_poles(record):
+            ok = False  # BSplineControlDataLimit
         face_edges = []
         for wo, w, wl in wires:
             wt = matmul(ft, loc(wl))
@@ -501,6 +513,10 @@ def body(shapes, tables, loc, record, t):
     return ok, counts
 
 
+def too_many_poles(record):
+    return kind_of(record) == 'bspline' and record[-1] > MAX_POLES
+
+
 def in_range(record, rng):
     """Whether an edge's or pcurve's range fits a B-spline record's domain,
     as the kernel's converter decides: ends within 1e-12 (relative) of a
@@ -509,7 +525,7 @@ def in_range(record, rng):
     range lies in the domain, or spans at most one period."""
     if kind_of(record) != 'bspline':
         return True
-    _, a, b, periodic = record
+    _, a, b, periodic, _ = record
     first, last = rng
     near = lambda x, y: abs(x-y) <= 1e-12*(1+abs(b-a)+abs(y))
     if near(first, a):

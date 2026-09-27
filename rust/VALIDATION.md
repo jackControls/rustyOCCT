@@ -513,6 +513,25 @@ centroid and each transform step. `arc_profiles.rs` covers invalid paths,
 reversal and labels, classification, the closed-form mass inside the
 certified enclosure, the height split and stacked fuse, and the builder
 against the neutral generator's arc prisms.
+
+Sheets, wires and acorns (S6): `generate_brep_fixtures.sheet_models()` adds
+eighteen models cut from the neutral prisms (free faces, an open box,
+closed shells without a solid, wires, a free edge, a vertex and three
+mutations); the independent validator learned two-sided faces, wire edges
+and acorn vertices, and `brep-classes.tsv` gives every valid case's class.
+`brep_validation.rs` requires the kernel's issue lists (170 cases, 78
+valid), classes and certified measures (containing the native `BRepGProp`
+rows of the pre-implementation capture). `compare_brep.py --family sheet`
+reproduces that capture and compares verdicts, synthesized counts,
+enclosures and measures: 17 matches, 1 reviewed difference (the open box's
+shifted pcurve), 15 counts and 15 measures verified.
+`generate_identity_fixtures.sheet_cases()` writes eleven face and wire
+bodies (polygons, a disc, arc paths, holes, labels, clockwise input, tilted
+frames, rigid copies) and their ids from `identity_reference.sheet_entities`;
+`identity.rs` requires the kernel's ids, classes, validity, counts and
+rigid motions to match. The derived DRAW case `faces_and_edges` (`mkface` on
+a plane and a cylinder, `mkedge` on a line and a circle, `mkplane` of a
+profile wire with arcs) passes on both backends.
 ## Height split and stacked fuse
 
 `generate_split_merge_fixtures.py --check` writes 174 scenarios from the
@@ -634,6 +653,18 @@ The native observations of the unmodified corpus are pinned in
 captured after the implementation; `NOTES.md` there records that order break
 and what it does and does not affect. `test_brep_io_oracle.py` checks that
 capture drift, malformed native output and property differences are caught.
+
+Since S6 the reader also imports free shells, faces, wires, edges and
+vertices (`brep-io-expected.tsv` lists the reader's verdicts on the 6,223
+free shapes of the corpus). `occt_brep.rs` requires every representable one
+to import with the reader's counts and round-trip, except the hammer's 31
+faces the validator rejects, pinned with their issue kinds; terrain and MAT
+exceed `MAX_POLES`, and face2 and shell1 use unsupported constructs.
+`compare_brep_io.py` compares the 6,188 imported free shapes with the
+native capture (`fixtures/occt-free-shape-capture`, taken before the
+import existed): OCCT's counts, certified measures containing OCCT's area
+or length and centre, and every one written back read natively valid with
+the same counts and properties; so are the eleven face and wire bodies.
 
 The `brep_io` fuzz target mutates written prisms, cones and upstream files
 token by token and line by line: no panic, typed errors, valid imports, and

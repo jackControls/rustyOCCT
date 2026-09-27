@@ -5,13 +5,16 @@ brep-io-expected.tsv has, per file, a `file NAME` row with the unsupported
 geometry records by name and count, then a `solid NAME RECORD VERDICT V E W F
 SH SO` row per solid reached from the root: VERDICT is `representable` when
 the structure is within the kernel's model and `unsupported` otherwise, and
-the counts are OCCT's distinct subshapes of the original seamed solid. No
-Rust result supplies an expectation.
+the counts are OCCT's distinct subshapes of the original seamed solid. Since
+S6 a `free NAME RECORD KIND VERDICT V E W F SH SO` row follows for every
+shell, face, wire, edge or vertex reached from the root outside a solid
+(KIND `Sh`, `Fa`, `Wi`, `Ed` or `Ve`). No Rust result supplies an
+expectation.
 """
 import argparse
 from pathlib import Path
 
-from brep_io_reference import files, summary
+from brep_io_reference import files, free_shapes, summary
 
 ROOT = Path(__file__).resolve().parents[1]
 CORPUS = ROOT.parent/'data'/'occ'
@@ -26,6 +29,9 @@ def rows():
         for record, ok, counts in solids:
             verdict = 'representable' if ok else 'unsupported'
             out.append('\t'.join(['solid', path.name, str(record), verdict]+[str(c) for c in counts]))
+        for record, kind, ok, counts in free_shapes(path.read_text()):
+            verdict = 'representable' if ok else 'unsupported'
+            out.append('\t'.join(['free', path.name, str(record), kind, verdict]+[str(c) for c in counts]))
     return '\n'.join(out)+'\n'
 
 

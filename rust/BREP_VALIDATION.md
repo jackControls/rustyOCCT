@@ -31,7 +31,7 @@ Issue classes:
 | --- | --- |
 | References and usage | `reference`, `unused_vertex`, `unused_edge`, `face_without_shell`, `face_reused`, `empty_face`, `empty_loop`, `empty_shell`, `fin_without_loop`, `fin_reused`, `loop_without_face`, `loop_reused`, `edge_fins_mismatch` |
 | Sides and regions | `side_without_shell`, `side_in_two_shells`, `side_region_mismatch`, `region_without_shell`, `no_infinite_region`, `region_shell_mismatch`, `double_bounding` |
-| Loops and shells | `open_loop`, `winding_mismatch`, `ring_edge_with_vertex`, `ring_edge_open`, `seam_edge`, `free_edge`, `non_manifold_edge`, `same_sense_uses`, `radial_order_inconsistent`, `edge_across_shells`, `disconnected_shell`, `non_manifold_vertex`, `euler` |
+| Loops and shells | `open_loop`, `winding_mismatch`, `ring_edge_with_vertex`, `ring_edge_open`, `seam_edge`, `free_edge`, `non_manifold_edge`, `same_sense_uses`, `radial_order_inconsistent`, `edge_across_shells`, `disconnected_shell`, `non_manifold_vertex`, `euler`, `wire_edge_with_fins`, `acorn_vertex_used` |
 | Definitions | `degenerate_vertex`, `degenerate_curve`, `degenerate_surface`, `degenerate_pcurve` |
 | Certified geometry | `vertex_off_curve`, `vertex_loop_off_surface`, `pole_off_apex`, `pcurve_off_edge`, `uv_gap`, `loop_winding`, `inner_loop_outside`, `shell_orientation`, `cavity_outside`, `nested_cavity` |
 | Undecided geometry | `uncertified_vertex_off_curve`, `uncertified_vertex_loop`, `uncertified_pcurve_off_edge`, `uncertified_uv_gap`, `uncertified_loop_winding`, `uncertified_containment`, `uncertified_shell_orientation` |
@@ -94,6 +94,15 @@ when a file trims it.
   rejected. Each shell's Euler characteristic `V - E + 2F - L`, with ring
   edges excluded and every loop counted (a vertex loop adds its vertex and
   its loop), must be even and at most 2.
+* **Sheets, wires and acorns (S6).** A face with both sides in one shell is
+  two-sided: an open sheet in the infinite void. Its shell has no Euler
+  condition and the face no orientation flux, and a sound shell lists more
+  one-sided face sides than twice its two-sided faces, so a solid's shell
+  never passes as a sheet. A wire edge a shell lists has no fin
+  (`wire_edge_with_fins`), an acorn vertex no edge (`acorn_vertex_used`);
+  a shell listing wire edges must connect them, and a shell with neither
+  faces, edges nor a vertex is `disconnected_shell`. Wire edges' curves and
+  vertex gaps are checked as every edge's.
 
 ## Certified geometric checks
 

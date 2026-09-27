@@ -20,8 +20,8 @@ use crate::topology::{
 };
 use crate::topology::{SplineDomain, SplineSpan};
 use crate::{
-    BSplineCurve2, BSplineCurve3, BSplineSurface3, Frame3, KnotVector, Point2, Point3, Tolerance,
-    Vec3,
+    BSplineCurve2, BSplineCurve3, BSplineSurface3, Error, Frame3, KnotVector, Point2, Point3,
+    Tolerance, Vec3,
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::f64::consts::TAU;
@@ -49,10 +49,27 @@ pub enum Rejected {
     },
 }
 
+/// A shell, face, wire, edge or vertex reached from the root outside any
+/// solid (S6 of REVIEW_NOTES.md): a closed shell becomes a shell bounding a
+/// void region, an open shell or a face a sheet (both sides of each face in
+/// the infinite void), a wire or an edge a wire body and a vertex an acorn.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ImportedFree {
+    /// The shape record (0-based, file order).
+    pub record: usize,
+    /// Shell, Face, Wire, Edge or Vertex.
+    pub kind: Kind,
+    /// The largest vertex, edge or face tolerance of the shape.
+    pub tolerance: Tolerance,
+    pub result: Result<Topology, Rejected>,
+}
+
 /// Everything a document holds, as far as the kernel represents it.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Import {
     pub solids: Vec<ImportedSolid>,
+    /// Free shapes, in the root's order (S6).
+    pub free: Vec<ImportedFree>,
     /// Every construct the kernel cannot represent, by name, with the number
     /// of records (geometry) or shape uses (topology) that carry it.
     pub unsupported: BTreeMap<&'static str, usize>,
@@ -269,14 +286,16 @@ impl Walk<'_> {
                 } else {
                     BSplineCurve3::new
                 };
-                let Ok(curve) = build(
+                let curve = match build(
                     b.degree,
                     poles,
                     b.weights.clone(),
                     b.knots.clone(),
                     b.multiplicities.clone(),
-                ) else {
-                    return self.no("InvalidBSplineCurve");
+                ) {
+                    Ok(curve) => curve,
+                    Err(Error::LimitExceeded(_)) => return self.no("BSplineControlDataLimit"),
+                    Err(_) => return self.no("InvalidBSplineCurve"),
                 };
                 match spline_span(curve, f, l) {
                     Some(span) => Curve3::BSpline(span),
@@ -381,14 +400,16 @@ impl Walk<'_> {
                 } else {
                     BSplineCurve2::new
                 };
-                let Ok(curve) = build(
+                let curve = match build(
                     b.degree,
                     poles,
                     b.weights.clone(),
                     b.knots.clone(),
                     b.multiplicities.clone(),
-                ) else {
-                    return self.no("InvalidBSplineCurve2d");
+                ) {
+                    Ok(curve) => curve,
+                    Err(Error::LimitExceeded(_)) => return self.no("BSplineControlDataLimit"),
+                    Err(_) => return self.no("InvalidBSplineCurve2d"),
                 };
                 match spline_span(curve, f, l) {
                     Some(span) => Curve2::BSpline(span),
@@ -514,12 +535,19 @@ impl Walk<'_> {
                         b.multiplicities[k].clone(),
                     )
                 };
-                let (Ok(u), Ok(v)) = (axis(0), axis(1)) else {
-                    return self.no("InvalidBSplineSurface");
+                // The kernel's resource limit (MAX_POLES) is its own name.
+                let limit = |e: &Error| matches!(e, Error::LimitExceeded(_));
+                let (u, v) = match (axis(0), axis(1)) {
+                    (Ok(u), Ok(v)) => (u, v),
+                    (Err(e), _) | (_, Err(e)) if limit(&e) => {
+                        return self.no("BSplineControlDataLimit")
+                    }
+                    _ => return self.no("InvalidBSplineSurface"),
                 };
                 let poles = b.poles.iter().map(|p| p3(st.point(*p))).collect();
                 match BSplineSurface3::new(u, v, poles, b.weights.clone()) {
                     Ok(s) => Surface::BSpline(s),
+                    Err(e) if limit(&e) => return self.no("BSplineControlDataLimit"),
                     Err(_) => return self.no("InvalidBSplineSurface"),
                 }
             }
@@ -557,9 +585,10 @@ impl Walk<'_> {
             }
             loops.push(self.in_traversal_order(uses));
         }
-        // On a plane the outer loop comes first; OCCT stores wires in any
-        // order. The outer loop encloses the largest area.
-        if matches!(surface, Surface::Plane(_)) && loops.len() > 1 {
+        // On a plane or a (non-periodic) spline surface the outer loop comes
+        // first; OCCT stores wires in any order. The outer loop encloses the
+        // largest area in UV.
+        if matches!(surface, Surface::Plane(_) | Surface::BSpline(_)) && loops.len() > 1 {
             let area = |lp: &Vec<SUse>| {
                 lp.iter()
                     .map(|u| {
@@ -988,7 +1017,17 @@ enum CellLoop<'a> {
 
 /// The cell complex of a seamed solid, by the rule of `to_cell`; the name of
 /// the unsupported construct when a degenerated edge is not a cone's pole.
-fn to_cell(walk: Walk, tol: f64) -> Result<TopologyParts, &'static str> {
+/// What the walked shapes become (S6): a solid's shells, a closed shell
+/// without a solid, an open sheet, a wire of the listed edges, an acorn.
+enum Mode {
+    Solid,
+    ClosedShell,
+    Sheet,
+    Wire(Vec<usize>),
+    Acorn(usize),
+}
+
+fn to_cell(walk: Walk, tol: f64, mode: Mode) -> Result<TopologyParts, &'static str> {
     let mut face_loops: Vec<Vec<CellLoop>> = Vec::new();
     let mut removed = BTreeSet::new();
     let mut poles = BTreeSet::new();
@@ -1051,6 +1090,11 @@ fn to_cell(walk: Walk, tol: f64) -> Result<TopologyParts, &'static str> {
         .collect();
     if still_used.iter().any(|e| walk.edges[*e].curve.is_none()) {
         return Err("DegeneratedEdge");
+    }
+    if let Mode::Wire(edges) = &mode {
+        if edges.iter().any(|e| walk.edges[*e].curve.is_none()) {
+            return Err("DegeneratedEdge");
+        }
     }
     removed.retain(|e| !still_used.contains(e));
     let closed = |c: &Option<Curve3>| matches!(c, Some(Curve3::CircularArc { sweep_angle, .. }) if sweep_angle.abs() == TAU);
@@ -1159,8 +1203,12 @@ fn to_cell(walk: Walk, tol: f64) -> Result<TopologyParts, &'static str> {
                 Orientation::Reversed
             },
             loops,
-            front: ShellId::new(k),
-            back: ShellId::new(n + k),
+            front: ShellId::new(if matches!(mode, Mode::Sheet) { 0 } else { k }),
+            back: ShellId::new(if matches!(mode, Mode::Sheet) {
+                0
+            } else {
+                n + k
+            }),
             // Computed after conversion: OCCT stores no bound on UV closure.
             enclosure: None,
         });
@@ -1168,13 +1216,55 @@ fn to_cell(walk: Walk, tol: f64) -> Result<TopologyParts, &'static str> {
     for (k, fin) in parts.fins.iter().enumerate() {
         parts.edges[fin.edge.index()].fins.push(FinId::new(k));
     }
+    let void = |shell: Shell| {
+        (
+            vec![shell],
+            vec![Region {
+                kind: RegionKind::Void,
+                shells: vec![ShellId::new(0)],
+            }],
+        )
+    };
+    let (shells, regions) = match &mode {
+        Mode::Sheet => void(Shell {
+            region: RegionId::new(0),
+            sides: (0..parts.faces.len())
+                .flat_map(|f| [(FaceId::new(f), Side::Front), (FaceId::new(f), Side::Back)])
+                .collect(),
+            wire_edges: Vec::new(),
+            acorn_vertices: Vec::new(),
+        }),
+        Mode::Wire(edges) => void(Shell {
+            region: RegionId::new(0),
+            sides: Vec::new(),
+            wire_edges: edges.iter().map(|e| edge_map[e]).collect(),
+            acorn_vertices: Vec::new(),
+        }),
+        Mode::Acorn(v) => void(Shell {
+            region: RegionId::new(0),
+            sides: Vec::new(),
+            wire_edges: Vec::new(),
+            acorn_vertices: vec![vertex_map[v]],
+        }),
+        Mode::Solid | Mode::ClosedShell => (Vec::new(), Vec::new()),
+    };
+    if !regions.is_empty() {
+        parts.shells = shells;
+        parts.regions = regions;
+        return Ok(parts);
+    }
     parts.regions = vec![
         Region {
             kind: RegionKind::Void,
             shells: vec![ShellId::new(n)],
         },
         Region {
-            kind: RegionKind::Solid,
+            // A closed shell without a solid bounds a void region (S6).
+            kind: if matches!(mode, Mode::ClosedShell) {
+                RegionKind::Void
+            } else {
+                RegionKind::Solid
+            },
             shells: (0..n).map(ShellId::new).collect(),
         },
     ];
@@ -1207,19 +1297,7 @@ fn to_cell(walk: Walk, tol: f64) -> Result<TopologyParts, &'static str> {
 }
 
 fn import_solid(doc: &Document, record: usize, t: &Transform, oriented: Orient) -> ImportedSolid {
-    let mut walk = Walk {
-        doc,
-        placement: Tolerance::default(),
-        unsupported: Vec::new(),
-        tolerance: 0.0,
-        vertices: Vec::new(),
-        vertex_tolerances: Vec::new(),
-        vertex_keys: Instances::default(),
-        edges: Vec::new(),
-        edge_keys: Instances::default(),
-        faces: Vec::new(),
-        shells: Vec::new(),
-    };
+    let mut walk = new_walk(doc);
     for shell in &doc.shapes[record].subs {
         if doc.shapes[shell.shape].kind != Kind::Shell {
             walk.unsupported.push("SolidWithNonShellChild");
@@ -1290,7 +1368,7 @@ fn import_solid(doc: &Document, record: usize, t: &Transform, oriented: Orient) 
             .unwrap_or(0);
         walk.shells.swap(0, outer);
     }
-    let parts = match to_cell(walk, resolution.linear()) {
+    let parts = match to_cell(walk, resolution.linear(), Mode::Solid) {
         Ok(parts) => parts.with_measured_enclosures(),
         Err(name) => {
             return ImportedSolid {
@@ -1312,8 +1390,130 @@ fn import_solid(doc: &Document, record: usize, t: &Transform, oriented: Orient) 
     }
 }
 
-/// Every solid of a document in the cell model, and every construct the
-/// kernel cannot represent, by name.
+fn new_walk(doc: &Document) -> Walk<'_> {
+    Walk {
+        doc,
+        placement: Tolerance::default(),
+        unsupported: Vec::new(),
+        tolerance: 0.0,
+        vertices: Vec::new(),
+        vertex_tolerances: Vec::new(),
+        vertex_keys: Instances::default(),
+        edges: Vec::new(),
+        edge_keys: Instances::default(),
+        faces: Vec::new(),
+        shells: Vec::new(),
+    }
+}
+
+/// A free shell, face, wire, edge or vertex as a body (S6).
+fn import_free(doc: &Document, record: usize, t: &Transform, oriented: Orient) -> ImportedFree {
+    let mut walk = new_walk(doc);
+    let kind = doc.shapes[record].kind;
+    let mode = match kind {
+        Kind::Shell => {
+            let mut faces = Vec::new();
+            for face in &doc.shapes[record].subs {
+                let Some(fo) = compose(face.orient, oriented) else {
+                    walk.unsupported.push("InternalOrExternalFace");
+                    continue;
+                };
+                if doc.shapes[face.shape].kind != Kind::Face {
+                    walk.unsupported.push("ShellWithNonFaceChild");
+                    continue;
+                }
+                let ft = t.times(&location(doc, face.location));
+                if let Some(f) = walk.face(face.shape, &ft, fo) {
+                    faces.push(f);
+                }
+            }
+            // Closed when every edge with a curve is used exactly twice
+            // (a seam's two uses in one face included).
+            let mut uses: BTreeMap<usize, usize> = BTreeMap::new();
+            for u in faces
+                .iter()
+                .flat_map(|f| walk.faces[*f].loops.iter().flatten())
+            {
+                if walk.edges[u.edge].curve.is_some() {
+                    *uses.entry(u.edge).or_default() += 1;
+                }
+            }
+            let closed = !uses.is_empty() && uses.values().all(|n| *n == 2);
+            walk.shells.push(faces);
+            if closed {
+                Mode::ClosedShell
+            } else {
+                Mode::Sheet
+            }
+        }
+        Kind::Face => {
+            if let Some(f) = walk.face(record, t, oriented) {
+                walk.shells.push(vec![f]);
+            }
+            Mode::Sheet
+        }
+        Kind::Wire => {
+            let mut edges = Vec::new();
+            for e in &doc.shapes[record].subs {
+                if compose(e.orient, Orient::Forward).is_none() {
+                    walk.unsupported.push("InternalOrExternalEdge");
+                    continue;
+                }
+                if doc.shapes[e.shape].kind != Kind::Edge {
+                    walk.unsupported.push("WireWithNonEdgeChild");
+                    continue;
+                }
+                let et = t.times(&location(doc, e.location));
+                if let Some(edge) = walk.edge(e.shape, &et) {
+                    if !edges.contains(&edge) {
+                        edges.push(edge);
+                    }
+                }
+            }
+            Mode::Wire(edges)
+        }
+        Kind::Edge => match walk.edge(record, t) {
+            Some(edge) => Mode::Wire(vec![edge]),
+            None => Mode::Wire(Vec::new()),
+        },
+        _ => match walk.vertex(record, t) {
+            Some(v) => Mode::Acorn(v),
+            None => Mode::Acorn(0),
+        },
+    };
+    let resolution = Tolerance::new(walk.tolerance.max(Tolerance::default().linear()), 1e-12)
+        .unwrap_or_default();
+    let rejected = |names: Vec<&'static str>| ImportedFree {
+        record,
+        kind,
+        tolerance: resolution,
+        result: Err(Rejected::Unsupported(names)),
+    };
+    if !walk.unsupported.is_empty() {
+        let mut names = std::mem::take(&mut walk.unsupported);
+        names.sort_unstable();
+        names.dedup();
+        return rejected(names);
+    }
+    let parts = match to_cell(walk, resolution.linear(), mode) {
+        Ok(parts) => parts.with_measured_enclosures(),
+        Err(name) => return rejected(vec![name]),
+    };
+    ImportedFree {
+        record,
+        kind,
+        tolerance: resolution,
+        result: Topology::from_parts(parts.clone(), resolution).map_err(|issues| {
+            Rejected::Invalid {
+                issues,
+                parts: Box::new(parts),
+            }
+        }),
+    }
+}
+
+/// Every solid and free shape of a document in the cell model, and every
+/// construct the kernel cannot represent, by name.
 pub fn import(doc: &Document) -> Import {
     let mut unsupported: BTreeMap<&'static str, usize> = BTreeMap::new();
     for c in &doc.curves {
@@ -1333,6 +1533,7 @@ pub fn import(doc: &Document) -> Import {
     }
     let geometry: Vec<&'static str> = unsupported.keys().copied().collect();
     let mut solids = Vec::new();
+    let mut free = Vec::new();
     let mut stack: Vec<(Sub, Transform, Orient)> =
         vec![(doc.root, Transform::IDENTITY, Orient::Forward)];
     while let Some((sub, parent, o)) = stack.pop() {
@@ -1364,15 +1565,20 @@ pub fn import(doc: &Document) -> Import {
                 solids.push(solid);
             }
             Kind::CompSolid => *unsupported.entry("CompSolid").or_default() += 1,
-            Kind::Shell => *unsupported.entry("FreeShell").or_default() += 1,
-            Kind::Face => *unsupported.entry("FreeFace").or_default() += 1,
-            Kind::Wire => *unsupported.entry("FreeWire").or_default() += 1,
-            Kind::Edge => *unsupported.entry("FreeEdge").or_default() += 1,
-            Kind::Vertex => *unsupported.entry("FreeVertex").or_default() += 1,
+            Kind::Shell | Kind::Face | Kind::Wire | Kind::Edge | Kind::Vertex => {
+                let body = import_free(doc, sub.shape, &t, o);
+                if let Err(Rejected::Unsupported(names)) = &body.result {
+                    for name in names.iter().filter(|n| !geometry.contains(*n)) {
+                        *unsupported.entry(name).or_default() += 1;
+                    }
+                }
+                free.push(body);
+            }
         }
     }
     Import {
         solids,
+        free,
         unsupported,
     }
 }

@@ -73,6 +73,10 @@ pub enum OperationKind {
     /// A primitive of revolution (`Solid::cone_with`, S3): entities derive
     /// from its meridian profile.
     Revolve,
+    /// A planar face body from a profile (`Body::face_from_profile`, S6).
+    MakeFace,
+    /// A wire body from a boundary (`Body::wire_from_boundary`, S6).
+    MakeWire,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -128,6 +132,12 @@ pub enum Role {
     Apex,
     /// A sphere's pole closing a zone at one end (S3).
     Pole,
+    /// A face body's face, generated from every boundary of its profile (S6).
+    Face,
+    /// A face or wire body's edge, generated from its profile segment (S6).
+    Edge,
+    /// A face or wire body's vertex, generated from its profile vertex (S6).
+    Vertex,
 }
 
 /// A profile boundary, one of its segments, or one of its vertices, by
@@ -196,6 +206,8 @@ fn operation_code(kind: OperationKind) -> u8 {
         OperationKind::HeightSplit => 5,
         OperationKind::StackedFuse => 6,
         OperationKind::Revolve => 7,
+        OperationKind::MakeFace => 8,
+        OperationKind::MakeWire => 9,
     }
 }
 
@@ -229,10 +241,13 @@ pub(crate) fn role_code(role: Role) -> u8 {
         Role::CutVertex => 16,
         Role::Apex => 17,
         Role::Pole => 18,
+        Role::Face => 19,
+        Role::Edge => 20,
+        Role::Vertex => 21,
     }
 }
 
-const OPERATIONS: [OperationKind; 7] = [
+const OPERATIONS: [OperationKind; 9] = [
     OperationKind::Extrude,
     OperationKind::Transform,
     OperationKind::External,
@@ -240,6 +255,8 @@ const OPERATIONS: [OperationKind; 7] = [
     OperationKind::HeightSplit,
     OperationKind::StackedFuse,
     OperationKind::Revolve,
+    OperationKind::MakeFace,
+    OperationKind::MakeWire,
 ];
 const ENTITIES: [EntityKind; 5] = [
     EntityKind::Vertex,
@@ -248,7 +265,7 @@ const ENTITIES: [EntityKind; 5] = [
     EntityKind::Body,
     EntityKind::Region,
 ];
-const ROLES: [Role; 18] = [
+const ROLES: [Role; 21] = [
     Role::StartCap,
     Role::EndCap,
     Role::Wall,
@@ -267,6 +284,9 @@ const ROLES: [Role; 18] = [
     Role::CutVertex,
     Role::Apex,
     Role::Pole,
+    Role::Face,
+    Role::Edge,
+    Role::Vertex,
 ];
 
 /// Append one parent's encoding.
@@ -462,7 +482,7 @@ mod tests {
             assert_eq!(id.parse::<EntityId>().unwrap(), derivation.id(), "{name}");
             count += 1;
         }
-        assert_eq!(count, 20);
+        assert_eq!(count, 23);
         // Published FNV-1a-128 test vectors.
         assert_eq!(
             EntityId(fnv1a128(b"")).to_string(),
@@ -503,9 +523,9 @@ mod tests {
             (0, b'X'),
             (4, 2),
             (13, 0),
-            (13, 8),
+            (13, 10),
             (14, 6),
-            (15, 19),
+            (15, 22),
             (24, 9),
             (29, 3),
         ] {

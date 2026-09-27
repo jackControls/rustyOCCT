@@ -30,7 +30,7 @@ mod mass;
 mod spline_deviation;
 mod spline_flux;
 mod spline_taylor;
-pub(crate) use mass::{face_mass, mass};
+pub(crate) use mass::{face_mass, mass, sheet_measure};
 
 /// Issue classes of the validation contract.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -51,6 +51,8 @@ pub enum IssueKind {
     DisconnectedShell,
     NonManifoldVertex,
     Euler,
+    WireEdgeWithFins,
+    AcornVertexUsed,
     DegenerateVertex,
     DegenerateCurve,
     DegenerateSurface,
@@ -122,6 +124,8 @@ impl IssueKind {
             DisconnectedShell => "disconnected_shell",
             NonManifoldVertex => "non_manifold_vertex",
             Euler => "euler",
+            WireEdgeWithFins => "wire_edge_with_fins",
+            AcornVertexUsed => "acorn_vertex_used",
             DegenerateVertex => "degenerate_vertex",
             DegenerateCurve => "degenerate_curve",
             DegenerateSurface => "degenerate_surface",
@@ -2022,6 +2026,24 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp], origin: &V3<T>) -> Option<T> {
     Some(total)
 }
 
+/// The faces a shell lists on both sides: a sheet's (S6). They bound no
+/// region of the shell's own and add nothing to its flux.
+fn two_sided(shell: &Shell) -> BTreeSet<usize> {
+    let sides: BTreeSet<(usize, Side)> = shell.sides.iter().map(|(f, s)| (f.0, *s)).collect();
+    shell
+        .sides
+        .iter()
+        .filter(|(f, side)| {
+            let other = match side {
+                Side::Front => Side::Back,
+                Side::Back => Side::Front,
+            };
+            sides.contains(&(f.0, other))
+        })
+        .map(|(f, _)| f.0)
+        .collect()
+}
+
 /// The origin of a shell's fluxes: any point works (the divergence of
 /// `S - origin` is 3), and a vertex of the shell keeps every face's
 /// integrand at the body's own scale; a shell without vertices takes its
@@ -2060,7 +2082,11 @@ fn shell_flux<T: Real>(
 ) -> Option<T> {
     let origin = v3::<T>(origin);
     let mut total = c::<T>(0.0);
+    let both = two_sided(shell);
     for (f, side) in &shell.sides {
+        if both.contains(&f.0) {
+            continue;
+        }
         let flux = face_flux::<T>(&faces[f.0], &resolved[f.0], &origin)?;
         total = match side {
             Side::Front => total.add(&flux),
@@ -2743,7 +2769,7 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
         .collect();
     let shell_faces =
         |si: usize| -> Vec<usize> { shells[si].sides.iter().map(|(f, _)| f.0).collect() };
-    for si in 0..ns {
+    for (si, shell) in shells.iter().enumerate().take(ns) {
         if twins.contains(&si) {
             continue;
         }
@@ -2825,9 +2851,69 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
             }
         }
         let chi = vs.len() as i64 - es.len() as i64 + 2 * members.len() as i64 - loop_total;
-        if chi % 2 != 0 || chi > 2 {
+        // A sheet's two sides make no closed surface of its faces (S6).
+        if two_sided(shell).is_empty() && (chi % 2 != 0 || chi > 2) {
             add(&mut issues, K::Euler, En::Shell(si));
             bad_shells.insert(si);
+        }
+    }
+
+    // Wire edges and acorn vertices (S6): a wire edge has no fins, an
+    // acorn vertex bounds nothing else, and a shell of wire edges and
+    // acorns alone is connected through their vertices.
+    let edge_ends: BTreeSet<usize> = edges
+        .iter()
+        .flat_map(|e| [e.start, e.end])
+        .flatten()
+        .map(|v| v.0)
+        .collect();
+    let loop_vertices: BTreeSet<usize> = loops
+        .iter()
+        .filter_map(|l| match l {
+            Loop::Vertex(v) => Some(v.0),
+            Loop::Edges { .. } => None,
+        })
+        .collect();
+    for (si, shell) in shells.iter().enumerate() {
+        for e in &shell.wire_edges {
+            if !edges[e.0].fins.is_empty() || users.contains_key(&e.0) {
+                add(&mut issues, K::WireEdgeWithFins, En::Edge(e.0));
+            }
+        }
+        for v in &shell.acorn_vertices {
+            if edge_ends.contains(&v.0) || loop_vertices.contains(&v.0) {
+                add(&mut issues, K::AcornVertexUsed, En::Vertex(v.0));
+            }
+        }
+        if shell.sides.is_empty()
+            && !(shell.wire_edges.is_empty() && shell.acorn_vertices.is_empty())
+        {
+            let parts: Vec<BTreeSet<usize>> = shell
+                .wire_edges
+                .iter()
+                .map(|e| {
+                    [edges[e.0].start, edges[e.0].end]
+                        .into_iter()
+                        .flatten()
+                        .map(|v| v.0)
+                        .collect()
+                })
+                .chain(shell.acorn_vertices.iter().map(|v| BTreeSet::from([v.0])))
+                .collect();
+            let mut seen = vec![false; parts.len()];
+            let mut stack = vec![0];
+            seen[0] = true;
+            while let Some(p) = stack.pop() {
+                for q in 0..parts.len() {
+                    if !seen[q] && !parts[p].is_disjoint(&parts[q]) {
+                        seen[q] = true;
+                        stack.push(q);
+                    }
+                }
+            }
+            if seen.iter().any(|x| !x) {
+                add(&mut issues, K::DisconnectedShell, En::Shell(si));
+            }
         }
     }
 
@@ -3368,6 +3454,8 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                     .sides
                     .iter()
                     .all(|(f, _)| !bad_faces.contains(&f.0))
+                // A sheet shell has no orientation to decide (S6).
+                && shells[*si].sides.len() > 2 * two_sided(&shells[*si]).len()
         })
         .collect();
     for (ri, region) in regions.iter().enumerate() {

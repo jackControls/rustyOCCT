@@ -16,8 +16,8 @@ import mpmath as mp
 
 from fractions import Fraction as F
 
-from cell_reference import (declare, encode as encode_cell, gap_bounds, mass_properties, to_cell,
-                            validate as validate_cell)
+from cell_reference import (body_class, declare, encode as encode_cell, gap_bounds, mass_properties,
+                            to_cell, validate as validate_cell)
 import spline_cell_reference as spline
 from spline_cell_reference import Basis, BSpline2, BSpline3, BSplineSurface
 
@@ -1139,10 +1139,12 @@ def generate():
     names = [c.name for c in cells]
     assert len(names) == len(set(names)), 'duplicate case names'
     text = '\n'.join(encode_cell(c) for c in cells)+'\n'
-    rows, lows, masses = [], [], []
+    rows, lows, masses, classes = [], [], [], []
     for c in cells:
         issues = validate_cell(c)
         rows.append(c.name+'\t'+';'.join(f'{k}:{e}' for k, e in issues))
+        if not issues:
+            classes.append(c.name+'\t'+body_class(c))
         if not issues and c.name.startswith('spline_'):
             # S4d: the mass properties of every valid spline case.
             props = mass_properties(c)
@@ -1164,7 +1166,9 @@ def generate():
                     'brep-enclosure-lows.tsv': '# valid case\tv|u|f index (vertex, fin arena index, face)'
                     '\tcertain lower value of its gap\n'+'\n'.join(lows)+'\n',
                     'brep-spline-mass.tsv': '# valid spline case\tvolume, area, centroid, inertia about it'
-                    ' (row-major), by nested Gauss-Legendre quadrature\n'+'\n'.join(masses)+'\n'}
+                    ' (row-major), by nested Gauss-Legendre quadrature\n'+'\n'.join(masses)+'\n',
+                    'brep-classes.tsv': '# valid case\tits class (D9: solid, sheet, wire, acorn or general)\n'
+                    + '\n'.join(classes)+'\n'}
 
 
 def main():

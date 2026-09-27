@@ -8,7 +8,10 @@
 //! a cone (S3 of REVIEW_NOTES.md), written with OCCT's seam and degenerated
 //! apex edge: it always round-trips, and its mutated text reads, imports and
 //! validates or fails cleanly. So do the valid spline fixtures (S4e): spline
-//! edges, pcurves and surfaces with B-spline records.
+//! edges, pcurves and surfaces with B-spline records. And (S6) the valid
+//! sheet, shell, wire and acorn fixtures and the face and wire bodies of a
+//! profile: written as free shapes, they round-trip, and every free shape
+//! of mutated text validates and round-trips or fails cleanly.
 use crate::identity::{build, cone_spec, spec, sphere_spec, torus_spec};
 use libfuzzer_sys::arbitrary::{Result, Unstructured};
 use rusty_occt::occt_brep::{import, read, write};
@@ -152,25 +155,42 @@ fn round_trip(t: &Topology, tolerance: f64) -> bool {
     let doc = read(&text).expect("the writer's text reads");
     let back = import(&doc);
     assert!(back.unsupported.is_empty(), "{:?}", back.unsupported);
-    assert_eq!(back.solids.len(), 1);
-    let again = back.solids[0]
-        .result
-        .as_ref()
-        .expect("a written solid imports");
+    let solid = t.class().name() == "solid";
+    assert_eq!(
+        (back.solids.len(), back.free.len()),
+        if solid { (1, 0) } else { (0, 1) }
+    );
+    let again = if solid {
+        back.solids[0].result.as_ref()
+    } else {
+        back.free[0].result.as_ref()
+    }
+    .expect("a written body imports");
+    assert_eq!(again.class(), t.class());
     assert_eq!(again.occt_counts(), t.occt_counts());
     assert_eq!(again.faces().len(), t.faces().len());
     assert_eq!(again.edges().len(), t.edges().len());
-    assert_eq!(vertices(again), vertices(t));
+    // A ring edge is closed at a vertex in the file and may come back a ring
+    // (S6: a disc's or a circle wire's).
+    if t.edges().iter().all(|e| !e.is_ring()) && again.edges().iter().all(|e| !e.is_ring()) {
+        assert_eq!(vertices(again), vertices(t));
+    }
     true
 }
 
 /// Mutated text never panics; what imports validates and round-trips.
 fn check_text(text: &str) {
     let Ok(doc) = read(text) else { return };
-    for solid in import(&doc).solids {
-        if let Ok(t) = &solid.result {
-            assert!(t.check(solid.tolerance).is_empty());
-            let tolerance = solid.tolerance.linear().max(Tolerance::default().linear());
+    let im = import(&doc);
+    let bodies = im
+        .solids
+        .iter()
+        .map(|s| (&s.result, s.tolerance))
+        .chain(im.free.iter().map(|f| (&f.result, f.tolerance)));
+    for (result, resolution) in bodies {
+        if let Ok(t) = result {
+            assert!(t.check(resolution).is_empty());
+            let tolerance = resolution.linear().max(Tolerance::default().linear());
             round_trip(t, tolerance);
         }
     }
@@ -233,10 +253,62 @@ fn check_torus(data: &[u8]) {
     }
 }
 
+/// S6: a valid sheet, shell, wire or acorn fixture, or the face or wire
+/// body of a profile, written as a free shape, round-trips; its mutated
+/// text reads, imports and validates or fails cleanly.
+fn check_free(data: &[u8]) {
+    let mut u = Unstructured::new(data);
+    let (t, tol) = if u.ratio(1, 2).unwrap_or(true) {
+        // The S6 models (generate_brep_fixtures.sheet_models); the three
+        // mutations among them are invalid and skipped.
+        let blocks: Vec<&str> = include_str!("../../fixtures/brep-cases.txt")
+            .split("\nend")
+            .map(str::trim)
+            .filter(|b| {
+                ["case sheet_", "case shell_", "case wire_", "case acorn_"]
+                    .iter()
+                    .any(|p| b.starts_with(p))
+            })
+            .collect();
+        let Ok(pick) = u.choose_index(blocks.len()) else {
+            return;
+        };
+        let (_, tol, parts) = brep_protocol::parse(blocks[pick]);
+        let Ok(t) = Topology::from_parts(parts, Tolerance::new(tol, 1e-12).unwrap()) else {
+            return;
+        };
+        (t, tol)
+    } else {
+        let Ok(Some(s)) = spec(&mut u) else { return };
+        let Some(solid) = build(&s, None, 1.0, false) else {
+            return;
+        };
+        let profile = solid.profile().unwrap().clone();
+        let (op, frame, tolerance) = (solid.operation(), solid.frame(), profile.tolerance());
+        let body = if u.ratio(1, 2).unwrap_or(true) {
+            rusty_occt::Body::face_from_profile_with(op, profile, frame)
+        } else {
+            rusty_occt::Body::wire_from_boundary_with(op, profile.outer().clone(), frame, tolerance)
+        };
+        let Ok((body, _)) = body else { return };
+        (body.topology().clone(), tolerance.linear())
+    };
+    assert!(round_trip(&t, tol), "an unmutated free shape writes");
+    let base = write(&t, tol).unwrap();
+    if let Ok(text) = mutate(&mut u, &base) {
+        check_text(&text);
+    }
+}
+
 pub fn check_brep_io(data: &[u8]) {
     if data.first() == Some(&0x53) {
         // 'S': the spline family.
         check_spline(&data[1..]);
+        return;
+    }
+    if data.first() == Some(&0x46) {
+        // 'F': free shapes (S6).
+        check_free(&data[1..]);
         return;
     }
     check_cone(data);

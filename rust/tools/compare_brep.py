@@ -460,6 +460,32 @@ def rust_masses():
     return out
 
 
+def rust_measures():
+    """{case: (class, [(lo, hi)] * 4)} each valid case's class and, for a
+    sheet, wire or acorn, its certified area or length and centre (S6)."""
+    cases = (ROOT/'rust/fixtures/brep-cases.txt').read_text()
+    rows = subprocess.run([str(ROOT/'target/release/examples/brep_validation_probe'), 'measure'],
+                          input=cases, text=True, capture_output=True, timeout=600, check=True).stdout
+    out = {}
+    for line in rows.splitlines():
+        name, row = line.split('\t')
+        if row != '-':
+            words = row.split()
+            values = [float(x) for x in words[1:]]
+            out[name] = (words[0], list(zip(values[::2], values[1::2])))
+    return out
+
+
+def measure_differences(enclosure, native):
+    """S6: the certified area or length and centre contain OCCT's
+    `BRepGProp` values up to 1e-9 of the row's largest magnitude (OCCT's
+    integration error; its circle centre is 7e-15 off the origin)."""
+    allowance = 1e-9*max([1.0]+[abs(x) for x in native])
+    labels = ['measure', 'cx', 'cy', 'cz']
+    return [label for label, (lo, hi), x in zip(labels, enclosure, native)
+            if not lo-allowance <= x <= hi+allowance]
+
+
 def mass_differences(enclosure, native):
     """S4d: each certified kernel enclosure contains OCCT's value, up to
     OCCT's own relative error estimate plus 1e-8 relative (OCCT's area of
@@ -562,6 +588,7 @@ def main():
     issues, counts = rust_issues()
     enclosures = rust_enclosures()
     masses = rust_masses()
+    kernel_measures = rust_measures()
     cases = spline_rows() if spline else sheet_rows() if sheet else native_rows()
     executable, env, loaded, command = build(prefix, output, cases[0][1])
     if args.capture_splines:
@@ -585,7 +612,8 @@ def main():
               'not_constructible_natively': [m.name for m in models if not reference.representable(m)],
               'native_timeout_seconds': TIMEOUT, 'native_seconds': {},
               'structure_only_statuses': {}, 'counts_verified': 0, 'enclosures_compared': 0,
-              'enclosure_observations': {}, 'properties_compared': 0, 'property_enclosure_widths': {},
+              'enclosure_observations': {}, 'measures_compared': 0, 'measure_classes': {},
+              'properties_compared': 0, 'property_enclosure_widths': {},
               'matches': [], 'reviewed_differences': [], 'failures': []}
     observations = {}
     native_lines = {}
@@ -637,6 +665,15 @@ def main():
             report['enclosure_observations'][m.name] = detail
             if found:
                 report['failures'].append({'case': m.name, 'reason': ' '.join(found), 'detail': detail})
+            if sheet:
+                kind, measured = kernel_measures[m.name]
+                found = (measure_differences(measured, measures[m.name]) if measured
+                         else ['not measured'])
+                report['measures_compared'] += 1
+                report['measure_classes'][m.name] = kind
+                if found:
+                    report['failures'].append({'case': m.name, 'reason': 'measure outside: '+' '.join(found),
+                                               'enclosure': measured, 'native': measures[m.name]})
             if spline:
                 if m.name not in masses:
                     report['failures'].append({'case': m.name, 'reason': 'mass not integrated'})

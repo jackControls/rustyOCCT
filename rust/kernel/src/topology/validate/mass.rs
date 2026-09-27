@@ -1104,3 +1104,118 @@ pub(crate) fn face_mass(
     }
     one::<Fast>(view, face, reference).or_else(|| one::<I>(view, face, reference))
 }
+
+/// A certified enclosure of a sheet's area or a wire's length and its
+/// centre (S6).
+pub(crate) struct SheetMeasure {
+    pub measure: [f64; 2],
+    pub centre: [[f64; 2]; 3],
+}
+
+/// The length of an edge's curve and its first moment relative to
+/// `reference`, in closed form: a segment's midpoint, an arc's
+/// `r s (o sweep + r ((sin a1 - sin a0) x + (cos a0 - cos a1) y))`, `s`
+/// the sweep's sign. `None` for a spline curve.
+fn curve_moments<T: Real>(curve: &Curve3, reference: &V3<T>) -> Option<(T, V3<T>)> {
+    match curve {
+        Curve3::LineSegment { start, end } => {
+            let (a, b) = (v3::<T>(start.to_array()), v3::<T>(end.to_array()));
+            let length = vdot(&vsub(&b, &a), &vsub(&b, &a)).sqrt();
+            let half = c::<T>(0.5);
+            let mid: V3<T> = std::array::from_fn(|i| a[i].add(&b[i]).mul(&half).sub(&reference[i]));
+            Some((length.clone(), mid.map(|m| m.mul(&length))))
+        }
+        Curve3::Circle { frame: f, radius } => {
+            let fr = frame::<T>(f);
+            let pi = T::from_r(crate::certified::pi().lo())
+                .union(&T::from_r(crate::certified::pi().hi()));
+            let length = c::<T>(2.0).mul(&pi).mul(&c(*radius));
+            let d = vsub(&fr.o, reference);
+            Some((length.clone(), d.map(|x| x.mul(&length))))
+        }
+        Curve3::CircularArc {
+            frame: f,
+            radius,
+            start_angle,
+            sweep_angle,
+        } => {
+            let fr = frame::<T>(f);
+            let r = c::<T>(*radius);
+            let a0 = c::<T>(*start_angle);
+            let sweep = c::<T>(*sweep_angle);
+            let (c0, s0) = T::cos_sin(&a0);
+            let (c1, s1) = T::cos_sin(&a0.add(&sweep));
+            let sign = c::<T>(sweep_angle.signum());
+            let length = r.mul(&sweep).mul(&sign);
+            let (ds, dc) = (s1.sub(&s0), c0.sub(&c1));
+            let d = vsub(&fr.o, reference);
+            let moment: V3<T> = std::array::from_fn(|i| {
+                d[i].mul(&sweep)
+                    .add(&r.mul(&ds.mul(&fr.x[i]).add(&dc.mul(&fr.y[i]))))
+                    .mul(&r)
+                    .mul(&sign)
+            });
+            Some((length, moment))
+        }
+        Curve3::BSpline(_) => None,
+    }
+}
+
+fn solve_measure<T: Real>(view: &View, reference: [f64; 3]) -> Option<SheetMeasure> {
+    let origin = v3::<T>(reference);
+    let mut total = c::<T>(0.0);
+    let mut moment: V3<T> = std::array::from_fn(|_| c(0.0));
+    let mut add = |measure: T, m: V3<T>| {
+        total = total.add(&measure);
+        moment = std::array::from_fn(|i| moment[i].add(&m[i]));
+    };
+    if !view.faces.is_empty() {
+        let loops = resolved(view);
+        for (f, face) in view.faces.iter().enumerate() {
+            let values = face_integrals::<T>(face, &loops[f], &origin)?;
+            let m = [values[11].clone(), values[12].clone(), values[13].clone()];
+            match values[10].sign()? {
+                Ordering::Less => add(values[10].neg(), m.map(|x| x.neg())),
+                _ => add(values[10].clone(), m),
+            }
+        }
+    } else {
+        let edges: BTreeSet<usize> = view
+            .shells
+            .iter()
+            .flat_map(|s| s.wire_edges.iter().map(|e| e.0))
+            .collect();
+        for e in edges {
+            let (length, m) = curve_moments::<T>(&view.edges[e].curve, &origin)?;
+            add(length, m);
+        }
+    }
+    let bounds = |x: &T| {
+        let (lo, hi) = x.bounds_f64();
+        (lo.is_finite() && hi.is_finite()).then_some([lo, hi])
+    };
+    let centre: V3<T> = if total.sign()? == Ordering::Equal {
+        // An acorn: its vertex.
+        origin
+    } else {
+        let mut out: V3<T> = std::array::from_fn(|_| c(0.0));
+        for i in 0..3 {
+            out[i] = moment[i].div(&total)?.add(&origin[i]);
+        }
+        out
+    };
+    Some(SheetMeasure {
+        measure: bounds(&total)?,
+        centre: [
+            bounds(&centre[0])?,
+            bounds(&centre[1])?,
+            bounds(&centre[2])?,
+        ],
+    })
+}
+
+/// A sheet's area or a wire's length and its centre, certified.
+pub(crate) fn sheet_measure(view: &View, reference: [f64; 3]) -> Option<SheetMeasure> {
+    super::bernstein::clear_memo();
+    solve_measure::<Fast>(view, reference).or_else(|| solve_measure::<I>(view, reference))
+}

@@ -24,13 +24,14 @@ FNV_PRIME = 0x0000000001000000000000000000013B
 MASK = (1 << 128)-1
 
 KIND = {'extrude': 1, 'transform': 2, 'external': 3, 'composite': 4, 'height_split': 5,
-        'stacked_fuse': 6, 'revolve': 7}
+        'stacked_fuse': 6, 'revolve': 7, 'make_face': 8, 'make_wire': 9}
 ENTITY = {'vertex': 1, 'edge': 2, 'face': 3, 'body': 4, 'region': 5}
 DIMENSION = {'vertex': 0, 'edge': 1, 'face': 2, 'body': 3, 'region': 3}
 ROLE = {'start_cap': 1, 'end_cap': 2, 'wall': 3, 'bottom_edge': 4, 'top_edge': 5,
         'vertical': 6, 'seam': 7, 'bottom_vertex': 8, 'top_vertex': 9,
         'seam_vertex': 10, 'body': 11, 'external': 12, 'region': 13, 'cut_face': 14,
-        'cut_edge': 15, 'cut_vertex': 16, 'apex': 17, 'pole': 18}
+        'cut_edge': 15, 'cut_vertex': 16, 'apex': 17, 'pole': 18, 'face': 19, 'edge': 20,
+        'vertex': 21}
 ELEMENT = {'boundary': 0, 'segment': 1, 'vertex': 2}
 RELATION = {'unchanged': 1, 'modified': 2, 'generated': 3, 'split': 4, 'merged': 5,
             'deleted': 6}
@@ -194,6 +195,7 @@ class Case:
     cone: tuple = None           # (r1, r2, height) for Solid::cone_with on the frame
     sphere: tuple = None         # (radius, low, high) for Solid::sphere_with on the frame
     torus: tuple = None          # (major, minor, low, high, angle) for Solid::torus_with
+    make: str = None             # 'face' (Body::face_from_profile) or 'wire' (the first boundary's)
 
 
 def number(x):
@@ -215,7 +217,7 @@ def encode_case(c):
         out.append('torus '+' '.join(number(x) for x in c.torus))
     else:
         out.append('frame '+' '.join(number(x) for x in c.frame))
-        out.append(f'offsets {number(c.start)} {number(c.end)}')
+        out.append(f'make {c.make}' if c.make else f'offsets {number(c.start)} {number(c.end)}')
         for b in c.boundaries:
             if b.circle is not None:
                 row = 'boundary C '+' '.join(number(x) for x in b.circle)
@@ -413,8 +415,42 @@ def torus_entities(c):
     return ents
 
 
+def sheet_entities(c):
+    """S6: a face body's face (from every boundary), and each boundary's
+    edges (from their segments) and vertices (from theirs); a wire body the
+    edges and vertices of its one boundary. A circle is one ring edge."""
+    op, tol, kind = c.operation, c.tolerance, 'make_'+c.make
+    boundaries = c.boundaries if c.make == 'face' else c.boundaries[:1]
+    ents = []
+
+    def add(entity, role, parents, locator):
+        ents.append(Entity(entity, Derivation(op, kind, entity, role, 0, tuple(parents)), locator))
+
+    face_parents = []
+    for b, boundary in enumerate(boundaries):
+        pts, labels = stored(boundary, tol)
+        if boundary.segments is not None:
+            pts = pts[0]
+        face_parents.append(('label', labels[0]) if labels else ('profile', b, 'boundary', 0))
+        seg = (lambda j: ('label', labels[1][j])) if labels else (lambda j: ('profile', b, 'segment', j))
+        vert = (lambda j: ('label', labels[2][j])) if labels else (lambda j: ('profile', b, 'vertex', j))
+        if pts is None:
+            add('edge', 'edge', [seg(0)], (b, 'segment', 0))
+            continue
+        for j in range(len(pts)):
+            add('vertex', 'vertex', [vert(j)], (b, 'vertex', j))
+            add('edge', 'edge', [seg(j)], (b, 'segment', j))
+    if c.make == 'face':
+        add('face', 'face', face_parents, ('face',))
+    ids = [e.id for e in ents]
+    assert len(set(ids)) == len(ids), f'{c.name}: id collision'
+    return ents
+
+
 def entities(c):
     """Every entity of a case's construction."""
+    if c.make is not None:
+        return sheet_entities(c)
     if c.torus is not None:
         return torus_entities(c)
     if c.cone is not None:

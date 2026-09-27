@@ -678,6 +678,41 @@ impl Face {
     }
 }
 
+/// Certified enclosures `[lo, hi]` of a sheet's area, a wire's length (zero
+/// for an acorn) and its centre (S6).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct MeasureEnclosure {
+    pub measure: [f64; 2],
+    pub centre: [[f64; 2]; 3],
+}
+
+/// A body's class (D9): computed, never stored.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BodyClass {
+    /// Every face between a solid and a void region.
+    Solid,
+    /// Faces only, no solid region.
+    Sheet,
+    /// Wire edges only.
+    Wire,
+    /// One vertex.
+    Acorn,
+    /// Anything else.
+    General,
+}
+
+impl BodyClass {
+    pub fn name(self) -> &'static str {
+        match self {
+            BodyClass::Solid => "solid",
+            BodyClass::Sheet => "sheet",
+            BodyClass::Wire => "wire",
+            BodyClass::Acorn => "acorn",
+            BodyClass::General => "general",
+        }
+    }
+}
+
 /// Certified enclosures `[lo, hi]` of a body's mass properties at unit
 /// density (REVIEW_NOTES.md U2): volume, surface area, centre of gravity and
 /// the inertia tensor about it, in world axes.
@@ -1102,28 +1137,51 @@ impl Topology {
     /// gets one degenerated edge (its vertex is the pole's); a face's wound
     /// loops form one wire and every other edge loop its own wire; shells
     /// and solids are those of solid regions.
+    /// The body's class (D9 of `TOPOLOGY_MODEL.md`, S6): computed from its
+    /// regions and what its shells list, never stored.
+    pub fn class(&self) -> BodyClass {
+        let wires = self.shells.iter().any(|s| !s.wire_edges.is_empty());
+        let acorns: usize = self.shells.iter().map(|s| s.acorn_vertices.len()).sum();
+        let solid = self.regions.iter().any(|r| r.kind == RegionKind::Solid);
+        let kind = |s: ShellId| self.regions[self.shells[s.0].region.0].kind;
+        if !self.faces.is_empty() && !wires && acorns == 0 {
+            if solid
+                && self.faces.iter().all(|f| {
+                    (kind(f.front) == RegionKind::Solid) != (kind(f.back) == RegionKind::Solid)
+                })
+            {
+                return BodyClass::Solid;
+            }
+            if !solid {
+                return BodyClass::Sheet;
+            }
+        }
+        if self.faces.is_empty() && !solid {
+            if wires && acorns == 0 {
+                return BodyClass::Wire;
+            }
+            if !wires && acorns == 1 {
+                return BodyClass::Acorn;
+            }
+        }
+        BodyClass::General
+    }
+
     pub fn occt_counts(&self) -> OcctCounts {
         let mut seams = 0;
         let mut degenerate = 0;
-        let mut seam_vertices = std::collections::BTreeSet::new();
         let mut wires = 0;
         let mut closed_vertices = 0;
         for face in &self.faces {
             let mut wound = [false, false];
             for l in &face.loops {
-                if let Loop::Edges { fins, winding } = &self.loops[l.0] {
+                if let Loop::Edges { winding, .. } = &self.loops[l.0] {
                     if winding == &[0, 0] {
                         wires += 1;
                         continue;
                     }
                     for (d, w) in winding.iter().enumerate() {
                         wound[d] |= *w != 0;
-                    }
-                    for k in fins {
-                        let e = self.fins[k.0].edge;
-                        if self.edges[e.0].is_ring() {
-                            seam_vertices.insert(e);
-                        }
                     }
                 }
             }
@@ -1161,12 +1219,47 @@ impl Topology {
             .iter()
             .filter(|r| r.kind == RegionKind::Solid)
             .collect();
+        // S6: without a solid, a sheet of one face is a free face and of
+        // several one shell per face-bearing shell (a closed shell's two
+        // sides, twins, are one); a wire of one edge is a free edge and of
+        // several one wire.
+        let sheet_shells = if solid.is_empty() && self.faces.len() > 1 {
+            let key = |s: &Shell, flip: bool| {
+                let mut k: Vec<(usize, bool)> = s
+                    .sides
+                    .iter()
+                    .map(|(f, side)| (f.0, (*side == Side::Front) != flip))
+                    .collect();
+                k.sort_unstable();
+                k
+            };
+            let mut seen: Vec<Vec<(usize, bool)>> = Vec::new();
+            let mut count = 0;
+            for shell in self.shells.iter().filter(|s| !s.sides.is_empty()) {
+                if !seen.contains(&key(shell, true)) {
+                    count += 1;
+                }
+                seen.push(key(shell, false));
+            }
+            count
+        } else {
+            0
+        };
+        wires += self
+            .shells
+            .iter()
+            .filter(|s| s.wire_edges.len() > 1)
+            .count();
         OcctCounts {
-            vertices: self.vertices.len() + seam_vertices.len() + closed_vertices,
+            // OCCT closes every closed edge at a vertex (on a cylinder's or
+            // cone's seam, on a disc, or alone in a wire).
+            vertices: self.vertices.len()
+                + self.edges.iter().filter(|e| e.is_ring()).count()
+                + closed_vertices,
             edges: self.edges.len() + seams + degenerate,
             wires,
             faces: self.faces.len(),
-            shells: solid.iter().map(|r| r.shells.len()).sum(),
+            shells: solid.iter().map(|r| r.shells.len()).sum::<usize>() + sheet_shells,
             solids: solid.len(),
         }
     }
@@ -1244,6 +1337,22 @@ impl Topology {
             surface_area: e.area,
             centroid: e.centroid,
             inertia: e.inertia,
+        })
+    }
+    /// Certified measure of a sheet (its area), wire (its length) or acorn
+    /// (zero) and its centre (S6); `None` for other classes, a wire with a
+    /// spline edge, or a face that cannot be integrated.
+    pub fn measure_enclosure(&self) -> Option<MeasureEnclosure> {
+        if !matches!(
+            self.class(),
+            BodyClass::Sheet | BodyClass::Wire | BodyClass::Acorn
+        ) {
+            return None;
+        }
+        let e = validate::sheet_measure(&self.view(), self.reference_point())?;
+        Some(MeasureEnclosure {
+            measure: e.measure,
+            centre: e.centre,
         })
     }
     /// A face's area and centre of gravity, from certified enclosures.
@@ -1931,6 +2040,207 @@ impl Topology {
         if topology.euler_characteristic() != 2 - 2 * profile.holes().len() as i64 {
             return Err(Error::InvalidTopology("unexpected shell genus"));
         }
+        Ok(topology)
+    }
+
+    /// A face body (`face`: one planar face on `frame` bounded by every
+    /// boundary, both sides in the infinite void) or a wire body (the first
+    /// boundary's edges as wire edges of the void), S6 of REVIEW_NOTES.md.
+    /// Vertices sit at the boundaries' stored points in the frame's plane,
+    /// edges are their segments as stored (a circle one ring edge); the face
+    /// is the frame's plane, its normal the frame's, its outer loop counter-
+    /// clockwise. Every entity is generated from its profile element: the
+    /// face from every boundary, an edge from its segment, a vertex from its
+    /// point.
+    pub(crate) fn planar_sheet(
+        boundaries: &[&crate::Boundary],
+        frame: Frame3,
+        tolerance: Tolerance,
+        face: bool,
+        operation: OperationId,
+    ) -> Result<Self> {
+        let kind = if face {
+            OperationKind::MakeFace
+        } else {
+            OperationKind::MakeWire
+        };
+        let derive = |entity, role, parents| Derivation {
+            operation,
+            kind,
+            entity,
+            role,
+            ordinal: 0,
+            parents,
+        };
+        let boundaries = if face { boundaries } else { &boundaries[..1] };
+        let mut topology = Self {
+            vertices: Vec::new(),
+            edges: Vec::new(),
+            fins: Vec::new(),
+            loops: Vec::new(),
+            faces: Vec::new(),
+            shells: Vec::new(),
+            regions: Vec::new(),
+            identity: Identity::new(
+                derive(EntityKind::Body, Role::Body, Vec::new()),
+                Vec::new(),
+                BTreeMap::new(),
+            )?,
+            layout: Vec::new(),
+            attributes: AttributeMap::new(),
+        };
+        if face {
+            topology.faces.push(Face {
+                surface: Surface::Plane(frame),
+                sense: Orientation::Forward,
+                loops: Vec::new(),
+                front: ShellId(0),
+                back: ShellId(0),
+                enclosure: None,
+            });
+        }
+        let mut derivations: Vec<(Slot, Derivation)> = Vec::new();
+        let mut labels = BTreeMap::new();
+        let mut face_parents = Vec::new();
+        let mut wire_edges = Vec::new();
+        for (boundary, wire) in boundaries.iter().enumerate() {
+            let b = boundary as u32;
+            match wire.labels() {
+                Some(l) => {
+                    face_parents.push(Parent::Label(l.boundary));
+                    labels.insert(l.boundary, (b, ProfileElement::Boundary));
+                    for (j, label) in l.segments.iter().enumerate() {
+                        labels.insert(*label, (b, ProfileElement::Segment(j as u32)));
+                    }
+                    for (j, label) in l.vertices.iter().enumerate() {
+                        labels.insert(*label, (b, ProfileElement::Vertex(j as u32)));
+                    }
+                }
+                None => face_parents.push(Parent::Profile {
+                    boundary: b,
+                    element: ProfileElement::Boundary,
+                }),
+            }
+            let seg = |j: usize| match wire.labels() {
+                Some(l) => Parent::Label(l.segments[j]),
+                None => Parent::Profile {
+                    boundary: b,
+                    element: ProfileElement::Segment(j as u32),
+                },
+            };
+            let vert = |j: usize| match wire.labels() {
+                Some(l) => Parent::Label(l.vertices[j]),
+                None => Parent::Profile {
+                    boundary: b,
+                    element: ProfileElement::Vertex(j as u32),
+                },
+            };
+            let (points, segments): (&[Point2], Option<&[Segment]>) = match &wire.kind {
+                BoundaryKind::Polygon(points) => (points.as_slice(), None),
+                BoundaryKind::Path { points, segments } => {
+                    (points.as_slice(), Some(segments.as_slice()))
+                }
+                BoundaryKind::Circle { center, radius } => {
+                    let circle = Frame3::new(
+                        frame.point(*center, 0.0),
+                        frame.normal(),
+                        frame.x(),
+                        tolerance,
+                    )?;
+                    let edge = topology.add_ring(Curve3::Circle {
+                        frame: circle,
+                        radius: *radius,
+                    });
+                    derivations.push((
+                        Slot::Edge(edge),
+                        derive(EntityKind::Edge, Role::Edge, vec![seg(0)]),
+                    ));
+                    wire_edges.push(edge);
+                    if face {
+                        topology.add_cap_loop(0, &[edge], boundary > 0, frame);
+                    }
+                    continue;
+                }
+            };
+            let count = points.len();
+            let vertices = points
+                .iter()
+                .map(|p| topology.add_vertex(frame.point(*p, 0.0)))
+                .collect::<Vec<_>>();
+            let mut edges = Vec::with_capacity(count);
+            for i in 0..count {
+                let j = (i + 1) % count;
+                let edge = match segments.map(|s| s[i]) {
+                    None | Some(Segment::Line) => topology.add_line(vertices[i], vertices[j]),
+                    Some(Segment::Arc {
+                        center,
+                        radius,
+                        ccw,
+                    }) => {
+                        let arc_frame = Frame3::new(
+                            frame.point(center, 0.0),
+                            frame.normal(),
+                            frame.x(),
+                            tolerance,
+                        )?;
+                        let a = points[i];
+                        topology.add_edge(
+                            Some(vertices[i]),
+                            Some(vertices[j]),
+                            Curve3::CircularArc {
+                                frame: arc_frame,
+                                radius,
+                                start_angle: (a.y - center.y).atan2(a.x - center.x),
+                                sweep_angle: crate::profile::arc_sweep(center, a, points[j], ccw),
+                            },
+                        )
+                    }
+                };
+                edges.push(edge);
+                derivations.push((
+                    Slot::Vertex(vertices[i]),
+                    derive(EntityKind::Vertex, Role::Vertex, vec![vert(i)]),
+                ));
+                derivations.push((
+                    Slot::Edge(edge),
+                    derive(EntityKind::Edge, Role::Edge, vec![seg(i)]),
+                ));
+            }
+            if face {
+                topology.add_cap_loop(0, &edges, boundary > 0, frame);
+            }
+            wire_edges.extend(edges);
+        }
+        if face {
+            derivations.push((
+                Slot::Face(FaceId(0)),
+                derive(EntityKind::Face, Role::Face, face_parents),
+            ));
+        }
+        for (k, fin) in topology.fins.iter().enumerate() {
+            topology.edges[fin.edge.0].fins.push(FinId(k));
+        }
+        topology.shells = vec![Shell {
+            region: RegionId(0),
+            sides: if face {
+                vec![(FaceId(0), Side::Front), (FaceId(0), Side::Back)]
+            } else {
+                Vec::new()
+            },
+            wire_edges: if face { Vec::new() } else { wire_edges },
+            acorn_vertices: Vec::new(),
+        }];
+        topology.regions = vec![Region {
+            kind: RegionKind::Void,
+            shells: vec![ShellId(0)],
+        }];
+        topology.identity = Identity::new(
+            derive(EntityKind::Body, Role::Body, Vec::new()),
+            derivations,
+            labels,
+        )?;
+        topology.measure_enclosures(tolerance)?;
+        topology.validate(tolerance)?;
         Ok(topology)
     }
 

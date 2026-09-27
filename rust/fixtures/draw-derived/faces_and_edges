@@ -1,0 +1,46 @@
+puts "Derived case, not an original OCCT test: faces and edges on geometry (S6)"
+puts "Written for rusty-occt; see rust/UPSTREAM_TESTS.md (derived cases)."
+
+# A rectangle on a tilted plane: a free face, no shell.
+plane p 1 2 3 0 0.6 0.8 1 0 0
+mkface f p -1 2 0 3
+checkshape f
+checknbshapes f -vertex 4 -edge 4 -wire 1 -face 1 -shell 0 -solid 0
+checkprops f -s 9
+
+# A cylinder patch: radius 2 times 1.5 radians times height 4.
+cylinder c 1 2 3 0 0 1 2
+mkface cf c 0 1.5 0 4
+checkshape cf
+checknbshapes cf -vertex 4 -edge 4 -wire 1 -face 1 -shell 0 -solid 0
+checkprops cf -s 12
+
+# The whole band: OCCT closes it with a seam and a vertex on each circle.
+mkface band c 0 [expr {2 * acos(-1)}] 0 4
+checkshape band
+checknbshapes band -vertex 2 -edge 3 -wire 1 -face 1 -shell 0 -solid 0
+checkprops band -s 50.26548245743669
+
+# A segment of a line and of a circle, and the whole circle.
+line l 0 0 0 3 4 0
+mkedge e l 1 6
+checkshape e
+checknbshapes e -vertex 2 -edge 1 -wire 0 -face 0
+checkprops e -l 5
+circle ci 0 0 1 0 0 1 3
+mkedge ce ci
+checkshape ce
+checknbshapes ce -vertex 1 -edge 1 -wire 0 -face 0
+checkprops ce -l 18.849555921538759
+mkedge ca ci 0 2
+checkshape ca
+checknbshapes ca -vertex 2 -edge 1
+checkprops ca -l 6
+
+# A profile wire with arcs made a face: a stadium of area 6 + pi.
+profile sw F 0 -1 X 3 C 1 180 X -3 C 1 180 W
+checkprops sw -l 12.283185307179586
+mkplane sf sw
+checkshape sf
+checknbshapes sf -vertex 4 -edge 4 -wire 1 -face 1 -shell 0
+checkprops sf -s 9.1415926535897931

@@ -4,8 +4,8 @@ use rusty_occt::history::{History, Relation};
 use rusty_occt::identity::{InputLabel, OperationId, Parent, ProfileElement, Role};
 use rusty_occt::topology::{Curve3, FaceId, Slot, Surface};
 use rusty_occt::{
-    Boundary, BoundaryLabels, Frame3, Point2, Point3, Profile, RigidTransform, Segment, Solid,
-    Tolerance, Vec3,
+    Body, Boundary, BoundaryLabels, Frame3, Point2, Point3, Profile, RigidTransform, Segment,
+    Solid, Tolerance, Vec3,
 };
 
 pub struct CaseSpec {
@@ -24,6 +24,8 @@ pub struct CaseSpec {
     /// Major and minor radii, the tube's latitudes and the turn (radians).
     pub torus: Option<[f64; 5]>,
     pub transforms: Vec<RigidTransform>,
+    /// S6: `face` or `wire` for a `Body` instead of a solid.
+    pub make: Option<String>,
 }
 
 fn labels(words: &[&str]) -> BoundaryLabels {
@@ -51,6 +53,7 @@ pub fn parse(block: &str) -> CaseSpec {
         sphere: None,
         torus: None,
         transforms: Vec::new(),
+        make: None,
     };
     for line in block.lines().filter(|l| !l.trim().is_empty()) {
         let w: Vec<&str> = line.split_whitespace().collect();
@@ -63,6 +66,7 @@ pub fn parse(block: &str) -> CaseSpec {
             "op" => spec.operation = OperationId(w[1].parse().unwrap()),
             "frame" => spec.frame = std::array::from_fn(|i| f(i + 1)),
             "offsets" => (spec.start, spec.end) = (f(1), f(2)),
+            "make" => spec.make = Some(w[1].to_string()),
             "box" => spec.box_at = Some(([f(1), f(2), f(3)], [f(4), f(5), f(6)])),
             "cone" => spec.cone = Some([f(1), f(2), f(3)]),
             "sphere" => spec.sphere = Some([f(1), f(2), f(3)]),
@@ -130,6 +134,131 @@ pub fn cases(text: &str) -> Vec<CaseSpec> {
         .filter(|b| !b.trim().is_empty())
         .map(|b| parse(b.trim()))
         .collect()
+}
+
+fn frame_of(spec: &CaseSpec) -> Frame3 {
+    let f = spec.frame;
+    Frame3::new(
+        Point3::new(f[0], f[1], f[2]),
+        Vec3::new(f[3], f[4], f[5]),
+        Vec3::new(f[6], f[7], f[8]),
+        spec.tolerance,
+    )
+    .unwrap()
+}
+
+/// S6: the face or wire body of a `make` case, with its construction
+/// history.
+pub fn build_body(spec: &CaseSpec) -> (Body, History) {
+    let frame = frame_of(spec);
+    match spec.make.as_deref() {
+        Some("face") => {
+            let profile = Profile::new(
+                spec.boundaries[0].clone(),
+                spec.boundaries[1..].to_vec(),
+                spec.tolerance,
+            )
+            .unwrap();
+            Body::face_from_profile_with(spec.operation, profile, frame).unwrap()
+        }
+        Some("wire") => Body::wire_from_boundary_with(
+            spec.operation,
+            spec.boundaries[0].clone(),
+            frame,
+            spec.tolerance,
+        )
+        .unwrap(),
+        other => panic!("not a body case: {other:?}"),
+    }
+}
+
+/// A face or wire body's rows: vertices by position against the stored
+/// points, edges by their end vertices (a ring by its circle's centre), the
+/// face as `face` (identity_reference.py::sheet_entities).
+pub fn body_rows(body: &Body) -> Vec<String> {
+    let t = body.topology();
+    let frame = body.frame();
+    let boundaries: Vec<&Boundary> = match body.profile() {
+        Some(p) => std::iter::once(p.outer()).chain(p.holes()).collect(),
+        None => vec![body.boundary().unwrap()],
+    };
+    let points = |b: &Boundary| -> Option<Vec<Point2>> {
+        b.polygon_vertices()
+            .or(b.path_geometry().map(|(p, _)| p))
+            .map(|p| p.to_vec())
+    };
+    let budget = 64.0 * f64::EPSILON * 1e3;
+    let vertex_loc: Vec<(usize, usize)> = t
+        .vertices()
+        .iter()
+        .map(|v| {
+            let found: Vec<(usize, usize)> = boundaries
+                .iter()
+                .enumerate()
+                .flat_map(|(b, boundary)| {
+                    points(boundary)
+                        .unwrap_or_default()
+                        .into_iter()
+                        .enumerate()
+                        .filter(|(_, q)| frame.point(*q, 0.0).distance(v.position) <= budget)
+                        .map(move |(j, _)| (b, j))
+                })
+                .collect();
+            assert_eq!(found.len(), 1, "vertex {:?} matches {found:?}", v.position);
+            found[0]
+        })
+        .collect();
+    let edge_loc: Vec<String> = t
+        .edges()
+        .iter()
+        .map(|edge| match (edge.start, edge.end) {
+            (Some(a), Some(b)) => {
+                let (a, b) = (vertex_loc[a.index()], vertex_loc[b.index()]);
+                assert_eq!(a.0, b.0, "edge between boundaries");
+                let n = points(boundaries[a.0]).unwrap().len();
+                assert_eq!((a.1 + 1) % n, b.1, "edge against the stored order");
+                format!("{} segment {}", a.0, a.1)
+            }
+            _ => {
+                let Curve3::Circle { frame: c, radius } = &edge.curve else {
+                    panic!("a vertex-less edge must be a full circle");
+                };
+                let found: Vec<usize> = (0..boundaries.len())
+                    .filter(|b| {
+                        boundaries[*b].circle_geometry().is_some_and(|(center, r)| {
+                            r == *radius && frame.point(center, 0.0).distance(c.origin()) <= budget
+                        })
+                    })
+                    .collect();
+                assert_eq!(found.len(), 1, "ring edge matches {found:?}");
+                format!("{} segment 0", found[0])
+            }
+        })
+        .collect();
+    let mut out = Vec::new();
+    for (id, slot) in t.ids() {
+        let d = t.derivation(id).unwrap();
+        assert_eq!(d.id(), id, "derivation must re-hash to its id");
+        assert_eq!(t.slot_of(id), Some(slot));
+        let (kind, loc) = match slot {
+            Slot::Vertex(v) => {
+                let (b, j) = vertex_loc[v.index()];
+                ("vertex", format!("{b} vertex {j}"))
+            }
+            Slot::Edge(e) => ("edge", edge_loc[e.index()].clone()),
+            Slot::Face(_) => ("face", "face".to_string()),
+            Slot::Region(_) => panic!("a face or wire body bounds no region"),
+        };
+        let parents: Vec<String> = d.parents.iter().map(parent_text).collect();
+        out.push(format!(
+            "{id} {kind} {} {} {} {loc}",
+            role_name(d.role),
+            d.ordinal,
+            parents.join(",")
+        ));
+    }
+    out.sort();
+    out
 }
 
 /// The solid before any transform.
@@ -202,6 +331,9 @@ pub fn role_name(role: Role) -> &'static str {
         Role::CutVertex => "cut_vertex",
         Role::Apex => "apex",
         Role::Pole => "pole",
+        Role::Face => "face",
+        Role::Edge => "edge",
+        Role::Vertex => "vertex",
     }
 }
 

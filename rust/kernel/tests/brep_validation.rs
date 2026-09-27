@@ -44,7 +44,7 @@ fn complete_issue_sets_match_the_independent_oracle() {
         checked += 1;
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
-    assert_eq!((checked, valid), (expected.len(), 63));
+    assert_eq!((checked, valid), (expected.len(), 78));
 }
 
 /// Measured enclosures (M5) of every valid case: never below the reference's
@@ -135,7 +135,7 @@ fn measured_enclosures_lie_between_the_reference_gap_and_its_declared_bound() {
         }
     }
     assert_eq!(compared, lows.values().map(Vec::len).sum::<usize>());
-    assert_eq!(lows.len(), 63);
+    assert_eq!(lows.len(), 78);
     // The gaps moved half the resolution compare without the allowance
     // mattering: a vertex, a cap fin, and a side fin with its face.
     assert!(strict >= 4, "{strict}");
@@ -206,4 +206,74 @@ fn spline_mass_encloses_the_reference() {
         checked += 1;
     }
     assert_eq!(checked, 16);
+}
+
+fn topology_of(name: &str) -> rusty_occt::topology::Topology {
+    let block = include_str!("../../fixtures/brep-cases.txt")
+        .split("\nend")
+        .find(|b| b.trim().lines().next() == Some(&format!("case {name}")))
+        .unwrap();
+    let (_, tolerance, parts) = parse(block.trim());
+    rusty_occt::topology::Topology::from_parts(parts, Tolerance::new(tolerance, 1e-12).unwrap())
+        .expect("a valid case")
+}
+
+/// D9 (S6): every valid case's computed class is the independent
+/// reference's (`brep-classes.tsv`).
+#[test]
+fn classes_match_the_independent_reference() {
+    let mut checked = 0;
+    for line in include_str!("../../fixtures/brep-classes.tsv")
+        .lines()
+        .skip(1)
+    {
+        let (name, class) = line.split_once('\t').unwrap();
+        assert_eq!(topology_of(name).class().name(), class, "{name}");
+        checked += 1;
+    }
+    assert_eq!(checked, 78);
+}
+
+/// S6: each valid sheet's, wire's and acorn's certified area or length and
+/// centre contains OCCT's `BRepGProp` value from the pre-implementation
+/// capture, up to `1e-9` of the row's largest magnitude (OCCT's own
+/// integration error; the circle's centre is `7e-15` off its origin).
+#[test]
+fn sheet_and_wire_measures_contain_the_native_properties() {
+    let mut checked = 0;
+    for line in include_str!("../../fixtures/occt-sheet-preimplementation/native.txt").lines() {
+        let words: Vec<&str> = line.split(' ').collect();
+        if words[1] != "G" {
+            continue;
+        }
+        let name = words[0];
+        // The three mutations are invalid.
+        if [
+            "sheet_square_vertex_moved",
+            "sheet_open_box_pcurve_shift",
+            "wire_disconnected",
+        ]
+        .contains(&name)
+        {
+            continue;
+        }
+        let t = topology_of(name);
+        let want: Vec<f64> = words[2..].iter().map(|x| x.parse().unwrap()).collect();
+        let m = t
+            .measure_enclosure()
+            .unwrap_or_else(|| panic!("{name}: measured"));
+        let slack = 1e-9 * want.iter().fold(1.0_f64, |a, x| a.max(x.abs()));
+        for (k, ([lo, hi], x)) in std::iter::once(m.measure)
+            .chain(m.centre)
+            .zip(&want)
+            .enumerate()
+        {
+            assert!(
+                lo - slack <= *x && *x <= hi + slack,
+                "{name} value {k}: {x} outside [{lo}, {hi}]"
+            );
+        }
+        checked += 1;
+    }
+    assert_eq!(checked, 15);
 }

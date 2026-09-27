@@ -7,10 +7,13 @@
 //! becomes a degenerated edge at the apex, as `BRepPrim_Cone` builds it: no
 //! 3D curve, the pcurve `v = v_apex` over one turn from `u0`, the apex its
 //! vertex at both ends, and the seam ends there. Every pcurve shares its
-//! edge's parameter, as OCCT's SameParameter edges do.
+//! edge's parameter, as OCCT's SameParameter edges do. A body without a
+//! solid region (S6) is written as its closed shells, its face or open
+//! shell, its edge or wire, or its vertex.
 use super::BrepError;
 use crate::topology::{
-    Curve2, Curve3, EdgeId, FaceId, Loop, Orientation, RegionKind, Side, Surface, Topology,
+    BodyClass, Curve2, Curve3, EdgeId, FaceId, Loop, Orientation, RegionKind, Side, Surface,
+    Topology,
 };
 use crate::{BSplineCurve3, BSplineSurface3, Point2, Point3};
 use std::collections::BTreeMap;
@@ -763,6 +766,24 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
             },
         );
     }
+    // A ring edge no seam meets (bounding a plane or in a wire, S6) is
+    // closed at the start of its record, as BRepBuilderAPI_MakeEdge closes a
+    // circle.
+    for (e, edge) in t.edges().iter().enumerate() {
+        let start = match &edge.curve {
+            Curve3::Circle { .. } => 0.0,
+            Curve3::CircularArc {
+                start_angle,
+                sweep_angle,
+                ..
+            } if *sweep_angle < 0.0 => -start_angle,
+            Curve3::CircularArc { start_angle, .. } => *start_angle,
+            _ => continue,
+        };
+        if edge.is_ring() {
+            ring_start.entry(e).or_insert(start);
+        }
+    }
     // Vertices, then seam vertices of ring edges.
     let mut vertex_record: BTreeMap<usize, usize> = BTreeMap::new();
     let vertex = |p: Point3, records: &mut Records| {
@@ -1035,9 +1056,7 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
     // Edges.
     let mut edge_record: BTreeMap<usize, usize> = BTreeMap::new();
     for (e, edge) in t.edges().iter().enumerate() {
-        if edge.fins.is_empty() {
-            return Err(unwritable("a wire edge"));
-        }
+        // A wire edge (S6) has no fin: only its 3D curve.
         curves.push(geometry[e].record.clone());
         let mut text = format!(
             "Ed\n {tol} 1 1 0\n1 {} 0 {}\n",
@@ -1051,10 +1070,10 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
         text.push_str("0\n\n0101000\n");
         let (s, en) = match (edge.start, edge.end) {
             (Some(s), Some(en)) => (vertex_record[&s.index()], vertex_record[&en.index()]),
-            _ => match ring_vertex.get(&e) {
-                Some(v) => (*v, *v),
-                None => return Err(unwritable("a ring edge on no wound face")),
-            },
+            _ => {
+                let v = ring_vertex[&e];
+                (v, v)
+            }
         };
         let _ = write!(text, "{{v+{s}}} 0 {{v-{en}}} 0 *");
         edge_record.insert(e, records.push(text));
@@ -1239,12 +1258,15 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
         let text: Vec<String> = shells.iter().map(|s| format!("{{+{s}}} 0")).collect();
         solids.push(records.push(format!("So\n\n0100100\n{} *", text.join(" "))));
     }
-    let root = match solids.as_slice() {
-        [] => return Err(unwritable("a topology without a solid region")),
-        [one] => *one,
+    let compound = |items: &[String], records: &mut Records| {
+        records.push(format!("Co\n\n1100000\n{} *", items.join(" ")))
+    };
+    let (root, forward) = match solids.as_slice() {
+        [one] => (*one, true),
+        [] => free_root(t, &face_record, &edge_record, &vertex_record, &mut records)?,
         many => {
             let text: Vec<String> = many.iter().map(|s| format!("{{+{s}}} 0")).collect();
-            records.push(format!("Co\n\n1100000\n{} *", text.join(" ")))
+            (compound(&text, &mut records), true)
         }
     };
     let _ = EdgeId::new(0);
@@ -1287,6 +1309,110 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
         text.push_str(rest);
         let _ = writeln!(out, "{text}");
     }
-    let _ = writeln!(out, "\n+{} 0 \n0", number(root));
+    let _ = writeln!(
+        out,
+        "\n{}{} 0 \n0",
+        if forward { "+" } else { "-" },
+        number(root)
+    );
     Ok(out)
+}
+
+/// The root of a body without a solid region (S6): a closed shell (of a
+/// bounded void) or several in a compound; an open sheet's one face, or its
+/// faces in one open shell, each by its front side; a wire's one edge, or
+/// its edges in one wire, each oriented to continue the last; an acorn's
+/// vertex.
+fn free_root(
+    t: &Topology,
+    face_record: &BTreeMap<usize, usize>,
+    edge_record: &BTreeMap<usize, usize>,
+    vertex_record: &BTreeMap<usize, usize>,
+    records: &mut Records,
+) -> Result<(usize, bool), BrepError> {
+    let sign = |forward: bool| if forward { "+" } else { "-" };
+    let side_text = |f: FaceId, side: Side| {
+        let face = &t.faces()[f.index()];
+        let forward = (face.sense == Orientation::Forward) == (side == Side::Front);
+        format!("{{{}{}}} 0", sign(forward), face_record[&f.index()])
+    };
+    match t.class() {
+        BodyClass::Sheet => {
+            let closed: Vec<usize> = t.regions()[1..]
+                .iter()
+                .flat_map(|r| r.shells.iter())
+                .map(|s| {
+                    let text: Vec<String> = t.shells()[s.index()]
+                        .sides
+                        .iter()
+                        .map(|(f, side)| side_text(*f, *side))
+                        .collect();
+                    records.push(format!("Sh\n\n0101100\n{} *", text.join(" ")))
+                })
+                .collect();
+            match closed.as_slice() {
+                [one] => return Ok((*one, true)),
+                [] => {}
+                many => {
+                    let text: Vec<String> = many.iter().map(|s| format!("{{+{s}}} 0")).collect();
+                    return Ok((
+                        records.push(format!("Co\n\n1100000\n{} *", text.join(" "))),
+                        true,
+                    ));
+                }
+            }
+            if t.faces().len() == 1 {
+                let forward = t.faces()[0].sense == Orientation::Forward;
+                return Ok((face_record[&0], forward));
+            }
+            let text: Vec<String> = (0..t.faces().len())
+                .map(|f| side_text(FaceId::new(f), Side::Front))
+                .collect();
+            Ok((
+                records.push(format!("Sh\n\n0101000\n{} *", text.join(" "))),
+                true,
+            ))
+        }
+        BodyClass::Wire => {
+            let edges: Vec<usize> = t
+                .shells()
+                .iter()
+                .flat_map(|s| s.wire_edges.iter().map(|e| e.index()))
+                .collect();
+            if let [one] = edges.as_slice() {
+                return Ok((edge_record[one], true));
+            }
+            let ends = |e: usize| (t.edges()[e].start, t.edges()[e].end);
+            let mut at = None;
+            let mut text = Vec::new();
+            for (k, e) in edges.iter().enumerate() {
+                let (a, b) = ends(*e);
+                let forward = match at {
+                    Some(v) => a == Some(v) || b != Some(v),
+                    // The first edge runs towards the second.
+                    None => edges.get(k + 1).is_none_or(|n| {
+                        let (c, d) = ends(*n);
+                        b == c || b == d || !(a == c || a == d)
+                    }),
+                };
+                at = if forward { b } else { a };
+                text.push(format!("{{{}{}}} 0", sign(forward), edge_record[e]));
+            }
+            Ok((
+                records.push(format!("Wi\n\n0101100\n{} *", text.join(" "))),
+                true,
+            ))
+        }
+        BodyClass::Acorn => {
+            let v = t
+                .shells()
+                .iter()
+                .find_map(|s| s.acorn_vertices.first())
+                .expect("an acorn has its vertex");
+            Ok((vertex_record[&v.index()], true))
+        }
+        BodyClass::Solid | BodyClass::General => {
+            Err(unwritable("a topology without a solid region"))
+        }
+    }
 }

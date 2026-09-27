@@ -95,6 +95,10 @@ def seed_corpus(target):
         for pick in range(6):
             for k in range(4):
                 save(bytes([0x53, pick])+bytes((j*53+k*31+7)%256 for j in range(64)))
+        # Free shapes (S6): 'F', a sheet, wire or acorn fixture or a
+        # profile's face or wire body, then mutations of its text.
+        for k in range(24):
+            save(bytes([0x46])+bytes((j*59+k*37+11)%256 for j in range(200)))
     elif target == 'attributes':
         # The identity structure, six random policies, random keys and small
         # values, a split height and changes on one piece before the fuse.
@@ -122,6 +126,9 @@ def seed_corpus(target):
             save(bytes(data))
         save(bytes([0]))
     elif target == 'brep_validation':
+        # S6: 'W', a sheet, shell, wire or acorn model, a scale and a shift.
+        for k in range(18):
+            save(bytes([0x57, k])+bytes((j*41+k*23+5)%256 for j in range(8)))
         # Every mutation on every base feature (none, round hole, square hole,
         # cavity), outline sizes 3..12 and small, unit and large scales.
         for mutation in range(24):

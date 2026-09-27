@@ -25,6 +25,7 @@
 
 mod algebraic;
 pub mod attributes;
+mod body;
 pub(crate) mod certified;
 pub mod curve;
 mod decide;
@@ -45,6 +46,7 @@ pub mod spline;
 pub mod surface;
 pub mod topology;
 
+pub use body::Body;
 pub use curve::{
     BSplineCurve2, BSplineCurve3, BezierCurve3, ExactBSplineCurve3, ExactBezierCurve3,
 };

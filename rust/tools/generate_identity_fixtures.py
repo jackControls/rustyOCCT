@@ -203,6 +203,39 @@ def arc_cases():
     return cases
 
 
+def sheet_cases():
+    """S6: face bodies of profiles (polygons, circles, arc paths, holes,
+    labels, clockwise input, tilted frames, rigid copies) and wire bodies of
+    boundaries."""
+    tol = 1e-7
+    xy = (0.0, 0.0, 0.0, 0.0, 0.0, 1.0, *X_HINT)
+    tilted = (3.0, -2.0, 5.0, 0.3, -0.4, 0.8, *X_HINT)
+    motions = [('R', (1.0, 2.0, 3.0), (0.0, 0.6, 0.8), 1.1), ('T', (10.0, -20.0, 30.0))]
+    square_b = Boundary(points=square((0.0, 0.0), 4.0))
+    labelled_square = Boundary(points=square((0.0, 0.0), 4.0), labels=(100, [101, 102, 103, 104],
+                                                                        [105, 106, 107, 108]))
+    stadium = path([(0.0, -1.0), (3.0, -1.0), (3.0, 1.0), (0.0, 1.0)],
+                   [None, arc(3.0, 0.0, 1.0), None, arc(0.0, 0.0, 1.0)])
+    cw = path([(0.0, 0.0), (0.0, 4.0), (4.0, 4.0), (4.0, 0.0)], [None, None, arc(2.0, 2.0, 2.0 * 2**0.5, False), None],
+              (200, [201, 202, 203, 204], [205, 206, 207, 208]))
+    outer = Boundary(points=square((0.0, 0.0), 10.0))
+    hole = Boundary(points=square((-5.0, -5.0), 2.0), labels=(300, [301, 302, 303, 304], [305, 306, 307, 308]))
+    return [
+        Case('face_square', tol, 41, xy, 0.0, 0.0, [square_b], make='face'),
+        Case('face_square_labelled', tol, 41, xy, 0.0, 0.0, [labelled_square], make='face'),
+        Case('face_disc', tol, 41, tilted, 0.0, 0.0, [Boundary(circle=(1.0, 2.0, 3.0))], make='face'),
+        Case('face_stadium', tol, 42, xy, 0.0, 0.0, [stadium], make='face'),
+        Case('face_clockwise_labelled', tol, 42, tilted, 0.0, 0.0, [cw], make='face'),
+        Case('face_holes', tol, 43, tilted, 0.0, 0.0, [outer, hole, Boundary(circle=(5.0, 5.0, 1.5)), stadium],
+             make='face'),
+        Case('face_transformed', tol, 44, tilted, 0.0, 0.0, [outer, hole], motions, make='face'),
+        Case('wire_square', tol, 45, xy, 0.0, 0.0, [square_b], make='wire'),
+        Case('wire_circle', tol, 45, tilted, 0.0, 0.0, [Boundary(circle=(1.0, 2.0, 3.0))], make='wire'),
+        Case('wire_clockwise_labelled', tol, 46, tilted, 0.0, 0.0, [cw], make='wire'),
+        Case('wire_transformed', tol, 47, tilted, 0.0, 0.0, [stadium], motions, make='wire'),
+    ]
+
+
 def cones():
     """Solid::cone_with cases (S3): apices at either end, frusta narrowing
     and widening, a tilted frame and rigid copies."""
@@ -283,6 +316,11 @@ def vectors():
         ('revolve_apex', Derivation(21, 'revolve', 'vertex', 'apex', 0, (('profile', 0, 'vertex', 2),))),
         ('revolve_ring', Derivation(21, 'revolve', 'edge', 'bottom_edge', 0, (('profile', 0, 'vertex', 1),))),
         ('revolve_pole', Derivation(31, 'revolve', 'vertex', 'pole', 0, (('profile', 0, 'vertex', 2),))),
+        # S6: face and wire bodies.
+        ('make_face', Derivation(41, 'make_face', 'face', 'face', 0,
+                                 (('label', 5), ('profile', 1, 'boundary', 0)))),
+        ('make_face_edge', Derivation(41, 'make_face', 'edge', 'edge', 0, (('profile', 0, 'segment', 3),))),
+        ('make_wire_vertex', Derivation(42, 'make_wire', 'vertex', 'vertex', 0, (('label', 9),))),
     ]
     rows = ['# name\tencoding hex\tid hex']
     for name, d in items:
@@ -315,7 +353,14 @@ def generate():
     for c in arcs:
         for row in sorted(entity_text(e) for e in extrude_entities(c)):
             arc_expected.append(f'{c.name}\t{row}')
+    sheets = sheet_cases()
+    sheet_expected = ['# case\tid kind role ordinal parents locator (S6 face and wire bodies)']
+    for c in sheets:
+        for row in sorted(entity_text(e) for e in entities(c)):
+            sheet_expected.append(f'{c.name}\t{row}')
     return cases, {
+        'identity-sheet-cases.txt': '\n'.join(encode_case(c) for c in sheets)+'\n',
+        'identity-sheet-expected.tsv': '\n'.join(sheet_expected)+'\n',
         'identity-arc-cases.txt': '\n'.join(encode_case(c) for c in arcs)+'\n',
         'identity-arc-expected.tsv': '\n'.join(arc_expected)+'\n',
         'identity-vectors.tsv': vectors(),

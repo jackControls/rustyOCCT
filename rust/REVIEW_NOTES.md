@@ -764,7 +764,11 @@ the first fixture, never deferred.
 * U6 (parallel track) — implemented: per-push sampled replay with a
   manifest of the last full replay, schedule-only exact tensor targets,
   Windows smoke per push and a nightly kernel schedule (`FUZZING.md`).
-* S5 — implemented; gate pending CI and the clean campaigns.
+* S5 — implemented at `4592ef6c`; kernel CI green there, and the clean
+  local 600-second campaigns of `identity`, `modeling`, `history`,
+  `brep_io` and `brep_validation` at that revision ran without an artifact
+  (1,360 to 7,681 mutation executions each, full replays). Acceptance waits
+  for the full replay of the next schedule run, which will also cover S6.
   * Native `MakePrism` observations of thirteen arc prisms captured before
     any kernel arc code (`88ae24df`), with arc paths in the identity
     reference and the native probe.
@@ -778,7 +782,36 @@ the first fixture, never deferred.
     prisms, the DRAW adapter runs `profile` (derived case `profile_arcs`,
     both backends) and the `identity` fuzz target builds filleted, notched
     paths. Polygon and circle ids are byte-identical (the full suite).
-* S6 — pending
+* S6 — implemented; gate pending CI, the schedule replay and the clean
+  campaigns.
+  * Native observations of eighteen sheet, shell, wire and acorn models and
+    of the corpus's 6,223 free shapes captured before any kernel code
+    accepted them (`9d7e5dfd`), with the independent validator and reader
+    extended.
+  * `Topology::class()`, the validator's two-sided faces, wire edges and
+    acorn vertices, OCCT's counts (a free face has no shell, a free edge no
+    wire, every ring edge one vertex, which also fixed a disc face's and a
+    circle wire's count found by the `identity` fuzz target), certified
+    area and length with centre (`measure_enclosure`), `Body` with
+    `face_from_profile_with` and `wire_from_boundary_with` (`MakeFace`,
+    `MakeWire`; roles `Face`, `Edge`, `Vertex`), free-shape import and
+    writing. `compare_brep.py --family sheet` gives 17 matches, 1 reviewed
+    difference, 0 failures; `compare_brep_io.py` imports 6,188 free shapes
+    and reads every one back natively valid, and the eleven builder bodies;
+    the DRAW adapter restores free shapes and runs `plane`, `cylinder`,
+    `line`, `circle`, `mkface`, `mkedge` (derived case `faces_and_edges`,
+    both backends).
+  * Decisions taken in implementation, none of them a user decision: a free
+    shell is closed when every edge with a curve is used exactly twice; the
+    outer loop of a spline face, as of a plane, is the one enclosing the
+    largest UV area (a hammer face stored its hole first); a spline over
+    `MAX_POLES` is `BSplineControlDataLimit`, and the independent reader
+    models that documented limit (terrain, MAT); the hammer's 31 faces the
+    validator rejects though BRepCheck accepts them (C0 spline surfaces,
+    certified gaps above OCCT's stored tolerance, undecided uses) are pinned
+    in `occt_brep.rs`, and twelve restore-only DRAW cases whose free faces
+    the validator rejects are failures (`UPSTREAM_TESTS.md`); spline wires
+    are not measured.
 * S7 — pending
 * S8 — pending
 * S9 — pending

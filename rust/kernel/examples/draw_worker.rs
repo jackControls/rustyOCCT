@@ -48,6 +48,15 @@ impl Polyline {
     }
 }
 
+/// A DRAW surface or curve (S6), in its DRAW placement.
+#[derive(Clone)]
+enum Geom {
+    Plane(Frame3),
+    Cylinder(Frame3, f64),
+    Line(Point3, Vec3),
+    Circle(Frame3, f64),
+}
+
 #[derive(Clone)]
 enum Shape {
     Solid(Box<Solid>),
@@ -66,11 +75,15 @@ enum Shape {
         slot: Slot,
     },
     /// A solid restored from a `.brep` file by the T2 converter, with the
-    /// resolution its OCCT tolerances give it.
+    /// resolution its OCCT tolerances give it; since S6 also a restored free
+    /// shape or a `mkface`/`mkedge` result, `kind` its OCCT type.
     Body {
         body: Box<BodyRef>,
         resolution: Tolerance,
+        kind: &'static str,
     },
+    /// A DRAW geometric object (S6): `plane`, `cylinder`, `line`, `circle`.
+    Geometry(Geom),
     Compound(Vec<Shape>),
     /// A native pick with no entity in the cell model (a seam, its vertex),
     /// or none the selector could single out.
@@ -134,8 +147,14 @@ fn numbers(args: &[String]) -> Result<Vec<f64>> {
         .collect()
 }
 fn get<'a>(shapes: &'a BTreeMap<String, Shape>, name: &str) -> Result<&'a Shape> {
-    if let Some(Shape::Lost(why)) = shapes.get(name) {
-        return Err(Failure::Unsupported(format!("{name}: {why}")));
+    match shapes.get(name) {
+        Some(Shape::Lost(why)) => return Err(Failure::Unsupported(format!("{name}: {why}"))),
+        Some(Shape::Geometry(_)) => {
+            return Err(Failure::Unsupported(format!(
+                "{name}: a geometric object, not a shape"
+            )))
+        }
+        _ => {}
     }
     shapes
         .get(name)
@@ -193,7 +212,10 @@ fn face_area(t: &Topology, face: usize) -> f64 {
     let fins = t.face_fins(FaceId::new(face));
     let fins = fins.iter().flatten();
     match t.faces()[face].surface {
-        Surface::BSpline(_) => unreachable!("no spline geometry reaches the adapter before S4"),
+        // A restored spline face (S4): the kernel's certified area.
+        Surface::BSpline(_) => t
+            .face_area_and_centre(FaceId::new(face))
+            .map_or(f64::NAN, |(area, _)| area),
         Surface::Plane(_) => 0.5 * fins.map(|u| moments(&u.pcurve)[0]).sum::<f64>().abs(),
         // Wall pcurves are lines on the universal cover: the area is the
         // radius times the periodic area -∮ v du, wound loops included.
@@ -326,6 +348,7 @@ struct Parts {
     edges: BTreeSet<String>,
     wires: usize,
     faces: BTreeSet<String>,
+    shells: usize,
     solids: usize,
     compounds: usize,
     length: f64,
@@ -461,6 +484,7 @@ fn collect(shape: &Shape, parts: &mut Parts) {
     match shape {
         Shape::Solid(s) => {
             parts.solids += 1;
+            parts.shells += s.topology().occt_counts().shells;
             parts.volume += s.mass_properties().volume;
             let b = BodyRef::of(s);
             for f in 0..b.topology.faces().len() {
@@ -468,16 +492,32 @@ fn collect(shape: &Shape, parts: &mut Parts) {
             }
         }
         Shape::Body { body, .. } => {
-            parts.solids += 1;
+            let t = &body.topology;
+            let c = t.occt_counts();
+            parts.solids += c.solids;
+            parts.shells += c.shells;
             // General certified mass properties (REVIEW_NOTES S3, U2).
-            parts.volume += body
-                .topology
-                .mass_enclosure()
-                .map_or(f64::NAN, |m| m.midpoints().volume);
-            for f in 0..body.topology.faces().len() {
+            if c.solids > 0 {
+                parts.volume += t
+                    .mass_enclosure()
+                    .map_or(f64::NAN, |m| m.midpoints().volume);
+            }
+            for f in 0..t.faces().len() {
                 add_face(body, f, parts);
             }
+            // S6: a wire's edges (one wire when several) and an acorn's
+            // vertex.
+            for shell in t.shells() {
+                for e in &shell.wire_edges {
+                    add_edge(body, e.index(), parts);
+                }
+                parts.wires += usize::from(shell.wire_edges.len() > 1);
+                for v in &shell.acorn_vertices {
+                    parts.vertices.insert(key(body, Slot::Vertex(*v)));
+                }
+            }
         }
+        Shape::Geometry(_) => unreachable!("geometry is not a shape"),
         Shape::Wire(p) => polyline(p, parts, false),
         Shape::Face(p) => polyline(p, parts, true),
         Shape::ProfileVertex { label, .. } => {
@@ -527,7 +567,9 @@ fn polygon_area(points: &[Point3]) -> f64 {
 
 fn type_name(shape: &Shape) -> &'static str {
     match shape {
-        Shape::Solid(_) | Shape::Body { .. } => "SOLID",
+        Shape::Solid(_) => "SOLID",
+        Shape::Body { kind, .. } => kind,
+        Shape::Geometry(_) => unreachable!("geometry is not a shape"),
         Shape::Wire(_) => "WIRE",
         Shape::Face(_) => "FACE",
         Shape::ProfileVertex { .. } => "VERTEX",
@@ -729,6 +771,12 @@ fn pcurve_at(p: &Curve2, t: f64) -> (Point2, Point2) {
 fn face_centre(t: &Topology, face: usize) -> (f64, Point3) {
     let nodes = gauss();
     let surface = &t.faces()[face].surface;
+    // A restored spline face (S4): the kernel's certified area and centre.
+    if matches!(surface, Surface::BSpline(_)) {
+        return t
+            .face_area_and_centre(FaceId::new(face))
+            .unwrap_or((f64::NAN, Point3::ORIGIN));
+    }
     let mut m = [0.0; 4];
     for fin in t.face_fins(FaceId::new(face)).iter().flatten() {
         for (x, w) in &nodes {
@@ -853,10 +901,12 @@ fn restore(path: &str, serial: &mut u64) -> Result<Shape> {
         )));
     }
     let mut solids = imported.solids.into_iter();
+    let mut free = imported.free.into_iter();
     fn build(
         doc: &rusty_occt::occt_brep::Document,
         sub: rusty_occt::occt_brep::read::Sub,
         solids: &mut std::vec::IntoIter<rusty_occt::occt_brep::ImportedSolid>,
+        free: &mut std::vec::IntoIter<rusty_occt::occt_brep::ImportedFree>,
         serial: &mut u64,
     ) -> Result<Shape> {
         let shape = &doc.shapes[sub.shape];
@@ -865,7 +915,7 @@ fn restore(path: &str, serial: &mut u64) -> Result<Shape> {
                 shape
                     .subs
                     .iter()
-                    .map(|s| build(doc, *s, solids, serial))
+                    .map(|s| build(doc, *s, solids, free, serial))
                     .collect::<Result<_>>()?,
             )),
             Kind::Solid => {
@@ -879,6 +929,7 @@ fn restore(path: &str, serial: &mut u64) -> Result<Shape> {
                                 topology,
                             }),
                             resolution: solid.tolerance,
+                            kind: "SOLID",
                         })
                     }
                     Err(Rejected::Invalid { issues, .. }) => Err(error(&format!(
@@ -892,10 +943,290 @@ fn restore(path: &str, serial: &mut u64) -> Result<Shape> {
                     ))),
                 }
             }
-            _ => Err(Failure::Unsupported("restore: a free shape".into())),
+            // S6: a free shell, face, wire, edge or vertex.
+            Kind::Shell | Kind::Face | Kind::Wire | Kind::Edge | Kind::Vertex => {
+                let shape = free
+                    .next()
+                    .ok_or_else(|| error("restore: free shape order"))?;
+                let kind = match shape.kind {
+                    Kind::Shell => "SHELL",
+                    Kind::Face => "FACE",
+                    Kind::Wire => "WIRE",
+                    Kind::Edge => "EDGE",
+                    _ => "VERTEX",
+                };
+                match shape.result {
+                    Ok(topology) => {
+                        *serial += 1;
+                        Ok(Shape::Body {
+                            body: Box::new(BodyRef {
+                                tag: format!("R{serial}"),
+                                topology,
+                            }),
+                            resolution: shape.tolerance,
+                            kind,
+                        })
+                    }
+                    Err(Rejected::Invalid { issues, .. }) => Err(error(&format!(
+                        "restore: the validator rejects free shape record {}: {}",
+                        shape.record,
+                        issues.first().map(|i| i.to_string()).unwrap_or_default()
+                    ))),
+                    Err(Rejected::Unsupported(names)) => Err(Failure::Unsupported(format!(
+                        "restore: unsupported constructs {}",
+                        names.join(",")
+                    ))),
+                }
+            }
+            _ => Err(Failure::Unsupported("restore: a compsolid".into())),
         }
     }
-    build(&doc, doc.root, &mut solids, serial)
+    build(&doc, doc.root, &mut solids, &mut free, serial)
+}
+
+// ------------------------------------------------------------------ geometry (S6)
+
+/// A DRAW placement: origin, main direction (default Z) and X direction,
+/// chosen as gp_Ax2 chooses it when only the main direction is given.
+fn placement(n: &[f64], t: Tolerance) -> Result<Frame3> {
+    let origin = Point3::new(n[0], n[1], n[2]);
+    let normal = if n.len() >= 6 {
+        Vec3::new(n[3], n[4], n[5])
+    } else {
+        Vec3::new(0.0, 0.0, 1.0)
+    };
+    let x = if n.len() >= 9 {
+        Vec3::new(n[6], n[7], n[8])
+    } else {
+        let (a, b, c) = (normal.x, normal.y, normal.z);
+        let (aa, ba, ca) = (a.abs(), b.abs(), c.abs());
+        if ba <= aa && ba <= ca {
+            if aa > ca {
+                Vec3::new(-c, 0.0, a)
+            } else {
+                Vec3::new(c, 0.0, -a)
+            }
+        } else if aa <= ba && aa <= ca {
+            if ba > ca {
+                Vec3::new(0.0, -c, b)
+            } else {
+                Vec3::new(0.0, c, -b)
+            }
+        } else if aa > ba {
+            Vec3::new(-b, a, 0.0)
+        } else {
+            Vec3::new(b, -a, 0.0)
+        }
+    };
+    Ok(Frame3::new(origin, normal, x, t)?)
+}
+
+fn geometry<'a>(shapes: &'a BTreeMap<String, Shape>, name: &str) -> Result<&'a Geom> {
+    match shapes.get(name) {
+        Some(Shape::Geometry(g)) => Ok(g),
+        _ => Err(Failure::Unsupported(format!(
+            "{name}: not a plane, cylinder, line or circle"
+        ))),
+    }
+}
+
+/// A body of parts: validated against the resolution, measured enclosures.
+fn body_of(
+    parts: rusty_occt::topology::TopologyParts,
+    t: Tolerance,
+    serial: &mut u64,
+    kind: &'static str,
+) -> Result<Shape> {
+    let topology = Topology::from_parts(parts.with_measured_enclosures(), t).map_err(|issues| {
+        error(&format!(
+            "invalid construction: {}",
+            issues.first().map(|i| i.to_string()).unwrap_or_default()
+        ))
+    })?;
+    *serial += 1;
+    Ok(Shape::Body {
+        body: Box::new(BodyRef {
+            tag: format!("M{serial}"),
+            topology,
+        }),
+        resolution: t,
+        kind,
+    })
+}
+
+/// `mkface` on a cylinder: the patch `[u0, u1] x [v0, v1]` of its cover,
+/// both sides in the void; one turn is a band bounded by two ring edges.
+fn cylinder_patch(
+    frame: Frame3,
+    radius: f64,
+    b: [f64; 4],
+    t: Tolerance,
+) -> Result<rusty_occt::topology::TopologyParts> {
+    use rusty_occt::topology::{
+        Edge, Face, Fin, FinId, Loop, LoopId, Region, RegionId, RegionKind, Shell, ShellId, Side,
+        TopologyParts, Vertex, VertexId,
+    };
+    let [u0, u1, v0, v1] = b;
+    if !(u0 < u1 && v0 < v1) || u1 - u0 > TAU * (1.0 + 1e-12) {
+        return Err(error("mkface: empty or over-wound bounds"));
+    }
+    let at = |v: f64| {
+        Frame3::new(
+            frame.point(Point2::default(), v),
+            frame.normal(),
+            frame.x(),
+            t,
+        )
+    };
+    let point = |u: f64, v: f64| {
+        at(v).map(|f| f.point(Point2::new(radius * u.cos(), radius * u.sin()), 0.0))
+    };
+    let mut p = TopologyParts::default();
+    let fin = |edge: usize, forward: bool, a: (f64, f64), c: (f64, f64)| Fin {
+        edge: EdgeId::new(edge),
+        sense: if forward {
+            Orientation::Forward
+        } else {
+            Orientation::Reversed
+        },
+        pcurve: Curve2::LineSegment {
+            start: Point2::new(a.0, a.1),
+            end: Point2::new(c.0, c.1),
+        },
+        enclosure: None,
+    };
+    let band = (u1 - u0 - TAU).abs() <= 1e-12 * TAU;
+    let loops: Vec<(Vec<Fin>, [i32; 2])> = if band {
+        for v in [v0, v1] {
+            p.edges.push(Edge {
+                start: None,
+                end: None,
+                curve: Curve3::Circle {
+                    frame: at(v)?,
+                    radius,
+                },
+                fins: Vec::new(),
+            });
+        }
+        vec![
+            (vec![fin(0, true, (u0, v0), (u0 + TAU, v0))], [1, 0]),
+            (vec![fin(1, false, (u0 + TAU, v1), (u0, v1))], [-1, 0]),
+        ]
+    } else {
+        for (u, v) in [(u0, v0), (u1, v0), (u1, v1), (u0, v1)] {
+            p.vertices.push(Vertex {
+                position: point(u, v)?,
+                enclosure: None,
+            });
+        }
+        let arc = |v: f64| -> Result<Curve3> {
+            Ok(Curve3::CircularArc {
+                frame: at(v)?,
+                radius,
+                start_angle: u0,
+                sweep_angle: u1 - u0,
+            })
+        };
+        let line = |a: usize, b: usize, p: &TopologyParts| Curve3::LineSegment {
+            start: p.vertices[a].position,
+            end: p.vertices[b].position,
+        };
+        let ends = [
+            (0, 1, arc(v0)?),
+            (1, 2, line(1, 2, &p)),
+            (3, 2, arc(v1)?),
+            (0, 3, line(0, 3, &p)),
+        ];
+        for (a, b, curve) in ends {
+            p.edges.push(Edge {
+                start: Some(VertexId::new(a)),
+                end: Some(VertexId::new(b)),
+                curve,
+                fins: Vec::new(),
+            });
+        }
+        vec![(
+            vec![
+                fin(0, true, (u0, v0), (u1, v0)),
+                fin(1, true, (u1, v0), (u1, v1)),
+                fin(2, false, (u1, v1), (u0, v1)),
+                fin(3, false, (u0, v1), (u0, v0)),
+            ],
+            [0, 0],
+        )]
+    };
+    let mut face_loops = Vec::new();
+    for (fins, winding) in loops {
+        let ids = fins
+            .into_iter()
+            .map(|f| {
+                p.edges[f.edge.index()].fins.push(FinId::new(p.fins.len()));
+                p.fins.push(f);
+                FinId::new(p.fins.len() - 1)
+            })
+            .collect();
+        p.loops.push(Loop::Edges { fins: ids, winding });
+        face_loops.push(LoopId::new(p.loops.len() - 1));
+    }
+    p.faces.push(Face {
+        surface: Surface::Cylinder { frame, radius },
+        sense: Orientation::Forward,
+        loops: face_loops,
+        front: ShellId::new(0),
+        back: ShellId::new(0),
+        enclosure: None,
+    });
+    p.shells.push(Shell {
+        region: RegionId::new(0),
+        sides: vec![(FaceId::new(0), Side::Front), (FaceId::new(0), Side::Back)],
+        wire_edges: Vec::new(),
+        acorn_vertices: Vec::new(),
+    });
+    p.regions.push(Region {
+        kind: RegionKind::Void,
+        shells: vec![ShellId::new(0)],
+    });
+    Ok(p)
+}
+
+/// `mkedge` on a line or circle: one wire edge in the void, bounded by the
+/// parameters; a whole circle is a ring edge.
+fn edge_parts(curve: Curve3, ends: Option<[Point3; 2]>) -> rusty_occt::topology::TopologyParts {
+    use rusty_occt::topology::{
+        Edge, Region, RegionId, RegionKind, Shell, ShellId, TopologyParts, Vertex, VertexId,
+    };
+    let mut p = TopologyParts::default();
+    let (start, end) = match ends {
+        Some([a, b]) => {
+            p.vertices.push(Vertex {
+                position: a,
+                enclosure: None,
+            });
+            p.vertices.push(Vertex {
+                position: b,
+                enclosure: None,
+            });
+            (Some(VertexId::new(0)), Some(VertexId::new(1)))
+        }
+        None => (None, None),
+    };
+    p.edges.push(Edge {
+        start,
+        end,
+        curve,
+        fins: Vec::new(),
+    });
+    p.shells.push(Shell {
+        region: RegionId::new(0),
+        sides: Vec::new(),
+        wire_edges: vec![EdgeId::new(0)],
+        acorn_vertices: Vec::new(),
+    });
+    p.regions.push(Region {
+        kind: RegionKind::Void,
+        shells: vec![ShellId::new(0)],
+    });
+    p
 }
 
 fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
@@ -906,6 +1237,118 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
     }
     let shapes = &mut session.shapes;
     match command {
+        // S6: DRAW's geometric objects and the faces and edges made on them.
+        "plane" if matches!(args.len(), 2 | 5 | 8 | 11) => {
+            let n = numbers(&args[2..])?;
+            let frame = if n.is_empty() {
+                Frame3::xy()
+            } else {
+                placement(&n, t)?
+            };
+            shapes.insert(args[1].clone(), Shape::Geometry(Geom::Plane(frame)));
+            Ok(String::new())
+        }
+        "cylinder" | "circle"
+            if matches!(args.len(), 3 | 6 | 9 | 12)
+                && (command == "cylinder" || args.len() > 3) =>
+        {
+            let n = numbers(&args[2..])?;
+            let (radius, axes) = n.split_last().expect("a radius");
+            let frame = if axes.is_empty() {
+                Frame3::xy()
+            } else {
+                placement(axes, t)?
+            };
+            if *radius <= t.linear() {
+                return Err(error("radius below the resolution"));
+            }
+            let g = if command == "cylinder" {
+                Geom::Cylinder(frame, *radius)
+            } else {
+                Geom::Circle(frame, *radius)
+            };
+            shapes.insert(args[1].clone(), Shape::Geometry(g));
+            Ok(String::new())
+        }
+        "line" if args.len() == 8 => {
+            let n = numbers(&args[2..])?;
+            let d = Vec3::new(n[3], n[4], n[5]);
+            if d.length() <= 0.0 {
+                return Err(error("line: null direction"));
+            }
+            let g = Geom::Line(Point3::new(n[0], n[1], n[2]), d * (1.0 / d.length()));
+            shapes.insert(args[1].clone(), Shape::Geometry(g));
+            Ok(String::new())
+        }
+        "mkface" if args.len() == 7 => {
+            let b = numbers(&args[3..])?;
+            let shape = match geometry(shapes, &args[2])?.clone() {
+                Geom::Plane(frame) => {
+                    if !(b[0] < b[1] && b[2] < b[3]) {
+                        return Err(error("mkface: empty bounds"));
+                    }
+                    let rectangle = Boundary::polygon(
+                        vec![
+                            Point2::new(b[0], b[2]),
+                            Point2::new(b[1], b[2]),
+                            Point2::new(b[1], b[3]),
+                            Point2::new(b[0], b[3]),
+                        ],
+                        t,
+                    )?;
+                    session.next_operation += 1;
+                    let (body, _) = rusty_occt::Body::face_from_profile_with(
+                        OperationId(session.next_operation),
+                        Profile::new(rectangle, vec![], t)?,
+                        frame,
+                    )?;
+                    Shape::Body {
+                        body: Box::new(BodyRef {
+                            tag: body.topology().body_id().to_string(),
+                            topology: body.topology().clone(),
+                        }),
+                        resolution: t,
+                        kind: "FACE",
+                    }
+                }
+                Geom::Cylinder(frame, radius) => body_of(
+                    cylinder_patch(frame, radius, [b[0], b[1], b[2], b[3]], t)?,
+                    t,
+                    &mut session.restored,
+                    "FACE",
+                )?,
+                _ => return Err(unsupported(args)),
+            };
+            session.shapes.insert(args[1].clone(), shape);
+            Ok(String::new())
+        }
+        "mkedge" if args.len() == 3 || args.len() == 5 => {
+            let bounds = numbers(&args[3..])?;
+            let (curve, ends) = match (geometry(shapes, &args[2])?.clone(), bounds.as_slice()) {
+                (Geom::Line(p, d), [f, l]) if f < l => {
+                    let (a, b) = (p + d * *f, p + d * *l);
+                    (Curve3::LineSegment { start: a, end: b }, Some([a, b]))
+                }
+                (Geom::Circle(frame, radius), []) => (Curve3::Circle { frame, radius }, None),
+                (Geom::Circle(frame, radius), [f, l]) if f < l && l - f < TAU => {
+                    let at =
+                        |a: f64| frame.point(Point2::new(radius * a.cos(), radius * a.sin()), 0.0);
+                    (
+                        Curve3::CircularArc {
+                            frame,
+                            radius,
+                            start_angle: *f,
+                            sweep_angle: l - f,
+                        },
+                        Some([at(*f), at(*l)]),
+                    )
+                }
+                _ => return Err(unsupported(args)),
+            };
+            let shape = body_of(edge_parts(curve, ends), t, &mut session.restored, "EDGE")?;
+            session.shapes.insert(args[1].clone(), shape);
+            Ok(String::new())
+        }
         "box" if args.len() == 5 || args.len() == 8 => {
             let n = numbers(&args[2..])?;
             let (origin, size) = if n.len() == 3 {
@@ -1445,11 +1888,35 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             fn bodies<'a>(shape: &'a Shape, out: &mut Vec<(&'a Topology, Tolerance)>) -> bool {
                 match shape {
                     Shape::Solid(s) => out.push((s.topology(), s.resolution())),
-                    Shape::Body { body, resolution } => out.push((&body.topology, *resolution)),
+                    Shape::Body {
+                        body, resolution, ..
+                    } => out.push((&body.topology, *resolution)),
                     Shape::Compound(items) => return items.iter().all(|i| bodies(i, out)),
                     _ => return false,
                 }
                 true
+            }
+            // S6: a profile face or wire validates as the face or wire body
+            // the kernel builds of it.
+            if let Shape::Face(p) | Shape::Wire(p) = get(shapes, &args[1])? {
+                let (frame, boundary) = boundary_of(p, t)?;
+                let body = if matches!(get(shapes, &args[1])?, Shape::Face(_)) {
+                    rusty_occt::Body::face_from_profile_with(
+                        OperationId::UNSPECIFIED,
+                        Profile::new(boundary, vec![], t)?,
+                        frame,
+                    )?
+                } else {
+                    rusty_occt::Body::wire_from_boundary_with(
+                        OperationId::UNSPECIFIED,
+                        boundary,
+                        frame,
+                        t,
+                    )?
+                }
+                .0;
+                body.topology().validate(t)?;
+                return Ok("This shape seems to be valid".into());
             }
             let mut found = Vec::new();
             if !bodies(get(shapes, &args[1])?, &mut found) {
@@ -1473,7 +1940,7 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
                 ("EDGE", p.edges.len()),
                 ("WIRE", p.wires),
                 ("FACE", p.faces.len()),
-                ("SHELL", p.solids),
+                ("SHELL", p.shells),
                 ("SOLID", p.solids),
                 ("COMPSOLID", 0),
                 ("COMPOUND", p.compounds),
@@ -1507,7 +1974,10 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
         }
         "vprops"
             if (args.len() == 2 || args.len() == 3)
-                && matches!(get(shapes, &args[1])?, Shape::Solid(_) | Shape::Body { .. }) =>
+                && matches!(
+                    get(shapes, &args[1])?,
+                    Shape::Solid(_) | Shape::Body { kind: "SOLID", .. }
+                ) =>
         {
             if args.len() == 3 && numbers(&args[2..])?[0] <= 0.0 {
                 return Err(unsupported(args));

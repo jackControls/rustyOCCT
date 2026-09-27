@@ -193,6 +193,20 @@
         "count synthesizer",
         "mass properties"
       ]
+    },
+    {
+      "path": "rust/fixtures/draw-derived/faces_and_edges",
+      "derived": true,
+      "context": "tests/bugs/modalg_7",
+      "expected_rust": "pass",
+      "expected_occt": "pass",
+      "purpose": "Derived: faces and edges on DRAW geometry (S6): mkface on a plane and a cylinder (a patch and the whole band), mkedge on a line and a circle (segments and the whole circle), and mkplane of a profile wire with arcs; counts and properties of free faces and edges.",
+      "verifies": [
+        "sheet bodies",
+        "wire bodies",
+        "count synthesizer",
+        "surface and linear properties"
+      ]
     }
   ],
   "derived_sources": {
@@ -203,7 +217,8 @@
     "rust/fixtures/draw-derived/pcone_counts": "8b326812c28bcd0f62c324607e15c9c1fd59b491e120d3f2554d8dd3aeb978a4",
     "rust/fixtures/draw-derived/psphere_counts": "67e36b8192db4fb52c5acb4db455695595cc3beff03c01bfea20939047ce2927",
     "rust/fixtures/draw-derived/ptorus_counts": "78532ada7afe493ad5f518b80c3e7d164159ec7d7f745000a5f639e00a5cbb42",
-    "rust/fixtures/draw-derived/profile_arcs": "0c08732ec213a66e283600cbccee85fa1a75e19bafc25dd6b7ddc3e012f53e64"
+    "rust/fixtures/draw-derived/profile_arcs": "0c08732ec213a66e283600cbccee85fa1a75e19bafc25dd6b7ddc3e012f53e64",
+    "rust/fixtures/draw-derived/faces_and_edges": "dd70b02e9fdf8f094bac0b97663a2528f4a7e7e245e6f5aea0247f0eaac406c0"
   },
   "ledger": {
     "survey": {

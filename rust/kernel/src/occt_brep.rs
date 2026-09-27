@@ -16,7 +16,7 @@ mod import;
 pub mod read;
 mod write;
 
-pub use import::{import, Import, ImportedSolid, Rejected};
+pub use import::{import, Import, ImportedFree, ImportedSolid, Rejected};
 pub use read::{read, Document};
 pub use write::write;
 

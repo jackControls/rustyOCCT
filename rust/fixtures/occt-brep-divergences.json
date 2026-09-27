@@ -144,6 +144,19 @@
       "reason": "As for stadium_arc_pcurve_shift: Closed2d only checks the first/last junction and accepts gaps below 1% of the face's UV extent, so the 1e-3 gaps pass natively; the shifted edge's InvalidCurveOnSurface (8) makes BRepCheck_Analyzer skip the face's wire orientation and mark it BRepCheck_UnorientableShape (27), which is not a gap status. InvalidCurveOnSurface still rejects the case.",
       "independent_evidence": "The degree-1 spline pcurve of the vertical edge on the half-cylinder wall (face 3) was shifted by 1e-3 in u, away from the ends of the neighbouring arc pcurves. The wall has unit radius, so each junction gap is 1e-3 in 3D, 10000 times the 1e-7 tolerance; the wall spans pi x 1 in UV, so the 1% bound is 0.0314 x 0.01. OCCT measures the shifted pcurve 1.0000099583e-3 off its edge.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "sheet_open_box_pcurve_shift",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "4c13a041dd4a9a29fc800ac6f532e112b872e79a2b1f6e1f0855b9e8a14dfc7f",
+      "native_stdout_sha256": "26e3196295be18ef1ba61f36e91021a5b32f8a2f414fee36b161da60bf371bb7",
+      "differences": [
+        "unmatched_uv_gap"
+      ],
+      "reason": "As for box_pcurve_shift and spline_bulge_pcurve_shift, on a free shell: Closed2d only checks the first/last junction and accepts gaps below 1% of the face's UV extent, so the 1e-3 gaps pass natively; the shifted edge's InvalidCurveOnSurface (8) makes BRepCheck_Analyzer skip the face's wire orientation and mark it BRepCheck_UnorientableShape (27), which is not a gap status. InvalidCurveOnSurface still rejects the case.",
+      "independent_evidence": "The first use of the open box's bottom face (face 0, edge 10) was shifted by 1e-3 in u: it runs (0.001,0)->(0.001,-2) while its neighbours meet it at (0,0) and (0,-2), both junction gaps 1e-3 in UV on an orthonormal plane frame, 10000 times the 1e-7 tolerance. The face spans 3 x 2 in UV, so the 1% bound is 0.03 x 0.02. OCCT measures the shifted pcurve 1.00001e-3 off its edge.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     }
   ]
 }
