@@ -446,6 +446,41 @@ the DRAW adapter; the `MakePrism` bridge extended; the neutral generator's
 existing arc prisms become builder fixtures. Value: the Extrude job takes
 real sketches. Gate: polygon and circle ids byte-identical again.
 
+Decisions for S5, recorded before its code (2026-09-27):
+
+* **Input.** `Boundary::path(points, segments, tolerance)`: segment `i` runs
+  from point `i` to point `i + 1` (cyclically) and is a `Segment::Line` or a
+  `Segment::Arc { center, radius, ccw }` turning counter-clockwise or
+  clockwise about the profile normal. Both ends must lie within tolerance of
+  the arc's circle, the sweep is the turn from the first end's direction to
+  the second's, in `(0, 2π)`, and a path has at least two segments. A path
+  of lines only is exactly `Boundary::polygon` (same stored points, same
+  ids). The radius is an input, so most arc decisions keep the exact
+  sum-of-terms predicates of `decide.rs`.
+* **Orientation and labels.** The stored path runs counter-clockwise by its
+  signed area, arcs' bulges included; a clockwise input is reversed as a
+  polygon is (points `1..` reversed, each segment traversed backwards, arcs'
+  directions flipped) and its labels map the same way.
+* **Validity.** Every segment's chord and every radius exceed the tolerance.
+  Non-adjacent segments stay farther apart than the tolerance, decided
+  exactly where the distance is a sum of input terms and in rational
+  intervals otherwise, an undecided case counting as touching (a validity
+  screen, as `area_is_degenerate`). Adjacent segments may not double back
+  at their shared point, may not meet again, and neither's far end may lie
+  within tolerance of the other (the polygon rule).
+* **Prisms.** An arc segment gives circular-arc bottom and top edges, the
+  vertical lines at its ends and a partial cylinder wall (one unwound loop
+  of line pcurves on the cylinder's cover, sensed so its normal leaves the
+  material), with the same roles and ids a line segment gets; caps take
+  circular-arc pcurves. Profile moments add each arc's circular segment in
+  closed form.
+* **Evidence first.** The identity reference learns arc segments, the
+  native `MakePrism` probe learns arc wires, and arc prisms (fillets,
+  notches, arcs over half a turn, two-arc lenses, holes with arcs, reversed
+  input, labels, tilted frames, transforms) are captured natively
+  (`fixtures/occt-arc-prism-preimplementation`) before any kernel arc code;
+  `compare_history.py --family arc` compares them afterwards.
+
 ### S6 — sheet and wire bodies
 
 Bodies without a solid region: a planar face from a profile, a face on any

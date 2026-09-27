@@ -47,6 +47,9 @@ import generate_identity_fixtures
 from identity_reference import encode_case, native_case
 
 ORIGINAL = ROOT/'rust/fixtures/occt-history-preimplementation'
+# S5: native MakePrism observations of arc profiles, captured before any
+# kernel arc code.
+ARCS = ROOT/'rust/fixtures/occt-arc-prism-preimplementation'
 REVIEWS = ROOT/'rust/fixtures/occt-history-divergences.json'
 SOURCE_FILE = ROOT/'rust/tools/occt_history_oracle.cpp'
 TOOLKITS = ['TKPrim', 'TKTopAlgo', 'TKBRep', 'TKGeomAlgo', 'TKGeomBase', 'TKG3d', 'TKG2d', 'TKMath', 'TKernel']
@@ -100,6 +103,54 @@ def original_capture():
         if metadata[key] != digest(ORIGINAL/name):
             raise ValueError('original native evidence changed: '+name)
     same_inputs((ORIGINAL/'inputs.txt').read_text(), '\n'.join(native_case(c) for c in chosen())+'\n')
+
+
+def capture_arcs(executable, env, sdk_manifest):
+    """Record the native rows of every S5 arc prism before any kernel arc
+    code; every construction must be valid natively."""
+    cases = generate_identity_fixtures.arc_cases()
+    rows = [native_case(c) for c in cases]
+    observations = {}
+    for c, text in zip(cases, rows):
+        record = run(executable, text, env)
+        if record['exit_code'] != 0:
+            raise ValueError('native arc capture failed for '+c.name+': '+record['stderr'])
+        parsed = parse_native(record['stdout'], c.name)
+        if not parsed['valid'] or not all(ok for _, ok in parsed['bodies']):
+            raise ValueError('native arc construction invalid: '+c.name)
+        observations[c.name] = record
+    ARCS.mkdir(parents=True, exist_ok=True)
+    (ARCS/'inputs.txt').write_text('\n'.join(rows)+'\n')
+    write(ARCS/'native.json', observations)
+    (ARCS/'oracle.cpp').write_text(SOURCE_FILE.read_text())
+    status = subprocess.run(['git', 'status', '--porcelain', '--', 'rust'], cwd=ROOT, text=True,
+                            capture_output=True, check=True).stdout.splitlines()
+    revision = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True, capture_output=True,
+                              check=True).stdout.strip()
+    write(ARCS/'capture.json', {
+        'source_reference': SOURCE, 'rust_revision': revision, 'platform': sys.platform,
+        'rust_arc_prism_implementation_exists': False, 'rust_worktree_uncommitted': status,
+        'cases': [c.name for c in cases], 'sdk_manifest_sha256': digest(sdk_manifest),
+        'input_sha256': digest(ARCS/'inputs.txt'), 'probe_source_sha256': digest(ARCS/'oracle.cpp'),
+        'observations_sha256': digest(ARCS/'native.json')})
+    return len(cases)
+
+
+def arc_capture():
+    """The S5 observations and their inputs are unchanged."""
+    metadata = json.loads((ARCS/'capture.json').read_text())
+    if (metadata['source_reference'] != SOURCE or metadata['rust_arc_prism_implementation_exists']
+            or any(line[3:].startswith('rust/kernel') for line in metadata['rust_worktree_uncommitted'])):
+        raise ValueError('arc capture was not a clean pre-implementation reference')
+    for key, name in [('input_sha256', 'inputs.txt'), ('probe_source_sha256', 'oracle.cpp'),
+                      ('observations_sha256', 'native.json')]:
+        if metadata[key] != digest(ARCS/name):
+            raise ValueError('arc native evidence changed: '+name)
+    cases = generate_identity_fixtures.arc_cases()
+    if metadata['cases'] != [c.name for c in cases]:
+        raise ValueError('arc cases changed')
+    same_inputs((ARCS/'inputs.txt').read_text(), '\n'.join(native_case(c) for c in cases)+'\n')
+    return tuple(cases), json.loads((ARCS/'native.json').read_text())
 
 
 # ------------------------------------------------------------------ parsing
@@ -310,17 +361,30 @@ def main():
     parser.add_argument('--sdk-manifest', type=Path, required=True)
     parser.add_argument('--output', type=Path, default=ROOT/'target/history-oracle')
     parser.add_argument('--strict-native', action='store_true')
+    parser.add_argument('--family', choices=['prism', 'arc'], default='prism',
+                        help='the pinned polygon and circle prisms, or the S5 arc prisms')
+    parser.add_argument('--capture-arcs', action='store_true',
+                        help='record the S5 arc observations (before implementation only)')
     args = parser.parse_args()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     prefix = args.occt_root.resolve()
     verify_sdk(prefix, args.sdk_manifest)
-    original_capture()
+    if args.capture_arcs:
+        rows = [native_case(c) for c in generate_identity_fixtures.arc_cases()]
+        executable, env, _, _ = build(prefix, output, rows[0])
+        print('captured', capture_arcs(executable, env, args.sdk_manifest), 'arc prisms')
+        return
+    if args.family == 'arc':
+        cases, captured = arc_capture()
+    else:
+        original_capture()
     for module in (generate_identity_fixtures, generate_history_fixtures):
         for name, text in module.generate()[1].items():
             if text != (ROOT/'rust/fixtures'/name).read_text():
                 raise ValueError('independent fixture regeneration changed: '+name)
-    cases = chosen()
+    if args.family == 'prism':
+        cases = chosen()
     subprocess.run(['cargo', '+stable', 'build', '--release', '--locked', '--example', 'history_probe'],
                    cwd=ROOT, check=True)
     probe = subprocess.run([str(ROOT/'target/release/examples/history_probe')],

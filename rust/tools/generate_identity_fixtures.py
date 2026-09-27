@@ -143,6 +143,66 @@ def explicit():
     return cases
 
 
+def path(points, segments, labels=None):
+    return Boundary(points=points, segments=segments, labels=labels)
+
+
+def arc(cx, cy, r, ccw=True):
+    return (cx, cy, r, ccw)
+
+
+def arc_cases():
+    """S5: prisms of profiles with circular-arc segments. Every point lies
+    exactly on its arcs' circles (the radii are exact distances)."""
+    tol = 1e-7
+    xy = (0.0, 0.0, 0.0, 0.0, 0.0, 1.0, *X_HINT)
+    tilted = (3.0, -2.0, 5.0, 0.3, -0.4, 0.8, *X_HINT)
+    stadium = path([(0.0, -1.0), (3.0, -1.0), (3.0, 1.0), (0.0, 1.0)],
+                   [None, arc(3.0, 0.0, 1.0), None, arc(0.0, 0.0, 1.0)])
+    rounded_pts = [(1.0, 0.0), (7.0, 0.0), (8.0, 1.0), (8.0, 5.0), (7.0, 6.0), (1.0, 6.0), (0.0, 5.0), (0.0, 1.0)]
+    rounded_segs = [None, arc(7.0, 1.0, 1.0), None, arc(7.0, 5.0, 1.0), None, arc(1.0, 5.0, 1.0),
+                    None, arc(1.0, 1.0, 1.0)]
+    rounded = path(rounded_pts, rounded_segs)
+    # Clockwise input with labels: reversed storage flips the arcs.
+    n = len(rounded_pts)
+    cw_pts = [rounded_pts[0]]+rounded_pts[:0:-1]
+    cw_segs = [None if rounded_segs[n-1-j] is None else (*rounded_segs[n-1-j][:3], False) for j in range(n)]
+    cw = path(cw_pts, cw_segs, (300, [301+j for j in range(n)], [401+j for j in range(n)]))
+    d_shape = path([(0.0, -2.0), (0.0, 2.0)], [arc(0.0, 0.0, 2.0), None])
+    pac_ccw = path([(0.0, 0.0), (3.0, 4.0), (3.0, -4.0)], [None, arc(0.0, 0.0, 5.0), None])
+    pac_cw = path([(0.0, 0.0), (3.0, -4.0), (3.0, 4.0)], [None, arc(0.0, 0.0, 5.0, False), None])
+    notch = path([(0.0, 0.0), (10.0, 0.0), (10.0, 6.0), (6.0, 6.0), (4.0, 6.0), (0.0, 6.0)],
+                 [None, None, None, arc(5.0, 6.0, 1.0, False), None, None])
+    lens = path([(0.0, -3.0), (0.0, 3.0)], [arc(-4.0, 0.0, 5.0), arc(4.0, 0.0, 5.0)])
+    scallop = path([(0.0, 0.0), (4.0, 0.0), (4.0, 4.0), (0.0, 4.0)],
+                   [arc(2.0, 1.5, 2.5), arc(2.5, 2.0, 2.5), arc(2.0, 2.5, 2.5), arc(1.5, 2.0, 2.5)])
+    slot_hole = path([(-2.0, -1.0), (2.0, -1.0), (2.0, 1.0), (-2.0, 1.0)],
+                     [None, arc(2.0, 0.0, 1.0), None, arc(-2.0, 0.0, 1.0)])
+    outer = Boundary(points=square((0.0, 0.0), 10.0))
+    cases = [
+        Case('arc_stadium', tol, 21, xy, 0.0, 2.0, [stadium]),
+        Case('arc_rounded_rectangle', tol, 21, xy, 0.0, 3.0, [rounded]),
+        Case('arc_rounded_clockwise_labelled', tol, 22, xy, 0.0, 3.0, [cw]),
+        Case('arc_d_shape', tol, 21, xy, 0.0, 1.0, [d_shape]),
+        Case('arc_pacman', tol, 21, xy, 0.0, 1.5, [pac_ccw]),
+        Case('arc_pacman_clockwise', tol, 21, xy, 0.0, 1.5, [pac_cw]),
+        Case('arc_notch', tol, 21, xy, 0.0, 2.0, [notch]),
+        Case('arc_lens', tol, 21, xy, 0.0, 2.0, [lens]),
+        Case('arc_scallop', tol, 21, xy, 0.0, 2.0, [scallop]),
+        Case('arc_slot_hole', tol, 23, tilted, 0.0, 3.0, [outer, slot_hole]),
+        Case('arc_holes_mixed', tol, 23, tilted, 3.0, 0.0,
+             [outer, path([(-6.0, -6.0), (-2.0, -6.0), (-2.0, -2.0)], [None, arc(-2.0, -4.0, 2.0), None]),
+              Boundary(circle=(5.0, 5.0, 1.5)), path([(4.0, -6.0), (6.0, -6.0)],
+                                                        [arc(5.0, -6.0, 1.0), arc(5.0, -6.0, 1.0)])]),
+        Case('arc_transformed', tol, 24, tilted, -1.0, 2.0, [rounded],
+             [('R', (1.0, 2.0, 3.0), (0.0, 0.6, 0.8), 1.1), ('T', (10.0, -20.0, 30.0))]),
+        Case('arc_far_small', 1e-10, 25, (100.0, -50.0, 25.0, 0.0, 0.0, 1.0, *X_HINT), 0.0, 0.001,
+             [path([(p[0]/1024, p[1]/1024) for p in rounded_pts],
+                   [None if g is None else (g[0]/1024, g[1]/1024, g[2]/1024, g[3]) for g in rounded_segs])]),
+    ]
+    return cases
+
+
 def cones():
     """Solid::cone_with cases (S3): apices at either end, frusta narrowing
     and widening, a tilted frame and rigid copies."""
@@ -250,7 +310,14 @@ def generate():
     for c in cone_cases:
         for row in sorted(entity_text(e) for e in entities(c)):
             expected.append(f'{c.name}\t{row}')
+    arcs = arc_cases()
+    arc_expected = ['# case\tid kind role ordinal parents locator (S5 arc prisms)']
+    for c in arcs:
+        for row in sorted(entity_text(e) for e in extrude_entities(c)):
+            arc_expected.append(f'{c.name}\t{row}')
     return cases, {
+        'identity-arc-cases.txt': '\n'.join(encode_case(c) for c in arcs)+'\n',
+        'identity-arc-expected.tsv': '\n'.join(arc_expected)+'\n',
         'identity-vectors.tsv': vectors(),
         'identity-cases.txt': '\n'.join(encode_case(c) for c in cases)+'\n',
         'identity-expected.tsv': '\n'.join(expected)+'\n',

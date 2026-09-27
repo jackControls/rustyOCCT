@@ -93,11 +93,42 @@ def parent_text(p):
 
 @dataclass
 class Boundary:
-    """Caller input: a polygon (points) or a circle, with optional labels in
-    the caller's input order."""
-    points: list = None          # [(x, y)] for a polygon
+    """Caller input: a polygon (points), a circle, or a path (points with a
+    segment per point, S5), with optional labels in the caller's input
+    order."""
+    points: list = None          # [(x, y)] for a polygon or a path
     circle: tuple = None         # (cx, cy, r)
     labels: tuple = None         # (boundary, [segment...], [vertex...])
+    # For a path, segment j from point j to j+1: None for a line or
+    # (cx, cy, r, ccw) for an arc about the profile normal.
+    segments: list = None
+
+
+def arc_sweep(p, q, arc):
+    """The signed sweep of an arc from p to q (mpmath): in (0, 2π) turning
+    counter-clockwise, in (-2π, 0) clockwise."""
+    import mpmath as mp
+    cx, cy, _, ccw = arc
+    a = mp.atan2(mp.mpf(p[1])-mp.mpf(cy), mp.mpf(p[0])-mp.mpf(cx))
+    b = mp.atan2(mp.mpf(q[1])-mp.mpf(cy), mp.mpf(q[0])-mp.mpf(cx))
+    turn = (b-a) % (2*mp.pi) if ccw else -((a-b) % (2*mp.pi))
+    assert turn != 0
+    return turn
+
+
+def path_area(pts, segments):
+    """Twice the signed area of a path: the polygon of its points plus each
+    arc's circular segment, (r^2)(φ - sin φ) for the signed sweep φ."""
+    import mpmath as mp
+    n = len(pts)
+    twice = mp.mpf(0)
+    for i in range(n):
+        p, q = pts[i], pts[(i+1) % n]
+        twice += mp.mpf(p[0])*q[1]-mp.mpf(q[0])*p[1]
+        if segments[i] is not None:
+            phi = arc_sweep(p, q, segments[i])
+            twice += mp.mpf(segments[i][2])**2*(phi-mp.sin(phi))
+    return twice
 
 
 def stored(boundary, tolerance):
@@ -105,9 +136,26 @@ def stored(boundary, tolerance):
 
     Boundary::polygon drops a closing point within tolerance of the first,
     then reverses points[1..] when the polygon is clockwise. Segment j of the
-    stored polygon runs from stored point j to j+1."""
+    stored polygon runs from stored point j to j+1. A path (S5) keeps every
+    point, is oriented by its area with arcs' bulges, and reversed segments
+    flip their arcs' directions."""
     if boundary.circle is not None:
         return None, boundary.labels
+    if boundary.segments is not None:
+        pts, segs = list(boundary.points), list(boundary.segments)
+        n = len(pts)
+        twice = path_area(pts, segs)
+        import mpmath as mp
+        assert abs(twice) > mp.mpf(2)**-40, 'path orientation too close to call'
+        labels = boundary.labels
+        if twice < 0:
+            pts = [pts[0]]+pts[:0:-1]
+            segs = [None if segs[n-1-j] is None else (*segs[n-1-j][:3], not segs[n-1-j][3])
+                    for j in range(n)]
+            if labels is not None:
+                b, seg, vert = labels
+                labels = (b, [seg[n-1-j] for j in range(n)], [vert[(n-j) % n] for j in range(n)])
+        return (pts, segs), labels
     pts = list(boundary.points)
     if len(pts) > 1:
         dx, dy = F(pts[0][0])-F(pts[-1][0]), F(pts[0][1])-F(pts[-1][1])
@@ -124,6 +172,12 @@ def stored(boundary, tolerance):
             b, seg, vert = labels
             labels = (b, [seg[n-1-j] for j in range(n)], [vert[(n-j) % n] for j in range(n)])
     return pts, labels
+
+
+def stored_points(boundary, tolerance):
+    """The stored points of a polygon or path (None for a circle)."""
+    pts, _ = stored(boundary, tolerance)
+    return pts[0] if boundary.segments is not None else pts
 
 
 @dataclass
@@ -165,6 +219,14 @@ def encode_case(c):
         for b in c.boundaries:
             if b.circle is not None:
                 row = 'boundary C '+' '.join(number(x) for x in b.circle)
+            elif b.segments is not None:
+                # S5: each point, then its segment to the next: L, or
+                # A cx cy r and 1 (counter-clockwise) or 0.
+                words = [f'boundary S {len(b.points)}']
+                for p, seg in zip(b.points, b.segments):
+                    words += [number(p[0]), number(p[1])]
+                    words += ['L'] if seg is None else ['A', *map(number, seg[:3]), '1' if seg[3] else '0']
+                row = ' '.join(words)
             else:
                 row = f'boundary P {len(b.points)} '+' '.join(number(x) for p in b.points for x in p)
             if b.labels is not None:
@@ -223,6 +285,9 @@ def extrude_entities(c):
     add('region', 'region', cap_parents, ('region',))
     for b, boundary in enumerate(boundaries):
         pts, labels = stored(boundary, tol)
+        if boundary.segments is not None:
+            # A path's segments and points are a polygon's (S5).
+            pts = pts[0]
         n = 1 if pts is None else len(pts)
         seg = (lambda j: ('label', labels[1][j])) if labels else (lambda j: ('profile', b, 'segment', j))
         vert = (lambda j: ('label', labels[2][j])) if labels else (lambda j: ('profile', b, 'vertex', j))
@@ -472,6 +537,19 @@ def native_case(c):
         if pts is None:
             cx, cy, r = b.circle
             rows.append('wire C '+' '.join(number(v) for v in (*at((cx, cy)), r)))
+        elif b.segments is not None:
+            # Stored counter-clockwise: each point, then its segment to the
+            # next (L, or A with the 3D centre, radius and 1 if it turns
+            # counter-clockwise about the plane's normal).
+            points, segments = pts
+            words = [f'wire S {len(points)}']
+            for p, seg in zip(points, segments):
+                words += [number(v) for v in at(p)]
+                if seg is None:
+                    words.append('L')
+                else:
+                    words += ['A', *(number(v) for v in at(seg[:2])), number(seg[2]), '1' if seg[3] else '0']
+            rows.append(' '.join(words))
         else:
             rows.append(f'wire P {len(pts)} '+' '.join(number(v) for p in pts for v in at(p)))
     rows.append('prism '+' '.join(number(n[i]*(end-start)) for i in range(3)))

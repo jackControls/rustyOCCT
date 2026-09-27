@@ -1,0 +1,35 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "rust_revision": "544766e6112205187a1d54c0707dbd48ac100e6a",
+  "platform": "darwin",
+  "rust_arc_prism_implementation_exists": false,
+  "rust_worktree_uncommitted": [
+    " M rust/REVIEW_NOTES.md",
+    " M rust/tools/compare_history.py",
+    " M rust/tools/generate_identity_fixtures.py",
+    " M rust/tools/identity_reference.py",
+    " M rust/tools/occt_history_oracle.cpp",
+    "?? rust/fixtures/identity-arc-cases.txt",
+    "?? rust/fixtures/identity-arc-expected.tsv",
+    "?? rust/fixtures/occt-arc-prism-preimplementation/"
+  ],
+  "cases": [
+    "arc_stadium",
+    "arc_rounded_rectangle",
+    "arc_rounded_clockwise_labelled",
+    "arc_d_shape",
+    "arc_pacman",
+    "arc_pacman_clockwise",
+    "arc_notch",
+    "arc_lens",
+    "arc_scallop",
+    "arc_slot_hole",
+    "arc_holes_mixed",
+    "arc_transformed",
+    "arc_far_small"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "d593ee824ca6ca14e0da08e5f3712f39ba66fa79dc26e2f364b54afd8fa4e3f0",
+  "probe_source_sha256": "efa41742506c0a68b2c2c528604273b3931b5b020103da02aff7474d82e8b3eb",
+  "observations_sha256": "d39abd470f61f145b8eb43a272b2b908b2a86aa9d9189287e95caf6c0ed3bfe8"
+}
