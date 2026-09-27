@@ -13,6 +13,7 @@ traversal, so a reversed use pairs pcurve t with edge fraction 1-t. Loops follow
 the oriented face: outer loops are counter-clockwise about the oriented normal.
 """
 from dataclasses import dataclass, field, replace
+import functools
 from fractions import Fraction as F
 import copy
 import math
@@ -278,7 +279,14 @@ def norm(a):
 
 
 def axes(f):
-    """Orthonormal (origin, x, y, n) exactly as Frame3::new, in high precision."""
+    """Orthonormal (origin, x, y, n) exactly as Frame3::new, in high precision
+    (memoized by the frame's numbers)."""
+    return _axes(tuple(f.origin), tuple(f.normal), tuple(f.x), mp.mp.prec)
+
+
+@functools.lru_cache(maxsize=4096)
+def _axes(origin, normal, hint, _prec):
+    f = Frame(origin, normal, hint)
     n = vec(f.normal)
     h = vec(f.x)
     if norm(n) == 0 or norm(h) == 0:
@@ -346,7 +354,9 @@ def curve_point(c, t):
 
 def pcurve_point(p, t):
     if isinstance(p, BSpline2):
-        return [mp.mpf(x.numerator)/x.denominator for x in spline.end_point(p, t)]
+        if t in (0, 1):
+            return [mp.mpf(x.numerator)/x.denominator for x in spline.end_point(p, t)]
+        return list(spline.curve_jet_mp(p, t)[0])
     t = mp.mpf(t)
     if isinstance(p, Line2):
         a, b = vec(p.start), vec(p.end)
@@ -804,13 +814,17 @@ def loop_area(loop, steps=2048):
     for k, u in enumerate(loop):
         p = u.pcurve
         f = lambda t: area_integrand(p, t)
-        total += mp.quad(f, [0, 1])
+        breaks = [0, *spline.knot_fractions(p), 1] if isinstance(p, BSpline2) else [0, 1]
+        total += mp.quad(f, [mp.mpf(x.numerator)/x.denominator if isinstance(x, F) else x for x in breaks])
         a, b = pcurve_point(p, 1), pcurve_point(loop[(k+1) % len(loop)].pcurve, 0)
         total += a[0]*b[1]-b[0]*a[1]
     return total/2
 
 
 def area_integrand(p, t):
+    if isinstance(p, BSpline2):
+        q, d = spline.curve_jet_mp(p, t)
+        return q[0]*d[1]-q[1]*d[0]
     if isinstance(p, Line2):
         a, b = vec(p.start), vec(p.end)
         q = add(a, mul(sub(b, a), t))

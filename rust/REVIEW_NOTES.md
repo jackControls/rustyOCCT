@@ -441,3 +441,14 @@ converter records that as `Imported` provenance, never as an approximation.
     ruled spline walls, spline geometry on a stadium's cylinder, and
     mutations) before any kernel code certifies spline geometry
     (`fixtures/occt-spline-preimplementation`).
+  * S4b-d, first part: exact composition for rational uses
+    (`validate/spline_deviation.rs`), enclosed spline areas and plane
+    fluxes, and the flux of nonrational spline surfaces
+    (`validate/spline_flux.rs`), over shared Bernstein arithmetic in both
+    tiers (`validate/bernstein.rs`); the reference samples exactly and
+    integrates by quadrature. Six spline cases are now valid, two of them
+    spline models that native OCCT also finds valid with the same counts and
+    enclosures within its measurements; `brep_validation` mutation 32 moves
+    them by exact similarities. Still to do in S4b-d: the interval path for
+    spline geometry on analytic curved surfaces, arcs and pcurves across
+    knot lines; rational surfaces' flux; containment; mass properties.

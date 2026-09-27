@@ -15,6 +15,7 @@ contract; the Rust validator must reproduce its complete sorted issue lists.
 """
 from dataclasses import dataclass, field
 import copy
+import functools
 
 import mpmath as mp
 
@@ -131,7 +132,7 @@ def gap_bounds(c):
                 if not 0 <= k < len(c.fins):
                     continue
                 u = c.fins[k]
-                raise_to(('u', k), lambda: deviation_bounds(c.edges[u.edge].curve, f.surface, u.pcurve, u.forward))
+                raise_to(('u', k), lambda: use_bounds(c.edges[u.edge].curve, f.surface, u.pcurve, u.forward))
 
                 def gap():
                     w = loop.fins[(ui+1) % len(loop.fins)]
@@ -146,6 +147,15 @@ def gap_bounds(c):
                     return mp.sqrt(du*du+dv*dv)
                 raise_to(('f', fi), gap)
     return out
+
+
+def use_bounds(curve, s, p, forward):
+    """A use's deviation bounds: exact for a rational spline use."""
+    if spline_use(curve, s, p):
+        bounds = spline_deviation(curve, s, p, forward)
+        if bounds is not None:
+            return bounds
+    return deviation_bounds(curve, s, p, forward)
 
 
 def declare(c):
@@ -820,10 +830,14 @@ def validate(c):
                 if not surface_ok[fi] or not curve_ok[u.edge]:
                     continue
                 if spline_use(c.edges[u.edge].curve, f.surface, u.pcurve):
-                    issues.append(issue('uncertified_pcurve_off_edge', ent))
-                    geometry_bad.add(fi)
-                    continue
-                low, high = deviation_bounds(c.edges[u.edge].curve, f.surface, u.pcurve, u.forward)
+                    bounds = spline_deviation(c.edges[u.edge].curve, f.surface, u.pcurve, u.forward)
+                    if bounds is None:
+                        issues.append(issue('uncertified_pcurve_off_edge', ent))
+                        geometry_bad.add(fi)
+                        continue
+                    low, high = bounds
+                else:
+                    low, high = deviation_bounds(c.edges[u.edge].curve, f.surface, u.pcurve, u.forward)
                 if judge(low, high, fin_bound.get(k), ent, f'{c.name}: {ent}') == 'beyond':
                     issues.append(issue('pcurve_off_edge', ent))
                     geometry_bad.add(fi)
@@ -905,7 +919,10 @@ def validate(c):
                 issues.append(issue('loop_winding', f'loop {fi}.{li}'))
         for li, l in edge_loops[1:]:
             point = pcurve_point(c.fins[l.fins[0]].pcurve, 0)
-            if winding(c, edge_loops[0][1], point) == 0:
+            if any(isinstance(c.fins[k].pcurve, BSpline2) for k in edge_loops[0][1].fins):
+                # Crossings with a spline pcurve are not decided yet.
+                issues.append(issue('uncertified_containment', f'loop {fi}.{li}'))
+            elif winding(c, edge_loops[0][1], point) == 0:
                 issues.append(issue('inner_loop_outside', f'loop {fi}.{li}'))
 
     # Region orientation and cavity nesting, for fully sound shells.
@@ -919,6 +936,9 @@ def validate(c):
             if si not in sound:
                 continue
             flux = shell_flux(c, si)
+            if flux is None:
+                issues.append(issue('uncertified_shell_orientation', f'shell {si}'))
+                continue
             if abs(flux) < mp.mpf('1e-25'):
                 raise ArithmeticError(f'{c.name}: shell volume too small for the oracle')
             outer = ri > 0 and pos == 0
@@ -955,6 +975,158 @@ def validate(c):
             if nested:
                 issues.append(issue('nested_cavity', f'shell {si}'))
     return sorted(set(issues))
+
+
+def mp_of(x):
+    return mp.mpf(x.numerator)/x.denominator if isinstance(x, F) else mp.mpf(x)
+
+
+def spline_cuts(curve, s, p, forward):
+    """The common pieces of a use in the pcurve's fraction: the ends, both
+    curves' knots, and a line pcurve's crossings of a spline surface's knot
+    lines (the kernel's exact pieces)."""
+    cuts = {F(0), F(1)}
+    if isinstance(p, BSpline2):
+        cuts |= set(spline.knot_fractions(p))
+    if isinstance(curve, BSpline3):
+        cuts |= {k if forward else 1-k for k in spline.knot_fractions(curve)}
+    if isinstance(s, BSplineSurface) and isinstance(p, Line2):
+        a, b = [F(x) for x in p.start], [F(x) for x in p.end]
+        for box in spline.patch_boxes(s):
+            for axis in range(2):
+                d = b[axis]-a[axis]
+                if d:
+                    for k in box[axis]:
+                        t = (k-a[axis])/d
+                        if 0 < t < 1:
+                            cuts.add(t)
+    return sorted(cuts)
+
+
+def pcurve_controls(p, t0, t1):
+    """The pcurve's Bézier control points (u, v) on [t0, t1]."""
+    if isinstance(p, Line2):
+        a, b = [F(x) for x in p.start], [F(x) for x in p.end]
+        return [tuple(x+t*(y-x) for x, y in zip(a, b)) for t in (t0, t1)]
+    return [(q[0]/q[-1], q[1]/q[-1]) for q in spline.blossom_piece(p, t0, t1)]
+
+
+def box_of(s, points):
+    for box in spline.patch_boxes(s):
+        (u0, u1), (v0, v1) = box
+        if all(u0 <= u <= u1 and v0 <= v <= v1 for u, v in points):
+            return box
+    return None
+
+
+def degree_of(curve):
+    return curve.basis.degree if isinstance(curve, (BSpline2, BSpline3)) else 1
+
+
+def exact_point(curve, t):
+    """A line's or spline's point at fraction t, exactly."""
+    if isinstance(curve, (Line2, Line3)):
+        return tuple(F(x)+fraction_of(t)*(F(y)-F(x)) for x, y in zip(curve.start, curve.end))
+    return spline.curve_jet(curve, t)[0]
+
+
+def fraction_of(t):
+    return spline.fraction(t)
+
+
+def spline_deviation(curve, s, p, forward):
+    """(low, high) of a rational spline use, or None where the kernel does
+    not decide it: exact samples on every common piece, enough to fix the
+    numerator's degree, so zero at all of them is zero everywhere (high 0);
+    otherwise the largest sample is certain and high is unbounded."""
+    if not (isinstance(curve, (Line3, BSpline3)) and isinstance(p, (Line2, BSpline2))
+            and isinstance(s, (Plane, BSplineSurface))):
+        return None
+    cuts = spline_cuts(curve, s, p, forward)
+    if isinstance(s, Plane):
+        o, x, y, _ = axes(s.frame)
+        surface = lambda u, v: add(o, add(mul(x, u), mul(y, v)))
+        extra = 1
+    else:
+        surface = lambda u, v: [mp_of(z) for z in spline.surface_jet(s, u, v)[0]]
+        extra = s.u.degree+s.v.degree
+    low = mp.mpf(0)
+    for t0, t1 in zip(cuts, cuts[1:]):
+        if isinstance(s, BSplineSurface):
+            if box_of(s, pcurve_controls(p, t0, t1)) is None:
+                return None
+            if extra*degree_of(p)+degree_of(curve)+1 > 96:
+                return None
+        count = extra*degree_of(p)+degree_of(curve)+2
+        for k in range(count+1):
+            t = t0+(t1-t0)*F(k, count)
+            q = exact_point(p, t)
+            e = exact_point(curve, t if forward else 1-t)
+            d = sub([mp_of(z) for z in e], surface(q[0], q[1]))
+            low = max(low, norm(d))
+    return (low, mp.mpf(0)) if low < mp.mpf('1e-25') else (low, mp.inf)
+
+
+def spline_face_flux(c, f):
+    """The flux of a face on a spline surface by nested quadrature: G(u, v)
+    = integral of S.(S_u x S_v) in v from the domain's start, then -loop
+    integral of G du. None where the kernel does not decide it: a rational
+    or periodic surface, or a spline pcurve piece across a knot line."""
+    s = f.surface
+    if s.u.periodic or s.v.periodic or len(set(s.weights)) > 1:
+        return None
+    _, _, (va, vb) = s.v.flat()
+    vknots = [va]+[F(k) for k in s.v.knots if va < F(k) < vb]
+
+    def flux_density(u, v):
+        pnt, su, sv = spline.surface_jet_mp(s, u, v)
+        return sum(a*b for a, b in zip(pnt, (su[1]*sv[2]-su[2]*sv[1], su[2]*sv[0]-su[0]*sv[2],
+                                              su[0]*sv[1]-su[1]*sv[0])))
+
+    def G(u, v):
+        breaks = [mp_of(k) for k in vknots if mp_of(k) < v]+[v]
+        return sum(gauss(lambda w: flux_density(u, w), a, b) for a, b in zip(breaks, breaks[1:]))
+    total = mp.mpf(0)
+    for lid in f.loops:
+        loop = c.loops[lid]
+        if loop.vertex is not None:
+            continue
+        pieces, chords = loop_points(c, loop)
+        for k in loop.fins:
+            p = c.fins[k].pcurve
+            cuts = spline_cuts(None, s, p, True)
+            for t0, t1 in zip(cuts, cuts[1:]):
+                if box_of(s, pcurve_controls(p, t0, t1)) is None:
+                    return None
+
+                def integrand(t, p=p):
+                    if isinstance(p, BSpline2):
+                        q, d = spline.curve_jet_mp(p, t)
+                        du = d[0]
+                    else:
+                        q = pcurve_point(p, t)
+                        du = mp.mpf(p.end[0])-mp.mpf(p.start[0])
+                    return -G(q[0], q[1])*du
+                total += gauss(integrand, mp_of(t0), mp_of(t1))
+        for a0, b0 in chords:
+            if b0[0] != a0[0]:
+                total += gauss(lambda t: -G(a0[0]+(b0[0]-a0[0])*t, a0[1]+(b0[1]-a0[1])*t)*(b0[0]-a0[0]), 0, 1)
+    return total
+
+
+def gauss(f, a, b):
+    """Gauss-Legendre quadrature on [a, b] with mpmath's 24 fixed nodes:
+    exact for the polynomial integrands of nonrational patches up to degree
+    47."""
+    nodes = _gauss_nodes(mp.mp.prec)
+    half, mid = (mp.mpf(b)-mp.mpf(a))/2, (mp.mpf(b)+mp.mpf(a))/2
+    return half*mp.fsum(w*f(mid+half*x) for x, w in nodes)
+
+
+@functools.lru_cache(maxsize=None)
+def _gauss_nodes(prec):
+    from mpmath.calculus.quadrature import GaussLegendre
+    return GaussLegendre(mp.mp).calc_nodes(4, prec)
 
 
 def surface_distance(s, p):
@@ -1058,6 +1230,8 @@ def face_flux(c, f):
     f independent of v; loops closed by chords (their orientation carries the
     face sense)."""
     s = f.surface
+    if isinstance(s, BSplineSurface):
+        return spline_face_flux(c, f)
     o, x, y, n = axes(s.frame)
     if isinstance(s, Cone):
         # S.(S_u x S_v) = rho(v) h(u); its v-antiderivative from the apex is
@@ -1129,7 +1303,9 @@ def face_flux(c, f):
         for p in pieces:
             def integrand(t, p=p):
                 q = pcurve_point(p, t)
-                if isinstance(p, Line2):
+                if isinstance(p, BSpline2):
+                    du = spline.curve_jet_mp(p, t)[1][0]
+                elif isinstance(p, Line2):
                     du = mp.mpf(p.end[0])-mp.mpf(p.start[0])
                 else:
                     ang = mp.mpf(p.start)+mp.mpf(p.sweep)*t
@@ -1143,9 +1319,12 @@ def face_flux(c, f):
 
 
 def shell_flux(c, si):
+    """None when a face's flux is not decided (S4d)."""
     total = mp.mpf(0)
     for f, side in c.shells[si].sides:
         flux = face_flux(c, c.faces[f])
+        if flux is None:
+            return None
         total += flux if side == 'F' else -flux
     return total
 

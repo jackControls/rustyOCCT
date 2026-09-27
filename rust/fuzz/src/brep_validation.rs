@@ -21,6 +21,10 @@
 //! replaces a prism's line edge, line pcurve or plane by a spline with a
 //! knot repeated to the degree, exactly C1 there, then breaks that knot: the
 //! first must report no continuity issue, the second exactly one more.
+//! Mutation 32 (S4b-d) moves the valid spline prisms of the fixtures by an
+//! exact similarity (a power-of-two scale and a dyadic translation), which
+//! must stay valid, then shifts a cap's spline pcurve far beyond or well
+//! within the tolerance, or reverses the ruled spline wall.
 use crate::byte;
 use rusty_occt::identity::OperationId;
 use rusty_occt::topology::{
@@ -766,8 +770,8 @@ fn knot_basis(p: usize) -> (Vec<f64>, Vec<usize>) {
 
 /// Mutation 31 (R4): a star prism whose line edge, line pcurve or plane
 /// becomes a spline, C1 at a knot repeated to its degree, then broken there.
-/// Spline geometry is otherwise uncertified before the rest of S4, so the C1
-/// report is compared with the broken one, which has exactly one more issue.
+/// Apart from the uses' deviations, the broken report has exactly one more
+/// issue than the C1 one.
 fn spline(b: &mut Bytes) {
     let count = 3 + usize::from(b.next() % 10);
     let scale = 2.0_f64.powi(i32::from(b.next() % 21) - 10);
@@ -885,21 +889,218 @@ fn spline(b: &mut Bytes) {
         }
     };
     let [smooth, broken] = versions;
-    let smooth = report(&smooth, tolerance);
+    // The splines' grid poles leave the prism's geometry by up to half a
+    // grid step, far beyond tolerance: their deviations (certified or not,
+    // S4b) are set aside, and continuity alone is compared.
+    let strip = |issues: Vec<String>| -> Vec<String> {
+        issues
+            .into_iter()
+            .filter(|i| !i.contains("pcurve_off_edge"))
+            .collect()
+    };
+    let smooth = strip(report(&smooth, tolerance));
     assert!(
         smooth.iter().all(|i| !i.contains("_not_c1")),
         "an exact repeat is C1: {smooth:?}"
     );
-    assert!(
-        smooth
-            .iter()
-            .any(|i| i.starts_with("uncertified_pcurve_off_edge")),
-        "spline uses are uncertified: {smooth:?}"
-    );
     let mut want = smooth.clone();
     want.push(issue);
     want.sort();
-    assert_eq!(report(&broken, tolerance), want);
+    assert_eq!(strip(report(&broken, tolerance)), want);
+}
+
+/// A spline prism of the fixtures under `p -> s p + t`, `s` a power of two
+/// and `t` dyadic: every relation stays exact. Plane frames keep their axes;
+/// pcurves on planes scale, and on the ruled wall so does `v` (its knots
+/// included).
+fn similar(parts: &mut TopologyParts, s: f64, t: [f64; 3]) {
+    let map = |p: Point3| Point3::new(s * p.x + t[0], s * p.y + t[1], s * p.z + t[2]);
+    let scaled = |e: &mut Option<Enclosure>| {
+        if let Some(e) = e {
+            e.bound *= s;
+        }
+    };
+    for v in &mut parts.vertices {
+        v.position = map(v.position);
+        scaled(&mut v.enclosure);
+    }
+    for e in &mut parts.edges {
+        e.curve = match &e.curve {
+            Curve3::LineSegment { start, end } => Curve3::LineSegment {
+                start: map(*start),
+                end: map(*end),
+            },
+            Curve3::BSpline(c) => {
+                let poles = c.poles().iter().map(|p| map(*p)).collect();
+                Curve3::BSpline(
+                    BSplineCurve3::new(
+                        c.degree(),
+                        poles,
+                        Some(c.weights().to_vec()),
+                        c.knots().to_vec(),
+                        c.multiplicities().to_vec(),
+                    )
+                    .unwrap(),
+                )
+            }
+            _ => unreachable!("spline prisms have lines and splines"),
+        };
+    }
+    let mut on_wall = vec![false; parts.loops.len()];
+    for f in &mut parts.faces {
+        scaled(&mut f.enclosure);
+        f.surface = match &f.surface {
+            Surface::Plane(frame) => {
+                let tol = Tolerance::default();
+                Surface::Plane(
+                    Frame3::new(map(frame.origin()), frame.normal(), frame.x(), tol).unwrap(),
+                )
+            }
+            Surface::BSpline(q) => {
+                for l in &f.loops {
+                    on_wall[l.index()] = true;
+                }
+                let v = q.v_knots();
+                let v = KnotVector::new(
+                    v.degree(),
+                    v.knots().iter().map(|k| k * s).collect(),
+                    v.multiplicities().to_vec(),
+                )
+                .unwrap();
+                let poles = q.poles().iter().map(|p| map(*p)).collect();
+                Surface::BSpline(
+                    BSplineSurface3::new(q.u_knots().clone(), v, poles, Some(q.weights().to_vec()))
+                        .unwrap(),
+                )
+            }
+            _ => unreachable!("spline prisms have planes and a spline wall"),
+        };
+    }
+    for (l, lp) in parts.loops.iter().enumerate() {
+        let Loop::Edges { fins, .. } = lp else {
+            continue;
+        };
+        for k in fins {
+            let fin = &mut parts.fins[k.index()];
+            scaled(&mut fin.enclosure);
+            let point = |p: Point2| {
+                if on_wall[l] {
+                    Point2::new(p.x, s * p.y)
+                } else {
+                    Point2::new(s * p.x, s * p.y)
+                }
+            };
+            fin.pcurve = match &fin.pcurve {
+                Curve2::LineSegment { start, end } => Curve2::LineSegment {
+                    start: point(*start),
+                    end: point(*end),
+                },
+                Curve2::BSpline(c) => {
+                    let c3 = c.as_curve3();
+                    let poles = c.poles().into_iter().map(point).collect();
+                    Curve2::BSpline(
+                        BSplineCurve2::new(
+                            c3.degree(),
+                            poles,
+                            Some(c3.weights().to_vec()),
+                            c3.knots().to_vec(),
+                            c3.multiplicities().to_vec(),
+                        )
+                        .unwrap(),
+                    )
+                }
+                _ => unreachable!("spline prisms have line and spline pcurves"),
+            };
+        }
+    }
+}
+
+/// Mutation 32 (S4b-d): a valid spline prism of the fixtures, moved exactly,
+/// is valid; then one mutation with its predicted issues.
+fn spline_prism(b: &mut Bytes) {
+    let text = include_str!("../../fixtures/brep-cases.txt");
+    let names = ["case spline_bulge", "case spline_cubic_bulge"];
+    let blocks: Vec<&str> = text
+        .split("\nend")
+        .filter(|x| names.contains(&x.trim().lines().next().unwrap_or("")))
+        .collect();
+    let (_, tol, mut parts) = brep_protocol::parse(blocks[b.pick(blocks.len())].trim());
+    let s = 2.0_f64.powi(i32::from(b.next() % 21) - 10);
+    let t = [0, 1, 2].map(|_| f64::from(b.next()) / 16.0 - 8.0);
+    similar(&mut parts, s, t);
+    let tolerance = Tolerance::new(tol * s, 1e-12).unwrap();
+    assert_eq!(report(&parts, tolerance), Vec::<String>::new());
+    // The top cap's spline pcurve and its position.
+    let top = 1;
+    let Loop::Edges { fins, .. } = &parts.loops[parts.faces[top].loops[0].index()] else {
+        unreachable!("an edge loop")
+    };
+    let (ui, k) = fins
+        .iter()
+        .enumerate()
+        .find(|(_, k)| matches!(parts.fins[k.index()].pcurve, Curve2::BSpline(_)))
+        .map(|(ui, k)| (ui, *k))
+        .expect("a spline pcurve on the top cap");
+    let shift = |parts: &mut TopologyParts, d: f64| {
+        let Curve2::BSpline(c) = &parts.fins[k.index()].pcurve else {
+            unreachable!("a spline pcurve")
+        };
+        let c3 = c.as_curve3();
+        let poles = c
+            .poles()
+            .iter()
+            .map(|p| Point2::new(p.x + d, p.y))
+            .collect();
+        parts.fins[k.index()].pcurve = Curve2::BSpline(
+            BSplineCurve2::new(
+                c3.degree(),
+                poles,
+                Some(c3.weights().to_vec()),
+                c3.knots().to_vec(),
+                c3.multiplicities().to_vec(),
+            )
+            .unwrap(),
+        );
+    };
+    let tau = tolerance.linear();
+    let expect = match b.next() % 3 {
+        0 => {
+            shift(&mut parts, 1000.0 * tau);
+            Expect::Contains(vec![format!("pcurve_off_edge:use {top}.0.{ui}")], vec![])
+        }
+        1 => {
+            // Within the resolution but beyond the declared enclosures (the
+            // fixtures declare about 1e-6 of it): at most those enclosures
+            // are unsound.
+            shift(&mut parts, 0.001 * tau);
+            Expect::Contains(vec![], vec![])
+        }
+        _ => {
+            let wall = (0..parts.faces.len())
+                .find(|f| matches!(parts.faces[*f].surface, Surface::BSpline(_)))
+                .unwrap();
+            parts.faces[wall].sense = match parts.faces[wall].sense {
+                Orientation::Forward => Orientation::Reversed,
+                Orientation::Reversed => Orientation::Forward,
+            };
+            Expect::Contains(vec![format!("loop_winding:loop {wall}.0")], vec![])
+        }
+    };
+    let got = report(&parts, tolerance);
+    match expect {
+        Expect::Contains(want, _) if !want.is_empty() => {
+            for w in want {
+                assert!(got.contains(&w), "missing {w} in {got:?}");
+            }
+        }
+        _ => {
+            // Within the resolution: only the use's enclosure may object.
+            assert!(
+                got.iter().all(|i| i.starts_with("enclosure_unsound")),
+                "{got:?}"
+            );
+        }
+    }
 }
 
 fn verify(got: Vec<String>, expect: Expect) {
@@ -926,7 +1127,7 @@ fn verify(got: Vec<String>, expect: Expect) {
 
 pub fn check_brep_validation(data: &[u8]) {
     let mut b = Bytes(data, 0);
-    let mutation = b.next() % 32;
+    let mutation = b.next() % 33;
     if mutation == 27 {
         far_prism(&mut b);
         return;
@@ -945,6 +1146,10 @@ pub fn check_brep_validation(data: &[u8]) {
     }
     if mutation == 31 {
         spline(&mut b);
+        return;
+    }
+    if mutation == 32 {
+        spline_prism(&mut b);
         return;
     }
     if mutation == 16 {

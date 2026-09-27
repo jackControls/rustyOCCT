@@ -539,7 +539,7 @@ algorithms).
 
 ## Generic B-rep validation
 
-`generate_brep_fixtures.py --check` rebuilds 145 cell-complex cases (47 valid):
+`generate_brep_fixtures.py --check` rebuilds 145 cell-complex cases (53 valid):
 54 converted by rule from an independent seamed prism builder and its
 mutations, twenty-two cell-model cases for the model's own failure
 modes, the near-frequency bound and enclosures (gaps just inside and outside
@@ -549,8 +549,8 @@ pcurve), fifteen spheres (seven valid, the whole sphere among them, and
 eight mutations) and thirteen tori (seven valid: the whole torus, both
 halves, a segment, two wedges and a far copy; six mutations) and nineteen
 spline cells (R4: C1 and broken knots on edges, pcurves and faces, periodic
-seams, degenerate splines) and ten spline models with native rows (none
-valid before the rest of S4), with complete issue lists from the separate mpmath reference validators
+seams, degenerate splines) and ten spline models with native rows (two
+valid since S4b-d), with complete issue lists from the separate mpmath reference validators
 (`brep_reference.py`, `cell_reference.py`). `brep_validation.rs` requires
 Rust's sorted report to equal each list exactly. The `brep_validation` fuzz
 target mutates valid prisms and cavities into specific invalid complexes.
@@ -561,7 +561,7 @@ structure-only and checks the synthesized counts of every valid case. See
 
 Enclosures (M5): every fixture carries bounds that the independent
 reference declares; Rust's report equals the reference's on all 145 cases.
-Measured bounds of the 47 valid cases lie between the reference's certain
+Measured bounds of the 53 valid cases lie between the reference's certain
 gap and its declared bound (`brep-enclosure-lows.tsv`, within a stated
 frame-rounding allowance). `enclosures.rs` requires every prism of the
 identity corpus to be enclosed within its resolution and no continued

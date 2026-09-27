@@ -190,15 +190,24 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   (`ring_edge_open`). A spline edge is degenerate when every pole lies
   within tolerance of the first, a spline pcurve when every pole is the
   first.
-* **Spline geometry before the rest of S4.** The vertex gaps at a spline
-  edge's ends are certified from its exact end points, and consecutive
-  spline pcurves' UV gaps from theirs. Everything else is uncertified: a use
-  with a spline edge, pcurve or surface is `uncertified_pcurve_off_edge`, a
-  UV gap on a spline surface is decided only when exactly zero
-  (`uncertified_uv_gap` otherwise, a surface without a length scale), and a
-  vertex loop on one is `uncertified_vertex_loop`. The face is then unsound
-  like any face with a geometric issue, so its winding, containment and
-  shell orientation are not decided, and mass properties are `None`.
+* **Spline geometry (S4).** The vertex gaps at a spline edge's ends are
+  certified from its exact end points, and consecutive spline pcurves' UV
+  gaps from theirs. A use whose factors are all rational (a line or spline
+  edge, a line or spline pcurve, a plane or spline surface) is decided by
+  exact composition (S4b, `MATHEMATICS.md`), provided each common Bézier
+  piece of a spline pcurve on a spline surface lies in one patch by its
+  control points and the composed degree is at most 96; any other use with
+  spline geometry is `uncertified_pcurve_off_edge`. A spline pcurve's share
+  of a loop's signed area is enclosed (S4c); containment of an inner loop in
+  an outer loop with a spline pcurve is `uncertified_containment`. The
+  orientation flux of a plane face with spline pcurves, and of a face on a
+  nonrational, nonperiodic spline surface whose pcurve pieces each lie in
+  one patch, is enclosed (S4d); on any other spline surface the shell's
+  orientation is `uncertified_shell_orientation`. A UV gap on a spline
+  surface is decided only when exactly zero (`uncertified_uv_gap`
+  otherwise, a surface without a length scale), a vertex loop on one is
+  `uncertified_vertex_loop`, and mass properties with spline geometry are
+  `None` so far.
 
 ## Two arithmetic tiers
 
@@ -343,7 +352,7 @@ Evidence:
   pcurves. Ten are the spline models of S4 (`spline_models()`, with OCCT
   rows for `compare_brep.py --family spline`): prisms with a spline side
   and a ruled spline wall, and a stadium with spline geometry on its
-  cylinder, with their mutations. 47 cases are valid. `brep_validation.rs`
+  cylinder, with their mutations. 53 cases are valid. `brep_validation.rs`
   requires Rust's complete sorted issue list to equal the reference's for
   every case.
 * The existing prism suites (`invariants`, `occt_regression`, `modeling`)
@@ -354,7 +363,7 @@ prisms with no hole, a round (seamless) hole, a square hole or an inverted box
 cavity. Scales range over `2^±10` with random frames and offsets. The cavity
 is merged by fuzz-crate code, not by a kernel builder: its material shell
 joins the body's solid region and its twin bounds a new void region. The
-base must be valid. Then one of 32 mutations must produce its predicted
+base must be valid. Then one of 33 mutations must produce its predicted
 issues:
 
 * an exact report for local changes: an extra vertex, edge, empty shell or
@@ -396,7 +405,13 @@ issues:
   R4): exactly C1 there (poles on a dyadic grid, the knot's pole their
   midpoint), it reports no continuity issue; with that pole moved half a
   grid step, exactly one more issue, `edge_not_c1`, `pcurve_not_c1` or
-  `face_not_c1`
+  `face_not_c1` (the uses' deviations set aside: the grid poles leave the
+  prism's geometry)
+* a valid spline prism of the fixtures moved by `p -> s p + t`, `s` a power
+  of two and `t` dyadic (mutation 32, S4b-d), which must stay valid, then a
+  cap's spline pcurve shifted by `1000·tol` (`pcurve_off_edge`) or by
+  `0.001·tol` (at most `enclosure_unsound`), or the ruled wall reversed
+  (`loop_winding`)
 
 Every report must be deterministic, duplicate-free and identical to
 `from_parts`. A local 300-second development campaign (dirty tree based on

@@ -39,11 +39,12 @@ no deviation at all.
   continuity status, so the kernel's `edge_not_c1`, `pcurve_not_c1` and
   `face_not_c1` there have no native counterpart.
 * The shifted pcurves report `BRepCheck_InvalidCurveOnSurface` (8) and
-  `BRepCheck_InvalidSameParameterFlag` (11) on the edge and an unclosed wire
-  (27) on the face, measuring `1.00001e-3` and `1.0000099583e-3`. The moved
+  `BRepCheck_InvalidSameParameterFlag` (11) on the edge and
+  `BRepCheck_UnorientableShape` (27) on the face (its wire no longer joins
+  in UV), measuring `1.00001e-3` and `1.0000099583e-3`. The moved
   vertex reports `BRepCheck_InvalidPointOnCurve` (1), measuring
-  `9.9999999999989e-4`. The reversed wall reports a bad orientation of a
-  subshape (32) on its face.
+  `9.9999999999989e-4`. The reversed wall reports `BRepCheck_BadOrientationOfSubshape`
+  (32) on its face.
 * Every other measured deviation is OCCT's evaluation rounding, at most
   `9.2e-16` (the rational corner's wall), and every vertex gap at most
   `1.8e-16` (the stadium's circles). Tolerances are the requested `1e-7`.

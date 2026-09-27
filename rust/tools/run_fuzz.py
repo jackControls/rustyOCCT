@@ -140,6 +140,12 @@ def seed_corpus(target):
                 for scale in [0,10,20]:
                     extra=[[],[150],[150,140],[150,140]][shape]
                     save(bytes([30,scale,90,120,shape]+extra+[140,90,200,128,100,160,sub])+bytes((j*37+1)%256 for j in range(16)))
+        # Spline prisms (mutation 32, S4b-d): both fixtures, three scales,
+        # each mutation.
+        for which in range(2):
+            for scale in (0, 10, 20):
+                for kind in range(3):
+                    save(bytes([32, which, scale, 7, 200, 129, kind]))
         # Splines (mutation 31, R4): an edge, a pcurve or a plane of a star
         # prism, with or without a round hole, at degrees 2 and 3.
         for c in (0, 5):

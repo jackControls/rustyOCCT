@@ -1251,6 +1251,48 @@ antiderivatives by quadrature (`cell_reference.py`), and
 The 22 tori of `torus-cases.txt` agree with the reference to `1e-12` of
 their scale (`tests/tori.rs`).
 
+## Spline uses, areas and fluxes (S4b-d)
+
+**Deviation by exact composition.** Where every factor of a use is
+rational, `D(t) = C(s(t)) - S(P(t))` is a rational function on every common
+piece: between the edge's knots (in the use's fraction, mirrored for a
+reversed use), the pcurve's knots and a line pcurve's crossings of a spline
+surface's knot lines. Each factor is extracted exactly as a Bézier piece
+(homogeneous Bernstein coordinates on `[0, 1]`). On a plane
+`S(u, v) = O + u X + v Y` with the stored axes, and `Ŝ = (O P_w + X P_u +
+Y P_v, P_w)`; on a spline surface's patch of degrees `(du, dv)` over
+`[u0, u1] × [v0, v1]`, with `U = (P_u - u0 P_w)/(u1 - u0)` and `V` likewise,
+`Ŝ = Σ Q_ij C(du, i) C(dv, j) U^i (P_w - U)^(du-i) V^j (P_w - V)^(dv-j)`,
+which is `S_h(P) P_w^(du+dv)`, a polynomial. Then `N = C_xyz Ŝ_w - Ŝ_xyz C_w`
+and `W = C_w Ŝ_w` are polynomials, `D = N/W`, and on `[0, 1]`
+`|N| <= max_i |N_i|` (a convex combination of the Bernstein coefficients)
+and `W >= min_j W_j`. When every `W_j > 0` and `|N_i|^2 <= tol^2 W_j^2` for
+all `i`, `j`, the piece is within tolerance; otherwise it is halved (de
+Casteljau) up to ten times. Cancellation is exact because the pieces are
+exact; the products run in binary64 intervals first and exactly when those
+cannot decide. A sample `|N(t)|^2 > tol^2 W(t)^2` certifies a failure. The
+measured enclosure of such a use is `max |N_i| / min W_j` over its pieces.
+
+**Signed area.** On a piece `u = U/W`, `v = V/W`,
+`u dv - v du = (U V' - V U')/W^2 dt`: the weights' derivatives cancel. With
+equal weights the integral is exact (the mean of the Bernstein
+coefficients); otherwise, on each of 64 subpieces with `1/W^2` in `[a, b]`
+(from the coefficients of `W`), `∫ M/W^2` lies in `a ∫M ± (b - a) max |M_i|`.
+The same enclosure gives `-∮ v du = -∫ V (U' W - U W')/W^3`, a plane's flux
+with spline pcurves.
+
+**Flux of a nonrational spline surface.** On a patch, in local coordinates,
+`f = X·(X_ū × X_v̄)` is a tensor Bernstein polynomial (the common weight
+cancels to `1/w^3`, a constant absorbed by using the poles divided by it).
+Its antiderivative from `v̄ = 0` is `H_k = Σ_(j<k) f_j / (n + 1)` along each
+row; with the full columns below the patch,
+`G = Σ_below H(ū, 1) + H(ū, v̄)` is the antiderivative in `v` of the global
+integrand from the domain's start, in local units of `u`, and by Green's
+theorem the face's flux is `-∮ G dū` along its loops, each piece in one
+patch, a polynomial (or, for a rational pcurve, a quotient by a power of
+`P_w`) integrated as above. The reference integrates the same flux by
+nested Gauss-Legendre quadrature of the exact surface derivatives.
+
 ## C1 of spline cells (R4)
 
 A cell is C1 in its own parameterisation (U3 of `REVIEW_NOTES.md`). For a

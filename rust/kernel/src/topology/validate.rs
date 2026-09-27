@@ -24,8 +24,11 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::f64::consts::TAU;
 use std::fmt;
 
+mod bernstein;
 mod continuity;
 mod mass;
+mod spline_deviation;
+mod spline_flux;
 pub(crate) use mass::{face_mass, mass};
 
 /// Issue classes of the validation contract.
@@ -1308,7 +1311,11 @@ pub(crate) fn measure(view: &View) -> Measured {
                             add_curve(h, curve, forward) && sub_use(h, &face.surface, &u.pcurve)
                         };
                         let mut h = Harmonic::<Fast>::new();
-                        fins[k.0] = if harmonic(&mut h) {
+                        fins[k.0] = if spline_use(curve, &face.surface, &u.pcurve) {
+                            spline_deviation::rational_use(curve, &face.surface, &u.pcurve, forward)
+                                .and_then(|exact| exact.upper_bound())
+                                .map(next_above)
+                        } else if harmonic(&mut h) {
                             let hi = h.upper().bounds_f64().1;
                             let hi = if hi.is_finite() {
                                 hi
@@ -1368,7 +1375,9 @@ fn area_term<T: Real>(p: &Curve2) -> T {
                 .sub(&c::<T>(center.y).mul(&c1.sub(&c0)));
             rho.mul(&linear).add(&rho.square().mul(&c(*sweep_angle)))
         }
-        Curve2::BSpline(_) => unreachable!("spline uses make their face unsound first"),
+        // Undecidable (a weight not certainly positive): any sign.
+        Curve2::BSpline(spline) => bernstein::twice_area(spline)
+            .unwrap_or_else(|| T::exact_f64(0.0).widen(&R::from_integer(BigInt::from(1) << 1000))),
     }
 }
 
@@ -1680,8 +1689,8 @@ fn cone_line_flux<T: Real>(
 /// v f(u) du (f does not depend on v), loops closed by chords; their
 /// orientation carries the face's sense.
 fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
-    if matches!(face.surface, Surface::BSpline(_)) {
-        return None;
+    if let Surface::BSpline(spline) = &face.surface {
+        return spline_flux::spline_face_flux(spline, loops);
     }
     if matches!(face.surface, Surface::Sphere { .. } | Surface::Torus { .. }) {
         return mass::sphere_flux(face, loops);
@@ -1776,6 +1785,10 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
                             .sub(&t1.sub(&t0).mul(&c(0.25))),
                     );
                     coeffs.2.mul(&first.add(&second))
+                }
+                // On a plane, `h (-∮ v du)`.
+                Curve2::BSpline(spline) if plane => {
+                    coeffs.2.mul(&bernstein::minus_v_du::<T>(spline)?)
                 }
                 Curve2::CircularArc { .. } | Curve2::BSpline(_) => return None,
             };
@@ -2778,17 +2791,27 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                 }
                 let forward = u.sense == Orientation::Forward;
                 let curve = &edges[u.edge.0].curve;
-                if spline_use(curve, &face.surface, &u.pcurve) {
-                    add(
-                        &mut issues,
-                        K::UncertifiedPcurveOffEdge,
-                        En::Use(fi, li, ui),
-                    );
-                    bad_faces.insert(fi);
-                    continue;
-                }
-                let decide = |th: &Threshold| {
-                    tiered(
+                // Spline uses whose factors are all rational are decided by
+                // exact composition (S4b); the others are not yet.
+                let exact = if spline_use(curve, &face.surface, &u.pcurve) {
+                    match spline_deviation::rational_use(curve, &face.surface, &u.pcurve, forward) {
+                        Some(exact) => Some(exact),
+                        None => {
+                            add(
+                                &mut issues,
+                                K::UncertifiedPcurveOffEdge,
+                                En::Use(fi, li, ui),
+                            );
+                            bad_faces.insert(fi);
+                            continue;
+                        }
+                    }
+                } else {
+                    None
+                };
+                let decide = |th: &Threshold| match &exact {
+                    Some(exact) => exact.decide(th.0),
+                    None => tiered(
                         Verdict::Unknown,
                         || {
                             let (t, t2) = th.tier::<Fast>();
@@ -2798,7 +2821,7 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                             let (t, t2) = th.tier::<I>();
                             deviation::<I>(curve, &face.surface, &u.pcurve, forward, &t, &t2)
                         },
-                    )
+                    ),
                 };
                 let (verdict, bound) = bounded(fin_bound[k.0], tolerance.linear(), decide);
                 enclosure_verdict(&mut issues, bound, En::Use(fi, li, ui));
