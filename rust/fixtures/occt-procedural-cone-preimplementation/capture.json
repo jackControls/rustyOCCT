@@ -1,0 +1,21 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+  "platform": "darwin",
+  "rust_revision": "bf224805a0b60d45ab2585e2a7b8bd984cceb3cf",
+  "rust_procedural_intersection_exists": false,
+  "rust_worktree_uncommitted": [
+    " M rust/REVIEW_NOTES.md",
+    " M rust/fixtures/procedural-intersection-cases.txt",
+    " M rust/fixtures/procedural-intersection-expected.tsv",
+    " M rust/tools/compare_procedural_intersections.py",
+    " M rust/tools/generate_procedural_intersection_fixtures.py",
+    " M rust/tools/occt_procedural_intersection_oracle.cpp",
+    " M rust/tools/procedural_intersection_reference.py",
+    "?? rust/fixtures/occt-procedural-cone-preimplementation/"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "d47ea777e6ff4d71981d6f21d0719c95c2597ff5346a1cd3bd302b68a6d98eb8",
+  "probe_source_sha256": "6219417411f5eda13c68e83f2498b6e18943a04ef0cb7362934384e88a404ce9",
+  "observations_sha256": "80bf42157bcc6ef978b08c18dc621cce6cf4e15919721c4d170d087c2ba10205"
+}

@@ -105,7 +105,7 @@ figure-eight's points containing the reference's, the loop's middle within
 (`fixtures/occt-procedural-intersection-preimplementation`) and
 `compare_procedural_intersections.py` finds every native sample within
 `1e-6` of the exact curve and every component covered in 17 cases, with 3
-reviewed differences (two missed tangent points, one sample `3.3e-5` off near
+reviewed differences (two missed tangent points, one sample `2.3e-5` off near
 Viviani's node), and the kernel inside the reference on all 20.
 
 ## Evidence

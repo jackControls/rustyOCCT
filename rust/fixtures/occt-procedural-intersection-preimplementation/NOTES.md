@@ -23,8 +23,10 @@ each line's closedness and 17 samples, and each isolated point.
 * Reviewed (`occt-procedural-intersection-divergences.json`): a sphere
   tangent to a cylinder from outside or from inside gives no result natively
   (the isolated tangency is missed), and near a Viviani configuration one of
-  OCCT's 51 approximated samples is `3.3e-5` from the exact curve, at the
-  loop's nearly pinched neck.
+  OCCT's 51 approximated samples is `2.3e-5` from the exact curve (by
+  closest-point distance; `3.3e-5` by the first comparison, which measured
+  along the ruling at the sample's own angle), at the loop's nearly pinched
+  neck.
 
 `compare_procedural_intersections.py` requires every later run to reproduce
 these rows and, once the kernel intersects these pairs, compares its

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Fixtures for S7b.1 of REVIEW_NOTES.md: two cylinders with crossing axes
-and a cylinder with a sphere off its axis.
+"""Fixtures for S7b.1 and S7b.2 of REVIEW_NOTES.md: two cylinders with
+crossing axes, a cylinder with a sphere off its axis, a cylinder with a cone
+(axes not coaxial) and a sphere with a cone (the centre off the axis).
 
 `procedural-intersection-cases.txt` uses the case protocol of
 `analytic-intersection-cases.txt`; `procedural-intersection-expected.tsv`
@@ -14,7 +15,7 @@ from pathlib import Path
 
 import analytic_intersection_reference as ana
 import procedural_intersection_reference as ref
-from generate_analytic_intersection_fixtures import X, Z, cylinder, encode, sphere
+from generate_analytic_intersection_fixtures import X, Y, Z, cone, cylinder, encode, sphere
 
 ROOT = Path(__file__).resolve().parents[1]
 TILT = (0.0, 3.0, 4.0)
@@ -44,6 +45,24 @@ def cases():
         ('cs_empty', cylinder((5.0, 0.0, 0.0), Z, 1.0), sphere(o, 2.0)),
         ('cs_tilted', cylinder((1.0, 2.0, 3.0), TILT, 1.0), sphere((1.75, 2.0, 3.0), 1.5)),
         ('cs_near_viviani', cylinder((1.0, 0.0, 0.0), Z, 1.0), sphere(o, 2.0-near)),
+        # S7b.2: a cylinder and a cone.
+        ('ck_cross', cylinder(o, Z, 1.0), cone((-3.0, 0.0, 0.0), X, 0.0, 0.3)),
+        ('ck_parallel', cylinder((0.5, 0.0, 0.0), Z, 1.0), cone(o, Z, 0.0, 0.4)),
+        ('ck_skew', cylinder((1.0, 0.0, 0.0), Z, 0.5), cone((0.0, 0.0, 1.0), Y, 0.2, 0.5)),
+        ('ck_miss', cylinder((0.0, 5.0, 0.0), X, 1.0), cone(o, Z, 0.0, 0.1)),
+        ('ck_rings', cylinder((0.0, 0.0, 5.0), X, 0.5), cone(o, Z, 0.0, 1.2)),
+        ('ck_tilted', cylinder((1.0, 2.0, 3.0), TILT, 0.75), cone((1.0, 2.5, 3.0), X, 0.5, 0.35)),
+        ('ck_two_loops', cylinder((0.0, 0.0, 2.0), X, 1.0), cone(o, Z, 0.0, 0.4)),
+        # S7b.2: a sphere and a cone, the apex rational or not.
+        ('ks_apex_inside', cone(o, Z, 0.0, 0.5), sphere((0.5, 0.0, 0.5), 2.0)),
+        ('ks_one_loop', cone(o, Z, 0.0, 0.5), sphere((3.0, 0.0, 5.0), 1.0)),
+        ('ks_two_loops', cone(o, Z, 0.0, 0.5), sphere((1.5, 0.0, 0.0), 1.4)),
+        # The centre is 1.5 cos 0.5 = 1.31637... from each generatrix.
+        ('ks_near_tangent', cone(o, Z, 0.0, 0.5), sphere((1.5, 0.0, 0.0), 1.3163738428355591+near)),
+        ('ks_rings_one_nappe', cone(o, Z, 0.0, 0.3), sphere((0.2, 0.0, 5.0), 3.0)),
+        ('ks_irrational_apex', cone(o, Z, 0.5, 0.4), sphere((1.0, 0.0, 2.0), 1.0)),
+        ('ks_tilted', cone((1.0, 2.0, 3.0), TILT, 0.25, 0.45), sphere((2.0, 2.0, 3.0), 1.5)),
+        ('ks_miss', cone(o, Z, 0.0, 0.2), sphere((5.0, 0.0, 0.0), 1.0)),
     ]
 
 

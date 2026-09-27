@@ -129,6 +129,66 @@ def sphere_form(c, R):
             'form': lambda d: sum(x*x for x in d)}
 
 
+def cone_form(o, a, r, angle):
+    """A double cone: f(p) = rho^2 cos^2 - (r cos + h sin)^2 with h along
+    the unit axis from o, and its quadratic form on a direction."""
+    om, am = [mpf(v) for v in o], unit(a)
+    ca, sa, rm = mp.cos(mpf(angle)), mp.sin(mpf(angle)), mpf(r)
+
+    def f(p):
+        rel = [x-y for x, y in zip(p, om)]
+        h = sum(x*y for x, y in zip(rel, am))
+        rho2 = sum(x*x for x in rel)-h*h
+        return rho2*ca*ca-(rm*ca+h*sa)**2
+
+    def form(d):
+        h = sum(x*y for x, y in zip(d, am))
+        return sum(x*x for x in d)*ca*ca-h*h
+    return {'f': f, 'form': form}
+
+
+class ConeCurve:
+    """A sphere seen from a cone's apex: rulings V + v d(u) with
+    d(u) = cos a axis + sin a (cos u x + sin u y), x towards the centre."""
+    def __init__(self, cone, sphere):
+        o, a = cone.axes()
+        c, _ = sphere.axes()
+        self.a = unit(a)
+        ca, sa = mp.cos(mpf(cone.angle)), mp.sin(mpf(cone.angle))
+        self.ca, self.sa = ca, sa
+        back = mpf(cone.radius)/mp.tan(mpf(cone.angle))
+        self.V = [mpf(x)-back*y for x, y in zip(o, self.a)]
+        cm = [mpf(x) for x in c]
+        rel = [x-y for x, y in zip(cm, self.V)]
+        h = sum(x*y for x, y in zip(rel, self.a))
+        perp = [x-h*y for x, y in zip(rel, self.a)]
+        n = mp.sqrt(sum(x*x for x in perp))
+        self.x = [x/n for x in perp]
+        self.y = [self.a[1]*self.x[2]-self.a[2]*self.x[1], self.a[2]*self.x[0]-self.a[0]*self.x[2],
+                  self.a[0]*self.x[1]-self.a[1]*self.x[0]]
+        self.c, self.R = cm, mpf(sphere.radius)
+        self.C = sum(x*x for x in rel)-self.R**2
+
+    def d(self, u):
+        c, s = mp.cos(u), mp.sin(u)
+        return [self.ca*a+self.sa*(c*x+s*y) for a, x, y in zip(self.a, self.x, self.y)]
+
+    def B(self, u):
+        return sum((v-c)*d for v, c, d in zip(self.V, self.c, self.d(u)))
+
+    def D(self, u):
+        return self.B(u)**2-self.C
+
+    def point(self, u, sign):
+        disc = self.D(u)
+        root = mp.sqrt(disc) if disc > 0 else mp.mpf(0)
+        v = -self.B(u)+sign*root
+        return [p+v*q for p, q in zip(self.V, self.d(u))]
+
+    def roots(self, samples=2880):
+        return Curve.roots(self, samples)
+
+
 def classify_cylinders(c1, c2):
     o1, a1 = c1.axes()
     o2, a2 = c2.axes()
@@ -210,6 +270,31 @@ def curve(s1, s2):
             m = scale(m, -1)
         fr = frame(o, a, m)
         return cls, Curve(fr, ruled.radius, cylinder_form(oo, ao, other.radius))
+    if (s1.kind, s2.kind) == ('cylinder', 'cone'):
+        o, a = s1.axes()
+        ok, ak = s2.axes()
+        if zero(cross(a, ak)) and zero(cross(sub(ok, o), a)):
+            return None        # coaxial: S7a
+        m = cross(a, ak)
+        if zero(m):
+            # Parallel axes: x towards the cone's axis.
+            w = sub(ok, o)
+            m = sub(w, scale(a, dot(w, a)/dot(a, a)))
+        elif dot(sub(ok, o), m) < 0:
+            m = scale(m, -1)
+        cv = Curve(frame(o, a, m), s1.radius, cone_form(ok, ak, s2.radius, s2.angle))
+        return 'by_roots', cv
+    if (s1.kind, s2.kind) == ('cone', 'sphere'):
+        o, a = s1.axes()
+        c, _ = s2.axes()
+        w = sub(c, o)
+        w = sub(w, scale(a, dot(w, a)/dot(a, a)))
+        if zero(w):
+            return None        # coaxial: S7a
+        cv = ConeCurve(s1, s2)
+        if F(s1.radius) == 0 and dot(sub(c, o), sub(c, o)) == F(s2.radius)**2:
+            return None        # the apex on the sphere: not yet parameterised
+        return 'by_roots', cv
     if (s1.kind, s2.kind) == ('cylinder', 'sphere'):
         o, a = s1.axes()
         c, _ = s2.axes()
@@ -230,6 +315,27 @@ def rows(s1, s2):
     if cls == 'empty':
         return ['empty']
     roots = cv.roots()
+    if cls == 'by_roots':
+        # Components from the roots of D (all simple): loops where D > 0
+        # between consecutive roots, two rings where D > 0 throughout.
+        if not roots:
+            if cv.D(mp.mpf(0)) < 0:
+                return ['empty']
+            return [('rings', cv.point(mp.mpf(0), 1), cv.point(mp.mpf(0), -1),
+                     cv.point(mp.pi, 1), cv.point(mp.pi, -1))]
+        out = []
+        n = len(roots)
+        for k in range(n):
+            u0, u1 = roots[k], roots[(k+1) % n]
+            if k+1 == n:
+                u1 += 2*mp.pi
+            mid = (u0+u1)/2
+            if cv.D(mid) > 0:
+                out.append(('loop', u0, u1, cv.point(u0, 1), cv.point(u1, 1), cv.point(mid, 1),
+                            cv.point(mid, -1)))
+        # Canonical order: a loop across pi first by its start below -pi
+        # would repeat; normalise starts to (-pi, pi].
+        return sorted(out, key=lambda r: float(r[1]))
     if cls == 'point':
         # D touches zero at u = 0 (towards the other surface).
         assert not roots, roots

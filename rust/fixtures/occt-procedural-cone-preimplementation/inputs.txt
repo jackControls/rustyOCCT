@@ -1,0 +1,60 @@
+case ck_cross
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface cone -3.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.3
+end
+case ck_parallel
+surface cylinder 0.5 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.4
+end
+case ck_skew
+surface cylinder 1.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.5
+surface cone 0.0 0.0 1.0 0.0 1.0 0.0 1.0 -0.0 0.0 0.2 0.5
+end
+case ck_miss
+surface cylinder 0.0 5.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 1.0
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.1
+end
+case ck_rings
+surface cylinder 0.0 0.0 5.0 1.0 0.0 0.0 0.0 1.0 0.0 0.5
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 1.2
+end
+case ck_tilted
+surface cylinder 1.0 2.0 3.0 0.0 0.6 0.8 1.0 -0.0 0.0 0.75
+surface cone 1.0 2.5 3.0 1.0 0.0 0.0 0.0 1.0 0.0 0.5 0.35
+end
+case ck_two_loops
+surface cylinder 0.0 0.0 2.0 1.0 0.0 0.0 0.0 1.0 0.0 1.0
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.4
+end
+case ks_apex_inside
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
+surface sphere 0.5 0.0 0.5 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case ks_one_loop
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
+surface sphere 3.0 0.0 5.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case ks_two_loops
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
+surface sphere 1.5 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.4
+end
+case ks_near_tangent
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
+surface sphere 1.5 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.3163747965098755
+end
+case ks_rings_one_nappe
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.3
+surface sphere 0.2 0.0 5.0 0.0 0.0 1.0 1.0 0.0 0.0 3.0
+end
+case ks_irrational_apex
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.5 0.4
+surface sphere 1.0 0.0 2.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case ks_tilted
+surface cone 1.0 2.0 3.0 0.0 0.6 0.8 1.0 -0.0 0.0 0.25 0.45
+surface sphere 2.0 2.0 3.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5
+end
+case ks_miss
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.2
+surface sphere 5.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end

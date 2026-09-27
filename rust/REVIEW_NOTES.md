@@ -624,6 +624,36 @@ Decisions for S7b, recorded before its code (2026-09-27):
   capture (sample points on both surfaces, curve counts) before its kernel
   code.
 
+Decisions for S7b.2, recorded before its code (2026-09-27):
+
+* **Sphere and cone** (the centre off the axis): parameterised on the cone's
+  rulings through its apex `V`, `V + v d(u)` with `d(u) = cos a a + sin a
+  (cos u x + sin u y)` unit and `x` towards the centre, so `A = 1`,
+  `C = |V - c|^2 - R^2` constant and `B(u) = b0 + b1 cos u` a sinusoid. The
+  apex inside the sphere (`C < 0`): two rings, one on each nappe. Outside
+  (`C > 0`): loops where `|B| > sqrt(C)`, one around `u = 0` and one around
+  `u = pi`, each end `arccos` in closed form, or two rings when `B` keeps a
+  sign beyond `sqrt(C)`. The apex on the sphere (`C = 0`, possible only for a
+  rational apex) makes one root the apex itself and the other switch
+  branches where `B` vanishes; it stays `NotConic` until a component for it
+  exists.
+* **Cylinder and cone** (axes not coaxial): parameterised on the cylinder,
+  where `A = cos^2 a - (a1 . a2)^2` is a nonzero constant (zero would make the
+  cylinder's axis a generatrix direction, impossible for a binary64 angle).
+  `D(u)` is a trigonometric polynomial of degree two without a convenient
+  closed form: its roots are isolated by certified subdivision with the
+  mean-value enclosure and a work budget (S7b.1's lesson), and the
+  components come from the certified count and signs: loops between roots
+  where `D > 0`, two rings where `D > 0` throughout. A tangency (a double
+  root) cannot be certified and is `ComputationLimit`; it never occurs
+  exactly with a transcendental half-angle.
+* **Two cones** (not coaxial): parameterised on the first, `A(u)` vanishes
+  where the rulings are parallel and a branch goes to infinity; they stay
+  `NotConic` until unbounded components exist (a later part of S7b).
+* **Evidence first**, as for S7b.1: the reference (same parameterisation and
+  frames, 80-digit roots by dense sampling) and a `GeomInt_IntSS` capture of
+  these pairs before their kernel code.
+
 ### S8 — general planar split and face trimming (SplitBody job)
 
 Split any supported solid by an arbitrary plane: face/plane intersection

@@ -35,19 +35,29 @@ import procedural_intersection_reference as ref
 from identity_reference import frame_axes
 
 SOURCE_FILE = ROOT/'rust/tools/occt_procedural_intersection_oracle.cpp'
-CAPTURE = ROOT/'rust/fixtures/occt-procedural-intersection-preimplementation'
 REVIEWS = ROOT/'rust/fixtures/occt-procedural-intersection-divergences.json'
 KERNEL_FILE = ROOT/'rust/kernel/src/intersection/procedural.rs'
 BOUND = 1e-6
+# Each sub-step's native observations were captured before its kernel code:
+# (directory, case-name prefixes, whether its kernel code exists).
+CAPTURES = {
+    's7b1': (ROOT/'rust/fixtures/occt-procedural-intersection-preimplementation', ('cc_', 'cs_'),
+             lambda: KERNEL_FILE.exists()),
+    's7b2': (ROOT/'rust/fixtures/occt-procedural-cone-preimplementation', ('ck_', 'ks_'),
+             lambda: KERNEL_FILE.exists() and 'Surface::Cone' in KERNEL_FILE.read_text()),
+}
 
 
-def native_input():
+def native_input(prefixes=None):
     rows = []
     for name, a, b in fixtures.cases():
+        if prefixes and not name.startswith(prefixes):
+            continue
         rows.append(f'case {name}')
         for kind, values in (a, b):
             o, x, _, n = frame_axes(tuple(values[:9]))
-            rows.append(' '.join(['surface', kind, *map(repr, (*o, *n, *x)), repr(float(values[9]))]))
+            rows.append(' '.join(['surface', kind, *map(repr, (*o, *n, *x)),
+                                  *(repr(float(v)) for v in values[9:])]))
         rows.append('end')
     return '\n'.join(rows)+'\n'
 
@@ -74,33 +84,63 @@ def surfaces_of(name, a, b):
     return surfaces
 
 
-def components(cls, cv, rows):
-    """The reference curve's components as point functions of (u, branch)."""
-    if cls == 'loop':
-        return [('loop', None)]
-    if cls == 'rings':
-        return [('ring', 1), ('ring', -1)]
-    return [('figure_eight', None)]
-
-
-def distance(cv, p, branch=None):
-    """Distance from a point to the reference curve (or one branch): the
-    point's angle on the ruled cylinder, then the nearer branch there."""
+def distance(cv, p, branch=None, span=None):
+    """Distance from a point to the reference curve (or one branch, or one
+    loop's parameter range): the point's angle on the ruled surface, then
+    the nearer branch there."""
     pm = [mp.mpf(x) for x in p]
+    if isinstance(cv, ref.ConeCurve):
+        # From the apex a point of the lower nappe (v < 0) lies along
+        # -d(u): its angle about the axis is u + pi. Try both.
+        rel = [x-y for x, y in zip(pm, cv.V)]
+        u = mp.atan2(sum(a*b for a, b in zip(rel, cv.y)), sum(a*b for a, b in zip(rel, cv.x)))
+        return min(distance_at(cv, pm, t, branch, span) for t in (u, u+mp.pi))
     rel = [x-y for x, y in zip(pm, cv.o)]
     u = mp.atan2(sum(a*b for a, b in zip(rel, cv.y)), sum(a*b for a, b in zip(rel, cv.x)))
-    best = None
+    return distance_at(cv, pm, u, branch, span)
+
+
+def distance_at(cv, pm, u, branch, span):
+    """The Euclidean distance from a point to the curve near parameter u:
+    near a loop's end the branches are vertical in (u, v), so the point's
+    own angle is not its nearest parameter; search a neighbourhood of u on
+    both branches (within a loop's range when given) and refine by golden
+    section."""
+    lo, hi = u-mp.mpf('0.02'), u+mp.mpf('0.02')
+    if span is not None:
+        u0, u1 = span
+        k = mp.floor((u-u0)/(2*mp.pi))
+        u = u-2*mp.pi*k
+        lo, hi = max(u-mp.mpf('0.02'), u0), min(u+mp.mpf('0.02'), u1)
+        if lo > hi:
+            ends = [cv.point(u0, 1), cv.point(u1, 1)]
+            return float(min(mp.sqrt(sum((a-b)**2 for a, b in zip(pm, q))) for q in ends))
+
+    def dist(t, sign):
+        if cv.D(t) < 0:
+            return mp.inf
+        q = cv.point(t, sign)
+        return mp.sqrt(sum((a-b)**2 for a, b in zip(pm, q)))
+    best = mp.inf
     for sign in ([branch] if branch else [1, -1]):
-        q = cv.point(u, sign)
-        d = mp.sqrt(sum((a-b)**2 for a, b in zip(pm, q)))
-        best = d if best is None else min(best, d)
+        ts = [lo+(hi-lo)*k/200 for k in range(201)]
+        ds = [dist(t, sign) for t in ts]
+        k = min(range(len(ts)), key=lambda j: ds[j])
+        a, b = ts[max(k-1, 0)], ts[min(k+1, 200)]
+        g = (mp.sqrt(5)-1)/2
+        for _ in range(60):
+            c1, c2 = b-g*(b-a), a+g*(b-a)
+            if dist(c1, sign) < dist(c2, sign):
+                b = c2
+            else:
+                a = c1
+        best = min(best, ds[k], dist((a+b)/2, sign))
     return float(best)
 
 
 def differences(name, surfaces, native):
     """What separates the native result from the reference's."""
-    found = ref.curve(*surfaces)
-    cls, cv = found
+    _, cv = ref.curve(*surfaces)
     rows = ref.rows(*surfaces)
     status, lines, points = native
     if status != 'done':
@@ -108,27 +148,32 @@ def differences(name, surfaces, native):
     samples = [p for line in lines for p in line]
     scale = max([1.0]+[abs(x) for s in surfaces for x in s.frame[:3]]+[s.radius for s in surfaces])
     tol = BOUND*scale
-    if cls == 'empty':
+    kind = rows[0] if isinstance(rows[0], str) else rows[0][0]
+    if kind == 'empty':
         return [] if not samples and not points else ['spurious']
-    if cls == 'point':
+    if kind == 'point':
         target = [float(x) for x in rows[0][1]]
         near = [p for p in samples+points if max(abs(a-b) for a, b in zip(p, target)) <= 1e-4*scale]
         if not near:
             return ['missed_tangent_point']
         return [] if len(near) == len(samples+points) else ['spurious']
+    # Components: each loop by its range, each ring by its branch, a
+    # figure-eight whole.
+    if kind == 'loop':
+        comps = [dict(span=(r[1], r[2])) for r in rows]
+    elif kind == 'rings':
+        comps = [dict(branch=1), dict(branch=-1)]
+    else:
+        comps = [dict()]
     out = []
     if any(distance(cv, p) > tol for p in samples+points):
         out.append('off_curve')
-    comps = components(cls, cv, rows)
     covered = set()
     for p in samples:
-        if cls == 'rings':
-            d = {k: distance(cv, p, branch) for k, (_, branch) in enumerate(comps)}
-            k = min(d, key=d.get)
-            if d[k] <= tol:
-                covered.add(k)
-        elif distance(cv, p) <= tol:
-            covered.add(0)
+        d = [distance(cv, p, **c) for c in comps]
+        k = min(range(len(d)), key=d.__getitem__)
+        if d[k] <= tol:
+            covered.add(k)
     if covered != set(range(len(comps))):
         out.append('missed_component')
     return out
@@ -176,7 +221,9 @@ def rust_differences(rust, expected):
     return []
 
 
-def capture(executable, env, text, sdk_manifest):
+def capture(executable, env, key, sdk_manifest):
+    CAPTURE, prefixes, exists = CAPTURES[key]
+    text = native_input(prefixes)
     record = run(executable, text, env)
     if record['exit_code'] != 0:
         raise SystemExit('native procedural intersection run failed: '+json.dumps(record)[:2000])
@@ -191,13 +238,18 @@ def capture(executable, env, text, sdk_manifest):
     write(CAPTURE/'capture.json', {
         'source_reference': SOURCE, 'oracle': next(iter(record['stderr'].splitlines()), None),
         'platform': sys.platform, 'rust_revision': revision,
-        'rust_procedural_intersection_exists': KERNEL_FILE.exists(),
+        'rust_procedural_intersection_exists': exists(),
         'rust_worktree_uncommitted': status, 'sdk_manifest_sha256': digest(sdk_manifest),
         'input_sha256': digest(CAPTURE/'inputs.txt'), 'probe_source_sha256': digest(CAPTURE/'oracle.cpp'),
         'observations_sha256': digest(CAPTURE/'native.txt')})
 
 
 def captured(observed):
+    for CAPTURE, prefixes, _ in CAPTURES.values():
+        captured_one(observed, CAPTURE, prefixes)
+
+
+def captured_one(observed, CAPTURE, prefixes):
     metadata = json.loads((CAPTURE/'capture.json').read_text())
     if metadata['source_reference'] != SOURCE or metadata['rust_procedural_intersection_exists']:
         raise ValueError('procedural intersection capture was not a clean pre-implementation reference')
@@ -205,10 +257,10 @@ def captured(observed):
                       ('observations_sha256', 'native.txt')]:
         if metadata[key] != digest(CAPTURE/name):
             raise ValueError('procedural intersection evidence changed: '+name)
-    if (CAPTURE/'inputs.txt').read_text() != native_input():
+    if (CAPTURE/'inputs.txt').read_text() != native_input(prefixes):
         raise ValueError('the native inputs differ from the captured ones')
     was = parse_native((CAPTURE/'native.txt').read_text())
-    if set(was) != set(observed):
+    if set(was) != {n for n in observed if n.startswith(prefixes)}:
         raise ValueError('native cases differ from the capture')
     for name, (status, lines, points) in was.items():
         now = observed[name]
@@ -224,8 +276,8 @@ def main():
     parser.add_argument('--sdk-manifest', type=Path, required=True)
     parser.add_argument('--output', type=Path, default=ROOT/'target/procedural-intersection-oracle')
     parser.add_argument('--strict-native', action='store_true')
-    parser.add_argument('--capture', action='store_true',
-                        help='record the native observations (before implementation only)')
+    parser.add_argument('--capture', choices=sorted(CAPTURES),
+                        help='record one sub-step\'s native observations (before its implementation only)')
     args = parser.parse_args()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -237,8 +289,8 @@ def main():
     executable, env, loaded, command = build(prefix, output, SOURCE_FILE, 'procedural-oracle')
     text = native_input()
     if args.capture:
-        capture(executable, env, text, args.sdk_manifest)
-        print('captured', len(fixtures.cases()), 'procedural intersection cases')
+        capture(executable, env, args.capture, args.sdk_manifest)
+        print('captured', args.capture)
         return
     record = run(executable, text, env)
     if record['exit_code'] != 0:
