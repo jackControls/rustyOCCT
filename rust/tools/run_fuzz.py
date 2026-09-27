@@ -86,6 +86,11 @@ def seed_corpus(target):
             data=bytearray((j*67+k*29+13)%256 for j in range(240))
             save(bytes(data))
         save(bytes([0]))
+        # The spline fixtures (S4e): 'S', a fixture, then token and line
+        # mutations of their B-spline records.
+        for pick in range(6):
+            for k in range(4):
+                save(bytes([0x53, pick])+bytes((j*53+k*31+7)%256 for j in range(64)))
     elif target == 'attributes':
         # The identity structure, six random policies, random keys and small
         # values, a split height and changes on one piece before the fuse.

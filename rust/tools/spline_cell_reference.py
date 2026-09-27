@@ -48,6 +48,7 @@ class BSpline3:
     poles: list          # 3-tuples of floats
     weights: list
     range: tuple = None
+    reversed: bool = False
 
 
 @dataclass
@@ -58,6 +59,18 @@ class BSpline2:
     poles: list          # 2-tuples
     weights: list
     range: tuple = None
+    reversed: bool = False
+
+
+def flip(curve):
+    """The same span traversed the other way (exact: no knot moves)."""
+    import dataclasses
+    return dataclasses.replace(curve, reversed=not curve.reversed)
+
+
+def _dir(curve, t):
+    """A span fraction as a fraction of the range in the curve's direction."""
+    return 1-t if curve.reversed else t
 
 
 def span_of(curve):
@@ -197,6 +210,7 @@ def end_point(curve, t):
     basis = curve.basis
     ctrl = _controls(basis, homogeneous(curve.poles, curve.weights))
     a, b = span_of(curve)
+    t = _dir(curve, t)
     u = _reduce(basis, a if t == 0 else b)
     _, _, (_, e) = basis.flat()
     value, _ = _one_sided(basis, ctrl, u, left=(u == e or (t != 0 and not basis.periodic)))
@@ -219,7 +233,8 @@ def pcurve_valid(curve):
 def reversed_curve(c):
     """The same curve traversed backwards over the mirrored domain: knots
     k -> a + b - k (exact in binary64 only when the sums are), poles and
-    weights reversed. Returns None when a mirrored knot is not exact."""
+    weights reversed, the direction flag kept. Returns None when a mirrored
+    knot is not exact (native rows need a curve; the cells use `flip`)."""
     b = c.basis
     a, e = F(b.knots[0]), F(b.knots[-1])
     knots = [a+e-F(k) for k in reversed(b.knots)]
@@ -232,7 +247,17 @@ def reversed_curve(c):
         if float(lo) != lo or float(hi) != hi:
             return None
         rng = (float(lo), float(hi))
-    return type(c)(basis, list(reversed(c.poles)), list(reversed(c.weights)), rng)
+    return type(c)(basis, list(reversed(c.poles)), list(reversed(c.weights)), rng, c.reversed)
+
+
+def unflagged(c):
+    """The same traversal as an unflagged curve: a flagged span is its
+    mirrored curve run forward. None when a mirrored knot is not exact."""
+    import dataclasses
+    if not c.reversed:
+        return c
+    m = reversed_curve(c)
+    return None if m is None else dataclasses.replace(m, reversed=False)
 
 
 def reparameterized(c, first, last):
@@ -262,6 +287,7 @@ def encode_curve(c, number, with_range=True):
     then `range FIRST LAST` for a range other than the whole domain."""
     poles = ' '.join(number(x) for p in c.poles for x in p)
     tail = f' range {number(c.range[0])} {number(c.range[1])}' if with_range and c.range is not None else ''
+    tail += ' reversed' if with_range and c.reversed else ''
     return (f'bspline {encode_basis(c.basis, number)} {len(c.poles)} {poles} '
             + ' '.join(map(number, c.weights))+tail)
 
@@ -297,7 +323,8 @@ def curve_jet(curve, t):
     b = curve.basis
     flat, _, (_, de) = b.flat()
     a, e = span_of(curve)
-    t = fraction(t)
+    t = _dir(curve, fraction(t))
+    sign = -1 if curve.reversed else 1
     u = _reduce(b, a+t*(e-a))
     ctrl = _controls(b, homogeneous(curve.poles, curve.weights))
     k = _span(flat, b.degree, u, left=(u == de))
@@ -305,7 +332,7 @@ def curve_jet(curve, t):
     dh = _derivative(flat, ctrl, b.degree, k, u)
     w, dw = h[-1], dh[-1]
     point = tuple(x/w for x in h[:-1])
-    speed = tuple((dx*w-x*dw)/(w*w)*(e-a) for x, dx in zip(h[:-1], dh[:-1]))
+    speed = tuple(sign*(dx*w-x*dw)/(w*w)*(e-a) for x, dx in zip(h[:-1], dh[:-1]))
     return point, speed
 
 
@@ -346,6 +373,8 @@ def blossom_piece(curve, t0, t1):
     flat, _, (_, de) = b.flat()
     a, e = span_of(curve)
     p = b.degree
+    if curve.reversed:
+        t0, t1 = 1-fraction(t1), 1-fraction(t0)
     u0, u1 = a+fraction(t0)*(e-a), a+fraction(t1)*(e-a)
     shift = _reduce(b, u0)-u0
     u0, u1 = u0+shift, u1+shift
@@ -360,7 +389,7 @@ def blossom_piece(curve, t0, t1):
                 al = (args[r-1]-flat[j])/(flat[j+p-r+1]-flat[j])
                 d[j] = tuple((1-al)*x+al*y for x, y in zip(d[j-1], d[j]))
         out.append(d[k])
-    return out
+    return out[::-1] if curve.reversed else out
 
 
 def knot_fractions(curve):
@@ -380,7 +409,7 @@ def knot_fractions(curve):
                 k += period
         elif a < k < e:
             out.add((k-a)/(e-a))
-    return sorted(out)
+    return sorted(1-f for f in out) if curve.reversed else sorted(out)
 
 
 def patch_boxes(s):
@@ -401,7 +430,8 @@ def curve_jet_mp(curve, t):
     a, e = span_of(curve)
     a, e = mp.mpf(a.numerator)/a.denominator, mp.mpf(e.numerator)/e.denominator
     da, de = mp.mpf(da.numerator)/da.denominator, mp.mpf(de.numerator)/de.denominator
-    u = a+mp.mpf(t)*(e-a)
+    sign = -1 if curve.reversed else 1
+    u = a+(1-mp.mpf(t) if curve.reversed else mp.mpf(t))*(e-a)
     if b.periodic:
         while u > de:
             u -= de-da
@@ -418,7 +448,7 @@ def curve_jet_mp(curve, t):
     dh = _derivative(flat, ctrl, p, k, u)
     w, dw = h[-1], dh[-1]
     return (tuple(x/w for x in h[:-1]),
-            tuple((dx*w-x*dw)/(w*w)*(e-a) for x, dx in zip(h[:-1], dh[:-1])))
+            tuple(sign*(dx*w-x*dw)/(w*w)*(e-a) for x, dx in zip(h[:-1], dh[:-1])))
 
 
 def surface_jet_mp(s, u, v):
@@ -471,6 +501,10 @@ def spline_jet2_iv(curve, t):
     a, e = span_of(curve)
     p = b.degree
     fl = [_iv(k) for k in flat]
+    sign = -1 if curve.reversed else 1
+    if curve.reversed:
+        import mpmath as _mp
+        t = 1-t
     mid = a+fraction(t.mid)*(e-a)
     shift = _reduce(b, mid)-mid
     a, e = a+shift, e+shift
@@ -488,7 +522,7 @@ def spline_jet2_iv(curve, t):
         h2 = q2[k] if p == 2 else _de_boor(fl, q2, p-2, k, u)
     else:
         h2 = tuple(0*x for x in h)
-    s = e_-a_
+    s = (e_-a_)*sign
     w, w1, w2 = h[-1], h1[-1]*s, h2[-1]*s*s
     v = [x/w for x in h[:-1]]
     v1 = [(x*s-y*w1)/w for x, y in zip(h1[:-1], v)]

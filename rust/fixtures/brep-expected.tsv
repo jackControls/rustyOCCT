@@ -126,6 +126,7 @@ spline_edge_degenerate	degenerate_curve:edge 0
 spline_edge_range	
 spline_edge_range_corner_outside	
 spline_pcurve_range	
+spline_pcurve_reversed	
 spline_ring_edge_c1	pcurve_off_edge:use 0.0.0;pcurve_off_edge:use 2.1.0
 spline_ring_edge_seam_not_c1	edge_not_c1:edge 0;pcurve_off_edge:use 0.0.0;pcurve_off_edge:use 2.1.0
 spline_ring_edge_nonperiodic	pcurve_off_edge:use 0.0.0;pcurve_off_edge:use 2.1.0;ring_edge_open:edge 0
@@ -142,7 +143,7 @@ spline_bulge_hole_outside	inner_loop_outside:loop 0.1;inner_loop_outside:loop 1.
 spline_bulge	
 spline_cubic_bulge	
 spline_c0_bulge	edge_not_c1:edge 6;edge_not_c1:edge 7;face_not_c1:face 3;pcurve_not_c1:use 0.0.2;pcurve_not_c1:use 1.0.1
-spline_rounded_corner	uncertified_shell_orientation:shell 0
+spline_rounded_corner	
 spline_bulge_pcurve_shift	pcurve_off_edge:use 1.0.1;uv_gap:use 1.0.0;uv_gap:use 1.0.1
 spline_bulge_vertex_moved	vertex_off_curve:edge 1 start;vertex_off_curve:edge 4 end;vertex_off_curve:edge 6 start
 spline_bulge_wall_reversed	loop_winding:loop 3.0

@@ -187,6 +187,9 @@ pub enum Curve3 {
 pub struct SplineSpan<C> {
     curve: C,
     range: [f64; 2],
+    /// Traversed from the range's end to its start (a pcurve reversed for a
+    /// reversed use, without mirroring its knots, which would round).
+    reversed: bool,
 }
 
 /// The parameter domain and periodicity of a spline curve.
@@ -218,6 +221,7 @@ impl<C: SplineDomain> SplineSpan<C> {
         Self {
             curve,
             range: [a, b],
+            reversed: false,
         }
     }
     /// `first < last`, finite; inside the domain, or of at most one period
@@ -236,7 +240,35 @@ impl<C: SplineDomain> SplineSpan<C> {
         Ok(Self {
             curve,
             range: [first, last],
+            reversed: false,
         })
+    }
+    /// The same span traversed the other way.
+    pub fn reversed(&self) -> Self
+    where
+        C: Clone,
+    {
+        Self {
+            curve: self.curve.clone(),
+            range: self.range,
+            reversed: !self.reversed,
+        }
+    }
+    pub fn is_reversed(&self) -> bool {
+        self.reversed
+    }
+    /// The curve's parameter at a fraction of the span, its ends exact.
+    pub fn parameter(&self, fraction: f64) -> f64 {
+        let t = if !self.reversed {
+            fraction
+        } else if fraction == 0.0 {
+            1.0
+        } else if fraction == 1.0 {
+            0.0
+        } else {
+            1.0 - fraction
+        };
+        spline_parameter(self.range.into(), t)
     }
     pub fn curve(&self) -> &C {
         &self.curve
@@ -250,6 +282,43 @@ impl<C: SplineDomain> SplineSpan<C> {
         self.curve.is_periodic()
             && crate::spline::rational(self.range[1]) - crate::spline::rational(self.range[0])
                 == crate::spline::rational(b) - crate::spline::rational(a)
+    }
+}
+
+impl SplineSpan<BSplineCurve2> {
+    /// The same traversal without the direction flag: a flagged span is its
+    /// mirrored curve (knots `k -> a + b - k`, poles and weights reversed,
+    /// the range mirrored) run forward. `None` when a mirrored value is not
+    /// a binary64 (the writer then cannot express it).
+    pub fn unflagged(&self) -> Option<Self> {
+        if !self.reversed {
+            return Some(self.clone());
+        }
+        use crate::spline::rational;
+        let c = self.curve.as_curve3();
+        let (a, b) = c.domain();
+        let mirror = |x: f64| -> Option<f64> {
+            let m = rational(a) + rational(b) - rational(x);
+            let f = a + b - x;
+            (rational(f) == m).then_some(f)
+        };
+        let knots: Vec<f64> = c
+            .knots()
+            .iter()
+            .rev()
+            .map(|k| mirror(*k))
+            .collect::<Option<_>>()?;
+        let mults: Vec<usize> = c.multiplicities().iter().rev().copied().collect();
+        let poles: Vec<Point2> = self.curve.poles().into_iter().rev().collect();
+        let weights: Vec<f64> = c.weights().iter().rev().copied().collect();
+        let curve = if c.is_periodic() {
+            BSplineCurve2::new_periodic(c.degree(), poles, Some(weights), knots, mults)
+        } else {
+            BSplineCurve2::new(c.degree(), poles, Some(weights), knots, mults)
+        }
+        .ok()?;
+        let [first, last] = self.range;
+        SplineSpan::new(curve, mirror(last)?, mirror(first)?).ok()
     }
 }
 
@@ -285,7 +354,7 @@ impl Curve3 {
             }
             Self::BSpline(span) => span
                 .curve()
-                .point(spline_parameter(span.range().into(), fraction))
+                .point(span.parameter(fraction))
                 .expect("a finite spline evaluates in its domain"),
         }
     }
@@ -326,7 +395,7 @@ impl Curve2 {
             }
             Self::BSpline(span) => span
                 .curve()
-                .point(spline_parameter(span.range().into(), fraction))
+                .point(span.parameter(fraction))
                 .expect("a finite spline evaluates in its domain"),
         }
     }

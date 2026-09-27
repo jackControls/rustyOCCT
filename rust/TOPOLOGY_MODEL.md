@@ -611,6 +611,46 @@ sphere, torus, one per accepted revision (R6).
   before any kernel torus code (`fixtures/occt-torus-preimplementation`,
   `fixtures/occt-torus-revolve-capture`).
 
+## Spline cells (S4)
+
+S4 of `REVIEW_NOTES.md` adds B-spline edges, pcurves and faces: R4's
+continuity check first, then the geometric checks, mass properties and
+interop.
+
+* **Cells.** `Curve3::BSpline` and `Curve2::BSpline` hold a `SplineSpan`:
+  a `BSplineCurve3` or `BSplineCurve2`, a closed range inside its domain
+  (the whole domain when the kernel builds it, a sub-range when a file
+  trims it) and a `reversed` flag, the fraction mapped affinely onto the
+  range, backwards when flagged. `Surface::BSpline` is a
+  `BSplineSurface3` in its own `(u, v)`; its loops do not wind.
+* **Validation.** C1 by exact knot removal (R4); deviations by exact
+  rational composition or second-order Taylor enclosures; vertex gaps from
+  exact ends; UV gaps on a spline surface in 3D; signed and periodic areas,
+  containment parity and orientation fluxes with spline geometry
+  (`BREP_VALIDATION.md`, `MATHEMATICS.md`). Periodic spline surfaces are
+  not certified.
+* **Interop.** The reader takes curve record 7, 2D curve record 7 and
+  surface record 9; a trimmed curve (record 8) whose basis is a line,
+  circle or B-spline reads as its basis, the edge's range bounding the part
+  used. A range within `1e-12` of a domain end is snapped to it, and a
+  periodic curve's range exceeding one period by at most `1e-12` of it is
+  shortened to one period. A periodic spline surface
+  (`PeriodicBSplineSurface`) and a seam on a spline surface
+  (`SeamOnBSplineSurface`) are unsupported: their windings would need the
+  domain's period. The writer writes records 7 and 9 with the span's
+  range; a pcurve against its spline's parameter is written mirrored
+  (knots `a + b - k`, only when exact), and an edge against its curve is
+  not writable.
+* **Evidence.** The native observations of the spline models came before
+  any kernel code certified spline geometry
+  (`fixtures/occt-spline-preimplementation`); `compare_brep.py --family
+  spline` requires them to reproduce and compares verdicts, status classes,
+  counts and enclosures (7 matches, 3 reviewed differences: BRepCheck has
+  no continuity status, and a shifted pcurve's gap is masked by its edge's
+  status). The independent references are `spline_cell_reference.py`
+  (spans, jets, exact and interval evaluation), the spline rules of
+  `cell_reference.py`, and `brep_io_reference.py` for the records.
+
 ## Acceptance
 
 Record each milestone's clean revision, kernel CI job count, fuzz CI target

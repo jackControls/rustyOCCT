@@ -309,23 +309,29 @@ fn arc_of(c: &Curve3) -> Option<(&Frame3, f64, f64, f64)> {
 /// A spline's exact point at an edge or pcurve fraction, the parameter
 /// `a + t (b - a)` exact (its ends exactly the domain's).
 fn spline_point(curve: &crate::BSplineCurve3, range: [f64; 2], t: f64) -> [R; 3] {
-    use crate::curve::{DerivativeOrder, KnotSide};
-    let exact = curve.to_exact();
-    let (a, b) = (r(range[0]), r(range[1]));
-    let u = if t == 0.0 {
-        a
-    } else if t == 1.0 {
-        b
-    } else {
-        &a + (&b - &a) * r(t)
-    };
-    exact
-        .exact_evaluate(&u, DerivativeOrder::Position, KnotSide::Automatic)
-        .expect("a spline evaluates exactly in its domain")
-        .position()
-        .coordinates()
-        .clone()
+    // The ends exactly; elsewhere the curve's exact point at the rounded
+    // parameter (a point of the curve, at a fraction within rounding).
+    let u = crate::topology::spline_parameter(range.into(), t);
+    curve
+        .exact_point(u)
+        .expect("a spline evaluates exactly in its range")
 }
+
+/// `-∫ F du` along a chord from `a` to `b` when its closed form cannot
+/// decide (a `du` straddling zero): `-du` times `F` over the chord's box,
+/// which holds the chord's mean of `F`.
+pub(super) fn chord_enclosure<T: Real>(
+    a: &V2<T>,
+    b: &V2<T>,
+    f: &dyn Fn(&T, &T) -> Option<T>,
+) -> Option<T> {
+    let du = b[0].sub(&a[0]);
+    Some(du.mul(&f(&a[0].union(&b[0]), &a[1].union(&b[1]))?).neg())
+}
+
+/// Halvings of a spline pcurve's Bézier pieces when a flux or mass
+/// integral along it is enclosed (S4d).
+pub(super) const SPLINE_DEPTH: usize = 6;
 
 /// Whether every pole of a spline pcurve has the same u, so that `du` is
 /// identically zero along it.
@@ -350,7 +356,10 @@ fn spline_use(curve: &Curve3, s: &Surface, p: &Curve2) -> bool {
 
 fn curve_at<T: Real>(curve: &Curve3, t: f64) -> V3<T> {
     match curve {
-        Curve3::BSpline(span) => spline_point(span.curve(), span.range(), t).map(|x| q::<T>(&x)),
+        Curve3::BSpline(span) => {
+            let t = if span.is_reversed() { 1.0 - t } else { t };
+            spline_point(span.curve(), span.range(), t).map(|x| q::<T>(&x))
+        }
         Curve3::LineSegment { start, .. } if t == 0.0 => v3::<T>(start.to_array()),
         Curve3::LineSegment { end, .. } if t == 1.0 => v3::<T>(end.to_array()),
         Curve3::LineSegment { start, end } => {
@@ -373,6 +382,7 @@ fn curve_at<T: Real>(curve: &Curve3, t: f64) -> V3<T> {
 fn pcurve_at<T: Real>(p: &Curve2, t: f64) -> V2<T> {
     match p {
         Curve2::BSpline(spline) => {
+            let t = if spline.is_reversed() { 1.0 - t } else { t };
             let [x, y, _] = spline_point(spline.curve().as_curve3(), spline.range(), t);
             [q(&x), q(&y)]
         }
@@ -1131,7 +1141,90 @@ fn vertex_gap<T: Real>(curve: &Curve3, vertex: [f64; 3], t: f64, tol2: &T) -> Ve
 
 /// The squared gap from the end of `p` to the start of `next` shifted by
 /// `shift` in u, angles scaled by the radius.
+/// A pcurve's end (`t` 0 or 1) exactly, for a line or spline.
+fn pcurve_end_exact(p: &Curve2, t: f64) -> Option<[R; 2]> {
+    match p {
+        Curve2::LineSegment { start, end } => {
+            let q = if t == 0.0 { start } else { end };
+            Some([r(q.x), r(q.y)])
+        }
+        Curve2::BSpline(span) => {
+            let t = if span.is_reversed() { 1.0 - t } else { t };
+            let [x, y, _] = spline_point(span.curve().as_curve3(), span.range(), t);
+            Some([x, y])
+        }
+        Curve2::CircularArc { .. } => None,
+    }
+}
+
+/// The squared 3D distance between the surface points at two pcurves'
+/// meeting ends on a spline surface, exactly (S4); `None` when an end is
+/// not exact or off the surface's domain.
+fn spline_gap2(s: &crate::BSplineSurface3, p: &Curve2, next: &Curve2) -> Option<R> {
+    let patches = s.bezier_patches().ok()?;
+    let ((ua, ub), (va, vb)) = s.domain();
+    let (ua, ub, va, vb) = (r(ua), r(ub), r(va), r(vb));
+    // A point within 1e-9 of the domain's width outside it (a pcurve end
+    // printed at fifteen digits) is on the boundary patch's polynomial
+    // extension, as OCCT evaluates it; farther out it is off the surface.
+    let slack = |lo: &R, hi: &R| (hi - lo) * R::new(BigInt::from(1), BigInt::from(1_000_000_000));
+    let (su, sv) = (slack(&ua, &ub), slack(&va, &vb));
+    let at = |q: [R; 2]| -> Option<[R; 3]> {
+        if q[0] < &ua - &su || q[0] > &ub + &su || q[1] < &va - &sv || q[1] > &vb + &sv {
+            return None;
+        }
+        let clamp = |x: &R, lo: &R, hi: &R| x.clone().max(lo.clone()).min(hi.clone());
+        let (cu, cv) = (clamp(&q[0], &ua, &ub), clamp(&q[1], &va, &vb));
+        let patch = patches.iter().find(|b| {
+            let [[u0, u1], [v0, v1]] = b.domain();
+            *u0 <= cu && cu <= *u1 && *v0 <= cv && cv <= *v1
+        })?;
+        Some(patch_point(patch, &q[0], &q[1]))
+    };
+    let (a, b) = (
+        at(pcurve_end_exact(p, 1.0)?)?,
+        at(pcurve_end_exact(next, 0.0)?)?,
+    );
+    Some((0..3).map(|k| (&a[k] - &b[k]) * (&a[k] - &b[k])).sum())
+}
+
+/// A Bézier patch's point at `(u, v)`, exactly, by de Casteljau: inside its
+/// domain or on its polynomial extension.
+fn patch_point(patch: &crate::ExactBezierSurface3, u: &R, v: &R) -> [R; 3] {
+    let [du, dv] = patch.degrees();
+    let [[u0, u1], [v0, v1]] = patch.domain().clone();
+    let (s, t) = ((u - &u0) / (&u1 - &u0), (v - &v0) / (&v1 - &v0));
+    let poles = patch.homogeneous_poles();
+    let casteljau = |mut row: Vec<[R; 4]>, t: &R| -> [R; 4] {
+        let one = R::from_integer(BigInt::from(1));
+        while row.len() > 1 {
+            row = row
+                .windows(2)
+                .map(|w| std::array::from_fn(|k| (&one - t) * &w[0][k] + t * &w[1][k]))
+                .collect();
+        }
+        row.pop().unwrap()
+    };
+    let column: Vec<[R; 4]> = (0..=du)
+        .map(|i| {
+            casteljau(
+                (0..=dv).map(|j| poles[i * (dv + 1) + j].clone()).collect(),
+                &t,
+            )
+        })
+        .collect();
+    let h = casteljau(column, &s);
+    [&h[0] / &h[3], &h[1] / &h[3], &h[2] / &h[3]]
+}
+
 fn uv_gap2<T: Real>(s: &Surface, p: &Curve2, next: &Curve2, shift: [f64; 2]) -> T {
+    if let Surface::BSpline(spline) = s {
+        // Measured in 3D; unknown when not exact.
+        return spline_gap2(spline, p, next).map_or_else(
+            || c::<T>(0.0).widen(&R::from_integer(BigInt::from(1) << 1000)),
+            |g| q(&g),
+        );
+    }
     let (a, b) = (pcurve_at::<T>(p, 1.0), pcurve_at::<T>(next, 0.0));
     let mut du = a[0].sub(&b[0].add(&c(shift[0])));
     if let Some(scale) = u_scale::<T>(s, &a[1]) {
@@ -1142,13 +1235,6 @@ fn uv_gap2<T: Real>(s: &Surface, p: &Curve2, next: &Curve2, shift: [f64; 2]) -> 
 }
 
 fn uv_gap<T: Real>(s: &Surface, p: &Curve2, next: &Curve2, shift: [f64; 2], tol2: &T) -> Verdict {
-    if matches!(s, Surface::BSpline(_)) {
-        // Without a length scale only an exact meeting is decided.
-        return match within(&uv_gap2::<T>(s, p, next, shift), &c(0.0)) {
-            Verdict::Within => Verdict::Within,
-            _ => Verdict::Unknown,
-        };
-    }
     within(&uv_gap2::<T>(s, p, next, shift), tol2)
 }
 
@@ -1263,6 +1349,7 @@ pub(crate) struct Measured {
 }
 
 pub(crate) fn measure(view: &View) -> Measured {
+    bernstein::clear_memo();
     let max = |a: Option<f64>, b: Option<f64>| Some(a?.max(b?));
     // Every stored bound is at least MIN_BOUND; a face without gaps (a
     // whole sphere) gets exactly that.
@@ -1325,7 +1412,11 @@ pub(crate) fn measure(view: &View) -> Measured {
                             add_curve(h, curve, forward) && sub_use(h, &face.surface, &u.pcurve)
                         };
                         let mut h = Harmonic::<Fast>::new();
-                        fins[k.0] = if spline_use(curve, &face.surface, &u.pcurve) {
+                        // A fin that already has an enclosure (an imported
+                        // tolerance) keeps it: nothing to measure.
+                        fins[k.0] = if u.enclosure.is_some() {
+                            None
+                        } else if spline_use(curve, &face.surface, &u.pcurve) {
                             match spline_deviation::rational_use(
                                 curve,
                                 &face.surface,
@@ -1723,7 +1814,10 @@ fn cone_line_flux<T: Real>(
 /// orientation carries the face's sense.
 fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
     if let Surface::BSpline(spline) = &face.surface {
-        return spline_flux::spline_face_flux(spline, loops);
+        // Exact on a nonrational surface with pieces inside patches,
+        // enclosed otherwise.
+        return spline_flux::spline_face_flux(spline, loops)
+            .or_else(|| spline_flux::enclosed_face_flux(spline, loops));
     }
     if matches!(face.surface, Surface::Sphere { .. } | Surface::Torus { .. }) {
         return mass::sphere_flux(face, loops);
@@ -1747,8 +1841,26 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
         let mut total = c::<T>(0.0);
         for lp in loops {
             for u in &lp.fins {
-                let Curve2::LineSegment { start, end } = &u.pcurve else {
-                    return None;
+                let (start, end) = match &u.pcurve {
+                    Curve2::LineSegment { start, end } => (start, end),
+                    // -∫ F(v) h(u) du along a spline, enclosed (S4d).
+                    Curve2::BSpline(spline) => {
+                        let (ha, hb, hc) = &h;
+                        let g = |uu: &T, v: &T| -> Option<T> {
+                            let (co, si) = T::cos_sin(uu);
+                            let hu = ha.mul(&co).add(&hb.mul(&si)).add(hc);
+                            let fv = if poled {
+                                rad.add(&sa.mul(v)).square().div(&sa.mul(&c(2.0)))?
+                            } else {
+                                rad.mul(v).add(&sa.mul(&v.square()).mul(&c(0.5)))
+                            };
+                            Some(fv.mul(&hu))
+                        };
+                        total =
+                            total.add(&bernstein::green_integral(spline, SPLINE_DEPTH, &g)?.neg());
+                        continue;
+                    }
+                    Curve2::CircularArc { .. } => return None,
                 };
                 let term = cone_line_flux(
                     &[c(start.x), c(start.y)],
@@ -1761,7 +1873,24 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
                 total = total.add(&term);
             }
             for (a, b) in chords::<T>(lp) {
-                total = total.add(&cone_line_flux(&a, &b, &sa, &rad, &h, poled)?);
+                let term = match cone_line_flux(&a, &b, &sa, &rad, &h, poled) {
+                    Some(term) => term,
+                    None => {
+                        let (ha, hb, hc) = &h;
+                        let g = |uu: &T, v: &T| -> Option<T> {
+                            let (co, si) = T::cos_sin(uu);
+                            let hu = ha.mul(&co).add(&hb.mul(&si)).add(hc);
+                            let fv = if poled {
+                                rad.add(&sa.mul(v)).square().div(&sa.mul(&c(2.0)))?
+                            } else {
+                                rad.mul(v).add(&sa.mul(&v.square()).mul(&c(0.5)))
+                            };
+                            Some(fv.mul(&hu))
+                        };
+                        chord_enclosure(&a, &b, &g)?
+                    }
+                };
+                total = total.add(&term);
             }
         }
         return Some(total);
@@ -1825,12 +1954,35 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
                 }
                 // A spline pcurve of constant u adds nothing to -∮ v f(u) du.
                 Curve2::BSpline(spline) if constant_u(spline) => c(0.0),
-                Curve2::CircularArc { .. } | Curve2::BSpline(_) => return None,
+                // Otherwise -∫ v f(u) du, enclosed (S4d).
+                Curve2::BSpline(spline) => {
+                    let f = |u: &T, v: &T| -> Option<T> {
+                        let (co, si) = T::cos_sin(u);
+                        Some(v.mul(&coeffs.0.mul(&si).add(&coeffs.1.mul(&co)).add(&coeffs.2)))
+                    };
+                    bernstein::green_integral(spline, SPLINE_DEPTH, &f)?.neg()
+                }
+                Curve2::CircularArc { .. } => return None,
             };
             total = total.add(&term);
         }
         for (a, b) in chords::<T>(lp) {
-            total = total.add(&line_flux(&a, &b, &coeffs, plane)?);
+            let term = match line_flux(&a, &b, &coeffs, plane) {
+                Some(term) => term,
+                None => {
+                    let g = |u: &T, v: &T| -> Option<T> {
+                        let (co, si) = T::cos_sin(u);
+                        let f = if plane {
+                            coeffs.2.clone()
+                        } else {
+                            coeffs.0.mul(&si).add(&coeffs.1.mul(&co)).add(&coeffs.2)
+                        };
+                        Some(v.mul(&f))
+                    };
+                    chord_enclosure(&a, &b, &g)?
+                }
+            };
+            total = total.add(&term);
         }
     }
     Some(total)
@@ -2104,6 +2256,7 @@ fn closed_curve(curve: &Curve3) -> bool {
 }
 
 pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
+    bernstein::clear_memo();
     let View {
         vertices,
         edges,

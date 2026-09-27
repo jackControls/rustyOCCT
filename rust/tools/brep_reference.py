@@ -965,6 +965,7 @@ def edge_range(c):
     """OCCT curve, parameter range, and our fraction -> OCCT parameter."""
     if isinstance(c, BSpline3):
         # The whole domain, the fraction mapped affinely onto it.
+        c = spline.unflagged(c)
         words = spline.encode_curve(c, number, with_range=False).split()[1:]
         a, e = spline.span_of(c)
         return ('bspline', tuple(words)), float(a), float(e)
@@ -985,7 +986,7 @@ def pcurve_encoding(p, forward, first, last):
     if isinstance(p, BSpline2):
         # The pcurve follows the face's traversal: a reversed use runs it
         # backwards along the edge.
-        q = p if forward else spline.reversed_curve(p)
+        q = spline.unflagged(p if forward else spline.flip(p))
         if q is None:
             return ('bspline', ()), False
         q, exact = spline.reparameterized(q, first, last)

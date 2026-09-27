@@ -633,8 +633,23 @@ fn trig_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>]) -> Option<Vec<T>
     };
     for lp in loops {
         for u in &lp.fins {
-            let Curve2::LineSegment { start, end } = &u.pcurve else {
-                return None;
+            let (start, end) = match &u.pcurve {
+                Curve2::LineSegment { start, end } => (start, end),
+                // -∫ F(u, v) du along a spline, F each integrand's
+                // antiderivative in v from `lower`, enclosed (S4d).
+                Curve2::BSpline(spline) => {
+                    let mut values = Vec::with_capacity(fs.len());
+                    for f in fs {
+                        let g = |uu: &T, v: &T| sph_antiderivative(f, uu, v, &lower);
+                        values.push(
+                            super::bernstein::green_integral(spline, super::SPLINE_DEPTH, &g)?
+                                .neg(),
+                        );
+                    }
+                    accumulate(values);
+                    continue;
+                }
+                Curve2::CircularArc { .. } => return None,
             };
             accumulate(sph_lines(
                 fs,
@@ -644,10 +659,34 @@ fn trig_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>]) -> Option<Vec<T>
             )?);
         }
         for (a, b) in chords::<T>(lp) {
-            accumulate(sph_lines(fs, &a, &b, &lower)?);
+            let values = match sph_lines(fs, &a, &b, &lower) {
+                Some(values) => values,
+                None => fs
+                    .iter()
+                    .map(|f| {
+                        let g = |uu: &T, v: &T| sph_antiderivative(f, uu, v, &lower);
+                        super::chord_enclosure(&a, &b, &g)
+                    })
+                    .collect::<Option<_>>()?,
+            };
+            accumulate(values);
         }
     }
     Some(totals)
+}
+
+/// `F(u, v) = ∫_lower^v f(u, s) ds` of a trigonometric polynomial, over
+/// boxes: each monomial's `cos^a u sin^b u` times the exact integral of
+/// `cos^c sin^d` from `lower` to `v`.
+fn sph_antiderivative<T: Real>(f: &Sph<T>, u: &T, v: &T, lower: &T) -> Option<T> {
+    let (co, si) = T::cos_sin(u);
+    let power = |x: &T, n: u8| (0..n).fold(c::<T>(1.0), |acc, _| acc.mul(x));
+    let mut total = c::<T>(0.0);
+    for ((a, b, cc, d), x) in f {
+        let along_u = power(&co, *a).mul(&power(&si, *b));
+        total = total.add(&x.mul(&along_u).mul(&trig_integral(*cc, *d, lower, v)?));
+    }
+    Some(total)
 }
 
 /// The orientation flux of a sphere or torus face: the integral of
@@ -676,14 +715,16 @@ pub(super) fn sphere_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
 /// The fourteen face integrals over the face region (loops carry its
 /// orientation, as in `face_flux`), relative to `reference`.
 fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Option<[T; TERMS]> {
-    // Spline pcurves are integrated on planes (S4d); spline surfaces and
-    // spline pcurves on curved surfaces are not yet.
+    // Spline pcurves are integrated on planes, spheres and tori (S4d);
+    // spline surfaces and spline pcurves on cylinders and cones are not yet.
     if matches!(face.surface, Surface::BSpline(_))
-        || (!matches!(face.surface, Surface::Plane(_))
-            && loops
-                .iter()
-                .flat_map(|lp| &lp.fins)
-                .any(|u| matches!(u.pcurve, Curve2::BSpline(_))))
+        || (matches!(
+            face.surface,
+            Surface::Cylinder { .. } | Surface::Cone { .. }
+        ) && loops
+            .iter()
+            .flat_map(|lp| &lp.fins)
+            .any(|u| matches!(u.pcurve, Curve2::BSpline(_))))
     {
         return None;
     }
@@ -949,6 +990,7 @@ fn solve<T: Real>(view: &View, reference: [f64; 3]) -> Option<Enclosed> {
 /// Mass properties of every solid region: binary64 intervals first, rational
 /// intervals when those cannot bound a result.
 pub(crate) fn mass(view: &View, reference: [f64; 3]) -> Option<Enclosed> {
+    super::bernstein::clear_memo();
     solve::<Fast>(view, reference).or_else(|| solve::<I>(view, reference))
 }
 

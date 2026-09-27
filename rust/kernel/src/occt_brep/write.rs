@@ -12,7 +12,7 @@ use super::BrepError;
 use crate::topology::{
     Curve2, Curve3, EdgeId, FaceId, Loop, Orientation, RegionKind, Side, Surface, Topology,
 };
-use crate::{Point2, Point3};
+use crate::{BSplineCurve3, BSplineSurface3, Point2, Point3};
 use std::collections::BTreeMap;
 use std::f64::consts::TAU;
 use std::fmt::Write as _;
@@ -41,7 +41,10 @@ struct EdgeGeometry {
 /// the edge.
 fn curve_record(c: &Curve3, ring_start: Option<f64>) -> EdgeGeometry {
     match c {
-        Curve3::BSpline(_) => unreachable!("write refuses spline geometry first"),
+        Curve3::BSpline(span) => EdgeGeometry {
+            record: bspline_record(span.curve(), |p| nums(&p.to_array())),
+            range: span.range(),
+        },
         Curve3::LineSegment { start, end } => {
             let d = *end - *start;
             let l = d.length();
@@ -94,10 +97,70 @@ fn curve_record(c: &Curve3, ring_start: Option<f64>) -> EdgeGeometry {
     }
 }
 
+/// A B-spline curve record (7), 3D or 2D: flags, degree, counts, poles
+/// (each with its weight when rational), knots with multiplicities, as
+/// `GeomTools_CurveSet` prints it.
+fn bspline_record(c: &BSplineCurve3, pole: impl Fn(&Point3) -> String) -> String {
+    let rational = c.is_rational();
+    let mut text = format!(
+        "7 {} {} {} {} {}",
+        u8::from(rational),
+        u8::from(c.is_periodic()),
+        c.degree(),
+        c.poles().len(),
+        c.knots().len()
+    );
+    for (p, w) in c.poles().iter().zip(c.weights()) {
+        text.push_str("\n ");
+        text.push_str(&pole(p));
+        if rational {
+            text.push(' ');
+            text.push_str(&num(*w));
+        }
+    }
+    for (k, m) in c.knots().iter().zip(c.multiplicities()) {
+        let _ = write!(text, "\n {} {m}", num(*k));
+    }
+    text
+}
+
+/// A B-spline surface record (9): flags, degrees, counts, poles U-major
+/// (each with its weight when rational), then the u and v knots.
+fn bspline_surface_record(s: &BSplineSurface3) -> String {
+    let (u, v) = (s.u_knots(), s.v_knots());
+    let rational = s.is_rational();
+    let mut text = format!(
+        "9 {r} {r} {} {} {} {} {} {} {} {}",
+        u8::from(u.is_periodic()),
+        u8::from(v.is_periodic()),
+        u.degree(),
+        v.degree(),
+        u.pole_count(),
+        v.pole_count(),
+        u.knots().len(),
+        v.knots().len(),
+        r = u8::from(rational)
+    );
+    for (p, w) in s.poles().iter().zip(s.weights()) {
+        text.push_str("\n ");
+        text.push_str(&nums(&p.to_array()));
+        if rational {
+            text.push(' ');
+            text.push_str(&num(*w));
+        }
+    }
+    for axis in [u, v] {
+        for (k, m) in axis.knots().iter().zip(axis.multiplicities()) {
+            let _ = write!(text, "\n {} {m}", num(*k));
+        }
+    }
+    text
+}
+
 /// The point of a curve at its own parameter `t` (as `curve_record` writes it).
 fn curve_at(c: &Curve3, t: f64) -> Point3 {
     match c {
-        Curve3::BSpline(_) => unreachable!("write refuses spline geometry first"),
+        Curve3::BSpline(span) => span.curve().point(t).expect("a parameter in the range"),
         Curve3::LineSegment { start, end } => {
             let d = *end - *start;
             *start + d * (t / d.length())
@@ -126,8 +189,27 @@ fn pcurve_record(
 ) -> Result<String, BrepError> {
     let [t0, t1] = range;
     Ok(match (surface, pcurve) {
-        (Surface::BSpline(_), _) | (_, Curve2::BSpline(_)) => {
-            unreachable!("write refuses spline geometry first")
+        // A spline pcurve is written in the edge's direction and parameter:
+        // unflagged there, over the edge's range to printing precision.
+        (_, Curve2::BSpline(span)) => {
+            let span = if forward {
+                span.clone()
+            } else {
+                span.reversed()
+            };
+            let Some(span) = span.unflagged() else {
+                return Err(unwritable("a spline pcurve whose mirror rounds"));
+            };
+            let [a, b] = span.range();
+            let near = |x: f64, y: f64| (x - y).abs() <= 1e-12 * (1.0 + (t1 - t0).abs() + y.abs());
+            if span.is_reversed() || !near(a, t0) || !near(b, t1) {
+                return Err(unwritable("a spline pcurve off its edge's parameter"));
+            }
+            let c = span.curve().as_curve3();
+            bspline_record(c, |p| nums(&[p.x, p.y]))
+        }
+        (Surface::BSpline(_), Curve2::CircularArc { .. }) => {
+            return Err(unwritable("an arc pcurve on a spline surface"));
         }
         (_, Curve2::LineSegment { start, end }) => {
             // In the edge's direction.
@@ -360,20 +442,12 @@ impl Records {
 /// the root, several a compound.
 pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
     let t = topology;
-    // Spline records are written with the rest of S4.
+    // A spline edge traversed against its curve would need mirrored knots.
     if t.edges()
         .iter()
-        .any(|e| matches!(e.curve, Curve3::BSpline(_)))
-        || t.fins()
-            .iter()
-            .any(|f| matches!(f.pcurve, Curve2::BSpline(_)))
-        || t.faces()
-            .iter()
-            .any(|f| matches!(f.surface, Surface::BSpline(_)))
+        .any(|e| matches!(&e.curve, Curve3::BSpline(s) if s.is_reversed()))
     {
-        return Err(BrepError::Unwritable {
-            what: "spline geometry",
-        });
+        return Err(unwritable("a spline edge against its curve"));
     }
     let tol = num(tolerance);
     let mut curves2d: Vec<String> = Vec::new();
@@ -709,7 +783,7 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
     // Surfaces.
     for face in t.faces() {
         surfaces.push(match &face.surface {
-            Surface::BSpline(_) => unreachable!("write refuses spline geometry first"),
+            Surface::BSpline(spline) => bspline_surface_record(spline),
             Surface::Plane(f) => format!(
                 "1 {} {} {} {}",
                 nums(&f.origin().to_array()),

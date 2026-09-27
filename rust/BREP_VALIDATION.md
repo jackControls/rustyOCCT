@@ -205,15 +205,21 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   `uncertified_pcurve_off_edge`. A spline pcurve's share of a loop's signed
   area and periodic areas are enclosed, and its crossings of a containment
   ray are counted by parity on exact halvings (S4c). The orientation flux of
-  a plane face with spline pcurves, of a cylinder face whose spline pcurves
-  keep a constant `u`, and of a face on a nonrational, nonperiodic spline
-  surface whose pcurve pieces each lie in one patch, is enclosed (S4d);
-  otherwise the shell's orientation is `uncertified_shell_orientation`. A UV
-  gap on a spline surface is decided only when exactly zero
-  (`uncertified_uv_gap` otherwise, a surface without a length scale), a
-  vertex loop on one is `uncertified_vertex_loop`. Mass properties
-  integrate spline pcurves on planes; with a spline surface or a spline
-  pcurve on a curved surface they are `None` so far.
+  a face with spline geometry is enclosed (S4d): on a plane exactly; along
+  a spline pcurve on a cylinder, cone, sphere or torus as `-∫ F du` over
+  halved pieces, the surface's exact antiderivative `F` evaluated over each
+  piece's box; on a nonrational spline surface whose pcurve pieces each lie
+  in one patch exactly, by Green's theorem with column antiderivatives; and
+  on any other nonperiodic spline surface by strips, the antiderivative in
+  `v` enclosed over 32 strips of the domain from the surface's jets.
+  Otherwise the shell's orientation is `uncertified_shell_orientation`. A
+  UV gap on a spline surface is measured in 3D between the exact surface
+  points at the two ends (a pcurve end within `1e-9` of the domain's width
+  outside it is on the boundary patch's polynomial extension, as OCCT
+  evaluates it); an inexact end leaves it `uncertified_uv_gap`. A vertex
+  loop on a spline surface is `uncertified_vertex_loop`. Mass properties
+  integrate spline pcurves on planes, spheres and tori; with a spline
+  surface or a spline pcurve on a cylinder or cone they are `None` so far.
 
 ## Two arithmetic tiers
 
@@ -320,7 +326,7 @@ Evidence:
   seam is kept and rejected as `seam_edge`), and `validate` implements the
   side, region, radial, winding, vertex-loop and region-flux invariants
   independently, with its own `+v` cover-crossing parity on cylinders.
-  `generate_brep_fixtures.py --check` rebuilds 150 cases. 54 come from an
+  `generate_brep_fixtures.py --check` rebuilds 151 cases. 54 come from an
   independent seamed prism builder (19 valid solids and 35 mutations; the
   valid solids include holes, convex and concave arcs, full circles, one and
   two cavities, rotated and far-translated copies and a millimetre-scale
@@ -349,18 +355,19 @@ Evidence:
   wedges and a far copy, and six mutations (a meridian loop winding twice or
   unbalanced in `v`, a meridian pcurve shifted, a whole torus inside out, a
   spindle torus and the inner half with its wall forward, as OCCT builds
-  it). Nineteen are spline cells (R4) on the box and cylinder: C1 and
+  it). Twenty are spline cells (R4) on the box and cylinder: C1 and
   broken knots on a quadratic, a linear, a rational and an unclamped edge
   (whose knots beyond its domain are not tested), periodic ring edges with
   a C1 seam or a broken one, a small periodic basis whose removal needs a
   refinement first, a nonperiodic ring edge, spline pcurves, spline faces
   (C1, broken, with a vertex loop) and degenerate spline edges and
   pcurves, three spline ranges (an edge and a pcurve trimmed from a
-  longer line spline, one with a corner knot outside its range), and two
+  longer line spline, one with a corner knot outside its range), a pcurve
+  running against its spline's parameter, and two
   holes against a spline side (inside and outside). Ten are the spline models of S4 (`spline_models()`, with OCCT
   rows for `compare_brep.py --family spline`): prisms with a spline side
   and a ruled spline wall, and a stadium with spline geometry on its
-  cylinder, with their mutations. 60 cases are valid. `brep_validation.rs`
+  cylinder, with their mutations. 62 cases are valid. `brep_validation.rs`
   requires Rust's complete sorted issue list to equal the reference's for
   every case.
 * The existing prism suites (`invariants`, `occt_regression`, `modeling`)

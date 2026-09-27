@@ -21,8 +21,9 @@ use crate::topology::{Curve2, Curve3, Surface};
 use num_rational::BigRational as R;
 use std::cmp::Ordering;
 
-/// The composed degree above which the exact path declines.
-const MAX_DEGREE: usize = 96;
+/// The composed degree above which the exact path declines (the Taylor path
+/// then decides: high-degree products are slow and wide in intervals).
+const MAX_DEGREE: usize = 24;
 /// Halvings of one piece before the bound is left undecided.
 const MAX_DEPTH: usize = 10;
 

@@ -37,14 +37,21 @@ fn control(w: &[&str], at: &mut usize, dim: usize) -> (Vec<Vec<f64>>, Vec<f64>) 
     (poles, weights)
 }
 
-/// The curve over an optional `range FIRST LAST` at `w[at]`, else whole.
-fn span<C: SplineDomain>(w: &[&str], at: usize, curve: C) -> SplineSpan<C> {
-    if w.get(at) == Some(&"range") {
+/// The curve over an optional `range FIRST LAST` at `w[at]`, else whole,
+/// then an optional `reversed`.
+fn span<C: SplineDomain + Clone>(w: &[&str], mut at: usize, curve: C) -> SplineSpan<C> {
+    let span = if w.get(at) == Some(&"range") {
         let first = w[at + 1].parse().unwrap();
         let last = w[at + 2].parse().unwrap();
+        at += 3;
         SplineSpan::new(curve, first, last).expect("fixture ranges are valid")
     } else {
         SplineSpan::whole(curve)
+    };
+    if w.get(at) == Some(&"reversed") {
+        span.reversed()
+    } else {
+        span
     }
 }
 

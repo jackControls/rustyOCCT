@@ -179,7 +179,7 @@ def invert(m):
 
 def reverse_pcurve(p):
     if isinstance(p, BSpline2):
-        return spline.reversed_curve(p)
+        return spline.flip(p)
     if isinstance(p, Line2):
         return Line2(p.end, p.start)
     return Arc2(p.center, p.radius, p.start+p.sweep, -p.sweep)
@@ -864,6 +864,15 @@ def spline_cases(bases):
         p = c.fins[k].pcurve
         c.fins[k].pcurve = BSpline2(long_basis, along(p.start, p.end, long_line), [1.0]*5, (1.0, 2.0))
     cell('box', 'spline_pcurve_range', ranged_pcurve)
+
+    # A reversed span: the line spline from the fin's end to its start,
+    # traversed backwards over a range (the importer's reversed pcurves).
+    def flagged_pcurve(c):
+        k = c.loops[c.faces[1].loops[0]].fins[0]
+        p = c.fins[k].pcurve
+        back = BSpline2(long_basis, along(p.end, p.start, long_line), [1.0]*5, (1.0, 2.0))
+        c.fins[k].pcurve = spline.flip(back)
+    cell('box', 'spline_pcurve_reversed', flagged_pcurve)
 
     # A ring edge: a periodic quadratic of period 3 with every knot of
     # multiplicity 2; its poles 0, 2 and 4 lie on the curve (at 0, 1, 2),

@@ -25,6 +25,7 @@ through compounds:
   the counts native `nbshapes` reports, and the kernel's synthesized counts
   must reproduce them for every solid it imports.
 """
+from fractions import Fraction as F
 from pathlib import Path
 import re
 
@@ -68,18 +69,39 @@ def curve3(r):
         r.reals((degree+1)*(4 if rational else 3))
         return 'BezierCurve'
     if kind == 7:
-        rational, _periodic, _degree, poles, knots = (r.int() for _ in range(5))
-        r.reals(poles*(4 if rational else 3)+2*knots)
-        return 'BSplineCurve'
+        return bspline(r, 3)
     if kind == 8:
         r.reals(2)
         basis = curve3(r)
-        return basis if basis in ('line', 'circle') else 'TrimmedCurve'
+        # A trimmed line, circle or B-spline is its basis (S4e): the edge's
+        # range bounds the part it uses.
+        return basis if kind_of(basis) in ('line', 'circle', 'bspline') else 'TrimmedCurve'
     if kind == 9:
         r.reals(4)
         curve3(r)
         return 'OffsetCurve'
     raise ValueError(f'3D curve type {kind}')
+
+
+def kind_of(x):
+    """A table entry's kind: its name, or 'bspline' for B-spline data."""
+    return x[0] if isinstance(x, tuple) else x
+
+
+def bspline(r, dim):
+    """('bspline', first, last, periodic): a B-spline curve record's domain,
+    read as GeomTools prints it (poles with weights when rational, knots
+    with multiplicities)."""
+    rational, periodic, degree, poles, knots = (r.int() for _ in range(5))
+    r.reals(poles*(dim+1 if rational else dim))
+    ks = []
+    for _ in range(knots):
+        k = r.real()
+        ks.append((k, r.int()))
+    if periodic:
+        return ('bspline', ks[0][0], ks[-1][0], True)
+    flat = [k for k, m in ks for _ in range(m)]
+    return ('bspline', flat[degree], flat[len(flat)-degree-1], False)
 
 
 def curve2(r):
@@ -94,13 +116,11 @@ def curve2(r):
         r.reals((degree+1)*(3 if rational else 2))
         return 'BezierCurve2d'
     if kind == 7:
-        rational, _periodic, _degree, poles, knots = (r.int() for _ in range(5))
-        r.reals(poles*(3 if rational else 2)+2*knots)
-        return 'BSplineCurve2d'
+        return bspline(r, 2)
     if kind == 8:
         r.reals(2)
         basis = curve2(r)
-        return basis if basis in ('line', 'circle') else 'TrimmedCurve2d'
+        return basis if kind_of(basis) in ('line', 'circle', 'bspline') else 'TrimmedCurve2d'
     if kind == 9:
         r.reals(1)
         curve2(r)
@@ -139,9 +159,11 @@ def surface(r):
         r.reals((du+1)*(dv+1)*(4 if ru or rv else 3))
         return 'BezierSurface'
     if kind == 9:
-        ru, rv, _pu, _pv, _du, _dv, nu, nv, ku, kv = (r.int() for _ in range(10))
+        ru, rv, pu, pv, _du, _dv, nu, nv, ku, kv = (r.int() for _ in range(10))
         r.reals(nu*nv*(4 if ru or rv else 3)+2*(ku+kv))
-        return 'BSplineSurface'
+        # A periodic spline surface would need windings with its domain's
+        # period; the kernel reports it by name.
+        return ('bspline', bool(pu or pv))
     if kind == 10:
         r.reals(4)
         surface(r)
@@ -268,8 +290,7 @@ def read(text):
                     break
                 if t == 1:
                     c, loc = r.int(), r.int()
-                    r.reals(2)
-                    reps.append(('curve', c, loc))
+                    reps.append(('curve', c, loc, tuple(r.reals(2))))
                 elif t in (2, 3):
                     pcs = [r.int()]
                     if t == 3:
@@ -279,8 +300,9 @@ def read(text):
                         if digits == len(w):
                             r.word()
                     s, loc = r.int(), r.int()
-                    r.reals(2+(4 if version == 2 else 0))
-                    reps.append(('pcurve', pcs, s, loc))
+                    rng = tuple(r.reals(2))
+                    r.reals(4 if version == 2 else 0)
+                    reps.append(('pcurve', pcs, s, loc, rng))
                 elif t == 4:
                     r.word()
                     r.reals(4)
@@ -321,8 +343,8 @@ def summary(text):
     loc = lambda i: IDENTITY if i == 0 else locations[i-1]
     unsupported = {}
     for name in ('Curves', 'Curve2ds', 'Surfaces'):
-        for kind in tables[name]:
-            if kind not in ('line', 'circle', 'plane', 'cylinder', 'cone', 'sphere', 'torus'):
+        for kind in map(kind_of, tables[name]):
+            if kind not in ('line', 'circle', 'plane', 'cylinder', 'cone', 'sphere', 'torus', 'bspline'):
                 unsupported[kind] = unsupported.get(kind, 0)+1
     solids = []
     stack = [(root, IDENTITY, '+')]
@@ -366,9 +388,13 @@ def solid(shapes, tables, loc, record, t):
                 ok = False
                 continue
             mark('Fa', f, ft)
-            surf = tables['Surfaces'][data[0]-1] if data[0] else None
-            if surf not in ('plane', 'cylinder', 'cone', 'sphere', 'torus'):
+            record = tables['Surfaces'][data[0]-1] if data[0] else None
+            surf = kind_of(record)
+            if surf not in ('plane', 'cylinder', 'cone', 'sphere', 'torus', 'bspline'):
                 ok = False
+            if surf == 'bspline' and record[1]:
+                ok = False  # PeriodicBSplineSurface
+            face_edges = []
             for wo, w, wl in wires:
                 wt = matmul(ft, loc(wl))
                 if wo not in '+-' or shapes[w][0] != 'Wi':
@@ -387,13 +413,19 @@ def solid(shapes, tables, loc, record, t):
                         if surf not in ('cone', 'sphere') or len(ends) != 2 or ends[0][0] != ends[1][0] \
                                 or not near(ends[0][1], ends[1][1]):
                             ok = False
-                    elif not curves or tables['Curves'][curves[0]-1] not in ('line', 'circle'):
+                    elif not curves or kind_of(tables['Curves'][curves[0]-1]) not in ('line', 'circle', 'bspline'):
                         ok = False
+                    elif not in_range(tables['Curves'][curves[0]-1], [x for x in reps if x[0] == 'curve'][0][3]):
+                        ok = False  # BSplineRangeOutsideDomain
+                    face_edges.append(e)
                     on = [x for x in reps if x[0] == 'pcurve' and x[2] == data[0]
                           and near(matmul(et, loc(x[3])), matmul(ft, loc(data[1])))]
                     if on:
-                        if any(tables['Curve2ds'][p-1] not in ('line', 'circle') for p in on[0][1]):
+                        if any(kind_of(tables['Curve2ds'][p-1]) not in ('line', 'circle', 'bspline')
+                               for p in on[0][1]):
                             ok = False
+                        elif not all(in_range(tables['Curve2ds'][p-1], on[0][4]) for p in on[0][1]):
+                            ok = False  # BSplineRangeOutsideDomain
                     elif surf != 'plane':
                         ok = False
                     orients = sorted(vo for vo, _, _ in shapes[e][2])
@@ -401,8 +433,35 @@ def solid(shapes, tables, loc, record, t):
                         ok = False
                     for vo, v, vl in shapes[e][2]:
                         mark('Ve', v, matmul(et, loc(vl)))
+            # A seam (an edge used twice by the face) on a spline surface.
+            if surf == 'bspline' and len(face_edges) != len(set(face_edges)):
+                ok = False  # SeamOnBSplineSurface
     counts = tuple(len(seen[k]) for k in ('Ve', 'Ed', 'Wi', 'Fa', 'Sh', 'So'))
     return ok, counts
+
+
+def in_range(record, rng):
+    """Whether an edge's or pcurve's range fits a B-spline record's domain,
+    as the kernel's converter decides: ends within 1e-12 (relative) of a
+    domain end are that end (ranges print fifteen digits, knots seventeen);
+    a periodic range a hair over one period is one period; otherwise the
+    range lies in the domain, or spans at most one period."""
+    if kind_of(record) != 'bspline':
+        return True
+    _, a, b, periodic = record
+    first, last = rng
+    near = lambda x, y: abs(x-y) <= 1e-12*(1+abs(b-a)+abs(y))
+    if near(first, a):
+        first = a
+    if near(last, b):
+        last = b
+    if not first < last:
+        return False
+    if periodic:
+        period = F(b)-F(a)
+        span = F(last)-F(first)
+        return span <= period or float(span) <= float(period)*(1+1e-12)
+    return a <= first and last <= b
 
 
 def files(root):

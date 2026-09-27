@@ -105,6 +105,45 @@
       "reason": "The zero-length edge has no native parameter range of positive length, so its pcurves cannot be encoded at matching speed. OCCT reports InvalidRange and related statuses; the Rust contract stops at degenerate_curve. Both verdicts are invalid.",
       "independent_evidence": "Edge 0 joins two vertices at the same point; brep_reference.pcurve_encoding marks uses 2.0.3 and 5.0.1 inexact. The reference validator reports degenerate_curve:edge 0 and gates the dependent geometric checks.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "spline_c0_bulge",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "006a067e0876f57e265fcce71b469c2caf9fb7b1fc01371c61390fb4cafaa277",
+      "native_stdout_sha256": "df0762b4719f3c75d9ef71c7a4a835687db58cdb6e13672a7e1df8c3d1c55eec",
+      "differences": [
+        "verdict"
+      ],
+      "reason": "BRepCheck has no continuity status: BRepCheck_Edge, BRepCheck_Face and BRepCheck_Wire never inspect the continuity of a curve or surface at its knots, so a C0 knot is valid natively. The Rust contract requires C1 geometry (R4) and reports edge_not_c1, pcurve_not_c1 and face_not_c1 there; every other relation of the case is exact, and the verdict difference is the contract difference alone.",
+      "independent_evidence": "The side is the quadratic with knots 0, 0.5, 1 of multiplicities 3, 2, 3 and poles (3,0), (3.5,0.25), (3.75,1), (3.5,1.75), (3,2): at u=0.5 the left derivative 4*((3.75,1)-(3.5,0.25)) = (1,3) and the right derivative 4*((3.5,1.75)-(3.75,1)) = (-1,3) differ, so the curve, its cap pcurves and the ruled wall C(u)+v z are C0 at that knot. The native row reports the case valid with the counts of its seamed encoding (8 12 6 6 1 1) and deviations at most 5e-16.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "spline_bulge_pcurve_shift",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "62ac58aeec80d7772cfffa37741892e48a8e47e318ee825b0348ea0fae392dfc",
+      "native_stdout_sha256": "20ddc111b943e8ad0fff9e03a785fb8f4f64624933abc20268de5f37de96d75d",
+      "differences": [
+        "unmatched_uv_gap"
+      ],
+      "reason": "As for box_pcurve_shift: BRepCheck_Wire::InContext runs Closed2d, which compares only the 2D junction between the wire's first and last edges and accepts any gap below 1% of the face's UV extent, so the 1e-3 gaps pass the wire check. The shifted edge's InvalidCurveOnSurface (8) then makes BRepCheck_Analyzer skip the orientation of the face's wires and mark the face BRepCheck_UnorientableShape (27), which is not a gap status. OCCT still rejects the case through InvalidCurveOnSurface on the shifted edge.",
+      "independent_evidence": "The spline pcurve of the bulge on the top cap (face 1) was shifted by 1e-3 in x: its ends are (3.001,0) and (3.001,2) while its neighbours meet it at (3,0) and (3,2), both junction gaps 1e-3 in UV on an orthonormal plane frame, 10000 times the 1e-7 tolerance. The cap spans 3.5 x 2 in UV, so the 1% bound is 0.035 x 0.02. BRepCheck_Analyzer.cxx sets performwire false on InvalidCurveOnSurface of any edge of the face and then calls SetUnorientable.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "spline_stadium_pcurve_shift",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0",
+      "input_sha256": "1f4fcfc2d1007b716c3fbec82b92e82437644340b843df7605faf07f817afb75",
+      "native_stdout_sha256": "fef6c4e3b3c8a23c8d3e86175271013ce78deb34b65dec9b2aec6a181693acfb",
+      "differences": [
+        "unmatched_uv_gap"
+      ],
+      "reason": "As for stadium_arc_pcurve_shift: Closed2d only checks the first/last junction and accepts gaps below 1% of the face's UV extent, so the 1e-3 gaps pass natively; the shifted edge's InvalidCurveOnSurface (8) makes BRepCheck_Analyzer skip the face's wire orientation and mark it BRepCheck_UnorientableShape (27), which is not a gap status. InvalidCurveOnSurface still rejects the case.",
+      "independent_evidence": "The degree-1 spline pcurve of the vertical edge on the half-cylinder wall (face 3) was shifted by 1e-3 in u, away from the ends of the neighbouring arc pcurves. The wall has unit radius, so each junction gap is 1e-3 in 3D, 10000 times the 1e-7 tolerance; the wall spans pi x 1 in UV, so the 1% bound is 0.0314 x 0.01. OCCT measures the shifted pcurve 1.0000099583e-3 off its edge.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     }
   ]
 }

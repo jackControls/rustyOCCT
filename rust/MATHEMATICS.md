@@ -1319,6 +1319,38 @@ nothing; any other piece is halved exactly, up to twelve times, and a
 pcurve through the point stays undecided. The reference integrates the
 winding angle instead.
 
+**Green integrals along spline pcurves.** On a cylinder, cone, sphere or
+torus the flux and mass integrands have exact antiderivatives `F(u, v)` in
+`v` (trigonometric in `u`, polynomial or trigonometric in `v`), but along a
+rational pcurve `F(P(τ))` is not integrable in closed form. Each Bézier
+piece of the pcurve is halved six times; on a piece, `F` is enclosed over
+the box of its control points (their convex hull contains the piece) and
+`P_u' = (U' W - U W')/W^2` over the hull of its Bernstein coefficients
+divided by the square of the weights' lower bound, so `-∫ F du` lies in
+their product: width `O(h^2)` per piece, `O(h)` in total. A gap-closing
+chord is enclosed the same way.
+
+**Flux of any nonperiodic spline surface.** When the exact route does not
+apply (a rational surface, a pcurve piece across a patch boundary), the
+antiderivative `G(u, v) = ∫_(v_0)^v f(u, s) ds` of `f = S·(S_u × S_v)` is
+enclosed over a box `U × V` from 32 equal strips of the `v` domain: the
+strips wholly below `V` contribute `Δs f(U × strip)`, the strip that `V`
+reaches contributes `[0, v_hi - s_k] f(U × [s_k, v_hi])`, and a box below
+the domain's start (a pcurve on the boundary patch's extension) the
+negated part down to it. `f` is enclosed from the surface jets of the
+Taylor enclosures (the quotient rule over exact Bézier nets). Along a line
+pcurve, 32 pieces each give `-Δu G(box)`; along a spline pcurve the Green
+integral above. Widths are `O(Δs + h)`: enough for the sign of a shell's
+flux, which is all the orientation check needs.
+
+**UV gaps on spline surfaces.** A spline surface has no length scale, so
+the gap between consecutive pcurves' ends is measured in 3D: both ends
+exact (a line's end, a spline's clamped end), each surface point evaluated
+exactly by de Casteljau on the patch whose domain contains the end clamped
+into the surface's domain. An end at most `1e-9` of the domain's width
+outside it lies on that patch's polynomial extension, as OCCT evaluates a
+file's fifteen-digit pcurve ends; farther out the gap is uncertified.
+
 ## C1 of spline cells (R4)
 
 A cell is C1 in its own parameterisation (U3 of `REVIEW_NOTES.md`). For a

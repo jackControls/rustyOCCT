@@ -18,7 +18,11 @@ use crate::topology::{
     Orientation, Region, RegionId, RegionKind, Shell, ShellId, Side, Surface, Topology,
     TopologyParts, Vertex, VertexId,
 };
-use crate::{Frame3, Point2, Point3, Tolerance, Vec3};
+use crate::topology::{SplineDomain, SplineSpan};
+use crate::{
+    BSplineCurve2, BSplineCurve3, BSplineSurface3, Frame3, KnotVector, Point2, Point3, Tolerance,
+    Vec3,
+};
 use std::collections::{BTreeMap, BTreeSet};
 use std::f64::consts::TAU;
 
@@ -54,10 +58,16 @@ pub struct Import {
     pub unsupported: BTreeMap<&'static str, usize>,
 }
 
+/// Two orientations composed; `None` when either is internal or external,
+/// which the cell model cannot represent.
 fn compose(a: Orient, b: Orient) -> Option<Orient> {
     match (a, b) {
-        (Orient::Forward, x) | (x, Orient::Forward) => Some(x),
-        (Orient::Reversed, Orient::Reversed) => Some(Orient::Forward),
+        (Orient::Forward, Orient::Forward) | (Orient::Reversed, Orient::Reversed) => {
+            Some(Orient::Forward)
+        }
+        (Orient::Forward, Orient::Reversed) | (Orient::Reversed, Orient::Forward) => {
+            Some(Orient::Reversed)
+        }
         _ => None,
     }
 }
@@ -252,6 +262,27 @@ impl Walk<'_> {
                     sweep_angle: sweep,
                 }
             }
+            read::Curve3::BSpline(b) => {
+                let poles = b.poles.iter().map(|p| p3(ct.point(*p))).collect();
+                let build = if b.periodic {
+                    BSplineCurve3::new_periodic
+                } else {
+                    BSplineCurve3::new
+                };
+                let Ok(curve) = build(
+                    b.degree,
+                    poles,
+                    b.weights.clone(),
+                    b.knots.clone(),
+                    b.multiplicities.clone(),
+                ) else {
+                    return self.no("InvalidBSplineCurve");
+                };
+                match spline_span(curve, f, l) {
+                    Some(span) => Curve3::BSpline(span),
+                    None => return self.no("BSplineRangeOutsideDomain"),
+                }
+            }
             read::Curve3::Other(name) => return self.no(name),
         };
         let e = self.edges.len();
@@ -341,6 +372,27 @@ impl Walk<'_> {
                     radius: *r,
                     start_angle: base + turn * f,
                     sweep_angle: turn * (l - f),
+                }
+            }
+            read::Curve2::BSpline(b) => {
+                let poles = b.poles.iter().map(|p| Point2::new(p[0], p[1])).collect();
+                let build = if b.periodic {
+                    BSplineCurve2::new_periodic
+                } else {
+                    BSplineCurve2::new
+                };
+                let Ok(curve) = build(
+                    b.degree,
+                    poles,
+                    b.weights.clone(),
+                    b.knots.clone(),
+                    b.multiplicities.clone(),
+                ) else {
+                    return self.no("InvalidBSplineCurve2d");
+                };
+                match spline_span(curve, f, l) {
+                    Some(span) => Curve2::BSpline(span),
+                    None => return self.no("BSplineRangeOutsideDomain"),
                 }
             }
             read::Curve2::Other(name) => return self.no(name),
@@ -449,6 +501,28 @@ impl Walk<'_> {
                     minor: *minor,
                 }
             }
+            read::Surface::BSpline(b) => {
+                // A periodic spline surface's loops would wind with its
+                // domain's period, which the model does not have yet.
+                if b.periodic[0] || b.periodic[1] {
+                    return self.no("PeriodicBSplineSurface");
+                }
+                let axis = |k: usize| {
+                    KnotVector::new(
+                        b.degrees[k],
+                        b.knots[k].clone(),
+                        b.multiplicities[k].clone(),
+                    )
+                };
+                let (Ok(u), Ok(v)) = (axis(0), axis(1)) else {
+                    return self.no("InvalidBSplineSurface");
+                };
+                let poles = b.poles.iter().map(|p| p3(st.point(*p))).collect();
+                match BSplineSurface3::new(u, v, poles, b.weights.clone()) {
+                    Ok(s) => Surface::BSpline(s),
+                    Err(_) => return self.no("InvalidBSplineSurface"),
+                }
+            }
             read::Surface::Other(name) => return self.no(name),
         };
         let cone = matches!(surface, Surface::Cone { .. } | Surface::Sphere { .. });
@@ -457,13 +531,16 @@ impl Walk<'_> {
             if doc.shapes[wire.shape].kind != Kind::Wire {
                 return self.no("FaceWithNonWireChild");
             }
+            if compose(wire.orient, Orient::Forward).is_none() {
+                return self.no("InternalOrExternalWire");
+            }
             let wt = t.times(&location(doc, wire.location));
             let mut uses = Vec::new();
             for e in &doc.shapes[wire.shape].subs {
                 let et = wt.times(&location(doc, e.location));
                 let stored =
                     compose(e.orient, wire.orient).or_else(|| self.no("InternalOrExternalEdge"))?;
-                let traversal = compose(stored, oriented).expect("forward or reversed");
+                let traversal = compose(stored, oriented).expect("a face is forward or reversed");
                 let edge = self.edge(e.shape, &et)?;
                 if self.edges[edge].curve.is_none() && !cone {
                     return self.no("DegeneratedEdge");
@@ -562,7 +639,26 @@ fn on_plane(plane: &Frame3, curve: &Curve3) -> Curve2 {
         Point2::new(x, y)
     };
     match curve {
-        Curve3::BSpline(_) => unreachable!("the reader rejects B-spline records (S4)"),
+        // The poles in the plane's coordinates: the curve lies in the plane.
+        Curve3::BSpline(span) => {
+            let c = span.curve();
+            let poles = c.poles().iter().map(|p| uv(*p)).collect();
+            let build = if c.is_periodic() {
+                BSplineCurve2::new_periodic
+            } else {
+                BSplineCurve2::new
+            };
+            let curve = build(
+                c.degree(),
+                poles,
+                Some(c.weights().to_vec()),
+                c.knots().to_vec(),
+                c.multiplicities().to_vec(),
+            )
+            .expect("the same basis and weights");
+            let [first, last] = span.range();
+            Curve2::BSpline(SplineSpan::new(curve, first, last).expect("the same range"))
+        }
         Curve3::LineSegment { start, end } => Curve2::LineSegment {
             start: uv(*start),
             end: uv(*end),
@@ -603,7 +699,31 @@ fn on_plane(plane: &Frame3, curve: &Curve3) -> Curve2 {
 
 fn negate_v(p: &Curve2) -> Curve2 {
     match p {
-        Curve2::BSpline(_) => unreachable!("the reader rejects B-spline records (S4)"),
+        Curve2::BSpline(span) => {
+            let c = span.curve();
+            let c3 = c.as_curve3();
+            let poles = c.poles().iter().map(|p| Point2::new(p.x, -p.y)).collect();
+            let build = if c3.is_periodic() {
+                BSplineCurve2::new_periodic
+            } else {
+                BSplineCurve2::new
+            };
+            let curve = build(
+                c3.degree(),
+                poles,
+                Some(c3.weights().to_vec()),
+                c3.knots().to_vec(),
+                c3.multiplicities().to_vec(),
+            )
+            .expect("the same basis and weights");
+            let [first, last] = span.range();
+            let out = SplineSpan::new(curve, first, last).expect("the same range");
+            Curve2::BSpline(if span.is_reversed() {
+                out.reversed()
+            } else {
+                out
+            })
+        }
         Curve2::LineSegment { start, end } => Curve2::LineSegment {
             start: Point2::new(start.x, -start.y),
             end: Point2::new(end.x, -end.y),
@@ -628,7 +748,7 @@ fn location_of(doc: &Document, index: usize) -> Transform {
 
 fn reversed(p: &Curve2) -> Curve2 {
     match p {
-        Curve2::BSpline(_) => unreachable!("the reader rejects B-spline records (S4)"),
+        Curve2::BSpline(span) => Curve2::BSpline(span.reversed()),
         Curve2::LineSegment { start, end } => Curve2::LineSegment {
             start: *end,
             end: *start,
@@ -644,6 +764,53 @@ fn reversed(p: &Curve2) -> Curve2 {
             start_angle: start_angle + sweep_angle,
             sweep_angle: -sweep_angle,
         },
+    }
+}
+
+/// A spline over an edge's range: the whole domain when the range is it, a
+/// range end within printing precision of a domain end snapped to it, and a
+/// periodic range printed a little longer than one period shortened to one,
+/// as a circle's sweep is snapped to a turn. `None` when the range leaves
+/// the domain.
+fn spline_span<C: SplineDomain + Clone>(
+    curve: C,
+    mut first: f64,
+    mut last: f64,
+) -> Option<SplineSpan<C>> {
+    let (a, b) = curve.domain();
+    // OCCT prints ranges with fifteen significant digits and knots with
+    // seventeen: a range end that rounds a domain end is that end.
+    let near = |x: f64, y: f64| (x - y).abs() <= 1e-12 * (1.0 + (b - a).abs() + y.abs());
+    if near(first, a) {
+        first = a;
+    }
+    if near(last, b) {
+        last = b;
+    }
+    if (first, last) == (a, b) {
+        return Some(SplineSpan::whole(curve));
+    }
+    if curve.is_periodic() {
+        let period = b - a;
+        if last - first > period && last - first <= period * (1.0 + 1e-12) {
+            last = first + period;
+            // Down to at most one period exactly.
+            while SplineSpan::new(curve.clone(), first, last).is_err() && last > first {
+                last = next_below(last);
+            }
+        }
+    }
+    SplineSpan::new(curve, first, last).ok()
+}
+
+/// The largest binary64 below a finite `x`.
+fn next_below(x: f64) -> f64 {
+    if x > 0.0 {
+        f64::from_bits(x.to_bits() - 1)
+    } else if x < 0.0 {
+        f64::from_bits(x.to_bits() + 1)
+    } else {
+        -f64::from_bits(1)
     }
 }
 
@@ -827,6 +994,15 @@ fn to_cell(walk: Walk, tol: f64) -> Result<TopologyParts, &'static str> {
     let mut poles = BTreeSet::new();
     for f in &walk.faces {
         let mut loops = Vec::new();
+        // A closed spline surface's seam (an edge used twice by the face)
+        // would need windings with its domain's period (S4e of
+        // REVIEW_NOTES.md).
+        if matches!(f.surface, Surface::BSpline(_)) {
+            let mut used = BTreeSet::new();
+            if f.loops.iter().flatten().any(|u| !used.insert(u.edge)) {
+                return Err("SeamOnBSplineSurface");
+            }
+        }
         for lp in &f.loops {
             match (!lp.is_empty()).then(|| seam_merge(f, lp, tol)).flatten() {
                 Some((seams, runs)) => {

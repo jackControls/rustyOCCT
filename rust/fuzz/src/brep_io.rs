@@ -7,12 +7,48 @@
 //! An unmutated prism always writes and round-trips. The same bytes also make
 //! a cone (S3 of REVIEW_NOTES.md), written with OCCT's seam and degenerated
 //! apex edge: it always round-trips, and its mutated text reads, imports and
-//! validates or fails cleanly.
+//! validates or fails cleanly. So do the valid spline fixtures (S4e): spline
+//! edges, pcurves and surfaces with B-spline records.
 use crate::identity::{build, cone_spec, spec, sphere_spec, torus_spec};
 use libfuzzer_sys::arbitrary::{Result, Unstructured};
 use rusty_occt::occt_brep::{import, read, write};
 use rusty_occt::topology::Topology;
 use rusty_occt::Tolerance;
+
+#[path = "../../kernel/tests/support/brep_protocol.rs"]
+#[allow(dead_code)]
+mod brep_protocol;
+
+/// Valid spline cases of the B-rep fixtures (S4).
+const SPLINES: [&str; 6] = [
+    "case spline_bulge",
+    "case spline_cubic_bulge",
+    "case spline_rounded_corner",
+    "case spline_stadium_pcurve",
+    "case spline_stadium_edge",
+    "case spline_face_c1",
+];
+
+/// A valid spline fixture written with B-spline records always round-trips;
+/// its mutated text reads, imports and validates or fails cleanly.
+fn check_spline(data: &[u8]) {
+    let mut u = Unstructured::new(data);
+    let Ok(pick) = u.choose_index(SPLINES.len()) else {
+        return;
+    };
+    let block = include_str!("../../fixtures/brep-cases.txt")
+        .split("\nend")
+        .find(|b| b.trim().lines().next() == Some(SPLINES[pick]))
+        .expect("a fixture block");
+    let (_, tol, parts) = brep_protocol::parse(block.trim());
+    let tolerance = Tolerance::new(tol, 1e-12).unwrap();
+    let t = Topology::from_parts(parts, tolerance).expect("a valid spline fixture");
+    assert!(round_trip(&t, tol), "an unmutated spline fixture writes");
+    let base = write(&t, tol).unwrap();
+    if let Ok(text) = mutate(&mut u, &base) {
+        check_text(&text);
+    }
+}
 
 const UPSTREAM: [&str; 3] = [
     include_str!("../../../data/occ/wedge_ok.brep"),
@@ -79,16 +115,22 @@ fn mutate(u: &mut Unstructured, text: &str) -> Result<String> {
                 let other = u.choose_index(lines.len())?;
                 lines.swap(at, other);
             }
-            // Orientation of a shape reference.
+            // Orientation of a shape reference: flipped, or made internal or
+            // external (OCCT's `bug21246.brep` has internal edges and faces).
             6 => {
+                let mark = *u.choose(&["", "i", "e"])?;
                 for word in &mut lines[at] {
-                    if let Some(rest) = word.strip_prefix('+') {
-                        *word = format!("-{rest}");
-                    } else if let Some(rest) = word.strip_prefix('-') {
-                        if rest.chars().all(|c| c.is_ascii_digit()) {
-                            *word = format!("+{rest}");
-                        }
+                    let Some(rest) = word.strip_prefix(['+', '-']) else {
+                        continue;
+                    };
+                    if !rest.chars().all(|c| c.is_ascii_digit()) {
+                        continue;
                     }
+                    *word = match (mark, word.starts_with('+')) {
+                        ("", true) => format!("-{rest}"),
+                        ("", false) => format!("+{rest}"),
+                        (m, _) => format!("{m}{rest}"),
+                    };
                 }
             }
             _ => lines.truncate(at),
@@ -192,6 +234,11 @@ fn check_torus(data: &[u8]) {
 }
 
 pub fn check_brep_io(data: &[u8]) {
+    if data.first() == Some(&0x53) {
+        // 'S': the spline family.
+        check_spline(&data[1..]);
+        return;
+    }
     check_cone(data);
     check_sphere(data);
     check_torus(data);

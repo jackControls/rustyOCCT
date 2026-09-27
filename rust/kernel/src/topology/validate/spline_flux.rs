@@ -290,3 +290,93 @@ pub(super) fn spline_face_flux<T: Real>(surface: &BSplineSurface3, loops: &[Lp])
     }
     Some(total)
 }
+
+/// Strips of the `v` domain for the enclosed flux.
+const STRIPS: usize = 32;
+/// Pieces of each line or spline pcurve piece for the enclosed flux.
+const PIECES: usize = 5;
+
+/// The flux of a face on any nonperiodic spline surface (rational, or with
+/// pcurve pieces across patches), enclosed (S4d): with
+/// `f = S·(S_u × S_v)` enclosed over boxes from the surfaces' jets (the
+/// quotient rule covers weights), the antiderivative in `v` from the
+/// domain's start over a box is the sum over the strips below it of
+/// `Δs f(box × strip)` plus the partial strip, and the face's flux is
+/// `-∮ G du`, enclosed piece by piece. Widths are `O(Δs)` and `O(h)`.
+pub(super) fn enclosed_face_flux<T: Real>(surface: &BSplineSurface3, loops: &[Lp]) -> Option<T> {
+    use super::spline_taylor::{lift_patches, spline_jet, Patch};
+    if surface.u_knots().is_periodic() || surface.v_knots().is_periodic() {
+        return None;
+    }
+    let patches: Vec<Patch<T>> = lift_patches(&surface.bezier_patches().ok()?);
+    let ((_, _), (va, vb)) = surface.domain();
+    let (va, vb) = (r(va), r(vb));
+    let edges: Vec<R> = (0..=STRIPS)
+        .map(|k| &va + (&vb - &va) * ratio(k as i64, STRIPS as i64))
+        .collect();
+    let f = |u: &T, v: &T| -> Option<T> {
+        let [s, su, sv, ..] = spline_jet(&patches, u, v)?;
+        let n: [T; 3] = std::array::from_fn(|k| {
+            let (a, b) = ((k + 1) % 3, (k + 2) % 3);
+            su[a].mul(&sv[b]).sub(&su[b].mul(&sv[a]))
+        });
+        Some(s[0].mul(&n[0]).add(&s[1].mul(&n[1])).add(&s[2].mul(&n[2])))
+    };
+    // G over a box: whole strips below the box's lowest v, then the part
+    // from that strip's start to its highest v.
+    let g = |u: &T, v: &T| -> Option<T> {
+        let (lo, hi) = super::bernstein::ends(v);
+        let mut total = T::exact_f64(0.0);
+        // Below the domain's start, G is negative: minus the integral up
+        // to it.
+        if lo < edges[0] {
+            let top = hi.clone().min(edges[0].clone());
+            let below = c::<T>(&lo).union(&c(&edges[0]));
+            let length = c::<T>(&(&lo - &edges[0])).union(&c(&(&top - &edges[0])));
+            total = total.add(&f(u, &below)?.mul(&length));
+        }
+        let mut k = 0;
+        while k < STRIPS && edges[k + 1] <= lo {
+            let strip = c::<T>(&edges[k]).union(&c(&edges[k + 1]));
+            total = total.add(&f(u, &strip)?.mul(&c(&(&edges[k + 1] - &edges[k]))));
+            k += 1;
+        }
+        let start = edges[k.min(STRIPS)].clone();
+        if hi > start {
+            let rest = c::<T>(&start).union(&c(&hi));
+            let length = T::exact_f64(0.0).union(&c(&(&hi - &start)));
+            total = total.add(&f(u, &rest)?.mul(&length));
+        }
+        Some(total)
+    };
+    let mut total = T::exact_f64(0.0);
+    for lp in loops {
+        for fin in &lp.fins {
+            match &fin.pcurve {
+                Curve2::LineSegment { start, end } => {
+                    // Pieces of the segment: -du times G over each box.
+                    let (a, b) = ([r(start.x), r(start.y)], [r(end.x), r(end.y)]);
+                    let n = 1 << PIECES;
+                    for k in 0..n {
+                        let at = |t: R| -> [R; 2] {
+                            std::array::from_fn(|i| &a[i] + (&b[i] - &a[i]) * &t)
+                        };
+                        let (p, q) = (at(ratio(k, n)), at(ratio(k + 1, n)));
+                        let du = c::<T>(&(&q[0] - &p[0]));
+                        let bu = c::<T>(&p[0]).union(&c(&q[0]));
+                        let bv = c::<T>(&p[1]).union(&c(&q[1]));
+                        total = total.add(&g(&bu, &bv)?.mul(&du).neg());
+                    }
+                }
+                Curve2::BSpline(spline) => {
+                    total = total.add(&super::bernstein::green_integral(spline, PIECES, &g)?.neg());
+                }
+                Curve2::CircularArc { .. } => return None,
+            }
+        }
+        for (a, b) in super::chords::<T>(lp) {
+            total = total.add(&super::chord_enclosure(&a, &b, &g)?);
+        }
+    }
+    Some(total)
+}

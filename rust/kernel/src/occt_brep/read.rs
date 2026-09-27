@@ -21,7 +21,35 @@ pub enum Curve3 {
         y: [f64; 3],
         r: f64,
     },
+    /// `Geom_BSplineCurve` (record 7), or a trimmed one (record 8) read as
+    /// its basis: an edge's range bounds the part it uses.
+    BSpline(BSplineRecord<3>),
     Other(&'static str),
+}
+
+/// A B-spline curve record's data, as `GeomTools_CurveSet` prints it: poles
+/// with weights when rational, knots with multiplicities.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BSplineRecord<const N: usize> {
+    pub degree: usize,
+    pub periodic: bool,
+    pub poles: Vec<[f64; N]>,
+    pub weights: Option<Vec<f64>>,
+    pub knots: Vec<f64>,
+    pub multiplicities: Vec<usize>,
+}
+
+/// A B-spline surface record (9): poles U-major (`GeomTools_SurfaceSet`
+/// prints them row by row in u).
+#[derive(Debug, Clone, PartialEq)]
+pub struct BSplineSurfaceRecord {
+    pub degrees: [usize; 2],
+    pub periodic: [bool; 2],
+    pub counts: [usize; 2],
+    pub poles: Vec<[f64; 3]>,
+    pub weights: Option<Vec<f64>>,
+    pub knots: [Vec<f64>; 2],
+    pub multiplicities: [Vec<usize>; 2],
 }
 
 /// A 2D curve record.
@@ -37,6 +65,8 @@ pub enum Curve2 {
         y: [f64; 2],
         r: f64,
     },
+    /// `Geom2d_BSplineCurve` (record 7), or a trimmed one read as its basis.
+    BSpline(BSplineRecord<2>),
     Other(&'static str),
 }
 
@@ -84,6 +114,7 @@ pub enum Surface {
         y: [f64; 3],
         r: f64,
     },
+    BSpline(Box<BSplineSurfaceRecord>),
     Other(&'static str),
 }
 
@@ -320,27 +351,13 @@ fn curve3(t: &mut Tokens) -> Result<Curve3, BrepError> {
             t.skip_reals((degree + 1) * if rational { 4 } else { 3 })?;
             Curve3::Other("BezierCurve")
         }
-        7 => {
-            // Rational and periodic flags (the specification's example shows
-            // a periodic flag of 0; it is a flag).
-            let rational = t.flag()?;
-            t.flag()?;
-            t.count(64)?;
-            let poles = t.count(LIMIT)?;
-            let knots = t.count(LIMIT)?;
-            t.skip_reals(poles * if rational { 4 } else { 3 })?;
-            for _ in 0..knots {
-                t.real()?;
-                t.int()?;
-            }
-            Curve3::Other("BSplineCurve")
-        }
+        7 => Curve3::BSpline(bspline::<3>(t)?),
         8 => {
-            // A trimmed line or circle is its basis: an edge's own range
-            // bounds the part it uses.
+            // A trimmed line, circle or B-spline is its basis: an edge's own
+            // range bounds the part it uses.
             t.skip_reals(2)?;
             match curve3(t)? {
-                c @ (Curve3::Line { .. } | Curve3::Circle { .. }) => c,
+                c @ (Curve3::Line { .. } | Curve3::Circle { .. } | Curve3::BSpline(_)) => c,
                 _ => Curve3::Other("TrimmedCurve"),
             }
         }
@@ -353,6 +370,38 @@ fn curve3(t: &mut Tokens) -> Result<Curve3, BrepError> {
             t.at -= 1;
             return Err(t.err("a 3D curve type 1-9"));
         }
+    })
+}
+
+/// A B-spline curve record after its type: rational and periodic flags (the
+/// specification's example shows a periodic flag of 0; it is a flag),
+/// degree, pole and knot counts, then the poles (each followed by its
+/// weight when rational) and the knots with their multiplicities.
+fn bspline<const N: usize>(t: &mut Tokens) -> Result<BSplineRecord<N>, BrepError> {
+    let rational = t.flag()?;
+    let periodic = t.flag()?;
+    let degree = t.count(64)?;
+    let count = t.count(LIMIT)?;
+    let knots = t.count(LIMIT)?;
+    let (mut poles, mut weights) = (Vec::new(), Vec::new());
+    for _ in 0..count {
+        poles.push(t.reals::<N>()?);
+        if rational {
+            weights.push(t.real()?);
+        }
+    }
+    let (mut values, mut multiplicities) = (Vec::new(), Vec::new());
+    for _ in 0..knots {
+        values.push(t.real()?);
+        multiplicities.push(t.count(LIMIT)?);
+    }
+    Ok(BSplineRecord {
+        degree,
+        periodic,
+        poles,
+        weights: rational.then_some(weights),
+        knots: values,
+        multiplicities,
     })
 }
 
@@ -392,23 +441,11 @@ fn curve2(t: &mut Tokens) -> Result<Curve2, BrepError> {
             t.skip_reals((degree + 1) * if rational { 3 } else { 2 })?;
             Curve2::Other("BezierCurve2d")
         }
-        7 => {
-            let rational = t.flag()?;
-            t.flag()?;
-            t.count(64)?;
-            let poles = t.count(LIMIT)?;
-            let knots = t.count(LIMIT)?;
-            t.skip_reals(poles * if rational { 3 } else { 2 })?;
-            for _ in 0..knots {
-                t.real()?;
-                t.int()?;
-            }
-            Curve2::Other("BSplineCurve2d")
-        }
+        7 => Curve2::BSpline(bspline::<2>(t)?),
         8 => {
             t.skip_reals(2)?;
             match curve2(t)? {
-                c @ (Curve2::Line { .. } | Curve2::Circle { .. }) => c,
+                c @ (Curve2::Line { .. } | Curve2::Circle { .. } | Curve2::BSpline(_)) => c,
                 _ => Curve2::Other("TrimmedCurve2d"),
             }
         }
@@ -500,23 +537,39 @@ fn surface(t: &mut Tokens) -> Result<Surface, BrepError> {
         }
         9 => {
             let (ru, rv) = (t.flag()?, t.flag()?);
-            // Periodic flags in u and v.
-            t.flag()?;
-            t.flag()?;
-            t.count(64)?;
-            t.count(64)?;
+            let periodic = [t.flag()?, t.flag()?];
+            let degrees = [t.count(64)?, t.count(64)?];
             let (pu, pv) = (t.count(LIMIT)?, t.count(LIMIT)?);
             let (ku, kv) = (t.count(LIMIT)?, t.count(LIMIT)?);
-            let poles = pu
+            let count = pu
                 .checked_mul(pv)
                 .filter(|n| *n <= LIMIT)
                 .ok_or(t.err("a pole count within the supported limit"))?;
-            t.skip_reals(poles * if ru || rv { 4 } else { 3 })?;
-            for _ in 0..ku + kv {
-                t.real()?;
-                t.int()?;
+            let rational = ru || rv;
+            let (mut poles, mut weights) = (Vec::new(), Vec::new());
+            for _ in 0..count {
+                poles.push(t.reals::<3>()?);
+                if rational {
+                    weights.push(t.real()?);
+                }
             }
-            Surface::Other("BSplineSurface")
+            let mut knots = [Vec::new(), Vec::new()];
+            let mut multiplicities = [Vec::new(), Vec::new()];
+            for (axis, n) in [ku, kv].into_iter().enumerate() {
+                for _ in 0..n {
+                    knots[axis].push(t.real()?);
+                    multiplicities[axis].push(t.count(LIMIT)?);
+                }
+            }
+            Surface::BSpline(Box::new(BSplineSurfaceRecord {
+                degrees,
+                periodic,
+                counts: [pu, pv],
+                poles,
+                weights: rational.then_some(weights),
+                knots,
+                multiplicities,
+            }))
         }
         10 => {
             t.skip_reals(4)?;

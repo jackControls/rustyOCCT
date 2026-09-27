@@ -539,7 +539,7 @@ algorithms).
 
 ## Generic B-rep validation
 
-`generate_brep_fixtures.py --check` rebuilds 150 cell-complex cases (60 valid):
+`generate_brep_fixtures.py --check` rebuilds 151 cell-complex cases (62 valid):
 54 converted by rule from an independent seamed prism builder and its
 mutations, twenty-two cell-model cases for the model's own failure
 modes, the near-frequency bound and enclosures (gaps just inside and outside
@@ -547,10 +547,10 @@ the resolution; missing, out-of-range and unsound bounds), twelve cones
 (six valid, six mutations of the pole, the winding, the angle and a ring
 pcurve), fifteen spheres (seven valid, the whole sphere among them, and
 eight mutations) and thirteen tori (seven valid: the whole torus, both
-halves, a segment, two wedges and a far copy; six mutations) and nineteen
+halves, a segment, two wedges and a far copy; six mutations) and twenty
 spline cells (R4: C1 and broken knots on edges, pcurves and faces, periodic
-seams, degenerate splines) and ten spline models with native rows (two
-valid since S4b-d), with complete issue lists from the separate mpmath reference validators
+seams, degenerate splines, ranges and a reversed pcurve) and ten spline
+models with native rows (six valid, as natively), with complete issue lists from the separate mpmath reference validators
 (`brep_reference.py`, `cell_reference.py`). `brep_validation.rs` requires
 Rust's sorted report to equal each list exactly. The `brep_validation` fuzz
 target mutates valid prisms and cavities into specific invalid complexes.
@@ -560,8 +560,8 @@ structure-only and checks the synthesized counts of every valid case. See
 [the bridge](BREP_VALIDATION.md#native-comparison-bridge).
 
 Enclosures (M5): every fixture carries bounds that the independent
-reference declares; Rust's report equals the reference's on all 150 cases.
-Measured bounds of the 60 valid cases lie between the reference's certain
+reference declares; Rust's report equals the reference's on all 151 cases.
+Measured bounds of the 62 valid cases lie between the reference's certain
 gap and its declared bound (`brep-enclosure-lows.tsv`, within a stated
 frame-rounding allowance). `enclosures.rs` requires every prism of the
 identity corpus to be enclosed within its resolution and no continued
@@ -582,11 +582,16 @@ kernel cannot represent, by name and count. For every solid the root reaches
 through compounds, it records whether its structure is representable, and
 OCCT's distinct subshape counts of the original, seamed solid. `occt_brep.rs`
 requires Rust's import to agree file by file: the same unsupported geometry,
-the same solids, a cell topology exactly for the representable ones (54 of
+the same solids, a cell topology exactly for the representable ones (60 of
 77: one more with cones, fourteen with spheres, twelve of them whole spheres
-and two with loops through a pole, and ten with tori since S3; horn and
-spindle tori are `NonRingToroidalSurface`) and synthesized counts equal to
-the original counts. Every one of the 564 identity cases (546 prisms, six
+and two with loops through a pole, and ten with tori since S3, six more with
+B-spline edges, pcurves and surfaces since S4; horn and spindle tori are
+`NonRingToroidalSurface`, and periodic spline surfaces and seams on spline
+surfaces are unsupported) and synthesized counts equal to the original
+counts. 58 of them are certified; `occt_brep.rs` pins the two the validator
+does not certify yet with their issue kinds (a sphere loop that passes both
+poles between two kept seam pairs, `seam_edge`, and containment in a
+cylinder face with spline pcurves, `uncertified_containment`). Every one of the 564 identity cases (546 prisms, six
 cones, six spheres and six tori)
 writes, reads back and imports to the same counts with bit-identical
 vertices, twice. Malformed text gives typed errors.
@@ -598,7 +603,7 @@ every corpus file, and their counts, must be exactly the reader's (77). Then
 native OCCT reads everything the kernel writes. Each of the 564 identity
 writes must be one valid solid whose counts equal the synthesized counts and
 whose volume, area and centroid equal the kernel's mass properties (exact for
-prisms, certified midpoints for cones, spheres and tori). Each of the 54 imported corpus
+prisms, certified midpoints for cones, spheres and tori). Each of the 58 certified corpus
 solids, written back, must be one valid solid with the original's counts,
 volume, area and centroid. The worst property
 difference observed is 6.6e-14 relative (macOS, since S3), against a bound of 1e-11.

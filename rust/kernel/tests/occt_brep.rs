@@ -138,6 +138,44 @@ const GEOMETRY: [&str; 21] = [
 /// geometry records, the same solids, a cell topology exactly for the
 /// solids whose structure is representable, and synthesized counts equal to
 /// OCCT's distinct subshapes of the original seamed solid.
+/// A sub-shape reference made internal or external (the cell model has no
+/// such orientation) imports without a panic, and the solid holding it is
+/// never certified: OCCT's `bug21246.brep` has internal edges and faces.
+#[test]
+fn internal_and_external_references_are_unsupported() {
+    let text = include_str!("../../../data/occ/wedge_ok.brep");
+    let lines: Vec<&str> = text.lines().collect();
+    let shapes = lines.iter().position(|l| l.starts_with("TShapes")).unwrap();
+    let mut mutated = 0;
+    for (k, line) in lines.iter().enumerate().skip(shapes + 1) {
+        let words: Vec<&str> = line.split_whitespace().collect();
+        if words.last() != Some(&"*") || words.len() < 3 {
+            continue;
+        }
+        for (w, word) in words.iter().enumerate().step_by(2) {
+            if !word.starts_with(['+', '-']) {
+                continue;
+            }
+            for mark in ["i", "e"] {
+                let mut changed = words.clone();
+                let replaced = format!("{mark}{}", &word[1..]);
+                changed[w] = &replaced;
+                let mut all = lines.clone();
+                let joined = changed.join(" ");
+                all[k] = &joined;
+                let im = import(&read(&(all.join("\n") + "\n")).unwrap());
+                assert!(
+                    im.solids.iter().all(|s| s.result.is_err()),
+                    "line {} word {w} marked {mark}",
+                    k + 1
+                );
+                mutated += 1;
+            }
+        }
+    }
+    assert!(mutated >= 40, "{mutated}");
+}
+
 #[test]
 fn corpus_matches_the_independent_reader() {
     let root = concat!(env!("CARGO_MANIFEST_DIR"), "/../../data/occ/");
@@ -152,6 +190,7 @@ fn corpus_matches_the_independent_reader() {
         }
     }
     let mut imported = 0;
+    let mut not_certified: Vec<(String, String, Vec<&'static str>)> = Vec::new();
     for (name, geometry, solids) in &files {
         let text = std::fs::read_to_string(format!("{root}{name}")).unwrap();
         let im = import(&read(&text).unwrap_or_else(|e| panic!("{name}: {e}")));
@@ -176,14 +215,46 @@ fn corpus_matches_the_independent_reader() {
                     let got = [c.vertices, c.edges, c.wires, c.faces, c.shells, c.solids]
                         .map(|n| n.to_string());
                     assert_eq!(got.as_slice(), &row[2..], "{name} {}", row[0]);
+                    // Written back, it reads as one certified solid with the
+                    // same counts.
+                    let text = write(t, solid.tolerance.linear())
+                        .unwrap_or_else(|e| panic!("{name} {}: {e}", row[0]));
+                    let again = import(&read(&text).unwrap());
+                    assert_eq!(again.solids.len(), 1, "{name} {}", row[0]);
+                    let back = again.solids[0]
+                        .result
+                        .as_ref()
+                        .unwrap_or_else(|e| panic!("{name} {} written back: {e:?}", row[0]));
+                    assert_eq!(back.occt_counts(), c, "{name} {}", row[0]);
                     imported += 1;
                 }
                 (Err(rusty_occt::occt_brep::Rejected::Unsupported(_)), "unsupported") => {}
+                // Representable structure the validator does not certify
+                // (S4): pinned below with its issue kinds.
+                (Err(rusty_occt::occt_brep::Rejected::Invalid { issues, .. }), "representable") => {
+                    let mut kinds: Vec<&'static str> =
+                        issues.iter().map(|i| i.kind.name()).collect();
+                    kinds.sort_unstable();
+                    kinds.dedup();
+                    not_certified.push((name.to_string(), row[0].to_string(), kinds));
+                }
                 (result, verdict) => {
                     panic!("{name} {}: {verdict} but {result:?}", row[0])
                 }
             }
         }
     }
-    assert_eq!(imported, 54);
+    assert_eq!(imported, 58);
+    // What the validator cannot certify yet: a sphere face whose loop passes
+    // both poles between two seam pairs (the seam merge keeps them), and
+    // containment in a cylinder face's loops with spline pcurves.
+    let pinned = [
+        ("Ball.brep", "108", vec!["seam_edge"]),
+        ("Motor-c.brep", "378", vec!["uncertified_containment"]),
+    ];
+    let pinned: Vec<(String, String, Vec<&str>)> = pinned
+        .into_iter()
+        .map(|(f, r, k)| (f.to_string(), r.to_string(), k))
+        .collect();
+    assert_eq!(not_certified, pinned);
 }

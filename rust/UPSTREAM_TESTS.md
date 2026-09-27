@@ -337,7 +337,7 @@ but the validator rejects is a failure.
 
 `survey_upstream_tests.py --restore-only` runs the 192 cases that only
 restore data and run checks on both backends, without registering them. With
-the dataset (2026-09-26):
+the dataset, after S4 (2026-09-27):
 
 | Rust / native | Cases |
 | --- | ---: |
@@ -347,10 +347,10 @@ the dataset (2026-09-26):
 | unsupported / known failure | 11 |
 | unsupported / unverified | 9 |
 | unsupported / private data | 5 |
-| unsupported / pass | 5 |
 | unsupported / failed | 4 |
+| unsupported / pass | 4 |
+| pass / pass | 2 |
 | known failure / known failure | 1 |
-| pass / pass | 1 |
 | viewer skipped / viewer skipped | 1 |
 
 Native DRAW evaluates 33 of them completely; Rust evaluates 2, both now
@@ -368,3 +368,14 @@ appear among the unsupported constructs. After the torus, `bug485` restores
 completely and now needs only `bfuse`; `bug327_3` and `bug27782` no longer
 report tori; `bug503`'s one torus is a horn torus (`NonRingToroidalSurface`,
 not representable). No further case evaluates on the Rust backend.
+After S4 no case reports B-spline curves, 2D curves or surfaces. What the
+restores still need, by construct: free faces 46, rectangular trimmed
+surfaces 12, ellipses 5, trimmed curves (of other bases) 4, extrusion and
+revolution surfaces 4 each, 2D ellipses 4, Bézier surfaces 3, and one or
+two each of the rest. `bug21246` has internal edges and faces: the importer
+panicked on them (an orientation composed as internal was taken for
+forward or reversed); it now reports them unsupported by name
+(`InternalOrExternalEdge`, `InternalOrExternalFace`), as the reference
+reader does, and `occt_brep.rs` and the `brep_io` fuzz target make
+references internal or external. No further case evaluates on the Rust
+backend.

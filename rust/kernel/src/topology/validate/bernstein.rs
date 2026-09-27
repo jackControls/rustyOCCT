@@ -38,17 +38,41 @@ pub(super) fn lift<T: Real>(a: &[R]) -> Bern<T> {
     a.iter().map(c).collect()
 }
 
+/// `C(n, k)` in the tier, exactly: binomials up to degree 56 are binary64
+/// integers, larger ones pass through rationals.
+fn binomial_t<T: Real>(n: usize, k: usize) -> T {
+    if n <= 56 {
+        let mut x = 1.0_f64;
+        for i in 0..k {
+            x = x * (n - i) as f64 / (i + 1) as f64;
+        }
+        T::exact_f64(x.round())
+    } else {
+        c(&R::from_integer(binomial(n, k)))
+    }
+}
+
+/// The product in the scaled basis `C(n, i) t^i (1 - t)^(n - i)`, where it
+/// is a convolution, converted back by `1/C(m + n, k)`.
 pub(super) fn product<T: Real>(a: &Bern<T>, b: &Bern<T>) -> Bern<T> {
     let (m, n) = (a.len() - 1, b.len() - 1);
+    let sa: Vec<T> = a
+        .iter()
+        .enumerate()
+        .map(|(i, x)| x.mul(&binomial_t(m, i)))
+        .collect();
+    let sb: Vec<T> = b
+        .iter()
+        .enumerate()
+        .map(|(j, x)| x.mul(&binomial_t(n, j)))
+        .collect();
     (0..=m + n)
         .map(|k| {
-            let total = R::from_integer(binomial(m + n, k));
             let mut sum = T::exact_f64(0.0);
             for i in k.saturating_sub(n)..=k.min(m) {
-                let w = R::from_integer(binomial(m, i) * binomial(n, k - i)) / &total;
-                sum = sum.add(&a[i].mul(&b[k - i]).mul(&c(&w)));
+                sum = sum.add(&sa[i].mul(&sb[k - i]));
             }
-            sum
+            sum.div(&binomial_t(m + n, k)).expect("a positive binomial")
         })
         .collect()
 }
@@ -144,7 +168,35 @@ fn line_arc(a: [f64; 3], b: [f64; 3]) -> Arcs {
     vec![(exact(0), exact(1), arc)]
 }
 
+thread_local! {
+    /// Arcs of the splines of the topology being validated, by the curve's
+    /// address and range: a topology is borrowed immutably while it is
+    /// validated, so addresses are stable; `clear_memo` runs at every entry.
+    static ARCS: std::cell::RefCell<std::collections::HashMap<(usize, u64, u64), Arcs>> =
+        std::cell::RefCell::new(std::collections::HashMap::new());
+}
+
+/// Forget the memoized arcs (at the start of a validation, measurement or
+/// mass computation).
+pub(super) fn clear_memo() {
+    ARCS.with(|m| m.borrow_mut().clear());
+}
+
 pub(super) fn spline_arcs(curve: &crate::BSplineCurve3, range: [f64; 2]) -> Option<Arcs> {
+    let key = (
+        curve as *const crate::BSplineCurve3 as usize,
+        range[0].to_bits(),
+        range[1].to_bits(),
+    );
+    if let Some(arcs) = ARCS.with(|m| m.borrow().get(&key).cloned()) {
+        return Some(arcs);
+    }
+    let arcs = compute_arcs(curve, range)?;
+    ARCS.with(|m| m.borrow_mut().insert(key, arcs.clone()));
+    Some(arcs)
+}
+
+fn compute_arcs(curve: &crate::BSplineCurve3, range: [f64; 2]) -> Option<Arcs> {
     let exact = curve.to_exact();
     let (a, b) = (r(range[0]), r(range[1]));
     let span = &b - &a;
@@ -159,15 +211,39 @@ pub(super) fn spline_arcs(curve: &crate::BSplineCurve3, range: [f64; 2]) -> Opti
     )
 }
 
-/// A spline pcurve's exact arcs over its range.
+/// A spline span's exact arcs over its range, in its direction: a reversed
+/// span's arcs reversed, in reverse order, on mirrored fractions.
+fn directed(arcs: Arcs, reversed: bool) -> Arcs {
+    if !reversed {
+        return arcs;
+    }
+    let one = exact(1);
+    arcs.into_iter()
+        .rev()
+        .map(|(a, b, arc)| (&one - b, &one - a, arc.reversed()))
+        .collect()
+}
+
+/// A spline pcurve's exact arcs over its range, in its direction.
 pub(super) fn span_arcs(span: &crate::topology::SplineSpan<crate::BSplineCurve2>) -> Option<Arcs> {
-    spline_arcs(span.curve().as_curve3(), span.range())
+    Some(directed(
+        spline_arcs(span.curve().as_curve3(), span.range())?,
+        span.is_reversed(),
+    ))
+}
+
+/// A spline edge's exact arcs over its range, in its direction.
+pub(super) fn edge_arcs(span: &crate::topology::SplineSpan<crate::BSplineCurve3>) -> Option<Arcs> {
+    Some(directed(
+        spline_arcs(span.curve(), span.range())?,
+        span.is_reversed(),
+    ))
 }
 
 pub(super) fn curve_arcs(curve: &Curve3) -> Option<Arcs> {
     match curve {
         Curve3::LineSegment { start, end } => Some(line_arc(start.to_array(), end.to_array())),
-        Curve3::BSpline(span) => spline_arcs(span.curve(), span.range()),
+        Curve3::BSpline(span) => edge_arcs(span),
         _ => None,
     }
 }
@@ -370,4 +446,49 @@ pub(super) fn crossing_parity<T: Real>(
         }
     }
     Some(parity)
+}
+
+/// `∫ F(u, v) du` along a spline pcurve, enclosed, for a function `F` the
+/// caller evaluates over boxes (the antiderivative in `v` of a surface's
+/// flux or mass integrand). Each Bézier piece is halved `depth` times; on a
+/// piece in its own parameter `τ` in `[0, 1]`, the integrand `F(P) P_u'`
+/// is enclosed over the box of the piece's control points (its convex
+/// hull) with `P_u' = (U' W - U W')/W^2`, so its integral lies in that
+/// enclosure. The width is `O(h^2)` per piece, `O(h)` in total.
+pub(super) fn green_integral<T: Real>(
+    curve: &crate::topology::SplineSpan<crate::BSplineCurve2>,
+    depth: usize,
+    f: &dyn Fn(&T, &T) -> Option<T>,
+) -> Option<T> {
+    let hull = |xs: &[T]| xs[1..].iter().fold(xs[0].clone(), |acc, x| acc.union(x));
+    let mut total = T::exact_f64(0.0);
+    for (_, _, arc) in &span_arcs(curve)? {
+        let poles = arc.homogeneous_poles();
+        let coords: [Bern<T>; 3] = [0, 1, 3].map(|k| poles.iter().map(|p| c(&p[k])).collect());
+        let mut stack = vec![(coords, depth)];
+        while let Some(([u, v, w], d)) = stack.pop() {
+            if d > 0 {
+                let (u, v, w) = (halves(&u), halves(&v), halves(&w));
+                // Each half covers half the piece's parameter.
+                stack.push(([u.0, v.0, w.0], d - 1));
+                stack.push(([u.1, v.1, w.1], d - 1));
+                continue;
+            }
+            let points: Vec<[T; 2]> = (0..w.len())
+                .map(|i| Some([u[i].div(&w[i])?, v[i].div(&w[i])?]))
+                .collect::<Option<_>>()?;
+            let bu = hull(&points.iter().map(|p| p[0].clone()).collect::<Vec<_>>());
+            let bv = hull(&points.iter().map(|p| p[1].clone()).collect::<Vec<_>>());
+            let wb = hull(&w);
+            if wb.sign() != Some(std::cmp::Ordering::Greater) {
+                return None;
+            }
+            let du = difference(&product(&derivative(&u), &w), &product(&u, &derivative(&w)));
+            let du = hull(&du).div(&wb.square())?;
+            // The piece is 2^-(depth - d) of the arc; P_u' is in the piece's
+            // own parameter, so the enclosure is the piece's integral.
+            total = total.add(&f(&bu, &bv)?.mul(&du));
+        }
+    }
+    Some(total)
 }

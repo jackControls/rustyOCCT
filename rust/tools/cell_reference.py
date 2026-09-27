@@ -137,6 +137,11 @@ def gap_bounds(c):
 
                 def gap():
                     w = loop.fins[(ui+1) % len(loop.fins)]
+                    if isinstance(f.surface, BSplineSurface):
+                        d = spline_gap(f.surface, u.pcurve, c.fins[w].pcurve)
+                        if d is None:
+                            raise ValueError('no exact gap')
+                        return d
                     a, b = pcurve_point(u.pcurve, 1), pcurve_point(c.fins[w].pcurve, 0)
                     last = ui == len(loop.fins)-1
                     shift = TAU*loop.winding if last and periodic(f.surface) else 0
@@ -225,6 +230,19 @@ def spline_use(curve, surface, pcurve):
     """Spline geometry that only the endpoint and continuity checks
     certify before the rest of S4."""
     return isinstance(curve, BSpline3) or isinstance(surface, BSplineSurface) or isinstance(pcurve, BSpline2)
+
+
+def spline_gap(s, p, q):
+    """The 3D distance between a spline surface's exact points at p's end
+    and q's start, or None when an end is not exact or off the domain."""
+    a, b = exact_end(p, 1), exact_end(q, 0)
+    if a is None or b is None:
+        return None
+    try:
+        x, y = spline.surface_jet(s, *a)[0], spline.surface_jet(s, *b)[0]
+    except ValueError:
+        return None
+    return mp.sqrt(mp_of(sum((i-j)**2 for i, j in zip(x, y))))
 
 
 def exact_end(p, t):
@@ -861,10 +879,13 @@ def validate(c):
                 last = ui == len(loop.fins)-1
                 w = loop.fins[(ui+1) % len(loop.fins)]
                 if isinstance(f.surface, BSplineSurface):
-                    # No length scale: only an exact meeting is decided.
-                    a, b = exact_end(c.fins[k].pcurve, 1), exact_end(c.fins[w].pcurve, 0)
-                    if a is None or b is None or a != b:
+                    # Measured in 3D between the exact surface points.
+                    d = spline_gap(f.surface, c.fins[k].pcurve, c.fins[w].pcurve)
+                    if d is None:
                         issues.append(issue('uncertified_uv_gap', f'use {fi}.{li}.{ui}'))
+                        geometry_bad.add(fi)
+                    elif judge(d, d, face_bound[fi], f'face {fi}', f'{c.name}: uv gap') == 'beyond':
+                        issues.append(issue('uv_gap', f'use {fi}.{li}.{ui}'))
                         geometry_bad.add(fi)
                     continue
                 a, b = pcurve_point(c.fins[k].pcurve, 1), pcurve_point(c.fins[w].pcurve, 0)
@@ -1202,10 +1223,9 @@ def taylor_deviation(curve, s, p, forward, tol):
 def spline_face_flux(c, f):
     """The flux of a face on a spline surface by nested quadrature: G(u, v)
     = integral of S.(S_u x S_v) in v from the domain's start, then -loop
-    integral of G du. None where the kernel does not decide it: a rational
-    or periodic surface, or a spline pcurve piece across a knot line."""
+    integral of G du. None on a periodic surface, as in the kernel."""
     s = f.surface
-    if s.u.periodic or s.v.periodic or len(set(s.weights)) > 1:
+    if s.u.periodic or s.v.periodic:
         return None
     _, _, (va, vb) = s.v.flat()
     vknots = [va]+[F(k) for k in s.v.knots if va < F(k) < vb]
@@ -1228,8 +1248,6 @@ def spline_face_flux(c, f):
             p = c.fins[k].pcurve
             cuts = spline_cuts(None, s, p, True)
             for t0, t1 in zip(cuts, cuts[1:]):
-                if box_of(s, pcurve_controls(p, t0, t1)) is None:
-                    return None
 
                 def integrand(t, p=p):
                     if isinstance(p, BSpline2):

@@ -272,6 +272,14 @@ Decisions for the rest of S4, recorded before its code (2026-09-26):
   fraction mapped affinely onto the range. R4 then tests the knots strictly
   inside the range: the cell's parameterisation is the range. A surface is
   still tested over its whole domain.
+* **Periodic spline surfaces stay unsupported (decided 2026-09-27, during
+  S4e).** Their windings with the domain's period were planned for S4e,
+  but in the `data/occ` corpus one solid of 77 has a periodic spline surface
+  (`PeriodicBSplineSurface`) and one a seam on a nonperiodic closed spline
+  surface (`SeamOnBSplineSurface`); every other spline surface (419 of 420
+  records) is nonperiodic and unseamed. The reader reports both by name, the
+  validator does not certify a periodic spline face, and windings on spline
+  surfaces wait for a case that needs them.
 
 ### After S4
 
@@ -467,3 +475,21 @@ converter records that as `Imported` provenance, never as an approximation.
     do: rational spline surfaces' flux, mass properties on spline surfaces
     and with spline pcurves on curved surfaces, periodic spline surfaces,
     and S4e.
+  * S4b-e, third part: the flux of every nonperiodic spline surface
+    (strips of the `v` domain from the surface jets when the exact route
+    does not apply), fluxes along spline pcurves on cylinders, cones,
+    spheres and tori, UV gaps on spline surfaces in 3D, pcurves against
+    their spline's parameter, and interop: records 7 and 9 in the reader
+    and writer, trimmed bases, ranges snapped at printing precision,
+    periodic spline surfaces and seams on spline surfaces unsupported as
+    decided above. 62 fixture cases are valid; the spline bridge has 7
+    matches and 3 reviewed differences (`spline_c0_bulge`: BRepCheck has no
+    continuity status; the two shifted pcurves: OCCT reports the face
+    unorientable after the edge's InvalidCurveOnSurface, and Closed2d
+    accepts the gap). 60 of 77 `data/occ` solids are representable and 58
+    certified; `Ball.brep` 108 (`seam_edge`) and `Motor-c.brep` 378
+    (`uncertified_containment`) are pinned. The restore-only survey after
+    S4 reports no B-spline construct; it found the importer panicking on
+    `bug21246`'s internal edges and faces (fixed, with a test and a fuzz
+    mutation). Still to do: mass properties with spline surfaces and with
+    spline pcurves on cylinders and cones.

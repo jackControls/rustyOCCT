@@ -216,6 +216,12 @@ impl BSplineCurve3 {
             ],
         })
     }
+    /// The exact point at a binary64 parameter in the domain (any, when
+    /// periodic), without converting the whole curve.
+    pub(crate) fn exact_point(&self, u: f64) -> Result<[R; 3]> {
+        let at = self.basis.locate(u, KnotSide::Automatic, 0)?;
+        Ok(self.exact_jet(&at[0], 0).swap_remove(0))
+    }
     fn exact_jet(&self, at: &spline::Parameter, order: usize) -> Vec<[R; 3]> {
         let local = (at.span - self.degree()..=at.span)
             .map(|i| {

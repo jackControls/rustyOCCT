@@ -17,16 +17,16 @@ solid	Axis_of_bearing.brep	225	unsupported	0	0	0	0	0	1
 solid	Axis_of_bearing.brep	267	representable	8	13	11	8	1	1
 solid	Axis_of_bearing.brep	299	representable	6	9	9	6	1	1
 solid	Axis_of_bearing.brep	371	representable	14	22	20	14	1	1
-file	Ball.brep	BSplineCurve=15,BSplineCurve2d=10,BSplineSurface=5,TrimmedCurve2d=5
+file	Ball.brep	-
 solid	Ball.brep	54	representable	14	21	9	9	1	1
-solid	Ball.brep	108	unsupported	13	22	8	8	1	1
-file	Bottom.brep	BSplineCurve=361,BSplineCurve2d=302,BSplineSurface=120,Ellipse2d=2,NonRingToroidalSurface=15,RectangularTrimmedSurface=4,TrimmedCurve=4,TrimmedCurve2d=90
+solid	Ball.brep	108	representable	13	22	8	8	1	1
+file	Bottom.brep	Ellipse2d=2,NonRingToroidalSurface=15,RectangularTrimmedSurface=4,TrimmedCurve=3,TrimmedCurve2d=6
 solid	Bottom.brep	1818	unsupported	405	751	338	323	1	1
-file	CrankArm.brep	BSplineCurve=56,BSplineCurve2d=5,BSplineSurface=16,RectangularTrimmedSurface=2,TrimmedCurve=6,TrimmedCurve2d=56
+file	CrankArm.brep	RectangularTrimmedSurface=2,TrimmedCurve=2
 solid	CrankArm.brep	21	representable	4	6	6	4	1	1
 solid	CrankArm.brep	344	unsupported	84	132	56	49	1	1
-file	MAT.brep	BSplineCurve=4,BSplineSurface=1
-file	MODERN_Chair_1.brep	BSplineCurve2d=40,Ellipse2d=12,TrimmedCurve=26
+file	MAT.brep	-
+file	MODERN_Chair_1.brep	Ellipse2d=12,TrimmedCurve=26
 solid	MODERN_Chair_1.brep	97	representable	20	40	18	18	1	1
 solid	MODERN_Chair_1.brep	403	unsupported	74	127	51	51	1	1
 solid	MODERN_Chair_1.brep	710	unsupported	74	127	51	51	1	1
@@ -38,23 +38,23 @@ solid	MODERN_Cooker_1.brep	338	representable	40	68	38	34	1	1
 file	MODERN_Cooker_1_opened.brep	-
 solid	MODERN_Cooker_1_opened.brep	33	representable	8	12	6	6	1	1
 solid	MODERN_Cooker_1_opened.brep	66	representable	6	10	8	7	1	1
-file	MODERN_Exhaust_1.brep	BSplineCurve=8,BSplineCurve2d=22,BSplineSurface=2,Ellipse2d=10,TrimmedCurve=12
+file	MODERN_Exhaust_1.brep	Ellipse2d=10,TrimmedCurve=12
 solid	MODERN_Exhaust_1.brep	88	representable	24	36	16	14	1	1
 solid	MODERN_Exhaust_1.brep	258	unsupported	44	68	28	27	1	1
 solid	MODERN_Exhaust_1.brep	348	representable	24	36	16	14	1	1
 file	MODERN_MVCooker_1.brep	-
 solid	MODERN_MVCooker_1.brep	80	representable	24	36	16	15	1	1
-file	MODERN_MVCooker_1_opened.brep	BSplineCurve2d=16,TrimmedCurve=8
+file	MODERN_MVCooker_1_opened.brep	TrimmedCurve=8
 solid	MODERN_MVCooker_1_opened.brep	103	unsupported	24	40	20	18	1	1
 file	MODERN_Refrigerator_1.brep	-
 solid	MODERN_Refrigerator_1.brep	123	representable	32	48	22	20	1	1
 solid	MODERN_Refrigerator_1.brep	148	representable	8	12	6	6	1	1
-file	MODERN_Refrigerator_1_opened.brep	BSplineCurve2d=16,TrimmedCurve=8
+file	MODERN_Refrigerator_1_opened.brep	TrimmedCurve=8
 solid	MODERN_Refrigerator_1_opened.brep	53	unsupported	12	20	10	10	1	1
 solid	MODERN_Refrigerator_1_opened.brep	108	unsupported	12	20	10	10	1	1
 solid	MODERN_Refrigerator_1_opened.brep	307	representable	48	80	34	34	1	1
 solid	MODERN_Refrigerator_1_opened.brep	506	representable	48	80	34	34	1	1
-file	MODERN_Sink_1.brep	BSplineCurve=9,BSplineCurve2d=12,BSplineSurface=2,NonRingToroidalSurface=8
+file	MODERN_Sink_1.brep	NonRingToroidalSurface=8
 solid	MODERN_Sink_1.brep	808	unsupported	188	323	153	144	1	1
 solid	MODERN_Sink_1.brep	892	representable	24	36	16	14	1	1
 solid	MODERN_Sink_1.brep	969	representable	20	30	12	12	1	1
@@ -63,52 +63,52 @@ solid	MODERN_Sink_1_opened.brep	32	representable	6	10	8	7	1	1
 solid	MODERN_Sink_1_opened.brep	66	representable	6	10	8	7	1	1
 solid	MODERN_Sink_1_opened.brep	91	representable	8	12	6	6	1	1
 solid	MODERN_Sink_1_opened.brep	115	representable	8	12	6	6	1	1
-file	MODERN_Table_1.brep	BSplineCurve2d=12,TrimmedCurve=6
+file	MODERN_Table_1.brep	TrimmedCurve=6
 solid	MODERN_Table_1.brep	117	unsupported	26	42	26	22	1	1
-file	Motor-c.brep	BSplineCurve=78,BSplineCurve2d=112,BSplineSurface=10,SurfaceOfLinearExtrusion=75,TrimmedCurve2d=12
+file	Motor-c.brep	SurfaceOfLinearExtrusion=75,TrimmedCurve2d=4
 solid	Motor-c.brep	61	representable	16	24	10	10	1	1
-solid	Motor-c.brep	257	unsupported	54	81	29	29	1	1
-solid	Motor-c.brep	378	unsupported	28	44	26	20	1	1
+solid	Motor-c.brep	257	representable	54	81	29	29	1	1
+solid	Motor-c.brep	378	representable	28	44	26	20	1	1
 solid	Motor-c.brep	413	representable	8	12	6	6	1	1
 solid	Motor-c.brep	479	representable	16	24	12	11	1	1
 solid	Motor-c.brep	531	representable	12	18	10	9	1	1
 solid	Motor-c.brep	554	representable	4	6	6	4	1	1
 solid	Motor-c.brep	578	representable	4	6	6	5	1	1
-solid	Motor-c.brep	699	unsupported	33	49	18	18	1	1
+solid	Motor-c.brep	699	representable	33	49	18	18	1	1
 solid	Motor-c.brep	722	representable	4	6	6	4	1	1
 solid	Motor-c.brep	757	representable	8	12	6	6	1	1
 solid	Motor-c.brep	801	representable	8	12	12	9	1	1
 solid	Motor-c.brep	850	representable	12	18	8	8	1	1
 solid	Motor-c.brep	1057	unsupported	50	85	35	34	1	1
-solid	Motor-c.brep	1237	unsupported	48	72	30	27	1	1
+solid	Motor-c.brep	1237	representable	48	72	30	27	1	1
 solid	Motor-c.brep	1272	representable	8	12	6	6	1	1
-solid	Motor-c.brep	1370	unsupported	22	33	23	17	1	1
-file	Pump_Nut.brep	BSplineCurve2d=26,Hyperbola2d=26,TrimmedCurve=26
+solid	Motor-c.brep	1370	representable	22	33	23	17	1	1
+file	Pump_Nut.brep	Hyperbola2d=26,TrimmedCurve=26
 solid	Pump_Nut.brep	164	unsupported	44	67	27	25	1	1
-file	Pump_TopCover.brep	BSplineCurve=6,BSplineCurve2d=4,BSplineSurface=2
+file	Pump_TopCover.brep	-
 solid	Pump_TopCover.brep	45	unsupported	10	16	10	8	1	1
 file	Room.brep	-
-file	Top.brep	BSplineCurve=308,BSplineCurve2d=282,BSplineSurface=107,NonRingToroidalSurface=4,SurfaceOfRevolution=3,TrimmedCurve=4,TrimmedCurve2d=61
+file	Top.brep	NonRingToroidalSurface=4,SurfaceOfRevolution=3
 solid	Top.brep	1843	unsupported	426	755	337	324	1	1
 file	asahi.brep	-
-file	bottle.brep	BSplineCurve=8,BSplineCurve2d=8,BSplineSurface=2,Ellipse2d=1,RectangularTrimmedSurface=1
+file	bottle.brep	Ellipse2d=1,RectangularTrimmedSurface=1
 solid	bottle.brep	378	unsupported	75	157	74	71	1	1
 file	edge.brep	-
 file	face.brep	-
 file	face1.brep	-
-file	face2.brep	BSplineCurve=4,BSplineCurve2d=6,BSplineSurface=4,Ellipse2d=2,RectangularTrimmedSurface=1,TrimmedCurve=2
-file	fuse.brep	BSplineCurve2d=3
-file	hammer.brep	BSplineCurve=104,BSplineCurve2d=208,BSplineSurface=45
+file	face2.brep	Ellipse2d=2,RectangularTrimmedSurface=1,TrimmedCurve=2
+file	fuse.brep	-
+file	hammer.brep	-
 file	mal_ecrou.brep	-
 solid	mal_ecrou.brep	8	representable	2	3	3	3	1	1
 file	mal_tige.brep	-
 solid	mal_tige.brep	42	representable	12	18	12	8	1	1
 file	mal_vis.brep	NonRingToroidalSurface=1
 solid	mal_vis.brep	24	unsupported	5	8	7	6	1	1
-file	shell1.brep	BSplineCurve=216,BSplineCurve2d=34,BSplineSurface=99
+file	shell1.brep	-
 file	solid.brep	-
 solid	solid.brep	42	representable	12	18	12	8	1	1
-file	terrain.brep	BSplineCurve=4,BSplineSurface=1
+file	terrain.brep	-
 file	wedge_ok.brep	-
 solid	wedge_ok.brep	33	representable	8	12	6	6	1	1
-file	wing.brep	BSplineCurve=16,BSplineSurface=4
+file	wing.brep	-
