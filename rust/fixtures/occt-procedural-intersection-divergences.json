@@ -1,0 +1,41 @@
+{
+  "note": "Reviewed GeomInt_IntSS differences from the exact S7b.1 reference.",
+  "reviews": [
+    {
+      "case": "cs_tangent_outside",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "514676241ef9d501f283ef54d1aee529e4aec6e8668e0795d818b24e3311f22e",
+      "differences": [
+        "missed_tangent_point"
+      ],
+      "reason": "GeomInt_IntSS (IntPatch) returns neither a line nor a point for a sphere tangent to a cylinder from outside: the isolated tangency is not found. The kernel's class is decided exactly (R = |e - r|) and its point is exact.",
+      "independent_evidence": "The cylinder has radius 1 about the line x = 3, y = 0; the sphere radius 2 about the origin: the distance of its centre from the axis is 3, 3 - 1 = 2 = R, so the surfaces touch only at (2, 0, 0), on both exactly.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "cs_tangent_inside",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "514676241ef9d501f283ef54d1aee529e4aec6e8668e0795d818b24e3311f22e",
+      "differences": [
+        "missed_tangent_point"
+      ],
+      "reason": "GeomInt_IntSS (IntPatch) returns nothing for a sphere tangent to a cylinder from inside: the isolated tangency is not found. The kernel's class is decided exactly (R = |e - r|).",
+      "independent_evidence": "The cylinder has radius 3 about the line x = 1, y = 0; the sphere radius 2 about the origin: the centre is 1 from the axis, 3 - 1 = 2 = R, so the sphere touches the cylinder only at (-2, 0, 0).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "cs_near_viviani",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "98996499083868d43ae9a3f894134d1fd1e5161a8c3340831f2f8c7b7a405d7a",
+      "differences": [
+        "off_curve"
+      ],
+      "reason": "GeomInt_IntSS approximates its walking lines by B-splines; near the nearly singular neck of this loop, where the two branches come within 2^-20 of meeting, one of its samples is 3.3e-5 from the exact curve (above the 1e-6 bound; the other 50 samples are within it). The kernel's points are certified on the exact curve.",
+      "independent_evidence": "The sphere radius is 2 - 2^-20 against a Viviani sphere of radius 2 (cylinder radius 1 about x = 1): the exact curve is one loop whose parameter range on the cylinder closes at u = +-3.1396, the discriminant being -3.8e-6 at u = pi; the reference at 80 digits puts 50 of OCCT's 51 samples within 2e-6 of the curve and the last at 3.27e-5.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}

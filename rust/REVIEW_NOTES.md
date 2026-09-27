@@ -588,6 +588,36 @@ Decisions for S7, recorded before its code (2026-09-27):
   is taken before any kernel intersection code. Fixtures declare every
   degeneracy class with at least one exact and one near case.
 
+Decisions for S7b, recorded before its code (2026-09-27):
+
+* **Ruled parameterisation.** Every quadric pair S7a leaves contains a
+  cylinder or a cone. The curve is parameterised on it (the thinner
+  cylinder, else the cylinder, else the first cone) by the angle `u` of a
+  ruling in an exactly orthonormal frame about its axis: substituting the
+  ruling into the other quadric gives `A v^2 + 2 B(u) v + C(u) = 0`, so the
+  curve is `v = (-B +- sqrt(D)) / A` where `D(u) = B^2 - A C >= 0`, two
+  branches joined where `D` vanishes. This is D13's certified
+  parameterisation: a point is evaluated in rational intervals with an
+  enclosure; the pcurve on the ruled surface is `(u, v)` exactly and on the
+  other surface its projection.
+* **Topology by exact predicates.** For two cylinders with crossing axes
+  the classes are decided exactly from the squared axis distance `d^2`
+  against `(r1 + r2)^2` and `(r1 - r2)^2`: empty, a tangent point, one loop,
+  a figure-eight (internal tangency, a node) or two rings around the thinner
+  cylinder (equal radii at `d = 0` are S7a's ellipses); a cylinder and a
+  sphere likewise from the distance of the centre to the axis against the
+  radii. The roots of `D` (a loop's ends) are then simple: each is certified
+  by a sign change of `D` and a derivative bounded away from zero, and their
+  number must be the class's, or the result is `ComputationLimit`.
+* **Order.** S7b.1: cylinder/cylinder and cylinder/sphere. S7b.2: pairs with
+  a cone (transcendental coefficients: the classes come from certified root
+  counts, exact only where the apex is rational). S7b.3: tori, by their
+  meridians (a plane or a sphere meets a meridian circle in a quadratic;
+  cylinders, cones and tori in a quartic). Each sub-step keeps the evidence
+  order: an independent 60-digit reference and a native `GeomAPI_IntSS`
+  capture (sample points on both surfaces, curve counts) before its kernel
+  code.
+
 ### S8 — general planar split and face trimming (SplitBody job)
 
 Split any supported solid by an arbitrary plane: face/plane intersection
