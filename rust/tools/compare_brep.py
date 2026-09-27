@@ -37,6 +37,9 @@ REVIEWS = ROOT/'rust/fixtures/occt-brep-divergences.json'
 # S4: native observations of the spline models, captured before any kernel
 # code certifies spline geometry.
 SPLINES = ROOT/'rust/fixtures/occt-spline-preimplementation'
+# S4d: BRepGProp properties of the spline models, captured before any kernel
+# code integrates a spline surface or a spline pcurve on a cylinder or cone.
+PROPERTIES = ROOT/'rust/fixtures/occt-spline-properties'
 SOURCE_FILE = ROOT/'rust/tools/occt_brep_check_oracle.cpp'
 TOOLKITS = ['TKTopAlgo', 'TKBRep', 'TKGeomAlgo', 'TKGeomBase', 'TKG3d', 'TKG2d', 'TKMath', 'TKernel']
 # Every preflight case finished within 0.02 s; the deadline only bounds hangs.
@@ -99,6 +102,74 @@ def capture_splines(executable, env, oracle_source, sdk_manifest):
         'sdk_manifest_sha256': digest(sdk_manifest), 'input_sha256': digest(SPLINES/'inputs.txt'),
         'probe_source_sha256': digest(SPLINES/'oracle.cpp'),
         'observations_sha256': digest(SPLINES/'native.txt')})
+
+
+def decode_properties(row, name):
+    """BRepGProp's volume, its error estimate, the area, its error estimate,
+    the centre of mass and the matrix of inertia about it (row-major)."""
+    words = row.split()
+    if words[:2] != [name, 'P'] or len(words) != 18:
+        raise ValueError('malformed properties row for '+name)
+    values = [float(w) for w in words[2:]]
+    return {'volume': values[0], 'volume_error': values[1], 'area': values[2], 'area_error': values[3],
+            'centre': values[4:7], 'inertia': [values[7:10], values[10:13], values[13:16]]}
+
+
+def capture_properties(executable, env, oracle_source, sdk_manifest):
+    """Record BRepGProp's properties of every spline model (S4d), before any
+    kernel code integrates a spline surface or a spline pcurve on a cylinder
+    or cone."""
+    rows = []
+    for m, text, _ in spline_rows():
+        record = run(executable, text, dict(env, BREP_ORACLE_PROPERTIES='1'))
+        lines = record['stdout'].splitlines()
+        if record['exit_code'] != 0 or len(lines) != 4:
+            raise ValueError('native properties capture failed for '+m.name+': '+record['stderr'])
+        decode_properties(lines[3], m.name)
+        rows.append(lines[3])
+    PROPERTIES.mkdir(parents=True, exist_ok=True)
+    (PROPERTIES/'inputs.txt').write_text('\n'.join(text for _, text, _ in spline_rows())+'\n')
+    (PROPERTIES/'native.txt').write_text('\n'.join(rows)+'\n')
+    (PROPERTIES/'oracle.cpp').write_text(oracle_source.read_text())
+    status = subprocess.run(['git', 'status', '--porcelain', '--', 'rust'], cwd=ROOT, text=True,
+                            capture_output=True, check=True).stdout.splitlines()
+    revision = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True, capture_output=True,
+                              check=True).stdout.strip()
+    write(PROPERTIES/'capture.json', {
+        'source_reference': SOURCE, 'rust_revision': revision, 'platform': sys.platform,
+        'rust_spline_mass_exists': False, 'rust_worktree_uncommitted': status,
+        'sdk_manifest_sha256': digest(sdk_manifest), 'input_sha256': digest(PROPERTIES/'inputs.txt'),
+        'probe_source_sha256': digest(PROPERTIES/'oracle.cpp'),
+        'observations_sha256': digest(PROPERTIES/'native.txt')})
+
+
+def properties_capture(observed):
+    """The S4d observations are unchanged and reproduce, every value within
+    1e-9 relative of the capture (OCCT integrates with the platform's libm)
+    or its own error estimate."""
+    metadata = json.loads((PROPERTIES/'capture.json').read_text())
+    if (metadata['source_reference'] != SOURCE or metadata['rust_spline_mass_exists']
+            or any(line[3:].startswith('rust/kernel') for line in metadata['rust_worktree_uncommitted'])):
+        raise ValueError('properties capture was not a clean pre-implementation reference')
+    for key, name in [('input_sha256', 'inputs.txt'), ('probe_source_sha256', 'oracle.cpp'),
+                      ('observations_sha256', 'native.txt')]:
+        if metadata[key] != digest(PROPERTIES/name):
+            raise ValueError('properties evidence changed: '+name)
+    same_inputs((PROPERTIES/'inputs.txt').read_text(), '\n'.join(text for _, text, _ in spline_rows())+'\n')
+    captured = {}
+    for line in (PROPERTIES/'native.txt').read_text().splitlines():
+        name = line.split()[0]
+        captured[name] = decode_properties(line, name)
+    if captured.keys() != observed.keys():
+        raise ValueError('native properties cover other cases than the capture')
+    for name, was in captured.items():
+        now = observed[name]
+        flat = lambda p: [p['volume'], p['area'], *p['centre'], *sum(p['inertia'], [])]
+        scale = max(abs(x) for x in flat(was)) or 1.0
+        # BRepGProp's error estimates are relative.
+        allowance = (1e-9+max(was['volume_error'], was['area_error']))*scale
+        if any(abs(a-b) > allowance for a, b in zip(flat(was), flat(now))):
+            raise ValueError('native properties of '+name+' differ from the capture')
 
 
 def spline_capture(observed):
@@ -365,6 +436,8 @@ def main():
                         help='the pinned prism corpus, or the spline models of S4')
     parser.add_argument('--capture-splines', action='store_true',
                         help='record the S4a spline observations (before implementation only)')
+    parser.add_argument('--capture-properties', action='store_true',
+                        help='record the S4d spline properties (before implementation only)')
     args = parser.parse_args()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -385,6 +458,13 @@ def main():
         capture_splines(executable, env, SOURCE_FILE, args.sdk_manifest)
         print('captured', len(cases), 'spline cases')
         return
+    if args.capture_properties:
+        capture_properties(executable, env, SOURCE_FILE, args.sdk_manifest)
+        print('captured', len(cases), 'properties rows')
+        return
+    if spline:
+        env = dict(env, BREP_ORACLE_PROPERTIES='1')
+    properties = {}
     if args.capture_enclosures:
         capture_enclosures(executable, env, SOURCE_FILE, args.sdk_manifest)
         print('captured', len(cases), 'tolerance rows')
@@ -413,6 +493,10 @@ def main():
         rows = record['stdout'].splitlines()
         native_lines[m.name] = rows
         try:
+            if spline:
+                if len(rows) != 4:
+                    raise ValueError(f'malformed native output for {m.name}')
+                properties[m.name] = decode_properties(rows.pop(), m.name)
             if (len(rows) != 3 or not rows[1].startswith(f'{m.name} N ')
                     or not rows[2].startswith(f'{m.name} T ')):
                 raise ValueError(f'malformed native output for {m.name}')
@@ -457,6 +541,8 @@ def main():
     # side does.
     if spline:
         spline_capture(native_lines)
+        properties_capture(properties)
+        report['properties_rows_reproduced'] = len(properties)
     else:
         enclosure_capture(tolerances)
     report['tolerance_rows_reproduced'] = len(tolerances)

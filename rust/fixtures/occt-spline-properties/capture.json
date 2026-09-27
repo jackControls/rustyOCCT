@@ -1,0 +1,16 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "rust_revision": "79422a58e41528b332ce5c1b32598e763d05e761",
+  "platform": "darwin",
+  "rust_spline_mass_exists": false,
+  "rust_worktree_uncommitted": [
+    " M rust/REVIEW_NOTES.md",
+    " M rust/tools/compare_brep.py",
+    " M rust/tools/occt_brep_check_oracle.cpp",
+    "?? rust/fixtures/occt-spline-properties/"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "47a3f172e28e20769953e76414a29a93b3b7f9ddf5b5b78f16d7912eaabb2c2f",
+  "probe_source_sha256": "540c9a28f6a394ad07eec128b382d329f77fccff09e97df66fe51b881128d69d",
+  "observations_sha256": "48af7e81b0acc08908a20963b28eecb648aeff24d41ebc25636fabc1b819b765"
+}

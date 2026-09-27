@@ -280,6 +280,32 @@ Decisions for the rest of S4, recorded before its code (2026-09-26):
   records) is nonperiodic and unseamed. The reader reports both by name, the
   validator does not certify a periodic spline face, and windings on spline
   surfaces wait for a case that needs them.
+* **Mass properties with spline geometry (S4d, decided 2026-09-27, before
+  its code).** The S4a capture has no `BRepGProp` row, so native properties
+  come first: `compare_brep.py --family spline --capture-properties`
+  records OCCT's volume and area (each with its error estimate at a
+  requested relative precision of `1e-12`), centre of mass and inertia
+  about it for every spline model (`fixtures/occt-spline-properties`),
+  before any kernel code integrates a spline surface or a spline pcurve on
+  a cylinder or cone; every later run must reproduce them. Then:
+  * along a spline pcurve on a cylinder or cone, each term's `-∫ F du` by
+    the Green integral already used on spheres and tori;
+  * on a nonrational spline surface whose pcurve pieces each lie in one
+    patch, the ten volume and moment integrands are tensor Bernstein
+    polynomials of the patch (`p` and `N = X_ū × X_v̄` from the poles),
+    integrated exactly by the flux's column antiderivatives; the four
+    terms with `|N|` (area and face centre) are enclosed by the flux's
+    strips;
+  * on any other nonperiodic spline surface, all fourteen terms by the
+    strips.
+  The Green integral and the strips are first order, so those enclosures
+  are wide (their widths are recorded); a higher-order certified quadrature
+  is later work, not S4. The bridge requires every kernel enclosure of a
+  spline model valid on both sides to contain OCCT's value up to OCCT's own
+  error estimate and `1e-9` relative. The reference integrates the same
+  properties of every valid spline fixture case by nested Gauss–Legendre
+  quadrature (`cell_reference.py`), and `brep_validation.rs` requires the
+  kernel's enclosures to contain them.
 
 ### After S4
 
