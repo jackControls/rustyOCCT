@@ -17,6 +17,7 @@ import mpmath as mp
 from fractions import Fraction as F
 
 from cell_reference import declare, encode as encode_cell, gap_bounds, to_cell, validate as validate_cell
+import spline_cell_reference as spline
 from spline_cell_reference import Basis, BSpline2, BSpline3, BSplineSurface
 
 from brep_reference import (Arc2, Arc3, Cone, Cylinder, Edge, Face, Frame, Line2, Line3, Model, Sphere, Torus,
@@ -34,8 +35,11 @@ def angle_of(p, c):
 
 def prism(name, boundaries, z0=0.0, z1=1.0, tolerance=1e-7):
     """Boundaries: lists of pieces ('line', p) or ('arc', p, center, ccw) or
-    ('circle', center, radius, ccw). Outer boundaries run counter-clockwise
-    about +z and holes clockwise; material is always on the left."""
+    ('circle', center, radius, ccw), or ('spline', p, interior poles, basis,
+    weights) from p to the next piece's point, clamped (S4): its wall is the
+    ruled spline surface C(u) + v z over v in [0, h]. Outer boundaries run
+    counter-clockwise about +z and holes clockwise; material is always on
+    the left."""
     m = Model(name, tolerance)
     h = z1-z0
     bottom = Face(Plane(Frame((0.0, 0.0, z0), (0.0, 0.0, -1.0), X)), True)
@@ -77,7 +81,27 @@ def prism(name, boundaries, z0=0.0, z1=1.0, tolerance=1e-7):
                 j = (i+1) % n
                 p, q = points[i], points[j]
                 eb, et = len(m.edges), len(m.edges)+1
-                if piece[0] == 'line':
+                if piece[0] == 'spline':
+                    _, _, interior, basis, weights = piece
+                    poles = [p, *interior, q]
+                    weights = weights or [1.0]*len(poles)
+                    at = lambda z: [(x, y, z) for x, y in poles]
+                    m.edges += [Edge(vb[i], vb[j], BSpline3(basis, at(z0), weights)),
+                                Edge(vt[i], vt[j], BSpline3(basis, at(z1), weights))]
+                    flipped = BSpline2(basis, [uv_bottom(x) for x in poles], weights)
+                    bottom_loop.append(Use(eb, False, spline.reversed_curve(flipped)))
+                    top_loop.append(Use(et, True, BSpline2(basis, poles, weights)))
+                    rows = [x for pole in poles for x in ((pole[0], pole[1], z0), (pole[0], pole[1], z1))]
+                    wall = Face(BSplineSurface(basis, Basis(1, [0.0, h], [2, 2]), rows,
+                                               [w for w in weights for _ in range(2)]), True)
+                    a, b = basis.knots[0], basis.knots[-1]
+                    wall.loops.append([
+                        Use(eb, True, Line2((a, 0.0), (b, 0.0))),
+                        Use(vertical[j], True, Line2((b, 0.0), (b, h))),
+                        Use(et, False, Line2((b, h), (a, h))),
+                        Use(vertical[i], False, Line2((a, h), (a, 0.0))),
+                    ])
+                elif piece[0] == 'line':
                     m.edges += [Edge(vb[i], vb[j], Line3((p[0], p[1], z0), (q[0], q[1], z0))),
                                 Edge(vt[i], vt[j], Line3((p[0], p[1], z1), (q[0], q[1], z1)))]
                     length = hypot_rn(q[0]-p[0], q[1]-p[1])
@@ -130,6 +154,10 @@ def regular(n, r, c=(0.0, 0.0), hole=False):
     return [('line', p) for p in pts]
 
 
+def stadium_boundary(length, r):
+    return stadium(length, r)
+
+
 def stadium(length, r):
     return [('line', (0.0, -r)), ('arc', (length, -r), (length, 0.0), True),
             ('line', (length, r)), ('arc', (0.0, r), (0.0, 0.0), True)]
@@ -150,6 +178,8 @@ def invert(m):
 
 
 def reverse_pcurve(p):
+    if isinstance(p, BSpline2):
+        return spline.reversed_curve(p)
     if isinstance(p, Line2):
         return Line2(p.end, p.start)
     return Arc2(p.center, p.radius, p.start+p.sweep, -p.sweep)
@@ -888,10 +918,81 @@ def spline_cases(bases):
     return out
 
 
+def spline_models():
+    """S4: seamed models with spline edges, pcurves and walls and their
+    explicit OCCT rows, for the native spline capture and bridge
+    (compare_brep.py --family spline). Kept apart from the prism models,
+    whose native inputs are pinned by the pre-implementation captures."""
+    quadratic = Basis(2, [0.0, 1.0], [3, 3])
+    bulge = [('line', (0.0, 0.0)), ('spline', (3.0, 0.0), [(4.0, 1.0)], quadratic, None),
+             ('line', (3.0, 2.0)), ('line', (0.0, 2.0))]
+    cubic = Basis(3, [0.0, 0.5, 1.0], [4, 1, 4])
+    cubic_bulge = [('line', (0.0, 0.0)),
+                   ('spline', (3.0, 0.0), [(3.5, 0.25), (4.0, 1.0), (3.5, 1.75)], cubic, None),
+                   ('line', (3.0, 2.0)), ('line', (0.0, 2.0))]
+    # A knot of multiplicity 2 on a quadratic whose poles around it are not
+    # collinear at equal spacing: C0 there, a corner the kernel rejects.
+    corner = Basis(2, [0.0, 0.5, 1.0], [3, 2, 3])
+    c0_bulge = [('line', (0.0, 0.0)),
+                ('spline', (3.0, 0.0), [(3.5, 0.25), (3.75, 1.0), (3.5, 1.75)], corner, None),
+                ('line', (3.0, 2.0)), ('line', (0.0, 2.0))]
+    # A rounded corner: the rational quadratic of a quarter circle.
+    rounded = [('line', (0.0, 0.0)), ('line', (3.0, 0.0)),
+               ('spline', (3.0, 1.5), [(3.0, 2.0)], quadratic, [1.0, 0.7071067811865476, 1.0]),
+               ('line', (2.5, 2.0)), ('line', (0.0, 2.0))]
+    models = [prism('spline_bulge', [bulge]), prism('spline_cubic_bulge', [cubic_bulge]),
+              prism('spline_c0_bulge', [c0_bulge]), prism('spline_rounded_corner', [rounded], -0.5, 0.5)]
+    base = {m.name: m for m in models}
+
+    def mutated_model(name, source, change):
+        m = copy.deepcopy(base[source])
+        m.name = name
+        change(m)
+        models.append(m)
+
+    def shift_top_pcurve(m):
+        top = m.faces[1]
+        u = next(u for u in top.loops[0] if isinstance(u.pcurve, BSpline2))
+        u.pcurve = BSpline2(u.pcurve.basis, [(x+1e-3, y) for x, y in u.pcurve.poles], u.pcurve.weights)
+    mutated_model('spline_bulge_pcurve_shift', 'spline_bulge', shift_top_pcurve)
+    mutated_model('spline_bulge_vertex_moved', 'spline_bulge',
+                  lambda m: m.vertices.__setitem__(1, (3.0+1e-3, 0.0, 0.0)))
+    mutated_model('spline_bulge_wall_reversed', 'spline_bulge',
+                  lambda m: setattr(next(f for f in m.faces if isinstance(f.surface, BSplineSurface)), 'forward', False))
+
+    # A stadium's vertical edge and its pcurve on the cylinder as degree-1
+    # splines: spline geometry on a periodic analytic surface.
+    linear = Basis(1, [0.0, 1.0], [2, 2])
+
+    def cylinder_use(m):
+        wall = next(f for f in m.faces if isinstance(f.surface, Cylinder))
+        return next(u for u in wall.loops[0] if m.edges[u.edge].start != m.edges[u.edge].end
+                    and isinstance(m.edges[u.edge].curve, Line3)
+                    and m.edges[u.edge].curve.start[:2] == m.edges[u.edge].curve.end[:2])
+
+    def spline_pcurve(du=0.0):
+        def change(m):
+            u = cylinder_use(m)
+            u.pcurve = BSpline2(linear, [(u.pcurve.start[0]+du, u.pcurve.start[1]),
+                                         (u.pcurve.end[0]+du, u.pcurve.end[1])], [1.0, 1.0])
+        return change
+
+    def spline_edge(m):
+        e = m.edges[cylinder_use(m).edge]
+        e.curve = BSpline3(linear, [e.curve.start, e.curve.end], [1.0, 1.0])
+    stadium = prism('spline_stadium', [stadium_boundary(3.0, 1.0)])
+    base['spline_stadium'] = stadium
+    mutated_model('spline_stadium_pcurve', 'spline_stadium', spline_pcurve())
+    mutated_model('spline_stadium_pcurve_shift', 'spline_stadium', spline_pcurve(1e-3))
+    mutated_model('spline_stadium_edge', 'spline_stadium', spline_edge)
+    return models
+
+
 def generate():
     bases = base_cases()
     models = list(bases.values())+mutations(bases)
-    cells = [declare(c) for c in [to_cell(m) for m in models]+cell_cases(bases)]
+    cells = [declare(c) for c in [to_cell(m) for m in models]+cell_cases(bases)
+             + [to_cell(m) for m in spline_models()]]
     names = [c.name for c in cells]
     assert len(names) == len(set(names)), 'duplicate case names'
     text = '\n'.join(encode_cell(c) for c in cells)+'\n'

@@ -946,6 +946,10 @@ def validate_references(m):
 
 def edge_range(c):
     """OCCT curve, parameter range, and our fraction -> OCCT parameter."""
+    if isinstance(c, BSpline3):
+        # The whole domain, the fraction mapped affinely onto it.
+        words = spline.encode_curve(c, number).split()[1:]
+        return ('bspline', tuple(words)), c.basis.knots[0], c.basis.knots[-1]
     if isinstance(c, Line3):
         d = [b-a for a, b in zip(c.start, c.end)]
         length = math.sqrt(ltr_sum(x*x for x in d))
@@ -960,6 +964,14 @@ def edge_range(c):
 
 def pcurve_encoding(p, forward, first, last):
     """Geom2d curve whose parameter equals the edge parameter; exact flag."""
+    if isinstance(p, BSpline2):
+        # The pcurve follows the face's traversal: a reversed use runs it
+        # backwards along the edge.
+        q = p if forward else spline.reversed_curve(p)
+        if q is None:
+            return ('bspline', ()), False
+        q, exact = spline.reparameterized(q, first, last)
+        return ('bspline', tuple(spline.encode_curve(q, number).split()[1:])), exact
     span = last-first
     if isinstance(p, Line2):
         a, b = (p.start, p.end) if forward else (p.end, p.start)
@@ -988,13 +1000,17 @@ def native(m):
     for e in m.edges:
         (kind, values), first, last = edge_range(e.curve)
         ranges.append((first, last))
-        out.append(f'e {e.start} {e.end} {kind} '+' '.join(map(number, values))+f' {number(first)} {number(last)}')
+        words = values if kind == 'bspline' else map(number, values)
+        out.append(f'e {e.start} {e.end} {kind} '+' '.join(words)+f' {number(first)} {number(last)}')
     inexact = []
     for fi, f in enumerate(m.faces):
         s = f.surface
-        values = (*s.frame.origin, *s.frame.normal, *s.frame.x) + (() if isinstance(s, Plane) else (s.radius,))
-        kind = 'plane' if isinstance(s, Plane) else 'cylinder'
-        out.append(f'f {kind} '+' '.join(map(number, values))+(' F' if f.forward else ' R'))
+        if isinstance(s, BSplineSurface):
+            out.append('f '+spline.encode_surface(s, number)+(' F' if f.forward else ' R'))
+        else:
+            values = (*s.frame.origin, *s.frame.normal, *s.frame.x) + (() if isinstance(s, Plane) else (s.radius,))
+            kind = 'plane' if isinstance(s, Plane) else 'cylinder'
+            out.append(f'f {kind} '+' '.join(map(number, values))+(' F' if f.forward else ' R'))
         for li, loop in enumerate(f.loops):
             out.append('w')
             for ui, u in enumerate(loop):
@@ -1004,7 +1020,8 @@ def native(m):
                     inexact.append(f'{fi}.{li}.{ui}')
                 # OCCT orientation inside the underlying FORWARD face.
                 o = 'F' if u.forward == f.forward else 'R'
-                out.append(f'u {u.edge} {o} {pk} '+' '.join(map(number, pv)))
+                words = pv if pk == 'bspline' else map(number, pv)
+                out.append(f'u {u.edge} {o} {pk} '+' '.join(words))
     for s in m.shells:
         out.append('s '+' '.join(map(str, s)))
     out.append('end')

@@ -168,6 +168,36 @@ def pcurve_valid(curve):
     return any(tuple(p) != tuple(curve.poles[0]) for p in curve.poles)
 
 
+def reversed_curve(c):
+    """The same curve traversed backwards over the mirrored domain: knots
+    k -> a + b - k (exact in binary64 only when the sums are), poles and
+    weights reversed. Returns None when a mirrored knot is not exact."""
+    b = c.basis
+    a, e = F(b.knots[0]), F(b.knots[-1])
+    knots = [a+e-F(k) for k in reversed(b.knots)]
+    if any(float(k) != k for k in knots):
+        return None
+    basis = Basis(b.degree, [float(k) for k in knots], list(reversed(b.mults)), b.periodic)
+    return type(c)(basis, list(reversed(c.poles)), list(reversed(c.weights)))
+
+
+def reparameterized(c, first, last):
+    """The same curve with its domain moved affinely onto [first, last]; the
+    second value says whether every knot moved exactly."""
+    b = c.basis
+    a, e = F(b.knots[0]), F(b.knots[-1])
+    lo, hi = F(first), F(last)
+    exact_knots = [lo+(F(k)-a)*(hi-lo)/(e-a) for k in b.knots]
+    knots = [float(k) for k in exact_knots]
+    exact = all(F(k) == x for k, x in zip(knots, exact_knots))
+    return type(c)(Basis(b.degree, knots, list(b.mults), b.periodic), list(c.poles), list(c.weights)), exact
+
+
+def native_basis(b, number):
+    """The native rows' basis: `DEG PERIODIC NK knots... mults...`."""
+    return encode_basis(b, number)
+
+
 def encode_basis(b, number):
     return (f'{b.degree} {int(b.periodic)} {len(b.knots)} '
             + ' '.join(map(number, b.knots))+' '+' '.join(map(str, b.mults)))

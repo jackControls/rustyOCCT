@@ -539,7 +539,7 @@ algorithms).
 
 ## Generic B-rep validation
 
-`generate_brep_fixtures.py --check` rebuilds 135 cell-complex cases (47 valid):
+`generate_brep_fixtures.py --check` rebuilds 145 cell-complex cases (47 valid):
 54 converted by rule from an independent seamed prism builder and its
 mutations, twenty-two cell-model cases for the model's own failure
 modes, the near-frequency bound and enclosures (gaps just inside and outside
@@ -549,7 +549,8 @@ pcurve), fifteen spheres (seven valid, the whole sphere among them, and
 eight mutations) and thirteen tori (seven valid: the whole torus, both
 halves, a segment, two wedges and a far copy; six mutations) and nineteen
 spline cells (R4: C1 and broken knots on edges, pcurves and faces, periodic
-seams, degenerate splines; none valid before the rest of S4), with complete issue lists from the separate mpmath reference validators
+seams, degenerate splines) and ten spline models with native rows (none
+valid before the rest of S4), with complete issue lists from the separate mpmath reference validators
 (`brep_reference.py`, `cell_reference.py`). `brep_validation.rs` requires
 Rust's sorted report to equal each list exactly. The `brep_validation` fuzz
 target mutates valid prisms and cavities into specific invalid complexes.
@@ -559,7 +560,7 @@ structure-only and checks the synthesized counts of every valid case. See
 [the bridge](BREP_VALIDATION.md#native-comparison-bridge).
 
 Enclosures (M5): every fixture carries bounds that the independent
-reference declares; Rust's report equals the reference's on all 135 cases.
+reference declares; Rust's report equals the reference's on all 145 cases.
 Measured bounds of the 47 valid cases lie between the reference's certain
 gap and its declared bound (`brep-enclosure-lows.tsv`, within a stated
 frame-rounding allowance). `enclosures.rs` requires every prism of the
@@ -671,6 +672,7 @@ only numbers carry an allowance.
 | `occt-sphere-revolve-capture/native.txt` (`compare_revolve_history.py --family sphere`) | every number of each case's native block on each run | `2^-40` × the case's size or the value | as for the cones |
 | `occt-torus-preimplementation/native.txt` (`compare_primitives.py --family torus`) | OCCT's counts, properties, faces, edges and vertices of the 22 tori on each run | the bridge's own `1e-9` of the case's size, as for the cones | as for the cones |
 | `occt-torus-revolve-capture/native.txt` (`compare_revolve_history.py --family torus`) | every number of each case's native block on each run | `2^-40` × the case's size or the value | as for the cones |
+| `occt-spline-preimplementation/native.txt` (`compare_brep.py --family spline`) | OCCT's statuses, counts, tolerances, vertex gaps and use deviations of the ten spline models on each run | tolerances, statuses and counts exact; measurements within `2^-46` of the case's size or `1e-9` relative, as for M5 | OCCT evaluates splines and trigonometry with platform arithmetic; every valid model's measurement is rounding, at most `9.2e-16` |
 | `prism-properties-baseline.tsv` (T1) | kernel mass properties, bounds and classifications before and after the migration | none: each host regenerates its own rows at `26fc457f` and must reproduce them bitwise | frames and rotations use the platform's trigonometry, so rows differ across hosts in the last bits |
 
 Native bridges that compare against reviewed differences use no numeric

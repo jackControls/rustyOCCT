@@ -1,0 +1,21 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "rust_revision": "395bc3e8fce2475e7f6df7ff25a3988e69b89c7d",
+  "platform": "darwin",
+  "rust_spline_certification_exists": false,
+  "rust_worktree_uncommitted": [
+    " M rust/REVIEW_NOTES.md",
+    " M rust/fixtures/brep-cases.txt",
+    " M rust/fixtures/brep-expected.tsv",
+    " M rust/tools/brep_reference.py",
+    " M rust/tools/compare_brep.py",
+    " M rust/tools/generate_brep_fixtures.py",
+    " M rust/tools/occt_brep_check_oracle.cpp",
+    " M rust/tools/spline_cell_reference.py",
+    "?? rust/fixtures/occt-spline-preimplementation/"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "47a3f172e28e20769953e76414a29a93b3b7f9ddf5b5b78f16d7912eaabb2c2f",
+  "probe_source_sha256": "9c9abba1d7b6807fe37dd44ffcc39e965dda1411898d5543e9f23a037c77038b",
+  "observations_sha256": "8460879607c6ca6a603dd83eb551155014c743ec47b25444e7f710f467101aae"
+}

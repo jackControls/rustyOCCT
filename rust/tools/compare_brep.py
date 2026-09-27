@@ -34,6 +34,9 @@ ORIGINAL = ROOT/'rust/fixtures/occt-brep-preimplementation'
 # before any Rust enclosure existed.
 ENCLOSURES = ROOT/'rust/fixtures/occt-enclosure-preimplementation'
 REVIEWS = ROOT/'rust/fixtures/occt-brep-divergences.json'
+# S4: native observations of the spline models, captured before any kernel
+# code certifies spline geometry.
+SPLINES = ROOT/'rust/fixtures/occt-spline-preimplementation'
 SOURCE_FILE = ROOT/'rust/tools/occt_brep_check_oracle.cpp'
 TOOLKITS = ['TKTopAlgo', 'TKBRep', 'TKGeomAlgo', 'TKGeomBase', 'TKG3d', 'TKG2d', 'TKMath', 'TKernel']
 # Every preflight case finished within 0.02 s; the deadline only bounds hangs.
@@ -63,6 +66,62 @@ def native_rows():
     """(model, explicit OCCT rows, inexact pcurve uses) for representable cases."""
     models, _ = generate()
     return [(m, *reference.native(m)) for m in models if reference.representable(m)]
+
+
+@functools.lru_cache(maxsize=None)
+def spline_rows():
+    """The same for the spline models (S4)."""
+    return [(m, *reference.native(m)) for m in generate_brep_fixtures.spline_models()]
+
+
+def capture_splines(executable, env, oracle_source, sdk_manifest):
+    """Record every native row of the spline models (S4a), before any kernel
+    code certifies spline geometry."""
+    rows = []
+    for m, text, _ in spline_rows():
+        record = run(executable, text, env)
+        lines = record['stdout'].splitlines()
+        if record['exit_code'] != 0 or len(lines) != 3:
+            raise ValueError('native spline capture failed for '+m.name+': '+record['stderr'])
+        decode_tolerances(lines[2], m.name)
+        rows.extend(lines)
+    SPLINES.mkdir(parents=True, exist_ok=True)
+    (SPLINES/'inputs.txt').write_text('\n'.join(text for _, text, _ in spline_rows())+'\n')
+    (SPLINES/'native.txt').write_text('\n'.join(rows)+'\n')
+    (SPLINES/'oracle.cpp').write_text(oracle_source.read_text())
+    status = subprocess.run(['git', 'status', '--porcelain', '--', 'rust'], cwd=ROOT, text=True,
+                            capture_output=True, check=True).stdout.splitlines()
+    revision = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True, capture_output=True,
+                              check=True).stdout.strip()
+    write(SPLINES/'capture.json', {
+        'source_reference': SOURCE, 'rust_revision': revision, 'platform': sys.platform,
+        'rust_spline_certification_exists': False, 'rust_worktree_uncommitted': status,
+        'sdk_manifest_sha256': digest(sdk_manifest), 'input_sha256': digest(SPLINES/'inputs.txt'),
+        'probe_source_sha256': digest(SPLINES/'oracle.cpp'),
+        'observations_sha256': digest(SPLINES/'native.txt')})
+
+
+def spline_capture(observed):
+    """The S4a observations are unchanged and reproduce: statuses and counts
+    exactly, tolerances exactly and measurements as for the M5 capture."""
+    metadata = json.loads((SPLINES/'capture.json').read_text())
+    if metadata['source_reference'] != SOURCE or metadata['rust_spline_certification_exists']:
+        raise ValueError('spline capture was not a clean pre-implementation reference')
+    for key, name in [('input_sha256', 'inputs.txt'), ('probe_source_sha256', 'oracle.cpp'),
+                      ('observations_sha256', 'native.txt')]:
+        if metadata[key] != digest(SPLINES/name):
+            raise ValueError('spline evidence changed: '+name)
+    same_inputs((SPLINES/'inputs.txt').read_text(), '\n'.join(text for _, text, _ in spline_rows())+'\n')
+    lines = (SPLINES/'native.txt').read_text().splitlines()
+    sizes = {m.name: case_size(m) for m, _, _ in spline_rows()}
+    for k in range(0, len(lines), 3):
+        name = lines[k].split()[0]
+        now = observed.get(name)
+        if now is None or now[:2] != lines[k:k+2]:
+            raise ValueError('native spline observations of '+name+' differ from the capture')
+        if not same_tolerances(decode_tolerances(lines[k+2], name), decode_tolerances(now[2], name),
+                               sizes[name]*2.0**-46):
+            raise ValueError('native spline tolerance observations of '+name+' differ from the capture')
 
 
 def original_capture():
@@ -302,20 +361,30 @@ def main():
     parser.add_argument('--strict-native', action='store_true')
     parser.add_argument('--capture-enclosures', action='store_true',
                         help='record the M5 tolerance observations (before implementation only)')
+    parser.add_argument('--family', choices=['prism', 'spline'], default='prism',
+                        help='the pinned prism corpus, or the spline models of S4')
+    parser.add_argument('--capture-splines', action='store_true',
+                        help='record the S4a spline observations (before implementation only)')
     args = parser.parse_args()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     prefix = args.occt_root.resolve()
     verify_sdk(prefix, args.sdk_manifest)
-    original_capture()
+    spline = args.family == 'spline'
+    if not spline:
+        original_capture()
     models, files = generate()
     for name, text in files.items():
         if text != (ROOT/'rust/fixtures'/name).read_text():
             raise ValueError('independent fixture regeneration changed: '+name)
     issues, counts = rust_issues()
     enclosures = rust_enclosures()
-    cases = native_rows()
+    cases = spline_rows() if spline else native_rows()
     executable, env, loaded, command = build(prefix, output, cases[0][1])
+    if args.capture_splines:
+        capture_splines(executable, env, SOURCE_FILE, args.sdk_manifest)
+        print('captured', len(cases), 'spline cases')
+        return
     if args.capture_enclosures:
         capture_enclosures(executable, env, SOURCE_FILE, args.sdk_manifest)
         print('captured', len(cases), 'tolerance rows')
@@ -329,6 +398,7 @@ def main():
               'enclosure_observations': {},
               'matches': [], 'reviewed_differences': [], 'failures': []}
     observations = {}
+    native_lines = {}
     oracle = None
     for m, text, inexact in cases:
         record = run(executable, text, env)
@@ -341,6 +411,7 @@ def main():
             continue
         oracle = oracle or next(iter(record['stderr'].splitlines()), None)
         rows = record['stdout'].splitlines()
+        native_lines[m.name] = rows
         try:
             if (len(rows) != 3 or not rows[1].startswith(f'{m.name} N ')
                     or not rows[2].startswith(f'{m.name} T ')):
@@ -382,8 +453,12 @@ def main():
                 'source_sha256': digest(SOURCE_FILE), 'probe_sha256': digest(executable),
                 'observations_sha256': digest(output/'native.json'),
                 'loaded_libraries': loaded, 'build_command': command}
-    # The M5 observations must reproduce whatever the Rust side does.
-    enclosure_capture(tolerances)
+    # The pre-implementation observations must reproduce whatever the Rust
+    # side does.
+    if spline:
+        spline_capture(native_lines)
+    else:
+        enclosure_capture(tolerances)
     report['tolerance_rows_reproduced'] = len(tolerances)
     write(output/'capture.json', metadata)
     write(output/'report.json', report)

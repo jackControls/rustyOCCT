@@ -232,6 +232,38 @@ Decisions for R4, recorded before its code (2026-09-26):
   the homogeneous curve's left and right first derivatives at each tested
   knot in `Fraction`s (de Boor on each side), the equivalent condition.
 
+Decisions for the rest of S4, recorded before its code (2026-09-26):
+
+* **Order.** S4a native capture, before any kernel code that certifies
+  spline geometry: the native construction protocol and
+  `occt_brep_check_oracle.cpp` learn B-spline curves, 2D curves and
+  surfaces; spline cases with OCCT rows (planar faces bounded by spline
+  edges, ruled spline walls, spline pcurves on planes and cylinders, and
+  their mutations) record BRepCheck verdicts, tolerances, per-use
+  deviations and `BRepGProp` properties. S4b certified deviation, UV gaps
+  and vertex gaps for spline uses. S4c loop winding and containment with
+  spline pcurves. S4d face flux and mass properties with spline pcurves and
+  surfaces. S4e interop (B-spline records in the reader, converter and
+  writer; periodic spline surfaces' windings with their domain's period).
+  Each lands with its reference, fixtures, fuzz coverage and docs; S4 is
+  accepted once as a whole, like S3.
+* **Deviation (S4b).** Where the composition is rational (a plane or spline
+  surface, a line or spline pcurve, a line or spline edge), the kernel forms
+  the homogeneous difference `N = C_h w_SP - (S∘P)_h w_C` exactly on every
+  common Bézier piece (split at the knots of both curves and at the
+  pcurve's crossings of the surface's knot lines) and bounds `|D| <= max
+  |N_i| / min (w_C w_SP)_j` from Bernstein coefficients: exact cancellation,
+  no subdivision. Otherwise (an arc edge or pcurve, or a periodic analytic
+  surface under a spline pcurve) it bounds `D` by a second-order Taylor
+  enclosure, `|D(t_m)| + |D'(t_m)| h/2 + sup|D''| h²/8`, over pieces
+  refined until it is within tolerance, with the hulls of exact Bézier
+  pieces for the spline factors and the certified trigonometry for the
+  analytic ones. A failure is certified by an exactly evaluated sample, as
+  today. The reference is independent: exact `Fraction` composition in the
+  rational case, `mpmath` interval arithmetic otherwise.
+* **UV gaps on spline surfaces** are measured in 3D, `|S(a) - S(b)|` from
+  exact evaluations, instead of by a length scale.
+
 ### After S4
 
 `PORTING.md` step three: general face trimming, curve/surface intersection
@@ -405,3 +437,7 @@ converter records that as `Imported` provenance, never as an approximation.
     `brep_validation` mutation 31. Every other check of spline geometry is
     uncertified, as decided above; the reader and writer still refuse
     splines.
+  * S4a: native observations of ten spline models (spline sides with
+    ruled spline walls, spline geometry on a stadium's cylinder, and
+    mutations) before any kernel code certifies spline geometry
+    (`fixtures/occt-spline-preimplementation`).

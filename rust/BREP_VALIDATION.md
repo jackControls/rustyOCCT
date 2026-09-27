@@ -305,7 +305,7 @@ Evidence:
   seam is kept and rejected as `seam_edge`), and `validate` implements the
   side, region, radial, winding, vertex-loop and region-flux invariants
   independently, with its own `+v` cover-crossing parity on cylinders.
-  `generate_brep_fixtures.py --check` rebuilds 135 cases. 54 come from an
+  `generate_brep_fixtures.py --check` rebuilds 145 cases. 54 come from an
   independent seamed prism builder (19 valid solids and 35 mutations; the
   valid solids include holes, convex and concave arcs, full circles, one and
   two cavities, rotated and far-translated copies and a millimetre-scale
@@ -340,7 +340,10 @@ Evidence:
   a C1 seam or a broken one, a small periodic basis whose removal needs a
   refinement first, a nonperiodic ring edge, spline pcurves, spline faces
   (C1, broken, with a vertex loop) and degenerate spline edges and
-  pcurves. 47 cases are valid. `brep_validation.rs`
+  pcurves. Ten are the spline models of S4 (`spline_models()`, with OCCT
+  rows for `compare_brep.py --family spline`): prisms with a spline side
+  and a ruled spline wall, and a stadium with spline geometry on its
+  cylinder, with their mutations. 47 cases are valid. `brep_validation.rs`
   requires Rust's complete sorted issue list to equal the reference's for
   every case.
 * The existing prism suites (`invariants`, `occt_regression`, `modeling`)
