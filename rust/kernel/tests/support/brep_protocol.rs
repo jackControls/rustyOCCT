@@ -5,7 +5,90 @@ use rusty_occt::topology::{
     Curve2, Curve3, Edge, EdgeId, Enclosure, Face, FaceId, Fin, FinId, Loop, LoopId, Orientation,
     Region, RegionId, RegionKind, Shell, ShellId, Side, Surface, TopologyParts, Vertex, VertexId,
 };
-use rusty_occt::{Frame3, Point2, Point3, Tolerance, Vec3};
+use rusty_occt::{
+    BSplineCurve2, BSplineCurve3, BSplineSurface3, Frame3, KnotVector, Point2, Point3, Tolerance,
+    Vec3,
+};
+
+/// `DEG PERIODIC NK knots... mults...` from `w[*at]`, advancing `at`.
+fn basis(w: &[&str], at: &mut usize) -> (usize, bool, Vec<f64>, Vec<usize>) {
+    let mut next = || {
+        *at += 1;
+        w[*at - 1]
+    };
+    let degree: usize = next().parse().unwrap();
+    let periodic = next() == "1";
+    let n: usize = next().parse().unwrap();
+    let knots = (0..n).map(|_| next().parse().unwrap()).collect();
+    let mults = (0..n).map(|_| next().parse().unwrap()).collect();
+    (degree, periodic, knots, mults)
+}
+
+/// `N poles(dim * N) weights(N)` from `w[*at]`, advancing `at`.
+fn control(w: &[&str], at: &mut usize, dim: usize) -> (Vec<Vec<f64>>, Vec<f64>) {
+    let mut next = || -> f64 {
+        *at += 1;
+        w[*at - 1].parse().unwrap()
+    };
+    let n = next() as usize;
+    let poles = (0..n).map(|_| (0..dim).map(|_| next()).collect()).collect();
+    let weights = (0..n).map(|_| next()).collect();
+    (poles, weights)
+}
+
+/// A spline edge after the word `bspline` at `w[at - 1]`.
+fn spline3(w: &[&str], mut at: usize) -> Curve3 {
+    let (degree, periodic, knots, mults) = basis(w, &mut at);
+    let (poles, weights) = control(w, &mut at, 3);
+    let poles = poles
+        .iter()
+        .map(|p| Point3::new(p[0], p[1], p[2]))
+        .collect();
+    Curve3::BSpline(
+        if periodic {
+            BSplineCurve3::new_periodic(degree, poles, Some(weights), knots, mults)
+        } else {
+            BSplineCurve3::new(degree, poles, Some(weights), knots, mults)
+        }
+        .expect("fixture splines are valid"),
+    )
+}
+
+fn spline2(w: &[&str], mut at: usize) -> Curve2 {
+    let (degree, periodic, knots, mults) = basis(w, &mut at);
+    let (poles, weights) = control(w, &mut at, 2);
+    let poles = poles.iter().map(|p| Point2::new(p[0], p[1])).collect();
+    Curve2::BSpline(
+        if periodic {
+            BSplineCurve2::new_periodic(degree, poles, Some(weights), knots, mults)
+        } else {
+            BSplineCurve2::new(degree, poles, Some(weights), knots, mults)
+        }
+        .expect("fixture splines are valid"),
+    )
+}
+
+/// A spline surface after `bspline` at `w[at - 1]`, and the index after it.
+fn spline_surface(w: &[&str], mut at: usize) -> (Surface, usize) {
+    let knot_vector = |(degree, periodic, knots, mults): (usize, bool, Vec<f64>, Vec<usize>)| {
+        if periodic {
+            KnotVector::new_periodic(degree, knots, mults)
+        } else {
+            KnotVector::new(degree, knots, mults)
+        }
+        .expect("fixture bases are valid")
+    };
+    let u = knot_vector(basis(w, &mut at));
+    let v = knot_vector(basis(w, &mut at));
+    let (poles, weights) = control(w, &mut at, 3);
+    let poles = poles
+        .iter()
+        .map(|p| Point3::new(p[0], p[1], p[2]))
+        .collect();
+    let surface =
+        BSplineSurface3::new(u, v, poles, Some(weights)).expect("fixture surfaces are valid");
+    (Surface::BSpline(surface), at)
+}
 
 fn frame(v: &[f64]) -> Frame3 {
     Frame3::new(
@@ -70,7 +153,9 @@ pub fn parse(block: &str) -> (String, f64, TopologyParts) {
                 enclosure: enclosure(&w),
             }),
             "e" => {
-                let curve = if w[3] == "line" {
+                let curve = if w[3] == "bspline" {
+                    spline3(&w, 4)
+                } else if w[3] == "line" {
                     let v = nums(4, 6);
                     Curve3::LineSegment {
                         start: Point3::new(v[0], v[1], v[2]),
@@ -93,7 +178,9 @@ pub fn parse(block: &str) -> (String, f64, TopologyParts) {
                 });
             }
             "f" => {
-                let (surface, rest) = if w[1] == "plane" {
+                let (surface, rest) = if w[1] == "bspline" {
+                    spline_surface(&w, 2)
+                } else if w[1] == "plane" {
                     (Surface::Plane(frame(&nums(2, 9))), 11)
                 } else if w[1] == "cone" {
                     let v = nums(2, 11);
@@ -158,7 +245,9 @@ pub fn parse(block: &str) -> (String, f64, TopologyParts) {
                     .push(Loop::Vertex(VertexId::new(w[1].parse().unwrap())));
             }
             "u" => {
-                let pcurve = if w[3] == "line" {
+                let pcurve = if w[3] == "bspline" {
+                    spline2(&w, 4)
+                } else if w[3] == "line" {
                     let v = nums(4, 4);
                     Curve2::LineSegment {
                         start: Point2::new(v[0], v[1]),

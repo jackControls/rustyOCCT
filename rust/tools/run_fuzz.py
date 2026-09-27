@@ -140,6 +140,15 @@ def seed_corpus(target):
                 for scale in [0,10,20]:
                     extra=[[],[150],[150,140],[150,140]][shape]
                     save(bytes([30,scale,90,120,shape]+extra+[140,90,200,128,100,160,sub])+bytes((j*37+1)%256 for j in range(16)))
+        # Splines (mutation 31, R4): an edge, a pcurve or a plane of a star
+        # prism, with or without a round hole, at degrees 2 and 3.
+        for c in (0, 5):
+            for kind in range(3):
+                for degree in range(2):
+                    for scale in [0,10,20]:
+                        for hole in range(2):
+                            save(bytes([31,c,scale]+[128]*(3+c)+[hole,120,140,90,100,150,200,90,160,degree,kind,3,1,0,2])
+                                 + bytes((j*37+1)%256 for j in range(16)))
         save(bytes([0]))
     elif target == 'spline_linear':
         # Known factors, rational polylines, the rational circle and the

@@ -48,7 +48,7 @@ impl SurfaceEvaluation {
 /// Immutable positive-weight tensor-product surface. U and V may independently
 /// be periodic. Control points and weights are U-major: index = u * v_count + v.
 /// At most 4096 total poles, degrees 1..=25; no trimming or topology is implied.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BSplineSurface3 {
     u: KnotVector,
     v: KnotVector,
@@ -109,6 +109,12 @@ impl BSplineSurface3 {
     }
     pub fn domain(&self) -> ((f64, f64), (f64, f64)) {
         (self.u.domain(), self.v.domain())
+    }
+    /// The rounded point at `(u, v)` in the domain (or any periodic value).
+    pub fn point(&self, u: f64, v: f64) -> Result<Point3> {
+        Ok(self
+            .evaluate(u, v, DerivativeOrder::Position, [KnotSide::Automatic; 2])?
+            .position())
     }
 
     /// Position, or position and every partial derivative through the requested

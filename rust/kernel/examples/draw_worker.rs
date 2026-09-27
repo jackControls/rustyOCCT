@@ -146,6 +146,7 @@ fn solid<'a>(
 /// Twice the signed area and twice the first moments of a pcurve.
 fn moments(p: &Curve2) -> [f64; 3] {
     match p {
+        Curve2::BSpline(_) => unreachable!("no spline geometry reaches the adapter before S4"),
         Curve2::LineSegment { start: a, end: b } => {
             let (du, dv) = (b.x - a.x, b.y - a.y);
             [
@@ -181,12 +182,16 @@ fn face_area(t: &Topology, face: usize) -> f64 {
     let fins = t.face_fins(FaceId::new(face));
     let fins = fins.iter().flatten();
     match t.faces()[face].surface {
+        Surface::BSpline(_) => unreachable!("no spline geometry reaches the adapter before S4"),
         Surface::Plane(_) => 0.5 * fins.map(|u| moments(&u.pcurve)[0]).sum::<f64>().abs(),
         // Wall pcurves are lines on the universal cover: the area is the
         // radius times the periodic area -∮ v du, wound loops included.
         Surface::Cylinder { radius, .. } => {
             let periodic = fins
                 .map(|u| match u.pcurve {
+                    Curve2::BSpline(_) => {
+                        unreachable!("no spline geometry reaches the adapter before S4")
+                    }
                     Curve2::LineSegment { start: a, end: b } => -0.5 * (a.y + b.y) * (b.x - a.x),
                     Curve2::CircularArc { .. } => f64::NAN,
                 })
@@ -291,6 +296,7 @@ fn seam_length(t: &Topology, face: usize) -> Option<f64> {
 
 fn edge_length(curve: &Curve3) -> f64 {
     match curve {
+        Curve3::BSpline(_) => unreachable!("no spline geometry reaches the adapter before S4"),
         Curve3::LineSegment { start, end } => start.distance(*end),
         Curve3::Circle { radius, .. } => TAU * radius,
         Curve3::CircularArc {
@@ -628,6 +634,7 @@ fn gauss() -> Vec<(f64, f64)> {
 /// A pcurve's point and derivative at `t` in [0, 1].
 fn pcurve_at(p: &Curve2, t: f64) -> (Point2, Point2) {
     match p {
+        Curve2::BSpline(_) => unreachable!("no spline geometry reaches the adapter before S4"),
         Curve2::LineSegment { start: a, end: b } => (p.point(t), Point2::new(b.x - a.x, b.y - a.y)),
         Curve2::CircularArc {
             radius,
@@ -653,6 +660,9 @@ fn face_centre(t: &Topology, face: usize) -> (f64, Point3) {
         for (x, w) in &nodes {
             let (q, d) = pcurve_at(&fin.pcurve, *x);
             let g = match surface {
+                Surface::BSpline(_) => {
+                    unreachable!("no spline geometry reaches the adapter before S4")
+                }
                 Surface::Plane(_) => [q.y, q.x * q.y, q.y * q.y / 2.0, 0.0],
                 Surface::Cylinder { .. } => {
                     [q.y, q.y * q.x.cos(), q.y * q.x.sin(), q.y * q.y / 2.0]
@@ -665,6 +675,7 @@ fn face_centre(t: &Topology, face: usize) -> (f64, Point3) {
         }
     }
     match surface {
+        Surface::BSpline(_) => unreachable!("no spline geometry reaches the adapter before S4"),
         Surface::Plane(_) => (
             m[0].abs(),
             surface.point(Point2::new(m[1] / m[0], m[2] / m[0])),

@@ -4,7 +4,9 @@
 //! BSplCLib_D0/D1/D2, and PLib::RationalDerivative. Exact de Boor interpolation
 //! with differentiated recurrences replaces floating evaluation. Every output
 //! component has its smallest finite binary64 enclosure. See MATHEMATICS.md.
-use crate::{exact, math::finite, spline, Error, KnotVector, Point3, Result, ScalarInterval};
+use crate::{
+    exact, math::finite, spline, Error, KnotVector, Point2, Point3, Result, ScalarInterval,
+};
 use num_rational::BigRational as R;
 
 mod editing;
@@ -71,7 +73,7 @@ impl CurveEvaluation {
 
 /// Immutable rational curve. Nonperiodic domains may be clamped or unclamped;
 /// periodic curves use OCCT's cyclic control-point order.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BSplineCurve3 {
     basis: KnotVector,
     poles: Vec<Point3>,
@@ -172,6 +174,12 @@ impl BSplineCurve3 {
     pub fn domain(&self) -> (f64, f64) {
         self.basis.domain()
     }
+    /// The rounded point at `u` in the domain (or any periodic value).
+    pub fn point(&self, u: f64) -> Result<Point3> {
+        Ok(self
+            .evaluate(u, DerivativeOrder::Position, KnotSide::Automatic)?
+            .position())
+    }
 
     /// Evaluate within a nonperiodic closed domain without extrapolation, or at
     /// any finite periodic parameter. An automatic derivative at a knot/seam
@@ -233,6 +241,64 @@ impl BSplineCurve3 {
             })
             .collect();
         spline::span_polynomial(&self.basis, span, poles)
+    }
+}
+
+/// A planar rational B-spline, as OCCT's `Geom2d_BSplineCurve`: a
+/// `BSplineCurve3` whose every pole has `z = 0`, so all of its evaluation,
+/// editing and exact modules apply unchanged (pcurves, S4 of
+/// REVIEW_NOTES.md).
+#[derive(Debug, Clone, PartialEq)]
+pub struct BSplineCurve2(BSplineCurve3);
+impl BSplineCurve2 {
+    /// The same data limits as `BSplineCurve3::new`.
+    pub fn new(
+        degree: usize,
+        poles: Vec<Point2>,
+        weights: Option<Vec<f64>>,
+        knots: Vec<f64>,
+        multiplicities: Vec<usize>,
+    ) -> Result<Self> {
+        let poles = poles.iter().map(|p| Point3::new(p.x, p.y, 0.0)).collect();
+        Ok(Self(BSplineCurve3::new(
+            degree,
+            poles,
+            weights,
+            knots,
+            multiplicities,
+        )?))
+    }
+    /// The same data limits as `BSplineCurve3::new_periodic`.
+    pub fn new_periodic(
+        degree: usize,
+        poles: Vec<Point2>,
+        weights: Option<Vec<f64>>,
+        knots: Vec<f64>,
+        multiplicities: Vec<usize>,
+    ) -> Result<Self> {
+        let poles = poles.iter().map(|p| Point3::new(p.x, p.y, 0.0)).collect();
+        Ok(Self(BSplineCurve3::new_periodic(
+            degree,
+            poles,
+            weights,
+            knots,
+            multiplicities,
+        )?))
+    }
+    /// The spatial curve in the plane `z = 0`.
+    pub fn as_curve3(&self) -> &BSplineCurve3 {
+        &self.0
+    }
+    pub fn poles(&self) -> Vec<Point2> {
+        self.0
+            .poles()
+            .iter()
+            .map(|p| Point2::new(p.x, p.y))
+            .collect()
+    }
+    pub fn point(&self, u: f64) -> Result<Point2> {
+        let p = self.0.point(u)?;
+        Ok(Point2::new(p.x, p.y))
     }
 }
 

@@ -560,7 +560,7 @@ fn circle_of(c: &Curve3) -> Option<(crate::Frame3, f64)> {
         Curve3::Circle { frame, radius } | Curve3::CircularArc { frame, radius, .. } => {
             Some((*frame, *radius))
         }
-        Curve3::LineSegment { .. } => None,
+        Curve3::LineSegment { .. } | Curve3::BSpline(_) => None,
     }
 }
 

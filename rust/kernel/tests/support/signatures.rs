@@ -14,6 +14,7 @@ pub fn p3(p: Point3) -> String {
 /// from the closed forms of 1/2 ∮ (u dv - v du), 1/2 ∮ u² dv, -1/2 ∮ v² du.
 fn moments(p: &Curve2) -> [f64; 3] {
     match p {
+        Curve2::BSpline(_) => unreachable!("builders make no spline pcurves"),
         Curve2::LineSegment { start: a, end: b } => {
             let (du, dv) = (b.x - a.x, b.y - a.y);
             [
@@ -106,6 +107,7 @@ pub fn signature(s: &Solid, slot: Slot) -> String {
                         .expect("a revolved face has certified mass properties");
                     format!("F {kind} {area:?} {}", p3(centre))
                 }
+                Surface::BSpline(_) => unreachable!("builders make no spline faces"),
             }
         }
         // A prism or cone has one solid region: the body.

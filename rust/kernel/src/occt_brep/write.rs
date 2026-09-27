@@ -41,6 +41,7 @@ struct EdgeGeometry {
 /// the edge.
 fn curve_record(c: &Curve3, ring_start: Option<f64>) -> EdgeGeometry {
     match c {
+        Curve3::BSpline(_) => unreachable!("write refuses spline geometry first"),
         Curve3::LineSegment { start, end } => {
             let d = *end - *start;
             let l = d.length();
@@ -96,6 +97,7 @@ fn curve_record(c: &Curve3, ring_start: Option<f64>) -> EdgeGeometry {
 /// The point of a curve at its own parameter `t` (as `curve_record` writes it).
 fn curve_at(c: &Curve3, t: f64) -> Point3 {
     match c {
+        Curve3::BSpline(_) => unreachable!("write refuses spline geometry first"),
         Curve3::LineSegment { start, end } => {
             let d = *end - *start;
             *start + d * (t / d.length())
@@ -124,6 +126,9 @@ fn pcurve_record(
 ) -> Result<String, BrepError> {
     let [t0, t1] = range;
     Ok(match (surface, pcurve) {
+        (Surface::BSpline(_), _) | (_, Curve2::BSpline(_)) => {
+            unreachable!("write refuses spline geometry first")
+        }
         (_, Curve2::LineSegment { start, end }) => {
             // In the edge's direction.
             let (a, b) = if forward {
@@ -254,6 +259,7 @@ enum Revolved {
 impl Revolved {
     fn of(surface: &Surface) -> Option<Self> {
         match surface {
+            Surface::BSpline(_) => None,
             Surface::Cylinder { frame, radius } => Some(Self::Ruled {
                 frame: *frame,
                 radius: *radius,
@@ -354,6 +360,21 @@ impl Records {
 /// the root, several a compound.
 pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
     let t = topology;
+    // Spline records are written with the rest of S4.
+    if t.edges()
+        .iter()
+        .any(|e| matches!(e.curve, Curve3::BSpline(_)))
+        || t.fins()
+            .iter()
+            .any(|f| matches!(f.pcurve, Curve2::BSpline(_)))
+        || t.faces()
+            .iter()
+            .any(|f| matches!(f.surface, Surface::BSpline(_)))
+    {
+        return Err(BrepError::Unwritable {
+            what: "spline geometry",
+        });
+    }
     let tol = num(tolerance);
     let mut curves2d: Vec<String> = Vec::new();
     let mut curves: Vec<String> = Vec::new();
@@ -688,6 +709,7 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
     // Surfaces.
     for face in t.faces() {
         surfaces.push(match &face.surface {
+            Surface::BSpline(_) => unreachable!("write refuses spline geometry first"),
             Surface::Plane(f) => format!(
                 "1 {} {} {} {}",
                 nums(&f.origin().to_array()),

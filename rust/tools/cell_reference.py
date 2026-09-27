@@ -18,6 +18,10 @@ import copy
 
 import mpmath as mp
 
+from fractions import Fraction as F
+
+import spline_cell_reference as spline
+from spline_cell_reference import BSpline2, BSpline3, BSplineSurface
 from brep_reference import (Arc2, Arc3, cos_rn, sin_rn, Cone, Cylinder, Line2, Line3, Plane, Sphere, TAU, Torus,
                             add, apex, periodic_v,
                             apex_v, axes, cross, periodic, u_scale, v_scale,
@@ -198,7 +202,24 @@ def pole_point(c, f):
 # ---------------------------------------------------------------- conversion
 
 def closed_curve(c):
+    if isinstance(c, BSpline3):
+        return c.basis.periodic  # a spline ring edge is periodic
     return isinstance(c, Arc3) and abs(c.sweep) == TAU
+
+
+def spline_use(curve, surface, pcurve):
+    """Spline geometry that only the endpoint and continuity checks
+    certify before the rest of S4."""
+    return isinstance(curve, BSpline3) or isinstance(surface, BSplineSurface) or isinstance(pcurve, BSpline2)
+
+
+def exact_end(p, t):
+    """A pcurve's end as Fractions, or None when it is not exact (an arc)."""
+    if isinstance(p, BSpline2):
+        return spline.end_point(p, t)
+    if isinstance(p, Line2):
+        return tuple(F(x) for x in (p.start if t == 0 else p.end))
+    return None
 
 
 def seam_merge(face, loop, edges):
@@ -365,6 +386,8 @@ def encode(c):
         head = f'e {ref(e.start)} {ref(e.end)}'
         if isinstance(cv, Line3):
             body = 'line '+' '.join(map(number, (*cv.start, *cv.end)))
+        elif isinstance(cv, BSpline3):
+            body = spline.encode_curve(cv, number)
         else:
             body = f'arc {frame(cv.frame)} '+' '.join(map(number, (cv.radius, cv.start, cv.sweep)))
         out.append(f'{head} {body} fins'+''.join(f' {k}' for k in e.fins))
@@ -380,6 +403,8 @@ def encode(c):
             o = 'F' if u.forward else 'R'
             if isinstance(p, Line2):
                 out.append(f'u {u.edge} {o} line '+' '.join(map(number, (*p.start, *p.end)))+enc(('u', k)))
+            elif isinstance(p, BSpline2):
+                out.append(f'u {u.edge} {o} {spline.encode_curve(p, number)}'+enc(('u', k)))
             else:
                 out.append(f'u {u.edge} {o} arc '
                            + ' '.join(map(number, (*p.center, p.radius, p.start, p.sweep)))+enc(('u', k)))
@@ -389,6 +414,8 @@ def encode(c):
         loops = ' loops'+''.join(f' {l}' for l in f.loops)
         if isinstance(s, Plane):
             out.append(f'f plane {frame(s.frame)} {o} {f.front} {f.back}{loops}'+enc(('f', fi)))
+        elif isinstance(s, BSplineSurface):
+            out.append(f'f {spline.encode_surface(s, number)} {o} {f.front} {f.back}{loops}'+enc(('f', fi)))
         elif isinstance(s, Cone):
             out.append(f'f cone {frame(s.frame)} {number(s.radius)} {number(s.half_angle)} {o} {f.front} {f.back}'
                        f'{loops}'+enc(('f', fi)))
@@ -706,6 +733,20 @@ def validate(c):
         if not ok:
             issues.append(issue('degenerate_surface', f'face {fi}'))
     geometry_bad = {fi for fi, ok in enumerate(surface_ok) if not ok}
+    # C1 in each cell's own parameterisation (R4), exactly.
+    for i, e in enumerate(c.edges):
+        if isinstance(e.curve, BSpline3) and not spline.curve_c1(e.curve):
+            issues.append(issue('edge_not_c1', f'edge {i}'))
+    for fi, f in enumerate(c.faces):
+        if isinstance(f.surface, BSplineSurface) and not spline.surface_c1(f.surface):
+            issues.append(issue('face_not_c1', f'face {fi}'))
+            geometry_bad.add(fi)
+        for li, lid in enumerate(f.loops):
+            for ui, k in enumerate(c.loops[lid].fins):
+                p = c.fins[k].pcurve
+                if isinstance(p, BSpline2) and not spline.curve_c1(p):
+                    issues.append(issue('pcurve_not_c1', f'use {fi}.{li}.{ui}'))
+                    geometry_bad.add(fi)
     # Enclosures (M5): a usable bound lies in [0, tol]; each geometric check
     # below decides against it first, then against the tolerance.
     def usable(key, entity):
@@ -754,7 +795,10 @@ def validate(c):
         for li, lid in enumerate(f.loops):
             loop = c.loops[lid]
             if loop.vertex is not None:
-                if surface_ok[fi] and vertex_ok[loop.vertex]:
+                if surface_ok[fi] and vertex_ok[loop.vertex] and isinstance(f.surface, BSplineSurface):
+                    issues.append(issue('uncertified_vertex_loop', f'loop {fi}.{li}'))
+                    geometry_bad.add(fi)
+                elif surface_ok[fi] and vertex_ok[loop.vertex]:
                     d = surface_distance(f.surface, vec(c.vertices[loop.vertex]))
                     v = loop.vertex
                     if judge(d, d, vertex_bound[v], f'vertex {v}', f'{c.name}: vertex loop') == 'beyond':
@@ -775,6 +819,10 @@ def validate(c):
                     continue
                 if not surface_ok[fi] or not curve_ok[u.edge]:
                     continue
+                if spline_use(c.edges[u.edge].curve, f.surface, u.pcurve):
+                    issues.append(issue('uncertified_pcurve_off_edge', ent))
+                    geometry_bad.add(fi)
+                    continue
                 low, high = deviation_bounds(c.edges[u.edge].curve, f.surface, u.pcurve, u.forward)
                 if judge(low, high, fin_bound.get(k), ent, f'{c.name}: {ent}') == 'beyond':
                     issues.append(issue('pcurve_off_edge', ent))
@@ -791,6 +839,13 @@ def validate(c):
             for ui, k in enumerate(loop.fins):
                 last = ui == len(loop.fins)-1
                 w = loop.fins[(ui+1) % len(loop.fins)]
+                if isinstance(f.surface, BSplineSurface):
+                    # No length scale: only an exact meeting is decided.
+                    a, b = exact_end(c.fins[k].pcurve, 1), exact_end(c.fins[w].pcurve, 0)
+                    if a is None or b is None or a != b:
+                        issues.append(issue('uncertified_uv_gap', f'use {fi}.{li}.{ui}'))
+                        geometry_bad.add(fi)
+                    continue
                 a, b = pcurve_point(c.fins[k].pcurve, 1), pcurve_point(c.fins[w].pcurve, 0)
                 shift = TAU*loop.winding if last and periodic(f.surface) else 0
                 shift_v = TAU*loop.winding_v if last and periodic(f.surface) else 0

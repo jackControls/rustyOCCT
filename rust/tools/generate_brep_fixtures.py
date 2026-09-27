@@ -14,7 +14,10 @@ from pathlib import Path
 
 import mpmath as mp
 
+from fractions import Fraction as F
+
 from cell_reference import declare, encode as encode_cell, gap_bounds, to_cell, validate as validate_cell
+from spline_cell_reference import Basis, BSpline2, BSpline3, BSplineSurface
 
 from brep_reference import (Arc2, Arc3, Cone, Cylinder, Edge, Face, Frame, Line2, Line3, Model, Sphere, Torus,
                             Plane, TAU, Use, atan2_rn, cos_rn, encode, hypot_rn, number, sin_rn,
@@ -732,6 +735,156 @@ def cell_cases(bases):
     torus_case('torus_whole', 'torus_whole_reversed', lambda c: setattr(c.faces[0], 'forward', False))
     torus_case('torus_whole', 'torus_spindle', lambda c: setattr(c.faces[0].surface, 'minor', 3.5))
     torus_case('torus_inner_half', 'torus_inner_half_wall_forward', lambda c: setattr(c.faces[0], 'forward', True))
+    out.extend(spline_cases(bases))
+    return out
+
+
+def exact(values):
+    """Fractions as binary64, which they must be exactly."""
+    out = tuple(float(x) for x in values)
+    assert all(F(x) == y for x, y in zip(out, values)), values
+    return out
+
+
+def along(a, b, fractions):
+    """Exact points a + f (b - a)."""
+    a, b = [F(x) for x in a], [F(x) for x in b]
+    return [exact([x+f*(y-x) for x, y in zip(a, b)]) for f in fractions]
+
+
+# A clamped quadratic with one knot of multiplicity 2 at 1/2: its Greville
+# fractions reproduce a line at uniform speed, so it is C1 there.
+QUADRATIC = Basis(2, [0.0, 0.5, 1.0], [3, 2, 3])
+QUADRATIC_LINE = [F(0), F(1, 4), F(1, 2), F(3, 4), F(1)]
+# The same with the first interior pole moved along the line: the speed jumps.
+QUADRATIC_KINK = [F(0), F(3, 8), F(1, 2), F(3, 4), F(1)]
+
+
+def spline_cases(bases):
+    """R4 of REVIEW_NOTES.md: spline edges, pcurves and faces, C1 or not in
+    their own parameterisation. Every other check of spline geometry is
+    uncertified before the rest of S4, so none of these is valid."""
+    out = []
+
+    def cell(base, name, change):
+        c = to_cell(copy.deepcopy(bases[base]))
+        c.name = name
+        change(c)
+        out.append(c)
+
+    def edge_spline(k, fractions, basis=QUADRATIC, weights=None):
+        def change(c):
+            e = c.edges[k]
+            a, b = c.vertices[e.start], c.vertices[e.end]
+            poles = along(a, b, fractions)
+            e.curve = BSpline3(basis, poles, weights or [1.0]*len(poles))
+        return change
+    cell('box', 'spline_edge_c1', edge_spline(0, QUADRATIC_LINE))
+    cell('box', 'spline_edge_not_c1', edge_spline(0, QUADRATIC_KINK))
+    # Degree 1: a knot of multiplicity 1 is tested; the midpoint keeps the
+    # speed, a point a quarter along does not.
+    linear = Basis(1, [0.0, 0.5, 1.0], [2, 1, 2])
+    cell('box', 'spline_edge_linear_c1', edge_spline(0, [F(0), F(1, 2), F(1)], linear))
+    cell('box', 'spline_edge_linear_kink', edge_spline(0, [F(0), F(1, 4), F(1)], linear))
+    # Unclamped degree 1 over [1, 2]: the knots 0 and 3 lie beyond the
+    # domain and are not tested.
+    cell('box', 'spline_edge_unclamped', edge_spline(0, [F(0), F(1)], Basis(1, [0.0, 1.0, 2.0, 3.0], [1, 1, 1, 1])))
+
+    # Rational: C1 of the homogeneous curve. With weights 1, 2, 3 around the
+    # knot's pole, w2 P2 = (w1 P1 + w3 P3) / 2 keeps it; P2 on the line
+    # otherwise breaks it.
+    def rational(c1):
+        def change(c):
+            e = c.edges[0]
+            a, b = [F(x) for x in c.vertices[e.start]], [F(x) for x in c.vertices[e.end]]
+            p1 = [x+(y-x)/4 for x, y in zip(a, b)]
+            p3 = [x+3*(y-x)/4 for x, y in zip(a, b)]
+            p2 = ([(x+3*y)/4 for x, y in zip(p1, p3)] if c1
+                  else [(x+y)/2 for x, y in zip(a, b)])
+            poles = [exact(a), exact(p1), exact(p2), exact(p3), exact(b)]
+            e.curve = BSpline3(QUADRATIC, poles, [1.0, 1.0, 2.0, 3.0, 1.0])
+        return change
+    cell('box', 'spline_edge_rational_c1', rational(True))
+    cell('box', 'spline_edge_rational_not_c1', rational(False))
+    cell('box', 'spline_edge_degenerate', edge_spline(0, [F(0)]*5))
+
+    # A ring edge: a periodic quadratic of period 3 with every knot of
+    # multiplicity 2; its poles 0, 2 and 4 lie on the curve (at 0, 1, 2),
+    # each the midpoint of its neighbours for C1. Moving pole 0 breaks only
+    # the seam. A nonperiodic spline cannot be a ring edge.
+    def ring(seam_c1=True, periodic=True):
+        def change(c):
+            k = next(i for i, e in enumerate(c.edges) if e.start is None)
+            z = F(c.edges[k].curve.frame.origin[2])
+            corners = [(F(2), F(0)), (F(-1), F(2)), (F(-1), F(-2))]
+            mid = lambda p, q: ((p[0]+q[0])/2, (p[1]+q[1])/2)
+            ring = []
+            for i in range(3):
+                ring += [mid(corners[i-1], corners[i]), corners[i]]
+            if not seam_c1:
+                ring[0] = (ring[0][0]+F(1, 8), ring[0][1])
+            poles = [exact((x, y, z)) for x, y in ring]
+            basis = Basis(2, [0.0, 1.0, 2.0, 3.0], [2, 2, 2, 2], periodic=True)
+            if not periodic:
+                poles.append(poles[0])
+                basis = Basis(2, [0.0, 1.0, 2.0, 3.0], [3, 2, 2, 3])
+            c.edges[k].curve = BSpline3(basis, poles, [1.0]*len(poles))
+        return change
+    cell('cylinder', 'spline_ring_edge_c1', ring())
+    cell('cylinder', 'spline_ring_edge_seam_not_c1', ring(seam_c1=False))
+    cell('cylinder', 'spline_ring_edge_nonperiodic', ring(periodic=False))
+
+    # A periodic quadratic of three poles with its seam of multiplicity 2:
+    # one removal would leave fewer poles than the basis allows, so the
+    # kernel refines elsewhere first. Pole 0 is the seam's point, C1 as the
+    # midpoint of the others.
+    def small_ring(c1):
+        def change(c):
+            k = next(i for i, e in enumerate(c.edges) if e.start is None)
+            z = F(c.edges[k].curve.frame.origin[2])
+            p1, p2 = (F(2), F(0)), (F(-2), F(2))
+            p0 = ((p1[0]+p2[0])/2, (p1[1]+p2[1])/2) if c1 else (F(1, 8), F(1))
+            poles = [exact((x, y, z)) for x, y in (p0, p1, p2)]
+            basis = Basis(2, [0.0, 1.0, 2.0], [2, 1, 2], periodic=True)
+            c.edges[k].curve = BSpline3(basis, poles, [1.0]*3)
+        return change
+    cell('cylinder', 'spline_ring_edge_small_basis_c1', small_ring(True))
+    cell('cylinder', 'spline_ring_edge_small_basis_not_c1', small_ring(False))
+
+    # A cap's pcurve as a spline over the same segment.
+    def pcurve_spline(fractions):
+        def change(c):
+            k = c.loops[c.faces[1].loops[0]].fins[0]
+            p = c.fins[k].pcurve
+            c.fins[k].pcurve = BSpline2(QUADRATIC, along(p.start, p.end, fractions), [1.0]*5)
+        return change
+    cell('box', 'spline_pcurve_c1', pcurve_spline(QUADRATIC_LINE))
+    cell('box', 'spline_pcurve_not_c1', pcurve_spline(QUADRATIC_KINK))
+    cell('box', 'spline_pcurve_degenerate', pcurve_spline([F(0)]*5))
+
+    # The top cap's surface as a spline: biquadratic, a knot of
+    # multiplicity 2 at 1/2 in u, its rows lines at uniform speed (C1) or
+    # one row kinked; its cap pcurves meet exactly, so only the pcurves'
+    # agreement with the edges is uncertified. A vertex loop on it is too.
+    def surface_spline(kinked=False, vertex_loop=False):
+        def change(c):
+            fractions = QUADRATIC_LINE
+            rows = []
+            for i, fu in enumerate(fractions):
+                for fv in (F(0), F(1, 2), F(1)):
+                    if kinked and i == 1 and fv == 0:
+                        fu = QUADRATIC_KINK[1]
+                    rows.append(exact((3*fu, 2*fv, F(1))))
+            c.faces[1].surface = BSplineSurface(QUADRATIC, Basis(2, [0.0, 1.0], [3, 3]), rows, [1.0]*len(rows))
+            if vertex_loop:
+                from cell_reference import Loop as CLoop
+                c.vertices.append((1.0, 1.0, 1.0))
+                c.loops.append(CLoop([], 0, len(c.vertices)-1))
+                c.faces[1].loops.append(len(c.loops)-1)
+        return change
+    cell('box', 'spline_face_c1', surface_spline())
+    cell('box', 'spline_face_not_c1', surface_spline(kinked=True))
+    cell('box', 'spline_face_vertex_loop', surface_spline(vertex_loop=True))
     return out
 
 

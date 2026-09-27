@@ -122,6 +122,7 @@ fn cones_match_the_independent_reference() {
                 Surface::Cylinder { .. } => "cylinder",
                 Surface::Sphere { .. } => "sphere",
                 Surface::Torus { .. } => "torus",
+                Surface::BSpline(_) => "bspline",
             };
             let (a, centre) = t.face_area_and_centre(FaceId::new(f)).expect("face");
             let k = faces

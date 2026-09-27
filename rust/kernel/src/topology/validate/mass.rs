@@ -638,6 +638,15 @@ pub(super) fn sphere_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
 /// The fourteen face integrals over the face region (loops carry its
 /// orientation, as in `face_flux`), relative to `reference`.
 fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Option<[T; TERMS]> {
+    // Spline geometry is not integrated before the rest of S4.
+    if matches!(face.surface, Surface::BSpline(_))
+        || loops
+            .iter()
+            .flat_map(|lp| &lp.fins)
+            .any(|u| matches!(u.pcurve, Curve2::BSpline(_)))
+    {
+        return None;
+    }
     let mut totals: [T; TERMS] = std::array::from_fn(|_| c(0.0));
     let mut accumulate = |values: [T; TERMS]| {
         for (t, v) in totals.iter_mut().zip(values) {
@@ -687,6 +696,7 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
                             *start_angle,
                             *sweep_angle,
                         ),
+                        Curve2::BSpline(_) => None,
                     });
                     accumulate(values.try_map_all()?);
                 }
@@ -713,6 +723,7 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
             let terms = torus_terms(&fr, *major, *minor, &d);
             accumulate(trig_face(face, loops, &terms)?.try_into().ok()?);
         }
+        Surface::BSpline(_) => return None,
         Surface::Cylinder { frame: f, radius }
         | Surface::Cone {
             frame: f, radius, ..

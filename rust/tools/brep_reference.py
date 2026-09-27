@@ -19,6 +19,9 @@ import math
 
 import mpmath as mp
 
+import spline_cell_reference as spline
+from spline_cell_reference import BSpline2, BSpline3, BSplineSurface
+
 mp.mp.dps = 40
 
 
@@ -295,6 +298,8 @@ def finite(values):
 
 
 def curve_valid(c, tol):
+    if isinstance(c, BSpline3):
+        return spline.curve_valid(c, tol)
     if isinstance(c, Line3):
         return finite((*c.start, *c.end)) and norm(sub(vec(c.end), vec(c.start))) > tol
     return (finite((*c.frame.origin, *c.frame.normal, *c.frame.x, c.radius, c.start, c.sweep))
@@ -302,6 +307,8 @@ def curve_valid(c, tol):
 
 
 def surface_valid(s, tol):
+    if isinstance(s, BSplineSurface):
+        return True  # finite, with positive weights, by construction
     frame_ok = finite((*s.frame.origin, *s.frame.normal, *s.frame.x)) and axes(s.frame) is not None
     if isinstance(s, Cone):
         # A cone may be given at its apex (radius 0); its angle is strictly
@@ -317,12 +324,17 @@ def surface_valid(s, tol):
 
 
 def pcurve_valid(p):
+    if isinstance(p, BSpline2):
+        return spline.pcurve_valid(p)
     if isinstance(p, Line2):
         return finite((*p.start, *p.end)) and p.start != p.end
     return finite((*p.center, p.radius, p.start, p.sweep)) and p.radius > 0 and 0 < abs(p.sweep) <= TAU
 
 
 def curve_point(c, t):
+    if isinstance(c, BSpline3):
+        # Only the ends are needed (vertex gaps), exactly.
+        return [mp.mpf(x.numerator)/x.denominator for x in spline.end_point(c, t)]
     t = mp.mpf(t)
     if isinstance(c, Line3):
         a, b = vec(c.start), vec(c.end)
@@ -333,6 +345,8 @@ def curve_point(c, t):
 
 
 def pcurve_point(p, t):
+    if isinstance(p, BSpline2):
+        return [mp.mpf(x.numerator)/x.denominator for x in spline.end_point(p, t)]
     t = mp.mpf(t)
     if isinstance(p, Line2):
         a, b = vec(p.start), vec(p.end)
@@ -516,6 +530,8 @@ def use_harmonic(s, p, h, sign):
 
 def deviation_bounds(c, s, p, forward, samples=256):
     """(certain lower bound by sampling, rigorous harmonic upper bound or inf)."""
+    if isinstance(c, BSpline3) or isinstance(s, BSplineSurface) or isinstance(p, BSpline2):
+        return mp.mpf(0), mp.inf  # not measured before the rest of S4
     def gap(t):
         return norm(sub(curve_point(c, t if forward else 1-t), surface_point(s, pcurve_point(p, t))))
     low = max(gap(mp.mpf(i)/samples) for i in range(samples+1))

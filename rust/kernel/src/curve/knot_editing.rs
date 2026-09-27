@@ -166,6 +166,20 @@ impl ExactBSplineCurve3 {
     /// multiplicity is a no-op. Removing a periodic seam to zero shifts the
     /// fundamental origin to the next distinct knot, retaining the period.
     pub fn remove_knot(&self, u: &R, target: usize) -> Result<Option<Self>> {
+        Ok(self
+            .removed(u, target)?
+            .filter(|c| c.controls.iter().all(|p| p[3] > integer(0))))
+    }
+
+    /// Whether removing `u` down to `target` has zero homogeneous residual,
+    /// whatever the signs of the resulting weights: C1 of the homogeneous
+    /// curve at a knot of multiplicity `degree` when `target` is
+    /// `degree - 1` (R4 of REVIEW_NOTES.md).
+    pub(crate) fn removable(&self, u: &R, target: usize) -> Result<bool> {
+        Ok(self.removed(u, target)?.is_some())
+    }
+
+    fn removed(&self, u: &R, target: usize) -> Result<Option<Self>> {
         let mut u = spline::normalize(u)?;
         if self.is_periodic() && u == self.domain()[1] {
             u = self.domain()[0].clone();
@@ -221,9 +235,6 @@ impl ExactBSplineCurve3 {
             }
         }
         let controls = work.crop(&basis);
-        if controls.iter().any(|p| p[3] <= integer(0)) {
-            return Ok(None);
-        }
         Ok(Some(Self { basis, controls }))
     }
 

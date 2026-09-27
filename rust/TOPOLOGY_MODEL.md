@@ -84,8 +84,9 @@ violates it without re-deriving the reasoning.
   ids and per-body slots already guarantee. *Forbids:* in-place mutation.
 * **D11. C1 within a cell.** Within an edge or a face interior, geometry is
   C1 in its parameters; a tangent discontinuity is a vertex or an edge. The
-  exact spline modules already detect interior-knot discontinuities.
-  *Forbids:* a single edge across a corner.
+  exact spline modules already detect interior-knot discontinuities; R4 of
+  `REVIEW_NOTES.md` implements the check (`edge_not_c1`, `pcurve_not_c1`,
+  `face_not_c1`). *Forbids:* a single edge across a corner.
 * **D12. Blend surfaces are an open decision with a constraint.** Procedural
   blend surfaces evaluated through their supports are preferred, as in
   Parasolid and CGM, but undecided. The `Surface` representation must remain

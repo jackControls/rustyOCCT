@@ -22,7 +22,10 @@ use crate::identity::{
     ProfileElement, Role,
 };
 use crate::profile::BoundaryKind;
-use crate::{Error, Frame3, Point2, Point3, Profile, Result, Tolerance, Vec3};
+use crate::{
+    BSplineCurve2, BSplineCurve3, BSplineSurface3, Error, Frame3, Point2, Point3, Profile, Result,
+    Tolerance, Vec3,
+};
 use std::collections::BTreeMap;
 use std::f64::consts::TAU;
 
@@ -171,6 +174,21 @@ pub enum Curve3 {
         start_angle: f64,
         sweep_angle: f64,
     },
+    /// A rational B-spline over its whole domain, the edge fraction mapped
+    /// affinely onto it (S4 of REVIEW_NOTES.md). A ring edge's is periodic.
+    BSpline(BSplineCurve3),
+}
+
+/// The spline parameter of an edge or pcurve fraction: affine onto the
+/// domain, its ends exact.
+pub(crate) fn spline_parameter((a, b): (f64, f64), fraction: f64) -> f64 {
+    if fraction >= 1.0 {
+        b
+    } else if fraction <= 0.0 {
+        a
+    } else {
+        (a + (b - a) * fraction).clamp(a, b)
+    }
 }
 
 impl Curve3 {
@@ -191,6 +209,9 @@ impl Curve3 {
                 let (sine, cosine) = (start_angle + sweep_angle * fraction).sin_cos();
                 frame.point(Point2::new(radius * cosine, radius * sine), 0.0)
             }
+            Self::BSpline(curve) => curve
+                .point(spline_parameter(curve.domain(), fraction))
+                .expect("a finite spline evaluates in its domain"),
         }
     }
 }
@@ -207,6 +228,9 @@ pub enum Curve2 {
         start_angle: f64,
         sweep_angle: f64,
     },
+    /// A planar rational B-spline in the face's (u, v) over its whole
+    /// domain, the fraction mapped affinely onto it (S4).
+    BSpline(BSplineCurve2),
 }
 
 impl Curve2 {
@@ -225,6 +249,9 @@ impl Curve2 {
                 let (sine, cosine) = (start_angle + sweep_angle * fraction).sin_cos();
                 Point2::new(center.x + radius * cosine, center.y + radius * sine)
             }
+            Self::BSpline(curve) => curve
+                .point(spline_parameter(curve.as_curve3().domain(), fraction))
+                .expect("a finite spline evaluates in its domain"),
         }
     }
 }
@@ -261,6 +288,9 @@ pub enum Surface {
         major: f64,
         minor: f64,
     },
+    /// A rational B-spline surface in its own (u, v) (S4). Its loops do not
+    /// wind until the rest of S4 gives windings the domain's period.
+    BSpline(BSplineSurface3),
 }
 
 impl Surface {
@@ -299,6 +329,9 @@ impl Surface {
                     minor * uv.y.sin(),
                 )
             }
+            Self::BSpline(surface) => surface
+                .point(uv.x, uv.y)
+                .expect("a finite spline surface evaluates in its domain"),
         }
     }
     /// The unit normal of the parametrization, `S_u x S_v` normalized; on a
@@ -318,6 +351,32 @@ impl Surface {
                 let radial = frame.x() * uv.x.cos() + frame.y() * uv.x.sin();
                 radial * uv.y.cos() + frame.normal() * uv.y.sin()
             }
+            Self::BSpline(surface) => {
+                use crate::curve::KnotSide;
+                // The right-hand jet, the left-hand one at a closed domain's
+                // upper end.
+                let side = |x: f64, k: &crate::KnotVector| {
+                    if !k.is_periodic() && x >= k.domain().1 {
+                        KnotSide::Left
+                    } else {
+                        KnotSide::Right
+                    }
+                };
+                let sides = [side(uv.x, surface.u_knots()), side(uv.y, surface.v_knots())];
+                let e = surface
+                    .evaluate(uv.x, uv.y, crate::curve::DerivativeOrder::First, sides)
+                    .expect("a finite spline surface evaluates in its domain");
+                let d = |u, v| {
+                    let b = e.derivative_bounds(u, v).expect("requested");
+                    Vec3::new(
+                        b[0].representative(),
+                        b[1].representative(),
+                        b[2].representative(),
+                    )
+                };
+                let n = d(1, 0).cross(d(0, 1));
+                n * (1.0 / n.length())
+            }
         }
     }
     /// Periodic in v too: a torus.
@@ -326,7 +385,7 @@ impl Surface {
     }
     /// Periodic in u (an angle): cylinders, cones, spheres and tori.
     pub fn is_periodic(&self) -> bool {
-        !matches!(self, Self::Plane(_))
+        !matches!(self, Self::Plane(_) | Self::BSpline(_))
     }
 }
 
@@ -1025,6 +1084,7 @@ impl Topology {
                 | Surface::Sphere { frame: f, .. }
                 | Surface::Torus { frame: f, .. },
             ) => f.origin().to_array(),
+            Some(Surface::BSpline(s)) => s.poles()[0].to_array(),
             None => [0.0; 3],
         }
     }
@@ -2354,7 +2414,7 @@ impl Topology {
                     sweep_angle: TAU * sense.sign() * circle.normal().dot(frame.normal()).signum(),
                 }
             }
-            Curve3::CircularArc { .. } => {
+            Curve3::CircularArc { .. } | Curve3::BSpline(_) => {
                 unreachable!("the extrusion builder creates only lines and full circles")
             }
         };

@@ -17,14 +17,20 @@
 //! 29 does the same for a whole sphere, a hemisphere or a zone, and turns a
 //! whole sphere inside out. Mutation 30 builds a whole torus, a v-segment or
 //! a wedge and breaks its windings in v, shifts a ring's pcurve, makes the
-//! tube reach the axis or turns a whole torus inside out.
+//! tube reach the axis or turns a whole torus inside out. Mutation 31 (R4)
+//! replaces a prism's line edge, line pcurve or plane by a spline with a
+//! knot repeated to the degree, exactly C1 there, then breaks that knot: the
+//! first must report no continuity issue, the second exactly one more.
 use crate::byte;
 use rusty_occt::identity::OperationId;
 use rusty_occt::topology::{
     Curve2, Curve3, Edge, EdgeId, Enclosure, FaceId, FinId, Loop, LoopId, Orientation, Region,
     RegionId, RegionKind, Shell, ShellId, Surface, Topology, TopologyParts, Vertex, VertexId,
 };
-use rusty_occt::{Boundary, Frame3, Point2, Point3, Profile, Solid, Tolerance, Vec3};
+use rusty_occt::{
+    BSplineCurve2, BSplineCurve3, BSplineSurface3, Boundary, Frame3, KnotVector, Point2, Point3,
+    Profile, Solid, Tolerance, Vec3,
+};
 use std::f64::consts::TAU;
 
 #[path = "../../kernel/tests/support/brep_protocol.rs"]
@@ -58,6 +64,7 @@ fn flip(o: Orientation) -> Orientation {
 
 fn reversed(p: &Curve2) -> Curve2 {
     match p {
+        Curve2::BSpline(_) => unreachable!("cavity prisms have no splines"),
         Curve2::LineSegment { start, end } => Curve2::LineSegment {
             start: *end,
             end: *start,
@@ -177,6 +184,7 @@ fn merge_cavity(parts: &mut TopologyParts, other: TopologyParts) {
 fn shift_v(p: &Curve2, dv: f64) -> Curve2 {
     let up = |q: Point2| Point2::new(q.x, q.y + dv);
     match p {
+        Curve2::BSpline(_) => unreachable!("cavity prisms have no splines"),
         Curve2::LineSegment { start, end } => Curve2::LineSegment {
             start: up(*start),
             end: up(*end),
@@ -721,6 +729,179 @@ fn torus(b: &mut Bytes) {
     verify(report(&parts, tolerance), expect);
 }
 
+/// Poles from `a` to `b` of a clamped spline of degree `p` on
+/// `[0, 1/2, 1]` with the knot 1/2 repeated `p` times: the interior poles on a
+/// dyadic grid, and pole `p` (the curve's point at 1/2) the exact midpoint of
+/// its neighbours, which is C1 there; the second list moves that pole half a
+/// grid step, which is not.
+fn knot_poles<const D: usize>(a: [f64; D], b: [f64; D], p: usize, grid: f64) -> [Vec<[f64; D]>; 2] {
+    let n = 2 * p;
+    let snap = |x: f64| (x / grid).round() * grid;
+    let mut poles: Vec<[f64; D]> = (0..=n)
+        .map(|i| {
+            if i == 0 {
+                a
+            } else if i == n {
+                b
+            } else {
+                let f = i as f64 / n as f64;
+                std::array::from_fn(|k| snap(a[k] + (b[k] - a[k]) * f))
+            }
+        })
+        .collect();
+    poles[p] = std::array::from_fn(|k| {
+        let (x, y) = (poles[p - 1][k], poles[p + 1][k]);
+        let m = (x + y) / 2.0;
+        assert_eq!(2.0 * m - x, y, "grid poles have exact midpoints");
+        m
+    });
+    let mut broken = poles.clone();
+    broken[p][0] += grid / 2.0;
+    [poles, broken]
+}
+
+fn knot_basis(p: usize) -> (Vec<f64>, Vec<usize>) {
+    (vec![0.0, 0.5, 1.0], vec![p + 1, p, p + 1])
+}
+
+/// Mutation 31 (R4): a star prism whose line edge, line pcurve or plane
+/// becomes a spline, C1 at a knot repeated to its degree, then broken there.
+/// Spline geometry is otherwise uncertified before the rest of S4, so the C1
+/// report is compared with the broken one, which has exactly one more issue.
+fn spline(b: &mut Bytes) {
+    let count = 3 + usize::from(b.next() % 10);
+    let scale = 2.0_f64.powi(i32::from(b.next() % 21) - 10);
+    let tolerance = Tolerance::new(1e-9 * scale, 1e-12).unwrap();
+    let outline: Vec<_> = (0..count)
+        .map(|i| {
+            let angle = TAU * i as f64 / count as f64;
+            let radius = scale * (0.8 + 0.6 * b.unit());
+            Point2::new(radius * angle.cos(), radius * angle.sin())
+        })
+        .collect();
+    let holes = if b.next() % 2 == 0 {
+        vec![Boundary::circle(Point2::default(), 0.2 * scale, tolerance).unwrap()]
+    } else {
+        vec![]
+    };
+    let Ok(outer) = Boundary::polygon(outline, tolerance) else {
+        return;
+    };
+    let Ok(profile) = Profile::new(outer, holes, tolerance) else {
+        return;
+    };
+    let normal = Vec3::new(b.signed(), b.signed(), 0.5 + b.unit());
+    let origin = Point3::new(
+        10.0 * scale * b.signed(),
+        10.0 * scale * b.signed(),
+        10.0 * scale * b.signed(),
+    );
+    let Ok(frame) = Frame3::new(origin, normal, Vec3::X, tolerance) else {
+        return;
+    };
+    let (low, high) = (-scale * (0.5 + b.unit()), scale * (0.5 + b.unit()));
+    let solid = Solid::extrude_with(OperationId::UNSPECIFIED, profile, frame, low, high)
+        .map(|(s, _)| s)
+        .expect("valid prism");
+    let parts = parts_of(solid.topology());
+    let p = 2 + b.pick(2);
+    let grid = scale * 2.0_f64.powi(-20);
+    let (knots, mults) = knot_basis(p);
+    let mut versions = [parts.clone(), parts.clone()];
+    let issue = match b.next() % 3 {
+        0 => {
+            let lines: Vec<usize> = (0..parts.edges.len())
+                .filter(|e| matches!(parts.edges[*e].curve, Curve3::LineSegment { .. }))
+                .collect();
+            let e = lines[b.pick(lines.len())];
+            let Curve3::LineSegment { start, end } = parts.edges[e].curve else {
+                unreachable!("a line")
+            };
+            for (version, poles) in
+                versions
+                    .iter_mut()
+                    .zip(knot_poles(start.to_array(), end.to_array(), p, grid))
+            {
+                let poles = poles
+                    .iter()
+                    .map(|q| Point3::new(q[0], q[1], q[2]))
+                    .collect();
+                let curve = BSplineCurve3::new(p, poles, None, knots.clone(), mults.clone())
+                    .expect("a valid spline");
+                version.edges[e].curve = Curve3::BSpline(curve);
+            }
+            format!("edge_not_c1:edge {e}")
+        }
+        1 => {
+            let Some((fi, li, ui, k)) = fin_at(&parts, b) else {
+                return;
+            };
+            let Curve2::LineSegment { start, end } = parts.fins[k.index()].pcurve else {
+                return;
+            };
+            for (version, poles) in
+                versions
+                    .iter_mut()
+                    .zip(knot_poles([start.x, start.y], [end.x, end.y], p, grid))
+            {
+                let poles = poles.iter().map(|q| Point2::new(q[0], q[1])).collect();
+                let curve = BSplineCurve2::new(p, poles, None, knots.clone(), mults.clone())
+                    .expect("a valid spline");
+                version.fins[k.index()].pcurve = Curve2::BSpline(curve);
+            }
+            format!("pcurve_not_c1:use {fi}.{li}.{ui}")
+        }
+        _ => {
+            let planes: Vec<usize> = (0..parts.faces.len())
+                .filter(|f| matches!(parts.faces[*f].surface, Surface::Plane(_)))
+                .collect();
+            let fi = planes[b.pick(planes.len())];
+            let o = origin.to_array();
+            let side = |j: f64| std::array::from_fn(|k| o[k] + j * scale * [1.0, 0.5, 0.25][k]);
+            let [near, far] = [side(0.0), side(1.0)];
+            let lift = |q: [f64; 3], h: f64| [q[0], q[1], q[2] + h];
+            // Rows across v (degree 1): each row along u is C1 at the knot;
+            // the broken surface kinks its first row.
+            let rows: Vec<[Vec<[f64; 3]>; 2]> = [0.0, scale]
+                .iter()
+                .map(|h| knot_poles(lift(near, *h), lift(far, *h), p, grid))
+                .collect();
+            let u = KnotVector::new(p, knots.clone(), mults.clone()).unwrap();
+            let v = KnotVector::new(1, vec![0.0, 1.0], vec![2, 2]).unwrap();
+            for (which, version) in versions.iter_mut().enumerate() {
+                let row = |j: usize| if j == 0 { &rows[0][which] } else { &rows[1][0] };
+                let poles = (0..=2 * p)
+                    .flat_map(|i| (0..2).map(move |j| (i, j)))
+                    .map(|(i, j)| {
+                        let q = row(j)[i];
+                        Point3::new(q[0], q[1], q[2])
+                    })
+                    .collect();
+                let surface = BSplineSurface3::new(u.clone(), v.clone(), poles, None)
+                    .expect("a valid surface");
+                version.faces[fi].surface = Surface::BSpline(surface);
+            }
+            format!("face_not_c1:face {fi}")
+        }
+    };
+    let [smooth, broken] = versions;
+    let smooth = report(&smooth, tolerance);
+    assert!(
+        smooth.iter().all(|i| !i.contains("_not_c1")),
+        "an exact repeat is C1: {smooth:?}"
+    );
+    assert!(
+        smooth
+            .iter()
+            .any(|i| i.starts_with("uncertified_pcurve_off_edge")),
+        "spline uses are uncertified: {smooth:?}"
+    );
+    let mut want = smooth.clone();
+    want.push(issue);
+    want.sort();
+    assert_eq!(report(&broken, tolerance), want);
+}
+
 fn verify(got: Vec<String>, expect: Expect) {
     match expect {
         Expect::Valid => assert_eq!(got, Vec::<String>::new()),
@@ -745,7 +926,7 @@ fn verify(got: Vec<String>, expect: Expect) {
 
 pub fn check_brep_validation(data: &[u8]) {
     let mut b = Bytes(data, 0);
-    let mutation = b.next() % 31;
+    let mutation = b.next() % 32;
     if mutation == 27 {
         far_prism(&mut b);
         return;
@@ -760,6 +941,10 @@ pub fn check_brep_validation(data: &[u8]) {
     }
     if mutation == 30 {
         torus(&mut b);
+        return;
+    }
+    if mutation == 31 {
+        spline(&mut b);
         return;
     }
     if mutation == 16 {

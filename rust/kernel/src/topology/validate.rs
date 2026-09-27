@@ -24,6 +24,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::f64::consts::TAU;
 use std::fmt;
 
+mod continuity;
 mod mass;
 pub(crate) use mass::{face_mass, mass};
 
@@ -91,6 +92,10 @@ pub enum IssueKind {
     UncertifiedEnclosure,
     // Poles (REVIEW_NOTES.md S3).
     PoleOffApex,
+    // Continuity (R4 of REVIEW_NOTES.md).
+    EdgeNotC1,
+    PcurveNotC1,
+    FaceNotC1,
 }
 
 impl IssueKind {
@@ -155,6 +160,9 @@ impl IssueKind {
             EnclosureUnsound => "enclosure_unsound",
             UncertifiedEnclosure => "uncertified_enclosure",
             PoleOffApex => "pole_off_apex",
+            EdgeNotC1 => "edge_not_c1",
+            PcurveNotC1 => "pcurve_not_c1",
+            FaceNotC1 => "face_not_c1",
         }
     }
 }
@@ -290,12 +298,42 @@ fn arc_of(c: &Curve3) -> Option<(&Frame3, f64, f64, f64)> {
             start_angle,
             sweep_angle,
         } => Some((frame, *radius, *start_angle, *sweep_angle)),
-        Curve3::LineSegment { .. } => None,
+        Curve3::LineSegment { .. } | Curve3::BSpline(_) => None,
     }
+}
+
+/// A spline's exact point at an edge or pcurve fraction, the parameter
+/// `a + t (b - a)` exact (its ends exactly the domain's).
+fn spline_point(curve: &crate::BSplineCurve3, t: f64) -> [R; 3] {
+    use crate::curve::{DerivativeOrder, KnotSide};
+    let exact = curve.to_exact();
+    let [a, b] = exact.domain().clone();
+    let u = if t == 0.0 {
+        a
+    } else if t == 1.0 {
+        b
+    } else {
+        &a + (&b - &a) * r(t)
+    };
+    exact
+        .exact_evaluate(&u, DerivativeOrder::Position, KnotSide::Automatic)
+        .expect("a spline evaluates exactly in its domain")
+        .position()
+        .coordinates()
+        .clone()
+}
+
+/// Whether a use involves spline geometry, which only the endpoint and
+/// continuity checks certify before the rest of S4.
+fn spline_use(curve: &Curve3, s: &Surface, p: &Curve2) -> bool {
+    matches!(curve, Curve3::BSpline(_))
+        || matches!(s, Surface::BSpline(_))
+        || matches!(p, Curve2::BSpline(_))
 }
 
 fn curve_at<T: Real>(curve: &Curve3, t: f64) -> V3<T> {
     match curve {
+        Curve3::BSpline(spline) => spline_point(spline, t).map(|x| q::<T>(&x)),
         Curve3::LineSegment { start, .. } if t == 0.0 => v3::<T>(start.to_array()),
         Curve3::LineSegment { end, .. } if t == 1.0 => v3::<T>(end.to_array()),
         Curve3::LineSegment { start, end } => {
@@ -317,6 +355,10 @@ fn curve_at<T: Real>(curve: &Curve3, t: f64) -> V3<T> {
 
 fn pcurve_at<T: Real>(p: &Curve2, t: f64) -> V2<T> {
     match p {
+        Curve2::BSpline(spline) => {
+            let [x, y, _] = spline_point(spline.as_curve3(), t);
+            [q(&x), q(&y)]
+        }
         Curve2::LineSegment { start, .. } if t == 0.0 => [c(start.x), c(start.y)],
         Curve2::LineSegment { end, .. } if t == 1.0 => [c(end.x), c(end.y)],
         Curve2::LineSegment { start, end } => {
@@ -345,6 +387,7 @@ fn pcurve_at<T: Real>(p: &Curve2, t: f64) -> V2<T> {
 
 fn surface_at<T: Real>(s: &Surface, uv: &V2<T>) -> V3<T> {
     match s {
+        Surface::BSpline(_) => unreachable!("spline uses are uncertified before sampling"),
         Surface::Plane(f) => {
             let fr = frame::<T>(f);
             vadd(&fr.o, &vadd(&vscale(&fr.x, &uv[0]), &vscale(&fr.y, &uv[1])))
@@ -488,6 +531,9 @@ fn u_scale<T: Real>(s: &Surface, v: &T) -> Option<T> {
         Surface::Torus { major, minor, .. } => {
             Some(c::<T>(*major).add(&c::<T>(*minor).mul(&T::cos_sin(v).0)))
         }
+        // Not a length scale: a gap on a spline surface is decided only
+        // when it is exactly zero (uv_gap).
+        Surface::BSpline(_) => None,
     }
 }
 
@@ -670,8 +716,10 @@ impl<T: Real> Harmonic<T> {
     }
 }
 
-fn add_curve<T: Real>(h: &mut Harmonic<T>, curve: &Curve3, forward: bool) {
+/// Add C(t); false for a spline, which is not a harmonic sum.
+fn add_curve<T: Real>(h: &mut Harmonic<T>, curve: &Curve3, forward: bool) -> bool {
     match curve {
+        Curve3::BSpline(_) => return false,
         Curve3::LineSegment { start, end } => {
             let (a, b) = (v3::<T>(start.to_array()), v3::<T>(end.to_array()));
             if forward {
@@ -699,6 +747,7 @@ fn add_curve<T: Real>(h: &mut Harmonic<T>, curve: &Curve3, forward: bool) {
             );
         }
     }
+    true
 }
 
 /// Subtract S(P(t)); false when the composition is not harmonic.
@@ -885,6 +934,7 @@ fn sub_use<T: Real>(h: &mut Harmonic<T>, s: &Surface, p: &Curve2) -> bool {
             }
         }
         (Surface::Torus { .. }, Curve2::CircularArc { .. }) => false,
+        (Surface::BSpline(_), _) | (_, Curve2::BSpline(_)) => false,
     }
 }
 
@@ -898,9 +948,13 @@ fn deviation<T: Real>(
     tol: &T,
     tol2: &T,
 ) -> Verdict {
+    if spline_use(curve, s, p) {
+        return Verdict::Unknown;
+    }
     let mut h = Harmonic::<T>::new();
-    add_curve(&mut h, curve, forward);
-    if sub_use(&mut h, s, p) && matches!(h.upper().cmp(tol), Some(Ordering::Less | Ordering::Equal))
+    if add_curve(&mut h, curve, forward)
+        && sub_use(&mut h, s, p)
+        && matches!(h.upper().cmp(tol), Some(Ordering::Less | Ordering::Equal))
     {
         return Verdict::Within;
     }
@@ -946,6 +1000,16 @@ fn curve_valid(curve: &Curve3, tol: &R, fast_tol2: &Fast, exact_tol2: &I) -> boo
                 d.iter().map(|x| x * x).sum::<R>() > tol * tol
             })
         }
+        // Degenerate when every pole lies within tolerance of the first:
+        // the whole curve then lies within tolerance of a point.
+        Curve3::BSpline(spline) => {
+            let poles = spline.poles();
+            let first = poles[0].to_array().map(r);
+            poles.iter().any(|p| {
+                let d: [R; 3] = std::array::from_fn(|i| r(p.to_array()[i]) - &first[i]);
+                d.iter().map(|x| x * x).sum::<R>() > tol * tol
+            })
+        }
         _ => {
             let (_, radius, start, sweep) = arc_of(curve).unwrap();
             finite(&[radius, start, sweep])
@@ -980,6 +1044,8 @@ fn surface_valid(s: &Surface, tol: &R) -> bool {
                 && r(*minor) > *tol
                 && r(*major) - r(*minor) > *tol
         }
+        // Finite with positive weights by construction.
+        Surface::BSpline(_) => true,
     }
 }
 
@@ -998,6 +1064,11 @@ fn pcurve_valid(p: &Curve2) -> bool {
                 && *radius > 0.0
                 && *sweep_angle != 0.0
                 && sweep_angle.abs() <= TAU
+        }
+        // Degenerate when every pole is the first.
+        Curve2::BSpline(spline) => {
+            let poles = spline.poles();
+            poles.iter().any(|p| (p.x, p.y) != (poles[0].x, poles[0].y))
         }
     }
 }
@@ -1054,6 +1125,13 @@ fn uv_gap2<T: Real>(s: &Surface, p: &Curve2, next: &Curve2, shift: [f64; 2]) -> 
 }
 
 fn uv_gap<T: Real>(s: &Surface, p: &Curve2, next: &Curve2, shift: [f64; 2], tol2: &T) -> Verdict {
+    if matches!(s, Surface::BSpline(_)) {
+        // Without a length scale only an exact meeting is decided.
+        return match within(&uv_gap2::<T>(s, p, next, shift), &c(0.0)) {
+            Verdict::Within => Verdict::Within,
+            _ => Verdict::Unknown,
+        };
+    }
     within(&uv_gap2::<T>(s, p, next, shift), tol2)
 }
 
@@ -1062,11 +1140,18 @@ fn uv_gap<T: Real>(s: &Surface, p: &Curve2, next: &Curve2, shift: [f64; 2], tol2
 /// cone the two generatrix lines of the meridian half-plane (both nappes):
 /// `r cos a - R cos a - z sin a` and `r cos a + R cos a + z sin a`.
 fn surface_gap2<T: Real>(s: &Surface, p: [f64; 3]) -> Vec<T> {
+    // No certified distance to a spline surface yet.
+    if matches!(s, Surface::BSpline(_)) {
+        return Vec::new();
+    }
     let (Surface::Plane(f)
     | Surface::Cylinder { frame: f, .. }
     | Surface::Cone { frame: f, .. }
     | Surface::Sphere { frame: f, .. }
-    | Surface::Torus { frame: f, .. }) = s;
+    | Surface::Torus { frame: f, .. }) = s
+    else {
+        unreachable!("spline surfaces return above")
+    };
     let fr = frame::<T>(f);
     let rel = vsub(&v3::<T>(p), &fr.o);
     let axial = vdot(&rel, &fr.n);
@@ -1098,6 +1183,7 @@ fn surface_gap2<T: Real>(s: &Surface, p: [f64; 3]) -> Vec<T> {
                 .sqrt();
             vec![to_core.sub(&c(*minor)).square()]
         }
+        Surface::BSpline(_) => unreachable!("returned above"),
     }
 }
 
@@ -1108,7 +1194,9 @@ fn on_surface<T: Real>(s: &Surface, p: [f64; 3], tol2: &T) -> Verdict {
         .iter()
         .map(|d2| within(d2, tol2))
         .collect();
-    if verdicts.contains(&Verdict::Within) {
+    if verdicts.is_empty() {
+        Verdict::Unknown
+    } else if verdicts.contains(&Verdict::Within) {
         Verdict::Within
     } else if verdicts.iter().all(|v| *v == Verdict::Beyond) {
         Verdict::Beyond
@@ -1217,8 +1305,7 @@ pub(crate) fn measure(view: &View) -> Measured {
                         let curve = &view.edges[u.edge.0].curve;
                         let forward = u.sense == Orientation::Forward;
                         let harmonic = |h: &mut Harmonic<Fast>| {
-                            add_curve(h, curve, forward);
-                            sub_use(h, &face.surface, &u.pcurve)
+                            add_curve(h, curve, forward) && sub_use(h, &face.surface, &u.pcurve)
                         };
                         let mut h = Harmonic::<Fast>::new();
                         fins[k.0] = if harmonic(&mut h) {
@@ -1281,6 +1368,7 @@ fn area_term<T: Real>(p: &Curve2) -> T {
                 .sub(&c::<T>(center.y).mul(&c1.sub(&c0)));
             rho.mul(&linear).add(&rho.square().mul(&c(*sweep_angle)))
         }
+        Curve2::BSpline(_) => unreachable!("spline uses make their face unsound first"),
     }
 }
 
@@ -1374,6 +1462,7 @@ fn crossings<T: Real>(loops: &[&Lp], p: &V2<T>) -> Option<u32> {
                     &r(*sweep_angle),
                     p,
                 )?,
+                Curve2::BSpline(_) => return None,
             };
         }
     }
@@ -1591,6 +1680,9 @@ fn cone_line_flux<T: Real>(
 /// v f(u) du (f does not depend on v), loops closed by chords; their
 /// orientation carries the face's sense.
 fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
+    if matches!(face.surface, Surface::BSpline(_)) {
+        return None;
+    }
     if matches!(face.surface, Surface::Sphere { .. } | Surface::Torus { .. }) {
         return mass::sphere_flux(face, loops);
     }
@@ -1648,9 +1740,10 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
                 (rad.mul(&a).neg(), rad.mul(&b), rad.square().mul(&det)),
             )
         }
-        Surface::Cone { .. } | Surface::Sphere { .. } | Surface::Torus { .. } => {
-            unreachable!("handled above")
-        }
+        Surface::Cone { .. }
+        | Surface::Sphere { .. }
+        | Surface::Torus { .. }
+        | Surface::BSpline(_) => unreachable!("handled above"),
     };
     let mut total = c::<T>(0.0);
     for lp in loops {
@@ -1684,7 +1777,7 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp]) -> Option<T> {
                     );
                     coeffs.2.mul(&first.add(&second))
                 }
-                Curve2::CircularArc { .. } => return None,
+                Curve2::CircularArc { .. } | Curve2::BSpline(_) => return None,
             };
             total = total.add(&term);
         }
@@ -1764,7 +1857,7 @@ fn face_hits<T: Real>(
     // is uncertified.
     if matches!(
         face.surface,
-        Surface::Cone { .. } | Surface::Sphere { .. } | Surface::Torus { .. }
+        Surface::Cone { .. } | Surface::Sphere { .. } | Surface::Torus { .. } | Surface::BSpline(_)
     ) {
         return None;
     }
@@ -1778,7 +1871,10 @@ fn face_hits<T: Real>(
         )
     };
     match &face.surface {
-        Surface::Cone { .. } | Surface::Sphere { .. } | Surface::Torus { .. } => None,
+        Surface::Cone { .. }
+        | Surface::Sphere { .. }
+        | Surface::Torus { .. }
+        | Surface::BSpline(_) => None,
         Surface::Plane(f) => {
             let (o, x, y, _) = exact(f);
             let qv: [R; 3] = std::array::from_fn(|i| &p[i] - &o[i]);
@@ -1938,6 +2034,7 @@ fn clear_of_boundary<T: Real>(
                     let r0 = d[0].square().add(&d[1].square()).sqrt();
                     far(&r0.sub(&c(*radius)).square())
                 }
+                Curve2::BSpline(_) => return None,
             };
             if !clear {
                 return Some(false);
@@ -1953,6 +2050,8 @@ fn closed_curve(curve: &Curve3) -> bool {
         Curve3::Circle { .. } => true,
         Curve3::CircularArc { sweep_angle, .. } => sweep_angle.abs() == TAU,
         Curve3::LineSegment { .. } => false,
+        // A spline ring edge must be periodic; its seam is tested for C1.
+        Curve3::BSpline(spline) => spline.is_periodic(),
     }
 }
 
@@ -2491,6 +2590,35 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
             bad_faces.insert(fi);
         }
     }
+    // C1 in each cell's own parameterisation (R4): exact, never uncertified.
+    for (i, edge) in edges.iter().enumerate() {
+        if let Curve3::BSpline(spline) = &edge.curve {
+            if !continuity::curve_c1(spline) {
+                add(&mut issues, K::EdgeNotC1, En::Edge(i));
+            }
+        }
+    }
+    for (fi, face) in faces.iter().enumerate() {
+        if let Surface::BSpline(spline) = &face.surface {
+            if !continuity::surface_c1(spline) {
+                add(&mut issues, K::FaceNotC1, En::Face(fi));
+                bad_faces.insert(fi);
+            }
+        }
+        for (li, l) in face.loops.iter().enumerate() {
+            let Loop::Edges { fins: list, .. } = &loops[l.0] else {
+                continue;
+            };
+            for (ui, k) in list.iter().enumerate() {
+                if let Curve2::BSpline(spline) = &fins[k.0].pcurve {
+                    if !continuity::curve_c1(spline.as_curve3()) {
+                        add(&mut issues, K::PcurveNotC1, En::Use(fi, li, ui));
+                        bad_faces.insert(fi);
+                    }
+                }
+            }
+        }
+    }
     // Enclosures (M5): a usable one lies in [0, resolution]; the geometric
     // checks below decide against it first, then against the resolution.
     let usable = |issues: &mut BTreeSet<Issue>, e: &Option<Enclosure>, entity| match e {
@@ -2650,6 +2778,15 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                 }
                 let forward = u.sense == Orientation::Forward;
                 let curve = &edges[u.edge.0].curve;
+                if spline_use(curve, &face.surface, &u.pcurve) {
+                    add(
+                        &mut issues,
+                        K::UncertifiedPcurveOffEdge,
+                        En::Use(fi, li, ui),
+                    );
+                    bad_faces.insert(fi);
+                    continue;
+                }
                 let decide = |th: &Threshold| {
                     tiered(
                         Verdict::Unknown,

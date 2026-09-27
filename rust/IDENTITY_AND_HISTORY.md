@@ -802,7 +802,8 @@ say what remains.
   plane normal to it, stacked prisms of one profile), not Booleans;
   attributes on operations are M4 and enclosures M5; composites across two
   algorithm levels are an open item under H8; the `continuity` check of
-  `TOPOLOGY_MODEL.md` D11 must land before spline edges or faces.
+  `TOPOLOGY_MODEL.md` D11 must land before spline edges or faces (it did,
+  as R4 of `REVIEW_NOTES.md`).
 * **M4 — accepted at `979cf939`.**
   * Rust kernel workflow: all twelve jobs passed.
   * Fuzzing workflow: all twenty-three targets passed. On Linux,
@@ -857,7 +858,7 @@ say what remains.
   every OCCT tolerance. `DerivedOnPlane` pcurves and enclosures of
   surfaces with poles wait for the geometry that needs them. The D11
   continuity check and the H8 composite-level rule remain open (see
-  above).
+  above; both since closed, by R4 and R5 of `REVIEW_NOTES.md`).
 
 ## Native format and Parasolid XT
 

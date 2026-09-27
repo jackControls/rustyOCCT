@@ -22,7 +22,7 @@ pub const MAX_POLES: usize = 4096;
 /// Immutable knot vector. Pole count follows from the degree and multiplicities.
 /// Both periodic and nonperiodic vectors require more poles than their degree.
 /// Periodic vectors use OCCT's pole ordering and equal end multiplicities.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct KnotVector {
     degree: usize,
     pole_count: usize,

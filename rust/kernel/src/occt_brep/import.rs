@@ -562,6 +562,7 @@ fn on_plane(plane: &Frame3, curve: &Curve3) -> Curve2 {
         Point2::new(x, y)
     };
     match curve {
+        Curve3::BSpline(_) => unreachable!("the reader rejects B-spline records (S4)"),
         Curve3::LineSegment { start, end } => Curve2::LineSegment {
             start: uv(*start),
             end: uv(*end),
@@ -602,6 +603,7 @@ fn on_plane(plane: &Frame3, curve: &Curve3) -> Curve2 {
 
 fn negate_v(p: &Curve2) -> Curve2 {
     match p {
+        Curve2::BSpline(_) => unreachable!("the reader rejects B-spline records (S4)"),
         Curve2::LineSegment { start, end } => Curve2::LineSegment {
             start: Point2::new(start.x, -start.y),
             end: Point2::new(end.x, -end.y),
@@ -626,6 +628,7 @@ fn location_of(doc: &Document, index: usize) -> Transform {
 
 fn reversed(p: &Curve2) -> Curve2 {
     match p {
+        Curve2::BSpline(_) => unreachable!("the reader rejects B-spline records (S4)"),
         Curve2::LineSegment { start, end } => Curve2::LineSegment {
             start: *end,
             end: *start,
@@ -661,6 +664,7 @@ type SeamRuns = (Vec<usize>, Vec<(Vec<usize>, [i32; 2])>);
 /// `R + r cos v`.
 fn u_scale(surface: &Surface, v: f64) -> Option<f64> {
     match surface {
+        Surface::BSpline(_) => None,
         Surface::Cylinder { radius, .. } => Some(*radius),
         Surface::Cone {
             radius, half_angle, ..

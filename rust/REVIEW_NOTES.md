@@ -201,6 +201,37 @@ in topology with the exact modules that already exist, pcurves on the
 universal cover, the converter and writer mapping, and the interop's
 unsupported list shrinking accordingly.
 
+Decisions for R4, recorded before its code (2026-09-26):
+
+* **Representation first.** R4 adds `Curve3::BSpline` (a `BSplineCurve3`
+  over its whole domain, the edge fraction mapped affinely onto it),
+  `Curve2::BSpline` (a new `BSplineCurve2`, the planar counterpart, for
+  pcurves) and `Surface::BSpline` (a `BSplineSurface3`, `u` or `v` periodic
+  as its basis is). Nothing builds or imports them yet: the reader still
+  reports B-spline records unsupported until the rest of S4.
+* **The criterion is homogeneous.** A binary64 B-spline has interior
+  multiplicities at most its degree, so a knot of lower multiplicity is C1
+  by construction and only a knot of multiplicity equal to the degree
+  (degree 1 included) is tested: one exact homogeneous removal
+  (`ExactBSplineCurve3::remove_knot`, the surface's `remove_u_knot` /
+  `remove_v_knot` for a whole knot line) with zero residual. That is C1 of
+  the homogeneous curve, which implies C1 of the rational one; a rational
+  joint whose weights alone jump is reported, as R4 states. A periodic
+  spline's seam knot is interior and tested the same way; a spline ring
+  edge must be periodic (`ring_edge_open` otherwise). Every knot of the
+  curve or surface is tested, trimmed away or not: the cell's
+  parameterisation is the whole curve or surface.
+* **Until the rest of S4, spline geometry is never called valid by the
+  other geometric checks.** Each check that cannot yet certify spline
+  geometry reports its `uncertified_*` kind (vertex on curve, pcurve on
+  edge, UV gap, loop winding, containment, shell orientation), and mass
+  properties are `None`. The continuity issues are exact, so R4's fixtures
+  and fuzz mutations require them exactly and leave the rest of the report
+  unchanged by the mutation.
+* **The independent check does not remove knots.** The reference compares
+  the homogeneous curve's left and right first derivatives at each tested
+  knot in `Fraction`s (de Boor on each side), the equivalent condition.
+
 ### After S4
 
 `PORTING.md` step three: general face trimming, curve/surface intersection
@@ -365,4 +396,12 @@ converter records that as `Imported` provenance, never as an approximation.
     (`brep_validation` mutation 30, tori in `identity`, `history` and
     `brep_io`). `bug485` now restores and needs only `bfuse`. Gate pending
     CI and the campaigns.
-* S4 — pending
+* S4 — R4 implemented; gate pending CI and the clean campaigns.
+  * Spline variants in the topology (`Curve3::BSpline`, `Curve2::BSpline`
+    with the new `BSplineCurve2`, `Surface::BSpline`); `edge_not_c1`,
+    `pcurve_not_c1` and `face_not_c1` by exact removal
+    (`topology/validate/continuity.rs`), independently checked by one-sided
+    derivatives (`spline_cell_reference.py`) on nineteen fixture cases;
+    `brep_validation` mutation 31. Every other check of spline geometry is
+    uncertified, as decided above; the reader and writer still refuse
+    splines.

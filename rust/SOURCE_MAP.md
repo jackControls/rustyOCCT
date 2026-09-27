@@ -595,3 +595,9 @@ record 5, and DRAW's `ptorus`, at
 | `Surface::Torus` | [Geom_ToroidalSurface.cxx](../src/ModelingData/TKG3d/Geom/Geom_ToroidalSurface.cxx) | Same parameterization; ring tori only; a whole torus is a face without loops, loops may wind in `v`. |
 | `Solid::torus_with` | [BRepPrimAPI_MakeTorus.cxx](../src/ModelingAlgorithms/TKPrim/BRepPrimAPI/BRepPrimAPI_MakeTorus.cxx), [BRepPrim_Torus.cxx](../src/ModelingAlgorithms/TKPrim/BRepPrim/BRepPrim_Torus.cxx), [BRepPrim_OneAxis.cxx](../src/ModelingAlgorithms/TKPrim/BRepPrim/BRepPrim_OneAxis.cxx) | The whole torus, v-segments (full turn) and wedges (whole tube from `v = 0`); a segment of a partial turn is refused. The wall faces out: OCCT's inner half is inside out. History as revolving the meridian. |
 | `occt_brep` tori | [GeomTools_SurfaceSet.cxx](../src/ModelingData/TKGeomBase/GeomTools/GeomTools_SurfaceSet.cxx) | Seams in `u` and `v` merged on import and rebuilt by rule when writing; horn and spindle tori unsupported. |
+
+## Spline continuity (R4)
+
+| Rust | OCCT | Notes |
+| --- | --- | --- |
+| `topology::validate::continuity` | [BSplCLib.cxx](../src/FoundationClasses/TKMath/BSplCLib/BSplCLib.cxx) `RemoveKnot`, [Geom_BSplineCurve.cxx](../src/ModelingData/TKG3d/Geom/Geom_BSplineCurve.cxx) `Continuity` | OCCT measures continuity by knot multiplicity and removes knots within a tolerance; the kernel decides C1 by one exact homogeneous removal with zero residual at each knot of multiplicity equal to the degree. |

@@ -157,7 +157,7 @@ impl ExactBSplineSurface3 {
         Ok(result)
     }
 
-    fn rows(&self, axis: usize) -> Vec<ExactBSplineCurve3> {
+    pub(crate) fn rows(&self, axis: usize) -> Vec<ExactBSplineCurve3> {
         let counts = self.pole_counts();
         (0..counts[1 - axis])
             .map(|fixed| {

@@ -1251,6 +1251,32 @@ antiderivatives by quadrature (`cell_reference.py`), and
 The 22 tori of `torus-cases.txt` agree with the reference to `1e-12` of
 their scale (`tests/tori.rs`).
 
+## C1 of spline cells (R4)
+
+A cell is C1 in its own parameterisation (U3 of `REVIEW_NOTES.md`). For a
+B-spline of degree `p`, a knot of multiplicity `m` leaves the curve
+`C^{p-m}` there, and one copy of the knot is removable with zero residual
+exactly when the curve is `C^{p-m+1}` (Tiller's removal condition). A
+binary64 spline has interior multiplicities `m <= p`, so it is C1 by
+construction wherever `m < p`, and at `m = p` it is C1 exactly when one
+removal succeeds. The kernel runs that removal
+(`ExactBSplineCurve3::removable`, the exact homogeneous inverse insertion
+with the resulting weights' signs not examined) on the homogeneous poles
+`(w x, w y, w z, w)`: it decides C1 of the homogeneous curve, which implies
+C1 of the rational curve `N / w`; a rational joint that is C1 only because
+its weights compensate is reported. A periodic seam is an interior knot. A
+removal the basis cannot hold (a periodic basis left with no more poles than
+its degree) first inserts a simple knot in the middle of the longest span,
+which changes neither the curve nor its continuity at the tested knot. A
+surface is C1 across a knot line when every control row across it is,
+since the surface is a combination of those rows with linearly independent
+basis functions in the other parameter.
+
+The independent reference (`spline_cell_reference.py`) never removes a
+knot: it compares the homogeneous curve's position and first derivative
+from both sides of each knot, by de Boor's recurrence on the two spans in
+`Fraction`s. The seam's left side is the domain's end.
+
 ## Complete spline/line and spline/segment preimages
 
 Closed rational B-spline ranges against infinite lines or closed segments

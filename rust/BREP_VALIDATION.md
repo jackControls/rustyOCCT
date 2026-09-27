@@ -58,7 +58,10 @@ Sphere UV is (longitude, latitude), the poles at `v = ±π/2`; a sphere face
 without edge loops is the whole sphere. Torus UV is (longitude, the tube's
 angle from the outer equator), periodic in both: a loop winding `[wu, wv]`
 closes shifted by `(2πwu, 2πwv)`; a torus face without edge loops is the
-whole torus.
+whole torus. A spline edge (`Curve3::BSpline`) or pcurve (`Curve2::BSpline`)
+spans its whole domain, the fraction mapped affinely onto it; a spline face
+(`Surface::BSpline`) uses its own `(u, v)` and its loops do not wind yet
+(R4 of `REVIEW_NOTES.md`).
 
 ## Exact combinatorial checks
 
@@ -176,6 +179,26 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   sphere or torus face is not yet solved, so a body with a cavity and such
   a face reports `uncertified_containment`. A cavity whose first face is a whole
   sphere takes its point at `(0, 0)`.
+* **Continuity (R4).** Every spline edge, pcurve and face must be C1 in its
+  own parameter: `edge_not_c1`, `pcurve_not_c1` and `face_not_c1`, decided
+  exactly and never uncertified. A binary64 B-spline's interior knots have
+  multiplicity at most its degree `p`, so only a knot of multiplicity `p`
+  (every knot of degree 1, a periodic seam included) is tested, by one
+  exact homogeneous removal with zero residual (`MATHEMATICS.md`); a face
+  is tested along every knot line in `u` and `v`. Only knots strictly inside
+  a nonperiodic domain count. A spline ring edge must be periodic
+  (`ring_edge_open`). A spline edge is degenerate when every pole lies
+  within tolerance of the first, a spline pcurve when every pole is the
+  first.
+* **Spline geometry before the rest of S4.** The vertex gaps at a spline
+  edge's ends are certified from its exact end points, and consecutive
+  spline pcurves' UV gaps from theirs. Everything else is uncertified: a use
+  with a spline edge, pcurve or surface is `uncertified_pcurve_off_edge`, a
+  UV gap on a spline surface is decided only when exactly zero
+  (`uncertified_uv_gap` otherwise, a surface without a length scale), and a
+  vertex loop on one is `uncertified_vertex_loop`. The face is then unsound
+  like any face with a geometric issue, so its winding, containment and
+  shell orientation are not decided, and mass properties are `None`.
 
 ## Two arithmetic tiers
 
@@ -282,7 +305,7 @@ Evidence:
   seam is kept and rejected as `seam_edge`), and `validate` implements the
   side, region, radial, winding, vertex-loop and region-flux invariants
   independently, with its own `+v` cover-crossing parity on cylinders.
-  `generate_brep_fixtures.py --check` rebuilds 116 cases. 54 come from an
+  `generate_brep_fixtures.py --check` rebuilds 135 cases. 54 come from an
   independent seamed prism builder (19 valid solids and 35 mutations; the
   valid solids include holes, convex and concave arcs, full circles, one and
   two cavities, rotated and far-translated copies and a millimetre-scale
@@ -311,7 +334,13 @@ Evidence:
   wedges and a far copy, and six mutations (a meridian loop winding twice or
   unbalanced in `v`, a meridian pcurve shifted, a whole torus inside out, a
   spindle torus and the inner half with its wall forward, as OCCT builds
-  it). 47 cases are valid. `brep_validation.rs`
+  it). Nineteen are spline cells (R4) on the box and cylinder: C1 and
+  broken knots on a quadratic, a linear, a rational and an unclamped edge
+  (whose knots beyond its domain are not tested), periodic ring edges with
+  a C1 seam or a broken one, a small periodic basis whose removal needs a
+  refinement first, a nonperiodic ring edge, spline pcurves, spline faces
+  (C1, broken, with a vertex loop) and degenerate spline edges and
+  pcurves. 47 cases are valid. `brep_validation.rs`
   requires Rust's complete sorted issue list to equal the reference's for
   every case.
 * The existing prism suites (`invariants`, `occt_regression`, `modeling`)
@@ -322,7 +351,7 @@ prisms with no hole, a round (seamless) hole, a square hole or an inverted box
 cavity. Scales range over `2^±10` with random frames and offsets. The cavity
 is merged by fuzz-crate code, not by a kernel builder: its material shell
 joins the body's solid region and its twin bounds a new void region. The
-base must be valid. Then one of 31 mutations must produce its predicted
+base must be valid. Then one of 32 mutations must produce its predicted
 issues:
 
 * an exact report for local changes: an extra vertex, edge, empty shell or
@@ -359,6 +388,12 @@ issues:
   loop winding twice (`winding_mismatch`), a ring pcurve shifted off the
   tube (`pcurve_off_edge`), the tube reaching the axis
   (`degenerate_surface`) or a whole torus turned inside out
+* a star prism whose line edge, line pcurve or plane becomes a spline of
+  degree 2 or 3 with its knot `1/2` repeated to the degree (mutation 31,
+  R4): exactly C1 there (poles on a dyadic grid, the knot's pole their
+  midpoint), it reports no continuity issue; with that pole moved half a
+  grid step, exactly one more issue, `edge_not_c1`, `pcurve_not_c1` or
+  `face_not_c1`
 
 Every report must be deterministic, duplicate-free and identical to
 `from_parts`. A local 300-second development campaign (dirty tree based on
