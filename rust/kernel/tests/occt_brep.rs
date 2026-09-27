@@ -7,7 +7,11 @@ use rusty_occt::occt_brep::{import, read, write, BrepError};
 
 #[test]
 fn every_prism_round_trips_to_the_same_cells_and_text() {
-    let specs = identity_protocol::cases(include_str!("../../fixtures/identity-cases.txt"));
+    // S5: the arc prisms too.
+    let mut specs = identity_protocol::cases(include_str!("../../fixtures/identity-cases.txt"));
+    specs.extend(identity_protocol::cases(include_str!(
+        "../../fixtures/identity-arc-cases.txt"
+    )));
     let mut checked = 0;
     for spec in &specs {
         let solid = identity_protocol::build(spec);

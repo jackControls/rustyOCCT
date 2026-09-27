@@ -612,6 +612,48 @@ sphere, torus, one per accepted revision (R6).
   before any kernel torus code (`fixtures/occt-torus-preimplementation`,
   `fixtures/occt-torus-revolve-capture`).
 
+## Arcs in profiles (S5)
+
+S5 of `REVIEW_NOTES.md` lets a profile boundary mix lines and circular arcs,
+so the Extrude job takes sketches with fillets and slots.
+
+* **Input.** `Boundary::path(points, segments, tolerance)`: segment `i` from
+  point `i` to `i + 1` is `Segment::Line` or `Segment::Arc { center, radius,
+  ccw }`. Both ends of an arc lie within tolerance of its circle; its sweep
+  is the turn between them in its direction. A path of lines only is the
+  polygon, so polygon and circle ids are unchanged. The path is stored
+  counter-clockwise by its area with arcs' bulges; a clockwise input is
+  reversed as a polygon is, arcs' directions flipped, labels mapped.
+* **Validity** (`decide/arcs.rs`, exact where the distance is a sum of input
+  terms, conservative in rational intervals otherwise): chords and radii
+  above the tolerance; non-adjacent pieces farther apart than it (endpoint
+  distances, the interior pair through the foot of a centre or along the
+  line of centres, crossings); adjacent pieces neither doubling back nor
+  meeting again (the reflection of the shared point) nor bringing a far
+  end within tolerance. Holes against paths use the same pieces.
+* **Prism.** An arc segment gives circular-arc bottom and top edges about
+  the profile normal, the vertical lines at its ends and a partial cylinder
+  wall: one unwound loop of line pcurves on the cover, the rectangle
+  `[a, a + sweep] x [0, h]`, sensed so its normal leaves the material
+  (forward on a counter-clockwise outer arc). Caps take circular-arc
+  pcurves. Roles, ids, layout and history are a line segment's. Profile
+  moments add each arc's Green integrals in closed form; the certified mass
+  enclosure contains them. Points classify by exact ray parity over the
+  arcs' parts monotone in `y`. The height split and stacked fuse work
+  unchanged.
+* **Interop and DRAW.** The writer and reader already carried arc edges and
+  partial cylinder walls; every arc prism round-trips and OCCT reads it
+  valid with equal counts and properties. The adapter runs upstream's
+  `profile` sketch command (lines, `C` arcs, `F`, `O`, `P`, `X`, `Y`, `L`,
+  `T`, `R`, `D`, `I`, `W`) and `prism` of its faces; the derived case
+  `profile_arcs` passes on both backends.
+* **Evidence.** The native `MakePrism` capture of thirteen arc prisms came
+  before any kernel arc code (`fixtures/occt-arc-prism-preimplementation`);
+  `compare_history.py --family arc` matches all thirteen. The identity
+  reference enumerates their ids (`identity-arc-cases.txt`,
+  `identity-arc-expected.tsv`); the builder reproduces the neutral
+  generator's stadium, notch and half disc.
+
 ## Spline cells (S4)
 
 S4 of `REVIEW_NOTES.md` adds B-spline edges, pcurves and faces: R4's

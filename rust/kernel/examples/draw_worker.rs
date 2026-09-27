@@ -12,8 +12,8 @@ use rusty_occt::topology::{
     Curve2, Curve3, EdgeId, FaceId, Loop, Orientation, Slot, Surface, Topology,
 };
 use rusty_occt::{
-    Boundary, BoundaryLabels, Frame3, Point2, Point3, Profile, RigidTransform, Solid, Tolerance,
-    Vec3,
+    Boundary, BoundaryLabels, Frame3, Point2, Point3, Profile, RigidTransform, Segment, Solid,
+    Tolerance, Vec3,
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::f64::consts::TAU;
@@ -35,6 +35,17 @@ type Result<T> = std::result::Result<T, Failure>;
 struct Polyline {
     points: Vec<Point3>,
     labels: BoundaryLabels,
+    /// S5: per segment, `None` for a line or its arc (centre, radius,
+    /// counter-clockwise about the plane's normal), with the plane the
+    /// `profile` command built it in.
+    arcs: Vec<Option<(Point3, f64, bool)>>,
+    plane: Option<Frame3>,
+}
+
+impl Polyline {
+    fn has_arcs(&self) -> bool {
+        self.arcs.iter().any(Option::is_some)
+    }
 }
 
 #[derive(Clone)]
@@ -410,16 +421,41 @@ fn collect(shape: &Shape, parts: &mut Parts) {
     };
     let polyline = |p: &Polyline, parts: &mut Parts, face: bool| {
         let n = p.points.len();
+        let boundary = if p.has_arcs() {
+            boundary_of(p, Tolerance::default()).ok().map(|(_, b)| b)
+        } else {
+            None
+        };
         for k in 0..n {
             parts
                 .vertices
                 .insert(format!("L{}", p.labels.vertices[k].0));
             parts.edges.insert(format!("L{}", p.labels.segments[k].0));
-            parts.length += p.points[k].distance(p.points[(k + 1) % n]);
+            let chord = p.points[k].distance(p.points[(k + 1) % n]);
+            parts.length += match p.arcs[k] {
+                None => chord,
+                // The arc's length from its sweep (S5).
+                Some((center, radius, ccw)) => {
+                    let frame = p.plane.expect("arcs come from a planar profile");
+                    let local = |q: Point3| {
+                        let [x, y, _] = frame.coordinates(q);
+                        Point2::new(
+                            x - frame.coordinates(center)[0],
+                            y - frame.coordinates(center)[1],
+                        )
+                    };
+                    let (a, b) = (local(p.points[k]), local(p.points[(k + 1) % n]));
+                    let mut turn = (a.x * b.y - a.y * b.x).atan2(a.x * b.x + a.y * b.y);
+                    if turn <= 0.0 {
+                        turn += TAU;
+                    }
+                    radius * if ccw { turn } else { TAU - turn }
+                }
+            };
         }
         parts.wires += 1;
         if face && parts.faces.insert(format!("L{}", p.labels.boundary.0)) {
-            parts.area += polygon_area(&p.points);
+            parts.area += boundary.map_or_else(|| polygon_area(&p.points), |b| b.area());
         }
     };
     match shape {
@@ -518,6 +554,17 @@ fn props(mass: f64) -> String {
 /// The plane of a closed polyline: Newell normal, origin at the first point,
 /// x toward the second.
 fn plane_of(p: &Polyline, tolerance: Tolerance) -> Result<(Frame3, Vec<Point2>)> {
+    if let Some(frame) = p.plane {
+        let local = p
+            .points
+            .iter()
+            .map(|q| {
+                let [x, y, _] = frame.coordinates(*q);
+                Point2::new(x, y)
+            })
+            .collect();
+        return Ok((frame, local));
+    }
     let n = p.points.len();
     let mut normal = Vec3::new(0.0, 0.0, 0.0);
     for k in 0..n {
@@ -537,6 +584,33 @@ fn plane_of(p: &Polyline, tolerance: Tolerance) -> Result<(Frame3, Vec<Point2>)>
         local.push(Point2::new(x, y));
     }
     Ok((frame, local))
+}
+
+/// The kernel boundary of a planar wire or face: a polygon, or a path when
+/// it has arcs (S5), in its plane's frame, with its labels.
+fn boundary_of(p: &Polyline, tolerance: Tolerance) -> Result<(Frame3, Boundary)> {
+    let (frame, local) = plane_of(p, tolerance)?;
+    let boundary = if p.has_arcs() {
+        let segments = p
+            .arcs
+            .iter()
+            .map(|arc| match arc {
+                None => Segment::Line,
+                Some((center, radius, ccw)) => {
+                    let [x, y, _] = frame.coordinates(*center);
+                    Segment::Arc {
+                        center: Point2::new(x, y),
+                        radius: *radius,
+                        ccw: *ccw,
+                    }
+                }
+            })
+            .collect();
+        Boundary::path(local, segments, tolerance)?
+    } else {
+        Boundary::polygon(local, tolerance)?
+    };
+    Ok((frame, boundary.with_labels(p.labels.clone())?))
 }
 
 fn history_output(saved: &Saved, parent: InputLabel, roles: &[Role]) -> Vec<Shape> {
@@ -962,7 +1036,242 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
                     .map(|k| InputLabel(base + 1 + count + k))
                     .collect(),
             };
-            shapes.insert(args[1].clone(), Shape::Wire(Polyline { points, labels }));
+            let arcs = vec![None; points.len()];
+            shapes.insert(
+                args[1].clone(),
+                Shape::Wire(Polyline {
+                    points,
+                    labels,
+                    arcs,
+                    plane: None,
+                }),
+            );
+            Ok(String::new())
+        }
+        // Upstream's sketch command (BRepTest_CurveCommands.cxx, `profile`):
+        // a moving point and direction in a plane, closed by a line to the
+        // first point, a face unless `W`. Lines and arcs (S5); `S` (a face's
+        // surface) and open wires (`WW`) are not supported.
+        "profile" if args.len() >= 3 => {
+            let words = &args[2..];
+            let (mut x0, mut y0, mut x, mut y, mut dx, mut dy): (f64, f64, f64, f64, f64, f64) =
+                (0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+            let (mut origin, mut normal, mut xdir) = (
+                Point3::ORIGIN,
+                Vec3::new(0.0, 0.0, 1.0),
+                Vec3::new(1.0, 0.0, 0.0),
+            );
+            let (mut face, mut first, mut stay_first) = (true, true, false);
+            let mut points: Vec<Point2> = Vec::new();
+            let mut arcs: Vec<Option<(Point2, f64, bool)>> = Vec::new();
+            let confusion = 1e-7;
+            let mut i = 0;
+            let value = |k: usize| -> Result<f64> {
+                words
+                    .get(k)
+                    .ok_or_else(|| error("profile : bad number of arguments"))?
+                    .parse::<f64>()
+                    .map_err(|_| error("profile : bad number"))
+            };
+            enum Move {
+                Line(f64),
+                Circle(f64, f64),
+                None,
+            }
+            loop {
+                let closing = i >= words.len();
+                let mut step = Move::None;
+                if closing {
+                    let (ex, ey) = (x0 - x, y0 - y);
+                    let length = (ex * ex + ey * ey).sqrt();
+                    if length <= confusion {
+                        break;
+                    }
+                    dx = ex / length;
+                    dy = ey / length;
+                    step = Move::Line(length);
+                } else {
+                    let code = words[i].to_ascii_uppercase();
+                    let second = code.chars().nth(1);
+                    match code.chars().next().unwrap_or(' ') {
+                        'F' => {
+                            if !first {
+                                return Err(error(
+                                    "profile: The F instruction must precede all moves",
+                                ));
+                            }
+                            (x0, y0) = (value(i + 1)?, value(i + 2)?);
+                            (x, y) = (x0, y0);
+                            stay_first = true;
+                            i += 2;
+                        }
+                        'O' => {
+                            origin = Point3::new(value(i + 1)?, value(i + 2)?, value(i + 3)?);
+                            stay_first = true;
+                            i += 3;
+                        }
+                        'P' => {
+                            normal = Vec3::new(value(i + 1)?, value(i + 2)?, value(i + 3)?);
+                            xdir = Vec3::new(value(i + 4)?, value(i + 5)?, value(i + 6)?);
+                            stay_first = true;
+                            i += 6;
+                        }
+                        'X' => {
+                            let mut length = value(i + 1)?;
+                            if second == Some('X') {
+                                length -= x;
+                            }
+                            (dx, dy) = (1.0, 0.0);
+                            step = Move::Line(length);
+                            i += 1;
+                        }
+                        'Y' => {
+                            let mut length = value(i + 1)?;
+                            if second == Some('Y') {
+                                length -= y;
+                            }
+                            (dx, dy) = (0.0, 1.0);
+                            step = Move::Line(length);
+                            i += 1;
+                        }
+                        'L' => {
+                            step = Move::Line(value(i + 1)?);
+                            i += 1;
+                        }
+                        'T' => {
+                            let (mut vx, mut vy) = (value(i + 1)?, value(i + 2)?);
+                            if second == Some('T') {
+                                vx -= x;
+                                vy -= y;
+                            }
+                            let length = (vx * vx + vy * vy).sqrt();
+                            if length > confusion {
+                                (dx, dy) = (vx / length, vy / length);
+                                step = Move::Line(length);
+                            }
+                            i += 2;
+                        }
+                        'R' => {
+                            let angle = value(i + 1)?.to_radians();
+                            if second == Some('R') {
+                                (dx, dy) = (angle.cos(), angle.sin());
+                            } else {
+                                let (c, s) = (angle.cos(), angle.sin());
+                                (dx, dy) = (c * dx - s * dy, s * dx + c * dy);
+                            }
+                            i += 1;
+                        }
+                        'D' => {
+                            let (vx, vy) = (value(i + 1)?, value(i + 2)?);
+                            let length = (vx * vx + vy * vy).sqrt();
+                            if length > confusion {
+                                (dx, dy) = (vx / length, vy / length);
+                            }
+                            i += 2;
+                        }
+                        'C' => {
+                            let radius = value(i + 1)?;
+                            if radius.abs() > confusion {
+                                step = Move::Circle(radius, value(i + 2)?.to_radians());
+                            }
+                            i += 2;
+                        }
+                        'I' => {
+                            let target = value(i + 1)?;
+                            let (along, from) = match second {
+                                Some('X') => (dx, x),
+                                Some('Y') => (dy, y),
+                                _ => return Err(unsupported(args)),
+                            };
+                            if along.abs() < confusion {
+                                return Err(error("Profile : cannot intersect"));
+                            }
+                            step = Move::Line((target - from) / along);
+                            i += 1;
+                        }
+                        'W' => {
+                            if second == Some('W') {
+                                return Err(unsupported(args));
+                            }
+                            face = false;
+                            i = words.len() - 1;
+                        }
+                        _ => return Err(unsupported(args)),
+                    }
+                }
+                match step {
+                    Move::Line(mut length) => {
+                        if length < 0.0 {
+                            length = -length;
+                            (dx, dy) = (-dx, -dy);
+                        }
+                        points.push(Point2::new(x, y));
+                        arcs.push(None);
+                        x += length * dx;
+                        y += length * dy;
+                    }
+                    Move::Circle(mut radius, mut angle) => {
+                        let mut sense = true;
+                        if radius < 0.0 {
+                            radius = -radius;
+                            sense = !sense;
+                            (dx, dy) = (-dx, -dy);
+                        }
+                        // gp_Ax2d: the centre left of the direction, the
+                        // x axis from the centre to the point.
+                        let center = Point2::new(x - radius * dy, y + radius * dx);
+                        let (ux, uy) = (dy, -dx);
+                        if angle < 0.0 {
+                            angle = -angle;
+                            sense = !sense;
+                        }
+                        // A direct circle's y axis turns x a quarter left.
+                        let (vx, vy) = if sense { (-uy, ux) } else { (uy, -ux) };
+                        points.push(Point2::new(x, y));
+                        arcs.push(Some((center, radius, sense)));
+                        let (c, s) = (angle.cos(), angle.sin());
+                        x = center.x + radius * (c * ux + s * vx);
+                        y = center.y + radius * (c * uy + s * vy);
+                        (dx, dy) = (-s * ux + c * vx, -s * uy + c * vy);
+                    }
+                    Move::None => {}
+                }
+                if closing {
+                    break;
+                }
+                first = stay_first;
+                stay_first = false;
+                i += 1;
+            }
+            let plane = Frame3::new(origin, normal, xdir, t)?;
+            let at = |q: Point2| plane.point(q, 0.0);
+            let count = points.len() as u64;
+            let base = session.next_label;
+            session.next_label += 2 * count + 1;
+            let labels = BoundaryLabels {
+                boundary: InputLabel(base),
+                segments: (0..count).map(|k| InputLabel(base + 1 + k)).collect(),
+                vertices: (0..count)
+                    .map(|k| InputLabel(base + 1 + count + k))
+                    .collect(),
+            };
+            let polyline = Polyline {
+                points: points.iter().map(|q| at(*q)).collect(),
+                labels,
+                arcs: arcs
+                    .iter()
+                    .map(|a| a.map(|(c, r, ccw)| (at(c), r, ccw)))
+                    .collect(),
+                plane: Some(plane),
+            };
+            // The boundary must be valid now, as OCCT's face is.
+            boundary_of(&polyline, t)?;
+            let shape = if face {
+                Shape::Face(polyline)
+            } else {
+                Shape::Wire(polyline)
+            };
+            shapes.insert(args[1].clone(), shape);
             Ok(String::new())
         }
         "mkplane" if args.len() == 3 => match get(shapes, &args[2])? {
@@ -982,13 +1291,12 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             };
             let n = numbers(&args[3..6])?;
             let vector = Vec3::new(n[0], n[1], n[2]);
-            let (frame, local) = plane_of(&face, t)?;
+            let (frame, boundary) = boundary_of(&face, t)?;
             let height = vector.dot(frame.normal());
             // Only prisms normal to the profile plane are supported.
             if (vector - frame.normal() * height).length() > t.linear() {
                 return Err(unsupported(args));
             }
-            let boundary = Boundary::polygon(local, t)?.with_labels(face.labels.clone())?;
             let profile = Profile::new(boundary, vec![], t)?;
             session.next_operation += 1;
             let operation = OperationId(session.next_operation);
@@ -1041,6 +1349,10 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
                 }
                 _ => return Err(unsupported(args)),
             };
+            // Profile edges are chords: an arc's is not its edge.
+            if polyline.has_arcs() && args[2].eq_ignore_ascii_case("e") {
+                return Err(unsupported(args));
+            }
             let n = polyline.points.len();
             let items: Vec<Shape> = match args[2].to_ascii_lowercase().as_str() {
                 "e" => (0..n)

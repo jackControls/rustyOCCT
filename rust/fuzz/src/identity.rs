@@ -7,6 +7,10 @@
 //! the meridian (identity_reference.cone_entities), and rebuilding,
 //! stretching and rigid motion keep its ids. So do a sphere's or zone's, and
 //! a torus's, v-segment's or wedge's (identity_reference.torus_entities).
+//! And a filleted rectangle with an optional notch (S5): arcs exactly on
+//! their circles, valid, a polygon's counts, ids kept through reversal and
+//! rigid motion, the closed-form area and mass inside the certified
+//! enclosure, and points classified by the arcs.
 
 use libfuzzer_sys::arbitrary::{Result, Unstructured};
 use rusty_occt::history::History;
@@ -15,8 +19,8 @@ use rusty_occt::identity::{
 };
 use rusty_occt::topology::Slot;
 use rusty_occt::{
-    Boundary, BoundaryLabels, Frame3, Point2, Point3, Profile, RigidTransform, Solid, Tolerance,
-    Vec3,
+    Boundary, BoundaryLabels, Frame3, Location, Point2, Point3, Profile, RigidTransform, Segment,
+    Solid, Tolerance, Vec3,
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::f64::consts::TAU;
@@ -679,7 +683,222 @@ fn check_cone(data: &[u8]) {
     }
 }
 
+/// S5: a `w x h` rectangle whose corners are filleted (radius 0 for a sharp
+/// corner) and whose top side may carry a concave half-circle notch; every
+/// value dyadic, so each arc's points lie exactly on its circle.
+fn arc_path(u: &mut Unstructured) -> Result<(Vec<Point2>, Vec<Segment>, f64)> {
+    let (w, h) = (
+        1.0 + f64::from(u.int_in_range(0u8..=63)?) / 16.0,
+        1.0 + f64::from(u.int_in_range(0u8..=63)?) / 16.0,
+    );
+    let small = w.min(h);
+    let mut radius = [0.0; 4];
+    for r in &mut radius {
+        // Up to a quarter of the shorter side, in 64ths.
+        *r = small / 4.0 * f64::from(u.int_in_range(0u8..=63)?) / 64.0;
+    }
+    let notch = if u.arbitrary()? { small / 8.0 } else { 0.0 };
+    let (mut points, mut segments) = (Vec::new(), Vec::new());
+    let mut area = w * h;
+    let corner = |points: &mut Vec<Point2>,
+                  segments: &mut Vec<Segment>,
+                  at: Point2,
+                  into: Point2,
+                  out: Point2,
+                  r: f64| {
+        // The corner `at`, entered along `into` and left along `out` (unit
+        // axis directions).
+        if r == 0.0 {
+            points.push(at);
+            segments.push(Segment::Line);
+        } else {
+            points.push(Point2::new(at.x - into.x * r, at.y - into.y * r));
+            segments.push(Segment::Arc {
+                center: Point2::new(at.x - into.x * r + out.x * r, at.y - into.y * r + out.y * r),
+                radius: r,
+                ccw: true,
+            });
+            points.push(Point2::new(at.x + out.x * r, at.y + out.y * r));
+            segments.push(Segment::Line);
+        }
+    };
+    let (e, n, west, s) = (
+        Point2::new(1.0, 0.0),
+        Point2::new(0.0, 1.0),
+        Point2::new(-1.0, 0.0),
+        Point2::new(0.0, -1.0),
+    );
+    corner(
+        &mut points,
+        &mut segments,
+        Point2::new(0.0, 0.0),
+        s,
+        e,
+        radius[0],
+    );
+    corner(
+        &mut points,
+        &mut segments,
+        Point2::new(w, 0.0),
+        e,
+        n,
+        radius[1],
+    );
+    corner(
+        &mut points,
+        &mut segments,
+        Point2::new(w, h),
+        n,
+        west,
+        radius[2],
+    );
+    if notch > 0.0 {
+        points.push(Point2::new(w / 2.0 + notch, h));
+        segments.push(Segment::Arc {
+            center: Point2::new(w / 2.0, h),
+            radius: notch,
+            ccw: false,
+        });
+        points.push(Point2::new(w / 2.0 - notch, h));
+        segments.push(Segment::Line);
+        area -= std::f64::consts::PI * notch * notch / 2.0;
+    }
+    corner(
+        &mut points,
+        &mut segments,
+        Point2::new(0.0, h),
+        west,
+        s,
+        radius[3],
+    );
+    for r in radius {
+        area -= r * r * (1.0 - std::f64::consts::PI / 4.0);
+    }
+    Ok((points, segments, area))
+}
+
+fn check_arcs(data: &[u8]) {
+    let mut u = Unstructured::new(data);
+    let Ok((points, segments, area)) = arc_path(&mut u) else {
+        return;
+    };
+    // A path of lines only is the polygon, covered above.
+    if segments.iter().all(|s| *s == Segment::Line) {
+        return;
+    }
+    let Ok(Some(s)) = spec(&mut u) else {
+        return;
+    };
+    let scale = s.tolerance.linear() / 1e-9;
+    let scaled: Vec<Point2> = points
+        .iter()
+        .map(|p| Point2::new(p.x * scale, p.y * scale))
+        .collect();
+    let arcs: Vec<Segment> = segments
+        .iter()
+        .map(|g| match *g {
+            Segment::Arc {
+                center,
+                radius,
+                ccw,
+            } => Segment::Arc {
+                center: Point2::new(center.x * scale, center.y * scale),
+                radius: radius * scale,
+                ccw,
+            },
+            Segment::Line => Segment::Line,
+        })
+        .collect();
+    let n = scaled.len();
+    let boundary = Boundary::path(scaled.clone(), arcs.clone(), s.tolerance)
+        .expect("a filleted rectangle is a valid path");
+    assert!((boundary.area() - area * scale * scale).abs() <= 1e-12 * area * scale * scale);
+    // The same path entered clockwise is stored the same way.
+    let mut cw_points = vec![scaled[0]];
+    cw_points.extend(scaled[1..].iter().rev());
+    let cw_segments: Vec<Segment> = (0..n)
+        .map(|j| match arcs[n - 1 - j] {
+            Segment::Arc {
+                center,
+                radius,
+                ccw,
+            } => Segment::Arc {
+                center,
+                radius,
+                ccw: !ccw,
+            },
+            g => g,
+        })
+        .collect();
+    let cw = Boundary::path(cw_points, cw_segments, s.tolerance).unwrap();
+    assert_eq!(cw.path_geometry(), boundary.path_geometry());
+    let build = |b: Boundary, reverse: bool| {
+        let profile = Profile::new(b, vec![], s.tolerance).unwrap();
+        let (start, end) = if reverse {
+            (s.end, s.start)
+        } else {
+            (s.start, s.end)
+        };
+        Solid::extrude_with(s.operation, profile, s.frame, start, end).map(|(x, _)| x)
+    };
+    let Ok(solid) = build(boundary.clone(), false) else {
+        return;
+    };
+    let t = solid.topology();
+    assert_eq!(t.check(solid.resolution()), Vec::new());
+    assert_eq!(t.vertices().len(), 2 * n);
+    assert_eq!(t.edges().len(), 3 * n);
+    assert_eq!(t.faces().len(), n + 2);
+    let c = t.occt_counts();
+    assert_eq!(
+        (c.vertices, c.edges, c.wires, c.faces),
+        (2 * n, 3 * n, n + 2, n + 2)
+    );
+    let base = ids(&solid);
+    assert_eq!(
+        ids(&build(cw, false).unwrap()),
+        base,
+        "clockwise input keeps ids"
+    );
+    assert_eq!(id_set(&ids(&build(boundary, true).unwrap())), id_set(&base));
+    let mut moved = solid.clone();
+    for transform in &s.transforms {
+        if let Ok((next, _)) = moved.transform_with(OperationId::UNSPECIFIED, *transform) {
+            assert_eq!(ids(&next), base);
+            moved = next;
+        }
+    }
+    let m = solid.mass_properties();
+    let e = t.mass_enclosure().expect("certified");
+    let slack = 1e-12 * m.volume.abs().max(1e-300);
+    assert!(e.volume[0] - slack <= m.volume && m.volume <= e.volume[1] + slack);
+    // The rectangle's filleted corner lies outside; its centre inside.
+    let mid = (s.start + s.end) / 2.0;
+    let at = |p: Point2| {
+        solid
+            .frame()
+            .point(Point2::new(p.x * scale, p.y * scale), mid)
+    };
+    let (w, h) = (
+        points[1..].iter().fold(0.0f64, |a, p| a.max(p.x)),
+        points.iter().fold(0.0f64, |a, p| a.max(p.y)),
+    );
+    assert_eq!(
+        solid.classify(at(Point2::new(w / 2.0, h / 4.0))).unwrap(),
+        Location::Inside
+    );
+    if let Segment::Arc { radius, .. } = segments[0] {
+        if radius * scale > 1e-3 * scale {
+            assert_eq!(
+                solid.classify(at(Point2::new(0.0, 0.0))).unwrap(),
+                Location::Outside
+            );
+        }
+    }
+}
+
 pub fn check_identity(data: &[u8]) {
+    check_arcs(data);
     check_cone(data);
     check_sphere(data);
     check_torus(data);

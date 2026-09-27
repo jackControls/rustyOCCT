@@ -76,6 +76,45 @@ fn every_case_matches_the_independent_ids_and_transforms_keep_them() {
     assert_eq!(entities, 46580);
 }
 
+/// S5: prisms of profiles with circular arcs get the ids the independent
+/// reference enumerates, keep them through rigid motions and validate.
+#[test]
+fn arc_prisms_match_the_independent_ids() {
+    let mut expected: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for line in include_str!("../../fixtures/identity-arc-expected.tsv")
+        .lines()
+        .filter(|l| !l.starts_with('#'))
+    {
+        let (case, row) = line.split_once('\t').unwrap();
+        expected
+            .entry(case.to_string())
+            .or_default()
+            .push(row.to_string());
+    }
+    let specs = cases(include_str!("../../fixtures/identity-arc-cases.txt"));
+    assert_eq!(specs.len(), expected.len());
+    for spec in &specs {
+        let solid = build(spec);
+        assert_eq!(
+            solid.topology().check(spec.tolerance),
+            Vec::new(),
+            "{}",
+            spec.name
+        );
+        let got = rows(&solid);
+        assert_eq!(got, expected[&spec.name], "{}", spec.name);
+        let mut moved = solid.clone();
+        for transform in &spec.transforms {
+            moved = moved
+                .transform_with(OperationId::UNSPECIFIED, *transform)
+                .map(|(s, _)| s)
+                .unwrap();
+            assert_eq!(rows(&moved), got, "{}: transform", spec.name);
+        }
+    }
+    assert_eq!(specs.len(), 13);
+}
+
 #[test]
 fn labels_decide_ids_and_indices_stand_in_without_them() {
     let specs = cases(include_str!("../../fixtures/identity-cases.txt"));

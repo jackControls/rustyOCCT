@@ -26,7 +26,124 @@ pub(crate) struct AreaMoments {
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum BoundaryKind {
     Polygon(Vec<Point2>),
-    Circle { center: Point2, radius: f64 },
+    Circle {
+        center: Point2,
+        radius: f64,
+    },
+    /// Points with a segment from each to the next (S5), at least one an
+    /// arc.
+    Path {
+        points: Vec<Point2>,
+        segments: Vec<Segment>,
+    },
+}
+
+/// A segment of a path boundary from one point to the next (S5).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Segment {
+    Line,
+    /// A circular arc about `center` of the given radius, turning
+    /// counter-clockwise (`ccw`) or clockwise about the profile's normal.
+    /// Both of its points lie within tolerance of the circle.
+    Arc {
+        center: Point2,
+        radius: f64,
+        ccw: bool,
+    },
+}
+
+impl Segment {
+    /// The same segment traversed backwards.
+    fn reversed(self) -> Self {
+        match self {
+            Segment::Line => Segment::Line,
+            Segment::Arc {
+                center,
+                radius,
+                ccw,
+            } => Segment::Arc {
+                center,
+                radius,
+                ccw: !ccw,
+            },
+        }
+    }
+}
+
+/// The signed sweep of an arc from `a` to `b` about `center`: in `(0, 2π)`
+/// turning counter-clockwise, in `(-2π, 0)` clockwise.
+pub(crate) fn arc_sweep(center: Point2, a: Point2, b: Point2, ccw: bool) -> f64 {
+    let (u, v) = (
+        Point2::new(a.x - center.x, a.y - center.y),
+        Point2::new(b.x - center.x, b.y - center.y),
+    );
+    let mut turn = cross(u, v).atan2(u.x * v.x + u.y * v.y);
+    if turn <= 0.0 {
+        turn += 2.0 * PI;
+    }
+    if ccw {
+        turn
+    } else {
+        turn - 2.0 * PI
+    }
+}
+
+/// `∫ cos^m t sin^n t dt` over `[a, b]` for `m + n <= 4`, by the reduction
+/// formulas.
+fn trig_integral(m: u32, n: u32, a: f64, b: f64) -> f64 {
+    let at = |t: f64, m: i32, n: i32| t.cos().powi(m) * t.sin().powi(n);
+    match (m, n) {
+        (0, 0) => b - a,
+        (1, 0) => b.sin() - a.sin(),
+        (0, 1) => a.cos() - b.cos(),
+        (1, 1) => 0.5 * (b.sin().powi(2) - a.sin().powi(2)),
+        (m, n) if n >= 2 => {
+            let k = f64::from(m + n);
+            -(at(b, m as i32 + 1, n as i32 - 1) - at(a, m as i32 + 1, n as i32 - 1)) / k
+                + f64::from(n - 1) / k * trig_integral(m, n - 2, a, b)
+        }
+        (m, n) => {
+            let k = f64::from(m + n);
+            (at(b, m as i32 - 1, n as i32 + 1) - at(a, m as i32 - 1, n as i32 + 1)) / k
+                + f64::from(m - 1) / k * trig_integral(m - 2, n, a, b)
+        }
+    }
+}
+
+/// Green's-theorem integrals `[A, ∫x, ∫y, ∫x², ∫xy, ∫y²]` of the region
+/// left of an arc (centre `(cx, cy)` relative to the anchor) from angle
+/// `start` over `sweep`.
+fn arc_moments(cx: f64, cy: f64, r: f64, start: f64, sweep: f64) -> [f64; 6] {
+    let (a, b) = (start, start + sweep);
+    let i = |m: u32, n: u32| trig_integral(m, n, a, b);
+    // x = cx + r c, y = cy + r s, dx = -r s dt, dy = r c dt.
+    let area = 0.5 * (r * cx * i(1, 0) + r * cy * i(0, 1) + r * r * i(0, 0));
+    // ∫x dA = ∮ x²/2 dy.
+    let mx = 0.5 * r * (cx * cx * i(1, 0) + 2.0 * cx * r * i(2, 0) + r * r * i(3, 0));
+    // ∫y dA = -∮ y²/2 dx.
+    let my = 0.5 * r * (cy * cy * i(0, 1) + 2.0 * cy * r * i(0, 2) + r * r * i(0, 3));
+    // ∫x² dA = ∮ x³/3 dy.
+    let xx = r / 3.0
+        * (cx.powi(3) * i(1, 0)
+            + 3.0 * cx * cx * r * i(2, 0)
+            + 3.0 * cx * r * r * i(3, 0)
+            + r.powi(3) * i(4, 0));
+    // ∫y² dA = -∮ y³/3 dx.
+    let yy = r / 3.0
+        * (cy.powi(3) * i(0, 1)
+            + 3.0 * cy * cy * r * i(0, 2)
+            + 3.0 * cy * r * r * i(0, 3)
+            + r.powi(3) * i(0, 4));
+    // ∫xy dA = ∮ x² y/2 dy.
+    let xy = 0.5
+        * r
+        * (cx * cx * cy * i(1, 0)
+            + cx * cx * r * i(1, 1)
+            + 2.0 * cx * r * cy * i(2, 0)
+            + 2.0 * cx * r * r * i(2, 1)
+            + r * r * cy * i(3, 0)
+            + r.powi(3) * i(3, 1));
+    [area, mx, my, xx, xy, yy]
 }
 
 /// Caller labels for one boundary, the roots of its entities' ids. A polygon
@@ -149,6 +266,105 @@ impl Boundary {
         })
     }
 
+    /// A path of line and circular-arc segments (S5): segment `i` runs from
+    /// point `i` to point `i + 1`, the last back to the first. Each arc's
+    /// points lie within tolerance of its circle; its sweep is the turn from
+    /// the first point's direction to the second's, in its direction. The
+    /// path is stored counter-clockwise like a polygon. A path of lines only
+    /// is exactly [`Boundary::polygon`] of its points.
+    pub fn path(points: Vec<Point2>, segments: Vec<Segment>, tolerance: Tolerance) -> Result<Self> {
+        if points.len() != segments.len() {
+            return Err(Error::InvalidCurve("one segment per path point"));
+        }
+        if segments.iter().all(|s| *s == Segment::Line) {
+            return Self::polygon(points, tolerance);
+        }
+        if points.len() > MAX_EDGES {
+            return Err(Error::LimitExceeded("path segments"));
+        }
+        if points.len() < 2 {
+            return Err(Error::Degenerate("path"));
+        }
+        for point in &points {
+            point.checked(tolerance)?;
+        }
+        let tol = tolerance.linear();
+        let count = points.len();
+        let mut perimeter = 0.0;
+        for (i, segment) in segments.iter().enumerate() {
+            let (a, b) = (points[i], points[(i + 1) % count]);
+            if decide::distance_le(a, b, &[tol]) {
+                return Err(Error::Degenerate("path segment"));
+            }
+            perimeter += match segment {
+                Segment::Line => a.distance(b),
+                Segment::Arc {
+                    center,
+                    radius,
+                    ccw,
+                } => {
+                    center.checked(tolerance)?;
+                    tolerance.resolve(&[*radius, center.x + radius, center.y + radius])?;
+                    if !radius.is_finite() || *radius <= tol {
+                        return Err(Error::Degenerate("arc radius"));
+                    }
+                    for end in [a, b] {
+                        if !(decide::distance_le(end, *center, &[*radius, tol])
+                            && decide::distance_ge(end, *center, &[*radius, -tol]))
+                        {
+                            return Err(Error::InvalidCurve("arc point off its circle"));
+                        }
+                    }
+                    radius * arc_sweep(*center, a, b, *ccw).abs()
+                }
+            };
+        }
+        let perimeter = finite(perimeter, "perimeter")?;
+        let pieces = path_pieces(&points, &segments);
+        for i in 0..count {
+            let j = (i + 1) % count;
+            // Two pieces meet at both ends of a two-segment path.
+            let others: Vec<Point2> = if count == 2 {
+                vec![points[i]]
+            } else {
+                Vec::new()
+            };
+            if decide::arcs::adjacent_invalid(&pieces[i], &pieces[j], tol, &others) {
+                return Err(Error::SelfIntersection);
+            }
+            for k in (i + 2)..count {
+                if (k + 1) % count == i {
+                    continue;
+                }
+                if decide::arcs::pieces_within(&pieces[i], &pieces[k], tol) {
+                    return Err(Error::SelfIntersection);
+                }
+            }
+        }
+        if decide::area_is_degenerate(&[decide::Outline::Path(&points, &segments)], tol) {
+            return Err(Error::Degenerate("path area"));
+        }
+        let (moments, signed) = path_moments(&points, &segments)?;
+        let reversed = signed < 0.0;
+        let (points, segments) = if reversed {
+            let mut p = points.clone();
+            p[1..].reverse();
+            let s = (0..count)
+                .map(|j| segments[count - 1 - j].reversed())
+                .collect();
+            (p, s)
+        } else {
+            (points, segments)
+        };
+        Ok(Self {
+            kind: BoundaryKind::Path { points, segments },
+            moments,
+            perimeter,
+            reversed,
+            labels: None,
+        })
+    }
+
     /// Rectangle from (0, 0) to (width, height).
     pub fn rectangle(width: f64, height: f64, tolerance: Tolerance) -> Result<Self> {
         finite(width, "rectangle width")?;
@@ -201,7 +417,7 @@ impl Boundary {
     /// runs from input vertex `i` to `i + 1`. They are stored in the
     /// boundary's counter-clockwise order. Labels must be distinct.
     pub fn with_labels(mut self, labels: BoundaryLabels) -> Result<Self> {
-        let count = self.polygon_vertices().map_or(1, <[Point2]>::len);
+        let count = self.segment_count();
         if labels.segments.len() != count || labels.vertices.len() != count {
             return Err(Error::InvalidLabel(
                 "one segment and one vertex label per point",
@@ -252,6 +468,33 @@ impl Boundary {
             _ => None,
         }
     }
+    /// The stored (counter-clockwise) points and segments of a path.
+    pub fn path_geometry(&self) -> Option<(&[Point2], &[Segment])> {
+        match &self.kind {
+            BoundaryKind::Path { points, segments } => Some((points, segments)),
+            _ => None,
+        }
+    }
+    /// The number of segments (and of points): one for a circle.
+    pub(crate) fn segment_count(&self) -> usize {
+        match &self.kind {
+            BoundaryKind::Polygon(points) => points.len(),
+            BoundaryKind::Circle { .. } => 1,
+            BoundaryKind::Path { points, .. } => points.len(),
+        }
+    }
+    /// The boundary as pieces for the proximity screen.
+    pub(crate) fn pieces(&self) -> Vec<decide::arcs::Piece> {
+        match &self.kind {
+            BoundaryKind::Polygon(points) => edges(points)
+                .map(|(a, b)| decide::arcs::Piece::Line(a, b))
+                .collect(),
+            BoundaryKind::Circle { center, radius } => {
+                vec![decide::arcs::Piece::Circle(*center, *radius)]
+            }
+            BoundaryKind::Path { points, segments } => path_pieces(points, segments),
+        }
+    }
     pub fn circle_geometry(&self) -> Option<(Point2, f64)> {
         match self.kind {
             BoundaryKind::Circle { center, radius } => Some((center, radius)),
@@ -263,12 +506,13 @@ impl Boundary {
         let mut rebuilt = match &self.kind {
             BoundaryKind::Polygon(points) => Self::polygon(points.clone(), tolerance)?,
             BoundaryKind::Circle { center, radius } => Self::circle(*center, *radius, tolerance)?,
+            BoundaryKind::Path { points, segments } => {
+                Self::path(points.clone(), segments.clone(), tolerance)?
+            }
         };
         // Stored points are already counter-clockwise: keep the caller's
         // orientation record and the stored-order labels.
-        if rebuilt.polygon_vertices().map(<[Point2]>::len)
-            != self.polygon_vertices().map(<[Point2]>::len)
-        {
+        if rebuilt.kind != self.kind {
             return Err(Error::Degenerate("polygon"));
         }
         rebuilt.reversed = self.reversed;
@@ -279,6 +523,7 @@ impl Boundary {
         match &self.kind {
             BoundaryKind::Polygon(points) => points[0],
             BoundaryKind::Circle { center, radius } => Point2::new(center.x + radius, center.y),
+            BoundaryKind::Path { points, .. } => points[0],
         }
     }
     pub(crate) fn locate(&self, point: Point2, tolerance: Tolerance) -> Location {
@@ -290,6 +535,30 @@ impl Boundary {
                 {
                     Location::Boundary
                 } else if !decide::distance_ge(point, *center, &[*radius]) {
+                    Location::Inside
+                } else {
+                    Location::Outside
+                }
+            }
+            BoundaryKind::Path { points, segments } => {
+                let tol = tolerance.linear();
+                let pieces = path_pieces(points, segments);
+                if pieces.iter().any(|piece| match piece {
+                    decide::arcs::Piece::Line(a, b) => {
+                        decide::segment_distance_le(point, *a, *b, &[tol])
+                    }
+                    decide::arcs::Piece::Arc(arc) => {
+                        decide::arcs::point_arc_within(point, arc, tol)
+                    }
+                    decide::arcs::Piece::Circle(..) => unreachable!("a path has no circle"),
+                }) {
+                    return Location::Boundary;
+                }
+                let crossings: u32 = pieces
+                    .iter()
+                    .map(|piece| decide::arcs::ray_crossings(point, piece))
+                    .sum();
+                if crossings % 2 == 1 {
                     Location::Inside
                 } else {
                     Location::Outside
@@ -344,7 +613,7 @@ impl Profile {
         // Enforce the aggregate limit before repeating quadratic validation.
         let total_edges: usize = std::iter::once(&outer)
             .chain(&holes)
-            .map(|boundary| boundary.polygon_vertices().map_or(1, <[Point2]>::len))
+            .map(Boundary::segment_count)
             .sum();
         if total_edges > MAX_EDGES {
             return Err(Error::LimitExceeded("profile edges"));
@@ -390,6 +659,7 @@ impl Profile {
             .map(|b| match &b.kind {
                 BoundaryKind::Polygon(points) => decide::Outline::Polygon(points),
                 BoundaryKind::Circle { radius, .. } => decide::Outline::Circle(*radius),
+                BoundaryKind::Path { points, segments } => decide::Outline::Path(points, segments),
             })
             .collect();
         if decide::area_is_degenerate(&outlines, tolerance.linear()) {
@@ -486,7 +756,7 @@ fn orient(a: Point2, b: Point2, c: Point2) -> f64 {
         Point2::new(c.x - a.x, c.y - a.y),
     )
 }
-fn segments_touch(a: Point2, b: Point2, c: Point2, d: Point2, tolerance: f64) -> bool {
+pub(crate) fn segments_touch(a: Point2, b: Point2, c: Point2, d: Point2, tolerance: f64) -> bool {
     let (ab_c, ab_d, cd_a, cd_b) = (
         orient2d_finite(a, b, c),
         orient2d_finite(a, b, d),
@@ -504,6 +774,13 @@ fn segments_touch(a: Point2, b: Point2, c: Point2, d: Point2, tolerance: f64) ->
         || decide::segment_distance_le(d, a, b, &[tolerance])
 }
 fn boundaries_touch(a: &Boundary, b: &Boundary, tolerance: f64) -> bool {
+    if matches!(a.kind, BoundaryKind::Path { .. }) || matches!(b.kind, BoundaryKind::Path { .. }) {
+        let (pa, pb) = (a.pieces(), b.pieces());
+        return pa.iter().any(|x| {
+            pb.iter()
+                .any(|y| decide::arcs::pieces_within(x, y, tolerance))
+        });
+    }
     match (&a.kind, &b.kind) {
         (BoundaryKind::Polygon(a), BoundaryKind::Polygon(b)) => {
             edges(a).any(|(a, b_)| edges(b).any(|(c, d)| segments_touch(a, b_, c, d, tolerance)))
@@ -530,5 +807,98 @@ fn boundaries_touch(a: &Boundary, b: &Boundary, tolerance: f64) -> bool {
                     && (decide::distance_ge(*center, a, &[*radius, -tolerance])
                         || decide::distance_ge(*center, b, &[*radius, -tolerance]))
             }),
+        _ => unreachable!("paths are handled above"),
     }
+}
+
+/// A path's segments as pieces.
+fn path_pieces(points: &[Point2], segments: &[Segment]) -> Vec<decide::arcs::Piece> {
+    let n = points.len();
+    segments
+        .iter()
+        .enumerate()
+        .map(|(i, segment)| {
+            let (a, b) = (points[i], points[(i + 1) % n]);
+            match segment {
+                Segment::Line => decide::arcs::Piece::Line(a, b),
+                Segment::Arc {
+                    center,
+                    radius,
+                    ccw,
+                } => decide::arcs::Piece::Arc(decide::arcs::Arc2 {
+                    center: *center,
+                    radius: *radius,
+                    start: a,
+                    end: b,
+                    ccw: *ccw,
+                }),
+            }
+        })
+        .collect()
+}
+
+/// A path's area moments (of its material region, whichever way it runs)
+/// and its signed area. Integrals are taken about the first point.
+fn path_moments(points: &[Point2], segments: &[Segment]) -> Result<(AreaMoments, f64)> {
+    let anchor = points[0];
+    let n = points.len();
+    let local = |p: Point2| Point2::new(p.x - anchor.x, p.y - anchor.y);
+    let mut total = [0.0; 6];
+    for (i, segment) in segments.iter().enumerate() {
+        let (a, b) = (local(points[i]), local(points[(i + 1) % n]));
+        let part = match segment {
+            Segment::Line => {
+                // The arcs' Green forms along the line (the polygon's
+                // symmetric per-edge forms agree only over a closed loop).
+                let (dx, dy) = (b.x - a.x, b.y - a.y);
+                let cube = |p: f64, q: f64| p * p * p + p * p * q + p * q * q + q * q * q;
+                let xxy = a.x * a.x * a.y
+                    + (a.x * a.x * dy + 2.0 * a.x * dx * a.y) / 2.0
+                    + (2.0 * a.x * dx * dy + dx * dx * a.y) / 3.0
+                    + dx * dx * dy / 4.0;
+                [
+                    0.5 * cross(a, b),
+                    dy * (a.x * a.x + a.x * b.x + b.x * b.x) / 6.0,
+                    -dx * (a.y * a.y + a.y * b.y + b.y * b.y) / 6.0,
+                    dy * cube(a.x, b.x) / 12.0,
+                    dy * xxy / 2.0,
+                    -dx * cube(a.y, b.y) / 12.0,
+                ]
+            }
+            Segment::Arc {
+                center,
+                radius,
+                ccw,
+            } => {
+                let c = local(*center);
+                let start = (a.y - c.y).atan2(a.x - c.x);
+                let sweep = arc_sweep(*center, points[i], points[(i + 1) % n], *ccw);
+                arc_moments(c.x, c.y, *radius, start, sweep)
+            }
+        };
+        for (t, p) in total.iter_mut().zip(part) {
+            *t += p;
+        }
+    }
+    let signed = total[0];
+    // A clockwise path integrates to the negated moments.
+    let k = if signed < 0.0 { -1.0 } else { 1.0 };
+    let [area, mx, my, xx, xy, yy] = total.map(|x| k * x);
+    let (cx, cy) = (mx / area, my / area);
+    let second = [
+        xx - area * cx * cx,
+        xy - area * cx * cy,
+        yy - area * cy * cy,
+    ];
+    for value in [area, cx, cy, second[0], second[1], second[2]] {
+        finite(value, "area moment")?;
+    }
+    Ok((
+        AreaMoments {
+            area,
+            centroid: Point2::new(anchor.x + cx, anchor.y + cy),
+            second,
+        },
+        signed,
+    ))
 }

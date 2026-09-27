@@ -8,6 +8,8 @@
 //! area/perimeter test involves square roots and `π`: it runs in rational
 //! intervals and, in the rare case they cannot decide, answers
 //! "degenerate", the conservative result for a validity screen.
+pub(crate) mod arcs;
+
 use crate::certified::{pi, Fast, Interval, Real};
 use crate::Point2;
 use num_rational::BigRational as R;
@@ -143,47 +145,115 @@ pub(crate) fn segment_distance_le(p: Point2, a: Point2, b: Point2, threshold: &[
 pub(crate) enum Outline<'a> {
     Polygon(&'a [Point2]),
     Circle(f64),
+    /// Points and the segment from each to the next (S5).
+    Path(&'a [Point2], &'a [crate::profile::Segment]),
 }
 
-fn area_perimeter(outline: &Outline) -> (Interval, Interval) {
+/// `π` in a tier.
+fn pi_t<T: Real>() -> T {
+    T::from_r(&pi().midpoint()).widen(&pi().radius())
+}
+
+/// An outline's area and perimeter in a tier; `None` when a quotient is not
+/// defined there.
+fn area_perimeter<T: Real>(outline: &Outline) -> Option<(T, T)> {
+    let abs = |x: T| -> T {
+        match x.sign() {
+            Some(Ordering::Less) => x.neg(),
+            Some(_) => x,
+            None => T::exact_f64(0.0).union(&x.neg()).union(&x),
+        }
+    };
     match outline {
         Outline::Polygon(points) => {
             let n = points.len();
             let mut twice = zero();
-            let mut perimeter = Interval::exact(zero());
+            let mut perimeter = T::exact_f64(0.0);
             for k in 0..n {
                 let (a, b) = (points[k], points[(k + 1) % n]);
                 twice += q(a.x) * q(b.y) - q(b.x) * q(a.y);
-                perimeter = perimeter.add(&Interval::exact(dist2_r(a, b)).sqrt());
+                perimeter = perimeter.add(&T::from_r(&dist2_r(a, b)).sqrt());
             }
             let area = twice / R::from_integer(2.into());
             let area = if area < zero() { -area } else { area };
-            (Interval::exact(area), perimeter)
+            Some((T::from_r(&area), perimeter))
         }
         Outline::Circle(radius) => {
-            let r = Interval::exact(q(*radius));
-            (
-                pi().mul(&r.square()),
-                pi().mul(&r).scale(&R::from_integer(2.into())),
-            )
+            let r = T::exact_f64(*radius);
+            Some((
+                pi_t::<T>().mul(&r.square()),
+                pi_t::<T>().mul(&r).mul(&T::exact_f64(2.0)),
+            ))
+        }
+        Outline::Path(points, segments) => {
+            let n = points.len();
+            let mut twice = T::exact_f64(0.0);
+            let mut perimeter = T::exact_f64(0.0);
+            for (k, segment) in segments.iter().enumerate() {
+                let (a, b) = (points[k], points[(k + 1) % n]);
+                twice = twice.add(&T::from_r(&(q(a.x) * q(b.y) - q(b.x) * q(a.y))));
+                match segment {
+                    crate::profile::Segment::Line => {
+                        perimeter = perimeter.add(&T::from_r(&dist2_r(a, b)).sqrt());
+                    }
+                    crate::profile::Segment::Arc {
+                        center,
+                        radius,
+                        ccw,
+                    } => {
+                        // The circular segment r^2 (φ - sin φ) and the arc
+                        // length r |φ|, φ the signed sweep.
+                        let (ux, uy) = (q(a.x) - q(center.x), q(a.y) - q(center.y));
+                        let (vx, vy) = (q(b.x) - q(center.x), q(b.y) - q(center.y));
+                        let cross = &ux * &vy - &uy * &vx;
+                        let dot = &ux * &vx + &uy * &vy;
+                        let two_pi = pi_t::<T>().mul(&T::exact_f64(2.0));
+                        let turn = if cross == zero() {
+                            pi_t::<T>()
+                        } else {
+                            let angle = T::atan2(&T::from_r(&cross), &T::from_r(&dot))?;
+                            if cross < zero() {
+                                angle.add(&two_pi)
+                            } else {
+                                angle
+                            }
+                        };
+                        let phi = if *ccw { turn } else { turn.sub(&two_pi) };
+                        let lengths =
+                            T::from_r(&((&ux * &ux + &uy * &uy) * (&vx * &vx + &vy * &vy))).sqrt();
+                        let sine = T::from_r(&cross).div(&lengths)?;
+                        let r = T::exact_f64(*radius);
+                        twice = twice.add(&r.square().mul(&phi.sub(&sine)));
+                        perimeter = perimeter.add(&abs(r.mul(&phi)));
+                    }
+                }
+            }
+            Some((abs(twice.mul(&T::exact_f64(0.5))), perimeter))
         }
     }
 }
 
-/// The material area (the first outline's minus the others') is at most the
-/// tolerance times half the total perimeter: thinner than the tolerance on
-/// average. Undecidable in rational intervals counts as degenerate.
-pub(crate) fn area_is_degenerate(outlines: &[Outline], tolerance: f64) -> bool {
-    let mut area = Interval::exact(zero());
-    let mut perimeter = Interval::exact(zero());
+/// The screen in one tier: `None` when it cannot decide.
+fn degenerate_in<T: Real>(outlines: &[Outline], tolerance: f64) -> Option<bool> {
+    let mut area = T::exact_f64(0.0);
+    let mut perimeter = T::exact_f64(0.0);
     for (i, outline) in outlines.iter().enumerate() {
-        let (a, p) = area_perimeter(outline);
+        let (a, p) = area_perimeter::<T>(outline)?;
         area = if i == 0 { area.add(&a) } else { area.sub(&a) };
         perimeter = perimeter.add(&p);
     }
-    let half = R::new(1.into(), 2.into());
-    let limit = perimeter.scale(&(q(tolerance) * half));
-    le(&area, &limit).unwrap_or(true)
+    let limit = perimeter.mul(&T::from_r(&(q(tolerance) * R::new(1.into(), 2.into()))));
+    le(&area, &limit)
+}
+
+/// The material area (the first outline's minus the others') is at most the
+/// tolerance times half the total perimeter: thinner than the tolerance on
+/// average. Binary64 intervals first, rational intervals when those cannot
+/// decide; undecidable in rational intervals counts as degenerate.
+pub(crate) fn area_is_degenerate(outlines: &[Outline], tolerance: f64) -> bool {
+    degenerate_in::<Fast>(outlines, tolerance)
+        .or_else(|| degenerate_in::<Interval>(outlines, tolerance))
+        .unwrap_or(true)
 }
 
 /// Where local coordinates `(x, y, z)` lie against the right circular cone or

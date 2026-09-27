@@ -1379,6 +1379,40 @@ into the surface's domain. An end at most `1e-9` of the domain's width
 outside it lies on that patch's polynomial extension, as OCCT evaluates a
 file's fifteen-digit pcurve ends; farther out the gap is uncertified.
 
+## Profiles with circular arcs (S5)
+
+**Sectors.** An arc of centre `c` from `a` to `b` contains the direction `w`
+exactly when, with `u, v` its bounding directions turning counter-clockwise,
+`u × w >= 0` and `w × v >= 0` for a minor sweep (`u × v > 0`), not both
+negative for a major one, and `u × w >= 0` for a half turn: rational signs.
+
+**Distances.** A point is within `t` of an arc when it is within `t` of an
+end or its direction lies in the sector and `r - t <= |p - c| <= r + t`,
+decided by the exact sum-of-terms predicates (`r` is an input). Between a
+segment and an arc the minimum lies at an end of either, at the pair through
+the foot of the centre on the segment (`||f - c| - r| <= t`, squared), or at
+a crossing; between two arcs at an end, at one of the four pairs along the
+line of centres (`|d ± r2 ∓ r1| <= t`, the distance between centres against
+sums of radii, exact) or at a crossing. Crossings are irrational: they are
+located in rational intervals with square roots, and an undecided location
+counts as touching. Adjacent pieces through the shared point `v` meet again
+at `v`'s reflection (along the segment, or across the line of centres),
+rational, which must not lie on both pieces farther than `2t` from their
+shared points; tangents exactly opposite are a doubling back.
+
+**Moments.** With the Green forms `A = ½∮(x dy - y dx)`, `∫x = ∮x²/2 dy`,
+`∫y = -∮y²/2 dx`, `∫x² = ∮x³/3 dy`, `∫y² = -∮y³/3 dx`, `∫xy = ∮x²y/2 dy` on
+every segment alike (the polygon's symmetric per-edge forms agree only over
+a closed loop), an arc `x = cx + r cos θ`, `y = cy + r sin θ` gives
+polynomials in `cos θ, sin θ` of degree at most 4, integrated by the
+reduction formulas. The area screen encloses `½(Σ p × q + Σ r²(φ - sin φ))`
+in rational intervals, `φ` the certified sweep and `sin φ = u × v / |u||v|`.
+
+**Ray parity.** An arc splits at the circle's top and bottom (exact points)
+into parts monotone in `y`; a part between heights on either side of the
+point's crosses once, right of the point when `±sqrt(r² - (y - cy)²) >
+x - cx`, the sign by the half it runs on, decided by squaring.
+
 ## C1 of spline cells (R4)
 
 A cell is C1 in its own parameterisation (U3 of `REVIEW_NOTES.md`). For a

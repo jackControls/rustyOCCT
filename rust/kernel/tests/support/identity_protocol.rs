@@ -4,8 +4,8 @@ use rusty_occt::history::{History, Relation};
 use rusty_occt::identity::{InputLabel, OperationId, Parent, ProfileElement, Role};
 use rusty_occt::topology::{Curve3, FaceId, Slot, Surface};
 use rusty_occt::{
-    Boundary, BoundaryLabels, Frame3, Point2, Point3, Profile, RigidTransform, Solid, Tolerance,
-    Vec3,
+    Boundary, BoundaryLabels, Frame3, Point2, Point3, Profile, RigidTransform, Segment, Solid,
+    Tolerance, Vec3,
 };
 
 pub struct CaseSpec {
@@ -72,6 +72,25 @@ pub fn parse(block: &str) -> CaseSpec {
                     let b =
                         Boundary::circle(Point2::new(f(2), f(3)), f(4), spec.tolerance).unwrap();
                     (b, 5)
+                } else if w[1] == "S" {
+                    // S5: each point, then its segment: L, or A cx cy r ccw.
+                    let n: usize = w[2].parse().unwrap();
+                    let (mut points, mut segments, mut k) = (Vec::new(), Vec::new(), 3);
+                    for _ in 0..n {
+                        points.push(Point2::new(f(k), f(k + 1)));
+                        if w[k + 2] == "L" {
+                            segments.push(Segment::Line);
+                            k += 3;
+                        } else {
+                            segments.push(Segment::Arc {
+                                center: Point2::new(f(k + 3), f(k + 4)),
+                                radius: f(k + 5),
+                                ccw: w[k + 6] == "1",
+                            });
+                            k += 7;
+                        }
+                    }
+                    (Boundary::path(points, segments, spec.tolerance).unwrap(), k)
                 } else {
                     let n: usize = w[2].parse().unwrap();
                     let points = (0..n)
@@ -217,7 +236,10 @@ pub fn rows(solid: &Solid) -> Vec<String> {
     let locate_vertex = |p: Point3| -> (usize, usize, &'static str) {
         let mut found = Vec::new();
         for (b, boundary) in boundaries.iter().enumerate() {
-            let points: Vec<Point2> = match boundary.polygon_vertices() {
+            let points: Vec<Point2> = match boundary
+                .polygon_vertices()
+                .or(boundary.path_geometry().map(|(p, _)| p))
+            {
                 Some(points) => points.to_vec(),
                 None => {
                     let (c, r) = boundary.circle_geometry().unwrap();
@@ -275,9 +297,13 @@ pub fn rows(solid: &Solid) -> Vec<String> {
             Curve3::LineSegment { .. } if a.0 == b.0 && a.1 == b.1 && a.2 != b.2 => {
                 format!("{} vertex {} both", a.0, a.1)
             }
-            Curve3::LineSegment { .. } => {
+            Curve3::LineSegment { .. } | Curve3::CircularArc { .. } => {
                 assert_eq!((a.0, a.2), (b.0, b.2), "edge between boundaries or sides");
-                let n = boundaries[a.0].polygon_vertices().unwrap().len();
+                let n = boundaries[a.0]
+                    .polygon_vertices()
+                    .or(boundaries[a.0].path_geometry().map(|(p, _)| p))
+                    .unwrap()
+                    .len();
                 let j = if (a.1 + 1) % n == b.1 { a.1 } else { b.1 };
                 assert!((a.1 + 1) % n == b.1 || (b.1 + 1) % n == a.1);
                 format!("{} segment {} {}", a.0, j, a.2)

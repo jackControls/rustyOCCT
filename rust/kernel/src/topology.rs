@@ -21,7 +21,7 @@ use crate::identity::{
     Derivation, EntityId, EntityKind, InputLabel, OperationId, OperationKind, Parent,
     ProfileElement, Role,
 };
-use crate::profile::BoundaryKind;
+use crate::profile::{BoundaryKind, Segment};
 use crate::{
     BSplineCurve2, BSplineCurve3, BSplineSurface3, Error, Frame3, Point2, Point3, Profile, Result,
     Tolerance, Vec3,
@@ -1573,6 +1573,230 @@ impl Topology {
                         });
                     }
                 }
+                BoundaryKind::Path { points, segments } => {
+                    // S5: a polygon's structure, with circular-arc bottom and
+                    // top edges and partial cylinder walls on arc segments.
+                    let bottom = points
+                        .iter()
+                        .map(|p| topology.add_vertex(frame.point(*p, low)))
+                        .collect::<Vec<_>>();
+                    let top = points
+                        .iter()
+                        .map(|p| topology.add_vertex(frame.point(*p, high)))
+                        .collect::<Vec<_>>();
+                    let count = points.len();
+                    let arc_of =
+                        |i: usize, height: f64| -> Result<Option<(Frame3, f64, f64, f64)>> {
+                            let Segment::Arc {
+                                center,
+                                radius,
+                                ccw,
+                            } = segments[i]
+                            else {
+                                return Ok(None);
+                            };
+                            let arc_frame = Frame3::new(
+                                frame.point(center, height),
+                                frame.normal(),
+                                frame.x(),
+                                tolerance,
+                            )?;
+                            let a = points[i];
+                            let start = (a.y - center.y).atan2(a.x - center.x);
+                            let sweep =
+                                crate::profile::arc_sweep(center, a, points[(i + 1) % count], ccw);
+                            Ok(Some((arc_frame, radius, start, sweep)))
+                        };
+                    let mut bottom_edges = Vec::with_capacity(count);
+                    let mut top_edges = Vec::with_capacity(count);
+                    for i in 0..count {
+                        let j = (i + 1) % count;
+                        for (ends, height, edges) in [
+                            (&bottom, low, &mut bottom_edges),
+                            (&top, high, &mut top_edges),
+                        ] {
+                            let edge = match arc_of(i, height)? {
+                                None => topology.add_line(ends[i], ends[j]),
+                                Some((arc_frame, radius, start, sweep)) => topology.add_edge(
+                                    Some(ends[i]),
+                                    Some(ends[j]),
+                                    Curve3::CircularArc {
+                                        frame: arc_frame,
+                                        radius,
+                                        start_angle: start,
+                                        sweep_angle: sweep,
+                                    },
+                                ),
+                            };
+                            edges.push(edge);
+                        }
+                    }
+                    let vertical = (0..count)
+                        .map(|i| topology.add_line(bottom[i], top[i]))
+                        .collect::<Vec<_>>();
+                    let wall = |j: usize| FaceId(topology.faces.len() + j);
+                    for j in 0..count {
+                        layout.extend([
+                            (
+                                Slot::Vertex(bottom[j]),
+                                Place::Low(End::Vertex(vertical[j])),
+                            ),
+                            (Slot::Vertex(top[j]), Place::High(End::Vertex(vertical[j]))),
+                            (Slot::Edge(bottom_edges[j]), Place::Low(End::Edge(wall(j)))),
+                            (Slot::Edge(top_edges[j]), Place::High(End::Edge(wall(j)))),
+                            (Slot::Edge(vertical[j]), Place::Swept),
+                            (Slot::Face(wall(j)), Place::Swept),
+                        ]);
+                        let (v, e) = (EntityKind::Vertex, EntityKind::Edge);
+                        derivations.push((
+                            Slot::Vertex(bottom[j]),
+                            derive(v, low_vertex, 0, vec![vert(j)]),
+                        ));
+                        derivations.push((
+                            Slot::Vertex(top[j]),
+                            derive(v, high_vertex, 0, vec![vert(j)]),
+                        ));
+                        derivations.push((
+                            Slot::Edge(bottom_edges[j]),
+                            derive(e, low_edge, 0, vec![seg(j)]),
+                        ));
+                        derivations.push((
+                            Slot::Edge(top_edges[j]),
+                            derive(e, high_edge, 0, vec![seg(j)]),
+                        ));
+                        derivations.push((
+                            Slot::Edge(vertical[j]),
+                            derive(e, Role::Vertical, 0, vec![vert(j)]),
+                        ));
+                    }
+                    topology.add_cap_loop(0, &bottom_edges, !inner, bottom_frame);
+                    topology.add_cap_loop(1, &top_edges, inner, top_frame);
+                    let height = high - low;
+                    for i in 0..count {
+                        let j = (i + 1) % count;
+                        let (start, end) = if inner { (j, i) } else { (i, j) };
+                        derivations.push((
+                            Slot::Face(FaceId(topology.faces.len())),
+                            derive(EntityKind::Face, Role::Wall, 0, vec![seg(i)]),
+                        ));
+                        let (surface, sense, fins) = match arc_of(i, low)? {
+                            None => {
+                                let origin = topology.vertices[bottom[start].0].position;
+                                let tangent = topology.vertices[bottom[end].0].position - origin;
+                                let side_frame = Frame3::new(
+                                    origin,
+                                    tangent.cross(frame.normal()),
+                                    tangent,
+                                    tolerance,
+                                )?;
+                                let fins = [
+                                    (bottom_edges[i], forward),
+                                    (vertical[end], Orientation::Forward),
+                                    (top_edges[i], reversed),
+                                    (vertical[start], Orientation::Reversed),
+                                ]
+                                .iter()
+                                .map(|(edge, sense)| topology.plane_fin(*edge, *sense, side_frame))
+                                .collect::<Vec<_>>();
+                                (Surface::Plane(side_frame), Orientation::Forward, fins)
+                            }
+                            Some((arc_frame, radius, a, sweep)) => {
+                                // The cover's rectangle [a, a + sweep] x
+                                // [0, height], its normal leaving the
+                                // material: outward on a counter-clockwise
+                                // outer arc.
+                                let b = a + sweep;
+                                let ccw = sweep > 0.0;
+                                let sense = if ccw != inner {
+                                    Orientation::Forward
+                                } else {
+                                    Orientation::Reversed
+                                };
+                                let fin = |edge, sense, from: (f64, f64), to: (f64, f64)| Fin {
+                                    edge,
+                                    sense,
+                                    pcurve: Curve2::LineSegment {
+                                        start: Point2::new(from.0, from.1),
+                                        end: Point2::new(to.0, to.1),
+                                    },
+                                    enclosure: None,
+                                };
+                                let fins = if inner {
+                                    vec![
+                                        fin(
+                                            bottom_edges[i],
+                                            Orientation::Reversed,
+                                            (b, 0.0),
+                                            (a, 0.0),
+                                        ),
+                                        fin(
+                                            vertical[i],
+                                            Orientation::Forward,
+                                            (a, 0.0),
+                                            (a, height),
+                                        ),
+                                        fin(
+                                            top_edges[i],
+                                            Orientation::Forward,
+                                            (a, height),
+                                            (b, height),
+                                        ),
+                                        fin(
+                                            vertical[j],
+                                            Orientation::Reversed,
+                                            (b, height),
+                                            (b, 0.0),
+                                        ),
+                                    ]
+                                } else {
+                                    vec![
+                                        fin(
+                                            bottom_edges[i],
+                                            Orientation::Forward,
+                                            (a, 0.0),
+                                            (b, 0.0),
+                                        ),
+                                        fin(
+                                            vertical[j],
+                                            Orientation::Forward,
+                                            (b, 0.0),
+                                            (b, height),
+                                        ),
+                                        fin(
+                                            top_edges[i],
+                                            Orientation::Reversed,
+                                            (b, height),
+                                            (a, height),
+                                        ),
+                                        fin(
+                                            vertical[i],
+                                            Orientation::Reversed,
+                                            (a, height),
+                                            (a, 0.0),
+                                        ),
+                                    ]
+                                };
+                                (
+                                    Surface::Cylinder {
+                                        frame: arc_frame,
+                                        radius,
+                                    },
+                                    sense,
+                                    fins,
+                                )
+                            }
+                        };
+                        let l = topology.add_loop(fins, [0, 0]);
+                        topology.faces.push(Face {
+                            surface,
+                            sense,
+                            loops: vec![l],
+                            front: ShellId(0),
+                            back: ShellId(1),
+                            enclosure: None,
+                        });
+                    }
+                }
                 BoundaryKind::Circle { center, radius } => {
                     let cylinder_frame = Frame3::new(
                         frame.point(*center, low),
@@ -2559,8 +2783,31 @@ impl Topology {
                     sweep_angle: TAU * sense.sign() * circle.normal().dot(frame.normal()).signum(),
                 }
             }
-            Curve3::CircularArc { .. } | Curve3::BSpline(_) => {
-                unreachable!("the extrusion builder creates only lines and full circles")
+            Curve3::CircularArc {
+                frame: arc,
+                radius,
+                sweep_angle,
+                ..
+            } => {
+                // S5: the arc in the cap's frame, its sweep's sign by the two
+                // normals and the traversal.
+                let [x, y, _] = frame.coordinates(arc.origin());
+                let (a, b) = (local(edge.curve.point(0.0)), local(edge.curve.point(1.0)));
+                let turn = sweep_angle * arc.normal().dot(frame.normal()).signum();
+                let (from, sweep) = if sense == Orientation::Forward {
+                    (a, turn)
+                } else {
+                    (b, -turn)
+                };
+                Curve2::CircularArc {
+                    center: Point2::new(x, y),
+                    radius: *radius,
+                    start_angle: (from.y - y).atan2(from.x - x),
+                    sweep_angle: sweep,
+                }
+            }
+            Curve3::BSpline(_) => {
+                unreachable!("the extrusion builder creates only lines, circles and arcs")
             }
         };
         Fin {

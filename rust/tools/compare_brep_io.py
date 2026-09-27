@@ -106,7 +106,9 @@ def rust_outputs(output):
         d.mkdir(parents=True, exist_ok=True)
         for f in d.glob('*.brep'):
             f.unlink()
-    cases = (ROOT/'rust/fixtures/identity-cases.txt').read_text()
+    # The identity prisms and, since S5, the arc prisms.
+    cases = ((ROOT/'rust/fixtures/identity-cases.txt').read_text()
+             + (ROOT/'rust/fixtures/identity-arc-cases.txt').read_text())
     prism_rows = subprocess.run([probe, 'prisms', str(prisms)], input=cases, text=True,
                                 capture_output=True, timeout=600, check=True).stdout
     corpus = '\n'.join(str(p) for p in sorted(CORPUS.glob('*.brep')))+'\n'

@@ -722,7 +722,20 @@ the first fixture, never deferred.
 * U6 (parallel track) — implemented: per-push sampled replay with a
   manifest of the last full replay, schedule-only exact tensor targets,
   Windows smoke per push and a nightly kernel schedule (`FUZZING.md`).
-* S5 — pending
+* S5 — implemented; gate pending CI and the clean campaigns.
+  * Native `MakePrism` observations of thirteen arc prisms captured before
+    any kernel arc code (`88ae24df`), with arc paths in the identity
+    reference and the native probe.
+  * `Boundary::path` with `Segment::Line`/`Segment::Arc`, certified arc
+    predicates (`decide/arcs.rs`), closed-form moments, exact ray parity;
+    partial cylinder walls in `Topology::prism`; arc pcurves on caps. The
+    history bridge's arc family matches 13 of 13, the interop bridge reads
+    577 written prisms (13 arc prisms) natively valid with equal properties,
+    `identity.rs` matches the reference's ids, `arc_profiles.rs` covers the
+    path contract, the builder reproduces the neutral generator's arc
+    prisms, the DRAW adapter runs `profile` (derived case `profile_arcs`,
+    both backends) and the `identity` fuzz target builds filleted, notched
+    paths. Polygon and circle ids are byte-identical (the full suite).
 * S6 — pending
 * S7 — pending
 * S8 — pending

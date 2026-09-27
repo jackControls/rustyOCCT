@@ -180,6 +180,19 @@
       "expected_rust": "pass",
       "expected_occt": "pass",
       "purpose": "Original restore-and-check case on the public dataset: a whole sphere restored, counted and measured (S3 of REVIEW_NOTES.md)."
+    },
+    {
+      "path": "rust/fixtures/draw-derived/profile_arcs",
+      "derived": true,
+      "context": "tests/bugs/modalg_7",
+      "expected_rust": "pass",
+      "expected_occt": "pass",
+      "purpose": "Derived: prisms of profiles with arcs (S5) built by upstream's profile sketch command: tangent half circles, fillets and a clockwise notch; counts and properties.",
+      "verifies": [
+        "profile arcs",
+        "count synthesizer",
+        "mass properties"
+      ]
     }
   ],
   "derived_sources": {
@@ -189,7 +202,8 @@
     "rust/fixtures/draw-derived/explode_selector": "8c4e6c3812894ee84a42285cbd5859096cb5c5479f05b49382666515aa40e340",
     "rust/fixtures/draw-derived/pcone_counts": "8b326812c28bcd0f62c324607e15c9c1fd59b491e120d3f2554d8dd3aeb978a4",
     "rust/fixtures/draw-derived/psphere_counts": "67e36b8192db4fb52c5acb4db455695595cc3beff03c01bfea20939047ce2927",
-    "rust/fixtures/draw-derived/ptorus_counts": "78532ada7afe493ad5f518b80c3e7d164159ec7d7f745000a5f639e00a5cbb42"
+    "rust/fixtures/draw-derived/ptorus_counts": "78532ada7afe493ad5f518b80c3e7d164159ec7d7f745000a5f639e00a5cbb42",
+    "rust/fixtures/draw-derived/profile_arcs": "0c08732ec213a66e283600cbccee85fa1a75e19bafc25dd6b7ddc3e012f53e64"
   },
   "ledger": {
     "survey": {

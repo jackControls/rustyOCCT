@@ -123,7 +123,7 @@ group, and stale success records are removed before each run.
 
 There are **five original geometry tests passing on both backends** and one
 more evaluated on both with its image commands recorded (`buc60769`).
-The seven derived cases are counted separately (see below).
+The eight derived cases are counted separately (see below).
 The 23 bridge self-tests are separate infrastructure checks; they do not count
 as more upstream coverage. The existing 66-solid / 2,292-classification native
 oracle corpus supplies much broader prism geometry checks independently.
@@ -166,6 +166,14 @@ cone has 2 vertices (the apex and the base circle's seam vertex), 3 edges
 kernel's has a ring edge and the apex as a pole. Its lengths are the circles
 twice and the seam twice; the degenerated edge adds nothing. Volumes and
 areas come from the kernel's certified mass properties.
+
+`profile_arcs` (S5) builds a stadium, a rectangle with four fillets and a
+rectangle with a concave notch with upstream's `profile` sketch command (tangent
+`C` arcs, a negative radius for a clockwise arc) and extrudes them: counts
+(a polygon's, no seams) and volumes on both backends. The adapter follows
+`BRepTest_CurveCommands.cxx`'s `profile` exactly for `F`, `O`, `P`, `X`,
+`Y`, `L`, `T`, `R`, `D`, `I`, `C` and `W`; `S` (another face's surface) and
+open wires (`WW`) are unsupported.
 
 The history cases use `prism ... Copy`. Without `Copy`, OCCT builds the prism's end face
 as the start face moved by a location, reusing its `TShape`s. DRAW's

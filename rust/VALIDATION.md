@@ -498,6 +498,21 @@ see [identity and history](IDENTITY_AND_HISTORY.md). Two derived DRAW cases
 check `generated`, `modified` and `isdeleted` on both backends, and a third
 checks a seamless `pcylinder` through the count synthesizer.
 
+
+Arc prisms (S5): `generate_identity_fixtures.arc_cases()` writes thirteen
+prisms of profiles with arcs (fillets, a notch, arcs over half a turn, a
+two-arc lens, holes with arcs, reversed input, labels, a tilted frame,
+transforms, a small body far away) and their ids from
+`identity_reference.py` (`identity-arc-*.txt|tsv`); `identity.rs` requires
+the kernel's ids, validity and rigid motions to match. Their native
+`MakePrism` observations were captured before any kernel arc code
+(`fixtures/occt-arc-prism-preimplementation`), and `compare_history.py
+--family arc` matches all thirteen: every Generated, FirstShape and
+LastShape query, counts, face areas and centroids, the body's volume and
+centroid and each transform step. `arc_profiles.rs` covers invalid paths,
+reversal and labels, classification, the closed-form mass inside the
+certified enclosure, the height split and stacked fuse, and the builder
+against the neutral generator's arc prisms.
 ## Height split and stacked fuse
 
 `generate_split_merge_fixtures.py --check` writes 174 scenarios from the
@@ -599,7 +614,7 @@ counts. 58 of them are certified; `occt_brep.rs` pins the two the validator
 does not certify yet with their issue kinds (a sphere loop that passes both
 poles between two kept seam pairs, `seam_edge`, and containment in a
 cylinder face with spline pcurves, `uncertified_containment`). Every one of the 564 identity cases (546 prisms, six
-cones, six spheres and six tori)
+cones, six spheres and six tori) and the 13 arc prisms of S5
 writes, reads back and imports to the same counts with bit-identical
 vertices, twice. Malformed text gives typed errors.
 
@@ -607,10 +622,10 @@ vertices, twice. Malformed text gives typed errors.
 `BRepCheck_Analyzer`, `TopExp::MapShapes`, `BRepGProp`) against the pinned
 SDK. It first certifies the independent reader against OCCT: the solids of
 every corpus file, and their counts, must be exactly the reader's (77). Then
-native OCCT reads everything the kernel writes. Each of the 564 identity
-writes must be one valid solid whose counts equal the synthesized counts and
+native OCCT reads everything the kernel writes. Each of the 577 identity
+and arc-prism writes must be one valid solid whose counts equal the synthesized counts and
 whose volume, area and centroid equal the kernel's mass properties (exact for
-prisms, certified midpoints for cones, spheres and tori). Each of the 58 certified corpus
+prisms, arc prisms' closed forms, certified midpoints for cones, spheres and tori). Each of the 58 certified corpus
 solids, written back, must be one valid solid with the original's counts,
 volume, area and centroid. The worst property
 difference observed is 6.6e-14 relative (macOS, since S3), against a bound of 1e-11.

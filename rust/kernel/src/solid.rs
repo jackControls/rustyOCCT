@@ -1002,6 +1002,31 @@ fn bounds(profile: &Profile, frame: Frame3, low: f64, high: f64) -> Bounds3 {
                 }
             }
         }
+        BoundaryKind::Path { points, segments } => {
+            // Points, and each arc's whole circle (conservative).
+            for height in [low, high] {
+                for point in points {
+                    let world = frame.point(*point, height).to_array();
+                    for i in 0..3 {
+                        min[i] = min[i].min(world[i]);
+                        max[i] = max[i].max(world[i]);
+                    }
+                }
+            }
+            let (x, y) = (frame.x().to_array(), frame.y().to_array());
+            for segment in segments {
+                if let crate::profile::Segment::Arc { center, radius, .. } = segment {
+                    for height in [low, high] {
+                        let c = frame.point(*center, height).to_array();
+                        for i in 0..3 {
+                            let extent = radius * x[i].hypot(y[i]);
+                            min[i] = min[i].min(c[i] - extent);
+                            max[i] = max[i].max(c[i] + extent);
+                        }
+                    }
+                }
+            }
+        }
         BoundaryKind::Circle { center, radius } => {
             let bottom = frame.point(*center, low).to_array();
             let top = frame.point(*center, high).to_array();

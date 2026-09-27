@@ -81,6 +81,13 @@ pub fn signature(s: &Solid, slot: Slot) -> String {
                     let c = frame.point(Point2::new(cu, cv), 0.0);
                     format!("F plane {:?} {}", area.abs(), p3(c))
                 }
+                Surface::Cylinder { .. } if face.loops.len() == 1 => {
+                    // A partial wall of an arc segment (S5): certified.
+                    let (area, centre) = t
+                        .face_area_and_centre(f)
+                        .expect("a partial wall has certified mass properties");
+                    format!("F cylinder {area:?} {}", p3(centre))
+                }
                 Surface::Cylinder { frame, radius } => {
                     // A full-turn wall of two ring loops: its area is the
                     // radius times the periodic area -∮ v du, its centroid on
