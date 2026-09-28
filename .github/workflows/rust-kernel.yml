@@ -19,7 +19,9 @@ jobs:
   upstream-draw:
     name: Original OCCT tests / Rust and native
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    # The fixture generators' checks grew with S7b (the torus curves' alone
+    # take about three minutes): 25 minutes no longer covered them.
+    timeout-minutes: 40
     env:
       CSF_OCCTResourcePath: /usr/share/opencascade/resources
       DRAWHOME: /usr/share/opencascade/resources/DrawResources
