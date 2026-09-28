@@ -122,10 +122,24 @@ enum Shape {
         body: Box<BodyRef>,
         resolution: Tolerance,
         kind: &'static str,
+        /// The kernel's sheet or wire, when the adapter built it (a plane
+        /// `mkface`, a `bsplit` piece): what `bsplit` splits (S8e).
+        kernel: Option<Box<rusty_occt::Body>>,
     },
     /// A DRAW geometric object (S6): `plane`, `cylinder`, `line`, `circle`.
     Geometry(Geom),
     Compound(Vec<Shape>),
+    /// `bsplit`'s result (S8e): every object's pieces in the kernel's order.
+    /// `groups` holds each object's first piece, piece count and whether it
+    /// was a wire (OCCT's General Fuse keeps a wire one wire of its split
+    /// edges); `alias` maps each entity a piece shares with an earlier piece
+    /// of its object (on the plane: a cut face, a chord, a crossing) to that
+    /// one's key, since OCCT shares them between the pieces.
+    Split {
+        pieces: Vec<Shape>,
+        groups: Vec<(usize, usize, bool)>,
+        alias: BTreeMap<String, String>,
+    },
     /// A native pick with no entity in the cell model (a seam, its vertex),
     /// or none the selector could single out.
     Lost(String),
@@ -171,6 +185,15 @@ struct Session {
     restored: u64,
     /// DRAW's numeric variables (S7: `bounds`, `dval`).
     numbers: BTreeMap<String, f64>,
+    /// The General Fuse arguments (S8e): `baddobjects`, `baddtools`, and
+    /// the argument lists' generation `bfillds` last filled.
+    objects: Vec<Shape>,
+    tools: Vec<Shape>,
+    arguments: u64,
+    filled: Option<u64>,
+    /// The last operation was a split, whose history the adapter does not
+    /// keep for `savehistory`.
+    split_history: bool,
 }
 
 fn unsupported(args: &[String]) -> Failure {
@@ -500,30 +523,50 @@ struct Parts {
     length: f64,
     area: f64,
     volume: f64,
+    /// A `bsplit` piece's prefix, and the entities pieces share (S8e).
+    scope: String,
+    alias: BTreeMap<String, String>,
+}
+
+impl Parts {
+    /// An entity's key: its body's tag and its id, within the current
+    /// piece's scope; a shared entity's is the first piece's.
+    fn key(&self, b: &BodyRef, slot: Slot) -> String {
+        let own = format!(
+            "{}{}:{}",
+            self.scope,
+            b.tag,
+            b.topology.id_of(slot).unwrap()
+        );
+        self.alias.get(&own).cloned().unwrap_or(own)
+    }
 }
 
 fn collect(shape: &Shape, parts: &mut Parts) {
-    let key = |b: &BodyRef, slot: Slot| format!("{}:{}", b.tag, b.topology.id_of(slot).unwrap());
     // Lengths sum per occurrence, as OCCT's lprops explores edges; counts are
     // of distinct shapes, as nbshapes reports them.
     let add_edge = |s: &BodyRef, e: usize, parts: &mut Parts| {
         let edge = &s.topology.edges()[e];
-        parts.edges.insert(key(s, Slot::Edge(EdgeId::new(e))));
+        let key = parts.key(s, Slot::Edge(EdgeId::new(e)));
         parts.length += edge_length(&edge.curve);
         for v in [edge.start, edge.end].into_iter().flatten() {
-            parts.vertices.insert(key(s, Slot::Vertex(v)));
+            let vertex = parts.key(s, Slot::Vertex(v));
+            parts.vertices.insert(vertex);
         }
         // OCCT splits a ring edge at a seam vertex.
         if edge.is_ring() {
-            parts
-                .vertices
-                .insert(format!("{}:seam", key(s, Slot::Edge(EdgeId::new(e)))));
+            parts.vertices.insert(format!("{key}:seam"));
         }
+        parts.edges.insert(key);
     };
     let add_face = |s: &BodyRef, f: usize, parts: &mut Parts| {
         let t = &s.topology;
-        let face = key(s, Slot::Face(FaceId::new(f)));
-        if !parts.faces.insert(face.clone()) {
+        let face = parts.key(s, Slot::Face(FaceId::new(f)));
+        let first = parts.faces.insert(face.clone());
+        // A face two split pieces share (S8e) is counted once and measured
+        // per use, as OCCT's explorer visits it in each solid.
+        let shared = parts.alias.values().any(|k| *k == face);
+        if !first && !shared {
             return;
         }
         parts.area += face_area(t, f);
@@ -531,6 +574,9 @@ fn collect(shape: &Shape, parts: &mut Parts) {
             for u in fins {
                 add_edge(s, u.edge.index(), parts);
             }
+        }
+        if !first {
+            return;
         }
         let unwound = t.faces()[f]
             .loops
@@ -552,7 +598,8 @@ fn collect(shape: &Shape, parts: &mut Parts) {
         // their own.
         for l in &t.faces()[f].loops {
             if let Loop::Vertex(v) = &t.loops()[l.index()] {
-                parts.vertices.insert(key(s, Slot::Vertex(*v)));
+                let vertex = parts.key(s, Slot::Vertex(*v));
+                parts.vertices.insert(vertex);
                 parts.edges.insert(format!("{face}:pole"));
             }
         }
@@ -659,7 +706,8 @@ fn collect(shape: &Shape, parts: &mut Parts) {
                 }
                 parts.wires += usize::from(shell.wire_edges.len() > 1);
                 for v in &shell.acorn_vertices {
-                    parts.vertices.insert(key(body, Slot::Vertex(*v)));
+                    let key = parts.key(body, Slot::Vertex(*v));
+                    parts.vertices.insert(key);
                 }
             }
         }
@@ -675,7 +723,8 @@ fn collect(shape: &Shape, parts: &mut Parts) {
         }
         Shape::Sub { body, slot } => match slot {
             Slot::Vertex(v) => {
-                parts.vertices.insert(key(body, Slot::Vertex(*v)));
+                let vertex = parts.key(body, Slot::Vertex(*v));
+                parts.vertices.insert(vertex);
             }
             Slot::Edge(e) => add_edge(body, e.index(), parts),
             Slot::Face(f) => add_face(body, f.index(), parts),
@@ -687,8 +736,39 @@ fn collect(shape: &Shape, parts: &mut Parts) {
                 collect(item, parts);
             }
         }
+        // OCCT's splitter returns a compound of every object's images,
+        // or the one image itself; a wire's image is one wire.
+        Shape::Split {
+            pieces,
+            groups,
+            alias,
+        } => {
+            parts.compounds += usize::from(split_items(groups) > 1);
+            let scope = parts.scope.clone();
+            parts.alias.extend(alias.clone());
+            for &(first, count, wire) in groups {
+                let wires = parts.wires;
+                for (k, piece) in pieces.iter().enumerate().skip(first).take(count) {
+                    parts.scope = format!("{scope}P{k}/");
+                    collect(piece, parts);
+                }
+                if wire {
+                    parts.wires = wires + 1;
+                }
+            }
+            parts.scope = scope;
+        }
         Shape::Lost(_) => unreachable!("lost picks are never read"),
     }
+}
+
+/// The shapes OCCT's splitter result holds: each piece of a solid or a
+/// sheet, one wire per split wire.
+fn split_items(groups: &[(usize, usize, bool)]) -> usize {
+    groups
+        .iter()
+        .map(|&(_, count, wire)| if wire { 1 } else { count })
+        .sum()
 }
 
 fn parts(shape: &Shape) -> Parts {
@@ -727,6 +807,11 @@ fn type_name(shape: &Shape) -> &'static str {
             Slot::Region(_) => "SOLID",
         },
         Shape::Compound(_) => "COMPOUND",
+        Shape::Split { pieces, groups, .. } => match groups.as_slice() {
+            [(_, _, true)] => "WIRE",
+            [(first, 1, false)] => type_name(&pieces[*first]),
+            _ => "COMPOUND",
+        },
         Shape::Lost(_) => unreachable!("lost picks are never read"),
     }
 }
@@ -1104,6 +1189,7 @@ fn restore(path: &str, serial: &mut u64) -> Result<Shape> {
                             }),
                             resolution: solid.tolerance,
                             kind: "SOLID",
+                            kernel: None,
                         })
                     }
                     Err(Rejected::Invalid { issues, .. }) => Err(error(&format!(
@@ -1139,6 +1225,7 @@ fn restore(path: &str, serial: &mut u64) -> Result<Shape> {
                             }),
                             resolution: shape.tolerance,
                             kind,
+                            kernel: None,
                         })
                     }
                     Err(Rejected::Invalid { issues, .. }) => Err(error(&format!(
@@ -1225,6 +1312,7 @@ fn body_of(
         }),
         resolution: t,
         kind,
+        kernel: None,
     })
 }
 
@@ -1401,6 +1489,358 @@ fn edge_parts(curve: Curve3, ends: Option<[Point3; 2]>) -> rusty_occt::topology:
         shells: vec![ShellId::new(0)],
     });
     p
+}
+
+// ------------------------------------------------------------------ splitter (S8e)
+//
+// OCCT's General Fuse splitter (`bsplit`, `bapisplit`) with one planar tool
+// face is the kernel's split by the face's plane where the face reaches
+// across every object and nothing else interferes. The adapter checks that
+// much before it splits, and reports anything else unsupported: several
+// tools, a tool that is not a convex planar face containing the objects'
+// shadow on its plane, objects that may touch each other (General Fuse
+// intersects them too), and a plane through a vertex or tangent to an arc,
+// where OCCT's sharing is not confirmed. Ring edges (OCCT's seams) are
+// outside the subset.
+
+/// A split's capability limits are unsupported, not failures.
+fn split_failure(e: rusty_occt::Error) -> Failure {
+    use rusty_occt::Error as E;
+    match e {
+        E::OutOfDomain(_)
+        | E::ComputationLimit(_)
+        | E::Degenerate(_)
+        | E::LimitExceeded(_)
+        | E::PrecisionLoss => Failure::Unsupported(format!("bsplit: {e}")),
+        e => e.into(),
+    }
+}
+
+fn split_unsupported(why: &str) -> Failure {
+    Failure::Unsupported(format!("bsplit: {why}"))
+}
+
+/// The tool's plane and its face's profile in the plane's frame: a convex
+/// polygon without holes.
+fn split_tool(tool: &Shape, t: Tolerance) -> Result<(Frame3, Profile)> {
+    let (frame, profile) = match tool {
+        Shape::Body {
+            kernel: Some(body),
+            kind: "FACE",
+            ..
+        } => (
+            body.frame(),
+            body.profile()
+                .ok_or_else(|| split_unsupported("the tool is not a planar face"))?
+                .clone(),
+        ),
+        Shape::Face(p) => {
+            let (frame, boundary) = boundary_of(p, t)?;
+            (frame, Profile::new(boundary, vec![], t)?)
+        }
+        _ => return Err(split_unsupported("the tool is not a planar face")),
+    };
+    let convex = profile.holes().is_empty()
+        && profile.outer().polygon_vertices().is_some_and(|p| {
+            let n = p.len();
+            let turns: Vec<f64> = (0..n)
+                .map(|k| {
+                    let (a, b, c) = (p[k], p[(k + 1) % n], p[(k + 2) % n]);
+                    (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x)
+                })
+                .collect();
+            turns.iter().all(|z| *z > 0.0) || turns.iter().all(|z| *z < 0.0)
+        });
+    if !convex {
+        return Err(split_unsupported("the tool face is not a convex polygon"));
+    }
+    Ok((frame, profile))
+}
+
+/// An object as the kernel splits it: a prism, or a sheet or closed wire.
+enum Object {
+    Solid(Solid),
+    Body(rusty_occt::Body),
+}
+
+impl Object {
+    fn of(shape: &Shape, operation: OperationId, t: Tolerance) -> Result<Self> {
+        Ok(match shape {
+            Shape::Solid(s) if s.profile().is_some() => Object::Solid((**s).clone()),
+            Shape::Body {
+                kernel: Some(body), ..
+            } if body.profile().is_some() || body.boundary().is_some() => {
+                Object::Body((**body).clone())
+            }
+            Shape::Face(p) => {
+                let (frame, boundary) = boundary_of(p, t)?;
+                Object::Body(
+                    rusty_occt::Body::face_from_profile_with(
+                        operation,
+                        Profile::new(boundary, vec![], t)?,
+                        frame,
+                    )?
+                    .0,
+                )
+            }
+            Shape::Wire(p) => {
+                let (frame, boundary) = boundary_of(p, t)?;
+                Object::Body(
+                    rusty_occt::Body::wire_from_boundary_with(operation, boundary, frame, t)?.0,
+                )
+            }
+            _ => {
+                return Err(split_unsupported(
+                    "an object other than a prism, a planar face or a closed wire",
+                ))
+            }
+        })
+    }
+
+    fn topology(&self) -> &Topology {
+        match self {
+            Object::Solid(s) => s.topology(),
+            Object::Body(b) => b.topology(),
+        }
+    }
+}
+
+/// An axis-aligned box about a topology of lines and arcs, after checking
+/// that the plane crosses its edges only in their interiors: no vertex
+/// within the resolution of the plane, no arc tangent to it.
+fn split_extent(topology: &Topology, plane: Frame3, t: Tolerance) -> Result<[Point3; 2]> {
+    let (mut lo, mut hi) = ([f64::INFINITY; 3], [f64::NEG_INFINITY; 3]);
+    let mut add = |p: Point3, r: [f64; 3]| {
+        for (i, x) in p.to_array().into_iter().enumerate() {
+            lo[i] = lo[i].min(x - r[i]);
+            hi[i] = hi[i].max(x + r[i]);
+        }
+    };
+    let m = plane.normal();
+    for v in topology.vertices() {
+        if plane.coordinates(v.position)[2].abs() <= t.linear() {
+            return Err(split_unsupported(
+                "the tool's plane passes through a vertex",
+            ));
+        }
+        add(v.position, [0.0; 3]);
+    }
+    for edge in topology.edges() {
+        if edge.is_ring() {
+            return Err(split_unsupported(
+                "a closed edge (OCCT's seam and its vertex)",
+            ));
+        }
+        match edge.curve {
+            Curve3::LineSegment { start, end } => {
+                add(start, [0.0; 3]);
+                add(end, [0.0; 3]);
+            }
+            Curve3::CircularArc { frame, radius, .. } => {
+                // The circle's height over the plane is d0 + r A cos(u - u0).
+                let d0 = plane.coordinates(frame.origin())[2];
+                let along = m.dot(frame.normal());
+                let a = (1.0 - along * along).max(0.0).sqrt();
+                if (d0.abs() - radius * a).abs() <= t.linear() {
+                    return Err(split_unsupported("the tool's plane is tangent to an arc"));
+                }
+                let n = frame.normal().to_array();
+                add(
+                    frame.origin(),
+                    n.map(|c| radius * (1.0 - c * c).max(0.0).sqrt()),
+                );
+            }
+            _ => {
+                return Err(split_unsupported(
+                    "an object with edges other than line segments and arcs",
+                ))
+            }
+        }
+    }
+    Ok([
+        Point3::new(lo[0], lo[1], lo[2]),
+        Point3::new(hi[0], hi[1], hi[2]),
+    ])
+}
+
+fn corners([lo, hi]: [Point3; 2]) -> impl Iterator<Item = Point3> {
+    (0..8).map(move |k| {
+        Point3::new(
+            if k & 1 == 0 { lo.x } else { hi.x },
+            if k & 2 == 0 { lo.y } else { hi.y },
+            if k & 4 == 0 { lo.z } else { hi.z },
+        )
+    })
+}
+
+/// A piece's body, as `collect` keys its entities.
+fn body_ref(shape: &Shape) -> Option<BodyRef> {
+    match shape {
+        Shape::Solid(s) => Some(BodyRef::of(s)),
+        Shape::Body { body, .. } => Some((**body).clone()),
+        _ => None,
+    }
+}
+
+/// The entities one object's pieces share, by geometry: vertices at one
+/// point, edges between the same vertices through one midpoint, faces
+/// bounded by the same edges. Each maps to the first piece's key.
+fn shared_entities(
+    pieces: &[Shape],
+    first: usize,
+    t: Tolerance,
+    alias: &mut BTreeMap<String, String>,
+) {
+    use rusty_occt::topology::VertexId;
+    let refs: Vec<(usize, BodyRef)> = pieces
+        .iter()
+        .enumerate()
+        .filter_map(|(k, p)| body_ref(p).map(|b| (first + k, b)))
+        .collect();
+    let key = |k: usize, b: &BodyRef, slot: Slot| {
+        format!("P{k}/{}:{}", b.tag, b.topology.id_of(slot).unwrap())
+    };
+    let canonical =
+        |alias: &BTreeMap<String, String>, own: String| alias.get(&own).cloned().unwrap_or(own);
+    let mut points: Vec<(usize, Point3, String)> = Vec::new();
+    for (k, b) in &refs {
+        for (i, v) in b.topology.vertices().iter().enumerate() {
+            let own = key(*k, b, Slot::Vertex(VertexId::new(i)));
+            match points
+                .iter()
+                .find(|(j, p, _)| j != k && p.distance(v.position) <= t.linear())
+            {
+                Some((_, _, c)) => {
+                    alias.insert(own, c.clone());
+                }
+                None => points.push((*k, v.position, own)),
+            }
+        }
+    }
+    type EdgeSignature = (usize, [Option<String>; 2], Point3, String);
+    let mut edges: Vec<EdgeSignature> = Vec::new();
+    for (k, b) in &refs {
+        for (i, e) in b.topology.edges().iter().enumerate() {
+            let own = key(*k, b, Slot::Edge(EdgeId::new(i)));
+            let mut ends =
+                [e.start, e.end].map(|v| v.map(|v| canonical(alias, key(*k, b, Slot::Vertex(v)))));
+            ends.sort();
+            let middle = e.curve.point(0.5);
+            match edges
+                .iter()
+                .find(|(j, u, p, _)| j != k && *u == ends && p.distance(middle) <= t.linear())
+            {
+                Some((_, _, _, c)) => {
+                    alias.insert(own, c.clone());
+                }
+                None => edges.push((*k, ends, middle, own)),
+            }
+        }
+    }
+    let mut faces: Vec<(usize, Vec<String>, String)> = Vec::new();
+    for (k, b) in &refs {
+        for f in 0..b.topology.faces().len() {
+            let own = key(*k, b, Slot::Face(FaceId::new(f)));
+            let mut bounds: Vec<String> = b
+                .topology
+                .face_fins(FaceId::new(f))
+                .iter()
+                .flatten()
+                .map(|u| canonical(alias, key(*k, b, Slot::Edge(u.edge))))
+                .collect();
+            bounds.sort();
+            match faces.iter().find(|(j, u, _)| j != k && *u == bounds) {
+                Some((_, _, c)) => {
+                    alias.insert(own, c.clone());
+                }
+                None => faces.push((*k, bounds, own)),
+            }
+        }
+    }
+}
+
+/// `bsplit` and `bapisplit`: every object split by the one tool's plane.
+fn split(session: &mut Session, t: Tolerance) -> Result<Shape> {
+    let [tool] = session.tools.as_slice() else {
+        return Err(split_unsupported("one planar tool face is supported"));
+    };
+    if session.objects.is_empty() {
+        return Err(split_unsupported("no objects"));
+    }
+    let (plane, face) = split_tool(tool, t)?;
+    let mut objects = Vec::new();
+    for shape in &session.objects {
+        session.next_operation += 1;
+        let object = Object::of(shape, OperationId(session.next_operation), t)?;
+        let extent = split_extent(object.topology(), plane, t)?;
+        objects.push((object, extent));
+    }
+    // General Fuse also intersects the objects with each other.
+    for (i, (_, [a0, a1])) in objects.iter().enumerate() {
+        for (_, [b0, b1]) in &objects[..i] {
+            let (a0, a1, b0, b1) = (a0.to_array(), a1.to_array(), b0.to_array(), b1.to_array());
+            let apart = (0..3).any(|k| a1[k] + t.linear() < b0[k] || b1[k] + t.linear() < a0[k]);
+            if !apart {
+                return Err(split_unsupported(
+                    "objects that may interfere with each other",
+                ));
+            }
+        }
+    }
+    let (mut pieces, mut groups, mut alias) = (Vec::new(), Vec::new(), BTreeMap::new());
+    for (object, extent) in objects {
+        let heights: Vec<f64> = corners(extent).map(|c| plane.coordinates(c)[2]).collect();
+        let missed =
+            heights.iter().all(|h| *h > t.linear()) || heights.iter().all(|h| *h < -t.linear());
+        // Where the plane reaches the object, the tool face must cover the
+        // object's whole shadow on it.
+        if !missed {
+            for c in corners(extent) {
+                let [x, y, _] = plane.coordinates(c);
+                if face.classify(Point2::new(x, y))? != rusty_occt::Location::Inside {
+                    return Err(split_unsupported(
+                        "the tool face does not reach across an object",
+                    ));
+                }
+            }
+        }
+        session.next_operation += 1;
+        let operation = OperationId(session.next_operation);
+        let first = pieces.len();
+        let wire = match &object {
+            Object::Solid(s) => {
+                let (split, _) = s.split_by_plane(operation, plane).map_err(split_failure)?;
+                pieces.extend(split.into_iter().map(|(_, p)| Shape::Solid(Box::new(p))));
+                false
+            }
+            Object::Body(b) => {
+                let (split, _) = b.split_by_plane(operation, plane).map_err(split_failure)?;
+                let wire = b.topology().faces().is_empty();
+                for (_, piece) in split {
+                    session.restored += 1;
+                    pieces.push(Shape::Body {
+                        body: Box::new(BodyRef {
+                            tag: format!("S{}", session.restored),
+                            topology: piece.topology().clone(),
+                        }),
+                        resolution: piece.resolution(),
+                        kind: if wire { "WIRE" } else { "FACE" },
+                        kernel: Some(Box::new(piece)),
+                    });
+                }
+                wire
+            }
+        };
+        shared_entities(&pieces[first..], first, t, &mut alias);
+        groups.push((first, pieces.len() - first, wire));
+    }
+    session.last = None;
+    session.split_history = true;
+    Ok(Shape::Split {
+        pieces,
+        groups,
+        alias,
+    })
 }
 
 fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
@@ -1633,6 +2073,49 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             Ok(names.iter().map(|n| format!("{n} ")).collect())
         }
         "dsetsignal" => Ok(String::new()),
+        // S8e: OCCT's General Fuse splitter with one plane face as the tool.
+        "bclearobjects" | "bcleartools" if args.len() == 1 => {
+            if command == "bclearobjects" {
+                session.objects.clear();
+            } else {
+                session.tools.clear();
+            }
+            session.arguments += 1;
+            Ok(String::new())
+        }
+        "baddobjects" | "baddtools" if args.len() >= 2 => {
+            let mut added = Vec::new();
+            for name in &args[1..] {
+                added.push(get(shapes, name)?.clone());
+            }
+            if command == "baddobjects" {
+                session.objects.extend(added);
+            } else {
+                session.tools.extend(added);
+            }
+            session.arguments += 1;
+            Ok(String::new())
+        }
+        "bfillds" if args.len() == 1 => {
+            if session.objects.is_empty() {
+                return Ok("No objects to process\n".into());
+            }
+            session.filled = Some(session.arguments);
+            Ok(String::new())
+        }
+        "bsplit" | "bapisplit" if args.len() == 2 => {
+            if command == "bsplit" {
+                match session.filled {
+                    None => return Ok("Prepare PaveFiller first\n".into()),
+                    // The arguments changed since the filler was prepared.
+                    Some(g) if g != session.arguments => return Err(unsupported(args)),
+                    Some(_) => {}
+                }
+            }
+            let result = split(session, t)?;
+            session.shapes.insert(args[1].clone(), result);
+            Ok(String::new())
+        }
         "mkface" if args.len() == 7 => {
             let b = numbers(&args[3..])?;
             let shape = match geometry(shapes, &args[2])?.clone() {
@@ -1662,6 +2145,7 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
                         }),
                         resolution: t,
                         kind: "FACE",
+                        kernel: Some(Box::new(body)),
                     }
                 }
                 Geom::Cylinder(frame, radius) => body_of(
@@ -2102,6 +2586,7 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
                 output: output.clone(),
                 face,
             });
+            session.split_history = false;
             session
                 .shapes
                 .insert(args[1].clone(), Shape::Solid(Box::new(output)));
@@ -2173,6 +2658,7 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             }
             Ok(names.join(" "))
         }
+        "savehistory" if args.len() == 2 && session.split_history => Err(unsupported(args)),
         "savehistory" if args.len() == 2 => {
             let saved = session
                 .last
@@ -2261,7 +2747,9 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
                     Shape::Body {
                         body, resolution, ..
                     } => out.push((&body.topology, *resolution)),
-                    Shape::Compound(items) => return items.iter().all(|i| bodies(i, out)),
+                    Shape::Compound(items) | Shape::Split { pieces: items, .. } => {
+                        return items.iter().all(|i| bodies(i, out))
+                    }
                     _ => return false,
                 }
                 true
@@ -2341,6 +2829,28 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
                 counts.iter().map(|(_, n)| n).sum::<usize>()
             ));
             Ok(result)
+        }
+        // A split's volume (S8e): its solids', a wire's being zero; OCCT
+        // gives a face a signed volume against the origin, not supported.
+        "vprops"
+            if (args.len() == 2 || args.len() == 3)
+                && matches!(shapes.get(&args[1]), Some(Shape::Split { .. })) =>
+        {
+            if args.len() == 3 && numbers(&args[2..])?[0] <= 0.0 {
+                return Err(unsupported(args));
+            }
+            let Some(Shape::Split { pieces, .. }) = shapes.get(&args[1]) else {
+                unreachable!("matched above")
+            };
+            let mut volume = 0.0;
+            for piece in pieces {
+                match piece {
+                    Shape::Solid(s) => volume += s.mass_properties().volume,
+                    Shape::Body { kind: "WIRE", .. } => {}
+                    _ => return Err(unsupported(args)),
+                }
+            }
+            Ok(props(volume))
         }
         "vprops"
             if (args.len() == 2 || args.len() == 3)

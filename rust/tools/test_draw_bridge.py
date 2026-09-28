@@ -130,6 +130,35 @@ class BridgeTests(unittest.TestCase):
         self.expect(prism + "catch {generated g h w}", "unsupported")
         self.expect(prism + "catch {prism q f 0 0 3}", "unsupported")
 
+    def test_split_by_a_plane_face(self):
+        # A 5 x 2 x 3 prism split at x = 2 (S8e): OCCT's two solids share the
+        # cut face, its edges and vertices; areas and lengths count per use.
+        prism = ("polyline w 0 0 0 5 0 0 5 2 0 0 2 0 0 0 0\nmkplane s w\nprism p s 0 0 3 Copy\n"
+                 "checkshape p\nplane t 2 0 0 1 0 0\nmkface f t -10 10 -10 10\n")
+        split = prism + "bclearobjects\nbcleartools\nbaddobjects p\nbaddtools f\nbfillds\n"
+        self.expect(split + "bsplit r\ncheckshape r\n"
+                    "checknbshapes r -vertex 12 -edge 20 -wire 11 -face 11 -shell 2 -solid 2 -compound 1\n"
+                    "checkprops r -v 30 -s 74 -l 120\n", "pass")
+        # The kernel's pieces have a cut face each; the result must not say so.
+        for wrong in ["checknbshapes r -face 12", "checkprops r -s 68", "checkprops r -l 100"]:
+            with self.subTest(wrong=wrong):
+                self.expect(split + "bsplit r\n" + wrong, "failed")
+        # Outside the subset: several tools, a tool face not reaching across
+        # the object, a plane through a vertex, objects that may interfere,
+        # a seam (ring edges), arguments changed after bfillds, and the
+        # split's history.
+        for gap, why in [
+                (prism + "baddobjects p\nbaddtools f f\nbfillds\ncatch {bsplit r}", "one planar tool"),
+                (prism + "mkface g t -1 1 -1 1\nbaddobjects p\nbaddtools g\ncatch {bapisplit r}", "does not reach"),
+                (prism + "plane u 5 0 0 1 0 0\nmkface g u -9 9 -9 9\nbaddobjects p\nbaddtools g\n"
+                 "catch {bapisplit r}", "through a vertex"),
+                (prism + "baddobjects p p\nbaddtools f\ncatch {bapisplit r}", "interfere"),
+                (prism + "pcylinder c 1 2\nbaddobjects c\nbaddtools f\ncatch {bapisplit r}", "closed edge"),
+                (split + "bclearobjects\nbaddobjects p\ncatch {bsplit r}", "bsplit r"),
+                (split + "bsplit r\ncatch {savehistory h}", "savehistory h")]:
+            with self.subTest(why=why):
+                self.assertIn(why, self.expect(gap, "unsupported")["unsupported"])
+
     def test_native_selector_picks_by_geometry(self):
         picks = self.root / "picks.txt"
         # A synthetic native record: explode 1 of a box's faces, deliberately

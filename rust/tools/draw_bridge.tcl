@@ -155,7 +155,7 @@ proc runCommand {command args} {
     if {$command in {checkshape nbshapes vprops sprops lprops isbbinterf isdeleted xdistcs dump dval}} {incr ::queries}
     # DBRep::Set binds DRAW shape names as Tcl variables as well.
     if {$::backend eq "rust"} {
-        if {$command in {box pcylinder pcone psphere ptorus polyline profile mkplane prism generated modified plane cylinder circle line sphere cone torus mkface mkedge}} {
+        if {$command in {box pcylinder pcone psphere ptorus polyline profile mkplane prism generated modified plane cylinder circle line sphere cone torus mkface mkedge bsplit bapisplit}} {
             interp eval testcase [list set [lindex $args 0] [lindex $args 0]]
         }
         if {$command in {copy restore}} {interp eval testcase [list set [lindex $args 1] [lindex $args 1]]}
@@ -202,7 +202,7 @@ if {[catch {
     interp alias testcase help {} metadata
     interp alias testcase cpulimit {} cpuLimit
     interp alias testcase locate_data_file {} locateData
-    foreach command {box copy ttranslate trotate isdraw whatis checkshape nbshapes vprops sprops lprops isbbinterf explode compound bcommon bfuse restore prism polyline profile mkplane savehistory generated modified isdeleted pcylinder pcone psphere ptorus plane cylinder circle sphere cone torus intersect bounds dval renamevar dump xdistcs directory dsetsignal mkface line mkedge mkvolume bclearobjects bcleartools baddobjects baddtools bfillds bsplit bbuild} {
+    foreach command {box copy ttranslate trotate isdraw whatis checkshape nbshapes vprops sprops lprops isbbinterf explode compound bcommon bfuse restore prism polyline profile mkplane savehistory generated modified isdeleted pcylinder pcone psphere ptorus plane cylinder circle sphere cone torus intersect bounds dval renamevar dump xdistcs directory dsetsignal mkface line mkedge mkvolume bclearobjects bcleartools baddobjects baddtools bfillds bsplit bapisplit bbuild} {
         interp alias testcase $command {} runCommand $command
     }
     # The variables upstream's _run_test (TestCommands.tcl) sets for a case.
