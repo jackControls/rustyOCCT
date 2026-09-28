@@ -126,9 +126,13 @@ class BridgeTests(unittest.TestCase):
                       "generated g h f\ncheckprops g -v 151 -deps 1e-9"]:
             with self.subTest(wrong=wrong):
                 self.expect(prism + wrong, "failed")
-        # History of a wire, and a prism without Copy, are outside the subset.
+        # History of a wire is outside the subset; so are a prism without
+        # Copy's counts and history (OCCT reuses its start shapes), not its
+        # properties.
         self.expect(prism + "catch {generated g h w}", "unsupported")
-        self.expect(prism + "catch {prism q f 0 0 3}", "unsupported")
+        self.expect(prism + "prism q f 0 0 3\ncheckprops q -v 150 -s 190 -l 144", "pass")
+        self.expect(prism + "prism q f 0 0 3\ncatch {nbshapes q}", "unsupported")
+        self.expect(prism + "prism q f 0 0 3\ncatch {savehistory hq}", "unsupported")
 
     def test_split_by_a_plane_face(self):
         # A 5 x 2 x 3 prism split at x = 2 (S8e): OCCT's two solids share the
@@ -156,6 +160,42 @@ class BridgeTests(unittest.TestCase):
                 (prism + "pcylinder c 1 2\nbaddobjects c\nbaddtools f\ncatch {bapisplit r}", "closed edge"),
                 (split + "bclearobjects\nbaddobjects p\ncatch {bsplit r}", "bsplit r"),
                 (split + "bsplit r\ncatch {savehistory h}", "savehistory h")]:
+            with self.subTest(why=why):
+                self.assertIn(why, self.expect(gap, "unsupported")["unsupported"])
+
+    def test_boolean_of_prisms(self):
+        # Two 4 x 4 x 2 boxes overlapping in a 2 x 2 square (S9a): OCCT's
+        # result is a compound; the kernel's is merged, as after unifysamedom.
+        boxes = "box a 0 0 0 4 4 2\nbox b 2 2 0 4 4 2\n"
+        self.expect(boxes + "bfuse r a b\ncheckshape r\ncheckprops r -v 56 -s 104\nunifysamedom u r\n"
+                    "checkprops u -l 128\n"
+                    "checknbshapes u -vertex 16 -edge 24 -wire 10 -face 10 -shell 1 -solid 1 -compound 1\n"
+                    "bop a b\nboptuc t\ncheckprops t -v 24 -s 56\nbopcommon m\ncheckprops m -v 8\n"
+                    "bclearobjects\nbcleartools\nbaddobjects a\nbaddtools b\nbfillds\nbbop c 2\n"
+                    "checkprops c -v 24\nbapibop f 1\ncheckprops f -v 56\n"
+                    # A result is an argument again; DRAW variables in numbers.
+                    "dset h sqrt(4)\nbox e 2 2 h 2 2 h/2\nbfuse s m e\ncheckprops s -v 12\n", "pass")
+        for wrong in ["bfuse r a b\ncheckprops r -v 64", "bcut r a b\ncheckprops r -s 64",
+                      "bcommon r a b\nchecknbshapes r -compound 0", "bfuse r a b\nchecknbshapes r -solid 2"]:
+            with self.subTest(wrong=wrong):
+                self.expect(boxes + wrong, "failed")
+        # Outside S9a, never an answer: frames with other axes (S9b), a cut
+        # leaving a stack (S9a.2), prisms touching along an edge
+        # (Degenerate), a cone, a section, several objects, a result of two
+        # solids as an argument, unifysamedom of other shapes, counts of an
+        # uncopied prism's result and a Boolean's history.
+        for gap, why in [
+                (boxes + "trotate b 0 0 0 0 0 1 30\ncatch {bfuse r a b}", "different axes"),
+                (boxes + "box t 1 1 1 1 1 1\ncatch {bcut r a t}", "S9a.2"),
+                (boxes + "box t 4 4 0 1 1 2\ncatch {bfuse r a t}", "egenerate"),
+                (boxes + "pcone k 1 0 2\ncatch {bcommon r a k}", "prisms"),
+                (boxes + "baddobjects a\nbaddtools b\ncatch {bapibop r 4}", "bapibop r 4"),
+                (boxes + "baddobjects a b\nbaddtools b\ncatch {bapibop r 1}", "one object"),
+                (boxes + "box d 9 9 9 1 1 1\nbfuse r a d\ncatch {bcut s r b}", "several solids"),
+                (boxes + "catch {unifysamedom u a}", "unifysamedom u a"),
+                (boxes + "polyline w 0 0 0 1 0 0 1 1 0 0 0 0\nmkplane p w\nprism q p 0 0 2\nbfuse r a q\n"
+                 "checkprops r -v 32\ncatch {nbshapes r}", "uncopied"),
+                (boxes + "bfuse r a b\ncatch {savehistory h}", "savehistory h")]:
             with self.subTest(why=why):
                 self.assertIn(why, self.expect(gap, "unsupported")["unsupported"])
 

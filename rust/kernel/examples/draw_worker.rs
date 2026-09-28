@@ -140,6 +140,20 @@ enum Shape {
         groups: Vec<(usize, usize, bool)>,
         alias: BTreeMap<String, String>,
     },
+    /// A prism `prism` made without `Copy` (S9a): OCCT builds its end face
+    /// as the start face moved by a location, reusing its `TShape`s, so DRAW
+    /// counts fewer vertices, edges and faces than the kernel's prism has
+    /// (and so does a Boolean of it); volumes, areas and lengths per use
+    /// agree. Its counts and history are unsupported.
+    Uncopied(Box<Solid>),
+    /// A Boolean's result (S9a): OCCT's compound of the result's solids,
+    /// none for an empty result. The solids share nothing (the kernel
+    /// refuses results touching themselves). `uncopied` when an argument
+    /// was an uncopied prism, whose shared shapes OCCT's result keeps.
+    Boolean {
+        solids: Vec<Solid>,
+        uncopied: bool,
+    },
     /// A native pick with no entity in the cell model (a seam, its vertex),
     /// or none the selector could single out.
     Lost(String),
@@ -191,9 +205,11 @@ struct Session {
     tools: Vec<Shape>,
     arguments: u64,
     filled: Option<u64>,
-    /// The last operation was a split, whose history the adapter does not
-    /// keep for `savehistory`.
-    split_history: bool,
+    /// The last operation was a split, a Boolean or an uncopied prism,
+    /// whose history the adapter does not keep for `savehistory`.
+    unkept_history: bool,
+    /// The arguments `bop` last prepared (S9a): the object and the tool.
+    bop: Option<(Shape, Shape)>,
 }
 
 fn unsupported(args: &[String]) -> Failure {
@@ -674,15 +690,27 @@ fn collect(shape: &Shape, parts: &mut Parts) {
             parts.area += boundary.map_or_else(|| polygon_area(&p.points), |b| b.area());
         }
     };
+    let add_solid = |s: &Solid, parts: &mut Parts| {
+        parts.solids += 1;
+        parts.shells += s.topology().occt_counts().shells;
+        parts.volume += s.mass_properties().volume;
+        let b = BodyRef::of(s);
+        for f in 0..b.topology.faces().len() {
+            add_face(&b, f, parts);
+        }
+    };
     match shape {
-        Shape::Solid(s) => {
-            parts.solids += 1;
-            parts.shells += s.topology().occt_counts().shells;
-            parts.volume += s.mass_properties().volume;
-            let b = BodyRef::of(s);
-            for f in 0..b.topology.faces().len() {
-                add_face(&b, f, parts);
+        Shape::Solid(s) | Shape::Uncopied(s) => add_solid(s, parts),
+        // A Boolean's solids share nothing: each is counted in its own
+        // scope, since two may carry equal ids (a fuse of disjoint copies).
+        Shape::Boolean { solids, .. } => {
+            parts.compounds += 1;
+            let scope = parts.scope.clone();
+            for (k, s) in solids.iter().enumerate() {
+                parts.scope = format!("{scope}B{k}/");
+                add_solid(s, parts);
             }
+            parts.scope = scope;
         }
         Shape::Body { body, .. } => {
             let t = &body.topology;
@@ -793,7 +821,8 @@ fn polygon_area(points: &[Point3]) -> f64 {
 
 fn type_name(shape: &Shape) -> &'static str {
     match shape {
-        Shape::Solid(_) => "SOLID",
+        Shape::Solid(_) | Shape::Uncopied(_) => "SOLID",
+        Shape::Boolean { .. } => "COMPOUND",
         Shape::Body { kind, .. } => kind,
         Shape::Geometry(_) => unreachable!("geometry is not a shape"),
         Shape::Wire(_) => "WIRE",
@@ -1835,7 +1864,7 @@ fn split(session: &mut Session, t: Tolerance) -> Result<Shape> {
         groups.push((first, pieces.len() - first, wire));
     }
     session.last = None;
-    session.split_history = true;
+    session.unkept_history = true;
     Ok(Shape::Split {
         pieces,
         groups,
@@ -1843,7 +1872,214 @@ fn split(session: &mut Session, t: Tolerance) -> Result<Shape> {
     })
 }
 
+// ------------------------------------------------------------------ Booleans (S9a)
+//
+// OCCT's Boolean commands (`bfuse`, `bcut`, `bcommon`, `btuc`; `bop` and
+// `bopfuse`, `bopcut`, `boptuc`, `bopcommon`; `bbop` and `bapibop` on the
+// General Fuse arguments) with one object and one tool, each a prism the
+// adapter made, through `Solid::fuse`, `cut` and `common`. The result is
+// OCCT's compound of the result's solids. Whatever the kernel refuses
+// (frames with different axes, an offset that is not binary64 in them,
+// S9a.2's stacks, results touching themselves, other solids) is
+// unsupported, never an answer.
+
+#[derive(Clone, Copy)]
+enum BooleanOp {
+    Common,
+    Fuse,
+    Cut,
+    /// OCCT's CUT21: the tool minus the object.
+    Tuc,
+}
+
+fn boolean_unsupported(why: &str) -> Failure {
+    Failure::Unsupported(format!("Boolean: {why}"))
+}
+
+/// A Boolean's capability limits are unsupported, not failures.
+fn boolean_failure(e: rusty_occt::Error) -> Failure {
+    use rusty_occt::Error as E;
+    match e {
+        E::OutOfDomain(_)
+        | E::ComputationLimit(_)
+        | E::Degenerate(_)
+        | E::LimitExceeded(_)
+        | E::PrecisionLoss => Failure::Unsupported(format!("Boolean: {e}")),
+        e => e.into(),
+    }
+}
+
+/// A Boolean argument: one solid the adapter made (a prism, a cone, a
+/// sphere or a torus; the kernel decides what it supports), or a Boolean
+/// result of one solid; and whether OCCT's shape reuses its shapes.
+fn boolean_argument(shape: &Shape) -> Result<(&Solid, bool)> {
+    match shape {
+        Shape::Solid(s) => Ok((s, false)),
+        Shape::Uncopied(s) => Ok((s, true)),
+        Shape::Boolean { solids, uncopied } if solids.len() == 1 => Ok((&solids[0], *uncopied)),
+        Shape::Boolean { .. } => Err(boolean_unsupported("an argument of several solids or none")),
+        _ => Err(boolean_unsupported(
+            "an argument other than a solid the adapter made",
+        )),
+    }
+}
+
+/// The same prism extruded again under an operation of its own: new ids,
+/// and a construction the Boolean indexes by profile element.
+fn rebuilt(s: &Solid, operation: OperationId) -> Result<Solid> {
+    let profile = s
+        .profile()
+        .ok_or_else(|| boolean_unsupported("a solid other than a prism"))?;
+    Ok(Solid::extrude_with(
+        operation,
+        profile.clone(),
+        s.frame(),
+        s.start_offset(),
+        s.end_offset(),
+    )?
+    .0)
+}
+
+/// `object op tool`, under `operations` (the Boolean's, then those of
+/// rebuilt arguments). DRAW's shapes are distinct whatever made them; the
+/// kernel's ids are not (every `box` is a cuboid of the unspecified
+/// operation, a `copy` keeps its ids), and a Boolean's history needs its
+/// inputs' ids apart: a tool sharing ids with the object is built again.
+/// So is a Boolean result, which the kernel's Boolean does not take as an
+/// input (its entities descend from the inputs, not from its profile).
+fn boolean(
+    object: &Shape,
+    tool: &Shape,
+    op: BooleanOp,
+    operations: [OperationId; 3],
+) -> Result<Shape> {
+    let (a, ua) = boolean_argument(object)?;
+    let (b, ub) = boolean_argument(tool)?;
+    let a = match object {
+        Shape::Boolean { .. } => rebuilt(a, operations[1])?,
+        _ => a.clone(),
+    };
+    let ids: BTreeSet<_> = a.topology().ids().map(|(id, _)| id).collect();
+    let b = match tool {
+        Shape::Boolean { .. } => rebuilt(b, operations[2])?,
+        _ if b.topology().ids().any(|(id, _)| ids.contains(&id)) => rebuilt(b, operations[2])?,
+        _ => b.clone(),
+    };
+    let (a, b, operation) = (&a, &b, operations[0]);
+    let (solids, _) = match op {
+        BooleanOp::Common => a.common(operation, b),
+        BooleanOp::Fuse => a.fuse(operation, b),
+        BooleanOp::Cut => a.cut(operation, b),
+        BooleanOp::Tuc => b.cut(operation, a),
+    }
+    .map_err(boolean_failure)?;
+    Ok(Shape::Boolean {
+        solids,
+        uncopied: ua || ub,
+    })
+}
+
+/// Whether a Boolean result is what `unifysamedom` would leave: each
+/// solid a prism whose boundaries have no two consecutive collinear lines
+/// or arcs of one circle (the walls and edges OCCT's unifier merges; the
+/// caps are one face each already).
+fn unified(solids: &[Solid]) -> bool {
+    let collinear = |a: Point2, b: Point2, c: Point2| {
+        let (u, v) = ((b.x - a.x, b.y - a.y), (c.x - b.x, c.y - b.y));
+        let cross = u.0 * v.1 - u.1 * v.0;
+        let scale = (u.0.hypot(u.1) * v.0.hypot(v.1)).max(f64::MIN_POSITIVE);
+        cross.abs() <= 1e-12 * scale && u.0 * v.0 + u.1 * v.1 > 0.0
+    };
+    solids.iter().all(|s| {
+        let Some(profile) = s.profile() else {
+            return false;
+        };
+        std::iter::once(profile.outer())
+            .chain(profile.holes())
+            .all(|b| {
+                if let Some(p) = b.polygon_vertices() {
+                    let n = p.len();
+                    return (0..n).all(|k| !collinear(p[k], p[(k + 1) % n], p[(k + 2) % n]));
+                }
+                let Some((points, segments)) = b.path_geometry() else {
+                    return b.circle_geometry().is_some();
+                };
+                let n = points.len();
+                (0..n).all(|k| match (&segments[k], &segments[(k + 1) % n]) {
+                    (Segment::Line, Segment::Line) => {
+                        !collinear(points[k], points[(k + 1) % n], points[(k + 2) % n])
+                    }
+                    (
+                        Segment::Arc {
+                            center: c0,
+                            radius: r0,
+                            ..
+                        },
+                        Segment::Arc {
+                            center: c1,
+                            radius: r1,
+                            ..
+                        },
+                    ) => c0.x != c1.x || c0.y != c1.y || r0 != r1,
+                    _ => true,
+                })
+            })
+    })
+}
+
+/// Whether DRAW's counts of a shape differ from the kernel's structure for
+/// a reason no mapping covers (an uncopied prism's shared shapes).
+fn uncounted(shape: &Shape) -> bool {
+    match shape {
+        Shape::Uncopied(_) => true,
+        Shape::Boolean { uncopied, .. } => *uncopied,
+        Shape::Compound(items) | Shape::Split { pieces: items, .. } => items.iter().any(uncounted),
+        _ => false,
+    }
+}
+
+/// A DRAW number (`Draw::Atof`): a literal, or an expression of `dset`
+/// variables; one that cannot be evaluated is a capability gap.
+fn draw_number(text: &str, numbers: &BTreeMap<String, f64>) -> Result<f64> {
+    if let Ok(v) = text.trim_end_matches(',').parse::<f64>() {
+        return Ok(v);
+    }
+    draw_geometry::evaluate(text, &|n| numbers.get(n).copied())
+        .map_err(|e| Failure::Unsupported(format!("DRAW expression {text}: {e}")))
+}
+
+/// Constructors whose numbers may be DRAW expressions: the arguments from
+/// the first index on (up to the second, when given).
+fn numeric_arguments(command: &str) -> Option<(usize, usize)> {
+    Some(match command {
+        "box" | "pcylinder" | "pcone" | "psphere" | "ptorus" | "ttranslate" | "trotate"
+        | "polyline" => (2, usize::MAX),
+        "prism" => (3, 6),
+        _ => return None,
+    })
+}
+
 fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
+    // DRAW evaluates `dset` variables in numeric arguments (S9a).
+    let evaluated: Vec<String>;
+    let args = match numeric_arguments(args.first().map(String::as_str).unwrap_or("")) {
+        Some((first, last)) => {
+            evaluated = args
+                .iter()
+                .enumerate()
+                .map(|(k, a)| {
+                    if (first..last).contains(&k) && a.trim_end_matches(',').parse::<f64>().is_err()
+                    {
+                        draw_number(a, &session.numbers).map(|v| v.to_string())
+                    } else {
+                        Ok(a.clone())
+                    }
+                })
+                .collect::<Result<_>>()?;
+            &evaluated[..]
+        }
+        None => args,
+    };
     let t = Tolerance::default();
     let command = args.first().map(String::as_str).unwrap_or("");
     if command == "explode" {
@@ -2128,6 +2364,80 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             session.shapes.insert(args[1].clone(), result);
             Ok(String::new())
         }
+        // S9a: Booleans of one object and one tool.
+        "bop" if args.len() == 3 => {
+            let object = get(shapes, &args[1])?.clone();
+            let tool = get(shapes, &args[2])?.clone();
+            session.bop = Some((object, tool));
+            Ok(String::new())
+        }
+        "bfuse" | "bcut" | "bcommon" | "btuc" | "bopfuse" | "bopcut" | "boptuc" | "bopcommon"
+        | "bbop" | "bapibop"
+            if args.len()
+                == match command {
+                    "bbop" | "bapibop" => 3,
+                    "bfuse" | "bcut" | "bcommon" | "btuc" => 4,
+                    _ => 2,
+                } =>
+        {
+            let op = match command {
+                "bfuse" | "bopfuse" => BooleanOp::Fuse,
+                "bcut" | "bopcut" => BooleanOp::Cut,
+                "bcommon" | "bopcommon" => BooleanOp::Common,
+                "btuc" | "boptuc" => BooleanOp::Tuc,
+                // BOPAlgo_Operation: COMMON, FUSE, CUT, CUT21 (SECTION is 4).
+                _ => match args[2].as_str() {
+                    "0" => BooleanOp::Common,
+                    "1" => BooleanOp::Fuse,
+                    "2" => BooleanOp::Cut,
+                    "3" => BooleanOp::Tuc,
+                    _ => return Err(unsupported(args)),
+                },
+            };
+            let (object, tool) = match command {
+                "bfuse" | "bcut" | "bcommon" | "btuc" => (
+                    get(shapes, &args[2])?.clone(),
+                    get(shapes, &args[3])?.clone(),
+                ),
+                "bbop" | "bapibop" => {
+                    if command == "bbop" {
+                        match session.filled {
+                            None => return Ok("Prepare PaveFiller first\n".into()),
+                            // The arguments changed since the filler was prepared.
+                            Some(g) if g != session.arguments => return Err(unsupported(args)),
+                            Some(_) => {}
+                        }
+                    }
+                    let ([object], [tool]) = (session.objects.as_slice(), session.tools.as_slice())
+                    else {
+                        return Err(boolean_unsupported("one object and one tool are supported"));
+                    };
+                    (object.clone(), tool.clone())
+                }
+                _ => session
+                    .bop
+                    .clone()
+                    .ok_or_else(|| error("Prepare BOPAlgo_PaveFiller first"))?,
+            };
+            let n = session.next_operation;
+            session.next_operation += 3;
+            let operations = [1, 2, 3].map(|k| OperationId(n + k));
+            let result = boolean(&object, &tool, op, operations)?;
+            session.last = None;
+            session.unkept_history = true;
+            session.shapes.insert(args[1].clone(), result);
+            Ok(String::new())
+        }
+        // OCCT's unifier leaves a Boolean result of the kernel as it is,
+        // when its walls and edges are merged already (S9a).
+        "unifysamedom" if args.len() == 3 => match get(shapes, &args[2])? {
+            shape @ Shape::Boolean { solids, .. } if unified(solids) => {
+                let shape = shape.clone();
+                shapes.insert(args[1].clone(), shape);
+                Ok(String::new())
+            }
+            _ => Err(unsupported(args)),
+        },
         "mkface" if args.len() == 7 => {
             let b = numbers(&args[3..])?;
             let shape = match geometry(shapes, &args[2])?.clone() {
@@ -2303,10 +2613,34 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
                 )?
             };
             // DRAW moves the location and records no history.
-            let moved = solid(shapes, &args[1], args)?
-                .transform_with(OperationId::UNSPECIFIED, transform)?
-                .0;
-            shapes.insert(args[1].clone(), Shape::Solid(Box::new(moved)));
+            let moved = match get(shapes, &args[1])? {
+                Shape::Solid(s) => Shape::Solid(Box::new(
+                    s.transform_with(OperationId::UNSPECIFIED, transform)?.0,
+                )),
+                Shape::Uncopied(s) => Shape::Uncopied(Box::new(
+                    s.transform_with(OperationId::UNSPECIFIED, transform)?.0,
+                )),
+                // A `profile` sketch moved before its prism (S9a): its
+                // points, arc centres and plane.
+                Shape::Face(p) | Shape::Wire(p) if command == "ttranslate" && p.plane.is_some() => {
+                    let v = Vec3::new(n[0], n[1], n[2]);
+                    let mut p = p.clone();
+                    for q in &mut p.points {
+                        *q = *q + v;
+                    }
+                    for (center, _, _) in p.arcs.iter_mut().flatten() {
+                        *center = *center + v;
+                    }
+                    p.plane = Some(p.plane.expect("checked").transformed(transform, t)?);
+                    boundary_of(&p, t)?;
+                    match get(shapes, &args[1])? {
+                        Shape::Face(_) => Shape::Face(p),
+                        _ => Shape::Wire(p),
+                    }
+                }
+                _ => return Err(unsupported(args)),
+            };
+            shapes.insert(args[1].clone(), moved);
             Ok(String::new())
         }
         "polyline" if args.len() >= 11 && (args.len() - 2) % 3 == 0 => {
@@ -2358,12 +2692,15 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             let mut arcs: Vec<Option<(Point2, f64, bool)>> = Vec::new();
             let confusion = 1e-7;
             let mut i = 0;
+            // Draw::Atof: a literal or an expression of `dset` variables.
+            let variables = &session.numbers;
             let value = |k: usize| -> Result<f64> {
-                words
-                    .get(k)
-                    .ok_or_else(|| error("profile : bad number of arguments"))?
-                    .parse::<f64>()
-                    .map_err(|_| error("profile : bad number"))
+                draw_number(
+                    words
+                        .get(k)
+                        .ok_or_else(|| error("profile : bad number of arguments"))?,
+                    variables,
+                )
             };
             enum Move {
                 Line(f64),
@@ -2576,8 +2913,13 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             _ => Err(unsupported(args)),
         },
         // DRAW's Copy builds distinct end entities, as the kernel does;
-        // without it OCCT reuses the start shapes under a moved location.
-        "prism" if args.len() == 7 && args[6].to_ascii_lowercase().starts_with('c') => {
+        // without it OCCT reuses the start shapes under a moved location
+        // (an uncopied prism: its counts and history are unsupported).
+        "prism"
+            if args.len() == 6
+                || args.len() == 7 && args[6].to_ascii_lowercase().starts_with('c') =>
+        {
+            let copy = args.len() == 7;
             let Shape::Face(face) = get(shapes, &args[2])?.clone() else {
                 return Err(unsupported(args));
             };
@@ -2593,12 +2935,20 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             session.next_operation += 1;
             let operation = OperationId(session.next_operation);
             let (output, history) = Solid::extrude_with(operation, profile, frame, 0.0, height)?;
+            if !copy {
+                session.last = None;
+                session.unkept_history = true;
+                session
+                    .shapes
+                    .insert(args[1].clone(), Shape::Uncopied(Box::new(output)));
+                return Ok(String::new());
+            }
             session.last = Some(Saved {
                 history,
                 output: output.clone(),
                 face,
             });
-            session.split_history = false;
+            session.unkept_history = false;
             session
                 .shapes
                 .insert(args[1].clone(), Shape::Solid(Box::new(output)));
@@ -2670,7 +3020,7 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             }
             Ok(names.join(" "))
         }
-        "savehistory" if args.len() == 2 && session.split_history => Err(unsupported(args)),
+        "savehistory" if args.len() == 2 && session.unkept_history => Err(unsupported(args)),
         "savehistory" if args.len() == 2 => {
             let saved = session
                 .last
@@ -2755,7 +3105,13 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             // Every solid of the shape validates against its own resolution.
             fn bodies<'a>(shape: &'a Shape, out: &mut Vec<(&'a Topology, Tolerance)>) -> bool {
                 match shape {
-                    Shape::Solid(s) => out.push((s.topology(), s.resolution())),
+                    Shape::Solid(s) | Shape::Uncopied(s) => {
+                        out.push((s.topology(), s.resolution()))
+                    }
+                    // An empty Boolean result is a valid empty compound.
+                    Shape::Boolean { solids, .. } => {
+                        out.extend(solids.iter().map(|s| (s.topology(), s.resolution())))
+                    }
                     Shape::Body {
                         body, resolution, ..
                     } => out.push((&body.topology, *resolution)),
@@ -2804,6 +3160,12 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
         }
         "nbshapes" if args.len() == 2 => {
             let shape = get(shapes, &args[1])?;
+            if uncounted(shape) {
+                return Err(Failure::Unsupported(format!(
+                    "nbshapes {}: an uncopied prism's shapes OCCT shares",
+                    args[1]
+                )));
+            }
             let p = parts(shape);
             let mut counts = [
                 ("VERTEX", p.vertices.len()),
@@ -2864,11 +3226,42 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             }
             Ok(props(volume))
         }
+        // A Boolean's volume and centre (S9a): its solids', an empty
+        // result's zero.
+        "vprops"
+            if (args.len() == 2 || args.len() == 3)
+                && matches!(shapes.get(&args[1]), Some(Shape::Boolean { .. })) =>
+        {
+            if args.len() == 3 && numbers(&args[2..])?[0] <= 0.0 {
+                return Err(unsupported(args));
+            }
+            let Some(Shape::Boolean { solids, .. }) = shapes.get(&args[1]) else {
+                unreachable!("matched above")
+            };
+            let (mut volume, mut moment) = (0.0, Vec3::new(0.0, 0.0, 0.0));
+            for s in solids {
+                let m = s.mass_properties();
+                volume += m.volume;
+                moment = moment + (m.centroid - Point3::ORIGIN) * m.volume;
+            }
+            let c = if volume > 0.0 {
+                moment * (1.0 / volume)
+            } else {
+                moment
+            };
+            Ok(format!(
+                "{}\nCenter of gravity :\nX = {:.17e}\nY = {:.17e}\nZ = {:.17e}\n",
+                props(volume),
+                c.x,
+                c.y,
+                c.z
+            ))
+        }
         "vprops"
             if (args.len() == 2 || args.len() == 3)
                 && matches!(
                     get(shapes, &args[1])?,
-                    Shape::Solid(_) | Shape::Body { kind: "SOLID", .. }
+                    Shape::Solid(_) | Shape::Uncopied(_) | Shape::Body { kind: "SOLID", .. }
                 ) =>
         {
             if args.len() == 3 && numbers(&args[2..])?[0] <= 0.0 {
@@ -2882,7 +3275,8 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
                     .mass_enclosure()
                     .ok_or_else(|| error("mass properties not certified"))?
                     .midpoints(),
-                _ => solid(shapes, &args[1], args)?.mass_properties(),
+                Shape::Solid(s) | Shape::Uncopied(s) => s.mass_properties(),
+                _ => unreachable!("matched above"),
             };
             Ok(format!("Mass : {:.17e}\n\nCenter of gravity :\nX = {:.17e}\nY = {:.17e}\nZ = {:.17e}\nMatrix of Inertia :\n{:.17e} {:.17e} {:.17e}\n{:.17e} {:.17e} {:.17e}\n{:.17e} {:.17e} {:.17e}\n",
                 m.volume, m.centroid.x, m.centroid.y, m.centroid.z,
