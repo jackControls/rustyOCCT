@@ -1212,7 +1212,12 @@ the first fixture, never deferred.
     parser itself is schema-free: Part 21 edition 2 syntax (header, one or
     more `DATA` sections, simple and complex instances, every parameter
     kind, comments, `''` and `\X\`, `\X2\`, `\X4\` string encodings kept
-    raw), with a nesting limit and entity numbers checked.
+    raw), with a nesting limit and entity numbers checked. *Amended in
+    implementation:* AP214's committee drafts (`AUTOMOTIVE_DESIGN_CC1`,
+    `_CC2` and the like, named by 61 of the local dataset's files) have
+    its geometry and topology and are read; inside a string `\\` and `\S\`
+    with the character after it are kept raw (`\S\'` does not end the
+    string).
   * **Entities.** Bodies: `MANIFOLD_SOLID_BREP` (a solid), `BREP_WITH_VOIDS`
     (a solid whose `ORIENTED_CLOSED_SHELL`s with orientation `.F.` are
     cavities, as OCCT writes and reads them) and `SHELL_BASED_SURFACE_MODEL`
@@ -1250,7 +1255,13 @@ the first fixture, never deferred.
     vertex's, edge's and face's imported tolerance, floored at `1e-7` mm and
     capped at `1` mm (OCCT's `read.precision.mode` "File" and
     `read.maxprecision.val`); without one, `1e-7` mm. A body's resolution
-    is then that tolerance, as for a `.brep` body.
+    is then that tolerance, as for a `.brep` body. *Amended in
+    implementation:* OCCT uses the uncertainty only as its healing
+    precision and builds every entity at `Precision::Confusion` (its
+    observed tolerances stay `1e-7` on files declaring `0.1`); the kernel,
+    which does not heal, keeps the file's claim, verified by the validator.
+    A measure with unit may be a complex instance whose value and unit sit
+    in its `MEASURE_WITH_UNIT` record.
   * **Pcurves.** STEP-a derives every pcurve and ignores the file's: on a
     plane, the edge's own data in the plane's coordinates (the `.brep`
     converter's `CurveOnPlane`); on a cylinder, cone, sphere or torus, the
@@ -1687,6 +1698,36 @@ the first fixture, never deferred.
     209 s of replay (350 inputs, 14,000 edges, 961 MB peak), no artifact.
   * Open for the user: U9 (a display mode without a bound). T-b (spline
     edges and faces) and T-c (procedural edges) pending.
+* STEP import (parallel track) — STEP-a implemented (`VALIDATION.md`,
+  `SOURCE_MAP.md`); gate pending CI, the schedule replay and the clean
+  campaign.
+  * The decisions above (`a5435624`), then the evidence before any importer
+    code (`cab82ecb`): the Part 21 reader with its tests, 22 STEP files
+    authored for the track (`generate_step_fixtures.py`: boxes in three
+    schemas and three units with every orientation flag flipped, prisms, a
+    void, cylinders, cones, frusta in degrees, spheres, tori, two solids, an
+    open box and a hand-written syntax file), the independent reference
+    (`step_reference.py`: its own Part 21 parser, OCCT's counts, closed
+    forms) and the native `STEPControl_Reader` capture
+    (`fixtures/occt-step-preimplementation`, the importer absent), which
+    matches the reference on all 22 within `7.6e-15`. The pinned SDK now
+    builds the STEP reader (`build_pinned_occt.py --toolkit TKDESTEP`, CI job
+    `pinned-step-oracle`).
+  * `step::import` builds OCCT's shape structure and converts it with the
+    `.brep` converter; every fixture body imports, validates and contains
+    the reference's measures within `1e-12` with OCCT's counts
+    (`tests/step.rs`); `compare_step.py` gives 22 matches, 0 reviewed
+    differences, 0 failures; the `step` fuzz target (no panic, typed errors,
+    determinism, validated bodies, `.brep` round trips).
+  * Local survey of the dataset's 336 STEP files (U1): no panic, 464 bodies
+    import; the constructs that stop the rest, in order, are B-spline curves
+    and surfaces (577 bodies), seamless periodic faces (106), extrusion and
+    revolution surfaces (165), non-straight pcurves on curved surfaces (35)
+    and ellipses (11) (`VALIDATION.md`).
+  * Next: STEP-b (ellipses; B-spline curves and surfaces with rational
+    complex instances, the file's `PCURVE`s on spline surfaces), then
+    seamless periodic faces (windings from the derived pcurves), the swept
+    surfaces, and placements; STEP-c the recorded corpus survey.
 * S8 — in progress: decisions recorded (2026-09-28).
   * S8a.1 implemented: the quadrature reference and a
     `BRepAlgoAPI_Splitter` capture of 26 prisms came before

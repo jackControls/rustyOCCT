@@ -52,6 +52,8 @@ mod split;
 pub use split::check_split;
 mod tessellation;
 pub use tessellation::check_tessellation;
+mod step;
+pub use step::check_step;
 mod bezier_editing;
 pub use bezier_editing::{check_bezier_editing, profile_bezier_editing};
 #[path = "../../kernel/tests/support/bezier_reference.rs"]

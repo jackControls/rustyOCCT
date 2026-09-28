@@ -20,7 +20,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear','brep_validation','identity','history','split_merge','attributes','brep_io','analytic_intersections','tessellation','curve_surface','curve_curve','split']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear','brep_validation','identity','history','split_merge','attributes','brep_io','analytic_intersections','tessellation','curve_surface','curve_curve','split','step']
 STARTUP_SECONDS = 600
 MAX_STARTUP_SECONDS = 3600
 # surface_knots' retained CI corpus replays slower than the cap allows: 2,766 s
@@ -98,6 +98,17 @@ def seed_corpus(target):
         if not path.exists():
             path.write_bytes(data)
 
+    if target == 'step':
+        # Every authored STEP fixture (a first byte of 2 or more, the
+        # fixture, then its unmutated import or up to six mutations of its
+        # instances), a raw file and a raw data section.
+        for pick in range(22):
+            for k in range(4):
+                save(bytes([2, pick])+bytes((j*61+k*37+pick*11+5)%256 for j in range(48)))
+        save(b"\x00ISO-10303-21;HEADER;FILE_SCHEMA(('AUTOMOTIVE_DESIGN'));ENDSEC;DATA;"
+             b"#1=CARTESIAN_POINT('',(0.,0.,0.));ENDSEC;END-ISO-10303-21;")
+        save(b"\x01#1=MANIFOLD_SOLID_BREP('',#2);#2=CLOSED_SHELL('',());")
+        save(bytes([0]))
     if target == 'split':
         # Every profile kind and plane mode (parallel, through a vertex,
         # along an edge, tangent, normal, in a cap, oblique), both frames.

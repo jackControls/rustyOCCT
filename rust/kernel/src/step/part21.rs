@@ -207,6 +207,20 @@ impl Lexer<'_> {
                             self.at += 1;
                             break;
                         }
+                        // `\\` is a backslash, and `\S\` takes the next
+                        // character whatever it is, an apostrophe included;
+                        // both are kept raw.
+                        Some(b'\\') => {
+                            let n = match (self.text.get(self.at + 1), self.text.get(self.at + 2)) {
+                                (Some(b'\\'), _) => 2,
+                                (Some(b'S'), Some(b'\\')) if self.at + 3 < self.text.len() => 4,
+                                _ => 1,
+                            };
+                            let raw = &self.text[self.at..self.at + n];
+                            self.line += raw.iter().filter(|c| **c == b'\n').count();
+                            bytes.extend_from_slice(raw);
+                            self.at += n;
+                        }
                         Some(&c) => {
                             if c == b'\n' {
                                 self.line += 1;
@@ -531,6 +545,20 @@ mod tests {
             ]
         );
         assert!(x.instances[&2].records[0].parameters.is_empty());
+    }
+
+    #[test]
+    fn string_directives_stay_raw() {
+        let text = file("#1=A('A\\S\\'h','x\\\\','\\X2\\00E9\\X0\\');\n");
+        let x = read(text.as_bytes()).unwrap();
+        assert_eq!(
+            x.instances[&1].records[0].parameters,
+            [
+                Parameter::String("A\\S\\'h".into()),
+                Parameter::String("x\\\\".into()),
+                Parameter::String("\\X2\\00E9\\X0\\".into()),
+            ]
+        );
     }
 
     #[test]

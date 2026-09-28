@@ -222,3 +222,10 @@ path = "fuzz_targets/tessellation.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "step"
+path = "fuzz_targets/step.rs"
+test = false
+doc = false
+bench = false

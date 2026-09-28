@@ -10,9 +10,9 @@ reads each file with `STEPControl_Reader` at its defaults. The native bodies
 must be the reference's (matched by centre), valid, with its counts, their
 volumes and areas within 1e-9 relative (BRepGProp's accuracy) and centres
 within 1e-9 of the case's size. `--capture` records the native observations
-before the kernel's importer exists; later runs must reproduce them (on
-another platform, its reviewed record). Differences need a fingerprinted
-review. The kernel's bodies (`step_probe`) must be the reference's, valid,
+before the kernel's importer exists; later runs must reproduce them on every
+platform (counts and verdicts exactly, measures within 1e-9). Differences
+need a fingerprinted review. The kernel's bodies (`step_probe`) must be the reference's, valid,
 with enclosures containing the reference's measures up to 1e-12 relative
 (the file's decimal data are binary64: a surface and its edges agree only
 to rounding), and OCCT's up to 1e-9, and their synthesized OCCT counts must
@@ -28,7 +28,6 @@ import sys
 from build_pinned_occt import SOURCE, digest
 from compare_brep import review_for, run, sha, write
 from compare_brep_io import build
-from compare_curve_surface import platform_record
 from compare_degree_elevation import verify_sdk
 from compare_occt import ROOT
 import generate_step_fixtures as fixtures
@@ -207,7 +206,10 @@ def captured(observed):
                 raise ValueError('STEP evidence changed: '+name)
         if (CAPTURE/'inputs.txt').read_text() != native_input():
             raise ValueError('the native inputs differ from the captured ones')
-        was = parse_native(platform_record(CAPTURE, metadata))
+        # Reading these files is not near any degeneracy: every platform must
+        # reproduce the capture's counts and verdicts exactly and its measures
+        # within 1e-9 (VALIDATION.md's allowance table), no platform record.
+        was = parse_native((CAPTURE/'native.txt').read_text())
         if set(was) != set(observed):
             raise ValueError('native cases differ from the capture')
         for name, (status, bodies) in was.items():

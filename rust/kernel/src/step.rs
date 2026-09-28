@@ -4,8 +4,10 @@
 //! of `REVIEW_NOTES.md`).
 use std::fmt;
 
+mod import;
 pub mod part21;
 
+pub use import::{import, Item, StepBody, StepImport};
 pub use part21::{read, Exchange, Instance, Parameter, Record};
 
 /// A malformed exchange structure, or one of a schema the importer does not
