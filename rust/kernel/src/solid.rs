@@ -56,6 +56,8 @@ enum Construction {
         angle: f64,
         tolerance: Tolerance,
     },
+    /// A piece of a prism split by a plane oblique to its axis (S8a.2).
+    Clipped(Box<split::Clipped>),
 }
 
 /// An immutable, validated normal extrusion of one planar material region,
@@ -279,6 +281,9 @@ impl Solid {
             } => Self::build_torus(
                 operation, frame, *major, *minor, *low, *high, *angle, *tolerance,
             ),
+            Construction::Clipped(clipped) => {
+                clipped.rebuilt(operation, frame, self.start, self.end)
+            }
         }
     }
 
@@ -646,6 +651,9 @@ impl Solid {
             Construction::Sphere { .. } => Err(Error::OutOfDomain(
                 "split and fuse rebuild prisms; this solid is a sphere",
             )),
+            Construction::Clipped(_) => Err(Error::OutOfDomain(
+                "a prism operation on a split piece (S8b)",
+            )),
             Construction::Torus { .. } => Err(Error::OutOfDomain(
                 "split and fuse rebuild prisms; this solid is a torus",
             )),
@@ -754,13 +762,15 @@ impl Solid {
             Construction::Prism(profile) => Some(profile),
             Construction::Cone { .. }
             | Construction::Sphere { .. }
-            | Construction::Torus { .. } => None,
+            | Construction::Torus { .. }
+            | Construction::Clipped(_) => None,
         }
     }
     /// The body's resolution.
     pub fn resolution(&self) -> Tolerance {
         match &self.construction {
             Construction::Prism(profile) => profile.tolerance(),
+            Construction::Clipped(clipped) => clipped.tolerance(),
             Construction::Cone { tolerance, .. }
             | Construction::Sphere { tolerance, .. }
             | Construction::Torus { tolerance, .. } => *tolerance,
@@ -802,6 +812,10 @@ impl Solid {
         let [x, y, z] = self.frame.coordinates(point);
         let profile = match &self.construction {
             Construction::Prism(profile) => profile,
+            Construction::Clipped(clipped) => {
+                let (low, high) = (self.start.min(self.end), self.start.max(self.end));
+                return clipped.classify([x, y, z], low, high, tolerance);
+            }
             Construction::Cone { bottom, top, .. } => {
                 let z = finite(z, "axial coordinate")?;
                 let local = [finite(x, "coordinate")?, finite(y, "coordinate")?, z];

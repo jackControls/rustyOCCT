@@ -351,20 +351,20 @@ fn trig_integral<T: Real>(cos_power: u8, sin_power: u8, t0: &T, t1: &T) -> Optio
     Some(total)
 }
 
-/// `-integral of F du` along a plane arc: `u = cx + r cos t`,
-/// `v = cy + r sin t`, so `-F du = F r sin t dt`.
+/// `-integral of F du` along a plane arc or axis-aligned ellipse arc:
+/// `u = cx + rx cos t`, `v = cy + ry sin t`, so `-F du = F rx sin t dt`.
 fn planar_arc<T: Real>(
     f: &Planar<T>,
     center: [T; 2],
-    radius: f64,
+    [rx, ry]: [f64; 2],
     start: f64,
     sweep: f64,
 ) -> Option<T> {
-    let rad = c::<T>(radius);
+    let rad = c::<T>(rx);
     // Polynomials in (cos t, sin t).
     let [cu, cv] = center;
     let u: Planar<T> = [((0, 0), cu), ((1, 0), rad.clone())].into_iter().collect();
-    let v: Planar<T> = [((0, 0), cv), ((0, 1), rad.clone())].into_iter().collect();
+    let v: Planar<T> = [((0, 0), cv), ((0, 1), c(ry))].into_iter().collect();
     let pow = |base: &Planar<T>, n: u8| {
         let mut out: Planar<T> = [((0, 0), c(1.0))].into_iter().collect();
         for _ in 0..n {
@@ -382,6 +382,44 @@ fn planar_arc<T: Real>(
         }
     }
     Some(total)
+}
+
+/// `-integral of F du` along `v = a0 + a1 cos u + a2 sin u` from `start`
+/// over `sweep` on a cylinder, for every `F` of `fs`: each monomial
+/// `v^k cos^p u sin^q u` is a polynomial in `(cos u, sin u)` integrated
+/// exactly.
+fn rev_sinusoid<T: Real>(fs: &[Rev<T>], start: f64, sweep: f64, a: &[f64; 3]) -> Option<Vec<T>> {
+    let u0 = c::<T>(start);
+    let u1 = u0.add(&c(sweep));
+    let v: Planar<T> = [((0, 0), c(a[0])), ((1, 0), c(a[1])), ((0, 1), c(a[2]))]
+        .into_iter()
+        .collect();
+    let mut powers: Vec<Planar<T>> = vec![[((0, 0), c(1.0))].into_iter().collect()];
+    let mut integrals: BTreeMap<(u8, u8), T> = BTreeMap::new();
+    let mut out = Vec::with_capacity(fs.len());
+    for f in fs {
+        let mut total = c::<T>(0.0);
+        for ((k, p, qq), x) in f {
+            while powers.len() <= usize::from(*k) {
+                let next = planar_mul(powers.last().expect("one"), &v);
+                powers.push(next);
+            }
+            for ((i, j), y) in &powers[usize::from(*k)] {
+                let key = (i + p, j + qq);
+                let value = match integrals.get(&key) {
+                    Some(value) => value.clone(),
+                    None => {
+                        let value = trig_integral::<T>(key.0, key.1, &u0, &u1)?;
+                        integrals.insert(key, value.clone());
+                        value
+                    }
+                };
+                total = total.add(&x.mul(y).mul(&value));
+            }
+        }
+        out.push(total.neg());
+    }
+    Some(out)
 }
 
 /// `-integral of F du` along the line from `a` to `b` on a surface of
@@ -703,7 +741,9 @@ fn trig_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>]) -> Option<Vec<T>
                     accumulate(values);
                     continue;
                 }
-                Curve2::CircularArc { .. } => return None,
+                Curve2::CircularArc { .. }
+                | Curve2::EllipseArc { .. }
+                | Curve2::Sinusoid { .. } => return None,
             };
             accumulate(sph_lines(
                 fs,
@@ -828,11 +868,25 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
                         } => planar_arc(
                             &anti[k],
                             at(center.x, center.y),
-                            *radius,
+                            [*radius; 2],
+                            *start_angle,
+                            *sweep_angle,
+                        ),
+                        Curve2::EllipseArc {
+                            center,
+                            major,
+                            minor,
+                            start_angle,
+                            sweep_angle,
+                        } => planar_arc(
+                            &anti[k],
+                            at(center.x, center.y),
+                            [*major, *minor],
                             *start_angle,
                             *sweep_angle,
                         ),
                         Curve2::BSpline(spline) => planar_spline(&anti[k], spline, &o),
+                        Curve2::Sinusoid { .. } => None,
                     });
                     accumulate(values.try_map_all()?);
                 }
@@ -936,7 +990,10 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
                                 .map(|x| x.neg())
                                 .collect()
                         }
-                        Curve2::CircularArc { .. } => return None,
+                        Curve2::Sinusoid { start, sweep, a } => {
+                            rev_sinusoid(&anti, *start, *sweep, a)?
+                        }
+                        Curve2::CircularArc { .. } | Curve2::EllipseArc { .. } => return None,
                     };
                     accumulate(values.try_into().ok()?);
                 }
@@ -1157,7 +1214,8 @@ fn curve_moments<T: Real>(curve: &Curve3, reference: &V3<T>) -> Option<(T, V3<T>
             });
             Some((length, moment))
         }
-        Curve3::BSpline(_) => None,
+        // An ellipse's length is an elliptic integral.
+        Curve3::BSpline(_) | Curve3::EllipseArc { .. } => None,
     }
 }
 

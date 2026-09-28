@@ -1588,5 +1588,28 @@ the first fixture, never deferred.
     split, parallel ones through the profile's exact section by the line and
     prisms renamed by provenance (`PlaneSplit`); the kernel inside the
     reference on the 13 such cases, two reviewed count differences (OCCT's
-    tangent split and seam); fuzz target `split`. S8a.2 (oblique planes) next.
+    tangent split and seam); fuzz target `split`.
+  * S8a.2 implemented (`solid/split/oblique.rs`): a prism split by a plane
+    oblique to its axis, each piece a footprint (the profile's exact section
+    by the plane's trace on one cap's plane) with a creased end (its section
+    by the trace on the other), built as a general body and validated; new
+    kinds `Curve3::EllipseArc`, `Curve2::EllipseArc` (axis-aligned on a
+    plane) and `Curve2::Sinusoid` (a plane's section on a cylinder) through
+    validation (the harmonic bound certifies an ellipse edge against both
+    its pcurves), mass properties, tessellation, `.brep` I/O (OCCT's
+    ellipse records; a sinusoid pcurve is `Unwritable`, OCCT having no
+    analytic record for it), history (`Family::Ellipse`) and the
+    intersections (an ellipse edge's whole ellipse). The kernel inside the
+    reference on all 26 cases, 23 native matches and 3 reviewed (a seam
+    through the touch point where a plane meets both caps' circles).
+    Decisions taken in implementation, none a user decision: a plane
+    touching a cap's circle keeps a vertex where the wall's height vanishes
+    (a non-winding loop round the cylinder); one touching a cap's arc edge
+    between its ends, or whose traces on the two caps lie within the
+    resolution of each other (parallel to the axis to binary64, as planes
+    "parallel" to a tilted frame's axis are), is `Degenerate`; pieces are
+    `Construction::Clipped` (profile, plane in the frame, index, footprint)
+    so a rigid motion rebuilds them and they classify points; the mesher
+    accepts a vertex twice on one loop when the two uses lie a period apart
+    on the cover.
 * S9 — pending

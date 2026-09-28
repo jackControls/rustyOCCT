@@ -470,6 +470,36 @@ mod tests {
     }
 
     #[test]
+    fn fast_atan2_encloses_the_exact_angle() {
+        for &(y, x) in &[
+            (1.0, 2.0),
+            (2.0, -1.0),
+            (-2.0, -1.0),
+            (-1.0, 3.0),
+            (0.0, 1.0),
+            (5.0, 0.0),
+            (1e-300, 1.0),
+            (3.0, 1e-12),
+            (-7.5, -1e-9),
+            (0.3, 0.3),
+        ] {
+            let f = Fast::atan2(&Fast::exact_f64(y), &Fast::exact_f64(x)).unwrap();
+            let e = atan2(&Interval::exact_f64(y), &Interval::exact_f64(x)).unwrap();
+            // Both certified: they meet, and the binary64 one is tight.
+            let (lo, hi) = f.bounds_f64();
+            assert!(
+                R::from_float(lo).unwrap() <= *e.hi() && *e.lo() <= R::from_float(hi).unwrap(),
+                "{y} {x}: {lo} {hi}"
+            );
+            assert!(
+                hi - lo <= 1e-14 * hi.abs().max(1e-300),
+                "{y} {x}: {lo} {hi}"
+            );
+        }
+        assert!(Fast::atan2(&Fast::exact_f64(0.0), &Fast::exact_f64(-1.0)).is_none());
+    }
+
+    #[test]
     fn atan2_covers_all_quadrants_and_refuses_the_branch_cut() {
         for &(y, x) in &[
             (1.0, 2.0),
@@ -782,10 +812,17 @@ impl Real for Fast {
         }
     }
     fn atan2(y: &Self, x: &Self) -> Option<Self> {
-        let to = |f: &Self| -> Option<Interval> {
-            Some(Interval::new(R::from_float(f.lo)?, R::from_float(f.hi)?))
-        };
-        Some(Self::from_interval(&atan2(&to(y)?, &to(x)?)?))
+        let half = fast_half_pi();
+        if x.lo > 0.0 {
+            return Some(fast_atan(&y.div(x)?));
+        }
+        if y.lo > 0.0 {
+            return Some(half.sub(&fast_atan(&x.div(y)?)));
+        }
+        if y.hi < 0.0 {
+            return Some(half.neg().sub(&fast_atan(&x.div(y)?)));
+        }
+        None
     }
     fn bounds_f64(&self) -> (f64, f64) {
         (self.lo, self.hi)
@@ -930,6 +967,60 @@ fn fast_half_pi() -> Fast {
     Fast {
         lo: std::f64::consts::FRAC_PI_2,
         hi: next_up(std::f64::consts::FRAC_PI_2),
+    }
+}
+
+/// Certified binary64 atan over an interval (monotone): each end's
+/// enclosure. Beyond 1 by `pi/2 - atan(1/t)`; then two halvings
+/// `atan t = 2 atan(t / (1 + sqrt(1 + t^2)))` bring `|t|` under
+/// `tan(pi/16) < 0.2`, where the alternating series' remainder is at most
+/// its next term.
+fn fast_atan(z: &Fast) -> Fast {
+    let at = |t: f64| -> Fast {
+        if !t.is_finite() {
+            let half = fast_half_pi();
+            return if t > 0.0 { half } else { half.neg() };
+        }
+        let t = Fast::exact_f64(t);
+        let (t, flip) = if t.lo.abs() > 1.0 {
+            (Fast::exact_f64(1.0).div(&t).expect("nonzero"), true)
+        } else {
+            (t, false)
+        };
+        let one = Fast::exact_f64(1.0);
+        let mut u = t;
+        for _ in 0..2 {
+            let d = one.add(&one.add(&u.square()).sqrt());
+            u = u.div(&d).expect("positive");
+        }
+        let u2 = u.square();
+        let (mut sum, mut term) = (Fast::exact_f64(0.0), u);
+        const TERMS: usize = 14;
+        for k in 0..TERMS {
+            let piece = term
+                .div(&Fast::exact_f64((2 * k + 1) as f64))
+                .expect("positive");
+            sum = if k % 2 == 0 {
+                sum.add(&piece)
+            } else {
+                sum.sub(&piece)
+            };
+            term = term.mul(&u2);
+        }
+        let m = term.lo.abs().max(term.hi.abs()) / (2 * TERMS + 1) as f64;
+        let angle = sum.add(&Fast::out(-m, m)).mul(&Fast::exact_f64(4.0));
+        if !flip {
+            angle
+        } else if t.lo > 0.0 {
+            fast_half_pi().sub(&angle)
+        } else {
+            fast_half_pi().neg().sub(&angle)
+        }
+    };
+    let (lo, hi) = (at(z.lo), at(z.hi));
+    Fast {
+        lo: lo.lo.min(hi.lo),
+        hi: lo.hi.max(hi.hi),
     }
 }
 

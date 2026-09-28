@@ -495,7 +495,9 @@ fn enclosed_green<T: Real>(
                     let values = super::bernstein::green_integrals(spline, PIECES, &g)?;
                     axpy(&mut total, values, &minus_one);
                 }
-                Curve2::CircularArc { .. } => return None,
+                Curve2::CircularArc { .. }
+                | Curve2::EllipseArc { .. }
+                | Curve2::Sinusoid { .. } => return None,
             }
         }
         for (a, b) in super::chords::<T>(lp) {

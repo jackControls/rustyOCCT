@@ -296,16 +296,24 @@ fn cos_sin_i<T: Real>(u: &T) -> (T, T) {
     T::cos_sin(u)
 }
 
-/// (start, sweep) of an arc; a full circle is the arc from 0 with sweep TAU.
-fn arc_of(c: &Curve3) -> Option<(&Frame3, f64, f64, f64)> {
+/// (frame, semi-axes along x and y, start, sweep) of an arc or an ellipse
+/// arc; a full circle is the arc from 0 with sweep TAU.
+fn arc_of(c: &Curve3) -> Option<(&Frame3, [f64; 2], f64, f64)> {
     match c {
-        Curve3::Circle { frame, radius } => Some((frame, *radius, 0.0, TAU)),
+        Curve3::Circle { frame, radius } => Some((frame, [*radius; 2], 0.0, TAU)),
         Curve3::CircularArc {
             frame,
             radius,
             start_angle,
             sweep_angle,
-        } => Some((frame, *radius, *start_angle, *sweep_angle)),
+        } => Some((frame, [*radius; 2], *start_angle, *sweep_angle)),
+        Curve3::EllipseArc {
+            frame,
+            major,
+            minor,
+            start_angle,
+            sweep_angle,
+        } => Some((frame, [*major, *minor], *start_angle, *sweep_angle)),
         Curve3::LineSegment { .. } | Curve3::BSpline(_) => None,
     }
 }
@@ -371,13 +379,15 @@ fn curve_at<T: Real>(curve: &Curve3, t: f64) -> V3<T> {
             vadd(&a, &vscale(&vsub(&b, &a), &c(t)))
         }
         _ => {
-            let (f, radius, start, sweep) = arc_of(curve).unwrap();
+            let (f, [rx, ry], start, sweep) = arc_of(curve).unwrap();
             let fr = frame::<T>(f);
             let (co, si) = T::cos_sin(&c::<T>(start).add(&c::<T>(sweep).mul(&c(t))));
-            let rad = c::<T>(radius);
             vadd(
                 &fr.o,
-                &vadd(&vscale(&fr.x, &rad.mul(&co)), &vscale(&fr.y, &rad.mul(&si))),
+                &vadd(
+                    &vscale(&fr.x, &c::<T>(rx).mul(&co)),
+                    &vscale(&fr.y, &c::<T>(ry).mul(&si)),
+                ),
             )
         }
     }
@@ -412,6 +422,28 @@ fn pcurve_at<T: Real>(p: &Curve2, t: f64) -> V2<T> {
                 c::<T>(center.x).add(&rad.mul(&co)),
                 c::<T>(center.y).add(&rad.mul(&si)),
             ]
+        }
+        Curve2::EllipseArc {
+            center,
+            major,
+            minor,
+            start_angle,
+            sweep_angle,
+        } => {
+            let angle = c::<T>(*start_angle).add(&c::<T>(*sweep_angle).mul(&c(t)));
+            let (co, si) = T::cos_sin(&angle);
+            [
+                c::<T>(center.x).add(&c::<T>(*major).mul(&co)),
+                c::<T>(center.y).add(&c::<T>(*minor).mul(&si)),
+            ]
+        }
+        Curve2::Sinusoid { start, sweep, a } => {
+            let u = c::<T>(*start).add(&c::<T>(*sweep).mul(&c(t)));
+            let (co, si) = T::cos_sin(&u);
+            let v = c::<T>(a[0])
+                .add(&c::<T>(a[1]).mul(&co))
+                .add(&c::<T>(a[2]).mul(&si));
+            [u, v]
         }
     }
 }
@@ -760,20 +792,19 @@ fn add_curve<T: Real>(h: &mut Harmonic<T>, curve: &Curve3, forward: bool) -> boo
             }
         }
         _ => {
-            let (f, radius, start, sweep) = arc_of(curve).unwrap();
+            let (f, [rx, ry], start, sweep) = arc_of(curve).unwrap();
             let fr = frame::<T>(f);
             let (mut alpha, mut omega) = (c::<T>(start), r(sweep));
             if !forward {
                 alpha = alpha.add(&c(sweep));
                 omega = -omega;
             }
-            let rad = c::<T>(radius);
             h.affine(&fr.o, &zero3(), true);
             h.rotating(
                 &alpha,
                 &omega,
-                &vscale(&fr.x, &rad),
-                &vscale(&fr.y, &rad),
+                &vscale(&fr.x, &c(rx)),
+                &vscale(&fr.y, &c(ry)),
                 true,
             );
         }
@@ -821,6 +852,46 @@ fn sub_use<T: Real>(h: &mut Harmonic<T>, s: &Surface, p: &Curve2) -> bool {
             );
             true
         }
+        (
+            Surface::Plane(f),
+            Curve2::EllipseArc {
+                center,
+                major,
+                minor,
+                start_angle,
+                sweep_angle,
+            },
+        ) => {
+            let fr = frame::<T>(f);
+            let base = vadd(
+                &fr.o,
+                &vadd(&vscale(&fr.x, &c(center.x)), &vscale(&fr.y, &c(center.y))),
+            );
+            h.affine(&base, &zero3(), false);
+            h.rotating(
+                &c(*start_angle),
+                &r(*sweep_angle),
+                &vscale(&fr.x, &c(*major)),
+                &vscale(&fr.y, &c(*minor)),
+                false,
+            );
+            true
+        }
+        // O + a0 n + cos u (R x + a1 n) + sin u (R y + a2 n).
+        (Surface::Cylinder { frame: f, radius }, Curve2::Sinusoid { start, sweep, a }) => {
+            let fr = frame::<T>(f);
+            let rad = c::<T>(*radius);
+            h.affine(&vadd(&fr.o, &vscale(&fr.n, &c(a[0]))), &zero3(), false);
+            h.rotating(
+                &c(*start),
+                &r(*sweep),
+                &vadd(&vscale(&fr.x, &rad), &vscale(&fr.n, &c(a[1]))),
+                &vadd(&vscale(&fr.y, &rad), &vscale(&fr.n, &c(a[2]))),
+                false,
+            );
+            true
+        }
+        (_, Curve2::EllipseArc { .. } | Curve2::Sinusoid { .. }) => false,
         (Surface::Cylinder { frame: f, radius }, Curve2::LineSegment { start, end }) => {
             let fr = frame::<T>(f);
             let dv = c::<T>(end.y).sub(&c(start.y));
@@ -1042,9 +1113,10 @@ fn curve_valid(curve: &Curve3, tol: &R, fast_tol2: &Fast, exact_tol2: &I) -> boo
             })
         }
         _ => {
-            let (_, radius, start, sweep) = arc_of(curve).unwrap();
-            finite(&[radius, start, sweep])
-                && r(radius) > *tol
+            let (_, [rx, ry], start, sweep) = arc_of(curve).unwrap();
+            finite(&[rx, ry, start, sweep])
+                && r(rx) > *tol
+                && r(ry) > *tol
                 && sweep != 0.0
                 && sweep.abs() <= TAU
         }
@@ -1100,6 +1172,28 @@ fn pcurve_valid(p: &Curve2) -> bool {
         Curve2::BSpline(span) => {
             let poles = span.curve().poles();
             poles.iter().any(|p| (p.x, p.y) != (poles[0].x, poles[0].y))
+        }
+        Curve2::EllipseArc {
+            center,
+            major,
+            minor,
+            start_angle,
+            sweep_angle,
+        } => {
+            finite(&[
+                center.x,
+                center.y,
+                *major,
+                *minor,
+                *start_angle,
+                *sweep_angle,
+            ]) && *major > 0.0
+                && *minor > 0.0
+                && *sweep_angle != 0.0
+                && sweep_angle.abs() <= TAU
+        }
+        Curve2::Sinusoid { start, sweep, a } => {
+            finite(&[*start, *sweep, a[0], a[1], a[2]]) && *sweep != 0.0 && sweep.abs() <= TAU
         }
     }
 }
@@ -1157,7 +1251,7 @@ fn pcurve_end_exact(p: &Curve2, t: f64) -> Option<[R; 2]> {
             let [x, y, _] = spline_point(span.curve().as_curve3(), span.range(), t);
             Some([x, y])
         }
-        Curve2::CircularArc { .. } => None,
+        Curve2::CircularArc { .. } | Curve2::EllipseArc { .. } | Curve2::Sinusoid { .. } => None,
     }
 }
 
@@ -1505,7 +1599,59 @@ fn area_term<T: Real>(p: &Curve2, o: &[R; 2]) -> T {
         // Undecidable (a weight not certainly positive): any sign.
         Curve2::BSpline(spline) => bernstein::twice_area(spline, o)
             .unwrap_or_else(|| T::exact_f64(0.0).widen(&R::from_integer(BigInt::from(1) << 1000))),
+        // The circle's terms with the radius along u and along v.
+        Curve2::EllipseArc {
+            center,
+            major,
+            minor,
+            start_angle,
+            sweep_angle,
+        } => {
+            let a0 = c::<T>(*start_angle);
+            let a1 = a0.add(&c(*sweep_angle));
+            let ((c0, s0), (c1, s1)) = (T::cos_sin(&a0), T::cos_sin(&a1));
+            let (rx, ry) = (c::<T>(*major), c::<T>(*minor));
+            ry.mul(&c::<T>(center.x).sub(&ou).mul(&s1.sub(&s0)))
+                .sub(&rx.mul(&c::<T>(center.y).sub(&ov).mul(&c1.sub(&c0))))
+                .add(&rx.mul(&ry).mul(&c(*sweep_angle)))
+        }
+        // With w = u - o_u: a1 w cos u + a2 w sin u - 2 a1 sin u + 2 a2 cos u
+        // between the ends, less (a0 - o_v) times the sweep.
+        Curve2::Sinusoid { start, sweep, a } => {
+            let (a1, a2) = (c::<T>(a[1]), c::<T>(a[2]));
+            let g = |u: &T| {
+                let (co, si) = T::cos_sin(u);
+                let w = u.sub(&ou);
+                a1.mul(&w)
+                    .mul(&co)
+                    .add(&a2.mul(&w).mul(&si))
+                    .sub(&a1.mul(&si).mul(&c(2.0)))
+                    .add(&a2.mul(&co).mul(&c(2.0)))
+            };
+            let u0 = c::<T>(*start);
+            let u1 = u0.add(&c(*sweep));
+            g(&u1)
+                .sub(&g(&u0))
+                .sub(&c::<T>(a[0]).sub(&ov).mul(&c(*sweep)))
+        }
     }
+}
+
+/// `-∫ v du` and `∫ u dv` along a sinusoid, in closed form.
+fn sinusoid_areas<T: Real>(start: f64, sweep: f64, a: &[f64; 3]) -> (T, T) {
+    let u0 = c::<T>(start);
+    let u1 = u0.add(&c(sweep));
+    let ((c0, s0), (c1, s1)) = (T::cos_sin(&u0), T::cos_sin(&u1));
+    let (a0, a1, a2) = (c::<T>(a[0]), c::<T>(a[1]), c::<T>(a[2]));
+    let minus_v_du = a0
+        .mul(&c(sweep))
+        .add(&a1.mul(&s1.sub(&s0)))
+        .sub(&a2.mul(&c1.sub(&c0)))
+        .neg();
+    // ∫ u (-a1 sin u + a2 cos u) du = a1 (u cos u - sin u) + a2 (u sin u + cos u).
+    let f = |u: &T, co: &T, si: &T| a1.mul(&u.mul(co).sub(si)).add(&a2.mul(&u.mul(si).add(co)));
+    let u_dv = f(&u1, &c1, &s1).sub(&f(&u0, &c0, &s0));
+    (minus_v_du, u_dv)
 }
 
 /// The chords closing a loop exactly: each fin's end to the next fin's
@@ -1560,7 +1706,8 @@ fn periodic_area<T: Real>(lp: &Lp) -> Option<T> {
                 term(&[c(start.x), c(start.y)], &[c(end.x), c(end.y)])
             }
             Curve2::BSpline(spline) => bernstein::minus_v_du(spline)?,
-            Curve2::CircularArc { .. } => return None,
+            Curve2::Sinusoid { start, sweep, a } => sinusoid_areas::<T>(*start, *sweep, a).0,
+            Curve2::CircularArc { .. } | Curve2::EllipseArc { .. } => return None,
         });
     }
     for (a, b) in chords::<T>(lp) {
@@ -1580,7 +1727,8 @@ fn periodic_area_v<T: Real>(lp: &Lp) -> Option<T> {
                 term(&[c(start.x), c(start.y)], &[c(end.x), c(end.y)])
             }
             Curve2::BSpline(spline) => bernstein::u_dv(spline)?,
-            Curve2::CircularArc { .. } => return None,
+            Curve2::Sinusoid { start, sweep, a } => sinusoid_areas::<T>(*start, *sweep, a).1,
+            Curve2::CircularArc { .. } | Curve2::EllipseArc { .. } => return None,
         });
     }
     for (a, b) in chords::<T>(lp) {
@@ -1615,6 +1763,29 @@ fn crossings<T: Real>(loops: &[&Lp], p: &V2<T>) -> Option<u32> {
                     p,
                 )?,
                 Curve2::BSpline(spline) => bernstein::crossing_parity(spline, p)?,
+                // An axis-aligned ellipse's crossings are its unit circle's
+                // after scaling each axis about the centre.
+                Curve2::EllipseArc {
+                    center,
+                    major,
+                    minor,
+                    start_angle,
+                    sweep_angle,
+                } => {
+                    let scaled = [
+                        p[0].sub(&c(center.x)).div(&c(*major))?,
+                        p[1].sub(&c(center.y)).div(&c(*minor))?,
+                    ];
+                    let zero = R::from_integer(0.into());
+                    arc_crossings(
+                        [zero.clone(), zero],
+                        &int(1),
+                        &r(*start_angle),
+                        &r(*sweep_angle),
+                        &scaled,
+                    )?
+                }
+                Curve2::Sinusoid { .. } => return None,
             };
         }
     }
@@ -1881,7 +2052,9 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp], origin: &V3<T>) -> Option<T> {
                             total.add(&bernstein::green_integral(spline, SPLINE_DEPTH, &g)?.neg());
                         continue;
                     }
-                    Curve2::CircularArc { .. } => return None,
+                    Curve2::CircularArc { .. }
+                    | Curve2::EllipseArc { .. }
+                    | Curve2::Sinusoid { .. } => return None,
                 };
                 let term = cone_line_flux(
                     &[c(start.x), c(start.y)],
@@ -1979,6 +2152,33 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp], origin: &V3<T>) -> Option<T> {
                     );
                     coeffs.2.mul(&first.add(&second))
                 }
+                // h integral of (cy + ry sin t) rx sin t dt.
+                Curve2::EllipseArc {
+                    center,
+                    major,
+                    minor,
+                    start_angle,
+                    sweep_angle,
+                } if plane => {
+                    let a0 = c::<T>(*start_angle);
+                    let a1 = a0.add(&c(*sweep_angle));
+                    let (c0, _) = T::cos_sin(&a0);
+                    let (c1, _) = T::cos_sin(&a1);
+                    let (_, t0) = T::cos_sin(&a0.mul(&c(2.0)));
+                    let (_, t1) = T::cos_sin(&a1.mul(&c(2.0)));
+                    let (rx, ry) = (c::<T>(*major), c::<T>(*minor));
+                    let first = c::<T>(center.y).sub(&shift).mul(&rx).mul(&c0.sub(&c1));
+                    let second = rx.mul(&ry).mul(
+                        &c::<T>(*sweep_angle)
+                            .mul(&c(0.5))
+                            .sub(&t1.sub(&t0).mul(&c(0.25))),
+                    );
+                    coeffs.2.mul(&first.add(&second))
+                }
+                // -∫ v (A sin u + B cos u + C) du on a cylinder, in closed form.
+                Curve2::Sinusoid { start, sweep, a } if !plane => {
+                    sinusoid_flux(*start, *sweep, a, &coeffs)
+                }
                 // On a plane, `h (-∮ v du)`.
                 Curve2::BSpline(spline) if plane => {
                     let about = [R::from_integer(0.into()), v0.clone()];
@@ -1996,7 +2196,9 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp], origin: &V3<T>) -> Option<T> {
                     };
                     bernstein::green_integral(spline, SPLINE_DEPTH, &f)?.neg()
                 }
-                Curve2::CircularArc { .. } => return None,
+                Curve2::CircularArc { .. }
+                | Curve2::EllipseArc { .. }
+                | Curve2::Sinusoid { .. } => return None,
             };
             total = total.add(&term);
         }
@@ -2024,6 +2226,37 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp], origin: &V3<T>) -> Option<T> {
         }
     }
     Some(total)
+}
+
+/// `-∫ v (A sin u + B cos u + C) du` along `v = a0 + a1 cos u + a2 sin u`
+/// from `start` over `sweep`, `(A, B, C)` the cylinder's flux coefficients.
+fn sinusoid_flux<T: Real>(start: f64, sweep: f64, a: &[f64; 3], k: &(T, T, T)) -> T {
+    let u0 = c::<T>(start);
+    let u1 = u0.add(&c(sweep));
+    let ((c0, s0), (c1, s1)) = (T::cos_sin(&u0), T::cos_sin(&u1));
+    let (_, t0) = T::cos_sin(&u0.mul(&c(2.0)));
+    let (_, t1) = T::cos_sin(&u1.mul(&c(2.0)));
+    let du = c::<T>(sweep);
+    // The integrals of sin, cos, sin cos, cos^2 and sin^2 between the ends.
+    let i_s = c0.sub(&c1);
+    let i_c = s1.sub(&s0);
+    let i_sc = s1.square().sub(&s0.square()).mul(&c(0.5));
+    let quarter = t1.sub(&t0).mul(&c(0.25));
+    let i_cc = du.mul(&c(0.5)).add(&quarter);
+    let i_ss = du.mul(&c(0.5)).sub(&quarter);
+    let (a0, a1, a2) = (c::<T>(a[0]), c::<T>(a[1]), c::<T>(a[2]));
+    let (ka, kb, kc) = k;
+    a0.mul(kc)
+        .mul(&du)
+        .add(&a0.mul(ka).mul(&i_s))
+        .add(&a0.mul(kb).mul(&i_c))
+        .add(&a1.mul(kc).mul(&i_c))
+        .add(&a1.mul(ka).mul(&i_sc))
+        .add(&a1.mul(kb).mul(&i_cc))
+        .add(&a2.mul(kc).mul(&i_s))
+        .add(&a2.mul(ka).mul(&i_ss))
+        .add(&a2.mul(kb).mul(&i_sc))
+        .neg()
 }
 
 /// The faces a shell lists on both sides: a sheet's (S6). They bound no
@@ -2328,7 +2561,24 @@ fn clear_of_boundary<T: Real>(
                     let r0 = d[0].square().add(&d[1].square()).sqrt();
                     far(&r0.sub(&c(*radius)).square())
                 }
-                Curve2::BSpline(_) => return None,
+                // An ellipse is the image of the unit circle under scalings
+                // by its semi-axes, which shrink distances by at most the
+                // minor one: clear beyond the margin over it.
+                Curve2::EllipseArc { .. } if periodic => return None,
+                Curve2::EllipseArc {
+                    center,
+                    major,
+                    minor,
+                    ..
+                } => {
+                    let d = [
+                        p[0].sub(&c(center.x)).div(&c(*major))?,
+                        p[1].sub(&c(center.y)).div(&c(*minor))?,
+                    ];
+                    let r0 = d[0].square().add(&d[1].square()).sqrt();
+                    far(&r0.sub(&c(1.0)).square().mul(&c::<T>(*minor).square()))
+                }
+                Curve2::BSpline(_) | Curve2::Sinusoid { .. } => return None,
             };
             if !clear {
                 return Some(false);
@@ -2342,7 +2592,9 @@ fn clear_of_boundary<T: Real>(
 fn closed_curve(curve: &Curve3) -> bool {
     match curve {
         Curve3::Circle { .. } => true,
-        Curve3::CircularArc { sweep_angle, .. } => sweep_angle.abs() == TAU,
+        Curve3::CircularArc { sweep_angle, .. } | Curve3::EllipseArc { sweep_angle, .. } => {
+            sweep_angle.abs() == TAU
+        }
         Curve3::LineSegment { .. } => false,
         // A spline ring edge is a full period; its seam is tested for C1.
         Curve3::BSpline(span) => span.is_closed_period(),

@@ -15,15 +15,21 @@ wall) or lying in one of its faces returns the solid itself, every entity
 `Unchanged`. A side may hold several pieces (a U's two prongs). Each piece is
 a validated solid; an error is one of:
 
-* `OutOfDomain`: a solid or plane of a later sub-step (S8a.2: planes oblique
-  to a prism's axis; S8c: primitives).
+* `OutOfDomain`: a solid of a later sub-step (S8b: spline prisms; S8c:
+  primitives; a split piece split again).
 * `Degenerate`: the split would leave an edge or a piece thinner than the
   resolution (a crossing within the resolution of a vertex, a plane within
-  binary64 of a cap), or pinch a piece (a plane tangent to a hole, or
-  touching the profile at a vertex, inside the solid): a profile cannot hold
-  a hole touching its boundary.
+  binary64 of a cap, a vertex within the resolution of the plane, a plane
+  whose traces on the two caps' planes lie within the resolution of each
+  other: parallel to the axis over the prism's height to binary64), or
+  pinch a piece (a plane tangent to a hole, or touching the profile at a
+  vertex, inside the solid; an oblique plane touching a cap's arc edge
+  between its ends): a profile cannot hold a hole touching its boundary.
 * `ComputationLimit`: a certified comparison it could not decide (an arc's
   crossing at its end).
+* `PrecisionLoss`: a new point the coordinates cannot resolve (the centre
+  of an ellipse where a steep plane meets a wall's axis far from the
+  solid).
 
 ## Prisms (S8a.1)
 
@@ -55,7 +61,40 @@ coefficients exact rationals of the stored data (the frame's axes as stored).
   `Generated` from the caps and the walls their chord meets, cut edges from
   the cap they cut, new vertical edges from the wall they cut and new cap
   vertices from the cap edge they cut (history `PlaneSplit`).
-* **Oblique** planes (S8a.2) build general bodies with ellipse-arc edges.
+* **Oblique** (S8a.2, `solid/split/oblique.rs`): over a profile point the
+  material under the plane along the axis spans `[low, min(high, g)]`,
+  `g = -(a u + b v + d) / c`, and the material over it `[max(low, g),
+  high]`. A lower piece's footprint is a piece of the profile's exact
+  section by the plane's trace on the bottom cap's plane (where its height
+  vanishes: those chords are edges where its bottom cap meets its cut
+  face), and its top is that footprint's section by the trace on the top
+  cap's plane: top-cap faces where `g >= high`, cut faces on the plane where
+  `g <= high`; an upper piece is the same with the ends exchanged. Walls run
+  over the footprint's boundary from its flat end to its creased one: a
+  planar wall's top is a line on the plane, a cylindrical wall's an ellipse
+  arc (`Curve3::EllipseArc`, OCCT's `Geom_Ellipse`: its centre where the
+  plane meets the wall's axis, its major axis the plane's steepest ascent,
+  `major = r |m| / |c|`, `minor = r`, its angle the circle's less the angle
+  of `(a, b)`) whose pcurve is the graph `v = a0 + a1 cos u + a2 sin u`
+  (`Curve2::Sinusoid`), and on the cut face an axis-aligned
+  `Curve2::EllipseArc`. A plane touching a cap's circle at a point leaves a
+  vertex there, where the wall's height vanishes (its loop runs once round
+  the cylinder from it and back, not winding). Every side, crossing and
+  tangency is decided exactly by the two sections; new vertices, heights,
+  ellipses and pcurves are rounded from exact values, and each piece is a
+  general body (`Topology::from_parts_named`: measured, then the whole
+  contract checked). Names follow provenance: an input entity whole in one
+  piece keeps its id (`Unchanged`, or `Modified` when its stored geometry or
+  bounding ids changed: a cap circle given its touch vertex), one in several
+  pieces or in parts is `Split` (vertices and edges lying in the plane into
+  copies), cut vertices, edges and faces are `Generated` from the input
+  entities they cut. A piece keeps its construction (the prism's profile,
+  the plane in its frame, its index), so a rigid motion rebuilds it exactly
+  and it classifies points by its footprint, the height range and the
+  plane's side. It tessellates within the request (the ellipse's curvature
+  bounds its segments); `.brep` writes its planar pieces and its ellipses on
+  planes, not a cylinder's section, which OCCT has no analytic pcurve for
+  (`Unwritable`).
 
 ## Evidence
 
@@ -72,14 +111,18 @@ coefficients exact rationals of the stored data (the frame's axes as stored).
   `BRepAlgoAPI_Splitter` and a planar face; its capture was taken before any
   kernel code (`fixtures/occt-split-preimplementation`): all 26 within 2e-8
   of the reference (BRepGProp's accuracy on elliptic faces). Against the
-  kernel two reviewed count differences: OCCT splits an arc wall along a
-  tangent ruling, and keeps a seam in a cut cylinder.
+  kernel three reviewed count differences: OCCT splits an arc wall along a
+  tangent ruling, and keeps a seam in a cut cylinder (parallel to the axis,
+  and through a plane touching both caps' circles).
 * **Kernel.** `tests/split.rs`: every side's sums of the kernel's enclosures
   contain the reference's volume, area and moments; histories pass the
-  independent check, cover every input entity and repeat exactly;
-  `compare_split.py`: the 13 cases of S8a.1 inside the reference, the 13
-  oblique ones pending S8a.2.
+  independent check, cover every input entity and repeat exactly; oblique
+  pieces move rigidly with their ids, classify, tessellate and write where
+  OCCT has records; `compare_split.py`: all 26 cases inside the reference,
+  23 matching the native counts and 3 reviewed.
 * **Fuzzing.** The `split` target cuts rectangles, regular polygons,
   stadiums, U shapes and holed squares in two frames with planes chosen
-  degenerate on purpose; volumes add up, pieces lie on their sides, and the
-  split's own history check runs in its debug build.
+  degenerate on purpose (oblique ones through a cap's vertex or touching a
+  cap's circle or arc); volumes add up, pieces lie on their sides and move
+  rigidly with their ids, and the split's own history check runs in its
+  debug build.

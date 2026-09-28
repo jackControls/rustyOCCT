@@ -1091,8 +1091,11 @@ See [the full contract, proof structure and limits](SPLINE_PROXIMITY.md).
 
 ## Certified B-rep validation
 
-A curve-on-surface deviation `D(t) = C(t_edge) - S(P(t))` for line/arc edges
-against plane line/arc pcurves and cylinder line pcurves is a harmonic sum
+A curve-on-surface deviation `D(t) = C(t_edge) - S(P(t))` for line, arc and
+ellipse edges against plane line, arc and axis-aligned ellipse pcurves,
+cylinder line pcurves and cylinder sinusoids `v = a0 + a1 cos u + a2 sin u`
+(whose image `O + a0 n + cos u (R x + a1 n) + sin u (R y + a2 n)` rotates at
+the pcurve's own frequency, S8a.2) is a harmonic sum
 `A0 + A1 t + Σ_ω (C_ω cos ωt + S_ω sin ωt)` with exact rational frequencies.
 Equal frequencies are combined, then
 `sup_[0,1] |D| <= sqrt(|A0|² + |A0+A1|²) + Σ_ω sqrt(λmax(Gram(C_ω, S_ω)))`.
@@ -1144,6 +1147,23 @@ enclosed in the same two tiers. A line pcurve's deviation is harmonic along a
 ruling (`du = 0`, affine in `t`) and a parallel (`dv = 0`, one frequency);
 anything else is not, and certifies only as a failure, like an arc pcurve on
 a cylinder.
+
+A plane's section of a cylinder (S8a.2) integrates in closed form. Along an
+axis-aligned ellipse pcurve `u = cx + a cos t`, `v = cy + b sin t` the
+twice-area term is `b (cx - ou)(sin t1 - sin t0) - a (cy - ov)(cos t1 -
+cos t0) + a b (t1 - t0)`, the plane flux `a (cy - v0)(cos t0 - cos t1) + a b
+((t1 - t0)/2 - (sin 2t1 - sin 2t0)/4)`, and a moment polynomial in `(u, v)`
+a polynomial in `(cos t, sin t)` integrated by the Fourier expansions of the
+arc's. Along a sinusoid `v = a0 + a1 cos u + a2 sin u` on a cylinder,
+`-∫ v du = -(a0 Δu + a1 Δsin u - a2 Δcos u)`, `∫ u dv = Δ[a1 (u cos u - sin
+u) + a2 (u sin u + cos u)]`, the twice-area term `Δ[a1 w cos u + a2 w sin u
+- 2 a1 sin u + 2 a2 cos u] - (a0 - ov) Δu` with `w = u - ou`, the flux
+`-∫ v (A sin u + B cos u + C) du` from the integrals of `1, sin, cos, sin
+cos, cos², sin²`, and each moment monomial `v^k cos^p u sin^q u` a
+polynomial in `(cos u, sin u)` integrated exactly. Containment parity along
+an ellipse is its unit circle's after scaling each axis about the centre,
+and a point is clear of an ellipse by `m` when its scaled distance from the
+unit circle exceeds `m / b` (the scaling shrinks distances by at most `b`).
 
 The apex is a pole: a vertex loop of the wall face. On a cone face whose edge
 loops wind once in total (`|Σ w| = 1`), the first vertex loop closes the band

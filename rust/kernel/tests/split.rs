@@ -39,15 +39,6 @@ fn frame_of(case: &Case) -> Frame3 {
     .unwrap()
 }
 
-/// Whether the plane is oblique to the prism's axis (S8a.2), in binary64:
-/// exact components along the stored axes are either zero or not far from.
-fn oblique(case: &Case) -> bool {
-    let f = frame_of(case);
-    let m = Vec3::new(case.plane[3], case.plane[4], case.plane[5]);
-    let (a, b, c) = (m.dot(f.x()), m.dot(f.y()), m.dot(f.normal()));
-    c != 0.0 && (a != 0.0 || b != 0.0)
-}
-
 /// The kernel stores the frames the reference used, bit for bit.
 #[test]
 fn stored_frames_are_the_reference_inputs() {
@@ -75,7 +66,7 @@ fn stored_frames_are_the_reference_inputs() {
 }
 
 /// Each side's volumes, areas and centre (summed over its pieces) contain
-/// the reference's; only planes oblique to the axis wait for S8a.2.
+/// the reference's, for planes normal, parallel and oblique to the axis.
 #[test]
 fn every_case_matches_the_reference() {
     let want = expected();
@@ -83,10 +74,8 @@ fn every_case_matches_the_reference() {
     for case in all() {
         let name = case.spec.name.clone();
         let got = rows(&case).unwrap_or_else(|e| panic!("{name}: {e}"));
-        if got == ["unsupported"] {
-            if !oblique(&case) {
-                failures.push(format!("{name}: unsupported"));
-            }
+        if got == ["unsupported"] || got == ["limit"] {
+            failures.push(format!("{name}: {got:?}"));
             continue;
         }
         let mut sides: BTreeMap<String, [[f64; 2]; 5]> = BTreeMap::new();
@@ -214,4 +203,101 @@ fn a_round_hole_off_the_plane_stays_whole() {
         "{volumes:?}"
     );
     assert!((volumes[1] - 20.0).abs() < 1e-9, "{volumes:?}");
+}
+
+fn case(name: &str) -> Case {
+    all()
+        .into_iter()
+        .find(|c| c.spec.name == name)
+        .unwrap_or_else(|| panic!("no case {name}"))
+}
+
+/// S8a.2: a rigid motion of an oblique piece rebuilds it in the new frame
+/// with every id, and its volume.
+#[test]
+fn oblique_pieces_move_rigidly() {
+    for name in [
+        "sq_tilted",
+        "stadium_tilted",
+        "disc_wall_ellipse",
+        "slot_hole_tilted",
+    ] {
+        let (_, pieces, _) = split(&case(name)).unwrap();
+        let motion = rusty_occt::RigidTransform::rotation(
+            Point3::new(1.0, -2.0, 0.5),
+            Vec3::new(0.3, -0.4, 0.8),
+            0.7,
+        )
+        .unwrap();
+        for (_, piece) in &pieces {
+            let (moved, h) = piece.transform_with(OperationId(901), motion).unwrap();
+            let ids =
+                |s: &rusty_occt::Solid| s.topology().ids().map(|(id, _)| id).collect::<Vec<_>>();
+            assert_eq!(ids(piece), ids(&moved), "{name}");
+            assert_eq!(h.relations.len(), ids(piece).len());
+            let (a, b) = (
+                piece.mass_properties().volume,
+                moved.mass_properties().volume,
+            );
+            assert!((a - b).abs() <= 1e-9 * a, "{name}: {a} {b}");
+        }
+    }
+}
+
+/// S8a.2: a piece classifies points by its footprint, the prism's height
+/// and the plane's side: its centre of mass inside a convex piece, points
+/// across the plane outside, points on the cut face on the boundary.
+#[test]
+fn oblique_pieces_classify() {
+    use rusty_occt::Location;
+    let c = case("sq_tilted");
+    let (_, pieces, _) = split(&c).unwrap();
+    let plane = plane_frame(c.plane);
+    for (side, piece) in &pieces {
+        let centre = piece.mass_properties().centroid;
+        assert_eq!(piece.classify(centre).unwrap(), Location::Inside);
+        let n = plane.normal() * if *side == Side::Below { 1.0 } else { -1.0 };
+        // Mirrored through the plane: the other side.
+        let d = (centre - plane.origin()).dot(n);
+        let across = centre + n * (-2.0 * d);
+        assert_eq!(piece.classify(across).unwrap(), Location::Outside);
+        let on = centre + n * (-d);
+        assert_eq!(piece.classify(on).unwrap(), Location::Boundary);
+    }
+}
+
+/// S8a.2: oblique pieces tessellate within the request, ellipse edges and
+/// their sinusoid pcurves included.
+#[test]
+fn oblique_pieces_tessellate() {
+    let parameters = rusty_occt::tessellation::Parameters::new(0.05, 0.5).unwrap();
+    for name in [
+        "sq_tilted",
+        "stadium_tilted",
+        "disc_wall_ellipse",
+        "disc_through_caps",
+    ] {
+        let (_, pieces, _) = split(&case(name)).unwrap();
+        for (_, piece) in &pieces {
+            let mesh = piece
+                .tessellate(parameters)
+                .unwrap_or_else(|e| panic!("{name}: {e}"));
+            assert!(mesh.deflection <= 0.05, "{name}: {}", mesh.deflection);
+            assert!(!mesh.triangles.is_empty());
+        }
+    }
+}
+
+/// S8a.2: a piece with ellipse edges writes only where OCCT has records:
+/// planar pieces write, a cylinder's section (a sinusoid pcurve) does not.
+#[test]
+fn oblique_pieces_write_where_occt_has_records() {
+    let (_, pieces, _) = split(&case("sq_tilted")).unwrap();
+    for (_, piece) in &pieces {
+        rusty_occt::occt_brep::write(piece.topology(), 1e-7).unwrap();
+    }
+    let (_, pieces, _) = split(&case("disc_wall_ellipse")).unwrap();
+    for (_, piece) in &pieces {
+        assert!(rusty_occt::occt_brep::write(piece.topology(), 1e-7).is_err());
+    }
 }

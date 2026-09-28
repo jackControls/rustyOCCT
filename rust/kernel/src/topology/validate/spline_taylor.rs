@@ -840,6 +840,21 @@ fn edge_kind(curve: &Curve3) -> Option<CurveKind<3>> {
             sweep: r(*sweep_angle),
         },
         Curve3::BSpline(s) => CurveKind::Spline(super::bernstein::edge_arcs(s)?),
+        // The unit circle's arc on the semi-axes as axes.
+        Curve3::EllipseArc {
+            frame,
+            major,
+            minor,
+            start_angle,
+            sweep_angle,
+        } => CurveKind::Arc {
+            center: frame.origin().to_array().map(r),
+            x: frame.x().to_array().map(|x| r(x) * r(*major)),
+            y: frame.y().to_array().map(|y| r(y) * r(*minor)),
+            radius: exact(1),
+            start: r(*start_angle),
+            sweep: r(*sweep_angle),
+        },
     })
 }
 
@@ -862,6 +877,21 @@ fn pcurve_kind(p: &Curve2) -> Option<CurveKind<2>> {
             sweep: r(*sweep_angle),
         },
         Curve2::BSpline(s) => CurveKind::Spline(super::bernstein::span_arcs(s)?),
+        Curve2::EllipseArc {
+            center,
+            major,
+            minor,
+            start_angle,
+            sweep_angle,
+        } => CurveKind::Arc {
+            center: [r(center.x), r(center.y)],
+            x: [r(*major), exact(0)],
+            y: [exact(0), r(*minor)],
+            radius: exact(1),
+            start: r(*start_angle),
+            sweep: r(*sweep_angle),
+        },
+        Curve2::Sinusoid { .. } => return None,
     })
 }
 

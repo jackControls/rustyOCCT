@@ -261,6 +261,32 @@ fn moments(p: &Curve2) -> [f64; 3] {
                     + r * r * ((-c1 + c1.powi(3) / 3.0) - (-c0 + c0.powi(3) / 3.0))),
             ]
         }
+        Curve2::EllipseArc {
+            center: c,
+            major,
+            minor,
+            start_angle: t0,
+            sweep_angle: sweep,
+        } => {
+            let (big, small) = (*major, *minor);
+            let t1 = t0 + sweep;
+            let (s0, c0, s1, c1) = (t0.sin(), t0.cos(), t1.sin(), t1.cos());
+            let cube_s = |s: f64| s - s * s * s / 3.0;
+            let cube_c = |c: f64| -c + c * c * c / 3.0;
+            let sq_c = |t: f64| t / 2.0 + (2.0 * t).sin() / 4.0;
+            let sq_s = |t: f64| t / 2.0 - (2.0 * t).sin() / 4.0;
+            [
+                small * c.x * (s1 - s0) - big * c.y * (c1 - c0) + big * small * sweep,
+                small
+                    * (c.x * c.x * (s1 - s0)
+                        + 2.0 * c.x * big * (sq_c(t1) - sq_c(*t0))
+                        + big * big * (cube_s(s1) - cube_s(s0))),
+                big * (-c.y * c.y * (c1 - c0)
+                    + 2.0 * c.y * small * (sq_s(t1) - sq_s(*t0))
+                    + small * small * (cube_c(c1) - cube_c(c0))),
+            ]
+        }
+        Curve2::Sinusoid { .. } => unreachable!("a sinusoid lies on a cylinder"),
     }
 }
 
@@ -282,7 +308,12 @@ fn face_area(t: &Topology, face: usize) -> f64 {
                         unreachable!("no spline geometry reaches the adapter before S4")
                     }
                     Curve2::LineSegment { start: a, end: b } => -0.5 * (a.y + b.y) * (b.x - a.x),
-                    Curve2::CircularArc { .. } => f64::NAN,
+                    Curve2::Sinusoid { start, sweep, a } => {
+                        let (u0, u1) = (start, start + sweep);
+                        -(a[0] * sweep + a[1] * (u1.sin() - u0.sin())
+                            - a[2] * (u1.cos() - u0.cos()))
+                    }
+                    Curve2::CircularArc { .. } | Curve2::EllipseArc { .. } => f64::NAN,
                 })
                 .sum::<f64>();
             radius * periodic.abs()
@@ -393,6 +424,25 @@ fn edge_length(curve: &Curve3) -> f64 {
             sweep_angle,
             ..
         } => radius * sweep_angle.abs(),
+        // An elliptic integral: Gauss nodes on 64 pieces of the angle.
+        Curve3::EllipseArc {
+            major,
+            minor,
+            start_angle,
+            sweep_angle,
+            ..
+        } => {
+            let nodes = gauss();
+            let pieces = 64;
+            let mut total = 0.0;
+            for k in 0..pieces {
+                for (x, w) in &nodes {
+                    let a = start_angle + sweep_angle * (k as f64 + x) / pieces as f64;
+                    total += w * (major * a.sin()).hypot(minor * a.cos());
+                }
+            }
+            total * sweep_angle.abs() / pieces as f64
+        }
     }
 }
 
@@ -817,6 +867,26 @@ fn pcurve_at(p: &Curve2, t: f64) -> (Point2, Point2) {
             let (sin, cos) = (start_angle + sweep_angle * t).sin_cos();
             let k = radius * sweep_angle;
             (p.point(t), Point2::new(-k * sin, k * cos))
+        }
+        Curve2::EllipseArc {
+            major,
+            minor,
+            start_angle,
+            sweep_angle,
+            ..
+        } => {
+            let (sin, cos) = (start_angle + sweep_angle * t).sin_cos();
+            (
+                p.point(t),
+                Point2::new(-major * sweep_angle * sin, minor * sweep_angle * cos),
+            )
+        }
+        Curve2::Sinusoid { start, sweep, a } => {
+            let (sin, cos) = (start + sweep * t).sin_cos();
+            (
+                p.point(t),
+                Point2::new(*sweep, sweep * (a[2] * cos - a[1] * sin)),
+            )
         }
     }
 }

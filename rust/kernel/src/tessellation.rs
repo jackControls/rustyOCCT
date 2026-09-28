@@ -297,6 +297,15 @@ fn v_range(topology: &Topology, face: &Face) -> (f64, f64) {
                             add(center.y - radius.abs());
                             add(center.y + radius.abs());
                         }
+                        Curve2::EllipseArc { center, minor, .. } => {
+                            add(center.y - minor.abs());
+                            add(center.y + minor.abs());
+                        }
+                        Curve2::Sinusoid { a, .. } => {
+                            let amplitude = a[1].hypot(a[2]) * (1.0 + 1e-12);
+                            add(a[0] - amplitude);
+                            add(a[0] + amplitude);
+                        }
                         Curve2::BSpline(_) => {}
                     }
                 }
@@ -331,24 +340,32 @@ fn segment_count(
     let (delta, theta) = (parameters.deflection, parameters.angle);
     let mut n = 1.0f64;
     let closed = edge.is_ring() || edge.start == edge.end;
-    if let Some((radius, sweep)) = match &edge.curve {
-        Curve3::Circle { radius, .. } => Some((*radius, TAU)),
+    // The largest semi-axis, the turn per unit angle, the sweep.
+    if let Some((frame, radius, ratio, sweep)) = match &edge.curve {
+        Curve3::Circle { frame, radius } => Some((frame, radius.abs(), 1.0, TAU)),
         Curve3::CircularArc {
+            frame,
             radius,
             sweep_angle,
             ..
-        } => Some((*radius, *sweep_angle)),
-        _ => None,
+        } => Some((frame, radius.abs(), 1.0, *sweep_angle)),
+        Curve3::EllipseArc {
+            frame,
+            major,
+            minor,
+            sweep_angle,
+            ..
+        } => {
+            let (big, small) = (major.abs().max(minor.abs()), major.abs().min(minor.abs()));
+            Some((frame, big, big / small * (1.0 + 1e-12), *sweep_angle))
+        }
+        Curve3::LineSegment { .. } | Curve3::BSpline(_) => None,
     } {
-        let frame = match &edge.curve {
-            Curve3::Circle { frame, .. } | Curve3::CircularArc { frame, .. } => frame,
-            _ => unreachable!(),
-        };
         let sigma = bounds::frame_norm(frame);
         let phi = sweep.abs() * (1.0 + 1e-12);
         n = n
-            .max(phi / theta)
-            .max(phi * (sigma * radius.abs() / (8.0 * CURVE_SHARE * delta)).sqrt());
+            .max(phi * ratio / theta)
+            .max(phi * (sigma * radius / (8.0 * CURVE_SHARE * delta)).sqrt());
     }
     if closed {
         n = n.max(3.0);
@@ -374,6 +391,19 @@ fn segment_count(
                 let l = (radius * sweep_angle).abs();
                 (l, l)
             }
+            Curve2::EllipseArc {
+                major,
+                minor,
+                sweep_angle,
+                ..
+            } => {
+                let l = (major.abs().max(minor.abs()) * sweep_angle).abs();
+                (l, l)
+            }
+            Curve2::Sinusoid { sweep, a, .. } => (
+                sweep.abs(),
+                (a[1].hypot(a[2]) * sweep).abs() * (1.0 + 1e-12),
+            ),
             Curve2::BSpline(_) => (0.0, 0.0),
         };
         let (v0, v1) = ranges[f];
@@ -659,9 +689,18 @@ impl FaceMesher<'_> {
         let mut locals: Vec<Local> = rings.iter().flatten().copied().collect();
         locals.extend(pole_vertices.iter().copied());
         {
-            let mut seen: Vec<usize> = locals.iter().map(|l| l.node).collect();
-            seen.sort_unstable();
-            if seen.windows(2).any(|w| w[0] == w[1]) {
+            // A node twice at one parameter point: loops that touch. The
+            // same vertex a period apart on the cover (a wall pinched to a
+            // point where a plane touches its cap's circle, S8a.2) is two
+            // points of the chart.
+            let mut seen: Vec<(usize, Point2)> = locals.iter().map(|l| (l.node, l.uv)).collect();
+            seen.sort_by_key(|x| x.0);
+            let touching = seen.windows(2).any(|w| {
+                w[0].0 == w[1].0
+                    && (w[0].1.x - w[1].1.x).abs() <= 1e-9 * (1.0 + w[0].1.x.abs())
+                    && (w[0].1.y - w[1].1.y).abs() <= 1e-9 * (1.0 + w[0].1.y.abs())
+            });
+            if touching {
                 return Self::fatal("tessellation of a face whose loops touch");
             }
         }

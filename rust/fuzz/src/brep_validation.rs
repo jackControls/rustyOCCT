@@ -85,6 +85,9 @@ fn reversed(p: &Curve2) -> Curve2 {
             start_angle: start_angle + sweep_angle,
             sweep_angle: -sweep_angle,
         },
+        Curve2::EllipseArc { .. } | Curve2::Sinusoid { .. } => {
+            unreachable!("cavity prisms have no plane sections")
+        }
     }
 }
 
@@ -205,6 +208,9 @@ fn shift_v(p: &Curve2, dv: f64) -> Curve2 {
             start_angle: *start_angle,
             sweep_angle: *sweep_angle,
         },
+        Curve2::EllipseArc { .. } | Curve2::Sinusoid { .. } => {
+            unreachable!("cavity prisms have no plane sections")
+        }
     }
 }
 
@@ -967,6 +973,19 @@ fn similar(parts: &mut TopologyParts, s: f64, t: [f64; 3]) {
                 start_angle: *start_angle,
                 sweep_angle: *sweep_angle,
             },
+            Curve3::EllipseArc {
+                frame,
+                major,
+                minor,
+                start_angle,
+                sweep_angle,
+            } => Curve3::EllipseArc {
+                frame: moved(frame),
+                major: major * s,
+                minor: minor * s,
+                start_angle: *start_angle,
+                sweep_angle: *sweep_angle,
+            },
             Curve3::BSpline(c) => {
                 let moved = spline3(
                     c.curve(),
@@ -1041,6 +1060,31 @@ fn similar(parts: &mut TopologyParts, s: f64, t: [f64; 3]) {
                         sweep_angle: *sweep_angle,
                     }
                 }
+                Curve2::EllipseArc {
+                    center,
+                    major,
+                    minor,
+                    start_angle,
+                    sweep_angle,
+                } => {
+                    assert!(!only_v[l], "ellipses are plane pcurves");
+                    Curve2::EllipseArc {
+                        center: point(*center),
+                        major: major * s,
+                        minor: minor * s,
+                        start_angle: *start_angle,
+                        sweep_angle: *sweep_angle,
+                    }
+                }
+                // v = a0 + a1 cos u + a2 sin u on a cylinder: v scales.
+                Curve2::Sinusoid { start, sweep, a } => {
+                    assert!(only_v[l], "sinusoids are cylinder pcurves");
+                    Curve2::Sinusoid {
+                        start: *start,
+                        sweep: *sweep,
+                        a: a.map(|x| x * s),
+                    }
+                }
                 Curve2::BSpline(span) => {
                     let (c, [first, last]) = (span.curve(), span.range());
                     let c3 = c.as_curve3();
@@ -1097,7 +1141,9 @@ fn shifted(p: &Curve2, d: f64) -> Curve2 {
                 last,
             ))
         }
-        Curve2::CircularArc { .. } => unreachable!("spline uses have line or spline pcurves"),
+        Curve2::CircularArc { .. } | Curve2::EllipseArc { .. } | Curve2::Sinusoid { .. } => {
+            unreachable!("spline uses have line or spline pcurves")
+        }
     }
 }
 

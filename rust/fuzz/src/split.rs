@@ -3,12 +3,13 @@
 //! dyadic sizes, split by a plane chosen with an exact degeneracy on purpose:
 //! parallel to the axis at a dyadic offset, through a profile vertex, along
 //! a profile edge, tangent to an arc or the hole; normal to the axis at a
-//! dyadic height or in a cap; or oblique (S8a.2). The split never panics
-//! and fails only as documented (an oblique plane `OutOfDomain`, a
-//! certified comparison it cannot decide, a piece within binary64 of a cap);
-//! its history passes the independent check (in the split, debug builds);
-//! the pieces' volumes add up to the solid's and every piece lies on its
-//! side of the plane; a missing or touching plane returns the solid.
+//! dyadic height or in a cap; or oblique (S8a.2), through a cap at a dyadic
+//! point or touching a cap's edge. The split never panics and fails only as
+//! documented (a certified comparison it cannot decide, a degenerate piece);
+//! every piece validates as it is built and its history passes the
+//! independent check (in the split, debug builds); the pieces' volumes add
+//! up to the solid's, every piece lies on its side of the plane and moves
+//! rigidly with its ids; a missing or touching plane returns the solid.
 use crate::analytic_intersections::Bytes;
 use rusty_occt::identity::OperationId;
 use rusty_occt::{
@@ -114,7 +115,7 @@ fn profile(kind: u8, s: f64, t: f64) -> Option<Profile> {
 
 pub fn check_split(data: &[u8]) {
     let mut b = Bytes(data, 0);
-    let (kind, mode) = (b.next(), b.next() % 7);
+    let (kind, mode) = (b.next(), b.next() % 9);
     let s = 1.0 + f64::from(b.next() % 32) / 4.0;
     let t = 0.5 + f64::from(b.next() % 32) / 8.0;
     let h = 0.5 + f64::from(b.next() % 16) / 4.0;
@@ -170,6 +171,14 @@ pub fn check_split(data: &[u8]) {
             at(0.0, 0.0, f64::from(b.next() % 16) / 16.0 * h),
             dir(0.0, 0.0, 1.0),
         ),
+        // Oblique through a profile vertex at a cap, or touching a cap's
+        // circle or arc where the stadium's or the hole's is.
+        7 => (at(vertex.x, vertex.y, 0.0), dir(a, c, 1.0)),
+        8 => match kind % 6 {
+            2 => (at(s + t, 0.0, 0.0), dir(1.0, 0.0, 1.0)),
+            4 => (at((t).min(s * 0.75), 0.0, h), dir(1.0, 0.0, -1.0)),
+            _ => return,
+        },
         5 => (at(0.0, 0.0, h), dir(0.0, 0.0, 1.0)),
         _ => (at(b.dyadic(), b.dyadic(), h / 2.0), dir(a, c, 1.0)),
     };
@@ -187,9 +196,6 @@ pub fn check_split(data: &[u8]) {
     let (pieces, _history) = match solid.split_by_plane(OperationId(2), plane) {
         Ok(r) => r,
         Err(Error::ComputationLimit(_)) => return,
-        // Oblique: mode 6, or any plane in the tilted frame (its stored
-        // axes are not exactly orthogonal, so its "parallel" planes are not).
-        Err(Error::OutOfDomain(_)) if mode == 6 || tilted => return,
         Err(Error::Degenerate(_)) => return,
         Err(e) => panic!("unexpected error {e}"),
     };
@@ -209,6 +215,8 @@ pub fn check_split(data: &[u8]) {
     }
     let n = plane.normal();
     let q = plane.origin();
+    let motion =
+        rusty_occt::RigidTransform::rotation(o, Vec3::new(1.0, 2.0, 2.0), 0.5).expect("a rotation");
     for (side, piece) in &pieces {
         let c = piece.mass_properties().centroid;
         let g = (c - q).dot(n);
@@ -216,5 +224,15 @@ pub fn check_split(data: &[u8]) {
             Side::Below => assert!(g < 0.0, "{g}: a piece below its plane"),
             Side::Above => assert!(g > 0.0, "{g}: a piece above its plane"),
         }
+        let (moved, _) = piece
+            .transform_with(OperationId(3), motion)
+            .expect("a piece moves rigidly");
+        let ids = |s: &Solid| s.topology().ids().map(|(id, _)| id).collect::<Vec<_>>();
+        assert_eq!(ids(piece), ids(&moved), "a moved piece keeps its ids");
+        let (v0, v1) = (
+            piece.mass_properties().volume,
+            moved.mass_properties().volume,
+        );
+        assert!((v0 - v1).abs() <= 1e-9 * v0.max(1.0), "{v0} moved to {v1}");
     }
 }

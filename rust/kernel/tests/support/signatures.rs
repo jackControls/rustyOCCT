@@ -45,6 +45,32 @@ fn moments(p: &Curve2) -> [f64; 3] {
                     + r * r * (cube_c(c1) - cube_c(c0))),
             ]
         }
+        Curve2::EllipseArc {
+            center: c,
+            major,
+            minor,
+            start_angle: t0,
+            sweep_angle: sweep,
+        } => {
+            let (big, small) = (*major, *minor);
+            let t1 = t0 + sweep;
+            let (s0, c0, s1, c1) = (t0.sin(), t0.cos(), t1.sin(), t1.cos());
+            let cube_s = |s: f64| s - s * s * s / 3.0;
+            let cube_c = |c: f64| -c + c * c * c / 3.0;
+            let sq_c = |t: f64| t / 2.0 + (2.0 * t).sin() / 4.0;
+            let sq_s = |t: f64| t / 2.0 - (2.0 * t).sin() / 4.0;
+            [
+                small * c.x * (s1 - s0) - big * c.y * (c1 - c0) + big * small * sweep,
+                small
+                    * (c.x * c.x * (s1 - s0)
+                        + 2.0 * c.x * big * (sq_c(t1) - sq_c(*t0))
+                        + big * big * (cube_s(s1) - cube_s(s0))),
+                big * (-c.y * c.y * (c1 - c0)
+                    + 2.0 * c.y * small * (sq_s(t1) - sq_s(*t0))
+                    + small * small * (cube_c(c1) - cube_c(c0))),
+            ]
+        }
+        Curve2::Sinusoid { .. } => unreachable!("a sinusoid lies on a cylinder"),
     }
 }
 

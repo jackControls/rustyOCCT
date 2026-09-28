@@ -254,7 +254,7 @@ pub(super) fn pcurve_arcs(p: &Curve2) -> Option<Arcs> {
             Some(line_arc([start.x, start.y, 0.0], [end.x, end.y, 0.0]))
         }
         Curve2::BSpline(span) => span_arcs(span),
-        Curve2::CircularArc { .. } => None,
+        Curve2::CircularArc { .. } | Curve2::EllipseArc { .. } | Curve2::Sinusoid { .. } => None,
     }
 }
 

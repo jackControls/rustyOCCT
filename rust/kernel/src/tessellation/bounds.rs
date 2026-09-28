@@ -140,6 +140,17 @@ pub(super) fn curve_point(curve: &Curve3, t: f64) -> Option<P> {
             let r = c(*radius);
             combine(frame, &r.mul(&ca), &r.mul(&sa), &c(0.0))
         }
+        Curve3::EllipseArc {
+            frame,
+            major,
+            minor,
+            start_angle,
+            sweep_angle,
+        } => {
+            let a = c(*start_angle).add(&c(*sweep_angle).mul(&c(t)));
+            let (ca, sa) = Fast::cos_sin(&a);
+            combine(frame, &c(*major).mul(&ca), &c(*minor).mul(&sa), &c(0.0))
+        }
         Curve3::BSpline(_) => return None,
     })
 }
@@ -365,24 +376,42 @@ fn fan_bound(s: &Surface, p: [Point2; 3], k: usize) -> f64 {
 }
 
 /// The certified deflection (without node gaps) and tangent turn of an edge
-/// segment over a fraction step `dt`.
+/// segment over a fraction step `dt`: `|C''| <= sigma max(a, b)` over the
+/// angle step, and an ellipse's tangent turns at most `max / min` times its
+/// angle.
 pub(super) fn segment_bound(curve: &Curve3, dt: f64) -> (f64, f64) {
-    let (frame, radius, sweep) = match curve {
-        Curve3::Circle { frame, radius } => (frame, *radius, Fast::two_pi()),
+    let (frame, [ra, rb], sweep) = match curve {
+        Curve3::Circle { frame, radius } => (frame, [*radius; 2], Fast::two_pi()),
         Curve3::CircularArc {
             frame,
             radius,
             sweep_angle,
             ..
-        } => (frame, *radius, c(sweep_angle.abs())),
-        _ => return (0.0, 0.0),
+        } => (frame, [*radius; 2], c(sweep_angle.abs())),
+        Curve3::EllipseArc {
+            frame,
+            major,
+            minor,
+            sweep_angle,
+            ..
+        } => (frame, [*major, *minor], c(sweep_angle.abs())),
+        Curve3::LineSegment { .. } | Curve3::BSpline(_) => return (0.0, 0.0),
     };
+    let (big, small) = (ra.abs().max(rb.abs()), ra.abs().min(rb.abs()));
     let angle = sweep.mul(&c(dt));
     let deviation = c(frame_norm(frame))
-        .mul(&c(radius.abs()))
+        .mul(&c(big))
         .mul(&angle.square())
         .mul(&c(0.125));
-    (upper(&deviation), upper(&angle))
+    let turn = if big == small {
+        angle
+    } else {
+        angle
+            .mul(&c(big))
+            .div(&c(small))
+            .unwrap_or(c(f64::INFINITY))
+    };
+    (upper(&deviation), upper(&turn))
 }
 
 /// `a + b` rounded up.

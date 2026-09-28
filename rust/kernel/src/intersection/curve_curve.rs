@@ -177,6 +177,19 @@ impl Exact {
             AnalyticCurve::Edge(Curve3::BSpline(_)) => {
                 return Err(Error::OutOfDomain("a spline edge (S7d.2)"))
             }
+            // An ellipse edge's whole ellipse (S8a.2).
+            AnalyticCurve::Edge(Curve3::EllipseArc {
+                frame,
+                major,
+                minor,
+                ..
+            }) => {
+                return Self::of(&AnalyticCurve::Conic(Conic::Ellipse {
+                    frame: *frame,
+                    major: *major,
+                    minor: *minor,
+                }))
+            }
             AnalyticCurve::Conic(conic) => {
                 let (frame, major, minor, hyperbola) = match *conic {
                     Conic::Ellipse {

@@ -775,6 +775,35 @@ interop.
   `mass_properties` of `cell_reference.py`, and `brep_io_reference.py` for
   the records.
 
+## Plane sections (S8a.2)
+
+S8a.2 of `REVIEW_NOTES.md` splits prisms by planes oblique to their axis
+(`SPLIT.md`), which adds the cells of a plane's section of a cylinder.
+
+* **Cells.** `Curve3::EllipseArc` is `origin + major cos a x + minor sin a
+  y`, `a = start + sweep f` (OCCT's `Geom_Ellipse`); a ring edge's sweep is
+  a full turn. `Curve2::EllipseArc` is the same in a plane's `(u, v)` with
+  its axes along `u` and `v` (the split's cut face shares its frame's axes
+  with every section ellipse). `Curve2::Sinusoid` is `u = start + sweep f`,
+  `v = a0 + a1 cos u + a2 sin u`: the graph of a plane's height over a
+  cylinder's angle, on the cylinder's universal cover.
+* **Validation.** The harmonic bound certifies an ellipse edge against
+  either pcurve: both are an affine term plus a rotating one at the edge's
+  own frequency, so the sweeps a split stores equal cancel exactly and
+  their phases' roundings remain. Degeneracy (both semi-axes above the
+  resolution), signed and periodic areas, containment parity (an ellipse
+  is a circle scaled about its centre), boundary clearance, orientation
+  fluxes and mass properties are closed forms in `cos` and `sin`
+  (`MATHEMATICS.md`); a wire's ellipse edge has no certified length (an
+  elliptic integral).
+* **Tessellation.** An ellipse's segment deflects at most its frame's norm
+  times its major radius times the angle step squared over eight, and turns
+  at most `major / minor` times the step.
+* **Interop.** The writer prints `Geom_Ellipse` (3D record 3, its major
+  radius first) and `Geom2d_Ellipse` (2D record 3) on a plane whose axes
+  are the ellipse's, the edge's parameter its angle; a sinusoid pcurve has
+  no OCCT record and is `Unwritable`. The reader keeps skipping ellipses.
+
 ## Acceptance
 
 Record each milestone's clean revision, kernel CI job count, fuzz CI target

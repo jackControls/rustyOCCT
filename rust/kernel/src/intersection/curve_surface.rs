@@ -93,6 +93,25 @@ pub fn curve_surface(curve: &Curve3, surface: &Surface) -> Result<CurveSurfaceIn
                 "a spline edge against an analytic surface (spline_plane and exact_spline)",
             ))
         }
+        // An ellipse edge's whole ellipse, by its angle (S8a.2).
+        Curve3::EllipseArc {
+            frame,
+            major,
+            minor,
+            ..
+        } => {
+            if major < minor {
+                return Err(Error::OutOfDomain("an ellipse edge's major axis along y"));
+            }
+            return super::conic_surface::conic_surface(
+                &super::conic_surface::Conic::Ellipse {
+                    frame: *frame,
+                    major: *major,
+                    minor: *minor,
+                },
+                surface,
+            );
+        }
     };
     if let CurveSurfaceIntersection::Points(points) = &mut out {
         points.sort_by(|a, b| {

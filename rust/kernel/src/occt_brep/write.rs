@@ -97,6 +97,47 @@ fn curve_record(c: &Curve3, ring_start: Option<f64>) -> EdgeGeometry {
                 range: [start, start + sweep_angle.abs()],
             }
         }
+        // `Geom_Ellipse` (record 3), its major radius first: an ellipse
+        // longer along y is written about its axes turned a quarter turn,
+        // `t - pi/2` its angle; a negative sweep about the flipped axis.
+        Curve3::EllipseArc {
+            frame,
+            major,
+            minor,
+            start_angle,
+            sweep_angle,
+        } => {
+            let (mut x, mut y) = (frame.x(), frame.y());
+            let (mut big, mut small, mut shift) = (*major, *minor, 0.0);
+            if major < minor {
+                (x, y) = (frame.y(), -frame.x());
+                (big, small, shift) = (*minor, *major, -std::f64::consts::FRAC_PI_2);
+            }
+            let flip = *sweep_angle < 0.0;
+            let (n, y) = if flip {
+                (-frame.normal(), -y)
+            } else {
+                (frame.normal(), y)
+            };
+            let angle = start_angle + shift;
+            let start = match ring_start {
+                Some(s) => s,
+                None if flip => -angle,
+                None => angle,
+            };
+            EdgeGeometry {
+                record: format!(
+                    "3 {} {} {} {} {} {}",
+                    nums(&frame.origin().to_array()),
+                    nums(&n.to_array()),
+                    nums(&x.to_array()),
+                    nums(&y.to_array()),
+                    num(big),
+                    num(small)
+                ),
+                range: [start, start + sweep_angle.abs()],
+            }
+        }
     }
 }
 
@@ -179,6 +220,21 @@ fn curve_at(c: &Curve3, t: f64) -> Point3 {
         } => {
             let a = if *sweep_angle < 0.0 { -t } else { t };
             frame.point(Point2::new(radius * a.cos(), radius * a.sin()), 0.0)
+        }
+        Curve3::EllipseArc {
+            frame,
+            major,
+            minor,
+            sweep_angle,
+            ..
+        } => {
+            let a = if *sweep_angle < 0.0 { -t } else { t };
+            let a = if major < minor {
+                a + std::f64::consts::FRAC_PI_2
+            } else {
+                a
+            };
+            frame.point(Point2::new(major * a.cos(), minor * a.sin()), 0.0)
         }
     }
 }
@@ -278,6 +334,43 @@ fn pcurve_record(
             | Surface::Torus { .. },
             Curve2::CircularArc { .. },
         ) => return Err(unwritable("an arc pcurve on a periodic surface")),
+        // `Geom2d_Ellipse` (record 3) on its own axes, the edge's parameter
+        // its angle: y flipped when the angle decreases along the edge.
+        (
+            Surface::Plane(_),
+            Curve2::EllipseArc {
+                center,
+                major,
+                minor,
+                start_angle,
+                sweep_angle,
+            },
+        ) => {
+            let (start, sweep) = if forward {
+                (*start_angle, *sweep_angle)
+            } else {
+                (start_angle + sweep_angle, -sweep_angle)
+            };
+            let sigma = sweep.signum();
+            let alpha = start - sigma * t0;
+            if major < minor || alpha.abs() > 1e-9 * (1.0 + t0.abs()) {
+                return Err(unwritable(
+                    "an ellipse pcurve whose angle is not its edge's parameter",
+                ));
+            }
+            format!(
+                "3 {} 1 0 0 {} {} {}",
+                nums(&[center.x, center.y]),
+                num(sigma),
+                num(*major),
+                num(*minor)
+            )
+        }
+        (_, Curve2::EllipseArc { .. }) => return Err(unwritable("an ellipse pcurve off a plane")),
+        // OCCT has no analytic record for a cylinder's plane section.
+        (_, Curve2::Sinusoid { .. }) => {
+            return Err(unwritable("a sinusoid pcurve (a cylinder's plane section)"))
+        }
     })
 }
 

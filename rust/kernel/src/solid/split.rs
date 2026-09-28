@@ -21,6 +21,9 @@ use num_rational::BigRational as R;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 
+mod oblique;
+pub(super) use oblique::Clipped;
+
 fn zero() -> R {
     R::from_integer(0.into())
 }
@@ -111,9 +114,7 @@ impl Solid {
             return Ok((pieces, history));
         }
         if c != zero() {
-            return Err(Error::OutOfDomain(
-                "a plane oblique to a prism's axis (S8a.2)",
-            ));
+            return self.split_oblique(context, &profile, [a, b, c, d]);
         }
         let section = Section::new(&profile, [a, b, d])?;
         if section
@@ -589,6 +590,10 @@ struct Section {
     shared: BTreeSet<PointId>,
     /// The stored segments meeting each point.
     incident: BTreeMap<PointId, Vec<(usize, usize)>>,
+    /// Every point's binary64 position.
+    positions: BTreeMap<PointId, Point2>,
+    /// The boundary's pieces with their sides (a hole's reversed).
+    edges: Vec<Edge2>,
 }
 
 impl Section {
@@ -748,7 +753,7 @@ impl Section {
                         if delta < zero() {
                             let pts =
                                 circle_points(center, radius, &[a.clone(), b.clone(), d.clone()])?;
-                            let mut inside: Vec<(I, [I; 2])> = Vec::new();
+                            let mut inside: Vec<(ArcPos, [I; 2])> = Vec::new();
                             for pt in pts {
                                 // Endpoints on the line are the path's vertices.
                                 if ((fp == zero()) && same_point(&pt, p)?)
@@ -760,7 +765,7 @@ impl Section {
                                     inside.push((t, pt));
                                 }
                             }
-                            inside.sort_by(|x, y| x.0.cmp(&y.0).unwrap_or(Ordering::Equal));
+                            inside.sort_by(|x, y| x.0.compare(&y.0).unwrap_or(Ordering::Equal));
                             for (k, (_, pt)) in inside.into_iter().enumerate() {
                                 let id = PointId::Cross(bi, j, k);
                                 positions.insert(id, rounded(&pt));
@@ -944,6 +949,8 @@ impl Section {
             chords,
             shared,
             incident,
+            positions,
+            edges,
         })
     }
 }
@@ -999,9 +1006,60 @@ fn circle_points(center: Point2, radius: f64, line: &[R; 3]) -> Result<Vec<[I; 2
     Ok(out)
 }
 
+/// A point's place along an arc from its start: the half-turn it lies in
+/// (0 the start's direction, 1 the first half-turn, 2 the opposite
+/// direction, 3 the second half-turn) and its vector from the centre, in
+/// the arc's turning sense. Places compare by orientation signs alone.
+#[derive(Debug, Clone)]
+struct ArcPos {
+    half: u8,
+    v: [I; 2],
+    sense: i8,
+}
+
+impl ArcPos {
+    fn of(r: &[I; 2], v: [I; 2], sense: i8) -> Result<Self> {
+        let limit = || Error::ComputationLimit("an arc's crossing at its end");
+        let cross = r[0].mul(&v[1]).sub(&r[1].mul(&v[0]));
+        let cross = if sense > 0 { cross } else { cross.neg() };
+        let half = match cross.sign().ok_or_else(limit)? {
+            Ordering::Greater => 1,
+            Ordering::Less => 3,
+            Ordering::Equal => {
+                let dot = r[0].mul(&v[0]).add(&r[1].mul(&v[1]));
+                match dot.sign().ok_or_else(limit)? {
+                    Ordering::Less => 2,
+                    _ => 0,
+                }
+            }
+        };
+        Ok(Self { half, v, sense })
+    }
+    /// Along the arc: the earlier first (within a half-turn, the one the
+    /// other lies counter to the sense from).
+    fn compare(&self, o: &Self) -> Option<Ordering> {
+        if self.half != o.half {
+            return Some(self.half.cmp(&o.half));
+        }
+        if self.half % 2 == 0 {
+            return Some(Ordering::Equal);
+        }
+        let cross = self.v[0].mul(&o.v[1]).sub(&self.v[1].mul(&o.v[0]));
+        let cross = if self.sense > 0 { cross } else { cross.neg() };
+        Some(cross.sign()?.reverse())
+    }
+}
+
 /// Whether a point of an arc's circle lies strictly inside the arc from `p`
-/// to `e`; its position along the arc (the turn from `p`) if it does.
-fn within_arc(center: Point2, p: Point2, e: Point2, ccw: bool, x: &[I; 2]) -> Result<Option<I>> {
+/// to `e`; its place along the arc if it does. Exact orientation signs, no
+/// angles.
+fn within_arc(
+    center: Point2,
+    p: Point2,
+    e: Point2,
+    ccw: bool,
+    x: &[I; 2],
+) -> Result<Option<ArcPos>> {
     let c = [I::exact(q(center.x)), I::exact(q(center.y))];
     let rel = |v: [I; 2]| [v[0].sub(&c[0]), v[1].sub(&c[1])];
     let (vp, ve, vx) = (
@@ -1009,42 +1067,21 @@ fn within_arc(center: Point2, p: Point2, e: Point2, ccw: bool, x: &[I; 2]) -> Re
         rel([I::exact(q(e.x)), I::exact(q(e.y))]),
         rel(x.clone()),
     );
-    let turn = |from: &[I; 2], to: &[I; 2]| -> Result<I> {
-        // The angle from `from` to `to` in the arc's direction, in [0, 2 pi).
-        let cross = from[0].mul(&to[1]).sub(&from[1].mul(&to[0]));
-        let dot = from[0].mul(&to[0]).add(&from[1].mul(&to[1]));
-        let cross = if ccw { cross } else { cross.neg() };
-        turn_of(&cross, &dot)
-    };
-    let (tx, te) = (turn(&vp, &vx)?, turn(&vp, &ve)?);
-    // A full circle from a point back to it: its turn is the whole.
-    let te = if p == e {
-        crate::certified::pi().mul(&I::exact_f64(2.0))
-    } else {
-        te
-    };
-    match (tx.sign(), tx.cmp(&te)) {
-        (Some(Ordering::Greater), Some(Ordering::Less)) => Ok(Some(tx)),
-        (Some(_), Some(_)) => Ok(None),
-        _ => Err(Error::ComputationLimit("an arc's crossing at its end")),
+    let sense = if ccw { 1 } else { -1 };
+    let px = ArcPos::of(&vp, vx, sense)?;
+    if px.half == 0 {
+        return Ok(None);
     }
-}
-
-/// The angle of `(x, y) = (dot, cross)` in `[0, 2 pi)`, certified (across
-/// the negative axis by the opposite vector).
-fn turn_of(cross: &I, dot: &I) -> Result<I> {
-    let two_pi = crate::certified::pi().mul(&I::exact_f64(2.0));
-    let limit = || Error::ComputationLimit("an arc's crossing");
-    if dot.sign() == Some(Ordering::Less) {
-        let t = crate::certified::atan2(&cross.neg(), &dot.neg()).ok_or_else(limit)?;
-        return Ok(t.add(crate::certified::pi()));
+    // A full circle from a point back to it: all but the point.
+    if p == e {
+        return Ok(Some(px));
     }
-    let t = crate::certified::atan2(cross, dot).ok_or_else(limit)?;
-    Ok(if t.sign() == Some(Ordering::Less) {
-        t.add(&two_pi)
-    } else {
-        t
-    })
+    let pe = ArcPos::of(&vp, ve, sense)?;
+    match px.compare(&pe) {
+        Some(Ordering::Less) => Ok(Some(px)),
+        Some(_) => Ok(None),
+        None => Err(Error::ComputationLimit("an arc's crossing at its end")),
+    }
 }
 
 /// Whether the prism lies (weakly) on one side of `a u + b v + c w + d`:
@@ -1433,7 +1470,12 @@ fn boundary_of(
     }
     let points: Vec<Point2> = items.iter().map(|i| positions[&i.0]).collect();
     let segments: Vec<Segment> = items.iter().map(|i| i.1).collect();
-    let boundary = Boundary::path(points.clone(), segments, tolerance)?;
+    // A piece whose boundary touches itself within the resolution (a line
+    // grazing a circle, cutting a sliver off it) is thinner than it.
+    let boundary = Boundary::path(points.clone(), segments, tolerance).map_err(|e| match e {
+        Error::SelfIntersection => Error::Degenerate("a piece thinner than the resolution"),
+        e => e,
+    })?;
     let stored: Vec<Point2> = match &boundary.kind {
         BoundaryKind::Polygon(p) => p.clone(),
         BoundaryKind::Path { points, .. } => points.clone(),

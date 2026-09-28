@@ -24,6 +24,18 @@
       "reason": "OCCT's cylinder keeps its seam at the frame's x axis (angle 0), inside the piece with x > 1: that piece has 5 faces, 9 edges, 6 vertices; the kernel has no seams (TOPOLOGY_MODEL.md), both pieces 4 faces, 6 edges, 4 vertices. Volumes, areas and centres agree with the reference.",
       "independent_evidence": "The plane x = 1 cuts the disc of radius 2 at angles +-60 degrees; the arc between them contains angle 0, OCCT's seam.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "disc_through_caps",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "5916c75b0247da098e4dbbba2bd6fb17de3ea7371b179734381c797ad10cecda",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "The plane x + z = 2 touches the bottom cap's circle at (2, 0, 0) and the top cap's at (-2, 0, 4). OCCT keeps the cylinder's seam at angle 0 (the frame's x axis) in both pieces: the lower piece's wall is bounded by the seam from the touch point (3 faces, 3 edges, 2 vertices), the upper piece's wall is cut along it (4 faces, 5 edges, 3 vertices). The kernel has no seams (TOPOLOGY_MODEL.md): each piece is its cap, its elliptic cut face and its wall, the cap's circle and the ellipse meeting at the one vertex where the plane touches the cap's edge (3 faces, 2 edges, 1 vertex). Volumes, areas and centres agree with the reference.",
+      "independent_evidence": "The cap circles have radius 2 about the axis; the plane's traces on the caps, x = 2 at z = 0 and x = -2 at z = 4, are tangent to them, so each piece's wall has zero height at one point, where the kernel places its vertex.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     }
   ]
 }

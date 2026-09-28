@@ -723,6 +723,28 @@ fn on_plane(plane: &Frame3, curve: &Curve3) -> Curve2 {
                 sweep_angle: turn * sweep_angle,
             }
         }
+        // Axis-aligned with the plane (the kernel's own ellipses, whose
+        // frames share the plane's axes); validation rejects any other.
+        Curve3::EllipseArc {
+            frame,
+            major,
+            minor,
+            start_angle,
+            sweep_angle,
+        } => {
+            let turn = if frame.normal().dot(plane.normal()) > 0.0 {
+                1.0
+            } else {
+                -1.0
+            };
+            Curve2::EllipseArc {
+                center: uv(frame.origin()),
+                major: *major,
+                minor: *minor,
+                start_angle: turn * start_angle,
+                sweep_angle: turn * sweep_angle,
+            }
+        }
     }
 }
 
@@ -768,6 +790,24 @@ fn negate_v(p: &Curve2) -> Curve2 {
             start_angle: -start_angle,
             sweep_angle: -sweep_angle,
         },
+        Curve2::EllipseArc {
+            center,
+            major,
+            minor,
+            start_angle,
+            sweep_angle,
+        } => Curve2::EllipseArc {
+            center: Point2::new(center.x, -center.y),
+            major: *major,
+            minor: *minor,
+            start_angle: -start_angle,
+            sweep_angle: -sweep_angle,
+        },
+        Curve2::Sinusoid { start, sweep, a } => Curve2::Sinusoid {
+            start: *start,
+            sweep: *sweep,
+            a: a.map(|x| -x),
+        },
     }
 }
 
@@ -792,6 +832,24 @@ fn reversed(p: &Curve2) -> Curve2 {
             radius: *radius,
             start_angle: start_angle + sweep_angle,
             sweep_angle: -sweep_angle,
+        },
+        Curve2::EllipseArc {
+            center,
+            major,
+            minor,
+            start_angle,
+            sweep_angle,
+        } => Curve2::EllipseArc {
+            center: *center,
+            major: *major,
+            minor: *minor,
+            start_angle: start_angle + sweep_angle,
+            sweep_angle: -sweep_angle,
+        },
+        Curve2::Sinusoid { start, sweep, a } => Curve2::Sinusoid {
+            start: start + sweep,
+            sweep: -sweep,
+            a: *a,
         },
     }
 }

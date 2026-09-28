@@ -409,6 +409,7 @@ pub enum Family {
     Point,
     Line,
     Circle,
+    Ellipse,
     Plane,
     Cylinder,
     Region,
@@ -419,6 +420,7 @@ impl Geometry {
         match self {
             Self::Point(_) => Family::Point,
             Self::Curve(Curve3::LineSegment { .. }) => Family::Line,
+            Self::Curve(Curve3::EllipseArc { .. }) => Family::Ellipse,
             Self::Curve(_) => Family::Circle,
             Self::Surface {
                 surface: Surface::Plane(_),
@@ -560,7 +562,7 @@ fn circle_of(c: &Curve3) -> Option<(crate::Frame3, f64)> {
         Curve3::Circle { frame, radius } | Curve3::CircularArc { frame, radius, .. } => {
             Some((*frame, *radius))
         }
-        Curve3::LineSegment { .. } | Curve3::BSpline(_) => None,
+        Curve3::LineSegment { .. } | Curve3::BSpline(_) | Curve3::EllipseArc { .. } => None,
     }
 }
 

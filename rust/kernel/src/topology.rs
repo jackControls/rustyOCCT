@@ -177,6 +177,16 @@ pub enum Curve3 {
     /// A rational B-spline over a range, the edge fraction mapped affinely
     /// onto it (S4 of REVIEW_NOTES.md). A ring edge's is a full period.
     BSpline(SplineSpan<BSplineCurve3>),
+    /// frame.origin + major cos a x + minor sin a y, a = start + sweep *
+    /// fraction (OCCT's `Geom_Ellipse`; S8a.2): a plane's section of a
+    /// cylinder. A ring edge's sweep is a full turn.
+    EllipseArc {
+        frame: Frame3,
+        major: f64,
+        minor: f64,
+        start_angle: f64,
+        sweep_angle: f64,
+    },
 }
 
 /// A spline over a closed range of its parameter: its whole domain when the
@@ -356,6 +366,16 @@ impl Curve3 {
                 .curve()
                 .point(span.parameter(fraction))
                 .expect("a finite spline evaluates in its domain"),
+            Self::EllipseArc {
+                frame,
+                major,
+                minor,
+                start_angle,
+                sweep_angle,
+            } => {
+                let (sine, cosine) = (start_angle + sweep_angle * fraction).sin_cos();
+                frame.point(Point2::new(major * cosine, minor * sine), 0.0)
+            }
         }
     }
 }
@@ -375,6 +395,22 @@ pub enum Curve2 {
     /// A planar rational B-spline in the face's (u, v) over a range, the
     /// fraction mapped affinely onto it (S4).
     BSpline(SplineSpan<BSplineCurve2>),
+    /// center + (major cos a, minor sin a), a = start + sweep * fraction:
+    /// an ellipse with its axes along the plane's u and v (S8a.2).
+    EllipseArc {
+        center: Point2,
+        major: f64,
+        minor: f64,
+        start_angle: f64,
+        sweep_angle: f64,
+    },
+    /// u = start + sweep * fraction, v = a0 + a1 cos u + a2 sin u: a plane's
+    /// section on a cylinder, the graph of its height over the angle (S8a.2).
+    Sinusoid {
+        start: f64,
+        sweep: f64,
+        a: [f64; 3],
+    },
 }
 
 impl Curve2 {
@@ -397,6 +433,21 @@ impl Curve2 {
                 .curve()
                 .point(span.parameter(fraction))
                 .expect("a finite spline evaluates in its domain"),
+            Self::EllipseArc {
+                center,
+                major,
+                minor,
+                start_angle,
+                sweep_angle,
+            } => {
+                let (sine, cosine) = (start_angle + sweep_angle * fraction).sin_cos();
+                Point2::new(center.x + major * cosine, center.y + minor * sine)
+            }
+            Self::Sinusoid { start, sweep, a } => {
+                let u = start + sweep * fraction;
+                let (sine, cosine) = u.sin_cos();
+                Point2::new(u, a[0] + a[1] * cosine + a[2] * sine)
+            }
         }
     }
 }
@@ -885,6 +936,39 @@ impl Topology {
             parts.regions.len(),
         )
         .expect("distinct external ordinals give distinct ids");
+        Ok(Self {
+            vertices: parts.vertices,
+            edges: parts.edges,
+            fins: parts.fins,
+            loops: parts.loops,
+            faces: parts.faces,
+            shells: parts.shells,
+            regions: parts.regions,
+            identity,
+            layout: Vec::new(),
+            attributes: AttributeMap::new(),
+        })
+    }
+    /// Validated parts under the given derivations (an operation's own
+    /// body, S8a.2): every vertex, fin and face measured, then the whole
+    /// contract checked; the issues otherwise.
+    pub(crate) fn from_parts_named(
+        parts: TopologyParts,
+        tolerance: Tolerance,
+        body: Derivation,
+        derivations: Vec<(Slot, Derivation)>,
+    ) -> std::result::Result<Self, Vec<Issue>> {
+        let parts = parts.with_measured_enclosures();
+        let issues = parts.check(tolerance);
+        if !issues.is_empty() {
+            return Err(issues);
+        }
+        let slots =
+            parts.vertices.len() + parts.edges.len() + parts.faces.len() + parts.regions.len() - 1;
+        let identity = match Identity::new(body, derivations, BTreeMap::new()) {
+            Ok(identity) if identity.slots.len() == slots => identity,
+            _ => return Err(Vec::new()),
+        };
         Ok(Self {
             vertices: parts.vertices,
             edges: parts.edges,
@@ -3063,68 +3147,97 @@ impl Topology {
         self.faces[face].loops.push(l);
     }
     fn plane_fin(&self, id: EdgeId, sense: Orientation, frame: Frame3) -> Fin {
-        let edge = &self.edges[id.0];
-        let local = |point: Point3| {
-            let [x, y, _] = frame.coordinates(point);
-            Point2::new(x, y)
-        };
-        let pcurve = match &edge.curve {
-            Curve3::LineSegment { start, end } => {
-                let (a, b) = if sense == Orientation::Forward {
-                    (*start, *end)
-                } else {
-                    (*end, *start)
-                };
-                Curve2::LineSegment {
-                    start: local(a),
-                    end: local(b),
-                }
-            }
-            Curve3::Circle {
-                frame: circle,
-                radius,
-            } => {
-                let [x, y, _] = frame.coordinates(circle.origin());
-                let start = local(circle.point(Point2::new(*radius, 0.0), 0.0));
-                Curve2::CircularArc {
-                    center: Point2::new(x, y),
-                    radius: *radius,
-                    start_angle: (start.y - y).atan2(start.x - x),
-                    sweep_angle: TAU * sense.sign() * circle.normal().dot(frame.normal()).signum(),
-                }
-            }
-            Curve3::CircularArc {
-                frame: arc,
-                radius,
-                sweep_angle,
-                ..
-            } => {
-                // S5: the arc in the cap's frame, its sweep's sign by the two
-                // normals and the traversal.
-                let [x, y, _] = frame.coordinates(arc.origin());
-                let (a, b) = (local(edge.curve.point(0.0)), local(edge.curve.point(1.0)));
-                let turn = sweep_angle * arc.normal().dot(frame.normal()).signum();
-                let (from, sweep) = if sense == Orientation::Forward {
-                    (a, turn)
-                } else {
-                    (b, -turn)
-                };
-                Curve2::CircularArc {
-                    center: Point2::new(x, y),
-                    radius: *radius,
-                    start_angle: (from.y - y).atan2(from.x - x),
-                    sweep_angle: sweep,
-                }
-            }
-            Curve3::BSpline(_) => {
-                unreachable!("the extrusion builder creates only lines, circles and arcs")
-            }
-        };
         Fin {
             edge: id,
             sense,
-            pcurve,
+            pcurve: plane_pcurve(&self.edges[id.0].curve, sense, frame),
             enclosure: None,
+        }
+    }
+}
+
+/// A planar curve's pcurve on the plane of `frame`, in the use's direction:
+/// lines by their ends, arcs and circles turned with the two normals,
+/// ellipses sharing the plane's x axis (S8a.2).
+pub(crate) fn plane_pcurve(curve: &Curve3, sense: Orientation, frame: Frame3) -> Curve2 {
+    let local = |point: Point3| {
+        let [x, y, _] = frame.coordinates(point);
+        Point2::new(x, y)
+    };
+    match curve {
+        Curve3::LineSegment { start, end } => {
+            let (a, b) = if sense == Orientation::Forward {
+                (*start, *end)
+            } else {
+                (*end, *start)
+            };
+            Curve2::LineSegment {
+                start: local(a),
+                end: local(b),
+            }
+        }
+        Curve3::Circle {
+            frame: circle,
+            radius,
+        } => {
+            let [x, y, _] = frame.coordinates(circle.origin());
+            let start = local(circle.point(Point2::new(*radius, 0.0), 0.0));
+            Curve2::CircularArc {
+                center: Point2::new(x, y),
+                radius: *radius,
+                start_angle: (start.y - y).atan2(start.x - x),
+                sweep_angle: TAU * sense.sign() * circle.normal().dot(frame.normal()).signum(),
+            }
+        }
+        Curve3::CircularArc {
+            frame: arc,
+            radius,
+            sweep_angle,
+            ..
+        } => {
+            // S5: the arc in the cap's frame, its sweep's sign by the two
+            // normals and the traversal.
+            let [x, y, _] = frame.coordinates(arc.origin());
+            let (a, b) = (local(curve.point(0.0)), local(curve.point(1.0)));
+            let turn = sweep_angle * arc.normal().dot(frame.normal()).signum();
+            let (from, sweep) = if sense == Orientation::Forward {
+                (a, turn)
+            } else {
+                (b, -turn)
+            };
+            Curve2::CircularArc {
+                center: Point2::new(x, y),
+                radius: *radius,
+                start_angle: (from.y - y).atan2(from.x - x),
+                sweep_angle: sweep,
+            }
+        }
+        // S8a.2: an ellipse whose frame shares the plane's x axis (the
+        // cut face's), its angle turned with the normals.
+        Curve3::EllipseArc {
+            frame: ellipse,
+            major,
+            minor,
+            start_angle,
+            sweep_angle,
+        } => {
+            let [x, y, _] = frame.coordinates(ellipse.origin());
+            let turn = ellipse.normal().dot(frame.normal()).signum();
+            let (start, sweep) = if sense == Orientation::Forward {
+                (*start_angle, *sweep_angle)
+            } else {
+                (start_angle + sweep_angle, -sweep_angle)
+            };
+            Curve2::EllipseArc {
+                center: Point2::new(x, y),
+                major: *major,
+                minor: *minor,
+                start_angle: turn * start,
+                sweep_angle: turn * sweep,
+            }
+        }
+        Curve3::BSpline(_) => {
+            unreachable!("the extrusion builder creates only lines, circles and arcs")
         }
     }
 }
