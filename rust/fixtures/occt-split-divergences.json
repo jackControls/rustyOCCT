@@ -36,6 +36,32 @@
       "reason": "The plane x + z = 2 touches the bottom cap's circle at (2, 0, 0) and the top cap's at (-2, 0, 4). OCCT keeps the cylinder's seam at angle 0 (the frame's x axis) in both pieces: the lower piece's wall is bounded by the seam from the touch point (3 faces, 3 edges, 2 vertices), the upper piece's wall is cut along it (4 faces, 5 edges, 3 vertices). The kernel has no seams (TOPOLOGY_MODEL.md): each piece is its cap, its elliptic cut face and its wall, the cap's circle and the ellipse meeting at the one vertex where the plane touches the cap's edge (3 faces, 2 edges, 1 vertex). Volumes, areas and centres agree with the reference.",
       "independent_evidence": "The cap circles have radius 2 about the axis; the plane's traces on the caps, x = 2 at z = 0 and x = -2 at z = 4, are tangent to them, so each piece's wall has zero height at one point, where the kernel places its vertex.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "sphere_oblique",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "327b1763b63bf13d506ed9bd7fa6d8e4c4b22773a4e792eb9379c06ac6e57557",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp measures the two caps a plane cuts from a sphere of radius 2 at 6.6e-8 relative from their exact volumes and areas (20.496799011 and 13.013523149 against 20.496797670 and 13.013523969), beyond the 2e-8 allowance for elliptic faces; its centres move by up to 5e-8.",
+      "independent_evidence": "The plane lies 0.3 from the centre (normal (1, 2, 2) / 3 through (0.3, 0.2, 0.1)): the caps have heights 1.7 and 2.3, volumes pi h^2 (3R - h) / 3 = 13.0135240 and 20.4967977, as the reference integrates.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "sphere_tilted",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "a1a4f8ba8e1854fdc0881b45af677f007b1c7034d26c735baf9a830775d72b33",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp measures the two caps of a sphere of radius 1.5 in the tilted frame 4.7e-4 relative from their exact volumes: their sum, 14.138748, exceeds the sphere's 14.137167 (4/3 pi 1.5^3); its areas and centres err likewise. The pieces are valid; OCCT's default integration precision on these spherical faces is the cause, not the split.",
+      "independent_evidence": "The plane (normal (1, -1, 0.5) through (1.25, -2, 0.5)) lies 1/6 from the centre (1, -2, 0.5): the caps have heights 4/3 and 5/3, volumes 5.8953344 and 8.2418326, and areas 2 pi R h plus their disc, as the reference integrates.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     }
   ]
 }

@@ -1,0 +1,24 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+  "platform": "darwin",
+  "rust_revision": "59cd932485af85f1639d82c50066549e1560feeb",
+  "rust_split_exists": false,
+  "rust_worktree_uncommitted": [
+    " M rust/REVIEW_NOTES.md",
+    " M rust/fuzz/regressions/README.md",
+    " M rust/kernel/src/solid/split.rs",
+    " M rust/tools/compare_split.py",
+    " M rust/tools/generate_split_fixtures.py",
+    " M rust/tools/occt_split_oracle.cpp",
+    " M rust/tools/split_reference.py",
+    "?? rust/fixtures/occt-split-primitive-preimplementation/",
+    "?? rust/fixtures/split-primitive-cases.txt",
+    "?? rust/fixtures/split-primitive-expected.tsv",
+    "?? rust/fuzz/regressions/split/crash-6d802bdd1a8deb1da573d4cdf1b35e71fcb7168e.bin"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "2d139fe27aaa99d75c34a44dfb1b6c59bce93d95b92b1625b5ba7ee95e4839a6",
+  "probe_source_sha256": "e9715c75d25972528158841ce1ca5277e5c18a023daef4117446898f38f0117b",
+  "observations_sha256": "0bb332ec0e5b9fd9ca3b27c68d2916b5596097ea60e50f38cfbbe5312e37f55b"
+}

@@ -1047,6 +1047,38 @@ Decisions for S8, recorded before its code (2026-09-28):
   missing, in a cap), and a native `BRepAlgoAPI_Splitter` capture (each
   piece's volume, area, centre and counts) before the kernel code.
 
+Decisions for S8c, recorded before its code (2026-09-28):
+
+* **Order changed: S8c before S8b.** S8b splits spline prisms, and no
+  builder makes one yet: a profile holds lines and arcs (S5). It needs
+  spline profile segments first (their validation as simple closed
+  curves by certified spline proximity, exact area moments, the extruded
+  wall as an exact degree-(p, 1) spline surface), whose tessellation and
+  precise mass are the running parallel tracks T-b and F8. S8b follows
+  them; S8c needs nothing new but its own evidence.
+* **Scope.** The cylinder primitive is a prism of a circle, split by S8a.
+  S8c.1: a cone, frustum or sphere zone by a plane normal to its axis, the
+  pieces the same primitive between exact heights rounded to binary64
+  (M3's height split for revolved solids: the cut face a disc or, through
+  the apex, the apex itself); a whole sphere by any plane, its pieces two
+  caps whose frame's axis is the plane's normal (a sphere has every axis).
+  S8c.2: a plane containing the axis, the pieces half-solids bounded by
+  meridians (a cone's rulings, a sphere's great half-circles, both line
+  pcurves) built as general bodies. Other planes cut a cone in conics and
+  a zone in circles whose pcurves are transcendental graphs over the
+  angle (OCCT approximates them by splines): they wait for D13's
+  procedural edges (S8d) and are `OutOfDomain` until then.
+* **History.** As S8a: pieces renamed by provenance, the lateral face
+  `Split` into faces of the same surface. The history checker's support
+  test learns cones, spheres and tori (a piece lies on the whole's surface
+  when the axes are parallel and the apex, centre or centre circle within
+  the tolerance, whatever their stored frames' x axes).
+* **Evidence first**: `split_reference.py` extended to cones and spheres
+  (each side's volume, area and centre by quadrature of the clipped
+  revolved profile), fixtures of every class, and `occt_split_oracle.cpp`
+  extended with `BRepPrimAPI_MakeCone`/`MakeSphere` and a capture before
+  the kernel code.
+
 ### S9 — Booleans for the analytic family (Combine job)
 
 Fuse, cut and common: intersect faces (S7), split (S8), classify by

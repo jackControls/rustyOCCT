@@ -2,7 +2,7 @@
 //! (`fixtures/split-*.txt|tsv` from `tools/generate_split_fixtures.py`).
 #[path = "support/split_protocol.rs"]
 mod protocol;
-use protocol::{cases, plane_frame, rows, split, Case};
+use protocol::{build_primitive, cases, plane_frame, primitive_cases, rows, split, Case};
 use rusty_occt::history::{self, Relation};
 use rusty_occt::identity::OperationId;
 use rusty_occt::{Frame3, Point3, Side, Tolerance, Vec3};
@@ -299,5 +299,37 @@ fn oblique_pieces_write_where_occt_has_records() {
     let (_, pieces, _) = split(&case("disc_wall_ellipse")).unwrap();
     for (_, piece) in &pieces {
         assert!(rusty_occt::occt_brep::write(piece.topology(), 1e-7).is_err());
+    }
+}
+
+/// S8c's fixtures: every cone, frustum, sphere and zone builds, and its
+/// certified volume contains the reference's total of both sides.
+#[test]
+fn primitive_fixtures_build_with_the_reference_volume() {
+    let mut totals: BTreeMap<String, f64> = BTreeMap::new();
+    for line in include_str!("../../fixtures/split-primitive-expected.tsv")
+        .lines()
+        .filter(|l| !l.starts_with('#'))
+    {
+        let (name, row) = line.split_once('\t').unwrap();
+        let v: f64 = row.split(' ').nth(2).unwrap().parse().unwrap();
+        *totals.entry(name.to_string()).or_default() += v;
+    }
+    let cases = primitive_cases(include_str!("../../fixtures/split-primitive-cases.txt"));
+    assert_eq!(cases.len(), totals.len());
+    for case in cases {
+        let solid = build_primitive(&case);
+        let m = solid.topology().mass_enclosure().unwrap();
+        let v = totals[&case.name];
+        let slack = 1e-12 * v;
+        assert!(
+            m.volume[0] - slack <= v && v <= m.volume[1] + slack,
+            "{}: {:?} {v}",
+            case.name,
+            m.volume
+        );
+        // Its split answers (pieces, or a later sub-step's `unsupported`).
+        let rows = protocol::primitive_rows(&case).unwrap_or_else(|e| panic!("{}: {e}", case.name));
+        assert!(!rows.is_empty(), "{}", case.name);
     }
 }

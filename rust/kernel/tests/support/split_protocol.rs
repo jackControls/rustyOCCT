@@ -60,10 +60,80 @@ pub fn split(case: &Case) -> Result<Split, Error> {
     Ok((solid, pieces, history))
 }
 
+/// A cone, frustum, sphere or zone of `split-primitive-cases.txt` (S8c).
+pub struct PrimitiveCase {
+    pub name: String,
+    pub kind: String,
+    pub tolerance: f64,
+    /// Origin, normal and x hint.
+    pub frame: [f64; 9],
+    /// A cone's bottom and top radii and height; a sphere's radius and
+    /// latitudes.
+    pub params: [f64; 3],
+    pub plane: [f64; 6],
+}
+
+/// Every `cone` or `sphere` line.
+pub fn primitive_cases(text: &str) -> Vec<PrimitiveCase> {
+    text.lines()
+        .filter(|l| l.starts_with("cone ") || l.starts_with("sphere "))
+        .map(|line| {
+            let w: Vec<&str> = line.split_whitespace().collect();
+            let v: Vec<f64> = w[2..15].iter().map(|x| x.parse().unwrap()).collect();
+            assert_eq!(w[15], "split");
+            let p: Vec<f64> = w[16..22].iter().map(|x| x.parse().unwrap()).collect();
+            PrimitiveCase {
+                name: w[1].to_string(),
+                kind: w[0].to_string(),
+                tolerance: v[0],
+                frame: v[1..10].try_into().unwrap(),
+                params: v[10..13].try_into().unwrap(),
+                plane: p.try_into().unwrap(),
+            }
+        })
+        .collect()
+}
+
+/// A primitive case's solid, from the kernel's builders.
+pub fn build_primitive(case: &PrimitiveCase) -> Solid {
+    let f = case.frame;
+    let tolerance = Tolerance::new(case.tolerance, Tolerance::default().angular()).unwrap();
+    let frame = Frame3::new(
+        Point3::new(f[0], f[1], f[2]),
+        Vec3::new(f[3], f[4], f[5]),
+        Vec3::new(f[6], f[7], f[8]),
+        tolerance,
+    )
+    .unwrap();
+    let [a, b, c] = case.params;
+    let made = if case.kind == "cone" {
+        Solid::cone_with(OperationId(1), frame, a, b, c, tolerance)
+    } else {
+        Solid::sphere_with(OperationId(1), frame, a, b, c, tolerance)
+    };
+    made.unwrap().0
+}
+
+/// The pieces and history of a primitive case.
+pub fn primitive_split(case: &PrimitiveCase) -> Result<Split, Error> {
+    let solid = build_primitive(case);
+    let (pieces, history) = solid.split_by_plane(OperationId(900), plane_frame(case.plane))?;
+    Ok((solid, pieces, history))
+}
+
+/// The kernel's rows for a primitive case.
+pub fn primitive_rows(case: &PrimitiveCase) -> Result<Vec<String>, Error> {
+    piece_rows(primitive_split(case).map(|(_, pieces, _)| pieces))
+}
+
 /// The kernel's rows for a case; `Err` for an unexpected error.
 pub fn rows(case: &Case) -> Result<Vec<String>, Error> {
-    let pieces = match split(case) {
-        Ok((_, pieces, _)) => pieces,
+    piece_rows(split(case).map(|(_, pieces, _)| pieces))
+}
+
+fn piece_rows(split: Result<Vec<(Side, Solid)>, Error>) -> Result<Vec<String>, Error> {
+    let pieces = match split {
+        Ok(pieces) => pieces,
         Err(Error::ComputationLimit(_)) => return Ok(vec!["limit".into()]),
         Err(Error::OutOfDomain(_)) => return Ok(vec!["unsupported".into()]),
         Err(e) => return Err(e),

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Source-pinned BRepAlgoAPI_Splitter observations beside the S8 reference:
-prisms of line and arc profiles split by a plane (S8a).
+prisms of line and arc profiles split by a plane (S8a), and cones, frusta,
+spheres and zones (S8c: `split-primitive-cases.txt`, built natively by
+BRepPrimAPI_MakeCone and MakeSphere on the kernel's stored frame axes).
 
 The independent reference (split_reference.py) gives every case of
 split-cases.txt the totals of each side (volume, area, centre); the native
@@ -31,6 +33,7 @@ from compare_brep_io import TOOLKITS, build
 from compare_curve_surface import platform_record
 from compare_degree_elevation import verify_sdk
 from compare_occt import ROOT
+from curve_surface_reference import stored_axes
 from identity_reference import native_case
 import generate_split_fixtures as fixtures
 
@@ -38,6 +41,8 @@ SOURCE_FILE = ROOT/'rust/tools/occt_split_oracle.cpp'
 REVIEWS = ROOT/'rust/fixtures/occt-split-divergences.json'
 CAPTURES = {
     's8a': (ROOT/'rust/fixtures/occt-split-preimplementation', ROOT/'rust/kernel/src/solid/split.rs'),
+    's8c': (ROOT/'rust/fixtures/occt-split-primitive-preimplementation',
+            ROOT/'rust/kernel/src/solid/split/revolved.rs'),
 }
 # OCCT's BRepGProp on the split pieces' elliptic faces (a plane across an arc
 # or a circle's wall) errs by up to 8.8e-9 relative in the pre-implementation
@@ -45,8 +50,15 @@ CAPTURES = {
 BOUND = 2e-8
 
 
-def native_input():
+def native_input(key='s8a'):
     blocks = []
+    if key == 's8c':
+        for kind, name, frame, params, plane in fixtures.primitive_cases():
+            o, x, _, n = stored_axes(frame)
+            axis = ' '.join(repr(float(v)) for v in list(o)+list(n)+list(x)+list(params))
+            blocks.append(f'case {name}\n{kind} {axis}\nsplit '
+                          + ' '.join(repr(float(v)) for v in plane)+'\nend')
+        return '\n'.join(blocks)+'\n'
     for case, plane in fixtures.cases():
         text = native_case(case)
         body, _ = text.rsplit('\nend', 1)
@@ -70,7 +82,9 @@ def parse_native(stdout):
 
 def expected_rows():
     out = {}
-    for line in (ROOT/'rust/fixtures/split-expected.tsv').read_text().splitlines()[1:]:
+    text = (ROOT/'rust/fixtures/split-expected.tsv').read_text().splitlines()[1:] + \
+        (ROOT/'rust/fixtures/split-primitive-expected.tsv').read_text().splitlines()[1:]
+    for line in text:
         name, row = line.split('\t')
         w = row.split()
         out.setdefault(name, []).append((w[1], float(w[2]), float(w[3]), [float(x) for x in w[4:7]]))
@@ -87,6 +101,9 @@ def totals(pieces):
 
 
 def case_scale(case, plane):
+    if isinstance(case, tuple):
+        _, _, frame, params, _ = case
+        return max([1.0]+[abs(x) for x in list(frame[:3])+list(plane[:3])+list(params)])
     return max([1.0]+[abs(x) for x in list(case.frame[:3])+list(plane[:3])]+[abs(case.end-case.start)])
 
 
@@ -120,7 +137,8 @@ def differences(case, plane, native, rows):
 def rust_rows():
     subprocess.run(['cargo', '+stable', 'build', '--release', '--locked', '--example', 'split_probe'],
                    cwd=ROOT, check=True)
-    text = (ROOT/'rust/fixtures/split-cases.txt').read_text()
+    text = (ROOT/'rust/fixtures/split-cases.txt').read_text() + \
+        (ROOT/'rust/fixtures/split-primitive-cases.txt').read_text()
     rows = subprocess.run([str(ROOT/'target/release/examples/split_probe')], input=text,
                           text=True, capture_output=True, timeout=600, check=True).stdout
     out = {}
@@ -179,7 +197,7 @@ def rust_differences(rust, rows, native):
 
 def capture(executable, env, key, sdk_manifest):
     CAPTURE, kernel_file = CAPTURES[key]
-    text = native_input()
+    text = native_input(key)
     record = run(executable, text, env)
     if record['exit_code'] != 0:
         raise SystemExit('native split run failed: '+json.dumps(record)[:2000])
@@ -200,16 +218,17 @@ def capture(executable, env, key, sdk_manifest):
         'observations_sha256': digest(CAPTURE/'native.txt')})
 
 
-def captured(observed):
-    for CAPTURE, _ in CAPTURES.values():
+def captured(observed_by_key):
+    for key, (CAPTURE, _) in CAPTURES.items():
+        observed = observed_by_key[key]
         metadata = json.loads((CAPTURE/'capture.json').read_text())
         if metadata['source_reference'] != SOURCE or metadata['rust_split_exists']:
             raise ValueError('split capture was not a clean pre-implementation reference')
-        for key, name in [('input_sha256', 'inputs.txt'), ('probe_source_sha256', 'oracle.cpp'),
-                          ('observations_sha256', 'native.txt')]:
-            if metadata[key] != digest(CAPTURE/name):
+        for field, name in [('input_sha256', 'inputs.txt'), ('probe_source_sha256', 'oracle.cpp'),
+                            ('observations_sha256', 'native.txt')]:
+            if metadata[field] != digest(CAPTURE/name):
                 raise ValueError('split evidence changed: '+name)
-        if (CAPTURE/'inputs.txt').read_text() != native_input():
+        if (CAPTURE/'inputs.txt').read_text() != native_input(key):
             raise ValueError('the native inputs differ from the captured ones')
         was = parse_native(platform_record(CAPTURE, metadata))
         if set(was) != set(observed):
@@ -242,20 +261,25 @@ def main():
         capture(executable, env, args.capture, args.sdk_manifest)
         print('captured', args.capture)
         return
-    record = run(executable, native_input(), env)
-    if record['exit_code'] != 0:
-        raise SystemExit('native split run failed: '+json.dumps(record)[:2000])
-    (output/'native-observed.txt').write_text(record['stdout'])
-    observed = parse_native(record['stdout'])
-    captured(observed)
+    by_key, stdout = {}, []
+    for key in CAPTURES:
+        record = run(executable, native_input(key), env)
+        if record['exit_code'] != 0:
+            raise SystemExit('native split run failed: '+json.dumps(record)[:2000])
+        stdout.append(record['stdout'])
+        by_key[key] = parse_native(record['stdout'])
+    (output/'native-observed.txt').write_text(''.join(stdout))
+    captured(by_key)
+    observed = {k: v for d in by_key.values() for k, v in d.items()}
     oracle = next(iter(record['stderr'].splitlines()), None)
     reviews = [] if args.strict_native or not REVIEWS.exists() else json.loads(REVIEWS.read_text())['reviews']
     expected = expected_rows()
     report = {'source_reference': SOURCE, 'oracle': oracle, 'cases': 0, 'rust_within_reference': 0,
               'rust_unsupported': [], 'matches': [], 'reviewed_differences': [], 'failures': []}
     rust = None if args.native_only else rust_rows()
-    for case, plane in fixtures.cases():
-        name = case.name
+    everything = [(case, plane, case.name) for case, plane in fixtures.cases()] + \
+        [(c, c[4], c[1]) for c in fixtures.primitive_cases()]
+    for case, plane, name in everything:
         report['cases'] += 1
         rows = expected[name]
         native = observed[name]

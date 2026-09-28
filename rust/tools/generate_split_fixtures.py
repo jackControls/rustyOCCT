@@ -15,8 +15,19 @@ across line and arc walls, through two vertical edges, through one vertex
 only, tangent to an arc wall along a ruling, lying in a cap, missing, and
 crossing a hole, a non-convex profile in two pieces of section, and a
 circle's whole wall in an ellipse. No Rust result supplies an expectation.
+
+S8c: `split-primitive-cases.txt` gives one cone, frustum, sphere or zone per
+line (`cone NAME tol ox oy oz nx ny nz xx xy xz r1 r2 h split ...` or
+`sphere NAME tol ox oy oz nx ny nz xx xy xz R a1 a2 split ...`, as the
+kernel's builders and `BRepPrimAPI_MakeCone`/`MakeSphere` take them) and
+`split-primitive-expected.tsv` its sides (`split_reference.revolved_rows`):
+planes normal to the axis (through a frustum, an apex cone, a zone, a whole
+sphere, at an apex, in a cap, missing, touching a sphere), a whole sphere
+by oblique planes, planes containing the axis, and the conic and circle
+sections that wait for procedural edges (S8d).
 """
 import argparse
+import math
 from pathlib import Path
 import struct
 
@@ -88,6 +99,45 @@ def cases():
     ]
 
 
+HALF_PI = math.pi/2
+
+
+def primitive_cases():
+    """(kind, name, frame, params, plane)."""
+    cone, sphere = 'cone', 'sphere'
+    return [
+        (cone, 'frustum_height', XY, (2.0, 1.0, 3.0), (0.0, 0.0, 1.25, 0.0, 0.0, 1.0)),
+        (cone, 'apex_height', XY, (2.0, 0.0, 3.0), (0.0, 0.0, 1.5, 0.0, 0.0, 1.0)),
+        (cone, 'apex_up_height', XY, (0.0, 1.5, 2.0), (0.0, 0.0, 0.5, 0.0, 0.0, -1.0)),
+        (cone, 'widening_height', XY, (1.0, 2.5, 0.5), (0.0, 0.0, 0.375, 0.0, 0.0, 1.0)),
+        (cone, 'apex_touch', XY, (2.0, 0.0, 3.0), (0.0, 0.0, 3.0, 0.0, 0.0, 1.0)),
+        (cone, 'frustum_in_cap', XY, (2.0, 1.0, 3.0), (0.5, 0.0, 0.0, 0.0, 0.0, 1.0)),
+        (cone, 'frustum_miss', XY, (2.0, 1.0, 3.0), (0.0, 0.0, 4.0, 0.0, 0.0, 1.0)),
+        (cone, 'tilted_height', TILT, (2.0, 0.5, 3.0), (1.0, -0.8, 2.1, 0.0, 3.0, 4.0)),
+        (cone, 'frustum_meridian', XY, (2.0, 1.0, 3.0), (0.0, 0.0, 0.0, 1.0, 0.0, 0.0)),
+        (cone, 'apex_meridian', XY, (2.0, 0.0, 3.0), (0.0, 0.0, 1.0, 1.0, 1.0, 0.0)),
+        (cone, 'apex_oblique', XY, (2.0, 0.0, 3.0), (0.0, 0.0, 1.0, 1.0, 0.0, 2.0)),
+        (cone, 'frustum_parallel', XY, (2.0, 1.0, 3.0), (0.5, 0.0, 0.0, 1.0, 0.0, 0.0)),
+        (sphere, 'sphere_equator', XY, (2.0, -HALF_PI, HALF_PI), (0.0, 0.0, 0.0, 0.0, 0.0, 1.0)),
+        (sphere, 'sphere_height', XY, (2.0, -HALF_PI, HALF_PI), (0.0, 0.0, 0.75, 0.0, 0.0, 1.0)),
+        (sphere, 'sphere_oblique', XY, (2.0, -HALF_PI, HALF_PI), (0.3, 0.2, 0.1, 1.0, 2.0, 2.0)),
+        (sphere, 'sphere_tilted', TILT, (1.5, -HALF_PI, HALF_PI), (1.25, -2.0, 0.5, 1.0, -1.0, 0.5)),
+        (sphere, 'sphere_touch', XY, (2.0, -HALF_PI, HALF_PI), (0.0, 0.0, 2.0, 0.0, 0.0, 1.0)),
+        (sphere, 'sphere_miss', XY, (2.0, -HALF_PI, HALF_PI), (0.0, 3.0, 0.0, 0.0, 1.0, 0.0)),
+        (sphere, 'zone_height', XY, (2.0, -0.5, 1.0), (0.0, 0.0, 0.25, 0.0, 0.0, 1.0)),
+        (sphere, 'cap_height', XY, (2.0, 0.25, HALF_PI), (0.0, 0.0, 1.5, 0.0, 0.0, 1.0)),
+        (sphere, 'zone_meridian', XY, (2.0, -0.5, 1.0), (0.0, 0.0, 0.0, 0.0, 1.0, 0.0)),
+        (sphere, 'cap_meridian', XY, (2.0, 0.25, HALF_PI), (0.0, 0.0, 0.0, 1.0, 1.0, 0.0)),
+        (sphere, 'zone_oblique', XY, (2.0, -0.5, 1.0), (0.0, 0.0, 0.5, 1.0, 0.0, 1.0)),
+    ]
+
+
+def primitive_line(kind, name, frame, params, plane):
+    words = [kind, name, '1e-07'] + [repr(float(v)) for v in frame+params] + ['split'] + \
+        [repr(float(v)) for v in plane]
+    return ' '.join(words)
+
+
 def encode(case, plane):
     text = encode_case(case)
     body, end = text.rsplit('\nend', 1)
@@ -104,8 +154,15 @@ def generate():
         _, x, y, n = stored_axes(case.frame)
         for key, v in (('n', n), ('x', x), ('y', y)):
             frames.append(f'{case.name}\t{key}\t'+' '.join(struct.pack('>d', c).hex() for c in v))
+    lines, prim = [], ['# case\trow (S8c, split_reference.revolved_rows)']
+    for kind, name, frame, params, plane in primitive_cases():
+        lines.append(primitive_line(kind, name, frame, params, plane))
+        for row in ref.revolved_rows(kind, frame, params, plane):
+            prim.append(f'{name}\t{ref.text(row)}')
     return {'split-cases.txt': '\n'.join(blocks)+'\n', 'split-expected.tsv': '\n'.join(out)+'\n',
-            'split-frames.tsv': '\n'.join(frames)+'\n'}
+            'split-frames.tsv': '\n'.join(frames)+'\n',
+            'split-primitive-cases.txt': '\n'.join(lines)+'\n',
+            'split-primitive-expected.tsv': '\n'.join(prim)+'\n'}
 
 
 def main():
@@ -120,7 +177,7 @@ def main():
                 raise SystemExit(f'{path} is stale')
         else:
             path.write_text(contents)
-    print(len(cases()), 'cases')
+    print(len(cases()), 'cases,', len(primitive_cases()), 'primitive cases')
 
 
 if __name__ == '__main__':
