@@ -650,9 +650,9 @@ and `fuse = A + B - common`, `cut = A - common` (all within 1.2e-38);
 `compare_boolean.py` reproduces the `BRepAlgoAPI_Fuse`/`Cut`/`Common`
 pre-implementation capture: every result valid with the reference's solid
 count, all 45 within 2e-8 of the reference (6.1e-15 at worst), no review.
-With S9a.1, `boolean_probe` puts every result inside the reference with the
-reference's solid count (36 cases; 5 empty), refuses the 3 degenerate ones
-and leaves the 6 stacks `OutOfDomain`, every count equal to OCCT's after
+With S9a.1 and S9a.2's stacks, `boolean_probe` puts every result inside the
+reference with the reference's solid count (42 cases; 5 empty, 6 stacks)
+and refuses the 3 degenerate ones, every count equal to OCCT's after
 unifying; `booleans.rs` checks the same and every history.
 
 The `GeomInt_IntSS` captures were taken on macOS arm64; IntPatch's walking

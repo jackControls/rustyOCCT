@@ -2032,6 +2032,24 @@ holes. Joining consecutive pieces is exact: two lines when `u x v = 0` and
 `u . v > 0` for their direction vectors, two arcs when their centres,
 radii and senses are equal.
 
+**Stacks (S9a.2).** Each piece's two sides carry exact memberships: its
+own profile's material lies left of a stored outer boundary and right of a
+hole, the other's on both sides (inside), neither (outside) or on the side
+its shared partner's lies. A slab's region is `f(m_A, m_B)` for its set
+function `f`; a piece is a wall where `f(left) != f(right)`, and at a slab
+height `k` the upward faces are `f_{k-1} ∧ ¬f_k`, the downward ones
+`f_k ∧ ¬f_{k-1}`, traced as above. At a piece and a height the four
+quadrants (left and right, below and above) give the faces meeting there:
+a wall where the two below or the two above differ, a cap where the two
+left or the two right differ; the changes around the cycle are 0, 2 or 4,
+and 4 is the result touching itself. Two walls join across a piece's end
+when their pieces lie on one line (`d1 x d2 = 0` and `d1 x (r - p) = 0`,
+exact) facing one way (region-left directions with a positive dot
+product), or on one circle (equal centres and radii) with equal
+region-left senses. A cylinder wall's pcurves are lines in (angle,
+height): an arc's fin advances the angle by its sweep, a vertical keeps
+it, so each loop's winding is its angle's change over `2 pi`.
+
 ## Tessellation bounds (T-a)
 
 A mesh triangle has nodes `X_i` and parameter points `p_i` on its face's

@@ -29,6 +29,7 @@ mod spiric;
 mod spline;
 mod torus;
 pub(super) use meridian::Half;
+pub(crate) use oblique::edge_bounds;
 pub(super) use oblique::Clipped;
 
 pub(crate) fn zero() -> R {

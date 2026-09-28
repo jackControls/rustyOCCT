@@ -89,6 +89,9 @@ enum Construction {
     /// A half of a cone or sphere zone split by a plane containing its
     /// axis (S8c.2).
     Half(Box<split::Half>),
+    /// A solid of a Boolean of two prisms that is a stack of slabs of
+    /// different regions (S9a.2).
+    Stack(Box<boolean::stack::Stack>),
 }
 
 /// An immutable, validated normal extrusion of one planar material region,
@@ -316,6 +319,7 @@ impl Solid {
                 clipped.rebuilt(operation, frame, self.start, self.end)
             }
             Construction::Half(half) => half.rebuilt(operation, frame),
+            Construction::Stack(stack) => stack.rebuilt_with(operation, frame, None),
         }
     }
 
@@ -692,6 +696,9 @@ impl Solid {
             Construction::Clipped(_) | Construction::Half(_) => Err(Error::OutOfDomain(
                 "a prism operation on a split piece (S8b)",
             )),
+            Construction::Stack(_) => Err(Error::OutOfDomain(
+                "a prism operation on a Boolean's stack (S9b)",
+            )),
             Construction::Torus { .. } => Err(Error::OutOfDomain(
                 "split and fuse rebuild prisms; this solid is a torus",
             )),
@@ -802,7 +809,8 @@ impl Solid {
             | Construction::Sphere { .. }
             | Construction::Torus { .. }
             | Construction::Clipped(_)
-            | Construction::Half(_) => None,
+            | Construction::Half(_)
+            | Construction::Stack(_) => None,
         }
     }
     /// The body's resolution.
@@ -811,6 +819,7 @@ impl Solid {
             Construction::Prism(profile) => profile.tolerance(),
             Construction::Clipped(clipped) => clipped.tolerance(),
             Construction::Half(half) => half.tolerance(),
+            Construction::Stack(stack) => stack.tolerance(),
             Construction::Cone { tolerance, .. }
             | Construction::Sphere { tolerance, .. }
             | Construction::Torus { tolerance, .. } => *tolerance,
@@ -857,6 +866,9 @@ impl Solid {
                 return clipped.classify([x, y, z], low, high, tolerance);
             }
             Construction::Half(half) => return half.classify([x, y, z], tolerance),
+            Construction::Stack(stack) => {
+                return stack.classify([x, y, z], [self.start, self.end], tolerance)
+            }
             Construction::Cone { bottom, top, .. } => {
                 let z = finite(z, "axial coordinate")?;
                 let local = [finite(x, "coordinate")?, finite(y, "coordinate")?, z];
@@ -978,6 +990,10 @@ impl Solid {
             // A split half's certified mass is costly: its source's, moved.
             Construction::Half(half) => {
                 half.rebuilt_with(self.operation, frame, Some(self.mass.moved(transform)))?
+            }
+            // A stack's too (S9a.2).
+            Construction::Stack(stack) => {
+                stack.rebuilt_with(self.operation, frame, Some(self.mass.moved(transform)))?
             }
             // An oblique piece's too (S8b's spline walls cost the most).
             Construction::Clipped(clipped) => clipped.rebuilt_with(

@@ -24,6 +24,8 @@
 //! single relation says it: each such result is `Generated` from its
 //! parents and those inputs are `Deleted`. An input continued by nothing is
 //! `Deleted`.
+pub(crate) mod stack;
+
 use super::{replayable, Construction, Context, Solid};
 use crate::history::{self, History, Relation};
 use crate::identity::{
@@ -323,9 +325,7 @@ impl Solid {
                     return self.finish(context, other, op, whole(self)?, Vec::new());
                 }
                 if !(hb[0] <= ha[0] && hb[1] >= ha[1]) {
-                    return Err(Error::OutOfDomain(
-                        "a cut leaving a stack of prisms (S9a.2)",
-                    ));
+                    return self.stacked(context, other, op, pa, pb, ha, hb);
                 }
                 (ha, boolean(pa, &pb, op)?)
             }
@@ -368,9 +368,7 @@ impl Solid {
                             Vec::new(),
                         );
                     } else {
-                        return Err(Error::OutOfDomain(
-                            "a fuse of prisms of different heights (S9a.2)",
-                        ));
+                        return self.stacked(context, other, op, pa, pb, ha, hb);
                     }
                 }
             }
@@ -594,6 +592,62 @@ impl Solid {
             plans.push(named);
         }
         let solids: Vec<Solid> = built.into_iter().map(|(s, ..)| s).collect();
+        self.finish(context, other, op, solids, plans)
+    }
+
+    /// S9a.2: a result that is a stack of slabs of different regions, its
+    /// solids general bodies named by their provenance.
+    #[allow(clippy::too_many_arguments)]
+    fn stacked(
+        &self,
+        context: &Context,
+        other: &Solid,
+        op: Op2,
+        pa: &Profile,
+        pb: Profile,
+        ha: [f64; 2],
+        hb: [f64; 2],
+    ) -> Result<(Vec<Solid>, History)> {
+        let stack = stack::Stack {
+            a: pa.clone(),
+            b: pb,
+            ha,
+            hb,
+            op,
+            index: 0,
+        };
+        let components = stack::build(&stack, self.frame)?;
+        let (index_a, index_b) = (index(self)?, index(other)?);
+        let resolve = |keys: &[stack::Key]| -> Result<Vec<EntityId>> {
+            keys.iter()
+                .map(|(o, at, what, b, j)| {
+                    let index = if *o == Operand::A { &index_a } else { &index_b };
+                    index
+                        .get(&(*at, *what, *b, *j))
+                        .copied()
+                        .ok_or(Error::InvalidTopology("a stack's input entity"))
+                })
+                .collect()
+        };
+        let mut solids = Vec::new();
+        let mut plans = Vec::new();
+        for (i, component) in components.into_iter().enumerate() {
+            let mut named = Vec::new();
+            for (slot, continues, touches, entity, role) in &component.plans {
+                let (mut c, mut t) = (resolve(continues)?, resolve(touches)?);
+                c.sort();
+                c.dedup();
+                t.sort();
+                t.dedup();
+                named.push((*slot, c, t, *entity, *role));
+            }
+            let piece = stack::Stack {
+                index: i,
+                ..stack.clone()
+            };
+            solids.push(piece.solid(component, self.frame, context.operation, None)?);
+            plans.push(named);
+        }
         self.finish(context, other, op, solids, plans)
     }
 
