@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 36382720611 (commit 70834be7), ubuntu-latest, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "8d38658c945e80549472f31f09a3c34948095fd8fccbcd7c612b8a8ae4cc337b",
+  "review": "The same statuses as the macOS capture for all 35 cases; the tangency clusters of e_torus_tangent and e_torus_tilted hold 12 and 13 points (macOS 14 each), and the separate points along the splines lying on the torus sit elsewhere along them (2.4e-3 apart); every other case within 1e-9. Against the reference the same reviewed classes (missed containment and overlaps), s_torus_contained and s_torus_partial fingerprinted for Linux."
+}

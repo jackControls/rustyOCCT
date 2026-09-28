@@ -144,6 +144,54 @@
       "reason": "GeomAPI_IntCS returns nothing for a spline lying on the cone. The kernel decides the overlap exactly: Q0, Q1 and Q2 vanish on the span (tan a / |a| is transcendental).",
       "independent_evidence": "The rational quadratic with poles (1, 0, 0), (1, 1, 0), (0, 1, 0) and weights 1, 1, 2 is the quarter of the cone's reference circle (radius 1 in z = 0).",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "c_torus_meridian",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomAPI_IntCS",
+      "native_sha256": "075dfd549770945cd0152bae6d4d8a03c4b1e21a1101a95a7d36695b8ab7abbc",
+      "differences": [
+        "missed_containment"
+      ],
+      "reason": "GeomAPI_IntCS reports a meridian circle lying on the torus as 421 separate points along it rather than as a segment; the kernel decides the containment exactly.",
+      "independent_evidence": "The circle of radius 0.5 about (2, 0, 0) normal to y is the torus's meridian at phi = 0 (major radius 2, minor 0.5 about z).",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native samples differing in number or rounding"
+    },
+    {
+      "case": "c_torus_parallel",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomAPI_IntCS",
+      "native_sha256": "f6c11a6ef0a71b8b538c4aca6805a70299da779896b78d29bd2894e23457f4ee",
+      "differences": [
+        "missed_containment"
+      ],
+      "reason": "GeomAPI_IntCS reports the torus's top circle lying on it as 324 separate points rather than as a segment; the kernel decides the containment exactly.",
+      "independent_evidence": "The circle of radius 2 about (0, 0, 0.5) normal to z is the torus's top parallel (the tube's highest points, major radius 2, minor 0.5).",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native samples differing in number or rounding"
+    },
+    {
+      "case": "s_torus_contained",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomAPI_IntCS",
+      "native_sha256": "77f2f2412056283d3458d99dc3195dec0762e3c071c7de86219e1ce91ada1eb3",
+      "differences": [
+        "missed_overlap"
+      ],
+      "reason": "GeomAPI_IntCS reports 74 separate points along a spline lying on the torus and no segment. The kernel decides the overlap exactly (the homogeneous quartic vanishes on the span).",
+      "independent_evidence": "The rational quadratic with poles (2, 0, 0.5), (2, 2, 0.5), (0, 2, 0.5) and weights 1, 1, 2 is the quarter of the circle of radius 2 in z = 0.5, the torus's upper parallel (R = 2, r = 0.5).",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native samples differing in number or rounding"
+    },
+    {
+      "case": "s_torus_partial",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomAPI_IntCS",
+      "native_sha256": "135cc708b7c65bcbefc2cf3c249b733d243941ca6a9f35ee0addfb6892614b44",
+      "differences": [
+        "missed_overlap"
+      ],
+      "reason": "GeomAPI_IntCS reports 80 separate points, along the first span that lies on the torus and at the second span's crossing, and no segment. The kernel reports the first span as an overlap and the crossing as a point.",
+      "independent_evidence": "The first span is the exact quarter circle of s_torus_contained on the torus's upper parallel; the reference's crossing at s = 5/3 is among the native points.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native samples differing in number or rounding"
     }
   ]
 }

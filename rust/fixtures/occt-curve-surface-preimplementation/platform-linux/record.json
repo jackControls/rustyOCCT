@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 36382720611 (commit 70834be7), ubuntu-latest, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "faf5c9f92757bf2e779f4c108dc11267ea7f377a2f168b614aa19ce3b2e072ac",
+  "review": "The same statuses as the macOS capture for all 36 cases; GeomAPI_IntCS reports 420 and 326 separate points (macOS 421 and 324) along the torus meridian and parallel it never reports as segments, and 5 points (macOS 6) in its cluster at c_torus_tangent; every other case within 1e-9. Against the reference the same reviewed classes (missed containment), c_torus_meridian and c_torus_parallel fingerprinted for Linux."
+}

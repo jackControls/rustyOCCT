@@ -25,6 +25,19 @@
       "reason": "IntTools_EdgeEdge reports the tangency as two vertices 5.5e-5 either side of it along the line x = 2, beyond the comparison's 1e-6. The kernel reports one tangent point exactly (a double root of the gcd).",
       "independent_evidence": "The straight spline x = 2, z = 0 touches the ellipse x^2/4 + y^2 = 1 at its vertex (2, 0, 0): substituting gives y^2 = 0.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "se_tangent",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 IntTools_EdgeEdge",
+      "native_sha256": "f8c1b42d4169db08a7b009ec974ac42d0ba3ceea629cbf38ce8a85e20a8844c2",
+      "differences": [
+        "missed_tangent_point",
+        "spurious"
+      ],
+      "reason": "IntTools_EdgeEdge reports the tangency as two vertices 5.5e-5 either side of it along the line x = 2, beyond the comparison's 1e-6. The kernel reports one tangent point exactly (a double root of the gcd).",
+      "independent_evidence": "The straight spline x = 2, z = 0 touches the ellipse x^2/4 + y^2 = 1 at its vertex (2, 0, 0): substituting gives y^2 = 0.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native samples differing in number or rounding"
     }
   ]
 }

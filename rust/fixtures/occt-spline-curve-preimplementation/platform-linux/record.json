@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 36382720611 (commit 70834be7), ubuntu-latest, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "322fbf9d42ca295c143415020679c7c3301cf19358c7a1c135f6d9ea82881109",
+  "review": "The same statuses, vertices and edge parts as the macOS capture for all 13 cases, within 1e-9; se_tangent's reviewed difference fingerprinted for Linux (its two vertices beside the tangency differ in rounding)."
+}

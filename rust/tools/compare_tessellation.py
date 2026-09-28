@@ -26,6 +26,7 @@ import tempfile
 from build_pinned_occt import SOURCE, digest
 from compare_brep import NUMBER_DRIFT, review_for, run, sha, write
 from compare_brep_io import build
+from compare_curve_surface import platform_record
 from compare_degree_elevation import verify_sdk
 from compare_occt import ROOT
 import generate_tessellation_fixtures as fixtures
@@ -190,7 +191,8 @@ def captured(observed, text):
         except ValueError as e:
             raise ValueError('the kernel\'s .brep texts or the settings differ from the captured ones: '
                              + str(e)) from None
-    was, _ = parse_native((CAPTURE/'native.txt').read_text())
+    # Another platform's BRepMesh rounds differently: its reviewed record.
+    was, _ = parse_native(platform_record(CAPTURE, metadata))
     if set(was) != set(observed):
         raise ValueError('native cases differ from the capture')
     for key, row in was.items():
@@ -257,6 +259,7 @@ def main():
                             timeout=1800, env=env)
     if record['exit_code'] != 0 or dumped.returncode != 0:
         raise SystemExit('native tessellation run failed: '+json.dumps(record)[:2000])
+    (output/'native-observed.txt').write_text(record['stdout'])
     observed, _ = parse_native(record['stdout'])
     captured(observed, text)
     native_meshes = ref.parse_meshes(parse_native(dumped.stdout)[1])
