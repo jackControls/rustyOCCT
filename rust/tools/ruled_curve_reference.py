@@ -32,6 +32,8 @@ Rows, in canonical order:
   unbounded component crosses them and may return, winding 0);
 * `ring u t x y z` for each component without folds, by its point at
   `u = 0`;
+* `line p d` rows (S7a's form) for two cones with one rational apex: their
+  common generatrices, or `point` the apex alone;
 * `apex x y z crossing|isolated`, and the apex curve's
   `component 0 1 w infinite`
   and `ring 1 psi x y z` (its point at `u = 1`, `psi` in `(-pi / 2, pi / 2]`)
@@ -148,9 +150,34 @@ def twins(cone, other):
     return zero(ana.cross(a1, a2))
 
 
+def common_apex(cone, other):
+    """Two cones with one rational apex: their common generatrices."""
+    if other.kind != 'cone' or F(cone.radius) != 0 or F(other.radius) != 0:
+        return False
+    return cone.axes()[0] == other.axes()[0]
+
+
+def apex_lines(cv):
+    """The rulings where A vanishes (a generatrix of both cones), as lines
+    through the apex, or the apex alone."""
+    n = 2880
+    us = [-mp.pi+2*mp.pi*(k+mp.mpf(1)/3)/n for k in range(n)]
+    As = [cv.AB(u)[0] for u in us]
+    out = []
+    for k in range(n):
+        j = (k+1) % n
+        if (As[k] > 0) != (As[j] > 0):
+            hi = us[j] if j else us[j]+2*mp.pi
+            u = mp.findroot(lambda x: cv.AB(x)[0], (us[k], hi), solver='anderson')
+            out.append(ana.line(tuple(cv.V), tuple(cv.d(u))))
+    return ana.canonical(out) if out else [('point', tuple(cv.V))]
+
+
 def rows(s1, s2):
     cone, other = order(s1, s2)
     cv = RulingChart(cone, other)
+    if common_apex(cone, other):
+        return apex_lines(cv)
     if apex_on(cone, other):
         return apex_rows(cv)
     if twins(cone, other):
@@ -230,6 +257,12 @@ def curve_samples(s1, s2, every=6, reach=20):
     cone, other = order(s1, s2)
     cv = RulingChart(cone, other)
     near = lambda p: sum((x-v)**2 for x, v in zip(p, cv.V)) < reach**2
+    if common_apex(cone, other):
+        rows_ = apex_lines(cv)
+        if rows_[0][0] == 'point':
+            return [], [[float(x) for x in cv.V]]
+        comps = [[[float(p+k*d) for p, d in zip(row[1], row[2])] for k in range(-10, 11) if k] for row in rows_]
+        return comps, []
     if apex_on(cone, other) or twins(cone, other):
         ab = (lambda u: (cv.AB(u)[0], 2*cv.AB(u)[1])) if apex_on(cone, other) else \
             (lambda u: (2*cv.AB(u)[1], cv.C))

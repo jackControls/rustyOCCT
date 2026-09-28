@@ -24,6 +24,30 @@
       "reason": "GeomInt_IntSS misses the tiny loop beside the apex when the sphere's radius exceeds the apex's distance by 2^-20 (the loop is about 2e-6 across); it finds the other ring.",
       "independent_evidence": "The reference's scan gives two components, one a ring within 1e-6 of the apex (its point at u = 0 is at t = -1.9e-6), whose points lie on both surfaces within 1e-70.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "kk_common_apex",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "434d1e32505e66e47ccbb3e7caa044155fb7b8127450dc6251a0d09ffaa2b45c",
+      "differences": [
+        "missed_component"
+      ],
+      "reason": "GeomInt_IntSS returns two of the four common generatrices of two cones with one apex (each twice, as two parameter halves): the two whose directions have x z > 0. The kernel finds all four as the certified roots of A(u), the rulings of the first cone parallel to generatrices of the second.",
+      "independent_evidence": "The cones of half-angles 0.9 about z and 0.8 about x share the apex at the origin; a common generatrix has a unit direction d with d . z = +-cos 0.9 and d . x = +-cos 0.8, so d_y^2 = 1 - cos^2 0.8 - cos^2 0.9 = 0.128... and the four lines (+-cos 0.8, +-0.358, cos 0.9) up to sign all lie on both cones (both nappes).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "kk_common_apex_point",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "514676241ef9d501f283ef54d1aee529e4aec6e8668e0795d818b24e3311f22e",
+      "differences": [
+        "missed_tangent_point"
+      ],
+      "reason": "GeomInt_IntSS returns nothing for two cones with one apex and no common generatrix: the apex, their only common point, is not reported.",
+      "independent_evidence": "The cones of half-angles 0.5 about z and 0.9 about x share the apex at the origin; a common direction would need cos^2 0.5 + cos^2 0.9 <= 1, but it is 1.157, so the apex is the only common point.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     }
   ]
 }

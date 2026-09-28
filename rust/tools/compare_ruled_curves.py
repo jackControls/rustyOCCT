@@ -89,12 +89,48 @@ def surface_distance(s, p):
     return min(abs(rho*ca-shift), abs(rho*ca+shift))
 
 
+def near_lines(lines, surfaces):
+    """Native lines' finite samples, a straight line (a Geom_Line of two
+    cones' common generatrix, sampled at +-1e100) resampled about its point
+    nearest the apex."""
+    cone, other = ref.order(*surfaces)
+    apex = [float(x) for x in ref.RulingChart(cone, other).V]
+    out = []
+    for line in lines:
+        # Samples at infinite parameters (a hyperbola's branch sampled over
+        # its whole line) are not points.
+        line = [p for p in line if all(math.isfinite(x) for x in p)]
+        if not line:
+            continue
+        far = max(math.dist(p, apex) for p in line)
+        if far < 1e6:
+            out.append(line)
+            continue
+        a, b = line[0], line[-1]
+        d = [y-x for x, y in zip(a, b)]
+        n = math.sqrt(sum(x*x for x in d))
+        if n == 0:
+            out.append(line)
+            continue
+        d = [x/n for x in d]
+        # Straight: every sample on the chord within 1e-9 of its length.
+        off = lambda p: math.sqrt(max(0.0, sum((x-y)**2 for x, y in zip(p, a))
+                                      - sum((x-y)*z for x, y, z in zip(p, a, d))**2))
+        if any(off(p) > 1e-9*n for p in line):
+            out.append(line)
+            continue
+        # The sample nearest the apex, and points along the line about it.
+        c = min(line, key=lambda p: math.dist(p, apex))
+        out.append([[x+k*0.5*y for x, y in zip(c, d)] for k in range(-8, 9)])
+    return out
+
+
 def differences(surfaces, native, rows):
     """What separates the native result from the reference's."""
     status, lines, points = native
     if status != 'done':
         return ['not_done']
-    samples = [p for line in lines for p in line]
+    samples = [p for line in near_lines(lines, surfaces) for p in line]
     scale = max([1.0]+[abs(x) for s in surfaces for x in s.frame[:3]]+[s.radius for s in surfaces])
     tol = BOUND*scale
     if rows == ['empty']:

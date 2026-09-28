@@ -26,6 +26,14 @@ case kk_twins
 surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
 surface cone 1.0 0.0 0.5 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
 end
+case kk_common_apex
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.9
+surface cone 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.8
+end
+case kk_common_apex_point
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
+surface cone 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.9
+end
 case ka_sphere
 surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
 surface sphere 0.75 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0 1.25

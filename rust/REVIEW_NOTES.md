@@ -784,9 +784,11 @@ Decisions for S7b.3b.2, recorded before its code (2026-09-27):
 
 Decisions for S7b.4, recorded before its code (2026-09-28):
 
-* **Scope.** Two cones not coaxial and without a common apex (S7a's), and a
-  cone whose rational apex lies exactly on a sphere or a cylinder: the pairs
-  S7b.2 left `NotConic` or could not certify. Their curves may be unbounded
+* **Scope.** Two cones not coaxial, and a cone whose rational apex lies
+  exactly on a sphere or a cylinder: the pairs S7b.2 left `NotConic` or could
+  not certify. Two cones with one rational apex meet in their common
+  generatrices (the certified roots of `A(u)`, S7a's lines), or the apex
+  alone. Their curves may be unbounded
   (a branch escapes where a ruling of the first cone is parallel to a
   generatrix of the second) or pass through the apex.
 * **The projective ruling.** On the first cone's rulings through its apex
@@ -814,7 +816,7 @@ Decisions for S7b.4, recorded before its code (2026-09-28):
 * **Evidence first**: the reference (the same projective parameterisation
   with `A`, `B`, `C` found by evaluating the other surface on the ruling at
   `v = -1, 0, 1`, the scan, critical meridians and components of the torus
-  reference, the factors in closed form) and a `GeomInt_IntSS` capture of 11
+  reference, the factors in closed form) and a `GeomInt_IntSS` capture of 13
   pairs before the kernel code.
 
 ### S8 — general planar split and face trimming (SplitBody job)

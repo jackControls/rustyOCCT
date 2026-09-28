@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Fixtures for S7b.4 of REVIEW_NOTES.md: two cones (not coaxial, without a
-common apex), and a cone whose rational apex lies on a sphere or a cylinder.
+"""Fixtures for S7b.4 of REVIEW_NOTES.md: two cones (not coaxial), and a cone
+whose rational apex lies on a sphere or a cylinder.
 
 `ruled-curve-cases.txt` uses the case protocol of
 `analytic-intersection-cases.txt`; `ruled-curve-expected.tsv` gives each
@@ -40,6 +40,8 @@ def cases():
         ('kk_irrational_apexes', cone(o, Z, 0.5, 0.5), cone((3.0, 0.0, 1.0), X, 0.25, 0.4)),
         ('kk_miss', cone(o, Z, 0.0, 0.3), cone((0.0, 2.0, 1.0), X, 0.25, 0.35)),
         ('kk_twins', cone(o, Z, 0.0, 0.5), cone((1.0, 0.0, 0.5), Z, 0.0, 0.5)),
+        ('kk_common_apex', cone(o, Z, 0.0, 0.9), cone(o, X, 0.0, 0.8)),
+        ('kk_common_apex_point', cone(o, Z, 0.0, 0.5), cone(o, X, 0.0, 0.9)),
         # A rational apex on a sphere or a cylinder.
         ('ka_sphere', cone(o, Z, 0.0, 0.5), sphere((0.75, 0.0, 1.0), 1.25)),
         ('ka_cylinder', cone(o, Z, 0.0, 0.5), cylinder((1.0, 0.0, 0.0), Y, 1.0)),
