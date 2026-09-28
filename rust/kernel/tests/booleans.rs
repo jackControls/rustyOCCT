@@ -529,3 +529,47 @@ fn fixture_histories_are_complete_and_deterministic() {
         }
     }
 }
+
+/// A fuse of meeting ranges is one input only when the other lies inside
+/// it: a tool filling the object's hole over part of the height, or a
+/// profile with the same outer and a hole, is a stack (a fuzz find: the
+/// fused boundary came from one input alone, its hole's filled).
+#[test]
+fn a_fuse_filling_a_hole_is_a_stack() {
+    use rusty_occt::Error;
+    let holed = prism(
+        rect(-4.0, -4.0, 4.0, 4.0),
+        vec![circle(0.0, 0.0, 1.5)],
+        Frame3::xy(),
+        -1.0,
+        3.0,
+        1,
+    );
+    let plug = prism(circle(0.0, 0.0, 2.0), vec![], Frame3::xy(), 0.0, 2.0, 2);
+    assert!(matches!(
+        plug.fuse(OperationId(3), &holed),
+        Err(Error::OutOfDomain(_))
+    ));
+    assert!(matches!(
+        holed.fuse(OperationId(4), &plug),
+        Err(Error::OutOfDomain(_))
+    ));
+    let solid = prism(
+        rect(-4.0, -4.0, 4.0, 4.0),
+        vec![],
+        Frame3::xy(),
+        0.0,
+        1.0,
+        5,
+    );
+    assert!(matches!(
+        solid.fuse(OperationId(6), &holed),
+        Err(Error::OutOfDomain(_))
+    ));
+    // Inside in 2D and in height: the holder, unchanged.
+    let small = prism(rect(2.0, 2.0, 3.0, 3.0), vec![], Frame3::xy(), 0.0, 1.0, 7);
+    let (f, h) = holed.fuse(OperationId(8), &small).unwrap();
+    assert_eq!(f.len(), 1);
+    assert_eq!(f[0].topology().body_id(), holed.topology().body_id());
+    check(&holed, &small, &f, &h);
+}

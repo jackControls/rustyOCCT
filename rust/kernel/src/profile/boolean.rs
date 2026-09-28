@@ -414,8 +414,34 @@ impl Arrangement {
     }
 }
 
+/// The stored segments of a set of profiles, boundaries numbered across
+/// them (each profile's outer first), and which are holes.
+fn segments(profiles: &[&Profile], op: Operand) -> (Vec<Seg>, Vec<bool>) {
+    let mut all = Vec::new();
+    let mut holes = Vec::new();
+    for profile in profiles {
+        let base = holes.len();
+        for (k, _) in profile.boundaries().enumerate() {
+            holes.push(k > 0);
+        }
+        for mut seg in segments_of(profile, op) {
+            seg.b += base;
+            let shift = |id: Option<PId>| {
+                id.map(|x| match x {
+                    PId::Vertex(o, b, j) => PId::Vertex(o, b + base, j),
+                    c => c,
+                })
+            };
+            seg.from = shift(seg.from);
+            seg.to = shift(seg.to);
+            all.push(seg);
+        }
+    }
+    (all, holes)
+}
+
 /// The stored segments of a profile.
-fn segments(profile: &Profile, op: Operand) -> Vec<Seg> {
+fn segments_of(profile: &Profile, op: Operand) -> Vec<Seg> {
     let mut out = Vec::new();
     for (b, boundary) in profile.boundaries().enumerate() {
         match &boundary.kind {
@@ -540,12 +566,39 @@ impl Piece {
     }
 }
 
+/// Two sets of profiles' boundaries arranged: their pieces, each shared
+/// with the other set's or placed inside or outside it.
+pub(crate) struct Arranged {
+    arr: Arrangement,
+    pieces: Vec<Piece>,
+    partner: BTreeMap<usize, (usize, bool)>,
+    place: Vec<Option<Location>>,
+    /// Per operand, which of its boundaries are holes.
+    holes: [Vec<bool>; 2],
+}
+
 /// The Boolean of two profiles in one frame: its result profiles with their
 /// provenance, in a deterministic order (by their first segment's origin).
 pub(crate) fn boolean(a: &Profile, b: &Profile, op: Op2) -> Result<Boolean2> {
-    let tolerance = a.tolerance();
+    let arranged = arrange(&[a], &[b], a.tolerance())?;
+    select_trace(&arranged, op, a.tolerance())
+}
+
+/// Where a point lies against a set of disjoint profiles.
+fn classify_set(set: &[&Profile], point: Point2) -> Result<Location> {
+    for p in set {
+        match p.classify(point)? {
+            Location::Outside => {}
+            at => return Ok(at),
+        }
+    }
+    Ok(Location::Outside)
+}
+
+/// Arranges two sets of profiles' boundaries.
+pub(crate) fn arrange(a: &[&Profile], b: &[&Profile], tolerance: Tolerance) -> Result<Arranged> {
     let tol = tolerance.linear();
-    for p in [a, b] {
+    for p in a.iter().chain(b) {
         if p.boundaries().any(|bd| match &bd.kind {
             BoundaryKind::Path { segments, .. } => {
                 segments.iter().any(|s| matches!(s, Segment::Spline(_)))
@@ -555,8 +608,9 @@ pub(crate) fn boolean(a: &Profile, b: &Profile, op: Op2) -> Result<Boolean2> {
             return Err(Error::OutOfDomain("a Boolean of spline profiles (S9a.2)"));
         }
     }
-    let mut segs = segments(a, Operand::A);
-    segs.extend(segments(b, Operand::B));
+    let (mut segs, holes_a) = segments(a, Operand::A);
+    let (segs_b, holes_b) = segments(b, Operand::B);
+    segs.extend(segs_b);
     let mut positions = BTreeMap::new();
     for seg in &segs {
         for (id, pt) in [(seg.from, seg.p), (seg.to, seg.e)] {
@@ -771,7 +825,7 @@ pub(crate) fn boolean(a: &Profile, b: &Profile, op: Op2) -> Result<Boolean2> {
         } else {
             a
         };
-        let at = other.classify(piece.sample(&arr.segs[piece.seg]))?;
+        let at = classify_set(other, piece.sample(&arr.segs[piece.seg]))?;
         if at == Location::Boundary {
             return Err(Error::Degenerate(
                 "a boundary within the resolution of the other profile's",
@@ -779,6 +833,27 @@ pub(crate) fn boolean(a: &Profile, b: &Profile, op: Op2) -> Result<Boolean2> {
         }
         place.push(Some(at));
     }
+    Ok(Arranged {
+        arr,
+        pieces,
+        partner,
+        place,
+        holes: [holes_a, holes_b],
+    })
+}
+
+/// The operation's pieces of an arrangement, traced into its result
+/// profiles.
+fn select_trace(arranged: &Arranged, op: Op2, tolerance: Tolerance) -> Result<Boolean2> {
+    let tol = tolerance.linear();
+    let Arranged {
+        arr,
+        pieces,
+        partner,
+        place,
+        holes,
+    } = arranged;
+    let hole = |o: Operand, b: usize| holes[if o == Operand::A { 0 } else { 1 }][b];
     // The kept pieces, directed with the region on their left: a hole's
     // stored direction reversed.
     let mut edges: Vec<Edge> = Vec::new();
@@ -788,7 +863,7 @@ pub(crate) fn boolean(a: &Profile, b: &Profile, op: Op2) -> Result<Boolean2> {
     };
     let directed = |piece: &Piece, arr: &Arrangement, flip: bool, origin: Origin2| -> Edge {
         let seg = &arr.segs[piece.seg];
-        let reverse = (seg.b > 0) != flip;
+        let reverse = hole(seg.op, seg.b) != flip;
         let shape = match seg.shape {
             Shape::Arc {
                 center,
@@ -834,7 +909,7 @@ pub(crate) fn boolean(a: &Profile, b: &Profile, op: Op2) -> Result<Boolean2> {
             Some(&(k, same)) => {
                 // In region-left directions: a hole's reversed.
                 let other = &arr.segs[pieces[k].seg];
-                let agree = same == ((seg.b > 0) == (other.b > 0));
+                let agree = same == (hole(seg.op, seg.b) == hole(other.op, other.b));
                 match (op, seg.op, agree) {
                     (Op2::Fuse | Op2::Common, Operand::A, true) => Some(false),
                     (Op2::Cut, Operand::A, false) => Some(false),
@@ -851,11 +926,11 @@ pub(crate) fn boolean(a: &Profile, b: &Profile, op: Op2) -> Result<Boolean2> {
         };
         let Some(flip) = keep_flip else { continue };
         let origin = Origin2 {
-            from: seg_ref(piece, &arr),
-            shared: partner.get(&i).map(|&(k, _)| seg_ref(&pieces[k], &arr)),
+            from: seg_ref(piece, arr),
+            shared: partner.get(&i).map(|&(k, _)| seg_ref(&pieces[k], arr)),
         };
-        let edge = directed(piece, &arr, flip, origin);
-        if piece.from.is_none() && ((seg.b > 0) != flip) {
+        let edge = directed(piece, arr, flip, origin);
+        if piece.from.is_none() && (hole(seg.op, seg.b) != flip) {
             circle_cw.insert(edges.len());
         }
         edges.push(edge);
@@ -952,7 +1027,7 @@ pub(crate) fn boolean(a: &Profile, b: &Profile, op: Op2) -> Result<Boolean2> {
     out.sort_by_key(|p| p.segments[0].iter().flatten().min().copied());
     Ok(Boolean2 {
         pieces: out,
-        crosses: arr.cross_segs,
+        crosses: arr.cross_segs.clone(),
     })
 }
 
