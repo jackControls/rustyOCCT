@@ -10,6 +10,7 @@
     "tests/boolean/bcut_simple/G7": "32b95d55c8a08b2b39d2c64e39d1fa4502bbb3fa78c92949bd0bb27e3365b319",
     "tests/boolean/bcut_simple/G8": "7f630a0200be640a8501b44c0532bc623a761872e90fd9e863dd1dd4c865d5c8",
     "tests/boolean/bcut_simple/H6": "bfbc1499a2c945ba7c1da4796987dbefa45bffcf1550f17a6ac60f73e0262ebd",
+    "tests/boolean/bcut_simple/J4": "4916cd52eebbf8ae2b595b6513698c6a3dfe1b89caff49ed4d4d9d7e726475b4",
     "tests/boolean/bcut_simple/L8": "f4eaa30c6004c82263238dabf6c6d77395449e900e5c899cdb9c37e1f14f74c3",
     "tests/boolean/begin": "d69546786e4458613f453d5083979bd5e2e67ae1f0f01b93f1bd93825e3a66bd",
     "tests/boolean/bfuse_complex/J5": "cda6d3fe80781b6537b23d7fb33728a0ff0eddfeff7025ea8f359cfbe64c632c",
@@ -37,7 +38,16 @@
     "tests/boolean/bopcommon_simple/C1": "6846c4eb7ddfa988b56b0dc570167a2b54405d00f109ffd5f7d3dd42e9ffa9cf",
     "tests/boolean/bopcommon_simple/C2": "b34d2d3ec2a09cfecf64ec5fb7a2e83ca2a4ca946583055777e22b3a5ecca52e",
     "tests/boolean/bopcommon_simple/C3": "3539f668cff8e4b18cac521505cf3d47295ca9315b9549fff255374a30f266ca",
+    "tests/boolean/bopcommon_simple/C6": "48fa8dbbc04b99e9bd029606ec9f6310de28f11c6231aea35b8738dc5945a505",
     "tests/boolean/bopcommon_simple/C8": "a182eb725f877382a023cb812128adb06c5505ea92bd5d276fa8828a455f06da",
+    "tests/boolean/bopcommon_simple/D2": "dc5289e2ec72c5b6cf396905ae0750d7c97a782ae96a65e276a15b1148d1a177",
+    "tests/boolean/bopcommon_simple/D4": "a2ad9c9534087d9ed566423f0fd3ab4803672ebd916201fb0bdb805af4ef9b2b",
+    "tests/boolean/bopcommon_simple/D5": "9a3d7989e759f5c5cded936507579c6a8468b0f5899442114d8e41b57d4561ff",
+    "tests/boolean/bopcommon_simple/D6": "9d2b9c15068306acedaaa09253f9f578b2b31b8ba186170840c81ae877809ef4",
+    "tests/boolean/bopcommon_simple/D7": "621200436c8f833c6117d463f9f819bb843f2cb3888d4fcbc578d7775067535a",
+    "tests/boolean/bopcommon_simple/D8": "9d01202bfce3a1c4608e1694697a30ca603420c57cfc5c4295c2fb9e3255e2e4",
+    "tests/boolean/bopcommon_simple/D9": "615dd43e05782bd38aa4d332bd548baa6f240ece3a0a61523d867ff52f809435",
+    "tests/boolean/bopcommon_simple/E1": "21ff568a5adac28a7d658c87960087a0153f92717dca055fd618b7b9f74cb7ab",
     "tests/boolean/bopcommon_simple/E2": "cd66b3f185c6465099bcbf54334f3e18c7ac9b6ba4a28101c4297f75dc480f6b",
     "tests/boolean/bopcommon_simple/E3": "8da7d32e8c7413d610134cc74bc7fec16a79214a7cec6f9acb189461a86aab61",
     "tests/boolean/bopcommon_simple/E4": "d6ed57ab589c9ec411219b9e7acca4baa2514b260ab87b73a5c80420e459e491",
@@ -50,12 +60,84 @@
     "tests/boolean/bopcommon_simple/F2": "a92f35976b7f6daa82928ef94e13ac4341705ded378e8fb5a8797b32a0eabe8a",
     "tests/boolean/bopcommon_simple/F3": "6a9461c8a3b3359d7636532fd826cdd267f9b40dcd95992990e51eb4d7902d3d",
     "tests/boolean/bopcommon_simple/F4": "1f46808319f17e4efa04d9412bbd81bbb824476183c9c2fdfff19a3dbcaf4927",
+    "tests/boolean/bopcommon_simple/F6": "a84d2ef5591ac990e170093c93185bde7a91b2031cdcdbab6a5e71f000b28b07",
+    "tests/boolean/bopcommon_simple/G8": "eb7ebcd308d31edb3efbcd94ead3972941c57de5c1a14470012fd2b206e3ec18",
+    "tests/boolean/bopcommon_simple/G9": "6c1e1285fa44eb7abf1c0ea49f8c368489fc0a55ab9b0d500195fc8f9fb31df2",
+    "tests/boolean/bopcommon_simple/H3": "d1edbe973d0586586e2f5d061cd811e6fa8999936f9f805c6641f0a5b68234e6",
+    "tests/boolean/bopcommon_simple/H4": "2c5da27f618756886015ff7f7c06197a80b225bc2153b97a4c28cc5769c5cdca",
+    "tests/boolean/bopcommon_simple/H6": "3c12d0c8072e925c03d7303135c06c83baaf38b3ae9c9daea64e52c35e4b5cb7",
+    "tests/boolean/bopcommon_simple/H7": "3e610e5b59ad35ae96cd21c9505813369359102ecfd893951886f23ced9eda3e",
+    "tests/boolean/bopcommon_simple/H9": "39bac34b94d57cee56b554ad87fd032876e69a1327c7ef9f4443a811e01a3fd8",
+    "tests/boolean/bopcommon_simple/I2": "1c7444b9328fabbe62a592f75f9868821ff7e71253c3bd737a6a1c7050c9255a",
+    "tests/boolean/bopcommon_simple/I3": "9f32520d64ccc64a508371e4f092a15bd1cc0b7d27dec1aa9cb553030d1b5201",
+    "tests/boolean/bopcommon_simple/I4": "f399d13ba52b24c5dd26f3f6be3c5afcba3906d7c990692c6728772fa3136e57",
+    "tests/boolean/bopcommon_simple/I5": "09cf7889d3283230d96ac6ca67c2fb77b65760d9179ff051b4aa7830fe70a7de",
+    "tests/boolean/bopcommon_simple/I6": "b87a14e4ab27b4956f6c78346f25be9087f27933083b6ee079d70d960ac121c1",
+    "tests/boolean/bopcommon_simple/I7": "7c0b058376bc629ccf422e8cfa1574c9d709a24af0ac3f6b28d372e916bc6569",
+    "tests/boolean/bopcommon_simple/I8": "92cf8cf502841228da983051ace42971ec557f445657ea4b01a5be174606391b",
+    "tests/boolean/bopcommon_simple/I9": "160a52c77b4182d268e8d923e1a07923fe03578d4ad87dd8e348bb7e838ce677",
+    "tests/boolean/bopcommon_simple/J1": "d1de6b6be4e8c13cc11c7ea0ccd7b3e816e85e70c1d23471b08730a56adc2cd8",
+    "tests/boolean/bopcommon_simple/J2": "63f82e7d8f2ec50cbe6a89be48ef42aa2939ce82eb3f42c11967af3cf8af4078",
+    "tests/boolean/bopcommon_simple/J4": "af6726db44a86fdfced7d064332ac710e8b1c2c2c1df502af9fa62cc318fca87",
+    "tests/boolean/bopcommon_simple/J5": "eb0ec487877462857a1d70bc7fbc90e390cf83be1bac463d8004070aa917e6a8",
+    "tests/boolean/bopcommon_simple/J6": "1028013dbbc2c8b2ab9578fed646603d2427d50d1fc38a3498c7dbfae28ec729",
+    "tests/boolean/bopcommon_simple/J7": "98285d2b8e6828da1583d5831a44c48cda4d75dad5534eda4fb11b34c7241b62",
+    "tests/boolean/bopcommon_simple/J8": "731eaa61542239172dac56807f3473c52fe908a8652763f85e52178025c87b45",
     "tests/boolean/bopcommon_simple/J9": "5314d5614de3f8805ca97dfe9ade0fe3ce56d8192d83206c41ed50af07e16d48",
     "tests/boolean/bopcommon_simple/K1": "ff6102aa35d54507b503eefccc155e2bbbef64c021710f2b3e3ee4c112545af6",
+    "tests/boolean/bopcommon_simple/K2": "23e41fbdf8ee8c4efb7aff507b1cb72a601a3200751080b6a4854d236181f74d",
+    "tests/boolean/bopcommon_simple/K3": "e7a5f8311b5cdfcf20b155887ce85895023d045a2880d50faaf08f6b7b543ccd",
+    "tests/boolean/bopcommon_simple/K4": "c516af146c9b0f851b98e6d56ddb7aca4b9703a46f5951ae51edac1d308149cd",
     "tests/boolean/bopcommon_simple/K5": "6a5a0cef8af688e9dad5b041e8b88cd19b75cf5314e0627fb2720f22daed9c0c",
+    "tests/boolean/bopcommon_simple/K6": "f8e13d31fc90b051fe3ee1fe50f8d7c5cedba64a522fd2192424e88e79cfde93",
+    "tests/boolean/bopcommon_simple/K7": "14ecc0df66da2e0cf95320723b9013b82036b7218857fb83fcd7df5accd62f50",
+    "tests/boolean/bopcommon_simple/K8": "58baf744206ff33caf92c114ed87ccff2db206e9986a6bc49bf4d1c70f30f3e3",
+    "tests/boolean/bopcommon_simple/K9": "c771b1d4b2812765123c0e0b4c0e06d9943eec759fc4e1cf94ab823ce688b772",
+    "tests/boolean/bopcommon_simple/L1": "5ca7ff41c6bd6f2bdc5ee5c1105e5063947636d3f1fbdc81f0f4f382046a5797",
+    "tests/boolean/bopcommon_simple/L2": "c153b6c81802a54efaaa4095d90f1443ae33eeadaf806d636b64801e552b0a7f",
+    "tests/boolean/bopcommon_simple/L3": "2eeaf05eed160a1aeec81a050339b16af36fb176a125c663044f5e129fdfd96b",
+    "tests/boolean/bopcommon_simple/L7": "ddca2dad8013940b4560d8e3e689d5860dd896b1884e7ade82b81c62c4973bfb",
+    "tests/boolean/bopcommon_simple/M3": "308c9e5a9b22b6c0f3dac8a4ac60e5175885fb2dc1f64748497a0db1565b50f3",
+    "tests/boolean/bopcommon_simple/M5": "98533411b78bc8c5c4e17d4e2451e7f66c864f2659db56ad4c39841f27f4d2a0",
+    "tests/boolean/bopcommon_simple/M6": "a957c27e2eeceb8250166db8346ca94d8af4ffdeac816ab231aae162802e15c2",
+    "tests/boolean/bopcommon_simple/M7": "34ac2d54833f98cc918126c9b31ef2eccdb53eb68e620a4c848794d12e301d51",
+    "tests/boolean/bopcommon_simple/M8": "1cb18979037c3201d94275eb158c0d0234e7c4423064c725dfedc7fb3ef19b58",
+    "tests/boolean/bopcommon_simple/M9": "ab23dc9f05d1dc8c8e5866ccf5eb2ccd7dc770305466a1bff211decaf6d777ea",
+    "tests/boolean/bopcommon_simple/N1": "e20d736a971f1b1b971ac8fc788f0044f15a74716b64fc94b1e712608bf3c761",
+    "tests/boolean/bopcommon_simple/N2": "0e160ba0bb2756e2ae1d91b3ee9f2e97e2e3cad2c468a840ed7e9f280e2bb111",
+    "tests/boolean/bopcommon_simple/N3": "4b13b2ac91dd4c30812b33fef6df3df29fe8bfb18d030ae46604a8b3e5f47fe7",
+    "tests/boolean/bopcommon_simple/N4": "f90a670b7bfcb6f60b16be4a1569f5f29326a3a01316dc2085dbeb1e80c93958",
+    "tests/boolean/bopcommon_simple/N5": "cddc5f93c0fc0b171f54e3f91867835c075402c6a5dfdcf6ab4e2c1692eb42bb",
+    "tests/boolean/bopcommon_simple/N6": "7c4a57d9e0a452853828dbaae1796b3ae3dd683e6e32e5d878f3aaa5ed4ab7b8",
+    "tests/boolean/bopcommon_simple/N7": "d5a4a7841098e1e358d461ef70da137f8282e99719c676bcf4a500a1a443f4c7",
+    "tests/boolean/bopcommon_simple/N9": "533c4106c2874e578dea79432054c4ff6f7d6dc51eb92bab05ee0f41cb303c3f",
+    "tests/boolean/bopcommon_simple/O1": "2cf5a09157ba92c4ba425ffc6862573dc828bb8f149f33092ce57465d964eab5",
+    "tests/boolean/bopcommon_simple/O2": "49dfa228238c72729ca44f1dd0e57e2bcf7b1e413fdf05635312eb20a07836a1",
+    "tests/boolean/bopcommon_simple/O3": "a5d9e1283c418c49bbdc5d7629218ba67bc00bdcb0c255257d04a9db99fbd1e7",
+    "tests/boolean/bopcommon_simple/O4": "d682d72a0be72ec29443de038a01f934c04f80678fa39af915bba87582369325",
+    "tests/boolean/bopcommon_simple/O5": "a092f01affe3a91ead5eddec7b33552313354b26d08e59f663aa86912edd9554",
+    "tests/boolean/bopcommon_simple/O6": "cfde8ef5df47b067d66289f6050ffbfa581e0ca6e94ff8f9efa9a029e8c924ff",
+    "tests/boolean/bopcommon_simple/O7": "729982d8b6b4cd479c6fcada462990600bf48fb8b0077e7be246986c4b94280a",
+    "tests/boolean/bopcommon_simple/O8": "41f53952628c5d6e74e55bc88fe14641d8e9451c2e8b2a8d7222d5ebc8877778",
+    "tests/boolean/bopcommon_simple/O9": "b0adca63a70c1ce94dad12c3425f6ac5fad1fb404b2375803c8eeb74d3dafbac",
+    "tests/boolean/bopcommon_simple/P1": "487627c95d5e062fed51e7e9421cd103f85a639f0a7b6b42f3cb641943279f06",
+    "tests/boolean/bopcommon_simple/P2": "326a099c477c1bb7cd3c6b1c9a6a70e18de71ef76e2d0b15c294bb8e2fd6249e",
     "tests/boolean/bopcommon_simple/P3": "d6950b131bdc890a119c41d363ad998bec43baa690d923c1066d748801fee271",
     "tests/boolean/bopcommon_simple/P4": "16d991dccc2f12f6352ceb257597440b45e75df0a82020d75df3e88e3fc7e1b8",
+    "tests/boolean/bopcommon_simple/P5": "c28278f8342208914c9a18f0143fb534dd26ad78b25fdaf84599048dd6830677",
+    "tests/boolean/bopcommon_simple/P6": "060a2f44feed9ed552a6bf57423df0ce494044eeba7466aaa95536bc242a3b0e",
+    "tests/boolean/bopcommon_simple/P7": "b3071eb32e976c8606fe2dd1d73c53ba401e170589d1d4fc488664b7a19a16f5",
     "tests/boolean/bopcommon_simple/P8": "719897050597cb740055e914c852f786b3ac2d33822bd969a7577e2a7aa35ef3",
+    "tests/boolean/bopcommon_simple/P9": "ebc83c20c4e97fc0e4478d10f8488ccd88b385acf1e61708e48a02478884ace6",
+    "tests/boolean/bopcommon_simple/Q1": "4588ab05252468779a8e1c932762ff54df4df2a34a6eb90c599d801fc1d9097d",
+    "tests/boolean/bopcommon_simple/Q2": "35661ac004c0f8b512631cc0a852091be930fab0d02bc6cfc2eda4826e273d5a",
+    "tests/boolean/bopcommon_simple/Q3": "4e75c332bde9bd6b54ba59478bf0d98a056dcc2d74938805e3b4cb2944d75c68",
+    "tests/boolean/bopcommon_simple/Q4": "49e04d82401e5acc91290e938b1dd2065d83956096543cd74493bf5528363bc5",
+    "tests/boolean/bopcommon_simple/Q5": "1ad68a04e7bc216a90bbce722c3fc6a48113f64ee7ffff344ba5e94cf2b7e408",
+    "tests/boolean/bopcommon_simple/Q6": "4dc864caf0ef61b169b8becf4c5531f206a56ee7994a22edc7da9a2e77a0c379",
+    "tests/boolean/bopcommon_simple/Q7": "9781541d5796224cb02ae7dceb3c6c99ab9a25bce7d404019a98120dc36a5134",
+    "tests/boolean/bopcommon_simple/Q8": "9c9c542773c91000c5caddbec690b18989f85675da493246561243fc15e6226a",
+    "tests/boolean/bopcommon_simple/Q9": "510886b816d796cbe862da4599f3543484a329987596dcb4835e3606f95cf9fe",
     "tests/boolean/bopcommon_simple/R1": "5264766f67abd4ebdba8397acc6dd14d3b71b6353e61b7e376a3cb4ee28eada1",
     "tests/boolean/bopcommon_simple/R3": "7f1babc22adf9d560394035c92581d9500ead0da0be760a4152cd2250d32ad97",
     "tests/boolean/bopcommon_simple/R5": "ea12c071cb34937f101f27fb5e8167b682887abbf8a4c8ddd147422dd8f4ceb7",
@@ -162,6 +244,15 @@
     "tests/boolean/bopcut_simple/B9": "ad94efb557ff6adfb84c53350946305bbc52f925e7e777b8ec3984c38a1508ab",
     "tests/boolean/bopcut_simple/C1": "db59e108a615b284a193f36f6d65d93c2e78e1e929648c0c550a8baa7e411ca2",
     "tests/boolean/bopcut_simple/C2": "048503ca6cb123cf12076141dd28900f783b5580fab5da5311816e1344350e7b",
+    "tests/boolean/bopcut_simple/C5": "6115ce0d8841957476a61c6a272c555582b46f72c91db3574924846a98c01292",
+    "tests/boolean/bopcut_simple/C6": "6fc0b4f0a2f06dfd1348ba9c9cdecac26ee4e04aafa301ca5e387216a86a08e0",
+    "tests/boolean/bopcut_simple/D3": "cdcee2512ffc3fc8e11384f14adfcb2c094c803e486e571d9c6e9b7dcb2e62aa",
+    "tests/boolean/bopcut_simple/D4": "6af80a42510876a58f864a6f584dfdc8b1770059a4717daf4b194d0f9977252d",
+    "tests/boolean/bopcut_simple/D5": "f91e64832cb36d1abdc6c5521f5a905b639963dbba71c9a25c3c240fcba3bcf0",
+    "tests/boolean/bopcut_simple/D6": "de90e086479e99831212ac7a7f31325c1d4b446130f88e9d616640d019cacb69",
+    "tests/boolean/bopcut_simple/D7": "eb399b3111480a33e92db8874b4f33cd7b82875cdde46821931e5e957bfdbbba",
+    "tests/boolean/bopcut_simple/D9": "174edebbdac8d92769f660298cc7a8d5e1d814734e9b646400ee54c0fc93e444",
+    "tests/boolean/bopcut_simple/E1": "e51a8d9044c5367aec2887d8e88ce4bf2e487964674ebbf908d5012766ea356a",
     "tests/boolean/bopcut_simple/E2": "81124b8c40a7a9cff73fb2d6b7531a830ebc74fc67544f968777ea0fb6b660e4",
     "tests/boolean/bopcut_simple/E3": "806d4648d3dbd16fbbdd83755c4901546cb7e24d1ebfc5592eeb21a068bac1e0",
     "tests/boolean/bopcut_simple/E4": "1acd2cb7b2187f56a1132c5ce67270e1f612f3e7503f5da9f613d973778af35f",
@@ -174,12 +265,73 @@
     "tests/boolean/bopcut_simple/F2": "7ed2d76b06be95ac5c2b3505f50fa4eedcfaedbd88b324c838d367b20e611254",
     "tests/boolean/bopcut_simple/F3": "9c660d3fd4ca2bff56984e12306d941d6573e202b1555b02cf2ebeaaa7d8b3e3",
     "tests/boolean/bopcut_simple/F4": "69250e522e433310c603822579e25fd0de41b3bbb61c2e20cd04ccf4a5518dec",
+    "tests/boolean/bopcut_simple/F6": "535212f1f3722cebd97dc4a8cb5a429f6f54a38e9327fcea9d0efa3ea8d2bf88",
+    "tests/boolean/bopcut_simple/G4": "723af7b99b4dfe99bf05bcfccf3508e2fbf1d85b94c1c113042ea58be0c2a14e",
+    "tests/boolean/bopcut_simple/G8": "2c1b5d0482a89313d0bf40f29a368b00caff766a4448839ab269f38e296eab80",
+    "tests/boolean/bopcut_simple/G9": "bf5eebc16153fece08ce9189e943ba2b7ce808628ca83098d6b8056e3664362a",
+    "tests/boolean/bopcut_simple/H6": "c4a27bdea0e9df80fb8d0153f216da752e240f6d854c46156631a840ec717de2",
+    "tests/boolean/bopcut_simple/H7": "011cd704b12150a88617874fcb43109f72365fe3d5587b9d8c11d80c2afad521",
+    "tests/boolean/bopcut_simple/I2": "f61d030d4e564bbc7766ec8d4b058d1a05e4d3f9169d48812c0d8ae8fbfea9a9",
+    "tests/boolean/bopcut_simple/I3": "19f618f9dbcabff270278ec57bef5600f32d2bdbc88955783c033d700cb253ac",
+    "tests/boolean/bopcut_simple/I4": "7e92497d1aa3708ed98f35cafdb541a0822fbb8cd6a2b5680fb8a441b947bab0",
+    "tests/boolean/bopcut_simple/I5": "ea613e75fd57e9e72d205528a38373f41f53e395653f4c94963876ff779f35c7",
+    "tests/boolean/bopcut_simple/J2": "8f998949447f57a80c741b623a922d3f41fe709795dbb23c28a7c919c5827225",
+    "tests/boolean/bopcut_simple/J5": "6581cad342ce555fb05d211bea9801d3758997f08d49f29114a7cca1e23b29ab",
+    "tests/boolean/bopcut_simple/J6": "71f8b6ef05f55e4f50c3ca2f6ee7541a345b368400a4b7e13afe25f754613848",
+    "tests/boolean/bopcut_simple/J7": "4da1717c9d6895ea12e8788b7d28d7017c9cd3a1b92b6d13293576f0578e95c5",
+    "tests/boolean/bopcut_simple/J8": "6823e8e36d049cb9a2894ca6910947ca19fb6d02bc386dca285883d735ea58ca",
     "tests/boolean/bopcut_simple/J9": "ca31308732f23d6f8856f66cbbe64244626a217a4b93bcac166e4ecc52c112cf",
     "tests/boolean/bopcut_simple/K1": "8ee4fe3ebeff821eae140836c0a85162e73484832b052b151bffd721f359b36c",
+    "tests/boolean/bopcut_simple/K2": "b443fe0742a34b62fe33debf9f2468eb662b448a618963b727f8689f4b0dcb64",
+    "tests/boolean/bopcut_simple/K3": "823b40176e776f5db0e1be6fc79f3623c9ffec837a5369acbf84065244dac529",
+    "tests/boolean/bopcut_simple/K4": "3d40d6d156097a0b2023e8bea24e1b963aa50ecd81b1a42e75694224bd094f79",
     "tests/boolean/bopcut_simple/K5": "fb8bd114a496caef4a712c132992b09d3259bf6310fb2c26f45ef40bde12953c",
+    "tests/boolean/bopcut_simple/K6": "12a72bd233ce47df916755dee2b577226477c5f165a11b745680048c0c1a7102",
+    "tests/boolean/bopcut_simple/K7": "115db487193c48e92f8df405a0ed12a798171a140f3c21a9a4d513a6f1a5237b",
+    "tests/boolean/bopcut_simple/K8": "f09be0dc808e25ddcbeabec26a701cc167b3dea5514bf4220e1024b78723e1f0",
+    "tests/boolean/bopcut_simple/K9": "0a19541e53acce983588c24ac02a7bd90ed13001e460e28a9f09ee083f07a3ad",
+    "tests/boolean/bopcut_simple/L1": "35f1c9b74f9ddac09fd5dc1f8f058351446445cc63fcb63b24397e9535872a7f",
+    "tests/boolean/bopcut_simple/L2": "abb5b52243d28e55107e97e8a40ab2a192c55ead9bb5d44f8cb20162e96f9e13",
+    "tests/boolean/bopcut_simple/L3": "afc34d651dea9e0d20b5a84212ab7e8392f1a388269d9545883360cb5b7d3838",
+    "tests/boolean/bopcut_simple/L7": "6d27f1b2920ccad5b4fbffcddc5f293d3da2d07f50b9f4290b5b2563a94234a8",
+    "tests/boolean/bopcut_simple/M5": "7a1c21f307cd531f924b1a026138aa16e2b19ac11235e0830f4f64ed98f7dd53",
+    "tests/boolean/bopcut_simple/M6": "25d6a02c2301008569b30c0dad474496c63e7bab734155fb7841a15df193a2d4",
+    "tests/boolean/bopcut_simple/M7": "5064df5cd7955ba7ebab3afe5b3dc7712ad1ec3f94bf01d3bad36d725b5ccbab",
+    "tests/boolean/bopcut_simple/M8": "59075c58bdfbb67d98b60a1a5767bdcf7fce64200df0062976743f89acd9684b",
+    "tests/boolean/bopcut_simple/N1": "6d263c876fafb8a2c64b9f099b137490a1f2974040d35f9d05d4328e15d996b8",
+    "tests/boolean/bopcut_simple/N2": "01dc3b209da33075dda9afd9bbfc2262fadbd3a0c38dda752a88b6591f979b2f",
+    "tests/boolean/bopcut_simple/N3": "bc15c42e5fa6405fcd380692f21f4a538487fe16e57e9ea2067c192ead4ffa75",
+    "tests/boolean/bopcut_simple/N4": "2a21ac1a022056770a8b9138258997f2cc1a228b310840a878d1985133668ceb",
+    "tests/boolean/bopcut_simple/N5": "51eff4c4d1a7e7844c78c2d06813cef7ad70818ecc9555a0f6f0d24e78eefbc6",
+    "tests/boolean/bopcut_simple/N6": "c904d5a383611bbc41504874eb4da31bb5ffa09161de2e80e5907b1dcf5fdb3e",
+    "tests/boolean/bopcut_simple/N7": "52ea6bb785d3991dd98d3ec8556312d7aacb6b26acc718b07f9dd3a1c705beaf",
+    "tests/boolean/bopcut_simple/N9": "4733f28cb5240c597a1b1afc506d7629bc9994684d80d540ed29a6e772e8532e",
+    "tests/boolean/bopcut_simple/O1": "753db9be6ee036e245a4a946fa70f82ccb8ed10e8dd6e95eb022b7115733a76c",
+    "tests/boolean/bopcut_simple/O2": "8042dbe5ca56a4068b25208e26515079c4a1c9d94865acd8786a24036fc1e449",
+    "tests/boolean/bopcut_simple/O3": "d1a0ed3d56c3ae0b4d1ffe5cc6416db628413645ed640696d462258fdf45d2a7",
+    "tests/boolean/bopcut_simple/O4": "ecaa3d0bac9c519f6a35aa18334722082cfb835287b59260b6d086237a9fa694",
+    "tests/boolean/bopcut_simple/O5": "164401943d18dcc88399f1a8469c76c72ff02176dda84b6adcd53c90eddc4202",
+    "tests/boolean/bopcut_simple/O6": "268a021a4247ce761093d2f8830c1fffae4b5f3efd1dfdebd02a9a44dc606c5b",
+    "tests/boolean/bopcut_simple/O7": "ca866faa0240b97deb306625cdb3ddef0eca7c647e809334eb3d4e69fcff2d6b",
+    "tests/boolean/bopcut_simple/O8": "06bb982b9cbf60b34000c3313aded79d88169fd32def4878f12ef0a803627280",
+    "tests/boolean/bopcut_simple/O9": "d9e1e1d55453443412025f75672a23ea8e042668bb37998664b6672e591b9db0",
+    "tests/boolean/bopcut_simple/P1": "9f76aef042a46427497c49ed7c9f0e7401c5a68702661588aeff574199d59efb",
+    "tests/boolean/bopcut_simple/P2": "bf92aa67b7cf87881786732ff09eec51c078645413d6b75ff262664bdbcafc8d",
     "tests/boolean/bopcut_simple/P3": "56c528c00664f753964e9594af39897d0254c6823d8451b91c8236ab7756e825",
     "tests/boolean/bopcut_simple/P4": "b432d2230d63bc547fbc6e7a4c15c98370623e9204969d948c449e44f40b006f",
+    "tests/boolean/bopcut_simple/P5": "78bbc2a447b7c7541e8337c7b887886a8f28e90cbcbafec47a795a04f00c77a1",
+    "tests/boolean/bopcut_simple/P6": "91c3932a833d0140652aa2b95939ac56fcea0fe8ed5c8b251d0d5e4a0212d845",
+    "tests/boolean/bopcut_simple/P7": "25e5bf5d4a99b37427d481b0b06351349cd2d362e229ee7ddd1f0f2ff0e98a98",
     "tests/boolean/bopcut_simple/P8": "132f5403b2d9306983d67ae744a7d14844315b9fbe25c77c87f9c2810a36e089",
+    "tests/boolean/bopcut_simple/P9": "bb13eb402da511461025f8d46067b746f7403878df81c97f41c618e0a55bf62e",
+    "tests/boolean/bopcut_simple/Q1": "1ce005c9d4ea217afca1d6d01d7bb27a01bf013c25caeebe237ca461606aa530",
+    "tests/boolean/bopcut_simple/Q2": "dbf38096411140a873cb45349804dbbabac4ef350178e1e6cbd732c4a4965ca2",
+    "tests/boolean/bopcut_simple/Q3": "1680c5c2c2ce19692cb4d6fab2cc8d56996916899a08c6472cd8ba804e9f40e3",
+    "tests/boolean/bopcut_simple/Q4": "5a082a9e9bcb825e37ae6f85b07570bb6601ce76d7f49c49364b80217ad6b52d",
+    "tests/boolean/bopcut_simple/Q5": "3bc3df828236b456aaa8691238fc8c9206dbae3f64235d4f46516365dfc92681",
+    "tests/boolean/bopcut_simple/Q6": "e4648bd7477688c49caf1a90dfb5b4ce26d7dff85455a15732628f569e1422e3",
+    "tests/boolean/bopcut_simple/Q8": "cb48aa65c9b6a5fb594d3bdfd3c44bb444ca4de19c8320a5c1eaad8d05d0ddfd",
+    "tests/boolean/bopcut_simple/Q9": "8077225c79b33294aaf3546d2dee7a5f210674f8c6974cf816dcd9f47311bf87",
     "tests/boolean/bopcut_simple/R1": "344f61ce6abbe88b21dd1fed45329ca27fea70cacce5d5bc0e005b42b41c7d4f",
     "tests/boolean/bopcut_simple/R3": "d48fa97bb435d0ba7008abe1a2bd3ce20ff326581b90a66ba5fac24e0b1d2e16",
     "tests/boolean/bopcut_simple/R5": "82054defe307ab263a36bd339654ca712cf6ce4a9bf5284a0febf9f4a72be3cc",
@@ -268,6 +420,14 @@
     "tests/boolean/bopfuse_simple/B9": "e2b606f02bbfa774cad54c8f4a2e24453df3d71d3b01337a945b734bb8b6ab29",
     "tests/boolean/bopfuse_simple/C1": "6d4cf5dafe9aca04312c502b341561ada2c3998b777f6d894f8368fb08581488",
     "tests/boolean/bopfuse_simple/C2": "664305375b5d3a42ff5e1ab85c74c0a5fe6ff9f3ae3a1652bd06178e8b3c3968",
+    "tests/boolean/bopfuse_simple/C6": "910c69f8f78ffe640ff11918b0312faf2f9a41fb3bb5455bce2eb6e193f9bbaf",
+    "tests/boolean/bopfuse_simple/C9": "c71ad8fa5d583e60f7e87bd7ffa5d2124beb8b48538665d1bbf2e193c3710837",
+    "tests/boolean/bopfuse_simple/D3": "306689b219f2fe8c9677eedb058d8c49b2d06606a1f8416adda48a6cae50cd93",
+    "tests/boolean/bopfuse_simple/D4": "f731534c6fe04b05a051e9652705c8ff9ad74e6553afd224e49eabaac4ae947a",
+    "tests/boolean/bopfuse_simple/D5": "3c147d98f32e2158a7d755708e2cd4d20a29b46799c00221d66f1cc6bdb56756",
+    "tests/boolean/bopfuse_simple/D6": "710f239bff6b433a98c8b285d389f39f1539c1791be6fdae26a975f3f3844ccc",
+    "tests/boolean/bopfuse_simple/D9": "670ac5032fd4849c3178f0c6750a992c5f14e7e949a26b034c20dbfcfd40c2d4",
+    "tests/boolean/bopfuse_simple/E1": "9aac1e4aeb794bdc8b82da1927d0a709bae8ff60afc276996dc9a2b4ed539516",
     "tests/boolean/bopfuse_simple/E2": "01b10a3062276b9c946cb4734fb092a6df21a3d8b89acc3dda9f7a27fa182157",
     "tests/boolean/bopfuse_simple/E3": "36dc57d1d27f49c33dcf3c78757d6f91d304eee1093b1b4ce638981f5931fc56",
     "tests/boolean/bopfuse_simple/E5": "4749a2997eb51c139540729ea6116b704f7d77a70b7f55f9602ec73384c6ff04",
@@ -277,12 +437,75 @@
     "tests/boolean/bopfuse_simple/F1": "1fc11553cb96a75137a9cf2b7b3b3c2bc7fc896a071b650d83ae977664cd0ad4",
     "tests/boolean/bopfuse_simple/F2": "5ec1c9a6aaec609befc80a13506f718230d93be3c5e613b080beece44de5338a",
     "tests/boolean/bopfuse_simple/F4": "d0d8d7caa9f96c26dc139474666f82ddbeb338add707e807a2255969cf457043",
+    "tests/boolean/bopfuse_simple/F6": "f19b3c32e4101b28fb14db7062b9b3ae2fe995a7565a2981b6ed2c7b319579f2",
+    "tests/boolean/bopfuse_simple/G4": "3c70a73c5196fe8ba7e0280b911b13b29b6050356cfd079eb54ce326e659830f",
+    "tests/boolean/bopfuse_simple/G7": "4dcc4b531bca9f65bd9668c99128a2c5d9f01ede0f8fbb8b72810fa2f1fba8b6",
+    "tests/boolean/bopfuse_simple/G8": "16d838541b1c690ead0959cba0752b011db1a88c118db829cf8f5c2925a03d4a",
+    "tests/boolean/bopfuse_simple/H3": "02f585004fcb54e24bf4c209b39bf60bd16f776f0c806b78c01f5db4a34160cc",
+    "tests/boolean/bopfuse_simple/H6": "2da68c64f9ba9cf22883eb609e83a6b42e18a055a4c446759acaa99d0db7f0f8",
+    "tests/boolean/bopfuse_simple/H9": "056f11fe0bfdbb9804d8f2acb110ad592ddce3acb2e423699ee011dfcc8215ec",
+    "tests/boolean/bopfuse_simple/I1": "ecacbd55e1e325189bb2546501800cc064ec942e5cdc81438dd3e47bb093d292",
+    "tests/boolean/bopfuse_simple/I2": "b197d50895b6dd62811f18b0b277d071f2039e0d0ac8c45d40f7cc7590179fbf",
+    "tests/boolean/bopfuse_simple/I4": "3334c38e0ad30a81807b6e5a84944aa2533ae68fb5b8cb44cb2e843df42089eb",
+    "tests/boolean/bopfuse_simple/I5": "b5405be9575ca52d5aabd74987584666fc1c310fa021ac0f649ee87aabd96cdf",
+    "tests/boolean/bopfuse_simple/I6": "76163075faa070b6720368a51d8a21d8a54d3052ba4b48a3583ae454bca3cb3e",
+    "tests/boolean/bopfuse_simple/I7": "1c9281f84c2a43ecd949de2bc3c6abcb65eaa40c542c470172605cc7810b0c45",
+    "tests/boolean/bopfuse_simple/I8": "73c54c879521a381d978b80cf84522e349cf8e9e2c34ae6aaa05107ad77a69ae",
+    "tests/boolean/bopfuse_simple/I9": "3600bc50f4b9c678f64213c0fde53e7aac0f3cae7c6df7d2701bf233c143e447",
+    "tests/boolean/bopfuse_simple/J1": "9e6333ca5696dbf66d3f9d9122a6b947f08f62229a98b7df9a6bfc694f0c0833",
+    "tests/boolean/bopfuse_simple/J2": "0d0422ddc55a7b6aee7f006b966ce82ba7db7181a6b36a84c136537680c9c6b9",
+    "tests/boolean/bopfuse_simple/J5": "3db23f28405b50b5963b774b1cde5831a5951cc7d480731a7ae49e87b9f7ed48",
+    "tests/boolean/bopfuse_simple/J6": "becc8c4304e41b5d65aa958b254cb346cca31c09946cd51441ba9a0943ebad8b",
+    "tests/boolean/bopfuse_simple/J7": "f33a863f22cd0c63a3b061f6539caba07a2569b5f685c2107023468bb841e2f1",
+    "tests/boolean/bopfuse_simple/J8": "e559cdfecd6c7896da8b8da848847569bdebafd6d52edcf12b88a52283fc7f65",
     "tests/boolean/bopfuse_simple/J9": "fba00ddcf4f32a9dc6dd243a4cd1ae4cf92990c82b6d68d77715931d16101fff",
     "tests/boolean/bopfuse_simple/K1": "972f59fa45d235415d3b05c1856603441c65e02ff4ed928768a67ea6423283c0",
+    "tests/boolean/bopfuse_simple/K2": "650a86867d66fedc216be9568c7eca31efb75644293b82e19a4d929885b763ca",
+    "tests/boolean/bopfuse_simple/K3": "57d0d9f0614a6d178b99466a7876799630ebf4bb45e7b5eeaddc928da1317190",
+    "tests/boolean/bopfuse_simple/K4": "ff85616b4d8c90b4ea99feb75ce26456b893d434396b47f3a9768bea608a36ae",
     "tests/boolean/bopfuse_simple/K5": "f49f4616d740c09adda40ea322ce9f1384e3c085aca47751ba0d078733cdeb37",
+    "tests/boolean/bopfuse_simple/K6": "a413458b15f504ba659c1a2c7427a416340cfe8134c1aa84ee117d7bb83cf140",
+    "tests/boolean/bopfuse_simple/K7": "fe89ef4234b4040f7955d631538ba291c2dbfacc519f27db7a859ceaa39c7a06",
+    "tests/boolean/bopfuse_simple/K8": "89fe6f2d24e692aa5b3ce6a122f1b8746d1e3c1d5f9c505382dfdd10d05219c9",
+    "tests/boolean/bopfuse_simple/K9": "89a73861c2fc2e6dff4db13f984b65261d072f75adb2839001d980fbfaaee8bd",
+    "tests/boolean/bopfuse_simple/L1": "34a9bcda27c0f9004d877fb9c8f4a348593aa9890d376605f93c6ce3666cbc9f",
+    "tests/boolean/bopfuse_simple/L2": "40a13e19d007196427b7b6093515559484ecf203ddb21e8099d685ff61fd1572",
+    "tests/boolean/bopfuse_simple/L3": "7b5f9198e3c5f99b4ff71fcde6f0f95257b6ae2b08989d8829289f2cedc52120",
+    "tests/boolean/bopfuse_simple/L7": "a1a582238fa38925f7bfd73808f599a971eea0d8eb2bf925b0e0a12eabb3f097",
+    "tests/boolean/bopfuse_simple/M1": "45f5808de1353e2680ab5283a61e8b666df97ce8975a034baf96b559bfb364ea",
+    "tests/boolean/bopfuse_simple/M5": "0a70245886b5ebeff4208c11146f8576bb98b1c09838dd795a689c7365a895a8",
+    "tests/boolean/bopfuse_simple/M6": "a209bc3632ac5c6db8e726d04883434ccb42655a673d2a177b4f931e56ff5050",
+    "tests/boolean/bopfuse_simple/M7": "c56314339db9689c65f23f63c2a5b83176cd26f7accf261e497ce4e93d330f29",
+    "tests/boolean/bopfuse_simple/N1": "c1c2551467868f660341b8e1706a675db23eea6f2426b37fc548afb4a60a265a",
+    "tests/boolean/bopfuse_simple/N2": "7d5b49c265f11c7134e6debeae403caea98b205ff9d139725e16df5c9b67db2e",
+    "tests/boolean/bopfuse_simple/N5": "8dadd62f42a18ee78856a5a5fac6330c0d29890eda332eae408427425ff3bb4e",
+    "tests/boolean/bopfuse_simple/N6": "076ef9ef49e7f5221510a93183edac4b61b038aa054033bbbbbc5c95f0b7962f",
+    "tests/boolean/bopfuse_simple/N7": "763c5609a20943ae77db502c5ad2af3cb722dd48b0cd24108ebda5e86305f23a",
+    "tests/boolean/bopfuse_simple/N9": "e119d71ba77e15427e0da3c816ce2d73ba072f8e67370f31aab76cf63b73975f",
+    "tests/boolean/bopfuse_simple/O1": "83a18387b3f28f9ec2d84ee1eda310709b805443d57ac6657e2ccb27cf718832",
+    "tests/boolean/bopfuse_simple/O2": "ee088313e357f5b6793b883a718d3f00949b95637a40b2a824332f57a07aafc3",
+    "tests/boolean/bopfuse_simple/O3": "cacf60886fcb2c1008b7b70ee46df52dd49b75889c8b676e5b374094e4541354",
+    "tests/boolean/bopfuse_simple/O4": "37542bcb7e81ece01353835bc8813c53994dbc5ad623279d7f8ec2465f2f1f71",
+    "tests/boolean/bopfuse_simple/O5": "b1fb9f8bd8ff022b5026455887761834e9ca77954a798f12bb1fea17679e625a",
+    "tests/boolean/bopfuse_simple/O8": "354eebcdb131c1e8b46ae7cd2e8b264736792788e1e70d18f2fc7e64e20bca03",
+    "tests/boolean/bopfuse_simple/O9": "367fe85d2e2bbf692080a64327a240c2dd5c39758776d4449f92871ffbd1022e",
+    "tests/boolean/bopfuse_simple/P1": "1ce863811bb8c213aba5408ad6e047c1ef799fdcc98a47d3216f15c3577d74da",
+    "tests/boolean/bopfuse_simple/P2": "08bf03d7e6fd47c30e060fbf61b302081cedb567c0b90ed5f419d29adc3d495b",
     "tests/boolean/bopfuse_simple/P3": "c02142b95fa779b6e358f0ac08895acd27ec48c522ce72841ee7c4c9b0e16192",
     "tests/boolean/bopfuse_simple/P4": "97a5ef74f038905834c59a65d0dad5e978ed12d00ee65c88418dc17aa2139675",
+    "tests/boolean/bopfuse_simple/P5": "7f0ba5756cc030a006bd519881f5d2776dd5530950b8276ebe1357f1f5db46bd",
+    "tests/boolean/bopfuse_simple/P6": "7cda6680d455598d0b94aac039bf1ca40b377ce70318a6bfec216c804e0c1072",
+    "tests/boolean/bopfuse_simple/P7": "d15000eda80498affcde0fcfb5c8e2ce41814273282756c1a6601af40f25f587",
     "tests/boolean/bopfuse_simple/P8": "602b84ed94b149574c5adc25f7d13a58c746b52bed990482e4e56c9732c5ff0c",
+    "tests/boolean/bopfuse_simple/P9": "fe5c8ff7259fc34acadcbb95b50589108d512b2b6411d0fad72308d16d40f9ea",
+    "tests/boolean/bopfuse_simple/Q1": "31697feb3452fe6ab8457cad84d4b9eb2bae343fb7c25fc7c0280331a406de05",
+    "tests/boolean/bopfuse_simple/Q2": "ab1c6b2084af69d29eac7b1eb23d5daa386ef4c6538d42ee265f5acbaa394458",
+    "tests/boolean/bopfuse_simple/Q3": "9442d1275d246462a1338a466165345a694a533739cf5db86d75fbd5759b916c",
+    "tests/boolean/bopfuse_simple/Q4": "00db997e233dd0fd7416dd50e16580d61484aa6c06fbf81664febd32f7729793",
+    "tests/boolean/bopfuse_simple/Q5": "e60d38f1f8ec6b8543ce8a875094e2b5432ea25c235287334b5af890de65ca37",
+    "tests/boolean/bopfuse_simple/Q6": "8c8b4b9dd6c2a8e5d3a86a092cafa47c669a72838d713d9512988fa604c30b55",
+    "tests/boolean/bopfuse_simple/Q8": "2ca327b5e459a7767b3d267d35fde8c4851738f0f3b88f221077d94ee5c68b53",
+    "tests/boolean/bopfuse_simple/Q9": "b879f322664e93475fa2db66e617e4730d3c75178800450a42ac9bab4b356d6c",
     "tests/boolean/bopfuse_simple/R1": "852dbc258722fd3c4836951f3327b269b7e95606c43d274b43e0b8953800f257",
     "tests/boolean/bopfuse_simple/R3": "0e8fe9d288e37d623afd0570d60b2b4769f278802ba37cfbbadb6cb524f1103d",
     "tests/boolean/bopfuse_simple/R5": "af576394ac6f495e406ab03320a112a321b448d8dcb5c2810d92838d00cb7065",
@@ -306,6 +529,7 @@
     "tests/boolean/bopfuse_simple/V1": "3cf424f1ccf7b9be014eb293254f652bb9e0a6833f6f92bdfe2a0ebdce70ccaf",
     "tests/boolean/bopfuse_simple/V4": "caf5a4bd5713ef4f92cb508803424f4ac6fde3756ed0f830a890add4f8865bd4",
     "tests/boolean/bopfuse_simple/Z5": "8adade02d3b4830ccb8cc64c28b9827bb3b0d039f865ab1371c93cbccc1c7471",
+    "tests/boolean/bopfuse_simple/Z8": "a71fa52193d4e254f945b089c0b072a33d212a4fe3f503b1808b4e448e351e32",
     "tests/boolean/bopfuse_simple/Z9": "c33835f165ee50fb6e1de8ffd61df8fa3e30db99d122e9cfbe5bfd490258044e",
     "tests/boolean/bopfuse_simple/ZA1": "d279a06297853226563a32d918db35711b74564905789bf310291bdda6830075",
     "tests/boolean/bopfuse_simple/ZA5": "6bfdfbf5b6820bff2a9952ab496db577cdd496b76134719ecbf4800a5458c46b",
@@ -313,6 +537,7 @@
     "tests/boolean/bopfuse_simple/ZA8": "936d9b90c56c92f8bce64672f5492dccda258d8ae4aa13d65383924121d31d1e",
     "tests/boolean/bopfuse_simple/ZA9": "b91b3ed1c8515901262816e8b55d226c137f0f50bf3a027110f6c48e5f716417",
     "tests/boolean/bopfuse_simple/ZB1": "b3ede2c44125b80b51a799cd20eaad25d2b7b78344e857c5896f1c69668a151f",
+    "tests/boolean/bopfuse_simple/ZB3": "a1acc4f4f47d6d5a00ca0052876532bcd3324adc475b96c592f6f3a496f7a85e",
     "tests/boolean/bopfuse_simple/ZB7": "28d391303ddc7a0d0a656d4f11a09089c2d8f8298bf7f5fd341e5da1dbe23291",
     "tests/boolean/bopfuse_simple/ZB8": "70451d5fe54743e251fa82a7c731d20e575d2fef9782ca099bd8cab4b877cf01",
     "tests/boolean/bopfuse_simple/ZC1": "a74fc6a98d9053b503568117450a876758eedd953ae6bc067fcc6c10d9587256",
@@ -359,6 +584,15 @@
     "tests/boolean/boptuc_simple/B9": "0123b5ab515ea70350416892fd171cf7568084c267b034a646053d1703892a64",
     "tests/boolean/boptuc_simple/C1": "ca8d58fffede31d118e7958e6b4f3df4f4b0be44f8ea2c074d2869679f09214b",
     "tests/boolean/boptuc_simple/C2": "b0cc3025d704957c2c974825d0f9ba5139fcfa16604aaf30d978c27b4d5e8be2",
+    "tests/boolean/boptuc_simple/C6": "af28e7ff51b1af49e4aa97fd921fa516bd6bdc2d781b43d713cc7077277c61f5",
+    "tests/boolean/boptuc_simple/C9": "77d091ebee14efe1872125874765b9f2fca1c3e514c7e00b09c39c1c58714007",
+    "tests/boolean/boptuc_simple/D4": "dbe7f4a754249299255b5b4e9200eebe2e3811ad8110330cac3870b3132364b3",
+    "tests/boolean/boptuc_simple/D5": "88b55d60e873db4124a854d66b30b541f8241d6bd379bbaf73dde99eb55c596a",
+    "tests/boolean/boptuc_simple/D6": "910b8fbbbd6fd27f32e7bb439c6a4e47a9ddc0be13959a8ee348f296a3086158",
+    "tests/boolean/boptuc_simple/D7": "0c6d8c3a5b0026697bf1915b36e0df3dd2044c0d9fcac9edc924caaee04e920b",
+    "tests/boolean/boptuc_simple/D8": "fb9cb5739fed4e13e921e8d84c7cbc025383fd71c1fc553409f7323813278ac0",
+    "tests/boolean/boptuc_simple/D9": "28b29e8fcb4fefafb9ba095fc3b9bfb64693bc1c118e41fca548046710b3f0ea",
+    "tests/boolean/boptuc_simple/E1": "8f06b4d6347964beda2aeb657e6e7367743e49542b6afd810174ee46cbd68345",
     "tests/boolean/boptuc_simple/E2": "d1078e5fd91f05dd556297a0b5e47b0573a2b8eb8c5c04428a7c86697a7015e9",
     "tests/boolean/boptuc_simple/E3": "9ff0112cda6c16a3c03d3297c1924bdadcf17d9cf877193dca737ab09cbcfcb0",
     "tests/boolean/boptuc_simple/E4": "be757b0928c1aa1bc5bcf9945ecdda23346b5b1bc9b42caaba207baa6ec5fe1a",
@@ -371,12 +605,83 @@
     "tests/boolean/boptuc_simple/F2": "fe3eb2701d07a5ad5937f33f27b8aadf8463723afef577d4bc668ba8c0d20b07",
     "tests/boolean/boptuc_simple/F3": "d07861dd45eea957d5f9ac5ca1483f40667371197417ac9001f3d9eacacc6a8b",
     "tests/boolean/boptuc_simple/F4": "711e42e6b4d6568fb55c720a7cc2af4d24d5aae0d1786a157ddccec607e5c8c2",
+    "tests/boolean/boptuc_simple/F9": "9c6905fab316efc340daac7fd1cd66019d05d1e76d7bcf5aeb0731668e3104c4",
+    "tests/boolean/boptuc_simple/G7": "191c9bf76cefd25c8cf6fe56819ead5461bae0c8fbdbc1dfeca098fe49fbbd41",
+    "tests/boolean/boptuc_simple/G8": "667c26aec0694779241ad874a0eef96ac4599916b26271b7437223e1332e83e0",
+    "tests/boolean/boptuc_simple/H1": "5d748d5ba008292f90f8145982f458c91feb200617a02baab6c21c9a8abac2b3",
+    "tests/boolean/boptuc_simple/H3": "e3e3898d8c45df95253b1e1aee144f24a316d879e66ea5d8f5379ae11ca6e0c7",
+    "tests/boolean/boptuc_simple/H4": "b034a57d8ab754a0a2b7c64b1e1e673848a13ac374c20e7470e181290e2bce30",
+    "tests/boolean/boptuc_simple/H9": "0fd0dfa418731da7aaf9c778b4c85c8aaa9c46aafb7dde0a184147a285cb0cf2",
+    "tests/boolean/boptuc_simple/I1": "4588f0a0406205ca3721079f5b109037f2af1c73bae0781ff2c0d5c063997975",
+    "tests/boolean/boptuc_simple/I2": "2b14fe8ce19b02c5eddd9dbeeefe1223d62c7ea6b0c6af5631ded7093ccb82ff",
+    "tests/boolean/boptuc_simple/I3": "45c29147708e1b153d53ca998dc380cb0bfd9c555335eae4c5daf736415cd65a",
+    "tests/boolean/boptuc_simple/I4": "55ea34c72a1cad525ce9326d7830015d5d49810c8c76ae69f12501a151df71ff",
+    "tests/boolean/boptuc_simple/I5": "da7c7ac2df877623d833b21fe25e3b42580b9f43ecc058a0680c90c236901304",
+    "tests/boolean/boptuc_simple/I6": "6d1e514e36016f672ce48fdeeb8502d8c5759675b470b6084cde1e3fe565b270",
+    "tests/boolean/boptuc_simple/I7": "673017a46093d25105c54330c82de22d535fc449542b318d6cec6481a155a0aa",
+    "tests/boolean/boptuc_simple/I8": "8ca1b36565272b64c7b5098839c99bd17bb99859e2f63259381d141e7bb57741",
+    "tests/boolean/boptuc_simple/I9": "7262386009876c289ffc15ebca6f214d5a90946da009ec91becd0f97fc8ade45",
+    "tests/boolean/boptuc_simple/J1": "d1acd4dc0655e38ee1c6c968e8ebb313dd196ea910566ba8ec45e813f546c15e",
+    "tests/boolean/boptuc_simple/J3": "aa615f1e51071aba212e8c705a14269049a9ce1efaabbb33f2bc2de0ea702ba0",
+    "tests/boolean/boptuc_simple/J4": "0fddc7953a8bee59a073a8255afd99e256b7665918140e4357daf015a8ea7b4f",
+    "tests/boolean/boptuc_simple/J6": "7e904a09fa00ac91f043e0508c604f790f55941ca8ea3f9052fde125859158de",
+    "tests/boolean/boptuc_simple/J7": "fd40de886ddd4439cb7912cc5a419fb00a5ff3a3d5b2561dd36cd5d1df514973",
+    "tests/boolean/boptuc_simple/J8": "bf74101bd4552c0aef918bdb68957dd8e6fd0ea94ccd5190f86e45b4dc49ac20",
     "tests/boolean/boptuc_simple/J9": "f30b3e9e2b868fd12873833b036f8058e775d2f3ecfb71968189b56c4e529b00",
     "tests/boolean/boptuc_simple/K1": "10d9e0660dd5a2656d48b85422aef9dbc35c9135fd54174cfee54047c8a5251b",
+    "tests/boolean/boptuc_simple/K2": "5f9865492e77a66c12142343fc9ff2bd51f6314e17acd1fcf362ffb954b12996",
+    "tests/boolean/boptuc_simple/K3": "b4ff6347324747fa97c02894bfc8173cbfceb6067c4ab6ffdaadfdea14564e45",
+    "tests/boolean/boptuc_simple/K4": "920639c54aceed442765b422d313e9a86d66a1fe64ebbaf9d1527d150ca7a507",
     "tests/boolean/boptuc_simple/K5": "e3cbc7fff387b5e1c531490ffeb8905095f0c3ac8ef3a43a83db010bf760b27a",
+    "tests/boolean/boptuc_simple/K6": "74550fbc839add4467eafe005639f4855b525eaab3e81e2b51e5b8b5805a552c",
+    "tests/boolean/boptuc_simple/K7": "4e504a4bfbe233bf268ff71e4b6b477ec9d20f06355b1948b8b7cd83507d3432",
+    "tests/boolean/boptuc_simple/K8": "1b3ceff808b3c97e5b9a48dc02d400802388442763d338b2f2492ed1f6e4994b",
+    "tests/boolean/boptuc_simple/K9": "5299181913caa17429d5660f2628673234ef884d1444a7ddea9604cbeb720309",
+    "tests/boolean/boptuc_simple/L1": "46345068c836c970e5c3cf4d0f16f8e9f61cfd8acb60605ea11ea0e3a82659c3",
+    "tests/boolean/boptuc_simple/L2": "83f07ad29a683617841edb83138a5981378bed637b4e9088f3a613e848d356ba",
+    "tests/boolean/boptuc_simple/L3": "5d78f1f3ec21d26dfd47efe70619802606a770e1be6b5b848476aef7dec70568",
+    "tests/boolean/boptuc_simple/L7": "580ccbc128a4539eceffb08d0a4bffc5575e539b6062510c7179318c4ef35540",
+    "tests/boolean/boptuc_simple/M1": "995744ed54078b9cb0b394d20d598e7d0f2570f9313283ff39fe55d6a60fcbee",
+    "tests/boolean/boptuc_simple/M5": "77bf08063fdd4af001487df8a94738711892fddb7a7acefa04a05a9f54e81492",
+    "tests/boolean/boptuc_simple/M6": "77257e9196eed17b939f9f4f3f3c12370910b6eff25d0114008f698981754216",
+    "tests/boolean/boptuc_simple/M7": "4d7006d641370604fac528ccda57bdf4dd941b15cb30f43798bf946d8f4cb7d3",
+    "tests/boolean/boptuc_simple/M8": "0eae0da2e90d7b0964249fd8471a00a822be31b9d7e0be252c89a348bfae013a",
+    "tests/boolean/boptuc_simple/M9": "3543a961a807e3adcb18cb8001c74b0e9a601f7389ee1f9e00844a2a798c2c9f",
+    "tests/boolean/boptuc_simple/N1": "136d80271dad9360d9eff5f0144199265eaf8de431c16c18c4e941de9a8b707c",
+    "tests/boolean/boptuc_simple/N2": "b7bdeaaa9f9d98ec1437bbc6457950b2affa754567c2d71c970c94e5b02de903",
+    "tests/boolean/boptuc_simple/N3": "bd79e608431b69f80b61aa32f5a3401c0d244718887028e806714d85633414c7",
+    "tests/boolean/boptuc_simple/N4": "affbc219f5f3403646a3dc01d23df651ece993de19128d9ae3079d422082279e",
+    "tests/boolean/boptuc_simple/N5": "f20ba4f1f17814383c744b70cedec69dc69890421022e18f1a9ba4cc93b11c6e",
+    "tests/boolean/boptuc_simple/N6": "2035ef592029a4fadbd572f97d33ce4607542e2d72003bdced57811e446f3d66",
+    "tests/boolean/boptuc_simple/N7": "09ef01ac049a114a3715b52c40b0ab3029822ab3d3e5b1d9bb9895a5e3c9f39c",
+    "tests/boolean/boptuc_simple/N9": "ec73d7812bfcf3187ac8eca73e08173df0ad49b3cd67ce52e17e3d87417c5bed",
+    "tests/boolean/boptuc_simple/O1": "209855f1998aeef8f7a08f6bdb48259e356730fab9ead5c65fa80801b5bb0f24",
+    "tests/boolean/boptuc_simple/O2": "d4aa3eebfe5c75adf7cfe5fa4e2a67fe24dd6649f4f5cfc2f713783211c2f865",
+    "tests/boolean/boptuc_simple/O3": "a283c7d596cb4e777122ae82d93b1a3b330a5c95a7b2d6949034960ecc8a2f8c",
+    "tests/boolean/boptuc_simple/O4": "20527c04901a686b086e8a69ee701500d18e4b30a7f3355a9b3ca4435b2ddf4f",
+    "tests/boolean/boptuc_simple/O5": "fca1cf25d2b7989f6e132ab750ca03b8e65afdf38c84cf4aa1f39cd699d53762",
+    "tests/boolean/boptuc_simple/O6": "73903bf87c00fb99ab781ba3636fd05746fe8fa9ceb02a87c2494f5824363a1b",
+    "tests/boolean/boptuc_simple/O7": "525457b5d746bcbd8ff4a4517c32aa013aafa57bfa06f959926caa14885c39e3",
+    "tests/boolean/boptuc_simple/O8": "82a00be66de96f49ac144736bf42c2df2e0a2a9e8f06d466a2c931c03e6c6324",
+    "tests/boolean/boptuc_simple/O9": "068b6096cb008c8612385a8521a4bc459af56dd1343dbe633b6c0578a6c61cdd",
+    "tests/boolean/boptuc_simple/P1": "8bb7a046f6065350accee904c14f09cb09c7db8cb96f32adb1a87e375470fd5a",
+    "tests/boolean/boptuc_simple/P2": "1a3bc0973b4db97e7c278347fcd003cc134861a34aa232bfc9147ff02a0886a1",
     "tests/boolean/boptuc_simple/P3": "b48927c57f8706b47adb4aed091fc4a4d35dbe12a8ee300acc7252daa354b6ed",
     "tests/boolean/boptuc_simple/P4": "433eb7375ff40f18a02ef70d9c4d4db8cfa4031694a742d952e1f76b856022b3",
+    "tests/boolean/boptuc_simple/P5": "beebd23c03b0c11dc6405dc86313de766c8dcbd8b7ad82ebb4982611bee46c7b",
+    "tests/boolean/boptuc_simple/P6": "d07a85859679ad6622a2043f425c97efd31b15b775ec47321fbb856b41fa9a1c",
+    "tests/boolean/boptuc_simple/P7": "30c6d725aaae821cd482ecf962686ce62fab2f0693dd6083cc0d731220c1819d",
     "tests/boolean/boptuc_simple/P8": "d98924a9158c4e284c4d0ef948b64cc78980f6e5aa06677f10abd4eb9bc9f497",
+    "tests/boolean/boptuc_simple/P9": "27d0aecd60957a8dcc6b76c771f0bac2fece79f59996af1dc930a9ef4cfe824f",
+    "tests/boolean/boptuc_simple/Q1": "488a437ecdef764b3f66a1f8d2d3cc4e29a4272a34fec3a8bbfbb110dd1f0eca",
+    "tests/boolean/boptuc_simple/Q2": "f6c3742a87cbe4b6409387b1eed4f05d2a0f0a35105407a1c77b198727197b2d",
+    "tests/boolean/boptuc_simple/Q3": "a5ec097a2fef333f7de9aa9fb30971247669b42256fd52224ee28cd7610a6c51",
+    "tests/boolean/boptuc_simple/Q4": "d34e6657bd00e750a9c084bbe40ef48cb95f4b1593457e5964f4845b2e3c567d",
+    "tests/boolean/boptuc_simple/Q5": "17d5f4ba0b7d1d5570a713c5e5c0e9b5a8958bba37bc045e76a579670963dee9",
+    "tests/boolean/boptuc_simple/Q6": "de71b5d2e9a60e2c30a15a91046cb360199343879ee6f533b3877c4d7a205198",
+    "tests/boolean/boptuc_simple/Q7": "0a3f0a960d436a68d5dd7c319c26a508e1f9d785c37bf65272002433aeaf39ec",
+    "tests/boolean/boptuc_simple/Q8": "b4107ccd7c58dfbc1ac683f5716d938e2a617bbb4d7deb51691dd5fb6c598962",
+    "tests/boolean/boptuc_simple/Q9": "cbca2058b09c47e7a6d0769de4320e0a4bdb0076b1d0f7c5b2b553c3a3f5300c",
     "tests/boolean/boptuc_simple/R1": "5590a29f5bfcce528b843e00fd8dc79fb107a43129caa2fba6a1a71b51ddfdd9",
     "tests/boolean/boptuc_simple/U7": "9883a4259bf34bb15bd322c0bbda24e64431e6e073f75b381b4340a5453d643e",
     "tests/boolean/boptuc_simple/U8": "42cccdd0d613099419af8cffe2797fa530381323d9ebcaa38adbe988096a9eb2",
@@ -720,6 +1025,20 @@
       "expected_rust": "pass",
       "expected_occt": "pass",
       "purpose": "Derived: Booleans of prisms in one frame whose slabs hold different regions (S9a.2's stacks) through bfuse, bcut, bop with bopfuse/bopcut and bbop: a step, a pocket, a box cut into two solids by a slab, a closed cavity (one solid of two shells) and a tool through a round wall; checkshape, volumes and areas on the result, counts and lengths per use after unifysamedom.",
+      "verifies": [
+        "Booleans of prisms",
+        "count synthesizer",
+        "per-use length synthesis",
+        "general mass properties"
+      ]
+    },
+    {
+      "path": "rust/fixtures/draw-derived/boolean_polyhedra",
+      "derived": true,
+      "context": "tests/bugs/modalg_7",
+      "expected_rust": "pass",
+      "expected_occt": "pass",
+      "purpose": "Derived: Booleans of prisms in frames with different axes (S9b.1's polyhedra) through bfuse, bcut, bcommon, bop with bopfuse/boptuc and bbop, the tools moved by tcopy and trotate: a box and its copy turned a quarter turn about z (an L whose coplanar walls are one face, and a plus sign's fuse, common, cut and reverse cut), a bar turned 45 degrees through a box (an octagon, four corners and a star, values in sqrt(2)), a tilted bar cutting a box in two (and their common), and a unit box turned about (1, 1, 1) inside a larger one (a closed cavity, one solid of two shells); checkshape, volumes and areas on the result, counts and lengths per use after unifysamedom.",
       "verifies": [
         "Booleans of prisms",
         "count synthesizer",
@@ -3306,7 +3625,7 @@
       "path": "tests/boolean/bopcommon_simple/C3",
       "expected_rust": "unsupported",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9a's Boolean group, a capability sentinel: a box rotated 45 degrees: frames with different axes (S9b)."
+      "purpose": "S9a's Boolean group, a capability sentinel: a box turned 45 degrees about z, its corner on the other's corner within rounding: a face thinner than the resolution (Degenerate; frames with different axes are S9b.1's)."
     },
     {
       "path": "tests/boolean/bfuse_complex/J5",
@@ -3316,9 +3635,9 @@
     },
     {
       "path": "tests/boolean/bcut_simple/H6",
-      "expected_rust": "unsupported",
+      "expected_rust": "viewer_skipped",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9a's Boolean group, a capability sentinel: pockets cut from a prism one after another; the first cut is a stack (S9a.2), which the next bcut takes as its object: a Boolean of a stack, not a prism (S9b)."
+      "purpose": "S9a's Boolean group: pockets cut from a prism one after another; the first cut is a stack (S9a.2), which the next bcut takes as its object (S9b.2, on its stored geometry)."
     },
     {
       "path": "tests/boolean/bopfuse_simple/B2",
@@ -3336,7 +3655,7 @@
       "path": "tests/boolean/bfuse_simple/E1",
       "expected_rust": "unsupported",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9a's Boolean group, a capability sentinel: SCALE-sized prisms, the tool's profile not translating exactly into the object's frame (S9b)."
+      "purpose": "S9a's Boolean group, a capability sentinel: SCALE-sized prisms with arcs, the tool's profile not translating exactly into the object's frame: decided on exact models, which for arcs is S9c's."
     },
     {
       "path": "tests/boolean/bopcommon_simple/C8",
@@ -3379,6 +3698,1836 @@
       "expected_rust": "unsupported",
       "expected_occt": "viewer_skipped",
       "purpose": "S9a's Boolean group, a capability sentinel: a semi-infinite prism of an exploded face (explode, SemiInf)."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/C6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/C9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/D3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/D4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/D5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/D6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/D9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/E1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/F6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/G4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/G7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/G8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/H6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/H9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/I1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/I2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/I4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/I5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/I6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/I7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/I8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/I9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/J1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/J2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/J5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/J6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/J7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/J8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/K2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/K3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z by quarter turns, turned exactly), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/K4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/K6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/K7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/K8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/K9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/L1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/L2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/L3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/L7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/M1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/M5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/M6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/M7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/N1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/N2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/N5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/N7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/N9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/O1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/O2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/O3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/O4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/O5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/O8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/O9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/P1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/P2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/P5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/P6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z by quarter turns, turned exactly), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/P7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/P9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/Q1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/Q2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/Q3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/Q4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/Q5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/Q6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/Q8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/Q9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned about x; ttranslate), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/Z8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of a box and a cylinder in one frame (dset numbers), whose slabs hold different regions (a stack), the box's corners on the cylinder within rounding (evaluated since the containment test takes a degenerate cut as not empty); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZB3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of a box and a cylinder in one frame (dset numbers), whose slabs hold different regions (a stack), the box's corners on the cylinder within rounding (evaluated since the containment test takes a degenerate cut as not empty); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/C5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/C6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/D3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/D4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/D5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/D6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/D7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/D9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/E1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/G4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/G9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/H6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/H7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/I2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/I3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/I4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/I5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/J2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/J5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/J6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/J7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/J8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/K2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/K3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z by quarter turns, turned exactly), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/K4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/K6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/K7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/K8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/K9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/L1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/L2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/L3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/L7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/M5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/M6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/M7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/M8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/N1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/N2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/N3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/N4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/N5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/N6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/N7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/N9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/O1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/O2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/O3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/O4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/O5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/O6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/O7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/O8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/O9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/P1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/P2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/P5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/P6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z by quarter turns, turned exactly), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/P7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/P9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/Q1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/Q2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/Q3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/Q4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/Q5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/Q6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/Q8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/Q9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcut of two boxes in frames with different axes (a box turned about x; ttranslate), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/C6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/D2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/D4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/D5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/D6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/D7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/D8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/D9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/E1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/F6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/G8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/G9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/H3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/H4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/H6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/H7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/H9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/I2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/I3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/I4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/I5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/I6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/I7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/I8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/I9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/J1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/J2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/J4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/J5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/J6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/J7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/J8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/K2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/K3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z by quarter turns, turned exactly), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/K4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/K6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/K7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/K8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/K9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/L1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/L2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/L3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/L7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/M3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/M5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/M6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/M7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/M8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/M9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/N1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/N2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/N3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/N4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/N5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/N6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/N7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/N9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/O1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/O2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/O3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/O4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/O5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/O6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/O7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/O8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/O9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/P1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/P2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/P5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/P6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z by quarter turns, turned exactly), decided as polyhedra; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/P7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/P9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/Q1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/Q2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/Q3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/Q4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/Q5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/Q6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/Q7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/Q8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/Q9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopcommon of two boxes in frames with different axes (a box turned about x; ttranslate), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/C6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/C9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/D4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/D5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/D6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/D7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/D8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/D9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/E1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/F9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/G7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/G8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/H1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/H3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/H4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/H9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/I1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/I2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/I3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/I4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/I5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/I6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/I7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/I8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/I9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/J1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/J3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/J4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/J6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/J7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/J8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/K2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/K3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z by quarter turns, turned exactly), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/K4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/K6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/K7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/K8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/K9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/L1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/L2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/L3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/L7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/M1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/M5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/M6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/M7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/M8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/M9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/N1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/N2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/N3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/N4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/N5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/N6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/N7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/N9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/O1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/O2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/O3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/O4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z; dset numbers), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/O5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/O6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/O7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/O8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/O9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/P1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/P2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/P5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/P6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z by quarter turns, turned exactly), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/P7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/P9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/Q1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/Q2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/Q3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/Q4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/Q5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/Q6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/Q7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/Q8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about z), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/Q9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and boptuc of two boxes in frames with different axes (a box turned about x; ttranslate), decided as polyhedra; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/F6",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1's Boolean group, a capability sentinel: a box turned 45 degrees about z, its corner on the other's wall within rounding: a face using an edge both ways (Degenerate)."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/G8",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1's Boolean group, a capability sentinel: a box turned 30 degrees about its corner on the other's wall: a face touching itself at a vertex (Degenerate)."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/N6",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1's Boolean group, a capability sentinel: a box below another, turned 115 degrees about its corner on the other's bottom edge: two solids touching at a point (Degenerate)."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/H3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1's Boolean group: a box turned 45 degrees about z, its corner on the other's wall within rounding (inside it exactly); refused as a direction of zero length until the result's face frames took the face's whole vector area (S9b.2)."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/J4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1's Boolean group: pockets cut one after another by prisms of profiles in a plane facing -z; the first cut is a polyhedron (S9b.1), which the next bcut takes as its object (S9b.2, on its stored geometry)."
     }
   ],
   "derived_sources": {
@@ -3393,7 +5542,8 @@
     "rust/fixtures/draw-derived/faces_and_edges": "dd70b02e9fdf8f094bac0b97663a2528f4a7e7e245e6f5aea0247f0eaac406c0",
     "rust/fixtures/draw-derived/split_plane": "1eb4b5e184e7b886f259292b334f80e783a02c96867dd8d282f02c1807a10b9f",
     "rust/fixtures/draw-derived/boolean_prisms": "b44258c5638c514650565a760e03b67d3f95e06a609313371d0f576b9b431902",
-    "rust/fixtures/draw-derived/boolean_stacks": "09987947e3421776c415dbfe1e7faaf63a1717df08e281495f604b30c1d622ca"
+    "rust/fixtures/draw-derived/boolean_stacks": "09987947e3421776c415dbfe1e7faaf63a1717df08e281495f604b30c1d622ca",
+    "rust/fixtures/draw-derived/boolean_polyhedra": "1bb44a5e3e1897a886cf8e85ce43c5d5acc7b1ebcaaa1f2f1bd3fbae802d0736"
   },
   "ledger": {
     "survey": {

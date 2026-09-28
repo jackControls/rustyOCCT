@@ -1,0 +1,96 @@
+# case	row (S9c.1, curved_boolean_reference.py: expect KIND S9c.1, reason TEXT for a degenerate case, then result N volume area cx cy cz or empty)
+tilted_cylinder_box_fuse	expect solid S9c.1
+tilted_cylinder_box_fuse	result 1 526.5071880146638823133583 431.8086256175966605548429 5.0 4.98363776164718605063257 2.486574573659229593764873
+tilted_cylinder_box_cut	expect solid S9c.1
+tilted_cylinder_box_cut	result 1 455.8213533088935360174896 441.2334035783660343582937 5.0 5.012115120970750207714935 2.5
+tilted_cylinder_box_common	expect solid S9c.1
+tilted_cylinder_box_common	result 1 44.17864669110646398251037 76.57632093125120554430199 5.0 4.874999999999999826527652 2.5
+corner_in_cylinder_fuse	expect solid S9c.1
+corner_in_cylinder_fuse	result 1 700.5841416586487548392004 543.5591966306619054889454 2.919407122510053786939026 2.761768927979850018808743 4.757092651283297771711811
+corner_in_cylinder_cut	expect solid S9c.1
+corner_in_cylinder_cut	result 1 284.5841416586487548392004 256.7122338916895903918318 -0.1219662723363611618008687 -0.1445916342768908679977425 2.940232955403492050003923
+corner_in_cylinder_common	expect solid S9c.1
+corner_in_cylinder_common	result 1 17.00875308597139605321339 43.76821565652155358806606 2.040694385338360341765929 2.41925354102817763110845 4.0
+corner_in_cylinder_leaning_fuse	expect solid S9c.1
+corner_in_cylinder_leaning_fuse	result 1 497.2279827813471833118387 417.0492415167870252839678 0.7652895159297145648709452 1.645367752444000802042468 4.743301813379967185272208
+corner_in_cylinder_leaning_cut	expect solid S9c.1
+corner_in_cylinder_leaning_cut	result 1 281.2279827813471881080022 252.6889617969626904493586 -0.1062363618836010083544648 -0.1631313892204659167435705 2.856409893657664008109049
+corner_in_cylinder_leaning_common	expect solid S9c.1
+corner_in_cylinder_leaning_common	result 1 20.36491196327296278441161 50.27817077039643059560139 1.467064419646657085642964 2.252752754420317130476757 4.982898626168395406481479
+steinmetz_fuse	expect solid S9c.1
+steinmetz_fuse	result 1 208.6607456205167924103448 237.5928947446201508924138 0.0 0.0 0.0
+steinmetz_cut	expect degenerate S9c.1
+steinmetz_cut	reason the result touches itself at the two points where the equal cylinders are tangent
+steinmetz_cut	result 2 82.99703947692506287183907 150.7964473723100754462069 0.0 0.0 0.0
+steinmetz_common	expect solid S9c.1
+steinmetz_common	result 1 42.66666666666666666666667 64.0 0.0 0.0 0.0
+steinmetz_oblique_fuse	expect solid S9c.1
+steinmetz_oblique_fuse	result 1 331.0127485483824173369207 345.7226754502635553978683 0.0 0.0 0.0
+steinmetz_oblique_common	expect solid S9c.1
+steinmetz_oblique_common	result 1 71.11111111111111216376702 106.6666666666666698246344 0.0 0.0 0.0
+steinmetz_tilted_common	expect solid S9c.1
+steinmetz_tilted_common	result 1 17.99999999999999840127884 35.99999999999999786837179 0.0 0.0 0.0
+parallel_cylinders_fuse	expect solid S9c.1
+parallel_cylinders_fuse	result 1 194.7036344755263164290004 204.0511636547529698266837 1.168050909105624722681587 0.1460063636382030903351983 2.5
+parallel_cylinders_cut	expect solid S9c.1
+parallel_cylinders_cut	result 1 131.8717814037304446840105 148.031403691201860945885 -0.1812643673834493353508552 -0.0226580459229311669188569 2.5
+parallel_cylinders_common	expect solid S9c.1
+parallel_cylinders_common	result 1 9.499888007810251046808404 34.70987801807132257464052 2.516203876532390009692633 0.3145254845665487512115791 2.5
+coaxial_fuse	expect solid S9c.1
+coaxial_fuse	result 1 155.5088363526947668734417 169.6460032938488359233433 0.0 0.0 2.5
+coaxial_cut	expect solid S9c.1
+coaxial_cut	result 1 106.0287520586555178742622 183.7831702350029054964252 0.0 0.0 2.5
+coaxial_common	expect solid S9c.1
+coaxial_common	result 1 35.3429173528851778565568 61.26105674500097233546374 0.0 0.0 2.5
+pin_through_hole_fuse	expect solid S9c.1
+pin_through_hole_fuse	result 2 192.1274315795696142143395 344.339817545518969139937 5.0 5.0 1.0
+pin_through_hole_cut	expect solid S9c.1
+pin_through_hole_cut	result 1 168.0 280.0 5.0 5.0 1.0
+pin_through_hole_common	expect empty S9c.1
+pin_through_hole_common	empty
+pin_fills_hole_fuse	expect solid S9c.1
+pin_fills_hole_fuse	result 1 550.2654824574366918154023 450.2654824574366918154023 5.0 5.0 2.5
+pin_fills_hole_cut	expect solid S9c.1
+pin_fills_hole_cut	result 1 437.1681469282041352307471 437.6991118430775188615517 5.0 5.0 2.5
+pin_fills_hole_common	expect empty S9c.1
+pin_fills_hole_common	empty
+across_hole_fuse	expect solid S9c.1
+across_hole_fuse	result 1 359.5619449019234492012731 436.2440965380562555956335 5.0 5.111832607120711192375363 1.981949026453218541262939
+across_hole_cut	expect solid S9c.1
+across_hole_cut	result 1 328.1460183660255175142204 398.544984694978735269177 5.0 4.931063910314499425889614 1.9802208687822192441493
+across_hole_common	expect solid S9c.1
+across_hole_common	result 1 7.853981633974482485779621 24.87094184091919537151516 5.0 7.880208333333333255752645 2.826388888888888883748967
+stadium_turned_fuse	expect solid S9c.1
+stadium_turned_fuse	result 1 261.6165186405129226912709 278.0412966012823025148974 5.316630143153912233526376 3.026345296461256152176323 1.830557688592248502584217
+stadium_turned_cut	expect solid S9c.1
+stadium_turned_cut	result 1 216.1917406797435379327196 270.616518640512920584631 4.7528182253137229700752 3.031880795820762136105197 2.110125665510621509294922
+stadium_turned_common	expect solid S9c.1
+stadium_turned_common	result 1 23.80825932025646206728043 55.09144462743604979967471 7.244542846031078897069923 2.710505306161466370219027 1.0
+stadium_tilted_fuse	expect solid S9c.1
+stadium_tilted_fuse	result 1 501.4343657483653888060023 402.8749999999999968215406 5.0 5.0 2.5
+stadium_tilted_cut	expect solid S9c.1
+stadium_tilted_cut	result 1 471.1511804411858030014988 454.4539076208976172596795 5.0 5.0 2.5
+stadium_tilted_common	expect solid S9c.1
+stadium_tilted_common	result 1 28.84881955881419699850123 63.97455592153876073148462 5.0 5.0 2.5
+quarter_common	expect solid S9c.1
+quarter_common	result 1 35.34291735288517393270474 67.69911184307751886155172 1.27323954473516268615107 1.27323954473516268615107 2.5
+quarter_turned_common	expect solid S9c.1
+quarter_turned_common	result 1 35.34291735288517393270474 67.69911184307751886155172 0.6855905240881645233121147 1.665005558499828128043707 2.5
+tangent_plane_fuse	expect degenerate S9c.1
+tangent_plane_fuse	reason a plane tangent to a cylinder along a generatrix
+tangent_plane_fuse	result 2 134.8318530717958647692529 195.964594300514210676954 0.0 2.135993783654701231175413 2.5
+tangent_plane_cut	expect degenerate S9c.1
+tangent_plane_cut	reason a plane tangent to a cylinder along a generatrix
+tangent_plane_cut	result 1 62.83185307179586476925287 87.96459430051421067695401 0.0 0.0 2.5
+tangent_plane_common	expect degenerate S9c.1
+tangent_plane_common	reason a plane tangent to a cylinder along a generatrix
+tangent_plane_common	empty
+tangent_cylinders_fuse	expect degenerate S9c.1
+tangent_cylinders_fuse	reason two cylinders tangent along a generatrix
+tangent_cylinders_fuse	result 2 84.82300164692441743849137 138.2300767579509024923563 0.7777777777777777777777778 0.0 2.5
+tangent_cylinders_common	expect degenerate S9c.1
+tangent_cylinders_common	reason two cylinders tangent along a generatrix
+tangent_cylinders_common	empty
+tangent_inside_cut	expect degenerate S9c.1
+tangent_inside_cut	reason two cylinders tangent along a generatrix
+tangent_inside_cut	result 1 125.6637061435917295385057 175.929188601028421353908 -0.25 0.0 2.5

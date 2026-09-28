@@ -280,12 +280,12 @@ impl Solid {
         {
             return Err(Error::InvalidLabel("Boolean inputs sharing entity ids"));
         }
+        // S9b.2: a Boolean's result, a plane's piece or any other planar
+        // solid as an input, on its stored geometry.
         let (Construction::Prism(pa), Construction::Prism(pb)) =
             (&self.construction, &other.construction)
         else {
-            return Err(Error::OutOfDomain(
-                "a Boolean of solids other than prisms (S9b on)",
-            ));
+            return self.polyhedral(context, other, op);
         };
         let (fa, fb) = (self.frame, other.frame);
         if fa.x() != fb.x() || fa.y() != fb.y() || fa.normal() != fb.normal() {
@@ -713,17 +713,16 @@ impl Solid {
         op: Op2,
     ) -> Result<(Vec<Solid>, History)> {
         let poly = polyhedra::Polyhedron {
-            a: polyhedra::PrismData::of(self)?,
-            b: polyhedra::PrismData::of(other)?,
+            a: Box::new(self.clone()),
+            b: Box::new(other.clone()),
             op,
             index: 0,
         };
         let components = polyhedra::build(&poly)?;
-        let resolve = self.resolver(other)?;
         let mut solids = Vec::new();
         let mut plans = Vec::new();
         for (i, component) in components.into_iter().enumerate() {
-            plans.push(resolve(&component.plans)?);
+            plans.push(component.plans.clone());
             let piece = polyhedra::Polyhedron {
                 index: i,
                 ..poly.clone()

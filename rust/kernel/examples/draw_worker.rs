@@ -147,10 +147,11 @@ enum Shape {
     /// agree. Its counts and history are unsupported.
     Uncopied(Box<Solid>),
     /// A Boolean's result (S9a): OCCT's compound of the result's solids,
-    /// none for an empty result, each a prism or a stack (S9a.2, a general
-    /// body, a closed cavity its second shell). The solids share nothing (the kernel
-    /// refuses results touching themselves). `uncopied` when an argument
-    /// was an uncopied prism, whose shared shapes OCCT's result keeps.
+    /// none for an empty result, each a prism, a stack (S9a.2) or a
+    /// polyhedron (S9b.1), the last two general bodies, a closed cavity
+    /// their second shell. The solids share nothing (the kernel refuses
+    /// results touching themselves). `uncopied` when an argument was an
+    /// uncopied prism, whose shared shapes OCCT's result keeps.
     Boolean {
         solids: Vec<Solid>,
         uncopied: bool,
@@ -1917,25 +1918,21 @@ fn boolean_failure(e: rusty_occt::Error) -> Failure {
     }
 }
 
-/// A Boolean's result solid that is S9a.2's stack: a general body, not a
-/// prism. The kernel's Booleans take prisms only, so every result solid
-/// without a profile is a stack.
-fn stack(s: &Solid) -> bool {
+/// A Boolean's result solid that is a general body, not a prism: S9a.2's
+/// stack or S9b's polyhedron (every result solid without a profile).
+fn general(s: &Solid) -> bool {
     s.profile().is_none()
 }
 
 /// A Boolean argument: one solid the adapter made (a prism, a cone, a
 /// sphere or a torus; the kernel decides what it supports), or a Boolean
-/// result of one prism; and whether OCCT's shape reuses its shapes. A
-/// stack is refused as the kernel refuses it (`OutOfDomain`): a Boolean of
-/// general bodies is S9b's.
+/// result of one solid (a prism, a stack or a polyhedron: S9b.2 takes the
+/// last two on their stored geometry); and whether OCCT's shape reuses
+/// its shapes.
 fn boolean_argument(shape: &Shape) -> Result<(&Solid, bool)> {
     match shape {
         Shape::Solid(s) => Ok((s, false)),
         Shape::Uncopied(s) => Ok((s, true)),
-        Shape::Boolean { solids, .. } if solids.len() == 1 && stack(&solids[0]) => Err(
-            boolean_unsupported("an argument that is a Boolean's stack, not a prism (S9b)"),
-        ),
         Shape::Boolean { solids, uncopied } if solids.len() == 1 => Ok((&solids[0], *uncopied)),
         Shape::Boolean { .. } => Err(boolean_unsupported("an argument of several solids or none")),
         _ => Err(boolean_unsupported(
@@ -1965,8 +1962,11 @@ fn rebuilt(s: &Solid, operation: OperationId) -> Result<Solid> {
 /// kernel's ids are not (every `box` is a cuboid of the unspecified
 /// operation, a `copy` keeps its ids), and a Boolean's history needs its
 /// inputs' ids apart: a tool sharing ids with the object is built again.
-/// So is a Boolean result, which the kernel's Boolean does not take as an
-/// input (its entities descend from the inputs, not from its profile).
+/// So is a Boolean result that is a prism, which the kernel's Boolean
+/// indexes by its profile (its entities descend from the inputs); a stack
+/// or a polyhedron is taken as it is (S9b.2, on its stored geometry), the
+/// other argument built again when they share ids (two general bodies
+/// sharing ids are unsupported).
 fn boolean(
     object: &Shape,
     tool: &Shape,
@@ -1975,16 +1975,24 @@ fn boolean(
 ) -> Result<Shape> {
     let (a, ua) = boolean_argument(object)?;
     let (b, ub) = boolean_argument(tool)?;
-    let a = match object {
-        Shape::Boolean { .. } => rebuilt(a, operations[1])?,
+    let mut a = match object {
+        Shape::Boolean { .. } if !general(a) => rebuilt(a, operations[1])?,
         _ => a.clone(),
     };
-    let ids: BTreeSet<_> = a.topology().ids().map(|(id, _)| id).collect();
-    let b = match tool {
-        Shape::Boolean { .. } => rebuilt(b, operations[2])?,
-        _ if b.topology().ids().any(|(id, _)| ids.contains(&id)) => rebuilt(b, operations[2])?,
+    let mut b = match tool {
+        Shape::Boolean { .. } if !general(b) => rebuilt(b, operations[2])?,
         _ => b.clone(),
     };
+    let ids: BTreeSet<_> = a.topology().ids().map(|(id, _)| id).collect();
+    if b.topology().ids().any(|(id, _)| ids.contains(&id)) {
+        if !general(&b) {
+            b = rebuilt(&b, operations[2])?;
+        } else if !general(&a) {
+            a = rebuilt(&a, operations[1])?;
+        } else {
+            return Err(boolean_unsupported("two stacks or polyhedra sharing ids"));
+        }
+    }
     let (a, b, operation) = (&a, &b, operations[0]);
     let (solids, _) = match op {
         BooleanOp::Common => a.common(operation, b),
@@ -2002,10 +2010,12 @@ fn boolean(
 /// Whether a Boolean result is what `unifysamedom` would leave: each
 /// solid a prism whose boundaries have no two consecutive collinear lines
 /// or arcs of one circle (the walls and edges OCCT's unifier merges; the
-/// caps are one face each already), or a stack (S9a.2), which the kernel
-/// builds unified: walls on one line or circle facing one way joined
-/// across slab heights and piece ends, edges without a vertex where they
-/// run straight on between the same two faces.
+/// caps are one face each already), or a stack (S9a.2) or a polyhedron
+/// (S9b.1), which the kernel builds unified: a stack's walls on one line
+/// or circle facing one way joined across slab heights and piece ends, a
+/// polyhedron's coplanar fragments facing one way joined into maximal
+/// faces, and edges without a vertex where they run straight on between
+/// the same two faces.
 fn unified(solids: &[Solid]) -> bool {
     let collinear = |a: Point2, b: Point2, c: Point2| {
         let (u, v) = ((b.x - a.x, b.y - a.y), (c.x - b.x, c.y - b.y));
@@ -2015,7 +2025,7 @@ fn unified(solids: &[Solid]) -> bool {
     };
     solids.iter().all(|s| {
         let Some(profile) = s.profile() else {
-            return stack(s);
+            return general(s);
         };
         std::iter::once(profile.outer())
             .chain(profile.holes())
@@ -2059,6 +2069,86 @@ fn uncounted(shape: &Shape) -> bool {
         Shape::Compound(items) | Shape::Split { pieces: items, .. } => items.iter().any(uncounted),
         _ => false,
     }
+}
+
+/// A `trotate` that is a whole number of quarter turns about a coordinate
+/// axis: its centre and the signed permutation of coordinates it is. The
+/// kernel's `RigidTransform::rotation` takes the sine and cosine of the
+/// angle in radians, as OCCT's `gp_Trsf` does (the cosine of a quarter
+/// turn rounds to 6.1e-17): OCCT's tolerances absorb that, but the
+/// kernel's Booleans decide exactly and would find a wall turned onto
+/// another's plane tilted off it (S9b.1).
+#[derive(Clone, Copy)]
+struct QuarterTurn {
+    centre: Vec3,
+    axis: usize,
+    turns: u8,
+}
+
+impl QuarterTurn {
+    /// The turn of a vector: negations and a permutation, exact.
+    fn apply(self, mut v: Vec3) -> Vec3 {
+        for _ in 0..self.turns {
+            v = match self.axis {
+                0 => Vec3::new(v.x, -v.z, v.y),
+                1 => Vec3::new(v.z, v.y, -v.x),
+                _ => Vec3::new(-v.y, v.x, v.z),
+            };
+        }
+        v
+    }
+}
+
+/// `trotate`'s numbers (centre, axis, angle in degrees) as quarter turns.
+fn quarter_turn(n: &[f64]) -> Option<QuarterTurn> {
+    let [cx, cy, cz, ax, ay, az, angle] = *n else {
+        return None;
+    };
+    let axes = [ax, ay, az];
+    if axes.iter().filter(|a| **a != 0.0).count() != 1 || angle % 90.0 != 0.0 || angle.abs() > 1e15
+    {
+        return None;
+    }
+    let axis = (0..3).find(|&k| axes[k] != 0.0)?;
+    // A whole multiple of 90 divides exactly.
+    let quarters = (angle / 90.0) as i64 * if axes[axis] > 0.0 { 1 } else { -1 };
+    Some(QuarterTurn {
+        centre: Vec3::new(cx, cy, cz),
+        axis,
+        turns: quarters.rem_euclid(4) as u8,
+    })
+}
+
+/// A solid moved by `ttranslate` or `trotate`: the kernel's rigid motion
+/// of it, keeping every id; a prism turned by quarter turns about a
+/// coordinate axis is the same prism in its frame turned exactly, its
+/// origin by DRAW's location arithmetic (the centre less its image, then
+/// the origin's image plus that: one rounding each), with the same ids.
+fn moved(s: &Solid, transform: RigidTransform, quarter: Option<QuarterTurn>) -> Result<Solid> {
+    if let (Some(q), Some(profile)) = (quarter, s.profile()) {
+        let f = s.frame();
+        let shift = q.centre - q.apply(q.centre);
+        let origin = Point3::ORIGIN + (q.apply(f.origin() - Point3::ORIGIN) + shift);
+        let (normal, x, y) = (q.apply(f.normal()), q.apply(f.x()), q.apply(f.y()));
+        let frame = Frame3::new(origin, normal, x, s.resolution())?;
+        // The frame keeps its turned axes bit for bit, and the prism its ids.
+        if frame.origin() == origin && frame.normal() == normal && frame.x() == x && frame.y() == y
+        {
+            let (turned, _) = Solid::extrude_with(
+                s.operation(),
+                profile.clone(),
+                frame,
+                s.start_offset(),
+                s.end_offset(),
+            )?;
+            if turned.topology().body_id() == s.topology().body_id()
+                && turned.topology().ids().eq(s.topology().ids())
+            {
+                return Ok(turned);
+            }
+        }
+    }
+    Ok(s.transform_with(OperationId::UNSPECIFIED, transform)?.0)
 }
 
 /// A DRAW number (`Draw::Atof`): a literal, or an expression of `dset`
@@ -2619,7 +2709,9 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             shapes.insert(args[1].clone(), Shape::Solid(Box::new(solid)));
             Ok(String::new())
         }
-        "copy" if args.len() == 3 => {
+        // `tcopy` copies the geometry too, keeping what the shape shares
+        // (an uncopied prism stays one): the same shape to the kernel.
+        "copy" | "tcopy" if args.len() == 3 => {
             let shape = get(shapes, &args[1])?.clone();
             shapes.insert(args[2].clone(), shape);
             Ok(String::new())
@@ -2635,14 +2727,15 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
                     n[6].to_radians(),
                 )?
             };
+            let quarter = if command == "trotate" {
+                quarter_turn(&n)
+            } else {
+                None
+            };
             // DRAW moves the location and records no history.
             let moved = match get(shapes, &args[1])? {
-                Shape::Solid(s) => Shape::Solid(Box::new(
-                    s.transform_with(OperationId::UNSPECIFIED, transform)?.0,
-                )),
-                Shape::Uncopied(s) => Shape::Uncopied(Box::new(
-                    s.transform_with(OperationId::UNSPECIFIED, transform)?.0,
-                )),
+                Shape::Solid(s) => Shape::Solid(Box::new(moved(s, transform, quarter)?)),
+                Shape::Uncopied(s) => Shape::Uncopied(Box::new(moved(s, transform, quarter)?)),
                 // A `profile` sketch moved before its prism (S9a): its
                 // points, arc centres and plane.
                 Shape::Face(p) | Shape::Wire(p) if command == "ttranslate" && p.plane.is_some() => {

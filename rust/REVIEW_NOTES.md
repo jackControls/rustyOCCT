@@ -1446,6 +1446,58 @@ Decisions for S9, recorded before its code (2026-09-28):
     the kernel, the probe and `compare_boolean.py`, the `boolean` target's
     rotated frames, the DRAW survey's 647 cases of frames with different
     axes and a campaign.
+* **S9c, decisions recorded before its code (2026-09-28).** Arc walls in
+  any position: prisms whose profiles hold arcs and circles as well as
+  lines (and S9b.1's polyhedra), in any relative position.
+  * **Sub-steps.** S9c.1: every pair of faces meets in lines, circles or
+    ellipses or not at all (S7a's items): plane/plane, plane/cylinder, and
+    two cylinders parallel (lines), coaxial (circles) or of equal radii with
+    crossing axes (two ellipses). S9c.2: two cylinders meeting in S7b.1's
+    procedural curves (D13). A pair of a later sub-step is `OutOfDomain`.
+  * **Faces in their parameters.** Each input face is split in its own
+    parameters (a plane's frame, a cylinder's cover `(u, v)`) by its
+    boundary and every curve where the other input's faces meet its
+    surface (S7a's items, restricted to the other face by exact or certified
+    tests): on a plane lines, circles and ellipse arcs, on a cylinder lines
+    (generatrices), circles (`v` constant) and a plane's section (S8a.2's
+    sinusoid `v = a0 + a1 cos u + a2 sin u`). The crossings of two such
+    curves in one face are S7d's certified curve/curve points (a conic pair,
+    a sinusoid and a line or another sinusoid by the exact equation in
+    `cos u`, `sin u`), each rounded once to binary64 on both faces' curves,
+    as S9a's arrangement rounds its crossings. Each piece is classified
+    against the other input at a certified interior point (exact for
+    planes, the certified `classify` for cylinders), kept by the set
+    function as S9b.1 keeps fragments, and pieces sharing a surface and
+    orientation are joined into maximal faces, their edges joined where they
+    run straight on (one line, circle or ellipse) between the same two
+    faces.
+  * **Geometry.** An edge's 3D curve is S7a's canonical item rounded once
+    (a line segment, a circular arc, an ellipse arc; an ellipse's frame
+    sharing its plane's `x` axis when it lies in an input plane, as S8a.2's
+    cut faces), its pcurves the exact forms above; vertices rounded; every
+    solid validated with measured enclosures, `PrecisionLoss` where the
+    rounding fails it. Tangencies (a plane tangent to a cylinder along a
+    generatrix, two cylinders tangent) and results touching themselves are
+    `Degenerate`, as in S8 and S9a.
+  * **History.** S9a's and S9b.1's rules: a face continues the input faces
+    its pieces lie on facing their way, an edge or vertex those it lies on,
+    new ones are generated from the faces meeting there.
+  * **Evidence first.** An independent reference: each result's volume,
+    area and centre from slicing the two solids in parallel planes (each
+    slice's region bounded by segments and ellipse arcs, its area and
+    moments by Green's theorem in closed form at 40 digits, the slices'
+    breakpoints where the section's structure changes found as roots,
+    integrated by Gauss-Legendre between them) and areas from the surfaces'
+    own parameterisations over each result face's region in its parameters,
+    checked against closed forms (a cylinder cut by planes, Steinmetz solids
+    of equal radii, coaxial and parallel cylinders), inclusion and exclusion,
+    and sampling; fixtures of every class (a tilted cylinder through a box,
+    a box corner in a cylinder, perpendicular and oblique equal cylinders,
+    parallel and coaxial cylinders, a cylinder through a hole, planes along
+    a generatrix and tangent cylinders declared `degenerate`, both frames);
+    a native `BRepAlgoAPI` capture before the kernel code; then the kernel,
+    the probe and the comparison, the `boolean` target's arcs in turned
+    frames, the DRAW survey and a campaign.
 
 ### Parallel tracks
 
@@ -2971,5 +3023,76 @@ Decisions for S9, recorded before its code (2026-09-28):
     kernel met it), and two solids sharing a vertex are `Degenerate`; (e) a
     result's rigid motion moves its stored geometry (the decisions' rule for
     general bodies): rebuilding its exact model in moved frames changed
-    near-coincident results. Pending: the campaign, S9b.2, the DRAW survey
-    of the 647 upstream cases in frames with different axes.
+    near-coincident results. Pending: the campaign, S9b.2. DRAW survey
+    (2026-09-28, `UPSTREAM_TESTS.md`): of the boolean group's 1,802
+    self-contained cases Rust evaluates 704 (404 before), none failing; of
+    the 647 in frames with different axes 298 evaluate (two boxes, one
+    turned; the adapter turns quarter turns exactly), 233 are arcs (S9c),
+    114 `Degenerate`, 2 give a polyhedron to another Boolean (S9b.2).
+  * S9b.2 implemented: a Boolean's stack or polyhedral result, a plane's
+    piece and any solid of planar faces and straight edges are inputs
+    (`tests/polyhedral_booleans.rs`: two pockets cut in turn, a turned box
+    against a stack, an S9b result against a prism, a plane's piece
+    against a box, each result's history checked and the volume
+    identities; the `boolean` target's first results chained against a
+    turned box). Amendment, from the implementation: such an input is
+    decided on its stored geometry, not a construction model (its faces'
+    triangles exact, its side by exact ray parity), and its fragments join
+    back by the stored face they come from; a line-profile prism keeps its
+    construction model. A result's inputs are kept as solids (its rigid
+    motion moves them too, for classification). A stack's rigid motion now
+    moves its stored geometry too (S9b.1's amendment (e), replacing S9a.2's
+    (g)): rebuilding spline stacks in the moved frame was most of the
+    `cfc641c9` campaign's timeout. Replaying the corpus with the chained
+    stage (debug assertions) found: (a) a tilted stack's stored model open
+    where its cap's trapezoids spanned a run of collinear edges without
+    their middle vertices (stored vertices are not collinear exactly):
+    stored faces are now triangulated on their own vertices (ears clipped,
+    the fattest first, holes bridged; the zipped trapezoids a fallback
+    under an exact area check), so neighbouring faces share their stored
+    edges exactly; (b) a stack touching itself at a vertex (a lens hole's
+    corner on the edge line of a block standing on the box) reported as a
+    non-manifold vertex (`InvalidTopology`, at `cfc641c9` too): now
+    `Degenerate`, S9a's rule; (c) exact fragments of stored models are
+    slow: 131 s in release for one chained input before splitting planes
+    were filtered by bounding boxes, fragments classified at short
+    interior points in one ray cast off the other's planes, and the ray
+    casts and collinearity tests given integer forms over common
+    denominators after binary64 filters; about 1 to 2 s an operation on a
+    stored model of 50 to 150 triangles remains (coordinates of ~900
+    bits: three stored planes' intersections), 25 times that under ASan.
+    The `boolean` target chains one result of at most 12 faces (cut and
+    common against the box), its per-input limit is 60 s, and Bernstein
+    degree elevation no longer brackets `i / n` from rationals (the
+    certified mass of spline walls, most of a spline stack's cost).
+    Campaigns: at `326ad26c` `boolean` clean (1,206 mutation executions
+    after the replay of 999 inputs, 324 MB peak) and `split` clean (2,356,
+    3,293 inputs, 1,396 MB); at `cfc641c9` `split` (1,898, 3,396 inputs,
+    1,900 MB) and `step` (13,991, 743 inputs) clean, `boolean` a timeout in
+    its replay (`fuzz/regressions/README.md`).
+  * S9c: decisions recorded (2026-09-28); S9c.1's evidence came before any
+    kernel code (`BOOLEAN.md`): `curved_boolean_reference.py` (slices
+    parallel to both axes, breakpoints as exact polynomial roots, faces
+    swept in their own parameters) and 44 fixtures
+    (`generate_curved_boolean_fixtures.py --check`: 35 solid, 2 empty, 7
+    degenerate with reasons; closed forms within 9.2e-41 in exact frames and
+    1.9e-16 in turned ones, identities 2e-40, Monte Carlo 2.7 sigma, S9a's
+    and S9b's references on their 90 fixtures) in frames the kernel stores
+    bit for bit (`ROT` is not: its `x` differs in the last bit on macOS
+    arm64), and the capture `occt-boolean-curved-preimplementation`
+    (`compare_curved_boolean.py`: all 44 valid with the reference's solids,
+    within 8.6e-9, no review; the kernel `unsupported` on all 44).
+    `compare_polyhedral.py` had checked S9a's capture since the spline set;
+    `compare_boolean.make_set` now lets each wrapper choose its set.
+    Amendments, from the evidence: (a) a cylinder's exact model is the
+    affine one on its frame's stored axes (in a turned frame slightly
+    elliptic), so two cylinders are one surface only when their frames' axes
+    are equal bit for bit or exactly orthonormal and their exact models
+    agree; others within rounding of each other are `Degenerate`, as the
+    reference refuses them; (b) two cylinders whose surfaces meet in a curve
+    other than lines, circles or ellipses are S9c.2's (`OutOfDomain` until
+    then) even when their bounded faces do not touch; (c) a tangency between
+    the inputs is refused (`Degenerate`) whether or not the result involves
+    it (an empty common, a cut leaving the object unchanged), S9a's rule;
+    OCCT returns valid results there, recorded as declared refusals. S9c.1's
+    kernel next.

@@ -97,6 +97,14 @@ impl BSplineCurve3 {
             weights,
         )
     }
+    /// The same curve with other poles (a rigid motion's images).
+    pub(crate) fn with_poles(&self, poles: Vec<Point3>) -> Result<Self> {
+        Self::build(
+            Ok(self.knot_vector().clone()),
+            poles,
+            Some(self.weights.clone()),
+        )
+    }
     /// Same finite-data limits as `new`. Periodic end multiplicities must agree
     /// and are at most the degree. The pole count is sum(mults) minus one end
     /// multiplicity. Every finite parameter is accepted and wrapped exactly.

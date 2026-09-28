@@ -265,3 +265,102 @@ fn touching_solids_are_refused() {
     let (m, _) = a.common(OperationId(5), &edge).unwrap();
     assert!(m.is_empty());
 }
+
+/// The three operations of two solids, each result's history checked, and
+/// the volume identities `V(A u B) = V(A) + V(B) - V(A n B)`, `V(A - B) =
+/// V(A) - V(A n B)`.
+fn identities(a: &Solid, b: &Solid, op: u64) -> [f64; 3] {
+    let (f, h) = a.fuse(OperationId(op), b).unwrap();
+    check(a, b, &f, &h);
+    let (c, h) = a.cut(OperationId(op + 1), b).unwrap();
+    check(a, b, &c, &h);
+    let (m, h) = a.common(OperationId(op + 2), b).unwrap();
+    check(a, b, &m, &h);
+    let (va, vb) = (a.mass_properties().volume, b.mass_properties().volume);
+    let (vf, vc, vm) = (volume(&f), volume(&c), volume(&m));
+    assert!((vf - (va + vb - vm)).abs() < 1e-9, "{vf} {va} {vb} {vm}");
+    assert!((vc - (va - vm)).abs() < 1e-9, "{vc} {va} {vm}");
+    [vf, vc, vm]
+}
+
+#[test]
+fn results_are_inputs_again() {
+    // S9b.2: a stack, an S9b result and a plane's piece as inputs.
+    let a = prism(
+        rect(0.0, 0.0, 10.0, 10.0),
+        vec![],
+        Frame3::xy(),
+        0.0,
+        5.0,
+        1,
+    );
+    // Two square pockets cut in turn (the first leaves a stack).
+    let p1 = prism(rect(1.0, 1.0, 3.0, 3.0), vec![], Frame3::xy(), 3.0, 6.0, 2);
+    let (s, _) = a.cut(OperationId(3), &p1).unwrap();
+    let p2 = prism(rect(6.0, 6.0, 8.0, 8.0), vec![], Frame3::xy(), 2.0, 6.0, 4);
+    let (twice, h) = s[0].cut(OperationId(5), &p2).unwrap();
+    check(&s[0], &p2, &twice, &h);
+    assert!(
+        (volume(&twice) - (500.0 - 8.0 - 12.0)).abs() < 1e-9,
+        "{}",
+        volume(&twice)
+    );
+    // A turned box against the stack.
+    let turn = frame([5.0, 5.0, 4.0], [0.0, 0.0, 1.0], [3.0, 4.0, 0.0]);
+    let t = prism(rect(-2.0, -2.0, 2.0, 2.0), vec![], turn, 0.0, 3.0, 6);
+    let [_, _, vm] = identities(&s[0], &t, 10);
+    assert!(vm > 0.0);
+    // An S9b result against a prism.
+    let (poly, _) = a.fuse(OperationId(20), &t).unwrap();
+    let c = prism(
+        rect(-1.0, -1.0, 4.0, 4.0),
+        vec![],
+        Frame3::xy(),
+        -1.0,
+        9.0,
+        21,
+    );
+    identities(&poly[0], &c, 30);
+    // A plane's piece of a box against a box.
+    let plane = Frame3::new(
+        Point3::new(5.0, 5.0, 2.5),
+        Vec3::new(1.0, 0.0, 1.0),
+        Vec3::new(0.0, 1.0, 0.0),
+        tol(),
+    )
+    .unwrap();
+    let (pieces, _) = a.split_by_plane(OperationId(40), plane).unwrap();
+    let piece = &pieces[0].1;
+    let d = prism(
+        rect(4.0, 4.0, 12.0, 12.0),
+        vec![],
+        Frame3::xy(),
+        1.0,
+        4.0,
+        41,
+    );
+    identities(piece, &d, 50);
+}
+
+#[test]
+fn a_tilted_stack_with_collinear_cap_edges_is_an_input() {
+    // A block on a box's side, rising above it, in a tilted frame: the box's
+    // cap meets the block's wall along one frame line in three edges, a
+    // vertical run in the cap's projection whose stored vertices are not
+    // collinear exactly. The stored model's triangles meet at all of them.
+    let tilt = frame([1.0, -2.0, 0.5], [0.0, 3.0, 4.0], [1.0, 0.0, 0.0]);
+    let a = prism(rect(0.0, 0.0, 4.0, 4.0), vec![], tilt, 0.0, 2.0, 1);
+    let block = prism(rect(4.0, 1.0, 6.0, 3.0), vec![], tilt, 1.0, 3.0, 2);
+    let (stack, _) = a.fuse(OperationId(3), &block).unwrap();
+    assert_eq!(stack.len(), 1);
+    let turned = Frame3::new(
+        tilt.point(Point2::new(4.0, 2.0), 1.5),
+        tilt.normal(),
+        tilt.x() * 3.0 + tilt.y() * 4.0,
+        tol(),
+    )
+    .unwrap();
+    let b = prism(rect(-1.0, -1.0, 1.0, 1.0), vec![], turned, 0.0, 2.0, 4);
+    let [_, _, vm] = identities(&stack[0], &b, 10);
+    assert!(vm > 0.0);
+}

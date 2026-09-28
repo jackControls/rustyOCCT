@@ -684,6 +684,28 @@ With S9b.1 the kernel puts 41 results inside the reference and refuses the 4
 degenerate ones; two count differences are reviewed (OCCT's imprints of a
 touching edge and vertex); `polyhedral_booleans.rs` checks every history.
 
+S9c.1 (`BOOLEAN.md`), before any kernel code:
+`generate_curved_boolean_fixtures.py --check` writes 44 Booleans of prisms
+whose profiles hold arcs and circles, in frames with different axes (14
+fuses, 13 cuts, 17 commons; 35 `solid`, 2 `empty`, 7 `degenerate` with
+their reasons) from `curved_boolean_reference.py` (slices parallel to both
+axes, each section a union of parallelograms, breakpoints as roots of exact
+polynomials, Gauss-Legendre between them; faces swept in their own
+parameters for the areas), after checking it against closed forms
+(Steinmetz solids, an oblique cylinder between planes, a quarter cylinder, a
+box corner in a cylinder, coaxial and parallel cylinders, a cylinder cut
+obliquely; 9.2e-41 in exact frames, 1.9e-16 in turned ones, whose stored
+axes are not orthonormal), the volume and area identities, face classes
+against closed-form face areas and a second slicing direction (all within
+2e-40), Monte-Carlo estimates (within 2.7 standard errors) and S9a's and
+S9b's references on their 90 fixtures (every solid count, all 25 printed
+digits for S9b's, 2.4e-17 for S9a's frame coordinates). Only frames whose
+stored axes the kernel gives bit for bit are used (`ROT`'s `x` differs in
+its last bit on macOS arm64). `compare_curved_boolean.py` reproduces the
+capture `occt-boolean-curved-preimplementation`: every result valid with
+the reference's solid count, all 44 within 8.6e-9 (BRepGProp on faces
+bounded by ellipses), no review, and the kernel `unsupported` on all 44.
+
 The `GeomInt_IntSS` captures were taken on macOS arm64; IntPatch's walking
 lines differ on Linux near degeneracies (the first Linux run changed
 `cc_near_figure_inside`). A run on another platform reproduces that
@@ -1068,6 +1090,7 @@ only numbers carry an allowance.
 | `occt-tessellation-preimplementation/inputs.txt` (`compare_tessellation.py`) | the kernel's regenerated `.brep` texts and settings against the captured ones | `2^-50` per number relative to its size (at least 1); every other token exact | the kernel writes frames and rotated points with the platform's trigonometry, which moves a value by an ulp of its own magnitude: the first Linux run's texts differed from the macOS capture, and a later one by a coordinate of -9.999999999999998 for -10, beyond an absolute `2^-50` |
 | `occt-split-preimplementation` (`compare_split.py`) | the native pieces' volumes, areas and centres per side against the reference | `2e-8` relative | BRepGProp's error on pieces with elliptic faces reached `8.8e-9` in the capture (`disc_through_caps`); planar pieces agree to `1e-15` |
 | `occt-boolean-preimplementation` (`compare_boolean.py`) | the native results' solid counts and their volumes', areas' and centres' totals against the reference | `2e-8` relative (centres: of the case's size); counts and validity exact | split's allowance for BRepGProp on curved faces; the capture's worst was `6.1e-15` (`lens_common`) |
+| `occt-boolean-curved-preimplementation` (`compare_curved_boolean.py`) | the same, on S9c.1's arcs in any position | as S9a's: `2e-8` relative; counts and validity exact | BRepGProp on faces bounded by ellipses and cylinders' plane sections reached `8.6e-9` (`across_hole_common`) |
 | `occt-tessellation-preimplementation/native.txt` (`compare_tessellation.py`) | OCCT's weld gap, own deflections, measured distances, area and volume of the 56 meshes on each run | `1e-9` relative or `1e-15` absolute; statuses and every count exact | BRepMesh and the probe's projections evaluate with platform trigonometry |
 | `occt-spline-tessellation-preimplementation/inputs.txt` and `native.txt` (`compare_tessellation.py --family spline`) | the kernel's `.brep` texts of the twelve spline bodies and OCCT's rows of their 24 meshes on each run | as for T-a's: `2^-50` per number relative to its size, `1e-9` relative or `1e-15` absolute per measurement; statuses and counts exact; another platform reproduces its own reviewed record (`platform-<name>/`) | the writer and BRepMesh evaluate splines with platform arithmetic |
 | `occt-procedural-*-preimplementation`, `occt-torus-curve-preimplementation`, `occt-torus-pair-preimplementation`, `occt-ruled-curve-preimplementation` (`compare_procedural_intersections.py`, `compare_torus_curves.py`, `compare_ruled_curves.py`) | the native lines' counts, points and samples on each run | `1e-9` relative per number on the capture's platform; another platform reproduces its own reviewed record (`platform-<name>/`) exactly in counts | IntPatch walks and approximates lines with platform arithmetic; near degeneracies its pieces differ |

@@ -13,7 +13,8 @@
 //! (debug builds); when all three succeed their volumes agree,
 //! `V(A ∪ B) = V(A) + V(B) - V(A ∩ B)` and `V(A - B) = V(A) - V(A ∩ B)`;
 //! every result moves rigidly with its ids, and each of its vertices
-//! classifies on its boundary.
+//! classifies on its boundary; each operation's first result is an input
+//! again (S9b.2) against a turned box, with the same identities.
 use crate::analytic_intersections::Bytes;
 use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
@@ -148,6 +149,47 @@ pub fn check_boolean(data: &[u8]) {
             volume(c),
             volume(m)
         );
+    }
+    // S9b.2: an operation's first result is an input again, against a
+    // turned box about the object's origin (a fresh operation's ids).
+    let turned = Frame3::new(
+        fa.point(rusty_occt::Point2::new(0.5, 0.25), h / 3.0),
+        fa.normal(),
+        fa.x() * 3.0 + fa.y() * 4.0,
+        tolerance,
+    )
+    .ok()
+    .and_then(|f| {
+        let square = rusty_occt::Boundary::polygon(
+            vec![
+                rusty_occt::Point2::new(-1.0, -1.0),
+                rusty_occt::Point2::new(1.0, -1.0),
+                rusty_occt::Point2::new(1.0, 1.0),
+                rusty_occt::Point2::new(-1.0, 1.0),
+            ],
+            tolerance,
+        )
+        .ok()?;
+        let profile = rusty_occt::Profile::new(square, vec![], tolerance).ok()?;
+        Solid::extrude_with(OperationId(7), profile, f, 0.0, h).ok()
+    });
+    if let Some((box_, _)) = turned {
+        // One operation's first result, chosen by a byte after the others,
+        // of at most 12 faces, cut by the box and in common with it: exact
+        // fragments of larger stored models took up to 165 s an input under
+        // ASan (fuzz/regressions/README.md); the kernel's tests take them.
+        let chosen = [&fused, &cut, &common][usize::from(b.next() % 3)];
+        let small = |s: &&Solid| s.topology().faces().len() <= 12;
+        if let Some(first) = chosen.as_ref().and_then(|out| out.first()).filter(small) {
+            let (c, m) = (
+                run(first.cut(OperationId(9), &box_)),
+                run(first.common(OperationId(10), &box_)),
+            );
+            if let (Some(c), Some(m)) = (&c, &m) {
+                let v1 = first.mass_properties().volume;
+                assert!(near(volume(c), v1 - volume(m)), "chained cut");
+            }
+        }
     }
     let motion = rusty_occt::RigidTransform::rotation(
         Point3::new(0.5, -1.0, 2.0),

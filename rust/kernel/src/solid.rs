@@ -329,7 +329,7 @@ impl Solid {
                         "a polyhedral Boolean's result moves with its motion",
                     ));
                 }
-                poly.rebuilt_with(operation, None, None)
+                poly.rebuilt(operation)
             }
         }
     }
@@ -1012,10 +1012,19 @@ impl Solid {
                 transform,
                 self.mass.moved(transform),
             )?,
-            // A stack's too (S9a.2).
-            Construction::Stack(stack) => {
-                stack.rebuilt_with(self.operation, frame, Some(self.mass.moved(transform)))?
-            }
+            // A stack's stored geometry moves (S9a.2), or it is rebuilt.
+            Construction::Stack(stack) => match stack.moved(
+                &self.topology,
+                frame,
+                self.operation,
+                transform,
+                self.mass.moved(transform),
+            ) {
+                Ok(solid) => solid,
+                Err(_) => {
+                    stack.rebuilt_with(self.operation, frame, Some(self.mass.moved(transform)))?
+                }
+            },
             // An oblique piece's too (S8b's spline walls cost the most).
             Construction::Clipped(clipped) => clipped.rebuilt_with(
                 self.operation,

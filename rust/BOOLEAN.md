@@ -6,9 +6,10 @@ assembled into shells and regions, with complete histories. This document
 describes what is implemented; the decisions are in `REVIEW_NOTES.md` (S9).
 S9a is implemented (`profile/boolean.rs` with its spline meetings in
 `profile/boolean/splines.rs`, `solid/boolean.rs`, S9a.2's stacks in
-`solid/boolean/stack.rs`), and S9b.1's polyhedral prisms in any relative
-position (`solid/boolean/polyhedra.rs`); S9b.2 (general polyhedral
-inputs), S9c and S9d are not.
+`solid/boolean/stack.rs`), and S9b's polyhedral Booleans in any relative
+position (`solid/boolean/polyhedra.rs`: prisms, and any planar solid with
+straight edges as an input, a Boolean's result or a plane's piece among
+them); S9c and S9d are not.
 
 ## Contract
 
@@ -22,7 +23,8 @@ prism's exact queries; any other is a general body built through
 `TopologyParts` and validated before it is returned. An error is one of:
 
 * `OutOfDomain`: a pair of a later sub-step (arcs or circles in frames
-  whose axes differ, S9c; an input other than a prism, S9b.2), two spline
+  whose axes differ, and inputs with curved faces or edges other than
+  prisms in one frame, S9c), two spline
   segments along one curve in different forms or a spline span along a
   line, or a stack's cavity in a result of several solids.
 * `Degenerate`: a crossing within the resolution of a vertex, two crossings
@@ -172,6 +174,26 @@ it is built. A result's rigid motion moves its stored geometry (vertices,
 lines and plane frames; the pcurves in those frames unchanged) and
 measures its enclosures again; its classification is the set function of
 both inputs' classifications within its bounds.
+
+S9b.2: an input other than a line-profile prism (a Boolean's stack or
+polyhedral result, a plane's piece, any solid of planar faces and straight
+edges) is decided on its stored geometry: its vertices as rationals, each
+face cut into triangles of its own vertices in its projection on the
+normal's largest coordinate plane (ears clipped, the fattest first, holes
+bridged; so each triangle is exactly planar and neighbouring faces share
+their stored edges exactly), or, when that fails the exact area check, its
+trapezoids zipped through every corner on their sides; its side by exact
+ray parity. Fragments of one stored face join back into one face (their
+triangles' planes differ within rounding); a prism's fragments join by
+their exact planes as before. Its entities are named by their ids.
+
+Cost: a part is split only by the other's planes whose faces' bounding box
+meets its own (the other's surface near it is all that can cross it); a
+fragment is classified at a point of short dyadic coordinates inside it
+(the centroid of its shortest fan triangle for a sliver), in one ray cast
+when it lies on none of the other's planes; the ray casts and the
+conforming step's collinearity tests take their signs from integer forms
+over common denominators, after binary64 filters.
 
 History: a face continues the input faces its fragments come from facing
 their way (a cut's tool's, or one facing the other way, it touches); an
@@ -377,6 +399,63 @@ height); its horizontal edges on a spline are its lifted restrictions.
   history (independent check, every input entity covered, repeated
   exactly) and hand cases (a turned box's quarter, its rigid motion and
   classification, a cavity, a cut in two, touching solids refused).
+* **S9c.1 evidence (arcs in any position), before its kernel code.**
+  `curved_boolean_reference.py` (mpmath, 40 digits) takes each prism on its
+  exact model (the stored axes as rationals) and slices both solids by the
+  planes parallel to both axes (`d = n_A x n_B`, or `n x e` for parallel
+  axes): each section is a union of parallelograms, one per chord of the
+  profile (its ends `L(s) + k sqrt(Q(s))`, exact), so a slice's common, cut
+  and fuse are convex clippings whose areas and moments are Green's theorem
+  over segments (the decisions' ellipse arcs appear only in slices of
+  another direction; here they bound the planar faces' regions of the area
+  part). Breakpoints are the real roots of exact polynomials (three lines
+  of the slice concurrent, two parallel ones coinciding, a trace through a
+  vertex or tangent to a circle: surds squared away, spurious roots
+  filtered by the meeting lying on both sections' boundaries), and each
+  interval is integrated by Gauss-Legendre after `s = a + (b - a)(1 - cos
+  t)/2` (end-point square roots analytic), refined to 1e-33 of the case's
+  size to the fourth. Areas: every input face is swept by lines of its own
+  parameters (`v` on caps, the height on flat and cylindrical walls), each
+  line cut at its crossings of the other solid's boundary and its pieces
+  classified at their midpoints (inside, outside, or on a coplanar or
+  coincident face of the same or opposite orientation, decided in
+  rationals), the class lengths integrated with the surface's own element
+  between breakpoints found the same way (in `tan(theta / 2)` on
+  cylinders). Solids: the slices' arrangements of lines, faces joined
+  across one line within an interval and by overlapping limits across a
+  breakpoint. `generate_curved_boolean_fixtures.py --check` writes
+  `boolean-curved-cases.txt`, `boolean-curved-expected.tsv` and
+  `boolean-curved-frames.tsv` (the stored axes' bits) with 44 cases (14
+  fuses, 13 cuts, 17 commons): a tilted cylinder through a box, a box
+  corner in a cylinder (exact and leaning), Steinmetz solids (perpendicular,
+  oblique, both axes tilted), parallel cylinders with coplanar caps, coaxial
+  cylinders, a tilted pin through a square hole, a coaxial pin filling a
+  round hole (coincident cylinders of opposite orientations), a tilted
+  cylinder across a hole's wall, a stadium in a turned and in a tilted
+  frame, quarter cylinders, and 7 `degenerate` with reasons (a plane
+  tangent along a generatrix, cylinders tangent outside and inside, the
+  Steinmetz cut touching itself at two points); 35 `solid`, 2 `empty`, 16
+  in exact frames only. Frames are those whose stored axes the kernel gives
+  bit for bit: not `ROT`, whose `x` differs from `stored_axes` in its last
+  bit on macOS arm64 (the platform `hypot`); `R125` (`x` along `(12, 5,
+  0)`) turns instead. Checks before writing: closed forms (9.2e-41 in exact
+  frames, 1.9e-16 in turned ones: the stored axes' departure from
+  orthonormal), `fuse = A + B - common` and `cut = A - common` with each
+  operation sliced apart (2e-41), the area identity and every face's
+  classes against its closed-form area (2e-40), a second slicing direction
+  for parallel axes (1.4e-41), Monte-Carlo volumes and centres (2.7
+  standard errors at worst), and S9a's and S9b's references on their 90
+  fixtures (every count; S9b's 25 printed digits exactly, S9a's within
+  2.4e-17, its frame coordinates taking the axes as orthonormal). A scan
+  for near coincidences moved two fixtures off coincidences of the slicing.
+  `compare_curved_boolean.py` (`compare_boolean.py` through its `make_set`
+  hook, which also repaired `compare_polyhedral.py`: since the spline set it
+  had checked S9a's capture) reproduces `occt-boolean-curved-preimplementation`
+  (`rust_curved_boolean_exists` false): every result valid with the
+  reference's solid count, the degenerate ones included, all 44 within
+  8.6e-9 (`across_hole_common`, BRepGProp on faces bounded by ellipses), no
+  review; four solids' counts change when unified (coplanar caps merged, a
+  tangency's imprint); the kernel's probe `unsupported` on all 44.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
@@ -396,9 +475,29 @@ unsupported. S9a.2's stacks are Boolean results like the prisms:
 `checkshape`, `nbshapes`, `vprops`, `sprops` and `lprops` read their
 topology (a closed cavity is a solid of two shells), and `unifysamedom`
 returns them unchanged, since the kernel builds them unified; native
-DRAW's unified counts agree on every stack checked. A stack given to
-another Boolean is reported unsupported (the kernel's Booleans take
-prisms; S9b). The derived cases `boolean_prisms` and `boolean_stacks` (a
-step, a pocket, a box cut in two by a slab, a closed cavity, a tool
-through a round wall) and 404 cases of upstream's `boolean` group (84 of
-them stacks) evaluate on both backends.
+DRAW's unified counts agree on every stack checked. S9b.1's polyhedra are
+handled alike: their measures and counts are read from their topology,
+`unifysamedom` returns them unchanged (coplanar fragments are joined into
+maximal faces and collinear edges joined as they are built), and native
+DRAW's unified counts agree on every polyhedron checked. A stack or a
+polyhedron given to another Boolean is taken as it is (S9b.2, on its
+stored geometry; the prism argument built again when they share ids).
+`ttranslate` and `trotate` move a prism by
+the kernel's rigid motion, a prism in the moved frame; `tcopy`, like
+`copy`, gives the same shape. A `trotate` by whole quarter turns about a
+coordinate axis turns a prism's frame exactly (a signed permutation of
+coordinates, the origin by DRAW's location arithmetic): the kernel's
+rotation rounds the cosine of a quarter turn to 6.1e-17, as OCCT's
+`gp_Trsf` does, and OCCT's tolerances absorb it, while the kernel's exact
+decisions would find a wall turned onto another's plane tilted off it (a
+box and its quarter-turned copy fused into an L would keep a crease: 9
+unified faces where OCCT has 8). The derived cases `boolean_prisms`,
+`boolean_stacks` (a step, a pocket, a box cut in two by a slab, a closed
+cavity, a tool through a round wall) and `boolean_polyhedra` (quarter
+turns, a bar turned 45 degrees through a box, a tilted bar cutting a box
+in two, a turned box inside another) and 704 cases of upstream's
+`boolean` group (86 of them stacks, 298 polyhedra of two boxes, one
+turned) evaluate on both backends. Of the upstream cases in frames with
+different axes the rest are refused: arcs in turned frames (S9c), solids
+other than prisms, and S9b.1's `Degenerate` (a turned box's corner on
+another's wall, edge or corner within rounding).

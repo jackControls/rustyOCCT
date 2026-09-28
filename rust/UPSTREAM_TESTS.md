@@ -124,6 +124,7 @@ group, and stale success records are removed before each run.
 | Derived `faces_and_edges` | Pass | Pass | Free faces and edges on DRAW geometry: `mkface` on a plane and a cylinder (a patch and the whole band), `mkedge` on a line and a circle, `mkplane` of a `profile` wire with arcs; `checkshape`, `checknbshapes`, areas and lengths (S6) |
 | Derived `boolean_prisms` | Pass | Pass | Booleans of prisms in one frame (`bfuse`, `bcut`, `bcommon`, `bop` with `bopfuse`, `bopcut`, `boptuc`, `bopcommon`, `bbop`, `bapibop`): overlapping boxes, a box and a cylinder (a half cylinder, a hole), a box cut in two, disjoint boxes, one box inside another, stacked boxes of one profile, a stadium prism and a bar; `checkshape`, volumes, areas, and counts and lengths per use after `unifysamedom` (S9a) |
 | Derived `boolean_stacks` | Pass | Pass | Booleans of prisms in one frame whose slabs hold different regions, the kernel's stacks (`bfuse`, `bcut`, `bop` with `bopfuse` and `bopcut`, `bbop`): a step, a pocket, a box cut into two solids by a slab, a closed cavity (one solid of two shells) and a tool through a round wall; `checkshape`, volumes, areas, and counts and lengths per use after `unifysamedom` (S9a.2) |
+| Derived `boolean_polyhedra` | Pass | Pass | Booleans of prisms in frames with different axes, S9b.1's polyhedra (`bfuse`, `bcut`, `bcommon`, `bop` with `bopfuse` and `boptuc`, `bbop`; tools moved by `tcopy` and `trotate`): a box and its copy turned a quarter turn (an L whose coplanar walls are one face, a plus sign's fuse, common and cuts), a bar turned 45 degrees through a box (an octagon, four corners, a star), a tilted bar cutting a box in two, and a turned box inside another (a closed cavity); `checkshape`, volumes, areas, and counts and lengths per use after `unifysamedom` (S9b.1) |
 | Derived `split_plane` | Pass | Pass | OCCT's splitter (`bclearobjects`, `bcleartools`, `baddobjects`, `baddtools`, `bfillds`, `bsplit`, `bapisplit`) with one plane face as the tool: a prism parallel to its axis, a box cut obliquely, a stadium sheet across an arc, a closed wire, and a prism, a face and a wire at once; `checkshape`, `checknbshapes` with the shared cut entities, volumes, areas and lengths per use (S8e) |
 | `lowalgos/intss/bug23177_1` | Viewer skipped | Viewer skipped | A torus and a plane through its axis: two circles, `dump`, `bounds`, `dval`, `xdistcs` on both surfaces (S7) |
 | `lowalgos/intss/bug23177_2` | Viewer skipped | Viewer skipped | The same with another plane through the axis (S7) |
@@ -136,19 +137,23 @@ group, and stale success records are removed before each run.
 | `bugs/modalg_7/bug32578` | Unsupported | Viewer skipped | A face split by many edges with a fuzzy value (`bfuzzyvalue`); needs the dataset (S8e) |
 | `bugs/moddata_3/bug31587_1` to `_6` | Unsupported | Pass | A box split by another box's faces, edges, wires, vertices or open polylines, then `removeinternals` (S8e) |
 | `boolean/splitter/A5`, `B5`; `bugs/modalg_7/bug28113_1`, `bug28113_2`, `bug29789`, `bug29955`, `bug31201_1` to `_3`, `bug31462`, `bug32644` | Private data | Private data | Splits of restored shapes (`bsplit`, and `bapisplit` in `B5`) whose files are not in the public dataset (S8e) |
-| `boolean/bopcommon_simple` (122 cases), `bopcut_simple` (106), `bopfuse_simple` (86), `boptuc_simple` (83), `bcommon_simple/I5`, `J1`, `bfuse_simple/L2`, `E2`, `bcut_simple/G7`, `L8` | Viewer skipped | Viewer skipped | `bop` and its operations, `bfuse`, `bcut` and `bcommon` of two boxes, a box and a `pcylinder`, or two cylinders in one frame (some moved by `ttranslate`, some sized by `dset`): `checkprops -s` (or `-s empty`) and the group's `checkshape`; each records a `checkview` (S9a; 84 of them, `bopfuse_simple/B2` among them, are S9a.2's stacks) |
+| `boolean/bopcommon_simple` (122 cases), `bopcut_simple` (106), `bopfuse_simple` (89), `boptuc_simple` (83), `bcommon_simple/I5`, `J1`, `bfuse_simple/L2`, `E2`, `bcut_simple/G7`, `L8` | Viewer skipped | Viewer skipped | `bop` and its operations, `bfuse`, `bcut` and `bcommon` of two boxes, a box and a `pcylinder`, or two cylinders in one frame (some moved by `ttranslate`, some sized by `dset`): `checkprops -s` (or `-s empty`) and the group's `checkshape`; each records a `checkview` (S9a; 86 of them, `bopfuse_simple/B2`, `Z8` and `ZB3` among them, are S9a.2's stacks) |
+| `boolean/bopcommon_simple` (81 more cases), `bopcut_simple` (68), `bopfuse_simple` (69), `boptuc_simple` (80) | Viewer skipped | Viewer skipped | `bop` and its operations on two boxes in frames with different axes (one turned by `trotate` about z, or about x and moved by `ttranslate`, some sized by `dset`; `K3` and `P6` by quarter turns, which the adapter turns exactly): `checkprops -s` (or `-s empty`) and the group's `checkshape`; each records a `checkview` (S9b.1's polyhedra) |
 | `boolean/bcommon_simple/A1`, `bopcommon_simple/ZL6` | Unsupported | Viewer skipped | A sphere and a box, two cones: solids other than prisms (S9d; S9a sentinels) |
-| `boolean/bopcommon_simple/C3`, `bfuse_complex/J5` | Unsupported | Viewer skipped | A box rotated by 45 degrees, crossed cylinders: frames with different axes (S9b, S9c) |
-| `boolean/bcut_simple/H6` | Unsupported | Viewer skipped | Pockets cut from a prism one after another: the first cut is a stack (S9a.2), which the next `bcut` takes as its object, a Boolean of a stack (S9b) |
-| `boolean/bfuse_simple/E1` | Unsupported | Viewer skipped | Prisms sized by `SCALE`: the tool's profile does not translate exactly into the object's frame (S9b) |
+| `boolean/bfuse_complex/J5` | Unsupported | Viewer skipped | Crossed cylinders: arcs in frames with different axes (S9c) |
+| `boolean/bopcommon_simple/C3`, `bopcut_simple/F6`, `G8`, `bopfuse_simple/N6` | Unsupported | Viewer skipped | A box turned by 45, 30 or 115 degrees with a corner on the other box's corner, wall or edge within rounding: a face thinner than the resolution, a face using an edge both ways, a face touching itself at a vertex, two solids touching at a point (S9b.1's `Degenerate`) |
+| `boolean/bcut_simple/H6` | Viewer skipped | Viewer skipped | Pockets cut from a prism one after another: the first cut is a stack (S9a.2), which the next `bcut` takes as its object (S9b.2, on its stored geometry) |
+| `boolean/bcut_simple/J4` | Viewer skipped | Viewer skipped | Pockets cut one after another by prisms of profiles in a plane facing -z: the first cut is a polyhedron (S9b.1), which the next `bcut` takes as its object (S9b.2) |
+| `boolean/bopfuse_simple/H3` | Viewer skipped | Viewer skipped | A box turned 45 degrees with its corner on the other's wall within rounding (inside it exactly): refused as a direction of zero length until S9b.2's face frames took each face's whole vector area |
+| `boolean/bfuse_simple/E1` | Unsupported | Viewer skipped | Prisms with arcs sized by `SCALE`: the tool's profile does not translate exactly into the object's frame, so the kernel decides them on exact models, which for arcs is S9c's |
 | `boolean/bopcommon_simple/C8` | Unsupported | Viewer skipped | An angle `atan2(1,2)*180/pi` in `dset`, which the adapter does not evaluate |
 | `boolean/bopcommon_simple/S5`, `bopcut_simple/ZC7`, `S4`, `bopfuse_simple/U7`, `B3`, `boptuc_simple/R1` | Unsupported | Viewer skipped | Box corners on or tangent to a cylinder, boxes touching along an edge: pieces thinner than the resolution, results touching themselves (at a point or along an edge) or each other, a hole touching its boundary (the kernel's `Degenerate`) |
 | `boolean/bcut_simple/G8` | Unsupported | Viewer skipped | A semi-infinite prism of an exploded face (`explode`, `SemiInf`) |
 
-There are **five original geometry tests passing on both backends** and 408
+There are **five original geometry tests passing on both backends** and 708
 more evaluated on both with their image commands recorded (`buc60769`,
 S7's `lowalgos/intss` cases `bug23177_1`, `bug23177_2` and `bug24648`, and
-404 Boolean cases of S9a and S9a.2).
+704 Boolean cases of S9a, S9a.2 and S9b.1).
 S8e registers the upstream `bsplit` group as capability sentinels: `boolean/splitter/A5`
 and `B5` and the 22 `bugs` cases that call `bsplit` (with `bug29333_1` and
 `bug29333_2`, registered before). They need S9's general builder: tools that
@@ -230,13 +235,68 @@ circular segments touching at the box's corners (`2 r^2` rounds just above
 the first S9a.2 revision propagating that refusal, fixed with a kernel
 test (`tests/booleans.rs`).
 
+**S9b.1's polyhedra in the Boolean group.** The same 1,802 cases were run
+again on both backends after S9b.1 and the adapter's polyhedra
+(2026-09-28, `survey_upstream_tests.py --boolean`, the public dataset read
+through `--data-dir`; no case loads it). The host now forwards `tcopy`, so
+native DRAW evaluates 1,579 (`bopfuse_simple/ZP6`, three tori, besides) and
+does not forward 223. Rust evaluates 704, each evaluated by native DRAW too
+and `viewer_skipped` on both; no case fails on Rust. Every one is
+registered: 300 new. 298 are S9b.1's polyhedra, `bop` and one of its
+operations on two boxes, one turned by `trotate` (about z, 45 of them sized
+by `dset`; `Q9` of each grid about x and moved by `ttranslate`), from the
+four `bop*_simple` grids (`bopcommon` 81, `boptuc` 80, `bopfuse` 69,
+`bopcut` 68). Eight of them turn by a quarter turn: `K3` of each grid
+evaluates with the kernel's rounded turn as well, `P6` only with the
+adapter's exact one (a box against the other's wall, which the rounded turn
+tilts by 6.1e-17 into a face thinner than the resolution). The other two,
+`bopfuse_simple/Z8` and `ZB3`, are stacks of a cylinder and a box whose
+corners lie on it within rounding: the containment fix made for `Z5`
+(above) reached this branch after S9a.2's survey, which had refused them
+as results touching themselves at a point. Before the adapter's changes
+the same kernel evaluated 700 (the four `P6` refused). Against the
+previous survey's 647 cases in frames with different axes: 298 evaluate,
+233 are cylinders turned, arcs in frames with different axes (S9c), 114
+are S9b.1's `Degenerate` (a turned box's corner on another box's corner,
+wall or edge within rounding) and 2 (`bcut_simple/J4`, `J7`) cut a pocket
+by a prism in a plane facing -z, a polyhedron, and give it to the next
+`bcut`. The 875 cases native DRAW evaluates and Rust does not, by reason:
+
+| Reason | Cases | Since S9a.2's survey |
+| --- | --- | --- |
+| Solids other than prisms (spheres, cones, tori): refused by the kernel 255, by the adapter 61 (a tool sharing ids with the object is extruded again, and has no profile) | 316 | +1 (`ZP6`, through `tcopy`) |
+| Arcs in frames with different axes (S9c): cylinders turned by `trotate` 233, `bfuse_simple/E1` (its tool's profile does not translate exactly) 1 | 234 | new (from frames with different axes 233, a profile not translating 1) |
+| `Degenerate`, S9b.1's: a face thinner than the resolution | 99 | new |
+| `Degenerate`, S9b.1's: a face using an edge both ways | 9 | new |
+| `Degenerate`, S9b.1's: a direction of zero length 2, two solids touching at a point 1, a face touching itself at a vertex 1 | 4 | new |
+| `Degenerate`: a result thinner than the resolution | 63 | +1 |
+| `Degenerate`: a profile piece thinner than the resolution | 24 | 0 |
+| `Degenerate`: a result touching itself at a point | 11 | -4 (`Z5`, `Z8`, `ZB3` evaluate, one is a result thinner than the resolution) |
+| `Degenerate`: a result touching itself along an edge | 6 | +2 (turned boxes) |
+| `Degenerate`: a result's hole outside its boundary 8, two results touching 4 | 12 | 0 |
+| A stack (37) or a polyhedron (2) as a Boolean argument (S9b.2) | 39 | +2 (`J4`, `J7`) |
+| `atan2` in `dset`, which the adapter does not evaluate | 48 | 0 |
+| `explode` without the native selector (a Boolean's result into solids 4, a `pcylinder` into faces 4, a face of a box 1) | 9 | 0 |
+| A `pcylinder` on a plane `pl1` | 1 | 0 |
+
+The previous survey's 647 cases in frames with different axes and one
+profile not translating exactly are gone from the reasons. The sentinels
+were checked again: none evaluates. `bopcommon_simple/C3` (a box turned 45
+degrees) is now refused as a face thinner than the resolution,
+`bfuse_simple/E1` as arcs decided on exact models (S9c), `bcut_simple/H6`
+as a Boolean of a stack (S9b.2); their purposes say so. Five sentinels are
+added for S9b.1's refusals: `bopcut_simple/F6` (a face using an edge both
+ways), `G8` (a face touching itself at a vertex), `bopfuse_simple/N6` (two
+solids touching at a point), `H3` (a direction of zero length) and
+`bcut_simple/J4` (a Boolean of a polyhedron).
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4
 and 2), where the kernel returns closed loops (1, 2 and 1) whose `xdistcs`
 samples lie within 1.5e-14 of both cylinders.
-The twelve derived cases are counted separately (see below).
-The 27 bridge self-tests are separate infrastructure checks; they do not count
+The thirteen derived cases are counted separately (see below).
+The 29 bridge self-tests are separate infrastructure checks; they do not count
 as more upstream coverage. The existing 66-solid / 2,292-classification native
 oracle corpus supplies much broader prism geometry checks independently.
 
@@ -413,14 +473,61 @@ are computed by hand and hold on both backends:
   2 + 4 t - 1)`, area `24 pi + 4 t + 3 s - 3`, length `16 pi + 12 + 16 t +
   8 s`; 10 vertices, 15 edges, 9 wires, 8 faces.
 
+`boolean_polyhedra` (S9b.1) runs them on prisms in frames with different
+axes, the tools copied by `tcopy` and turned by `trotate`. The kernel
+builds these results as polyhedra (`Construction::Polyhedron`): general
+bodies decided on the inputs' exact models, unified as built (coplanar
+fragments facing one way joined into maximal faces, edges joined where they
+run straight on between the same two faces), so `unifysamedom` returns them
+unchanged as it does stacks; native DRAW's unified counts agree on each
+below. A `trotate` by whole quarter turns about a coordinate axis turns a
+prism's frame exactly: the kernel's rotation takes the cosine of the
+rounded quarter turn, 6.1e-17, as OCCT's `gp_Trsf` does, and where OCCT's
+tolerances make a turned wall coplanar with another, the kernel's exact
+decisions would keep a crease (the L below would have 14 vertices, 21
+edges and 9 faces unified, where OCCT has 12, 18 and 8). With `r =
+sqrt(2)`, its values are computed by hand and hold on both backends (to
+`-deps 1e-5` where native DRAW prints six digits of an irrational value):
+
+* a 2 x 1 x 1 box and its copy turned 90 degrees about z, meeting along a
+  face: an L-shaped prism (volume 4, area 18, length 52; 12 vertices, 18
+  edges, 8 wires and faces), its walls at `y = 0` one face across both
+  boxes;
+* a 4 x 2 x 1 bar and its copy turned 90 degrees about z: a plus sign
+  (volume 12, area 40, length 88; 24 vertices, 36 edges, 14 wires and
+  faces), the 2 x 2 middle (4, 16, 40; 8, 12, 6), the two ends (4, 20, 64;
+  16, 24, 12, 2 shells and solids), and the other bar's ends (`boptuc`);
+* a 2 x 2 x 3 bar over `[-1, 2]` turned 45 degrees about the centre of the
+  2 x 2 x 1 box it passes through: the common a regular octagon of
+  inradius 1 (volume `8 r - 8`, area `32 r - 32`, length `64 r - 48`; 16
+  vertices, 24 edges, 10 wires and faces), the cut four corner triangles
+  of legs `2 - r` (volume `12 - 8 r`, area `32 - 16 r`, length 56; 24
+  vertices, 36 edges, 20 wires and faces, 4 shells and solids), the fuse
+  (volume `24 - 8 r`, area `80 - 32 r`);
+* a 1 x 4 x 8 bar turned 45 degrees about the y axis through `(2, 0, 1)`,
+  across a 4 x 2 x 2 box: the cut two trapezoid prisms (volume `16 - 4 r`,
+  area 40, length `80 + 8 r`; 16 vertices, 24 edges, 12 wires and faces, 2
+  shells and solids), the common a parallelogram prism (volume `4 r`, area
+  `16 r`, length `24 r + 16`; 8, 12, 6);
+* a unit box turned 30 degrees about `(1, 1, 1)` through its centre,
+  strictly inside a 4 x 4 x 4 box (`bcut`, `bbop 2`): a closed cavity,
+  volume 63, area 102, length 120; 16 vertices, 24 edges, 12 wires and
+  faces, 2 shells, one solid; the common is the unit box.
+
+No spline profile is among them: the adapter builds no spline edge
+(`bsplinecurve`, and `wire` or `edge` of edges, are unsupported), so
+S9a.2's spline profiles are not reachable through DRAW yet.
+
 The adapter reports unsupported, never an answer, whatever the kernel
-refuses: frames with different axes, an offset or profile that does not
-translate exactly, results touching themselves or each other and pieces
-thinner than the resolution (`Degenerate`), `ComputationLimit`,
+refuses: arcs in frames with different axes (S9c), results touching
+themselves or each other, faces and pieces thinner than the resolution, a
+face using an edge both ways or touching itself at a vertex, and two
+solids sharing a vertex (`Degenerate`), `ComputationLimit`,
 `LimitExceeded` and `PrecisionLoss`; also several objects or tools, a
 section (`bbop`/`bapibop` 4, `bopsection`), an argument of several solids,
-a stack as an argument (the kernel's Booleans take prisms: a Boolean of a
-stack is S9b's), restored shapes and split results. Two things the kernel's Boolean requires of its inputs the
+a stack or a polyhedron as an argument (the kernel's Booleans take prisms:
+a Boolean of a Boolean's general body is S9b.2's), restored shapes and
+split results. Two things the kernel's Boolean requires of its inputs the
 adapter supplies: their ids apart (every `box` is a cuboid of the
 unspecified operation, and a `copy` keeps its ids), and a construction
 indexed by profile element (a Boolean result's entities descend from its
@@ -456,8 +563,9 @@ instead.
 ## Deliberate limits
 
 - Rust signatures: positional `box` with three or six numbers, `pcylinder name
-  radius height` on the default axis, two-name `copy`, single-shape
-  `ttranslate`/`trotate`, `checkshape`, unique `nbshapes` with synthesized
+  radius height` on the default axis, two-name `copy` and `tcopy`, single-shape
+  `ttranslate`/`trotate` (a prism turned by whole quarter turns about a
+  coordinate axis in an exactly turned frame), `checkshape`, unique `nbshapes` with synthesized
   seams and seam vertices (`Topology::occt_counts` for whole solids), `vprops`
   with optional positive integration epsilon, `isdraw`, the solid identification
   needed by `checkprops`, and AABB `isbbinterf`. For history: a closed
@@ -480,9 +588,11 @@ instead.
   `bop object tool` then `bopfuse`, `bopcut`, `boptuc` or `bopcommon name`;
   `bbop name 0..3` after `bfillds` and `bapibop name 0..3` with one object
   and one tool; `unifysamedom name result` of a unified Boolean result, a
-  stack's too (S9a.2; see `boolean_prisms` and `boolean_stacks` above);
-  `checkshape`, `nbshapes`, `vprops`, `sprops` and `lprops` of any Boolean
-  result, a stack's too. `prism` without `Copy` builds an uncopied prism
+  stack's or a polyhedron's too (S9a.2, S9b.1; see `boolean_prisms`,
+  `boolean_stacks` and `boolean_polyhedra` above); `checkshape`,
+  `nbshapes`, `vprops`, `sprops` and `lprops` of any Boolean result, a
+  stack's or a polyhedron's too. A Boolean result is not moved
+  (`ttranslate` or `trotate` of it is unsupported). `prism` without `Copy` builds an uncopied prism
   (above); `ttranslate` also moves a `profile` sketch; `profile ... C r 360`
   is a whole circle. Numbers of `box`, `pcylinder`, `pcone`, `psphere`,
   `ptorus`, `ttranslate`, `trotate`, `polyline`, `prism` and `profile` may
