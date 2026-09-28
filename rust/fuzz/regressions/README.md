@@ -3,6 +3,24 @@
 The runner seeds every `*.bin` under the matching target directory. Keep original
 artifact bytes and names so campaign evidence remains traceable.
 
+## Tessellation: the first spline campaign's slow units (T-b)
+
+`tessellation/slow-unit-5f6821b6d0e321e663b20155e303bb9db0e1514c.bin` (a
+spline prism) and `tessellation/slow-unit-ce04689a160ed2848b526283b48e2b2c51c7c209.bin`
+(a spline sheet) were saved by the first local 600-second campaign after T-b
+added spline bodies to the target, as slow-unit diagnostics (the slowest
+input 19 seconds on a loaded host) with no wrong answer, sanitizer failure or
+timeout. Local AddressSanitizer replay then took about 9 and 4 seconds per
+execution: the prism's validation, its exact certified mass enclosure, two
+tessellations and a projection oracle with the kernel's exact evaluation.
+The target now checks a spline prism's volume against a quadrature of its
+profile, re-tessellates only meshes of at most 500 triangles, projects with
+its own binary64 Cox-de Boor evaluation, builds prisms on axis-aligned
+frames, and draws spline deflections from a 64th of the size and angles
+from 0.35 rad; the two inputs (their bytes now decode to other bodies) replay
+in about 3.3 and 2.1 seconds under the sanitizer on a host at load 10,
+within the `20 s / 2.6` triage rule. The 20-second input limit is unchanged.
+
 ## B-rep validation: a far, small spline prism
 
 `brep_validation/slow-unit-47bdac9ab6a50070d76f4f45029d0419a26705eb.bin` was

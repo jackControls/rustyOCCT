@@ -201,9 +201,9 @@ def seed_corpus(target):
         save(bytes([0]))
     elif target == 'tessellation':
         # Every body kind (polygon prism, arc prism, arc face, cone, sphere,
-        # torus, polygon face), each with varied shapes, frames, motions,
-        # deflections and angles.
-        for kind in range(7):
+        # torus, polygon face; T-b: spline prism, spline sheet), each with
+        # varied shapes, frames, motions, deflections and angles.
+        for kind in range(9):
             for k in range(12):
                 save(bytes([kind])+bytes((j*61+k*47+kind*19+3)%256 for j in range(96)))
         save(bytes([0]))
