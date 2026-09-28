@@ -2746,15 +2746,12 @@ Decisions for S9, recorded before its code (2026-09-28):
     certified bounds to the leading-bits bracket before the binary64
     pattern search and a stack cap's overlaps to its pieces' memberships
     (the input six times faster). Pending: the campaign; S9a.2's spline
-<<<<<<< HEAD
     profiles next. Their evidence exists before their code (`3951925a`,
     `BOOLEAN.md`): 46 spline cases (36 prisms, 5 stacks, 4 empty, 1
     degenerate; 18 tilted), the reference checked within 3.7e-39 (chords
     2.1e-4), and `occt-boolean-spline-preimplementation`: all valid with the
     reference's solids, 37 within 2e-8, 9 reviewed (BRepGProp on B-spline
     faces, up to 8.0e-4), the kernel `unsupported` on all 46.
-=======
-    profiles next (their evidence first).
   * S9b's evidence (a parallel start, before S9a.2's splines end): the
     decisions above, then `polyhedral_reference.py` and 45 fixtures
     (`generate_polyhedral_fixtures.py --check`: S9a's slicing on its 21
@@ -2785,4 +2782,3 @@ Decisions for S9, recorded before its code (2026-09-28):
     general bodies): rebuilding its exact model in moved frames changed
     near-coincident results. Pending: the campaign, S9b.2, the DRAW survey
     of the 647 upstream cases in frames with different axes.
->>>>>>> s9b
