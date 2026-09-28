@@ -1065,6 +1065,79 @@ the first fixture, never deferred.
   needs the full replay, on the schedule run of the accepted revision.
 * **Higher-order certified quadrature** for spline mass properties, to bring
   F8 from 5% to the enclosure widths of the analytic family.
+
+  F8 quadrature decisions, recorded before its code (2026-09-28):
+
+  * **Method.** Gauss–Legendre with `n = 8` nodes per direction on
+    subdivided pieces, with the rule's exact remainder bounded from
+    enclosed derivatives. On `[a, b]`, `∫ f = (b - a)/2 Σ w_i f(x_i) + K_n
+    (b - a)^(2n+1) f_(2n)(ξ)` with `K_n = (n!)^4 / ((2n + 1) ((2n)!)^2)`
+    and `f_(2n) = f^(2n)/(2n)!` the Taylor coefficient. The nodes are
+    enclosed by exact sign changes of the Legendre polynomial `P_8` and the
+    weights `2/((1 - x^2) P_8'(x)^2)` over those brackets (rational
+    intervals, once per thread). `f_(2n)` over the piece comes from
+    interval Taylor arithmetic: the recurrences of `+`, `×`, `÷`, `√` and
+    `cos`/`sin` applied to the inputs' series at `X + ε`, `X` the piece, are
+    inclusion isotone, so they contain the coefficient at every point of
+    `X`. On a box, the tensor rule's remainder is `K_n Δx^(2n+1) Δy
+    f_(2n,0)(X × Y) + K_n Δx Δy^(2n+1) f_(0,2n)(X × Y)` (the rule in `x`
+    applied to `∫ f dy`, then the rule in `y` at each node in `x`, whose
+    weights are positive and sum to `Δx`), so only univariate series along
+    each axis with the other held as an interval are needed. Why not Taylor
+    models (the integral of the expansion at the centre plus a Lagrange
+    term): on a piece of half width `h`, for the same sixteenth
+    coefficient, theirs is `2 h^17/17` times it and Gauss's `K_8 (2h)^17`,
+    about `π h (h/2)^16`, 2,500 times smaller; they need a second series at
+    the centre instead of eight point values, and in two dimensions
+    bivariate series. The node values are cheap and tight. `n = 8` puts the remainder at the sixteenth coefficient: for an
+    integrand analytic within `ρ` of the piece, `(h/2ρ)^16` falls below
+    `2^-40` at `h/ρ` about `0.35`, a few halvings on the fixtures.
+  * **What it integrates.** (a) `∫ M/W^k` of Bernstein polynomials along a
+    rational spline pcurve piece (planes, and rational pcurves on
+    nonrational patches). (b) `-∫ F(u(τ), v(τ)) u'(τ) dτ` along spline
+    pcurves on cylinders, cones, spheres and tori, `F` the closed-form
+    antiderivative in `v` (polynomials in `v` and `cos`/`sin` of `u` and of
+    multiples of `v`). (c) Every term of a rational spline surface and the
+    four `|N|` terms of a nonrational one (the other ten stay exact): by
+    Green's theorem with `G` from the domain's start through the patches,
+    a boundary piece in the patch `[u0, u1] × [v0, v1]` contributes, in its
+    local coordinates, `J = -∫_0^1 ∫_0^1 ū'(τ) v̄(τ) f̄(ū(τ), σ v̄(τ)) dσ
+    dτ` plus, for every patch below it in its column, the same `J` of the
+    line from `ū(0)` to `ū(1)` at `v̄ = 1`. The mass integrands are
+    homogeneous of degree one in `N`, so with `N̄ = S_ū × S_v̄` the change
+    to local coordinates cancels exactly. `f̄` is analytic on each patch
+    (its weights positive), so the rule's smoothness holds; a piece must
+    lie in one patch (lines are split exactly at knot lines, spline pieces
+    are located by their control points, chords by certain ends).
+  * **Adaptivity.** A piece (or box) is accepted when every integrand's
+    remainder is at most `2^-40` of its share (by length or area) of the
+    piece's absolute integral, taken from the node values of the first
+    rule, or at most four times the rounding width of its node sum;
+    otherwise it is halved across the direction with the larger remainder,
+    at most twelve times per direction. A box still too wide there is
+    accepted as it is: always sound, only wider, and the widths are
+    reported.
+  * **Fallback and scope.** Where the rule cannot run (a piece across a
+    patch boundary, a weight or `|N|` not certainly positive, a periodic
+    spline surface) the first-order strips and Green integrals of S4d stay.
+    Only mass properties use the rule (`mass_enclosure`, face areas and
+    centres, sheet measures); validation's orientation fluxes and loop
+    areas need signs only and keep their routes, so validation costs
+    nothing more.
+  * **Target widths.** Every enclosure of every spline mass fixture within
+    `1e-11` relative of its quantity's scale (volume, area; the centroid
+    by `V^(1/3)`, the inertia by `V^(5/3)`), asserted in tests, where S4d
+    gave `2e-3`–`5e-3` on nonrational walls' areas and `5e-2`–`0.6` on
+    the rational corner. The reference's quadrature (mpmath at 40 digits)
+    is checked against itself on halved pieces to `1e-25` of each row's
+    scale, and against closed forms where they exist, so containment is
+    asserted with a slack of binary64 rounding, not `1e-12`.
+  * **Evidence added.** Two spline models whose routes the fixtures do not
+    yet exercise, captured natively before the kernel change:
+    `spline_stadium_parallel` (the stadium with a spline pcurve along a
+    cylinder's parallel: route (b) with `du ≠ 0`) and
+    `spline_bulge_split_wall` (the bulge with a knot in its wall's `v`
+    direction: route (c) with a column below).
 * **Tessellation**, deflection-controlled and watertight, once S5 lands;
   the application needs it for display and it needs nothing from S7–S9.
 

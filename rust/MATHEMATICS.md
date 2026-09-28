@@ -1400,6 +1400,104 @@ into the surface's domain. An end at most `1e-9` of the domain's width
 outside it lies on that patch's polynomial extension, as OCCT evaluates a
 file's fifteen-digit pcurve ends; farther out the gap is uncertified.
 
+## Certified Gauss–Legendre quadrature of spline mass (F8)
+
+The strips and Green integrals above are first order. Mass properties
+(not validation, which needs signs only) now integrate every non-polynomial
+term by a Gauss–Legendre rule whose remainder is bounded rigorously; the
+first-order routes stay as the fallback.
+
+**The rule and its remainder.** For `f ∈ C^(2n)[a, b]` and the `n`-point
+rule with nodes `x_i` and weights `w_i` on `[-1, 1]`,
+`∫_a^b f = (b - a)/2 Σ w_i f(m + (b - a) x_i / 2) + E`, `m` the midpoint,
+with `E = (b - a)^(2n+1) (n!)^4 / ((2n + 1) ((2n)!)^3) f^(2n)(ξ)` for some
+`ξ` in `[a, b]`. In the Taylor coefficient `f_(2n) = f^(2n)/(2n)!`,
+`E = K_n (b - a)^(2n+1) f_(2n)(ξ)` with `K_n = (n!)^4 / ((2n + 1)
+((2n)!)^2)` (`K_1 = 1/24`, the midpoint rule; `K_2 = 1/180`). Hence
+`∫ f ∈ (b - a)/2 Σ W_i f(X_i) + K_n (b - a)^(2n+1) [f_(2n)](X)` for
+enclosures `X_i ∋ x_i`, `W_i ∋ w_i` and `[f_(2n)](X)` of the coefficient
+over the whole piece. As `(n!)^2/(2n)! ≈ √(πn)/4^n`, `K_n (2h)^(2n+1) ≈ π h
+(h/2)^(2n)` on a piece of half width `h`: for an integrand analytic within
+`ρ` of the piece, whose coefficients are about `M/ρ^(2n)`, the remainder is
+about `π h M (h/(2ρ))^(2n)`. The kernel uses `n = 8`.
+
+On a box `[a, b] × [c, d]` the tensor rule `Q = Q_x Q_y` satisfies
+`∫∫ f - Q f = (I_x - Q_x)[∫ f dy] + Q_x[(I_y - Q_y) f]`. The first term is
+the one-dimensional remainder of `F(x) = ∫_c^d f(x, y) dy`, whose
+coefficient `F_(2n)(ξ) = ∫_c^d f_(2n,0)(ξ, y) dy` lies in `(d - c)
+[f_(2n,0)](X × Y)`; the second is `Σ_i w_i` times the remainders along `y`
+at the nodes `x_i`, each in `K_n (d - c)^(2n+1) [f_(0,2n)](X × Y)`, and the
+weights are positive and sum to `b - a`. So
+`∫∫ f ∈ Q f + K_n (b - a)^(2n+1) (d - c) [f_(2n,0)](X × Y) + K_n (b - a)
+(d - c)^(2n+1) [f_(0,2n)](X × Y)`: only the pure coefficients along each
+axis are needed, each from a univariate series with the other variable
+held as an interval.
+
+**Nodes and weights.** The nodes are the roots of the Legendre polynomial
+`P_n` (`(k + 1) P_(k+1) = (2k + 1) x P_k - k P_(k-1)`). Each binary64
+approximation `x̃` is widened to `[x̃ - δ, x̃ + δ]` until the exact rational
+values of `P_n` at the two ends have opposite signs, which brackets exactly
+one root for `δ` far below the roots' spacing; the weight
+`w = 2 / ((1 - x^2) P_n'(x)^2)` (with `(1 - x^2) P_n' = n (P_(n-1) - x
+P_n)`) is enclosed over the bracket in rational interval arithmetic. The
+rational brackets are computed once per thread and lifted into either tier.
+
+**Coefficients by interval Taylor arithmetic.** A truncated series
+`a = Σ_(k<L) a_k ε^k` stands for `a(x + ε)`. With `a_0`, `b_0` enclosures
+and `k >= 1`: `(ab)_k = Σ_(j<=k) a_j b_(k-j)`; `q = a/b`: `q_k = (a_k -
+Σ_(1<=j<=k) b_j q_(k-j)) / b_0`; `r = √a`: `r_0 = √a_0`, `r_k = (a_k -
+Σ_(1<=j<k) r_j r_(k-j)) / (2 r_0)`; `c + i s = exp(i a)`: `c_k = -(1/k)
+Σ_(1<=j<=k) j a_j s_(k-j)`, `s_k = (1/k) Σ_(1<=j<=k) j a_j c_(k-j)`. A
+Bernstein polynomial of a series argument is evaluated by de Casteljau on
+series. For every point `x` of `X` these recurrences produce the exact
+coefficients at `x` from the exact coefficients of the inputs; interval
+operations are inclusion isotone, so evaluating them on the inputs'
+enclosures at `X + ε` encloses the coefficient at every `x ∈ X`, in
+particular at `ξ`. The same evaluation certifies smoothness: a division
+runs only when `b_0` excludes zero and a square root only when `a_0` is
+positive, over all of `X`, so the integrand is analytic on the piece. A
+series of length 1 is a plain enclosure; the node values use it.
+
+**What is integrated.** (a) Along a rational spline pcurve piece, `∫_0^1
+M/W^k`, `M` and `W` Bernstein (a plane's flux and mass integrands, and the
+patch-exact route of a rational pcurve on a nonrational patch). (b) Along a
+spline pcurve on a cylinder, cone, sphere or torus, `-∫_0^1 F(u(τ), v(τ))
+u'(τ) dτ`, `u = U/W`, `v = V/W`, `u' = (U'W - UW')/W^2`, `F` the
+closed-form antiderivative in `v`: polynomials in `v` times `cos^a u sin^b
+u` (cylinder, cone), or `cos^a u sin^b u` times the Fourier form
+`α_0 (v - v_l) + Σ_f (α_f (sin f v - sin f v_l) + β_f (cos f v_l - cos f
+v)) / f` of `∫_(v_l)^v cos^c sin^d` (sphere, torus). (c) On a spline
+surface, the terms that are not tensor polynomials: every term on a
+rational patch, the four `|N|` terms on a nonrational one. With `G(u, v) =
+∫_(v_a)^v f(u, s) ds` from the domain's start, a boundary piece `(u(τ),
+v(τ))` in the patch `[u0, u1] × [v0, v1]` contributes `-∫ G du =
+-Σ_(Q below) ∫_(u(0))^(u(1)) ∫_(Q) f ds du - ∫_0^1 u'(τ) ∫_(v0)^(v(τ))
+f(u(τ), s) ds dτ` (the first term by the change of variables `u = u(τ)`,
+an exact differential whatever `u`'s monotonicity). In the patch's local
+coordinates `ū = (u - u0)/Δu`, `v̄ = (v - v0)/Δv` every mass integrand is
+`g(S)·N` or `g(S) |N|`, homogeneous of degree one in `N = S_u × S_v =
+N̄ / (Δu Δv)` with `N̄ = S_ū × S_v̄`, so `f du dv = f̄ dū dv̄` exactly, `f̄`
+the same integrand with `N̄`. Substituting `s̄ = σ v̄(τ)`, the piece's own
+term is `J = -∫_0^1 ∫_0^1 ū'(τ) v̄(τ) f̄(ū(τ), σ v̄(τ)) dσ dτ`, and each
+patch `Q` below contributes the same `J` of the line from `ū_Q(u(0))` to
+`ū_Q(u(1))` at `v̄ = 1`. The swept region lies in the patch, where the
+homogeneous surface `h(ū, v̄) / w(ū, v̄)` is analytic while `w > 0` (checked
+over each box), so the tensor rule above applies with the series along
+`τ` (`σ` an interval) and along `σ` (`τ` an interval). A piece must lie in
+one patch: lines are split exactly where they cross knot lines, a spline
+pcurve piece is located by its control points, a chord (a gap between
+pcurve ends) by certain ends; anything else falls back to the strips.
+
+**Adaptivity.** The first rule on a whole piece gives `s_k = Σ W |f_k|`
+at its nodes, the piece's absolute integral of each integrand. A piece or
+box of relative size `a` (its length or area as a fraction of the piece's)
+is accepted when each remainder is at most `2^-40 a s_k`, or at most four
+times the rounding width of its own node sum (an integrand that vanishes);
+otherwise it is halved across the direction with the larger remainder, up
+to twelve halvings per direction, where it is accepted as it is. The
+acceptance rule only decides the work: every accepted enclosure is sound
+by the remainder above, and the result's width is reported, not assumed.
+
 ## Profiles with circular arcs (S5)
 
 **Sectors.** An arc of centre `c` from `a` to `b` contains the direction `w`
