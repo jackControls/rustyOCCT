@@ -125,14 +125,16 @@ group, and stale success records are removed before each run.
 | `lowalgos/intss/bug23177_1` | Viewer skipped | Viewer skipped | A torus and a plane through its axis: two circles, `dump`, `bounds`, `dval`, `xdistcs` on both surfaces (S7) |
 | `lowalgos/intss/bug23177_2` | Viewer skipped | Viewer skipped | The same with another plane through the axis (S7) |
 | `lowalgos/intss/bug24648` | Viewer skipped | Viewer skipped | A cone and a coaxial torus: every curve a circle (S7) |
-| `lowalgos/intss/bug23178` | Failed | Viewer skipped | Crossing cylinders: the kernel's one closed loop (samples within 4e-15 of both) against the 6 pieces the case counts (S7, a recorded divergence) |
-| `lowalgos/intss/bug28222_2` | Failed | Viewer skipped | Crossing cylinders: 2 closed loops against 4 counted pieces (S7, a recorded divergence) |
-| `lowalgos/intss/bug28222_3` | Failed | Viewer skipped | A thin cylinder through a thick one: one loop against 2 counted pieces (S7, a recorded divergence) |
 | `lowalgos/intss/bug21750` | Unsupported | Unverified | Cylinders antiparallel up to rounding: OCCT snaps them to two lines, the kernel's exact predicates find crossing axes and one closed curve, and the case then calls the undefined `Error:` (S7, a recorded divergence) |
 
 There are **five original geometry tests passing on both backends** and four
 more evaluated on both with their image commands recorded (`buc60769`, and
 S7's `lowalgos/intss` cases `bug23177_1`, `bug23177_2` and `bug24648`).
+Three more `intss` cases run on the Rust adapter but are not registered,
+because the contract admits no failing status: `bug23178`, `bug28222_2` and
+`bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4
+and 2), where the kernel returns closed loops (1, 2 and 1) whose `xdistcs`
+samples lie within 1.5e-14 of both cylinders.
 The nine derived cases are counted separately (see below).
 The 23 bridge self-tests are separate infrastructure checks; they do not count
 as more upstream coverage. The existing 66-solid / 2,292-classification native

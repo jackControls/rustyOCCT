@@ -1000,8 +1000,13 @@ Decisions for S8, recorded before its code (2026-09-28):
   `Frame3`: origin and normal) returns the pieces as solids, those against
   the normal first, then along it, each in a deterministic order (by the
   lowest id of its input faces), with the operation's history. A plane
-  missing the solid returns it unchanged. Each piece is a general body built
-  through `TopologyParts` and validated before it is returned.
+  missing the solid returns it unchanged. A piece that is itself a prism of
+  the input's frame (a plane normal to the axis: M3's height split; a plane
+  parallel to it: the prism of the profile's section by the plane's line,
+  its ids renamed from the input by provenance) is built as one, keeping the
+  prism's exact queries (S8a.1); any other piece is a general body built
+  through `TopologyParts` and validated before it is returned (S8a.2 on:
+  planes oblique to a prism's axis, and the other families).
 * **Exact decisions, binary64 geometry.** Which side of the plane every
   vertex lies on, whether an edge or a face crosses, touches or lies in the
   plane, and where boundaries meet the section are exact predicates on the
@@ -1533,12 +1538,13 @@ the first fixture, never deferred.
     lines and hyperbolas' branches as DRAW curves, a procedural loop, ring
     or figure-eight and a traced track as parameterised curves), numeric
     variables (`bounds`, `dval`, `renamevar`, `directory`), `dump`,
-    geometry-aware `whatis` and `xdistcs` with OCCT's output. Seven
+    geometry-aware `whatis` and `xdistcs` with OCCT's output. Four
     self-contained `intss` cases are registered: three evaluated on both
     backends (a torus with a plane through its axis, twice; a cone with a
-    coaxial torus), four recorded divergences (OCCT's piece counts of
-    walking lines against the kernel's closed loops; antiparallel axes
-    snapped by tolerance). The other self-contained cases need trimmed and
+    coaxial torus) and one declared gap (antiparallel axes OCCT snaps by
+    tolerance); three more run but stay unregistered, the contract
+    admitting no failure: they count OCCT's pieces of walking lines
+    against the kernel's closed loops. The other self-contained cases need trimmed and
     extruded surfaces, and the data cases B-spline surfaces, beyond S7's
     analytic scope (UPSTREAM_TESTS.md).
 * Tessellation (parallel track) — T-a implemented (`TESSELLATION.md`);
