@@ -1,0 +1,95 @@
+puts "Derived case, not an original OCCT test: splits by a plane face (S8e)"
+puts "Written for rusty-occt; see rust/UPSTREAM_TESTS.md (derived cases)."
+
+# A 6 x 4 x 3 prism split by the plane x + y = 3 (parallel to its axis):
+# a triangular prism (4.5 x 3) and a pentagonal one (19.5 x 3) sharing
+# their cut face (3 sqrt 2 x 3), its four edges and four vertices.
+profile r F 0 0 X 6 Y 4 X -6
+prism p r 0 0 3 c
+plane t 3 0 0 1 1 0
+mkface f t -20 20 -20 20
+bclearobjects
+bcleartools
+baddobjects p
+baddtools f
+bfillds
+bsplit rp
+checkshape rp
+checknbshapes rp -vertex 12 -edge 20 -wire 11 -face 11 -shell 2 -solid 2 -compound 1
+# Areas per use: the prism's 108 and the cut face in both solids, 18 sqrt 2;
+# lengths per use: every prism edge twice (104), the cut face's perimeter
+# (6 sqrt 2 + 6) four times.
+checkprops rp -v 72 -s 133.45584412271572 -l 161.94112549695427
+
+# A 4 x 4 x 2 box cut obliquely (S8a.2) by (x - 11) + y / 2 + 7 z / 10 = 0:
+# a corner tetrahedron with legs 1, 2 and 10/7 off the box's (10, 0, 0),
+# whose slanted face (area sqrt 696 / 14) both solids share.
+box b 10 0 0 4 4 2
+plane t1 11 0 0 1 0.5 0.7
+mkface f1 t1 -20 20 -20 20
+bclearobjects
+bcleartools
+baddobjects b
+baddtools f1
+bfillds
+bsplit rb
+checkshape rb
+checknbshapes rb -vertex 11 -edge 18 -wire 10 -face 10 -shell 2 -solid 2 -compound 1
+# Areas: the box's 64 and the slanted face twice; lengths: the box's edges
+# twice (80) and the slanted face's sides (sqrt 5, sqrt 149 / 7 and
+# sqrt 296 / 7) four times.
+checkprops rb -v 32 -s 67.76883027379226 -l 105.75067542418142
+
+# A stadium sheet (area 6 + pi) split by the plane x = 3.5 across its right
+# half circle: the arc splits in three, and the two faces share the chord
+# (length sqrt 3) and its two vertices.
+profile s F 0 -1 X 3 C 1 180 X -3 C 1 180
+plane t2 3.5 0 0 1 0 0
+mkface f2 t2 -5 5 -5 5
+bclearobjects
+bcleartools
+baddobjects s
+baddtools f2
+bfillds
+bsplit rs
+checkshape rs
+checknbshapes rs -vertex 6 -edge 7 -wire 2 -face 2 -shell 0 -solid 0 -compound 1
+# The chord counts once per face: 6 + 2 pi + 2 sqrt 3.
+checkprops rs -s 9.1415926535897931 -l 15.74728692231734
+
+# A closed 5 x 2 rectangle wire split by the plane x - y = 1: OCCT keeps it
+# one wire of six edges, the result is that wire (no compound).
+polyline w 0 0 0 5 0 0 5 2 0 0 2 0 0 0 0
+plane t3 1 0 0 1 -1 0
+mkface f3 t3 -10 10 -10 10
+bclearobjects
+bcleartools
+baddobjects w
+baddtools f3
+bfillds
+bsplit rw
+checkshape rw
+checknbshapes rw -vertex 6 -edge 6 -wire 1 -face 0 -compound 0
+checkprops rw -l 14
+
+# The three kinds at once, apart from each other, by one tool face (the
+# plane x = 1.5), through the API command: a 4 x 3 x 2 prism, a 4 x 4 plane
+# face and a stadium wire (length 6 + 2 pi).
+profile q O 0 0 -10 F 0 0 X 4 Y 3 X -4
+prism pq q 0 0 2 c
+plane pl 0 0 5
+mkface sq pl 0 4 0 4
+profile sw O 0 0 10 F 0 -1 X 3 C 1 180 X -3 C 1 180 W
+plane t4 1.5 0 0 1 0 0
+mkface f4 t4 -50 50 -50 50
+bclearobjects
+bcleartools
+baddobjects pq sq sw
+baddtools f4
+bapisplit r
+checkshape r
+checknbshapes r -vertex 24 -edge 33 -wire 14 -face 13 -shell 2 -solid 2 -compound 1
+# Areas: the prism's 52 and its cut face (6) twice, the face's 16; lengths:
+# the prism's 72 and its cut face's perimeter (10) four times, the face's
+# 16 and its chord twice, the wire's 6 + 2 pi.
+checkprops r -s 80 -l 148.28318530717959
