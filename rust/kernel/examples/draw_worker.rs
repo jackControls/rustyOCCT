@@ -147,7 +147,8 @@ enum Shape {
     /// agree. Its counts and history are unsupported.
     Uncopied(Box<Solid>),
     /// A Boolean's result (S9a): OCCT's compound of the result's solids,
-    /// none for an empty result. The solids share nothing (the kernel
+    /// none for an empty result, each a prism or a stack (S9a.2, a general
+    /// body, a closed cavity its second shell). The solids share nothing (the kernel
     /// refuses results touching themselves). `uncopied` when an argument
     /// was an uncopied prism, whose shared shapes OCCT's result keeps.
     Boolean {
@@ -1916,13 +1917,25 @@ fn boolean_failure(e: rusty_occt::Error) -> Failure {
     }
 }
 
+/// A Boolean's result solid that is S9a.2's stack: a general body, not a
+/// prism. The kernel's Booleans take prisms only, so every result solid
+/// without a profile is a stack.
+fn stack(s: &Solid) -> bool {
+    s.profile().is_none()
+}
+
 /// A Boolean argument: one solid the adapter made (a prism, a cone, a
 /// sphere or a torus; the kernel decides what it supports), or a Boolean
-/// result of one solid; and whether OCCT's shape reuses its shapes.
+/// result of one prism; and whether OCCT's shape reuses its shapes. A
+/// stack is refused as the kernel refuses it (`OutOfDomain`): a Boolean of
+/// general bodies is S9b's.
 fn boolean_argument(shape: &Shape) -> Result<(&Solid, bool)> {
     match shape {
         Shape::Solid(s) => Ok((s, false)),
         Shape::Uncopied(s) => Ok((s, true)),
+        Shape::Boolean { solids, .. } if solids.len() == 1 && stack(&solids[0]) => Err(
+            boolean_unsupported("an argument that is a Boolean's stack, not a prism (S9b)"),
+        ),
         Shape::Boolean { solids, uncopied } if solids.len() == 1 => Ok((&solids[0], *uncopied)),
         Shape::Boolean { .. } => Err(boolean_unsupported("an argument of several solids or none")),
         _ => Err(boolean_unsupported(
@@ -1989,7 +2002,10 @@ fn boolean(
 /// Whether a Boolean result is what `unifysamedom` would leave: each
 /// solid a prism whose boundaries have no two consecutive collinear lines
 /// or arcs of one circle (the walls and edges OCCT's unifier merges; the
-/// caps are one face each already).
+/// caps are one face each already), or a stack (S9a.2), which the kernel
+/// builds unified: walls on one line or circle facing one way joined
+/// across slab heights and piece ends, edges without a vertex where they
+/// run straight on between the same two faces.
 fn unified(solids: &[Solid]) -> bool {
     let collinear = |a: Point2, b: Point2, c: Point2| {
         let (u, v) = ((b.x - a.x, b.y - a.y), (c.x - b.x, c.y - b.y));
@@ -1999,7 +2015,7 @@ fn unified(solids: &[Solid]) -> bool {
     };
     solids.iter().all(|s| {
         let Some(profile) = s.profile() else {
-            return false;
+            return stack(s);
         };
         std::iter::once(profile.outer())
             .chain(profile.holes())
