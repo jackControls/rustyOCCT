@@ -14,6 +14,12 @@ Encoding (all integers little-endian):
                  2 vertex), index u32
         Entity:  tag 3, 16 id bytes
 The id is the FNV-1a-128 digest of those bytes, stored big-endian.
+
+Case protocol (`encode_case`): a block of rows `case NAME TOL`, `op ID`, a
+construction (`frame` and `offsets` or `make`, `box`, `cone`, `sphere` or
+`torus`), `boundary` rows, `transform` rows and `end`; a split case (S8) adds
+a `split` row before `end`, and a Boolean case (S9a, `encode_boolean_case`)
+is two prisms' rows joined by a `boolean OP ID` row.
 """
 from dataclasses import dataclass, field
 from fractions import Fraction as F
@@ -368,6 +374,52 @@ def encode_case(c):
             out.append('transform R '+' '.join(number(x) for x in (*t[1], *t[2], t[3])))
     out.append('end')
     return '\n'.join(out)
+
+
+BOOLEAN_OPERATIONS = ('fuse', 'cut', 'common')
+
+
+def encode_boolean_case(obj, operation, tool, boolean_operation):
+    """S9a: a Boolean of two prisms in the protocol above. The object's
+    block (`encode_case(obj)`) without its `end`, then a row `boolean OP ID`
+    (`OP` one of fuse, cut, common: `Solid::fuse(ID, tool)` and so on, the
+    object the receiver, `ID` the Boolean's operation id), then the tool's
+    rows (`encode_case(tool)` without its `case` row and its `end`: `op`,
+    `frame`, `offsets`, `boundary`...), then `end`:
+
+        case NAME TOL
+        op 91
+        frame ...
+        offsets ...
+        boundary ...
+        boolean fuse 93
+        op 92
+        frame ...
+        offsets ...
+        boundary ...
+        end
+
+    A reader splits the block at the `boolean` row and parses each side as
+    an identity case, the tool's with the object's `case` row (its name and
+    tolerance). Blocks without a `boolean` row are unchanged: every existing
+    reader of a case still reads them."""
+    assert operation in BOOLEAN_OPERATIONS, operation
+    assert obj.make is None and tool.make is None and tool.box is None and tool.cone is None \
+        and tool.sphere is None and tool.torus is None, 'S9a: two prisms'
+    assert not obj.transforms and not tool.transforms, 'S9a: prisms in place'
+    first = encode_case(obj).rsplit('\nend', 1)[0]
+    second = encode_case(tool).split('\n')[1:-1]
+    return '\n'.join([first, f'boolean {operation} {boolean_operation}', *second, 'end'])
+
+
+def native_boolean_case(obj, operation, tool):
+    """The explicit OCCT rows of a Boolean (occt_boolean_oracle.cpp): the
+    object's `native_case` rows without `end`, a `boolean OP` row, the
+    tool's rows without their `case` row, and `end`."""
+    assert operation in BOOLEAN_OPERATIONS, operation
+    first = native_case(obj).rsplit('\nend', 1)[0]
+    second = native_case(tool).split('\n')[1:-1]
+    return '\n'.join([first, f'boolean {operation}', *second, 'end'])
 
 
 def box_boundaries(size):

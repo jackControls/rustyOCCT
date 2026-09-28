@@ -640,6 +640,18 @@ checks their rows and overlaps too, and `compare_curve_curve.py` reproduces
 the second capture: 11 matches and 2 reviewed differences, the kernel inside
 the reference on all 54 cases.
 
+S9a (`BOOLEAN.md`), before any kernel code: `generate_boolean_fixtures.py
+--check` writes 45 Booleans of two prisms in one frame (15 fuses, 17 cuts,
+13 commons; both frames, the tool's origin offset) and each result's solid
+count, volume, area, centre and slab profiles from `boolean_reference.py`,
+after checking the reference against Green's theorem, exact Fraction
+clipping and boundary classes of polygons, closed-form lenses, hand results
+and `fuse = A + B - common`, `cut = A - common` (all within 1.2e-38);
+`compare_boolean.py` reproduces the `BRepAlgoAPI_Fuse`/`Cut`/`Common`
+pre-implementation capture: every result valid with the reference's solid
+count, all 45 within 2e-8 of the reference (6.1e-15 at worst), no review.
+Until `boolean_probe` exists every case is `rust_unsupported`.
+
 The `GeomInt_IntSS` captures were taken on macOS arm64; IntPatch's walking
 lines differ on Linux near degeneracies (the first Linux run changed
 `cc_near_figure_inside`). A run on another platform reproduces that
@@ -955,6 +967,7 @@ only numbers carry an allowance.
 | `occt-spline-preimplementation/native.txt` (`compare_brep.py --family spline`) | OCCT's statuses, counts, tolerances, vertex gaps and use deviations of the ten spline models on each run | tolerances, statuses and counts exact; measurements within `2^-46` of the case's size or `1e-9` relative, as for M5 | OCCT evaluates splines and trigonometry with platform arithmetic; every valid model's measurement is rounding, at most `9.2e-16` |
 | `occt-tessellation-preimplementation/inputs.txt` (`compare_tessellation.py`) | the kernel's regenerated `.brep` texts and settings against the captured ones | `2^-50` per number relative to its size (at least 1); every other token exact | the kernel writes frames and rotated points with the platform's trigonometry, which moves a value by an ulp of its own magnitude: the first Linux run's texts differed from the macOS capture, and a later one by a coordinate of -9.999999999999998 for -10, beyond an absolute `2^-50` |
 | `occt-split-preimplementation` (`compare_split.py`) | the native pieces' volumes, areas and centres per side against the reference | `2e-8` relative | BRepGProp's error on pieces with elliptic faces reached `8.8e-9` in the capture (`disc_through_caps`); planar pieces agree to `1e-15` |
+| `occt-boolean-preimplementation` (`compare_boolean.py`) | the native results' solid counts and their volumes', areas' and centres' totals against the reference | `2e-8` relative (centres: of the case's size); counts and validity exact | split's allowance for BRepGProp on curved faces; the capture's worst was `6.1e-15` (`lens_common`) |
 | `occt-tessellation-preimplementation/native.txt` (`compare_tessellation.py`) | OCCT's weld gap, own deflections, measured distances, area and volume of the 56 meshes on each run | `1e-9` relative or `1e-15` absolute; statuses and every count exact | BRepMesh and the probe's projections evaluate with platform trigonometry |
 | `occt-spline-tessellation-preimplementation/inputs.txt` and `native.txt` (`compare_tessellation.py --family spline`) | the kernel's `.brep` texts of the twelve spline bodies and OCCT's rows of their 24 meshes on each run | as for T-a's: `2^-50` per number relative to its size, `1e-9` relative or `1e-15` absolute per measurement; statuses and counts exact; another platform reproduces its own reviewed record (`platform-<name>/`) | the writer and BRepMesh evaluate splines with platform arithmetic |
 | `occt-procedural-*-preimplementation`, `occt-torus-curve-preimplementation`, `occt-torus-pair-preimplementation`, `occt-ruled-curve-preimplementation` (`compare_procedural_intersections.py`, `compare_torus_curves.py`, `compare_ruled_curves.py`) | the native lines' counts, points and samples on each run | `1e-9` relative per number on the capture's platform; another platform reproduces its own reviewed record (`platform-<name>/`) exactly in counts | IntPatch walks and approximates lines with platform arithmetic; near degeneracies its pieces differ |
