@@ -245,3 +245,226 @@ fn cauchy(p: &P) -> R {
         .fold(rz(), |a, b| if b > a { b } else { a });
     m + R::from_integer(BigInt::from(1))
 }
+
+// ------------------------------------------------------------------ tori
+
+/// Polynomials in `(u, v)`: the coefficients of `v^0, v^1, ...`, each a
+/// polynomial in `u`.
+type B = Vec<P>;
+
+fn bl(c: R, cu: R, cv: R) -> B {
+    vec![vec![c, cu], vec![cv]]
+}
+fn badd(a: &B, b: &B) -> B {
+    let n = a.len().max(b.len());
+    (0..n)
+        .map(|k| {
+            padd(
+                a.get(k).map_or(&Vec::new(), |x| x),
+                b.get(k).map_or(&Vec::new(), |x| x),
+            )
+        })
+        .collect()
+}
+fn bscale(a: &B, k: &R) -> B {
+    a.iter().map(|x| pscale(x, k)).collect()
+}
+fn bmul(a: &B, b: &B) -> B {
+    if a.is_empty() || b.is_empty() {
+        return Vec::new();
+    }
+    let mut out = vec![Vec::new(); a.len() + b.len() - 1];
+    for (i, x) in a.iter().enumerate() {
+        for (j, y) in b.iter().enumerate() {
+            out[i + j] = padd(&out[i + j], &pmul(x, y));
+        }
+    }
+    out
+}
+fn bdot(a: &[B; 3], b: &[B; 3]) -> B {
+    badd(
+        &badd(&bmul(&a[0], &b[0]), &bmul(&a[1], &b[1])),
+        &bmul(&a[2], &b[2]),
+    )
+}
+/// `b` modulo `a2 v^2 + a1 v + a0` (`a2` a nonzero constant): `c0 + c1 v`.
+fn reduce(b: &B, a0: &P, a1: &P, a2: &R) -> (P, P) {
+    let mut b = b.clone();
+    for n in (2..b.len()).rev() {
+        let top = std::mem::take(&mut b[n]);
+        let k = pscale(&top, &(R::from_integer((-1).into()) / a2));
+        b[n - 1] = padd(&b[n - 1], &pmul(&k, a1));
+        b[n - 2] = padd(&b[n - 2], &pmul(&k, a0));
+    }
+    let get = |k: usize| b.get(k).cloned().unwrap_or_default();
+    (get(0), get(1))
+}
+
+/// The exact tangencies of two tori (origins `o1`, `o2`, axes `a1`, `a2`,
+/// radii `(R1, r1)`, `(R2, r2)`) off a common axis: pairs of spine points at
+/// a critical distance `r1 + r2` or `|r1 - r2|`, for the first spine's point
+/// `s1 = o1 + u U + v V` on its circle `E0`. With `w = s1 - o2`, `M` the
+/// projector normal to `a2` and `Q = k - |w|^2 - R2^2`, the distance to the
+/// second spine is `k` and critical along the first at `s1` exactly when
+/// `E1 = (w . T1) Q + 2 R2^2 (M w . T1) = 0` and
+/// `E2 = Q^2 - 4 R2^2 |M w|^2 = 0` (`T1 = a1 x (s1 - o1)`, and `w . T1` is
+/// linear in `u`, `v`). Both are reduced modulo `E0` to `c0 + c1 v` and
+/// `d0 + d1 v`; the critical points are the real roots of the resultant
+/// `a2 c0^2 - a1 c0 c1 + a0 c1^2`, `v = -c0 / c1`, and a tangency where
+/// `d0 c1 - d1 c0` vanishes on the algebraic root. `ComputationLimit` for a
+/// critical point on the second torus's axis (`Q = 0`), spines meeting with
+/// equal minor radii, tori touching along a curve, or when no shear
+/// separates the critical points.
+#[allow(clippy::too_many_arguments)]
+pub(super) fn torus_torus(
+    o1: &X,
+    a1: &X,
+    big1: &R,
+    small1: &R,
+    o2: &X,
+    a2: &X,
+    big2: &R,
+    small2: &R,
+) -> Result<Vec<Contact>> {
+    let limit = || Error::ComputationLimit("the tangency of two tori");
+    let u0 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+        .iter()
+        .map(|e| cross(a1, &e.map(|k| R::from_integer(k.into()))))
+        .find(|u| !u.iter().all(zero))
+        .expect("a nonzero axis");
+    let v0 = cross(a1, &u0);
+    let aa2 = dot(a2, a2);
+    let d = sub(o1, o2);
+    let ks = {
+        let (p, q) = (small1 + small2, small1 - small2);
+        let mut ks = vec![&p * &p];
+        if &q * &q != &p * &p {
+            ks.push(&q * &q);
+        }
+        ks
+    };
+    let two = R::from_integer(2.into());
+    let four = R::from_integer(4.into());
+    for shear in [0i64, 1, -2, 3, -5, 7, 11, -13] {
+        let sh = R::new(shear.into(), 7.into());
+        let u = u0.clone();
+        let v: X = std::array::from_fn(|i| &v0[i] + &u0[i] * &sh);
+        let (au, av) = (cross(a1, &u), cross(a1, &v));
+        // E0 = a2 v^2 + a1 v + a0.
+        let e0a0: P = vec![-(big1 * big1), rz(), dot(&u, &u)];
+        let e0a1: P = vec![rz(), &two * dot(&u, &v)];
+        let e0a2 = dot(&v, &v);
+        let w: [B; 3] = std::array::from_fn(|i| bl(d[i].clone(), u[i].clone(), v[i].clone()));
+        let t1: [B; 3] = std::array::from_fn(|i| bl(rz(), au[i].clone(), av[i].clone()));
+        let wa = bdot(&w, &std::array::from_fn(|i| vec![vec![a2[i].clone()]]));
+        let mw: [B; 3] = std::array::from_fn(|i| badd(&w[i], &bscale(&wa, &(-(&a2[i] / &aa2)))));
+        let ww = bdot(&w, &w);
+        let wt = bdot(&w, &t1);
+        let mt = bdot(&mw, &t1);
+        let mm = bdot(&mw, &mw);
+        let r22 = big2 * big2;
+        let mut found = Vec::new();
+        let mut separated = true;
+        for k in &ks {
+            let q = badd(
+                &vec![vec![k - &r22]],
+                &bscale(&ww, &R::from_integer((-1).into())),
+            );
+            let e1 = badd(&bmul(&wt, &q), &bscale(&mt, &(&two * &r22)));
+            let e2 = badd(&bmul(&q, &q), &bscale(&mm, &(-(&four * &r22))));
+            let (c0, c1) = reduce(&e1, &e0a0, &e0a1, &e0a2);
+            let (d0, d1) = reduce(&e2, &e0a0, &e0a1, &e0a2);
+            let (q0, q1) = reduce(&q, &e0a0, &e0a1, &e0a2);
+            let res = padd(
+                &padd(
+                    &pscale(&pmul(&c0, &c0), &e0a2),
+                    &pscale(&pmul(&pmul(&e0a1, &c0), &c1), &R::from_integer((-1).into())),
+                ),
+                &pmul(&e0a0, &pmul(&c1, &c1)),
+            );
+            let resultant = IntPolynomial::from_rationals(&res);
+            if resultant.is_zero() {
+                return Err(limit());
+            }
+            let c1i = IntPolynomial::from_rationals(&c1);
+            let mut budget = Budget::new(RootIsolationOptions::default());
+            let bound = cauchy(&res);
+            let roots = isolate(&resultant, -bound.clone(), bound, &mut budget)?;
+            if roots
+                .iter()
+                .any(|x| c1i.is_zero() || x.vanishes_polynomial(&c1i))
+            {
+                separated = false;
+                break;
+            }
+            let tangent = IntPolynomial::from_rationals(&psub(&pmul(&d0, &c1), &pmul(&d1, &c0)));
+            let on_axis = IntPolynomial::from_rationals(&psub(&pmul(&q0, &c1), &pmul(&q1, &c0)));
+            for mut root in roots {
+                if !(tangent.is_zero() || root.vanishes_polynomial(&tangent)) {
+                    continue;
+                }
+                if on_axis.is_zero() || root.vanishes_polynomial(&on_axis) {
+                    return Err(limit());
+                }
+                root.refine_for_signs(400);
+                let (lo, up) = root.isolator();
+                let uu = I::new(lo.clone(), up.clone());
+                let vv = enclose(&c0, &uu)
+                    .div(&enclose(&c1, &uu))
+                    .ok_or_else(limit)?
+                    .neg();
+                let x = |c: &R| I::exact(c.clone());
+                let s1: [I; 3] = std::array::from_fn(|i| {
+                    x(&o1[i]).add(&uu.mul(&x(&u[i]))).add(&vv.mul(&x(&v[i])))
+                });
+                let wv: [I; 3] = std::array::from_fn(|i| s1[i].sub(&x(&o2[i])));
+                let h = wv
+                    .iter()
+                    .zip(a2)
+                    .fold(I::exact_f64(0.0), |acc, (wi, ai)| acc.add(&wi.mul(&x(ai))))
+                    .div(&x(&aa2))
+                    .ok_or_else(limit)?;
+                let m: [I; 3] = std::array::from_fn(|i| wv[i].sub(&h.mul(&x(&a2[i]))));
+                let rho = m
+                    .iter()
+                    .fold(I::exact_f64(0.0), |acc, g| acc.add(&g.square()))
+                    .sqrt();
+                let qv = x(k)
+                    .sub(
+                        &wv.iter()
+                            .fold(I::exact_f64(0.0), |acc, g| acc.add(&g.square())),
+                    )
+                    .sub(&x(&r22));
+                let sigma = match qv.sign() {
+                    Some(std::cmp::Ordering::Greater) => 1.0,
+                    Some(std::cmp::Ordering::Less) => -1.0,
+                    _ => return Err(limit()),
+                };
+                // s2 = o2 - sigma R2 M w / rho.
+                let f = I::exact_f64(sigma)
+                    .mul(&x(big2))
+                    .div(&rho)
+                    .ok_or_else(limit)?;
+                let s2: [I; 3] = std::array::from_fn(|i| x(&o2[i]).sub(&f.mul(&m[i])));
+                let gap: [I; 3] = std::array::from_fn(|i| s2[i].sub(&s1[i]));
+                let norm = gap
+                    .iter()
+                    .fold(I::exact_f64(0.0), |acc, g| acc.add(&g.square()))
+                    .sqrt();
+                if norm.sign() != Some(std::cmp::Ordering::Greater) {
+                    return Err(limit());
+                }
+                let away = k != &ks[0] && small2 > small1;
+                let r = if away { x(small1).neg() } else { x(small1) };
+                let point: [I; 3] = std::array::from_fn(|i| {
+                    s1[i].add(&r.mul(&gap[i]).div(&norm).expect("a positive distance"))
+                });
+                found.push(Contact { spine: s1, point });
+            }
+        }
+        if separated {
+            return Ok(found);
+        }
+    }
+    Err(limit())
+}

@@ -56,7 +56,7 @@ arguments.
 | Cylinder/cylinder | parallel axes: two lines, one or none; coaxial: the same or empty; equal radii with crossing axes: two ellipses in the bisecting planes; otherwise not a conic |
 | Coaxial pairs | a cylinder, cone or sphere centred on the other's axis: circles where the radius functions of the axial coordinate agree, the apex where both pass through it, or the same surface |
 | Other quadric pairs | procedural curves (S7b.1, S7b.2); two cones and a cone's rational apex on a sphere not yet |
-| Tori | a plane or a sphere: procedural curves, or circles in the special cases; coaxial pairs: circles (S7b.3a); a cylinder or a cone off the axis: traced curves (S7b.3b.1); two tori off a common axis not yet (S7b.3b.2) |
+| Tori | a plane or a sphere: procedural curves, or circles in the special cases; coaxial pairs: circles (S7b.3a); a cylinder, a cone or another torus off the axis: traced curves (S7b.3b) |
 
 The plane/cone section uses a closed form: with the apex `V`, the plane's
 unit normal `n`, `cos b = n . a` (the unit axis), `D = (V - o) . n` and
@@ -196,22 +196,30 @@ checked bit for bit (`procedural-intersection-frames.tsv`): a near-Villarceau
 case is sensitive to one unit in the last place of the normal, and the
 platform's `hypot` can round a non-Pythagorean normal differently.
 
-## A torus with a cylinder or a cone (S7b.3b.1)
+## A torus with a cylinder, a cone or another torus (S7b.3b)
 
 A cylinder or a cone off the torus's axis meets a meridian circle in up to
 four points and no closed form separates them: the result is a
 `TracedCurve` (`SurfaceIntersection::Traced`), the zero set of
 `G(phi, t) = f(p(phi, t))` on the flat parameter torus (the meridian
 parameterisation of S7b.3a; `x` along the other axis's component normal to
-the torus's axis), as a graph.
+the torus's axis), as a graph. For two tori (S7b.3b.2) the carrier is the
+first by stored data and `f` the other's quartic; along a meridian circle
+`|p - o2|^2` is affine in `cos t`, `sin t`, so `G` is of degree two in them
+for every pair.
 
 * **Tangencies** (the curve's singular points) are decided exactly: a torus
   and a cylinder are pipes about the spine circle and the axis, and touch
   where a critical distance between them is `r + r_c` or `|r - r_c|`, found
   from exact resultants of three conics in the spine's plane and decided on
   the algebraic roots (`tangency.rs`). Each is a `Node`, crossing or isolated
-  by the certified sign of the Hessian of `G`. A cone is never exactly
-  tangent to a torus for a binary64 half-angle.
+  by the certified sign of the Hessian of `G`. Two tori touch where their
+  spines have a critical pair at the distance `r1 + r2` or `|r1 - r2|`: the
+  criticality along the first spine (a cubic once the distance condition is
+  used) and the distance (a quartic) are reduced modulo the first spine's
+  circle, and the critical points are the real roots of the resulting
+  resultant, decided on the algebraic roots. A cone is never exactly tangent
+  to a torus for a binary64 half-angle.
 * **Folds**, where a component turns in `phi` (`G = G_t = 0`), are found by
   subdivision of the parameter torus with mean-value exclusion and
   certified by the Krawczyk operator; each is a `Fold` with enclosed angles
@@ -234,16 +242,22 @@ the torus's axis), as a graph.
 Evidence: `torus_curve_reference.py` (80-digit polynomial roots of every
 meridian in `z = e^{it}`, the critical meridians as the real roots of a
 resultant of `z^2 G` and `z^2 G_t`, components by continuity, tangencies by a
-Groebner basis in sympy) and 24 fixture cases (`torus-curve-*`: loops through
+Groebner basis in sympy: of three conics for a cylinder, of both spines'
+points for two tori) and 38 fixture cases (24 with a cylinder or a cone, 14
+pairs of tori: side by side, linked, a ring round the tube, through the
+hole, over it, tilted, touching at outer equators, at a saddle from inside,
+at two saddles crossing, at right angles, near cases); for the first 24 (`torus-curve-*`: loops through
 the tube, round the hole, rings, curves winding round the tube, tilted
 frames, isolated tangencies from outside, inside the hole and over the tube,
 a crossing at a saddle, near cases of each); a `GeomInt_IntSS` capture before
-any kernel code (`fixtures/occt-torus-curve-preimplementation`): 18 native
-matches and 6 reviewed differences (three missed isolated tangencies, three
-approximated lines off the surfaces), and the kernel inside the reference on
-all 24 (`compare_torus_curves.py`, `torus_curves.rs`: folds, tangencies and
-rings' points enclosed, components and winding numbers equal, order
-independence, points along every track on both surfaces).
+any kernel code (`fixtures/occt-torus-curve-preimplementation`) and for the
+14 pairs another before the kernel intersected two tori
+(`fixtures/occt-torus-pair-preimplementation`): 28 native matches and 10
+reviewed differences (six missed isolated tangencies, a missed tiny loop,
+three approximated lines off the surfaces), and the kernel inside the
+reference on all 38 (`compare_torus_curves.py`, `torus_curves.rs`: folds,
+tangencies and rings' points enclosed, components and winding numbers equal,
+order independence, points along every track on both surfaces).
 
 ## Evidence
 

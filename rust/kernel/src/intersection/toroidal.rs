@@ -166,7 +166,7 @@ pub(super) fn intersect(a: &Surface, b: &Surface) -> Result<SurfaceIntersection>
             }
             general(ts, os, &t, &o)
         }
-        Kind::Cylinder | Kind::Cone if !(parallel && on_axis) => {
+        Kind::Cylinder | Kind::Cone | Kind::Torus if !(parallel && on_axis) => {
             let curve = super::torus_curves::intersect(ts, os)?;
             Ok(if curve.tracks().is_empty() && curve.nodes().is_empty() {
                 SurfaceIntersection::Empty

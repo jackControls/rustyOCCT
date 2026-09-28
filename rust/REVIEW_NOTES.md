@@ -1229,8 +1229,15 @@ the first fixture, never deferred.
     The fuzz target found a track's end refused after rounding and a point
     evaluation too slow in rational intervals (interval Newton now); both
     are checked-in regressions.
-  * S7b.3b.2 (two tori off a common axis), unbounded components (two
-    cones), S7c and S7d pending.
+  * S7b.3b.2 implemented: the reference extended with the other torus's
+    quartic and both spines' critical pairs, and a native capture of 14
+    pairs of tori, came before the kernel intersected two tori; the field's
+    jets carry the quartic and `tangency::torus_torus` reduces the
+    criticality and distance conditions modulo the first spine's circle; the
+    kernel inside the reference on all 38 torus cases, the bridge 28
+    matches and 10 reviewed differences.
+  * Unbounded components (two cones, a cone's apex on a sphere), S7c and
+    S7d pending.
 * Tessellation (parallel track) — T-a implemented (`TESSELLATION.md`);
   gate pending CI, the schedule replay and the clean campaign.
   * The decisions above, the independent reference

@@ -1592,6 +1592,23 @@ where `A v^2 + 2 B v + C = 0` and the curve is `v = (-B +- sqrt(D)) / A`,
   point is a tangency. `V` is sheared (`V + s U`, `s` a small rational)
   until no critical point makes the denominator vanish (two critical points
   with one `u`).
+* **Two tori (S7b.3b.2).** For the other torus's quartic
+  `f = (|w|^2 + K)^2 - 4 R2^2 |M w|^2` (`K = R2^2 - r2^2`, `M` the projector
+  normal to its axis) the jets use `grad f = 4 (|w|^2 + K) w - 8 R2^2 M w`
+  and the Hessian form `4 (|w|^2 + K) v . z + 8 (w . v)(w . z) -
+  8 R2^2 v . M z`. For the tangencies, with `s1` on the first spine,
+  `w = s1 - o2`, `rho = |M w|` and `Q = k - |w|^2 - R2^2`, the distance to the
+  second spine critical along it is `|w|^2 + R2^2 + 2 sigma R2 rho`; setting
+  it to `k` gives `2 sigma R2 rho = Q`, the criticality along the first spine
+  `w . T1 + sigma R2 (M w . T1) / rho = 0` becomes
+  `E1 = (w . T1) Q + 2 R2^2 (M w . T1)` (a cubic: `w . T1` is linear, as
+  `(u U + v V) . (a x (u U + v V)) = 0`), and the distance
+  `E2 = Q^2 - 4 R2^2 rho^2`. Modulo `E0 = a2 v^2 + a1 v + a0` (`a2` a nonzero
+  constant) both are linear in `v`, `c0 + c1 v` and `d0 + d1 v`; the common
+  roots of `E0` and `E1` are the real roots of `a2 c0^2 - a1 c0 c1 + a0 c1^2`
+  with `v = -c0 / c1`, and `E2` vanishes there exactly when `d0 c1 - d1 c0`
+  does. The second spine's point is `o2 - sigma R2 M w / rho`, `sigma` the
+  sign of `Q`.
 * **Points.** The interval Newton operator `N(T) = m - G(m) / G_t(T)`
   contains every root of `G(phi, .)` in `T`; intersected with `T` it
   converges quadratically.

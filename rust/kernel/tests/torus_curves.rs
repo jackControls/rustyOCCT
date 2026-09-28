@@ -1,5 +1,6 @@
-//! S7b.3b.1: a torus and a cylinder or a cone off its axis, as traced curves,
-//! against the independent reference (`fixtures/torus-curve-*.txt|tsv` from
+//! S7b.3b: a torus and a cylinder, a cone or another torus off its axis, as
+//! traced curves, against the independent reference
+//! (`fixtures/torus-curve-*.txt|tsv` from
 //! `tools/generate_torus_curve_fixtures.py`).
 use rusty_occt::intersection::{
     surface_surface, SurfaceIntersection, TracedComponent, TracedCurve,
@@ -218,7 +219,7 @@ fn every_case_matches_the_exact_reference() {
         assert_eq!(surface_surface(b, a).unwrap(), got, "{name}: order");
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
-    assert_eq!(all.len(), 24);
+    assert_eq!(all.len(), 38);
 }
 
 /// Points along every track lie on both surfaces, enclosed tightly.

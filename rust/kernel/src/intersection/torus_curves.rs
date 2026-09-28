@@ -1,4 +1,4 @@
-//! A torus and a cylinder or a cone off its axis (S7b.3b.1 of
+//! A torus and a cylinder, a cone or another torus off its axis (S7b.3b of
 //! `REVIEW_NOTES.md`): traced curves on the torus's meridians.
 //!
 //! The torus (axis `a` normalised exactly, major radius `R`, minor `r`) is
@@ -8,10 +8,14 @@
 //! of `G(phi, t) = f(p(phi, t))` on the flat parameter torus, `f` the other
 //! surface's implicit function `(p - q)^T Q (p - q) - k`, `Q = c2 - u u^T`
 //! (a cylinder: `q` its origin, `c2 = 1`, `k = r_c^2`; a cone, both nappes:
-//! `q` its apex, `c2 = cos^2 h`, `k = 0`; `u` the unit axis).
+//! `q` its apex, `c2 = cos^2 h`, `k = 0`; `u` the unit axis), or another
+//! torus's quartic `(|w|^2 + R2^2 - r2^2)^2 - 4 R2^2 |w - (w . u) u|^2`,
+//! `w = p - q` (S7b.3b.2; of two tori the carrier is the first by stored
+//! data). Along a meridian circle `|w|^2` is affine in `cos t`, `sin t`, so
+//! `G` is of degree two in them for every pair.
 //!
 //! The curve is a graph. Its vertices are the tangencies of the surfaces,
-//! decided exactly (`tangency.rs`); its folds, where a component turns in
+//! decided exactly from the pipes' spines and axes (`tangency.rs`); its folds, where a component turns in
 //! `phi` (`G = G_t = 0`), are found by subdivision of the parameter torus
 //! with mean-value exclusion and certified by the Krawczyk operator. Each fold
 //! and tangency gets a box whose top and bottom edges carry no zero of `G` and
@@ -183,21 +187,22 @@ struct Data {
     minor: R,
     angle: f64,
     cone: bool,
+    torus: bool,
 }
 
 fn data(s: &Surface) -> Option<Data> {
-    let (f, r, minor, angle, cone) = match s {
+    let (f, r, minor, angle, cone, torus) = match s {
         Surface::Torus {
             frame,
             major,
             minor,
-        } => (frame, *major, *minor, 0.0, false),
-        Surface::Cylinder { frame, radius } => (frame, *radius, 0.0, 0.0, false),
+        } => (frame, *major, *minor, 0.0, false, true),
+        Surface::Cylinder { frame, radius } => (frame, *radius, 0.0, 0.0, false, false),
         Surface::Cone {
             frame,
             radius,
             half_angle,
-        } => (frame, *radius, 0.0, *half_angle, true),
+        } => (frame, *radius, 0.0, *half_angle, true, false),
         _ => return None,
     };
     Some(Data {
@@ -207,6 +212,7 @@ fn data(s: &Surface) -> Option<Data> {
         minor: q(minor),
         angle,
         cone,
+        torus,
     })
 }
 
@@ -218,11 +224,14 @@ struct Field<T> {
     y: E<T>,
     big: T,
     small: T,
-    /// `f(p) = (p - q)^T Q (p - q) - k`, `Q = c2 - u u^T`.
+    /// `f(p) = (p - q)^T Q (p - q) - k`, `Q = c2 - u u^T`; for another
+    /// torus (`torus_pair`) `c2 = 1` and `f = (|w|^2 + K)^2 - 4 R2^2
+    /// (p - q)^T Q (p - q)`, `w = p - q`, with `(R2^2, K = R2^2 - r2^2)`.
     q: E<T>,
     u: E<T>,
     c2: T,
     k: T,
+    quartic: Option<(T, T)>,
 }
 
 /// `G` and its derivatives up to the second order.
@@ -254,6 +263,12 @@ impl<T: Real> Field<T> {
         let x = unit::<T>(&toward(&t, &o))?;
         let y = ecross(&a, &x);
         let u = unit::<T>(&o.a)?;
+        let quartic = o.torus.then(|| {
+            (
+                i::<T>(&(&o.r * &o.r)),
+                i::<T>(&(&o.r * &o.r - &o.minor * &o.minor)),
+            )
+        });
         let (q, c2, k) = if o.cone {
             let (c, s) = T::cos_sin(&T::exact_f64(o.angle));
             let apex = if zero(&o.r) {
@@ -277,6 +292,7 @@ impl<T: Real> Field<T> {
             u,
             c2,
             k,
+            quartic,
         })
     }
     fn qv(&self, w: &E<T>) -> E<T> {
@@ -310,17 +326,49 @@ impl<T: Real> Field<T> {
     fn value(&self, phi: &T, t: &T) -> T {
         let [p, ..] = self.frame(phi, t);
         let w = esub(&p, &self.q);
-        self.form(&w, &w).sub(&self.k)
+        match &self.quartic {
+            None => self.form(&w, &w).sub(&self.k),
+            Some((r22, kk)) => edot(&w, &w)
+                .add(kk)
+                .square()
+                .sub(&self.form(&w, &w).mul(r22).mul(&T::exact_f64(4.0))),
+        }
     }
     fn jet(&self, phi: &T, t: &T) -> Jet<T> {
         let [p, pp, pt, ppp, ppt, ptt] = self.frame(phi, t);
         let w = esub(&p, &self.q);
         let qw = self.qv(&w);
         let two = T::exact_f64(2.0);
-        let d = |v: &E<T>| edot(&qw, v).mul(&two);
-        let h = |v: &E<T>, z: &E<T>| self.form(v, z).mul(&two);
+        // The gradient of f and its Hessian as a form.
+        let (g, grad, s, r22) = match &self.quartic {
+            None => (
+                edot(&w, &qw).sub(&self.k),
+                escale(&qw, &two),
+                None,
+                T::exact_f64(0.0),
+            ),
+            Some((r22, kk)) => {
+                let s = edot(&w, &w).add(kk);
+                let four = T::exact_f64(4.0);
+                let g = s.square().sub(&edot(&w, &qw).mul(r22).mul(&four));
+                let grad = esub(
+                    &escale(&w, &s.mul(&four)),
+                    &escale(&qw, &r22.mul(&T::exact_f64(8.0))),
+                );
+                (g, grad, Some(s), r22.clone())
+            }
+        };
+        let d = |v: &E<T>| edot(&grad, v);
+        let h = |v: &E<T>, z: &E<T>| match &s {
+            None => self.form(v, z).mul(&two),
+            Some(s) => edot(v, z)
+                .mul(s)
+                .mul(&T::exact_f64(4.0))
+                .add(&edot(&w, v).mul(&edot(&w, z)).mul(&T::exact_f64(8.0)))
+                .sub(&self.form(v, z).mul(&r22).mul(&T::exact_f64(8.0))),
+        };
         Jet {
-            g: edot(&w, &qw).sub(&self.k),
+            g,
             gp: d(&pp),
             gt: d(&pt),
             gpp: h(&pp, &pp).add(&d(&ppp)),
@@ -957,7 +1005,8 @@ fn angle(y: &I, x: &I) -> Result<I> {
     crate::certified::atan2(y, x).ok_or(limit("a tangency's angle"))
 }
 
-/// The intersection of a torus and a cylinder or cone off its axis.
+/// The intersection of a torus and a cylinder, a cone or another torus
+/// (`torus_pair`, the carrier first by stored data) off its axis.
 pub(super) fn intersect(torus: &Surface, other: &Surface) -> Result<TracedCurve> {
     let fast = Field::<Fast>::of(torus, other)?;
     let exact = Field::<I>::of(torus, other)?;
@@ -968,7 +1017,15 @@ pub(super) fn intersect(torus: &Surface, other: &Surface) -> Result<TracedCurve>
     let mut nodes = Vec::new();
     let mut zones = Vec::new();
     if !od.cone {
-        for c in tangency::torus_cylinder(&td.o, &td.a, &td.r, &td.minor, &od.o, &od.a, &od.r)? {
+        // A torus pair's tangencies (torus_pair), else a cylinder's.
+        let contacts = if od.torus {
+            tangency::torus_torus(
+                &td.o, &td.a, &td.r, &td.minor, &od.o, &od.a, &od.r, &od.minor,
+            )?
+        } else {
+            tangency::torus_cylinder(&td.o, &td.a, &td.r, &td.minor, &od.o, &od.a, &od.r)?
+        };
+        for c in contacts {
             let rel = esub(&c.spine, &exact.o);
             let phi = angle(&edot(&rel, &exact.y), &edot(&rel, &exact.x))?;
             let (cp, sp) = I::cos_sin(&phi);
