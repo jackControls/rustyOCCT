@@ -973,6 +973,18 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
                         end: Point2::new(end.x + k, end.y),
                     };
                 }
+                // Likewise in [v0, v0 + 2 pi] on a face wound in v: a ring
+                // starting a rounding below its seam's v0 (reduced into
+                // [0, 2 pi)) lies a period below it otherwise.
+                if let (Some(seam), Curve2::LineSegment { start, end }) = (vseams.get(&fi), &pcurve)
+                {
+                    let low = start.y.min(end.y);
+                    let k = -((low - seam.v0) / TAU + 1e-9).floor() * TAU;
+                    pcurve = Curve2::LineSegment {
+                        start: Point2::new(start.x, start.y + k),
+                        end: Point2::new(end.x, end.y + k),
+                    };
+                }
                 let forward = fin.sense == Orientation::Forward;
                 curves2d.push(pcurve_record(&face.surface, &pcurve, forward, range)?);
                 reps[e].push(format!(

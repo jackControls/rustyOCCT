@@ -685,3 +685,15 @@ by a plane that passes a hole vertex within the resolution without touching
 it exactly. The hole of one piece then lies within the resolution of that
 piece's boundary, which a profile rejects (`InvalidHole`); the split now
 reports it `Degenerate`, as it does other sub-resolution pieces.
+
+## STEP: a torus band's ring starting a rounding below its seam
+
+`step/crash-6b0ff1a4f7646a3f2fce7e959be0fc3033928e74.bin` was found by the
+first clean campaign of the STEP-a target: the quarter-torus elbow with one
+meridian's reference direction scaled and flipped, so the circle's
+parameter starts on the tube's inner side. The import is valid (a torus
+band between two rings wound in `v`), but its `.brep` text did not read
+back: the writer reduced the `+v` ring's start, `-1.2e-16`, into `[0, 2 pi)`
+for the latitude seam and left the rings' pcurves where they were, a period
+below it. The writer now shifts a face's line pcurves into `[v0, v0 + 2 pi]`
+as it does in `u`; the input replays in 0.06 s.

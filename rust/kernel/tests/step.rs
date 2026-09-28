@@ -113,6 +113,27 @@ fn import_is_deterministic_and_cavities_are_regions() {
     assert_eq!(t.shells().len(), 4);
 }
 
+/// A torus band whose `+v` ring starts a rounding below the latitude seam
+/// the `.brep` writer puts at `v0` (the `step` fuzz target's first finding,
+/// `fuzz/regressions/step`): written and read back with its counts.
+#[test]
+fn a_torus_band_round_trips_through_brep() {
+    for meridian in ["(0.,1.,0.)", "(0.,-1000.0000010000001,0.)"] {
+        let text = edit(
+            &fixture("elbow"),
+            "#31=DIRECTION('',(0.,1.,0.));",
+            &format!("#31=DIRECTION('',{meridian});"),
+        );
+        let imported = import(&text).unwrap();
+        let body = &imported.bodies[0];
+        let t = body.result.as_ref().unwrap();
+        let written = rusty_occt::occt_brep::write(t, body.tolerance.linear()).unwrap();
+        let back = rusty_occt::occt_brep::import(&rusty_occt::occt_brep::read(&written).unwrap());
+        let again = back.solids[0].result.as_ref().unwrap();
+        assert_eq!(again.occt_counts(), t.occt_counts(), "{meridian}");
+    }
+}
+
 #[test]
 fn schemas_of_ap203_ap214_and_ap242_only() {
     let text = fixture("box");

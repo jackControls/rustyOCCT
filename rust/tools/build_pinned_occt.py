@@ -91,6 +91,8 @@ def main():
                    '-DBUILD_GTEST=OFF', '-DBUILD_DOC_Overview=OFF', '-DBUILD_DOC_RefMan=OFF',
                    '-DUSE_TK=OFF', '-DUSE_FREETYPE=OFF', '-DUSE_TBB=OFF',
                    '-DUSE_OPENGL=OFF', '-DUSE_GLES2=OFF',
+                   # TKService (under TKDESTEP) would link X11 on Linux.
+                   '-DUSE_XLIB=OFF',
                    '-DBUILD_ADDITIONAL_TOOLKITS='+';'.join(record['toolkits'])]
         command.extend('-DBUILD_MODULE_'+name+'=OFF' for name in MODULES)
         run('configure', command)
