@@ -39,6 +39,19 @@ their sides from the same slicing (`spline_cases`). Before writing,
 `reference_checks` compares the spline slicing with closed forms: straight
 splines give the polygon's rows, and every profile of lines and splines its
 Green's-theorem area and moments in exact Fractions, both within 1e-30.
+
+S8e: `split-sheet-cases.txt` holds face and wire bodies (S6: a `make face`
+or `make wire` row in place of `offsets`) with their `split` rows, and
+`split-sheet-expected.tsv` their sides (`split_reference.planar_rows`) in
+the rows of `split-expected.tsv` with the measures one dimension down: `side
+S area perimeter cx cy cz` for a sheet (its area, the total length of its
+boundary, chords included, and its centroid), `side S length 0 cx cy cz`
+for a wire (its length, 0 for its ends' measure, and its centroid).
+`planar_reference_checks` compares them with closed forms (a square's
+halves, a U's and a holed square's perimeters, circles' arcs and
+segments, a quadratic's length), exact half-plane clipping of polygons in
+Fractions, straight splines, Green's theorem and the sides' sums, within
+1e-30.
 """
 import argparse
 import dataclasses
@@ -579,7 +592,15 @@ def generate():
         bblocks.append(encode(case, plane))
         for row in ref.rows(case, plane):
             bsplines.append(f'{case.name}\t{ref.text(row)}')
+    pblocks, planars = [], ['# case\trow (S8e, split_reference.planar_rows: side S area perimeter cx cy cz '
+                            'of a sheet, side S length 0 cx cy cz of a wire)']
+    for case, plane in planar_cases():
+        pblocks.append(encode(case, plane))
+        for row in ref.planar_rows(case, plane):
+            planars.append(f'{case.name}\t{ref.text(row)}')
     return {'split-cases.txt': '\n'.join(blocks)+'\n', 'split-expected.tsv': '\n'.join(out)+'\n',
+            'split-sheet-cases.txt': '\n'.join(pblocks)+'\n',
+            'split-sheet-expected.tsv': '\n'.join(planars)+'\n',
             'split-frames.tsv': '\n'.join(frames)+'\n',
             'split-primitive-cases.txt': '\n'.join(lines)+'\n',
             'split-primitive-expected.tsv': '\n'.join(prim)+'\n',
