@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Fixtures for S7b.3b.1 of REVIEW_NOTES.md: a torus with a cylinder or a cone
-off its axis.
+"""Fixtures for S7b.3b of REVIEW_NOTES.md: a torus with a cylinder, a cone or
+another torus off its axis.
 
 `torus-curve-cases.txt` uses the case protocol of
 `analytic-intersection-cases.txt`; `torus-curve-expected.tsv` gives each
@@ -59,6 +59,23 @@ def cases():
         ('tk_irrational_apex', thin, cone((2.0, 0.0, 0.0), Z, 0.2, 0.3)),
         ('tk_tilted', torus((1.0, 2.0, 3.0), TILT, 2.0, 0.5), cone((3.0, 2.0, 3.0), X, 0.25, 0.3)),
         ('tk_miss', thin, cone((0.0, 0.0, 5.0), X, 0.0, 0.1)),
+        # S7b.3b.2: two tori off a common axis.
+        ('tt_side', thin, torus((3.0, 0.0, 0.0), Z, 1.0, 0.25)),
+        ('tt_link_cut', thin, torus((2.0, 0.0, 0.0), Y, 2.0, 1.625)),
+        ('tt_ring_round_tube', thin, torus((2.0, 0.0, 0.0), X, 1.0, 0.625)),
+        ('tt_parallel_offset', thin, torus((1.0, 0.0, 0.25), Z, 2.0, 0.5)),
+        ('tt_through_hole', thin, torus(o, X, 1.25, 0.375)),
+        ('tt_over', thin, torus((0.0, 0.0, 1.0), X, 2.0, 0.5)),
+        ('tt_tilted', torus((1.0, 2.0, 3.0), TILT, 2.0, 0.5), torus((3.0, 2.0, 3.0), X, 1.0, 0.375)),
+        ('tt_miss', thin, torus((0.0, 0.0, 5.0), X, 1.0, 0.25)),
+        # Exact tangencies: outer equators, a saddle and an outer equator, two
+        # saddles (crossing), the top of one tube and the bottom of another.
+        ('tt_side_touch', thin, torus((5.0, 0.0, 0.0), Z, 2.0, 0.5)),
+        ('tt_saddle_touch', thin, torus((3.0, 0.0, 0.0), Z, 1.125, 0.375)),
+        ('tt_saddles_touch', thin, torus((3.0, 0.0, 0.0), Z, 2.25, 0.75)),
+        ('tt_perpendicular_touch', thin, torus((2.0, 0.0, 2.0), X, 1.0, 0.5)),
+        ('tt_side_touch_near', thin, torus((5.0-near, 0.0, 0.0), Z, 2.0, 0.5)),
+        ('tt_saddles_near', thin, torus((3.0, 0.0, 0.0), Z, 2.25, 0.75+near)),
     ]
 
 

@@ -1,0 +1,56 @@
+case tt_side
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface torus 3.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 0.25
+end
+case tt_link_cut
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface torus 2.0 0.0 0.0 0.0 1.0 0.0 1.0 -0.0 0.0 2.0 1.625
+end
+case tt_ring_round_tube
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface torus 2.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 1.0 0.625
+end
+case tt_parallel_offset
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface torus 1.0 0.0 0.25 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+end
+case tt_through_hole
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface torus 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 1.25 0.375
+end
+case tt_over
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface torus 0.0 0.0 1.0 1.0 0.0 0.0 0.0 1.0 0.0 2.0 0.5
+end
+case tt_tilted
+surface torus 1.0 2.0 3.0 0.0 0.6 0.8 1.0 -0.0 0.0 2.0 0.5
+surface torus 3.0 2.0 3.0 1.0 0.0 0.0 0.0 1.0 0.0 1.0 0.375
+end
+case tt_miss
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface torus 0.0 0.0 5.0 1.0 0.0 0.0 0.0 1.0 0.0 1.0 0.25
+end
+case tt_side_touch
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface torus 5.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+end
+case tt_saddle_touch
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface torus 3.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.125 0.375
+end
+case tt_saddles_touch
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface torus 3.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.25 0.75
+end
+case tt_perpendicular_touch
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface torus 2.0 0.0 2.0 1.0 0.0 0.0 0.0 1.0 0.0 1.0 0.5
+end
+case tt_side_touch_near
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface torus 4.999999046325684 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+end
+case tt_saddles_near
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface torus 3.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.25 0.7500009536743164
+end

@@ -755,6 +755,33 @@ Decisions for S7b.3b, recorded before its code (2026-09-27):
   by a Groebner basis in sympy) and a `GeomInt_IntSS` capture before the
   kernel code.
 
+Decisions for S7b.3b.2, recorded before its code (2026-09-27):
+
+* **The same graph.** Of two tori the carrier is the first by stored data;
+  the other's implicit quartic `(|w|^2 + R2^2 - r2^2)^2 - 4 R2^2 |M2 w|^2`
+  restricted to a meridian circle is still of degree two in `cos t`,
+  `sin t` (`|w|^2` is affine along a circle), so folds, boxes and tracks are
+  S7b.3b.1's with the quartic's gradient and Hessian in the jets.
+* **Tangency exactly.** Two tori touch where their spines have a critical
+  pair at the distance `r1 + r2` or `|r1 - r2|`. For a point `s1` of the
+  first spine (`u`, `v` in a rational basis of its plane, the circle `E0`)
+  the distance to the second spine is critical along it at
+  `D = |w|^2 + R2^2 + 2 sigma R2 rho` (`w = s1 - o2`, `rho = |M2 w|`,
+  `sigma = +-1`); `D = k` gives `2 sigma R2 rho = Q`, `Q = k - |w|^2 - R2^2`,
+  and the criticality along the first spine becomes the cubic
+  `E1 = (w . T1) Q + 2 R2^2 (M2 w . T1)` and the distance the quartic
+  `E2 = Q^2 - 4 R2^2 |M2 w|^2`, `sigma` the sign of `Q`. Both reduce modulo
+  `E0` (its `v^2` coefficient is a nonzero constant) to `c1 v + c0` and
+  `d1 v + d0`; the critical points are the real roots of
+  `a2 c0^2 - a1 c0 c1 + a0 c1^2` with `v = -c0 / c1`, and a tangency where
+  `d0 c1 - d1 c0` vanishes on the algebraic root. `Q = 0` there (the point
+  on the other's axis) and spines meeting with `r1 = r2` are
+  `ComputationLimit`, as are tori touching along a curve.
+* **Evidence first**: the reference with the torus's quartic and its
+  tangencies by a Groebner basis of both spines' points (four coordinates,
+  five equations), and a `GeomInt_IntSS` capture of 14 pairs before the
+  kernel code.
+
 ### S8 — general planar split and face trimming (SplitBody job)
 
 Split any supported solid by an arbitrary plane: face/plane intersection

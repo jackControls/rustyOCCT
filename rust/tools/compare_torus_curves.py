@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Source-pinned GeomInt_IntSS observations beside the S7b.3b reference: a
-torus and a cylinder or a cone off its axis.
+torus and a cylinder, a cone or another torus off its axis.
 
 The independent reference (torus_curve_reference.py) gives every case of
 torus-curve-cases.txt its canonical rows (folds, tangencies, components with
@@ -43,6 +43,8 @@ BOUND = 1e-6
 CAPTURES = {
     's7b3b1': (ROOT/'rust/fixtures/occt-torus-curve-preimplementation', ('tc_', 'tk_'),
                lambda: KERNEL_FILE.exists()),
+    's7b3b2': (ROOT/'rust/fixtures/occt-torus-pair-preimplementation', ('tt_',),
+               lambda: KERNEL_FILE.exists() and 'torus_pair' in KERNEL_FILE.read_text()),
 }
 
 

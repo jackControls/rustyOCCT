@@ -1,0 +1,19 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+  "platform": "darwin",
+  "rust_revision": "be9d330f0cb1de448b7dde8254a8676d78cbb44a",
+  "rust_torus_curve_exists": false,
+  "rust_worktree_uncommitted": [
+    " M rust/fixtures/torus-curve-cases.txt",
+    " M rust/fixtures/torus-curve-expected.tsv",
+    " M rust/fixtures/torus-curve-frames.tsv",
+    " M rust/tools/compare_torus_curves.py",
+    " M rust/tools/generate_torus_curve_fixtures.py",
+    "?? rust/fixtures/occt-torus-pair-preimplementation/"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "b7f0fb7485dda033c84f5e9baea745e16a3664af3ae06c2484833e481a8c8b9d",
+  "probe_source_sha256": "c5d56eb5325d7f932729e371c655839c3e1bcc1daf645fe192020d3504f12090",
+  "observations_sha256": "9b37dc771e54ca895e9d84ca2056c564a34f731e5af8a661a609643830f1f78e"
+}

@@ -1,5 +1,5 @@
 {
-  "note": "Reviewed GeomInt_IntSS differences from the S7b.3b reference.",
+  "note": "Reviewed GeomInt_IntSS differences from the S7b.3b references.",
   "reviews": [
     {
       "case": "tc_tangent_hole",
@@ -71,6 +71,54 @@
       ],
       "reason": "Two of GeomInt_IntSS's four approximated lines (the lower loop near (2, 0, -0.498)) are up to 1.6e-4 from the cone, an approximation error of the walking line.",
       "independent_evidence": "The reference's two loops (where the cone enters the tube's top and bottom) are both covered by native samples; the lines' end points lie on both surfaces within 1e-7.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "tt_side_touch",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "514676241ef9d501f283ef54d1aee529e4aec6e8668e0795d818b24e3311f22e",
+      "differences": [
+        "missed_tangent_point"
+      ],
+      "reason": "GeomInt_IntSS returns nothing for two tori touching at their outer equators: the isolated tangency is not found. The kernel decides it exactly (a critical distance r1 + r2 between the spines).",
+      "independent_evidence": "Both tori have major radius 2 and minor 0.5 about vertical axes through the origin and (5, 0, 0); their spines' nearest points (2, 0, 0) and (3, 0, 0) are 1 = r1 + r2 apart, so the tubes touch only at (2.5, 0, 0).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "tt_saddle_touch",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "0cb5ca9083364dd383c64612585d96da767c1e0f390ee7773635660907f84c83",
+      "differences": [
+        "missed_tangent_point"
+      ],
+      "reason": "GeomInt_IntSS finds the two curves where the smaller torus cuts the larger one but not the isolated point where it touches the larger one's inner equator. The kernel decides the tangency exactly.",
+      "independent_evidence": "The second torus has major radius 1.125 and minor 0.375 about the vertical line through (3, 0, 0), so its outermost point towards the origin is (1.5, 0, 0), on the first torus's inner equator, where both normals point along -x; the spines' points (2, 0, 0) and (1.875, 0, 0) are at the critical distance |r1 - r2| = 0.125 along the x axis, normal to both circles, so the smaller tube touches the larger from inside at (1.5, 0, 0).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "tt_perpendicular_touch",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "514676241ef9d501f283ef54d1aee529e4aec6e8668e0795d818b24e3311f22e",
+      "differences": [
+        "missed_tangent_point"
+      ],
+      "reason": "GeomInt_IntSS returns nothing for a torus resting on top of another's tube at right angles: the isolated tangency is not found. The kernel decides it exactly.",
+      "independent_evidence": "The second torus's spine is the circle of radius 1 about (2, 0, 2) in the plane x = 2, whose lowest point (2, 0, 1) is 1 = r1 + r2 above the first spine's point (2, 0, 0); the segment between them is normal to both circles, so the tubes touch only at (2, 0, 0.5).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "tt_side_touch_near",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "514676241ef9d501f283ef54d1aee529e4aec6e8668e0795d818b24e3311f22e",
+      "differences": [
+        "missed_component"
+      ],
+      "reason": "GeomInt_IntSS returns nothing for two tori 2^-20 closer than touching at their outer equators: the tiny loop (about 1e-3 across) is missed.",
+      "independent_evidence": "The reference's critical meridians (a resultant) and its folds at phi = +-0.00049 give one loop of two folds near (2.5, 0, 0); its points lie on both tori within 1e-70.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     }
   ]
