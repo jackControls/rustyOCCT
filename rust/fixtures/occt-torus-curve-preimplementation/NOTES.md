@@ -23,5 +23,11 @@ closedness and 17 samples, and each isolated point.
   are up to `2.6e-4` off the cone (walking-line approximation), their end
   points on both surfaces.
 
+* The first capture used a cylinder axis `(1, 1, 1)` for `tc_skew`, whose
+  stored normal the reference's emulation of `Frame3::new` and the kernel
+  round one unit in the last place apart (the platform's `hypot`); the case
+  now uses the Pythagorean axis `(0, 3, 4)`, and this capture was retaken
+  with the kernel's torus curve code set aside.
+
 `compare_torus_curves.py` requires every later run to reproduce these rows
 and compares the kernel's results with both.

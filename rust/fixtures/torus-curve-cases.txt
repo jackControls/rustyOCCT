@@ -24,7 +24,7 @@ surface cylinder 2.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.25
 end
 case tc_skew
 surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
-surface cylinder 0.0 1.0 0.25 1.0 1.0 1.0 0.0 1.0 0.0 0.4
+surface cylinder 1.5 0.0 0.25 0.0 3.0 4.0 1.0 0.0 0.0 0.4
 end
 case tc_tilted
 surface torus 1.0 2.0 3.0 0.0 3.0 4.0 1.0 0.0 0.0 2.0 0.5

@@ -7,7 +7,9 @@ off its axis.
 case's canonical rows from `torus_curve_reference.py` (folds, tangencies,
 components and their winding numbers, rings' points), and
 `torus-curve-frames.tsv` each surface's stored unit normal as the reference
-computes `Frame3::new`'s (the kernel must store the same bits). Every class
+computes `Frame3::new`'s (the kernel must store the same bits: every
+normal has a zero coordinate and Pythagorean others, which the platform's
+`hypot` cannot round differently). Every class
 has an exact case (tangencies from outside, inside the hole, over the tube,
 at a saddle where two branches cross) beside near ones. No Rust result
 supplies an expectation.
@@ -37,7 +39,7 @@ def cases():
         ('tc_across_hole', thin, cylinder(o, Y, 1.75)),
         ('tc_enclosing', thin, cylinder(o, X, 2.25)),
         ('tc_vertical_through', thin, cylinder((2.0, 0.0, 0.0), Z, 0.25)),
-        ('tc_skew', thin, cylinder((0.0, 1.0, 0.25), (1.0, 1.0, 1.0), 0.4)),
+        ('tc_skew', thin, cylinder((1.5, 0.0, 0.25), TILT, 0.4)),
         ('tc_tilted', torus((1.0, 2.0, 3.0), TILT, 2.0, 0.5), cylinder((1.0, 2.0, 3.0), X, 0.3)),
         ('tc_miss', thin, cylinder((0.0, 0.0, 5.0), X, 0.5)),
         # Exact tangencies: isolated points and a crossing at a saddle.

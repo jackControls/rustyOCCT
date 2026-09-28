@@ -48,7 +48,7 @@ import mpmath as mp
 
 import analytic_intersection_reference as ana
 from analytic_intersection_reference import cross, dot, mpf, scale, sub, zero
-from procedural_intersection_reference import cone_form, cylinder_form, frame
+from procedural_intersection_reference import cone_form, cylinder_form, frame, unit
 from identity_reference import frame_axes
 
 mp.mp.dps = 80
@@ -59,15 +59,21 @@ class TorusCurve:
         ot, A = torus.axes()
         oo, ao = other.axes()
         toward = sub(ao, scale(A, dot(ao, A)/dot(A, A)))
+        self.other = other
         if zero(toward):
             w = sub(oo, ot)
             toward = sub(w, scale(A, dot(w, A)/dot(A, A)))
         self.o, self.a, self.x, self.y = frame(ot, A, toward)
         self.R, self.r = mpf(torus.radius), mpf(torus.minor)
+        # G's degree in cos t, sin t: two, for a torus too (on a meridian
+        # circle |p - o2|^2 is affine in cos t and sin t).
+        self.deg = 2
         if other.kind == 'cylinder':
             self.f = cylinder_form(oo, ao, other.radius)['f']
-        else:
+        elif other.kind == 'cone':
             self.f = cone_form(oo, ao, other.radius, other.angle)['f']
+        else:
+            self.f = torus_form(oo, ao, other.radius, other.minor)
 
     def point(self, phi, t):
         c, s = mp.cos(phi), mp.sin(phi)
@@ -78,23 +84,19 @@ class TorusCurve:
         return self.f(self.point(phi, t))
 
     def fourier(self, phi):
-        """(c0, c1, s1, c2, s2) of G(phi, t) = c0 + c1 cos t + s1 sin t +
-        c2 cos 2t + s2 sin 2t, from five samples."""
-        ts = [2*mp.pi*k/5 for k in range(5)]
+        """([c_0..c_d], [s_0..s_d]) of G(phi, t) = sum c_j cos jt + s_j sin jt,
+        from 2d + 1 samples."""
+        n = 2*self.deg+1
+        ts = [2*mp.pi*k/n for k in range(n)]
         gs = [self.G(phi, t) for t in ts]
-        c0 = sum(gs)/5
-        c1 = 2*sum(g*mp.cos(t) for g, t in zip(gs, ts))/5
-        s1 = 2*sum(g*mp.sin(t) for g, t in zip(gs, ts))/5
-        c2 = 2*sum(g*mp.cos(2*t) for g, t in zip(gs, ts))/5
-        s2 = 2*sum(g*mp.sin(2*t) for g, t in zip(gs, ts))/5
-        return c0, c1, s1, c2, s2
+        c = [sum(gs)/n]+[2*sum(g*mp.cos(j*t) for g, t in zip(gs, ts))/n for j in range(1, self.deg+1)]
+        s = [mp.mpf(0)]+[2*sum(g*mp.sin(j*t) for g, t in zip(gs, ts))/n for j in range(1, self.deg+1)]
+        return c, s
 
     def roots(self, phi, loose=False):
         """The real roots t in (-pi, pi] of G(phi, .), sorted (with `loose`,
         also those within 1e-12 of the circle: a double root's neighbours)."""
-        c0, c1, s1, c2, s2 = self.fourier(phi)
-        # z^2 G = (c2 - i s2)/2 z^4 + (c1 - i s1)/2 z^3 + c0 z^2 + ...
-        coeffs = [(c2-1j*s2)/2, (c1-1j*s1)/2, c0, (c1+1j*s1)/2, (c2+1j*s2)/2]
+        coeffs = zpoly(*self.fourier(phi))
         while coeffs and abs(coeffs[0]) < mp.mpf(10)**-60:
             coeffs = coeffs[1:]
         out = []
@@ -113,6 +115,25 @@ class TorusCurve:
         return mp.atan2(mp.sin(p), mp.cos(p)), mp.atan2(mp.sin(s), mp.cos(s))
 
 
+def zpoly(c, s):
+    """z^d G in z = e^{it}, highest power first."""
+    d = len(c)-1
+    return [(c[j]-1j*s[j])/2 for j in range(d, 0, -1)]+[c[0]]+[(c[j]+1j*s[j])/2 for j in range(1, d+1)]
+
+
+def torus_form(o, a, R, r):
+    """f(p) = (|w|^2 + R^2 - r^2)^2 - 4 R^2 (|w|^2 - (w . a)^2), w = p - o."""
+    om, am = [mpf(v) for v in o], unit(a)
+    Rm, rm = mpf(R), mpf(r)
+
+    def f(p):
+        w = [x-y for x, y in zip(p, om)]
+        ww = sum(x*x for x in w)
+        h = sum(x*y for x, y in zip(w, am))
+        return (ww+Rm*Rm-rm*rm)**2-4*Rm*Rm*(ww-h*h)
+    return f
+
+
 def wrap(x):
     return mp.atan2(mp.sin(x), mp.cos(x))
 
@@ -123,31 +144,31 @@ def dist(a, b):
 
 def critical_phis(cv):
     """Every meridian angle where G(phi, .) has a double root on the circle
-    (a fold or a tangency): the real roots of the resultant of z^2 G and
-    z^2 G_t in z = e^{it}, a trigonometric polynomial of degree at most 16 in
-    phi found from 64 samples, kept where a double root is on the circle."""
-    def poly(f):
-        c0, c1, s1, c2, s2 = f
-        return [(c2-1j*s2)/2, (c1-1j*s1)/2, c0, (c1+1j*s1)/2, (c2+1j*s2)/2]
+    (a fold or a tangency): the real roots of the resultant of z^d G and
+    z^d G_t in z = e^{it}, a trigonometric polynomial of degree at most
+    4 d^2 in phi (16 for a quadric, 64 for a torus) found from exact samples,
+    kept where a double root is on the circle."""
+    d = cv.deg
 
     def res(phi):
-        c0, c1, s1, c2, s2 = cv.fourier(phi)
-        a = poly((c0, c1, s1, c2, s2))
-        b = poly((0, s1, -c1, 2*s2, -2*c2))
-        rows_ = []
-        for i in range(4):
-            rows_.append([0]*i+a+[0]*(3-i))
-        for i in range(4):
-            rows_.append([0]*i+b+[0]*(3-i))
+        c, s = cv.fourier(phi)
+        a = zpoly(c, s)
+        b = zpoly([0]+[j*s[j] for j in range(1, d+1)], [0]+[-j*c[j] for j in range(1, d+1)])
+        n = 2*d
+        rows_ = [[0]*i+a+[0]*(n-1-i) for i in range(n)]+[[0]*i+b+[0]*(n-1-i) for i in range(n)]
         return mp.det(mp.matrix(rows_))
-    N = 64
+    top = 4*d*d
+    N = 4*top
     samples = [res(2*mp.pi*k/N) for k in range(N)]
-    # R(phi) = sum_{j=-16}^{16} r_j e^{i j phi}.
+    # R(phi) = sum_{j=-top}^{top} r_j e^{i j phi}.
     coeffs = []
-    for j in range(16, -17, -1):
+    for j in range(top, -top-1, -1):
         coeffs.append(sum(v*mp.expj(-j*2*mp.pi*k/N) for k, v in enumerate(samples))/N)
-    while abs(coeffs[0]) < mp.mpf(10)**-50*max(abs(c) for c in coeffs):
+    scale = max(abs(c) for c in coeffs)
+    while abs(coeffs[0]) < mp.mpf(10)**-50*scale:
         coeffs = coeffs[1:]
+    while abs(coeffs[-1]) < mp.mpf(10)**-50*scale:
+        coeffs = coeffs[:-1]
     out = []
     for w in mp.polyroots(coeffs, maxsteps=400, extraprec=400):
         if abs(abs(w)-1) > mp.mpf(10)**-20:
@@ -334,8 +355,11 @@ def tangencies(torus, other):
     """Exact tangencies of a torus and a cylinder: critical points of the
     distance between the torus's spine circle and the cylinder's axis at the
     distance r + r_c or |r - r_c|, by a Groebner basis and sympy's exact
-    roots. [(phi, t, point)]; a cone gives none."""
+    roots. [(spine point, contact point)]; a cone gives none; another torus:
+    `torus_tangencies`."""
     import sympy as sy
+    if other.kind == 'torus':
+        return torus_tangencies(torus, other)
     if other.kind != 'cylinder':
         return []
     ot, A = torus.axes()
@@ -417,3 +441,52 @@ def curve_samples(torus, other, every=6):
         if node_type(cv, phi, t) == 'isolated':
             isolated.append([float(x) for x in p])
     return comps, isolated
+
+
+def torus_tangencies(t1, t2):
+    """Exact tangencies of two tori: pairs of points (s1, s2) of the spine
+    circles whose segment is normal to both circles, at the distance
+    r1 + r2 or |r1 - r2|: five polynomial equations in the four coordinates
+    of the points in rational bases of the spines' planes, by a Groebner basis
+    and sympy's exact roots. [(spine point of t1, contact point)]."""
+    import sympy as sy
+    o1, A1 = t1.axes()
+    o2, A2 = t2.axes()
+    R1, r1, R2, r2 = F(t1.radius), F(t1.minor), F(t2.radius), F(t2.minor)
+    Q = lambda x: sy.Rational(x.numerator, x.denominator)
+
+    def plane(A):
+        U = next(u for u in (cross(A, e) for e in ((1, 0, 0), (0, 1, 0), (0, 0, 1))) if not zero(u))
+        return U, cross(A, U)
+    (U1, V1), (U2, V2) = plane(A1), plane(A2)
+    u1, v1, u2, v2 = sy.symbols('u1 v1 u2 v2', real=True)
+    s1 = [Q(o1[i])+u1*Q(U1[i])+v1*Q(V1[i]) for i in range(3)]
+    s2 = [Q(o2[i])+u2*Q(U2[i])+v2*Q(V2[i]) for i in range(3)]
+    rel1 = [s1[i]-Q(o1[i]) for i in range(3)]
+    rel2 = [s2[i]-Q(o2[i]) for i in range(3)]
+    crossq = lambda a, b: [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]
+    T1 = crossq([Q(x) for x in A1], rel1)
+    T2 = crossq([Q(x) for x in A2], rel2)
+    g = [s1[i]-s2[i] for i in range(3)]
+    base = [sy.expand(sum(x*x for x in rel1)-Q(R1)**2), sy.expand(sum(x*x for x in rel2)-Q(R2)**2),
+            sy.expand(sum(g[i]*T1[i] for i in range(3))), sy.expand(sum(g[i]*T2[i] for i in range(3)))]
+    out = []
+    for k in {(r1+r2)**2, (r1-r2)**2}:
+        system = base+[sy.expand(sum(x*x for x in g)-Q(k))]
+        basis = sy.groebner(system, u1, v1, u2, v2, order='lex')
+        if list(basis) == [1]:
+            continue
+        for sol in sy.solve(list(basis), [u1, v1, u2, v2], dict=True):
+            if not all(sol[x].is_real for x in (u1, v1, u2, v2)):
+                continue
+            sm = [mp.mpf(sy.N(x.subs(sol), 90)) for x in s1]
+            tm = [mp.mpf(sy.N(x.subs(sol), 90)) for x in s2]
+            gap = [b-a for a, b in zip(sm, tm)]
+            n = mp.sqrt(sum(x*x for x in gap))
+            assert n > mp.mpf(10)**-40, 'the spines meet'
+            # The contact is r1 from s1 on the segment, beyond it towards s2
+            # unless inside a thicker tube (k = (r1 - r2)^2 with r2 > r1).
+            sign = -1 if (k != (r1+r2)**2 and r2 > r1) else 1
+            p = [a+sign*mpf(r1)*x/n for a, x in zip(sm, gap)]
+            out.append((sm, p))
+    return out
