@@ -9,9 +9,11 @@ closed form (`step-expected.tsv`); the native probe (occt_step_oracle.cpp)
 reads each file with `STEPControl_Reader` at its defaults. The native bodies
 must be the reference's (matched by centre), valid, with its counts, their
 volumes and areas within 1e-9 relative (BRepGProp's accuracy) and centres
-within 1e-9 of the case's size. `--capture` records the native observations
-before the kernel's importer exists; later runs must reproduce them on every
-platform (counts and verdicts exactly, measures within 1e-9). Differences
+within 1e-9 of the case's size. `--capture step_a` (`step_b`) records the
+native observations of a sub-step's cases before the kernel's importer (its
+translation of the sub-step's entities, `step/spline.rs`) exists; later runs
+must reproduce every capture on every platform (counts and verdicts exactly,
+measures within 1e-9). Differences
 need a fingerprinted review. The kernel's bodies (`step_probe`) must be the reference's, valid,
 with enclosures containing the reference's measures up to 1e-12 relative
 (the file's decimal data are binary64: a surface and its edges agree only
@@ -34,8 +36,13 @@ import generate_step_fixtures as fixtures
 
 SOURCE_FILE = ROOT/'rust/tools/occt_step_oracle.cpp'
 REVIEWS = ROOT/'rust/fixtures/occt-step-divergences.json'
+# Per sub-step: the capture, the kernel file whose absence it records, and
+# its cases (STEP-b's, and STEP-a's the rest).
 CAPTURES = {
-    'step_a': (ROOT/'rust/fixtures/occt-step-preimplementation', ROOT/'rust/kernel/src/step/import.rs'),
+    'step_a': (ROOT/'rust/fixtures/occt-step-preimplementation', ROOT/'rust/kernel/src/step/import.rs',
+               lambda name: name not in fixtures.STEP_B),
+    'step_b': (ROOT/'rust/fixtures/occt-step-b-preimplementation', ROOT/'rust/kernel/src/step/spline.rs',
+               lambda name: name in fixtures.STEP_B),
 }
 TOOLKITS = ['TKDESTEP', 'TKXSBase', 'TKDE', 'TKTopAlgo', 'TKBRep', 'TKGeomAlgo', 'TKGeomBase', 'TKG3d',
             'TKG2d', 'TKMath', 'TKernel']
@@ -46,8 +53,18 @@ BOUND = 1e-9
 KERNEL_BOUND = 1e-12
 
 
-def native_input():
-    return ''.join(f'case {name} {len(text.encode())}\n{text}' for name, text, _ in fixtures.cases())
+_CASES = []
+
+
+def all_cases():
+    """The fixtures' cases, made once (STEP-b's quadratures take seconds)."""
+    if not _CASES:
+        _CASES.extend(fixtures.cases())
+    return _CASES
+
+
+def native_input(keep=lambda name: True):
+    return ''.join(f'case {name} {len(text.encode())}\n{text}' for name, text, _ in all_cases() if keep(name))
 
 
 def parse_native(stdout):
@@ -119,7 +136,7 @@ def differences(native, rows):
 def rust_rows():
     subprocess.run(['cargo', '+stable', 'build', '--release', '--locked', '--example', 'step_probe'],
                    cwd=ROOT, check=True)
-    paths = '\n'.join(str(fixtures.OUT/(name+'.stp')) for name, _, _ in fixtures.cases())+'\n'
+    paths = '\n'.join(str(fixtures.OUT/(name+'.stp')) for name, _, _ in all_cases())+'\n'
     rows = subprocess.run([str(ROOT/'target/release/examples/step_probe')], input=paths,
                           text=True, capture_output=True, timeout=600, check=True).stdout
     out = {}
@@ -173,8 +190,8 @@ def rust_differences(rust, rows, native):
 
 
 def capture(executable, env, key, sdk_manifest):
-    CAPTURE, kernel_file = CAPTURES[key]
-    text = native_input()
+    CAPTURE, kernel_file, keep = CAPTURES[key]
+    text = native_input(keep)
     record = run(executable, text, env)
     if record['exit_code'] != 0:
         raise SystemExit('native STEP run failed: '+json.dumps(record)[:2000])
@@ -196,7 +213,7 @@ def capture(executable, env, key, sdk_manifest):
 
 
 def captured(observed):
-    for CAPTURE, _ in CAPTURES.values():
+    for CAPTURE, _, keep in CAPTURES.values():
         metadata = json.loads((CAPTURE/'capture.json').read_text())
         if metadata['source_reference'] != SOURCE or metadata['rust_step_import_exists']:
             raise ValueError('STEP capture was not a clean pre-implementation reference')
@@ -204,13 +221,13 @@ def captured(observed):
                           ('observations_sha256', 'native.txt')]:
             if metadata[key] != digest(CAPTURE/name):
                 raise ValueError('STEP evidence changed: '+name)
-        if (CAPTURE/'inputs.txt').read_text() != native_input():
+        if (CAPTURE/'inputs.txt').read_text() != native_input(keep):
             raise ValueError('the native inputs differ from the captured ones')
         # Reading these files is not near any degeneracy: every platform must
         # reproduce the capture's counts and verdicts exactly and its measures
         # within 1e-9 (VALIDATION.md's allowance table), no platform record.
         was = parse_native((CAPTURE/'native.txt').read_text())
-        if set(was) != set(observed):
+        if set(was) != {name for name in observed if keep(name)}:
             raise ValueError('native cases differ from the capture')
         for name, (status, bodies) in was.items():
             now = observed[name]
@@ -252,7 +269,7 @@ def main():
     report = {'source_reference': SOURCE, 'oracle': oracle, 'cases': 0, 'bodies': 0,
               'rust_within_reference': 0, 'matches': [], 'reviewed_differences': [], 'failures': []}
     rust = None if args.native_only else rust_rows()
-    for name, _, _ in fixtures.cases():
+    for name, _, _ in all_cases():
         report['cases'] += 1
         rows = expected[name]
         report['bodies'] += len(rows)

@@ -1,0 +1,25 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 STEPControl_Reader",
+  "platform": "darwin",
+  "rust_revision": "651da6bda7d50e00f5bdea2d0e4ab345aa721fec",
+  "rust_step_import_exists": false,
+  "rust_worktree_uncommitted": [
+    " M rust/fixtures/step-expected.tsv",
+    " M rust/tools/compare_step.py",
+    " M rust/tools/generate_step_fixtures.py",
+    " M rust/tools/step_reference.py",
+    "?? rust/fixtures/occt-step-b-preimplementation/",
+    "?? rust/fixtures/step/bspline_patch.stp",
+    "?? rust/fixtures/step/bspline_plate.stp",
+    "?? rust/fixtures/step/bspline_prism.stp",
+    "?? rust/fixtures/step/bspline_trimmed.stp",
+    "?? rust/fixtures/step/cylinder_oblique.stp",
+    "?? rust/fixtures/step/ellipse_sheet.stp",
+    "?? rust/fixtures/step/rational_cylinder.stp"
+  ],
+  "sdk_manifest_sha256": "553c9eb2d70d2b5f3541791bdf5462265c5082fc87fb2e6a96ec290ffed4f90c",
+  "input_sha256": "bb8852864eadf28db03103260e9c407defdd297ff91e7426ca95e08214e45119",
+  "probe_source_sha256": "f89f574c79603758ef2dfb6faab156e73419d887599044eddae7998005086e61",
+  "observations_sha256": "da46e594d2633ecd6d687437943686fe1248eaf6a8810095c30a8616fb11f3cb"
+}

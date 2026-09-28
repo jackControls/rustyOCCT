@@ -37,6 +37,19 @@ fn inside([lo, hi]: [f64; 2], value: f64, size: f64) {
     );
 }
 
+/// STEP-b's fixtures (`generate_step_fixtures.py`'s `STEP_B`): ellipses,
+/// B-splines and the file's pcurves, which the importer does not translate
+/// yet (`step/spline.rs`).
+const STEP_B: [&str; 7] = [
+    "ellipse_sheet",
+    "cylinder_oblique",
+    "bspline_plate",
+    "bspline_prism",
+    "bspline_patch",
+    "bspline_trimmed",
+    "rational_cylinder",
+];
+
 #[test]
 fn fixtures_import_as_the_reference() {
     let table = std::fs::read_to_string(fixtures().join("step-expected.tsv")).unwrap();
@@ -44,6 +57,14 @@ fn fixtures_import_as_the_reference() {
     for line in table.lines().skip(1) {
         let w: Vec<&str> = line.split('\t').collect();
         let (name, entity, class) = (w[0], w[1].parse::<u64>().unwrap(), w[2]);
+        if STEP_B.contains(&name) {
+            let imported = import(&fixture(name)).unwrap();
+            assert!(
+                matches!(imported.bodies[0].result, Err(Rejected::Unsupported(_))),
+                "{name}"
+            );
+            continue;
+        }
         let counts: Vec<usize> = w[3].split(' ').map(|c| c.parse().unwrap()).collect();
         let centre: Vec<f64> = w[6].split(' ').map(|c| c.parse().unwrap()).collect();
         let area: f64 = w[5].parse().unwrap();
