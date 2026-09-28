@@ -681,7 +681,11 @@ def transform_matrix(t):
 
 
 def native_case(c):
-    """Explicit OCCT construction rows for occt_history_oracle.cpp."""
+    """Explicit OCCT construction rows for occt_history_oracle.cpp (and
+    occt_split_oracle.cpp). A face or wire body (S6, `make`) has its frame's
+    plane (the start offset is 0), its boundaries' `wire` rows (a wire body
+    its first boundary's only) and a `make face` or `make wire` row in place
+    of the `prism` vector (S8e)."""
     if c.box is not None:
         (ox, oy, oz), size = c.box
         frame = (0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0)
@@ -690,6 +694,10 @@ def native_case(c):
         transforms = [('T', corner)]+list(c.transforms)
     else:
         frame, start, end, boundaries, transforms = c.frame, c.start, c.end, c.boundaries, c.transforms
+    if c.make is not None:
+        assert start == 0.0 and end == 0.0 and c.make in ('face', 'wire'), f'{c.name}: a face or wire body'
+        if c.make == 'wire':
+            boundaries = boundaries[:1]
     o, x, y, n = frame_axes(frame)
     at = lambda p: tuple(o[i]+x[i]*p[0]+y[i]*p[1]+n[i]*start for i in range(3))
     rows = [f'case {c.name}', 'plane '+' '.join(number(v) for v in (*at((0.0, 0.0)), *n, *x))]
@@ -711,7 +719,10 @@ def native_case(c):
             rows.append(' '.join(words))
         else:
             rows.append(f'wire P {len(pts)} '+' '.join(number(v) for p in pts for v in at(p)))
-    rows.append('prism '+' '.join(number(n[i]*(end-start)) for i in range(3)))
+    if c.make is not None:
+        rows.append(f'make {c.make}')
+    else:
+        rows.append('prism '+' '.join(number(n[i]*(end-start)) for i in range(3)))
     for t in transforms:
         rows.append('transform '+' '.join(number(v) for row in transform_matrix(t) for v in row))
     rows.append('end')
