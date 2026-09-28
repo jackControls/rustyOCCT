@@ -121,14 +121,14 @@ fn det(mut m: Vec<Vec<R>>) -> R {
             m.swap(pivot, col);
             sign = -sign;
         }
-        for r in (col + 1)..n {
-            if m[r][col] == zero() {
+        let pivot_row = m[col].clone();
+        for row in m.iter_mut().skip(col + 1) {
+            if row[col] == zero() {
                 continue;
             }
-            let f = &m[r][col] / &m[col][col];
-            for c in col..n {
-                let v = &f * &m[col][c];
-                m[r][c] -= v;
+            let f = &row[col] / &pivot_row[col];
+            for (x, p) in row.iter_mut().zip(&pivot_row).skip(col) {
+                *x -= &f * p;
             }
         }
     }

@@ -4,10 +4,11 @@ S9 of `REVIEW_NOTES.md` fuses, cuts and intersects solids (the Combine
 job): the faces intersected (S7), split (S8), classified by regions and
 assembled into shells and regions, with complete histories. This document
 describes what is implemented; the decisions are in `REVIEW_NOTES.md` (S9).
-S9a is implemented (`profile/boolean.rs`, `solid/boolean.rs`, S9a.2's
-stacks in `solid/boolean/stack.rs`) but for spline profiles, and S9b.1's
-polyhedral prisms in any relative position (`solid/boolean/polyhedra.rs`);
-S9b.2 (general polyhedral inputs), S9c and S9d are not.
+S9a is implemented (`profile/boolean.rs` with its spline meetings in
+`profile/boolean/splines.rs`, `solid/boolean.rs`, S9a.2's stacks in
+`solid/boolean/stack.rs`), and S9b.1's polyhedral prisms in any relative
+position (`solid/boolean/polyhedra.rs`); S9b.2 (general polyhedral
+inputs), S9c and S9d are not.
 
 ## Contract
 
@@ -21,8 +22,9 @@ prism's exact queries; any other is a general body built through
 `TopologyParts` and validated before it is returned. An error is one of:
 
 * `OutOfDomain`: a pair of a later sub-step (arcs or circles in frames
-  whose axes differ, S9c; spline profiles, S9a.2; an input other than a
-  prism, S9b.2), or a stack's cavity in a result of several solids.
+  whose axes differ, S9c; an input other than a prism, S9b.2), two spline
+  segments along one curve in different forms or a spline span along a
+  line, or a stack's cavity in a result of several solids.
 * `Degenerate`: a crossing within the resolution of a vertex, two crossings
   within it of each other, a piece thinner than the resolution, or a result
   touching itself at a point or along an edge (two solids sharing an edge,
@@ -179,6 +181,35 @@ elsewhere lies on the input edges and faces through it; a solid continues
 the regions of the inputs whose faces it continues (a cut's: the object's),
 a cavity's void is generated from the tool's region.
 
+### Spline profiles (S9a.2)
+
+Either profile may hold S8b's nonrational spline segments
+(`profile/boolean/splines.rs`). A spline meets a line where the line's
+equation has a root on one of its Bézier arcs (S8b.3's `meets`), a circle
+where `(x - c_x)^2 + (y - c_y)^2 - r^2` does (degree `2p`, the same
+isolation), and another spline where each arc's parameter is a root of the
+resultant of the other arc's implicit equation on it: `Res_t(x(t) - X,
+y(t) - Y)` (a Sylvester determinant, exact) evaluated on the other arc's
+points at `p q + 1` rational parameters and interpolated exactly, both ways,
+each root paired with the one root whose certified point box meets it
+(refined until one partner or none remains; two is `ComputationLimit`). A
+crossing is at the spline's parameter rounded to binary64, the vertex the
+curve's exact point there rounded; a root of even multiplicity is a
+tangency and cuts nothing, one of two splines is refused (`Degenerate`),
+and an identically vanishing resultant or equation (a spline along another
+curve) is `OutOfDomain` unless the two segments are one curve, equal or
+with reversed poles and mirrored knots, whose pieces are then shared like
+one circle's. A vertex within the resolution of a spline cuts it at its
+nearest parameter (the distance's derivative's roots, decided exactly at
+the rounded parameter). Pieces are ordered by parameter, classified at the
+fraction `0.4453125` of their parameter range, and a traced result joins
+consecutive pieces of one segment into its exact restriction between their
+outer ends (S8b.3's knot insertion), its end poles set to the result's
+vertices (within rounding of the restriction's own ends). A stack's walls
+on one spline segment are one face on that segment's whole degree-`(p, 1)`
+wall (S8b's) where they join, their pcurves lines in (curve parameter,
+height); its horizontal edges on a spline are its lifted restrictions.
+
 ## Evidence
 
 * **Case protocol.** A Boolean case (`identity_reference.
@@ -293,9 +324,12 @@ a cavity's void is generated from the tool's region.
   (the three-span wave S8b's split capture reviewed), while Green's theorem
   over OCCT's own cap edges agrees with the reference within 4.5e-8. OCCT
   keeps tangency points as vertices and edges (a tangency cuts nothing in
-  the decisions) and returns one valid solid for the degenerate case. The
-  probe reports `unsupported` on all 46, which the comparison requires
-  while the kernel refuses spline profiles.
+  the decisions) and returns one valid solid for the degenerate case.
+  The kernel (S9a.2's splines): 45 results inside the reference, the
+  degenerate one refused, every count OCCT's after unifying but four
+  reviewed tangencies (OCCT keeps the touching point as vertices and edges
+  on the dome's wall); `tests/booleans.rs` checks the same and every
+  fixture's history.
 * **Kernel (S9a).** All 45 cases: 42 results inside the reference with
   the reference's solid count (each solid's volume, area and centre
   enclosed), 5 of them empty and 6 S9a.2 stacks among them, and the 3

@@ -40,7 +40,7 @@ fn spline(
 }
 
 /// S8b.3's spline profiles on dyadic sizes.
-fn spline_profile(kind: u8, s: f64, t: f64) -> Option<Profile> {
+pub(crate) fn spline_profile(kind: u8, s: f64, t: f64) -> Option<Profile> {
     let tol = Tolerance::default();
     let (outer, holes) = match kind % 3 {
         // A rectangle whose right side bulges to x = s + t / 2.

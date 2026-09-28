@@ -2752,6 +2752,23 @@ Decisions for S9, recorded before its code (2026-09-28):
     2.1e-4), and `occt-boolean-spline-preimplementation`: all valid with the
     reference's solids, 37 within 2e-8, 9 reviewed (BRepGProp on B-spline
     faces, up to 8.0e-4), the kernel `unsupported` on all 46.
+  * S9a.2's spline profiles implemented (`profile/boolean/splines.rs`):
+    all 46 spline fixtures as the reference (45 results, the degenerate one
+    refused) and OCCT's unified counts but four reviewed tangencies (OCCT
+    keeps the touching point as vertices and edges); every fixture's
+    history checked; the `boolean` target's spline profiles (900 spline
+    variants of its corpus replaying clean). Amendments, from the
+    implementation: (a) two splines tangent where they meet are refused
+    (`Degenerate`): the decisions left that tangency's side undecided and no
+    fixture holds one; (b) one curve in either direction is equal poles,
+    knots and range, or reversed poles with knots and range mirrored
+    exactly; (c) a spline piece's end poles are set to the arrangement's
+    vertex (a crossing of two splines is one point; each restriction's own
+    end is within rounding of it); (d) a stack's walls on one spline
+    segment lie on that segment's whole degree-`(p, 1)` wall, joined across
+    its pieces' ends and slab heights; (e) `translated` moves a spline's
+    poles exactly (it cloned them: an offset spline tool failed as an
+    invalid curve, found by the evidence track). Pending: the campaign.
   * S9b's evidence (a parallel start, before S9a.2's splines end): the
     decisions above, then `polyhedral_reference.py` and 45 fixtures
     (`generate_polyhedral_fixtures.py --check`: S9a's slicing on its 21

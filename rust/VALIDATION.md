@@ -653,7 +653,9 @@ count, all 45 within 2e-8 of the reference (6.1e-15 at worst), no review.
 With S9a.1 and S9a.2's stacks, `boolean_probe` puts every result inside the
 reference with the reference's solid count (42 cases; 5 empty, 6 stacks)
 and refuses the 3 degenerate ones, every count equal to OCCT's after
-unifying; `booleans.rs` checks the same and every history. S9a.2's spline
+unifying; `booleans.rs` checks the same and every history. With S9a.2's
+spline profiles it does the same on the 46 spline cases (45 inside, the
+degenerate one refused), four tangencies' counts reviewed. S9a.2's spline
 profiles, before their kernel code: the same generator writes 46 Booleans of
 prisms whose profiles hold S8b's splines (`boolean-spline-cases.txt`; 14
 fuses, 16 cuts, 16 commons, 18 tilted) from `boolean_reference.SplinePair`
