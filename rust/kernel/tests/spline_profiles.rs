@@ -87,25 +87,72 @@ fn a_spline_prism_validates_with_its_certified_mass() {
 }
 
 #[test]
-fn a_spline_turning_a_quarter_turn_is_out_of_domain() {
-    // A quadratic whose legs turn through 90 degrees.
+fn a_spline_turning_through_a_half_turn_is_valid() {
+    // A 4 x 2 rectangle whose left side is a cubic end bulging to x = -9/8
+    // and turning through a half-turn: the end adds 9/5.
     let points = vec![
         Point2::new(0.0, 0.0),
-        Point2::new(2.0, 0.0),
+        Point2::new(4.0, 0.0),
+        Point2::new(4.0, 2.0),
         Point2::new(0.0, 2.0),
     ];
     let segments = vec![
         Segment::Line,
+        Segment::Line,
+        Segment::Line,
         spline(
-            &[(2.0, 0.0), (2.0, 2.0), (0.0, 2.0)],
+            &[(0.0, 2.0), (-1.5, 2.0), (-1.5, 0.0), (0.0, 0.0)],
             vec![0.0, 1.0],
-            vec![3, 3],
+            vec![4, 4],
+        ),
+    ];
+    let b = Boundary::path(points, segments, tol()).expect("a valid half-turn end");
+    let area = 8.0 + 9.0 / 5.0;
+    assert!((b.area() - area).abs() <= 1e-14 * area, "{}", b.area());
+    let profile = Profile::new(b, vec![], tol()).expect("a profile");
+    let (solid, _) = Solid::extrude_with(OperationId(1), profile, Frame3::xy(), 0.0, 1.0)
+        .expect("a half-turn spline prism");
+    let m = solid
+        .topology()
+        .mass_enclosure()
+        .expect("certified mass properties");
+    assert!(m.volume[0] <= area * (1.0 + 1e-14) && area * (1.0 - 1e-14) <= m.volume[1]);
+}
+
+#[test]
+fn a_spline_with_a_cusp_is_refused() {
+    // A cubic whose derivative vanishes at its middle, closed by a line:
+    // its two halves double back at the cusp.
+    let points = vec![Point2::new(0.0, 0.0), Point2::new(2.0, 0.0)];
+    let segments = vec![
+        spline(
+            &[(0.0, 0.0), (2.0, 2.0), (0.0, 2.0), (2.0, 0.0)],
+            vec![0.0, 1.0],
+            vec![4, 4],
         ),
         Segment::Line,
     ];
     assert!(matches!(
         Boundary::path(points, segments, tol()),
-        Err(Error::OutOfDomain(_))
+        Err(Error::SelfIntersection)
+    ));
+}
+
+#[test]
+fn a_spline_looping_over_itself_is_refused() {
+    // A cubic crossing itself before it returns to the line's far end.
+    let points = vec![Point2::new(0.0, 0.0), Point2::new(4.0, 0.0)];
+    let segments = vec![
+        Segment::Line,
+        spline(
+            &[(4.0, 0.0), (-2.0, 4.0), (6.0, 4.0), (0.0, 0.0)],
+            vec![0.0, 1.0],
+            vec![4, 4],
+        ),
+    ];
+    assert!(matches!(
+        Boundary::path(points, segments, tol()),
+        Err(Error::SelfIntersection)
     ));
 }
 

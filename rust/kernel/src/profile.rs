@@ -114,12 +114,7 @@ fn spline_parts(
     let parts = decide::splines::spline(span).ok_or(Error::InvalidCurve(
         "a spline profile segment's Bézier arcs",
     ))?;
-    if !decide::splines::quarter_turn(&parts) {
-        return Err(Error::OutOfDomain(
-            "a spline profile segment turning through a quarter-turn or more (split it)",
-        ));
-    }
-    Ok(parts)
+    decide::splines::simple(parts).ok_or(Error::OutOfDomain("a spline profile segment with a cusp"))
 }
 
 /// Every segment of a path as screen parts.
@@ -403,6 +398,11 @@ impl Boundary {
         // S8b: a path with a spline segment by the spline screen.
         if segments.iter().any(|s| matches!(s, Segment::Spline(_))) {
             let parts = path_parts(&points, &segments)?;
+            for (segment, own) in segments.iter().zip(&parts) {
+                if matches!(segment, Segment::Spline(_)) && !decide::splines::self_apart(own, tol) {
+                    return Err(Error::SelfIntersection);
+                }
+            }
             for i in 0..count {
                 let j = (i + 1) % count;
                 if !decide::splines::adjacent_valid(&parts[i], &parts[j], tol, count == 2) {

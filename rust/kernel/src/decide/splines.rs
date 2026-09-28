@@ -543,25 +543,68 @@ pub(crate) fn adjacent_valid(a: &[Part], b: &[Part], t: f64, closed_pair: bool) 
     Screen { work: 0 }.pairs(a, b, t, &joints)
 }
 
-/// Whether a spline's control polygon turns through less than a
-/// quarter-turn: every leg's direction within an open right angle.
-pub(crate) fn quarter_turn(parts: &[Part]) -> bool {
-    let mut legs: Vec<P> = Vec::new();
-    for part in parts {
-        if let Part::Bezier(cps) = part {
-            for w in cps.windows(2) {
-                let d = sub(&w[1], &w[0]);
-                if !is_zero(&d) {
-                    legs.push(d);
+/// A spline's Bézier arcs cut into pieces whose control polygons turn
+/// through less than a half-turn: each is monotone along a direction, so
+/// simple. A cusp's halves end at its stationary point and double back
+/// there (the self screen refuses them); `None` when a turn does not narrow
+/// within the subdivision limit.
+pub(crate) fn simple(parts: Vec<Part>) -> Option<Vec<Part>> {
+    let narrow = |part: &Part| {
+        let Part::Bezier(cps) = part else {
+            return true;
+        };
+        let legs: Vec<P> = cps
+            .windows(2)
+            .map(|w| sub(&w[1], &w[0]))
+            .filter(|d| !is_zero(d))
+            .collect();
+        Sector::of(&legs).is_some()
+    };
+    let mut out = Vec::new();
+    let mut stack: Vec<(Part, usize)> = parts.into_iter().rev().map(|p| (p, 0)).collect();
+    while let Some((part, depth)) = stack.pop() {
+        if narrow(&part) {
+            out.push(part);
+            continue;
+        }
+        if depth >= SIMPLE_DEPTH {
+            return None;
+        }
+        let [left, right] = part.halves();
+        stack.push((right, depth + 1));
+        stack.push((left, depth + 1));
+    }
+    Some(out)
+}
+
+/// Subdivisions of a Bézier arc to narrow its turn.
+const SIMPLE_DEPTH: usize = 12;
+
+/// Whether a segment's simple pieces stay farther apart than `t` from each
+/// other, consecutive ones except at their shared point.
+pub(crate) fn self_apart(parts: &[Part], t: f64) -> bool {
+    let mut screen = Screen { work: 0 };
+    for i in 0..parts.len() {
+        for j in (i + 1)..parts.len() {
+            let joints: Vec<P> = if j == i + 1 {
+                match parts[i].segment_ends()[1].clone() {
+                    Some(p) => vec![p],
+                    None => return false,
                 }
+            } else {
+                Vec::new()
+            };
+            if !screen.pairs(
+                std::slice::from_ref(&parts[i]),
+                std::slice::from_ref(&parts[j]),
+                t,
+                &joints,
+            ) {
+                return false;
             }
         }
     }
-    let Some(sector) = Sector::of(&legs) else {
-        return false;
-    };
-    // Less than a right angle: the extremes' dot product positive.
-    dot(&sector.lo, &sector.hi) > zero()
+    true
 }
 
 /// Whether a point lies within `t` of a segment's parts (or undecided).
