@@ -345,12 +345,11 @@ impl Arrangement {
         let fc = a * q(center.x) + b * q(center.y) + d;
         let ab2 = a * a + b * b;
         let delta = &fc * &fc - q(radius) * q(radius) * &ab2;
+        // A tangency cuts nothing: the pieces on either side of it lie on
+        // one side of the other boundary (a result touching itself there is
+        // refused when it is traced or validated).
         let points: Vec<[I; 2]> = match delta.cmp(&zero()) {
-            Ordering::Greater => return Ok(()),
-            Ordering::Equal => {
-                let foot = [q(center.x) - &fc * a / &ab2, q(center.y) - &fc * b / &ab2];
-                vec![[I::exact(foot[0].clone()), I::exact(foot[1].clone())]]
-            }
+            Ordering::Greater | Ordering::Equal => return Ok(()),
             Ordering::Less => circle_points(center, radius, &[a.clone(), b.clone(), d.clone()])?,
         };
         for x in points {
@@ -680,7 +679,9 @@ pub(crate) fn boolean(a: &Profile, b: &Profile, op: Op2) -> Result<Boolean2> {
         let seg = &arr.segs[s];
         let mut chain: Vec<Option<PId>> = Vec::new();
         match seg.shape {
-            Shape::Circle { .. } if ev.is_empty() => {
+            // A circle cut at one point only (another's vertex on it) stays
+            // whole.
+            Shape::Circle { .. } if ev.len() < 2 => {
                 pieces.push(Piece {
                     seg: s,
                     part: 0,

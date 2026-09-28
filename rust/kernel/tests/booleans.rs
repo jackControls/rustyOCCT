@@ -238,3 +238,161 @@ fn an_arc_profile_cut_by_a_box() {
     assert!((volume(&c) - (area - 2.0)).abs() < 1e-12, "{}", volume(&c));
     check(&a, &b, &c, &h);
 }
+
+fn circle(x: f64, y: f64, r: f64) -> Boundary {
+    Boundary::circle(Point2::new(x, y), r, tol()).unwrap()
+}
+
+#[test]
+fn tangent_cylinders() {
+    use rusty_occt::Error;
+    // Outside each other, touching at (1, 0): a fuse would touch itself
+    // along a line, the common is empty.
+    let a = prism(circle(0.0, 0.0, 1.0), vec![], Frame3::xy(), 0.0, 1.0, 1);
+    let b = prism(circle(2.0, 0.0, 1.0), vec![], Frame3::xy(), 0.0, 1.0, 2);
+    assert!(matches!(
+        a.fuse(OperationId(3), &b),
+        Err(Error::Degenerate(_))
+    ));
+    let (m, h) = a.common(OperationId(4), &b).unwrap();
+    assert!(m.is_empty());
+    check(&a, &b, &m, &h);
+    let (c, h) = a.cut(OperationId(5), &b).unwrap();
+    assert!((volume(&c) - std::f64::consts::PI).abs() < 1e-12);
+    check(&a, &b, &c, &h);
+    // Inside, touching at (2, 0): the fuse is the big one, the common the
+    // small one, the cut would touch itself.
+    let big = prism(circle(0.0, 0.0, 2.0), vec![], Frame3::xy(), 0.0, 1.0, 6);
+    let small = prism(circle(1.0, 0.0, 1.0), vec![], Frame3::xy(), 0.0, 1.0, 7);
+    let (f, h) = big.fuse(OperationId(8), &small).unwrap();
+    assert!((volume(&f) - 4.0 * std::f64::consts::PI).abs() < 1e-12);
+    check(&big, &small, &f, &h);
+    let (m, h) = big.common(OperationId(9), &small).unwrap();
+    assert!((volume(&m) - std::f64::consts::PI).abs() < 1e-12);
+    check(&big, &small, &m, &h);
+    assert!(matches!(
+        big.cut(OperationId(10), &small),
+        Err(Error::Degenerate(_))
+    ));
+}
+
+#[test]
+fn arcs_of_one_circle() {
+    // Two half-discs of the unit circle overlapping in a quarter.
+    let half = |a0: f64, op: u64| {
+        let (c, s) = (a0.cos(), a0.sin());
+        let p = Point2::new(c, s);
+        let q = Point2::new(-c, -s);
+        let boundary = Boundary::path(
+            vec![p, q],
+            vec![
+                Segment::Arc {
+                    center: Point2::new(0.0, 0.0),
+                    radius: 1.0,
+                    ccw: true,
+                },
+                Segment::Line,
+            ],
+            tol(),
+        )
+        .unwrap();
+        prism(boundary, vec![], Frame3::xy(), 0.0, 1.0, op)
+    };
+    let a = half(0.0, 1);
+    let b = half(std::f64::consts::FRAC_PI_2, 2);
+    let (m, h) = a.common(OperationId(3), &b).unwrap();
+    assert!(
+        (volume(&m) - std::f64::consts::FRAC_PI_4).abs() < 1e-9,
+        "{}",
+        volume(&m)
+    );
+    check(&a, &b, &m, &h);
+    let (f, h) = a.fuse(OperationId(4), &b).unwrap();
+    assert!(
+        (volume(&f) - 3.0 * std::f64::consts::FRAC_PI_4).abs() < 1e-9,
+        "{}",
+        volume(&f)
+    );
+    check(&a, &b, &f, &h);
+}
+
+#[test]
+fn a_vertex_on_the_others_edge() {
+    // A triangle whose apex lies on the square's top edge.
+    let a = prism(rect(0.0, 0.0, 4.0, 4.0), vec![], Frame3::xy(), 0.0, 1.0, 1);
+    let tri = Boundary::polygon(
+        vec![
+            Point2::new(1.0, 6.0),
+            Point2::new(3.0, 6.0),
+            Point2::new(2.0, 4.0),
+        ],
+        tol(),
+    )
+    .unwrap();
+    let b = prism(tri, vec![], Frame3::xy(), 0.0, 1.0, 2);
+    let (m, h) = a.common(OperationId(3), &b).unwrap();
+    assert!(m.is_empty());
+    check(&a, &b, &m, &h);
+    let tri = Boundary::polygon(
+        vec![
+            Point2::new(1.0, 2.0),
+            Point2::new(3.0, 2.0),
+            Point2::new(2.0, 4.0),
+        ],
+        tol(),
+    )
+    .unwrap();
+    let inner = prism(tri, vec![], Frame3::xy(), 0.0, 1.0, 4);
+    let (m, h) = a.common(OperationId(5), &inner).unwrap();
+    assert!((volume(&m) - 2.0).abs() < 1e-12);
+    check(&a, &inner, &m, &h);
+}
+
+#[test]
+fn a_holed_box_and_a_tool() {
+    let a = prism(
+        rect(0.0, 0.0, 6.0, 6.0),
+        vec![circle(3.0, 3.0, 1.0)],
+        Frame3::xy(),
+        0.0,
+        1.0,
+        1,
+    );
+    // Through the hole: the common is the box's part around it, in two.
+    let b = prism(
+        rect(2.5, -1.0, 3.5, 7.0),
+        vec![],
+        Frame3::xy(),
+        -1.0,
+        2.0,
+        2,
+    );
+    let (m, h) = a.common(OperationId(3), &b).unwrap();
+    assert_eq!(m.len(), 2);
+    let band = 0.75f64.sqrt() + std::f64::consts::PI / 3.0;
+    let expected = 6.0 - band;
+    assert!((volume(&m) - expected).abs() < 1e-12, "{}", volume(&m));
+    check(&a, &b, &m, &h);
+    let (c, h) = a.cut(OperationId(4), &b).unwrap();
+    assert_eq!(c.len(), 2);
+    assert!((volume(&c) - (36.0 - std::f64::consts::PI - expected)).abs() < 1e-12);
+    check(&a, &b, &c, &h);
+}
+
+#[test]
+fn stacks_wait_for_s9a2() {
+    use rusty_occt::Error;
+    let a = prism(rect(0.0, 0.0, 4.0, 4.0), vec![], Frame3::xy(), 0.0, 1.0, 1);
+    let b = prism(rect(1.0, 1.0, 3.0, 3.0), vec![], Frame3::xy(), 0.5, 2.0, 2);
+    assert!(matches!(
+        a.fuse(OperationId(3), &b),
+        Err(Error::OutOfDomain(_))
+    ));
+    assert!(matches!(
+        a.cut(OperationId(4), &b),
+        Err(Error::OutOfDomain(_))
+    ));
+    let (m, h) = a.common(OperationId(5), &b).unwrap();
+    assert!((volume(&m) - 2.0).abs() < 1e-12);
+    check(&a, &b, &m, &h);
+}
