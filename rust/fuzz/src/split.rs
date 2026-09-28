@@ -13,7 +13,12 @@
 //! S8b.3: a leading byte in `192..224` takes a spline profile instead (a
 //! rectangle with a quadratic bulge, a wave of three quadratic spans, a
 //! square with a lens hole of two cubics given either way round), with the
-//! tangent modes touching the spline at its apex.
+//! tangent modes touching the spline at its apex. S8e: a leading byte in
+//! `160..192` takes a sheet or a closed wire of any of those profiles (a
+//! wire the outer boundary), split by a plane through a dyadic point,
+//! through a vertex, along an edge, tangent, parallel to the body or in its
+//! plane, or at an angle: the measures (areas or lengths) add up, each piece
+//! lies on its side and moves rigidly with its ids.
 use crate::analytic_intersections::Bytes;
 use rusty_occt::identity::OperationId;
 use rusty_occt::topology::SplineSpan;
@@ -238,7 +243,141 @@ pub fn check_split(data: &[u8]) {
     if data.first().is_some_and(|k| *k >= 192) {
         return check_prism(&data[1..], true);
     }
+    if data.first().is_some_and(|k| *k >= 160) {
+        return check_body(&data[1..]);
+    }
     check_prism(data, false);
+}
+
+/// S8e: a sheet or a closed wire split by a plane.
+fn check_body(data: &[u8]) {
+    use rusty_occt::Body;
+    let mut b = Bytes(data, 0);
+    let (kind, mode, flags) = (b.next(), b.next() % 8, b.next());
+    let (splined, wire, tilted) = (flags & 1 == 1, flags & 2 == 2, flags & 4 == 4);
+    let s = 1.0 + f64::from(b.next() % 32) / 4.0;
+    let t = 0.5 + f64::from(b.next() % 32) / 8.0;
+    let made = if splined {
+        spline_profile(kind, s, t)
+    } else {
+        profile(kind, s, t)
+    };
+    let Some(p) = made else { return };
+    let o = Point3::new(b.dyadic(), b.dyadic(), b.dyadic());
+    let frame = if !tilted {
+        Frame3::xy()
+    } else {
+        match Frame3::new(
+            o,
+            Vec3::new(0.0, 3.0, 4.0),
+            Vec3::new(1.0, 0.0, 0.0),
+            Tolerance::default(),
+        ) {
+            Ok(f) => f,
+            Err(_) => return,
+        }
+    };
+    let made = if wire {
+        Body::wire_from_boundary_with(OperationId(1), p.outer().clone(), frame, p.tolerance())
+    } else {
+        Body::face_from_profile_with(OperationId(1), p.clone(), frame)
+    };
+    let Ok((body, _)) = made else { return };
+    let at = |u: f64, v: f64, w: f64| frame.point(Point2::new(u, v), w);
+    let dir = |u: f64, v: f64, w: f64| frame.x() * u + frame.y() * v + frame.normal() * w;
+    let (a, c) = (b.small(), b.small());
+    let vertex = match p
+        .outer()
+        .polygon_vertices()
+        .or(p.outer().path_geometry().map(|g| g.0))
+    {
+        Some(v) if !v.is_empty() => v[b.next() as usize % v.len()],
+        _ => Point2::new(0.0, 0.0),
+    };
+    let (point, normal) = match mode {
+        0 => (at(b.dyadic(), b.dyadic(), 0.0), dir(a, c, 0.0)),
+        1 => (at(vertex.x, vertex.y, 0.0), dir(a, c, 0.0)),
+        2 => match p.outer().polygon_vertices() {
+            Some(v) if v.len() > 1 => {
+                let k = b.next() as usize % v.len();
+                let (p0, p1) = (v[k], v[(k + 1) % v.len()]);
+                (at(p0.x, p0.y, 0.0), dir(p0.y - p1.y, p1.x - p0.x, 0.0))
+            }
+            _ => return,
+        },
+        // Tangent to the stadium's arc, the hole, the bulge or the lens.
+        3 => match (splined, kind % if splined { 3 } else { 6 }) {
+            (false, 2) => (at(s + t, 0.0, 0.0), dir(1.0, 0.0, 0.0)),
+            (false, 4) => (at(t.min(s * 0.75), 0.0, 0.0), dir(1.0, 0.0, 0.0)),
+            (true, 0) => (at(s + t / 2.0, 0.0, 0.0), dir(1.0, 0.0, 0.0)),
+            (true, 2) => (at(0.0, 3.0 * s / 8.0, 0.0), dir(0.0, 1.0, 0.0)),
+            _ => return,
+        },
+        // Parallel to the body, off it or in its plane.
+        4 => (
+            at(0.0, 0.0, f64::from(b.next() % 3) - 1.0),
+            dir(0.0, 0.0, 1.0),
+        ),
+        // Through a vertex at an angle.
+        5 => (at(vertex.x, vertex.y, 0.0), dir(a, c, 1.0)),
+        _ => (at(b.dyadic(), b.dyadic(), 0.0), dir(a, c, b.small())),
+    };
+    if normal.length() == 0.0 {
+        return;
+    }
+    let hint = if normal.x.abs() < 0.5 * normal.length() {
+        Vec3::new(1.0, 0.0, 0.0)
+    } else {
+        Vec3::new(0.0, 1.0, 0.0)
+    };
+    let Ok(plane) = Frame3::new(point, normal, hint, Tolerance::default()) else {
+        return;
+    };
+    let (pieces, _history) = match body.split_by_plane(OperationId(2), plane) {
+        Ok(r) => r,
+        Err(Error::ComputationLimit(_) | Error::Degenerate(_)) => return,
+        Err(e) => panic!("unexpected error {e}"),
+    };
+    let measure = |x: &Body| {
+        let m = x.measure().expect("a certified measure");
+        (0.5 * m.measure[0] + 0.5 * m.measure[1], m.centre)
+    };
+    let total: f64 = pieces.iter().map(|(_, x)| measure(x).0).sum();
+    let whole = measure(&body).0;
+    assert!(
+        (total - whole).abs() <= 1e-9 * whole.max(1.0),
+        "{total} for {whole}"
+    );
+    if pieces.len() == 1 {
+        assert_eq!(
+            pieces[0].1.topology().body_id(),
+            body.topology().body_id(),
+            "unchanged"
+        );
+        return;
+    }
+    let motion =
+        rusty_occt::RigidTransform::rotation(o, Vec3::new(1.0, 2.0, 2.0), 0.5).expect("a rotation");
+    for (side, piece) in &pieces {
+        let (_, centre) = measure(piece);
+        let c = Point3::new(
+            0.5 * centre[0][0] + 0.5 * centre[0][1],
+            0.5 * centre[1][0] + 0.5 * centre[1][1],
+            0.5 * centre[2][0] + 0.5 * centre[2][1],
+        );
+        let g = (c - plane.origin()).dot(plane.normal());
+        match side {
+            Side::Below => assert!(g < 0.0, "{g}: a piece below its plane"),
+            Side::Above => assert!(g > 0.0, "{g}: a piece above its plane"),
+        }
+        let (moved, _) = piece
+            .transform_with(OperationId(3), motion)
+            .expect("a piece moves rigidly");
+        let ids = |x: &Body| x.topology().ids().map(|(id, _)| id).collect::<Vec<_>>();
+        assert_eq!(ids(piece), ids(&moved), "a moved piece keeps its ids");
+        let (m0, m1) = (measure(piece).0, measure(&moved).0);
+        assert!((m0 - m1).abs() <= 1e-9 * m0.max(1.0), "{m0} moved to {m1}");
+    }
 }
 
 fn check_prism(data: &[u8], splined: bool) {

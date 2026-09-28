@@ -1586,7 +1586,7 @@ pub(crate) struct SheetMeasure {
 /// The length of an edge's curve and its first moment relative to
 /// `reference`, in closed form: a segment's midpoint, an arc's
 /// `r s (o sweep + r ((sin a1 - sin a0) x + (cos a0 - cos a1) y))`, `s`
-/// the sweep's sign. `None` for a spline curve.
+/// the sweep's sign; a nonrational spline's by certified quadrature (S8e).
 fn curve_moments<T: Real>(curve: &Curve3, reference: &V3<T>) -> Option<(T, V3<T>)> {
     match curve {
         Curve3::LineSegment { start, end } => {
@@ -1628,13 +1628,104 @@ fn curve_moments<T: Real>(curve: &Curve3, reference: &V3<T>) -> Option<(T, V3<T>
             });
             Some((length, moment))
         }
+        Curve3::BSpline(span) => spline_moments(span, reference),
         // An ellipse's length is an elliptic integral.
-        Curve3::BSpline(_)
-        | Curve3::EllipseArc { .. }
+        Curve3::EllipseArc { .. }
         | Curve3::HyperbolaArc { .. }
         | Curve3::ParabolaArc { .. }
         | Curve3::Section(_) => None,
     }
+}
+
+/// A nonrational spline edge's length `∫ |C'|` and first moment
+/// `∫ (C - reference) |C'|` over its range: on each exact Bézier arc, in its
+/// local parameter, the coordinates in the power basis as jets and the
+/// speed their derivatives' norm, integrated by `jet::integrate_many` (D13's
+/// order, widths relative to each integral's scale, and depth). `None` for
+/// a rational spline, or where the speed's enclosure reaches zero (a
+/// stationary point).
+fn spline_moments<T: Real>(
+    span: &crate::topology::SplineSpan<crate::BSplineCurve3>,
+    reference: &V3<T>,
+) -> Option<(T, V3<T>)> {
+    use super::projection::{DEPTH, ORDER, WIDTH};
+    use crate::jet::{integrate_many, Jet};
+    let curve = span.curve();
+    if curve.is_rational() {
+        return None;
+    }
+    let [first, last] = span.range();
+    let arcs = curve.bezier_arcs_in(first, last).ok()?;
+    let mut length = c::<T>(0.0);
+    let mut moment: V3<T> = std::array::from_fn(|_| c(0.0));
+    for arc in &arcs {
+        let poles = arc.homogeneous_poles();
+        let n = poles.len() - 1;
+        // Each coordinate in the power basis of the arc's parameter.
+        let power: Vec<Vec<T>> = (0..3)
+            .map(|k| {
+                let b: Vec<R> = poles.iter().map(|h| &h[k] / &h[3]).collect();
+                let mut out = vec![R::from_integer(0.into()); n + 1];
+                for (i, bi) in b.iter().enumerate() {
+                    for (j, o) in out.iter_mut().enumerate().skip(i) {
+                        let binom = |a: usize, k: usize| {
+                            (0..k).fold(R::from_integer(1.into()), |acc, m| {
+                                acc * R::from_integer(((a - m) as i64).into())
+                                    / R::from_integer(((m + 1) as i64).into())
+                            })
+                        };
+                        let term = bi * binom(n, i) * binom(n - i, j - i);
+                        if (j - i) % 2 == 0 {
+                            *o += term;
+                        } else {
+                            *o -= term;
+                        }
+                    }
+                }
+                out.iter().map(|x| T::from_r(x)).collect()
+            })
+            .collect();
+        let derivative: Vec<Vec<T>> = power
+            .iter()
+            .map(|p| {
+                p.iter()
+                    .enumerate()
+                    .skip(1)
+                    .map(|(k, x)| x.mul(&c::<T>(k as f64)))
+                    .collect()
+            })
+            .collect();
+        let integrand = |t: &Jet<T>| -> Option<Vec<Jet<T>>> {
+            let order = t.order();
+            let horner = |coefficients: &[T]| {
+                coefficients
+                    .iter()
+                    .rev()
+                    .fold(Jet::constant(c::<T>(0.0), order), |acc, x| {
+                        acc.mul(t).add(&Jet::constant(x.clone(), order))
+                    })
+            };
+            let point: Vec<Jet<T>> = power.iter().map(|p| horner(p)).collect();
+            // The derivative's own coefficients (a jet's derivative would
+            // lose its last one, which bounds the remainder).
+            let speed = derivative
+                .iter()
+                .map(|p| horner(p).square())
+                .reduce(|a, b| a.add(&b))?
+                .sqrt()?;
+            let mut out = vec![speed.clone()];
+            for k in 0..3 {
+                out.push(point[k].add_constant(&reference[k].neg()).mul(&speed));
+            }
+            Some(out)
+        };
+        let values = integrate_many(&integrand, 4, 0.0, 1.0, ORDER, WIDTH, DEPTH, true)?;
+        length = length.add(&values[0]);
+        for k in 0..3 {
+            moment[k] = moment[k].add(&values[k + 1]);
+        }
+    }
+    Some((length, moment))
 }
 
 fn solve_measure<T: Real>(view: &View, reference: [f64; 3]) -> Option<SheetMeasure> {

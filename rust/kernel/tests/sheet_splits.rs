@@ -172,6 +172,20 @@ fn a_spline_sheet_splits_through_its_spline() {
     check(&sheet, &pieces, &h);
     let (wire, _) =
         Body::wire_from_boundary_with(OperationId(1), boundary, Frame3::xy(), tol()).unwrap();
+    // The wire's length: 8 of lines and the parabola's
+    // ∫ sqrt(16 + (2 - 4t)^2) dt over [0, 1] (mpmath, 40 digits).
+    let length = 8.0 + 4.160_915_277_738_203;
+    let m = wire.measure().expect("a certified length");
+    assert!(
+        m.measure[0] <= length && length <= m.measure[1],
+        "{:?}",
+        m.measure
+    );
+    assert!(
+        m.measure[1] - m.measure[0] <= 1e-10 * length,
+        "{:?}",
+        m.measure
+    );
     let (pieces, h) = wire
         .split_by_plane(OperationId(2), plane([1.0, 0.0, 0.0], [1.0, 0.0, 0.0]))
         .unwrap();
