@@ -143,13 +143,12 @@ group, and stale success records are removed before each run.
 | `boolean/bfuse_simple/E1` | Unsupported | Viewer skipped | Prisms sized by `SCALE`: the tool's profile does not translate exactly into the object's frame (S9b) |
 | `boolean/bopcommon_simple/C8` | Unsupported | Viewer skipped | An angle `atan2(1,2)*180/pi` in `dset`, which the adapter does not evaluate |
 | `boolean/bopcommon_simple/S5`, `bopcut_simple/ZC7`, `S4`, `bopfuse_simple/U7`, `B3`, `boptuc_simple/R1` | Unsupported | Viewer skipped | Box corners on or tangent to a cylinder, boxes touching along an edge: pieces thinner than the resolution, results touching themselves (at a point or along an edge) or each other, a hole touching its boundary (the kernel's `Degenerate`) |
-| `boolean/bopfuse_simple/Z5` | Unsupported | Viewer skipped | A box inscribed in a cylinder, of different heights: evaluated at S9a (the cylinder); since S9a.2 the stacked fuse's containment test cuts the cylinder by the box, four segments touching at its corners, and the kernel's `Degenerate` refuses the fuse (a recorded regression, below) |
 | `boolean/bcut_simple/G8` | Unsupported | Viewer skipped | A semi-infinite prism of an exploded face (`explode`, `SemiInf`) |
 
-There are **five original geometry tests passing on both backends** and 407
+There are **five original geometry tests passing on both backends** and 408
 more evaluated on both with their image commands recorded (`buc60769`,
 S7's `lowalgos/intss` cases `bug23177_1`, `bug23177_2` and `bug24648`, and
-403 Boolean cases of S9a and S9a.2).
+404 Boolean cases of S9a and S9a.2).
 S8e registers the upstream `bsplit` group as capability sentinels: `boolean/splitter/A5`
 and `B5` and the 22 `bugs` cases that call `bsplit` (with `bug29333_1` and
 `bug29333_2`, registered before). They need S9's general builder: tools that
@@ -196,23 +195,22 @@ so the ledger does not change.
 again on both backends after S9a.2 (2026-09-28, `survey_upstream_tests.py
 --boolean`, the public dataset read through `--data-dir`; no case loads
 it). Native DRAW's statuses are unchanged (1,578 evaluated, 224 not
-forwarded). Rust now evaluates 403, each evaluated by native DRAW too and
+forwarded). Rust now evaluates 404, each evaluated by native DRAW too and
 `viewer_skipped` on both; no case fails on Rust. Every one is registered:
 84 new (`bop` with `bopcut` 47, `bopfuse` 26, `boptuc` 8, `bcut` 2,
 `bfuse` 1, from `bcut_simple`, `bfuse_simple` and the `bop*_simple`
 grids; each a stack: two boxes, a box and a `pcylinder`, or two cylinders
 whose slabs hold different regions). Against the previous survey's 163
-stacked cases, by the change of each count: 84 more evaluate (and `Z5`
-less), 37 cut a pocket and then give the stack to the next `bcut` (a
-Boolean of a stack, S9b), 39 more are `Degenerate` (`Z5` among them) and 4
+stacked cases, by the change of each count: 84 more evaluate, 37 cut a pocket and then give the stack to the next `bcut` (a
+Boolean of a stack, S9b), 38 more are `Degenerate` and 4
 more `explode` a Boolean's result, which now exists, into solids. Their assertions are again `checkprops -s` (or `-s empty`) and
 `checkshape`: no upstream case in these grids counts a stack's shapes or
-measures its lengths; `boolean_stacks` (below) does. Of the 1,175 native
+measures its lengths; `boolean_stacks` (below) does. Of the 1,174 native
 DRAW evaluates and Rust does not, the reasons are now: frames with
 different axes 647; solids other than prisms 315 (255 refused by the
 kernel, 60 by the adapter, which extrudes again a tool sharing ids with
 the object and finds no profile); a stack as a Boolean argument 37;
-`Degenerate` 117 (a result thinner than the resolution 62, a profile piece
+`Degenerate` 116 (a result thinner than the resolution 62, a profile piece
 thinner than it 24, a result touching itself at a point 15 or along an
 edge 4, two results touching 4, a result's hole outside its boundary 8);
 a profile not translating exactly 1; `atan2` in `dset` 48; `explode` 9 (a
@@ -223,17 +221,14 @@ again: `bopfuse_simple/B2` now evaluates and is registered, replaced by
 `bcut_simple/H6` is still refused, now as a Boolean of its first cut's
 stack; the other twelve are refused as before.
 
-One registered case was lost: `bopfuse_simple/Z5` (`pcylinder b1 1 2`, a
-box `-r -r 0 2*r 2*r 1` with `dset r sqrt(2)/2`, `bop b1 b2`, `bopfuse
-result`, `checkprops result -s 18.8496`) evaluated at S9a as the cylinder
-(area `6 pi`). Its heights differ, and the stacked fuse now decides
-containment by exact cuts: the cylinder minus the box, four circular
-segments touching at the box's corners (`2 r^2` rounds just above 1), is
-refused (`Degenerate`, "a result touching itself at a point") and the
-error ends the fuse. The same fuse over equal heights, and the box minus
-the cylinder, still evaluate. The kernel is unchanged here; Z5 is recorded
-as `unsupported` until the containment test no longer propagates a
-refused cut.
+`bopfuse_simple/Z5` (`pcylinder b1 1 2`, a box `-r -r 0 2*r 2*r 1` with
+`dset r sqrt(2)/2`, `bop b1 b2`, `bopfuse result`, `checkprops result -s
+18.8496`) is the cylinder (area `6 pi`). Its heights differ, and the fuse
+decides containment by exact cuts: the cylinder minus the box, four
+circular segments touching at the box's corners (`2 r^2` rounds just above
+1), is refused as degenerate, which says it is not empty; the survey found
+the first S9a.2 revision propagating that refusal, fixed with a kernel
+test (`tests/booleans.rs`).
 
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and

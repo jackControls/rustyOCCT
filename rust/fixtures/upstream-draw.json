@@ -2200,9 +2200,9 @@
     },
     {
       "path": "tests/boolean/bopfuse_simple/Z5",
-      "expected_rust": "unsupported",
+      "expected_rust": "viewer_skipped",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9a: bop and bopfuse of a cylinder and a box inscribed in it (dset numbers), of different heights; checkprops -s and checkshape; its checkview is recorded. Evaluated at S9a (the cylinder); since the stacked fuse decides containment by exact cuts, the cylinder minus the box, four segments touching at the corners, is refused (Degenerate) and so is the fuse."
+      "purpose": "S9a: bop and bopfuse of a cylinder and a box inscribed in it (dset numbers), of different heights: the cylinder (its containment test's cut of the cylinder by the box, four segments touching at the corners, refused as degenerate and so not empty); checkprops -s and checkshape; its checkview is recorded."
     },
     {
       "path": "tests/boolean/bopfuse_simple/ZA1",

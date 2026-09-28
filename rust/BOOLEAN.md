@@ -246,9 +246,5 @@ DRAW's unified counts agree on every stack checked. A stack given to
 another Boolean is reported unsupported (the kernel's Booleans take
 prisms; S9b). The derived cases `boolean_prisms` and `boolean_stacks` (a
 step, a pocket, a box cut in two by a slab, a closed cavity, a tool
-through a round wall) and 403 cases of upstream's `boolean` group (84 of
-them stacks) evaluate on both backends. One case evaluated at S9a is
-lost: `bopfuse_simple/Z5`, a fuse of a cylinder and an inscribed box of
-different heights, whose containment test cuts the cylinder by the box
-into four segments touching at its corners and propagates that cut's
-`Degenerate` (`UPSTREAM_TESTS.md`).
+through a round wall) and 404 cases of upstream's `boolean` group (84 of
+them stacks) evaluate on both backends.
