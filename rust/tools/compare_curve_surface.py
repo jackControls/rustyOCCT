@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""Source-pinned GeomAPI_IntCS observations beside the S7c.1 reference: lines
-and circles against planes, cylinders, cones, spheres and tori.
+"""Source-pinned GeomAPI_IntCS observations beside the S7c reference: lines,
+circles, ellipses and hyperbolas against planes, cylinders, cones, spheres and
+tori (S7c.1, S7c.2), and splines against cones and tori (S7c.2; a spline's
+overlaps must be native segments with the same ends).
 
 The independent reference (curve_surface_reference.py) gives every case of
 curve-surface-cases.txt its rows (empty, contained, or points with their curve
@@ -33,9 +35,14 @@ SOURCE_FILE = ROOT/'rust/tools/occt_curve_surface_oracle.cpp'
 REVIEWS = ROOT/'rust/fixtures/occt-curve-surface-divergences.json'
 KERNEL_FILE = ROOT/'rust/kernel/src/intersection/curve_surface.rs'
 BOUND = 1e-6
+# S7c.2's kernel files: the conics' and the splines' against cones and tori.
+S7C2_FILES = [ROOT/'rust/kernel/src/intersection/conic_surface.rs',
+              ROOT/'rust/kernel/src/intersection/spline_revolved.rs']
 CAPTURES = {
     's7c1': (ROOT/'rust/fixtures/occt-curve-surface-preimplementation', ('l_', 'c_'),
              lambda: KERNEL_FILE.exists()),
+    's7c2': (ROOT/'rust/fixtures/occt-conic-spline-surface-preimplementation', ('e_', 'h_', 's_'),
+             lambda: any(f.exists() for f in S7C2_FILES)),
 }
 
 
@@ -49,6 +56,12 @@ def native_input(prefixes=None):
             p0, p1 = cv[:3], cv[3:]
             d = [b-a for a, b in zip(p0, p1)]
             rows.append(' '.join(['curve line', *map(repr, (*p0, *d))]))
+        elif ckind == 'spline':
+            rows.append(fixtures.encode(name, (ckind, cv), (skind, sv)).splitlines()[1])
+        elif ckind in ('ellipse', 'hyperbola'):
+            o, x, _, n = frame_axes(tuple(cv[:9]))
+            rows.append(' '.join(['curve', ckind, *map(repr, (*o, *n, *x)), repr(float(cv[9])),
+                                  repr(float(cv[10]))]))
         else:
             o, x, _, n = frame_axes(tuple(cv[:9]))
             rows.append(' '.join(['curve circle', *map(repr, (*o, *n, *x)), repr(float(cv[9]))]))
@@ -82,7 +95,8 @@ def expected_rows():
 
 
 def case_scale(curve, surface):
-    values = [abs(x) for x in list(curve[1])+list(surface[1][:3])]
+    numbers = [v for p in curve[1][1] for v in p[:3]] if curve[0] == 'spline' else list(curve[1])
+    values = [abs(x) for x in numbers+list(surface[1][:3])]
     return max([1.0]+values)
 
 
@@ -97,14 +111,23 @@ def differences(curve, surface, native, rows):
     if rows[0][0] == 'contained':
         return [] if segments else ['missed_containment']
     out = []
-    ref = [([float(x) for x in r[2:5]], r[5]) for r in rows]
-    used = set()
+    # A spline's overlaps: a native segment with the same ends; native
+    # points inside an overlap belong to it.
+    overlaps = [(float(r[1]), float(r[2])) for r in rows if r[0] == 'overlap']
+    used_segments = set()
+    for a, b in overlaps:
+        hit = [k for k, (c, d) in enumerate(segments) if abs(a-c) <= tol and abs(b-d) <= tol]
+        if not hit:
+            out.append('missed_overlap')
+        used_segments.update(hit)
+    ref = [([float(x) for x in r[2:5]], r[5]) for r in rows if r[0] == 'point']
+    used = {k for k, (_, w) in enumerate(points) if any(a-tol <= w <= b+tol for a, b in overlaps)}
     for p, kind in ref:
         hit = [k for k, (q, _) in enumerate(points) if math.dist(p, q) <= tol]
         if not hit:
             out.append('missed_tangent_point' if kind == 'tangent' else 'missed_point')
         used.update(hit)
-    if len(used) != len(points) or segments:
+    if len(used) != len(points) or len(used_segments) != len(segments):
         out.append('spurious')
     return sorted(set(out))
 
@@ -130,6 +153,11 @@ def rust_differences(rust, want, circle):
         return ['rust_class']
     for got, row in zip(rust, want):
         if row[0] in ('empty', 'contained'):
+            continue
+        if row[0] == 'overlap':
+            # Whole spans: exact knots.
+            if [float(x) for x in got[1:3]] != [float(x) for x in row[1:3]]:
+                return ['rust_overlap']
             continue
         numbers = [float(x) for x in row[1:5]]
         if got[-1] != row[-1] or len(got) != 10:
@@ -235,7 +263,7 @@ def main():
         report['cases'] += 1
         rows = expected[name]
         if rust is not None:
-            wrong = rust_differences(rust[name], rows, curve[0] == 'circle')
+            wrong = rust_differences(rust[name], rows, curve[0] in ('circle', 'ellipse'))
             if wrong:
                 report['failures'].append({'case': name, 'reason': ' '.join(wrong), 'rust': rust[name]})
                 continue

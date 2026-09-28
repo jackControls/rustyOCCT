@@ -1,5 +1,5 @@
 {
-  "note": "Reviewed GeomAPI_IntCS differences from the S7c.1 reference.",
+  "note": "Reviewed GeomAPI_IntCS differences from the S7c reference (S7c.1, S7c.2).",
   "reviews": [
     {
       "case": "l_plane_contained",
@@ -83,6 +83,66 @@
       ],
       "reason": "GeomAPI_IntCS reports the torus's top circle lying on it as 324 separate points rather than as a segment; the kernel decides the containment exactly.",
       "independent_evidence": "The circle of radius 2 about (0, 0, 0.5) normal to z is the torus's top parallel (the tube's highest points, major radius 2, minor 0.5).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "e_plane_contained",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomAPI_IntCS",
+      "native_sha256": "514676241ef9d501f283ef54d1aee529e4aec6e8668e0795d818b24e3311f22e",
+      "differences": [
+        "missed_containment"
+      ],
+      "reason": "GeomAPI_IntCS returns nothing for an ellipse lying in the plane: the containment is not reported. The kernel decides it exactly (the reduced function vanishes on the whole ellipse).",
+      "independent_evidence": "The ellipse of semi-axes 2 and 1 about the origin in z = 0 lies in the plane z = 0.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "h_plane_contained",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomAPI_IntCS",
+      "native_sha256": "514676241ef9d501f283ef54d1aee529e4aec6e8668e0795d818b24e3311f22e",
+      "differences": [
+        "missed_containment"
+      ],
+      "reason": "GeomAPI_IntCS returns nothing for a hyperbola lying in the plane: the containment is not reported. The kernel decides it exactly.",
+      "independent_evidence": "The hyperbola x^2 - y^2 = 1 in z = 0 lies in the plane z = 0.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "s_torus_contained",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomAPI_IntCS",
+      "native_sha256": "d582d7bc01de0e7d4fe8b40bd7be827b740b5d7a46bb034fe39b451a89f9843e",
+      "differences": [
+        "missed_overlap"
+      ],
+      "reason": "GeomAPI_IntCS reports 74 separate points along a spline lying on the torus and no segment. The kernel decides the overlap exactly (the homogeneous quartic vanishes on the span).",
+      "independent_evidence": "The rational quadratic with poles (2, 0, 0.5), (2, 2, 0.5), (0, 2, 0.5) and weights 1, 1, 2 is the quarter of the circle of radius 2 in z = 0.5, the torus's upper parallel (R = 2, r = 0.5).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "s_torus_partial",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomAPI_IntCS",
+      "native_sha256": "f053626b5180b9f7bf4ce4c32e3562d603d8241ad26e698d601cf22dd197ee95",
+      "differences": [
+        "missed_overlap"
+      ],
+      "reason": "GeomAPI_IntCS reports 80 separate points, along the first span that lies on the torus and at the second span's crossing, and no segment. The kernel reports the first span as an overlap and the crossing as a point.",
+      "independent_evidence": "The first span is the exact quarter circle of s_torus_contained on the torus's upper parallel; the reference's crossing at s = 5/3 is among the native points.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "s_cone_contained",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomAPI_IntCS",
+      "native_sha256": "514676241ef9d501f283ef54d1aee529e4aec6e8668e0795d818b24e3311f22e",
+      "differences": [
+        "missed_overlap"
+      ],
+      "reason": "GeomAPI_IntCS returns nothing for a spline lying on the cone. The kernel decides the overlap exactly: Q0, Q1 and Q2 vanish on the span (tan a / |a| is transcendental).",
+      "independent_evidence": "The rational quadratic with poles (1, 0, 0), (1, 1, 0), (0, 1, 0) and weights 1, 1, 2 is the quarter of the cone's reference circle (radius 1 in z = 0).",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     }
   ]

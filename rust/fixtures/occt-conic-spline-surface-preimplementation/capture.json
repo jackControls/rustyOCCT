@@ -1,0 +1,21 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 GeomAPI_IntCS",
+  "platform": "darwin",
+  "rust_revision": "c8344f16dac0ccd4887d2e4b912f7c03672531b2",
+  "rust_curve_surface_exists": false,
+  "rust_worktree_uncommitted": [
+    " M rust/fixtures/curve-surface-cases.txt",
+    " M rust/fixtures/curve-surface-expected.tsv",
+    " M rust/fixtures/curve-surface-frames.tsv",
+    " M rust/tools/compare_curve_surface.py",
+    " M rust/tools/curve_surface_reference.py",
+    " M rust/tools/generate_curve_surface_fixtures.py",
+    " M rust/tools/occt_curve_surface_oracle.cpp",
+    "?? rust/fixtures/occt-conic-spline-surface-preimplementation/"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "50053dbd844807b8f00b9542e866f4ce2224c0137a1a9cc29c7604f7f6f26099",
+  "probe_source_sha256": "d1c1e7f57dcabe1a3bf3da40978062a89c6f6a36fb8a616e7dbf307cfd0dc6e2",
+  "observations_sha256": "c443f7c80269bce8ce795d495785f1f93ba67a8f7d32e32c51dc88be6a7fb768"
+}
