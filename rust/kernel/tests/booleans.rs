@@ -401,14 +401,16 @@ fn stacks_wait_for_s9a2() {
     check(&a, &b, &m, &h);
 }
 
+/// Per case: its declared kind and the reference's solid count and totals.
+type Expected = std::collections::BTreeMap<String, (String, Option<(usize, [f64; 5])>)>;
+
 /// Every fixture: a result's solids' sums of enclosures contain the
 /// reference's volume, area and moments; its solid count is the
 /// reference's; a degenerate case is refused and an S9a.2 stack is
 /// `OutOfDomain`.
 #[test]
 fn every_case_matches_the_reference() {
-    let mut expect: std::collections::BTreeMap<String, (String, Option<(usize, [f64; 5])>)> =
-        Default::default();
+    let mut expect: Expected = Default::default();
     for line in include_str!("../../fixtures/boolean-expected.tsv")
         .lines()
         .filter(|l| !l.starts_with('#'))
