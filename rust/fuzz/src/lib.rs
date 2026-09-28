@@ -50,6 +50,8 @@ mod curve_curve;
 pub use curve_curve::check_curve_curve;
 mod split;
 pub use split::check_split;
+mod boolean;
+pub use boolean::check_boolean;
 mod tessellation;
 pub use tessellation::check_tessellation;
 mod step;

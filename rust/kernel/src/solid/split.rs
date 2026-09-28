@@ -1073,7 +1073,7 @@ fn exact_sign(
     f(positions[p]).cmp(&zero()) as i8
 }
 
-fn rounded(p: &[I; 2]) -> Point2 {
+pub(crate) fn rounded(p: &[I; 2]) -> Point2 {
     let (x0, x1) = p[0].bounds_f64();
     let (y0, y1) = p[1].bounds_f64();
     Point2::new(0.5 * x0 + 0.5 * x1, 0.5 * y0 + 0.5 * y1)
@@ -1081,13 +1081,13 @@ fn rounded(p: &[I; 2]) -> Point2 {
 
 /// Whether an enclosed circle point is the exact vertex `v` (a vertex on
 /// the line is one of the circle's two points; the other is apart).
-fn same_point(p: &[I; 2], v: Point2) -> Result<bool> {
+pub(crate) fn same_point(p: &[I; 2], v: Point2) -> Result<bool> {
     let contains = |iv: &I, x: f64| iv.lo() <= &q(x) && &q(x) <= iv.hi();
     Ok(contains(&p[0], v.x) && contains(&p[1], v.y))
 }
 
 /// The two points of a circle on the line (the line certainly crossing it).
-fn circle_points(center: Point2, radius: f64, line: &[R; 3]) -> Result<Vec<[I; 2]>> {
+pub(crate) fn circle_points(center: Point2, radius: f64, line: &[R; 3]) -> Result<Vec<[I; 2]>> {
     let [a, b, d] = line;
     let ab2 = a * a + b * b;
     let fc = a * q(center.x) + b * q(center.y) + d;
@@ -1115,14 +1115,14 @@ fn circle_points(center: Point2, radius: f64, line: &[R; 3]) -> Result<Vec<[I; 2
 /// direction, 3 the second half-turn) and its vector from the centre, in
 /// the arc's turning sense. Places compare by orientation signs alone.
 #[derive(Debug, Clone)]
-struct ArcPos {
+pub(crate) struct ArcPos {
     half: u8,
     v: [I; 2],
     sense: i8,
 }
 
 impl ArcPos {
-    fn of(r: &[I; 2], v: [I; 2], sense: i8) -> Result<Self> {
+    pub(crate) fn of(r: &[I; 2], v: [I; 2], sense: i8) -> Result<Self> {
         let limit = || Error::ComputationLimit("an arc's crossing at its end");
         let cross = r[0].mul(&v[1]).sub(&r[1].mul(&v[0]));
         let cross = if sense > 0 { cross } else { cross.neg() };
@@ -1141,7 +1141,7 @@ impl ArcPos {
     }
     /// Along the arc: the earlier first (within a half-turn, the one the
     /// other lies counter to the sense from).
-    fn compare(&self, o: &Self) -> Option<Ordering> {
+    pub(crate) fn compare(&self, o: &Self) -> Option<Ordering> {
         if self.half != o.half {
             return Some(self.half.cmp(&o.half));
         }
@@ -1157,7 +1157,7 @@ impl ArcPos {
 /// Whether a point of an arc's circle lies strictly inside the arc from `p`
 /// to `e`; its place along the arc if it does. Exact orientation signs, no
 /// angles.
-fn within_arc(
+pub(crate) fn within_arc(
     center: Point2,
     p: Point2,
     e: Point2,

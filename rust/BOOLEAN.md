@@ -4,9 +4,10 @@ S9 of `REVIEW_NOTES.md` fuses, cuts and intersects solids (the Combine
 job): the faces intersected (S7), split (S8), classified by regions and
 assembled into shells and regions, with complete histories. This document
 describes what is implemented; the decisions are in `REVIEW_NOTES.md` (S9).
-Nothing is implemented yet: S9a's evidence came first.
+S9a.1 is implemented (`profile/boolean.rs`, `solid/boolean.rs`); S9a.2 and
+S9b on are not.
 
-## Contract (from the decisions; not yet implemented)
+## Contract
 
 `Solid::fuse(operation, other)`, `Solid::cut(operation, tool)` and
 `Solid::common(operation, other)` return the result's solids (each a
@@ -24,6 +25,8 @@ prism's exact queries; any other is a general body built through
   touching itself at a point or along an edge (two solids sharing an edge,
   a hole tangent to the outer boundary) until the kernel holds non-manifold
   bodies.
+* `ComputationLimit`: two cuts of a segment, or a crossing at a segment's
+  end, whose order its enclosures leave undecided.
 
 ### Prisms in one frame (S9a)
 
@@ -38,24 +41,58 @@ ranges, or whose slabs all have one profile). S9a.2: the other stacks,
 general bodies whose caps between slabs are the regions where consecutive
 profiles differ.
 
-The 2D Boolean arranges the two boundaries exactly (crossings of lines,
-lines and arcs, and circles decided on the stored data and rounded to
-binary64 as new vertices), classifies every piece of either boundary at a
-point strictly inside it (inside, outside, or on the other boundary with
-the same or the opposite direction) and keeps: for a fuse each profile's
-pieces outside the other and the shared pieces of the same direction; for a
-cut the object's pieces outside the tool, the tool's inside the object
-reversed and the shared pieces of opposite directions; for a common each
-profile's pieces inside the other and the shared pieces of the same
-direction. The kept pieces are traced into cycles (S8's rule),
-counter-clockwise ones outer boundaries and clockwise ones holes.
+The 2D Boolean (`profile/boolean.rs`) arranges the two boundaries exactly:
+two lines cross at their rational crossing, or overlap along one line and
+cut each other at their ends; a line and a circle meet where the exact sign
+of their discriminant says, at a quadratic surd's enclosure; two circles on
+their radical line, or overlap as one circle. A tangency cuts nothing (the
+pieces on either side of it lie on one side of the other boundary); a
+meeting within the resolution of a segment's stored end is that vertex,
+which then cuts the other segment; a stored vertex of one exactly on the
+other's line, or within the resolution of its circle, cuts it; B's vertices
+equal to A's are A's. Pieces along one line or one circle between the same
+ends are shared (in the same or the opposite direction); every other piece
+is classified against the other profile at an off-centre point (fraction
+`0.4453125` along it, the certified `Profile::classify`; one within the
+resolution of the other boundary without being shared is `Degenerate`).
+The operation keeps: for a fuse each profile's pieces outside the other and
+the shared pieces of the same direction; for a cut the object's pieces
+outside the tool, the tool's inside the object reversed and the shared
+pieces of opposite directions; for a common each profile's pieces inside
+the other and the shared pieces of the same direction. The kept pieces,
+directed with the region on their left, are traced into cycles: each end
+starts exactly one kept piece (two would make the result touch itself
+there: `Degenerate`). A cycle keeps no vertex where it does not turn
+(consecutive collinear lines and consecutive arcs of one circle in one
+sense are joined, each result segment listing the input pieces it holds; a
+cycle left as one arc is its whole circle), counter-clockwise cycles are
+outer boundaries and clockwise ones holes, each result a validated profile;
+separate results must not touch.
 
-History: an input entity kept whole keeps its id (`Unchanged`, or
-`Modified`), one kept in parts is `Split`, coplanar caps and coincident
-walls of both inputs are `Merged` into one result entity, an input entity
-not kept is `Deleted`, new edges and vertices where the inputs' faces meet
-are `Generated` from the faces they lie on; the region is `Merged` (fuse),
-`Split` or `Modified`.
+In 3D (`solid/boolean.rs`) the tool's profile is translated exactly into
+the object's frame; a common is the 2D common over the ranges'
+intersection (empty when they only touch); a cut whose tool spans the
+object's heights is the 2D cut over the object's, one that misses them the
+object; a fuse of equal ranges the 2D fuse over them, of meeting ranges and
+identical profiles one prism over their union, of an input inside the other
+(in 2D and in height) that input, of profiles apart both inputs.
+
+History: each result entity continues the input entities it is a part of
+(a cap the caps at its height of the inputs whose material it holds, a wall
+or cap edge the walls or cap edges its segment joins, a vertical edge or cap
+vertex its vertex's, the region the inputs' regions); a cut's tool faces
+the other way where it bounds the result, so what it gives is generated,
+not continued. An input continued by one result entity alone keeps its id
+(`Unchanged`, or `Modified` when its geometry or bounding ids changed), by
+several each continuing it alone is `Split`; several inputs continued by one
+result alone are `Merged` into it; where several inputs reach several
+results (coplanar caps over several results, a wall shared in part) no
+single relation says it: each such result is `Generated` from its parents
+and those inputs are `Deleted`. An entity continuing nothing (a vertical
+edge where two walls cross, a cap edge inside a wall where the other
+input's cap meets it) is `Generated` from what it lies on; an input
+continued by nothing is `Deleted`. Inputs returned whole keep every id. The
+independent history check runs in debug builds and every test.
 
 ## Evidence
 
@@ -123,6 +160,23 @@ are `Generated` from the faces they lie on; the region is `Merged` (fuse),
   valid solids for prisms touching along a vertical edge and one valid solid
   for a hole tangent to the outer circle (the decisions: `Degenerate`), and
   keeps each input's cap and wall images and its cylinders' seams (counts
-  compared after unifying). `compare_boolean.py` runs a probe
-  (`examples/boolean_probe.rs`) only when it exists; until then all 45 are
-  `rust_unsupported`.
+  compared after unifying). `compare_boolean.py` runs the probe
+  (`examples/boolean_probe.rs`) on every case.
+* **Kernel (S9a.1).** All 45 cases: 36 results inside the reference with
+  the reference's solid count (each solid's volume, area and centre
+  enclosed), 5 of them empty, the 3 degenerate ones refused and the 6
+  S9a.2 stacks `OutOfDomain`; every kernel count equals OCCT's after
+  unifying (the kernel's joined collinear lines and cocircular arcs are
+  OCCT's unified faces and edges; its seamless circles counted as OCCT's
+  seams by `Topology::occt_counts`), no review. `tests/booleans.rs` checks
+  the same against the reference, every fixture's history (independent
+  check, every input entity covered, repeated exactly) and hand cases of
+  every class (overlaps, a lens, a hole, identical, disjoint, inside, a
+  shared wall, tangent cylinders inside and outside, arcs of one circle, a
+  vertex on an edge, a holed box, frames with equal axes and offset
+  origins, stacks refused).
+* **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
+  and arc profiles, the tool offset exactly in the axis-aligned frame or
+  sharing the tilted one's origin, heights equal, spanning, overlapping or
+  disjoint; fuse, cut and common with the volume identities and rigid
+  motions of the results.

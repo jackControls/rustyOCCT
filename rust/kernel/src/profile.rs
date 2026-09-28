@@ -5,6 +5,8 @@ use crate::predicates::{orient2d_finite, Orientation2};
 use crate::{Error, Point2, Result, Tolerance};
 use std::f64::consts::PI;
 
+pub(crate) mod boolean;
+
 const MAX_EDGES: usize = 4096;
 const MAX_HOLES: usize = 128;
 

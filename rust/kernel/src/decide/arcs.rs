@@ -89,13 +89,20 @@ impl Arc2 {
         let (u, v) = self.ccw_bounds();
         let ex = |x: &R| Interval::exact(x.clone());
         // cross(u, w) and cross(w, v).
-        let uw = ex(&u.0).mul(&w.1).sub(&ex(&u.1).mul(&w.0)).sign()?;
-        let wv = w.0.mul(&ex(&v.1)).sub(&w.1.mul(&ex(&v.0))).sign()?;
-        Some(match cross(&u, &v).cmp(&zero()) {
-            Ordering::Greater => uw != Ordering::Less && wv != Ordering::Less,
-            Ordering::Less => !(uw == Ordering::Less && wv == Ordering::Less),
-            Ordering::Equal => uw != Ordering::Less,
-        })
+        // Each side decided on its own: one certain side may settle it.
+        let uw = ex(&u.0).mul(&w.1).sub(&ex(&u.1).mul(&w.0)).sign();
+        let wv = w.0.mul(&ex(&v.1)).sub(&w.1.mul(&ex(&v.0))).sign();
+        let (neg, pos) = (Some(Ordering::Less), |x: Option<Ordering>| {
+            matches!(x, Some(Ordering::Greater | Ordering::Equal))
+        });
+        match cross(&u, &v).cmp(&zero()) {
+            Ordering::Greater if uw == neg || wv == neg => Some(false),
+            Ordering::Greater if pos(uw) && pos(wv) => Some(true),
+            Ordering::Less if pos(uw) || pos(wv) => Some(true),
+            Ordering::Less if uw == neg && wv == neg => Some(false),
+            Ordering::Equal => uw.map(|x| x != Ordering::Less),
+            _ => None,
+        }
     }
 
     /// The unit-free tangent at an end, in the direction of travel.
@@ -207,14 +214,12 @@ fn segment_arc_within(s0: Point2, s1: Point2, arc: &Arc2, t: f64) -> bool {
             return true;
         }
     }
-    // A crossing inside both pieces, or one not located.
+    // A crossing inside both pieces, or one not located: a crossing whose
+    // direction the arc certainly excludes is off it wherever it lies along
+    // the segment.
     line_circle(arc.center, arc.radius, s0, s1)
         .iter()
-        .any(|(tau, dir)| match in_unit(tau) {
-            Some(false) => false,
-            Some(true) => arc.contains_interval(dir) != Some(false),
-            None => true,
-        })
+        .any(|(tau, dir)| in_unit(tau) != Some(false) && arc.contains_interval(dir) != Some(false))
 }
 
 /// Crossings of two circles as interval directions from each centre.

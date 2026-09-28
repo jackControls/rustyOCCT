@@ -6,6 +6,7 @@ use crate::profile::BoundaryKind;
 use crate::topology::Topology;
 
 mod attrs;
+mod boolean;
 mod enclose;
 pub(crate) mod split;
 mod stack;
