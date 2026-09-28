@@ -1029,7 +1029,8 @@ periodic seams and extreme rational domains. See
    minimize failures, and expand resource/performance and independent-oracle
    checks as geometry and operation sequences become more complex.
 
-General curve/surface intersections beyond spline/plane/sphere/cylinder, Booleans,
+General curve/surface intersections beyond spline/plane/sphere/cylinder and the
+lines and circles of S7c.1, Booleans,
 generic topology history, STEP and meshing remain unimplemented. Certified
 linear/quadratic primitives and spline evaluation do not establish these capabilities or make
 the rest of the kernel exact.
@@ -1624,6 +1625,29 @@ where `A v^2 + 2 B v + C = 0` and the curve is `v = (-B +- sqrt(D)) / A`,
 * **Points.** The interval Newton operator `N(T) = m - G(m) / G_t(T)`
   contains every root of `G(phi, .)` in `T`; intersected with `T` it
   converges quadratically.
+
+## Lines and circles against surfaces (S7c.1)
+
+Along a line `p0 + s d` with rational `p0`, `d`, a plane's, cylinder's,
+sphere's and torus's implicit functions (`n . w`, `|w|^2 - (w . a)^2 / |a|^2
+- r^2`, `|w|^2 - r^2`, `(|w|^2 + R^2 - r^2)^2 - 4 R^2 (|w|^2 - (w . a)^2 /
+|a|^2)` with `w = p - o`) are rational polynomials in `s`. A real root's
+multiplicity (from the repeated gcds with the derivative) is the order of
+contact: two or more is a tangency.
+
+A circle's points are `o + u U + v V` with `E0 = |U|^2 u^2 + 2 (U . V) u v +
+|V|^2 v^2 - r^2 = 0`. Reducing the surface's function `F` modulo `E0` (as a
+polynomial in `v`, `E0` monic up to the constant `|V|^2`) leaves
+`c0(u) + c1(u) v`, equal to `F` on the circle. The resultant in `v` of `E0`
+and `c0 + c1 v` is `a2 c0^2 - a1 c0 c1 + a0 c1^2`; its leading coefficient
+in `v` being constant, the order of a root `u0` is the sum of the
+intersection multiplicities of `E0 = 0` and `F = 0` over the points above
+`u0`, and `F + g E0` has the intersection multiplicities of `F`. Where
+`c1(u0) != 0` there is one point above `u0`, `v = -c0 / c1`, real, so the
+root's order is that point's multiplicity; a shear `V + k U` (rational `k`)
+moves the roots where `c1` vanishes. `c0 = c1 = 0` identically is
+`F = 0` on the whole circle; `E0` being irreducible, a zero resultant
+implies it.
 
 ## C1 of spline cells (R4)
 

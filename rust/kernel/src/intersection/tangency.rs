@@ -23,24 +23,24 @@ use num_bigint::BigInt;
 use num_rational::BigRational as R;
 
 /// Univariate rational polynomials, ascending powers.
-type P = Vec<R>;
+pub(super) type P = Vec<R>;
 
-fn rz() -> R {
+pub(super) fn rz() -> R {
     R::from_integer(0.into())
 }
-fn padd(a: &P, b: &P) -> P {
+pub(super) fn padd(a: &P, b: &P) -> P {
     let n = a.len().max(b.len());
     (0..n)
         .map(|i| a.get(i).cloned().unwrap_or_else(rz) + b.get(i).cloned().unwrap_or_else(rz))
         .collect()
 }
-fn psub(a: &P, b: &P) -> P {
+pub(super) fn psub(a: &P, b: &P) -> P {
     padd(a, &pscale(b, &R::from_integer((-1).into())))
 }
-fn pscale(a: &P, k: &R) -> P {
+pub(super) fn pscale(a: &P, k: &R) -> P {
     a.iter().map(|x| x * k).collect()
 }
-fn pmul(a: &P, b: &P) -> P {
+pub(super) fn pmul(a: &P, b: &P) -> P {
     if a.is_empty() || b.is_empty() {
         return Vec::new();
     }
@@ -53,10 +53,10 @@ fn pmul(a: &P, b: &P) -> P {
     out
 }
 /// `c0 + c1 u`.
-fn lin(c0: R, c1: R) -> P {
+pub(super) fn lin(c0: R, c1: R) -> P {
     vec![c0, c1]
 }
-fn enclose(p: &P, u: &I) -> I {
+pub(super) fn enclose(p: &P, u: &I) -> I {
     p.iter().rev().fold(I::exact_f64(0.0), |acc, c| {
         acc.mul(u).add(&I::exact(c.clone()))
     })
@@ -225,7 +225,7 @@ pub(super) fn torus_cylinder(
 }
 
 /// A bound on the absolute values of a polynomial's real roots.
-fn cauchy(p: &P) -> R {
+pub(super) fn cauchy(p: &P) -> R {
     let lead = p
         .iter()
         .rev()
@@ -250,12 +250,12 @@ fn cauchy(p: &P) -> R {
 
 /// Polynomials in `(u, v)`: the coefficients of `v^0, v^1, ...`, each a
 /// polynomial in `u`.
-type B = Vec<P>;
+pub(super) type B = Vec<P>;
 
-fn bl(c: R, cu: R, cv: R) -> B {
+pub(super) fn bl(c: R, cu: R, cv: R) -> B {
     vec![vec![c, cu], vec![cv]]
 }
-fn badd(a: &B, b: &B) -> B {
+pub(super) fn badd(a: &B, b: &B) -> B {
     let n = a.len().max(b.len());
     (0..n)
         .map(|k| {
@@ -266,10 +266,10 @@ fn badd(a: &B, b: &B) -> B {
         })
         .collect()
 }
-fn bscale(a: &B, k: &R) -> B {
+pub(super) fn bscale(a: &B, k: &R) -> B {
     a.iter().map(|x| pscale(x, k)).collect()
 }
-fn bmul(a: &B, b: &B) -> B {
+pub(super) fn bmul(a: &B, b: &B) -> B {
     if a.is_empty() || b.is_empty() {
         return Vec::new();
     }
@@ -281,14 +281,14 @@ fn bmul(a: &B, b: &B) -> B {
     }
     out
 }
-fn bdot(a: &[B; 3], b: &[B; 3]) -> B {
+pub(super) fn bdot(a: &[B; 3], b: &[B; 3]) -> B {
     badd(
         &badd(&bmul(&a[0], &b[0]), &bmul(&a[1], &b[1])),
         &bmul(&a[2], &b[2]),
     )
 }
 /// `b` modulo `a2 v^2 + a1 v + a0` (`a2` a nonzero constant): `c0 + c1 v`.
-fn reduce(b: &B, a0: &P, a1: &P, a2: &R) -> (P, P) {
+pub(super) fn reduce(b: &B, a0: &P, a1: &P, a2: &R) -> (P, P) {
     let mut b = b.clone();
     for n in (2..b.len()).rev() {
         let top = std::mem::take(&mut b[n]);

@@ -19,23 +19,23 @@ use rusty_occt::intersection::{
 use rusty_occt::topology::Surface;
 use rusty_occt::{Error, Frame3, Point3, RigidTransform, Tolerance, Vec3};
 
-struct Bytes<'a>(&'a [u8], usize);
+pub(crate) struct Bytes<'a>(pub(crate) &'a [u8], pub(crate) usize);
 impl Bytes<'_> {
-    fn next(&mut self) -> u8 {
+    pub(crate) fn next(&mut self) -> u8 {
         let b = self.0.get(self.1).copied().unwrap_or(0);
         self.1 += 1;
         b
     }
     /// A dyadic value k / 8 in [-8, 8).
-    fn dyadic(&mut self) -> f64 {
+    pub(crate) fn dyadic(&mut self) -> f64 {
         f64::from(i16::from(self.next()) - 128) / 16.0
     }
-    fn small(&mut self) -> f64 {
+    pub(crate) fn small(&mut self) -> f64 {
         f64::from(self.next() % 7) - 3.0
     }
 }
 
-fn frame(o: Point3, n: Vec3) -> Option<Frame3> {
+pub(crate) fn frame(o: Point3, n: Vec3) -> Option<Frame3> {
     let hint = if n.x.abs() >= n.y.abs().max(n.z.abs()) {
         Vec3::new(0.0, 1.0, 0.0)
     } else {
@@ -44,7 +44,7 @@ fn frame(o: Point3, n: Vec3) -> Option<Frame3> {
     Frame3::new(o, n, hint, Tolerance::default()).ok()
 }
 
-fn make(kind: u8, f: Frame3, radius: f64, angle: f64) -> Surface {
+pub(crate) fn make(kind: u8, f: Frame3, radius: f64, angle: f64) -> Surface {
     if kind >= 224 {
         // Minor radius at most the major's less a quarter: a ring torus.
         return Surface::Torus {
@@ -65,7 +65,7 @@ fn make(kind: u8, f: Frame3, radius: f64, angle: f64) -> Surface {
     }
 }
 
-fn frame_of(s: &Surface) -> Frame3 {
+pub(crate) fn frame_of(s: &Surface) -> Frame3 {
     match s {
         Surface::Plane(f)
         | Surface::Cylinder { frame: f, .. }
@@ -77,7 +77,7 @@ fn frame_of(s: &Surface) -> Frame3 {
 }
 
 /// Binary64 distance from a point to a surface (the check's own).
-fn distance(s: &Surface, p: Vec3) -> f64 {
+pub(crate) fn distance(s: &Surface, p: Vec3) -> f64 {
     let f = frame_of(s);
     let rel = p - (f.origin() - Point3::ORIGIN);
     let n = f.normal();
@@ -171,7 +171,7 @@ fn samples(item: &AnalyticItem) -> Vec<Vec3> {
     }
 }
 
-fn translated(s: &Surface, t: RigidTransform) -> Surface {
+pub(crate) fn translated(s: &Surface, t: RigidTransform) -> Surface {
     let f = frame_of(s).transformed(t, Tolerance::default()).unwrap();
     match s {
         Surface::Plane(_) => Surface::Plane(f),

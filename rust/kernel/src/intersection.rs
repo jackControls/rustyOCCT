@@ -15,6 +15,7 @@ use num_bigint::{BigInt, BigUint, Sign};
 use std::cmp::Ordering;
 
 mod analytic;
+mod curve_surface;
 mod curved;
 mod exact_spline;
 mod linear_sets;
@@ -29,6 +30,7 @@ mod toroidal;
 mod torus_curves;
 pub use crate::proximity::LinearPrimitive3;
 pub use analytic::{surface_surface, AnalyticItem, Enclosure, Enclosure3, SurfaceIntersection};
+pub use curve_surface::{curve_surface, CurvePoint, CurveSurfaceIntersection};
 pub use curved::{
     line_circle, line_cylinder, line_sphere, segment_circle, segment_cylinder, segment_sphere,
     Circle3, ContactKind, CurveHit, CurvedIntersection, Cylinder3, Sphere3,

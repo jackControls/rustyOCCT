@@ -864,6 +864,55 @@ Decisions for S7c, recorded before its code (2026-09-28):
   parallel; 80-digit roots for cones) and a native `GeomAPI_IntCS` capture
   of 36 cases before the kernel code.
 
+Decisions for S7c.2, recorded before its code (2026-09-28):
+
+* **Conic curves.** S7a's ellipses and hyperbolas become edges in S8 and
+  S9 with stored binary64 data, as OCCT's `Geom_Ellipse` and
+  `Geom_Hyperbola`: `intersection::Conic` is an ellipse or a hyperbola of a
+  `Frame3` with semi-axes `major` and `minor`, the exact point sets
+  `o + major cos t x + minor sin t y` and `o + major cosh t x + minor sinh t
+  y` (the stored axes `x`, `y`; one branch of the hyperbola), `t` the
+  parameter of `ElCLib` (an ellipse's in `(-pi, pi]`, a hyperbola's real).
+  S8 gives them their `Curve3` variants with the same data.
+  `conic_surface(conic, surface)` gives `Empty`, `Contained` or points, as
+  `curve_surface`.
+* **Conic methods.** In the stored axes, sheared, a point `o + xi x + eta y`
+  is on the curve exactly when `minor^2 xi^2 +- major^2 eta^2 = major^2
+  minor^2` (and `xi > 0` on the hyperbola's branch, a certified sign): the
+  circle's resultant method of S7c.1 applies unchanged, with exact
+  multiplicities and containment against planes, cylinders, spheres and
+  tori. The parameter is a certified `atan2(eta / minor, xi / major)` or
+  `asinh(eta / minor)` (a certified logarithm joins `certified.rs`). Against
+  a cone an ellipse is the circle's trigonometric polynomial of degree two;
+  a hyperbola's, times `4 z^2` with `z = e^t`, a quartic in `z > 0` with
+  interval coefficients, its roots isolated by certified subdivision
+  between Cauchy bounds of it and its reciprocal, `t = ln z`; a tangency
+  there is `ComputationLimit`.
+* **Splines against tori.** `spline_torus`: the torus's quartic in
+  homogeneous form, `(|D|^2 + (R^2 - r^2) W^2)^2 - 4 R^2 W^2 (|D|^2 -
+  (D . a)^2 / |a|^2)` with `D = X - o W`, of degree `4 p` on each span,
+  through the shared exact isolator of `spline_sphere` and `spline_cylinder`:
+  every root with its contact orders, and every span on the torus as an
+  overlap.
+* **Splines against cones.** A cone is the set `rho = |r + h tan a|` about
+  its stored axis, so on a span `W^2 F = Q0 + tau Q1 + tau^2 Q2` with exact
+  polynomials `Q0 = |D|^2 - (D . a)^2 / |a|^2 - r^2 W^2`, `Q1 = -2 r (D . a)
+  W`, `Q2 = -(D . a)^2` and one irrational `tau = tan a / |a|`. `tau` is
+  transcendental (`a` a nonzero rational, Lindemann-Weierstrass), so a span
+  lies on the cone exactly when `Q0 = Q1 = Q2 = 0`, and a root common to all
+  three (their exact gcd: a rational apex) is an exact point, a tangency
+  (the cone's apex is singular). The other roots are isolated by certified
+  subdivision with `tau` in intervals, each by a sign change and a
+  derivative of one sign; one that cannot be certified is
+  `ComputationLimit`. `spline_cone` gives points (parameter, point,
+  contact) and overlaps (whole spans, exact knots).
+* **Evidence first**: the reference extended (sympy: the conics' two
+  equations by Groebner bases, a spline's exact span polynomials against a
+  torus with `real_roots` and multiplicities; 80 digits for cones), fixtures
+  of ellipses, hyperbolas and splines against every surface with each class,
+  and a native `GeomAPI_IntCS` capture on `Geom_Ellipse`, `Geom_Hyperbola`
+  and `Geom_BSplineCurve` before the kernel code.
+
 ### S8 — general planar split and face trimming (SplitBody job)
 
 Split any supported solid by an arbitrary plane: face/plane intersection
@@ -1327,7 +1376,16 @@ the first fixture, never deferred.
     matches and 3 reviewed differences. S7a's `kk_crossing` (two congruent
     cones crossing symmetrically, two conics meeting at nodes) is
     `ComputationLimit`, which its comparison accepts.
-  * S7c (curve/surface) and S7d (curve/curve) pending.
+  * S7c.1 implemented: the exact sympy reference and a `GeomAPI_IntCS`
+    capture of 36 lines and circles against every analytic surface came
+    before `intersection/curve_surface.rs`; lines exactly by their
+    polynomials, circles by the resultant modulo their conic, both with
+    exact multiplicities (tangencies) and containment, a cone's in certified
+    intervals; the kernel inside the reference on all 36, the bridge 29
+    matches and 7 reviewed differences (a contained curve never a native
+    segment); fuzz target `curve_surface`.
+  * S7c.2 (ellipses, hyperbolas, splines against cones and tori) and S7d
+    (curve/curve) pending.
 * Tessellation (parallel track) — T-a implemented (`TESSELLATION.md`);
   gate pending CI, the schedule replay and the clean campaign.
   * The decisions above, the independent reference

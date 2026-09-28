@@ -76,6 +76,7 @@ jobs:
           target/math-oracle-venv/bin/python rust/tools/generate_procedural_intersection_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_torus_curve_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_ruled_curve_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_curve_surface_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_tessellation_fixtures.py --check
       - name: Run unchanged upstream tests on both kernels
         run: python3 rust/tools/run_upstream_tests.py --backend both --draw-exe /usr/bin/occt-draw
@@ -258,6 +259,9 @@ jobs:
       - name: Compare two cones' traced curves with GeomInt_IntSS and the exact reference
         if: ${{ !cancelled() }}
         run: target/math-oracle-venv/bin/python rust/tools/compare_ruled_curves.py --occt-root target/brep-sdk/install --sdk-manifest target/brep-sdk/build-manifest.json
+      - name: Compare lines and circles against analytic surfaces with GeomAPI_IntCS and the exact reference
+        if: ${{ !cancelled() }}
+        run: target/math-oracle-venv/bin/python rust/tools/compare_curve_surface.py --occt-root target/brep-sdk/install --sdk-manifest target/brep-sdk/build-manifest.json
       - name: Test the tessellation reference's deliberate failures and compare tessellations with BRepMesh_IncrementalMesh
         if: ${{ !cancelled() }}
         run: |
@@ -277,6 +281,7 @@ jobs:
             target/procedural-intersection-oracle/
             target/torus-curve-oracle/
             target/ruled-curve-oracle/
+            target/curve-surface-oracle/
             target/tessellation-oracle/
             target/brep-sdk/build-manifest.json
             target/brep-sdk/*.log

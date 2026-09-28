@@ -589,6 +589,16 @@ order independence and finite points along every track on both surfaces.
 matches and 3 reviewed differences, the kernel inside the reference on all
 12.
 
+S7c.1: `generate_curve_surface_fixtures.py --check` writes 36 lines and
+circles against every analytic surface and their rows from
+`curve_surface_reference.py`; `curve_surface.rs` requires the stored normals,
+the reference's classes, contacts and point counts, every reference number
+inside the kernel's enclosures (a circle's angle modulo a turn), an arc's
+result equal to its circle's, and every point the curve's point at its
+parameter. `compare_curve_surface.py` reproduces the `GeomAPI_IntCS`
+pre-implementation capture: 29 matches and 7 reviewed differences (missed
+containment), the kernel inside the reference on all 36.
+
 The `GeomInt_IntSS` captures were taken on macOS arm64; IntPatch's walking
 lines differ on Linux near degeneracies (the first Linux run changed
 `cc_near_figure_inside`). A run on another platform reproduces that

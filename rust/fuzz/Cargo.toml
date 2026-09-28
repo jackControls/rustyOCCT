@@ -196,6 +196,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "curve_surface"
+path = "fuzz_targets/curve_surface.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "tessellation"
 path = "fuzz_targets/tessellation.rs"
 test = false

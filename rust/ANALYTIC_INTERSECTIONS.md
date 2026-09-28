@@ -300,6 +300,54 @@ isolated apex missed, two of four common generatrices, the lone apex
 missed), and the kernel inside the reference on all 12
 (`compare_ruled_curves.py`, `ruled_curves.rs`).
 
+## Lines and circles against surfaces (S7c.1)
+
+`intersection::curve_surface(curve, surface)` intersects a topology line or
+circle (a segment's whole line, an arc's whole circle) with a plane, a
+cylinder, a cone, a sphere or a torus: `Empty`, `Contained`, or points sorted
+by the curve's parameter (a line's `s` along `p0 + s (p1 - p0)`, a circle's
+angle from its stored x axis in `(-pi, pi]`), each with its parameter and
+point enclosed and its contact, a crossing or a tangency. A spline edge is
+`OutOfDomain` (the spline/plane and exact spline intersections serve it); a
+line through one point is `Degenerate`.
+
+* **Lines.** The surface's function along a line is a polynomial of degree
+  one, two or four with rational coefficients; its real roots are isolated
+  exactly (`polynomial::real`) with their multiplicities: a multiple root is
+  a tangency, the zero polynomial containment (a line in a plane or along a
+  cylinder).
+* **Circles.** In a rational basis `(U, V)` of the circle's plane, `V`
+  sheared until `c1` vanishes at no root, the surface's function reduced
+  modulo the circle's conic is `c0(u) + c1(u) v`; the points are the real
+  roots of the resultant `a2 c0^2 - a1 c0 c1 + a0 c1^2` with
+  `v = -c0 / c1`, one per root, whose multiplicity is that point's
+  intersection multiplicity (a tangency above one). `c0 = c1 = 0` is
+  containment: a circle in a plane, on a sphere, on a coaxial cylinder, a
+  torus's meridian or parallel. The angle is a certified `atan2` in the
+  stored frame.
+* **Cones.** A cone's `cos` and `sin` are transcendental: along a line a
+  quadratic with interval coefficients (a certain discriminant sign, else
+  `ComputationLimit`; a line through a rational apex meets it there, a double
+  root), along a circle a trigonometric polynomial of degree two whose roots
+  are isolated over one turn cut where it is certainly nonzero, each by a
+  sign change and a derivative of one sign (the mean-value form excluding
+  the rest) and narrowed by bisection on certain signs, in binary64
+  intervals first and in exact arithmetic for the boxes those leave
+  undecided; a tangency there is `ComputationLimit`.
+
+Evidence: `curve_surface_reference.py` (sympy: the exact polynomial along a
+line fitted from rational samples, `real_roots` with multiplicities; the
+circle's two equations by a Groebner basis, a tangency where their gradients
+are parallel; 80-digit roots for cones) and 36 fixture cases (`l_`, `c_`:
+every surface with a crossing, a tangency, containment and a miss where they
+exist); a `GeomAPI_IntCS` capture before the kernel code
+(`fixtures/occt-curve-surface-preimplementation`): 29 native matches and 7
+reviewed differences (a contained curve is never a segment: nothing for a
+line in a plane or along a cylinder, a circle in a plane, on a sphere or a
+cylinder, and hundreds of separate points along a torus's meridian or
+parallel), and the kernel inside the reference on all 36
+(`compare_curve_surface.py`, `curve_surface.rs`).
+
 ## Evidence
 
 * **Independent reference.** `analytic_intersection_reference.py` computes

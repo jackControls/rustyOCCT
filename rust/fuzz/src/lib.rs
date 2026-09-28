@@ -44,6 +44,8 @@ mod brep_io;
 pub use brep_io::check_brep_io;
 mod analytic_intersections;
 pub use analytic_intersections::check_analytic_intersections;
+mod curve_surface;
+pub use curve_surface::check_curve_surface;
 mod tessellation;
 pub use tessellation::check_tessellation;
 mod bezier_editing;

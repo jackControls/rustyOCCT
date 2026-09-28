@@ -20,7 +20,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear','brep_validation','identity','history','split_merge','attributes','brep_io','analytic_intersections','tessellation']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear','brep_validation','identity','history','split_merge','attributes','brep_io','analytic_intersections','tessellation','curve_surface']
 STARTUP_SECONDS = 600
 MAX_STARTUP_SECONDS = 3600
 # surface_knots' retained CI corpus replays slower than the cap allows: 2,766 s
@@ -38,14 +38,17 @@ TARGET_INPUT_SECONDS = {"surface_knots": 60, "degree_elevation": 60, "surface_ed
 # replay while the input it stopped on alone runs in 66 ms.
 # analytic_intersections joined in S7b.2: a 300 s campaign stopped at the
 # 2,048 MB RSS limit on two planes (0.011 s alone), after rational-interval
-# cone isolation had churned temporary BigInts.
+# cone isolation had churned temporary BigInts. curve_surface joined in S7c.1:
+# a 600 s campaign peaked at 1,904 MB after exact circle/cone and torus
+# resultants.
 ALLOCATOR_TARGETS = {'surface_knots', 'degree_elevation', 'spline_linear', 'brep_validation',
-                     'analytic_intersections'}
+                     'analytic_intersections', 'curve_surface'}
 # Targets whose allocation stack traces are kept to five frames: with the
 # default thirty, AddressSanitizer's stack depot grew analytic_intersections
 # to 1,489 MB in 120 s (33 MB without a sanitizer); five frames keep it at
-# 227 MB and still name each allocation's site in a report.
-SHORT_STACK_TARGETS = {'analytic_intersections'}
+# 227 MB and still name each allocation's site in a report. curve_surface
+# joined with it (the same exact intersection machinery).
+SHORT_STACK_TARGETS = {'analytic_intersections', 'curve_surface'}
 # The pinned libFuzzer checks stop_file between MutateAndTestOne batches,
 # not between each callback. Keep its default mutation sequence length.
 MUTATION_DEPTH = 5
@@ -95,6 +98,18 @@ def seed_corpus(target):
         if not path.exists():
             path.write_bytes(data)
 
+    if target == 'curve_surface':
+        # Every surface kind (plane, cylinder, cone, sphere, torus) against a
+        # line and a circle in every mode (independent, along the axis at the
+        # radius, across it, through the origin; independent, coaxial,
+        # beside, in a plane through the axis).
+        for kind in (0, 1, 2, 3, 224):
+            for shape in range(2):
+                for mode in range(4):
+                    data = bytearray((j*53+kind*13+shape*29+mode*5+7)%256 for j in range(32))
+                    data[:3] = bytes([kind, shape, mode])
+                    save(bytes(data))
+        save(bytes([0]))
     if target == 'analytic_intersections':
         # Every kind pair (plane, cylinder, cone, sphere) in every mode
         # (independent, parallel, coaxial, tangent offset, shared origin).

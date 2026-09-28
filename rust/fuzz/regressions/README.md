@@ -653,3 +653,17 @@ fell below `1e-6` and were retried in rational intervals, 7.5 s without a
 sanitizer. The windows are now predicted to second order (the branch's
 curvature from implicit differentiation) and rational steps are tried only
 below `1e-9`; the input replays in 0.8 s.
+
+## Curve/surface: a circle nearly tangent to a cone
+
+`curve_surface/timeout-fdb4ae721b33aab65287ff8213216b9633bd2975.bin` and
+`curve_surface/slow-unit-5141896143c65fa4feb23b2d35ce6aa19345b013.bin` were
+found by the first local campaigns of the S7c.1 target: a circle beside a
+cone at the sum of its radius and the cone's (the harness's tangent mode),
+touching the cone's section circle up to the rounding of the stored frames.
+Binary64 intervals cannot settle the boxes around the near-tangency, and the
+rational tier then subdivided the whole turn with rational cosines: over
+20 s under AddressSanitizer. The rational tier now revisits only the boxes
+binary64 leaves undecided, merged, under a budget of 16 boxes, with the
+cone's apex and axis computed once; the inputs replay in 0.19 s and 0.24 s
+without a sanitizer.
