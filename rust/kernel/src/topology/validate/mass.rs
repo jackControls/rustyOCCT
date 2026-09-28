@@ -115,6 +115,76 @@ pub(super) fn point_integrands<T: Real>(p: &[T; 3], n: &[T; 3], norm: &T) -> [T;
 }
 
 /// `sum of c v^k cos^a u sin^b u` over boxes.
+/// `trig_integral` from a constant `lower` to a jet `v`.
+fn trig_integral_jet<T: Real>(
+    cos_power: u8,
+    sin_power: u8,
+    lower: &T,
+    v: &Jet<T>,
+) -> Option<Jet<T>> {
+    let n = v.order();
+    let mut total = Jet::constant(c::<T>(0.0), n);
+    for &(f, alpha, beta) in fourier(cos_power, sin_power).iter() {
+        if f == 0 {
+            total = total.add(&v.add_constant(&lower.neg()).scale(&c(alpha)));
+            continue;
+        }
+        let g = c::<T>(f as f64);
+        let (c1, s1) = v.scale(&g).cos_sin();
+        let (c0, s0) = T::cos_sin(&lower.mul(&g));
+        let cos_part = s1.add_constant(&s0.neg()).scale(&c(alpha));
+        let sin_part = c1.neg().add_constant(&c0).scale(&c(beta));
+        total = total.add(&cos_part.add(&sin_part).scale(&c::<T>(1.0).div(&g)?));
+    }
+    Some(total)
+}
+
+/// `sph_antiderivative` on jets of `u` and `v`.
+fn sph_antiderivative_jet<T: Real>(
+    f: &Sph<T>,
+    u: &Jet<T>,
+    v: &Jet<T>,
+    lower: &T,
+) -> Option<Jet<T>> {
+    let (co, si) = u.cos_sin();
+    let n = u.order();
+    let power = |x: &Jet<T>, k: u8| (0..k).fold(Jet::constant(c::<T>(1.0), n), |acc, _| acc.mul(x));
+    let mut total = Jet::constant(c::<T>(0.0), n);
+    for ((a, b, cc, d), x) in f {
+        let along_u = power(&co, *a).mul(&power(&si, *b));
+        total = total.add(&along_u.mul(&trig_integral_jet(*cc, *d, lower, v)?).scale(x));
+    }
+    Some(total)
+}
+
+/// `rev_eval` on jets.
+fn rev_eval_jet<T: Real>(f: &Rev<T>, u: &Jet<T>, v: &Jet<T>) -> Jet<T> {
+    let (co, si) = u.cos_sin();
+    let n = u.order();
+    let power = |x: &Jet<T>, k: u8| (0..k).fold(Jet::constant(c::<T>(1.0), n), |acc, _| acc.mul(x));
+    let mut total = Jet::constant(c::<T>(0.0), n);
+    for ((k, a, b), x) in f {
+        total = total.add(
+            &power(v, *k)
+                .mul(&power(&co, *a))
+                .mul(&power(&si, *b))
+                .scale(x),
+        );
+    }
+    total
+}
+
+/// A planar polynomial `sum c u^a v^b` on jets.
+fn planar_eval_jet<T: Real>(f: &Planar<T>, x: &Jet<T>, y: &Jet<T>) -> Jet<T> {
+    let n = x.order();
+    let power = |z: &Jet<T>, k: u8| (0..k).fold(Jet::constant(c::<T>(1.0), n), |acc, _| acc.mul(z));
+    let mut total = Jet::constant(c::<T>(0.0), n);
+    for ((a, b), cf) in f {
+        total = total.add(&power(x, *a).mul(&power(y, *b)).scale(cf));
+    }
+    total
+}
+
 fn rev_eval<T: Real>(f: &Rev<T>, u: &T, v: &T) -> T {
     let (co, si) = T::cos_sin(u);
     let power = |x: &T, n: u8| (0..n).fold(c::<T>(1.0), |acc, _| acc.mul(x));
@@ -727,6 +797,20 @@ fn trig_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>]) -> Option<Vec<T>
         for u in &lp.fins {
             let (start, end) = match &u.pcurve {
                 Curve2::LineSegment { start, end } => (start, end),
+                // -∫ F(u, v) du along a projection (S8d.2), with jets.
+                Curve2::Projection(pr) => {
+                    let mut values = Vec::with_capacity(fs.len());
+                    for f in fs {
+                        values.push(super::projection::integrate_along::<T>(
+                            pr,
+                            &|uu, v, du, _| {
+                                Some(sph_antiderivative_jet(f, uu, v, &lower)?.mul(du).neg())
+                            },
+                        )?);
+                    }
+                    accumulate(values);
+                    continue;
+                }
                 // -∫ F(u, v) du along a spline, F each integrand's
                 // antiderivative in v from `lower`, enclosed (S4d).
                 Curve2::BSpline(spline) => {
@@ -887,6 +971,13 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
                         ),
                         Curve2::BSpline(spline) => planar_spline(&anti[k], spline, &o),
                         Curve2::Sinusoid { .. } => None,
+                        // -∫ F du along a projection onto the plane (S8d.2).
+                        Curve2::Projection(pr) => {
+                            super::projection::integrate_along::<T>(pr, &|x, y, dx, _| {
+                                let (x, y) = (x.add_constant(&ou.neg()), y.add_constant(&ov.neg()));
+                                Some(planar_eval_jet(&anti[k], &x, &y).mul(dx).neg())
+                            })
+                        }
                     });
                     accumulate(values.try_map_all()?);
                 }
@@ -993,6 +1084,15 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
                         Curve2::Sinusoid { start, sweep, a } => {
                             rev_sinusoid(&anti, *start, *sweep, a)?
                         }
+                        // -∫ F(u, v) du along a projection (S8d.2), with jets.
+                        Curve2::Projection(pr) => anti
+                            .iter()
+                            .map(|f| {
+                                super::projection::integrate_along::<T>(pr, &|uu, v, du, _| {
+                                    Some(rev_eval_jet(f, uu, v).mul(du).neg())
+                                })
+                            })
+                            .collect::<Option<Vec<T>>>()?,
                         Curve2::CircularArc { .. } | Curve2::EllipseArc { .. } => return None,
                     };
                     accumulate(values.try_into().ok()?);
@@ -1229,7 +1329,10 @@ fn curve_moments<T: Real>(curve: &Curve3, reference: &V3<T>) -> Option<(T, V3<T>
             Some((length, moment))
         }
         // An ellipse's length is an elliptic integral.
-        Curve3::BSpline(_) | Curve3::EllipseArc { .. } => None,
+        Curve3::BSpline(_)
+        | Curve3::EllipseArc { .. }
+        | Curve3::HyperbolaArc { .. }
+        | Curve3::ParabolaArc { .. } => None,
     }
 }
 

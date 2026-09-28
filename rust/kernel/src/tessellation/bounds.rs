@@ -151,6 +151,9 @@ pub(super) fn curve_point(curve: &Curve3, t: f64) -> Option<P> {
             let (ca, sa) = Fast::cos_sin(&a);
             combine(frame, &c(*major).mul(&ca), &c(*minor).mul(&sa), &c(0.0))
         }
+        Curve3::HyperbolaArc { .. } | Curve3::ParabolaArc { .. } => {
+            crate::topology::conic_point_fast(curve, t)?
+        }
         Curve3::BSpline(_) => return None,
     })
 }
@@ -395,6 +398,40 @@ pub(super) fn segment_bound(curve: &Curve3, dt: f64) -> (f64, f64) {
             sweep_angle,
             ..
         } => (frame, [*major, *minor], c(sweep_angle.abs())),
+        // |C''| <= sigma max(a, b) cosh(T) sweep^2 and the tangent turns at
+        // most a / b per unit of t on a hyperbola; C'' = sweep^2 x / (2 f)
+        // and the turn at most 1 / (2 f) per unit of t on a parabola.
+        Curve3::HyperbolaArc {
+            frame,
+            major,
+            minor,
+            start,
+            sweep,
+        } => {
+            let reach = start.abs().max((start + sweep).abs());
+            let big = major.abs().max(minor.abs()) * reach.cosh() * (1.0 + 1e-12);
+            let step = c(sweep.abs()).mul(&c(dt));
+            let deviation = c(frame_norm(frame))
+                .mul(&c(big))
+                .mul(&step.square())
+                .mul(&c(0.125));
+            let turn = step.mul(&c(major.abs() / minor.abs() * (1.0 + 1e-12)));
+            return (upper(&deviation), upper(&turn));
+        }
+        Curve3::ParabolaArc {
+            frame,
+            focal,
+            sweep,
+            ..
+        } => {
+            let step = c(sweep.abs()).mul(&c(dt));
+            let k = 1.0 / (2.0 * focal.abs()) * (1.0 + 1e-12);
+            let deviation = c(frame_norm(frame))
+                .mul(&c(k))
+                .mul(&step.square())
+                .mul(&c(0.125));
+            return (upper(&deviation), upper(&step.mul(&c(k))));
+        }
         Curve3::LineSegment { .. } | Curve3::BSpline(_) => return (0.0, 0.0),
     };
     let (big, small) = (ra.abs().max(rb.abs()), ra.abs().min(rb.abs()));

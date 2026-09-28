@@ -723,6 +723,10 @@ fn on_plane(plane: &Frame3, curve: &Curve3) -> Curve2 {
                 sweep_angle: turn * sweep_angle,
             }
         }
+        // A hyperbola or parabola on a plane: its exact projection (S8d.2).
+        Curve3::HyperbolaArc { .. } | Curve3::ParabolaArc { .. } => {
+            crate::topology::plane_pcurve(curve, crate::topology::Orientation::Forward, *plane)
+        }
         // Axis-aligned with the plane (the kernel's own ellipses, whose
         // frames share the plane's axes); validation rejects any other.
         Curve3::EllipseArc {
@@ -808,6 +812,7 @@ fn negate_v(p: &Curve2) -> Curve2 {
             sweep: *sweep,
             a: a.map(|x| -x),
         },
+        Curve2::Projection(_) => unreachable!("the reader makes no projection pcurves"),
     }
 }
 
@@ -851,6 +856,12 @@ fn reversed(p: &Curve2) -> Curve2 {
             sweep: -sweep,
             a: *a,
         },
+        Curve2::Projection(p) => {
+            let mut p = (**p).clone();
+            p.reversed = !p.reversed;
+            p.lifts.reverse();
+            Curve2::Projection(Box::new(p))
+        }
     }
 }
 

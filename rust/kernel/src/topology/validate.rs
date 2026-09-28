@@ -16,6 +16,7 @@ use super::{
     ShellId, Side, Surface, Vertex,
 };
 use crate::certified::{pi, Fast, Interval as I, Real};
+use crate::jet::Jet;
 use crate::{Frame3, Tolerance};
 use num_bigint::{BigInt, Sign};
 use num_rational::BigRational as R;
@@ -27,6 +28,8 @@ use std::fmt;
 mod bernstein;
 mod continuity;
 mod mass;
+mod projection;
+pub(crate) use projection::{conic_point_fast, projection_range};
 mod spline_deviation;
 mod spline_flux;
 mod spline_taylor;
@@ -314,7 +317,10 @@ fn arc_of(c: &Curve3) -> Option<(&Frame3, [f64; 2], f64, f64)> {
             start_angle,
             sweep_angle,
         } => Some((frame, [*major, *minor], *start_angle, *sweep_angle)),
-        Curve3::LineSegment { .. } | Curve3::BSpline(_) => None,
+        Curve3::LineSegment { .. }
+        | Curve3::BSpline(_)
+        | Curve3::HyperbolaArc { .. }
+        | Curve3::ParabolaArc { .. } => None,
     }
 }
 
@@ -378,6 +384,9 @@ fn curve_at<T: Real>(curve: &Curve3, t: f64) -> V3<T> {
             let (a, b) = (v3::<T>(start.to_array()), v3::<T>(end.to_array()));
             vadd(&a, &vscale(&vsub(&b, &a), &c(t)))
         }
+        Curve3::HyperbolaArc { .. } | Curve3::ParabolaArc { .. } => {
+            projection::conic_point::<T>(curve, t).expect("a conic evaluates")
+        }
         _ => {
             let (f, [rx, ry], start, sweep) = arc_of(curve).unwrap();
             let fr = frame::<T>(f);
@@ -437,6 +446,10 @@ fn pcurve_at<T: Real>(p: &Curve2, t: f64) -> V2<T> {
                 c::<T>(center.y).add(&c::<T>(*minor).mul(&si)),
             ]
         }
+        Curve2::Projection(pr) => projection::projection_at::<T>(pr, t).unwrap_or_else(|| {
+            let wide = c::<T>(0.0).widen(&int(1 << 30));
+            [wide.clone(), wide]
+        }),
         Curve2::Sinusoid { start, sweep, a } => {
             let u = c::<T>(*start).add(&c::<T>(*sweep).mul(&c(t)));
             let (co, si) = T::cos_sin(&u);
@@ -782,7 +795,9 @@ impl<T: Real> Harmonic<T> {
 /// Add C(t); false for a spline, which is not a harmonic sum.
 fn add_curve<T: Real>(h: &mut Harmonic<T>, curve: &Curve3, forward: bool) -> bool {
     match curve {
-        Curve3::BSpline(_) => return false,
+        Curve3::BSpline(_) | Curve3::HyperbolaArc { .. } | Curve3::ParabolaArc { .. } => {
+            return false
+        }
         Curve3::LineSegment { start, end } => {
             let (a, b) = (v3::<T>(start.to_array()), v3::<T>(end.to_array()));
             if forward {
@@ -891,7 +906,7 @@ fn sub_use<T: Real>(h: &mut Harmonic<T>, s: &Surface, p: &Curve2) -> bool {
             );
             true
         }
-        (_, Curve2::EllipseArc { .. } | Curve2::Sinusoid { .. }) => false,
+        (_, Curve2::EllipseArc { .. } | Curve2::Sinusoid { .. } | Curve2::Projection(_)) => false,
         (Surface::Cylinder { frame: f, radius }, Curve2::LineSegment { start, end }) => {
             let fr = frame::<T>(f);
             let dv = c::<T>(end.y).sub(&c(start.y));
@@ -1053,6 +1068,12 @@ fn deviation<T: Real>(
     if spline_use(curve, s, p) {
         return Verdict::Unknown;
     }
+    // A projection of the fin's own edge lies on it by definition (D13).
+    if let Curve2::Projection(pr) = p {
+        if projection::own(pr, curve, s, forward) {
+            return Verdict::Within;
+        }
+    }
     let mut h = Harmonic::<T>::new();
     if add_curve(&mut h, curve, forward)
         && sub_use(&mut h, s, p)
@@ -1112,6 +1133,24 @@ fn curve_valid(curve: &Curve3, tol: &R, fast_tol2: &Fast, exact_tol2: &I) -> boo
                 d.iter().map(|x| x * x).sum::<R>() > tol * tol
             })
         }
+        Curve3::HyperbolaArc {
+            major,
+            minor,
+            start,
+            sweep,
+            ..
+        } => {
+            finite(&[*major, *minor, *start, *sweep])
+                && r(*major) > *tol
+                && r(*minor) > *tol
+                && *sweep != 0.0
+        }
+        Curve3::ParabolaArc {
+            focal,
+            start,
+            sweep,
+            ..
+        } => finite(&[*focal, *start, *sweep]) && *focal > 0.0 && *sweep != 0.0,
         _ => {
             let (_, [rx, ry], start, sweep) = arc_of(curve).unwrap();
             finite(&[rx, ry, start, sweep])
@@ -1192,6 +1231,9 @@ fn pcurve_valid(p: &Curve2) -> bool {
                 && *sweep_angle != 0.0
                 && sweep_angle.abs() <= TAU
         }
+        Curve2::Projection(pr) => {
+            pr.lifts.len() >= 2 && pr.lifts.iter().all(|l| finite(&[l.x, l.y]))
+        }
         Curve2::Sinusoid { start, sweep, a } => {
             finite(&[*start, *sweep, a[0], a[1], a[2]]) && *sweep != 0.0 && sweep.abs() <= TAU
         }
@@ -1251,7 +1293,10 @@ fn pcurve_end_exact(p: &Curve2, t: f64) -> Option<[R; 2]> {
             let [x, y, _] = spline_point(span.curve().as_curve3(), span.range(), t);
             Some([x, y])
         }
-        Curve2::CircularArc { .. } | Curve2::EllipseArc { .. } | Curve2::Sinusoid { .. } => None,
+        Curve2::CircularArc { .. }
+        | Curve2::EllipseArc { .. }
+        | Curve2::Sinusoid { .. }
+        | Curve2::Projection(_) => None,
     }
 }
 
@@ -1531,6 +1576,10 @@ pub(crate) fn measure(view: &View) -> Measured {
                                 .and_then(|taylor| taylor.upper_bound()),
                             }
                             .map(next_above)
+                        } else if matches!(&u.pcurve, Curve2::Projection(pr)
+                            if projection::own(pr, curve, &face.surface, forward))
+                        {
+                            Some(MIN_BOUND)
                         } else if harmonic(&mut h) {
                             let hi = h.upper().bounds_f64().1;
                             let hi = if hi.is_finite() {
@@ -1615,6 +1664,16 @@ fn area_term<T: Real>(p: &Curve2, o: &[R; 2]) -> T {
                 .sub(&rx.mul(&c::<T>(center.y).sub(&ov).mul(&c1.sub(&c0))))
                 .add(&rx.mul(&ry).mul(&c(*sweep_angle)))
         }
+        // Along a projection (S8d.2), integrated with jets; unknown (any
+        // sign) when the integral cannot be enclosed.
+        Curve2::Projection(pr) => projection::integrate_along::<T>(pr, &|u, v, du, dv| {
+            Some(
+                u.add_constant(&ou.neg())
+                    .mul(dv)
+                    .sub(&v.add_constant(&ov.neg()).mul(du)),
+            )
+        })
+        .unwrap_or_else(|| T::exact_f64(0.0).widen(&R::from_integer(BigInt::from(1) << 1000))),
         // With w = u - o_u: a1 w cos u + a2 w sin u - 2 a1 sin u + 2 a2 cos u
         // between the ends, less (a0 - o_v) times the sweep.
         Curve2::Sinusoid { start, sweep, a } => {
@@ -1707,6 +1766,9 @@ fn periodic_area<T: Real>(lp: &Lp) -> Option<T> {
             }
             Curve2::BSpline(spline) => bernstein::minus_v_du(spline)?,
             Curve2::Sinusoid { start, sweep, a } => sinusoid_areas::<T>(*start, *sweep, a).0,
+            Curve2::Projection(pr) => {
+                projection::integrate_along::<T>(pr, &|_, v, du, _| Some(v.mul(du).neg()))?
+            }
             Curve2::CircularArc { .. } | Curve2::EllipseArc { .. } => return None,
         });
     }
@@ -1728,6 +1790,9 @@ fn periodic_area_v<T: Real>(lp: &Lp) -> Option<T> {
             }
             Curve2::BSpline(spline) => bernstein::u_dv(spline)?,
             Curve2::Sinusoid { start, sweep, a } => sinusoid_areas::<T>(*start, *sweep, a).1,
+            Curve2::Projection(pr) => {
+                projection::integrate_along::<T>(pr, &|u, _, _, dv| Some(u.mul(dv)))?
+            }
             Curve2::CircularArc { .. } | Curve2::EllipseArc { .. } => return None,
         });
     }
@@ -1785,7 +1850,7 @@ fn crossings<T: Real>(loops: &[&Lp], p: &V2<T>) -> Option<u32> {
                         &scaled,
                     )?
                 }
-                Curve2::Sinusoid { .. } => return None,
+                Curve2::Sinusoid { .. } | Curve2::Projection(_) => return None,
             };
         }
     }
@@ -2052,6 +2117,25 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp], origin: &V3<T>) -> Option<T> {
                             total.add(&bernstein::green_integral(spline, SPLINE_DEPTH, &g)?.neg());
                         continue;
                     }
+                    // -∫ F(v) h(u) du along a projection (S8d.2).
+                    Curve2::Projection(pr) => {
+                        let (ha, hb, hc) = &h;
+                        let term = projection::integrate_along::<T>(pr, &|u, v, du, _| {
+                            let (co, si) = u.cos_sin();
+                            let hu = co.scale(ha).add(&si.scale(hb)).add_constant(hc);
+                            let fv = if poled {
+                                v.scale(&sa)
+                                    .add_constant(&rad)
+                                    .square()
+                                    .scale(&c::<T>(1.0).div(&sa.mul(&c(2.0)))?)
+                            } else {
+                                v.scale(&rad).add(&v.square().scale(&sa.mul(&c(0.5))))
+                            };
+                            Some(fv.mul(&hu).mul(du).neg())
+                        })?;
+                        total = total.add(&term);
+                        continue;
+                    }
                     Curve2::CircularArc { .. }
                     | Curve2::EllipseArc { .. }
                     | Curve2::Sinusoid { .. } => return None,
@@ -2196,6 +2280,19 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp], origin: &V3<T>) -> Option<T> {
                     };
                     bernstein::green_integral(spline, SPLINE_DEPTH, &f)?.neg()
                 }
+                // -∫ (v - v0) f(u) du along a projection (S8d.2): `f` the
+                // plane's constant or the cylinder's `A sin u + B cos u + C`.
+                Curve2::Projection(pr) => projection::integrate_along::<T>(pr, &|u, v, du, _| {
+                    let f = if plane {
+                        Jet::constant(coeffs.2.clone(), u.order())
+                    } else {
+                        let (co, si) = u.cos_sin();
+                        si.scale(&coeffs.0)
+                            .add(&co.scale(&coeffs.1))
+                            .add_constant(&coeffs.2)
+                    };
+                    Some(v.add_constant(&shift.neg()).mul(&f).mul(du).neg())
+                })?,
                 Curve2::CircularArc { .. }
                 | Curve2::EllipseArc { .. }
                 | Curve2::Sinusoid { .. } => return None,
@@ -2578,7 +2675,9 @@ fn clear_of_boundary<T: Real>(
                     let r0 = d[0].square().add(&d[1].square()).sqrt();
                     far(&r0.sub(&c(1.0)).square().mul(&c::<T>(*minor).square()))
                 }
-                Curve2::BSpline(_) | Curve2::Sinusoid { .. } => return None,
+                Curve2::BSpline(_) | Curve2::Sinusoid { .. } | Curve2::Projection(_) => {
+                    return None
+                }
             };
             if !clear {
                 return Some(false);
@@ -2595,6 +2694,7 @@ fn closed_curve(curve: &Curve3) -> bool {
         Curve3::CircularArc { sweep_angle, .. } | Curve3::EllipseArc { sweep_angle, .. } => {
             sweep_angle.abs() == TAU
         }
+        Curve3::HyperbolaArc { .. } | Curve3::ParabolaArc { .. } => false,
         Curve3::LineSegment { .. } => false,
         // A spline ring edge is a full period; its seam is tested for C1.
         Curve3::BSpline(span) => span.is_closed_period(),

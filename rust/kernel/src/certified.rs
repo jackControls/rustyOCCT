@@ -565,6 +565,48 @@ pub(crate) trait Real: Clone + std::fmt::Debug {
     fn bounds_f64(&self) -> (f64, f64);
     /// The smallest enclosure of both.
     fn union(&self, o: &Self) -> Self;
+    /// `e^x` from the tier's own arithmetic: halve the argument until it
+    /// is at most 1/2, sum the series to `x^14 / 14!` with the remainder
+    /// bounded by twice the next term, then square back.
+    fn exp(x: &Self) -> Self {
+        let (lo, hi) = x.bounds_f64();
+        let reach = lo.abs().max(hi.abs());
+        if !reach.is_finite() || reach > 700.0 {
+            return Self::exact_f64(0.0).widen(&R::from_integer(BigInt::from(1) << 1100));
+        }
+        let mut halvings = 0u32;
+        let mut r = reach;
+        while r > 0.5 {
+            r *= 0.5;
+            halvings += 1;
+        }
+        let mut y = x.clone();
+        for _ in 0..halvings {
+            y = y.mul(&Self::exact_f64(0.5));
+        }
+        let mut sum = Self::exact_f64(1.0);
+        let mut term = Self::exact_f64(1.0);
+        const TERMS: u32 = 14;
+        for k in 1..=TERMS {
+            term = term
+                .mul(&y)
+                .div(&Self::exact_f64(f64::from(k)))
+                .expect("a nonzero index");
+            sum = sum.add(&term);
+        }
+        // |remainder| <= 2 |y|^15 / 15! for |y| <= 1/2.
+        let next = term
+            .mul(&y)
+            .div(&Self::exact_f64(f64::from(TERMS + 1)))
+            .expect("a nonzero index");
+        let (nlo, nhi) = next.bounds_f64();
+        let bound = 2.0 * nlo.abs().max(nhi.abs());
+        let mut out = sum.add(&Self::exact_f64(-bound).union(&Self::exact_f64(bound)));
+        for _ in 0..halvings {
+            out = out.square();
+        }
+        out
+    }
 }
 
 impl Real for Interval {

@@ -37,6 +37,7 @@ pub mod history;
 pub mod identity;
 pub mod intersection;
 mod interval;
+mod jet;
 pub mod math;
 pub mod occt_brep;
 pub mod polynomial;

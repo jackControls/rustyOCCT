@@ -30,6 +30,7 @@ use std::collections::BTreeMap;
 use std::f64::consts::TAU;
 
 mod validate;
+pub(crate) use validate::{conic_point_fast, projection_range};
 pub use validate::{EdgeEnd, Entity, Issue, IssueKind};
 
 macro_rules! index_type {
@@ -187,6 +188,151 @@ pub enum Curve3 {
         start_angle: f64,
         sweep_angle: f64,
     },
+    /// frame.origin + major cosh t x + minor sinh t y, t = start + sweep *
+    /// fraction (OCCT's `Geom_Hyperbola`; S8d.2): a branch of a plane's
+    /// section of a cone.
+    HyperbolaArc {
+        frame: Frame3,
+        major: f64,
+        minor: f64,
+        start: f64,
+        sweep: f64,
+    },
+    /// frame.origin + t^2 / (4 focal) x + t y, t = start + sweep * fraction
+    /// (OCCT's `Geom_Parabola`; S8d.2): a plane's section of a cone parallel
+    /// to one of its rulings.
+    ParabolaArc {
+        frame: Frame3,
+        focal: f64,
+        start: f64,
+        sweep: f64,
+    },
+}
+
+/// A pcurve defined as the exact inverse of its face's surface map applied
+/// to its fin's edge (D13; S8d.2): at a fraction `f` the surface's
+/// parameters of the edge's point at `f` (or `1 - f` for a reversed use),
+/// continuous on the surface's cover, `u` (and a torus's `v`) lifted to the
+/// representative nearest the interpolation of `lifts` (the parameters at
+/// fractions `k / (lifts.len() - 1)`, recorded when the pcurve is made).
+#[derive(Debug, Clone, PartialEq)]
+pub struct Projection {
+    pub curve: Curve3,
+    pub surface: Surface,
+    pub reversed: bool,
+    pub lifts: Vec<Point2>,
+}
+
+impl Projection {
+    /// The surface's principal parameters of a point, before lifting.
+    pub(crate) fn inverse(surface: &Surface, p: Point3) -> Option<Point2> {
+        let frame = match surface {
+            Surface::Plane(f)
+            | Surface::Cylinder { frame: f, .. }
+            | Surface::Cone { frame: f, .. }
+            | Surface::Sphere { frame: f, .. }
+            | Surface::Torus { frame: f, .. } => f,
+            Surface::BSpline(_) => return None,
+        };
+        let [x, y, z] = frame.coordinates(p);
+        Some(match surface {
+            Surface::Plane(_) => Point2::new(x, y),
+            Surface::Cylinder { .. } => Point2::new(y.atan2(x), z),
+            Surface::Cone { half_angle, .. } => Point2::new(y.atan2(x), z / half_angle.cos()),
+            Surface::Sphere { .. } => Point2::new(y.atan2(x), z.atan2(x.hypot(y))),
+            Surface::Torus { major, .. } => Point2::new(y.atan2(x), z.atan2(x.hypot(y) - major)),
+            Surface::BSpline(_) => unreachable!("returned above"),
+        })
+    }
+
+    /// The lift at a fraction: the linear interpolation of the recorded ones.
+    pub(crate) fn lift(&self, fraction: f64) -> Point2 {
+        let n = self.lifts.len() - 1;
+        let x = (fraction.clamp(0.0, 1.0) * n as f64).min(n as f64);
+        let k = (x.floor() as usize).min(n.saturating_sub(1));
+        let w = x - k as f64;
+        let (a, b) = (self.lifts[k], self.lifts[(k + 1).min(n)]);
+        Point2::new(a.x + (b.x - a.x) * w, a.y + (b.y - a.y) * w)
+    }
+
+    /// Whether the surface is periodic in u (every surface of revolution)
+    /// and in v (a torus).
+    pub(crate) fn periodic(&self) -> [bool; 2] {
+        match self.surface {
+            Surface::Plane(_) | Surface::BSpline(_) => [false, false],
+            Surface::Torus { .. } => [true, true],
+            _ => [true, false],
+        }
+    }
+
+    pub fn point(&self, fraction: f64) -> Point2 {
+        let f = if self.reversed {
+            1.0 - fraction
+        } else {
+            fraction
+        };
+        let p = self.curve.point(f);
+        let Some(mut uv) = Self::inverse(&self.surface, p) else {
+            return Point2::new(f64::NAN, f64::NAN);
+        };
+        let lift = self.lift(fraction);
+        let [pu, pv] = self.periodic();
+        let near = |x: f64, target: f64| x + TAU * ((target - x) / TAU).round();
+        if pu {
+            uv.x = near(uv.x, lift.x);
+        }
+        if pv {
+            uv.y = near(uv.y, lift.y);
+        }
+        uv
+    }
+
+    /// A projection of `curve` onto `surface` with `anchors` recorded lifts,
+    /// each the representative nearest the previous one (from `start` at
+    /// fraction 0); `None` when consecutive anchors turn by more than a
+    /// quarter period, where the interpolation would not pin the lift.
+    pub(crate) fn new(
+        curve: Curve3,
+        surface: Surface,
+        reversed: bool,
+        start: Point2,
+        anchors: usize,
+    ) -> Option<Self> {
+        let mut out = Self {
+            curve,
+            surface,
+            reversed,
+            lifts: vec![start],
+        };
+        let [pu, pv] = out.periodic();
+        let steps = anchors.max(1) * 8;
+        let mut last = start;
+        let mut lifts = vec![start];
+        for k in 1..=steps {
+            let fraction = k as f64 / steps as f64;
+            let f = if reversed { 1.0 - fraction } else { fraction };
+            let mut uv = Self::inverse(&out.surface, out.curve.point(f))?;
+            let near = |x: f64, target: f64| x + TAU * ((target - x) / TAU).round();
+            if pu {
+                uv.x = near(uv.x, last.x);
+                if (uv.x - last.x).abs() > std::f64::consts::FRAC_PI_2 {
+                    return None;
+                }
+            }
+            if pv {
+                uv.y = near(uv.y, last.y);
+                if (uv.y - last.y).abs() > std::f64::consts::FRAC_PI_2 {
+                    return None;
+                }
+            }
+            last = uv;
+            if k % 8 == 0 {
+                lifts.push(uv);
+            }
+        }
+        out.lifts = lifts;
+        Some(out)
+    }
 }
 
 /// A spline over a closed range of its parameter: its whole domain when the
@@ -376,6 +522,25 @@ impl Curve3 {
                 let (sine, cosine) = (start_angle + sweep_angle * fraction).sin_cos();
                 frame.point(Point2::new(major * cosine, minor * sine), 0.0)
             }
+            Self::HyperbolaArc {
+                frame,
+                major,
+                minor,
+                start,
+                sweep,
+            } => {
+                let t = start + sweep * fraction;
+                frame.point(Point2::new(major * t.cosh(), minor * t.sinh()), 0.0)
+            }
+            Self::ParabolaArc {
+                frame,
+                focal,
+                start,
+                sweep,
+            } => {
+                let t = start + sweep * fraction;
+                frame.point(Point2::new(t * t / (4.0 * focal), t), 0.0)
+            }
         }
     }
 }
@@ -411,6 +576,9 @@ pub enum Curve2 {
         sweep: f64,
         a: [f64; 3],
     },
+    /// The exact projection of the fin's own edge onto its face's surface
+    /// (D13; S8d.2).
+    Projection(Box<Projection>),
 }
 
 impl Curve2 {
@@ -448,6 +616,7 @@ impl Curve2 {
                 let (sine, cosine) = u.sin_cos();
                 Point2::new(u, a[0] + a[1] * cosine + a[2] * sine)
             }
+            Self::Projection(p) => p.point(fraction),
         }
     }
 }
@@ -3235,6 +3404,16 @@ pub(crate) fn plane_pcurve(curve: &Curve3, sense: Orientation, frame: Frame3) ->
                 start_angle: turn * start,
                 sweep_angle: turn * sweep,
             }
+        }
+        // A hyperbola or parabola in the plane: its exact projection
+        // (S8d.2), lifted from its start.
+        Curve3::HyperbolaArc { .. } | Curve3::ParabolaArc { .. } => {
+            let reversed = sense == Orientation::Reversed;
+            let start = local(curve.point(if reversed { 1.0 } else { 0.0 }));
+            Curve2::Projection(Box::new(
+                Projection::new(curve.clone(), Surface::Plane(frame), reversed, start, 8)
+                    .expect("a conic projects onto a plane"),
+            ))
         }
         Curve3::BSpline(_) => {
             unreachable!("the extrusion builder creates only lines, circles and arcs")

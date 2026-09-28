@@ -177,6 +177,22 @@ impl Exact {
             AnalyticCurve::Edge(Curve3::BSpline(_)) => {
                 return Err(Error::OutOfDomain("a spline edge (S7d.2)"))
             }
+            // A hyperbola edge's whole branch (S8d.2).
+            AnalyticCurve::Edge(Curve3::HyperbolaArc {
+                frame,
+                major,
+                minor,
+                ..
+            }) => {
+                return Self::of(&AnalyticCurve::Conic(Conic::Hyperbola {
+                    frame: *frame,
+                    major: *major,
+                    minor: *minor,
+                }))
+            }
+            AnalyticCurve::Edge(Curve3::ParabolaArc { .. }) => {
+                return Err(Error::OutOfDomain("a parabola edge"))
+            }
             // An ellipse edge's whole ellipse (S8a.2).
             AnalyticCurve::Edge(Curve3::EllipseArc {
                 frame,

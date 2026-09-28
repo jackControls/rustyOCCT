@@ -306,6 +306,12 @@ fn v_range(topology: &Topology, face: &Face) -> (f64, f64) {
                             add(a[0] - amplitude);
                             add(a[0] + amplitude);
                         }
+                        Curve2::Projection(p) => {
+                            if let Some([_, _, lo, hi]) = crate::topology::projection_range(p, 64) {
+                                add(lo);
+                                add(hi);
+                            }
+                        }
                         Curve2::BSpline(_) => {}
                     }
                 }
@@ -359,6 +365,32 @@ fn segment_count(
             let (big, small) = (major.abs().max(minor.abs()), major.abs().min(minor.abs()));
             Some((frame, big, big / small * (1.0 + 1e-12), *sweep_angle))
         }
+        Curve3::HyperbolaArc {
+            frame,
+            major,
+            minor,
+            start,
+            sweep,
+        } => {
+            let reach = start.abs().max((start + sweep).abs());
+            Some((
+                frame,
+                major.abs().max(minor.abs()) * reach.cosh(),
+                major.abs() / minor.abs() * (1.0 + 1e-12),
+                *sweep,
+            ))
+        }
+        Curve3::ParabolaArc {
+            frame,
+            focal,
+            sweep,
+            ..
+        } => Some((
+            frame,
+            1.0 / (2.0 * focal.abs()),
+            1.0 / (2.0 * focal.abs()) * (1.0 + 1e-12),
+            *sweep,
+        )),
         Curve3::LineSegment { .. } | Curve3::BSpline(_) => None,
     } {
         let sigma = bounds::frame_norm(frame);
@@ -404,6 +436,10 @@ fn segment_count(
                 sweep.abs(),
                 (a[1].hypot(a[2]) * sweep).abs() * (1.0 + 1e-12),
             ),
+            Curve2::Projection(p) => match crate::topology::projection_range(p, 64) {
+                Some([ul, uh, vl, vh]) => (uh - ul, vh - vl),
+                None => (f64::INFINITY, f64::INFINITY),
+            },
             Curve2::BSpline(_) => (0.0, 0.0),
         };
         let (v0, v1) = ranges[f];

@@ -97,6 +97,61 @@ fn curve_record(c: &Curve3, ring_start: Option<f64>) -> EdgeGeometry {
                 range: [start, start + sweep_angle.abs()],
             }
         }
+        // `Geom_Hyperbola` (record 5) and `Geom_Parabola` (record 6), their
+        // parameters the edge's; a negative sweep about the flipped axis
+        // (both are even in `x` and odd in `y` under `t -> -t`).
+        Curve3::HyperbolaArc {
+            frame,
+            major,
+            minor,
+            start,
+            sweep,
+        } => {
+            let flip = *sweep < 0.0;
+            let (n, y) = if flip {
+                (-frame.normal(), -frame.y())
+            } else {
+                (frame.normal(), frame.y())
+            };
+            let s = if flip { -start } else { *start };
+            EdgeGeometry {
+                record: format!(
+                    "5 {} {} {} {} {} {}",
+                    nums(&frame.origin().to_array()),
+                    nums(&n.to_array()),
+                    nums(&frame.x().to_array()),
+                    nums(&y.to_array()),
+                    num(*major),
+                    num(*minor)
+                ),
+                range: [s, s + sweep.abs()],
+            }
+        }
+        Curve3::ParabolaArc {
+            frame,
+            focal,
+            start,
+            sweep,
+        } => {
+            let flip = *sweep < 0.0;
+            let (n, y) = if flip {
+                (-frame.normal(), -frame.y())
+            } else {
+                (frame.normal(), frame.y())
+            };
+            let s = if flip { -start } else { *start };
+            EdgeGeometry {
+                record: format!(
+                    "6 {} {} {} {} {}",
+                    nums(&frame.origin().to_array()),
+                    nums(&n.to_array()),
+                    nums(&frame.x().to_array()),
+                    nums(&y.to_array()),
+                    num(*focal)
+                ),
+                range: [s, s + sweep.abs()],
+            }
+        }
         // `Geom_Ellipse` (record 3), its major radius first: an ellipse
         // longer along y is written about its axes turned a quarter turn,
         // `t - pi/2` its angle; a negative sweep about the flipped axis.
@@ -236,6 +291,25 @@ fn curve_at(c: &Curve3, t: f64) -> Point3 {
             };
             frame.point(Point2::new(major * a.cos(), minor * a.sin()), 0.0)
         }
+        Curve3::HyperbolaArc {
+            frame,
+            major,
+            minor,
+            sweep,
+            ..
+        } => {
+            let a = if *sweep < 0.0 { -t } else { t };
+            frame.point(Point2::new(major * a.cosh(), minor * a.sinh()), 0.0)
+        }
+        Curve3::ParabolaArc {
+            frame,
+            focal,
+            sweep,
+            ..
+        } => {
+            let a = if *sweep < 0.0 { -t } else { t };
+            frame.point(Point2::new(a * a / (4.0 * focal), a), 0.0)
+        }
     }
 }
 
@@ -371,6 +445,8 @@ fn pcurve_record(
         (_, Curve2::Sinusoid { .. }) => {
             return Err(unwritable("a sinusoid pcurve (a cylinder's plane section)"))
         }
+        // D13's exact projections are written as approximations only.
+        (_, Curve2::Projection(_)) => return Err(unwritable("a projection pcurve (D13)")),
     })
 }
 

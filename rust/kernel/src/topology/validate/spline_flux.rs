@@ -497,7 +497,8 @@ fn enclosed_green<T: Real>(
                 }
                 Curve2::CircularArc { .. }
                 | Curve2::EllipseArc { .. }
-                | Curve2::Sinusoid { .. } => return None,
+                | Curve2::Sinusoid { .. }
+                | Curve2::Projection(_) => return None,
             }
         }
         for (a, b) in super::chords::<T>(lp) {

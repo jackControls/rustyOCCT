@@ -840,6 +840,7 @@ fn edge_kind(curve: &Curve3) -> Option<CurveKind<3>> {
             sweep: r(*sweep_angle),
         },
         Curve3::BSpline(s) => CurveKind::Spline(super::bernstein::edge_arcs(s)?),
+        Curve3::HyperbolaArc { .. } | Curve3::ParabolaArc { .. } => return None,
         // The unit circle's arc on the semi-axes as axes.
         Curve3::EllipseArc {
             frame,
@@ -891,7 +892,7 @@ fn pcurve_kind(p: &Curve2) -> Option<CurveKind<2>> {
             start: r(*start_angle),
             sweep: r(*sweep_angle),
         },
-        Curve2::Sinusoid { .. } => return None,
+        Curve2::Sinusoid { .. } | Curve2::Projection(_) => return None,
     })
 }
 

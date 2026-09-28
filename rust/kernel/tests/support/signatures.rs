@@ -71,6 +71,32 @@ fn moments(p: &Curve2) -> [f64; 3] {
             ]
         }
         Curve2::Sinusoid { .. } => unreachable!("a sinusoid lies on a cylinder"),
+        // A projection (S8d.2): Gauss nodes on 64 pieces, the derivative by
+        // central differences.
+        Curve2::Projection(_) => {
+            let nodes: [(f64, f64); 3] = [
+                (0.5 - 0.5 * 0.6f64.sqrt(), 5.0 / 18.0),
+                (0.5, 8.0 / 18.0),
+                (0.5 + 0.5 * 0.6f64.sqrt(), 5.0 / 18.0),
+            ];
+            let pieces = 256;
+            let h = 1e-6;
+            let mut out = [0.0; 3];
+            for k in 0..pieces {
+                for (x, w) in nodes {
+                    let t = (k as f64 + x) / pieces as f64;
+                    let (a, b) = (p.point((t - h).max(0.0)), p.point((t + h).min(1.0)));
+                    let span = (t + h).min(1.0) - (t - h).max(0.0);
+                    let (du, dv) = ((b.x - a.x) / span, (b.y - a.y) / span);
+                    let q = p.point(t);
+                    let w = w / pieces as f64;
+                    out[0] += w * (q.x * dv - q.y * du);
+                    out[1] += w * q.x * q.x * dv;
+                    out[2] -= w * q.y * q.y * du;
+                }
+            }
+            out
+        }
     }
 }
 

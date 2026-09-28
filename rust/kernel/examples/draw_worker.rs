@@ -287,6 +287,32 @@ fn moments(p: &Curve2) -> [f64; 3] {
             ]
         }
         Curve2::Sinusoid { .. } => unreachable!("a sinusoid lies on a cylinder"),
+        // A projection (S8d.2): Gauss nodes on 64 pieces, the derivative by
+        // central differences.
+        Curve2::Projection(_) => {
+            let nodes: [(f64, f64); 3] = [
+                (0.5 - 0.5 * 0.6f64.sqrt(), 5.0 / 18.0),
+                (0.5, 8.0 / 18.0),
+                (0.5 + 0.5 * 0.6f64.sqrt(), 5.0 / 18.0),
+            ];
+            let pieces = 256;
+            let h = 1e-6;
+            let mut out = [0.0; 3];
+            for k in 0..pieces {
+                for (x, w) in nodes {
+                    let t = (k as f64 + x) / pieces as f64;
+                    let (a, b) = (p.point((t - h).max(0.0)), p.point((t + h).min(1.0)));
+                    let span = (t + h).min(1.0) - (t - h).max(0.0);
+                    let (du, dv) = ((b.x - a.x) / span, (b.y - a.y) / span);
+                    let q = p.point(t);
+                    let w = w / pieces as f64;
+                    out[0] += w * (q.x * dv - q.y * du);
+                    out[1] += w * q.x * q.x * dv;
+                    out[2] -= w * q.y * q.y * du;
+                }
+            }
+            out
+        }
     }
 }
 
@@ -313,7 +339,9 @@ fn face_area(t: &Topology, face: usize) -> f64 {
                         -(a[0] * sweep + a[1] * (u1.sin() - u0.sin())
                             - a[2] * (u1.cos() - u0.cos()))
                     }
-                    Curve2::CircularArc { .. } | Curve2::EllipseArc { .. } => f64::NAN,
+                    Curve2::CircularArc { .. }
+                    | Curve2::EllipseArc { .. }
+                    | Curve2::Projection(_) => f64::NAN,
                 })
                 .sum::<f64>();
             radius * periodic.abs()
@@ -442,6 +470,17 @@ fn edge_length(curve: &Curve3) -> f64 {
                 }
             }
             total * sweep_angle.abs() / pieces as f64
+        }
+        // Hyperbolas and parabolas (S8d.2): chords of 4096 pieces.
+        Curve3::HyperbolaArc { .. } | Curve3::ParabolaArc { .. } => {
+            let pieces = 4096;
+            (0..pieces)
+                .map(|k| {
+                    curve
+                        .point(k as f64 / pieces as f64)
+                        .distance(curve.point((k + 1) as f64 / pieces as f64))
+                })
+                .sum()
         }
     }
 }
@@ -886,6 +925,14 @@ fn pcurve_at(p: &Curve2, t: f64) -> (Point2, Point2) {
             (
                 p.point(t),
                 Point2::new(*sweep, sweep * (a[2] * cos - a[1] * sin)),
+            )
+        }
+        Curve2::Projection(_) => {
+            let (lo, hi) = ((t - 1e-6).max(0.0), (t + 1e-6).min(1.0));
+            let (a, b) = (p.point(lo), p.point(hi));
+            (
+                p.point(t),
+                Point2::new((b.x - a.x) / (hi - lo), (b.y - a.y) / (hi - lo)),
             )
         }
     }

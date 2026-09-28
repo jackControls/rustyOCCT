@@ -93,6 +93,27 @@ pub fn curve_surface(curve: &Curve3, surface: &Surface) -> Result<CurveSurfaceIn
                 "a spline edge against an analytic surface (spline_plane and exact_spline)",
             ))
         }
+        // A hyperbola edge's whole branch (S8d.2).
+        Curve3::HyperbolaArc {
+            frame,
+            major,
+            minor,
+            ..
+        } => {
+            return super::conic_surface::conic_surface(
+                &super::conic_surface::Conic::Hyperbola {
+                    frame: *frame,
+                    major: *major,
+                    minor: *minor,
+                },
+                surface,
+            );
+        }
+        Curve3::ParabolaArc { .. } => {
+            return Err(Error::OutOfDomain(
+                "a parabola edge against an analytic surface",
+            ))
+        }
         // An ellipse edge's whole ellipse, by its angle (S8a.2).
         Curve3::EllipseArc {
             frame,
