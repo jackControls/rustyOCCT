@@ -903,12 +903,19 @@ fn step<T: Real>(
         let (lo, hi) = x.bounds_f64();
         mid([lo, hi])
     };
-    let slope = -c(&j.gp) / c(&j.gt);
-    if !slope.is_finite() {
+    // The branch's slope and curvature from implicit differentiation:
+    // t' = -G_phi / G_t, t'' = -(G_pp + 2 G_pt t' + G_tt t'^2) / G_t.
+    let (gt, slope) = (c(&j.gt), -c(&j.gp) / c(&j.gt));
+    let bend = -(c(&j.gpp) + 2.0 * c(&j.gpt) * slope + c(&j.gtt) * slope * slope) / gt;
+    if !(slope.is_finite() && bend.is_finite()) {
         return None;
     }
-    let dt = slope * (phi1 - phi0);
-    let margin = 1.5 * dt.abs() + 4.0 * (w0[1] - w0[0]) + 1e-12 * (1.0 + tm.abs());
+    let h = phi1 - phi0;
+    let dt = slope * h + 0.5 * bend * h * h;
+    let margin = 0.5 * (slope * h).abs()
+        + bend.abs() * h * h
+        + 4.0 * (w0[1] - w0[0])
+        + 1e-12 * (1.0 + tm.abs());
     let w = [
         w0[0].min(w0[0] + dt) - margin,
         w0[1].max(w0[1] + dt) + margin,
@@ -955,7 +962,7 @@ fn follow(
             .ok_or(limit("a torus curve's branches"))?;
         let next = if at + h >= phi1 { phi1 } else { at + h };
         let done = step(fast, at, w, next).or_else(|| {
-            if h < 1e-6 {
+            if h < 1e-9 {
                 step(exact, at, w, next)
             } else {
                 None

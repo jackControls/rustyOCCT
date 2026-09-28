@@ -640,3 +640,16 @@ intervals, narrowed by bisection: dozens of rational cosines per point, over
 20 s per input under AddressSanitizer. The rational tier now narrows the
 binary64 bracket by the interval Newton operator (a few evaluations); the
 input replays in 1.5 s without a sanitizer.
+
+## Analytic intersections: steep branches of two thin tori
+
+`analytic_intersections/timeout-248e3b316e70fe35093e805d7ae31e09c7a5ac09.bin`
+was found by a local 600-second campaign before S7b.3b.2 was pushed: two
+tori of major radii 4.375 and 3.125 with thin tubes (0.254 and 0.483) on
+perpendicular axes. Their loops are narrow in the carrier's meridian angle
+and tall round its tube, so beside the folds the branches climb steeply and
+the tracks' windows, predicted from the slope alone, kept missing them; steps
+fell below `1e-6` and were retried in rational intervals, 7.5 s without a
+sanitizer. The windows are now predicted to second order (the branch's
+curvature from implicit differentiation) and rational steps are tried only
+below `1e-9`; the input replays in 0.8 s.
