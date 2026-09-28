@@ -375,7 +375,8 @@ fn distance2(a: [f64; 3], b: [f64; 3]) -> f64 {
 }
 
 /// The parameter in `[lo, hi]` where `f` comes nearest `target`: an end
-/// within `tol` of it exactly, else the best of samples spread over the
+/// within `tol` of it exactly (on a closed curve, where both are, the end
+/// for an edge's `last` vertex), else the best of samples spread over the
 /// spans between `breaks`, refined by golden-section search between its
 /// neighbours (OCCT's `ShapeAnalysis_Curve::Project` samples and refines
 /// alike). Deterministic; a point that does not evaluate is infinitely far.
@@ -385,14 +386,14 @@ fn locate(
     breaks: &[f64],
     target: [f64; 3],
     tol: f64,
+    last: bool,
 ) -> f64 {
     let d = |t: f64| f(t).map_or(f64::INFINITY, |p| distance2(p, target));
-    let (dlo, dhi) = (d(lo), d(hi));
-    if dlo <= tol * tol && dlo <= dhi {
-        return lo;
-    }
-    if dhi <= tol * tol {
-        return hi;
+    match (d(lo) <= tol * tol, d(hi) <= tol * tol) {
+        (true, true) => return if last { hi } else { lo },
+        (true, false) => return lo,
+        (false, true) => return hi,
+        (false, false) => {}
     }
     let mut ends = vec![lo];
     ends.extend(breaks.iter().copied().filter(|k| *k > lo && *k < hi));
@@ -451,11 +452,11 @@ pub(super) fn curve_range(
     if closed && !curve.is_periodic() {
         return Ok([a, b]);
     }
-    let first = locate(&f, [a, b], breaks, from, tol);
+    let first = locate(&f, [a, b], breaks, from, tol, false);
     if closed {
         return Ok([first, first + (b - a)]);
     }
-    let last = locate(&f, [a, b], breaks, to, tol);
+    let last = locate(&f, [a, b], breaks, to, tol, true);
     if curve.is_periodic() {
         return Ok([first, if last <= first { last + (b - a) } else { last }]);
     }
@@ -514,8 +515,8 @@ pub(super) fn pcurve_range(
         domain
     } else {
         [
-            locate(&image, domain, &breaks, from, tol),
-            locate(&image, domain, &breaks, to, tol),
+            locate(&image, domain, &breaks, from, tol, false),
+            locate(&image, domain, &breaks, to, tol, true),
         ]
     };
     let record = match pcurve {
@@ -533,4 +534,52 @@ pub(super) fn pcurve_range(
         }
     };
     Ok((record, range))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A closed clamped curve: its start and end are one point.
+    fn loop_curve() -> BSplineCurve3 {
+        let poles = [
+            [1.0, 0.0],
+            [1.0, 1.0],
+            [-1.0, 1.0],
+            [-1.0, -1.0],
+            [1.0, -1.0],
+            [1.0, 0.0],
+        ];
+        BSplineCurve3::new(
+            2,
+            poles.iter().map(|p| Point3::new(p[0], p[1], 0.0)).collect(),
+            None,
+            vec![0.0, 1.0, 2.0, 3.0, 4.0],
+            vec![3, 1, 1, 1, 3],
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn ranges_run_from_the_first_vertex_to_the_last() {
+        let c = loop_curve();
+        let start = [1.0, 0.0, 0.0];
+        // Two vertices at the closed curve's joint: the whole domain.
+        assert_eq!(curve_range(&c, start, start, false, 1e-7), Ok([0.0, 4.0]));
+        assert_eq!(curve_range(&c, start, start, true, 1e-7), Ok([0.0, 4.0]));
+        // An interior vertex, found to rounding.
+        let p = c.point(1.5).unwrap();
+        let [first, last] = curve_range(&c, start, p3(p), false, 1e-7).unwrap();
+        assert_eq!(first, 0.0);
+        assert!((last - 1.5).abs() < 1e-9, "{last}");
+        // Against the curve's parameter.
+        assert_eq!(
+            curve_range(&c, p3(p), [-1.0, -0.5, 0.0], false, 1e-7).map(|_| ()),
+            Ok(())
+        );
+        assert_eq!(
+            curve_range(&c, p3(c.point(3.0).unwrap()), p3(p), false, 1e-7),
+            Err("EdgeRangeInverted")
+        );
+    }
 }
