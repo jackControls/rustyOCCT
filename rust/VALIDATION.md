@@ -929,7 +929,7 @@ round trips of every writable import to identical counts and vertices.
   `brep_validation`, `identity`, `history` and `brep_io` fuzz targets build
   and mutate cones.
 
-## STEP import (STEP-a)
+## STEP import (STEP-a, STEP-b)
 
 `generate_step_fixtures.py --check` writes 22 small STEP files authored for
 the track (`fixtures/step`): boxes in AP203, AP214 and AP242, in metres and
@@ -963,6 +963,57 @@ with OCCT's counts: 22 matches, 0 reviewed differences, 0 failures.
 `test_step_oracle.py` checks that wrong counts, verdicts, measures, centres
 and bodies on either side are caught.
 
+STEP-b adds seven files (`generate_step_fixtures.py`'s `STEP_B`): a
+half-ellipse sheet on the plane of its axes; a cylinder cut by an oblique
+plane (its top an ellipse on a plane whose axes are not the ellipse's, its
+wall bounded by the section); a sheet and a prism bounded by a two-span
+cubic, the prism's side a B-spline surface with the file's line pcurves and
+its curves also carrying pcurves on the caps; a two-span patch sheet with
+line and B-spline pcurves; a patch trimmed by a curve whose pcurve is a
+quadratic B-spline (its 3D curve the exact composition, of degree 9); and a
+cylinder of rational quarter-arc half circles and half-cylinder surfaces,
+all complex instances. `step_reference.py` measures them by closed forms,
+exact rational integrals (the profile's area and centroid by Green's theorem
+on its Bézier pieces in `Fraction`s) or Gauss-Legendre quadrature at 40
+digits (the profile's arc length, the patches' areas and centres, each error
+estimate below `1e-30`; the trimmed patch agrees with a nested tanh-sinh
+quadrature to 17 digits). It also checks every file's geometry with its own
+evaluation (de Boor's algorithm, rational in homogeneous form): every edge
+meets its vertices and lies on its faces' surfaces, through the file's
+pcurve on a spline surface at the same fraction of both ranges, within
+`1.1e-16` of the case's size over all 29 files (20 spline uses). The native
+capture (`fixtures/occt-step-b-preimplementation`) was taken while
+`step/spline.rs` did not exist and the importer rejected all seven files:
+OCCT's counts and validity agree with the reference; its default
+`BRepGProp` integration misses three bodies' measures (the oblique cylinder
+by `3.5e-6`, the two-span patch by `5.7e-7`, the rational cylinder by
+`2.0e-3`), which its adaptive integration reproduces.
+
+`tests/step.rs` requires 29 of the 30 bodies to import as the reference
+says (a sheet of one face with a free face's synthesized counts, S6: no
+shell) and the rational cylinder to be refused by exactly `edge_not_c1`,
+`pcurve_not_c1` and `face_not_c1`: R4 certifies C1 of the homogeneous
+curve, which the quarter-arc form is not at its double knots, though its
+rational curve is. The plate's and the prism's splines rewritten as complex
+rational instances import as the plain ones; the plate bounded by a
+rational third of a circle (weights 1, 1/2, 1) contains the circular
+segment's closed form; `BEZIER_CURVE`, `EdgeRangeInverted`,
+`PCurveNotDerived` (a pcurve on another surface) and `PCurveAgainstEdge`
+are named, and a pcurve bent off its edge is an import failure with
+`pcurve_off_edge`. `compare_step.py` gives 23 matches, 6 reviewed
+differences (`occt-step-divergences.json`: four one-face sheets counted as
+free faces, three `BRepGProp` measures, the rational cylinder's refusal)
+and 0 failures; a kernel body its validator refuses needs a review
+fingerprinted by its issue kinds (`rust_invalid:`), while an unsupported one
+or one outside the reference fails. The `step` fuzz target mutates all 29
+fixtures with STEP-b's entity names among its tokens; its `.brep` round
+trip skips a body written with an ellipse, which the `.brep` reader does
+not read yet. Its first 60-second smoke run found the `.brep` writer
+writing a line pcurve on a spline surface at unit speed where the pcurve is
+not its edge's length (`fuzz/regressions/step`); fixed, the four spline
+bodies round-trip (`tests/step.rs`) and a second smoke run (3,518 mutation
+executions after replaying 397 inputs) found nothing.
+
 A local survey of the public dataset's 336 `.stp` and `.step` files (U1:
 local only, nothing recorded from their contents) found no panic: 464
 bodies of 114 files import and validate; 896 are rejected, each by its
@@ -977,6 +1028,23 @@ schemas outside AP203, AP214 and AP242, five malformed (a duplicate entity
 number, two dangling references, a corrupted record, an apostrophe not
 doubled inside a string, which OCCT's lexer accepts when no `,` or `)`
 follows it).
+
+With STEP-b the same survey (U1: counts only; the base reproduces the
+numbers above) finds no panic: 550 bodies of 131 files import and validate;
+760 are rejected by their first construct outside STEP-a and STEP-b
+(`PCurveNotDerived` 458: B-spline and elliptic edges on cylinders, cones,
+spheres and tori that no rule derives, and spline-surface edges without the
+face's pcurve; periodic faces without a seam 106; extrusion surfaces 104;
+revolution surfaces 62; quasi-uniform surfaces 15 and curves 10; non-ring
+tori 3; the vertex loop and the negative major radius); 61 fail validation,
+STEP-a's 11 and 50 new: 21 through R4's C1 rule (rational quarter-arc
+forms: `edge_not_c1`, `pcurve_not_c1`, `face_not_c1`), 21 with a file's
+pcurve off its edge (not its edge's parameter, which OCCT's
+`SameParameter` repairs), 7 with loops winding the wrong way and one
+degenerate curve; the 22 refused files are unchanged. The survey's first
+run named 11 bodies `EdgeRangeInverted`: an edge ending at a closed
+spline's joint was located at the start; the end vertex now takes the far
+end (`step::spline`'s unit test).
 
 ## Cross-platform allowances
 
@@ -1004,6 +1072,7 @@ only numbers carry an allowance.
 | `occt-spline-tessellation-preimplementation/inputs.txt` and `native.txt` (`compare_tessellation.py --family spline`) | the kernel's `.brep` texts of the twelve spline bodies and OCCT's rows of their 24 meshes on each run | as for T-a's: `2^-50` per number relative to its size, `1e-9` relative or `1e-15` absolute per measurement; statuses and counts exact; another platform reproduces its own reviewed record (`platform-<name>/`) | the writer and BRepMesh evaluate splines with platform arithmetic |
 | `occt-procedural-*-preimplementation`, `occt-torus-curve-preimplementation`, `occt-torus-pair-preimplementation`, `occt-ruled-curve-preimplementation` (`compare_procedural_intersections.py`, `compare_torus_curves.py`, `compare_ruled_curves.py`) | the native lines' counts, points and samples on each run | `1e-9` relative per number on the capture's platform; another platform reproduces its own reviewed record (`platform-<name>/`) exactly in counts | IntPatch walks and approximates lines with platform arithmetic; near degeneracies its pieces differ |
 | `occt-step-preimplementation/native.txt` (`compare_step.py`) | OCCT's bodies of the 22 STEP fixtures on each run | `1e-9` relative per volume, area and centre coordinate; statuses, classes, counts and verdicts exact; no platform record | `STEPControl_Reader` and `BRepGProp` evaluate with platform trigonometry; the macOS capture agrees with the closed forms within `7.6e-15` |
+| `occt-step-b-preimplementation/native.txt` (`compare_step.py`) | OCCT's bodies of STEP-b's seven fixtures on each run | as for STEP-a's: `1e-9` relative per measure; statuses, classes, counts and verdicts exact; no platform record | the same evaluation of splines and ellipses; `BRepGProp`'s fixed-order integration errs by up to `2.0e-3` against the reference (reviewed), but repeats its own arithmetic |
 | `prism-properties-baseline.tsv` (T1) | kernel mass properties, bounds and classifications before and after the migration | none: each host regenerates its own rows at `26fc457f` and must reproduce them bitwise | frames and rotations use the platform's trigonometry, so rows differ across hosts in the last bits |
 
 Native bridges that compare against reviewed differences use no numeric

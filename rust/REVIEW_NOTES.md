@@ -1957,6 +1957,127 @@ Decisions for S9, recorded before its code (2026-09-28):
     for it exists, then the importer, a probe, `compare_step.py` with
     fingerprinted reviews, the `step` fuzz target and the docs.
 
+  STEP-b decisions, recorded before its code (2026-09-28, by the
+  implementing agent of the parallel track; none is a user decision). The
+  decisions above hold; these settle what they leave open for ellipses,
+  B-splines and the file's pcurves:
+
+  * **Ellipses.** `ELLIPSE(position, semi_axis_1, semi_axis_2)` is
+    `c + a1 cos t x + a2 sin t y` in its placement, in either order of the
+    semi-axes (OCCT's `StepToGeom` turns the axes a quarter turn when the
+    second is longer; the kernel's `Curve3::EllipseArc` takes either, so
+    the file's parameter is kept). An edge's range is the vertices' angles
+    `atan2(y / a2, x / a1)`, a closed ellipse one turn, as for a circle.
+    Pcurves are derived, as in STEP-a: on a plane, the ellipse in the
+    plane's coordinates when its axes are the plane's (`Curve2::EllipseArc`,
+    S8a.2), else its exact projection onto the plane (`Curve2::Projection`,
+    D13); on a cylinder, when the ellipse is the section of the cylinder by
+    its own plane (its centre on the axis, its axes projecting onto the
+    axis's normal plane as two perpendicular radii), the sinusoid
+    `v = a0 + a1 cos u + a2 sin u` of S8a.2 over `u = +-t + phi`, placed on
+    the universal cover like the straight segments. An ellipse on a cone,
+    sphere or torus, or one that is not such a section, is
+    `PCurveNotDerived`.
+  * **B-spline curves and surfaces.** `B_SPLINE_CURVE_WITH_KNOTS` and
+    `B_SPLINE_SURFACE_WITH_KNOTS` as simple instances, and as complex
+    instances whose `B_SPLINE_CURVE` (`B_SPLINE_SURFACE`) record holds the
+    degree(s), control points and flags, `B_SPLINE_CURVE_WITH_KNOTS`
+    (`..._SURFACE_WITH_KNOTS`) the multiplicities and knots, and
+    `RATIONAL_B_SPLINE_CURVE` (`..._SURFACE`) the weights; the other records
+    of a complex instance (`BOUNDED_CURVE`, `GEOMETRIC_REPRESENTATION_ITEM`,
+    `REPRESENTATION_ITEM` and the like) carry nothing geometric. Control
+    points scale with the length unit; knots and weights do not. Surface
+    control points are rows in `u` (the kernel's `u`-major order). Curve
+    form, closure flags, self-intersection and knot type are not used. A
+    B-spline is non-periodic when its multiplicities sum to poles plus
+    degree plus one (ISO 10303-42's clamped or unclamped form), periodic
+    when they follow OCCT's periodic pattern (`StepToGeom`'s test), and
+    otherwise `InvalidBSplineCurve` / `InvalidBSplineSurface`; OCCT also
+    makes a closed curve flagged closed periodic (`SetPeriodic`), which
+    moves no point. The kernel's constructors decide validity and limits
+    (`BSplineControlDataLimit`), as for `.brep` records. `BEZIER_*`,
+    `UNIFORM_*` and `QUASI_UNIFORM_*` curves and surfaces are refused by
+    name for now (OCCT converts them to knotted B-splines); the survey
+    counts them.
+  * **Edge ranges on B-splines.** An edge runs along its curve from the
+    parameter where its start vertex lies to where its end vertex lies:
+    the domain's end when the vertex is within the entity tolerance of it,
+    else the nearest point of the curve found by sampling each span and a
+    bracketed refinement (OCCT's `ShapeAnalysis_Curve::Project`); a closed
+    curve used by one vertex runs its whole domain. A start at or after the
+    end on a non-periodic curve is `EdgeRangeInverted`. The validator then
+    certifies the vertices on the edge, so a wrong location is an import
+    failure with `vertex_off_curve`, never a moved edge.
+  * **The file's pcurves.** On a B-spline surface the edge's `SURFACE_CURVE`
+    (or `SEAM_CURVE`) must carry a `PCURVE` whose `basis_surface` is the
+    face's surface; its `DEFINITIONAL_REPRESENTATION` holds a 2D `LINE`
+    (its point and direction; the vector's magnitude only scales the
+    parameter) or a 2D B-spline curve (simple or rational complex, as
+    above). Its range is found as the edge's, locating the edge's vertices
+    on the pcurve's image `S(c(t))`; the pcurve and the edge must then
+    share their parameter up to an affine map, which the validator
+    certifies at matching fractions (S4b): a file whose pcurve is
+    parameterised otherwise is an import failure with its issues, where
+    OCCT reparameterises (`BRepLib::SameParameter`). A pcurve running
+    against its edge is `PCurveAgainstEdge`. Without a `PCURVE` on the
+    face's surface, or with another 2D curve, the use is
+    `PCurveNotDerived` (OCCT projects the edge; the kernel does not
+    approximate). The first matching `PCURVE` is used; an edge used twice
+    by one spline face is the converter's `SeamOnBSplineSurface`. On
+    planes and on the analytic curved surfaces the file's pcurves are still
+    ignored and derived as in STEP-a (OCCT, too, recomputes them on
+    planes): an edge on a cylinder, cone, sphere or torus that STEP-a and
+    the ellipse rule above cannot derive stays `PCurveNotDerived`, even
+    when the file carries a pcurve. On a plane a B-spline edge's pcurve is
+    its poles in the plane's coordinates (the converter's `CurveOnPlane`).
+  * **OCCT's shape structure.** The `occt_brep::Document` gains
+    `Curve3::Ellipse` (the file's semi-axes in their order) and
+    `Curve2::Sinusoid`, which only the STEP translation produces: the
+    `.brep` reader keeps naming ellipse records (`Ellipse`, `Ellipse2d`)
+    unsupported, since reading them is a `.brep` change with its own
+    evidence (it would move the recorded `.brep` dataset survey), and OCCT
+    itself would hold an approximated B-spline pcurve where the kernel
+    holds the exact sinusoid. The converter maps them to
+    `Curve3::EllipseArc` (one turn snapped exactly, a closed ellipse losing
+    its seam vertex becoming a ring like a circle) and `Curve2::Sinusoid`,
+    and its plane pcurve of an ellipse whose axes are not the plane's
+    becomes the exact projection. Because the reader does not read ellipse
+    records, the `step` fuzz target's `.brep` round trip is skipped for a
+    body whose written text carries one.
+  * **Evidence.** New fixtures of `generate_step_fixtures.py`, each with
+    closed forms or mpmath quadrature at 30 or more digits: a half-ellipse
+    sheet on the plane of its axes; a cylinder cut by an oblique plane (an
+    ellipse on a plane not sharing its axes, and a sinusoid on the
+    cylinder); a sheet bounded by a line and a two-span cubic B-spline; a
+    prism over that profile whose side is a B-spline surface with the
+    file's line pcurves; a two-span bicubic patch sheet; a single-span
+    patch trimmed by a curve whose pcurve is a quadratic B-spline (its 3D
+    curve the exact composition, degree 9); and a cylinder of two rational
+    half-circle surfaces and rational half-circle edges as complex
+    instances. `step_reference.py` gains its own B-spline evaluation and
+    checks that every edge's curve meets its vertices and lies on each
+    face's surface (through the file's pcurve on a spline surface, at
+    matching parameters) within `1e-12` of the case's size. The native
+    capture of these files (`fixtures/occt-step-b-preimplementation`) is
+    taken while `step/spline.rs`, the translation of the new entities,
+    does not exist; STEP-a's capture is unchanged.
+  * *Amended in implementation:* `PCurveAgainstEdge` applies to B-spline
+    pcurves only (a line pcurve's range may run either way), and a line
+    pcurve that misses the spline surface's domain is
+    `PCurveOutsideSurface`. The rational cylinder's circles, rational
+    quarter arcs with knots of multiplicity equal to the degree (the usual
+    NURBS circle), are C1 as rational curves but not in homogeneous form,
+    which R4 certifies: the kernel translates every entity and its
+    validator refuses the body (`edge_not_c1`, `pcurve_not_c1`,
+    `face_not_c1`). The fixture and its capture stay as taken;
+    `compare_step.py` reviews a validation refusal fingerprinted by its
+    issue kinds (`rust_invalid:`), and rational complex instances are shown
+    to import by the plate and prism rewritten with equal weights and a
+    plate bounded by a rational third of a circle (`tests/step.rs`). A sheet
+    of one face keeps the kernel's synthesized counts of a free face (S6:
+    no shell) where OCCT's reader keeps the shell; each such fixture has a
+    review.
+
 ### Decisions pending from the user
 
 * **U6.** Approve the CI budget policy above? **Answered 2026-09-27: yes.**
@@ -2420,9 +2541,9 @@ Decisions for S9, recorded before its code (2026-09-28):
       Lipschitz bound), within twelve doublings. The corpus test asserts all 59 certified solids; its
       spline projection adds a compass search where Gauss-Newton stalls at
       the cusp (a centroid at 4.6e-4 against a bound of 3.3e-5 before it).
-* STEP import (parallel track) — STEP-a implemented (`VALIDATION.md`,
-  `SOURCE_MAP.md`); gate pending CI, the schedule replay and the clean
-  campaign.
+* STEP import (parallel track) — STEP-a and STEP-b implemented
+  (`VALIDATION.md`, `SOURCE_MAP.md`); STEP-a's gate pending CI, the
+  schedule replay and the clean campaign.
   * The decisions above (`a5435624`), then the evidence before any importer
     code (`cab82ecb`): the Part 21 reader with its tests, 22 STEP files
     authored for the track (`generate_step_fixtures.py`: boxes in three
@@ -2453,10 +2574,50 @@ Decisions for S9, recorded before its code (2026-09-28):
     and surfaces (577 bodies), seamless periodic faces (106), extrusion and
     revolution surfaces (165), non-straight pcurves on curved surfaces (35)
     and ellipses (11) (`VALIDATION.md`).
-  * Next: STEP-b (ellipses; B-spline curves and surfaces with rational
-    complex instances, the file's `PCURVE`s on spline surfaces), then
-    seamless periodic faces (windings from the derived pcurves), the swept
-    surfaces, and placements; STEP-c the recorded corpus survey.
+  * STEP-b implemented (`VALIDATION.md`, `SOURCE_MAP.md`); gate pending
+    CI, the schedule replay and a clean campaign. Its decisions
+    (`651da6bd`), then the evidence before its code (`46668ea1`): seven
+    fixtures (a half-ellipse sheet, an obliquely cut cylinder, a B-spline
+    plate and prism, a two-span patch, a trimmed patch with a quadratic
+    B-spline pcurve, a rational quarter-arc cylinder), the reference's
+    closed forms, exact integrals and 40-digit quadratures with its own
+    geometry check of every file (gaps within `1.1e-16` of the size), and
+    the native capture (`fixtures/occt-step-b-preimplementation`, taken
+    while `step/spline.rs` did not exist and the importer rejected all
+    seven): OCCT's counts and validity agree; its default `BRepGProp`
+    misses three bodies' measures, by up to `2.0e-3`.
+  * The importer (`be1cb610`, `11979a6b`): ellipses (plane pcurves as the
+    ellipse or its exact projection, the cylinder section's exact
+    sinusoid), knotted B-spline curves and surfaces, simple and rational
+    complex, and the file's pcurves on spline surfaces over the ranges where
+    their images meet the vertices. 29 of the 30 fixture bodies import,
+    validate and contain the reference's measures within `1e-12` with
+    OCCT's counts (a one-face sheet counted as a free face); the rational
+    cylinder is refused by R4's C1 rule. `compare_step.py`: 23 matches,
+    6 reviewed differences, 0 failures. The `step` fuzz target covers the
+    new fixtures; its first smoke run found the `.brep` writer's line
+    pcurves on spline surfaces written at unit speed (fixed, with a
+    regression).
+  * Local survey (U1, counts only): 550 bodies of 131 files import (464 of
+    114 before), 760 rejected (`PCurveNotDerived` 458 now leads), 61 fail
+    validation (21 through R4's C1 rule on rational quarter arcs, 21 with a
+    file's pcurve off its edge's parameter), no panic.
+  * Open from STEP-b: (1) rational B-splines with knots of multiplicity equal
+    to the degree (the usual NURBS circle) are refused by R4's homogeneous
+    C1 test though C1 as rational curves; a rational C1 criterion, or
+    splitting such edges and faces at those knots, needs its own decision.
+    (2) Pcurves on cylinders, cones, spheres and tori beyond rulings,
+    parallels, meridians and cylinder sections (B-spline and other elliptic
+    edges there: most of the 458 `PCurveNotDerived`), whether from the
+    file's `PCURVE`s placed on the cover or derived as projections (D13).
+    (3) A file's pcurve not parameterised like its edge (21 bodies) would
+    need an exact reparameterisation; OCCT approximates with
+    `SameParameter`. (4) The knotless B-spline forms (25 bodies), the
+    `.brep` reader's ellipse records, and a one-face sheet's shell in the
+    synthesized counts.
+  * Next: seamless periodic faces (windings from the derived pcurves), the
+    swept surfaces, the open STEP-b items above, and placements; STEP-c the
+    recorded corpus survey.
 * S8 — in progress: decisions recorded (2026-09-28).
   * S8a.1 implemented: the quadrature reference and a
     `BRepAlgoAPI_Splitter` capture of 26 prisms came before

@@ -39,6 +39,9 @@ class StepBridge(unittest.TestCase):
         self.assertEqual(bridge.rust_differences(rust(counts='2 3 3 3 1 0'), ROWS, NATIVE), ['rust_counts'])
         self.assertEqual(bridge.rust_differences([['70', 'solid', 'unsupported', 'ELLIPSE']], ROWS, NATIVE),
                          ['rust_rejected'])
+        self.assertEqual(bridge.rust_differences([['70', 'solid', 'invalid', 'edge_not_c1:edge', '0',
+                                                   'face_not_c1:face', '1', 'edge_not_c1:edge', '2']],
+                                                 ROWS, NATIVE), ['rust_invalid:edge_not_c1,face_not_c1'])
         self.assertEqual(bridge.rust_differences([['error', 'line', '1']], ROWS, NATIVE), ['rust_error'])
         self.assertEqual(bridge.rust_differences([], ROWS, NATIVE), ['rust_bodies'])
 

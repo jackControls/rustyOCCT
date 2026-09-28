@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Fixtures for STEP-a of REVIEW_NOTES.md: small STEP files authored here.
+"""Fixtures for STEP-a and STEP-b of REVIEW_NOTES.md: small STEP files
+authored here.
 
 Each case is built from its construction parameters by the B-rep builders
 below (vertices, edges on lines and circles, faces on planes, cylinders,
@@ -14,12 +15,24 @@ exercise the orientation flags (`same_sense` of faces and edge curves,
 bound orientations), void shells, surface models, several bodies, lengths
 in metres and inches and angles in degrees.
 
+STEP-b's cases (`STEP_B`) add ellipses, B-spline curves and surfaces
+(rational ones as complex instances, as OCCT writes them) and edges as
+`SURFACE_CURVE`s carrying `PCURVE`s on spline surfaces (and, on the prism,
+on planes): a half-ellipse sheet, a cylinder cut by an oblique plane, a
+sheet and a prism bounded by a two-span cubic, a two-span patch sheet, a
+patch trimmed by a curve whose pcurve is a quadratic B-spline (its 3D curve
+the exact composition, of degree 9), and a cylinder of rational
+half-circles. Every file's geometry is checked by the reference
+(`step_reference.geometry_gaps`): each edge meets its vertices and lies on
+its faces' surfaces, through the file's pcurve on a spline surface at the
+same fraction of both ranges, within `1e-12` of the case's size.
+
 `rust/fixtures/step/NAME.stp` holds each file and `step-expected.tsv` each
 body: its entity number, class, OCCT's counts (`step_reference.bodies`,
 from the independent parser) and its volume, area and centre from the
-closed forms of `step_reference.py` (a sheet has no volume: `-`). `--check`
-regenerates everything and fails on any difference. No Rust or native
-result supplies an expectation.
+closed forms of `step_reference.py` (a sheet has no volume: `-`), exact
+rational integrals or its quadrature. `--check` regenerates everything and
+fails on any difference. No Rust or native result supplies an expectation.
 """
 import argparse
 from fractions import Fraction
@@ -73,16 +86,23 @@ class Vertex:
 class Edge:
     """A line from `start` to `end`, or a circle (`frame`: centre, axis, x
     direction; radius) traversed counter-clockwise about its axis from
-    `start` to `end` (the same vertex for a closed circle)."""
+    `start` to `end` (the same vertex for a closed circle), or another
+    `curve` (STEP-b): ('ELLIPSE', frame, a1, a2) or ('BSPLINE', degree,
+    poles, weights | None, knots, multiplicities), run along its parameter.
+    `pcurves`: [(face, 2D curve)], each ('LINE', point, direction) or a 2D
+    ('BSPLINE', ...), written with the curve as a `SURFACE_CURVE`."""
 
-    def __init__(self, start, end, circle=None):
-        self.start, self.end, self.circle = start, end, circle
+    def __init__(self, start, end, circle=None, curve=None):
+        self.start, self.end, self.circle, self.curve = start, end, circle, curve
+        self.pcurves = []
 
 
 class Face:
     """`surface`: ('PLANE', frame) | ('CYLINDRICAL_SURFACE', frame, r) |
     ('CONICAL_SURFACE', frame, r, semi_angle) | ('SPHERICAL_SURFACE', frame,
-    r) | ('TOROIDAL_SURFACE', frame, R, r), a frame being (origin, axis, x);
+    r) | ('TOROIDAL_SURFACE', frame, R, r), a frame being (origin, axis, x),
+    or ('B_SPLINE_SURFACE', (du, dv), rows of poles in u, weights | None,
+    (u knots, v knots), (u multiplicities, v multiplicities));
     `same_sense`: whether the face's normal is the surface's; `bounds`: lists
     of (edge, forward) in order, the first the outer bound, each counter-
     clockwise about the face's normal (inner bounds clockwise)."""
@@ -244,6 +264,179 @@ def half_cylinder_faces(o, r, h):
     ]
 
 
+# --- STEP-b's shapes ----------------------------------------------------------
+
+def f3(p):
+    return tuple(float(c) for c in p)
+
+
+def half_ellipse_faces(c, x, a, b):
+    """The half on the side of y = z x x of an ellipse in the plane z =
+    c[2] sharing the plane's axes: an arc from c + a x to c - a x and the
+    segment back."""
+    z = (0, 0, 1)
+    frame = (f3(c), f3(z), f3(x))
+    v0 = Vertex([c[i]+a*x[i] for i in range(3)])
+    v1 = Vertex([c[i]-a*x[i] for i in range(3)])
+    arc = Edge(v0, v1, curve=('ELLIPSE', frame, a, b))
+    return [Face(('PLANE', frame), True, [[(arc, True), (Edge(v1, v0), True)]])]
+
+
+def oblique_cylinder_faces(r, h, normal, major):
+    """The cylinder of radius r about +z through the origin between z = 0
+    and the plane through (0, 0, h) of unit normal (0, -s, c): its section
+    the ellipse of semi-axes r / c along `major` = (0, c, s) and r along
+    -x, from the vertex (r, 0, h)."""
+    a, b = Vertex((r, 0, 0)), Vertex((r, 0, h))
+    top = (0.0, 0.0, float(h))
+    circle = Edge(a, a, (frame_at((0, 0, 0)), r))
+    ellipse = Edge(b, b, curve=('ELLIPSE', (top, f3(normal), f3(major)), Fraction(r)/major[1], r))
+    seam = Edge(a, b)
+    return [
+        Face(('PLANE', frame_at((0, 0, 0), (0.0, 0.0, -1.0))), True, [[(circle, False)]]),
+        Face(('PLANE', (top, f3(normal), (1.0, 0.0, 0.0))), True, [[(ellipse, True)]]),
+        Face(('CYLINDRICAL_SURFACE', frame_at((0, 0, 0)), r), True,
+             [[(circle, True), (seam, True), (ellipse, False), (seam, False)]]),
+    ]
+
+
+# The profile of the B-spline plate and prism: a two-span cubic from
+# (10, 0) round to the origin above the x axis, closed by the segment.
+PROFILE = (3, [(10, 0), (11, 5), (5, 10), (-1, 5), (0, 0)], (0, 1, 2), (4, 1, 4))
+
+
+def profile_curve(z):
+    degree, poles, knots, mults = PROFILE
+    return ('BSPLINE', degree, [(x, y, z) for x, y in poles], None, knots, mults)
+
+
+def bspline_plate_faces(z):
+    v0, v1 = Vertex((0, 0, z)), Vertex((10, 0, z))
+    segment, curve = Edge(v0, v1), Edge(v1, v0, curve=profile_curve(z))
+    return [Face(('PLANE', frame_at((0, 0, z))), True, [[(segment, True), (curve, True)]])]
+
+
+def bspline_prism_faces(h):
+    """The prism of PROFILE from 0 to h: its side along the curve is the
+    B-spline surface C(u) + v h z with the file's pcurves (lines), and its
+    curves carry pcurves on the caps too."""
+    degree, poles, knots, mults = PROFILE
+    v0b, v1b, v0t, v1t = Vertex((0, 0, 0)), Vertex((10, 0, 0)), Vertex((0, 0, h)), Vertex((10, 0, h))
+    lb, lt = Edge(v0b, v1b), Edge(v0t, v1t)
+    cb, ct = Edge(v1b, v0b, curve=profile_curve(0)), Edge(v1t, v0t, curve=profile_curve(h))
+    up0, up1 = Edge(v1b, v1t), Edge(v0b, v0t)
+    side = ('B_SPLINE_SURFACE', (degree, 1), [[(x, y, 0), (x, y, h)] for x, y in poles], None,
+            (knots, (0, 1)), (mults, (2, 2)))
+    bottom = Face(('PLANE', frame_at((0, 0, 0), (0.0, 0.0, -1.0))), True, [[(cb, False), (lb, False)]])
+    top = Face(('PLANE', frame_at((0, 0, h))), True, [[(lt, True), (ct, True)]])
+    wall = Face(('PLANE', ((0.0, 0.0, 0.0), (0.0, -1.0, 0.0), (1.0, 0.0, 0.0))), True,
+                [[(lb, True), (up0, True), (lt, False), (up1, False)]])
+    spline = Face(side, True, [[(cb, True), (up1, True), (ct, False), (up0, False)]])
+    # The bottom plane's coordinates are (x, -y).
+    cb.pcurves = [(spline, ('LINE', (0, 0), (1, 0))),
+                  (bottom, ('BSPLINE', degree, [(x, -y) for x, y in poles], None, knots, mults))]
+    ct.pcurves = [(spline, ('LINE', (0, 1), (1, 0))),
+                  (top, ('BSPLINE', degree, poles, None, knots, mults))]
+    up0.pcurves = [(spline, ('LINE', (0, 0), (0, 1)))]
+    up1.pcurves = [(spline, ('LINE', (2, 0), (0, 1)))]
+    return [bottom, top, wall, spline]
+
+
+# A two-span cubic by quadratic patch: x and y linear in u and v (the poles
+# at the Greville abscissae, x = 6u, y = 8v), z varying.
+PATCH = ((3, 2), [[(x, y, z) for y, z in zip((0, 4, 8), zs)]
+                  for x, zs in zip((0, 2, 6, 10, 12), ([0, 1, 0], [1, 2, 1], [2, 4, 1], [1, 2, 2], [0, 1, 0]))],
+         ((0, 1, 2), (0, 1)), ((4, 1, 4), (3, 3)))
+
+
+def patch_faces():
+    """The whole patch, bounded by its four boundary curves: lines as the
+    pcurves along u, degree-1 B-splines along v."""
+    (du, dv), rows, (uk, vk), (um, vm) = PATCH
+    corner = {(i, j): Vertex(rows[-i][-j]) for i in (0, 1) for j in (0, 1)}
+    column = lambda i: ('BSPLINE', dv, rows[i], None, vk, vm)
+    row = lambda j: ('BSPLINE', du, [r[j] for r in rows], None, uk, um)
+    bottom = Edge(corner[0, 0], corner[1, 0], curve=row(0))
+    right = Edge(corner[1, 0], corner[1, 1], curve=column(-1))
+    top = Edge(corner[0, 1], corner[1, 1], curve=row(-1))
+    left = Edge(corner[0, 0], corner[0, 1], curve=column(0))
+    face = Face(('B_SPLINE_SURFACE', (du, dv), rows, None, (uk, vk), (um, vm)), True,
+                [[(bottom, True), (right, True), (top, False), (left, False)]])
+    segment = lambda u: ('BSPLINE', 1, [(u, 0), (u, 1)], None, (0, 1), (2, 2))
+    bottom.pcurves = [(face, ('LINE', (0, 0), (1, 0)))]
+    top.pcurves = [(face, ('LINE', (0, 1), (1, 0)))]
+    right.pcurves = [(face, segment(2))]
+    left.pcurves = [(face, segment(0))]
+    return [face]
+
+
+def patch_pieces():
+    """PATCH as Bézier patches (per u span) for the reference."""
+    (du, dv), rows, (uk, vk), (um, vm) = PATCH
+    columns = [ref.bezier_pieces(du, uk, um, [r[j] for r in rows]) for j in range(len(rows[0]))]
+    return [([[columns[j][s][2][i] for j in range(len(rows[0]))] for i in range(du+1)], None)
+            for s in range(len(uk)-1)]
+
+
+# A single bicubic Bézier patch over [0, 9] x [0, 6] and the trim v <= g(u)
+# = 1/2 + u (1 - u) / 2, a quadratic in (u, v).
+TRIM_GRID = [[(3*i, 2*j, z) for j, z in enumerate(zs)]
+             for i, zs in enumerate(([0, 1, 1, 0], [1, 2, 2, 1], [0, 2, 3, 1], [0, 1, 1, 0]))]
+TRIM = [Fraction(1, 2), Fraction(3, 4), Fraction(1, 2)]
+
+
+def trimmed_faces():
+    polys = ref.patch_polys(TRIM_GRID)
+    g = ref.power(TRIM)
+
+    def at(u, v):
+        return [ref.compose_patch(c, ref.Poly([Fraction(u)]), ref.Poly([Fraction(v)])).c[0] for c in polys]
+    a, b, c, d = Vertex(at(0, 0)), Vertex(at(1, 0)), Vertex(at(1, TRIM[0])), Vertex(at(0, TRIM[0]))
+    column = lambda i: ('BSPLINE', 3, TRIM_GRID[i], None, (0, 1), (4, 4))
+    # The trim's 3D curve: S(t, g(t)), a polynomial of degree 9.
+    lifted = [ref.bernstein(ref.compose_patch(k, ref.Poly([0, 1]), g), 9) for k in polys]
+    trim = ('BSPLINE', 9, list(zip(*lifted)), None, (0, 1), (10, 10))
+    bottom = Edge(a, b, curve=('BSPLINE', 3, [r[0] for r in TRIM_GRID], None, (0, 1), (4, 4)))
+    right, top, left = Edge(b, c, curve=column(3)), Edge(d, c, curve=trim), Edge(a, d, curve=column(0))
+    face = Face(('B_SPLINE_SURFACE', (3, 3), TRIM_GRID, None, ((0, 1), (0, 1)), ((4, 4), (4, 4))), True,
+                [[(bottom, True), (right, True), (top, False), (left, False)]])
+    bottom.pcurves = [(face, ('LINE', (0, 0), (1, 0)))]
+    right.pcurves = [(face, ('LINE', (1, 0), (0, 1)))]
+    top.pcurves = [(face, ('BSPLINE', 2, [(Fraction(k, 2), TRIM[k]) for k in range(3)], None, (0, 1), (3, 3)))]
+    left.pcurves = [(face, ('LINE', (0, 0), (0, 1)))]
+    return [face]
+
+
+# A quarter-arc half circle as a rational quadratic: poles on the square
+# about the circle, weights 1 and sqrt(2)/2 (rounded once).
+HALF_WEIGHT = float(mpmath.sqrt(2)/2)
+
+
+def rational_cylinder_faces(r, h):
+    """The cylinder of radius r about +z from 0 to h made of two rational
+    half-cylinders (y >= 0 and y <= 0) and two caps bounded by rational
+    half circles, every curve and surface a complex instance."""
+    halves = [[(r, 0), (r, r), (0, r), (-r, r), (-r, 0)], [(-r, 0), (-r, -r), (0, -r), (r, -r), (r, 0)]]
+    weights = [1, HALF_WEIGHT, 1, HALF_WEIGHT, 1]
+    arc = lambda poles, z: ('BSPLINE', 2, [(x, y, z) for x, y in poles], weights, (0, 1, 2), (3, 2, 3))
+    p, q, pt, qt = Vertex((r, 0, 0)), Vertex((-r, 0, 0)), Vertex((r, 0, h)), Vertex((-r, 0, h))
+    ab, bb = Edge(p, q, curve=arc(halves[0], 0)), Edge(q, p, curve=arc(halves[1], 0))
+    at, bt = Edge(pt, qt, curve=arc(halves[0], h)), Edge(qt, pt, curve=arc(halves[1], h))
+    up_p, up_q = Edge(p, pt), Edge(q, qt)
+    wall = lambda poles: ('B_SPLINE_SURFACE', (2, 1), [[(x, y, 0), (x, y, h)] for x, y in poles],
+                          [[w, w] for w in weights], ((0, 1, 2), (0, 1)), ((3, 2, 3), (2, 2)))
+    fa = Face(wall(halves[0]), True, [[(ab, True), (up_q, True), (at, False), (up_p, False)]])
+    fb = Face(wall(halves[1]), True, [[(bb, True), (up_p, True), (bt, False), (up_q, False)]])
+    bottom = Face(('PLANE', frame_at((0, 0, 0), (0.0, 0.0, -1.0))), True, [[(ab, False), (bb, False)]])
+    top = Face(('PLANE', frame_at((0, 0, h))), True, [[(at, True), (bt, True)]])
+    line = lambda u, v, du, dv: ('LINE', (u, v), (du, dv))
+    ab.pcurves, at.pcurves = [(fa, line(0, 0, 1, 0))], [(fa, line(0, 1, 1, 0))]
+    bb.pcurves, bt.pcurves = [(fb, line(0, 0, 1, 0))], [(fb, line(0, 1, 1, 0))]
+    up_q.pcurves = [(fa, line(2, 0, 0, 1)), (fb, line(0, 0, 0, 1))]
+    up_p.pcurves = [(fa, line(0, 0, 0, 1)), (fb, line(2, 0, 0, 1))]
+    return [fa, fb, bottom, top]
+
+
 # --- the Part 21 writer ------------------------------------------------------
 
 LENGTHS = {
@@ -267,6 +460,9 @@ class Writer:
         self.lines = []
         self.flip_faces, self.flip_edges, self.flip_bounds = flip_faces, flip_edges, flip_bounds
         self.vertices, self.edges = {}, {}
+        # STEP-b: surfaces written before their shell's faces (a pcurve names
+        # its basis surface) and the parameter space context of pcurves.
+        self.surfaces, self.context2d = {}, None
 
     def add(self, text):
         self.lines.append(text)
@@ -294,13 +490,19 @@ class Writer:
         if id(e) in self.edges:
             return self.edges[id(e)]
         start, end = self.vertex(e.start), self.vertex(e.end)
-        if e.circle is None:
+        if e.curve is not None:
+            curve = self.curve(e.curve)
+        elif e.circle is None:
             d = tuple(e.end.p[i]-e.start.p[i] for i in range(3))
             vector = self.add("VECTOR('',#%d,1.)" % self.direction(d))
             curve = self.add("LINE('',#%d,#%d)" % (self.point(e.start.p), vector))
         else:
             frame, r = e.circle
             curve = self.add("CIRCLE('',#%d,%s)" % (self.placement(frame), real(r)))
+        if e.pcurves:
+            pcurves = [self.pcurve(face, c2) for face, c2 in e.pcurves]
+            curve = self.add("SURFACE_CURVE('',#%d,(%s),.CURVE_3D.)"
+                             % (curve, ','.join('#%d' % p for p in pcurves)))
         flip = self.flip_edges and len(self.edges) % 2 == 1
         if flip:
             number = self.add("EDGE_CURVE('',#%d,#%d,#%d,.F.)" % (end, start, curve))
@@ -309,7 +511,56 @@ class Writer:
         self.edges[id(e)] = (number, flip)
         return self.edges[id(e)]
 
+    def curve(self, c):
+        """An ellipse, or a B-spline curve of 2 or 3 dimensions: simple, or
+        rational as the complex instance OCCT writes."""
+        if c[0] == 'ELLIPSE':
+            _, frame, a1, a2 = c
+            return self.add("ELLIPSE('',#%d,%s,%s)" % (self.placement(frame), real(a1), real(a2)))
+        if c[0] == 'LINE':
+            _, p, d = c
+            vector = self.add("VECTOR('',#%d,1.)" % self.direction(d))
+            return self.add("LINE('',#%d,#%d)" % (self.point(p), vector))
+        _, degree, poles, weights, knots, mults = c
+        points = '(%s)' % ','.join('#%d' % self.point(p) for p in poles)
+        mults = '(%s)' % ','.join(str(m) for m in mults)
+        knots = '(%s)' % ','.join(real(k) for k in knots)
+        if weights is None:
+            return self.add("B_SPLINE_CURVE_WITH_KNOTS('',%d,%s,.UNSPECIFIED.,.F.,.F.,%s,%s,.UNSPECIFIED.)"
+                            % (degree, points, mults, knots))
+        return self.add("( BOUNDED_CURVE() B_SPLINE_CURVE(%d,%s,.UNSPECIFIED.,.F.,.F.) "
+                        "B_SPLINE_CURVE_WITH_KNOTS(%s,%s,.UNSPECIFIED.) CURVE() "
+                        "GEOMETRIC_REPRESENTATION_ITEM() RATIONAL_B_SPLINE_CURVE((%s)) "
+                        "REPRESENTATION_ITEM('') )"
+                        % (degree, points, mults, knots, ','.join(real(w) for w in weights)))
+
+    def pcurve(self, face, c2):
+        if self.context2d is None:
+            self.context2d = self.add("( GEOMETRIC_REPRESENTATION_CONTEXT(2) "
+                                      "PARAMETRIC_REPRESENTATION_CONTEXT() "
+                                      "REPRESENTATION_CONTEXT('2D SPACE','') )")
+        curve = self.curve(c2)
+        rep = self.add("DEFINITIONAL_REPRESENTATION('',(#%d),#%d)" % (curve, self.context2d))
+        return self.add("PCURVE('',#%d,#%d)" % (self.surfaces[id(face)], rep))
+
+    def spline_surface(self, s):
+        _, (du, dv), rows, weights, (uk, vk), (um, vm) = s
+        grid = '(%s)' % ','.join('(%s)' % ','.join('#%d' % self.point(p) for p in row) for row in rows)
+        ints = lambda xs: '(%s)' % ','.join(str(x) for x in xs)
+        reals = lambda xs: '(%s)' % ','.join(real(x) for x in xs)
+        if weights is None:
+            return self.add("B_SPLINE_SURFACE_WITH_KNOTS('',%d,%d,%s,.UNSPECIFIED.,.F.,.F.,.F.,%s,%s,%s,%s,"
+                            ".UNSPECIFIED.)" % (du, dv, grid, ints(um), ints(vm), reals(uk), reals(vk)))
+        return self.add("( BOUNDED_SURFACE() B_SPLINE_SURFACE(%d,%d,%s,.UNSPECIFIED.,.F.,.F.,.F.) "
+                        "B_SPLINE_SURFACE_WITH_KNOTS(%s,%s,%s,%s,.UNSPECIFIED.) "
+                        "GEOMETRIC_REPRESENTATION_ITEM() RATIONAL_B_SPLINE_SURFACE((%s)) "
+                        "REPRESENTATION_ITEM('') SURFACE() )"
+                        % (du, dv, grid, ints(um), ints(vm), reals(uk), reals(vk),
+                           ','.join(reals(row) for row in weights)))
+
     def surface(self, s, flip):
+        if s[0] == 'B_SPLINE_SURFACE':
+            return self.spline_surface(s)
         kind, frame, *radii = s
         o, axis, x = frame
         if flip:
@@ -332,12 +583,17 @@ class Writer:
             lp = self.add("EDGE_LOOP('',(%s))" % ','.join('#%d' % o for o in oriented))
             kind = 'FACE_OUTER_BOUND' if k == 0 else 'FACE_BOUND'
             bounds.append(self.add("%s('',#%d,%s)" % (kind, lp, '.F.' if reverse else '.T.')))
-        surface = self.surface(f.surface, flip)
+        surface = self.surfaces[id(f)] if id(f) in self.surfaces else self.surface(f.surface, flip)
         sense = f.same_sense != flip
         return self.add("ADVANCED_FACE('',(%s),#%d,%s)"
                         % (','.join('#%d' % b for b in bounds), surface, '.T.' if sense else '.F.'))
 
     def shell(self, faces, kind='CLOSED_SHELL'):
+        # With pcurves, every face's surface first (none flips: STEP-b's
+        # cases have no flipped variants).
+        if any(e.pcurves for f in faces for loop in f.bounds for e, _ in loop):
+            for f in faces:
+                self.surfaces[id(f)] = self.surface(f.surface, False)
         numbers = [self.face(f, i) for i, f in enumerate(faces)]
         return self.add("%s('',(%s))" % (kind, ','.join('#%d' % n for n in numbers)))
 
@@ -594,16 +850,47 @@ def cases():
     del open_box[1]  # the top
     case('open_box', [('sheet', [open_box])], [ref.open_box((0, 0, 0), (10, 10, 5))])
     out.append(('syntax', SYNTAX, [ref.combine((1, ref.tetrahedron((0, 0, 0), 10.0)))]))
+    # STEP-b.
+    c, x = (1, 2, 3), (Fraction('0.6'), Fraction('0.8'), 0)
+    case('ellipse_sheet', [('sheet', [half_ellipse_faces(c, x, 5, 3)])],
+         [ref.half_ellipse(c, (-x[1], x[0], 0), 5, 3)])
+    normal, major = (0, Fraction('-0.6'), Fraction('0.8')), (0, Fraction('0.8'), Fraction('0.6'))
+    case('cylinder_oblique', [('solid', oblique_cylinder_faces(5, 10, normal, major))],
+         [ref.combine((1, ref.oblique_cylinder(5, 10, Fraction(3, 4))))])
+    prof = ref.profile(*[PROFILE[i] for i in (0, 1, 2, 3)])
+    case('bspline_plate', [('sheet', [bspline_plate_faces(0)])], [ref.bspline_plate(prof, 0)])
+    case('bspline_prism', [('solid', bspline_prism_faces(4))], [ref.combine((1, ref.bspline_prism(prof, 0, 4)))])
+    case('bspline_patch', [('sheet', [patch_faces()])], [ref.spline_sheet(patch_pieces())])
+    case('bspline_trimmed', [('sheet', [trimmed_faces()])], [ref.spline_sheet([(TRIM_GRID, ref.power(TRIM))])])
+    case('rational_cylinder', [('solid', rational_cylinder_faces(5, 8))],
+         [ref.combine((1, ref.cylinder((0, 0, 0), (0, 0, 1), 5, 8)))])
     return out
 
 
-def rows():
+# The cases of STEP-b, captured natively apart from STEP-a's.
+STEP_B = ('ellipse_sheet', 'cylinder_oblique', 'bspline_plate', 'bspline_prism', 'bspline_patch',
+          'bspline_trimmed', 'rational_cylinder')
+
+
+# Per case, the largest geometry gap relative to its size and the spline
+# uses checked through a pcurve (`rows`).
+GAPS = {}
+
+
+def rows(made=None):
     out = ['case\tentity\tclass\tV E W F SH SO\tvolume\tarea\tcx cy cz']
-    for name, text, forms in cases():
+    for name, text, forms in made or cases():
         _, data = ref.parse(text)
         found = ref.bodies(data)
         if len(found) != len(forms):
             raise ValueError(f'{name}: {len(found)} bodies, {len(forms)} closed forms')
+        # Every edge on its vertices and its faces (in the file's units).
+        gap, spline_uses = ref.geometry_gaps(data, found[0][3][1])
+        size = max([1.0]+[abs(c) for n in data if 'CARTESIAN_POINT' in ref.kinds(data, n)
+                          for c in ref.point(data, n)])
+        if gap > 1e-12*size:
+            raise ValueError(f'{name}: geometry gap {mpmath.nstr(gap, 3)}')
+        GAPS[name] = (gap/size, spline_uses)
         for (entity, kind, counts, _), form in zip(found, forms):
             if kind == 'sheet':
                 area, centre = form
@@ -620,8 +907,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
-    files = {name+'.stp': text for name, text, _ in cases()}
-    table = rows()
+    made = cases()
+    files = {name+'.stp': text for name, text, _ in made}
+    table = rows(made)
+    worst = max(GAPS, key=lambda n: GAPS[n][0])
+    print(f'largest geometry gap {mpmath.nstr(GAPS[worst][0], 3)} of the size ({worst}); '
+          f'{sum(u for _, u in GAPS.values())} spline uses checked through their pcurves')
     if args.check:
         stale = [n for n, t in files.items() if not (OUT/n).exists() or (OUT/n).read_text() != t]
         stale += sorted(p.name for p in OUT.glob('*.stp') if p.name not in files)
