@@ -784,6 +784,21 @@ projection quadrature on the pieces' torus faces. Moving a piece's mass
 properties with it instead of enclosing them again (`0df34152`) halved
 them. Within the split target's 60-second input limit.
 
+## Split: spline prisms cut obliquely (slow units)
+
+`split/slow-unit-67ae28f45bf8c12f623afa46bd15d5a35c6d09d2.bin` and
+`split/slow-unit-9ff692515f26ff227bc0ec1be47e543351fc3f83.bin` were saved by
+the first S8b campaign at `66c32112` (no crash): a square with a lens hole of
+two cubics given clockwise, and a quadratic bulge, in the tilted frame, cut
+through a vertex at an angle (the target's spline prisms, plane mode 7), split
+and moved rigidly. The first took 66 s under AddressSanitizer, beyond the
+60-second input limit (7.4 s in release): exact rational halvings in the
+separation screen, a cycle's orientation area from 256 exact evaluations,
+and an oblique piece's certified mass enclosed again after a rigid motion.
+The screen now halves outward binary64 boxes, the orientation area is a
+binary64 polynomial integral, and a moved oblique piece takes its source's
+mass, moved (`55bb0516`): 1.6 s and 0.7 s in release.
+
 ## STEP: a torus band's ring starting a rounding below its seam
 
 `step/crash-6b0ff1a4f7646a3f2fce7e959be0fc3033928e74.bin` was found by the
