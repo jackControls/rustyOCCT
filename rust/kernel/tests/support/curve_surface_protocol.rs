@@ -35,7 +35,7 @@ fn numbers(words: &[&str]) -> Vec<f64> {
     words.iter().map(|w| w.parse().unwrap()).collect()
 }
 
-fn curve(words: &[&str]) -> Curve {
+pub fn curve(words: &[&str]) -> Curve {
     let v = numbers(&words[1..]);
     match words[0] {
         "line" => Curve::Edge(Curve3::LineSegment {

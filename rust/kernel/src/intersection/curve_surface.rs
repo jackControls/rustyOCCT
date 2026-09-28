@@ -167,7 +167,7 @@ impl Implicit {
         })
     }
     /// The function at a point given by polynomials (in `(u, v)`: `B`).
-    fn at(&self, p: &[B; 3]) -> B {
+    pub(super) fn at(&self, p: &[B; 3]) -> B {
         let w: [B; 3] = std::array::from_fn(|i| badd(&p[i], &vec![vec![-self.o[i].clone()]]));
         let a: [B; 3] = std::array::from_fn(|i| vec![vec![self.a[i].clone()]]);
         let aa = dot(&self.a, &self.a);
@@ -348,7 +348,7 @@ fn circle_exact(c: &Circle, s: &Implicit) -> Result<CurveSurfaceIntersection> {
         let w: [B; 3] = std::array::from_fn(|i| badd(&bscale(xi, &u0[i]), &bscale(eta, &v0[i])));
         badd(&bdot(&w, &w), &vec![vec![-(&c.r * &c.r)]])
     };
-    Ok(match section(&c.o, &u0, &v0, &conic, s)? {
+    Ok(match section(&c.o, &u0, &v0, &conic, &|p| s.at(p))? {
         Section::Contained => CurveSurfaceIntersection::Contained,
         Section::Points(points) => CurveSurfaceIntersection::Points(
             points
@@ -380,8 +380,9 @@ pub(super) struct SectionPoint {
 }
 
 /// The points `o + xi e1 + eta e2` (rational `e1`, `e2`) with `conic(xi,
-/// eta) = 0` (a quadratic whose square terms are not both zero) on a
-/// plane, cylinder, sphere or torus. With `xi = u + k v`, `eta = v` (a shear
+/// eta) = 0` (a quadratic whose square terms are not both zero) where
+/// `surface` vanishes (a plane's, cylinder's, sphere's or torus's function;
+/// another conic's in the same plane). With `xi = u + k v`, `eta = v` (a shear
 /// `k` chosen so that `c1` vanishes at no root) the conic is
 /// `a2 v^2 + a1 v + a0`, the surface's function reduced modulo it `c0 + c1 v`, and the
 /// points the real roots of `a2 c0^2 - a1 c0 c1 + a0 c1^2` with `v = -c0 /
@@ -392,7 +393,7 @@ pub(super) fn section(
     e1: &X,
     e2: &X,
     conic: &dyn Fn(&B, &B) -> B,
-    s: &Implicit,
+    surface: &dyn Fn(&[B; 3]) -> B,
 ) -> Result<Section> {
     let one = R::from_integer(1.into());
     for shear in [0i64, 1, -2, 3, -5, 7, 11, -13] {
@@ -410,7 +411,7 @@ pub(super) fn section(
         }
         let v: X = std::array::from_fn(|i| &e2[i] + &e1[i] * &sh);
         let p: [B; 3] = std::array::from_fn(|i| bl(o[i].clone(), e1[i].clone(), v[i].clone()));
-        let (c0, c1) = reduce(&s.at(&p), &a0, &a1, &a2);
+        let (c0, c1) = reduce(&surface(&p), &a0, &a1, &a2);
         let (i0, i1) = (
             IntPolynomial::from_rationals(&c0),
             IntPolynomial::from_rationals(&c1),

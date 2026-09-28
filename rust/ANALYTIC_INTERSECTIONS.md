@@ -391,6 +391,41 @@ misses), with each conic's stored axes checked bit for bit; a
 and 5 reviewed differences (containment and overlaps never native
 segments), and the kernel inside the reference on all 35.
 
+## Pairs of curves (S7d.1)
+
+`intersection::curve_curve(a, b)` intersects two `AnalyticCurve`s (a
+topology line or circle, a segment's whole line and an arc's whole circle,
+or an S7c.2 conic): `Empty`, `Coincident` (the same point sets), or points
+sorted by the first curve's parameter, each with both parameters and the
+point enclosed and its contact (tangent where the curves share their
+tangent line). A circle lies in the plane normal to its stored normal, an
+ellipse or a hyperbola in the plane of its stored axes; all exact.
+
+* **Two lines**: exact linear algebra.
+* **A line and a conic**: a line crossing the conic's plane meets it in one
+  rational point, on the conic exactly when its equation vanishes there; a
+  line in the plane substitutes into the equation (a quadratic with rational
+  coefficients, a double root a tangency).
+* **Two conics** in one plane: S7c's resultant with the second conic's
+  equation (in exact frame coordinates) for the surface's function; in two
+  crossing planes, both equations along the common line are quadratics and
+  the points are the real roots of their gcd, tangent where double in
+  both; parallel planes miss. A hyperbola keeps its branch.
+
+A spline edge is `OutOfDomain` until S7d.2. Evidence:
+`curve_curve_reference.py` (both curves' implicit equations in `(X, Y, Z)`
+solved together by sympy's Groebner basis, coincidence by reduction,
+tangency by parallel tangent directions) and 41 fixture cases (every pair of
+kinds: crossing, parallel, skew and coincident lines; piercing on and off,
+in-plane crossings and tangencies, the other branch, a line parallel to an
+asymptote; conics in one plane crossing, touching inside and outside,
+coincident, on opposite branches; conics across planes meeting twice,
+touching with a shared tangent line, meeting once, missing), with every
+frame's stored normal and axes checked bit for bit; an `IntTools_EdgeEdge`
+capture before the kernel code (`fixtures/occt-curve-curve-preimplementation`):
+41 native matches, and the kernel inside the reference on all 41
+(`compare_curve_curve.py`, `curve_curve.rs`).
+
 ## Evidence
 
 * **Independent reference.** `analytic_intersection_reference.py` computes

@@ -605,6 +605,15 @@ bit for bit besides the normals, and `compare_curve_surface.py` reproduces
 the second pre-implementation capture: 30 matches and 5 reviewed
 differences, the kernel inside the reference on all 71 cases.
 
+S7d.1: `generate_curve_curve_fixtures.py --check` writes 41 pairs of lines,
+circles, ellipses and hyperbolas and their rows from
+`curve_curve_reference.py`; `curve_curve.rs` requires every frame's stored
+normal and axes, the reference's classes, contacts and counts, every
+reference number inside the kernel's enclosures, and swapped curves to swap
+the parameters exactly. `compare_curve_curve.py` reproduces the
+`IntTools_EdgeEdge` pre-implementation capture: 41 matches, the kernel
+inside the reference on all 41.
+
 The `GeomInt_IntSS` captures were taken on macOS arm64; IntPatch's walking
 lines differ on Linux near degeneracies (the first Linux run changed
 `cc_near_figure_inside`). A run on another platform reproduces that

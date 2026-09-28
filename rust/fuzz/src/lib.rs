@@ -46,6 +46,8 @@ mod analytic_intersections;
 pub use analytic_intersections::check_analytic_intersections;
 mod curve_surface;
 pub use curve_surface::check_curve_surface;
+mod curve_curve;
+pub use curve_curve::check_curve_curve;
 mod tessellation;
 pub use tessellation::check_tessellation;
 mod bezier_editing;

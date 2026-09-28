@@ -20,7 +20,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear','brep_validation','identity','history','split_merge','attributes','brep_io','analytic_intersections','tessellation','curve_surface']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear','brep_validation','identity','history','split_merge','attributes','brep_io','analytic_intersections','tessellation','curve_surface','curve_curve']
 STARTUP_SECONDS = 600
 MAX_STARTUP_SECONDS = 3600
 # surface_knots' retained CI corpus replays slower than the cap allows: 2,766 s
@@ -98,6 +98,17 @@ def seed_corpus(target):
         if not path.exists():
             path.write_bytes(data)
 
+    if target == 'curve_curve':
+        # Every pair of kinds (line, circle, ellipse, hyperbola) in every mode
+        # (independent, one plane, coincident, touching circles, a line
+        # along the first's axis).
+        for k1 in range(4):
+            for k2 in range(4):
+                for mode in range(5):
+                    data = bytearray((j*47+k1*19+k2*13+mode*7+3)%256 for j in range(24))
+                    data[:3] = bytes([k1, k2, mode])
+                    save(bytes(data))
+        save(bytes([0]))
     if target == 'curve_surface':
         # Every surface kind (plane, cylinder, cone, sphere, torus) against a
         # line and a circle in every mode (independent, along the axis at the

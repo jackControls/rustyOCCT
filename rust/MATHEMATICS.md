@@ -1655,6 +1655,19 @@ vanish in the sheared basis: an ellipse or a hyperbola of stored axes `x`,
 + k v`, `eta = v`; a shear making the hyperbola's `v^2` term vanish (`k =
 major / minor`) is skipped.
 
+**Two plane conics (S7d.1).** In one plane the second conic's equation,
+written in the first's plane by exact frame coordinates (the rows of
+`[x y (x × y)]^-1`, rational), is a quadratic function there, so the
+resultant above applies with it as the surface's function; `c0 = c1 = 0` is
+the same conic. In planes crossing along `x0 + t d` (`d = n1 × n2`, `x0` the
+rational solution of `n1 . x0 = n1 . o1`, `n2 . x0 = n2 . o2`, `d . x0 = 0`),
+a common point lies on that line, where each conic's equation is a
+polynomial `q_i(t)` of degree at most two: the points are the real roots of
+`gcd(q1, q2)`. Both curves are tangent to the line there exactly when the
+root is double in both, and then they share their tangent line; otherwise
+their tangents differ (a conic's tangent at a simple root of `q_i` is not the
+line, and a curve in another plane cannot share any other tangent).
+
 **A spline against a cone.** With `h = (D . a) / (|a| W)` and `rho^2 =
 (|D|^2 - (D . a)^2 / |a|^2) / W^2` for `D = X - o W`, the cone `rho^2 = (r +
 h tan a)^2` is `W^2 F = Q0 + tau Q1 + tau^2 Q2 = 0` with rational `Q0 =

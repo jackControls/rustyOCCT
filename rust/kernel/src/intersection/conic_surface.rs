@@ -103,7 +103,7 @@ pub fn conic_surface(conic: &Conic, surface: &Surface) -> Result<CurveSurfaceInt
                 &vec![vec![-(&a2 * &b2)]],
             )
         };
-        match section(&o, &x, &y, &conic, &s)? {
+        match section(&o, &x, &y, &conic, &|p| s.at(p))? {
             Section::Contained => return Ok(CurveSurfaceIntersection::Contained),
             Section::Points(found) => {
                 let mut out = Vec::new();
@@ -142,7 +142,7 @@ pub fn conic_surface(conic: &Conic, surface: &Surface) -> Result<CurveSurfaceInt
 }
 
 /// `atan2(y, x)` in `(-pi, pi]` unless it straddles `pi`.
-fn turn_angle(y: &I, x: &I) -> Result<I> {
+pub(super) fn turn_angle(y: &I, x: &I) -> Result<I> {
     let t = angle(y, x)?;
     Ok(
         if y.sign() == Some(Ordering::Less) && x.sign() == Some(Ordering::Less) {

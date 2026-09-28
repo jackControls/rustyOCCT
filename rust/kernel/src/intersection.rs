@@ -16,6 +16,7 @@ use std::cmp::Ordering;
 
 mod analytic;
 mod conic_surface;
+mod curve_curve;
 mod curve_surface;
 mod curved;
 mod exact_spline;
@@ -33,6 +34,7 @@ mod torus_curves;
 pub use crate::proximity::LinearPrimitive3;
 pub use analytic::{surface_surface, AnalyticItem, Enclosure, Enclosure3, SurfaceIntersection};
 pub use conic_surface::{conic_surface, Conic};
+pub use curve_curve::{curve_curve, AnalyticCurve, CurveCurveIntersection, CurveCurvePoint};
 pub use curve_surface::{curve_surface, CurvePoint, CurveSurfaceIntersection};
 pub use curved::{
     line_circle, line_cylinder, line_sphere, segment_circle, segment_cylinder, segment_sphere,

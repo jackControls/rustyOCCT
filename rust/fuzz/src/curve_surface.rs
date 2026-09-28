@@ -362,6 +362,10 @@ fn check_conic_or_spline(b: &mut Bytes, shape: u8, mode: u8, s: &Surface, reach:
         2 => (o + x * (reach + m), axis, m, m.min(small)),
         _ => (o, x, reach.max(small), reach.min(small)),
     };
+    // A cone of radius zero reaches no conic.
+    if minor <= 0.0 {
+        return;
+    }
     let Some(cf) = frame(c, cn) else { return };
     let conic = if hyperbola {
         Conic::Hyperbola {

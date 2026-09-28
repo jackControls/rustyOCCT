@@ -203,6 +203,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "curve_curve"
+path = "fuzz_targets/curve_curve.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "tessellation"
 path = "fuzz_targets/tessellation.rs"
 test = false

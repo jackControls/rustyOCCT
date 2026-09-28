@@ -1432,7 +1432,13 @@ the first fixture, never deferred.
     stored `y` showed that `frame_axes` omits `Vec3::normalized`'s scaling:
     the S7c.2 reference emulates it and the fixtures record each conic's
     stored axes (the shared helper stays, its captured inputs unchanged).
-  * S7d (curve/curve) pending.
+  * S7d.1 implemented: the Groebner-basis reference and an
+    `IntTools_EdgeEdge` capture of 41 pairs came before
+    `intersection/curve_curve.rs`; lines by linear algebra, a line and a
+    conic by its plane and equation, conics by S7c's resultant in one plane
+    or the gcd along two planes' line; the kernel inside the reference on
+    all 41, the bridge 41 matches; fuzz target `curve_curve`.
+  * S7d.2 (spline edges against curves) and the `lowalgos` group pending.
 * Tessellation (parallel track) — T-a implemented (`TESSELLATION.md`);
   gate pending CI, the schedule replay and the clean campaign.
   * The decisions above, the independent reference
