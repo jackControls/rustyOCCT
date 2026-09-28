@@ -16,7 +16,7 @@ the world's axes permuted, so its faces lie on the object's planes) and
 * `expect KIND S9b`: the declared outcome (`solid`: a result of one or more
   solids; `empty`: no solids; `degenerate`: the result touches itself along
   an edge or at a point, `Degenerate` until the kernel holds non-manifold
-  bodies);
+  bodies, or holds a piece thinner than the resolution);
 * `result N volume area cx cy cz` (totals over the N solids, world
   coordinates) or `empty`.
 
@@ -117,7 +117,11 @@ def cases():
     out += trio('inside', box, ([square(0.0, 0.0, 2.0, 2.0)], at(TILT, (4.0, 4.0, 1.5)), 0.0, 2.0))
     out += trio('apart', box, ([square(0.0, 0.0, 2.0, 2.0)], at(TILT, (14.0, 4.0, 1.5)), 0.0, 2.0),
                 ('solid', 'solid', 'empty'))
-    out += trio('ell_tilted', ell, ([square(0.0, -2.0, 6.0, 2.0)], at(TILT, (2.0, 4.0, 1.0)), -2.0, 3.0))
+    # The tool's far top edge passes within rounding of the L's corner edge
+    # (`y = 4 + 1.6 + 1.8`): the fuse's and the cut's wall there is two
+    # triangles joined by a neck thinner than the resolution.
+    out += trio('ell_tilted', ell, ([square(0.0, -2.0, 6.0, 2.0)], at(TILT, (2.0, 4.0, 1.0)), -2.0, 3.0),
+                ('degenerate', 'degenerate', 'solid'))
     wide = ([square(0.0, 0.0, 10.0, 10.0), square(2.0, 2.0, 8.0, 8.0)], XY, 0.0, 5.0)
     out += trio('through_hole', wide, ([square(4.0, -0.25, 6.0, 0.25)], at(TILT, (0.0, 2.5, 0.0)), -2.0, 8.5),
                 ('solid', 'solid', 'empty'))
@@ -215,7 +219,7 @@ def generate():
         blocks.append(case.encode())
         rows, pair = ref.rows(case.obj, case.operation, case.tool)
         n = 0 if rows[0] == 'empty' else int(rows[0].split()[1])
-        want = {'solid': n > 0, 'empty': n == 0, 'degenerate': n > 1}[case.kind]
+        want = {'solid': n > 0, 'empty': n == 0, 'degenerate': n > 0}[case.kind]
         assert want, f'{case.name}: declared {case.kind}, the reference gives {rows[0]}'
         out.append(f'{case.name}\texpect {case.kind} S9b')
         for row in rows:

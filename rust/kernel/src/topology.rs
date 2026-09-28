@@ -1131,6 +1131,29 @@ fn fill<T>(
 }
 
 impl Topology {
+    /// Its boundary data, the measured enclosures cleared (to measure again
+    /// after the geometry moves).
+    pub(crate) fn to_parts(&self) -> TopologyParts {
+        let mut parts = TopologyParts {
+            vertices: self.vertices.clone(),
+            edges: self.edges.clone(),
+            fins: self.fins.clone(),
+            loops: self.loops.clone(),
+            faces: self.faces.clone(),
+            shells: self.shells.clone(),
+            regions: self.regions.clone(),
+        };
+        for v in &mut parts.vertices {
+            v.enclosure = None;
+        }
+        for f in &mut parts.fins {
+            f.enclosure = None;
+        }
+        for f in &mut parts.faces {
+            f.enclosure = None;
+        }
+        parts
+    }
     /// The same topology with every spline edge traversed along its curve:
     /// an edge whose span is flagged reversed runs from its end to its start
     /// over the unflagged span, each of its fins used the other way (a fin's

@@ -34,3 +34,10 @@ two frames' axes different (`XY`, `TILT`, `ROT`, `SIDE`, `LEAN`).
   reference resolves and OCCT's tolerances do not (a bar's side through a
   hole's corner, a face through the other's edge): each gave one solid in
   the exact model and two natively.
+* After the capture the kernel met a third near-coincidence the fixtures
+  had not declared: in `ell_tilted`'s fuse and cut the tool's top edge
+  passes within rounding of the L's corner edge, leaving a wall of two
+  triangles joined by a neck thinner than the resolution in the exact
+  model (one face) and two faces touching at a point natively. Both are
+  now declared `degenerate` (the native inputs, and so this capture, are
+  unchanged); the common is unaffected.

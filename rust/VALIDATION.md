@@ -663,6 +663,9 @@ slicing reference on the 21 polygon cases of S9a (2.3e-17), the area
 identity of fuse and common (3e-41) and closed forms of boxes;
 `compare_polyhedral.py` reproduces the `BRepAlgoAPI` capture: every result
 valid with the reference's solid count, all 45 within 7.9e-16, no review.
+With S9b.1 the kernel puts 41 results inside the reference and refuses the 4
+degenerate ones; two count differences are reviewed (OCCT's imprints of a
+touching edge and vertex); `polyhedral_booleans.rs` checks every history.
 
 The `GeomInt_IntSS` captures were taken on macOS arm64; IntPatch's walking
 lines differ on Linux near degeneracies (the first Linux run changed

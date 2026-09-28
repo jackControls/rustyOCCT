@@ -2755,3 +2755,25 @@ Decisions for S9, recorded before its code (2026-09-28):
     module (`compare_polyhedral.py`: 45 matches, no review). Amendment: the
     decisions' fixtures of a stack and a plane piece as inputs wait for the
     case protocol to chain operations; the kernel's tests take them.
+  * S9b.1 implemented (`solid/boolean/polyhedra.rs`,
+    `Construction::Polyhedron`): prisms of line profiles in any relative
+    position (and S9a's pairs whose offset or tool profile would round),
+    all 45 fixtures as the reference (41 results, 4 refused as declared) and
+    OCCT's unified counts but two reviewed imprints; histories checked for
+    every fixture; the `boolean` target's turned, leaning and tilted tools,
+    its corpus replaying clean. Amendments, from the implementation: (a) the
+    decisions' input set is split: S9b.1 takes prisms, S9b.2 the Boolean's
+    stacks, plane pieces and S9b results as inputs (their naming needs keys
+    beyond a prism's slots); (b) a cap's exact plane is normal to `x * y`,
+    not the stored `n` (the stored axes are not exactly orthogonal, so the
+    lifted profile points lie on the plane of `x` and `y`); (c) faces are
+    fragments of each input face split by every plane of the other's faces
+    (not a 2D arrangement per face), joined back into maximal faces; (d) a
+    face with a vertex within the resolution of another vertex or of an
+    edge not ending there is `Degenerate` (a neck thinner than the
+    resolution; the fixture `ell_tilted` fuse and cut declared so after the
+    kernel met it), and two solids sharing a vertex are `Degenerate`; (e) a
+    result's rigid motion moves its stored geometry (the decisions' rule for
+    general bodies): rebuilding its exact model in moved frames changed
+    near-coincident results. Pending: the campaign, S9b.2, the DRAW survey
+    of the 647 upstream cases in frames with different axes.

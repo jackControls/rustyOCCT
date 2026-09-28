@@ -186,7 +186,7 @@ fn frames_with_equal_axes() {
         volume(&f)
     );
     check(&a, &b, &f, &h);
-    // An offset that rounds in the tilted axes: S9b's.
+    // An offset that rounds in the tilted axes: S9b's polyhedra.
     let shifted = Frame3::new(
         tilted.point(Point2::new(1.0, 0.5), 0.25),
         Vec3::new(0.0, 3.0, 4.0),
@@ -195,10 +195,9 @@ fn frames_with_equal_axes() {
     )
     .unwrap();
     let c = prism(rect(0.0, 0.0, 2.0, 2.0), vec![], shifted, 0.0, 1.0, 7);
-    assert!(matches!(
-        a.common(OperationId(8), &c),
-        Err(rusty_occt::Error::OutOfDomain(_))
-    ));
+    let (m, h) = a.common(OperationId(8), &c).unwrap();
+    assert!((volume(&m) - 2.25).abs() < 1e-9, "{}", volume(&m));
+    check(&a, &c, &m, &h);
 }
 
 #[test]

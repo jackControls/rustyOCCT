@@ -1,0 +1,29 @@
+{
+  "note": "Reviewed BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut and BRepAlgoAPI_Common differences from the S9b reference and the kernel.",
+  "reviews": [
+    {
+      "case": "edge_on_face_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "302e8566058008dfbd995e170bc050909b89c5c77e5d8ee68fc70bc00c79d776",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI_Cut keeps the tool's edge touching the box's top face as an edge of that face (6 faces, 13 edges, 10 vertices after ShapeUpgrade_UnifySameDomain); the kernel's cut of a tool touching the object only along an edge returns the box unchanged (6 faces, 12 edges, 8 vertices), the regularized result. The volume, area and centre agree with the reference.",
+      "independent_evidence": "The tool (TILT frame at (3, 5, 5), profile u in [0, 4], v in [-3, 0], heights 0 to 3) has z = 5 - 0.6 v + 0.8 w >= 5 with equality only along its edge v = w = 0, which lies in the box's top face z = 5: the two solids share no volume.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "vertex_on_face_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "54ee698ad6315f324e09cd5793ba81000706b080f79f8e771c7f28e6ab1e0ec8",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI_Cut keeps the tool's vertex touching the box's top face as a vertex of that face (6 faces, 12 edges, 9 vertices after ShapeUpgrade_UnifySameDomain); the kernel's cut of a tool touching the object only at a vertex returns the box unchanged (6 faces, 12 edges, 8 vertices), the regularized result. The volume, area and centre agree with the reference.",
+      "independent_evidence": "The tool (TILT frame at (5, 5, 5), triangle (0, 0), (-2, -4), (2, -4), heights 0 to 3) has z = 5 - 0.6 v + 0.8 w >= 5 with equality only at its vertex (0, 0) at w = 0, which lies in the box's top face: the two solids share no volume.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}
