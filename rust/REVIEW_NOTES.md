@@ -1081,6 +1081,47 @@ Decisions for S8c, recorded before its code (2026-09-28):
   extended with `BRepPrimAPI_MakeCone`/`MakeSphere` and a capture before
   the kernel code.
 
+Decisions for S8b, recorded before its code (2026-09-28):
+
+* **Unblocked.** T-b tessellates spline edges, pcurves and faces and F8
+  encloses spline mass properties within 1e-12 of their scale; S8b now
+  follows S8d, before S8e.
+* **S8b.1, spline profile segments.** `Segment::Spline` holds a planar
+  nonrational B-spline (`BSplineCurve2`, degree 1 to 7) whose first and last
+  poles are its path points exactly and which is C1 inside (R4's exact test);
+  a rational spline is `OutOfDomain` (its moments are not polynomial).
+  `Segment` stops being `Copy`. Validation keeps its rules: a boundary is a
+  simple closed curve, each pair of pieces farther apart than the resolution
+  except adjacent ones at their shared point, decided by a certified
+  separation screen: exact Bernstein subdivision of each spline piece with
+  control-hull boxes against lines, arcs and spline pieces, in the binary64
+  tier then the rational one, an undecided pair treated as touching
+  (`SelfIntersection`, as `decide::area_is_degenerate` does); adjacent
+  pieces leave their shared point in directions decided exactly and are
+  separated beyond a ball about it. Area moments are exact Bernstein
+  integrals; point location uses the crossing parity and the certified
+  point-to-spline distance.
+* **S8b.2, spline prisms.** A spline segment's wall is the exact degree-(p,
+  1) B-spline surface over its knots and the heights (its poles the
+  profile's lifted by the frame, rounded); its cap edges are `Curve3`
+  splines, its cap pcurves the profile spline in the cap's frame, its wall
+  pcurves lines in the surface's parameters. Mass (F8), tessellation (T-b),
+  validation and `.brep` records (S4) apply unchanged; roles and ids are
+  the arcs' (identity encodes elements, not geometry).
+* **S8b.3, splits.** Normal to the axis: the height split. Parallel: the
+  profile's section by the plane's line, crossings by exact spline/line
+  preimages, each piece's spline the exact restriction at the crossing's
+  rounded parameter with its poles rounded (within the resolution of the
+  original). Oblique: S8a.2's footprint and crease, the crease an affine
+  image of the footprint's spline (exact, rounded) with a spline pcurve on
+  the wall (identity in `u`, affine in `v`).
+* **Evidence first**: the independent reference with spline profiles
+  (mpmath Bernstein areas and moments; prism volumes and split sides by
+  slicing), fixtures of every class (splines crossing, touching and
+  tangent to the plane's line, holes, mixed with lines and arcs), and a
+  native capture (faces bounded by `Geom2d_BSplineCurve` edges, prisms,
+  `BRepAlgoAPI_Splitter`) before the kernel code.
+
 Decisions for S8d, recorded before its code (2026-09-28):
 
 * **S8d.1, exact.** A torus (whole, band or wedge) by a plane normal to
