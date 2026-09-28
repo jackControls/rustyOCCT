@@ -1673,3 +1673,97 @@ on the binary64 inputs, within the body's resolution `t`:
 
 Nothing else counts as the same support, so a split along a slightly rotated
 plane or a merge of non-coplanar walls is reported, never absorbed.
+
+## Tessellation bounds (T-a)
+
+A mesh triangle has nodes `X_i` and parameter points `p_i` on its face's
+surface `S` (lifted into one period; a pole's `u` is free). Its reported
+bound certifies a map from the flat triangle onto `S` that moves no point
+farther (`TESSELLATION.md`); three maps are certified and the smallest bound
+is kept.
+
+**Linear map.** A point with weights `λ` goes to `S(p)`, `p = Σ λ_i p_i`.
+With `d_i = p_i - p` (so `Σ λ_i d_i = 0`), Taylor's formula with integral
+remainder gives
+
+    Σ λ_i S(p_i) - S(p) = Σ λ_i ∫_0^1 (1 - s) D²S(p + s d_i)[d_i, d_i] ds.
+
+The segments `p + s d_i` stay in the triangle. If `a >= |S_uu|`,
+`b >= |S_uv|`, `c >= |S_vv|` over its parameter box, `|D²S[w, w]| <=
+a w_u² + 2 b |w_u w_v| + c w_v²`. `Σ λ_i d_{u,i}²` is the variance of a
+distribution on an interval of length `U` (the triangle's `u` extent), at
+most `U² / 4`, and by Cauchy–Schwarz `Σ λ_i |d_{u,i} d_{v,i}| <= U V / 4`.
+With `∫ (1 - s) ds = 1/2`:
+
+    |Σ λ_i S(p_i) - S(p)| <= (a U² + 2 b U V + c V²) / 8,
+
+and the flat point `Σ λ_i X_i` is within the largest gap `|X_i - S(p_i)|`
+more. On a triangle with one parameter edge (`V = 0`) this is the familiar
+`M h² / 8` of a chord.
+
+**Coefficients.** With `E(u) = cos u x + sin u y` from the stored frame and
+`σ` a bound on the spectral norm of `[x y n]` (Gershgorin on its Gram
+matrix, about one), any combination `α x + β y + γ n` is at most
+`σ |(α, β, γ)|`, so
+
+| Surface | `a` | `b` | `c` | `|N_u|` | `|N_v|` |
+| --- | --- | --- | --- | --- | --- |
+| plane | 0 | 0 | 0 | 0 | 0 |
+| cylinder `r` | `σ r` | 0 | 0 | 1 | 0 |
+| cone `R`, `α` | `σ max |R + v sin α|` | `σ |sin α|` | 0 | `|cos α|` | 0 |
+| sphere `R` | `σ R sup |cos v|` | `σ R sup |sin v|` | `σ R` | `sup |cos v|` | 1 |
+| torus `R`, `r` | `σ (R + r sup |cos v|)` | `σ r sup |sin v|` | `σ r` | `sup |cos v|` | 1 |
+
+over the box's `v` range; `|cos|` and `|sin|` are bounded from the box's
+middle by their Lipschitz constant 1. The normal turns by at most
+`|N_u| U + |N_v| V` over the triangle (the angle between unit normals is at
+most the length of their path), with a `1e-12` relative allowance for the
+frame's departure from orthonormality.
+
+**Tangential correction.** On each analytic surface `S_uv` is parallel to
+`S_u` (`S_u = g(v) E'(u)`, `S_uv = g'(v) E'(u)`), and the unit normal
+`N ∝ S_u x S_v` is orthogonal to it, whatever the frame. So
+`N(p) . S_uv(ξ) = (N(p) - N(ξ)) . S_uv(ξ)`, at most `t b` for the
+triangle's normal turn `t` (at most 2): the normal part of the linear map's
+deviation `e = Σ λ_i S(p_i) - S(p)` is at most
+`(a U² + 2 t b U V + c V²) / 8`. Its tangential part `e_t = S_u δu + S_v δv`
+has `|δu| <= |e| / |S_u|` and `|δv| <= |e| / |S_v|` (orthogonal
+derivatives; the frames' defect of a few units in the last place is
+covered by a `1e-9` relative allowance), and mapping the point to
+`S(p + δp)` instead leaves `|e_n| + |S(p + δp) - S(p) - J δp|`, the second
+term at most `(a' δu² + 2 b' |δu δv| + c' δv²) / 2` with the coefficients
+over the box widened by `δv`. `|S_u|` is bounded below over the box (`r`;
+`|R + v sin α|` at the nearer end when it keeps its sign; `R cos v` at an
+end, concave on the band; `R + r (cos v_m - h)`); where it may vanish (a
+pole in the box) the correction is not used. On cones and tori the mixed
+term dominates elongated triangles, and this removes it to first order.
+
+**Fan map at a pole.** A triangle with vertex `k` at a pole and the others
+at `(u_m, v_m)`, `(u_n, v_n)`: the point with weights `λ` goes to
+`S(u_μ, Σ λ_i v_i)`, `u_μ` interpolating `u_m`, `u_n` in the ratio
+`λ_m : λ_n`. It is continuous (every `u` maps to the pole) and linear on the
+opposite edge, so it agrees with a neighbour's linear map there. Writing
+the flat point as `(1 - s) X_k + s Q_μ`, `Q_μ` on the opposite chord, its
+distance from the image is at most `s |Q_μ - S(u_μ, v_μ)|`, the opposite
+edge's interpolation, plus the chord of the meridian `u = u_μ` from the pole
+to `v_μ`, at most `c V² / 8`. On a cone the meridian is a ruling and `c = 0`:
+an apex fan meets its base segment's bound.
+
+**Edges.** An arc of radius `r` and sweep `φ` has `|C''| <= σ r φ²` in its
+fraction, so a segment of fraction step `Δt` deviates by at most
+`σ r (φ Δt)² / 8` from its chord, plus its end nodes' distances from the
+exact curve points; a line segment by those only. Its tangent turns by
+`|φ| Δt`.
+
+**Counts.** An edge takes the least uniform count `n` with
+`σ r (φ / n)² / 8 <= 0.9 δ` and `|φ| / n <= θ`, and for each curved face
+using it `(a Δu² + 2 b Δu Δv + c Δv²) / (8 n²) <= 0.45 δ` and
+`(n_u Δu + n_v Δv) / n <= 0.45 θ` over its pcurve's extents: a triangle on a
+boundary segment has at least the segment's extents, so the segment must
+leave room for the triangle's own bound.
+
+**Evaluation.** Node positions are the midpoints of outward-rounded binary64
+enclosures of `S(p)` or `C(t)` (`Fast`, with its certified `cos_sin` and
+`2π`), their gaps the enclosures' reach; a vertex's gap is its distance from
+the enclosed exact point; every bound is summed and multiplied in the same
+tier and rounded up.

@@ -200,6 +200,7 @@ target/math-oracle-venv/bin/python rust/tools/generate_spline_linear_fixtures.py
 target/math-oracle-venv/bin/python rust/tools/generate_closed_clip_fixtures.py --check
 target/math-oracle-venv/bin/python rust/tools/generate_affine_parameter_fixtures.py --check
 target/math-oracle-venv/bin/python rust/tools/generate_brep_fixtures.py --check
+target/math-oracle-venv/bin/python rust/tools/generate_tessellation_fixtures.py --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo check --workspace --lib --locked --target wasm32-unknown-unknown
 cargo run --locked --example plate
@@ -584,6 +585,26 @@ exactly; elsewhere the capture's integrity and cases are checked, the
 observations are held to the reference, and a review holds for the same
 case and kinds of difference (`capture_reproduced` in the report).
 
+## Tessellation (T-a)
+
+`generate_tessellation_fixtures.py --check` writes 28 bodies (prisms of
+polygons, circles and arc paths with holes, a box, cones, spheres and tori
+with poles, bands, an inner half and a wedge, face bodies) with a coarse
+and a fine setting, and what `tessellation_reference.py` derives from each
+case alone: the class, the Euler characteristic, a face body's loops, exact
+area and volume. `tessellation.rs` meshes all 56 and requires the certified
+bounds within the request, 12 samples of every triangle within its bound of
+its face's whole surface (closed-form distances independent of the
+kernel's), closedness, opposite orientations, the Euler characteristic, the
+volume within the deflection times the areas, determinism and convergence;
+and the contract on the 54 certified `data/occ` solids without spline
+geometry. `compare_tessellation.py` reproduces the pre-implementation
+`BRepMesh_IncrementalMesh` capture and the `.brep` texts it read, runs the
+reference's full check on the kernel's meshes (all 56 pass) and on OCCT's
+welded meshes: 42 matches and 14 reviewed differences (OCCT beyond the
+request on seven rows, degenerate triangles at poles;
+`TESSELLATION.md`).
+
 ## Height split and stacked fuse
 
 `generate_split_merge_fixtures.py --check` writes 174 scenarios from the
@@ -783,6 +804,7 @@ only numbers carry an allowance.
 | `occt-torus-preimplementation/native.txt` (`compare_primitives.py --family torus`) | OCCT's counts, properties, faces, edges and vertices of the 22 tori on each run | the bridge's own `1e-9` of the case's size, as for the cones | as for the cones |
 | `occt-torus-revolve-capture/native.txt` (`compare_revolve_history.py --family torus`) | every number of each case's native block on each run | `2^-40` × the case's size or the value | as for the cones |
 | `occt-spline-preimplementation/native.txt` (`compare_brep.py --family spline`) | OCCT's statuses, counts, tolerances, vertex gaps and use deviations of the ten spline models on each run | tolerances, statuses and counts exact; measurements within `2^-46` of the case's size or `1e-9` relative, as for M5 | OCCT evaluates splines and trigonometry with platform arithmetic; every valid model's measurement is rounding, at most `9.2e-16` |
+| `occt-tessellation-preimplementation/native.txt` (`compare_tessellation.py`) | OCCT's weld gap, own deflections, measured distances, area and volume of the 56 meshes on each run | `1e-9` relative or `1e-15` absolute; statuses and every count exact | BRepMesh and the probe's projections evaluate with platform trigonometry |
 | `prism-properties-baseline.tsv` (T1) | kernel mass properties, bounds and classifications before and after the migration | none: each host regenerates its own rows at `26fc457f` and must reproduce them bitwise | frames and rotations use the platform's trigonometry, so rows differ across hosts in the last bits |
 
 Native bridges that compare against reviewed differences use no numeric

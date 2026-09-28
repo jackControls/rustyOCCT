@@ -933,6 +933,15 @@ the first fixture, never deferred.
   stay explicit where the intersection is one.
 * **U8.** S5 before S6, application value first; or S6 before S5, upstream
   evidence and Boolean tools first. **Answered 2026-09-27: S5 then S6.**
+* **U9 (recorded 2026-09-27 by the implementing agent, T-a of the
+  tessellation track).** Tessellation certifies every triangle's deflection
+  over the whole triangle, where BRepMesh samples a triangle's centre and
+  link middles. On the fixtures that costs 1.0–1.2 times BRepMesh's
+  triangles on prisms, 0.2–0.3 on apex cones, 0.9–2.6 on spheres, frusta
+  and tori, while BRepMesh exceeds the request on seven of 56 rows (up to 4.4
+  times). Keep the certified contract as the only mode, or add a display
+  mode with sampled control and no bound (fewer triangles, OCCT's
+  behaviour)? Until answered, only the certified mode exists.
 
 ## Status
 
@@ -1195,5 +1204,39 @@ the first fixture, never deferred.
     are checked-in regressions.
   * S7b.3b.2 (two tori off a common axis), unbounded components (two
     cones), S7c and S7d pending.
+* Tessellation (parallel track) — T-a implemented (`TESSELLATION.md`);
+  gate pending CI, the schedule replay and the clean campaign.
+  * The decisions above, the independent reference
+    (`tessellation_reference.py`) and fixtures of 28 bodies at two settings,
+    and the native `BRepMesh_IncrementalMesh` capture of all 56 meshes came
+    before any kernel tessellation code (`1c4db5a3`); the pinned SDK now
+    builds TKMesh (`build_pinned_occt.py --toolkit TKMesh`, also in the
+    B-rep oracle job).
+  * `tessellation.rs` (edges, charts, faces, the contract check),
+    `tessellation/cdt.rs` (constrained Delaunay triangulation with exact
+    orientation predicates) and `tessellation/bounds.rs` (certified bounds
+    in the `Fast` tier). All 56 fixture meshes pass every check of the
+    reference; the 54 certified `data/occ` solids without spline geometry
+    mesh closed and oriented with their volumes in the deflection band of
+    their mass enclosures; the bridge gives 42 matches and 14 reviewed
+    differences (OCCT beyond the request on seven rows, degenerate triangles
+    at every apex and pole).
+  * Decisions taken in implementation, none of them a user decision: the
+    certified map is chosen per triangle among three (linear, tangentially
+    corrected, and the fan map at a pole; `MATHEMATICS.md`), added after the
+    first measurements showed apex cones at up to 15 times BRepMesh's
+    triangles with the linear map alone; a triangle is split at the middle
+    of the edge contributing most to its bounds, not its longest in space
+    (the longest drove points into an apex without reducing the normal
+    turn); the reference's normal test offsets a centroid by twice the larger
+    of the request and the triangle's own deviation; native rows reproduce
+    with exact counts on every platform (`VALIDATION.md`'s allowance table),
+    so a Linux BRepMesh that triangulates differently needs its own capture
+    review.
+  * Clean local 600-second `tessellation` campaign at `c9dbf4f6`
+    (AddressSanitizer, standard limits): 4,855 mutation executions after
+    209 s of replay (350 inputs, 14,000 edges, 961 MB peak), no artifact.
+  * Open for the user: U9 (a display mode without a bound). T-b (spline
+    edges and faces) and T-c (procedural edges) pending.
 * S8 — pending
 * S9 — pending

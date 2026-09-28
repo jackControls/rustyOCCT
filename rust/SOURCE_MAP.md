@@ -605,3 +605,30 @@ record 5, and DRAW's `ptorus`, at
 | Rust | OCCT | Notes |
 | --- | --- | --- |
 | `topology::validate::continuity` | [BSplCLib.cxx](../src/FoundationClasses/TKMath/BSplCLib/BSplCLib.cxx) `RemoveKnot`, [Geom_BSplineCurve.cxx](../src/ModelingData/TKG3d/Geom/Geom_BSplineCurve.cxx) `Continuity` | OCCT measures continuity by knot multiplicity and removes knots within a tolerance; the kernel decides C1 by one exact homogeneous removal with zero residual at each knot of multiplicity equal to the degree. |
+
+## Tessellation (T-a)
+
+The source review covered `BRepMesh_IncrementalMesh` and
+`IMeshTools_Parameters` (`Deflection`, `Angle`, `Relative`, `InParallel`,
+`ControlSurfaceDeflection`, `MinSize`), `BRepMesh_EdgeDiscret` and
+`BRepMesh_CurveTessellator` (an edge discretized once, its polygon on each
+face's triangulation, a seam's two polygons), `BRepMesh_Deflection`, the
+range splitters of cylinders, cones, spheres and tori (the parameter grid
+of a periodic face, meshed between its seam's two uses, so the seam's
+nodes appear twice in the face's triangulation),
+`BRepMesh_DelaunayBaseMeshAlgo`, `BRepMesh_Delaun` and
+`BRepMesh_DelaunayDeflectionControlMeshAlgo` (a Delaunay triangulation in
+scaled parameters, then up to 11 passes testing each triangle's centre and
+its links' middles against the surface and inserting nodes; frontier links
+are not split; the largest sampled deviation is stored as the face's
+`Poly_Triangulation::Deflection`), at
+`3d097a0328e71b826377d4814ab05ec3c3d23871`.
+
+| Rust | OCCT | Notes |
+| --- | --- | --- |
+| `tessellation::Parameters` | [IMeshTools_Parameters.hxx](../src/ModelingAlgorithms/TKMesh/IMeshTools/IMeshTools_Parameters.hxx) | Absolute deflection and angle only; no relative mode, minimum size or parallel faces yet. The angle is limited to `(0, π/2]`. |
+| edge polylines | [BRepMesh_EdgeDiscret.cxx](../src/ModelingAlgorithms/TKMesh/BRepMesh/BRepMesh_EdgeDiscret.cxx), [BRepMesh_CurveTessellator.cxx](../src/ModelingAlgorithms/TKMesh/BRepMesh/BRepMesh_CurveTessellator.cxx) | Uniform in the edge's fraction, the count from a certified chord bound and each curved face's thin-triangle condition; no seam polygons, no degenerated edges (a pole is one node). |
+| face charts | [BRepMesh_CylinderRangeSplitter.cxx](../src/ModelingAlgorithms/TKMesh/BRepMesh/BRepMesh_CylinderRangeSplitter.cxx), [BRepMesh_ConeRangeSplitter.cxx](../src/ModelingAlgorithms/TKMesh/BRepMesh/BRepMesh_ConeRangeSplitter.cxx), [BRepMesh_SphereRangeSplitter.cxx](../src/ModelingAlgorithms/TKMesh/BRepMesh/BRepMesh_SphereRangeSplitter.cxx), [BRepMesh_TorusRangeSplitter.cxx](../src/ModelingAlgorithms/TKMesh/BRepMesh/BRepMesh_TorusRangeSplitter.cxx) | OCCT meshes a periodic face between its seam's two uses; the kernel maps the whole domain homeomorphically into the plane (sinusoidal and annulus charts), so there is no seam and nothing to join. |
+| `tessellation/cdt.rs` | [BRepMesh_Delaun.cxx](../src/ModelingAlgorithms/TKMesh/BRepMesh/BRepMesh_Delaun.cxx) | Exact orientation predicates, a filtered in-circle that never flips on doubt, Sloan's constraint recovery; crossing chords refine the edges instead of being repaired. |
+| refinement and bounds | [BRepMesh_DelaunayDeflectionControlMeshAlgo.hxx](../src/ModelingAlgorithms/TKMesh/BRepMesh/BRepMesh_DelaunayDeflectionControlMeshAlgo.hxx) | OCCT samples each triangle's centre and links' middles for at most 11 passes and records what remains; the kernel certifies every triangle's deviation over the whole triangle (`MATHEMATICS.md`) and refines until it holds. |
+| `Mesh` | [Poly_Triangulation.hxx](../src/FoundationClasses/TKMath/Poly/Poly_Triangulation.hxx), [Poly_PolygonOnTriangulation.hxx](../src/FoundationClasses/TKMath/Poly/Poly_PolygonOnTriangulation.hxx) | One node array for the whole body, triangles grouped by face and oriented out of the material; OCCT stores one triangulation per face in its surface's orientation and joins them through the edges' polygons. |
