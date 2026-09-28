@@ -2287,4 +2287,16 @@ the first fixture, never deferred.
     natively before the code, and S8d's four); 17 reviewed differences
     (OCCT's B-spline sections and seams). A section on its own torus
     evaluates by its angles (twice as fast); the quadrature's order is 12.
+  * S8b: decisions recorded (2026-09-28); its evidence came before any
+    kernel code (`cb701edc`): the case protocol's spline segment (`B` in an
+    `S` row, reversed with its path), the reference slicing spline profiles
+    by exact Bezier pieces (straight splines give the polygon's rows, and
+    every profile of lines and splines its Green's-theorem moments in exact
+    Fractions, within 1e-40), 17 prisms (`split-spline-cases.txt`) and
+    `occt-split-spline-preimplementation`: every piece valid, the sides the
+    reference's, 10 within 2e-8 and seven reviewed BRepGProp errors (walls
+    of one span cut across their rulings, 3.6e-8 to 2.6e-7; faces bounded by
+    a three-span spline, up to 1.8e-3, though Green's theorem over OCCT's
+    own edges gives the reference's area). The probe cannot read `B` rows
+    yet: all 17 `rust_unsupported`. S8b.1 next.
 * S9 — pending
