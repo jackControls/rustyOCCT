@@ -1,0 +1,164 @@
+case ll_cross
+curve line -1.0 0.0 0.0 2.0 0.0 0.0
+curve line 0.5 -1.0 0.0 0.0 2.0 0.0
+end
+case ll_parallel
+curve line -1.0 0.0 0.0 2.0 0.0 0.0
+curve line -1.0 1.0 0.0 4.0 0.0 0.0
+end
+case ll_skew
+curve line -1.0 0.0 0.0 2.0 0.0 0.0
+curve line 0.0 -1.0 1.0 0.0 2.0 0.0
+end
+case ll_coincident
+curve line -1.0 0.0 0.0 2.0 0.0 0.0
+curve line 3.0 0.0 0.0 -1.0 0.0 0.0
+end
+case lc_pierce
+curve line 0.0 1.0 -1.0 0.0 0.0 2.0
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case lc_pierce_off
+curve line 0.25 0.5 -1.0 0.0 0.0 2.0
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case lc_two
+curve line -2.0 0.5 0.0 4.0 0.0 0.0
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case lc_tangent
+curve line -2.0 1.0 0.0 4.0 0.0 0.0
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case lc_miss
+curve line -2.0 2.0 0.0 4.0 0.0 0.0
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case lc_parallel
+curve line -2.0 0.0 1.0 4.0 0.0 0.0
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case lc_tilted
+curve line -2.0 0.25 0.5 4.0 0.5 -0.75
+curve circle 0.0 0.5 0.0 0.0 0.6 0.8 1.0 -0.0 0.0 1.5
+end
+case le_tangent
+curve line 2.0 -1.0 0.0 0.0 2.0 0.0
+curve ellipse 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 1.0
+end
+case le_two
+curve line -3.0 0.5 0.0 6.0 -0.25 0.0
+curve ellipse 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 1.0
+end
+case le_pierce
+curve line 2.0 0.0 -1.0 0.0 0.0 2.0
+curve ellipse 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 1.0
+end
+case lh_two
+curve line 2.0 -3.0 0.0 0.0 6.0 0.0
+curve hyperbola 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 1.0
+end
+case lh_other
+curve line -2.0 -3.0 0.0 0.0 6.0 0.0
+curve hyperbola 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 1.0
+end
+case lh_asymptote
+curve line 0.0 0.5 0.0 1.0 1.0 0.0
+curve hyperbola 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 1.0
+end
+case lh_tangent
+curve line 1.0 -1.0 0.0 0.0 2.0 0.0
+curve hyperbola 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 1.0
+end
+case cc_two
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+curve circle 1.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case cc_outside
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+curve circle 2.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case cc_inside
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+curve circle 0.5 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.5
+end
+case cc_coincident
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+curve circle 0.0 0.0 0.0 0.0 0.0 -1.0 0.0 1.0 0.0 1.0
+end
+case cc_apart
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+curve circle 3.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case cc_concentric
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.5
+end
+case ce_four
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5
+curve ellipse 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 1.0
+end
+case ce_tangent
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+curve ellipse 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 1.0
+end
+case ee_four
+curve ellipse 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 1.0
+curve ellipse 0.0 0.0 0.0 0.0 0.0 1.0 0.0 1.0 -0.0 2.0 1.0
+end
+case ee_coincident
+curve ellipse 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 1.0
+curve ellipse 0.0 0.0 0.0 0.0 0.0 1.0 -1.0 0.0 0.0 2.0 1.0
+end
+case eh_four
+curve ellipse 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 1.5
+curve hyperbola 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 1.0
+end
+case hh_opposite
+curve hyperbola 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 1.0
+curve hyperbola 0.0 0.0 0.0 0.0 0.0 1.0 -1.0 0.0 0.0 1.0 1.0
+end
+case hh_coincident
+curve hyperbola 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 1.0
+curve hyperbola 0.0 0.0 0.0 0.0 0.0 -1.0 1.0 0.0 0.0 1.0 1.0
+end
+case ch_two
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+curve hyperbola -0.5 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 1.0
+end
+case cc_across_two
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+curve circle 0.5 0.0 0.5 1.0 0.0 0.0 0.0 1.0 0.0 1.0
+end
+case cc_across_tangent
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+curve circle 1.0 0.0 1.0 1.0 0.0 0.0 0.0 1.0 0.0 1.0
+end
+case cc_across_one
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0
+curve circle 3.0 4.0 1.0 1.0 0.0 0.0 0.0 1.0 0.0 1.0
+end
+case cc_across_miss
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+curve circle 0.5 0.0 2.0 1.0 0.0 0.0 0.0 1.0 0.0 1.0
+end
+case cc_parallel_planes
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+curve circle 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case ce_across
+curve ellipse 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 2.5
+curve circle 3.0 2.0 1.0 1.0 0.0 0.0 0.0 1.0 0.0 1.0
+end
+case ce_across_miss
+curve ellipse 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 1.0
+curve circle 1.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 1.0
+end
+case eh_across
+curve ellipse 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 1.0
+curve hyperbola 0.0 0.0 0.0 0.0 1.0 0.0 1.0 -0.0 0.0 1.0 0.5
+end
+case cc_tilted
+curve circle 0.0 0.5 0.0 0.0 0.6 0.8 1.0 -0.0 0.0 1.5
+curve circle 0.25 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 1.25
+end

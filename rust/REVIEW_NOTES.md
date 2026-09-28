@@ -913,6 +913,43 @@ Decisions for S7c.2, recorded before its code (2026-09-28):
   and a native `GeomAPI_IntCS` capture on `Geom_Ellipse`, `Geom_Hyperbola`
   and `Geom_BSplineCurve` before the kernel code.
 
+Decisions for S7d, recorded before its code (2026-09-28):
+
+* **Scope and order.** S7d.1: pairs of the analytic curves (a line segment's
+  whole line, a circle or an arc's whole circle, S7c.2's ellipses and
+  hyperbolas' branches): `curve_curve(a, b)` over
+  `intersection::AnalyticCurve` (`Edge(Curve3)` or `Conic(Conic)`) gives
+  `Empty`, `Coincident` (the same point sets), or points, each with both
+  curves' parameters and the point enclosed and its contact (tangent where
+  the curves share their tangent line there, else crossing), sorted by the
+  first curve's parameter. S7d.2: spline edges against these curves and
+  each other, decided with its own decisions after S7d.1.
+* **Planes, exactly.** A circle lies in the plane through its origin normal
+  to its stored normal; an ellipse or a hyperbola in the plane through its
+  origin spanned by its stored axes (normal `x × y`, rational). A line is
+  `p0 + s (p1 - p0)`.
+* **Methods.** Two lines: exact linear algebra (coincident, parallel, skew,
+  or one rational point). A line and a plane conic: a line crossing the
+  plane meets it in one rational point, on the conic exactly when the
+  conic's equation vanishes there (a crossing); a line in the plane
+  substitutes into the conic's equation, a quadratic with rational
+  coefficients (a double root a tangency); a line parallel to the plane
+  off it misses. Two plane conics in one plane: S7c's resultant, the second
+  conic's equation written in the first's plane by exact frame
+  coordinates (a multiple root a tangency, `c0 = c1 = 0` coincidence, a
+  hyperbola's branch by a certified sign). In two crossing planes: both
+  conics' equations along the planes' common line are quadratics with
+  rational coefficients; the points are the real roots of their gcd, a
+  tangency where the root is double in both. Parallel planes: empty.
+* **Evidence first**: an independent reference (sympy: each curve's
+  rational parameterisation substituted into the other curve's plane and
+  conic equations, the common real roots of the two polynomials by their
+  gcd; a tangency where the tangent directions are parallel), fixtures of
+  every pair and class (crossings, tangencies coplanar and across planes,
+  coincidence, parallel and skew lines, the other branch, misses), and a
+  native `IntTools_EdgeEdge` capture on edges of those curves before the
+  kernel code.
+
 ### S8 — general planar split and face trimming (SplitBody job)
 
 Split any supported solid by an arbitrary plane: face/plane intersection
