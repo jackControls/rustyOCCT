@@ -188,6 +188,33 @@ fn translated(profile: &Profile, du: f64, dv: f64) -> Result<Option<Profile>> {
                                 ccw: *ccw,
                             }
                         }
+                        // A spline's poles move exactly (S9a.2).
+                        Segment::Spline(span) => {
+                            let c = span.curve().as_curve3();
+                            let Some(poles) = span
+                                .curve()
+                                .poles()
+                                .iter()
+                                .map(|p| point(*p))
+                                .collect::<Option<Vec<_>>>()
+                            else {
+                                return Ok(None);
+                            };
+                            let curve = crate::BSplineCurve2::new(
+                                c.degree(),
+                                poles,
+                                None,
+                                c.knots().to_vec(),
+                                c.multiplicities().to_vec(),
+                            )?;
+                            let [lo, hi] = span.range();
+                            let moved = crate::topology::SplineSpan::new(curve, lo, hi)?;
+                            Segment::Spline(if span.is_reversed() {
+                                moved.reversed()
+                            } else {
+                                moved
+                            })
+                        }
                         s => s.clone(),
                     });
                 }

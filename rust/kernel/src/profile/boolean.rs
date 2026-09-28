@@ -17,7 +17,10 @@
 //! `Degenerate`), counter-clockwise cycles are outer boundaries and
 //! clockwise ones holes, each result validated as a profile.
 use super::{boundaries_touch, Boundary, BoundaryKind, Location, Profile, Segment};
+mod splines;
+
 use crate::certified::{Interval as I, Real};
+use crate::solid::split::spline::Span;
 use crate::solid::split::{circle_points, q, rounded, within_arc, zero, ArcPos};
 use crate::{Error, Point2, Result, Tolerance};
 use num_rational::BigRational as R;
@@ -92,6 +95,8 @@ enum Shape {
         center: Point2,
         radius: f64,
     },
+    /// A spline segment (S9a.2): its index among the arrangement's splines.
+    Spline(usize),
 }
 
 /// A stored segment of an operand's boundary.
@@ -114,6 +119,9 @@ struct Seg {
 enum Key {
     Line(I),
     Arc(ArcPos),
+    /// A spline's curve parameter, negated when it runs against the curve
+    /// (so it increases along the stored direction).
+    Spline(f64),
 }
 
 impl Key {
@@ -121,9 +129,15 @@ impl Key {
         match (self, o) {
             (Key::Line(a), Key::Line(b)) => a.cmp(b),
             (Key::Arc(a), Key::Arc(b)) => a.compare(b),
+            (Key::Spline(a), Key::Spline(b)) => a.partial_cmp(b),
             _ => None,
         }
     }
+}
+
+/// A spline's key at its curve parameter `t`.
+fn spline_key(span: &Span, t: f64) -> Key {
+    Key::Spline(if span.is_reversed() { -t } else { t })
 }
 
 fn exact2(p: Point2) -> [I; 2] {
@@ -162,6 +176,8 @@ struct Arrangement {
     crosses: usize,
     /// The two segments meeting at each crossing.
     cross_segs: BTreeMap<usize, [(Operand, usize, usize); 2]>,
+    /// The spline segments' spans (S9a.2).
+    splines: Vec<Span>,
 }
 
 impl Arrangement {
@@ -205,6 +221,15 @@ impl Arrangement {
                     1,
                 )?)))
             }
+            // A point within the resolution of a spline, at its nearest
+            // parameter strictly inside the segment.
+            Shape::Spline(k) => {
+                let span = &self.splines[k];
+                let [lo, hi] = span.range();
+                Ok(splines::nearest(span, rounded(x), self.tol)?
+                    .filter(|t| lo < *t && *t < hi)
+                    .map(|t| spline_key(span, t)))
+            }
         }
     }
 
@@ -212,6 +237,12 @@ impl Arrangement {
     /// identified with a stored end of either within the resolution, a cut
     /// of each segment it lies strictly inside.
     fn meet(&mut self, s: usize, t: usize, x: &[I; 2]) -> Result<()> {
+        self.meet_keyed(s, t, x, &[])
+    }
+
+    /// [`Arrangement::meet`] with the keys of the segments known where the
+    /// meeting is a new crossing (a spline's parameter there).
+    fn meet_keyed(&mut self, s: usize, t: usize, x: &[I; 2], known: &[(usize, Key)]) -> Result<()> {
         let rx = rounded(x);
         let ends =
             |seg: &Seg| -> Vec<PId> { seg.from.iter().chain(seg.to.iter()).copied().collect() };
@@ -255,7 +286,19 @@ impl Arrangement {
             if own.contains(&id) {
                 continue;
             }
-            match self.place(seg, &exact_of(id, self))? {
+            let given = matches!(id, PId::Cross(_))
+                .then(|| {
+                    known
+                        .iter()
+                        .find(|(k, _)| *k == seg)
+                        .map(|(_, key)| key.clone())
+                })
+                .flatten();
+            let placed = match given {
+                Some(key) => Some(key),
+                None => self.place(seg, &exact_of(id, self))?,
+            };
+            match placed {
                 Some(key) => self.events[seg].push((key, id)),
                 // A vertex snapped onto a segment it lies just past.
                 None if matches!(id, PId::Vertex(..)) => {
@@ -323,6 +366,69 @@ impl Arrangement {
         Ok(vec![(s, t)])
     }
 
+    /// A spline segment and any other (S9a.2): its crossings with a line
+    /// (S8b.3's roots), a circle or another spline; one curve shared with
+    /// another spline segment, each one's ends inside the other cutting it.
+    fn with_spline(&mut self, s: usize, t: usize) -> Result<Vec<(usize, usize)>> {
+        let (sp, other) = if matches!(self.segs[s].shape, Shape::Spline(_)) {
+            (s, t)
+        } else {
+            (t, s)
+        };
+        let Shape::Spline(k) = self.segs[sp].shape else {
+            unreachable!("a spline")
+        };
+        let span = self.splines[k].clone();
+        let exact = |e: &[R; 2]| [I::exact(e[0].clone()), I::exact(e[1].clone())];
+        match self.segs[other].shape {
+            Shape::Line => {
+                let [a, b, d] = line_through(self.segs[other].p, self.segs[other].e);
+                let m = crate::solid::split::spline::meets(&span, [&a, &b, &d])?;
+                for c in m.crossings {
+                    self.meet_keyed(sp, other, &exact(&c.exact), &[(sp, spline_key(&span, c.t))])?;
+                }
+            }
+            Shape::Arc { center, radius, .. } | Shape::Circle { center, radius } => {
+                let m = splines::with_circle(&span, center, radius)?;
+                for c in m.crossings {
+                    self.meet_keyed(sp, other, &exact(&c.exact), &[(sp, spline_key(&span, c.t))])?;
+                }
+            }
+            Shape::Spline(k2) => {
+                let span2 = self.splines[k2].clone();
+                if splines::same_curve(&span, &span2) {
+                    for (on, from) in [(sp, other), (other, sp)] {
+                        let ends = [self.segs[from].from, self.segs[from].to];
+                        for end in ends.iter().flatten() {
+                            let id = self.canon(*end);
+                            let own = [self.segs[on].from, self.segs[on].to]
+                                .map(|x| x.map(|x| self.canon(x)));
+                            if own.contains(&Some(id)) {
+                                continue;
+                            }
+                            if let Some(key) = self.place(on, &exact2(self.positions[&id]))? {
+                                self.events[on].push((key, id));
+                            }
+                        }
+                    }
+                    return Ok(vec![(sp.min(other), sp.max(other))]);
+                }
+                for c in splines::with_spline(&span, &span2)? {
+                    self.meet_keyed(
+                        sp,
+                        other,
+                        &exact(&c.exact),
+                        &[
+                            (sp, spline_key(&span, c.t[0])),
+                            (other, spline_key(&span2, c.t[1])),
+                        ],
+                    )?;
+                }
+            }
+        }
+        Ok(Vec::new())
+    }
+
     /// A line `s` and a circle or arc `t`.
     fn line_circle(&mut self, s: usize, t: usize) -> Result<()> {
         let (p, e) = (self.segs[s].p, self.segs[s].e);
@@ -330,7 +436,7 @@ impl Arrangement {
             Shape::Arc { center, radius, .. } | Shape::Circle { center, radius } => {
                 (center, radius)
             }
-            Shape::Line => unreachable!("a curve"),
+            Shape::Line | Shape::Spline(_) => unreachable!("a curve"),
         };
         let line = line_through(p, e);
         self.circle_line(s, t, center, radius, &line)
@@ -382,7 +488,7 @@ impl Arrangement {
             Shape::Arc { center, radius, .. } | Shape::Circle { center, radius } => {
                 (center, radius)
             }
-            Shape::Line => unreachable!("a curve"),
+            Shape::Line | Shape::Spline(_) => unreachable!("a curve"),
         };
         let ((c1, r1), (c2, r2)) = (geo(&self.segs[s]), geo(&self.segs[t]));
         if c1 == c2 && r1 == r2 {
@@ -420,7 +526,7 @@ impl Arrangement {
 
 /// The stored segments of a set of profiles, boundaries numbered across
 /// them (each profile's outer first), and which are holes.
-fn segments(profiles: &[&Profile], op: Operand) -> (Vec<Seg>, Vec<bool>) {
+fn segments(profiles: &[&Profile], op: Operand, splines: &mut Vec<Span>) -> (Vec<Seg>, Vec<bool>) {
     let mut all = Vec::new();
     let mut holes = Vec::new();
     for profile in profiles {
@@ -428,7 +534,7 @@ fn segments(profiles: &[&Profile], op: Operand) -> (Vec<Seg>, Vec<bool>) {
         for (k, _) in profile.boundaries().enumerate() {
             holes.push(k > 0);
         }
-        for mut seg in segments_of(profile, op) {
+        for mut seg in segments_of(profile, op, splines) {
             seg.b += base;
             let shift = |id: Option<PId>| {
                 id.map(|x| match x {
@@ -445,7 +551,7 @@ fn segments(profiles: &[&Profile], op: Operand) -> (Vec<Seg>, Vec<bool>) {
 }
 
 /// The stored segments of a profile.
-fn segments_of(profile: &Profile, op: Operand) -> Vec<Seg> {
+fn segments_of(profile: &Profile, op: Operand, splines: &mut Vec<Span>) -> Vec<Seg> {
     let mut out = Vec::new();
     for (b, boundary) in profile.boundaries().enumerate() {
         match &boundary.kind {
@@ -494,7 +600,10 @@ fn segments_of(profile: &Profile, op: Operand) -> Vec<Seg> {
                             radius: *radius,
                             ccw: *ccw,
                         },
-                        Segment::Spline(_) => unreachable!("refused before"),
+                        Segment::Spline(span) => {
+                            splines.push(span.clone());
+                            Shape::Spline(splines.len() - 1)
+                        }
                     };
                     out.push(Seg {
                         op,
@@ -524,6 +633,8 @@ struct Piece {
     to: Option<PId>,
     p: Point2,
     e: Point2,
+    /// A spline piece's curve parameters at its start and end (S9a.2).
+    range: Option<(f64, f64)>,
 }
 
 /// A directed result edge, the region on its left.
@@ -538,13 +649,19 @@ struct Edge {
     /// The arrangement pieces it joins, in order, each with whether it runs
     /// along its segment's stored direction.
     parts: Vec<(usize, bool)>,
+    /// A spline edge's curve parameters at its start and end.
+    range: Option<(f64, f64)>,
 }
 
 impl Piece {
     /// An off-centre point of the piece (fraction `0.4453125` along it).
-    fn sample(&self, seg: &Seg) -> Point2 {
+    fn sample(&self, seg: &Seg, splines: &[Span]) -> Result<Point2> {
         let f = 0.4453125;
-        match seg.shape {
+        Ok(match seg.shape {
+            Shape::Spline(k) => {
+                let (t0, t1) = self.range.expect("a spline piece's range");
+                splines[k].curve().point(t0 + (t1 - t0) * f)?
+            }
             Shape::Line => Point2::new(
                 self.p.x + (self.e.x - self.p.x) * f,
                 self.p.y + (self.e.y - self.p.y) * f,
@@ -562,14 +679,17 @@ impl Piece {
             Shape::Circle { center, radius } => {
                 if self.from.is_none() {
                     let a = std::f64::consts::TAU * f;
-                    return Point2::new(center.x + radius * a.cos(), center.y + radius * a.sin());
+                    return Ok(Point2::new(
+                        center.x + radius * a.cos(),
+                        center.y + radius * a.sin(),
+                    ));
                 }
                 let a0 = (self.p.y - center.y).atan2(self.p.x - center.x);
                 let sweep = super::arc_sweep(center, self.p, self.e, true);
                 let a = a0 + sweep * f;
                 Point2::new(center.x + radius * a.cos(), center.y + radius * a.sin())
             }
-        }
+        })
     }
 }
 
@@ -617,6 +737,12 @@ pub(crate) enum Curve {
     Circle {
         center: Point2,
         radius: f64,
+    },
+    /// A spline piece: its spline (`Arranged::spline`) and curve
+    /// parameters at its start and end.
+    Spline {
+        index: usize,
+        range: (f64, f64),
     },
 }
 
@@ -666,6 +792,10 @@ impl Arranged {
                         ccw: true,
                     },
                     Shape::Circle { center, radius } => Curve::Circle { center, radius },
+                    Shape::Spline(index) => Curve::Spline {
+                        index,
+                        range: piece.range.expect("a spline piece's range"),
+                    },
                 };
                 let class = match self.partner.get(&i) {
                     Some(&(k, same)) => {
@@ -711,6 +841,10 @@ impl Arranged {
             })
             .collect()
     }
+    /// A spline piece's spline.
+    pub(crate) fn spline(&self, index: usize) -> &Span {
+        &self.arr.splines[index]
+    }
     /// A point's canonical id (a vertex of `B` equal to one of `A`'s is
     /// `A`'s).
     pub(crate) fn canon(&self, p: PId) -> PId {
@@ -736,18 +870,9 @@ fn classify_set(set: &[&Profile], point: Point2) -> Result<Location> {
 /// Arranges two sets of profiles' boundaries.
 pub(crate) fn arrange(a: &[&Profile], b: &[&Profile], tolerance: Tolerance) -> Result<Arranged> {
     let tol = tolerance.linear();
-    for p in a.iter().chain(b) {
-        if p.boundaries().any(|bd| match &bd.kind {
-            BoundaryKind::Path { segments, .. } => {
-                segments.iter().any(|s| matches!(s, Segment::Spline(_)))
-            }
-            _ => false,
-        }) {
-            return Err(Error::OutOfDomain("a Boolean of spline profiles (S9a.2)"));
-        }
-    }
-    let (mut segs, holes_a) = segments(a, Operand::A);
-    let (segs_b, holes_b) = segments(b, Operand::B);
+    let mut splines: Vec<Span> = Vec::new();
+    let (mut segs, holes_a) = segments(a, Operand::A, &mut splines);
+    let (segs_b, holes_b) = segments(b, Operand::B, &mut splines);
     segs.extend(segs_b);
     let mut positions = BTreeMap::new();
     for seg in &segs {
@@ -778,6 +903,7 @@ pub(crate) fn arrange(a: &[&Profile], b: &[&Profile], tolerance: Tolerance) -> R
         events: vec![Vec::new(); n],
         crosses: 0,
         cross_segs: BTreeMap::new(),
+        splines,
     };
     // Stored vertices of one within the resolution of the other's (not
     // equal): sub-resolution.
@@ -802,18 +928,23 @@ pub(crate) fn arrange(a: &[&Profile], b: &[&Profile], tolerance: Tolerance) -> R
             if arr.segs[s].op != Operand::A || arr.segs[t].op != Operand::B {
                 continue;
             }
+            let spline = |x: &Seg| matches!(x.shape, Shape::Spline(_));
             let lines = |x: &Seg| matches!(x.shape, Shape::Line);
-            let found = match (lines(&arr.segs[s]), lines(&arr.segs[t])) {
-                (true, true) => arr.lines(s, t)?,
-                (true, false) => {
-                    arr.line_circle(s, t)?;
-                    Vec::new()
+            let found = if spline(&arr.segs[s]) || spline(&arr.segs[t]) {
+                arr.with_spline(s, t)?
+            } else {
+                match (lines(&arr.segs[s]), lines(&arr.segs[t])) {
+                    (true, true) => arr.lines(s, t)?,
+                    (true, false) => {
+                        arr.line_circle(s, t)?;
+                        Vec::new()
+                    }
+                    (false, true) => {
+                        arr.line_circle(t, s)?;
+                        Vec::new()
+                    }
+                    (false, false) => arr.circles(s, t)?,
                 }
-                (false, true) => {
-                    arr.line_circle(t, s)?;
-                    Vec::new()
-                }
-                (false, false) => arr.circles(s, t)?,
             };
             overlaps.extend(found);
         }
@@ -846,6 +977,7 @@ pub(crate) fn arrange(a: &[&Profile], b: &[&Profile], tolerance: Tolerance) -> R
                 Shape::Arc { center, radius, .. } | Shape::Circle { center, radius } => {
                     (pt.distance(center) - radius).abs() <= tol
                 }
+                Shape::Spline(k) => splines::nearest(&arr.splines[k], pt, tol)?.is_some(),
             };
             if on {
                 if let Some(key) = arr.place(s, &exact2(pt))? {
@@ -883,6 +1015,7 @@ pub(crate) fn arrange(a: &[&Profile], b: &[&Profile], tolerance: Tolerance) -> R
                     to: None,
                     p: seg.p,
                     e: seg.p,
+                    range: None,
                 });
                 continue;
             }
@@ -901,6 +1034,24 @@ pub(crate) fn arrange(a: &[&Profile], b: &[&Profile], tolerance: Tolerance) -> R
             }
         }
         let parts = chain.len() - 1;
+        // A spline's curve parameters at its cuts, along its stored
+        // direction.
+        let params: Option<Vec<f64>> = match seg.shape {
+            Shape::Spline(k) => {
+                let span = &arr.splines[k];
+                let [lo, hi] = span.range();
+                let back = span.is_reversed();
+                let mut v = vec![if back { hi } else { lo }];
+                for (key, _) in &ev {
+                    if let Key::Spline(x) = key {
+                        v.push(if back { -x } else { *x });
+                    }
+                }
+                v.push(if back { lo } else { hi });
+                Some(v)
+            }
+            _ => None,
+        };
         for k in 0..parts {
             let (f, t) = (chain[k], chain[k + 1]);
             let (pf, pt) = (arr.positions[&f.unwrap()], arr.positions[&t.unwrap()]);
@@ -917,6 +1068,7 @@ pub(crate) fn arrange(a: &[&Profile], b: &[&Profile], tolerance: Tolerance) -> R
                 to: t,
                 p: pf,
                 e: pt,
+                range: params.as_ref().map(|v| (v[k], v[k + 1])),
             });
         }
     }
@@ -931,16 +1083,21 @@ pub(crate) fn arrange(a: &[&Profile], b: &[&Profile], tolerance: Tolerance) -> R
             if arr.segs[pb.seg].op != Operand::B || !same_support(pa.seg, pb.seg) {
                 continue;
             }
-            let arcs = |x: &Piece| match arr.segs[x.seg].shape {
-                Shape::Arc { ccw, .. } => Some(ccw),
-                Shape::Circle { .. } => Some(true),
-                Shape::Line => None,
-            };
             let same = pa.from == pb.from && pa.to == pb.to;
             let opposite = pa.from == pb.to && pa.to == pb.from;
-            let shared = match (arcs(pa), arcs(pb)) {
-                (None, None) => same || opposite,
-                (Some(ca), Some(cb)) => {
+            let sense = |x: &Piece| match arr.segs[x.seg].shape {
+                Shape::Arc { ccw, .. } => Some(ccw),
+                _ => Some(true),
+            };
+            let shared = match (&arr.segs[pa.seg].shape, &arr.segs[pb.seg].shape) {
+                (Shape::Line, Shape::Line) | (Shape::Spline(_), Shape::Spline(_)) => {
+                    same || opposite
+                }
+                (
+                    Shape::Arc { .. } | Shape::Circle { .. },
+                    Shape::Arc { .. } | Shape::Circle { .. },
+                ) => {
+                    let (ca, cb) = (sense(pa), sense(pb));
                     (same && ca == cb) || (opposite && ca != cb && pa.from.is_some())
                 }
                 _ => false,
@@ -963,7 +1120,7 @@ pub(crate) fn arrange(a: &[&Profile], b: &[&Profile], tolerance: Tolerance) -> R
         } else {
             a
         };
-        let at = classify_set(other, piece.sample(&arr.segs[piece.seg]))?;
+        let at = classify_set(other, piece.sample(&arr.segs[piece.seg], &arr.splines)?)?;
         if at == Location::Boundary {
             return Err(Error::Degenerate(
                 "a boundary within the resolution of the other profile's",
@@ -1128,6 +1285,9 @@ fn traced(
             shape,
             origins: vec![origin],
             parts: vec![(i, !reverse)],
+            range: piece
+                .range
+                .map(|(a, b)| if reverse { (b, a) } else { (a, b) }),
         });
     }
     // Cycles: each kept piece's end starts exactly one kept piece.
@@ -1164,7 +1324,10 @@ fn traced(
             cycle.push(next);
             at = edges[next].to;
         }
-        let area = signed_area(&cycle.iter().map(|&k| &edges[k]).collect::<Vec<_>>());
+        let area = signed_area(
+            &cycle.iter().map(|&k| &edges[k]).collect::<Vec<_>>(),
+            &arr.splines,
+        );
         cycles.push((cycle, area > 0.0));
     }
     // Outer boundaries and their holes, with no vertex where a boundary
@@ -1176,7 +1339,12 @@ fn traced(
         let raw: Vec<Edge> = cycle.iter().map(|&k| edges[k].clone()).collect();
         let parts: Vec<(usize, bool)> = raw.iter().flat_map(|e| e.parts.clone()).collect();
         let merged = if join { merged(raw) } else { raw };
-        let built = boundary_of(&merged.iter().collect::<Vec<_>>(), !ccw, tolerance)?;
+        let built = boundary_of(
+            &merged.iter().collect::<Vec<_>>(),
+            !ccw,
+            &arr.splines,
+            tolerance,
+        )?;
         if *ccw {
             outers.push((built, parts));
         } else {
@@ -1232,6 +1400,34 @@ fn traced(
     })
 }
 
+/// A spline piece with its traversal's ends set to the arrangement's
+/// points (a crossing of two splines is one point; each restriction's end
+/// is within rounding of it).
+pub(crate) fn pinned(span: &Span, p: Point2, e: Point2) -> Result<Span> {
+    let c = span.curve().as_curve3();
+    let mut poles = span.curve().poles();
+    let n = poles.len();
+    let (first, last) = if span.is_reversed() { (e, p) } else { (p, e) };
+    if poles[0] == first && poles[n - 1] == last {
+        return Ok(span.clone());
+    }
+    poles[0] = first;
+    poles[n - 1] = last;
+    let curve = crate::BSplineCurve2::new(
+        c.degree(),
+        poles,
+        None,
+        c.knots().to_vec(),
+        c.multiplicities().to_vec(),
+    )?;
+    let whole = crate::topology::SplineSpan::whole(curve);
+    Ok(if span.is_reversed() {
+        whole.reversed()
+    } else {
+        whole
+    })
+}
+
 /// A traced boundary with its segments' and vertices' provenance.
 type Traced = (Boundary, Vec<Vec<Origin2>>, Vec<PId>);
 
@@ -1258,6 +1454,10 @@ fn merged(mut cycle: Vec<Edge>) -> Vec<Edge> {
                 ccw: s2,
             },
         ) => c1 == c2 && r1 == r2 && s1 == s2,
+        // Consecutive pieces of one spline segment, running on (S9a.2).
+        (Shape::Spline(k1), Shape::Spline(k2)) => {
+            k1 == k2 && matches!((a.range, b.range), (Some(x), Some(y)) if x.1 == y.0)
+        }
         _ => false,
     };
     loop {
@@ -1282,6 +1482,7 @@ fn merged(mut cycle: Vec<Edge>) -> Vec<Edge> {
             shape: a.shape,
             origins,
             parts,
+            range: a.range.zip(b.range).map(|(x, y)| (x.0, y.1)),
         };
         // Keep the cycle's start where it was when the join wraps round.
         if j == 0 {
@@ -1303,10 +1504,18 @@ fn merged(mut cycle: Vec<Edge>) -> Vec<Edge> {
 }
 
 /// A cycle's signed area (binary64, for its orientation).
-fn signed_area(cycle: &[&Edge]) -> f64 {
+fn signed_area(cycle: &[&Edge], splines: &[Span]) -> f64 {
     let mut twice = 0.0;
     for e in cycle {
         match e.shape {
+            Shape::Spline(k) => {
+                twice += e.p.x * e.e.y - e.e.x * e.p.y;
+                if let Some((t0, t1)) = e.range {
+                    if let Ok(part) = crate::solid::split::spline::piece(&splines[k], t0, t1) {
+                        twice += crate::solid::split::spline::twice_area_beyond_chord(&part);
+                    }
+                }
+            }
             Shape::Circle { radius, .. } => {
                 twice += std::f64::consts::TAU * radius * radius;
             }
@@ -1327,7 +1536,12 @@ fn signed_area(cycle: &[&Edge]) -> f64 {
 
 /// A cycle as a stored counter-clockwise boundary (a hole's traversal
 /// reversed), with its segments' and vertices' provenance in stored order.
-fn boundary_of(cycle: &[&Edge], hole: bool, tolerance: Tolerance) -> Result<Traced> {
+fn boundary_of(
+    cycle: &[&Edge],
+    hole: bool,
+    splines: &[Span],
+    tolerance: Tolerance,
+) -> Result<Traced> {
     if cycle.len() == 1 && cycle[0].from.is_none() {
         let Shape::Circle { center, radius } = cycle[0].shape else {
             return Err(Error::InvalidTopology("a ring that is not a circle"));
@@ -1342,6 +1556,11 @@ fn boundary_of(cycle: &[&Edge], hole: bool, tolerance: Tolerance) -> Result<Trac
         .iter()
         .map(|e| {
             let seg = match e.shape {
+                Shape::Spline(k) => {
+                    let (t0, t1) = e.range.expect("a spline edge's range");
+                    let part = crate::solid::split::spline::piece(&splines[k], t0, t1)?;
+                    Segment::Spline(pinned(&part, e.p, e.e)?)
+                }
                 Shape::Line => Segment::Line,
                 Shape::Arc {
                     center,
@@ -1354,9 +1573,9 @@ fn boundary_of(cycle: &[&Edge], hole: bool, tolerance: Tolerance) -> Result<Trac
                 },
                 Shape::Circle { .. } => unreachable!("a cut circle is arcs"),
             };
-            (e.from.expect("a vertex"), e.p, seg, e.origins.clone())
+            Ok((e.from.expect("a vertex"), e.p, seg, e.origins.clone()))
         })
-        .collect();
+        .collect::<Result<_>>()?;
     if hole {
         let n = items.len();
         let mut rev = Vec::with_capacity(n);
@@ -1373,6 +1592,7 @@ fn boundary_of(cycle: &[&Edge], hole: bool, tolerance: Tolerance) -> Result<Trac
                     radius,
                     ccw: !ccw,
                 },
+                Segment::Spline(span) => Segment::Spline(span.reversed()),
                 s => s,
             };
             rev.push((from, p, seg, origin));

@@ -442,11 +442,24 @@ type Expected = std::collections::BTreeMap<String, (String, Option<(usize, [f64;
 /// `OutOfDomain`.
 #[test]
 fn every_case_matches_the_reference() {
+    matches_the_reference(
+        include_str!("../../fixtures/boolean-cases.txt"),
+        include_str!("../../fixtures/boolean-expected.tsv"),
+    );
+}
+
+#[test]
+fn every_spline_case_matches_the_reference() {
+    // S9a.2's spline profiles.
+    matches_the_reference(
+        include_str!("../../fixtures/boolean-spline-cases.txt"),
+        include_str!("../../fixtures/boolean-spline-expected.tsv"),
+    );
+}
+
+fn matches_the_reference(cases: &str, expected: &str) {
     let mut expect: Expected = Default::default();
-    for line in include_str!("../../fixtures/boolean-expected.tsv")
-        .lines()
-        .filter(|l| !l.starts_with('#'))
-    {
+    for line in expected.lines().filter(|l| !l.starts_with('#')) {
         let (name, row) = line.split_once('\t').unwrap();
         let w: Vec<&str> = row.split(' ').collect();
         let entry = expect
@@ -462,7 +475,7 @@ fn every_case_matches_the_reference() {
         }
     }
     let mut failures = Vec::new();
-    for case in protocol::cases(include_str!("../../fixtures/boolean-cases.txt")) {
+    for case in protocol::cases(cases) {
         let (kind, want) = &expect[&case.name];
         let rows = protocol::rows(&case).unwrap_or_else(|e| panic!("{}: {e}", case.name));
         match kind.as_str() {
@@ -531,7 +544,18 @@ fn every_case_matches_the_reference() {
 /// entity and repeats exactly.
 #[test]
 fn fixture_histories_are_complete_and_deterministic() {
-    for case in protocol::cases(include_str!("../../fixtures/boolean-cases.txt")) {
+    histories_are_complete_and_deterministic(include_str!("../../fixtures/boolean-cases.txt"));
+}
+
+#[test]
+fn spline_fixture_histories_are_complete_and_deterministic() {
+    histories_are_complete_and_deterministic(include_str!(
+        "../../fixtures/boolean-spline-cases.txt"
+    ));
+}
+
+fn histories_are_complete_and_deterministic(cases: &str) {
+    for case in protocol::cases(cases) {
         let Ok((a, b, out, h)) = protocol::run(&case) else {
             continue;
         };

@@ -113,6 +113,54 @@
       "reason": "BRepGProp integrates the faces bounded by the waves, quadratic B-splines of three spans, badly (S8b's wave reviews): 8.0e-04 in volume (720.2583 against 719.6848), 3.2e-04 in area, 9.0e-06 of the size in the centre; the adaptive integration is worse (1.8e-03). OCCT's section edges carry tolerance 2.6e-05 here. The result is valid with the reference's solid count. The kernel refuses spline profiles before S9a.2's code (OutOfDomain): the case is rust_unsupported.",
       "independent_evidence": "The wave profile (the rectangle [0, 10] x [0, 6] under the quadratic B-spline of three spans through the poles (10, 6), (8, 8), (5, 5), (2, 8), (0, 6)) has area 65.75 exactly, the region above the second wave 68.0625, and both waves are symmetric about u = 5. S8b's split capture reviewed the same BRepGProp error on faces bounded by this wave (occt-split-divergences.json: wave_knot, wave_parallel_four, wave_tilted). The stack is the wave prism alone from 0 to 2 (131.5), the fuse from 2 to 5 (3 x 127.9990892) and the upper region alone from 5 to 8 (204.1875): 719.6847677. With a scratch variant of occt_boolean_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating u dv - v du in the object's frame over OCCT's own edges of each planar cap face of the result (BRepAdaptor_Curve, 2,000 subintervals of 5-point Gauss-Legendre per edge): the caps by Green's theorem over OCCT's edges are the reference's within 2.6e-09 (bottom 65.7500002, top 68.0625000, the steps at heights 2 and 5 62.2490768 and 59.9365890), where BRepGProp gives 65.8445345 and 68.1511920 for the bottom and top.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "dome_tangent_line_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "1a90b6c7073bdf61990140fd77c9bc085fac681c11bf79ec78478e12c2210e9a",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT keeps the point where the dome's spline wall touches the other boundary as vertices and edges on that wall and its caps, even after ShapeUpgrade_UnifySameDomain (6 faces, 14 edges, 10 vertices); the kernel's tangency cuts nothing (S9's decisions, S9a.1 amendment (b)) and keeps the wall whole (6 faces, 12 edges, 8 vertices). The volume, area and centre agree with the reference.",
+      "independent_evidence": "The reference finds the meeting a root of even multiplicity of the other curve's equation on the dome's B\u00e9zier arc (exact square-free factors), and the regions on either side of it lie on one side of the other boundary.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "dome_tangent_line_fuse_tilted",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "89ecc3b918e20490fe936f08050e84e4b828473cc679514c38f649ce9aec6869",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT keeps the point where the dome's spline wall touches the other boundary as vertices and edges on that wall and its caps, even after ShapeUpgrade_UnifySameDomain (12 faces, 37 edges, 32 vertices); the kernel's tangency cuts nothing (S9's decisions, S9a.1 amendment (b)) and keeps the wall whole (12 faces, 30 edges, 20 vertices). The volume, area and centre agree with the reference.",
+      "independent_evidence": "The reference finds the meeting a root of even multiplicity of the other curve's equation on the dome's B\u00e9zier arc (exact square-free factors), and the regions on either side of it lie on one side of the other boundary.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "dome_touch_line_cut_tilted",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "61a8f6503e46cc983a693a40e870688269e4c1e5528ff92444c3bcb61dd3be52",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT keeps the point where the dome's spline wall touches the other boundary as vertices and edges on that wall and its caps, even after ShapeUpgrade_UnifySameDomain (4 faces, 10 edges, 9 vertices); the kernel's tangency cuts nothing (S9's decisions, S9a.1 amendment (b)) and keeps the wall whole (4 faces, 6 edges, 4 vertices). The volume, area and centre agree with the reference.",
+      "independent_evidence": "The reference finds the meeting a root of even multiplicity of the other curve's equation on the dome's B\u00e9zier arc (exact square-free factors), and the regions on either side of it lie on one side of the other boundary.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "dome_tangent_disc_fuse_tilted",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "8fc6df6b1f33939beb429055149b58212b60bf91ef864359550788edbd96dfa1",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT keeps the point where the dome's spline wall touches the other boundary as vertices and edges on that wall and its caps, even after ShapeUpgrade_UnifySameDomain (4 faces, 16 edges, 22 vertices); the kernel's tangency cuts nothing (S9's decisions, S9a.1 amendment (b)) and keeps the wall whole (4 faces, 6 edges, 4 vertices). The volume, area and centre agree with the reference.",
+      "independent_evidence": "The reference finds the meeting a root of even multiplicity of the other curve's equation on the dome's B\u00e9zier arc (exact square-free factors), and the regions on either side of it lie on one side of the other boundary.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     }
   ]
 }
