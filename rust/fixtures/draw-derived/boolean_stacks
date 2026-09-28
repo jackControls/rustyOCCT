@@ -1,0 +1,90 @@
+puts "Derived case, not an original OCCT test: Booleans of prisms in one frame whose slabs hold different regions (S9a.2)"
+puts "Written for rusty-occt; see rust/UPSTREAM_TESTS.md (derived cases)."
+
+# The kernel builds these results as stacks: general bodies, unified as
+# OCCT's unifysamedom leaves them (walls on one line or circle facing one
+# way joined across slab heights, no vertex where an edge runs straight
+# on). Counts and lengths per use are checked on the unified result,
+# volumes and areas on the raw one.
+
+# A step: a 2 x 4 x 2 box on half of a 4 x 4 x 2 box. The unified result
+# is an L-shaped prism along y (L area 12, perimeter 16): the walls at
+# x = 0 and y = 0, 4 each one face across both slabs.
+box a 0 0 0 4 4 2
+box b 0 0 2 2 4 2
+bfuse step a b
+checkshape step
+checkprops step -v 48 -s 88 -deps 1e-9
+unifysamedom ustep step
+checkprops ustep -l 112 -deps 1e-9
+checknbshapes ustep -vertex 12 -edge 18 -wire 8 -face 8 -shell 1 -solid 1 -compound 1
+bop a b
+bopfuse bstep
+checkprops bstep -v 48 -s 88 -deps 1e-9
+
+# A pocket: a radius 1 cylinder over [1, 2] cut from a 4 x 4 x 2 box.
+# Volume 32 - pi, area 64 - pi + 2 pi + pi; OCCT's pocket wall has a seam
+# and a vertex on each circle, the floor one wire of its circle.
+box pb 0 0 0 4 4 2
+pcylinder pc 1 1
+ttranslate pc 2 2 1
+bcut pocket pb pc
+checkshape pocket
+checkprops pocket -v 28.858407346410207 -s 70.2831853071796 -deps 1e-5
+unifysamedom upocket pocket
+# Lengths per use: the box's edges twice (80), each circle twice (8 pi)
+# and the seam of length 1 twice.
+checkprops upocket -l 107.13274122871834 -deps 1e-5
+checknbshapes upocket -vertex 10 -edge 15 -wire 9 -face 8 -shell 1 -solid 1 -compound 1
+bop pb pc
+bopcut bpocket
+checkprops bpocket -v 28.858407346410207 -s 70.2831853071796 -deps 1e-5
+
+# A slab over [2, 3] across a 3 x 2 x 6 box cuts it into two solids,
+# 3 x 2 x 2 and 3 x 2 x 3.
+box s 0 0 0 3 2 6
+box slab -1 -1 2 5 4 1
+bcut two s slab
+checkshape two
+checkprops two -v 30 -s 74 -deps 1e-9
+unifysamedom utwo two
+checkprops utwo -l 120 -deps 1e-9
+checknbshapes utwo -vertex 16 -edge 24 -wire 12 -face 12 -shell 2 -solid 2 -compound 1
+
+# A closed cavity: a 2 x 2 x 2 box strictly inside a 4 x 4 x 4 box. The
+# result is one solid of two shells, the outer box's and the cavity's.
+box o 0 0 0 4 4 4
+box cavity 1 1 1 2 2 2
+bcut hollow o cavity
+checkshape hollow
+checkprops hollow -v 56 -s 120 -deps 1e-9
+unifysamedom uhollow hollow
+checkprops uhollow -l 144 -deps 1e-9
+checknbshapes uhollow -vertex 16 -edge 24 -wire 12 -face 12 -shell 2 -solid 1 -compound 1
+bclearobjects
+bcleartools
+baddobjects o
+baddtools cavity
+bfillds
+bbop ghollow 2
+checkprops ghollow -v 56 -s 120 -deps 1e-9
+
+# A tool through a round wall: a 3 x 1 x 1 box over [1, 2] entering a
+# radius 2, height 4 cylinder from -x, away from OCCT's seam at +x, to
+# x = -1. With s = sqrt(15) / 2 and t = asin(1/4), the window in the wall
+# spans the angle 2t at x = -s; the removed volume is the strip of the
+# disc between y = -1/2 and 1/2 beyond x = -1: s / 2 + 4 t - 1.
+pcylinder rc 2 4
+box rt -4 -0.5 1 3 1 1
+bcut window rc rt
+checkshape window
+# Volume 16 pi - (s / 2 + 4 t - 1); area 24 pi less the window (4 t)
+# plus the floor and the roof (s / 2 + 4 t - 1 each), the sides (s - 1
+# each) and the end (1).
+checkprops window -v 49.28651560031652 -s 79.21841972603447 -deps 1e-5
+unifysamedom uwindow window
+# Lengths per use: the circles (4 pi each) and the seam (4) twice, the
+# window's arcs (4t each) and verticals twice, the end's four
+# edges twice and the four edges along x (s - 1) twice.
+checkprops uwindow -l 81.80029992453962 -deps 1e-5
+checknbshapes uwindow -vertex 10 -edge 15 -wire 9 -face 8 -shell 1 -solid 1 -compound 1

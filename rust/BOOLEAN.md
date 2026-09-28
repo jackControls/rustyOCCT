@@ -238,5 +238,17 @@ OCCT's Boolean commands of one object and one tool through `Solid::fuse`,
 `bopfuse`, `bopcut`, `boptuc` and `bopcommon`, and `bbop`/`bapibop` 0 to 3
 on the General Fuse arguments, returning OCCT's compound of the result's
 solids and reporting every refusal (`OutOfDomain`, `Degenerate`, ...)
-unsupported; the derived case `boolean_prisms` and 320 cases of upstream's
-`boolean` group evaluate on both backends.
+unsupported. S9a.2's stacks are Boolean results like the prisms:
+`checkshape`, `nbshapes`, `vprops`, `sprops` and `lprops` read their
+topology (a closed cavity is a solid of two shells), and `unifysamedom`
+returns them unchanged, since the kernel builds them unified; native
+DRAW's unified counts agree on every stack checked. A stack given to
+another Boolean is reported unsupported (the kernel's Booleans take
+prisms; S9b). The derived cases `boolean_prisms` and `boolean_stacks` (a
+step, a pocket, a box cut in two by a slab, a closed cavity, a tool
+through a round wall) and 403 cases of upstream's `boolean` group (84 of
+them stacks) evaluate on both backends. One case evaluated at S9a is
+lost: `bopfuse_simple/Z5`, a fuse of a cylinder and an inscribed box of
+different heights, whose containment test cuts the cylinder by the box
+into four segments touching at its corners and propagates that cut's
+`Degenerate` (`UPSTREAM_TESTS.md`).
