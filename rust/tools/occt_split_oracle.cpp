@@ -15,6 +15,20 @@
 // (N result solids), then per solid `S side volume area cx cy cz faces edges
 // vertices valid` (side: below or above the plane, by its centre), or
 // `NAME failure`. Nothing is computed from the kernel's output.
+//
+// S8e: a `make face` row in place of the `prism` vector makes the planar face
+// of the wires (BRepBuilderAPI_MakeFace on the frame's plane) the argument,
+// and each face of the result is a piece: `S side area perimeter cx cy cz 1
+// edges vertices valid` (the perimeter BRepGProp::LinearProperties over its
+// edges). A `make wire` row makes the one wire the argument. The splitter
+// keeps a wire whole with its edges split, so the pieces are grouped here:
+// the input wire's edges in their stored order, each replaced by its images
+// (`Modified`) in order along it; each image takes the side of its midpoint,
+// or, lying on the plane (1e-9), the side of the image before it; each
+// maximal cyclic run of images on one side is a piece (every image on the
+// plane: one piece below), `S side length 0 cx cy cz 0 edges vertices
+// valid` (validity: a wire made of the run's edges in order, checked). The
+// images must cover the result's edges.
 #include <BRepAlgoAPI_Splitter.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
@@ -26,7 +40,9 @@
 #include <BRepPrimAPI_MakePrism.hxx>
 #include <BRepPrimAPI_MakeSphere.hxx>
 #include <BRepPrimAPI_MakeTorus.hxx>
+#include <BRep_Tool.hxx>
 #include <GProp_GProps.hxx>
+#include <GeomAPI_ProjectPointOnCurve.hxx>
 #include <Geom_BSplineCurve.hxx>
 #include <NCollection_Array1.hxx>
 #include <NCollection_IndexedMap.hxx>
@@ -37,7 +53,9 @@
 #include <TopTools_ListOfShape.hxx>
 #include <TopTools_ShapeMapHasher.hxx>
 #include <TopoDS.hxx>
+#include <TopoDS_Edge.hxx>
 #include <TopoDS_Face.hxx>
+#include <TopoDS_Iterator.hxx>
 #include <TopoDS_Wire.hxx>
 #include <gp_Ax3.hxx>
 #include <gp_Circ.hxx>
@@ -101,6 +119,87 @@ struct Piece {
   int faces, edges, vertices;
   bool valid;
 };
+
+// S8e: a split wire's pieces, the maximal runs of its edges' images on one
+// side in the wire's stored order.
+std::vector<Piece> wire_runs(const TopoDS_Wire& wire, BRepAlgoAPI_Splitter& splitter, const gp_Pnt& q,
+                             const gp_Dir& m) {
+  struct Part {
+    TopoDS_Edge edge;
+    int side;
+    double length;
+    gp_Pnt centre;
+  };
+  std::vector<Part> parts;
+  ShapeMap covered;
+  for (TopoDS_Iterator it(wire); it.More(); it.Next()) {
+    const TopoDS_Edge edge = TopoDS::Edge(it.Value());
+    double f, l;
+    Handle(Geom_Curve) curve = BRep_Tool::Curve(edge, f, l);
+    std::vector<TopoDS_Edge> list;
+    const TopTools_ListOfShape& modified = splitter.Modified(edge);
+    if (modified.IsEmpty()) {
+      if (splitter.IsDeleted(edge)) throw Standard_Failure("edge deleted");
+      list.push_back(edge);
+    } else {
+      for (const TopoDS_Shape& s : modified) list.push_back(TopoDS::Edge(s));
+    }
+    std::vector<std::pair<double, Part>> images;
+    for (const TopoDS_Edge& image : list) {
+      double a, b;
+      Handle(Geom_Curve) c = BRep_Tool::Curve(image, a, b);
+      const gp_Pnt mid = c->Value(0.5 * (a + b));
+      GeomAPI_ProjectPointOnCurve projection(mid, curve, f, l);
+      if (projection.NbPoints() == 0) throw Standard_Failure("image off its edge");
+      GProp_GProps g;
+      BRepGProp::LinearProperties(image, g);
+      const double s = gp_Vec(q, mid).Dot(gp_Vec(m));
+      images.push_back({projection.LowerDistanceParameter(),
+                        {image, std::abs(s) <= 1e-9 ? 0 : (s < 0 ? -1 : 1), g.Mass(), g.CentreOfMass()}});
+      covered.Add(image);
+    }
+    std::sort(images.begin(), images.end(),
+              [](const auto& x, const auto& y) { return x.first < y.first; });
+    if (edge.Orientation() == TopAbs_REVERSED) std::reverse(images.begin(), images.end());
+    for (const auto& image : images) parts.push_back(image.second);
+  }
+  if (covered.Extent() != count(splitter.Shape(), TopAbs_EDGE))
+    throw Standard_Failure("images do not cover the result");
+  const int n = static_cast<int>(parts.size());
+  std::vector<int> side(n, -1);
+  const bool sided = std::any_of(parts.begin(), parts.end(), [](const Part& p) { return p.side != 0; });
+  for (int i = 0; sided && i < n; ++i) {
+    int j = i;
+    while (parts[j].side == 0) j = (j + n - 1) % n;
+    side[i] = parts[j].side;
+  }
+  int start = 0;
+  for (int i = 0; i < n; ++i)
+    if (side[i] != side[(i + n - 1) % n]) {
+      start = i;
+      break;
+    }
+  std::vector<Piece> pieces;
+  for (int k = 0; k < n;) {
+    const int s = side[(start + k) % n];
+    double length = 0;
+    gp_XYZ moment(0, 0, 0);
+    ShapeMap edges, vertices;
+    BRepBuilderAPI_MakeWire mw;
+    for (; k < n && side[(start + k) % n] == s; ++k) {
+      const Part& p = parts[(start + k) % n];
+      length += p.length;
+      moment += p.length * p.centre.XYZ();
+      edges.Add(p.edge);
+      TopExp::MapShapes(p.edge, TopAbs_VERTEX, vertices);
+      mw.Add(p.edge);
+    }
+    const bool valid = mw.IsDone() && BRepCheck_Analyzer(mw.Wire()).IsValid();
+    pieces.push_back({s < 0 ? "below" : "above", length, 0.0, gp_Pnt(moment / length), 0, edges.Extent(),
+                      vertices.Extent(), valid});
+  }
+  return pieces;
+}
 }  // namespace
 
 int main() {
@@ -120,6 +219,7 @@ int main() {
       gp_Pnt q;
       gp_Dir m;
       TopoDS_Shape primitive;
+      std::string make;
       while (std::getline(std::cin, line) && line != "end") {
         std::istringstream in(line);
         std::string kind;
@@ -188,6 +288,9 @@ int main() {
         } else if (kind == "prism") {
           auto v = numbers(in, 3);
           prism = gp_Vec(v[0], v[1], v[2]);
+        } else if (kind == "make") {
+          in >> make;
+          if (make != "face" && make != "wire") throw Standard_Failure("unknown body");
         } else if (kind == "split") {
           auto v = numbers(in, 6);
           q = gp_Pnt(v[0], v[1], v[2]);
@@ -197,10 +300,15 @@ int main() {
         }
       }
       TopoDS_Shape solid = primitive;
-      if (solid.IsNull()) {
+      if (make == "wire") {
+        solid = wires.at(0);
+      } else if (solid.IsNull()) {
         BRepBuilderAPI_MakeFace mf(gp_Pln(frame), wires.at(0), true);
         for (size_t i = 1; i < wires.size(); ++i) mf.Add(wires[i]);
-        solid = BRepPrimAPI_MakePrism(mf.Face(), prism).Shape();
+        if (make == "face")
+          solid = mf.Face();
+        else
+          solid = BRepPrimAPI_MakePrism(mf.Face(), prism).Shape();
       }
       TopoDS_Face tool = BRepBuilderAPI_MakeFace(gp_Pln(q, m), -1e3, 1e3, -1e3, 1e3);
       TopTools_ListOfShape arguments, tools;
@@ -215,6 +323,16 @@ int main() {
         continue;
       }
       std::vector<Piece> pieces;
+      if (make == "wire") pieces = wire_runs(TopoDS::Wire(solid), splitter, q, m);
+      for (TopExp_Explorer e(splitter.Shape(), TopAbs_FACE); make == "face" && e.More(); e.Next()) {
+        GProp_GProps a, l;
+        BRepGProp::SurfaceProperties(e.Current(), a);
+        BRepGProp::LinearProperties(e.Current(), l, true);
+        const gp_Pnt c = a.CentreOfMass();
+        const double s = gp_Vec(q, c).Dot(gp_Vec(m));
+        pieces.push_back({s < 0 ? "below" : "above", a.Mass(), l.Mass(), c, 1, count(e.Current(), TopAbs_EDGE),
+                          count(e.Current(), TopAbs_VERTEX), BRepCheck_Analyzer(e.Current()).IsValid()});
+      }
       for (TopExp_Explorer e(splitter.Shape(), TopAbs_SOLID); e.More(); e.Next()) {
         GProp_GProps v, a;
         BRepGProp::VolumeProperties(e.Current(), v);
