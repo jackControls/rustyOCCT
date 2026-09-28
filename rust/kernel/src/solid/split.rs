@@ -1311,7 +1311,14 @@ fn trace(
                 segments.push(s);
                 vertices.push(v);
             }
-            let profile = Profile::new(outer, hole_boundaries, tolerance)?;
+            // A hole within the resolution of its piece's boundary (a plane
+            // passing that close to a hole's vertex) is not representable.
+            let profile = Profile::new(outer, hole_boundaries, tolerance).map_err(|e| match e {
+                Error::InvalidHole(_) => {
+                    Error::Degenerate("a piece's hole within the resolution of its boundary")
+                }
+                e => e,
+            })?;
             out.push(SectionPiece {
                 side,
                 profile,

@@ -676,3 +676,12 @@ a plane parallel to its axis that misses the hole. The hole's whole circle
 enters the section as one piece from a placeholder vertex, which had no
 stored position, and tracing its cycle's orientation looked it up. The
 placeholder is now a point of the circle; the input replays in 0.008 s.
+
+## Split: a plane passing a hole's vertex within the resolution
+
+`split/crash-769f29ee776d0370d29778bce537ec268da15e07.bin` came from the
+second campaign: a square with a square hole split through an outer vertex
+by a plane that passes a hole vertex within the resolution without touching
+it exactly. The hole of one piece then lies within the resolution of that
+piece's boundary, which a profile rejects (`InvalidHole`); the split now
+reports it `Degenerate`, as it does other sub-resolution pieces.
