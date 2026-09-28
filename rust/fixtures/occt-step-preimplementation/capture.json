@@ -1,0 +1,25 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 STEPControl_Reader",
+  "platform": "darwin",
+  "rust_revision": "59cd932485af85f1639d82c50066549e1560feeb",
+  "rust_step_import_exists": false,
+  "rust_worktree_uncommitted": [
+    " M rust/REVIEW_NOTES.md",
+    " M rust/kernel/src/lib.rs",
+    " M rust/tools/build_pinned_occt.py",
+    "?? rust/fixtures/occt-step-preimplementation/",
+    "?? rust/fixtures/step-expected.tsv",
+    "?? rust/fixtures/step/",
+    "?? rust/kernel/src/step.rs",
+    "?? rust/kernel/src/step/",
+    "?? rust/tools/compare_step.py",
+    "?? rust/tools/generate_step_fixtures.py",
+    "?? rust/tools/occt_step_oracle.cpp",
+    "?? rust/tools/step_reference.py"
+  ],
+  "sdk_manifest_sha256": "620c9b81c2c6e6d2f83ab460a94347696c62b5a0e43608ae98fb0556442308f6",
+  "input_sha256": "53bb1792316cd495d3ef50697d127c6664f73f2bfa577b0d24379331c97157c8",
+  "probe_source_sha256": "f89f574c79603758ef2dfb6faab156e73419d887599044eddae7998005086e61",
+  "observations_sha256": "c000a905a94c9c738d87a926faa0fe1141cac8c419080f12026f8c287f626be3"
+}
