@@ -12,6 +12,7 @@ context and the observed statuses as expectations.
 """
 import argparse
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 import json
 from pathlib import Path
 import re
@@ -63,6 +64,24 @@ def restore_only():
     return out
 
 
+BOOLEAN_GRIDS = [f'{op}{kind}' for op in ['bfuse', 'bcut', 'bcommon', 'bopfuse', 'bopcut', 'bopcommon', 'boptuc']
+                 for kind in ['_simple', '_2d', '_complex']]
+
+
+def boolean_cases():
+    """The self-contained cases (no `restore`, no data file) of the
+    `boolean` group's 21 Boolean grids (S9a, S9a.2)."""
+    out = []
+    for grid in BOOLEAN_GRIDS:
+        for path in sorted((ROOT / 'tests/boolean' / grid).iterdir()):
+            if not path.is_file() or path.name in {'begin', 'end', 'parse.rules', 'cases.list'}:
+                continue
+            text = path.read_text(errors='replace')
+            if 'restore' not in text and 'locate_data_file' not in text:
+                out.append(str(path.relative_to(ROOT)))
+    return out
+
+
 def context(case):
     """The case, its begin/end scripts and parse rules, as recorded paths."""
     sources = source_files(case)
@@ -75,7 +94,12 @@ def context(case):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--restore-only', action='store_true')
+    parser.add_argument('--boolean', action='store_true',
+                        help="the boolean group's self-contained Boolean cases")
     parser.add_argument('--case', action='append', default=[])
+    # A dataset elsewhere (another checkout's fetched one), read only.
+    parser.add_argument('--data-dir', action='append', type=Path, default=[])
+    parser.add_argument('--jobs', type=int, default=1)
     parser.add_argument('--draw-exe', default=shutil.which('DRAWEXE') or shutil.which('occt-draw')
                         or '/opt/homebrew/opt/opencascade/bin/DRAWEXE')
     parser.add_argument('--tclsh', default=shutil.which('tclsh') or 'tclsh')
@@ -83,12 +107,20 @@ def main():
     parser.add_argument('--output', type=Path, default=ROOT / 'target/upstream-survey')
     parser.add_argument('--register', action='store_true')
     args = parser.parse_args()
-    cases = (restore_only() if args.restore_only else []) + args.case
+    if args.register and args.boolean:
+        # Its records say restore-and-check on data; a Boolean case's
+        # purpose names its commands and geometry.
+        parser.error('--register records restore-only cases; register Boolean cases with their purpose')
+    cases = ((restore_only() if args.restore_only else []) + (boolean_cases() if args.boolean else [])
+             + args.case)
     inventory = dataset_inventory()
-    data_dirs = [ROOT / 'data'] + ([DATASET] if inventory is not None else [])
+    for directory in args.data_dir:
+        if inventory is None and directory.is_dir():
+            inventory = {p.name for p in directory.rglob('*') if p.is_file()}
+    data_dirs = [ROOT / 'data'] + ([DATASET] if DATASET.is_dir() else []) + args.data_dir
     worker = build_worker()
-    rows = []
-    for k, case in enumerate(cases):
+
+    def survey(case):
         sources, _ = context(case)
         names = Path(case).relative_to('tests').parts
         row = {'case': case}
@@ -99,8 +131,14 @@ def main():
             row[backend] = result['status']
             row[backend + '_unsupported'] = result.get('unsupported', '')
             row[backend + '_error'] = result.get('error', '')
-        rows.append(row)
-        print(f"{k + 1:4}/{len(cases)} {row['rust']:15} {row['occt']:15} {case}", flush=True)
+        return row
+
+    rows = []
+    # Each case runs in processes of its own; threads only wait for them.
+    with ThreadPoolExecutor(max_workers=max(1, args.jobs)) as pool:
+        for k, row in enumerate(pool.map(survey, cases)):
+            rows.append(row)
+            print(f"{k + 1:4}/{len(cases)} {row['rust']:15} {row['occt']:15} {row['case']}", flush=True)
     evaluated = [r for r in rows if r['rust'] in EVALUATED and r['occt'] in EVALUATED]
     constructs = Counter()
     for r in rows:

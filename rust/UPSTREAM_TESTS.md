@@ -123,6 +123,7 @@ group, and stale success records are removed before each run.
 | Derived `profile_arcs` | Pass | Pass | Prisms of `profile` sketches with arcs: tangent half circles, fillets and a clockwise notch; counts and volumes (S5) |
 | Derived `faces_and_edges` | Pass | Pass | Free faces and edges on DRAW geometry: `mkface` on a plane and a cylinder (a patch and the whole band), `mkedge` on a line and a circle, `mkplane` of a `profile` wire with arcs; `checkshape`, `checknbshapes`, areas and lengths (S6) |
 | Derived `boolean_prisms` | Pass | Pass | Booleans of prisms in one frame (`bfuse`, `bcut`, `bcommon`, `bop` with `bopfuse`, `bopcut`, `boptuc`, `bopcommon`, `bbop`, `bapibop`): overlapping boxes, a box and a cylinder (a half cylinder, a hole), a box cut in two, disjoint boxes, one box inside another, stacked boxes of one profile, a stadium prism and a bar; `checkshape`, volumes, areas, and counts and lengths per use after `unifysamedom` (S9a) |
+| Derived `boolean_stacks` | Pass | Pass | Booleans of prisms in one frame whose slabs hold different regions, the kernel's stacks (`bfuse`, `bcut`, `bop` with `bopfuse` and `bopcut`, `bbop`): a step, a pocket, a box cut into two solids by a slab, a closed cavity (one solid of two shells) and a tool through a round wall; `checkshape`, volumes, areas, and counts and lengths per use after `unifysamedom` (S9a.2) |
 | Derived `split_plane` | Pass | Pass | OCCT's splitter (`bclearobjects`, `bcleartools`, `baddobjects`, `baddtools`, `bfillds`, `bsplit`, `bapisplit`) with one plane face as the tool: a prism parallel to its axis, a box cut obliquely, a stadium sheet across an arc, a closed wire, and a prism, a face and a wire at once; `checkshape`, `checknbshapes` with the shared cut entities, volumes, areas and lengths per use (S8e) |
 | `lowalgos/intss/bug23177_1` | Viewer skipped | Viewer skipped | A torus and a plane through its axis: two circles, `dump`, `bounds`, `dval`, `xdistcs` on both surfaces (S7) |
 | `lowalgos/intss/bug23177_2` | Viewer skipped | Viewer skipped | The same with another plane through the axis (S7) |
@@ -135,19 +136,19 @@ group, and stale success records are removed before each run.
 | `bugs/modalg_7/bug32578` | Unsupported | Viewer skipped | A face split by many edges with a fuzzy value (`bfuzzyvalue`); needs the dataset (S8e) |
 | `bugs/moddata_3/bug31587_1` to `_6` | Unsupported | Pass | A box split by another box's faces, edges, wires, vertices or open polylines, then `removeinternals` (S8e) |
 | `boolean/splitter/A5`, `B5`; `bugs/modalg_7/bug28113_1`, `bug28113_2`, `bug29789`, `bug29955`, `bug31201_1` to `_3`, `bug31462`, `bug32644` | Private data | Private data | Splits of restored shapes (`bsplit`, and `bapisplit` in `B5`) whose files are not in the public dataset (S8e) |
-| `boolean/bopcommon_simple` (122 cases), `boptuc_simple` (75), `bopfuse_simple` (61), `bopcut_simple` (59), `bcommon_simple/I5`, `J1`, `bfuse_simple/L2` | Viewer skipped | Viewer skipped | `bop` and its operations, `bfuse` and `bcommon` of two boxes, a box and a `pcylinder`, or two cylinders in one frame (some moved by `ttranslate`, some sized by `dset`): `checkprops -s` (or `-s empty`) and the group's `checkshape`; each records a `checkview` (S9a) |
+| `boolean/bopcommon_simple` (122 cases), `bopcut_simple` (106), `bopfuse_simple` (86), `boptuc_simple` (83), `bcommon_simple/I5`, `J1`, `bfuse_simple/L2`, `E2`, `bcut_simple/G7`, `L8` | Viewer skipped | Viewer skipped | `bop` and its operations, `bfuse`, `bcut` and `bcommon` of two boxes, a box and a `pcylinder`, or two cylinders in one frame (some moved by `ttranslate`, some sized by `dset`): `checkprops -s` (or `-s empty`) and the group's `checkshape`; each records a `checkview` (S9a; 84 of them, `bopfuse_simple/B2` among them, are S9a.2's stacks) |
 | `boolean/bcommon_simple/A1`, `bopcommon_simple/ZL6` | Unsupported | Viewer skipped | A sphere and a box, two cones: solids other than prisms (S9d; S9a sentinels) |
 | `boolean/bopcommon_simple/C3`, `bfuse_complex/J5` | Unsupported | Viewer skipped | A box rotated by 45 degrees, crossed cylinders: frames with different axes (S9b, S9c) |
-| `boolean/bcut_simple/H6`, `bopfuse_simple/B2` | Unsupported | Viewer skipped | Pockets cut from a prism, a smaller box against a face of another: stacks of prisms (S9a.2) |
+| `boolean/bcut_simple/H6` | Unsupported | Viewer skipped | Pockets cut from a prism one after another: the first cut is a stack (S9a.2), which the next `bcut` takes as its object, a Boolean of a stack (S9b) |
 | `boolean/bfuse_simple/E1` | Unsupported | Viewer skipped | Prisms sized by `SCALE`: the tool's profile does not translate exactly into the object's frame (S9b) |
 | `boolean/bopcommon_simple/C8` | Unsupported | Viewer skipped | An angle `atan2(1,2)*180/pi` in `dset`, which the adapter does not evaluate |
-| `boolean/bopcommon_simple/S5`, `bopcut_simple/ZC7`, `S4`, `bopfuse_simple/U7`, `boptuc_simple/R1` | Unsupported | Viewer skipped | Box corners on or tangent to a cylinder: pieces thinner than the resolution, results touching themselves or each other, a hole touching its boundary (the kernel's `Degenerate`) |
+| `boolean/bopcommon_simple/S5`, `bopcut_simple/ZC7`, `S4`, `bopfuse_simple/U7`, `B3`, `boptuc_simple/R1` | Unsupported | Viewer skipped | Box corners on or tangent to a cylinder, boxes touching along an edge: pieces thinner than the resolution, results touching themselves (at a point or along an edge) or each other, a hole touching its boundary (the kernel's `Degenerate`) |
 | `boolean/bcut_simple/G8` | Unsupported | Viewer skipped | A semi-infinite prism of an exploded face (`explode`, `SemiInf`) |
 
-There are **five original geometry tests passing on both backends** and 324
+There are **five original geometry tests passing on both backends** and 408
 more evaluated on both with their image commands recorded (`buc60769`,
 S7's `lowalgos/intss` cases `bug23177_1`, `bug23177_2` and `bug24648`, and
-S9a's 320 Boolean cases).
+404 Boolean cases of S9a and S9a.2).
 S8e registers the upstream `bsplit` group as capability sentinels: `boolean/splitter/A5`
 and `B5` and the 22 `bugs` cases that call `bsplit` (with `bug29333_1` and
 `bug29333_2`, registered before). They need S9's general builder: tools that
@@ -190,13 +191,52 @@ of them, one or two per reason, are registered as capability sentinels.
 Their assertions are `checkprops -s` and `checkshape` (model-independent),
 so the ledger does not change.
 
+**S9a.2's stacks in the Boolean group.** The same 1,802 cases were run
+again on both backends after S9a.2 (2026-09-28, `survey_upstream_tests.py
+--boolean`, the public dataset read through `--data-dir`; no case loads
+it). Native DRAW's statuses are unchanged (1,578 evaluated, 224 not
+forwarded). Rust now evaluates 404, each evaluated by native DRAW too and
+`viewer_skipped` on both; no case fails on Rust. Every one is registered:
+84 new (`bop` with `bopcut` 47, `bopfuse` 26, `boptuc` 8, `bcut` 2,
+`bfuse` 1, from `bcut_simple`, `bfuse_simple` and the `bop*_simple`
+grids; each a stack: two boxes, a box and a `pcylinder`, or two cylinders
+whose slabs hold different regions). Against the previous survey's 163
+stacked cases, by the change of each count: 84 more evaluate, 37 cut a pocket and then give the stack to the next `bcut` (a
+Boolean of a stack, S9b), 38 more are `Degenerate` and 4
+more `explode` a Boolean's result, which now exists, into solids. Their assertions are again `checkprops -s` (or `-s empty`) and
+`checkshape`: no upstream case in these grids counts a stack's shapes or
+measures its lengths; `boolean_stacks` (below) does. Of the 1,174 native
+DRAW evaluates and Rust does not, the reasons are now: frames with
+different axes 647; solids other than prisms 315 (255 refused by the
+kernel, 60 by the adapter, which extrudes again a tool sharing ids with
+the object and finds no profile); a stack as a Boolean argument 37;
+`Degenerate` 116 (a result thinner than the resolution 62, a profile piece
+thinner than it 24, a result touching itself at a point 15 or along an
+edge 4, two results touching 4, a result's hole outside its boundary 8);
+a profile not translating exactly 1; `atan2` in `dset` 48; `explode` 9 (a
+Boolean's result into solids 4, a `pcylinder` into faces 4, a face of a
+box 1); a `pcylinder` on a plane `pl1` 1. The sentinels were checked
+again: `bopfuse_simple/B2` now evaluates and is registered, replaced by
+`bopfuse_simple/B3` (boxes touching along an edge, `Degenerate`);
+`bcut_simple/H6` is still refused, now as a Boolean of its first cut's
+stack; the other twelve are refused as before.
+
+`bopfuse_simple/Z5` (`pcylinder b1 1 2`, a box `-r -r 0 2*r 2*r 1` with
+`dset r sqrt(2)/2`, `bop b1 b2`, `bopfuse result`, `checkprops result -s
+18.8496`) is the cylinder (area `6 pi`). Its heights differ, and the fuse
+decides containment by exact cuts: the cylinder minus the box, four
+circular segments touching at the box's corners (`2 r^2` rounds just above
+1), is refused as degenerate, which says it is not empty; the survey found
+the first S9a.2 revision propagating that refusal, fixed with a kernel
+test (`tests/booleans.rs`).
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4
 and 2), where the kernel returns closed loops (1, 2 and 1) whose `xdistcs`
 samples lie within 1.5e-14 of both cylinders.
-The eleven derived cases are counted separately (see below).
-The 25 bridge self-tests are separate infrastructure checks; they do not count
+The twelve derived cases are counted separately (see below).
+The 27 bridge self-tests are separate infrastructure checks; they do not count
 as more upstream coverage. The existing 66-solid / 2,292-classification native
 oracle corpus supplies much broader prism geometry checks independently.
 
@@ -308,9 +348,10 @@ argument's face and edge images (a fused wall in two faces, a stacked
 fuse's walls split at the joint), while the kernel merges collinear edges
 and coplanar faces as `unifysamedom` does: volumes and areas are checked on
 the raw result, counts and lengths per use on `unifysamedom`'s, which the
-adapter returns unchanged when no two consecutive profile segments of the
-result are collinear lines or arcs of one circle (any other `unifysamedom`
-is unsupported). Its values are computed by hand and hold on both backends:
+adapter returns unchanged when each solid is a prism with no two
+consecutive profile segments collinear lines or arcs of one circle, or a
+stack (S9a.2, below; any other `unifysamedom` is unsupported). Its values
+are computed by hand and hold on both backends:
 
 * 4 x 4 x 2 boxes overlapping in a 2 x 2 square: the fuse an octagon prism
   (volume 56, area 104, length 128; 16 vertices, 24 edges, 10 wires and
@@ -338,14 +379,48 @@ is unsupported). Its values are computed by hand and hold on both backends:
   it: a cross of 12 profile vertices (volume `20 + 2 pi`, area `48 + 6
   pi`, length `104 + 8 pi`).
 
+`boolean_stacks` (S9a.2) runs the same commands on prisms whose result's
+height slabs hold different regions. The kernel builds these results as
+stacks (`Construction::Stack`): general bodies, no longer prisms, with
+certified mass properties, a closed cavity a second shell of its solid.
+`checkshape`, `vprops`, `sprops`, `lprops` and `nbshapes` read the stack's
+topology as any Boolean result's (the count synthesizer's seams and seam
+vertices for its cylinder walls, `Topology::occt_counts` for its shells).
+The kernel's stacks are unified already (walls on one line or circle
+facing one way joined across slab heights and piece ends, no vertex where
+an edge runs straight on between the same two faces), so `unifysamedom`
+returns them unchanged; native DRAW's unified counts agree on every stack
+checked, those below and a tower, an L step, a stepped shaft, a plug
+filling a hole over part of its height and a cylindrical boss. Its values
+are computed by hand and hold on both backends:
+
+* a 2 x 4 x 2 box on half of a 4 x 4 x 2 box (`bfuse`, and `bop` with
+  `bopfuse`): an L-shaped prism along y, volume 48, area 88, length 112; 12
+  vertices, 18 edges, 8 wires and faces;
+* a radius 1 cylinder over `[1, 2]` cut from a 4 x 4 x 2 box (`bcut`, and
+  `bopcut`), a pocket: volume `32 - pi`, area `64 + 2 pi`, length `82 + 8
+  pi` (the seam of length 1 twice); 10 vertices, 15 edges, 9 wires, 8
+  faces;
+* a slab over `[2, 3]` across a 3 x 2 x 6 box cuts it into two solids:
+  volume 30, area 74, length 120; 16 vertices, 24 edges, 12 wires and
+  faces, 2 shells and solids;
+* a 2 x 2 x 2 box strictly inside a 4 x 4 x 4 box (`bcut`, and `bbop 2`),
+  a closed cavity: volume 56, area 120, length 144; 16 vertices, 24 edges,
+  12 wires and faces, 2 shells, one solid;
+* a 3 x 1 x 1 box over `[1, 2]` entering a radius 2, height 4 cylinder
+  from `-x` to `x = -1` (away from OCCT's seam), a tool through a round
+  wall: with `s = sqrt(15) / 2` and `t = asin(1/4)`, volume `16 pi - (s /
+  2 + 4 t - 1)`, area `24 pi + 4 t + 3 s - 3`, length `16 pi + 12 + 16 t +
+  8 s`; 10 vertices, 15 edges, 9 wires, 8 faces.
+
 The adapter reports unsupported, never an answer, whatever the kernel
 refuses: frames with different axes, an offset or profile that does not
-translate exactly, S9a.2's stacks (`OutOfDomain`), results touching
-themselves or each other and pieces thinner than the resolution
-(`Degenerate`), `ComputationLimit`, `LimitExceeded` and `PrecisionLoss`;
-also several objects or tools, a section (`bbop`/`bapibop` 4,
-`bopsection`), an argument of several solids, restored shapes and split
-results. Two things the kernel's Boolean requires of its inputs the
+translate exactly, results touching themselves or each other and pieces
+thinner than the resolution (`Degenerate`), `ComputationLimit`,
+`LimitExceeded` and `PrecisionLoss`; also several objects or tools, a
+section (`bbop`/`bapibop` 4, `bopsection`), an argument of several solids,
+a stack as an argument (the kernel's Booleans take prisms: a Boolean of a
+stack is S9b's), restored shapes and split results. Two things the kernel's Boolean requires of its inputs the
 adapter supplies: their ids apart (every `box` is a cuboid of the
 unspecified operation, and a `copy` keeps its ids), and a construction
 indexed by profile element (a Boolean result's entities descend from its
@@ -404,8 +479,10 @@ instead.
   For Booleans (S9a): `bfuse`, `bcut`, `bcommon`, `btuc name object tool`;
   `bop object tool` then `bopfuse`, `bopcut`, `boptuc` or `bopcommon name`;
   `bbop name 0..3` after `bfillds` and `bapibop name 0..3` with one object
-  and one tool; `unifysamedom name result` of a unified Boolean result (see
-  `boolean_prisms` above). `prism` without `Copy` builds an uncopied prism
+  and one tool; `unifysamedom name result` of a unified Boolean result, a
+  stack's too (S9a.2; see `boolean_prisms` and `boolean_stacks` above);
+  `checkshape`, `nbshapes`, `vprops`, `sprops` and `lprops` of any Boolean
+  result, a stack's too. `prism` without `Copy` builds an uncopied prism
   (above); `ttranslate` also moves a `profile` sketch; `profile ... C r 360`
   is a whole circle. Numbers of `box`, `pcylinder`, `pcone`, `psphere`,
   `ptorus`, `ttranslate`, `trotate`, `polyline`, `prism` and `profile` may
@@ -553,7 +630,10 @@ another DRAW type (a saved curve or surface). A solid the converter builds
 but the validator rejects is a failure.
 
 `survey_upstream_tests.py --restore-only` runs the 192 cases that only
-restore data and run checks on both backends, without registering them. With
+restore data and run checks on both backends, without registering them
+(`--boolean` runs the Boolean group's self-contained cases instead; a
+dataset fetched in another checkout is read through `--data-dir`, and
+`--jobs` runs cases side by side). With
 the dataset, after S4 (2026-09-27):
 
 | Rust / native | Cases |

@@ -736,6 +736,11 @@ impl Fast {
     /// Outward binary64 enclosure of an exact rational interval.
     fn from_interval(i: &Interval) -> Self {
         let bound = |x: &R, up: bool| -> f64 {
+            // The tightest bracket from the leading bits and a few exact
+            // comparisons; the bit-pattern search where it gives none.
+            if let Some(b) = bracket(x) {
+                return if up { b.hi } else { b.lo };
+            }
             match crate::interval::enclose(|y| x.cmp(&R::from_float(y).unwrap()), "certified bound")
             {
                 Ok(b) => {
