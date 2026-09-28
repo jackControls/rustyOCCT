@@ -8,7 +8,7 @@ oy oz nx ny nz` row (the plane through a point with a normal) before `end`;
 `split-expected.tsv` gives each case's sides from `split_reference.py`
 (`side below|above|whole volume area cx cy cz`: the totals of the pieces on
 each side), and `split-frames.tsv` each
-prism's stored frame axes (the reference's `frame_axes`; the kernel's tests
+prism's stored frame axes (`stored_axes`, the kernel's `Frame3::new`; its tests
 check them bit for bit). Every class has a case: planes crossing the caps and
 the walls at angles, normal to the axis (M3's height split), parallel to it
 across line and arc walls, through two vertical edges, through one vertex
@@ -20,7 +20,8 @@ import argparse
 from pathlib import Path
 import struct
 
-from identity_reference import Boundary, Case, encode_case, frame_axes
+from identity_reference import Boundary, Case, encode_case
+from curve_surface_reference import stored_axes
 import split_reference as ref
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -95,12 +96,12 @@ def encode(case, plane):
 
 def generate():
     blocks, out = [], ['# case\trow (S8a, split_reference.py)']
-    frames = ['# case\taxis (n, x, y)\tstored unit vector (the reference\'s frame_axes, as hex bits)']
+    frames = ['# case\taxis (n, x, y)\tstored unit vector (stored_axes, as hex bits)']
     for case, plane in cases():
         blocks.append(encode(case, plane))
         for row in ref.rows(case, plane):
             out.append(f'{case.name}\t{ref.text(row)}')
-        _, x, y, n = frame_axes(case.frame)
+        _, x, y, n = stored_axes(case.frame)
         for key, v in (('n', n), ('x', x), ('y', y)):
             frames.append(f'{case.name}\t{key}\t'+' '.join(struct.pack('>d', c).hex() for c in v))
     return {'split-cases.txt': '\n'.join(blocks)+'\n', 'split-expected.tsv': '\n'.join(out)+'\n',

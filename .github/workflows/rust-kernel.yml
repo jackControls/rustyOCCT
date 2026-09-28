@@ -242,7 +242,7 @@ jobs:
       - name: Fetch the exact reference source
         run: git fetch --no-tags --depth=1 https://github.com/Open-Cascade-SAS/OCCT.git 3d097a0328e71b826377d4814ab05ec3c3d23871
       - name: Build the headless BRepCheck and BRepMesh SDK with exception checks
-        run: python3 rust/tools/build_pinned_occt.py --output target/brep-sdk --toolkit TKTopAlgo --toolkit TKMesh --toolkit TKBO --jobs 2
+        run: python3 rust/tools/build_pinned_occt.py --output target/brep-sdk --toolkit TKTopAlgo --toolkit TKMesh --toolkit TKBO --toolkit TKPrim --jobs 2
       - name: Test deliberate bridge failures and compare every analyzable case
         run: |
           target/math-oracle-venv/bin/python rust/tools/test_brep_oracle.py
@@ -266,6 +266,9 @@ jobs:
       - name: Compare lines and circles against analytic surfaces with GeomAPI_IntCS and the exact reference
         if: ${{ !cancelled() }}
         run: target/math-oracle-venv/bin/python rust/tools/compare_curve_surface.py --occt-root target/brep-sdk/install --sdk-manifest target/brep-sdk/build-manifest.json
+      - name: Compare prisms split by planes with BRepAlgoAPI_Splitter and the quadrature reference
+        if: ${{ !cancelled() }}
+        run: target/math-oracle-venv/bin/python rust/tools/compare_split.py --occt-root target/brep-sdk/install --sdk-manifest target/brep-sdk/build-manifest.json
       - name: Compare pairs of lines and conics with IntTools_EdgeEdge and the exact reference
         if: ${{ !cancelled() }}
         run: target/math-oracle-venv/bin/python rust/tools/compare_curve_curve.py --occt-root target/brep-sdk/install --sdk-manifest target/brep-sdk/build-manifest.json
@@ -290,6 +293,7 @@ jobs:
             target/ruled-curve-oracle/
             target/curve-surface-oracle/
             target/curve-curve-oracle/
+            target/split-oracle/
             target/tessellation-oracle/
             target/brep-sdk/build-manifest.json
             target/brep-sdk/*.log

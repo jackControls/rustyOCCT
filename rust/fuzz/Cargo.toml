@@ -210,6 +210,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "split"
+path = "fuzz_targets/split.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "tessellation"
 path = "fuzz_targets/tessellation.rs"
 test = false

@@ -48,6 +48,8 @@ mod curve_surface;
 pub use curve_surface::check_curve_surface;
 mod curve_curve;
 pub use curve_curve::check_curve_curve;
+mod split;
+pub use split::check_split;
 mod tessellation;
 pub use tessellation::check_tessellation;
 mod bezier_editing;

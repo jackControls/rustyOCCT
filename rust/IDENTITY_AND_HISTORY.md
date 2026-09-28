@@ -641,7 +641,15 @@ here.
   S3 appended operation kind 7 (`Revolve`) and roles 17 (`apex`) and 18
   (`pole`); the vectors grew to 20. S6 appended operation kinds 8
   (`MakeFace`) and 9 (`MakeWire`) and roles 19 (`face`), 20 (`edge`) and 21
-  (`vertex`); the vectors grew to 23.
+  (`vertex`); the vectors grew to 23. S8 appended operation kind 10
+  (`PlaneSplit`, `Solid::split_by_plane`); the vectors grew to 25. A plane
+  split derives a split child `Derivation(op, PlaneSplit, kind, role, n,
+  [parent])` with `n` its place among the parent's children (by piece, then
+  along the parent), a cut entity from the faces or edges it cuts with an
+  ordinal `(piece << 16) | local`, a vertex on the plane one copy per piece,
+  and each piece body `Derivation(op, PlaneSplit, body, body, k, [input
+  body])`; an entity kept whole keeps its id (`Unchanged` or `Modified`,
+  `SPLIT.md`).
 * **Face and wire bodies (S6).** `Body::face_from_profile_with` derives its
   face from every boundary (as a prism's caps), each edge from its segment
   and each vertex from its point, all with ordinal 0 and the operation kind

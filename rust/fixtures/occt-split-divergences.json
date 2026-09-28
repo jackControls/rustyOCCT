@@ -1,0 +1,29 @@
+{
+  "note": "Reviewed BRepAlgoAPI_Splitter differences from the S8 reference and the kernel.",
+  "reviews": [
+    {
+      "case": "stadium_tangent",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "629542f33fdf6b0531f67a88c52e83fc252335fc655d86c33a74b7f4245ccc17",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI_Splitter splits the arc wall along the line where the plane touches it (7 faces, 15 edges, 10 vertices); the kernel's split cuts nothing at a tangency (S8 decisions) and returns the prism unchanged (6 faces, 12 edges, 8 vertices). The volume, area and centre agree with the reference.",
+      "independent_evidence": "The plane x = 4 touches the stadium's right arc (centre (3, 0), radius 1) at (4, 0) only: the prism lies in x <= 4.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "disc_vertical",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "ce2d4ce7087757ed379085cd4355426b7ebb1c638cd122a38480da1a42c3d500",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT's cylinder keeps its seam at the frame's x axis (angle 0), inside the piece with x > 1: that piece has 5 faces, 9 edges, 6 vertices; the kernel has no seams (TOPOLOGY_MODEL.md), both pieces 4 faces, 6 edges, 4 vertices. Volumes, areas and centres agree with the reference.",
+      "independent_evidence": "The plane x = 1 cuts the disc of radius 2 at angles +-60 degrees; the arc between them contains angle 0, OCCT's seam.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}

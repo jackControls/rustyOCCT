@@ -1,0 +1,19 @@
+//! Test-only input for compare_split.py: reads the case protocol of
+//! `split-cases.txt` on stdin and prints per case `NAME limit`, `NAME
+//! unsupported` (a plane or solid of a later sub-step), or per piece `NAME
+//! piece below|above vol_lo vol_hi area_lo area_hi cx_lo cx_hi cy_lo cy_hi
+//! cz_lo cz_hi faces edges vertices`.
+#[path = "../tests/support/split_protocol.rs"]
+mod protocol;
+use std::io::Read;
+
+fn main() {
+    let mut input = String::new();
+    std::io::stdin().read_to_string(&mut input).unwrap();
+    for case in protocol::cases(&input) {
+        let rows = protocol::rows(&case).unwrap_or_else(|e| panic!("{}: {e}", case.spec.name));
+        for row in rows {
+            println!("{} {row}", case.spec.name);
+        }
+    }
+}

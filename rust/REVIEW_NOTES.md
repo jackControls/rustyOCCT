@@ -1581,5 +1581,12 @@ the first fixture, never deferred.
     209 s of replay (350 inputs, 14,000 edges, 961 MB peak), no artifact.
   * Open for the user: U9 (a display mode without a bound). T-b (spline
     edges and faces) and T-c (procedural edges) pending.
-* S8 — in progress: decisions recorded (2026-09-28); S8a next.
+* S8 — in progress: decisions recorded (2026-09-28).
+  * S8a.1 implemented: the quadrature reference and a
+    `BRepAlgoAPI_Splitter` capture of 26 prisms came before
+    `solid/split.rs`; planes normal to a prism's axis through M3's height
+    split, parallel ones through the profile's exact section by the line and
+    prisms renamed by provenance (`PlaneSplit`); the kernel inside the
+    reference on the 13 such cases, two reviewed count differences (OCCT's
+    tangent split and seam); fuzz target `split`. S8a.2 (oblique planes) next.
 * S9 — pending

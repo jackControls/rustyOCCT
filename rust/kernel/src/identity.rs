@@ -77,6 +77,8 @@ pub enum OperationKind {
     MakeFace,
     /// A wire body from a boundary (`Body::wire_from_boundary`, S6).
     MakeWire,
+    /// `Solid::split_by_plane` (S8).
+    PlaneSplit,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -208,6 +210,7 @@ fn operation_code(kind: OperationKind) -> u8 {
         OperationKind::Revolve => 7,
         OperationKind::MakeFace => 8,
         OperationKind::MakeWire => 9,
+        OperationKind::PlaneSplit => 10,
     }
 }
 
@@ -247,7 +250,7 @@ pub(crate) fn role_code(role: Role) -> u8 {
     }
 }
 
-const OPERATIONS: [OperationKind; 9] = [
+const OPERATIONS: [OperationKind; 10] = [
     OperationKind::Extrude,
     OperationKind::Transform,
     OperationKind::External,
@@ -257,6 +260,7 @@ const OPERATIONS: [OperationKind; 9] = [
     OperationKind::Revolve,
     OperationKind::MakeFace,
     OperationKind::MakeWire,
+    OperationKind::PlaneSplit,
 ];
 const ENTITIES: [EntityKind; 5] = [
     EntityKind::Vertex,
@@ -482,7 +486,7 @@ mod tests {
             assert_eq!(id.parse::<EntityId>().unwrap(), derivation.id(), "{name}");
             count += 1;
         }
-        assert_eq!(count, 23);
+        assert_eq!(count, 25);
         // Published FNV-1a-128 test vectors.
         assert_eq!(
             EntityId(fnv1a128(b"")).to_string(),
@@ -523,7 +527,7 @@ mod tests {
             (0, b'X'),
             (4, 2),
             (13, 0),
-            (13, 10),
+            (13, 11),
             (14, 6),
             (15, 22),
             (24, 9),

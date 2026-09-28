@@ -317,7 +317,7 @@ impl Solid {
 }
 
 /// Every operation checks its history independently in debug builds.
-fn debug_check(inputs: &[&Solid], outputs: &[&Solid], history: &History) {
+pub(super) fn debug_check(inputs: &[&Solid], outputs: &[&Solid], history: &History) {
     if cfg!(debug_assertions) {
         let sets = |bodies: &[&Solid]| {
             bodies

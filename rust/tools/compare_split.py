@@ -15,7 +15,8 @@ reproduce them (on another platform, its reviewed record). Differences need a
 fingerprinted review. The kernel's pieces (`split_probe`) must have the
 reference's sides, their volumes', areas' and centres' sums inside the
 kernel's enclosures, and the native piece counts per side and face, edge and
-vertex counts (a difference needs a review).
+vertex counts (a difference needs a review). A case the kernel reports
+`unsupported` (a plane or solid of a later sub-step of S8) is listed apart.
 """
 import argparse
 import json
@@ -251,7 +252,7 @@ def main():
     reviews = [] if args.strict_native or not REVIEWS.exists() else json.loads(REVIEWS.read_text())['reviews']
     expected = expected_rows()
     report = {'source_reference': SOURCE, 'oracle': oracle, 'cases': 0, 'rust_within_reference': 0,
-              'matches': [], 'reviewed_differences': [], 'failures': []}
+              'rust_unsupported': [], 'matches': [], 'reviewed_differences': [], 'failures': []}
     rust = None if args.native_only else rust_rows()
     for case, plane in fixtures.cases():
         name = case.name
@@ -259,7 +260,11 @@ def main():
         rows = expected[name]
         native = observed[name]
         found = differences(case, plane, native, rows)
-        if rust is not None:
+        if rust is not None and rust[name] == [['unsupported']]:
+            # A plane or solid of a later sub-step (S8a.2 on): listed, and
+            # the native comparison still made.
+            report['rust_unsupported'].append(name)
+        elif rust is not None:
             wrong = rust_differences(rust[name], rows, native)
             if any(w in ('rust_limit', 'rust_pieces', 'rust_sides', 'rust_measure_outside_reference',
                          'rust_centre_outside_reference') for w in wrong):

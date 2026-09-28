@@ -7,12 +7,14 @@ use crate::topology::Topology;
 
 mod attrs;
 mod enclose;
+mod split;
 mod stack;
 use crate::{
     Boundary, Bounds3, Error, Frame3, Location, Point2, Point3, Profile, Result, RigidTransform,
     Tolerance,
 };
 pub use attrs::Context;
+pub use split::Side;
 
 /// Geometric properties at unit density, evaluated from analytic geometry.
 #[derive(Debug, Clone, Copy, PartialEq)]

@@ -57,6 +57,6 @@ pub use intersection::{Circle3, Cylinder3, Plane3, Sphere3, Triangle3};
 pub use interval::ScalarInterval;
 pub use math::{Bounds3, Frame3, Point2, Point3, RigidTransform, Tolerance, Vec3};
 pub use profile::{Boundary, BoundaryLabels, Location, Profile, Segment};
-pub use solid::{Context, MassProperties, Solid};
+pub use solid::{Context, MassProperties, Side, Solid};
 pub use spline::{ExactKnotVector, KnotVector};
 pub use surface::{BSplineSurface3, BezierSurface3, ExactBSplineSurface3, ExactBezierSurface3};

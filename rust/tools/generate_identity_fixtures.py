@@ -321,6 +321,10 @@ def vectors():
                                  (('label', 5), ('profile', 1, 'boundary', 0)))),
         ('make_face_edge', Derivation(41, 'make_face', 'edge', 'edge', 0, (('profile', 0, 'segment', 3),))),
         ('make_wire_vertex', Derivation(42, 'make_wire', 'vertex', 'vertex', 0, (('label', 9),))),
+        # S8: a plane split's child and cut face.
+        ('plane_split_child', Derivation(51, 'plane_split', 'face', 'wall', 2, (('entity', e),))),
+        ('plane_split_cut_face', Derivation(51, 'plane_split', 'face', 'cut_face', 65536,
+                                            (('entity', e), ('entity', e[::-1])))),
     ]
     rows = ['# name\tencoding hex\tid hex']
     for name, d in items:

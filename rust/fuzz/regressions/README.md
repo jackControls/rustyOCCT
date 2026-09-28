@@ -667,3 +667,12 @@ rational tier then subdivided the whole turn with rational cosines: over
 binary64 leaves undecided, merged, under a budget of 16 boxes, with the
 cone's apex and axis computed once; the inputs replay in 0.19 s and 0.24 s
 without a sanitizer.
+
+## Split: a round hole off the plane
+
+`split/crash-39ab84da8a9b4d13d549164b53edee0890ef9fb2.bin` was found by the
+first local campaign of the S8a target: a square with a round hole split by
+a plane parallel to its axis that misses the hole. The hole's whole circle
+enters the section as one piece from a placeholder vertex, which had no
+stored position, and tracing its cycle's orientation looked it up. The
+placeholder is now a point of the circle; the input replays in 0.008 s.

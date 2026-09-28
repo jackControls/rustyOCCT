@@ -4,7 +4,7 @@ profiles split by a plane.
 
 A prism is its profile region `Omega` (the stored boundaries of
 `identity_reference.stored`: an outer path and holes, lines and circular
-arcs) in the stored frame axes `(o, x, y, n)` (`frame_axes`), swept along `n`
+arcs) in the stored frame axes `(o, x, y, n)` (`stored_axes`: the kernel's `Frame3::new` step by step), swept along `n`
 between the offsets. The plane is `m . (p - q) = 0`; in frame coordinates
 `m . (p - q) = a u + b v + c w + d` with exact rationals from the stored
 binary64 data (the frame's axes taken as stored, not as exactly orthonormal:
@@ -35,7 +35,8 @@ import math
 
 import mpmath as mp
 
-from identity_reference import frame_axes, stored, arc_sweep
+from identity_reference import stored, arc_sweep
+from curve_surface_reference import stored_axes
 
 mp.mp.dps = 40
 
@@ -163,7 +164,7 @@ def x_breaks(els, lines):
 
 class Prism:
     def __init__(self, case, plane):
-        self.o, self.x, self.y, self.n = (tuple(_Q(v) for v in w) for w in frame_axes(case.frame))
+        self.o, self.x, self.y, self.n = (tuple(_Q(v) for v in w) for w in stored_axes(case.frame))
         self.w0, self.w1 = sorted((_Q(case.start), _Q(case.end)))
         q, m = tuple(_Q(v) for v in plane[:3]), tuple(_Q(v) for v in plane[3:6])
         dot = lambda u, v: sum(i*j for i, j in zip(u, v))
