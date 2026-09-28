@@ -726,3 +726,20 @@ fn a_tool_through_a_round_wall() {
     assert!((volume(&c) - (va - volume(&m))).abs() < 1e-9);
     assert!((volume(&f) - (va + vb - volume(&m))).abs() < 1e-9);
 }
+
+#[test]
+fn a_box_inscribed_in_a_cylinder_over_part_of_its_height() {
+    // Upstream `bopfuse_simple/Z5`: the box's corners on the cylinder within
+    // the resolution, so the cylinder less the box touches itself there;
+    // that refused cut still says the cylinder is not inside the box, and
+    // the box lies inside the cylinder: the fuse is the cylinder.
+    let r = std::f64::consts::SQRT_2 / 2.0;
+    let a = prism(circle(0.0, 0.0, 1.0), vec![], Frame3::xy(), 0.0, 2.0, 1);
+    let b = prism(rect(-r, -r, r, r), vec![], Frame3::xy(), 0.0, 1.0, 2);
+    for (x, y) in [(&a, &b), (&b, &a)] {
+        let (f, h) = x.fuse(OperationId(3), y).unwrap();
+        assert_eq!(f.len(), 1);
+        assert_eq!(f[0].topology().body_id(), a.topology().body_id());
+        check(x, y, &f, &h);
+    }
+}
