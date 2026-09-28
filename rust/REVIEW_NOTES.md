@@ -950,6 +950,34 @@ Decisions for S7d, recorded before its code (2026-09-28):
   native `IntTools_EdgeEdge` capture on edges of those curves before the
   kernel code.
 
+Decisions for S7d.2, recorded before its code (2026-09-28):
+
+* **Scope.** Rational B-spline edges against circles, ellipses and
+  hyperbolas' branches (`spline_curve(spline, curve)`; against lines
+  `spline_line` already serves). Two spline edges meet in 3D only at
+  isolated, non-generic points whose exact decision needs resultants of
+  degree up to `2 p q` in the span parameters (1,250 at degree 25): they
+  come with S9, where spline edges meet through the faces that share them,
+  as S7c left procedural and traced curves to S9.
+* **Method.** On each span, with the homogeneous polynomials `(X, W)`, the
+  conic's plane gives `L = n . (X - o W)` (degree `p`) and its equation
+  `Q = W^2 E(X / W)` (degree `2 p`), both exact. A span lies on the conic
+  exactly when `L = Q = 0` (an overlap between exact knots); otherwise the
+  points are the real roots of `gcd(L, Q)` in the span, with the exact
+  isolator, a hyperbola's branch by a certified sign. The spline's tangent
+  is the conic's there exactly when the root is at least double in both
+  (in the gcd): `L'` vanishing puts the tangent in the plane, `Q'` along the
+  conic. Knots shared by two spans give one point.
+* **Results.** Points with the spline's parameter, the conic's, the point
+  and the contact, and overlaps as spline parameter ranges.
+* **Evidence first**: the reference extended (exact span polynomials into
+  the conic's implicit equations in `(X, Y, Z)`, sympy's gcd and
+  `real_roots`, tangency by parallel tangent directions), fixtures of each
+  class (crossing through the plane, in-plane crossings and tangencies,
+  a span on the circle as an exact rational quarter circle, a partial
+  overlap, the hyperbola's other branch, misses), and a native
+  `IntTools_EdgeEdge` capture before the kernel code.
+
 ### S8 — general planar split and face trimming (SplitBody job)
 
 Split any supported solid by an arbitrary plane: face/plane intersection
@@ -1438,7 +1466,7 @@ the first fixture, never deferred.
     conic by its plane and equation, conics by S7c's resultant in one plane
     or the gcd along two planes' line; the kernel inside the reference on
     all 41, the bridge 41 matches; fuzz target `curve_curve`.
-  * S7d.2 (spline edges against curves) and the `lowalgos` group pending.
+  * S7d.2 (spline edges against conics) and the `lowalgos` group pending.
 * Tessellation (parallel track) — T-a implemented (`TESSELLATION.md`);
   gate pending CI, the schedule replay and the clean campaign.
   * The decisions above, the independent reference

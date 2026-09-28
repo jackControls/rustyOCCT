@@ -20,6 +20,10 @@ gradients) are parallel at the point, exactly.
 Rows, sorted by the first curve's parameter: `empty`, `coincident`, or
 `point sa sb x y z crossing|tangent` (a line's `s`, a circle's angle from
 its stored `x`, an ellipse's angle, a hyperbola's `t`).
+
+S7d.2 (`spline_rows`): a rational B-spline against a conic by its exact span
+polynomials substituted into the conic's two equations; `overlap s0 s1`
+rows for spans on the conic.
 """
 from fractions import Fraction as F
 
@@ -145,6 +149,58 @@ def rows(a, b):
     return out or ['empty']
 
 
+def spline_rows(spline, conic):
+    """A rational B-spline against a conic: on each span the conic's plane
+    and quadric equations times `W` and `W^2` are exact polynomials in the
+    span parameter; a span where both vanish is an overlap, elsewhere the
+    points are the real roots of their gcd in the span (a hyperbola's
+    branch kept). A tangency: the spline's derivative parallel to the
+    conic's tangent there (to 60 digits; the fixtures' are exact). Rows:
+    `overlap s0 s1`, `point s t x y z crossing|tangent` (the spline's and
+    the conic's parameters), by `s`."""
+    import sympy as sy
+    from curve_surface_reference import spline_spans
+    s, spans = spline_spans(spline)
+    rows, overlaps = [], []
+    for lo, hi, H in spans:
+        W = H[3]
+        eqs = conic.equations([H[i]/W for i in range(3)])
+        L = sy.expand(sy.cancel(eqs[0]*W))
+        Q = sy.expand(sy.cancel(eqs[1]*W**2))
+        if L == 0 and Q == 0:
+            if overlaps and overlaps[-1][1] == lo:
+                overlaps[-1][1] = hi
+            else:
+                overlaps.append([lo, hi])
+            continue
+        g = sy.gcd(sy.Poly(L, s), sy.Poly(Q, s)) if L != 0 else sy.Poly(Q, s)
+        if g.degree() < 1:
+            continue
+        for r in sorted(set(sy.real_roots(g)), key=lambda z: float(z)):
+            if not (_Q(lo) <= r <= _Q(hi)):
+                continue
+            point = [sy.cancel(H[i]/W).subs(s, r) for i in range(3)]
+            if not conic.on_branch(point):
+                continue
+            with mp.workdps(80):
+                d = [sy.N(sy.diff(sy.cancel(H[i]/W), s).subs(s, r), 80) for i in range(3)]
+                t = [sy.N(c, 80) for c in conic.tangent(None, point)]
+                cr = [d[1]*t[2]-d[2]*t[1], d[2]*t[0]-d[0]*t[2], d[0]*t[1]-d[1]*t[0]]
+                scale = max(abs(c) for c in d+t)
+                tangent = all(abs(c) < scale*sy.Float(10)**-60 for c in cr)
+            pm = tuple(mp.mpf(sy_n(c)) for c in point)
+            rows.append(('point', mp.mpf(sy_n(r)), conic.parameter(point), pm, 'tangent' if tangent else 'crossing'))
+    out = [('overlap', F(a), F(b)) for a, b in overlaps]
+    for r in rows:
+        if any(mpf(a) <= r[1] <= mpf(b) for a, b in overlaps):
+            continue
+        if any(q[0] == 'point' and abs(q[1]-r[1]) < mp.mpf(10)**-40 for q in out):
+            continue
+        out.append(r)
+    out.sort(key=lambda r: float(r[1]))
+    return out or ['empty']
+
+
 def number(x):
     x = mpf(x)
     return '0.0' if abs(x) < mp.mpf(10)**-60 else mp.nstr(x, 30, min_fixed=-5, max_fixed=5)
@@ -153,5 +209,7 @@ def number(x):
 def text(row):
     if isinstance(row, str):
         return row
+    if row[0] == 'overlap':
+        return ' '.join(['overlap', number(row[1]), number(row[2])])
     _, sa, sb, p, kind = row
     return ' '.join(['point', number(sa), number(sb)]+[number(v) for v in p]+[kind])

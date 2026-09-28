@@ -1,0 +1,22 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 IntTools_EdgeEdge",
+  "platform": "darwin",
+  "rust_revision": "c304cc2001ff2948f5db111cbafed9a9311162d1",
+  "rust_curve_curve_exists": false,
+  "rust_worktree_uncommitted": [
+    " M rust/REVIEW_NOTES.md",
+    " M rust/fixtures/curve-curve-cases.txt",
+    " M rust/fixtures/curve-curve-expected.tsv",
+    " M rust/fixtures/curve-curve-frames.tsv",
+    " M rust/tools/compare_curve_curve.py",
+    " M rust/tools/curve_curve_reference.py",
+    " M rust/tools/generate_curve_curve_fixtures.py",
+    " M rust/tools/occt_curve_curve_oracle.cpp",
+    "?? rust/fixtures/occt-spline-curve-preimplementation/"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "c30fbad72577d2e27a1754ed00579cc9c5309b7b0f4dfee6cc08f5c9d16d019d",
+  "probe_source_sha256": "9d4581500fb87732e1986842aedfc9ec77058f5c2e96dbdd6d5dabde68f07667",
+  "observations_sha256": "5bcab7a61979ecd96280cdcd176206c89816be2ef5360653789438f5f5727e60"
+}

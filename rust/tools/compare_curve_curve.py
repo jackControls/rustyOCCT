@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""Source-pinned IntTools_EdgeEdge observations beside the S7d.1 reference:
-pairs of lines, circles, ellipses and hyperbolas' branches.
+"""Source-pinned IntTools_EdgeEdge observations beside the S7d reference:
+pairs of lines, circles, ellipses and hyperbolas' branches (S7d.1), and
+rational B-splines against conics (S7d.2; a spline's overlaps must be native
+edge parts with the same ends).
 
 The independent reference (curve_curve_reference.py) gives every case of
 curve-curve-cases.txt its rows (empty, coincident, or points with both
@@ -33,12 +35,20 @@ import generate_curve_curve_fixtures as fixtures
 
 SOURCE_FILE = ROOT/'rust/tools/occt_curve_curve_oracle.cpp'
 REVIEWS = ROOT/'rust/fixtures/occt-curve-curve-divergences.json'
-KERNEL_FILE = ROOT/'rust/kernel/src/intersection/curve_curve.rs'
-CAPTURE = ROOT/'rust/fixtures/occt-curve-curve-preimplementation'
+# Each capture: its directory, the cases it holds (S7d.2's splines start
+# with `s`), and the kernel file that must not have existed.
+CAPTURES = {
+    's7d1': (ROOT/'rust/fixtures/occt-curve-curve-preimplementation', lambda name: not name.startswith('s'),
+             ROOT/'rust/kernel/src/intersection/curve_curve.rs'),
+    's7d2': (ROOT/'rust/fixtures/occt-spline-curve-preimplementation', lambda name: name.startswith('s'),
+             ROOT/'rust/kernel/src/intersection/spline_curve.rs'),
+}
 BOUND = 1e-6
 
 
 def curve_row(kind, values):
+    if kind == 'spline':
+        return fixtures.encode('x', (kind, values), (kind, values)).splitlines()[1]
     if kind == 'line':
         p0, p1 = values[:3], values[3:6]
         d = [b-a for a, b in zip(p0, p1)]
@@ -47,10 +57,11 @@ def curve_row(kind, values):
     return ' '.join(['curve', kind, *map(repr, (*o, *n, *x)), *(repr(float(v)) for v in values[9:])])
 
 
-def native_input():
+def native_input(select=lambda name: True):
     rows = []
     for name, a, b in fixtures.cases():
-        rows += [f'case {name}', curve_row(*a), curve_row(*b), 'end']
+        if select(name):
+            rows += [f'case {name}', curve_row(*a), curve_row(*b), 'end']
     return '\n'.join(rows)+'\n'
 
 
@@ -78,7 +89,8 @@ def expected_rows():
 
 
 def case_scale(a, b):
-    return max([1.0]+[abs(x) for x in list(a[1][:3])+list(b[1][:3])])
+    first = [v for p in a[1][1] for v in p[:3]] if a[0] == 'spline' else list(a[1][:3])
+    return max([1.0]+[abs(x) for x in first+list(b[1][:3])])
 
 
 def differences(a, b, native, rows):
@@ -90,14 +102,25 @@ def differences(a, b, native, rows):
         return [] if not points and not segments else ['spurious']
     if rows[0][0] == 'coincident':
         return [] if segments else ['missed_coincidence']
-    out, used = [], set()
+    out, used, used_segments = [], set(), set()
+    # A spline's overlaps: a native edge part with the same ends on the
+    # spline (the first edge); native vertices inside one belong to it.
+    overlaps = [(float(r[1]), float(r[2])) for r in rows if r[0] == 'overlap']
+    for lo, hi in overlaps:
+        hit = [k for k, (c, d) in enumerate(segments) if abs(lo-c) <= tol and abs(hi-d) <= tol]
+        if not hit:
+            out.append('missed_overlap')
+        used_segments.update(hit)
+    used = {k for k, (_, t, _) in enumerate(points) if any(lo-tol <= t <= hi+tol for lo, hi in overlaps)}
     for r in rows:
+        if r[0] != 'point':
+            continue
         p = [float(x) for x in r[3:6]]
         hit = [k for k, (q, _, _) in enumerate(points) if math.dist(p, q) <= tol]
         if not hit:
             out.append('missed_tangent_point' if r[6] == 'tangent' else 'missed_point')
         used.update(hit)
-    if len(used) != len(points) or segments:
+    if len(used) != len(points) or len(used_segments) != len(segments):
         out.append('spurious')
     return sorted(set(out))
 
@@ -124,6 +147,10 @@ def rust_differences(rust, want, turns):
     for got, row in zip(rust, want):
         if row[0] in ('empty', 'coincident'):
             continue
+        if row[0] == 'overlap':
+            if [float(x) for x in got[1:3]] != [float(x) for x in row[1:3]]:
+                return ['rust_overlap']
+            continue
         if got[-1] != row[-1] or len(got) != 12:
             return ['rust_contact']
         for k, x in enumerate(float(v) for v in row[1:6]):
@@ -135,8 +162,9 @@ def rust_differences(rust, want, turns):
     return []
 
 
-def capture(executable, env, sdk_manifest):
-    text = native_input()
+def capture(executable, env, key, sdk_manifest):
+    CAPTURE, select, kernel_file = CAPTURES[key]
+    text = native_input(select)
     record = run(executable, text, env)
     if record['exit_code'] != 0:
         raise SystemExit('native curve/curve run failed: '+json.dumps(record)[:2000])
@@ -151,31 +179,32 @@ def capture(executable, env, sdk_manifest):
     write(CAPTURE/'capture.json', {
         'source_reference': SOURCE, 'oracle': next(iter(record['stderr'].splitlines()), None),
         'platform': sys.platform, 'rust_revision': revision,
-        'rust_curve_curve_exists': KERNEL_FILE.exists(),
+        'rust_curve_curve_exists': kernel_file.exists(),
         'rust_worktree_uncommitted': status, 'sdk_manifest_sha256': digest(sdk_manifest),
         'input_sha256': digest(CAPTURE/'inputs.txt'), 'probe_source_sha256': digest(CAPTURE/'oracle.cpp'),
         'observations_sha256': digest(CAPTURE/'native.txt')})
 
 
 def captured(observed):
-    metadata = json.loads((CAPTURE/'capture.json').read_text())
-    if metadata['source_reference'] != SOURCE or metadata['rust_curve_curve_exists']:
-        raise ValueError('curve/curve capture was not a clean pre-implementation reference')
-    for key, name in [('input_sha256', 'inputs.txt'), ('probe_source_sha256', 'oracle.cpp'),
-                      ('observations_sha256', 'native.txt')]:
-        if metadata[key] != digest(CAPTURE/name):
-            raise ValueError('curve/curve evidence changed: '+name)
-    if (CAPTURE/'inputs.txt').read_text() != native_input():
-        raise ValueError('the native inputs differ from the captured ones')
-    was = parse_native(platform_record(CAPTURE, metadata))
-    if set(was) != set(observed):
-        raise ValueError('native cases differ from the capture')
-    for name, (status, points, segments) in was.items():
-        now = observed[name]
-        flat = lambda x: [v for p, s, t in x[1] for v in p+[s, t]]+[v for s in x[2] for v in s]
-        if now[0] != status or len(now[1]) != len(points) or len(now[2]) != len(segments) \
-                or any(abs(a-b) > 1e-9*max(1.0, abs(a)) for a, b in zip(flat(now), flat((status, points, segments)))):
-            raise ValueError('native observation of '+name+' differs from the capture')
+    for CAPTURE, select, _ in CAPTURES.values():
+        metadata = json.loads((CAPTURE/'capture.json').read_text())
+        if metadata['source_reference'] != SOURCE or metadata['rust_curve_curve_exists']:
+            raise ValueError('curve/curve capture was not a clean pre-implementation reference')
+        for key, name in [('input_sha256', 'inputs.txt'), ('probe_source_sha256', 'oracle.cpp'),
+                          ('observations_sha256', 'native.txt')]:
+            if metadata[key] != digest(CAPTURE/name):
+                raise ValueError('curve/curve evidence changed: '+name)
+        if (CAPTURE/'inputs.txt').read_text() != native_input(select):
+            raise ValueError('the native inputs differ from the captured ones')
+        was = parse_native(platform_record(CAPTURE, metadata))
+        if set(was) != {n for n in observed if select(n)}:
+            raise ValueError('native cases differ from the capture')
+        for name, (status, points, segments) in was.items():
+            now = observed[name]
+            flat = lambda x: [v for p, s, t in x[1] for v in p+[s, t]]+[v for s in x[2] for v in s]
+            if now[0] != status or len(now[1]) != len(points) or len(now[2]) != len(segments) \
+                    or any(abs(a-b) > 1e-9*max(1.0, abs(a)) for a, b in zip(flat(now), flat((status, points, segments)))):
+                raise ValueError('native observation of '+name+' differs from the capture')
 
 
 def main():
@@ -184,7 +213,7 @@ def main():
     parser.add_argument('--sdk-manifest', type=Path, required=True)
     parser.add_argument('--output', type=Path, default=ROOT/'target/curve-curve-oracle')
     parser.add_argument('--strict-native', action='store_true')
-    parser.add_argument('--capture', action='store_true')
+    parser.add_argument('--capture', choices=sorted(CAPTURES))
     parser.add_argument('--native-only', action='store_true')
     args = parser.parse_args()
     output = args.output.resolve()
@@ -194,8 +223,8 @@ def main():
     executable, env, loaded, command = build(prefix, output, SOURCE_FILE, 'curve-curve-oracle', ('TKBO',),
                                              ['TKBO']+TOOLKITS)
     if args.capture:
-        capture(executable, env, args.sdk_manifest)
-        print('captured')
+        capture(executable, env, args.capture, args.sdk_manifest)
+        print('captured', args.capture)
         return
     record = run(executable, native_input(), env)
     if record['exit_code'] != 0:

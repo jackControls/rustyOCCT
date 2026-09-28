@@ -14,8 +14,11 @@ the curve and off it, lying in it across the curve, touching it, missing
 it, meeting the hyperbola's other branch; two conics in one plane crossing,
 touching inside and outside, coincident, apart, on opposite branches; two
 conics in crossing planes meeting at two points, touching with a common
-tangent line, meeting once, missing. No Rust result supplies an
-expectation.
+tangent line, meeting once, missing. S7d.2 adds rational B-splines (first,
+`curve spline degree n x y z w ... k knot mult ...`) against conics: through
+the plane on the curve and off it, in the plane crossing and touching, an
+exact rational quarter circle on the circle, a partial overlap, the
+hyperbola's other branch, a miss. No Rust result supplies an expectation.
 """
 import argparse
 from pathlib import Path
@@ -47,6 +50,11 @@ def ellipse(o, n, a, b, x=None):
 
 def hyperbola(o, n, a, b, x=None):
     return ('hyperbola', (*o, *n, *(x or hint(n)), a, b))
+
+
+def spline(degree, poles, knots, mults):
+    """A clamped rational B-spline: poles `(x, y, z, w)`."""
+    return ('spline', (degree, tuple(poles), tuple(knots), tuple(mults)))
 
 
 def cases():
@@ -100,13 +108,45 @@ def cases():
         ('ce_across_miss', e21, circle((1.0, 0.0, 0.0), X, 1.0)),
         ('eh_across', e21, hyperbola((0.0, 0.0, 0.0), Y, 1.0, 0.5)),
         ('cc_tilted', circle((0.0, 0.5, 0.0), TILT, 1.5), circle((0.25, 0.0, 0.0), X, 1.25)),
+        # A spline and a conic (S7d.2): the spline first.
+        ('sc_pierce', spline(2, [(1.0, -0.25, -1.0, 1.0), (1.0, 0.25, 0.0, 1.0), (1.0, -0.25, 1.0, 1.0)],
+                             [0.0, 1.0], [3, 3]), unit),
+        ('sc_pierce_off', spline(2, [(0.5, -0.25, -1.0, 1.0), (0.5, 0.25, 0.0, 1.0), (0.5, -0.25, 1.0, 1.0)],
+                                 [0.0, 1.0], [3, 3]), unit),
+        ('sc_two', spline(2, [(-2.0, 0.5, 0.0, 1.0), (0.0, 0.75, 0.0, 1.0), (2.0, 0.5, 0.0, 1.0)],
+                          [0.0, 1.0], [3, 3]), unit),
+        ('sc_tangent', spline(2, [(-2.0, 1.0, 0.0, 1.0), (0.0, 1.0, 0.0, 1.0), (2.0, 1.0, 0.0, 1.0)],
+                              [0.0, 1.0], [3, 3]), unit),
+        ('sc_quarter', spline(2, [(1.0, 0.0, 0.0, 1.0), (1.0, 1.0, 0.0, 1.0), (0.0, 1.0, 0.0, 2.0)],
+                              [0.0, 1.0], [3, 3]), unit),
+        ('sc_partial', spline(2, [(1.0, 0.0, 0.0, 1.0), (1.0, 1.0, 0.0, 1.0), (0.0, 1.0, 0.0, 2.0),
+                                  (-2.0, 1.0, 0.0, 1.0), (-2.0, -1.0, 0.0, 1.0)], [0.0, 1.0, 2.0], [3, 2, 3]), unit),
+        ('sc_miss', spline(3, [(3.0, 3.0, 0.0, 1.0), (4.0, 3.0, 1.0, 2.0), (4.0, 4.0, -1.0, 1.0),
+                               (3.0, 4.0, 0.5, 1.0)], [0.0, 1.0], [4, 4]), unit),
+        ('se_two', spline(2, [(-3.0, 0.5, 0.0, 1.0), (0.0, 0.25, 0.0, 2.0), (3.0, 0.5, 0.0, 1.0)],
+                          [0.0, 1.0], [3, 3]), e21),
+        ('se_tangent', spline(2, [(2.0, -1.0, 0.0, 1.0), (2.0, 0.0, 0.0, 1.0), (2.0, 1.0, 0.0, 1.0)],
+                              [0.0, 1.0], [3, 3]), e21),
+        ('se_pierce', spline(3, [(0.0, 1.0, -1.0, 1.0), (0.0, 1.0, -0.25, 2.0), (0.0, 1.0, 0.5, 1.0),
+                                 (0.0, 1.0, 1.0, 1.0)], [0.0, 1.0], [4, 4]), e21),
+        ('sh_two', spline(2, [(2.0, -3.0, 0.0, 1.0), (2.0, 0.0, 0.0, 1.0), (2.0, 3.0, 0.0, 1.0)],
+                          [0.0, 1.0], [3, 3]), h11),
+        ('sh_other', spline(2, [(-2.0, -3.0, 0.0, 1.0), (-2.0, 0.0, 0.0, 1.0), (-2.0, 3.0, 0.0, 1.0)],
+                            [0.0, 1.0], [3, 3]), h11),
+        ('sh_tangent', spline(1, [(1.0, -1.0, 0.0, 1.0), (1.0, 1.0, 0.0, 1.0)], [0.0, 1.0], [2, 2]), h11),
     ]
 
 
 def encode(name, a, b):
     rows = [f'case {name}']
     for kind, values in (a, b):
-        rows.append(f'curve {kind} '+' '.join(repr(float(v)) for v in values))
+        if kind == 'spline':
+            degree, poles, knots, mults = values
+            words = [str(degree), str(len(poles))]+[repr(float(v)) for p in poles for v in p]
+            words += [str(len(knots))]+[w for k, m in zip(knots, mults) for w in (repr(float(k)), str(m))]
+            rows.append('curve spline '+' '.join(words))
+        else:
+            rows.append(f'curve {kind} '+' '.join(repr(float(v)) for v in values))
     return '\n'.join(rows)
 
 
@@ -115,10 +155,11 @@ def generate():
     frames = ['# case\tcurve (0 the first, 1 the second)\taxis (n, x, y)\tstored unit vector (the reference\'s Frame3::new, as hex bits)']
     for name, a, b in cases():
         blocks.append(encode(name, a, b)+'\nend')
-        for row in ref.rows(ref.Curve(*a), ref.Curve(*b)):
+        found = ref.spline_rows(a[1], ref.Curve(*b)) if a[0] == 'spline' else ref.rows(ref.Curve(*a), ref.Curve(*b))
+        for row in found:
             out.append(f'{name}\t{ref.text(row)}')
         for k, (kind, values) in enumerate((a, b)):
-            if kind == 'line':
+            if kind in ('line', 'spline'):
                 continue
             _, x, y, n = stored_axes(tuple(values[:9]))
             for key, v in (('n', n), ('x', x), ('y', y)):

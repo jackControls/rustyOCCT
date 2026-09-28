@@ -1,0 +1,30 @@
+{
+  "note": "Reviewed IntTools_EdgeEdge differences from the S7d reference.",
+  "reviews": [
+    {
+      "case": "sc_partial",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 IntTools_EdgeEdge",
+      "native_sha256": "83652207e78c328dcbc842a0a465ef41d27fc675a1f70e72784fa2098679e29f",
+      "differences": [
+        "missed_overlap"
+      ],
+      "reason": "IntTools_EdgeEdge reports two separate vertices on the spline's first span, which lies on the circle, and no edge part; on sc_quarter, the same span alone, it reports the edge part. The kernel reports the span as an overlap exactly (L = Q = 0 on it).",
+      "independent_evidence": "The first span has poles (1, 0, 0), (1, 1, 0), (0, 1, 0) and weights 1, 1, 2: the exact rational quarter of the unit circle in z = 0.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "se_tangent",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 IntTools_EdgeEdge",
+      "native_sha256": "a9a34d255d80cb306883e79c6abb328953453a150eec0f00bb17a931c0d8f00f",
+      "differences": [
+        "missed_tangent_point",
+        "spurious"
+      ],
+      "reason": "IntTools_EdgeEdge reports the tangency as two vertices 5.5e-5 either side of it along the line x = 2, beyond the comparison's 1e-6. The kernel reports one tangent point exactly (a double root of the gcd).",
+      "independent_evidence": "The straight spline x = 2, z = 0 touches the ellipse x^2/4 + y^2 = 1 at its vertex (2, 0, 0): substituting gives y^2 = 0.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}
