@@ -734,6 +734,16 @@ vertex off the trace by less than the resolution (exact on the stored data)
 is now `Degenerate`, as a crossing that close to its segment's ends was. The
 input replays in 0.002 s.
 
+## Split: a cap cut near its pole (slow unit)
+
+`split/slow-unit-4238fd63c6db929689705944f50d5785839ac17b.bin` was saved by
+the clean 600-second S8d.2 campaign at `a4e1c9df`, a slow-unit diagnostic
+(10 s under AddressSanitizer, 0.92 s in release) with no wrong answer: a cap
+(latitude 0.25 to its pole) cut by a plane parallel to a ruling mode, whose
+circle passes near the pole, where the projection quadrature refines while
+the section's angle about the axis turns fast. It is within the split
+target's 60-second input limit (S8d.2).
+
 ## STEP: a torus band's ring starting a rounding below its seam
 
 `step/crash-6b0ff1a4f7646a3f2fce7e959be0fc3033928e74.bin` was found by the

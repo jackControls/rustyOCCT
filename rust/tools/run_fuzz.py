@@ -45,8 +45,10 @@ TARGET_INPUT_SECONDS = {"surface_knots": 60, "degree_elevation": 60, "surface_ed
 # cone isolation had churned temporary BigInts. curve_surface joined in S7c.1:
 # a 600 s campaign peaked at 1,904 MB after exact circle/cone and torus
 # resultants. curve_curve joined in S7d.1: 1,351 MB within a 600 s campaign.
+# split joined in S8d.2: a clean 600 s campaign at a4e1c9df peaked at 1,903 MB
+# (projection jets and exact plane decisions churning temporaries).
 ALLOCATOR_TARGETS = {'surface_knots', 'degree_elevation', 'spline_linear', 'brep_validation',
-                     'analytic_intersections', 'curve_surface', 'curve_curve'}
+                     'analytic_intersections', 'curve_surface', 'curve_curve', 'split'}
 # Targets whose allocation stack traces are kept to five frames: with the
 # default thirty, AddressSanitizer's stack depot grew analytic_intersections
 # to 1,489 MB in 120 s (33 MB without a sanitizer); five frames keep it at
