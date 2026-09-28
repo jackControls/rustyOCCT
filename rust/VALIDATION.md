@@ -670,10 +670,15 @@ alone. `tessellation.rs` meshes all 24 (areas, volumes, the Euler
 characteristic, closedness, determinism, triangle centroids within their
 bounds of the surface by a projection evaluated by Cox-de Boor in the test),
 the 17 valid B-rep fixture cases with spline geometry against their
-certified mass enclosures, and every one of the 58 certified `data/occ`
-solids, the four with spline geometry among them. `tessellation/spline.rs`
-tests that the cells enclose the exact points and partials and that their
-bounds hold, on rational and nonrational surfaces up to degree 8.
+certified mass enclosures, and every one of the 59 certified `data/occ`
+solids, the five with spline geometry among them (`Motor-c.brep` 378's
+blends with cusp corners since the corner turn; the test's projection
+adds a compass search where Gauss-Newton stalls at a cusp).
+`tessellation/spline.rs` tests that the cells enclose the exact points and
+partials and that their bounds hold, on rational and nonrational surfaces
+up to degree 8, and that the corner turn bounds the widest angle between
+exact normals sampled on fans, segments and triangles at and beside a cusp
+corner (rational or not), shrinking with them.
 `compare_tessellation.py --family spline` reproduces the pre-implementation
 capture and the `.brep` texts, runs the reference's full check on the
 kernel's meshes (all 24 pass) and on OCCT's: 21 matches and 3 reviewed

@@ -365,12 +365,8 @@ impl Splines {
                 })
                 .collect();
             for w in points.windows(2) {
-                let (deviation, turn, _) = cells.box_bound(
-                    w[0].x.min(w[1].x),
-                    w[0].x.max(w[1].x),
-                    w[0].y.min(w[1].y),
-                    w[0].y.max(w[1].y),
-                );
+                // The chord's box, and a singular corner's turn along it.
+                let (deviation, turn, _) = cells.triangle_bound([w[0], w[1], w[1]]);
                 if !(deviation <= THIN_SHARE * delta && turn <= THIN_SHARE * theta) {
                     return false;
                 }

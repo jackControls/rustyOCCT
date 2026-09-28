@@ -2223,6 +2223,46 @@ own parameters) and on the weights; each cell's ratio is formed with its
 own `M` before the largest is taken, so no two cells' multiples are
 compared.
 
+**Cusp corners.** At a corner `c` of the domain whose boundary rows leave
+it in one direction, `S_u × S_v` vanishes: there `S_u` is a nonzero
+multiple of the corner control's difference to its neighbour along `u`
+(rational or not, `± p w_1 / (w_0 L_u)`), likewise `S_v`, so the test is
+exact on the patch's controls. The unit normal's limit then depends on the
+direction of approach (`Motor-c.brep` 378's four blends: 0.45 rad between
+their two boundary rows), every bound above divides by a least `|M|` that
+is zero on a box at `c`, and a boundary segment or triangle at the corner
+never certifies. On the corner's patch and on its boxes `[c, c ± 2^-k L]`,
+`k <= 3` (tighter third derivatives, until rounding takes over), with `y`
+a box's own parameters from `c` and `M` the positive multiple above
+(`A_s × A_t`, or `N_s × N_t`, one polynomial on the box, exactly zero at
+`c`), Taylor's formula gives
+
+    M(c + y) = G y + H[y, y] / 2 + E,  |E| <= T(y) / 6,
+
+`G = [M_s M_t](c)`, `H` the second derivatives at `c` (enclosed, de
+Casteljau at the corner), `T(y) = t_sss |y_s|³ + 3 t_sst y_s² |y_t| +
+3 t_stt |y_s| y_t² + t_ttt |y_t|³` from the largest coefficients of the
+third derivatives. `h(y) = G y + H[y, y] / 2` is quadratic, so over a
+triangle `y_1 y_2 y_3` it lies in the convex hull of its quadratic Bézier
+controls, the blossoms `h[y_i, y_j] = G (y_i + y_j) / 2 + H[y_i, y_j] / 2`.
+A triangle at the corner is its rays `c + r d`, `0 < r <= 1`, `d` on the
+opposite edge: `M / r = (1 - r) G d + r h(d) + E / r`, `|E / r| <=
+r² T(d) / 6`, so the controls are the `G d_i` and the blossoms of the
+opposite edge. Every normal is then within `asin ε` of a vector of the
+controls' convex cone, `ε = T_max / (6 μ)` with `T_max` at the vertices'
+largest `|y_s|`, `|y_t|` and `μ` the controls' least component along their
+mean direction (a lower bound of the hull's norms). When the controls are
+pairwise within 90°, the cone's directions are pairwise within the
+widest angle `β` between two controls (for a fixed direction the
+directions within `β <= 90°` of it form a convex cone, so the widest pair
+is attained at controls), and the normal turns by at most
+`β + 2 asin ε <= β + π ε` (`asin` convex on `[0, 1]`), the corner itself,
+where no normal exists, excluded. A triangle's (or boundary segment's)
+turn is the smallest of this and the bounds above, the corner turn only
+for triangles inside one of the boxes. Along a row from the corner `β` is
+zero and `ε` shrinks with the segment; a fan's triangles turn by their
+sector's `β`.
+
 **Counts.** An edge on a spline face needs, for each boundary segment with
 parameter extents `Δu`, `Δv` between its pcurve's nodes,
 `(a Δu² + 2 b Δu Δv + c Δv²)/8 <= 0.45 δ` and
