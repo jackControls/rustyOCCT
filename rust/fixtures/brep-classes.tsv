@@ -77,3 +77,6 @@ wire_circle	wire
 wire_open	wire
 wire_edge	wire
 acorn_point	acorn
+spline_stadium_parallel	solid
+spline_bulge_split_wall	solid
+spline_rounded_corner_split_wall	solid

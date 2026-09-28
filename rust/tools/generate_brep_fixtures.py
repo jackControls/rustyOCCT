@@ -16,7 +16,8 @@ import mpmath as mp
 
 from fractions import Fraction as F
 
-from cell_reference import (body_class, declare, encode as encode_cell, gap_bounds, mass_properties,
+from cell_reference import (body_class, declare, encode as encode_cell, face_mass_terms, gap_bounds,
+                            mass_properties, polynomial_face,
                             to_cell, validate as validate_cell)
 import spline_cell_reference as spline
 from spline_cell_reference import Basis, BSpline2, BSpline3, BSplineSurface
@@ -1046,6 +1047,51 @@ def spline_models():
     return models
 
 
+def quadrature_models():
+    """F8: spline models for routes of the certified quadrature the S4
+    models do not exercise, captured natively before the kernel code
+    (compare_brep.py --family spline): a spline pcurve along a cylinder's
+    parallel, where the Green integral runs with du != 0, and spline walls
+    with a knot in v, whose upper patch has a column below it."""
+    base = {m.name: m for m in spline_models()}
+    # A narrow stadium at tolerance 1e-6: the kernel measures an arc edge's
+    # use by a spline pcurve along a parallel (M5) by second-order Taylor
+    # bounds on at most 2^8 pieces, about r (pi/256)^3/4 for a half turn, 4.6e-7
+    # at r = 1: above 1e-7, and above the bound the reference declares (it
+    # refines to a quarter of the tolerance). Validation itself refines
+    # further and certifies the use at 1e-7 either way.
+    base['spline_stadium'] = prism('spline_stadium', [stadium_boundary(3.0, 0.25)], tolerance=1e-6)
+    models = []
+    linear = Basis(1, [0.0, 1.0], [2, 2])
+
+    def parallel(m):
+        # The first cylinder wall's top use, (a + sweep, h) to (a, h).
+        wall = next(f for f in m.faces if isinstance(f.surface, Cylinder))
+        u = wall.loops[0][2]
+        assert isinstance(u.pcurve, Line2) and u.pcurve.start[1] == u.pcurve.end[1] != 0.0
+        u.pcurve = BSpline2(linear, [u.pcurve.start, u.pcurve.end], [1.0, 1.0])
+
+    def split_wall(m):
+        wall = next(f for f in m.faces if isinstance(f.surface, BSplineSurface))
+        s = wall.surface
+        h = s.v.knots[-1]
+        poles = [s.poles[2*i] for i in range(len(s.poles)//2)]
+        tops = [s.poles[2*i+1] for i in range(len(s.poles)//2)]
+        rows = [x for p, q in zip(poles, tops) for x in (p, (p[0], p[1], (p[2]+q[2])/2), q)]
+        weights = [s.weights[2*i] for i in range(len(s.poles)//2)]
+        wall.surface = BSplineSurface(s.u, Basis(1, [0.0, h/2, h], [2, 1, 2]), rows,
+                                      [w for w in weights for _ in range(3)])
+
+    for name, source, change in [('spline_stadium_parallel', 'spline_stadium', parallel),
+                                 ('spline_bulge_split_wall', 'spline_bulge', split_wall),
+                                 ('spline_rounded_corner_split_wall', 'spline_rounded_corner', split_wall)]:
+        m = copy.deepcopy(base[source])
+        m.name = name
+        change(m)
+        models.append(m)
+    return models
+
+
 def extract(m, name, face_ids, kind):
     """S6: the faces `face_ids` of a model as a sheet ('sheet': a free face,
     or an open shell of several) or a closed shell without a solid
@@ -1131,11 +1177,57 @@ def sheet_models():
     return models
 
 
+# F8: the reference's own quadrature error bound, relative to the scale of
+# each property (volume, area, centroid, inertia).
+REFINED = mp.mpf('1e-20')
+# Closed forms of spline models' properties (occt-spline-properties/NOTES.md):
+# the bulge's profile is the rectangle 3 x 2 and a parabolic segment of area
+# 2/3 whose arc length is sqrt 2 + asinh 1. (The rounded corner's weight is
+# the binary64 value of sqrt(2)/2, so its arc is not exactly circular and the
+# closed forms of a quarter disc hold only to about 1e-17.)
+CLOSED_FORMS = {
+    'spline_bulge': {0: mp.mpf(20)/3, 1: mp.mpf(40)/3+8+mp.sqrt(2)+mp.asinh(1)},
+    'spline_bulge_split_wall': {0: mp.mpf(20)/3, 1: mp.mpf(40)/3+8+mp.sqrt(2)+mp.asinh(1)},
+}
+
+
+def spline_mass(c):
+    """The mass properties of a valid spline case (S4d) as a row: volume,
+    area, centroid, inertia about it; None when not integrated. F8: the
+    case is integrated again with every Gauss-Legendre interval halved on
+    the faces whose integrands are not polynomials the 24 nodes integrate
+    exactly, and both must agree within REFINED of each property's scale;
+    closed forms, where known, must hold to the same bound."""
+    terms = {}
+
+    def first(c, f, ref):
+        terms[id(f)] = face_mass_terms(c, f, ref)
+        return terms[id(f)]
+
+    def halved(c, f, ref):
+        return terms[id(f)] if polynomial_face(c, f) else face_mass_terms(c, f, ref, split=2)
+    rows = []
+    for terms_of in (first, halved):
+        props = mass_properties(c, terms_of)
+        if props is None:
+            return None
+        rows.append([props['volume'], props['area'], *props['centroid'], *sum(props['inertia'], [])])
+    values, again = rows
+    for group in (range(0, 1), range(1, 2), range(2, 5), range(5, 14)):
+        scale = max(abs(values[i]) for i in group) or 1
+        for i in group:
+            assert abs(values[i]-again[i]) <= REFINED*scale, (c.name, i, values[i], again[i])
+            if i in CLOSED_FORMS.get(c.name, {}):
+                assert abs(values[i]-CLOSED_FORMS[c.name][i]) <= REFINED*scale, (c.name, i, values[i])
+    return values
+
+
 def generate():
     bases = base_cases()
     models = list(bases.values())+mutations(bases)
     cells = [declare(c) for c in [to_cell(m) for m in models]+cell_cases(bases)
-             + [to_cell(m) for m in spline_models()]+[to_cell(m) for m in sheet_models()]]
+             + [to_cell(m) for m in spline_models()]+[to_cell(m) for m in sheet_models()]
+             + [to_cell(m) for m in quadrature_models()]]
     names = [c.name for c in cells]
     assert len(names) == len(set(names)), 'duplicate case names'
     text = '\n'.join(encode_cell(c) for c in cells)+'\n'
@@ -1147,9 +1239,8 @@ def generate():
             classes.append(c.name+'\t'+body_class(c))
         if not issues and c.name.startswith('spline_'):
             # S4d: the mass properties of every valid spline case.
-            props = mass_properties(c)
-            if props is not None:
-                values = [props['volume'], props['area'], *props['centroid'], *sum(props['inertia'], [])]
+            values = spline_mass(c)
+            if values is not None:
                 # Quadrature noise far below any enclosure's width reads 0.
                 masses.append(c.name+'\t'+' '.join('0' if abs(x) < 1e-25 else mp.nstr(x, 20)
                                                      for x in values))
