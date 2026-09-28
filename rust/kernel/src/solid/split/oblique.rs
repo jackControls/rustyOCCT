@@ -1997,6 +1997,19 @@ impl Clipped {
         start: f64,
         end: f64,
     ) -> Result<Solid> {
+        self.rebuilt_with(operation, frame, start, end, None)
+    }
+
+    /// [`Clipped::rebuilt`] with its mass properties when known (a rigid
+    /// motion's: its source's, moved), which are costly to enclose again.
+    pub(crate) fn rebuilt_with(
+        &self,
+        operation: OperationId,
+        frame: Frame3,
+        start: f64,
+        end: f64,
+        known: Option<crate::MassProperties>,
+    ) -> Result<Solid> {
         let mut built = pieces(
             &self.profile,
             frame,
@@ -2009,10 +2022,13 @@ impl Clipped {
             return Err(Error::InvalidTopology("a split piece rebuilt differently"));
         };
         let topology = unnamed(piece.parts, self.tolerance())?;
-        let mass = topology
-            .mass_enclosure()
-            .ok_or(Error::Unrepresentable("a split piece's mass properties"))?
-            .midpoints();
+        let mass = match known {
+            Some(mass) => mass,
+            None => topology
+                .mass_enclosure()
+                .ok_or(Error::Unrepresentable("a split piece's mass properties"))?
+                .midpoints(),
+        };
         let bounds = edge_bounds(&topology);
         Ok(Solid {
             construction: super::Construction::Clipped(Box::new(self.clone())),

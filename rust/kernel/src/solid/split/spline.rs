@@ -418,23 +418,55 @@ pub(super) fn tangent(span: &Span, start: bool) -> (f64, f64) {
 }
 
 /// Twice the signed area between a piece and its chord, `∮ x dy - y dx`
-/// along the piece less the chord's, sampled (for a cycle's orientation).
+/// along the piece less the chord's, in binary64 from its Bézier arcs'
+/// control points in the power basis (for a cycle's orientation only).
 pub(super) fn twice_area_beyond_chord(span: &Span) -> f64 {
-    let curve = span.curve();
-    let (a, b) = span.curve().as_curve3().domain();
-    let n = 256;
-    let mut pts: Vec<Point2> = (0..=n)
-        .filter_map(|i| curve.point(a + (b - a) * i as f64 / n as f64).ok())
-        .collect();
-    if span.is_reversed() {
-        pts.reverse();
-    }
+    let Ok(arcs) = arcs(span) else {
+        return 0.0;
+    };
+    let power_f64 = |c: Vec<f64>| -> Vec<f64> {
+        let n = c.len() - 1;
+        let binomial =
+            |n: usize, k: usize| (0..k).fold(1.0, |acc, m| acc * (n - m) as f64 / (m + 1) as f64);
+        let mut out = vec![0.0; n + 1];
+        for (i, ci) in c.iter().enumerate() {
+            for (k, o) in out.iter_mut().enumerate().skip(i) {
+                let term = ci * binomial(n, i) * binomial(n - i, k - i);
+                *o += if (k - i) % 2 == 0 { term } else { -term };
+            }
+        }
+        out
+    };
+    // ∫_0^1 a(s) b'(s) ds of two power series.
+    let cross_integral = |a: &[f64], b: &[f64]| {
+        let mut total = 0.0;
+        for (i, ai) in a.iter().enumerate() {
+            for (k, bk) in b.iter().enumerate().skip(1) {
+                total += ai * bk * k as f64 / (i + k) as f64;
+            }
+        }
+        total
+    };
     let mut twice = 0.0;
-    for w in pts.windows(2) {
-        twice += w[0].x * w[1].y - w[1].x * w[0].y;
+    for arc in &arcs {
+        let x = power_f64(arc.cps.iter().map(|c| to_f64(&c[0])).collect());
+        let y = power_f64(arc.cps.iter().map(|c| to_f64(&c[1])).collect());
+        twice += cross_integral(&x, &y) - cross_integral(&y, &x);
     }
-    let (s, e) = (pts[0], pts[pts.len() - 1]);
-    twice - (s.x * e.y - e.x * s.y)
+    let (first, last) = (
+        &arcs[0].cps[0],
+        &arcs[arcs.len() - 1].cps[arcs[arcs.len() - 1].cps.len() - 1],
+    );
+    let (a, b) = (
+        Point2::new(to_f64(&first[0]), to_f64(&first[1])),
+        Point2::new(to_f64(&last[0]), to_f64(&last[1])),
+    );
+    let chord = a.x * b.y - b.x * a.y;
+    if span.is_reversed() {
+        -(twice - chord)
+    } else {
+        twice - chord
+    }
 }
 
 /// The part of a spline's curve between parameters `u0` and `u1`, traversed

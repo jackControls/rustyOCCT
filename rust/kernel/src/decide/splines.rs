@@ -1,18 +1,20 @@
 //! S8b: the proximity screen for profile paths with spline segments.
 //!
 //! Every segment is a chain of parts (a line, a circular arc over an angle
-//! range, or a Bézier arc by its exact control points), each with an
-//! outward-rounded box. Two segments that share no point are apart when
-//! every pair of their parts is, which boxes farther apart than the
-//! resolution certify, the larger part halved (exactly for lines and Bézier
-//! arcs, by angle for arcs) until they do. Adjacent segments must not double
-//! back at their shared point, their far ends must be apart from the other
-//! segment, and a pair of their parts is exempt when both are seen from the
-//! shared point in disjoint directions (exact cones of control points or box
-//! corners; they meet only there), as the arcs' adjacency rules ignore the
-//! meeting itself. A pair still undecided at the depth or work limit counts
-//! as touching. A spline segment turns through less than a quarter-turn
-//! (its hodograph in an open quarter-plane), so it cannot come near itself.
+//! range, or a Bézier arc by its exact control points). Two segments that
+//! share no point are apart when every pair of their parts is, which boxes
+//! farther apart than the resolution certify, the larger part halved until
+//! they do: lines and Bézier arcs by de Casteljau in outward binary64
+//! intervals (each control point's box holds the exact one, so the part lies
+//! in their hull), arcs by angle. Adjacent segments must not double back at
+//! their shared point, their far ends must be apart from the other segment,
+//! and a pair of their parts is exempt when both are seen from the shared
+//! point, which they keep as an exact end, in disjoint directions (cones of
+//! their control points' box corners, or of their own box's; they meet only
+//! there), as the arcs' adjacency rules ignore the meeting itself. A pair
+//! still undecided at the depth or work limit counts as touching. A spline
+//! segment is screened against itself in simple pieces (control polygons
+//! turning through less than a half-turn).
 use super::arcs::Arc2;
 use crate::certified::{Fast, Real};
 use crate::Point2;
@@ -442,6 +444,146 @@ fn outgoing(parts: &[Part], start: bool) -> Option<P> {
     }
 }
 
+/// A part as the screen subdivides it: a line or a Bézier arc by outward
+/// boxes of its control points and its exact ends where they are its
+/// original part's; an arc as a part.
+#[derive(Clone)]
+enum Screened {
+    Poly {
+        boxes: Vec<[Fast; 2]>,
+        ends: [Option<P>; 2],
+    },
+    Arc(Part),
+}
+
+fn point_box(p: &P) -> [Fast; 2] {
+    [Fast::from_r(&p[0]), Fast::from_r(&p[1])]
+}
+
+/// A box's corners, exactly.
+fn corners(b: &[Fast; 2]) -> [P; 4] {
+    let ((xl, xh), (yl, yh)) = (b[0].bounds_f64(), b[1].bounds_f64());
+    [
+        [q(xl), q(yl)],
+        [q(xl), q(yh)],
+        [q(xh), q(yl)],
+        [q(xh), q(yh)],
+    ]
+}
+
+impl Screened {
+    fn of(part: &Part) -> Self {
+        match part {
+            Part::Line(a, b) => Screened::Poly {
+                boxes: vec![point_box(a), point_box(b)],
+                ends: [Some(a.clone()), Some(b.clone())],
+            },
+            Part::Bezier(cps) => Screened::Poly {
+                boxes: cps.iter().map(point_box).collect(),
+                ends: [Some(cps[0].clone()), Some(cps[cps.len() - 1].clone())],
+            },
+            Part::Arc { .. } => Screened::Arc(part.clone()),
+        }
+    }
+
+    fn bbox(&self) -> Bx {
+        match self {
+            Screened::Arc(part) => part.bbox(),
+            Screened::Poly { boxes, .. } => {
+                let mut out = [
+                    f64::INFINITY,
+                    f64::NEG_INFINITY,
+                    f64::INFINITY,
+                    f64::NEG_INFINITY,
+                ];
+                for b in boxes {
+                    let ((xl, xh), (yl, yh)) = (b[0].bounds_f64(), b[1].bounds_f64());
+                    out = [
+                        out[0].min(xl),
+                        out[1].max(xh),
+                        out[2].min(yl),
+                        out[3].max(yh),
+                    ];
+                }
+                out
+            }
+        }
+    }
+
+    fn halves(&self) -> [Screened; 2] {
+        match self {
+            Screened::Arc(part) => part.halves().map(Screened::Arc),
+            Screened::Poly { boxes, ends } => {
+                let half = Fast::exact_f64(0.5);
+                let mut rows = vec![boxes.clone()];
+                while rows.last().expect("a row").len() > 1 {
+                    let next: Vec<[Fast; 2]> = rows
+                        .last()
+                        .expect("a row")
+                        .windows(2)
+                        .map(|w| {
+                            [
+                                w[0][0].add(&w[1][0]).mul(&half),
+                                w[0][1].add(&w[1][1]).mul(&half),
+                            ]
+                        })
+                        .collect();
+                    rows.push(next);
+                }
+                let left = rows.iter().map(|r| r[0]).collect();
+                let right = rows.iter().rev().map(|r| r[r.len() - 1]).collect();
+                [
+                    Screened::Poly {
+                        boxes: left,
+                        ends: [ends[0].clone(), None],
+                    },
+                    Screened::Poly {
+                        boxes: right,
+                        ends: [None, ends[1].clone()],
+                    },
+                ]
+            }
+        }
+    }
+
+    /// Directions from `p` covering the part (all but `p` itself), when they
+    /// span less than a half-turn: `None` to refine. From an exact end, the
+    /// cone of the other control points' box corners (the part is their
+    /// nonnegative combination); otherwise its box's corners, `p` outside
+    /// it.
+    fn sector(&self, p: &P) -> Option<Sector> {
+        let Screened::Poly { boxes, ends } = self else {
+            let Screened::Arc(part) = self else {
+                unreachable!()
+            };
+            return part.sector(p);
+        };
+        let (at_start, at_end) = (ends[0].as_ref() == Some(p), ends[1].as_ref() == Some(p));
+        let vectors: Vec<P> = if at_start || at_end {
+            let own = if at_start { 0 } else { boxes.len() - 1 };
+            boxes
+                .iter()
+                .enumerate()
+                .filter(|(i, _)| *i != own)
+                .flat_map(|(_, b)| corners(b))
+                .map(|c| sub(&c, p))
+                .filter(|v| !is_zero(v))
+                .collect()
+        } else {
+            let [xl, xh, yl, yh] = self.bbox();
+            let (px, py) = (p[0].clone(), p[1].clone());
+            if q(xl) <= px && px <= q(xh) && q(yl) <= py && py <= q(yh) {
+                return None;
+            }
+            [(xl, yl), (xl, yh), (xh, yl), (xh, yh)]
+                .iter()
+                .map(|(x, y)| sub(&[q(*x), q(*y)], p))
+                .collect()
+        };
+        Sector::of(&vectors)
+    }
+}
+
 /// Screen state: pairs to examine and a work budget.
 struct Screen {
     work: usize,
@@ -451,9 +593,13 @@ impl Screen {
     /// Whether every pair of parts is apart (or exempt); `false` when
     /// within `t` or undecided.
     fn pairs(&mut self, a: &[Part], b: &[Part], t: f64, joints: &[P]) -> bool {
-        let mut stack: Vec<(Part, Part, usize)> = Vec::new();
-        for x in a {
-            for y in b {
+        let (a, b): (Vec<Screened>, Vec<Screened>) = (
+            a.iter().map(Screened::of).collect(),
+            b.iter().map(Screened::of).collect(),
+        );
+        let mut stack: Vec<(Screened, Screened, usize)> = Vec::new();
+        for x in &a {
+            for y in &b {
                 stack.push((x.clone(), y.clone(), 0));
             }
         }

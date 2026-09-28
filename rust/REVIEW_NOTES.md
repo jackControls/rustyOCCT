@@ -1161,9 +1161,14 @@ Decisions for S8b, recorded before its code (2026-09-28):
   only in disjoint direction sectors from their shared point. A cusp's
   halves double back there (`SelfIntersection`); a turn that does not
   narrow within twelve halvings is `OutOfDomain`. (b) The screen
-  subdivides exact rational Bézier control points; each box is the
-  outward binary64 hull of its exact points, so there is one tier and it
-  is certified. (c) Point location takes the crossing parity of the `+x`
+  subdivides in outward binary64 intervals: each control point's box
+  holds the exact one, so a part lies in their hull, and a part keeps its
+  exact ends where they are its original's, so a sector from a shared
+  point is the cone of the other boxes' corners. (Exact rational halvings
+  at depth 48 made a lens hole's oblique split take 66 s under the
+  sanitizer in S8b's first campaign; with them, a sampled orientation area
+  and an oblique piece's mass recomputed under rigid motion it took 7.4 s
+  in release, now 2.2 s.) (c) Point location takes the crossing parity of the `+x`
   ray with exact `y`-monotone pieces, and a point within the resolution of
   a spline, or undecided, is on the boundary, as for arcs.
 * **S8b.2, spline prisms.** A spline segment's wall is the exact degree-(p,
