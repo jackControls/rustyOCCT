@@ -3025,3 +3025,18 @@ Decisions for S9, recorded before its code (2026-09-28):
     general bodies): rebuilding its exact model in moved frames changed
     near-coincident results. Pending: the campaign, S9b.2, the DRAW survey
     of the 647 upstream cases in frames with different axes.
+  * S9c: decisions recorded (2026-09-28); S9c.1's evidence came before any
+    kernel code (`BOOLEAN.md`): `curved_boolean_reference.py` (slices
+    parallel to both axes, breakpoints as exact polynomial roots, faces
+    swept in their own parameters) and 44 fixtures
+    (`generate_curved_boolean_fixtures.py --check`: 35 solid, 2 empty, 7
+    degenerate with reasons; closed forms within 9.2e-41 in exact frames and
+    1.9e-16 in turned ones, identities 2e-40, Monte Carlo 2.7 sigma, S9a's
+    and S9b's references on their 90 fixtures) in frames the kernel stores
+    bit for bit (`ROT` is not: its `x` differs in the last bit on macOS
+    arm64), and the capture `occt-boolean-curved-preimplementation`
+    (`compare_curved_boolean.py`: all 44 valid with the reference's solids,
+    within 8.6e-9, no review; the kernel `unsupported` on all 44).
+    `compare_polyhedral.py` had checked S9a's capture since the spline set;
+    `compare_boolean.make_set` now lets each wrapper choose its set. S9c.1's
+    kernel next.
