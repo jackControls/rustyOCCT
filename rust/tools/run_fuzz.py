@@ -58,7 +58,11 @@ ALLOCATOR_TARGETS = {'surface_knots', 'degree_elevation', 'spline_linear', 'brep
 # to 1,489 MB in 120 s (33 MB without a sanitizer); five frames keep it at
 # 227 MB and still name each allocation's site in a report. curve_surface
 # and curve_curve joined with it (the same exact intersection machinery).
-SHORT_STACK_TARGETS = {'analytic_intersections', 'curve_surface', 'curve_curve'}
+# boolean joined in S9a.2: with the allocator purge, a 600 s campaign at
+# f510f3a6 left replay at 1,849 MB and stopped at the gate with 28 MB live
+# and 53 MB quarantined, the rest the depot of its exact arrangements'
+# stacks.
+SHORT_STACK_TARGETS = {'analytic_intersections', 'curve_surface', 'curve_curve', 'boolean'}
 # The pinned libFuzzer checks stop_file between MutateAndTestOne batches,
 # not between each callback. Keep its default mutation sequence length.
 MUTATION_DEPTH = 5

@@ -240,7 +240,11 @@ its 348-input replay at 1,443 MB and stopped at the 2 GiB gate after 1,125
 mutations, on an input that peaks at 6 MB alone; its exact arrangements churn
 BigRationals as the others do. `split`, listed since S8d.2, only now calls
 the purge between inputs from its target (it had the quarantine setting
-alone).
+alone). With S9a.2's stacks the purge was not enough: a campaign at
+`f510f3a6` left its 672-input replay at 1,849 MB and stopped at the gate
+with 28 MB live and 53 MB quarantined, the rest AddressSanitizer's stack
+depot, so `boolean` keeps five frames per allocation too, as
+`analytic_intersections` does.
 
 The mutation timer starts when the pinned libFuzzer reports `INITED`, after
 corpus replay. Its `max_total_time` flag includes initialization and previously
