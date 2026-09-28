@@ -4,8 +4,16 @@
   "sources": {
     "resources/DrawResources/CheckCommands.tcl": "ff1a6ab0a57e4746346587b3bee439128d8494bf28f14c2f2d854d10136525ff",
     "resources/DrawResources/TestCommands.tcl": "badd93f0168b28f8f150c59507cc0bf63e8f0462fcb479095af2b4c6bfb236ab",
+    "tests/boolean/begin": "d69546786e4458613f453d5083979bd5e2e67ae1f0f01b93f1bd93825e3a66bd",
+    "tests/boolean/end": "c9af5276f45a782d2c8bd14514d6ecd8bb47d3765a037018608d20ca79efe557",
+    "tests/boolean/parse.rules": "08f82593d2eacd0dcb4ef65b9dfcb472b6ce2e7c4faeae1e5645fa26d9fa6c64",
+    "tests/boolean/splitter/A5": "50047314a7612585ebd704ffec835df3b80bf71aed5c80dc939b464e820c4a96",
+    "tests/boolean/splitter/B5": "1c81f40f59769da12891cefbb3a878ec7022f238347f7e97954f659ae4ca18b7",
     "tests/bugs/begin": "b48f06a88ac5079b55362ad03c7c55715d67268a7f59f26781eb9a4b2f11851e",
     "tests/bugs/end": "1f73180b566914e19ec07a3439881eb03ce8e9c13c3c92d057c03f4d55ee807d",
+    "tests/bugs/heal/begin": "800a585229c63465759d963af344ac42e9f915a9bf2f079c226813a390153fb7",
+    "tests/bugs/heal/bug29502": "d1442a498bd937ce31f8228f54a0446429e8dc333b54fc62d2da201035c98791",
+    "tests/bugs/heal/bug33171_1": "24d4cefea7037e44cc571fe9501c8c220bd16b94e34d63acd886fa63983c47c3",
     "tests/bugs/modalg_1/begin": "16a2a51b965d83e675a1c75b1aed0eb0de88905d9ffdc81d57466305d0cf9c8a",
     "tests/bugs/modalg_1/buc60684": "771b69a7c29a5140a0fd370d0f17a6a27551b67e8fa19233b48c56f90d4245cb",
     "tests/bugs/modalg_6/begin": "16a2a51b965d83e675a1c75b1aed0eb0de88905d9ffdc81d57466305d0cf9c8a",
@@ -14,14 +22,33 @@
     "tests/bugs/modalg_6/bug28189_2": "2b32b4257cfcfc6f7d111d71e7301f089147ebeac7350d145737698185c24418",
     "tests/bugs/modalg_6/bug28189_3": "7fa450c825e67af25b3ec2fe1370555c75ff572ab7303c90134cee595ae5e78b",
     "tests/bugs/modalg_7/begin": "5989051978daa1e26a264a25aa54a6701bb2130c96a593d65b4ccb0ec33374c1",
+    "tests/bugs/modalg_7/bug21264": "597ae6ceba8c8fe8674bb86cd7f5168395df1cde5a125669255c84267095bf5c",
+    "tests/bugs/modalg_7/bug28113_1": "b4b218e6978b7233bb58b133debfc1b5f61383048f8e88897ef406dc8823a8f3",
+    "tests/bugs/modalg_7/bug28113_2": "9b78414b50ad56fba677aaaf810e717e34bf940f375164fd1612bdee65532650",
     "tests/bugs/modalg_7/bug29311_5": "3c872fea81b6bcd24532825c2b4161b5a63aed9b9dc86dc9d41b52fc2a2aa21c",
     "tests/bugs/modalg_7/bug29311_6": "9edfc48c936e355a0d1e8b6a69d2cff05113ac4af64a471b8a14d71c18e2c9fd",
     "tests/bugs/modalg_7/bug29311_7": "f6936da6f89e34f03d2988aa7c9cf00237eb0cdf3f679ee636d643cb84c4cfd8",
     "tests/bugs/modalg_7/bug29311_8": "100684b62c461fe3cd95674bcb5830b79ecca76e890f7294a4226159a30e923a",
     "tests/bugs/modalg_7/bug29333_1": "8c616310a2116ee7be3ec84b2da7b404d23fd794f2729d6c334f8af34ecde671",
     "tests/bugs/modalg_7/bug29333_2": "3d31f3df20765ebfa72990245b68c0591777f15ad81d84cfccb0545928fc5221",
+    "tests/bugs/modalg_7/bug29789": "39c96491c0540d80cc143fd3db4c217966b9ef11892fdf674cf5a0a32ecc2983",
+    "tests/bugs/modalg_7/bug29955": "1ac6f8ff93f002e4c9df7174ba0ced97126c80256be1e2cbf58294615cf8096a",
+    "tests/bugs/modalg_7/bug30092": "634319169525ee37edb19fe440e881ef65901a655d8444adfc5033ce2124512a",
+    "tests/bugs/modalg_7/bug31201_1": "3aeb4a7275d59db8ba78cea687d201e36a17ee727c5d663730a743a2600f68e7",
+    "tests/bugs/modalg_7/bug31201_2": "0dcc0a6c05532ea87ee3e5bba8fd4e88aaa8ac89c70987f479276f103736d029",
+    "tests/bugs/modalg_7/bug31201_3": "a34d150921c7e09708a3651fcd1ff0c7cdff5cef3015bf6ddae01d54624d6040",
+    "tests/bugs/modalg_7/bug31462": "5499427bf718e83c9061ca98cf3cbda69ed9cf3571eadaf4b8c6213b2511ee8a",
+    "tests/bugs/modalg_7/bug32578": "c0e4df3cfe8d006ab5c77b62c8725de859fa68958e2456423f8d24051f656998",
+    "tests/bugs/modalg_7/bug32644": "f52fb956bb8e696620bb50ba9b01300c7a46f51fcee2ee9880589738b590cfe6",
     "tests/bugs/moddata_1/begin": "5808c58aa3201cb4a5dd9513407fcf273dbc2b2763b2b395c11932a432f2a10b",
     "tests/bugs/moddata_1/buc60769": "8ece4a587d65d59a1922f08f1898735e6cf01bf2bbc0675b3616dcd129e03400",
+    "tests/bugs/moddata_3/begin": "5808c58aa3201cb4a5dd9513407fcf273dbc2b2763b2b395c11932a432f2a10b",
+    "tests/bugs/moddata_3/bug31587_1": "cdeabe56e21bac974a0e5bd10d470b36902223a72cea5c28e1ab5a87d65bde7f",
+    "tests/bugs/moddata_3/bug31587_2": "54338ea8ce3bd4906d727fdf9493b9d45409642eaa1aba412a273c487882e6bb",
+    "tests/bugs/moddata_3/bug31587_3": "604a59ed8aad9fce9987a2b13ec793801935e0d2eecc83ddfe81cfab4282ac44",
+    "tests/bugs/moddata_3/bug31587_4": "df6bbf836497ae40e22269e1a0d197ac3918f14bc9fa6ff0cc93e9afc83bda1c",
+    "tests/bugs/moddata_3/bug31587_5": "5afd2a27952471bec9244edd74a2e861b13834bcf4cdb25b6a6ec9f62f9fbf5b",
+    "tests/bugs/moddata_3/bug31587_6": "a09d4a0cb4f13fefcb3e499e8e2cd6d35def7051aabb026089338a166634ac04",
     "tests/bugs/parse.rules": "946ccdde3ded0ec98d7559cdfd530afd0e7e4c941524b02b389a739ab86e3db6",
     "tests/lowalgos/begin": "f140a7dcc998993c45da7684d2664548b333170abd2ec809bc51fbaafcadf869",
     "tests/lowalgos/end": "6c353dcde0e39fe44c9ce7699f12ac43db0569da02ef1a7fcf1069a28ae3fa4b",
@@ -239,6 +266,165 @@
       "expected_rust": "unsupported",
       "expected_occt": "unverified",
       "purpose": "S7 (lowalgos), a recorded divergence: two cylinders whose axes are antiparallel only up to rounding; OCCT snaps them to parallel and reports two lines, the kernel's exact predicates find crossing axes and one closed curve, and the case then calls the undefined command `Error:`."
+    },
+    {
+      "path": "rust/fixtures/draw-derived/split_plane",
+      "derived": true,
+      "context": "tests/bugs/modalg_7",
+      "expected_rust": "pass",
+      "expected_occt": "pass",
+      "purpose": "Derived: OCCT's splitter (bclearobjects, bcleartools, baddobjects, baddtools, bfillds, bsplit, bapisplit) with one plane face as the tool on a prism, a sheet with arcs and a closed wire, singly and together (S8e): checkshape, counts with the pieces' shared cut faces, chords and crossings, and properties per use.",
+      "verifies": [
+        "plane splits",
+        "count synthesizer",
+        "per-use length synthesis",
+        "mass properties"
+      ]
+    },
+    {
+      "path": "tests/boolean/splitter/A5",
+      "data": true,
+      "expected_rust": "private_data",
+      "expected_occt": "private_data",
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: a shell split by three restored faces (bsplit); its data file is not in the public dataset (Open Cascade's private test data)."
+    },
+    {
+      "path": "tests/boolean/splitter/B5",
+      "data": true,
+      "expected_rust": "private_data",
+      "expected_occt": "private_data",
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: the same through bapisplit; its data file is not in the public dataset (Open Cascade's private test data)."
+    },
+    {
+      "path": "tests/bugs/heal/bug29502",
+      "expected_rust": "unsupported",
+      "expected_occt": "pass",
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: a whole cylinder band split by a vertex, then unifysamedom; the heal group loads XSDRAW."
+    },
+    {
+      "path": "tests/bugs/heal/bug33171_1",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: a box prism split by four open-wire prisms (sheets), bopcheck and unifysamedom; the heal group loads XSDRAW."
+    },
+    {
+      "path": "tests/bugs/modalg_7/bug21264",
+      "expected_rust": "unsupported",
+      "expected_occt": "unverified",
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: progress reports of the Boolean and splitter commands (XProgress); native makes no geometric query."
+    },
+    {
+      "path": "tests/bugs/modalg_7/bug28113_1",
+      "data": true,
+      "expected_rust": "private_data",
+      "expected_occt": "private_data",
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: solids made by mkvolume split by restored shapes, bbuild and bsplit; its data file is not in the public dataset (Open Cascade's private test data)."
+    },
+    {
+      "path": "tests/bugs/modalg_7/bug28113_2",
+      "data": true,
+      "expected_rust": "private_data",
+      "expected_occt": "private_data",
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: restored shapes split by another; its data file is not in the public dataset (Open Cascade's private test data)."
+    },
+    {
+      "path": "tests/bugs/modalg_7/bug29789",
+      "data": true,
+      "expected_rust": "private_data",
+      "expected_occt": "private_data",
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: a hull split by a contour; its data file is not in the public dataset (Open Cascade's private test data)."
+    },
+    {
+      "path": "tests/bugs/modalg_7/bug29955",
+      "data": true,
+      "expected_rust": "private_data",
+      "expected_occt": "private_data",
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: Booleans and a split of restored faces; its data file is not in the public dataset (Open Cascade's private test data)."
+    },
+    {
+      "path": "tests/bugs/modalg_7/bug30092",
+      "data": true,
+      "expected_rust": "unsupported",
+      "expected_occt": "pass",
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: a face on an offset surface split by an edge with a grown tolerance; the restore needs offset surfaces."
+    },
+    {
+      "path": "tests/bugs/modalg_7/bug31201_1",
+      "data": true,
+      "expected_rust": "private_data",
+      "expected_occt": "private_data",
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: faces split by a tool, then a section; its data file is not in the public dataset (Open Cascade's private test data)."
+    },
+    {
+      "path": "tests/bugs/modalg_7/bug31201_2",
+      "data": true,
+      "expected_rust": "private_data",
+      "expected_occt": "private_data",
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: faces split by a tool, then a section; its data file is not in the public dataset (Open Cascade's private test data)."
+    },
+    {
+      "path": "tests/bugs/modalg_7/bug31201_3",
+      "data": true,
+      "expected_rust": "private_data",
+      "expected_occt": "private_data",
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: faces split by a tool, then a section; its data file is not in the public dataset (Open Cascade's private test data)."
+    },
+    {
+      "path": "tests/bugs/modalg_7/bug31462",
+      "data": true,
+      "expected_rust": "private_data",
+      "expected_occt": "private_data",
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: a solid split by faces in two orders; its data file is not in the public dataset (Open Cascade's private test data)."
+    },
+    {
+      "path": "tests/bugs/modalg_7/bug32578",
+      "data": true,
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: a face split by many edges with a fuzzy value (bfuzzyvalue)."
+    },
+    {
+      "path": "tests/bugs/modalg_7/bug32644",
+      "data": true,
+      "expected_rust": "private_data",
+      "expected_occt": "private_data",
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: a face split by a wire and a section; its data file is not in the public dataset (Open Cascade's private test data)."
+    },
+    {
+      "path": "tests/bugs/moddata_3/bug31587_1",
+      "expected_rust": "unsupported",
+      "expected_occt": "pass",
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: a box split by another box's faces and edges, then removeinternals."
+    },
+    {
+      "path": "tests/bugs/moddata_3/bug31587_2",
+      "expected_rust": "unsupported",
+      "expected_occt": "pass",
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: a box split by faces, edges and vertices, then removeinternals."
+    },
+    {
+      "path": "tests/bugs/moddata_3/bug31587_3",
+      "expected_rust": "unsupported",
+      "expected_occt": "pass",
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: a box split by faces through it, bbuild and removeinternals."
+    },
+    {
+      "path": "tests/bugs/moddata_3/bug31587_4",
+      "expected_rust": "unsupported",
+      "expected_occt": "pass",
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: a box split by faces and a wire, then removeinternals."
+    },
+    {
+      "path": "tests/bugs/moddata_3/bug31587_5",
+      "expected_rust": "unsupported",
+      "expected_occt": "pass",
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: a box split by faces and wires of two boxes, then removeinternals."
+    },
+    {
+      "path": "tests/bugs/moddata_3/bug31587_6",
+      "expected_rust": "unsupported",
+      "expected_occt": "pass",
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: a box split by open polylines, then removeinternals."
     }
   ],
   "derived_sources": {
@@ -250,7 +436,8 @@
     "rust/fixtures/draw-derived/psphere_counts": "67e36b8192db4fb52c5acb4db455695595cc3beff03c01bfea20939047ce2927",
     "rust/fixtures/draw-derived/ptorus_counts": "78532ada7afe493ad5f518b80c3e7d164159ec7d7f745000a5f639e00a5cbb42",
     "rust/fixtures/draw-derived/profile_arcs": "0c08732ec213a66e283600cbccee85fa1a75e19bafc25dd6b7ddc3e012f53e64",
-    "rust/fixtures/draw-derived/faces_and_edges": "dd70b02e9fdf8f094bac0b97663a2528f4a7e7e245e6f5aea0247f0eaac406c0"
+    "rust/fixtures/draw-derived/faces_and_edges": "dd70b02e9fdf8f094bac0b97663a2528f4a7e7e245e6f5aea0247f0eaac406c0",
+    "rust/fixtures/draw-derived/split_plane": "1eb4b5e184e7b886f259292b334f80e783a02c96867dd8d282f02c1807a10b9f"
   },
   "ledger": {
     "survey": {
