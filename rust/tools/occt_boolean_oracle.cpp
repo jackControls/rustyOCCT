@@ -1,8 +1,10 @@
 // Source-pinned observations of BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut and
-// BRepAlgoAPI_Common on two prisms (S9a of REVIEW_NOTES.md). Each input block
-// is identity_reference.native_boolean_case: the object's explicit prism
-// construction (a `plane` row with the profile's frame at the extrusion's
-// start offset, `wire` rows: P polygons, S paths of line and arc segments, C
+// BRepAlgoAPI_Common on two prisms (S9a of REVIEW_NOTES.md, and S9a.2's spline
+// profiles). Each input block is identity_reference.native_boolean_case: the
+// object's explicit prism construction (a `plane` row with the profile's frame
+// at the extrusion's start offset, `wire` rows: P polygons, S paths of line,
+// arc and (S9a.2) B-spline segments, the last a Geom_BSplineCurve of the
+// row's 3D poles, knots and multiplicities between the path's vertices, C
 // circles, holes reversed here; a `prism` vector, as occt_split_oracle.cpp
 // reads them), a `boolean fuse|cut|common` row, then the tool's construction
 // rows, and `end`. Each prism is BRepPrimAPI_MakePrism of its profile face;
@@ -27,6 +29,8 @@
 #include <BRepGProp.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
 #include <GProp_GProps.hxx>
+#include <Geom_BSplineCurve.hxx>
+#include <NCollection_Array1.hxx>
 #include <NCollection_IndexedMap.hxx>
 #include <ShapeUpgrade_UnifySameDomain.hxx>
 #include <Standard_Failure.hxx>
@@ -64,6 +68,29 @@ int count(const TopoDS_Shape& s, TopAbs_ShapeEnum type) {
   return map.Extent();
 }
 
+// A B-spline path segment (S8b): degree, poles, knots and multiplicities, as
+// occt_split_oracle.cpp reads them.
+Handle(Geom_BSplineCurve) spline(std::istringstream& in) {
+  int degree, n, k;
+  if (!(in >> degree >> n)) throw Standard_Failure("spline header");
+  NCollection_Array1<gp_Pnt> poles(1, n);
+  for (int i = 1; i <= n; ++i) {
+    auto p = numbers(in, 3);
+    poles.SetValue(i, gp_Pnt(p[0], p[1], p[2]));
+  }
+  if (!(in >> k)) throw Standard_Failure("spline knots");
+  auto u = numbers(in, k);
+  NCollection_Array1<double> knots(1, k);
+  NCollection_Array1<int> mults(1, k);
+  for (int i = 1; i <= k; ++i) knots.SetValue(i, u[i - 1]);
+  for (int i = 1; i <= k; ++i) {
+    int m;
+    if (!(in >> m)) throw Standard_Failure("spline multiplicities");
+    mults.SetValue(i, m);
+  }
+  return new Geom_BSplineCurve(poles, knots, mults, degree);
+}
+
 // One prism's construction rows, as occt_split_oracle.cpp reads them.
 struct Prism {
   gp_Ax3 frame;
@@ -84,23 +111,32 @@ struct Prism {
         in >> n;
         std::vector<TopoDS_Vertex> vs;
         std::vector<std::vector<double>> arcs;
+        std::vector<Handle(Geom_BSplineCurve)> splines;
         for (int j = 0; j < n; ++j) {
           auto p = numbers(in, 3);
           vs.push_back(BRepBuilderAPI_MakeVertex(gp_Pnt(p[0], p[1], p[2])));
           std::vector<double> arc;
+          Handle(Geom_BSplineCurve) curve;
           if (shape == "S") {
             std::string seg;
             in >> seg;
             if (seg == "A")
               arc = numbers(in, 5);
+            else if (seg == "B")
+              curve = spline(in);
             else if (seg != "L")
               throw Standard_Failure("unknown segment");
           }
           arcs.push_back(arc);
+          splines.push_back(curve);
         }
         for (int j = 0; j < n; ++j) {
           const auto& a = arcs[j];
-          if (a.empty()) {
+          if (!splines[j].IsNull()) {
+            BRepBuilderAPI_MakeEdge me(splines[j], vs[j], vs[(j + 1) % n]);
+            if (!me.IsDone()) throw Standard_Failure("spline edge");
+            mw.Add(me.Edge());
+          } else if (a.empty()) {
             mw.Add(BRepBuilderAPI_MakeEdge(vs[j], vs[(j + 1) % n]));
           } else {
             gp_Dir normal = a[4] != 0 ? frame.Direction() : frame.Direction().Reversed();
