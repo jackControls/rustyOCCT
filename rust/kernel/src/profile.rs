@@ -39,7 +39,7 @@ pub(crate) enum BoundaryKind {
 }
 
 /// A segment of a path boundary from one point to the next (S5).
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Segment {
     Line,
     /// A circular arc about `center` of the given radius, turning
@@ -50,12 +50,16 @@ pub enum Segment {
         radius: f64,
         ccw: bool,
     },
+    /// A planar nonrational B-spline (S8b) over its whole domain, from its
+    /// first pole to its last (or the reverse when flagged): its ends are the
+    /// two points exactly.
+    Spline(crate::topology::SplineSpan<crate::BSplineCurve2>),
 }
 
 impl Segment {
     /// The same segment traversed backwards.
-    fn reversed(self) -> Self {
-        match self {
+    fn reversed(&self) -> Self {
+        match self.clone() {
             Segment::Line => Segment::Line,
             Segment::Arc {
                 center,
@@ -66,8 +70,78 @@ impl Segment {
                 radius,
                 ccw: !ccw,
             },
+            Segment::Spline(span) => Segment::Spline(span.reversed()),
         }
     }
+}
+
+/// A spline segment from `a` to `b` checked (S8b): nonrational, degree 1 to
+/// 7, over its whole domain, its ends the two points exactly, C1 inside and
+/// turning through less than a quarter-turn; its screen parts.
+fn spline_parts(
+    span: &crate::topology::SplineSpan<crate::BSplineCurve2>,
+    a: Point2,
+    b: Point2,
+) -> Result<Vec<decide::splines::Part>> {
+    let curve = span.curve().as_curve3();
+    if curve.is_rational() {
+        return Err(Error::OutOfDomain("a rational spline profile segment"));
+    }
+    if !(1..=7).contains(&curve.degree()) {
+        return Err(Error::OutOfDomain(
+            "a spline profile segment of degree above 7",
+        ));
+    }
+    let (first, last) = curve.domain();
+    if span.range() != [first, last] || curve.is_periodic() {
+        return Err(Error::InvalidCurve(
+            "a spline profile segment over part of its domain",
+        ));
+    }
+    let poles = span.curve().poles();
+    let (s, e) = (poles[0], poles[poles.len() - 1]);
+    let (s, e) = if span.is_reversed() { (e, s) } else { (s, e) };
+    if s != a || e != b {
+        return Err(Error::InvalidCurve(
+            "a spline segment's ends off its path points",
+        ));
+    }
+    if !crate::topology::validate::continuity::curve_c1(curve, [first, last], false) {
+        return Err(Error::InvalidCurve(
+            "a spline profile segment not C1 inside",
+        ));
+    }
+    let parts = decide::splines::spline(span).ok_or(Error::InvalidCurve(
+        "a spline profile segment's Bézier arcs",
+    ))?;
+    decide::splines::simple(parts).ok_or(Error::OutOfDomain("a spline profile segment with a cusp"))
+}
+
+/// Every segment of a path as screen parts.
+fn path_parts(points: &[Point2], segments: &[Segment]) -> Result<Vec<Vec<decide::splines::Part>>> {
+    let n = points.len();
+    segments
+        .iter()
+        .enumerate()
+        .map(|(i, segment)| {
+            let (a, b) = (points[i], points[(i + 1) % n]);
+            Ok(match segment {
+                Segment::Line => decide::splines::line(a, b),
+                Segment::Arc {
+                    center,
+                    radius,
+                    ccw,
+                } => decide::splines::arc(&decide::arcs::Arc2 {
+                    center: *center,
+                    radius: *radius,
+                    start: a,
+                    end: b,
+                    ccw: *ccw,
+                }),
+                Segment::Spline(span) => spline_parts(span, a, b)?,
+            })
+        })
+        .collect()
 }
 
 /// The signed sweep of an arc from `a` to `b` about `center`: in `(0, 2π)`
@@ -298,6 +372,7 @@ impl Boundary {
             }
             perimeter += match segment {
                 Segment::Line => a.distance(b),
+                Segment::Spline(span) => decide::splines::length(&spline_parts(span, a, b)?),
                 Segment::Arc {
                     center,
                     radius,
@@ -320,8 +395,35 @@ impl Boundary {
             };
         }
         let perimeter = finite(perimeter, "perimeter")?;
+        // S8b: a path with a spline segment by the spline screen.
+        if segments.iter().any(|s| matches!(s, Segment::Spline(_))) {
+            let parts = path_parts(&points, &segments)?;
+            for (segment, own) in segments.iter().zip(&parts) {
+                if matches!(segment, Segment::Spline(_)) && !decide::splines::self_apart(own, tol) {
+                    return Err(Error::SelfIntersection);
+                }
+            }
+            for i in 0..count {
+                let j = (i + 1) % count;
+                if !decide::splines::adjacent_valid(&parts[i], &parts[j], tol, count == 2) {
+                    return Err(Error::SelfIntersection);
+                }
+                for k in (i + 2)..count {
+                    if (k + 1) % count == i {
+                        continue;
+                    }
+                    if !decide::splines::apart(&parts[i], &parts[k], tol) {
+                        return Err(Error::SelfIntersection);
+                    }
+                }
+                if count == 2 {
+                    break;
+                }
+            }
+        }
         let pieces = path_pieces(&points, &segments);
-        for i in 0..count {
+        let splined = segments.iter().any(|s| matches!(s, Segment::Spline(_)));
+        for i in (0..count).filter(|_| !splined) {
             let j = (i + 1) % count;
             // Two pieces meet at both ends of a two-segment path.
             let others: Vec<Point2> = if count == 2 {
@@ -495,6 +597,28 @@ impl Boundary {
             BoundaryKind::Path { points, segments } => path_pieces(points, segments),
         }
     }
+    /// Whether the boundary has a spline segment (S8b).
+    fn has_spline(&self) -> bool {
+        matches!(&self.kind, BoundaryKind::Path { segments, .. }
+            if segments.iter().any(|s| matches!(s, Segment::Spline(_))))
+    }
+
+    /// Each segment as screen parts (a polygon's edges, a circle's whole
+    /// turn); `None` when a spline segment is not valid.
+    fn spline_chains(&self) -> Option<Vec<Vec<decide::splines::Part>>> {
+        match &self.kind {
+            BoundaryKind::Polygon(points) => Some(
+                edges(points)
+                    .map(|(a, b)| decide::splines::line(a, b))
+                    .collect(),
+            ),
+            BoundaryKind::Circle { center, radius } => {
+                Some(vec![decide::splines::circle(*center, *radius)])
+            }
+            BoundaryKind::Path { points, segments } => path_parts(points, segments).ok(),
+        }
+    }
+
     pub fn circle_geometry(&self) -> Option<(Point2, f64)> {
         match self.kind {
             BoundaryKind::Circle { center, radius } => Some((center, radius)),
@@ -535,6 +659,36 @@ impl Boundary {
                 {
                     Location::Boundary
                 } else if !decide::distance_ge(point, *center, &[*radius]) {
+                    Location::Inside
+                } else {
+                    Location::Outside
+                }
+            }
+            // S8b: a path with a spline segment by its screen parts.
+            BoundaryKind::Path { points, segments }
+                if segments.iter().any(|s| matches!(s, Segment::Spline(_))) =>
+            {
+                let tol = tolerance.linear();
+                let Ok(chains) = path_parts(points, segments) else {
+                    return Location::Boundary;
+                };
+                if chains
+                    .iter()
+                    .any(|parts| decide::splines::point_within(point, parts, tol))
+                {
+                    return Location::Boundary;
+                }
+                let mut crossings = 0;
+                for (segment, (i, parts)) in segments.iter().zip(chains.iter().enumerate()) {
+                    crossings += match segment {
+                        Segment::Spline(_) => match decide::splines::ray_crossings(point, parts) {
+                            Some(n) => n,
+                            None => return Location::Boundary,
+                        },
+                        _ => decide::arcs::ray_crossings(point, &path_pieces(points, segments)[i]),
+                    };
+                }
+                if crossings % 2 == 1 {
                     Location::Inside
                 } else {
                     Location::Outside
@@ -774,6 +928,14 @@ pub(crate) fn segments_touch(a: Point2, b: Point2, c: Point2, d: Point2, toleran
         || decide::segment_distance_le(d, a, b, &[tolerance])
 }
 fn boundaries_touch(a: &Boundary, b: &Boundary, tolerance: f64) -> bool {
+    // S8b: with a spline on either, every pair of segments by the screen.
+    if let (Some(ca), Some(cb)) = (a.spline_chains(), b.spline_chains()) {
+        if a.has_spline() || b.has_spline() {
+            return ca
+                .iter()
+                .any(|x| cb.iter().any(|y| !decide::splines::apart(x, y, tolerance)));
+        }
+    }
     if matches!(a.kind, BoundaryKind::Path { .. }) || matches!(b.kind, BoundaryKind::Path { .. }) {
         let (pa, pb) = (a.pieces(), b.pieces());
         return pa.iter().any(|x| {
@@ -820,7 +982,9 @@ fn path_pieces(points: &[Point2], segments: &[Segment]) -> Vec<decide::arcs::Pie
         .map(|(i, segment)| {
             let (a, b) = (points[i], points[(i + 1) % n]);
             match segment {
-                Segment::Line => decide::arcs::Piece::Line(a, b),
+                // A spline's chord (S8b: spline paths are screened by
+                // their parts, never by these pieces).
+                Segment::Line | Segment::Spline(_) => decide::arcs::Piece::Line(a, b),
                 Segment::Arc {
                     center,
                     radius,
@@ -847,6 +1011,13 @@ fn path_moments(points: &[Point2], segments: &[Segment]) -> Result<(AreaMoments,
     for (i, segment) in segments.iter().enumerate() {
         let (a, b) = (local(points[i]), local(points[(i + 1) % n]));
         let part = match segment {
+            // S8b: exact Bernstein integrals about the anchor, rounded.
+            Segment::Spline(span) => {
+                let parts = spline_parts(span, points[i], points[(i + 1) % n])?;
+                let r = |x: f64| num_rational::BigRational::from_float(x).expect("finite");
+                decide::splines::green(&parts, &[r(anchor.x), r(anchor.y)])
+                    .map(|x| decide::splines::to_f64(&x))
+            }
             Segment::Line => {
                 // The arcs' Green forms along the line (the polygon's
                 // symmetric per-edge forms agree only over a closed loop).

@@ -215,7 +215,9 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   edge, a line or spline pcurve, a plane or spline surface) is decided by
   exact composition (S4b, `MATHEMATICS.md`), provided each common Bézier
   piece of a spline pcurve on a spline surface lies in one patch by its
-  control points and the composed degree is at most 96. Every other use
+  control points, or but for slivers at most `2^-20` of the patch across
+  its knot lines, whose departure is bounded exactly and added (S8b.3), and
+  the composed degree is at most 96. Every other use
   with spline geometry (an arc, an analytic curved surface, a pcurve across
   a knot line) is decided by second-order Taylor enclosures on halved
   pieces; only a periodic spline surface leaves it

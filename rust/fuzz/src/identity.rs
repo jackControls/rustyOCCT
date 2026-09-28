@@ -806,7 +806,7 @@ fn check_arcs(data: &[u8]) {
         .collect();
     let arcs: Vec<Segment> = segments
         .iter()
-        .map(|g| match *g {
+        .map(|g| match g.clone() {
             Segment::Arc {
                 center,
                 radius,
@@ -817,6 +817,7 @@ fn check_arcs(data: &[u8]) {
                 ccw,
             },
             Segment::Line => Segment::Line,
+            Segment::Spline(_) => unreachable!("the fuzz builds no spline paths here"),
         })
         .collect();
     let n = scaled.len();
@@ -827,7 +828,7 @@ fn check_arcs(data: &[u8]) {
     let mut cw_points = vec![scaled[0]];
     cw_points.extend(scaled[1..].iter().rev());
     let cw_segments: Vec<Segment> = (0..n)
-        .map(|j| match arcs[n - 1 - j] {
+        .map(|j| match arcs[n - 1 - j].clone() {
             Segment::Arc {
                 center,
                 radius,

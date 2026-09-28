@@ -1916,10 +1916,90 @@ on the binary64 inputs, within the body's resolution `t`:
   axis (`|(p - o) x n|^2 <= s^2 |n|^2`): parallel axes at distance `d` and
   radii differing by `e` keep the surfaces within `d + e <= t` of each other
   everywhere. The builder's pieces share the whole's axis direction bit for
-  bit.
+  bit;
+* a spline edge piece over `[a, b]` of its curve's parameter lies on a
+  spline edge when, over the same range, their exact Bézier arcs pair up
+  and every pair of control points differs by at most `t` (the difference
+  of two arcs is the arc of the differences; a restriction keeps its
+  parameter); a plane piece's spline boundary edge counts by its poles (the
+  curve lies in their hull and the distance is affine), nonrational only;
+* a spline wall piece lies on a spline wall when both are extrusions
+  (degree 1 over two rows of poles, nonrational) along directions parallel
+  to `1e-12`, and each of the piece's rows is within `t` of the whole's
+  first row across the whole's direction (`|d|^2 |n|^2 - (d . n)^2 <= t^2
+  |n|^2` for each pair of arcs' control points `d` apart).
 
 Nothing else counts as the same support, so a split along a slightly rotated
 plane or a merge of non-coplanar walls is reported, never absorbed.
+
+## Spline profiles and their splits (S8b)
+
+**Separation screen (S8b.1).** A profile segment is cut into parts: a line,
+an arc, or a spline's exact Bézier arcs (rational control points), each
+arc halved exactly until its control polygon's legs span less than a
+half-turn (then the arc is monotone along a direction, so simple). Two
+parts are apart when their boxes (the outward binary64 hulls of their
+exact points, or an arc's certified extent) are farther apart than the
+resolution; parts sharing a point are exempt when the directions from that
+point to each (a cone of their control points, or of an arc's tangent and
+far end) are disjoint half-turn sectors. Otherwise the larger is halved,
+to depth 48 and 400,000 pairs; anything undecided is `SelfIntersection`.
+A segment is screened against itself in its simple pieces, consecutive
+ones exempt only at their shared point: a cusp's halves double back there
+and are refused. Area moments are exact: Green's forms `A = ½∮(x dy - y
+dx)`, `∫x = ½∮x² dy`, `∫y = -½∮y² dx`, `∫x² = ⅓∮x³ dy`, `∫xy = ½∮x² y dy`,
+`∫y² = -⅓∮y³ dx` are polynomial integrals over each Bézier arc in the
+power basis, in rationals.
+
+**Crossings (S8b.3).** On a Bézier arc with control points `P_i` the
+trace's function `g_i = a x_i + b y_i + d` is a Bernstein polynomial in the
+arc's parameter; in the power basis its rational coefficients make an
+integer polynomial whose real roots in `[0, 1]` are isolated by Sturm
+sequences of its square-free part, with multiplicities from the repeated
+gcd layers. A simple root changes the sign (a crossing); an even one does
+not (a touch); an odd one of three or more crosses tangentially. The
+crossing's curve parameter is `u0 + s (u1 - u0)` from the isolator, refined
+until both ends round to one binary64 (at most 1,280 halvings, then the
+midpoint's rounding). A piece's side is the exact sign of `g` at a rational
+parameter strictly between two consecutive distinct roots, so the rounded
+parameter never decides it. Whether `g + k` takes a strict sign anywhere on
+a spline is decided the same way: at the arcs' ends and between their
+roots.
+
+**Restriction.** Boehm's insertion of `u` (in rationals) with
+`Q_i = α_i P_i + (1 - α_i) P_{i-1}`, `α_i = (u - u_i)/(u_{i+p} - u_i)` for
+`i` in `k - p + 1 ..= k` raises its multiplicity to the degree `p`; the
+pole before the first copy is the curve's point at `u`, and the knot
+sequence and poles split there into two clamped splines. Restricting to
+`[t0, t1]` cuts at `t1` then `t0`; rounding the poles moves the piece by at
+most their rounding, and its ends are the rounded crossings exactly.
+
+**Creases on the plane.** With `g(p)` the plane's height over a profile
+point (affine in `p`), the image `p -> (p, g(p))` of a spline is the spline
+of its poles' images, and on the wall `S(u, v) = L(u) + (v/h)(H(u) - L(u))`
+(`L`, `H` the lifted curves at the low and high ends) the crease's pcurve
+is `(u(t), v(t)) = (t, g(C(t)) - low)`: the identity has the Greville
+abscissae `ξ_i = (t_{i+1} + ... + t_{i+p}) / p` for poles, and `v` is the
+spline of `g(P_i) - low`. Both round: `ξ_i` to binary64 (not exact for
+most knots), `g` to binary64 per pole, the ends to their vertices' heights.
+
+**Slivers across knot lines.** Rounded `ξ_i` leave `u(t)` off the identity
+by a rounding step, so a pcurve piece's hull can cross the wall's knot line
+`u = κ` by that much: no single patch holds it. The exact deviation (S4b)
+then composes with the patch `Q` holding the hull's midpoint when the
+excess past each of its sides is at most `2^-20` of its width, and adds the
+surface's departure from `Q`'s polynomial there: on each neighbouring
+patch `Q'`'s part `B` of the hull's box, both polynomials are re-expressed
+exactly over `B` (their blossoms at `B`'s ends, row by row and then column
+by column; `Q` extrapolated), and `max_ij |Δ_ij|` over the difference's
+control points bounds `|Q' - Q|` on `B` (the difference lies in their
+hull). A piece within `tol - extra` is within the tolerance; one beyond
+`tol + extra` at a sample is beyond it. Green's exact integral (S4d) holds
+a piece whose control polygon leaves the patch when its curve provably
+keeps to it: each homogeneous coordinate against each bound,
+`X - lo W >= 0` and `hi W - X >= 0` on `[0, 1]`, by its Bernstein
+coefficients or else its exact signs at the ends and between its real
+roots.
 
 ## Tessellation bounds (T-a)
 

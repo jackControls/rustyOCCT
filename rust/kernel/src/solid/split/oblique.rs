@@ -122,8 +122,11 @@ impl Setup<'_> {
     }
     /// The plane's height over a profile point, rounded.
     fn g(&self, p: Point2) -> f64 {
+        rational_f64(&self.g_exact(p))
+    }
+    fn g_exact(&self, p: Point2) -> R {
         let [a, b, c, d] = &self.plane;
-        rational_f64(&(-(a * q(p.x) + b * q(p.y) + d) / c))
+        -(a * q(p.x) + b * q(p.y) + d) / c
     }
     fn line(&self, w: f64) -> [R; 3] {
         let [a, b, c, d] = &self.plane;
@@ -177,6 +180,11 @@ enum PSeg {
         center: Point2,
         radius: f64,
     },
+    /// A spline (S8b.3), stored reversed or not: its geometry is the
+    /// footprint's piece of it.
+    Spline {
+        reversed: bool,
+    },
 }
 
 fn pseg(profile: &Profile, b: usize, j: usize) -> PSeg {
@@ -189,7 +197,10 @@ fn pseg(profile: &Profile, b: usize, j: usize) -> PSeg {
         BoundaryKind::Polygon(points) => PSeg::Line(points[j], points[(j + 1) % points.len()]),
         BoundaryKind::Path { points, segments } => {
             let (s, e) = (points[j], points[(j + 1) % points.len()]);
-            match segments[j] {
+            match segments[j].clone() {
+                Segment::Spline(span) => PSeg::Spline {
+                    reversed: span.is_reversed(),
+                },
                 Segment::Line => PSeg::Line(s, e),
                 Segment::Arc {
                     center,
@@ -250,6 +261,12 @@ fn tangent_inside(profile: &Profile, line: &[R; 3]) -> Result<bool> {
             BoundaryKind::Path { points, segments } => {
                 let n = points.len();
                 for (j, s) in segments.iter().enumerate() {
+                    if let Segment::Spline(span) = s {
+                        if !super::spline::meets(span, [a, b, d])?.touches.is_empty() {
+                            return Ok(true);
+                        }
+                        continue;
+                    }
                     let Segment::Arc {
                         center,
                         radius,
@@ -340,7 +357,9 @@ pub(super) fn pieces(
     };
     for w in [low, high] {
         if tangent_inside(profile, &setup.line(w))? {
-            return Err(Error::Degenerate("a plane tangent to a cap's arc edge"));
+            return Err(Error::Degenerate(
+                "a plane tangent to a cap's arc or spline edge",
+            ));
         }
     }
     // The lower side's sign of F: material under the plane along the axis.
@@ -424,6 +443,16 @@ fn build_piece(
     // 1 on the cap side of the creased end, 0 on its trace, -1 cut.
     let crease_rel = |p: PointId| sign_of(&setup.f(pos1(p), &wkr)) * own;
     let q_profile = &q_piece.profile;
+    // A footprint segment's spline, in the footprint's stored direction.
+    let q_span = |qb: usize, qj: usize| -> Option<super::spline::Span> {
+        match &q_profile.boundaries().nth(qb)?.kind {
+            BoundaryKind::Path { segments, .. } => match &segments[qj] {
+                Segment::Spline(span) => Some(span.clone()),
+                _ => None,
+            },
+            _ => None,
+        }
+    };
     // The footprint's segments.
     let mut qsegs: BTreeMap<(usize, usize), QSeg> = BTreeMap::new();
     for (qb, boundary) in q_profile.boundaries().enumerate() {
@@ -635,6 +664,7 @@ fn build_piece(
     let angles = |b: usize, j: usize, points: &[(PointId, Point2)]| -> Vec<f64> {
         match pseg(setup.profile, b, j) {
             PSeg::Line(..) => vec![0.0; points.len()],
+            PSeg::Spline { .. } => unreachable!("a spline's points are by its parameter"),
             PSeg::Arc {
                 center,
                 start,
@@ -830,7 +860,36 @@ fn build_piece(
                 (id, k.2)
             })
             .collect();
-        let u = if qs.ends.is_none() && ids.is_empty() {
+        let spline =
+            q_span(qb, qj).filter(|_| matches!(pseg(setup.profile, b, j), PSeg::Spline { .. }));
+        let u = if let Some(span) = spline {
+            // A spline's points by its curve's parameter, which its pieces
+            // share with the input's curve.
+            let (first, last) = span.curve().as_curve3().domain();
+            let (start, end) = if span.is_reversed() {
+                (last, first)
+            } else {
+                (first, last)
+            };
+            let n = stored.len();
+            let mut us: Vec<f64> = stored
+                .iter()
+                .enumerate()
+                .map(|(i, &(_, p2))| {
+                    if i == 0 {
+                        start
+                    } else if i + 1 == n {
+                        end
+                    } else {
+                        s2.params[&p2]
+                    }
+                })
+                .collect();
+            if !qs.same {
+                us.reverse();
+            }
+            us
+        } else if qs.ends.is_none() && ids.is_empty() {
             Vec::new()
         } else {
             angles(b, j, &ids)
@@ -881,6 +940,16 @@ fn build_piece(
                             start: v3(&parts, a),
                             end: v3(&parts, bb),
                         },
+                    )
+                }
+                (PSeg::Spline { .. }, _) => {
+                    let chain = &chains[&(qb, qj)];
+                    let last = chain.points.len() - 1;
+                    let span = q_span(qb, qj).expect("a spline footprint segment");
+                    let span = if qs.same { span } else { span.reversed() };
+                    (
+                        Some((vid(chain.points[0].0), vid(chain.points[last].0))),
+                        crate::topology::lifted_spline(&span, setup.frame, wf)?,
                     )
                 }
                 // An arc, or a part of a circle the flat trace crosses.
@@ -998,6 +1067,26 @@ fn build_piece(
                     start: v3(&parts, pa),
                     end: v3(&parts, pb),
                 },
+                (PSeg::Spline { .. }, cap) => {
+                    let span = q_span(qb, qj).expect("a spline footprint segment");
+                    let part = super::spline::piece(&span, chain.u[i], chain.u[t])?;
+                    if cap {
+                        crate::topology::lifted_spline(&part, setup.frame, wk)?
+                    } else {
+                        // Its ends at their vertices' heights (a crossing's
+                        // is its level's), its other poles on the plane.
+                        let ends = [
+                            (chain.points[i].2, heights[&pa]),
+                            (chain.points[t].2, heights[&pb]),
+                        ];
+                        let height = |p: Point2| {
+                            ends.iter()
+                                .find(|e| e.0 == p)
+                                .map_or_else(|| setup.g(p), |e| e.1)
+                        };
+                        super::spline::plane_image(&part, setup.frame, &height)?
+                    }
+                }
                 (PSeg::Arc { center, radius, .. }, true) => Curve3::CircularArc {
                     frame: setup.level_frame(center, wk)?,
                     radius,
@@ -1375,23 +1464,65 @@ fn build_piece(
                     &mut plans,
                 );
             }
-            PSeg::Arc { center, radius, .. } | PSeg::Circle { center, radius } => {
-                let cylinder = setup.level_frame(center, setup.low)?;
+            kind => {
                 let ring = qs.ends.is_none() && !touch.contains_key(&(qb, qj));
-                // Material-left turns counter-clockwise on an outer arc
-                // (increasing the angle) when the input's sweep is positive.
-                let ccw = match pseg(setup.profile, b, j) {
-                    PSeg::Arc { sweep, .. } => (sweep > 0.0) == along,
-                    _ => along,
+                // A spline wall's footprint piece (S8b.3).
+                let spline = match kind {
+                    PSeg::Spline { .. } => q_span(qb, qj),
+                    _ => None,
+                };
+                // The wall's surface, and whether material-left increases
+                // its `u`: counter-clockwise on an outer arc when the input's
+                // sweep is positive, along a spline's parameter when the
+                // input is stored forward.
+                let (surface, ccw, a_coef) = match kind {
+                    PSeg::Arc {
+                        center,
+                        radius,
+                        sweep,
+                        ..
+                    } => (
+                        Surface::Cylinder {
+                            frame: setup.level_frame(center, setup.low)?,
+                            radius,
+                        },
+                        (sweep > 0.0) == along,
+                        setup.sinusoid(center, radius),
+                    ),
+                    PSeg::Circle { center, radius } => (
+                        Surface::Cylinder {
+                            frame: setup.level_frame(center, setup.low)?,
+                            radius,
+                        },
+                        along,
+                        setup.sinusoid(center, radius),
+                    ),
+                    PSeg::Spline { reversed } => {
+                        let span = spline.as_ref().expect("a spline footprint segment");
+                        let whole = crate::topology::SplineSpan::whole(span.curve().clone());
+                        (
+                            crate::topology::spline_wall(
+                                &whole,
+                                setup.frame,
+                                setup.low,
+                                setup.high,
+                            )?
+                            .0,
+                            reversed != along,
+                            [0.0; 3],
+                        )
+                    }
+                    PSeg::Line(..) => unreachable!("a planar wall"),
                 };
                 let face_sense = sense(ccw);
-                let a_coef = setup.sinusoid(center, radius);
+                // A point's height on the plane above the wall's low end.
+                let plane_v = |p: Point2| rational_f64(&(setup.g_exact(p) - q(setup.low)));
                 let line = |from: (f64, f64), to: (f64, f64)| Curve2::LineSegment {
                     start: Point2::new(from.0, from.1),
                     end: Point2::new(to.0, to.1),
                 };
                 // A crease part's pcurve between two chain indices.
-                let crease_pcurve = |from: usize, to: usize, rel: i8| -> Curve2 {
+                let crease_pcurve = |from: usize, to: usize, rel: i8| -> Result<Curve2> {
                     let (u0, u1) = if ring && chain.points.is_empty() {
                         if from < to {
                             (0.0, TAU)
@@ -1401,15 +1532,27 @@ fn build_piece(
                     } else {
                         (chain.u[from], chain.u[to])
                     };
-                    if rel >= 0 {
+                    Ok(if rel >= 0 {
                         line((u0, v_of(wk)), (u1, v_of(wk)))
+                    } else if let Some(span) = &spline {
+                        // Its ends at their vertices' heights, as the edge's.
+                        let ends = [from, to].map(|k| {
+                            let (_, key, p) = chain.points[k];
+                            (p, v_of_w(heights[&key], setup.low, height))
+                        });
+                        let v = |p: Point2| {
+                            ends.iter()
+                                .find(|e| e.0 == p)
+                                .map_or_else(|| plane_v(p), |e| e.1)
+                        };
+                        super::spline::wall_pcurve(&super::spline::piece(span, u0, u1)?, &v)?
                     } else {
                         Curve2::Sinusoid {
                             start: u0,
                             sweep: u1 - u0,
                             a: a_coef,
                         }
-                    }
+                    })
                 };
                 let flat_pcurve = |forward: bool| -> Curve2 {
                     let (u0, u1) = if ring {
@@ -1429,9 +1572,9 @@ fn build_piece(
                     pcurve: flat_pcurve(forward),
                     enclosure: None,
                 };
-                let crease_fins = |forward: bool| -> Vec<Fin> {
+                let crease_fins = |forward: bool| -> Result<Vec<Fin>> {
                     if chain.crease.is_empty() {
-                        return Vec::new();
+                        return Ok(Vec::new());
                     }
                     crease_in(forward)
                         .into_iter()
@@ -1445,12 +1588,12 @@ fn build_piece(
                             } else {
                                 (from, to)
                             };
-                            Fin {
+                            Ok(Fin {
                                 edge,
                                 sense: sense(f),
-                                pcurve: crease_pcurve(from, to, rel),
+                                pcurve: crease_pcurve(from, to, rel)?,
                                 enclosure: None,
-                            }
+                            })
                         })
                         .collect()
                 };
@@ -1458,15 +1601,12 @@ fn build_piece(
                     // Two loops winding about the axis in opposite senses.
                     let turns = if along { 1 } else { -1 };
                     let (lower_fins, upper_fins) = if lower {
-                        (vec![flat_fin(along)], crease_fins(!along))
+                        (vec![flat_fin(along)], crease_fins(!along)?)
                     } else {
-                        (crease_fins(along), vec![flat_fin(!along)])
+                        (crease_fins(along)?, vec![flat_fin(!along)])
                     };
                     add_face(
-                        Surface::Cylinder {
-                            frame: cylinder,
-                            radius,
-                        },
+                        surface,
                         face_sense,
                         vec![(lower_fins, [turns, 0]), (upper_fins, [-turns, 0])],
                         occ,
@@ -1500,19 +1640,16 @@ fn build_piece(
                 if lower {
                     fins.push(flat_fin(along));
                     fins.extend(vertical(far, true));
-                    fins.extend(crease_fins(!along));
+                    fins.extend(crease_fins(!along)?);
                     fins.extend(vertical(near, false));
                 } else {
-                    fins.extend(crease_fins(along));
+                    fins.extend(crease_fins(along)?);
                     fins.extend(vertical(far, true));
                     fins.push(flat_fin(!along));
                     fins.extend(vertical(near, false));
                 }
                 add_face(
-                    Surface::Cylinder {
-                        frame: cylinder,
-                        radius,
-                    },
+                    surface,
                     face_sense,
                     vec![(fins, [0, 0])],
                     occ,

@@ -33,6 +33,10 @@ struct Piece {
     edge: [Vec<R>; 4],
     uv: [Vec<R>; 4],
     patch: Option<ExactBezierSurface3>,
+    /// A bound of the surface's departure from the patch's polynomial
+    /// where the pcurve piece's hull crosses into a neighbouring patch by a
+    /// sliver (zero when it lies in the patch).
+    extra: f64,
 }
 
 /// A use whose factors are all rational, piece by piece.
@@ -111,23 +115,33 @@ impl Exact {
     }
 
     fn decide_in<T: Real>(&self, tol: f64) -> Verdict {
-        let tol2 = T::exact_f64(tol).square();
         let samples: Vec<T> = (0..=4).map(|k| c(&ratio(k, 4))).collect();
         let mut stack = Vec::new();
-        for piece in &self.pieces {
-            let q = self.quotient::<T>(piece);
-            if samples.iter().any(|t| q.beyond_at(t, &tol2)) {
-                return Verdict::Beyond;
-            }
-            stack.push((q, 0));
-        }
-        let half = T::exact_f64(0.5);
         let mut undecided = false;
-        while let Some((q, depth)) = stack.pop() {
-            if q.within(&tol2) {
+        for piece in &self.pieces {
+            // A sliver's departure narrows what the polynomial may deviate
+            // by within the tolerance and widens it beyond.
+            let (inner, outer) = (
+                T::exact_f64(tol).sub(&T::exact_f64(piece.extra)),
+                T::exact_f64(tol).add(&T::exact_f64(piece.extra)),
+            );
+            if inner.sign() != Some(Ordering::Greater) {
+                undecided = true;
                 continue;
             }
-            if q.beyond_at(&half, &tol2) {
+            let (inner2, outer2) = (inner.square(), outer.square());
+            let q = self.quotient::<T>(piece);
+            if samples.iter().any(|t| q.beyond_at(t, &outer2)) {
+                return Verdict::Beyond;
+            }
+            stack.push((q, 0, inner2, outer2));
+        }
+        let half = T::exact_f64(0.5);
+        while let Some((q, depth, inner2, outer2)) = stack.pop() {
+            if q.within(&inner2) {
+                continue;
+            }
+            if q.beyond_at(&half, &outer2) {
                 return Verdict::Beyond;
             }
             if depth == MAX_DEPTH {
@@ -135,8 +149,8 @@ impl Exact {
                 continue;
             }
             let (a, b) = q.halves();
-            stack.push((a, depth + 1));
-            stack.push((b, depth + 1));
+            stack.push((a, depth + 1, inner2.clone(), outer2.clone()));
+            stack.push((b, depth + 1, inner2, outer2));
         }
         if undecided {
             Verdict::Unknown
@@ -177,6 +191,7 @@ impl Exact {
                 let bound = Fast::exact_f64(n)
                     .sqrt()
                     .div(&Fast::exact_f64(w))?
+                    .add(&Fast::exact_f64(piece.extra))
                     .bounds_f64()
                     .1;
                 if !bound.is_finite() {
@@ -289,6 +304,133 @@ fn patch_under<'a>(
     })
 }
 
+/// A patch's nonrational control net re-expressed over a box of its own
+/// parameters (inside or outside its domain: a polynomial extends), by
+/// blossoming each row and column; `None` for a rational patch.
+fn over_box(patch: &ExactBezierSurface3, b: &[[R; 2]; 2]) -> Option<Vec<[R; 3]>> {
+    let [du, dv] = patch.degrees();
+    let [[u0, u1], [v0, v1]] = patch.domain().clone();
+    let poles = patch.homogeneous_poles();
+    let w0 = &poles[0][3];
+    if poles.iter().any(|q| &q[3] != w0) {
+        return None;
+    }
+    let net: Vec<[R; 3]> = poles
+        .iter()
+        .map(|q| std::array::from_fn(|k| &q[k] / w0))
+        .collect();
+    // The control points of a degree-n polynomial given over [0, 1] by `cs`
+    // over [a, b]: its blossom at (a^(n-i), b^i).
+    let reexpress = |cs: &[[R; 3]], a: &R, b: &R| -> Vec<[R; 3]> {
+        let n = cs.len() - 1;
+        (0..=n)
+            .map(|i| {
+                let mut row = cs.to_vec();
+                for step in 0..n {
+                    let t = if step < n - i { a } else { b };
+                    row = row
+                        .windows(2)
+                        .map(|w| std::array::from_fn(|k| &w[0][k] + t * (&w[1][k] - &w[0][k])))
+                        .collect();
+                }
+                row[0].clone()
+            })
+            .collect()
+    };
+    let local = |x: &R, lo: &R, hi: &R| (x - lo) / (hi - lo);
+    let (ua, ub) = (local(&b[0][0], &u0, &u1), local(&b[0][1], &u0, &u1));
+    let (va, vb) = (local(&b[1][0], &v0, &v1), local(&b[1][1], &v0, &v1));
+    // Rows along v first, then columns along u.
+    let mut rows: Vec<Vec<[R; 3]>> = (0..=du)
+        .map(|i| reexpress(&net[i * (dv + 1)..(i + 1) * (dv + 1)], &va, &vb))
+        .collect();
+    for j in 0..=dv {
+        let column: Vec<[R; 3]> = rows.iter().map(|r| r[j].clone()).collect();
+        for (i, x) in reexpress(&column, &ua, &ub).into_iter().enumerate() {
+            rows[i][j] = x;
+        }
+    }
+    Some(rows.into_iter().flatten().collect())
+}
+
+/// The patch holding a pcurve piece's control points but for slivers
+/// across its boundaries at most `2^-20` of its size wide, with a certified
+/// bound of the surface's departure from that patch's polynomial on them:
+/// on each neighbouring patch's part of the piece's box, both polynomials
+/// re-expressed exactly over it, the largest control point of their
+/// difference (the difference lies in its hull). A piece reaching beyond
+/// the surface's domain, or across a rational patch, is `None`.
+fn patch_near<'a>(
+    patches: &'a [ExactBezierSurface3],
+    uv: &[Vec<R>; 4],
+) -> Option<(&'a ExactBezierSurface3, f64)> {
+    if let Some(patch) = patch_under(patches, uv) {
+        return Some((patch, 0.0));
+    }
+    let points: Vec<(R, R)> = (0..uv[3].len())
+        .map(|i| (&uv[0][i] / &uv[3][i], &uv[1][i] / &uv[3][i]))
+        .collect();
+    let lo_hi = |f: &dyn Fn(&(R, R)) -> &R| {
+        let lo = points.iter().map(f).min().expect("a point").clone();
+        let hi = points.iter().map(f).max().expect("a point").clone();
+        [lo, hi]
+    };
+    let bbox = [lo_hi(&|p| &p.0), lo_hi(&|p| &p.1)];
+    // Inside the surface's domain.
+    for (axis, [below, above]) in bbox.iter().enumerate() {
+        let lo = patches.iter().map(|q| &q.domain()[axis][0]).min()?;
+        let hi = patches.iter().map(|q| &q.domain()[axis][1]).max()?;
+        if below < lo || above > hi {
+            return None;
+        }
+    }
+    let two = ratio(2, 1);
+    let mid = [
+        (&bbox[0][0] + &bbox[0][1]) / &two,
+        (&bbox[1][0] + &bbox[1][1]) / &two,
+    ];
+    let inside = |q: &ExactBezierSurface3, p: &[R; 2]| {
+        (0..2).all(|a| q.domain()[a][0] <= p[a] && p[a] <= q.domain()[a][1])
+    };
+    let patch = patches.iter().find(|q| inside(q, &mid))?;
+    let sliver = ratio(1, 1 << 20);
+    for (axis, [below, above]) in bbox.iter().enumerate() {
+        let [lo, hi] = &patch.domain()[axis];
+        let limit = (hi - lo) * &sliver;
+        if lo - below > limit || above - hi > limit {
+            return None;
+        }
+    }
+    let own_net = |b: &[[R; 2]; 2]| over_box(patch, b);
+    let mut extra = 0.0_f64;
+    for other in patches {
+        if std::ptr::eq(other, patch) {
+            continue;
+        }
+        // The neighbour's part of the box, with room inside it.
+        let part: [[R; 2]; 2] = std::array::from_fn(|a| {
+            [
+                (&bbox[a][0]).max(&other.domain()[a][0]).clone(),
+                (&bbox[a][1]).min(&other.domain()[a][1]).clone(),
+            ]
+        });
+        if part.iter().any(|[lo, hi]| lo >= hi) {
+            continue;
+        }
+        let theirs = over_box(other, &part)?;
+        let mine = own_net(&part)?;
+        for (a, b) in theirs.iter().zip(&mine) {
+            let d2: R = (0..3).map(|k| (&a[k] - &b[k]) * (&a[k] - &b[k])).sum();
+            let bound = I::exact(d2).sqrt().bounds_f64().1;
+            extra = extra.max(bound);
+        }
+    }
+    if !extra.is_finite() {
+        return None;
+    }
+    Some((patch, extra))
+}
+
 /// The pieces of a use whose factors are all rational, or `None` (an arc,
 /// an analytic curved surface, a spline pcurve across a surface's knot
 /// line, or too high a composed degree).
@@ -337,21 +479,22 @@ pub(super) fn rational_use(
             e.iter_mut().for_each(|x| x.reverse());
             e
         };
-        let patch = match &plane {
-            Some(_) => None,
+        let (patch, extra) = match &plane {
+            Some(_) => (None, 0.0),
             None => {
-                let patch = patch_under(&patches, &p)?;
+                let (patch, extra) = patch_near(&patches, &p)?;
                 let [du, dv] = patch.degrees();
                 if (du + dv) * (p[3].len() - 1) + e[3].len() > MAX_DEGREE {
                     return None;
                 }
-                Some(patch.clone())
+                (Some(patch.clone()), extra)
             }
         };
         pieces.push(Piece {
             edge: e,
             uv: p,
             patch,
+            extra,
         });
     }
     Some(Exact { plane, pieces })

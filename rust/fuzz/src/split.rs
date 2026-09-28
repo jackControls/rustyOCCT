@@ -10,11 +10,129 @@
 //! independent check (in the split, debug builds); the pieces' volumes add
 //! up to the solid's, every piece lies on its side of the plane and moves
 //! rigidly with its ids; a missing or touching plane returns the solid.
+//! S8b.3: a leading byte in `192..224` takes a spline profile instead (a
+//! rectangle with a quadratic bulge, a wave of three quadratic spans, a
+//! square with a lens hole of two cubics given either way round), with the
+//! tangent modes touching the spline at its apex.
 use crate::analytic_intersections::Bytes;
 use rusty_occt::identity::OperationId;
+use rusty_occt::topology::SplineSpan;
 use rusty_occt::{
-    Boundary, Error, Frame3, Point2, Point3, Profile, Segment, Side, Solid, Tolerance, Vec3,
+    BSplineCurve2, Boundary, Error, Frame3, Point2, Point3, Profile, Segment, Side, Solid,
+    Tolerance, Vec3,
 };
+
+/// A nonrational spline segment over its whole domain.
+fn spline(
+    degree: usize,
+    poles: &[(f64, f64)],
+    knots: Vec<f64>,
+    mults: Vec<usize>,
+) -> Option<Segment> {
+    let poles = poles.iter().map(|(x, y)| Point2::new(*x, *y)).collect();
+    let curve = BSplineCurve2::new(degree, poles, None, knots, mults).ok()?;
+    Some(Segment::Spline(SplineSpan::whole(curve)))
+}
+
+/// S8b.3's spline profiles on dyadic sizes.
+fn spline_profile(kind: u8, s: f64, t: f64) -> Option<Profile> {
+    let tol = Tolerance::default();
+    let (outer, holes) = match kind % 3 {
+        // A rectangle whose right side bulges to x = s + t / 2.
+        0 => (
+            Boundary::path(
+                vec![
+                    Point2::new(0.0, -t),
+                    Point2::new(s, -t),
+                    Point2::new(s, t),
+                    Point2::new(0.0, t),
+                ],
+                vec![
+                    Segment::Line,
+                    spline(
+                        2,
+                        &[(s, -t), (s + t, 0.0), (s, t)],
+                        vec![0.0, 1.0],
+                        vec![3, 3],
+                    )?,
+                    Segment::Line,
+                    Segment::Line,
+                ],
+                tol,
+            )
+            .ok()?,
+            vec![],
+        ),
+        // A rectangle under a wave of three quadratic spans.
+        1 => (
+            Boundary::path(
+                vec![
+                    Point2::new(0.0, 0.0),
+                    Point2::new(3.0 * s, 0.0),
+                    Point2::new(3.0 * s, 2.0 * t),
+                    Point2::new(0.0, 2.0 * t),
+                ],
+                vec![
+                    Segment::Line,
+                    Segment::Line,
+                    spline(
+                        2,
+                        &[
+                            (3.0 * s, 2.0 * t),
+                            (2.5 * s, 3.0 * t),
+                            (1.5 * s, t),
+                            (0.5 * s, 3.0 * t),
+                            (0.0, 2.0 * t),
+                        ],
+                        vec![0.0, 1.0, 2.0, 3.0],
+                        vec![3, 1, 1, 3],
+                    )?,
+                    Segment::Line,
+                ],
+                tol,
+            )
+            .ok()?,
+            vec![],
+        ),
+        // A square with a lens hole reaching y = +-3s/8, given
+        // counter-clockwise or clockwise.
+        _ => {
+            let (a, h) = (s / 2.0, s / 2.0);
+            let lower = [(-a, 0.0), (-a / 2.0, -h), (a / 2.0, -h), (a, 0.0)];
+            let upper = [(a, 0.0), (a / 2.0, h), (-a / 2.0, h), (-a, 0.0)];
+            let cubic = |p: &[(f64, f64)]| spline(3, p, vec![0.0, 1.0], vec![4, 4]);
+            let hole = if t > 2.0 {
+                Boundary::path(
+                    vec![Point2::new(-a, 0.0), Point2::new(a, 0.0)],
+                    vec![cubic(&lower)?, cubic(&upper)?],
+                    tol,
+                )
+            } else {
+                let rev = |p: [(f64, f64); 4]| [p[3], p[2], p[1], p[0]];
+                Boundary::path(
+                    vec![Point2::new(-a, 0.0), Point2::new(a, 0.0)],
+                    vec![cubic(&rev(upper))?, cubic(&rev(lower))?],
+                    tol,
+                )
+            }
+            .ok()?;
+            (
+                Boundary::polygon(
+                    vec![
+                        Point2::new(-s, -s),
+                        Point2::new(s, -s),
+                        Point2::new(s, s),
+                        Point2::new(-s, s),
+                    ],
+                    tol,
+                )
+                .ok()?,
+                vec![hole],
+            )
+        }
+    };
+    Profile::new(outer, holes, tol).ok()
+}
 
 fn profile(kind: u8, s: f64, t: f64) -> Option<Profile> {
     let tol = Tolerance::default();
@@ -117,12 +235,33 @@ pub fn check_split(data: &[u8]) {
     if data.first().is_some_and(|k| *k >= 224) {
         return check_revolved(&data[1..]);
     }
+    if data.first().is_some_and(|k| *k >= 192) {
+        return check_prism(&data[1..], true);
+    }
+    check_prism(data, false);
+}
+
+fn check_prism(data: &[u8], splined: bool) {
     let mut b = Bytes(data, 0);
     let (kind, mode) = (b.next(), b.next() % 9);
     let s = 1.0 + f64::from(b.next() % 32) / 4.0;
     let t = 0.5 + f64::from(b.next() % 32) / 8.0;
     let h = 0.5 + f64::from(b.next() % 16) / 4.0;
-    let Some(p) = profile(kind, s, t) else { return };
+    let made = if splined {
+        spline_profile(kind, s, t)
+    } else {
+        profile(kind, s, t)
+    };
+    let Some(p) = made else { return };
+    // Where the tangent modes touch: the stadium's right arc or the round
+    // hole, the bulge's apex or the lens's top.
+    let touch = match (splined, kind % if splined { 3 } else { 6 }) {
+        (false, 2) => Some((Point2::new(s + t, 0.0), (1.0, 0.0))),
+        (false, 4) => Some((Point2::new(t.min(s * 0.75), 0.0), (1.0, 0.0))),
+        (true, 0) => Some((Point2::new(s + t / 2.0, 0.0), (1.0, 0.0))),
+        (true, 2) => Some((Point2::new(0.0, 3.0 * s / 8.0), (0.0, 1.0))),
+        _ => None,
+    };
     let o = Point3::new(b.dyadic(), b.dyadic(), b.dyadic());
     let tilted = b.next() % 2 == 1;
     let frame = if !tilted {
@@ -164,11 +303,10 @@ pub fn check_split(data: &[u8]) {
             }
             _ => return,
         },
-        // Tangent to the stadium's right arc, or to the hole.
-        3 => match kind % 6 {
-            2 => (at(s + t, 0.0, 0.0), dir(1.0, 0.0, 0.0)),
-            4 => (at((t).min(s * 0.75), 0.0, 0.0), dir(1.0, 0.0, 0.0)),
-            _ => return,
+        // Tangent to the stadium's right arc, the hole or a spline.
+        3 => match touch {
+            Some((q, (nx, ny))) => (at(q.x, q.y, 0.0), dir(nx, ny, 0.0)),
+            None => return,
         },
         4 => (
             at(0.0, 0.0, f64::from(b.next() % 16) / 16.0 * h),
@@ -177,10 +315,16 @@ pub fn check_split(data: &[u8]) {
         // Oblique through a profile vertex at a cap, or touching a cap's
         // circle or arc where the stadium's or the hole's is.
         7 => (at(vertex.x, vertex.y, 0.0), dir(a, c, 1.0)),
-        8 => match kind % 6 {
-            2 => (at(s + t, 0.0, 0.0), dir(1.0, 0.0, 1.0)),
-            4 => (at((t).min(s * 0.75), 0.0, h), dir(1.0, 0.0, -1.0)),
-            _ => return,
+        // (at the low cap for the stadium, the high one for the hole, either
+        // for a spline).
+        8 => match touch {
+            Some((q, (nx, ny)))
+                if (!splined && kind % 6 == 2) || (splined && b.next() % 2 == 0) =>
+            {
+                (at(q.x, q.y, 0.0), dir(nx, ny, 1.0))
+            }
+            Some((q, (nx, ny))) => (at(q.x, q.y, h), dir(nx, ny, -1.0)),
+            None => return,
         },
         5 => (at(0.0, 0.0, h), dir(0.0, 0.0, 1.0)),
         _ => (at(b.dyadic(), b.dyadic(), h / 2.0), dir(a, c, 1.0)),

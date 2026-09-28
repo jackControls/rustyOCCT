@@ -100,7 +100,7 @@ fn clockwise_input_is_stored_counter_clockwise_with_its_labels() {
     let mut cw_points = vec![points[0]];
     cw_points.extend(points[1..].iter().rev());
     let cw_segments: Vec<Segment> = (0..n)
-        .map(|j| match segments[n - 1 - j] {
+        .map(|j| match segments[n - 1 - j].clone() {
             Segment::Arc { center, radius, .. } => Segment::Arc {
                 center,
                 radius,

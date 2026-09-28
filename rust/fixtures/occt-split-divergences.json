@@ -1016,6 +1016,18 @@
       "reason": "The plane cuts the prism's single-span B-spline wall across its rulings, and BRepGProp's default Gauss integration of the trimmed extrusion faces errs by up to 3.6e-08 in volume relative (beyond the 2e-8 allowance), and moves the centres by up to 3.6e-08 of the case's size. The pieces are valid, their sides the reference's. The kernel does not read spline segments yet (S8b.1): the case is rust_unsupported.",
       "independent_evidence": "The reference slices the prism (the stadium of an arc and a two-span cubic end, area 9.9707963268 by the reference's slicing) in 40-digit arithmetic: 10.7329363999 below and 9.2086562537 above. With a scratch variant of occt_split_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating x dy - y dx over OCCT's own profile edges (BRepAdaptor_Curve, 2,000 subintervals of 10-point Gauss-Legendre per edge): Green over OCCT's edges gives 9.97079632679440, and the adaptive volumes of the same pieces are 10.7329364006 and 9.2086562531.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "bulge_tangent",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "e639c0e6a3104b069287a6e459ca8b8e723bff4d19e0081210b203db38b3d1b9",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI_Splitter splits the spline wall's two cap edges where the plane touches them (6 faces, 14 edges, 10 vertices); the kernel's split cuts nothing at a tangency (S8 decisions: an even root of the line's function on the spline is a touch) and returns the prism unchanged (6 faces, 12 edges, 8 vertices). The volume, area and centre agree with the reference.",
+      "independent_evidence": "The plane x = 11 meets the bulge's quadratic (poles (10, 0), (12, 3), (10, 6)), x(t) = 10 + 4 t (1 - t), only at t = 1/2, the point (11, 3), a double root: the prism lies in x <= 11.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     }
   ]
 }

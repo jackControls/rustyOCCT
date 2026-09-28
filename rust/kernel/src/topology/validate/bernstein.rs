@@ -541,3 +541,53 @@ pub(super) fn green_integrals<T: Real>(
     }
     totals
 }
+
+/// Whether an exact Bernstein polynomial over `[0, 1]` is nonnegative
+/// there: its coefficients, or else its exact signs at both ends and
+/// between its distinct real roots (isolated exactly).
+pub(super) fn nonnegative(b: &[R]) -> bool {
+    let zero = ratio(0, 1);
+    if b.iter().all(|x| *x >= zero) {
+        return true;
+    }
+    let n = b.len() - 1;
+    // Ascending powers of t.
+    let mut power = vec![zero.clone(); n + 1];
+    for (i, bi) in b.iter().enumerate() {
+        for (k, out) in power.iter_mut().enumerate().skip(i) {
+            let c = R::from_integer(binomial(n, i) * binomial(n - i, k - i));
+            if (k - i) % 2 == 0 {
+                *out += bi * c;
+            } else {
+                *out -= bi * c;
+            }
+        }
+    }
+    let at = |t: &R| power.iter().rev().fold(zero.clone(), |acc, c| acc * t + c);
+    if power.iter().all(|c| *c == zero) {
+        return true;
+    }
+    let p = crate::polynomial::real::IntPolynomial::from_rationals(&power);
+    let mut budget =
+        crate::polynomial::real::Budget::new(crate::polynomial::RootIsolationOptions::default());
+    let Ok(mut roots) =
+        crate::polynomial::real::isolate(&p, zero.clone(), ratio(1, 1), &mut budget)
+    else {
+        return false;
+    };
+    roots.sort_by(|x, y| x.compare_root(y));
+    let two = ratio(2, 1);
+    let mut samples = vec![zero.clone(), ratio(1, 1)];
+    let mut last = zero.clone();
+    for r in &roots {
+        let (lo, hi) = r.isolator();
+        if *lo > last {
+            samples.push((&last + lo) / &two);
+        }
+        last = hi.clone();
+    }
+    if last < ratio(1, 1) {
+        samples.push((&last + ratio(1, 1)) / &two);
+    }
+    samples.iter().all(|t| at(t) >= zero)
+}

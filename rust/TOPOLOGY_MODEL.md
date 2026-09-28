@@ -763,8 +763,10 @@ interop.
   (`SeamOnBSplineSurface`) are unsupported: their windings would need the
   domain's period. The writer writes records 7 and 9 with the span's
   range; a pcurve against its spline's parameter is written mirrored
-  (knots `a + b - k`, only when exact), and an edge against its curve is
-  not writable.
+  (knots `a + b - k`, only when exact), and an edge against its curve
+  (S8b: a spline profile segment given clockwise, a hole's spline in an
+  outer boundary after a split) is written along it, used the other way in
+  every wire (its pcurves, stored in their uses' directions, are unchanged).
 * **Evidence.** The native observations of the spline models came before
   any kernel code certified spline geometry
   (`fixtures/occt-spline-preimplementation`), and `BRepGProp`'s properties

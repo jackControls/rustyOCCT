@@ -126,6 +126,18 @@ def seed_corpus(target):
                     data[:2] = bytes([kind, mode])
                     data[10] = frame
                     save(bytes(data))
+        # S8b.3: the spline profiles (a first byte of 192): a bulge, a wave
+        # and a lens hole given either way round, in every plane mode (the
+        # tangent ones at a spline's apex), both frames.
+        for kind in range(3):
+            for mode in range(9):
+                for frame in range(2):
+                    for turn in range(2 if kind == 2 else 1):
+                        data = bytearray((j*43+kind*17+mode*23+frame*3+turn*29+11)%256 for j in range(24))
+                        data[:3] = bytes([192, kind, mode])
+                        data[4] = 4 + 16*turn
+                        data[11] = frame
+                        save(bytes(data))
         # S8c and S8d: a cone, a sphere, a zone, a cap and a torus (a first
         # byte of 224 on) in every plane mode (S8d.2's touching a rim,
         # parallel to a ruling and through a virtual apex among them), both

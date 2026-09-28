@@ -14,12 +14,18 @@ fn all() -> Vec<Case> {
     cases(include_str!("../../fixtures/split-cases.txt"))
 }
 
+/// S8b.3's prisms of spline profiles.
+fn spline_cases() -> Vec<Case> {
+    cases(include_str!("../../fixtures/split-spline-cases.txt"))
+}
+
 fn expected() -> BTreeMap<String, Vec<(String, [f64; 5])>> {
+    expected_in(include_str!("../../fixtures/split-expected.tsv"))
+}
+
+fn expected_in(text: &str) -> BTreeMap<String, Vec<(String, [f64; 5])>> {
     let mut out: BTreeMap<String, Vec<(String, [f64; 5])>> = BTreeMap::new();
-    for line in include_str!("../../fixtures/split-expected.tsv")
-        .lines()
-        .filter(|l| !l.starts_with('#'))
-    {
+    for line in text.lines().filter(|l| !l.starts_with('#')) {
         let (name, row) = line.split_once('\t').unwrap();
         let w: Vec<&str> = row.split(' ').collect();
         let v: Vec<f64> = w[2..7].iter().map(|x| x.parse().unwrap()).collect();
@@ -71,9 +77,22 @@ fn stored_frames_are_the_reference_inputs() {
 /// the reference's, for planes normal, parallel and oblique to the axis.
 #[test]
 fn every_case_matches_the_reference() {
-    let want = expected();
+    check_sides(all(), &expected());
+}
+
+/// S8b.3: the same for prisms of spline profiles, split through spline
+/// walls, joins and knots, tangent to them, and obliquely.
+#[test]
+fn spline_splits_match_the_reference() {
+    check_sides(
+        spline_cases(),
+        &expected_in(include_str!("../../fixtures/split-spline-expected.tsv")),
+    );
+}
+
+fn check_sides(cases: Vec<Case>, want: &BTreeMap<String, Vec<(String, [f64; 5])>>) {
     let mut failures = Vec::new();
-    for case in all() {
+    for case in cases {
         let name = case.spec.name.clone();
         let got = rows(&case).unwrap_or_else(|e| panic!("{name}: {e}"));
         if got == ["unsupported"] || got == ["limit"] {
@@ -135,7 +154,7 @@ fn every_case_matches_the_reference() {
 /// every input entity, and is deterministic.
 #[test]
 fn histories_are_complete_and_deterministic() {
-    for case in all() {
+    for case in all().into_iter().chain(spline_cases()) {
         let name = case.spec.name.clone();
         let Ok((solid, pieces, h)) = split(&case) else {
             continue;
@@ -210,6 +229,7 @@ fn a_round_hole_off_the_plane_stays_whole() {
 fn case(name: &str) -> Case {
     all()
         .into_iter()
+        .chain(spline_cases())
         .find(|c| c.spec.name == name)
         .unwrap_or_else(|| panic!("no case {name}"))
 }
@@ -223,6 +243,9 @@ fn oblique_pieces_move_rigidly() {
         "stadium_tilted",
         "disc_wall_ellipse",
         "slot_hole_tilted",
+        "wave_tilted",
+        "lens_tilted",
+        "capsule_parallel",
     ] {
         let (_, pieces, _) = split(&case(name)).unwrap();
         let motion = rusty_occt::RigidTransform::rotation(
@@ -278,6 +301,9 @@ fn oblique_pieces_tessellate() {
         "stadium_tilted",
         "disc_wall_ellipse",
         "disc_through_caps",
+        "bulge_oblique",
+        "wave_tilted",
+        "lens_parallel",
     ] {
         let (_, pieces, _) = split(&case(name)).unwrap();
         for (_, piece) in &pieces {
@@ -301,6 +327,38 @@ fn oblique_pieces_write_where_occt_has_records() {
     let (_, pieces, _) = split(&case("disc_wall_ellipse")).unwrap();
     for (_, piece) in &pieces {
         assert!(rusty_occt::occt_brep::write(piece.topology(), 1e-7).is_err());
+    }
+}
+
+/// S8b.3: spline pieces (restricted profile splines, their walls, creases
+/// on the plane with spline pcurves on the walls) write to `.brep` and read
+/// back as one certified solid of the same volume.
+#[test]
+fn spline_pieces_round_trip_through_brep() {
+    for name in [
+        "bulge_parallel_twice",
+        "wave_knot",
+        "wave_tilted",
+        "lens_tilted",
+    ] {
+        let (_, pieces, _) = split(&case(name)).unwrap();
+        for (_, piece) in &pieces {
+            let text = rusty_occt::occt_brep::write(piece.topology(), 1e-7)
+                .unwrap_or_else(|e| panic!("{name}: {e}"));
+            let doc = rusty_occt::occt_brep::read(&text).unwrap();
+            let back = rusty_occt::occt_brep::import(&doc);
+            assert_eq!(back.solids.len(), 1, "{name}");
+            let solid = back.solids[0]
+                .result
+                .as_ref()
+                .unwrap_or_else(|e| panic!("{name}: {e:?}"));
+            let a = piece.mass_properties().volume;
+            let b = solid.mass_enclosure().expect("certified mass").volume;
+            assert!(
+                b[0] - 1e-9 * a <= a && a <= b[1] + 1e-9 * a,
+                "{name}: {a} {b:?}"
+            );
+        }
     }
 }
 

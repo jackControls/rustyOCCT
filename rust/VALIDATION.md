@@ -624,6 +624,17 @@ reference and the 13 oblique ones listed as pending S8a.2. `compare_curve_curve.
 `IntTools_EdgeEdge` pre-implementation capture: 41 matches, the kernel
 inside the reference on all 41.
 
+S8b: the same generator adds 17 prisms of spline profiles
+(`split-spline-cases.txt`, their sides from slicing exact Bézier pieces,
+checked against polygons and Green's theorem in exact Fractions); `split.rs`
+requires the kernel's sums to contain the reference's on all of them, their
+histories to check (spline edges and walls against their parents' supports)
+and spline pieces to move, tessellate and round-trip through `.brep`;
+`compare_split.py` reproduces `occt-split-spline-preimplementation` (10
+within 2e-8, seven reviewed BRepGProp errors on spline faces, one reviewed
+count difference at a tangency), the kernel inside the reference on all
+103 split cases.
+
 S7d.2: the same generator adds 13 splines against conics; `curve_curve.rs`
 checks their rows and overlaps too, and `compare_curve_curve.py` reproduces
 the second capture: 11 matches and 2 reviewed differences, the kernel inside

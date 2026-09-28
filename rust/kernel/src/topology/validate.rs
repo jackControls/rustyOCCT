@@ -1581,7 +1581,17 @@ pub(crate) fn measure(view: &View) -> Measured {
                                 &u.pcurve,
                                 forward,
                             ) {
-                                Some(exact) => exact.upper_bound(),
+                                // Undecided exactly (a sliver's bound, a
+                                // denominator): the Taylor enclosure.
+                                Some(exact) => exact.upper_bound().or_else(|| {
+                                    spline_taylor::taylor_use(
+                                        curve,
+                                        &face.surface,
+                                        &u.pcurve,
+                                        forward,
+                                    )
+                                    .and_then(|taylor| taylor.upper_bound())
+                                }),
                                 None => spline_taylor::taylor_use(
                                     curve,
                                     &face.surface,
@@ -3571,7 +3581,13 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                     None
                 };
                 let decide = |th: &Threshold| match &spline {
-                    Some(SplineUse::Exact(exact)) => exact.decide(th.0),
+                    Some(SplineUse::Exact(exact)) => match exact.decide(th.0) {
+                        Verdict::Unknown => {
+                            spline_taylor::taylor_use(curve, &face.surface, &u.pcurve, forward)
+                                .map_or(Verdict::Unknown, |taylor| taylor.decide(th.0))
+                        }
+                        verdict => verdict,
+                    },
                     Some(SplineUse::Taylor(taylor)) => taylor.decide(th.0),
                     None => tiered(
                         Verdict::Unknown,

@@ -1101,6 +1101,19 @@ Decisions for S8b, recorded before its code (2026-09-28):
   separated beyond a ball about it. Area moments are exact Bernstein
   integrals; point location uses the crossing parity and the certified
   point-to-spline distance.
+* **S8b.1 amendments, from its implementation (2026-09-28).** (a) A
+  spline segment is also screened against itself: its Bézier arcs are cut
+  (exactly, at halves) into pieces whose control polygons turn through
+  less than a half-turn, each therefore monotone along a direction and
+  simple, and the pieces are screened pairwise, consecutive ones exempt
+  only in disjoint direction sectors from their shared point. A cusp's
+  halves double back there (`SelfIntersection`); a turn that does not
+  narrow within twelve halvings is `OutOfDomain`. (b) The screen
+  subdivides exact rational Bézier control points; each box is the
+  outward binary64 hull of its exact points, so there is one tier and it
+  is certified. (c) Point location takes the crossing parity of the `+x`
+  ray with exact `y`-monotone pieces, and a point within the resolution of
+  a spline, or undecided, is on the boundary, as for arcs.
 * **S8b.2, spline prisms.** A spline segment's wall is the exact degree-(p,
   1) B-spline surface over its knots and the heights (its poles the
   profile's lifted by the frame, rounded); its cap edges are `Curve3`
@@ -1115,6 +1128,32 @@ Decisions for S8b, recorded before its code (2026-09-28):
   original). Oblique: S8a.2's footprint and crease, the crease an affine
   image of the footprint's spline (exact, rounded) with a spline pcurve on
   the wall (identity in `u`, affine in `v`).
+* **S8b.3 amendments, from its implementation (2026-09-28).** (a) Roots
+  come with exact multiplicities: a simple root crosses, an even one
+  touches (the side kept; a touch inside the solid pinches as an arc's
+  does), an odd one of three or more or a tangency at a knot is
+  `Degenerate`, and a spline along the trace `OutOfDomain`; sides are exact
+  signs between distinct roots. (b) A crease part's ends take their
+  vertices' heights exactly (the edge's end poles and the pcurve's end `v`),
+  so no pcurve leaves the wall's `v` range by rounding. (c) The identity in
+  `u` rounds (Greville abscissae are averages of knots), so a pcurve's
+  hull crosses the wall's knot lines by a rounding step: the exact
+  deviation bound (S4b) now takes the patch holding a piece but for slivers
+  at most `2^-20` of its size, adding a certified bound of each
+  neighbouring patch's departure from its polynomial over the sliver's box
+  (both nets re-expressed exactly there; the difference lies in the hull of
+  theirs); an undecided exact bound falls back to the Taylor enclosure. (d)
+  Green's exact path (S4d) takes a patch whose box a pcurve piece's curve
+  provably keeps to when its control polygon leaves it (a crease nearly
+  touching a cap): each coordinate against each bound exactly nonnegative
+  on `[0, 1]`. Without it the strips' enclosure was wide (a fuzz seed:
+  0.13 relative). (e) The independent history check compares spline supports:
+  a spline edge's exact Bézier arcs with its parent's over its range, a
+  wall's rows with its parent's extrusion across its direction, a planar
+  piece's spline boundary by its poles, each within the tolerance. (f) The
+  `.brep` writer writes an edge whose span runs against its curve along it,
+  used the other way (S8b.2's prisms of profiles given clockwise were
+  unwritable).
 * **Evidence first**: the independent reference with spline profiles
   (mpmath Bernstein areas and moments; prism volumes and split sides by
   slicing), fixtures of every class (splines crossing, touching and
@@ -2327,4 +2366,15 @@ the first fixture, never deferred.
     a three-span spline, up to 1.8e-3, though Green's theorem over OCCT's
     own edges gives the reference's area). The probe cannot read `B` rows
     yet: all 17 `rust_unsupported`. S8b.1 next.
+  * S8b.1 and S8b.2 implemented (`decide/splines.rs`, `profile.rs`,
+    `topology.rs`): spline profile segments screened for separation (and
+    each against itself in pieces turning less than a half-turn), exact
+    Bernstein moments, prisms with exact degree-(p, 1) spline walls.
+  * S8b.3 implemented (`solid/split/spline.rs`, `oblique.rs`): splits by
+    exact spline/line roots, restrictions by exact knot insertion, creases
+    on the plane as affine images with exact wall pcurves. Inside the
+    reference on all 17 spline cases (103 in all: 52 matches, 51 reviewed,
+    one new review: OCCT splits the bulge's cap edges where a plane touches
+    them). Pending: the campaign, and the Linux record of the spline capture
+    after CI.
 * S9 — pending
