@@ -637,7 +637,7 @@ are not split; the largest sampled deviation is stored as the face's
 | refinement and bounds | [BRepMesh_DelaunayDeflectionControlMeshAlgo.hxx](../src/ModelingAlgorithms/TKMesh/BRepMesh/BRepMesh_DelaunayDeflectionControlMeshAlgo.hxx) | OCCT samples each triangle's centre and links' middles for at most 11 passes and records what remains; the kernel certifies every triangle's deviation over the whole triangle (`MATHEMATICS.md`) and refines until it holds. |
 | `Mesh` | [Poly_Triangulation.hxx](../src/FoundationClasses/TKMath/Poly/Poly_Triangulation.hxx), [Poly_PolygonOnTriangulation.hxx](../src/FoundationClasses/TKMath/Poly/Poly_PolygonOnTriangulation.hxx) | One node array for the whole body, triangles grouped by face and oriented out of the material; OCCT stores one triangulation per face in its surface's orientation and joins them through the edges' polygons. |
 
-## STEP import (STEP-a)
+## STEP import (STEP-a, STEP-b)
 
 The source review covered OCCT's Part 21 lexer and grammar (`step.lex`,
 `step.yacc`, `StepData_StepReaderData`: simple and complex instances,
@@ -663,3 +663,19 @@ written reversed), at `3d097a0328e71b826377d4814ab05ec3c3d23871`.
 | body, shell and face translation | [StepToTopoDS_Builder.cxx](../src/DataExchange/TKDESTEP/StepToTopoDS/StepToTopoDS_Builder.cxx), [StepToTopoDS_TranslateShell.cxx](../src/DataExchange/TKDESTEP/StepToTopoDS/StepToTopoDS_TranslateShell.cxx), [StepToTopoDS_TranslateFace.cxx](../src/DataExchange/TKDESTEP/StepToTopoDS/StepToTopoDS_TranslateFace.cxx) | The same orientation rules, into an `occt_brep::Document` that the `.brep` converter turns into cells. |
 | edges, loops and vertices | [StepToTopoDS_TranslateEdge.cxx](../src/DataExchange/TKDESTEP/StepToTopoDS/StepToTopoDS_TranslateEdge.cxx), [StepToTopoDS_TranslateEdgeLoop.cxx](../src/DataExchange/TKDESTEP/StepToTopoDS/StepToTopoDS_TranslateEdgeLoop.cxx), [StepToTopoDS_TranslateVertex.cxx](../src/DataExchange/TKDESTEP/StepToTopoDS/StepToTopoDS_TranslateVertex.cxx) | An edge runs along its curve between its vertices' projections. OCCT projects a missing pcurve and repairs with ShapeFix; the kernel derives rulings, parallels and meridians exactly as straight segments on the universal cover and adds the degenerated edge at a pole on the face's side. |
 | geometry | [StepToGeom.cxx](../src/DataExchange/TKDESTEP/StepToGeom/StepToGeom.cxx) | Placements by ISO 10303-42's `build_axes` (OCCT's `gp_Ax2` picks another `x` when the reference direction is absent, which moves no point); a trimmed curve as its basis with its sense; a torus with a negative major radius is `NegativeMajorRadius` (OCCT flips the face). |
+
+STEP-b's review added `StepToGeom`'s ellipses (a quarter turn of the axes
+when the second semi-axis is longer), knotted B-spline curves and surfaces
+with their rational complex forms (`MakeBSplineCurveCommon`,
+`MakeBSplineSurface`: the periodic reading of a knot sequence, a closed
+curve flagged closed made periodic, the knotless forms converted), and
+`StepToTopoDS_TranslateEdgeLoop` with `StepToTopoDS_GeometricTool::PCurve`
+(the `PCURVE` whose basis is the face's surface, recomputed on planes;
+seam-like pairs; `ShapeFix_EdgeProjAux` projecting the vertices for a
+pcurve's range, then `BRepLib::SameParameter`).
+
+| Rust | OCCT | Notes |
+| --- | --- | --- |
+| `step::spline` (B-spline curves and surfaces) | [StepToGeom.cxx](../src/DataExchange/TKDESTEP/StepToGeom/StepToGeom.cxx) | Simple and complex rational instances of the knotted forms, OCCT's periodic test; a closed curve stays as its knots give it (OCCT's `SetPeriodic` moves no point); the knotless forms are refused by name. |
+| `step::spline` (the file's pcurves, ranges) | [StepToTopoDS_TranslateEdgeLoop.cxx](../src/DataExchange/TKDESTEP/StepToTopoDS/StepToTopoDS_TranslateEdgeLoop.cxx), [StepToTopoDS_GeometricTool.cxx](../src/DataExchange/TKDESTEP/StepToTopoDS/StepToTopoDS_GeometricTool.cxx) | On a spline surface the first `PCURVE` on the face's surface, a line or a B-spline; ranges where the vertices lie, sampled and refined like `ShapeAnalysis_Curve::Project`; no `SameParameter`: the validator certifies each pcurve against its edge at matching fractions, and OCCT's projected pcurves on other surfaces are not taken. |
+| ellipses (`step::import`) | [StepToGeom.cxx](../src/DataExchange/TKDESTEP/StepToGeom/StepToGeom.cxx) | The file's parameter kept in either order of the semi-axes (`Curve3::EllipseArc`); the plane pcurve is the ellipse or its exact projection, the cylinder pcurve of a plane section the exact sinusoid where OCCT approximates a projection. |
