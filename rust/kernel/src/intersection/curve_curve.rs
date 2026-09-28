@@ -23,7 +23,7 @@ use super::analytic::{Enclosure, Enclosure3};
 use super::conic_surface::{turn_angle, Conic};
 use super::curve_surface::{section, Section};
 use super::procedural::{bounds, bounds3, cross, dot, e3, edot, esub, limit, q, sub, zero, E, X};
-use super::tangency::{badd, bdot, bmul, bscale, cauchy, B, P};
+use super::tangency::{badd, bdot, bmul, bscale, cauchy, padd, pmul, pscale, B, P};
 use crate::certified::Interval as I;
 use crate::polynomial::real::{isolate, Budget, IntPolynomial};
 use crate::polynomial::RootIsolationOptions;
@@ -100,13 +100,13 @@ enum Found {
     Points(Vec<(E<I>, bool)>),
 }
 
-struct Line {
+pub(super) struct Line {
     p0: X,
     d: X,
 }
 
 /// A plane conic: its plane (origin, normal) and its equation.
-struct PlaneConic {
+pub(super) struct PlaneConic {
     o: X,
     normal: X,
     kind: Kind,
@@ -133,13 +133,13 @@ enum Kind {
 
 // Two per call, never stored: their sizes do not matter.
 #[allow(clippy::large_enum_variant)]
-enum Exact {
+pub(super) enum Exact {
     Line(Line),
     Plane(PlaneConic),
 }
 
 impl Exact {
-    fn of(c: &AnalyticCurve) -> Result<Self> {
+    pub(super) fn of(c: &AnalyticCurve) -> Result<Self> {
         Ok(match c {
             AnalyticCurve::Edge(Curve3::LineSegment { start, end }) => {
                 let p0 = start.to_array().map(q);
@@ -277,7 +277,7 @@ impl PlaneConic {
 
     /// Whether a point of the conic lies on its branch (always, but for a
     /// hyperbola: `xi > 0`, certainly).
-    fn on_branch(&self, p: &E<I>) -> Result<bool> {
+    pub(super) fn on_branch(&self, p: &E<I>) -> Result<bool> {
         match &self.kind {
             Kind::Conic {
                 hyperbola: true, ..
@@ -290,7 +290,7 @@ impl PlaneConic {
         }
     }
 
-    fn parameter(&self, p: &E<I>) -> Result<Enclosure> {
+    pub(super) fn parameter(&self, p: &E<I>) -> Result<Enclosure> {
         let t = match &self.kind {
             Kind::Circle { x, y, .. } => {
                 let w = esub(p, &e3(&self.o));
@@ -350,6 +350,38 @@ impl PlaneConic {
                 }),
             ),
         }
+    }
+
+    /// The plane's and the equation's homogeneous forms `n . (X - o W)`
+    /// and `W^2 E(X / W)` for polynomials `(X, W)` (a spline's span).
+    pub(super) fn homogeneous(&self, h: &[P; 4]) -> (P, P) {
+        let w: [P; 3] = std::array::from_fn(|i| padd(&h[i], &pscale(&h[3], &-&self.o[i])));
+        let dot_p = |a: &X| (0..3).fold(Vec::new(), |acc: P, i| padd(&acc, &pscale(&w[i], &a[i])));
+        let w2 = pmul(&h[3], &h[3]);
+        let equation = match &self.kind {
+            Kind::Circle { r, .. } => {
+                let ww = (0..3).fold(Vec::new(), |acc: P, i| padd(&acc, &pmul(&w[i], &w[i])));
+                padd(&ww, &pscale(&w2, &-(r * r)))
+            }
+            Kind::Conic {
+                a,
+                b,
+                hyperbola,
+                rows,
+                ..
+            } => {
+                let (xi, eta) = (dot_p(&rows[0]), dot_p(&rows[1]));
+                let sign = if *hyperbola { -1 } else { 1 };
+                padd(
+                    &padd(
+                        &pscale(&pmul(&xi, &xi), &(b * b)),
+                        &pscale(&pmul(&eta, &eta), &(a * a * R::from_integer(sign.into()))),
+                    ),
+                    &pscale(&w2, &-(a * a * b * b)),
+                )
+            }
+        };
+        (dot_p(&self.normal), equation)
     }
 
     /// The equation along `p0 + t d` (a polynomial in `t`).

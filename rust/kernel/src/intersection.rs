@@ -23,6 +23,7 @@ mod exact_spline;
 mod linear_sets;
 mod procedural;
 mod ruled_curves;
+mod spline_curve;
 mod spline_linear;
 mod spline_plane;
 mod spline_quadric;
@@ -48,6 +49,7 @@ pub use exact_spline::{
 };
 pub use linear_sets::{linear_intersection, ExactPoint3, LinearIntersection};
 pub use procedural::{Branch, Component, ProceduralCurve};
+pub use spline_curve::{spline_curve, SplineCurveIntersection};
 pub use spline_linear::{
     exact_spline_line, exact_spline_line_in, exact_spline_line_in_with_options,
     exact_spline_line_with_options, exact_spline_segment, exact_spline_segment_in,

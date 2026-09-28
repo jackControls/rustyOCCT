@@ -426,6 +426,22 @@ capture before the kernel code (`fixtures/occt-curve-curve-preimplementation`):
 41 native matches, and the kernel inside the reference on all 41
 (`compare_curve_curve.py`, `curve_curve.rs`).
 
+`intersection::spline_curve(spline, curve)` (S7d.2) intersects a rational
+B-spline with a circle, an ellipse or a hyperbola's branch: on each span the
+conic's plane `L = n . (X - o W)` and equation `Q = W^2 E(X / W)` are exact
+polynomials; a span with `L = Q = 0` is an overlap between exact knots, and
+the points are the real roots of `gcd(L, Q)`, tangent where the root is at
+least double in the gcd (`SplineCurveIntersection`: points with the
+spline's parameter first, overlaps). A line is `spline_line`'s; two splines
+meet only through the faces that share them (S9). Evidence: the reference's
+`spline_rows` (exact span polynomials into the conic's implicit equations,
+sympy's gcd and `real_roots`, tangency by parallel tangent directions) and 13
+fixture cases (`sc_`, `se_`, `sh_`), an `IntTools_EdgeEdge` capture before
+the kernel code (`fixtures/occt-spline-curve-preimplementation`): 11 native
+matches and 2 reviewed differences (an overlap as two scattered vertices, a
+tangency as two vertices 5.5e-5 apart), and the kernel inside the reference
+on all 13.
+
 ## Evidence
 
 * **Independent reference.** `analytic_intersection_reference.py` computes

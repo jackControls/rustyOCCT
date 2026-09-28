@@ -1668,6 +1668,17 @@ root is double in both, and then they share their tangent line; otherwise
 their tangents differ (a conic's tangent at a simple root of `q_i` is not the
 line, and a curve in another plane cannot share any other tangent).
 
+**A spline against a plane conic (S7d.2).** With `D = X - o W` on a span,
+`L = n . D` vanishes where the spline meets the conic's plane and `Q = W^2
+E(X / W)` (the conic's quadratic equation made homogeneous: `|D|^2 - r^2 W^2`,
+or `minor^2 xi(D)^2 +- major^2 eta(D)^2 - major^2 minor^2 W^2` with the
+rational frame rows) where it meets the conic's quadric cylinder, so the
+common points are the common roots, the roots of `gcd(L, Q)`. With `W > 0`,
+`d/ds (n . (X / W - o)) = L' / W` and likewise for `Q` at a root: the spline's
+tangent lies in the plane exactly when the root is multiple in `L` and along
+the conic exactly when it is multiple in `Q`, both exactly when it is at
+least double in the gcd.
+
 **A spline against a cone.** With `h = (D . a) / (|a| W)` and `rho^2 =
 (|D|^2 - (D . a)^2 / |a|^2) / W^2` for `D = X - o W`, the cone `rho^2 = (r +
 h tan a)^2` is `W^2 F = Q0 + tau Q1 + tau^2 Q2 = 0` with rational `Q0 =

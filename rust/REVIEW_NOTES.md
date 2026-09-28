@@ -1466,7 +1466,13 @@ the first fixture, never deferred.
     conic by its plane and equation, conics by S7c's resultant in one plane
     or the gcd along two planes' line; the kernel inside the reference on
     all 41, the bridge 41 matches; fuzz target `curve_curve`.
-  * S7d.2 (spline edges against conics) and the `lowalgos` group pending.
+  * S7d.2 implemented: the span-polynomial reference and an
+    `IntTools_EdgeEdge` capture of 13 splines against conics came before
+    `intersection/spline_curve.rs`; overlaps, points and tangencies from the
+    gcd of the conic's plane and equation on each span; the kernel inside
+    the reference on all 13, the bridge 11 matches and 2 reviewed
+    differences; `curve_curve` fuzzes splines too.
+  * The `lowalgos` group pending.
 * Tessellation (parallel track) — T-a implemented (`TESSELLATION.md`);
   gate pending CI, the schedule replay and the clean campaign.
   * The decisions above, the independent reference

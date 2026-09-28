@@ -108,6 +108,13 @@ def seed_corpus(target):
                     data = bytearray((j*47+k1*19+k2*13+mode*7+3)%256 for j in range(24))
                     data[:3] = bytes([k1, k2, mode])
                     save(bytes(data))
+        # S7d.2: a spline (a first kind byte of 128) against every conic,
+        # degree and mode.
+        for k2 in range(12):
+            for mode in range(3):
+                data = bytearray((j*41+k2*23+mode*5+9)%256 for j in range(64))
+                data[:3] = bytes([128, k2, mode])
+                save(bytes(data))
         save(bytes([0]))
     if target == 'curve_surface':
         # Every surface kind (plane, cylinder, cone, sphere, torus) against a

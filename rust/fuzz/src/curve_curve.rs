@@ -9,8 +9,11 @@
 //! parameters; every point is each curve's point at its parameter; the
 //! points of a coincident pair lie on both curves.
 use crate::analytic_intersections::{frame, Bytes};
-use rusty_occt::intersection::{curve_curve, AnalyticCurve, Conic, CurveCurveIntersection};
+use rusty_occt::intersection::{
+    curve_curve, spline_curve, AnalyticCurve, Conic, CurveCurveIntersection,
+};
 use rusty_occt::topology::Curve3;
+use rusty_occt::BSplineCurve3;
 use rusty_occt::{Error, Frame3, Point3, Vec3};
 
 fn mid([lo, hi]: [f64; 2]) -> f64 {
@@ -104,6 +107,9 @@ pub fn check_curve_curve(data: &[u8]) {
         0.25 + f64::from(b.next() % 32) / 8.0,
     );
     let Some(f1) = frame(o, n) else { return };
+    if k1 >= 128 {
+        return check_spline(&mut b, k2, mode, make(k2 % 3 + 1, f1, a1, b1));
+    }
     let c1 = make(k1, f1, a1, b1);
     let (a2, b2) = (
         0.25 + f64::from(b.next() % 32) / 8.0,
@@ -224,5 +230,92 @@ pub fn check_curve_curve(data: &[u8]) {
             }
         }
         _ => assert_eq!(result, swapped, "swapped"),
+    }
+}
+
+/// S7d.2: a rational B-spline (a first kind byte of 128 or more) against a
+/// circle, an ellipse or a hyperbola: independent poles, poles in the conic's
+/// plane, or the exact rational quarter circle on a circle (then independent
+/// poles).
+fn check_spline(b: &mut Bytes, pick: u8, mode: u8, conic: AnalyticCurve) {
+    let f = match &conic {
+        AnalyticCurve::Edge(Curve3::Circle { frame, .. }) => *frame,
+        AnalyticCurve::Conic(Conic::Ellipse { frame, .. } | Conic::Hyperbola { frame, .. }) => {
+            *frame
+        }
+        _ => unreachable!(),
+    };
+    let (o, x, y) = (f.origin(), f.x(), f.y());
+    let degree = 1 + usize::from(pick / 4 % 3);
+    let n = degree + 1 + usize::from(b.next() % 3);
+    let mut poles: Vec<Point3> = match (mode % 3, &conic) {
+        (2, AnalyticCurve::Edge(Curve3::Circle { radius, .. })) => {
+            vec![o + x * *radius, o + (x + y) * *radius, o + y * *radius]
+        }
+        (1, _) => Vec::new(),
+        _ => (0..n)
+            .map(|_| Point3::new(b.dyadic(), b.dyadic(), b.dyadic()))
+            .collect(),
+    };
+    let quarter = poles.len() == 3 && mode % 3 == 2;
+    while poles.len() < n.max(3) {
+        poles.push(if mode % 3 == 1 {
+            o + x * b.dyadic() + y * b.dyadic()
+        } else {
+            Point3::new(b.dyadic(), b.dyadic(), b.dyadic())
+        });
+    }
+    let n = poles.len();
+    let degree = if quarter { 2 } else { degree.min(n - 1) };
+    let weights: Vec<f64> = (0..n)
+        .map(|i| match (quarter, i) {
+            (true, 2) => 2.0,
+            (true, 0 | 1) => 1.0,
+            _ => [1.0, 2.0, 0.5, 1.5][usize::from(b.next() % 4)],
+        })
+        .collect();
+    let spans = n - degree;
+    let knots: Vec<f64> = (0..=spans).map(|k| k as f64).collect();
+    let mut mults = vec![1; spans + 1];
+    mults[0] = degree + 1;
+    mults[spans] = degree + 1;
+    if quarter && spans > 1 {
+        mults[1] = degree;
+    }
+    if mults.iter().sum::<usize>() != n + degree + 1 {
+        return;
+    }
+    let Ok(c) = BSplineCurve3::new(degree, poles, Some(weights), knots, mults) else {
+        return;
+    };
+    let found = match spline_curve(&c, &conic) {
+        Ok(r) => r,
+        Err(Error::ComputationLimit(_)) => return,
+        Err(e) => panic!("unexpected error {e}"),
+    };
+    let scale = |p: Point3| (p - Point3::ORIGIN).length().max(1.0) * 8.0;
+    for [lo, hi] in &found.overlaps {
+        assert!(lo < hi, "an overlap");
+        for k in 0..=4 {
+            let p = c.point(lo + (hi - lo) * f64::from(k) / 4.0).unwrap();
+            let r = residual(&conic, p);
+            assert!(r <= 1e-9 * scale(p), "{r}: overlap off {conic:?}");
+        }
+    }
+    for w in found.points.windows(2) {
+        assert!(mid(w[0].parameters[0]) <= mid(w[1].parameters[0]), "sorted");
+    }
+    for p in &found.points {
+        let x = Point3::new(mid(p.point[0]), mid(p.point[1]), mid(p.point[2]));
+        let on = c.point(mid(p.parameters[0])).unwrap();
+        assert!(
+            (on - x).length() <= 1e-9 * scale(x),
+            "{p:?} is not the spline's point"
+        );
+        let on = at(&conic, mid(p.parameters[1]));
+        assert!(
+            (on - x).length() <= 1e-9 * scale(x),
+            "{p:?} is not the conic's point"
+        );
     }
 }

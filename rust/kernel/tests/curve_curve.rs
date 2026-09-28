@@ -47,7 +47,12 @@ fn stored_frames_are_the_reference_inputs() {
         .skip(1)
     {
         let w: Vec<&str> = row.split('\t').collect();
-        let frame = frame_of(&all[w[0]].curves[w[1].parse::<usize>().unwrap()]).unwrap();
+        let frame = frame_of(
+            all[w[0]].curves[w[1].parse::<usize>().unwrap()]
+                .as_ref()
+                .unwrap(),
+        )
+        .unwrap();
         let got = match w[2] {
             "n" => frame.normal(),
             "x" => frame.x(),
@@ -62,7 +67,13 @@ fn stored_frames_are_the_reference_inputs() {
     }
     let framed: usize = all
         .values()
-        .map(|c| c.curves.iter().filter(|x| frame_of(x).is_some()).count())
+        .map(|c| {
+            c.curves
+                .iter()
+                .flatten()
+                .filter(|x| frame_of(x).is_some())
+                .count()
+        })
         .sum();
     assert_eq!(checked, 3 * framed);
 }
@@ -97,6 +108,10 @@ fn every_case_matches_the_exact_reference() {
                 if g[0] != w[0] {
                     return false;
                 }
+                if w[0] == "overlap" {
+                    return g[1].parse::<f64>().unwrap() == w[1].parse::<f64>().unwrap()
+                        && g[2].parse::<f64>().unwrap() == w[2].parse::<f64>().unwrap();
+                }
                 if w[0] != "point" {
                     return true;
                 }
@@ -105,7 +120,7 @@ fn every_case_matches_the_exact_reference() {
                 };
                 g[11] == w[6]
                     && (0..5).all(|k| {
-                        let turn = k < 2 && periodic(&case.curves[k]);
+                        let turn = k < 2 && case.curves[k].as_ref().is_some_and(periodic);
                         inside(w[1 + k].parse().unwrap(), bound(k), turn)
                     })
             });
@@ -122,7 +137,9 @@ fn every_case_matches_the_exact_reference() {
 #[test]
 fn swapping_the_curves_swaps_the_parameters() {
     for case in all() {
-        let [a, b] = &case.curves;
+        let [Some(a), Some(b)] = &case.curves else {
+            continue;
+        };
         let (x, y) = (curve_curve(a, b).unwrap(), curve_curve(b, a).unwrap());
         match (&x, &y) {
             (CurveCurveIntersection::Points(p), CurveCurveIntersection::Points(q)) => {

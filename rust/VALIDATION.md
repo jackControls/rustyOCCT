@@ -614,6 +614,11 @@ the parameters (overlapping enclosures) with the same contacts. `compare_curve_c
 `IntTools_EdgeEdge` pre-implementation capture: 41 matches, the kernel
 inside the reference on all 41.
 
+S7d.2: the same generator adds 13 splines against conics; `curve_curve.rs`
+checks their rows and overlaps too, and `compare_curve_curve.py` reproduces
+the second capture: 11 matches and 2 reviewed differences, the kernel inside
+the reference on all 54 cases.
+
 The `GeomInt_IntSS` captures were taken on macOS arm64; IntPatch's walking
 lines differ on Linux near degeneracies (the first Linux run changed
 `cc_near_figure_inside`). A run on another platform reproduces that
