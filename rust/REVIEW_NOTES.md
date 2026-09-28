@@ -1446,6 +1446,58 @@ Decisions for S9, recorded before its code (2026-09-28):
     the kernel, the probe and `compare_boolean.py`, the `boolean` target's
     rotated frames, the DRAW survey's 647 cases of frames with different
     axes and a campaign.
+* **S9c, decisions recorded before its code (2026-09-28).** Arc walls in
+  any position: prisms whose profiles hold arcs and circles as well as
+  lines (and S9b.1's polyhedra), in any relative position.
+  * **Sub-steps.** S9c.1: every pair of faces meets in lines, circles or
+    ellipses or not at all (S7a's items): plane/plane, plane/cylinder, and
+    two cylinders parallel (lines), coaxial (circles) or of equal radii with
+    crossing axes (two ellipses). S9c.2: two cylinders meeting in S7b.1's
+    procedural curves (D13). A pair of a later sub-step is `OutOfDomain`.
+  * **Faces in their parameters.** Each input face is split in its own
+    parameters (a plane's frame, a cylinder's cover `(u, v)`) by its
+    boundary and every curve where the other input's faces meet its
+    surface (S7a's items, restricted to the other face by exact or certified
+    tests): on a plane lines, circles and ellipse arcs, on a cylinder lines
+    (generatrices), circles (`v` constant) and a plane's section (S8a.2's
+    sinusoid `v = a0 + a1 cos u + a2 sin u`). The crossings of two such
+    curves in one face are S7d's certified curve/curve points (a conic pair,
+    a sinusoid and a line or another sinusoid by the exact equation in
+    `cos u`, `sin u`), each rounded once to binary64 on both faces' curves,
+    as S9a's arrangement rounds its crossings. Each piece is classified
+    against the other input at a certified interior point (exact for
+    planes, the certified `classify` for cylinders), kept by the set
+    function as S9b.1 keeps fragments, and pieces sharing a surface and
+    orientation are joined into maximal faces, their edges joined where they
+    run straight on (one line, circle or ellipse) between the same two
+    faces.
+  * **Geometry.** An edge's 3D curve is S7a's canonical item rounded once
+    (a line segment, a circular arc, an ellipse arc; an ellipse's frame
+    sharing its plane's `x` axis when it lies in an input plane, as S8a.2's
+    cut faces), its pcurves the exact forms above; vertices rounded; every
+    solid validated with measured enclosures, `PrecisionLoss` where the
+    rounding fails it. Tangencies (a plane tangent to a cylinder along a
+    generatrix, two cylinders tangent) and results touching themselves are
+    `Degenerate`, as in S8 and S9a.
+  * **History.** S9a's and S9b.1's rules: a face continues the input faces
+    its pieces lie on facing their way, an edge or vertex those it lies on,
+    new ones are generated from the faces meeting there.
+  * **Evidence first.** An independent reference: each result's volume,
+    area and centre from slicing the two solids in parallel planes (each
+    slice's region bounded by segments and ellipse arcs, its area and
+    moments by Green's theorem in closed form at 40 digits, the slices'
+    breakpoints where the section's structure changes found as roots,
+    integrated by Gauss-Legendre between them) and areas from the surfaces'
+    own parameterisations over each result face's region in its parameters,
+    checked against closed forms (a cylinder cut by planes, Steinmetz solids
+    of equal radii, coaxial and parallel cylinders), inclusion and exclusion,
+    and sampling; fixtures of every class (a tilted cylinder through a box,
+    a box corner in a cylinder, perpendicular and oblique equal cylinders,
+    parallel and coaxial cylinders, a cylinder through a hole, planes along
+    a generatrix and tangent cylinders declared `degenerate`, both frames);
+    a native `BRepAlgoAPI` capture before the kernel code; then the kernel,
+    the probe and the comparison, the `boolean` target's arcs in turned
+    frames, the DRAW survey and a campaign.
 
 ### Parallel tracks
 
