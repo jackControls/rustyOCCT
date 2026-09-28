@@ -773,6 +773,17 @@ was then unknown and validation could certify no gap. The angle is now that
 of the normal's trace turned back by its binary64 value, as the jets' angles
 are. The input replays in well under a second.
 
+## Split: tori cut in spiric sections (slow units)
+
+`split/slow-unit-3965cc7684d5f1398a09a86ce4dfb856336444af.bin` and
+`split/slow-unit-3c49096c4d0a4a3e60cdddef2eb662fe70cb62ff.bin` were saved by
+the clean S8d.3 campaign at `9c21cd2a`, slow-unit diagnostics with no wrong
+answer: whole tori cut obliquely (the target's plane modes 5 and 8), split
+and moved rigidly, about 4 s each in release then, most of it certified
+projection quadrature on the pieces' torus faces. Moving a piece's mass
+properties with it instead of enclosing them again (`0df34152`) halved
+them. Within the split target's 60-second input limit.
+
 ## STEP: a torus band's ring starting a rounding below its seam
 
 `step/crash-6b0ff1a4f7646a3f2fce7e959be0fc3033928e74.bin` was found by the

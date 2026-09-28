@@ -2287,4 +2287,9 @@ the first fixture, never deferred.
     natively before the code, and S8d's four); 17 reviewed differences
     (OCCT's B-spline sections and seams). A section on its own torus
     evaluates by its angles (twice as fast); the quadrature's order is 12.
+    The first campaign replayed a torus whose section's angle sat on
+    `atan2`'s branch cut (fixed at `9c21cd2a` with its regression); the
+    second, at `9c21cd2a`, was clean: 1,787 mutation executions after a
+    948 s replay, 21,482 edges, 1,255 MB peak, two slow units kept as
+    regressions. Pending: the Linux record of the spiric capture after CI.
 * S9 — pending
