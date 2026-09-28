@@ -2540,6 +2540,12 @@ Decisions for S9, recorded before its code (2026-09-28):
     split's rounded, so its comparison allows `2^-40` of the case's size;
     a sheet's or wire's arcs and circles take the face frame's axes bit for
     bit (`Frame3::at`: normalizing a unit vector again is not idempotent,
-    and the history check compares circle normals exactly). Pending: the
-    campaign, the Linux record of the sheet capture after CI.
+    and the history check compares circle normals exactly). The first S8b
+    campaign, at `66c32112`, found no crash but a 66 s slow unit (a lens
+    hole cut obliquely, fixed at `55bb0516`); the campaign at `5c50de15`
+    (spline prisms, sheets and wires in the target) was clean: 1,787
+    mutation executions after a 1,073 s replay, 30,505 edges, 2,020 MB peak
+    (the target's RSS cap is 2,048 MB), three slow units kept as
+    regressions, the slowest 18 s under AddressSanitizer. Pending: the
+    Linux records of the spline and sheet captures after CI.
 * S9 — pending

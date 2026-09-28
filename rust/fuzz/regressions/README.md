@@ -798,6 +798,10 @@ and an oblique piece's certified mass enclosed again after a rigid motion.
 The screen now halves outward binary64 boxes, the orientation area is a
 binary64 polynomial integral, and a moved oblique piece takes its source's
 mass, moved (`55bb0516`): 1.6 s and 0.7 s in release.
+`split/slow-unit-e63ac50da1489df1eb606f9b800f18074062b053.bin` was saved by
+the clean campaign at `5c50de15`: the lens hole again, cut at a dyadic
+point at an angle (plane mode 6), 18 s under AddressSanitizer and 1.7 s in
+release, within the limit.
 
 ## STEP: a torus band's ring starting a rounding below its seam
 
