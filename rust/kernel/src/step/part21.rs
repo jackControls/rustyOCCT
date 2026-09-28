@@ -639,7 +639,7 @@ mod tests {
             .map(|e| e.unwrap().path())
             .collect();
         names.sort();
-        assert_eq!(names.len(), 22);
+        assert_eq!(names.len(), 29);
         for path in names {
             let x = read(&std::fs::read(&path).unwrap()).unwrap();
             assert!(x.instances.len() > 20, "{}", path.display());
