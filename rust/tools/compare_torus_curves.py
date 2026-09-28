@@ -28,7 +28,7 @@ from compare_brep import review_for, run, sha, write
 from compare_brep_io import build
 from compare_degree_elevation import verify_sdk
 from compare_occt import ROOT
-from compare_procedural_intersections import parse_native
+from compare_procedural_intersections import parse_native, platform_record
 import analytic_intersection_reference as ana
 import generate_torus_curve_fixtures as fixtures
 import torus_curve_reference as ref
@@ -181,11 +181,8 @@ def capture(executable, env, key, sdk_manifest):
 
 
 def captured(observed):
-    """True when every capture was taken on this platform and is reproduced
-    exactly; on another platform the captures' integrity and cases are
-    checked and the observations held to the reference
-    (compare_procedural_intersections.captured)."""
-    strict = True
+    """Every capture reproduced (on another platform, its reviewed record:
+    compare_procedural_intersections.platform_record)."""
     for CAPTURE, prefixes, _ in CAPTURES.values():
         metadata = json.loads((CAPTURE/'capture.json').read_text())
         if metadata['source_reference'] != SOURCE or metadata['rust_torus_curve_exists']:
@@ -196,12 +193,9 @@ def captured(observed):
                 raise ValueError('torus curve evidence changed: '+name)
         if (CAPTURE/'inputs.txt').read_text() != native_input(prefixes):
             raise ValueError('the native inputs differ from the captured ones')
-        was = parse_native((CAPTURE/'native.txt').read_text())
+        was = parse_native(platform_record(CAPTURE, metadata))
         if set(was) != {n for n in observed if n.startswith(prefixes)}:
             raise ValueError('native cases differ from the capture')
-        if metadata['platform'] != sys.platform:
-            strict = False
-            continue
         for name, (status, lines, points) in was.items():
             now = observed[name]
             flat = lambda x: [v for p in [q for line in x[1] for q in line]+x[2] for v in p]
@@ -209,7 +203,6 @@ def captured(observed):
                     or len(now[2]) != len(points) \
                     or any(abs(a-b) > 1e-9*max(1.0, abs(a)) for a, b in zip(flat(now), flat((status, lines, points)))):
                 raise ValueError('native observation of '+name+' differs from the capture')
-    return strict
 
 
 def main():
@@ -239,12 +232,12 @@ def main():
     record = run(executable, native_input(), env)
     if record['exit_code'] != 0:
         raise SystemExit('native torus curve run failed: '+json.dumps(record)[:2000])
+    (output/'native-observed.txt').write_text(record['stdout'])
     observed = parse_native(record['stdout'])
-    strict = captured(observed)
+    captured(observed)
     oracle = next(iter(record['stderr'].splitlines()), None)
     reviews = [] if args.strict_native or not REVIEWS.exists() else json.loads(REVIEWS.read_text())['reviews']
-    report = {'source_reference': SOURCE, 'oracle': oracle, 'capture_reproduced': strict,
-              'cases': 0, 'native_samples': 0,
+    report = {'source_reference': SOURCE, 'oracle': oracle, 'cases': 0, 'native_samples': 0,
               'rust_within_reference': 0, 'matches': [], 'reviewed_differences': [], 'failures': []}
     rust = None if args.native_only else rust_rows()
     for name, a, b in fixtures.cases():
@@ -267,8 +260,7 @@ def main():
             continue
         evidence = {'case': name, 'source_reference': SOURCE, 'oracle': oracle,
                     'native_sha256': sha(json.dumps(native)), 'differences': found}
-        review = review_for(evidence if strict else {k: v for k, v in evidence.items() if k != 'native_sha256'},
-                            reviews)
+        review = review_for(evidence, reviews)
         report['reviewed_differences' if review else 'failures'].append(
             review or dict(evidence, lines=len(native[1]), points=len(native[2])))
     write(output/'capture.json', {'source_reference': SOURCE, 'oracle': oracle,

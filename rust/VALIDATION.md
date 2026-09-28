@@ -578,12 +578,13 @@ every track on both surfaces. `compare_torus_curves.py` reproduces the
 pre-implementation `GeomInt_IntSS` capture: 18 matches and 6 reviewed
 differences, the kernel inside the reference on all 24.
 
-The `GeomInt_IntSS` captures are platform records (macOS arm64): IntPatch's
-walking lines differ on Linux in their last digits and, near degeneracies,
-in their pieces. On the capture's platform every run reproduces the capture
-exactly; elsewhere the capture's integrity and cases are checked, the
-observations are held to the reference, and a review holds for the same
-case and kinds of difference (`capture_reproduced` in the report).
+The `GeomInt_IntSS` captures were taken on macOS arm64; IntPatch's walking
+lines differ on Linux near degeneracies (the first Linux run changed
+`cc_near_figure_inside`). A run on another platform reproduces that
+platform's reviewed record instead (`platform-<name>/` beside the capture:
+its observations, digest and review), each run writes what it observed
+(`native-observed.txt`) for the review, and differences from the reference
+are fingerprinted per platform (the cross-platform allowances below).
 
 ## Tessellation (T-a)
 
@@ -805,6 +806,7 @@ only numbers carry an allowance.
 | `occt-torus-revolve-capture/native.txt` (`compare_revolve_history.py --family torus`) | every number of each case's native block on each run | `2^-40` × the case's size or the value | as for the cones |
 | `occt-spline-preimplementation/native.txt` (`compare_brep.py --family spline`) | OCCT's statuses, counts, tolerances, vertex gaps and use deviations of the ten spline models on each run | tolerances, statuses and counts exact; measurements within `2^-46` of the case's size or `1e-9` relative, as for M5 | OCCT evaluates splines and trigonometry with platform arithmetic; every valid model's measurement is rounding, at most `9.2e-16` |
 | `occt-tessellation-preimplementation/native.txt` (`compare_tessellation.py`) | OCCT's weld gap, own deflections, measured distances, area and volume of the 56 meshes on each run | `1e-9` relative or `1e-15` absolute; statuses and every count exact | BRepMesh and the probe's projections evaluate with platform trigonometry |
+| `occt-procedural-*-preimplementation`, `occt-torus-curve-preimplementation` (`compare_procedural_intersections.py`, `compare_torus_curves.py`) | the native lines' counts, points and samples on each run | `1e-9` relative per number on the capture's platform; another platform reproduces its own reviewed record (`platform-<name>/`) exactly in counts | IntPatch walks and approximates lines with platform arithmetic; near degeneracies its pieces differ |
 | `prism-properties-baseline.tsv` (T1) | kernel mass properties, bounds and classifications before and after the migration | none: each host regenerates its own rows at `26fc457f` and must reproduce them bitwise | frames and rotations use the platform's trigonometry, so rows differ across hosts in the last bits |
 
 Native bridges that compare against reviewed differences use no numeric
