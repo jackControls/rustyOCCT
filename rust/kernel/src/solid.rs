@@ -7,7 +7,7 @@ use crate::topology::Topology;
 
 mod attrs;
 mod enclose;
-mod split;
+pub(crate) mod split;
 mod stack;
 use crate::{
     Boundary, Bounds3, Error, Frame3, Location, Point2, Point3, Profile, Result, RigidTransform,

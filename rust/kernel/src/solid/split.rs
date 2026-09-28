@@ -31,11 +31,11 @@ mod torus;
 pub(super) use meridian::Half;
 pub(super) use oblique::Clipped;
 
-fn zero() -> R {
+pub(crate) fn zero() -> R {
     R::from_integer(0.into())
 }
 
-fn q(x: f64) -> R {
+pub(crate) fn q(x: f64) -> R {
     R::from_float(x).expect("finite")
 }
 
@@ -519,12 +519,12 @@ enum Plan {
 
 /// An ordinal for an entity of piece `k`: one cut in two pieces gives two
 /// entities.
-fn piece_ordinal(k: usize, local: usize) -> u32 {
+pub(crate) fn piece_ordinal(k: usize, local: usize) -> u32 {
     ((k as u32) << 16) | local as u32
 }
 
 /// A rational's nearest binary64.
-fn rational_f64(x: &R) -> f64 {
+pub(crate) fn rational_f64(x: &R) -> f64 {
     let lo = I::exact(x.clone()).bounds_f64();
     if lo.0 == lo.1 {
         return lo.0;
@@ -544,14 +544,14 @@ fn rational_f64(x: &R) -> f64 {
 /// crossing of the line with stored segment `j` of boundary `b` (the first
 /// or second along the segment's stored direction).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-enum PointId {
+pub(crate) enum PointId {
     Vertex(usize, usize),
     Cross(usize, usize, usize),
 }
 
 /// Where a piece's boundary segment comes from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-enum SegOrigin {
+pub(crate) enum SegOrigin {
     /// A whole stored segment of the input.
     Whole(usize, usize),
     /// A part of one, numbered along the segment's stored direction.
@@ -561,7 +561,7 @@ enum SegOrigin {
 }
 
 #[derive(Debug, Clone)]
-enum Kind {
+pub(crate) enum Kind {
     Line,
     Arc {
         center: Point2,
@@ -574,25 +574,25 @@ enum Kind {
 
 /// A directed piece of the arrangement.
 #[derive(Debug, Clone)]
-struct Edge2 {
-    from: PointId,
-    to: PointId,
-    kind: Kind,
-    origin: SegOrigin,
+pub(crate) struct Edge2 {
+    pub(crate) from: PointId,
+    pub(crate) to: PointId,
+    pub(crate) kind: Kind,
+    pub(crate) origin: SegOrigin,
     /// -1 below the line, 1 above, 0 along it.
-    side: i8,
+    pub(crate) side: i8,
 }
 
-struct SectionPiece {
-    side: Side,
-    profile: Profile,
+pub(crate) struct SectionPiece {
+    pub(crate) side: Side,
+    pub(crate) profile: Profile,
     /// Per boundary of the piece's profile (outer first), per stored segment.
-    segments: Vec<Vec<SegOrigin>>,
-    vertices: Vec<Vec<PointId>>,
+    pub(crate) segments: Vec<Vec<SegOrigin>>,
+    pub(crate) vertices: Vec<Vec<PointId>>,
 }
 
 impl SectionPiece {
-    fn first_origin(&self) -> SegOrigin {
+    pub(crate) fn first_origin(&self) -> SegOrigin {
         self.segments
             .iter()
             .flatten()
@@ -602,19 +602,19 @@ impl SectionPiece {
     }
 }
 
-struct Section {
-    pieces: Vec<SectionPiece>,
-    chords: Vec<(PointId, PointId)>,
+pub(crate) struct Section {
+    pub(crate) pieces: Vec<SectionPiece>,
+    pub(crate) chords: Vec<(PointId, PointId)>,
     /// Stored vertices on the line reached by both sides.
-    shared: BTreeSet<PointId>,
+    pub(crate) shared: BTreeSet<PointId>,
     /// The stored segments meeting each point.
     incident: BTreeMap<PointId, Vec<(usize, usize)>>,
     /// Every point's binary64 position.
-    positions: BTreeMap<PointId, Point2>,
+    pub(crate) positions: BTreeMap<PointId, Point2>,
     /// A spline crossing's curve parameter (S8b.3).
     params: BTreeMap<PointId, f64>,
     /// The boundary's pieces with their sides (a hole's reversed).
-    edges: Vec<Edge2>,
+    pub(crate) edges: Vec<Edge2>,
 }
 
 impl Section {
@@ -623,7 +623,17 @@ impl Section {
     }
 
     /// The profile's pieces on each side of `a u + b v + d = 0`.
-    fn new(profile: &Profile, line: [R; 3]) -> Result<Self> {
+    pub(crate) fn new(profile: &Profile, line: [R; 3]) -> Result<Self> {
+        Self::build(profile, line, true)
+    }
+
+    /// The boundaries' pieces and their sides only (S8e's wires): no chords,
+    /// no pinch checks, no pieces.
+    pub(crate) fn arrangement(profile: &Profile, line: [R; 3]) -> Result<Self> {
+        Self::build(profile, line, false)
+    }
+
+    fn build(profile: &Profile, line: [R; 3], trace_pieces: bool) -> Result<Self> {
         let tolerance = profile.tolerance();
         let [a, b, d] = line;
         let f = |p: Point2| &a * q(p.x) + &b * q(p.y) + &d;
@@ -953,6 +963,17 @@ impl Section {
                     }
                 }
             }
+        }
+        if !trace_pieces {
+            return Ok(Section {
+                pieces: Vec::new(),
+                chords: Vec::new(),
+                shared: BTreeSet::new(),
+                incident,
+                positions,
+                params,
+                edges,
+            });
         }
         // Chords: between consecutive points on the line, inside the profile.
         let on_line_at: BTreeMap<PointId, I> = on_line.clone();
