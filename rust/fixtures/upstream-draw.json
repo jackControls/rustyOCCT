@@ -7,11 +7,14 @@
     "tests/boolean/bcommon_simple/A1": "0bf3ab9bd586c0830ad6f4a80c9f635e9fef6827fce2491c0cca50ccf912e728",
     "tests/boolean/bcommon_simple/I5": "f8086ea8e06eb760a0c43c005db9a40d8b4f5573d5af050e7d3c06206a29f49e",
     "tests/boolean/bcommon_simple/J1": "767998e1bf6f2423a097f608b559fb452daeaef72028dbfd3102645b5c8eded7",
+    "tests/boolean/bcut_simple/G7": "32b95d55c8a08b2b39d2c64e39d1fa4502bbb3fa78c92949bd0bb27e3365b319",
     "tests/boolean/bcut_simple/G8": "7f630a0200be640a8501b44c0532bc623a761872e90fd9e863dd1dd4c865d5c8",
     "tests/boolean/bcut_simple/H6": "bfbc1499a2c945ba7c1da4796987dbefa45bffcf1550f17a6ac60f73e0262ebd",
+    "tests/boolean/bcut_simple/L8": "f4eaa30c6004c82263238dabf6c6d77395449e900e5c899cdb9c37e1f14f74c3",
     "tests/boolean/begin": "d69546786e4458613f453d5083979bd5e2e67ae1f0f01b93f1bd93825e3a66bd",
     "tests/boolean/bfuse_complex/J5": "cda6d3fe80781b6537b23d7fb33728a0ff0eddfeff7025ea8f359cfbe64c632c",
     "tests/boolean/bfuse_simple/E1": "b4c9767189a819abcfeb8ed2afcab1928383f12242e579053078d9c42c4bff59",
+    "tests/boolean/bfuse_simple/E2": "1f254d4e9b211faadbe3dc01239bfdffb7c563a573176b7bdf0ec59125a85261",
     "tests/boolean/bfuse_simple/L2": "eee3cb4bcb138fbda94f62144a4be688fb17e1aa49f731b40e6e2871e441c5e5",
     "tests/boolean/bopcommon_simple/A1": "f4390fc464cd35b5996363eebf706b73684dc228bdf8a5502393c56b5f9bca6c",
     "tests/boolean/bopcommon_simple/A2": "30e69fe59d9934441839671729872bc666b113b74e2b3c409389a68e92b20832",
@@ -143,22 +146,40 @@
     "tests/boolean/bopcut_simple/A2": "7df41dc992e2f806ba3579eb1003c9cdd2c3a684e0ef2e4311b544207654d5c0",
     "tests/boolean/bopcut_simple/A3": "ae3bb43a37e78f5a7bb79c1c9f8e184b3fd7c80a6c545932b2985ec84d58d1a2",
     "tests/boolean/bopcut_simple/A4": "e79771ab02a01781588088c126f0b6a032c56f16fd633dde28fdf649aad2b80b",
+    "tests/boolean/bopcut_simple/A5": "21d46a4eb2619af4e628e77494f8ba21c68914d04cd83726053d7e8641181102",
     "tests/boolean/bopcut_simple/A6": "e7eb84d60fe16ae1d99b8eae798ebde4fb695b0e1fa45c8c69d518d160d52b95",
     "tests/boolean/bopcut_simple/A7": "556efa6f19f520479063e29e14ece47deb8eb50776ac529e3c2d863708afbd03",
     "tests/boolean/bopcut_simple/A8": "6a48bf1557df76fd3d42d807cb885e17f0243b930cc0769e195af6a3c29949f1",
     "tests/boolean/bopcut_simple/A9": "e703c07c6707cdeaf6970e29a5c488d179cef5ad9a3ac71e93cab6b4f03708ef",
+    "tests/boolean/bopcut_simple/B1": "25622950983bf7194af317ddde731f79bd59d5fea9692f257ced0e2b2f85bb53",
+    "tests/boolean/bopcut_simple/B2": "b677f5d7c1db28d6a6da2e6ac91a5ac3522bdebb3cbfab0471017bd0f948a252",
     "tests/boolean/bopcut_simple/B3": "84211088a16fc17361b12ae82237842e08b205624039ebd8c02d5ceefd36938a",
     "tests/boolean/bopcut_simple/B4": "2824a84aca1587269281724af96e5d672f7d8d5bb72a524764c524438ce3e025",
+    "tests/boolean/bopcut_simple/B5": "54cdfb655e45a57bfe004edd02e3a98bb274fcb16a181a91a548101c7e93d1f5",
+    "tests/boolean/bopcut_simple/B6": "655e1751cfd8fd3310aaaafe18509042b62a4ba0df746d739c836dc80dcd9b72",
     "tests/boolean/bopcut_simple/B7": "5fce422dd1e76144fcd26388ccb28e8b16acae8648148a965b342a67d7a5f66d",
     "tests/boolean/bopcut_simple/B8": "b5c52ebeceafa741356a5241868c6a3e16028aba7c36b13cacfb6156316f0400",
     "tests/boolean/bopcut_simple/B9": "ad94efb557ff6adfb84c53350946305bbc52f925e7e777b8ec3984c38a1508ab",
+    "tests/boolean/bopcut_simple/C1": "db59e108a615b284a193f36f6d65d93c2e78e1e929648c0c550a8baa7e411ca2",
     "tests/boolean/bopcut_simple/C2": "048503ca6cb123cf12076141dd28900f783b5580fab5da5311816e1344350e7b",
+    "tests/boolean/bopcut_simple/E2": "81124b8c40a7a9cff73fb2d6b7531a830ebc74fc67544f968777ea0fb6b660e4",
+    "tests/boolean/bopcut_simple/E3": "806d4648d3dbd16fbbdd83755c4901546cb7e24d1ebfc5592eeb21a068bac1e0",
     "tests/boolean/bopcut_simple/E4": "1acd2cb7b2187f56a1132c5ce67270e1f612f3e7503f5da9f613d973778af35f",
+    "tests/boolean/bopcut_simple/E5": "80d17cc167b821e9cef513910aeb214b82fc5ecfa19d5069b777472454ff9ac5",
+    "tests/boolean/bopcut_simple/E6": "223826eebe43b677bc8a7f26b3b4a3360dc2ae3447b1ff9b59fe83cb63644dd0",
+    "tests/boolean/bopcut_simple/E7": "f89c2236bc484a01a3f149a0227a96aa02bf8b9b89facb19f949756813d80dfb",
     "tests/boolean/bopcut_simple/E8": "8c1a79e50e57edffb4e94208d5f749795aea29a34d4b42783e106b2f0fafde94",
+    "tests/boolean/bopcut_simple/E9": "768bdceb9ab0f87f745af8b74d6a78e6b5d81a7da71180c440989b0b3fe4bef4",
+    "tests/boolean/bopcut_simple/F1": "67488f08c3e9d20bfbe2b92cc36c289cf4b9220cee82f20243e9e4e0c51f9905",
+    "tests/boolean/bopcut_simple/F2": "7ed2d76b06be95ac5c2b3505f50fa4eedcfaedbd88b324c838d367b20e611254",
     "tests/boolean/bopcut_simple/F3": "9c660d3fd4ca2bff56984e12306d941d6573e202b1555b02cf2ebeaaa7d8b3e3",
+    "tests/boolean/bopcut_simple/F4": "69250e522e433310c603822579e25fd0de41b3bbb61c2e20cd04ccf4a5518dec",
     "tests/boolean/bopcut_simple/J9": "ca31308732f23d6f8856f66cbbe64244626a217a4b93bcac166e4ecc52c112cf",
     "tests/boolean/bopcut_simple/K1": "8ee4fe3ebeff821eae140836c0a85162e73484832b052b151bffd721f359b36c",
     "tests/boolean/bopcut_simple/K5": "fb8bd114a496caef4a712c132992b09d3259bf6310fb2c26f45ef40bde12953c",
+    "tests/boolean/bopcut_simple/P3": "56c528c00664f753964e9594af39897d0254c6823d8451b91c8236ab7756e825",
+    "tests/boolean/bopcut_simple/P4": "b432d2230d63bc547fbc6e7a4c15c98370623e9204969d948c449e44f40b006f",
+    "tests/boolean/bopcut_simple/P8": "132f5403b2d9306983d67ae744a7d14844315b9fbe25c77c87f9c2810a36e089",
     "tests/boolean/bopcut_simple/R1": "344f61ce6abbe88b21dd1fed45329ca27fea70cacce5d5bc0e005b42b41c7d4f",
     "tests/boolean/bopcut_simple/R3": "d48fa97bb435d0ba7008abe1a2bd3ce20ff326581b90a66ba5fac24e0b1d2e16",
     "tests/boolean/bopcut_simple/R5": "82054defe307ab263a36bd339654ca712cf6ce4a9bf5284a0febf9f4a72be3cc",
@@ -180,19 +201,48 @@
     "tests/boolean/bopcut_simple/U6": "8d6dca87f44e7433f25be4a497468b35cfa9d55da56dfe0d0c357be6dc70155e",
     "tests/boolean/bopcut_simple/U7": "e0d717adbf3a504daeff8d6c83f503a185e3a0e45da3ec4777afcf92aebe0af7",
     "tests/boolean/bopcut_simple/U8": "79f7de3981067b04743444b4ce1ff202fe35b7ba49688d6e3790228310b047d9",
+    "tests/boolean/bopcut_simple/V5": "fe4aa5c24dcc3aff6823702e06d21547760cca8f53a48a4a934fda0e9013dd11",
+    "tests/boolean/bopcut_simple/V7": "4c01a12b4fab7ad1e045b5f1b39ee111585917ad60fe4fcc93b0f9b1e097a22f",
+    "tests/boolean/bopcut_simple/V9": "ffe7f20dc21626f5c05a869f553a5a2189f22559fb71e191c3822e486005922c",
+    "tests/boolean/bopcut_simple/W1": "8bda9c0163ef0097a3111f6e4826cbdd60e9437fa4ce57d69b85c4c52e83c8a3",
+    "tests/boolean/bopcut_simple/W2": "9322808778bcdbc1ea1e1683a7b24c33bf7641ee794bee9ccd670787f48aa31f",
+    "tests/boolean/bopcut_simple/W3": "0c20b8311ae995518e2de36175c809b31bd7ec00a90526f44ee8ff1366aec68d",
+    "tests/boolean/bopcut_simple/W4": "662a34ea2c724a315623386abc049d44cd705925e6a994d910f640f2b097bda2",
+    "tests/boolean/bopcut_simple/W5": "a50e2d57d3ac9f5463d6af6fca3b62ba5b505c045c5038e01916c3d6312029e9",
+    "tests/boolean/bopcut_simple/X1": "aa1f82e2847d76849726bfe1db1e5ada64e4d69991d38c8d55a0310f4dcf38e1",
+    "tests/boolean/bopcut_simple/X2": "2f0e6290b4f8d52678346e0316e52c43069d5a82073b17a1021f103c392d6235",
+    "tests/boolean/bopcut_simple/X4": "1d245ef1a71a657dc78999309f15124400d677deb3490342a8d3b61bd06ee27f",
+    "tests/boolean/bopcut_simple/X5": "705ea40d469d1245b1f74979a09291f2df741d83a922c09393f9b61d6f2fb649",
+    "tests/boolean/bopcut_simple/X7": "3563da6f2e3a7b3b028fb87ba081115ab384d96cd7e832dc50a500fa6dd27d29",
+    "tests/boolean/bopcut_simple/X9": "fa097221624f4a5b023d1a4ffc3fd2db3eccc51be4574bdebacae4ef80da991f",
+    "tests/boolean/bopcut_simple/Y7": "dd00f921391ce224105b9b8693b2ed0f3b7c90308fe8de1c55077552c6862d53",
+    "tests/boolean/bopcut_simple/Y8": "014b238fc73894965ef4ca2ff2f0bc4eab66e49579be3a8ba6f1ae29bb982206",
+    "tests/boolean/bopcut_simple/Y9": "70f7f0bdcf28a59b8b07524db9621ae5a94ace32d876765f8e41c3502302204e",
+    "tests/boolean/bopcut_simple/Z1": "6e564222f82419beebd71045072f00909a852e658d550b99c5b2dcdbd0d12386",
+    "tests/boolean/bopcut_simple/Z2": "fb2fa8756637563713fba110a7b1aee7a8576e6632456d384e4899a0cd4ca4f1",
+    "tests/boolean/bopcut_simple/Z3": "ee49b38c4d6c28f5657102753bbf55eaaa4d39c7e2918f9c85e6167ca90ba8e0",
     "tests/boolean/bopcut_simple/Z9": "63be45fc0ab33120318c57577fdca477b28342cae41541981c2ec373c9f27809",
     "tests/boolean/bopcut_simple/ZA5": "f8ed01f557b4157a3fd6cfe91ddc133b238cbee67aa23964cf85ead6f48e376d",
     "tests/boolean/bopcut_simple/ZA6": "75558b07993a10bab212743b63de1e6258b9facd820d5b84a911f4f9586b68f4",
     "tests/boolean/bopcut_simple/ZA8": "802ba058bec3f29a5c8e66c0c8457fb289eefa8e173833a6d948dd85a0713485",
     "tests/boolean/bopcut_simple/ZA9": "1332d057c19d208c83d4df2291f3628d7a87c6a79dad4c559ba34ac108e8f3c7",
     "tests/boolean/bopcut_simple/ZB1": "a5886e213d0757d17a0e9b7b755047ff7c64f97731ed21ebe0d8d74c7ecc0de4",
+    "tests/boolean/bopcut_simple/ZB7": "b294c9773b01a91af11a484783363bbfb40ef6d52c0dd5bced8f1bab1760ca82",
+    "tests/boolean/bopcut_simple/ZB8": "53b2581eb318d929ed71a274fa8251e78f3866e308fd583938203106a2e7acc5",
+    "tests/boolean/bopcut_simple/ZC1": "c13f580ca69b8aa497b6ea59f66ba58f212291be7692ec24c183498b70e9dbd3",
+    "tests/boolean/bopcut_simple/ZC2": "928f91d753da81f3b58e93d38d22f840bafe925675919c99efd5106b26b70b37",
+    "tests/boolean/bopcut_simple/ZC3": "ccf41aa41de2be306af729914041501e05b358e0cb488c7ccdc97d2d2fab758e",
+    "tests/boolean/bopcut_simple/ZC6": "c70f09e3a0f62bcd83f1f52248a973411ce1d1ac6d31684832ae8c7d3a39b668",
     "tests/boolean/bopcut_simple/ZC7": "8f116d5acd981c0ea31b31c0024a470bad1236c0f18107cc75fbfe1f25363cb3",
     "tests/boolean/bopcut_simple/ZC8": "c13678e523fc0dcd7c684e1e2dd173002b4c3dbbe5563e7503380094526ba260",
+    "tests/boolean/bopcut_simple/ZC9": "22d0c383e5a3cb7d4eef4d1fcb2a14e44007485cfac07ba2c6482a99a72ad9ea",
+    "tests/boolean/bopcut_simple/ZD1": "c3ed7c4cfbce3bf4ca168d2575c90432b164a864ed6cd4f1c7a0154b74443704",
     "tests/boolean/bopcut_simple/ZD2": "d871baea2c67fdf833aace196bc0b14cb29afe946d05b1c9dd2d173129970854",
     "tests/boolean/bopcut_simple/ZD3": "da7725a5a344ee104080b50c1f184440d4c2f0791d710d5d4c247e12ecc06efd",
     "tests/boolean/bopcut_simple/ZD4": "e00a8476ed6ba845c4f0929b862b35aca1dca4be1d772bee1ea7b39419e538fc",
     "tests/boolean/bopcut_simple/ZF4": "ca0e61ea9508e8c2fb0867861c88ae891f4cac3b5f4349fb2093e893e1e98346",
     "tests/boolean/bopcut_simple/ZN3": "10bf2981a9aec383ae9820dd538c8c385e2a6d7c3ea3a6f4de719c900980c64c",
+    "tests/boolean/bopcut_simple/ZN4": "24fcd5ad0f1a2435636bac933394cc2ddc00565893bd2c4845d826e926eedd42",
     "tests/boolean/bopcut_simple/ZN8": "8133911b8490f01480bbc3cbd9f82444ec9bb6b7ab36d16ab8d598b959daf569",
     "tests/boolean/bopcut_simple/ZN9": "77154d2d4e89a61082065baf7f52fde59c54c0abd1166a19ebe41181cd529cf6",
     "tests/boolean/bopcut_simple/ZO1": "7097760a7c6e3b5ceb5a2429c7dd767bedab89e966d190968ae650e70e4d45e1",
@@ -210,13 +260,29 @@
     "tests/boolean/bopfuse_simple/A9": "bba450fb21ada8ed0868198e5d55564908e31b95da08b4185876e010e7e65130",
     "tests/boolean/bopfuse_simple/B1": "a58a58a500c1858536283c9352ef48bdc8192f612d7718c3b9b0a6c15f2b75f2",
     "tests/boolean/bopfuse_simple/B2": "7b1b26ec33dbd9f35eb92f150b591549e086efd9460861fb3d4d3c0ba03cf8ea",
+    "tests/boolean/bopfuse_simple/B3": "028a1ebbd07f59de6c121f12527cbdc6479111d49699f4440e30a5ef84e526b9",
+    "tests/boolean/bopfuse_simple/B5": "769ca8f1cc68f426ac574e4ad0f3f1b1b02297df0b6cb2a8966484457bf47777",
+    "tests/boolean/bopfuse_simple/B6": "065762f2036f7c3bf305b3b7b4b64bb2612c04996c28f7caa9e3578442b93709",
     "tests/boolean/bopfuse_simple/B7": "ac6298d2ff9d8d149a742308c0ad146c8143f71faa01f1315f52797bf51f69b4",
     "tests/boolean/bopfuse_simple/B8": "ba3526fbd45bdc5efb030b230c912611d3907f808744cf5cdbbb23aa40dd7c37",
     "tests/boolean/bopfuse_simple/B9": "e2b606f02bbfa774cad54c8f4a2e24453df3d71d3b01337a945b734bb8b6ab29",
+    "tests/boolean/bopfuse_simple/C1": "6d4cf5dafe9aca04312c502b341561ada2c3998b777f6d894f8368fb08581488",
+    "tests/boolean/bopfuse_simple/C2": "664305375b5d3a42ff5e1ab85c74c0a5fe6ff9f3ae3a1652bd06178e8b3c3968",
     "tests/boolean/bopfuse_simple/E2": "01b10a3062276b9c946cb4734fb092a6df21a3d8b89acc3dda9f7a27fa182157",
+    "tests/boolean/bopfuse_simple/E3": "36dc57d1d27f49c33dcf3c78757d6f91d304eee1093b1b4ce638981f5931fc56",
+    "tests/boolean/bopfuse_simple/E5": "4749a2997eb51c139540729ea6116b704f7d77a70b7f55f9602ec73384c6ff04",
+    "tests/boolean/bopfuse_simple/E6": "47a035d12a7b6bfc312d8525e362428de9bfd2777e6b30a2f448a58b99cff6e1",
+    "tests/boolean/bopfuse_simple/E7": "fd61cdce8da582bc66afaef0bee39e370be5514f474aa90be49d1d3ee1741586",
+    "tests/boolean/bopfuse_simple/E9": "831d3159b0bc3be329163a08fde3f16f660de0e6a31c9b7ae96785751d581c4a",
+    "tests/boolean/bopfuse_simple/F1": "1fc11553cb96a75137a9cf2b7b3b3c2bc7fc896a071b650d83ae977664cd0ad4",
+    "tests/boolean/bopfuse_simple/F2": "5ec1c9a6aaec609befc80a13506f718230d93be3c5e613b080beece44de5338a",
+    "tests/boolean/bopfuse_simple/F4": "d0d8d7caa9f96c26dc139474666f82ddbeb338add707e807a2255969cf457043",
     "tests/boolean/bopfuse_simple/J9": "fba00ddcf4f32a9dc6dd243a4cd1ae4cf92990c82b6d68d77715931d16101fff",
     "tests/boolean/bopfuse_simple/K1": "972f59fa45d235415d3b05c1856603441c65e02ff4ed928768a67ea6423283c0",
     "tests/boolean/bopfuse_simple/K5": "f49f4616d740c09adda40ea322ce9f1384e3c085aca47751ba0d078733cdeb37",
+    "tests/boolean/bopfuse_simple/P3": "c02142b95fa779b6e358f0ac08895acd27ec48c522ce72841ee7c4c9b0e16192",
+    "tests/boolean/bopfuse_simple/P4": "97a5ef74f038905834c59a65d0dad5e978ed12d00ee65c88418dc17aa2139675",
+    "tests/boolean/bopfuse_simple/P8": "602b84ed94b149574c5adc25f7d13a58c746b52bed990482e4e56c9732c5ff0c",
     "tests/boolean/bopfuse_simple/R1": "852dbc258722fd3c4836951f3327b269b7e95606c43d274b43e0b8953800f257",
     "tests/boolean/bopfuse_simple/R3": "0e8fe9d288e37d623afd0570d60b2b4769f278802ba37cfbbadb6cb524f1103d",
     "tests/boolean/bopfuse_simple/R5": "af576394ac6f495e406ab03320a112a321b448d8dcb5c2810d92838d00cb7065",
@@ -240,17 +306,26 @@
     "tests/boolean/bopfuse_simple/V1": "3cf424f1ccf7b9be014eb293254f652bb9e0a6833f6f92bdfe2a0ebdce70ccaf",
     "tests/boolean/bopfuse_simple/V4": "caf5a4bd5713ef4f92cb508803424f4ac6fde3756ed0f830a890add4f8865bd4",
     "tests/boolean/bopfuse_simple/Z5": "8adade02d3b4830ccb8cc64c28b9827bb3b0d039f865ab1371c93cbccc1c7471",
+    "tests/boolean/bopfuse_simple/Z9": "c33835f165ee50fb6e1de8ffd61df8fa3e30db99d122e9cfbe5bfd490258044e",
     "tests/boolean/bopfuse_simple/ZA1": "d279a06297853226563a32d918db35711b74564905789bf310291bdda6830075",
     "tests/boolean/bopfuse_simple/ZA5": "6bfdfbf5b6820bff2a9952ab496db577cdd496b76134719ecbf4800a5458c46b",
     "tests/boolean/bopfuse_simple/ZA6": "0d2dd1a8d883e64d41e919fe3d0f433ea45217a3d1fbf7a09c9268f09bf2b540",
     "tests/boolean/bopfuse_simple/ZA8": "936d9b90c56c92f8bce64672f5492dccda258d8ae4aa13d65383924121d31d1e",
     "tests/boolean/bopfuse_simple/ZA9": "b91b3ed1c8515901262816e8b55d226c137f0f50bf3a027110f6c48e5f716417",
     "tests/boolean/bopfuse_simple/ZB1": "b3ede2c44125b80b51a799cd20eaad25d2b7b78344e857c5896f1c69668a151f",
+    "tests/boolean/bopfuse_simple/ZB7": "28d391303ddc7a0d0a656d4f11a09089c2d8f8298bf7f5fd341e5da1dbe23291",
+    "tests/boolean/bopfuse_simple/ZB8": "70451d5fe54743e251fa82a7c731d20e575d2fef9782ca099bd8cab4b877cf01",
+    "tests/boolean/bopfuse_simple/ZC1": "a74fc6a98d9053b503568117450a876758eedd953ae6bc067fcc6c10d9587256",
+    "tests/boolean/bopfuse_simple/ZC2": "07e812d4c05cb34cc3aad84821c49c336a86d2bb291ebb0d7baebad09c1d6f2d",
+    "tests/boolean/bopfuse_simple/ZC3": "ae0418cef8cbac9cac38f17e7b952fd5baf1f010349a3f4da5109994ac961412",
+    "tests/boolean/bopfuse_simple/ZC8": "539dc113209d47a9f60ba07193626e73520ca0d9519c31815870fa5d6616adef",
     "tests/boolean/bopfuse_simple/ZC9": "79151e79d5c52075de107b76268dfafb2a7b8240def97c8827fafca79ec14d5f",
     "tests/boolean/bopfuse_simple/ZD1": "492a6bf70b35516561690e8a6f0f83019256d1e4dcd636bfd6877b7c99213884",
     "tests/boolean/bopfuse_simple/ZD2": "2ec98328d3da30ba4822bb89ffb82006472db50c96cca53b2a34c28e36d550fb",
+    "tests/boolean/bopfuse_simple/ZD3": "28e00925bdb677228c502f1a28cecd9722022ead493649a73dd88ae865660ad7",
     "tests/boolean/bopfuse_simple/ZD4": "cdc54b62dde6537d546ddd67b87642ce1819c406fee4e42de689af72878f6f01",
     "tests/boolean/bopfuse_simple/ZF4": "7355d16e96889c2c318c41dcb7d3197b60069853f6c9d3db9d4c46629e98a4b5",
+    "tests/boolean/bopfuse_simple/ZN3": "18e989bcd62509a71b0fc868c5a02e1379c15f160a400cd7170c4135a05f1237",
     "tests/boolean/bopfuse_simple/ZN4": "7b35d664b74c1e74564eaad69414842c673f89ecf9973e372844ee829a8e070f",
     "tests/boolean/bopfuse_simple/ZN5": "7ccb3fabeb4c2518fa5969e27d3ff7479472d99a4c578df45e0bb1a480832091",
     "tests/boolean/bopfuse_simple/ZN6": "413c30af49eaadc501d2312a9f86580d271af9278e204c2b2fac47e7bd67ff26",
@@ -263,6 +338,7 @@
     "tests/boolean/bopfuse_simple/ZO4": "fa184a64ca8f3cb0f26c263a53573aba1284141f8e0f3dad9c671fc5d7753557",
     "tests/boolean/bopfuse_simple/ZO5": "4520df3f1987a0785f565c57bf0ca099d51927a20868860104a4913048fac56d",
     "tests/boolean/bopfuse_simple/ZO6": "71c6cf3a872aa4598fb2215c1f2a6e978c97b7860efdc20ebc0a0af5f5c47be5",
+    "tests/boolean/bopfuse_simple/ZP2": "c33835f165ee50fb6e1de8ffd61df8fa3e30db99d122e9cfbe5bfd490258044e",
     "tests/boolean/boptuc_simple/A1": "99a24059b97328ad630ccf4a8578814b03eed0757337160af670beb9a0e1da04",
     "tests/boolean/boptuc_simple/A2": "42a0f6c22708d580e4995c92d712e810dc084c7ffd732ece8203b8aa15b58326",
     "tests/boolean/boptuc_simple/A3": "de72339d116c06638ba05c74cd6f695daefca4c33cf01f2ab5490708885686ce",
@@ -298,6 +374,9 @@
     "tests/boolean/boptuc_simple/J9": "f30b3e9e2b868fd12873833b036f8058e775d2f3ecfb71968189b56c4e529b00",
     "tests/boolean/boptuc_simple/K1": "10d9e0660dd5a2656d48b85422aef9dbc35c9135fd54174cfee54047c8a5251b",
     "tests/boolean/boptuc_simple/K5": "e3cbc7fff387b5e1c531490ffeb8905095f0c3ac8ef3a43a83db010bf760b27a",
+    "tests/boolean/boptuc_simple/P3": "b48927c57f8706b47adb4aed091fc4a4d35dbe12a8ee300acc7252daa354b6ed",
+    "tests/boolean/boptuc_simple/P4": "433eb7375ff40f18a02ef70d9c4d4db8cfa4031694a742d952e1f76b856022b3",
+    "tests/boolean/boptuc_simple/P8": "d98924a9158c4e284c4d0ef948b64cc78980f6e5aa06677f10abd4eb9bc9f497",
     "tests/boolean/boptuc_simple/R1": "5590a29f5bfcce528b843e00fd8dc79fb107a43129caa2fba6a1a71b51ddfdd9",
     "tests/boolean/boptuc_simple/U7": "9883a4259bf34bb15bd322c0bbda24e64431e6e073f75b381b4340a5453d643e",
     "tests/boolean/boptuc_simple/U8": "42cccdd0d613099419af8cffe2797fa530381323d9ebcaa38adbe988096a9eb2",
@@ -307,6 +386,7 @@
     "tests/boolean/boptuc_simple/Z3": "d38638d5fcff09dac2e2f3a3eb090f80ac3b641711c94ddb026d6043233c1c63",
     "tests/boolean/boptuc_simple/Z5": "71560dae3604532844f59de74ace1513b96c1151623eaf4812ae565da53d9079",
     "tests/boolean/boptuc_simple/Z8": "204e8df1e11883aedef29823433abd948a9ddbb51c5e92fea8f58cebe1e9f066",
+    "tests/boolean/boptuc_simple/Z9": "d83411a13d6fc54d1c294c533b21c6c612f127a6b814f02d5c2636c7687b98e0",
     "tests/boolean/boptuc_simple/ZA1": "788fdf1ffbf8d3ad9044ab87b1cb5e2c7edc5be37124a12c68e757d637d499c2",
     "tests/boolean/boptuc_simple/ZA5": "18619f702cd99c1fd7a7ab098fdc91498d9bea93cc164bb8fad9bc5ca1121ff6",
     "tests/boolean/boptuc_simple/ZA6": "e6ce6761798098607f45fc3eef8c1a85712ab31a13a592f3730c0a0fbe2527da",
@@ -319,12 +399,15 @@
     "tests/boolean/boptuc_simple/ZC1": "5100ae1b04314aee8c040cc0989413bd6dab4cceb120506ed56f2827d0292510",
     "tests/boolean/boptuc_simple/ZC2": "941d2d4d0151da480345d9271635bc91eed622570b55456fbc139127ff8b1a4e",
     "tests/boolean/boptuc_simple/ZC3": "a738539892453eec9c642d2d557b0125897dcb16dc6bfa849493fff0355360e2",
+    "tests/boolean/boptuc_simple/ZC7": "1ce8aebc074bec4d6f616f1890c1143bebbf6bff3b4e8d6a129afed3abd497ae",
     "tests/boolean/boptuc_simple/ZC8": "efb1732fbcc53c42c9e7f1514303560bb057b61f0e33745930111d7ac69c7b58",
     "tests/boolean/boptuc_simple/ZC9": "af6248c673e26226aeae4b77bf8f3a05c9388b74e172c6e0c6fcc2aa8a3d0e4e",
     "tests/boolean/boptuc_simple/ZD1": "f0bdb5aa325e8a89147888431bb2ae0152a49fde9b30fc4247188f028a1bed40",
     "tests/boolean/boptuc_simple/ZD2": "fc1157dafa260b3ce444126fc67ce8cad90d23066c5bb054f49b775c5876d10a",
+    "tests/boolean/boptuc_simple/ZD3": "ee031f8a1a191ad8c61849594d71ef241bc979d1700fc563b9eef99cda12866b",
     "tests/boolean/boptuc_simple/ZD4": "e9372e99f5fcaf86ef6f1d7399838451c773726df004bde455039b1a58c415ff",
     "tests/boolean/boptuc_simple/ZF4": "dee82a15736d998a9fcb8aa65f4addef8e1fc6d0c696d27b6d67da03f5d88e51",
+    "tests/boolean/boptuc_simple/ZN3": "ca29039daf7a23240c4ee54078a32265a84c73031993af5c474624e78c1e6082",
     "tests/boolean/boptuc_simple/ZN4": "22187faa639e26763f6fcfa6470960757e86f59ace4e31292969a3d854dad962",
     "tests/boolean/boptuc_simple/ZN5": "0bd8fb5fafa714ef2daa8d9b0ea0ef058c4e3eeca561955b47885fdbdb094958",
     "tests/boolean/boptuc_simple/ZN6": "3b64b7176e3c4b1aaf0d9296d7237e2d6b01d5cebf31a6d4fc094e2b74a6778a",
@@ -339,6 +422,7 @@
     "tests/boolean/boptuc_simple/ZO6": "22d1cb51bd97dcdd17fa9024bafe64c6d279a5632eec3018b43b0a25267dbe2b",
     "tests/boolean/boptuc_simple/ZO9": "713fdcfd35f6ba62bfb96568502395a3353a1b64bd2af8b2a41abb97b8d74763",
     "tests/boolean/boptuc_simple/ZP1": "ff099d7b539f89611cd07829371e264ce6165576e11a913fe75ee5c5dcc73294",
+    "tests/boolean/boptuc_simple/ZP2": "d83411a13d6fc54d1c294c533b21c6c612f127a6b814f02d5c2636c7687b98e0",
     "tests/boolean/end": "c9af5276f45a782d2c8bd14514d6ecd8bb47d3765a037018608d20ca79efe557",
     "tests/boolean/parse.rules": "08f82593d2eacd0dcb4ef65b9dfcb472b6ce2e7c4faeae1e5645fa26d9fa6c64",
     "tests/boolean/splitter/A5": "50047314a7612585ebd704ffec835df3b80bf71aed5c80dc939b464e820c4a96",
@@ -627,6 +711,20 @@
         "count synthesizer",
         "per-use length synthesis",
         "mass properties"
+      ]
+    },
+    {
+      "path": "rust/fixtures/draw-derived/boolean_stacks",
+      "derived": true,
+      "context": "tests/bugs/modalg_7",
+      "expected_rust": "pass",
+      "expected_occt": "pass",
+      "purpose": "Derived: Booleans of prisms in one frame whose slabs hold different regions (S9a.2's stacks) through bfuse, bcut, bop with bopfuse/bopcut and bbop: a step, a pocket, a box cut into two solids by a slab, a closed cavity (one solid of two shells) and a tool through a round wall; checkshape, volumes and areas on the result, counts and lengths per use after unifysamedom.",
+      "verifies": [
+        "Booleans of prisms",
+        "count synthesizer",
+        "per-use length synthesis",
+        "general mass properties"
       ]
     },
     {
@@ -2104,7 +2202,7 @@
       "path": "tests/boolean/bopfuse_simple/Z5",
       "expected_rust": "viewer_skipped",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+      "purpose": "S9a: bop and bopfuse of a cylinder and a box inscribed in it (dset numbers), of different heights: the cylinder (its containment test's cut of the cylinder by the box, four segments touching at the corners, refused as degenerate and so not empty); checkprops -s and checkshape; its checkview is recorded."
     },
     {
       "path": "tests/boolean/bopfuse_simple/ZA1",
@@ -2695,6 +2793,504 @@
       "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
     },
     {
+      "path": "tests/boolean/bfuse_simple/E2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bfuse of two boxes in one frame (ttranslate), whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/G7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bcut of two boxes in one frame (ttranslate), whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/L8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bcut of two cylinders in one frame (ttranslate), whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/B5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/B6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/C1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/C2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/E3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/E5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/E6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/E7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/E9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/F1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/F2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/F4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/P3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/P4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/P8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/Z9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of a box and a cylinder in one frame (ttranslate), whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZB7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZB8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZC1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZC2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZC3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of a box and a cylinder in one frame (dset numbers), whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZC8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of two cylinders in one frame (ttranslate), whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZD3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of two cylinders in one frame (ttranslate), whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZN3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of a box and a cylinder in one frame (ttranslate), whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZP2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of a box and a cylinder in one frame (ttranslate), whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/A5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/B1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/B2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/B5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/B6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/C1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/E2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/E3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/E5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/E6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/E7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/E9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/F1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/F2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/F4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/P3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/P4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/P8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/V5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/V7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/V9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/W1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/W2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/W3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/W4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/W5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/X1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/X2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/X4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/X5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/X7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/X9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/Y7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/Y8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/Y9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/Z1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/Z2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/Z3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZB7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZB8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZC1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZC2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZC3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame (dset numbers), whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZC6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZC9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of two cylinders in one frame (ttranslate), whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZD1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of two cylinders in one frame (ttranslate), whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZN4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopcut of a box and a cylinder in one frame (ttranslate), whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/P3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and boptuc of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/P4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and boptuc of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/P8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and boptuc of two boxes in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/Z9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and boptuc of a box and a cylinder in one frame (ttranslate), whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZC7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and boptuc of a box and a cylinder in one frame, whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZD3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and boptuc of two cylinders in one frame (ttranslate), whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZN3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and boptuc of a box and a cylinder in one frame (ttranslate), whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZP2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and boptuc of a box and a cylinder in one frame (ttranslate), whose slabs hold different regions (a stack); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
       "path": "tests/boolean/bcommon_simple/A1",
       "expected_rust": "unsupported",
       "expected_occt": "viewer_skipped",
@@ -2722,13 +3318,19 @@
       "path": "tests/boolean/bcut_simple/H6",
       "expected_rust": "unsupported",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9a's Boolean group, a capability sentinel: pockets cut from a prism: a cut leaving a stack of prisms (S9a.2)."
+      "purpose": "S9a's Boolean group, a capability sentinel: pockets cut from a prism one after another; the first cut is a stack (S9a.2), which the next bcut takes as its object: a Boolean of a stack, not a prism (S9b)."
     },
     {
       "path": "tests/boolean/bopfuse_simple/B2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a.2: bop and bopfuse of two boxes in one frame, a smaller box against a face of another, whose slabs hold different regions (a stack; S9a's sentinel for S9a.2); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/B3",
       "expected_rust": "unsupported",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9a's Boolean group, a capability sentinel: a smaller box against a face of another: a fuse of different heights (S9a.2)."
+      "purpose": "S9a's Boolean group, a capability sentinel: a smaller box touching another along an edge: a result touching itself along an edge (Degenerate)."
     },
     {
       "path": "tests/boolean/bfuse_simple/E1",
@@ -2790,7 +3392,8 @@
     "rust/fixtures/draw-derived/profile_arcs": "0c08732ec213a66e283600cbccee85fa1a75e19bafc25dd6b7ddc3e012f53e64",
     "rust/fixtures/draw-derived/faces_and_edges": "dd70b02e9fdf8f094bac0b97663a2528f4a7e7e245e6f5aea0247f0eaac406c0",
     "rust/fixtures/draw-derived/split_plane": "1eb4b5e184e7b886f259292b334f80e783a02c96867dd8d282f02c1807a10b9f",
-    "rust/fixtures/draw-derived/boolean_prisms": "b44258c5638c514650565a760e03b67d3f95e06a609313371d0f576b9b431902"
+    "rust/fixtures/draw-derived/boolean_prisms": "b44258c5638c514650565a760e03b67d3f95e06a609313371d0f576b9b431902",
+    "rust/fixtures/draw-derived/boolean_stacks": "09987947e3421776c415dbfe1e7faaf63a1717df08e281495f604b30c1d622ca"
   },
   "ledger": {
     "survey": {

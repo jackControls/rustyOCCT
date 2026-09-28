@@ -182,14 +182,15 @@ class BridgeTests(unittest.TestCase):
                       "bcommon r a b\nchecknbshapes r -compound 0", "bfuse r a b\nchecknbshapes r -solid 2"]:
             with self.subTest(wrong=wrong):
                 self.expect(boxes + wrong, "failed")
-        # Outside S9a, never an answer: frames with other axes (S9b), a cut
-        # leaving a stack (S9a.2), prisms touching along an edge
-        # (Degenerate), a cone, a section, several objects, a result of two
-        # solids as an argument, unifysamedom of other shapes, counts of an
-        # uncopied prism's result and a Boolean's history.
+        # Outside S9a, never an answer: frames with other axes (S9b), a
+        # stack as an argument (S9a.2 builds it, S9b takes it), prisms
+        # touching along an edge (Degenerate), a cone, a section, several
+        # objects, a result of two solids as an argument, unifysamedom of
+        # other shapes, counts of an uncopied prism's result and a
+        # Boolean's history.
         for gap, why in [
                 (boxes + "trotate b 0 0 0 0 0 1 30\ncatch {bfuse r a b}", "different axes"),
-                (boxes + "box t 1 1 1 1 1 1\ncatch {bcut r a t}", "S9a.2"),
+                (boxes + "box t 1 1 2 1 1 1\nbfuse r a t\ncheckprops r -v 33\ncatch {bcut s r b}", "stack"),
                 (boxes + "box t 4 4 0 1 1 2\ncatch {bfuse r a t}", "egenerate"),
                 (boxes + "pcone k 1 0 2\ncatch {bcommon r a k}", "prisms"),
                 (boxes + "baddobjects a\nbaddtools b\ncatch {bapibop r 4}", "bapibop r 4"),
@@ -202,6 +203,41 @@ class BridgeTests(unittest.TestCase):
                 (boxes + "catch {dset x atan2(1,2)}", "atan2")]:
             with self.subTest(why=why):
                 self.assertIn(why, self.expect(gap, "unsupported")["unsupported"])
+
+    def test_boolean_stacks(self):
+        # S9a.2's stacks: a 4 x 4 x 4 box less a 2 x 2 x 2 box inside it is
+        # one solid of two shells; a 2 x 4 x 2 box on half of a 4 x 4 x 2
+        # box is an L-shaped step. The kernel's stacks are unified already.
+        stacks = "box o 0 0 0 4 4 4\nbox c 1 1 1 2 2 2\nbox a 0 0 0 4 4 2\nbox b 0 0 2 2 4 2\n"
+        self.expect(stacks + "bcut h o c\ncheckshape h\ncheckprops h -v 56 -s 120\nunifysamedom u h\n"
+                    "checkprops u -l 144\n"
+                    "checknbshapes u -vertex 16 -edge 24 -wire 12 -face 12 -shell 2 -solid 1 -compound 1\n"
+                    "bop a b\nbopfuse s\ncheckshape s\ncheckprops s -v 48 -s 88\nunifysamedom us s\n"
+                    "checkprops us -l 112\n"
+                    "checknbshapes us -vertex 12 -edge 18 -wire 8 -face 8 -shell 1 -solid 1 -compound 1\n",
+                    "pass")
+        # A stack's measures and counts are the kernel's, never echoed.
+        for wrong in ["bcut h o c\ncheckprops h -v 64", "bcut h o c\ncheckprops h -s 96",
+                      "bcut h o c\nunifysamedom u h\nchecknbshapes u -shell 1",
+                      "bcut h o c\nunifysamedom u h\nchecknbshapes u -solid 2",
+                      "bfuse s a b\nunifysamedom u s\ncheckprops u -l 128",
+                      "bfuse s a b\nunifysamedom u s\nchecknbshapes u -face 10 -vertex 16"]:
+            with self.subTest(wrong=wrong):
+                self.expect(stacks + wrong, "failed")
+        # A stack is no Boolean argument: the kernel's Booleans take prisms.
+        for gap in ["bcut h o c\ncheckprops h -v 56\ncatch {bfuse r h a}",
+                    "bfuse s a b\ncheckprops s -v 48\ncatch {bcommon r o s}",
+                    "bfuse s a b\ncheckprops s -v 48\nbop s o\ncatch {bopcut r}"]:
+            with self.subTest(gap=gap):
+                self.assertIn("stack", self.expect(stacks + gap, "unsupported")["unsupported"])
+
+    @unittest.skipUnless(os.environ.get("RUSTY_TEST_DRAW_EXE"), "optional native DRAW cross-check")
+    def test_boolean_stacks_against_native_occt(self):
+        # The same stacks' values on native DRAW, after unifysamedom.
+        self.expect("box o 0 0 0 4 4 4\nbox c 1 1 1 2 2 2\nbcut h o c\ncheckshape h\n"
+                    "checkprops h -v 56 -s 120\nunifysamedom u h\ncheckprops u -l 144\n"
+                    "checknbshapes u -vertex 16 -edge 24 -wire 12 -face 12 -shell 2 -solid 1 -compound 1\n",
+                    "pass", backend="occt", draw_exe=os.environ["RUSTY_TEST_DRAW_EXE"])
 
     def test_native_selector_picks_by_geometry(self):
         picks = self.root / "picks.txt"

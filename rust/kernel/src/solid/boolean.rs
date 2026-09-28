@@ -31,7 +31,7 @@ use crate::history::{self, History, Relation};
 use crate::identity::{
     Derivation, EntityId, EntityKind, OperationId, OperationKind, Parent, ProfileElement, Role,
 };
-use crate::profile::boolean::{boolean, Op2, Operand, Origin2, PId, SegRef};
+use crate::profile::boolean::{arrange, boolean, select_trace, Op2, Operand, Origin2, PId, SegRef};
 use crate::profile::BoundaryKind;
 use crate::solid::split::{q, rational_f64, zero};
 use crate::topology::{End, Place, Slot, Topology};
@@ -348,18 +348,32 @@ impl Solid {
                     // Containment in 2D is an empty exact cut (a fuse's
                     // boundary coming from one input alone is not: the
                     // other may fill that one's hole).
-                    let fused = boolean(pa, &pb, Op2::Fuse)?;
-                    let a_in_b = boolean(pa, &pb, Op2::Cut)?.pieces.is_empty();
-                    let b_in_a = boolean(&pb, pa, Op2::Cut)?.pieces.is_empty();
-                    let apart = boolean(pa, &pb, Op2::Common)?.pieces.is_empty();
+                    // One arrangement serves every selection.
+                    let tolerance = pa.tolerance();
+                    let arranged = arrange(&[pa], &[&pb], tolerance)?;
+                    let select =
+                        |op: Op2, swap: bool| select_trace(&arranged, op, swap, true, tolerance);
+                    // A selection refused as degenerate (a region touching
+                    // itself) is not empty.
+                    let empty = |op: Op2, swap: bool| match select(op, swap) {
+                        Ok(r) => Ok(r.pieces.is_empty()),
+                        Err(Error::Degenerate(_)) => Ok(false),
+                        Err(e) => Err(e),
+                    };
+                    let a_in_b = empty(Op2::Cut, false)?;
+                    let b_in_a = empty(Op2::Cut, true)?;
+                    let apart = empty(Op2::Common, false)?;
                     let within = |x: [f64; 2], y: [f64; 2]| y[0] >= x[0] && y[1] <= x[1];
                     if a_in_b && b_in_a {
-                        ([ha[0].min(hb[0]), ha[1].max(hb[1])], fused)
+                        (
+                            [ha[0].min(hb[0]), ha[1].max(hb[1])],
+                            select(Op2::Fuse, false)?,
+                        )
                     } else if b_in_a && within(ha, hb) {
                         return self.finish(context, other, op, vec![self.clone()], Vec::new());
                     } else if a_in_b && within(hb, ha) {
                         return self.finish(context, other, op, vec![other.clone()], Vec::new());
-                    } else if apart && fused.pieces.len() == 2 {
+                    } else if apart && select(Op2::Fuse, false)?.pieces.len() == 2 {
                         return self.finish(
                             context,
                             other,

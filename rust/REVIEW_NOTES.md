@@ -2733,6 +2733,17 @@ Decisions for S9, recorded before its code (2026-09-28):
     profiles (S9 Order: "S9a.2: spline profiles") are S9a.2's second
     part, after the stacks; (g) a stack's rigid motion rebuilds it from its
     construction in the moved frame (as S8's pieces), keeping its ids and
-    moving its mass, rather than moving its stored geometry. Pending: the
-    campaign, the DRAW survey of the 163 stacked upstream cases; S9a.2's
-    spline profiles next (their evidence first).
+    moving its mass, rather than moving its stored geometry. The DRAW
+    adapter runs stacks (unified as built; a stack given to another
+    Boolean unsupported until S9b) and the derived case `boolean_stacks`
+    (a step, a pocket, a slab cutting a box in two, a closed cavity, a tool
+    through a round wall) on both backends; of the 163 stacked upstream
+    cases 84 now evaluate (404 of the `boolean` group in all, none failing),
+    37 give a stack to a second Boolean and 38 are `Degenerate`. The survey
+    found the fuse's containment test propagating a degenerate cut
+    (`bopfuse_simple/Z5`, a box inscribed in a cylinder): a refused
+    selection now counts as not empty. Profiling a slow fuzz input moved
+    certified bounds to the leading-bits bracket before the binary64
+    pattern search and a stack cap's overlaps to its pieces' memberships
+    (the input six times faster). Pending: the campaign; S9a.2's spline
+    profiles next (their evidence first).

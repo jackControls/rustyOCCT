@@ -23,7 +23,7 @@
 use super::{At, What};
 use crate::identity::OperationId;
 use crate::identity::{EntityKind, Role};
-use crate::profile::boolean::{arrange, boolean, select_with, Curve, Op2, Operand, PId, PieceView};
+use crate::profile::boolean::{arrange, select_with, Curve, Op2, Operand, PId, PieceView};
 use crate::solid::split::q;
 use crate::solid::{Construction, MassProperties, Solid};
 use crate::topology::Topology;
@@ -271,6 +271,27 @@ fn same_carrier(x: &PieceView, y: &PieceView) -> bool {
         }
         (Some(c), Some(k)) => c == k,
         _ => false,
+    }
+}
+
+/// A point of a piece (off its ends).
+fn sample(v: &PieceView) -> Point2 {
+    let f = 0.4453125;
+    match v.curve {
+        Curve::Line => Point2::new(v.p.x + (v.e.x - v.p.x) * f, v.p.y + (v.e.y - v.p.y) * f),
+        Curve::Arc {
+            center,
+            radius,
+            ccw,
+        } => {
+            let a0 = (v.p.y - center.y).atan2(v.p.x - center.x);
+            let a = a0 + crate::profile::arc_sweep(center, v.p, v.e, ccw) * f;
+            Point2::new(center.x + radius * a.cos(), center.y + radius * a.sin())
+        }
+        Curve::Circle { center, radius } => {
+            let a = TAU * f;
+            Point2::new(center.x + radius * a.cos(), center.y + radius * a.sin())
+        }
     }
 }
 
@@ -991,8 +1012,47 @@ pub(super) fn build(stack: &Stack, frame: Frame3) -> Result<Vec<Component>> {
             through.entry(p).or_default().insert((v.op, v.b, v.j));
         }
     }
+    // Whether a horizontal face's region overlaps an operand's: every cell
+    // of it is bounded by a piece of its boundary (its inner side) or by a
+    // piece inside it (both sides), whose sides' memberships are known.
+    let overlaps = |k: usize, up: bool, i: usize, o: Operand| -> Result<bool> {
+        let x = usize::from(o == Operand::B);
+        let (profile, cycles) = &caps[&(k, up)][i];
+        let mut bounding: BTreeSet<usize> = BTreeSet::new();
+        for &(g, forward) in cycles.iter().flatten() {
+            bounding.insert(g);
+            let inner = if forward {
+                views[g].left
+            } else {
+                views[g].right
+            };
+            if inner[x] {
+                return Ok(true);
+            }
+        }
+        let way = |m: [bool; 2]| {
+            let (below, above) = (holds(k as isize - 1, m), holds(k as isize, m));
+            if up {
+                below && !above
+            } else {
+                above && !below
+            }
+        };
+        let alone = caps[&(k, up)].len() == 1;
+        for (g, v) in views.iter().enumerate() {
+            if !v.representative || bounding.contains(&g) || !(way(v.left) && way(v.right)) {
+                continue;
+            }
+            if !(v.left[x] || v.right[x]) {
+                continue;
+            }
+            if alone || profile.classify(sample(v))? != crate::Location::Outside {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    };
     // Cap faces' plans first: edges and vertices inside a wall touch them.
-    let other_profile = |o: Operand| if o == Operand::A { &stack.a } else { &stack.b };
     let mut cap_plan: BTreeMap<usize, (Vec<Key>, Vec<Key>)> = BTreeMap::new();
     for (gi, group) in groups.iter().enumerate() {
         let Cell::Cap(k, up, i) = cells[group[0]] else {
@@ -1004,10 +1064,7 @@ pub(super) fn build(stack: &Stack, frame: Frame3) -> Result<Vec<Component>> {
                 continue;
             };
             let facing_up = e == At::High;
-            let overlaps = !boolean(&caps[&(k, up)][i].0, other_profile(o), Op2::Common)?
-                .pieces
-                .is_empty();
-            if !overlaps {
+            if !overlaps(k, up, i, o)? {
                 continue;
             }
             let key = (o, e, What::Cap, 0, 0);
