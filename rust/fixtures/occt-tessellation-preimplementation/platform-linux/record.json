@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 36387858928 (commit 823c7937), ubuntu-latest, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "154fd89e2034d5b878d6d78f07e5e54662ec1fdd0f993df14e74d89bb5a06630",
+  "review": "The same statuses and 43 of 56 rows as the macOS capture within its allowances; on 13 rows BRepMesh on Linux places a few nodes differently (far_prism, cone_apex, sphere, hemisphere, sphere_zone, sphere_far, torus and its segment, inner half and tilted copy: node and triangle counts within 3%, deflections and volumes accordingly), as VALIDATION.md anticipates for a platform whose BRepMesh triangulates differently. Each Linux row is compared with the reference on its own; reviewed differences are fingerprinted with the Linux row."
+}

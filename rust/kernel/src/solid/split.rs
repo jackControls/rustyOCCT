@@ -1333,10 +1333,23 @@ fn trace(
                 true,
             )?;
             let sample = positions[&set[c[0]].from];
-            let owner = built
+            let owner = match built
                 .iter()
                 .position(|((bd, ..), _)| bd.locate(sample, tolerance) == Location::Inside)
-                .ok_or(Error::InvalidTopology("a section hole outside every piece"))?;
+            {
+                Some(owner) => owner,
+                // On a piece's boundary within the resolution: the hole
+                // touches it there (a line grazing a hole's circle).
+                None if built
+                    .iter()
+                    .any(|((bd, ..), _)| bd.locate(sample, tolerance) == Location::Boundary) =>
+                {
+                    return Err(Error::Degenerate(
+                        "a piece's hole within the resolution of its boundary",
+                    ));
+                }
+                None => return Err(Error::InvalidTopology("a section hole outside every piece")),
+            };
             built[owner].1.push(hole);
         }
         for ((outer, segs, verts), hs) in built {

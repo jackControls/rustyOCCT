@@ -685,3 +685,23 @@ by a plane that passes a hole vertex within the resolution without touching
 it exactly. The hole of one piece then lies within the resolution of that
 piece's boundary, which a profile rejects (`InvalidHole`); the split now
 reports it `Degenerate`, as it does other sub-resolution pieces.
+
+## Split: an oblique plane grazing a hole's circle
+
+`split/crash-6d802bdd1a8deb1da573d4cdf1b35e71fcb7168e.bin` came from the
+first S8a.2 campaign: in the tilted frame a plane meant to touch the round
+hole's circle at the top cap crosses it at two points close together (the
+frame's stored axes are not exactly orthogonal). The section's hole cycle
+then starts within the resolution of its piece's outer boundary, which no
+piece owns; the split now reports it `Degenerate`, as it does a piece's
+hole within the resolution of its boundary.
+
+## Split: a winding loop closing within rounding of a turn
+
+`split/timeout-387b23f8d333d1b9c65ea4672d2af5b6c964cce5.bin` came from the
+second S8a.2 campaign: an oblique plane cuts a square's round hole across
+its top cap, so the hole's wall in the lower piece has an upper loop of an
+arc and a sinusoid ending within rounding of its start a turn on. The
+binary64 mass tier could not sign that closing chord's `du` and fell back to
+rational intervals (6.3 s in release, a timeout under AddressSanitizer);
+the chord is now enclosed over its box in either tier (0.3 s).

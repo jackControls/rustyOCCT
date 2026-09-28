@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 36387858928 (commit 823c7937), ubuntu-latest, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "a57451a19c458766407890dcef0b2ca51a344f220259925287482fa50865b5f4",
+  "review": "The same statuses, sides, piece counts and face, edge and vertex counts as the macOS capture for all 26 cases; volumes, areas and centres within 2.4e-13 relative."
+}

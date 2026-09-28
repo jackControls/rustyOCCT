@@ -998,7 +998,21 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
                     accumulate(values.try_into().ok()?);
                 }
                 for (a, b) in chords::<T>(lp) {
-                    accumulate(rev_lines(&anti, &a, &b)?.try_into().ok()?);
+                    // A closing chord whose `du` straddles zero (a loop that
+                    // ends within rounding of its start a turn on) is
+                    // enclosed over its box.
+                    let values = match rev_lines(&anti, &a, &b) {
+                        Some(values) => values,
+                        None => anti
+                            .iter()
+                            .map(|f| {
+                                super::chord_enclosure(&a, &b, &|u: &T, v: &T| {
+                                    Some(rev_eval(f, u, v))
+                                })
+                            })
+                            .collect::<Option<Vec<T>>>()?,
+                    };
+                    accumulate(values.try_into().ok()?);
                 }
             }
         }
