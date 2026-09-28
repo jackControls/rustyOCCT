@@ -262,6 +262,19 @@ everywhere, `|d| - R |(a, b)| >= r |m|`, decided by squares.
   kernel is inside the reference on all 17. OCCT approximates the sections by
   B-splines (BRepGProp's volumes and areas off by 1.6e-7 to 7.6e-4) and keeps
   the torus's seams: 17 reviewed differences.
+* **Spline prisms (S8b), before the code.** A path's segment may be a
+  nonrational B-spline (`B` in an `S` row). `split_reference.py` slices its
+  exact Bezier pieces (crossings on `x`-monotone runs; breaks at the pieces'
+  ends and extremes and the clip lines' roots), checked against polygons
+  (straight splines) and Green's theorem in exact Fractions, within 1e-40;
+  `split-spline-cases.txt` holds 17 prisms (a bulge, a blob of four cubics,
+  a three-span wave, a stadium with a cubic end, a lens-shaped hole; planes
+  normal, parallel through a knot's point, two joins, tangent, oblique, in a
+  cap, both frames) and `occt-split-spline-preimplementation` their splits
+  with `Geom_BSplineCurve` edges: 10 within 2e-8, seven reviewed BRepGProp
+  errors (trimmed spline walls to 2.6e-7; faces bounded by the three-span
+  wave to 1.8e-3, though OCCT's edges enclose the reference's area). Until
+  S8b.1 the kernel reports all 17 unsupported.
 * **Kernel.** `tests/split.rs`: every side's sums of the kernel's enclosures
   contain the reference's volume, area and moments; histories pass the
   independent check, cover every input entity and repeat exactly; oblique

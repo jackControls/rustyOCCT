@@ -926,6 +926,96 @@
       "reason": "OCCT keeps the sphere's seam (at u = 0, the frame's x axis) inside the upper piece, whose wall does not wind round the axis: the seam crosses that wall, making it two faces, and splits the bottom and top arcs it crosses (5 faces, 9 edges, 6 vertices). The kernel has no seams (TOPOLOGY_MODEL.md): the wall is one face (4 faces, 6 edges, 4 vertices). Volumes, areas and centres agree with the reference.",
       "independent_evidence": "The plane crosses both rims of the tilted zone (radius 1.5, latitudes -0.7 to 0.9) in two circle arcs; the strip on the upper side contains the seam's meridian at the frame's x axis.",
       "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 7.7e-13 relative of the macOS capture's"
+    },
+    {
+      "case": "bulge_height",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "7d2b47c63f74da45f06d587d09628d88a5426440e3938aa9b4dac7b00f05cbea",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "The plane cuts the prism's single-span B-spline wall across its rulings, and BRepGProp's default Gauss integration of the trimmed extrusion faces errs by 1.3e-07 in volume and up to 2.6e-07 in area relative (beyond the 2e-8 allowance), and moves the centres by up to 3e-08 of the case's size. The pieces are valid, their sides the reference's. The kernel does not read spline segments yet (S8b.1): the case is rust_unsupported.",
+      "independent_evidence": "The profile (the rectangle [0, 10] x [0, 6] with the quadratic Bezier from (10, 0) through the control point (12, 3) to (10, 6)) has area 64 exactly by Green's theorem in exact Fractions, so the plane z = 2 across the prism of height 5 leaves 128 below and 192 above (the reference's slicing agrees within 1e-40). With a scratch variant of occt_split_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating x dy - y dx over OCCT's own profile edges (BRepAdaptor_Curve, 2,000 subintervals of 10-point Gauss-Legendre per edge): Green over OCCT's edges gives 64.0000000000032, and the adaptive volumes of the same pieces are 127.99999999745 and 191.99999999617, their areas 192.837408600 and 225.256112904 (the reference 192.837408606 and 225.256112909).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "bulge_oblique",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "6202de01f9b83a6cf8682e5e5c68915da6bc7537f8868f37d694e68cac372a96",
+      "differences": [
+        "measure"
+      ],
+      "reason": "The plane cuts the prism's single-span B-spline wall across its rulings, and BRepGProp's default Gauss integration of the trimmed extrusion faces errs by up to 4.3e-08 in volume and 9.5e-08 in area relative (beyond the 2e-8 allowance). The pieces are valid, their sides the reference's. The kernel does not read spline segments yet (S8b.1): the case is rust_unsupported.",
+      "independent_evidence": "The reference slices the prism of the bulge (area 64 exactly by Green's theorem in exact Fractions) in 40-digit arithmetic: 280.4333333333 below and 39.5666666667 above. With a scratch variant of occt_split_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating x dy - y dx over OCCT's own profile edges (BRepAdaptor_Curve, 2,000 subintervals of 10-point Gauss-Legendre per edge): the adaptive volumes of the same pieces are 280.43333333395 and 39.56666666223, the above piece's area 87.2307158591 (the reference 87.2307158693).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "blob_walls_only",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "c792886ae92d33ecd7529f8ac0efef924ba3f7f3915ff2b29d1aade69fe7bb3d",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "The plane cuts the prism's single-span B-spline wall across its rulings, and BRepGProp's default Gauss integration of the trimmed extrusion faces errs by 7.5e-08 in volume and 1.4e-07 in area relative (beyond the 2e-8 allowance), and moves the centres by up to 2.5e-08 of the case's size. The pieces are valid, their sides the reference's. The kernel does not read spline segments yet (S8b.1): the case is rust_unsupported.",
+      "independent_evidence": "The blob of four cubic Beziers has area 52.25 exactly by Green's theorem in exact Fractions; the plane through its centre (4, 4, 2.5) halves the prism of height 5 by symmetry: 130.625 on each side. With a scratch variant of occt_split_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating x dy - y dx over OCCT's own profile edges (BRepAdaptor_Curve, 2,000 subintervals of 10-point Gauss-Legendre per edge): Green over OCCT's edges gives 52.25000000000025, and the adaptive volumes of the same pieces are 130.62499999222, their areas 169.152937699 (the reference 169.152937648).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "wave_knot",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "295d6222351e3f22a9e5aa8d931a1c6cbce8893aa00f5d99a2c630ec658220a9",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp integrates the faces bounded by the wave, a quadratic B-spline of three spans (interior knots 1 and 2), badly: the piece below x = 6.5, holding two spans, has volume 209.28386 (adaptive 209.37620) and area 215.97300 against the reference's 209.375 and 216.13397, 4.4e-04 and 7.4e-04 relative; the piece above, within one span, agrees to 1e-15. The pieces are valid, their sides the reference's. The kernel does not read spline segments yet (S8b.1): the case is rust_unsupported.",
+      "independent_evidence": "The profile (the rectangle [0, 10] x [0, 6] under the wave through the poles (10, 6), (8, 8), (5, 5), (2, 8), (0, 6)) has area 65.75 exactly by Green's theorem in exact Fractions over its Bernstein pieces from blossoms (a 200,001-point de Boor polygon gives 65.7499999994), and the reference's slicing agrees within 1e-40. With a scratch variant of occt_split_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating x dy - y dx over OCCT's own profile edges (BRepAdaptor_Curve, 2,000 subintervals of 10-point Gauss-Legendre per edge): Green over OCCT's edges gives 65.7500000397, so OCCT's solid is the reference's, but BRepGProp gives the uncut prism 329.093 by default and 329.623 adaptively, not 328.75; the same curve given as three Bezier spans (knots of multiplicity 2) gives the same numbers.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "wave_parallel_four",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "8856dc58606b3d20b6e9cd0d85a31c488d889a88d1145bd2d05e4a036343d664",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp integrates the faces bounded by the wave, a quadratic B-spline of three spans (interior knots 1 and 2), badly: the piece below y = 6.8, holding all three spans, has volume 323.82063 (adaptive 323.77427) against the reference's 323.84445, 7.4e-05 relative; the two pieces above, each within one span, agree to 1e-15. The pieces are valid, their sides the reference's. The kernel does not read spline segments yet (S8b.1): the case is rust_unsupported.",
+      "independent_evidence": "The profile (the rectangle [0, 10] x [0, 6] under the wave through the poles (10, 6), (8, 8), (5, 5), (2, 8), (0, 6)) has area 65.75 exactly by Green's theorem in exact Fractions over its Bernstein pieces from blossoms (a 200,001-point de Boor polygon gives 65.7499999994), and the reference's slicing agrees within 1e-40. With a scratch variant of occt_split_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating x dy - y dx over OCCT's own profile edges (BRepAdaptor_Curve, 2,000 subintervals of 10-point Gauss-Legendre per edge): Green over OCCT's edges gives 65.7500000397, so OCCT's solid is the reference's, but BRepGProp gives the uncut prism 329.093 by default and 329.623 adaptively, not 328.75; the same curve given as three Bezier spans (knots of multiplicity 2) gives the same numbers.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "wave_tilted",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "5c748de554616e5963dbf8641147d6d39b1d1313b46157d9dd907689b937df4c",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp integrates the faces bounded by the wave, a quadratic B-spline of three spans (interior knots 1 and 2), badly: in the tilted frame both pieces hold several spans: volumes 218.94522 and 44.14542 (adaptive 218.96428 and 44.13368) against the reference's 218.93509 and 44.06491, up to 1.8e-03 relative. The pieces are valid, their sides the reference's. The kernel does not read spline segments yet (S8b.1): the case is rust_unsupported.",
+      "independent_evidence": "The profile (the rectangle [0, 10] x [0, 6] under the wave through the poles (10, 6), (8, 8), (5, 5), (2, 8), (0, 6)) has area 65.75 exactly by Green's theorem in exact Fractions over its Bernstein pieces from blossoms (a 200,001-point de Boor polygon gives 65.7499999994), and the reference's slicing agrees within 1e-40. With a scratch variant of occt_split_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating x dy - y dx over OCCT's own profile edges (BRepAdaptor_Curve, 2,000 subintervals of 10-point Gauss-Legendre per edge): Green over OCCT's edges gives 65.7500000397, so OCCT's solid is the reference's, but BRepGProp gives the uncut prism (height 4) 263.274 by default and 263.698 adaptively, not 263; the same curve given as three Bezier spans (knots of multiplicity 2) gives the same numbers.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "capsule_steep",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "8bb4891a78b1eef1bc2356fdf9ae5bf59e5fe427da7980a16f2792cd9e894dfd",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "The plane cuts the prism's single-span B-spline wall across its rulings, and BRepGProp's default Gauss integration of the trimmed extrusion faces errs by up to 3.6e-08 in volume relative (beyond the 2e-8 allowance), and moves the centres by up to 3.6e-08 of the case's size. The pieces are valid, their sides the reference's. The kernel does not read spline segments yet (S8b.1): the case is rust_unsupported.",
+      "independent_evidence": "The reference slices the prism (the stadium of an arc and a two-span cubic end, area 9.9707963268 by the reference's slicing) in 40-digit arithmetic: 10.7329363999 below and 9.2086562537 above. With a scratch variant of occt_split_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating x dy - y dx over OCCT's own profile edges (BRepAdaptor_Curve, 2,000 subintervals of 10-point Gauss-Legendre per edge): Green over OCCT's edges gives 9.97079632679440, and the adaptive volumes of the same pieces are 10.7329364006 and 9.2086562531.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     }
   ]
 }

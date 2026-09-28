@@ -30,13 +30,22 @@ angle a full turn) and `split-torus-expected.tsv` (`split_reference.
 torus_rows`): planes normal to the axis (through the equator, above it,
 touching, missing, in a tilted frame), containing it, parallel to it
 through the tube, and oblique.
+
+S8b: `split-spline-cases.txt` holds prisms whose profiles have spline
+segments (the `B` segment of an `S` boundary row, `identity_reference.
+encode_case`), quadratic and cubic, with interior knots, beside lines and an
+arc, in holes, two of them given clockwise; `split-spline-expected.tsv`
+their sides from the same slicing (`spline_cases`). Before writing,
+`reference_checks` compares the spline slicing with closed forms: straight
+splines give the polygon's rows, and every profile of lines and splines its
+Green's-theorem area and moments in exact Fractions, both within 1e-30.
 """
 import argparse
 import math
 from pathlib import Path
 import struct
 
-from identity_reference import Boundary, Case, encode_case
+from identity_reference import Boundary, Case, Spline, encode_case, reversed_segment
 from curve_surface_reference import stored_axes
 import split_reference as ref
 
@@ -201,6 +210,125 @@ def spiric_cases():
     ]
 
 
+def spline(degree, poles, knots=(0.0, 1.0), mults=None):
+    """A clamped nonrational spline segment (S8b); a single Bezier span by
+    default."""
+    if mults is None:
+        mults = (degree+1,)+(1,)*(len(knots)-2)+(degree+1,)
+    return Spline(degree, tuple(poles), tuple(knots), tuple(mults))
+
+
+def clockwise(points, segments):
+    """The same closed path given the other way round (its first point
+    kept), each spline reversed: the stored order must restore it."""
+    n = len(points)
+    return path([points[0]]+points[:0:-1], [reversed_segment(segments[n-1-j]) for j in range(n)])
+
+
+def framed(frame, point, normal):
+    """A plane given in a frame's stored coordinates, in world coordinates
+    (binary64)."""
+    o, x, y, n = stored_axes(frame)
+    at = tuple(o[i]+point[0]*x[i]+point[1]*y[i]+point[2]*n[i] for i in range(3))
+    return at+tuple(normal[0]*x[i]+normal[1]*y[i]+normal[2]*n[i] for i in range(3))
+
+
+def spline_profiles():
+    """S8b's profiles: a rectangle with a quadratic bulge, a closed blob of
+    four cubics (given clockwise), a rectangle under a quadratic wave with
+    two interior knots, a stadium whose left end is a cubic with a double
+    interior knot, and a square with a lens-shaped hole of two cubics (given
+    clockwise)."""
+    rect = [(0.0, 0.0), (10.0, 0.0), (10.0, 6.0), (0.0, 6.0)]
+    bulge = path(rect, [None, spline(2, [(10.0, 0.0), (12.0, 3.0), (10.0, 6.0)]), None, None])
+    blob = clockwise([(4.0, 0.0), (8.0, 4.0), (4.0, 8.0), (0.0, 4.0)], [
+        spline(3, [(4.0, 0.0), (6.5, 0.0), (8.0, 1.5), (8.0, 4.0)]),
+        spline(3, [(8.0, 4.0), (8.0, 6.5), (6.5, 8.0), (4.0, 8.0)]),
+        spline(3, [(4.0, 8.0), (1.5, 8.0), (0.0, 6.5), (0.0, 4.0)]),
+        spline(3, [(0.0, 4.0), (0.0, 1.5), (1.5, 0.0), (4.0, 0.0)])])
+    wave = path(rect, [None, None, spline(2, [(10.0, 6.0), (8.0, 8.0), (5.0, 5.0), (2.0, 8.0), (0.0, 6.0)],
+                                          (0.0, 1.0, 2.0, 3.0)), None])
+    capsule = path([(0.0, -1.0), (3.0, -1.0), (3.0, 1.0), (0.0, 1.0)],
+                   [None, arc(3.0, 0.0, 1.0), None,
+                    spline(3, [(0.0, 1.0), (-1.0, 1.0), (-1.5, 0.5), (-1.5, -0.5), (-1.0, -1.0), (0.0, -1.0)],
+                           (0.0, 1.0, 2.0), (4, 2, 4))])
+    square = Boundary(points=[(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)])
+    lens = clockwise([(3.0, 5.0), (7.0, 5.0)], [
+        spline(3, [(3.0, 5.0), (4.0, 2.0), (6.0, 2.0), (7.0, 5.0)]),
+        spline(3, [(7.0, 5.0), (6.0, 8.0), (4.0, 8.0), (3.0, 5.0)])])
+    return {'bulge': [bulge], 'blob': [blob], 'wave': [wave], 'capsule': [capsule], 'lens': [square, lens]}
+
+
+def spline_cases():
+    """(case, plane): prisms of S8b's profiles (`spline_profiles`) by planes
+    normal to the axis, parallel to it (crossing a spline once, twice, four
+    times, through an interior knot's point, through two joins of splines,
+    tangent to a spline's extreme, beyond a spline but inside its control
+    polygon), oblique (across spline walls and caps, across every wall and
+    no cap, across a spline beside an arc, touching one join), and in a
+    cap, in both frames."""
+    p = spline_profiles()
+    return [
+        (prism('bulge_height', p['bulge']), (0.0, 0.0, 2.0, 0.0, 0.0, 1.0)),
+        (prism('bulge_parallel_once', p['bulge']), (0.0, 2.0, 0.0, 0.0, 1.0, 0.0)),
+        (prism('bulge_parallel_twice', p['bulge']), (10.5, 0.0, 0.0, 1.0, 0.0, 0.0)),
+        (prism('bulge_tangent', p['bulge']), (11.0, 0.0, 0.0, 1.0, 0.0, 0.0)),
+        (prism('bulge_miss_hull', p['bulge']), (12.0, 0.0, 0.0, 1.0, 0.0, 0.0)),
+        (prism('bulge_oblique', p['bulge']), (10.0, 3.0, 2.5, 1.0, 0.25, 1.5)),
+        (prism('blob_walls_only', p['blob']), (4.0, 4.0, 2.5, 0.125, 0.0625, 1.0)),
+        (prism('blob_joins', p['blob']), (4.0, 0.0, 0.0, 1.0, 0.0, 0.0)),
+        (prism('blob_join_touch', p['blob']), (8.0, 4.0, 5.0, 1.0, 0.0, 1.0)),
+        (prism('blob_tilted_in_cap', p['blob'], frame=TILT, end=4.0), (1.0, -2.0, 0.5, 0.0, 3.0, 4.0)),
+        (prism('wave_knot', p['wave']), (6.5, 0.0, 0.0, 1.0, 0.0, 0.0)),
+        (prism('wave_parallel_four', p['wave']), (0.0, 6.8, 0.0, 0.0, 1.0, 0.0)),
+        (prism('wave_tilted', p['wave'], frame=TILT, end=4.0), framed(TILT, (5.0, 6.0, 2.0), (0.5, 1.0, 1.0))),
+        (prism('capsule_parallel', p['capsule'], end=2.0), (-1.0, 0.0, 0.0, 1.0, 0.0, 0.0)),
+        (prism('capsule_steep', p['capsule'], end=2.0), (1.5, 0.0, 1.0, 1.0, 0.25, 2.75)),
+        (prism('lens_parallel', p['lens']), (0.0, 4.0, 0.0, 0.0, 1.0, 0.0)),
+        (prism('lens_tilted', p['lens'], frame=TILT, end=3.0), framed(TILT, (5.0, 4.0, 1.5), (0.25, 1.0, 0.5))),
+    ]
+
+
+def reference_checks():
+    """The spline reference against closed forms: a square whose sides are
+    straight splines (a quadratic and a cubic with an interior knot, poles
+    collinear and evenly spaced) gives the polygon's rows for S8a's square
+    planes; and every spline profile of lines and splines has, by slicing,
+    the area and first moments Green's theorem gives in exact Fractions.
+    Returns the largest relative deviations; raises beyond 1e-30."""
+    square = Boundary(points=[(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)])
+    straight = path([(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)], [
+        spline(2, [(0.0, 0.0), (5.0, 0.0), (10.0, 0.0)]),
+        spline(3, [(10.0, 0.0), (10.0, 2.5), (10.0, 5.0), (10.0, 7.5), (10.0, 10.0)], (0.0, 1.0, 2.0)),
+        None, None])
+    worst = [ref.M(0), ref.M(0)]
+    planes = [plane for case, plane in cases() if case.name in
+              ('sq_height', 'sq_tilted', 'sq_skew', 'sq_vertical', 'sq_diagonal_edges', 'sq_corner_cut')]
+    for plane in planes:
+        want = ref.rows(prism('polygon', [square]), plane)
+        got = ref.rows(prism('straight', [straight]), plane)
+        assert [r[0] for r in want] == [r[0] for r in got]
+        for w, g in zip(want, got):
+            for a, b in zip([w[1], w[2], *w[3]], [g[1], g[2], *g[3]]):
+                worst[0] = max(worst[0], abs(a-b)/max(1, abs(a)))
+    seen = set()
+    for case, _ in spline_cases():
+        if any(b.circle is not None or (b.segments and any(isinstance(s, tuple) for s in b.segments))
+               for b in case.boundaries) or case.name.split('_')[0] in seen:
+            continue
+        seen.add(case.name.split('_')[0])
+        area, mx, my = ref.green_moments(case)
+        h = ref.M(case.end-case.start)
+        prism_ = ref.Prism(case, (0.0, 0.0, 0.0, 0.0, 0.0, 1.0))
+        V, mu, mv, _ = prism_.volume_moments(None)
+        cap = prism_.region_measure([], lambda u, v: True)
+        for a, b in ((V/h, area), (mu/h, mx), (mv/h, my), (cap, area)):
+            worst[1] = max(worst[1], abs(a-ref.M(b))/max(1, abs(ref.M(b))))
+    if max(worst) > ref.M(10)**-30:
+        raise SystemExit(f'spline reference checks failed: {worst}')
+    return worst
+
+
 def primitive_line(kind, name, frame, params, plane):
     words = [kind, name, '1e-07'] + [repr(float(v)) for v in frame+params] + ['split'] + \
         [repr(float(v)) for v in plane]
@@ -243,6 +371,11 @@ def generate():
         slines.append(primitive_line('torus', name, frame, params+(2*math.pi,), plane))
         for row in ref.torus_rows(frame, params, plane):
             spirics.append(f'{name}\t{ref.text(row)}')
+    bblocks, bsplines = [], ['# case\trow (S8b, split_reference.py)']
+    for case, plane in spline_cases():
+        bblocks.append(encode(case, plane))
+        for row in ref.rows(case, plane):
+            bsplines.append(f'{case.name}\t{ref.text(row)}')
     return {'split-cases.txt': '\n'.join(blocks)+'\n', 'split-expected.tsv': '\n'.join(out)+'\n',
             'split-frames.tsv': '\n'.join(frames)+'\n',
             'split-primitive-cases.txt': '\n'.join(lines)+'\n',
@@ -252,13 +385,16 @@ def generate():
             'split-torus-cases.txt': '\n'.join(tlines)+'\n',
             'split-torus-expected.tsv': '\n'.join(tori)+'\n',
             'split-spiric-cases.txt': '\n'.join(slines)+'\n',
-            'split-spiric-expected.tsv': '\n'.join(spirics)+'\n'}
+            'split-spiric-expected.tsv': '\n'.join(spirics)+'\n',
+            'split-spline-cases.txt': '\n'.join(bblocks)+'\n',
+            'split-spline-expected.tsv': '\n'.join(bsplines)+'\n'}
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
+    straight, green = reference_checks()
     files = generate()
     for name, contents in files.items():
         path = ROOT/'fixtures'/name
@@ -268,7 +404,10 @@ def main():
         else:
             path.write_text(contents)
     print(len(cases()), 'cases,', len(primitive_cases()), 'primitive cases,', len(conic_cases()),
-          'conic cases,', len(torus_cases()), 'tori,', len(spiric_cases()), 'spiric tori')
+          'conic cases,', len(torus_cases()), 'tori,', len(spiric_cases()), 'spiric tori,',
+          len(spline_cases()), 'spline prisms')
+    print('spline reference: straight splines within', ref.mp.nstr(straight, 3),
+          'of the polygon, slicing within', ref.mp.nstr(green, 3), 'of Green (relative)')
 
 
 if __name__ == '__main__':

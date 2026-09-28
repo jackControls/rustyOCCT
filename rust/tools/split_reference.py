@@ -23,6 +23,21 @@ and the cut face: the region of `Omega` where the plane lies strictly
 between the caps, times `|(a, b, c)| / |c|`, or the plane's vertical chord
 of `Omega` times the height when `c = 0`.
 
+S8b: a path segment may be a nonrational B-spline (`identity_reference.
+Spline`). Its element is `('B', p, q, pieces)`: its Bezier pieces from exact
+knot insertion (Boehm's, in Fractions, each interior knot raised to the
+degree), each piece's coordinates polynomials in `t` on `[0, 1]` with exact
+coefficients. The vertical line `u = x` meets a piece where `x(t) = x` on one
+of its `x`-monotone runs (between the roots of `x'(t)`), found by a bracketed
+Newton iteration; the breaks add each piece's ends and `x`-extremes and the
+points where a clip line's `alpha x(t) + beta y(t) - gamma` vanishes (roots
+of a polynomial by the same bracketing on its own monotone runs,
+recursively). A spline wall's clipped strip is `mp.quad` of the clipped
+height times `|C'(t)|` between those roots. `green_moments` gives a profile
+of lines and splines its area and first moments by Green's theorem in exact
+Fractions (Bernstein product integrals over Bezier pieces from blossoms, not
+from knot insertion), a check of the slicing.
+
 A side holding no solid (the plane missing, touching a vertex, an edge or a
 ruling, or lying in a cap: every stored point certainly on the other side or
 on the plane) gives no piece: one `whole` row. A side may hold several pieces
@@ -35,7 +50,7 @@ import math
 
 import mpmath as mp
 
-from identity_reference import stored, arc_sweep
+from identity_reference import Spline, arc_sweep, bernstein_product, stored
 from curve_surface_reference import stored_axes
 
 mp.mp.dps = 40
@@ -52,10 +67,185 @@ def M(v):
     return mp.mpf(v)
 
 
+def _horner(c, t):
+    out = M(0)
+    for k in reversed(c):
+        out = out*t+k
+    return out
+
+
+def _derivative(c):
+    return [k*c[k] for k in range(1, len(c))]
+
+
+def _trim(c):
+    c = list(c)
+    while c and c[-1] == 0:
+        c.pop()
+    return c
+
+
+def _bracket(f, df, a, b, fa):
+    """The root of `f` in `[a, b]`, where it changes sign (`fa = f(a)`):
+    Newton steps kept inside the shrinking bracket, bisection otherwise."""
+    t = (a+b)/2
+    for _ in range(400):
+        ft = f(t)
+        if ft == 0:
+            return t
+        if (ft < 0) == (fa < 0):
+            a, fa = t, ft
+        else:
+            b = t
+        d = df(t)
+        nt = t-ft/d if d != 0 else None
+        if nt is None or not (a < nt < b):
+            nt = (a+b)/2
+        if abs(nt-t) <= M(10)**-39 or b-a <= M(10)**-39:
+            return nt
+        t = nt
+    raise ArithmeticError('bracketed root did not converge')
+
+
+def _runs(c):
+    """0, the roots of `c'` in (0, 1) and 1: the ends of the polynomial
+    `c`'s monotone runs on [0, 1]."""
+    return [M(0)]+_roots(_derivative(_trim(c)), touching=True)+[M(1)]
+
+
+def _roots(c, touching=False):
+    """The roots of the polynomial `c` (ascending mpf coefficients) in the
+    open (0, 1): where it changes sign on one of its monotone runs
+    (recursively through its derivatives), and with `touching` also the
+    runs' interior ends where it vanishes (to 1e-35 of its coefficients)."""
+    c = _trim(c)
+    if len(c) <= 1:
+        return []
+    if len(c) == 2:
+        t = -c[0]/c[1]
+        return [t] if 0 < t < 1 else []
+    ends = _runs(c)
+    dc = _derivative(c)
+    f, df = (lambda t: _horner(c, t)), (lambda t: _horner(dc, t))
+    out = []
+    for a, b in zip(ends, ends[1:]):
+        fa, fb = f(a), f(b)
+        if fa != 0 and fb != 0 and (fa < 0) != (fb < 0):
+            out.append(_bracket(f, df, a, b, fa))
+    if touching:
+        scale = max(abs(k) for k in c)
+        out += [t for t in ends[1:-1] if abs(f(t)) <= scale*M(10)**-35]
+    return sorted(out)
+
+
+def _power(ctrl):
+    """Power-basis coefficients (ascending, exact) of a Bezier coordinate
+    with Fraction controls."""
+    from math import comb
+    n = len(ctrl)-1
+    return [comb(n, k)*sum((-1)**(k-i)*comb(k, i)*ctrl[i] for i in range(k+1)) for k in range(n+1)]
+
+
+class Bezier:
+    """One Bezier piece of a spline element on `t` in [0, 1]: its exact
+    controls, 40-digit power coefficients, its `x`-monotone runs, and its
+    crossings of vertical lines cached by abscissa."""
+
+    def __init__(self, ctrl):
+        self.ctrl = tuple((F(x), F(y)) for x, y in ctrl)
+        self.cx = [M(k) for k in _power([p[0] for p in self.ctrl])]
+        self.cy = [M(k) for k in _power([p[1] for p in self.ctrl])]
+        self.dx, self.dy = _derivative(self.cx), _derivative(self.cy)
+        ts = _runs(self.cx)
+        self.runs = [(a, b, self.point(a)[0], self.point(b)[0]) for a, b in zip(ts, ts[1:])]
+        self.cache = {}
+
+    def reversed(self):
+        return Bezier(tuple(reversed(self.ctrl)))
+
+    def point(self, t):
+        """The point at `t`, its ends exactly the controls (so neighbouring
+        pieces agree there)."""
+        if t == 0:
+            return M(self.ctrl[0][0]), M(self.ctrl[0][1])
+        if t == 1:
+            return M(self.ctrl[-1][0]), M(self.ctrl[-1][1])
+        return _horner(self.cx, t), _horner(self.cy, t)
+
+    def speed(self, t):
+        return mp.sqrt(_horner(self.dx, t)**2+_horner(self.dy, t)**2)
+
+    def ys_at(self, x):
+        """The `v` where the piece crosses `u = x` (never at an end or an
+        `x`-extreme: those are breaks)."""
+        if x not in self.cache:
+            ys = []
+            for a, b, xa, xb in self.runs:
+                if (xa < x < xb) or (xb < x < xa):
+                    t = _bracket(lambda t: _horner(self.cx, t)-x, lambda t: _horner(self.dx, t),
+                                 a, b, xa-x)
+                    ys.append(_horner(self.cy, t))
+            self.cache[x] = ys
+        return self.cache[x]
+
+    def line(self, alpha, beta, gamma):
+        """`alpha x(t) + beta y(t) - gamma` as ascending coefficients."""
+        c = [alpha*i+beta*j for i, j in zip(self.cx, self.cy)]
+        c[0] -= gamma
+        return c
+
+    def line_roots(self, alpha, beta, gamma):
+        """Every `t` in (0, 1) where the line `alpha x + beta y = gamma`
+        meets the piece, touching ones included."""
+        return _roots(self.line(M(alpha), M(beta), M(gamma)), touching=True)
+
+    def line_sign_changes(self, alpha, beta, gamma):
+        """The points where `alpha x + beta y - gamma` passes between `< 0`
+        and `>= 0` along the piece (the convention of a segment's
+        crossings; a touch crosses nothing), one per monotone run."""
+        alpha, beta, gamma = M(alpha), M(beta), M(gamma)
+        c = self.line(alpha, beta, gamma)
+        dc = _derivative(_trim(c))
+        g = lambda t: alpha*self.point(t)[0]+beta*self.point(t)[1]-gamma
+        ends = _runs(c)
+        out = []
+        for a, b in zip(ends, ends[1:]):
+            fa, fb = g(a), g(b)
+            if (fa < 0) != (fb < 0):
+                if fa == 0 or fb == 0:
+                    out.append(a if fa == 0 else b)
+                else:
+                    out.append(_bracket(lambda t: _horner(c, t), lambda t: _horner(dc, t), a, b, fa))
+        return [self.point(t) for t in out]
+
+
+def bezier_pieces(spline):
+    """The spline's Bezier control points per knot span, by Boehm's knot
+    insertion in Fractions: each interior knot inserted until its
+    multiplicity is the degree."""
+    d = spline.degree
+    U = spline.flat_knots()
+    P = [(F(x), F(y)) for x, y in spline.poles]
+    for k, m in zip(spline.knots[1:-1], spline.mults[1:-1]):
+        t = F(k)
+        for _ in range(d-m):
+            s = max(i for i in range(len(U)-1) if U[i] <= t < U[i+1])
+            Q = P[:s-d+1]
+            for i in range(s-d+1, s+1):
+                a = (t-U[i])/(U[i+d]-U[i])
+                Q.append(tuple((1-a)*P[i-1][c]+a*P[i][c] for c in range(2)))
+            Q += P[s:]
+            P, U = Q, U[:s+1]+[t]+U[s+1:]
+    count = len(spline.knots)-1
+    assert len(P) == count*d+1
+    return [tuple(P[i*d:i*d+d+1]) for i in range(count)]
+
+
 def elements(boundaries, tolerance):
-    """The stored boundaries' elements: ('L', p, q) or ('A', p, q, (cx, cy,
-    r), sweep), counter-clockwise outer, clockwise holes (as stored: holes
-    reversed so the region is on the left)."""
+    """The stored boundaries' elements: ('L', p, q), ('A', p, q, (cx, cy,
+    r), sweep) or ('B', p, q, Bezier pieces) (S8b), counter-clockwise outer,
+    clockwise holes (as stored: holes reversed so the region is on the
+    left)."""
     out = []
     for k, b in enumerate(boundaries):
         pts, _ = stored(b, tolerance)
@@ -71,6 +261,9 @@ def elements(boundaries, tolerance):
                 p, q = points[i], points[(i+1) % n]
                 if segs[i] is None:
                     items.append(('L', p, q))
+                elif isinstance(segs[i], Spline):
+                    segs[i].check(p, q)
+                    items.append(('B', p, q, tuple(Bezier(c) for c in bezier_pieces(segs[i]))))
                 else:
                     items.append(('A', p, q, segs[i][:3], arc_sweep(p, q, segs[i])))
         else:
@@ -83,6 +276,8 @@ def elements(boundaries, tolerance):
             for it in reversed(items):
                 if it[0] == 'L':
                     rev.append(('L', it[2], it[1]))
+                elif it[0] == 'B':
+                    rev.append(('B', it[2], it[1], tuple(b.reversed() for b in reversed(it[3]))))
                 else:
                     rev.append(('A', it[2], it[1], it[3], -it[4]))
             items = rev
@@ -106,6 +301,9 @@ def crossings(els, x):
             if (x0 < x < x1) or (x1 < x < x0):
                 t = (x-M(x0))/(M(x1)-x0)
                 ys.append(M(y0)+t*(M(y1)-y0))
+        elif e[0] == 'B':
+            for piece in e[3]:
+                ys += piece.ys_at(x)
         else:
             _, _, _, (cx, cy, r), sweep = e
             dx = x-M(cx)
@@ -128,6 +326,10 @@ def x_breaks(els, lines):
     for e in els:
         xs.add(M(e[1][0]))
         xs.add(M(e[2][0]))
+        if e[0] == 'B':
+            for piece in e[3]:
+                for _, _, xa, xb in piece.runs:
+                    xs.update((xa, xb))
         if e[0] == 'A':
             _, _, _, (cx, cy, r), sweep = e
             a0, sw = arc_angles(e)
@@ -150,6 +352,10 @@ def x_breaks(els, lines):
                     t = f0/(f0-f1)
                     if 0 <= t <= 1:
                         xs.add(M(x0)+t*(M(x1)-x0))
+            elif e[0] == 'B':
+                for piece in e[3]:
+                    for t in piece.line_roots(alpha, beta, gamma):
+                        xs.add(piece.point(t)[0])
             else:
                 _, _, _, (cx, cy, r), sweep = e
                 # alpha (cx + r cos) + beta (cy + r sin) = gamma
@@ -184,6 +390,13 @@ class Prism:
         vals = []
         for e in self.els:
             vals.append(M(self.a)*e[1][0]+M(self.b)*e[1][1])
+            if e[0] == 'B' and (self.a or self.b):
+                # Each piece's end and its support points.
+                for piece in e[3]:
+                    c = piece.line(M(self.a), M(self.b), M(0))
+                    for t in [M(1)]+_roots(_derivative(_trim(c)), touching=True):
+                        x, y = piece.point(t)
+                        vals.append(M(self.a)*x+M(self.b)*y)
             if e[0] == 'A' and (self.a or self.b):
                 _, _, _, (cx, cy, r), sweep = e
                 a0, sw = arc_angles(e)
@@ -345,6 +558,10 @@ class Prism:
                     t = f0/(f0-f1)
                     px, py = x0+t*(x1-x0), y0+t*(y1-y0)
                     ts.append((px-foot[0])*dirv[0]+(py-foot[1])*dirv[1])
+            elif e[0] == 'B':
+                for piece in e[3]:
+                    for px, py in piece.line_sign_changes(alpha, beta, gamma):
+                        ts.append((px-foot[0])*dirv[0]+(py-foot[1])*dirv[1])
             else:
                 _, _, _, (cx, cy, r), sweep = e
                 a0, sw = arc_angles(e)
@@ -390,6 +607,20 @@ class Prism:
                 total += (t1-t0)/2*(f(t0+(t1-t0)*M(10)**-30)+f(t1-(t1-t0)*M(10)**-30)) \
                     if c != 0 else (t1-t0)*f((t0+t1)/2)
             return total*seg
+        if e[0] == 'B':
+            # The clipped height times the speed, between the clip levels'
+            # roots on each piece.
+            levels = [(a, b, -d-c*M(w)) for w in (self.w0, self.w1)] if c != 0 else [(a, b, -d)]
+            total = M(0)
+            for piece in e[3]:
+                br = {M(0), M(1)}
+                for alpha, beta, gamma in levels:
+                    if alpha or beta:
+                        br.update(piece.line_roots(alpha, beta, gamma))
+                br = sorted(br)
+                f = lambda t: length(*piece.point(t))*piece.speed(t)
+                total += sum(mp.quad(f, [t0, t1]) for t0, t1 in zip(br, br[1:]))
+            return total
         _, _, _, (cx, cy, r), sweep = e
         a0, sw = arc_angles(e)
         f = lambda t: length(cx+r*mp.cos(t), cy+r*mp.sin(t))
@@ -438,6 +669,54 @@ def number(x):
 def text(row):
     side, V, A, c = row
     return ' '.join(['side', side, number(V), number(A)]+[number(v) for v in c])
+
+
+# ------------------------------------------------------------------ S8b
+
+def _triple(n, i, j, m, k):
+    """The integral over [0, 1] of B(n, i) B(n, j) B(m, k)."""
+    from math import comb
+    return F(comb(n, i)*comb(n, j)*comb(m, k), comb(2*n+m, i+j+k)*(2*n+m+1))
+
+
+def green_moments(case):
+    """(area, integral of u, integral of v) of a profile of lines and
+    splines in its frame's coordinates, by Green's theorem in exact
+    Fractions: `A = 1/2 int x dy - y dx`, `int u dA = int x^2/2 dy`, `int v
+    dA = -int y^2/2 dx` along the stored boundaries (holes reversed), each
+    line a degree-1 Bezier and each spline its pieces from blossoms
+    (`Spline.pieces`, checked equal to the slicing's knot insertion), with
+    Bernstein product integrals."""
+    area = mx = my = F(0)
+    for k, b in enumerate(case.boundaries):
+        pts, _ = stored(b, case.tolerance)
+        assert pts is not None, 'green_moments: lines and splines only'
+        points, segs = pts if b.segments is not None else (pts, [None]*len(pts))
+        pieces, n = [], len(points)
+        for i in range(n):
+            p, q = points[i], points[(i+1) % n]
+            if segs[i] is None:
+                pieces.append(((F(p[0]), F(p[1])), (F(q[0]), F(q[1]))))
+            else:
+                assert isinstance(segs[i], Spline), 'green_moments: lines and splines only'
+                blossomed = segs[i].pieces()
+                assert blossomed == bezier_pieces(segs[i]), 'blossoms and knot insertion disagree'
+                pieces += blossomed
+        if k > 0:
+            pieces = [tuple(reversed(c)) for c in reversed(pieces)]
+        for c in pieces:
+            d = len(c)-1
+            dx = [d*(c[j+1][0]-c[j][0]) for j in range(d)]
+            dy = [d*(c[j+1][1]-c[j][1]) for j in range(d)]
+            for i in range(d+1):
+                for j in range(d):
+                    area += bernstein_product(d, i, d-1, j)*(c[i][0]*dy[j]-c[i][1]*dx[j])/2
+                for j in range(d+1):
+                    for l in range(d):
+                        w = _triple(d, i, j, d-1, l)
+                        mx += w*c[i][0]*c[j][0]*dy[l]/2
+                        my -= w*c[i][1]*c[j][1]*dx[l]/2
+    return area, mx, my
 
 
 # ------------------------------------------------------------------ S8c

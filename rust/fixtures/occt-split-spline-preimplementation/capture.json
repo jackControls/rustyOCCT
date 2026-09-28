@@ -1,0 +1,14 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+  "platform": "darwin",
+  "rust_revision": "85d7e26ebc9d8492882ca05eaafa1917cd5e28bc",
+  "rust_split_exists": false,
+  "rust_worktree_uncommitted": [
+    "?? rust/fixtures/occt-split-spline-preimplementation/"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "2c7df817f37a9e146a69acfae0dd52585df3d3eb9569b33a50d959e7a66d2b73",
+  "probe_source_sha256": "3bd002d78830e6b838b15f8b5294e91acd96bb4e8aa74a1c72c21f9b86c1794a",
+  "observations_sha256": "38dd3d15f87d35548630beea48ef180ae534140f73727efa55caf5a89d9f7edd"
+}
