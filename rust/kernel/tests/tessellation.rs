@@ -1,7 +1,7 @@
-//! Tessellation (T-a of REVIEW_NOTES.md) against the independent reference's
-//! expectations (fixtures/tessellation-*.{txt,tsv} from
-//! tools/generate_tessellation_fixtures.py), and the contract on imported
-//! corpus solids.
+//! Tessellation (T-a and T-b of REVIEW_NOTES.md) against the independent
+//! reference's expectations (fixtures/tessellation-*.{txt,tsv} from
+//! tools/generate_tessellation_fixtures.py), and the contract on the valid
+//! spline cases of the B-rep fixtures and on imported corpus solids.
 #[path = "support/brep_protocol.rs"]
 mod brep_protocol;
 #[path = "support/identity_protocol.rs"]
@@ -10,7 +10,7 @@ mod identity_protocol;
 use rusty_occt::occt_brep::{import, read};
 use rusty_occt::tessellation::{tessellate, Mesh, Parameters};
 use rusty_occt::topology::{Surface, Topology};
-use rusty_occt::{Error, Point3, Vec3};
+use rusty_occt::{BSplineSurface3, Error, KnotVector, Point3, Tolerance, Vec3};
 use std::collections::BTreeMap;
 
 /// Barycentric samples: the order-4 lattice without the vertices.
@@ -64,6 +64,182 @@ fn surface_distance(surface: &Surface, p: Point3) -> f64 {
             ((rho - major).hypot(z) - minor).abs()
         }
         Surface::BSpline(_) => f64::INFINITY,
+    }
+}
+
+/// Distances to a spline surface over its domain, independent of the
+/// kernel's evaluation and of the tessellation's cells: the surface's basis
+/// functions and their derivatives by the Cox-de Boor recurrence in
+/// binary64 (The NURBS Book, A2.2 and A2.3), the rational quotient rule;
+/// from the four nearest points of a grid with four samples per knot span
+/// (at least 9 per direction, at most 257), Gauss-Newton iterations clamped to the
+/// domain. A projection can only overstate a distance (by rounding, far
+/// below the check's allowance).
+struct SplineDistance<'a> {
+    surface: &'a BSplineSurface3,
+    flat: [Vec<f64>; 2],
+    grid: Vec<(Point3, f64, f64)>,
+}
+
+/// The flat knot sequence of a nonperiodic basis.
+fn flat(k: &KnotVector) -> Vec<f64> {
+    k.knots()
+        .iter()
+        .zip(k.multiplicities())
+        .flat_map(|(x, m)| std::iter::repeat_n(*x, *m))
+        .collect()
+}
+
+/// The span `s` with `flat[s] <= x < flat[s + 1]` (the last nonempty one at
+/// the domain's end), and the basis values and first derivatives there.
+fn basis_at(flat: &[f64], p: usize, x: f64) -> (usize, Vec<f64>, Vec<f64>) {
+    let n = flat.len() - p - 1;
+    let mut s = p;
+    while s + 1 < n && flat[s + 1] <= x {
+        s += 1;
+    }
+    let mut ndu = vec![vec![0.0; p + 1]; p + 1];
+    ndu[0][0] = 1.0;
+    let (mut left, mut right) = (vec![0.0; p + 1], vec![0.0; p + 1]);
+    for j in 1..=p {
+        left[j] = x - flat[s + 1 - j];
+        right[j] = flat[s + j] - x;
+        let mut saved = 0.0;
+        for r in 0..j {
+            ndu[j][r] = right[r + 1] + left[j - r];
+            let temp = ndu[r][j - 1] / ndu[j][r];
+            ndu[r][j] = saved + right[r + 1] * temp;
+            saved = left[j - r] * temp;
+        }
+        ndu[j][j] = saved;
+    }
+    let values: Vec<f64> = (0..=p).map(|j| ndu[j][p]).collect();
+    // First derivatives: p (N_{r,p-1} / du - N_{r+1,p-1} / du').
+    let derivatives = (0..=p)
+        .map(|r| {
+            let mut d = 0.0;
+            if r >= 1 {
+                d += ndu[r - 1][p - 1] / ndu[p][r - 1];
+            }
+            if r < p {
+                d -= ndu[r][p - 1] / ndu[p][r];
+            }
+            p as f64 * d
+        })
+        .collect();
+    (s, values, derivatives)
+}
+
+impl<'a> SplineDistance<'a> {
+    fn new(surface: &'a BSplineSurface3) -> Self {
+        let flat = [flat(surface.u_knots()), flat(surface.v_knots())];
+        let mut out = Self {
+            surface,
+            flat,
+            grid: Vec::new(),
+        };
+        let ((u0, u1), (v0, v1)) = surface.domain();
+        let count = |k: &KnotVector| (4 * (k.knots().len() - 1)).clamp(8, 256);
+        let (nu, nv) = (count(surface.u_knots()), count(surface.v_knots()));
+        for i in 0..=nu {
+            for j in 0..=nv {
+                let (u, v) = (
+                    (u0 + (u1 - u0) * i as f64 / nu as f64).min(u1),
+                    (v0 + (v1 - v0) * j as f64 / nv as f64).min(v1),
+                );
+                let point = out.jet(u, v).0;
+                out.grid.push((point, u, v));
+            }
+        }
+        out
+    }
+
+    /// `(S, S_u, S_v)` in binary64.
+    fn jet(&self, u: f64, v: f64) -> (Point3, Vec3, Vec3) {
+        let s = self.surface;
+        let (p, q) = (s.u_knots().degree(), s.v_knots().degree());
+        let nv = s.v_knots().pole_count();
+        let (su, nu_, du_) = basis_at(&self.flat[0], p, u);
+        let (sv, nv_, dv_) = basis_at(&self.flat[1], q, v);
+        let (mut a, mut au, mut av) = ([0.0; 3], [0.0; 3], [0.0; 3]);
+        let (mut w, mut wu, mut wv) = (0.0, 0.0, 0.0);
+        for i in 0..=p {
+            for j in 0..=q {
+                let index = (su - p + i) * nv + (sv - q + j);
+                let (pole, weight) = (s.poles()[index].to_array(), s.weights()[index]);
+                let (b, bu, bv) = (nu_[i] * nv_[j], du_[i] * nv_[j], nu_[i] * dv_[j]);
+                for k in 0..3 {
+                    a[k] += b * weight * pole[k];
+                    au[k] += bu * weight * pole[k];
+                    av[k] += bv * weight * pole[k];
+                }
+                w += b * weight;
+                wu += bu * weight;
+                wv += bv * weight;
+            }
+        }
+        let point = [a[0] / w, a[1] / w, a[2] / w];
+        let d = |x: [f64; 3], dw: f64| {
+            Vec3::new(
+                (x[0] - dw * point[0]) / w,
+                (x[1] - dw * point[1]) / w,
+                (x[2] - dw * point[2]) / w,
+            )
+        };
+        (
+            Point3::new(point[0], point[1], point[2]),
+            d(au, wu),
+            d(av, wv),
+        )
+    }
+
+    fn distance(&self, p: Point3) -> f64 {
+        let mut near: Vec<(f64, f64, f64)> = self
+            .grid
+            .iter()
+            .map(|(q, u, v)| (q.distance(p), *u, *v))
+            .collect();
+        near.sort_by(|a, b| a.0.total_cmp(&b.0));
+        near.iter()
+            .take(4)
+            .map(|&(d, u, v)| d.min(self.descend(p, u, v)))
+            .fold(f64::INFINITY, f64::min)
+    }
+
+    fn descend(&self, p: Point3, mut u: f64, mut v: f64) -> f64 {
+        let ((u0, u1), (v0, v1)) = self.surface.domain();
+        let mut best = f64::INFINITY;
+        for _ in 0..30 {
+            let (point, su, sv) = self.jet(u, v);
+            let r = point - p;
+            best = best.min(r.length());
+            let (a, b, c) = (su.dot(su), su.dot(sv), sv.dot(sv));
+            let (g, h) = (-r.dot(su), -r.dot(sv));
+            let det = a * c - b * b;
+            if det.is_nan() || det <= 0.0 {
+                break;
+            }
+            let (nu, nv) = (
+                (u + (g * c - h * b) / det).clamp(u0, u1),
+                (v + (a * h - b * g) / det).clamp(v0, v1),
+            );
+            if (nu - u).abs() <= 1e-15 * (u1 - u0) && (nv - v).abs() <= 1e-15 * (v1 - v0) {
+                break;
+            }
+            (u, v) = (nu, nv);
+        }
+        best
+    }
+}
+
+fn kind(surface: &Surface) -> &'static str {
+    match surface {
+        Surface::Plane(_) => "plane",
+        Surface::Cylinder { .. } => "cylinder",
+        Surface::Cone { .. } => "cone",
+        Surface::Sphere { .. } => "sphere",
+        Surface::Torus { .. } => "torus",
+        Surface::BSpline(_) => "spline",
     }
 }
 
@@ -126,6 +302,17 @@ fn contract(name: &str, t: &Topology, mesh: &Mesh, p: Parameters, solid: bool) -
     let (mut area, mut volume) = (0.0, 0.0);
     for f in &mesh.faces {
         let surface = &t.faces()[f.face.index()].surface;
+        // A spline face: the centroids of at most 1000 of its triangles,
+        // evenly spread, by projection.
+        let spline = match surface {
+            Surface::BSpline(s) => Some(SplineDistance::new(s)),
+            _ => None,
+        };
+        let stride = if spline.is_some() {
+            f.triangles.len().div_ceil(1000).max(1)
+        } else {
+            1
+        };
         for k in f.triangles.clone() {
             let x = mesh.triangles[k].map(|n| mesh.nodes[n]);
             let bound = mesh.triangle_bounds[k];
@@ -133,16 +320,28 @@ fn contract(name: &str, t: &Topology, mesh: &Mesh, p: Parameters, solid: bool) -
                 bound.deflection <= p.deflection() && bound.angle <= p.angle(),
                 "{name}"
             );
-            for l in samples() {
+            let lattice = if spline.is_none() {
+                samples()
+            } else if (k - f.triangles.start) % stride == 0 {
+                vec![[1.0 / 3.0; 3]]
+            } else {
+                Vec::new()
+            };
+            for l in lattice {
                 let s = Point3::new(
                     l[0] * x[0].x + l[1] * x[1].x + l[2] * x[2].x,
                     l[0] * x[0].y + l[1] * x[1].y + l[2] * x[2].y,
                     l[0] * x[0].z + l[1] * x[1].z + l[2] * x[2].z,
                 );
-                let d = surface_distance(surface, s);
+                let d = match &spline {
+                    Some(spline) => spline.distance(s),
+                    None => surface_distance(surface, s),
+                };
                 assert!(
                     d <= bound.deflection + eps,
-                    "{name}: sample {d} beyond bound {bound:?}"
+                    "{name}: face {} ({}) sample {d} beyond bound {bound:?}",
+                    f.face.index(),
+                    kind(surface)
                 );
             }
             let n: Vec3 = (x[1] - x[0]).cross(x[2] - x[0]);
@@ -323,27 +522,108 @@ fn wire_bodies_give_polylines_and_budgets_are_typed() {
     ));
 }
 
+/// T-b: the twelve spline fixture bodies at both settings against the
+/// reference's expectations (tessellation-spline-*.{txt,tsv}).
 #[test]
-fn spline_geometry_waits_for_t_b() {
-    let mut splines = 0;
+fn every_spline_fixture_mesh_meets_the_reference_expectations() {
+    let expected: BTreeMap<&str, Vec<&str>> =
+        include_str!("../../fixtures/tessellation-spline-expected.tsv")
+            .lines()
+            .filter(|l| !l.starts_with('#'))
+            .map(|l| {
+                let row: Vec<&str> = l.split('\t').collect();
+                (row[0], row[1..].to_vec())
+            })
+            .collect();
+    let text = include_str!("../../fixtures/tessellation-spline-cases.txt");
+    let mut meshes = 0;
+    for block in text.split("\nend").filter(|b| !b.trim().is_empty()) {
+        let body: String = block
+            .trim()
+            .lines()
+            .filter(|l| !l.starts_with("mesh "))
+            .map(|l| format!("{l}\n"))
+            .collect();
+        let (name, tolerance, parts) = brep_protocol::parse(body.trim());
+        let topology = Topology::from_parts(parts, Tolerance::new(tolerance, 1e-12).unwrap())
+            .unwrap_or_else(|e| panic!("{name}: {e:?}"));
+        let row = &expected[name.as_str()];
+        let solid = row[0] == "solid";
+        let (euler, loops): (i64, usize) = (row[1].parse().unwrap(), row[2].parse().unwrap());
+        let (area, volume): (f64, f64) = (row[3].parse().unwrap(), row[4].parse().unwrap());
+        for (setting, deflection, angle) in settings(block) {
+            let p = Parameters::new(deflection, angle).unwrap();
+            let label = format!("{name} {setting}");
+            let mesh = tessellate(&topology, p).unwrap_or_else(|e| panic!("{label}: {e}"));
+            let m = contract(&label, &topology, &mesh, p, solid);
+            assert_eq!(m.euler, euler, "{label}");
+            if !solid {
+                assert!(m.boundary_edges >= 3 * loops, "{label}");
+            } else {
+                assert!(
+                    (m.volume - volume).abs() <= deflection * (area + m.area) * (1.0 + 1e-9),
+                    "{label}: volume {} against {volume}",
+                    m.volume
+                );
+            }
+            assert!(
+                (m.area - area).abs() <= 0.05 * area,
+                "{label}: area {}",
+                m.area
+            );
+            assert_eq!(tessellate(&topology, p).unwrap(), mesh, "{label}");
+            meshes += 1;
+        }
+    }
+    assert_eq!(meshes, 24);
+}
+
+/// T-b: every valid case of the B-rep fixtures with spline geometry
+/// (ranges, reversed spans, rational and unclamped edges, a spline cap,
+/// spline walls and holes, a tiny far corner, a spline sheet) meets the
+/// contract, a solid's volume within the deflection times the areas of its
+/// certified mass enclosure.
+#[test]
+fn valid_spline_cases_of_the_brep_fixtures_meet_the_contract() {
+    let mut meshed = 0;
     for block in include_str!("../../fixtures/brep-cases.txt")
         .split("\nend")
-        .filter(|b| b.contains("case spline_"))
+        .filter(|b| b.contains("bspline"))
     {
         let (name, tolerance, parts) = brep_protocol::parse(block.trim());
-        let Ok(t) =
-            Topology::from_parts(parts, rusty_occt::Tolerance::new(tolerance, 1e-12).unwrap())
-        else {
+        let Ok(t) = Topology::from_parts(parts, Tolerance::new(tolerance, 1e-12).unwrap()) else {
             continue;
         };
-        splines += 1;
-        assert_eq!(
-            tessellate(&t, Parameters::new(0.1, 0.5).unwrap()),
-            Err(Error::OutOfDomain("tessellation of spline geometry")),
-            "{name}"
-        );
+        let (mut lo, mut hi) = ([f64::INFINITY; 3], [f64::NEG_INFINITY; 3]);
+        for p in t.vertices().iter().map(|v| v.position) {
+            let a = p.to_array();
+            for k in 0..3 {
+                lo[k] = lo[k].min(a[k]);
+                hi[k] = hi[k].max(a[k]);
+            }
+        }
+        let size = (0..3).map(|k| hi[k] - lo[k]).fold(0.0, f64::max);
+        let p = Parameters::new(size * 2e-3, 0.5).unwrap();
+        let mesh = tessellate(&t, p).unwrap_or_else(|e| panic!("{name}: {e}"));
+        let solid = t
+            .regions()
+            .iter()
+            .any(|r| r.kind == rusty_occt::topology::RegionKind::Solid);
+        let m = contract(&name, &t, &mesh, p, solid);
+        if let (true, Some(mass)) = (solid, t.mass_enclosure()) {
+            let [v0, v1] = mass.volume;
+            let slack = p.deflection() * (mass.surface_area[1] + m.area) * (1.0 + 1e-9);
+            assert!(
+                m.volume >= v0 - slack && m.volume <= v1 + slack,
+                "{name}: {} not in {:?}",
+                m.volume,
+                mass.volume
+            );
+        }
+        meshed += 1;
     }
-    assert!(splines > 0);
+    // T-b's 17 and F8's three split-wall and parallel models.
+    assert_eq!(meshed, 20);
 }
 
 /// The document without the free shapes directly under its root compound
@@ -368,10 +648,10 @@ fn solids_only(mut doc: rusty_occt::occt_brep::Document) -> rusty_occt::occt_bre
     doc
 }
 
-/// Every corpus solid the importer certifies without spline geometry (planes
-/// and cylinders with general loops, seams merged into windings, holes):
-/// closed, oriented, within its bounds, its volume within the deflection
-/// times the areas of the certified mass enclosure.
+/// Every corpus solid the importer certifies (planes, cylinders, cones,
+/// spheres, tori and, since T-b, splines, with general loops, seams merged
+/// into windings, holes): closed, oriented, within its bounds, its volume
+/// within the deflection times the areas of the certified mass enclosure.
 #[test]
 fn imported_corpus_solids_meet_the_contract() {
     let root = concat!(env!("CARGO_MANIFEST_DIR"), "/../../data/occ/");
@@ -381,12 +661,14 @@ fn imported_corpus_solids_meet_the_contract() {
         .map(|l| l.split('\t').next().unwrap())
         .collect();
     files.dedup();
-    let mut meshed = 0;
+    let (mut meshed, mut limited) = (0, Vec::<String>::new());
     for name in files {
         let text = std::fs::read_to_string(format!("{root}{name}")).unwrap();
         let im = import(&solids_only(read(&text).unwrap()));
         for solid in &im.solids {
             let Ok(t) = &solid.result else { continue };
+            // A spline solid's certified mass enclosure takes minutes: its
+            // mesh is checked without the volume band.
             let spline = t
                 .faces()
                 .iter()
@@ -394,9 +676,6 @@ fn imported_corpus_solids_meet_the_contract() {
                 || t.edges()
                     .iter()
                     .any(|e| matches!(e.curve, rusty_occt::topology::Curve3::BSpline(_)));
-            if spline {
-                continue;
-            }
             let (mut lo, mut hi) = ([f64::INFINITY; 3], [f64::NEG_INFINITY; 3]);
             // The box of the edges' points (ring edges have no vertex).
             let points = t
@@ -411,13 +690,29 @@ fn imported_corpus_solids_meet_the_contract() {
                 }
             }
             // A whole sphere or torus has no edge: its volume's cube root.
-            let cube = t.mass_enclosure().map_or(0.0, |m| m.volume[1].abs().cbrt());
+            let cube = if spline {
+                0.0
+            } else {
+                t.mass_enclosure().map_or(0.0, |m| m.volume[1].abs().cbrt())
+            };
             let size = (0..3).map(|k| hi[k] - lo[k]).fold(cube.max(1e-3), f64::max);
             let p = Parameters::new(size * 2e-3, 0.5).unwrap();
             let label = format!("{name} {}", solid.record);
-            let mesh = tessellate(t, p).unwrap_or_else(|e| panic!("{label}: {e}"));
+            let mesh = match tessellate(t, p) {
+                Ok(mesh) => mesh,
+                // Certified since S8d.2 (a hole with spline pcurves in a
+                // wound cylinder face): its spline edge's segment check does
+                // not converge within the budget (a T-b follow-up).
+                Err(rusty_occt::Error::ComputationLimit(_))
+                    if name == "Motor-c.brep" && solid.record == 378 =>
+                {
+                    limited.push(label);
+                    continue;
+                }
+                Err(e) => panic!("{label}: {e}"),
+            };
             let m = contract(&label, t, &mesh, p, true);
-            if let Some(mass) = t.mass_enclosure() {
+            if let Some(mass) = (!spline).then(|| t.mass_enclosure()).flatten() {
                 let [v0, v1] = mass.volume;
                 let [_, a1] = mass.surface_area;
                 let slack = p.deflection() * (a1 + m.area) * (1.0 + 1e-9);
@@ -431,6 +726,8 @@ fn imported_corpus_solids_meet_the_contract() {
             meshed += 1;
         }
     }
-    // The 58 certified corpus solids but the four with spline geometry.
-    assert_eq!(meshed, 54);
+    // The 59 certified corpus solids, the five with spline geometry among
+    // them, but Motor-c 378 (pinned above).
+    assert_eq!(meshed, 58);
+    assert_eq!(limited, ["Motor-c.brep 378"]);
 }

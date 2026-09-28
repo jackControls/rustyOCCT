@@ -1,5 +1,5 @@
-//! Deflection-controlled, watertight tessellation (T-a of `REVIEW_NOTES.md`,
-//! `TESSELLATION.md`).
+//! Deflection-controlled, watertight tessellation (T-a and T-b of
+//! `REVIEW_NOTES.md`, `TESSELLATION.md`).
 //!
 //! Every edge is discretized once, uniformly in its fraction; every face
 //! that uses the edge takes exactly that polyline as boundary, so faces
@@ -9,10 +9,12 @@
 //! in the sinusoidal chart `((u - u_c) |S_u|(v), s(v))`, which collapses a
 //! pole to a point, a face wound in `u` in an annulus chart `P(v) (cos u,
 //! sin u)` and a torus face wound in `v` the same way with `u` and `v`
-//! exchanged; a whole sphere or torus is a structured grid. No seam is
-//! meshed. A constrained Delaunay triangulation of the chart polygons
-//! (`cdt.rs`) is refined by Steiner points until every triangle's certified
-//! deflection and normal turn (`bounds.rs`) are within the request.
+//! exchanged; a whole sphere or torus is a structured grid; a nonperiodic
+//! spline face (T-b) in an affine chart of its `(u, v)`. No seam is meshed.
+//! A constrained Delaunay triangulation of the chart polygons (`cdt.rs`) is
+//! refined by Steiner points until every triangle's certified deflection and
+//! normal turn (`bounds.rs`; `spline.rs` for spline cells) are within the
+//! request.
 //!
 //! The bound reported for a triangle is certified: under the map
 //! `Σ λ_i X_i ↦ S(Σ λ_i p_i)`, `X_i` its nodes and `p_i` their parameter
@@ -21,8 +23,9 @@
 //! `IMeshTools_Parameters` (`Deflection`, `Angle`), which measure deflection
 //! by sampling and mesh seams; see `SOURCE_MAP.md`.
 use crate::predicates::{orient2d_finite, Orientation2};
+use crate::topology::validate::continuity;
 use crate::topology::{
-    Curve2, Curve3, EdgeId, Face, FaceId, Loop, Orientation, RegionKind, Surface, Topology,
+    Curve2, Curve3, EdgeId, Face, FaceId, FinId, Loop, Orientation, RegionKind, Surface, Topology,
 };
 use crate::{Error, Point2, Point3, Result, Vec3};
 use std::collections::{BTreeMap, VecDeque};
@@ -30,8 +33,10 @@ use std::f64::consts::{FRAC_PI_2, TAU};
 
 mod bounds;
 mod cdt;
+mod spline;
 
 use cdt::{Cdt, CORNERS};
+use spline::{CurveCells, SurfaceCells};
 
 /// More nodes than this is `ComputationLimit`.
 pub const MAX_NODES: usize = 4_000_000;
@@ -115,22 +120,6 @@ pub struct Mesh {
 
 /// Tessellate every face and edge of a topology within `parameters`.
 pub fn tessellate(topology: &Topology, parameters: Parameters) -> Result<Mesh> {
-    let spline = Error::OutOfDomain("tessellation of spline geometry");
-    if topology
-        .faces()
-        .iter()
-        .any(|f| matches!(f.surface, Surface::BSpline(_)))
-        || topology
-            .edges()
-            .iter()
-            .any(|e| matches!(e.curve, Curve3::BSpline(_)))
-        || topology
-            .fins()
-            .iter()
-            .any(|f| matches!(f.pcurve, Curve2::BSpline(_)))
-    {
-        return Err(spline);
-    }
     let ranges: Vec<(f64, f64)> = topology
         .faces()
         .iter()
@@ -146,13 +135,32 @@ pub fn tessellate(topology: &Topology, parameters: Parameters) -> Result<Mesh> {
             }
         }
     }
+    let splines = Splines::new(topology, &fin_face)?;
     let mut multiplier = vec![1usize; topology.edges().len()];
     for _ in 0..MAX_ROUNDS {
         let mut nodes: Vec<Point3> = topology.vertices().iter().map(|v| v.position).collect();
         let mut polylines = Vec::with_capacity(topology.edges().len());
         for (e, edge) in topology.edges().iter().enumerate() {
-            let n = segment_count(topology, e, &fin_face, &ranges, parameters)? * multiplier[e];
-            polylines.push(discretize(topology, e, &edge.curve, n, &mut nodes)?);
+            let mut n = segment_count(topology, e, &fin_face, &ranges, &splines, parameters)?
+                * multiplier[e];
+            let cells = splines.edges[e].as_ref();
+            let mark = nodes.len();
+            let mut polyline = discretize(topology, e, &edge.curve, cells, n, &mut nodes)?;
+            // T-b: a spline edge's segments, and the boundary segments of
+            // spline faces, checked; each failure doubles the count.
+            let mut doublings = 0;
+            while splines.checked(topology, e, &fin_face)
+                && !splines.edge_ok(topology, e, &polyline, &fin_face, parameters)
+            {
+                doublings += 1;
+                n = n.saturating_mul(2);
+                if doublings > MAX_ROUNDS || n > MAX_NODES {
+                    return Err(Error::ComputationLimit("tessellation spline edge"));
+                }
+                nodes.truncate(mark);
+                polyline = discretize(topology, e, &edge.curve, cells, n, &mut nodes)?;
+            }
+            polylines.push(polyline);
             if nodes.len() > MAX_NODES {
                 return Err(Error::ComputationLimit("tessellation size"));
             }
@@ -169,6 +177,7 @@ pub fn tessellate(topology: &Topology, parameters: Parameters) -> Result<Mesh> {
                 polylines: &polylines,
                 parameters,
                 outward: outward_sign(topology, face),
+                spline: splines.faces[f].as_ref(),
             };
             match mesher.mesh(&mut nodes, &mut triangles, &mut triangle_bounds) {
                 Ok(()) => {}
@@ -230,6 +239,145 @@ pub fn tessellate(topology: &Topology, parameters: Parameters) -> Result<Mesh> {
         }
     }
     Err(Error::ComputationLimit("tessellation boundary refinement"))
+}
+
+/// The spline cells of a topology (T-b): each spline edge's and each
+/// nonperiodic spline face's, their C1 continuity checked (R4), and the
+/// speed of each spline pcurve on a curved analytic surface.
+struct Splines {
+    edges: Vec<Option<CurveCells>>,
+    faces: Vec<Option<SurfaceCells>>,
+    pcurves: Vec<Option<f64>>,
+}
+
+impl Splines {
+    fn new(topology: &Topology, fin_face: &[usize]) -> Result<Self> {
+        let not_c1 = Error::OutOfDomain("tessellation of a spline that is not C1");
+        let mut faces = Vec::with_capacity(topology.faces().len());
+        for face in topology.faces() {
+            faces.push(match &face.surface {
+                Surface::BSpline(s) => {
+                    if s.u_knots().is_periodic() || s.v_knots().is_periodic() {
+                        return Err(Error::OutOfDomain(
+                            "tessellation of a periodic spline surface",
+                        ));
+                    }
+                    if !continuity::surface_c1(s) {
+                        return Err(not_c1);
+                    }
+                    Some(SurfaceCells::new(s)?)
+                }
+                _ => None,
+            });
+        }
+        let mut edges = Vec::with_capacity(topology.edges().len());
+        for edge in topology.edges() {
+            edges.push(match &edge.curve {
+                Curve3::BSpline(span) => {
+                    if !continuity::curve_c1(span.curve(), span.range(), span.is_closed_period()) {
+                        return Err(not_c1);
+                    }
+                    Some(CurveCells::new(span.curve(), span.range())?)
+                }
+                _ => None,
+            });
+        }
+        let mut pcurves = Vec::with_capacity(topology.fins().len());
+        for (k, fin) in topology.fins().iter().enumerate() {
+            let curved = fin_face[k] != usize::MAX
+                && !matches!(
+                    topology.faces()[fin_face[k]].surface,
+                    Surface::Plane(_) | Surface::BSpline(_)
+                );
+            pcurves.push(match &fin.pcurve {
+                Curve2::BSpline(span) if curved => {
+                    Some(CurveCells::new(span.curve().as_curve3(), span.range())?.speed())
+                }
+                _ => None,
+            });
+        }
+        Ok(Self {
+            edges,
+            faces,
+            pcurves,
+        })
+    }
+
+    fn face_of(&self, fin: FinId, fin_face: &[usize]) -> Option<&SurfaceCells> {
+        let f = fin_face[fin.index()];
+        if f == usize::MAX {
+            None
+        } else {
+            self.faces[f].as_ref()
+        }
+    }
+
+    /// Whether an edge's polyline needs T-b's checks: a spline edge, or an
+    /// edge with a fin on a spline face.
+    fn checked(&self, topology: &Topology, e: usize, fin_face: &[usize]) -> bool {
+        self.edges[e].is_some()
+            || topology.edges()[e]
+                .fins
+                .iter()
+                .any(|f| self.face_of(*f, fin_face).is_some())
+    }
+
+    /// A spline edge's segments within the request, and on every spline face
+    /// using the edge each boundary segment's thin-triangle condition over
+    /// the cells of its chord's box, within a share of the request.
+    fn edge_ok(
+        &self,
+        topology: &Topology,
+        e: usize,
+        polyline: &Polyline,
+        fin_face: &[usize],
+        parameters: Parameters,
+    ) -> bool {
+        let (delta, theta) = (parameters.deflection, parameters.angle);
+        if self.edges[e].is_some()
+            && polyline
+                .segments
+                .iter()
+                .any(|b| !(b.deflection <= delta && b.angle <= theta))
+        {
+            return false;
+        }
+        for id in &topology.edges()[e].fins {
+            let Some(cells) = self.face_of(*id, fin_face) else {
+                continue;
+            };
+            let fin = &topology.fins()[id.index()];
+            let forward = fin.sense == Orientation::Forward;
+            let points: Vec<Point2> = polyline
+                .fractions
+                .iter()
+                .map(|&t| {
+                    let s = if forward {
+                        t
+                    } else if t == 0.0 {
+                        1.0
+                    } else if t == 1.0 {
+                        0.0
+                    } else {
+                        1.0 - t
+                    };
+                    cells.clamp(fin.pcurve.point(s))
+                })
+                .collect();
+            for w in points.windows(2) {
+                let (deviation, turn, _) = cells.box_bound(
+                    w[0].x.min(w[1].x),
+                    w[0].x.max(w[1].x),
+                    w[0].y.min(w[1].y),
+                    w[0].y.max(w[1].y),
+                );
+                if !(deviation <= THIN_SHARE * delta && turn <= THIN_SHARE * theta) {
+                    return false;
+                }
+            }
+        }
+        true
+    }
 }
 
 fn face_edges(topology: &Topology, face: &Face) -> Vec<usize> {
@@ -312,7 +460,12 @@ fn v_range(topology: &Topology, face: &Face) -> (f64, f64) {
                                 add(hi);
                             }
                         }
-                        Curve2::BSpline(_) => {}
+                        Curve2::BSpline(span) => {
+                            // The curve lies in its control hull.
+                            for p in span.curve().poles() {
+                                add(p.y);
+                            }
+                        }
                     }
                 }
             }
@@ -340,6 +493,7 @@ fn segment_count(
     e: usize,
     fin_face: &[usize],
     ranges: &[(f64, f64)],
+    splines: &Splines,
     parameters: Parameters,
 ) -> Result<usize> {
     let edge = &topology.edges()[e];
@@ -406,6 +560,13 @@ fn segment_count(
             .max(phi * ratio / theta)
             .max(phi * (sigma * radius / (8.0 * CURVE_SHARE * delta)).sqrt());
     }
+    // T-b: `D2 h² / 8` within the request over the span's parameter length;
+    // each segment's turn and bound are checked once discretized.
+    if let (Curve3::BSpline(span), Some(cells)) = (&edge.curve, &splines.edges[e]) {
+        let [a, b] = span.range();
+        let h = bounds::sum_up(b, -a);
+        n = n.max(h * (cells.curvature() / (8.0 * CURVE_SHARE * delta)).sqrt());
+    }
     if closed {
         n = n.max(3.0);
     }
@@ -447,7 +608,15 @@ fn segment_count(
                 Some([ul, uh, vl, vh]) => (uh - ul, vh - vl),
                 None => (f64::INFINITY, f64::INFINITY),
             },
-            Curve2::BSpline(_) => (0.0, 0.0),
+            // T-b: its parameter length times its speed, in u and in v.
+            Curve2::BSpline(span) => match splines.pcurves[fin.index()] {
+                Some(speed) => {
+                    let [a, b] = span.range();
+                    let l = bounds::sum_up(b, -a) * speed * (1.0 + 1e-12);
+                    (l, l)
+                }
+                None => (0.0, 0.0),
+            },
         };
         let (v0, v1) = ranges[f];
         let [a, b, c, nu, nv] = bounds::coefficients(&face.surface, v0, v1);
@@ -468,6 +637,7 @@ fn discretize(
     topology: &Topology,
     e: usize,
     curve: &Curve3,
+    cells: Option<&CurveCells>,
     n: usize,
     nodes: &mut Vec<Point3>,
 ) -> Result<Polyline> {
@@ -479,7 +649,12 @@ fn discretize(
     let mut errors = Vec::with_capacity(n + 1);
     for k in 0..=n {
         let t = if k == n { 1.0 } else { k as f64 / n as f64 };
-        let exact = bounds::curve_point(curve, t).ok_or(unrepresentable.clone())?;
+        // A spline's node carries its span's parameter at the fraction.
+        let exact = match (curve, cells) {
+            (Curve3::BSpline(span), Some(cells)) => cells.point(span.parameter(t)),
+            _ => bounds::curve_point(curve, t),
+        }
+        .ok_or(unrepresentable.clone())?;
         let end = match (k, edge.start, edge.end) {
             (0, Some(v), _) => Some(v.index()),
             (k, _, Some(v)) if k == n => Some(v.index()),
@@ -501,7 +676,13 @@ fn discretize(
     let mut segments = Vec::with_capacity(n);
     for k in 0..n {
         let dt = bounds::sum_up(fractions[k + 1], -fractions[k]);
-        let (deviation, angle) = bounds::segment_bound(curve, dt);
+        let (deviation, angle) = match (curve, cells) {
+            (Curve3::BSpline(span), Some(cells)) => cells.segment(
+                span.parameter(fractions[k]),
+                span.parameter(fractions[k + 1]),
+            ),
+            _ => bounds::segment_bound(curve, dt),
+        };
         let deflection = bounds::sum_up(deviation, errors[k].max(errors[k + 1]));
         if !deflection.is_finite() {
             return Err(unrepresentable);
@@ -554,13 +735,18 @@ enum Chart {
     },
     /// A torus wound in `v`: `exp(k (u - uref) scale) (cos v, sin v)`.
     RingV { k: f64, uref: f64, scale: f64 },
+    /// A spline face (T-b): `(gu (u - cu), gv (v - cv))`.
+    Affine { cu: f64, cv: f64, gu: f64, gv: f64 },
 }
 
 impl Chart {
     /// +1 when the chart keeps the parameter orientation.
     fn sign(self) -> f64 {
         match self {
-            Chart::Plane { .. } | Chart::Sinusoidal { .. } | Chart::RingV { .. } => 1.0,
+            Chart::Plane { .. }
+            | Chart::Sinusoidal { .. }
+            | Chart::RingV { .. }
+            | Chart::Affine { .. } => 1.0,
             Chart::RingU { pole: None, .. } => -1.0,
             Chart::RingU {
                 pole: Some((_, side)),
@@ -601,6 +787,7 @@ impl Chart {
                 let (sin, cos) = uv.y.sin_cos();
                 Point2::new(rho * cos, rho * sin)
             }
+            Chart::Affine { cu, cv, gu, gv } => Point2::new((uv.x - cu) * gu, (uv.y - cv) * gv),
         }
     }
 
@@ -629,6 +816,7 @@ impl Chart {
                 let rho = p.x.hypot(p.y);
                 Point2::new(uref + rho.ln() / (k * scale), p.y.atan2(p.x))
             }
+            Chart::Affine { cu, cv, gu, gv } => Point2::new(p.x / gu + cu, p.y / gv + cv),
         }
     }
 }
@@ -661,11 +849,21 @@ struct FaceMesher<'a> {
     polylines: &'a [Polyline],
     parameters: Parameters,
     outward: f64,
+    /// A spline face's cells (T-b).
+    spline: Option<&'a SurfaceCells>,
 }
 
 impl FaceMesher<'_> {
     fn surface(&self) -> &Surface {
         &self.face.surface
+    }
+
+    /// The exact point of the face's surface at a parameter point, enclosed.
+    fn surface_point(&self, uv: Point2) -> Option<[crate::certified::Fast; 3]> {
+        match self.spline {
+            Some(cells) => cells.jet(uv).map(|j| j[0]),
+            None => bounds::surface_point(self.surface(), uv),
+        }
     }
 
     fn fatal<T>(what: &'static str) -> std::result::Result<T, FaceError> {
@@ -801,7 +999,19 @@ impl FaceMesher<'_> {
         }
         let curved = !matches!(surface, Surface::Plane(_));
         if curved {
-            self.refine(&mut cdt, chart, &mut locals, &mut gaps, nodes)?;
+            // A spline face's parameter span: refinement below 2^-30 of it
+            // in both directions is a budget failure.
+            let span = |f: fn(&Local) -> f64| {
+                let (lo, hi) = locals
+                    .iter()
+                    .map(f)
+                    .fold((f64::INFINITY, f64::NEG_INFINITY), |(l, h), x| {
+                        (l.min(x), h.max(x))
+                    });
+                (hi - lo) * 2f64.powi(-30)
+            };
+            let floor = (span(|l| l.uv.x), span(|l| l.uv.y));
+            self.refine(&mut cdt, chart, &mut locals, &mut gaps, nodes, floor)?;
         }
         let flip = chart.sign() * self.outward < 0.0;
         for t in 0..cdt.slots() {
@@ -842,6 +1052,7 @@ impl FaceMesher<'_> {
                     1.0 - line.fractions[j]
                 };
                 let uv = fin.pcurve.point(s);
+                let uv = self.spline.map_or(uv, |cells| cells.clamp(uv));
                 let node = line.nodes[j];
                 let is_vertex = node < self.topology.vertices().len();
                 let pole = pole_values
@@ -875,6 +1086,17 @@ impl FaceMesher<'_> {
         let (um, vm) = (0.5 * u0 + 0.5 * u1, 0.5 * v0 + 0.5 * v1);
         if matches!(surface, Surface::Plane(_)) {
             return Chart::Plane { cu: um, cv: vm };
+        }
+        if let Some(cells) = self.spline {
+            // Scaled by the partials' lengths at the region's centre, so the
+            // chart is about isometric there.
+            let (gu, gv) = cells.speeds(cells.clamp(Point2::new(um, vm)));
+            return Chart::Affine {
+                cu: um,
+                cv: vm,
+                gu,
+                gv,
+            };
         }
         if wound_v {
             let (major, minor) = match surface {
@@ -923,7 +1145,7 @@ impl FaceMesher<'_> {
     /// triangle's own `u` when a triangle is evaluated).
     fn gap(&self, x: Point3, uv: Point2, pole: Option<f64>) -> f64 {
         let uv = pole.map_or(uv, |vp| Point2::new(uv.x, vp));
-        match bounds::surface_point(self.surface(), uv) {
+        match self.surface_point(uv) {
             Some(p) => bounds::gap(x, &p),
             None => f64::INFINITY,
         }
@@ -990,7 +1212,14 @@ impl FaceMesher<'_> {
         // A triangle with one vertex at a pole is certified by its fan map.
         let poles: Vec<usize> = (0..3).filter(|k| l[*k].pole.is_some()).collect();
         let pole = (poles.len() == 1).then(|| poles[0]);
-        let (deviation, turn) = bounds::triangle_bound(self.surface(), p, pole);
+        // A spline face's bounds and normal come from its cells (T-b).
+        let (deviation, turn, spline_normal) = match self.spline {
+            Some(cells) => cells.triangle_bound(p),
+            None => {
+                let (deviation, turn) = bounds::triangle_bound(self.surface(), p, pole);
+                (deviation, turn, None)
+            }
+        };
         let bound = Bound {
             deflection: bounds::sum_up(deviation, gap),
             angle: turn,
@@ -1019,7 +1248,11 @@ impl FaceMesher<'_> {
             (p[0].x + p[1].x + p[2].x) / 3.0,
             (p[0].y + p[1].y + p[2].y) / 3.0,
         );
-        let normal = self.parametric_normal(mid);
+        let normal = match (self.spline, spline_normal) {
+            (Some(_), Some(normal)) => normal,
+            (Some(_), None) => return (false, bound),
+            (None, _) => self.parametric_normal(mid),
+        };
         (n.dot(normal) > 0.0, bound)
     }
 
@@ -1047,7 +1280,24 @@ impl FaceMesher<'_> {
             .fold((f64::INFINITY, f64::NEG_INFINITY), |(a, b), q| {
                 (a.min(q.y), b.max(q.y))
             });
-        let [a, b, c, nu, nv] = bounds::coefficients(self.surface(), v0, v1);
+        let [a, b, c, nu, nv] = match self.spline {
+            // T-b: the cells over the triangle's box, the normal's rates
+            // relative to |S_u x S_v| at its centre.
+            Some(cells) => {
+                let (u0, u1) = p
+                    .iter()
+                    .fold((f64::INFINITY, f64::NEG_INFINITY), |(a, b), q| {
+                        (a.min(q.x), b.max(q.x))
+                    });
+                let [a, b, c, du, dv] = cells.coefficients(u0, u1, v0, v1);
+                let m = cells
+                    .normal(Point2::new(0.5 * u0 + 0.5 * u1, 0.5 * v0 + 0.5 * v1))
+                    .map_or(0.0, |n| n.length())
+                    .max(f64::MIN_POSITIVE);
+                [a, b, c, (a * dv + du * b) / m, (b * dv + du * c) / m]
+            }
+            None => bounds::coefficients(self.surface(), v0, v1),
+        };
         let (delta, theta) = (self.parameters.deflection, self.parameters.angle);
         let score = |k: usize| {
             let (m, n) = ((k + 1) % 3, (k + 2) % 3);
@@ -1080,6 +1330,7 @@ impl FaceMesher<'_> {
         locals: &mut Vec<Local>,
         gaps: &mut Vec<f64>,
         nodes: &mut Vec<Point3>,
+        floor: (f64, f64),
     ) -> std::result::Result<(), FaceError> {
         let surface = self.surface();
         let mut queue: VecDeque<(u32, u32)> = (0..cdt.slots())
@@ -1092,6 +1343,25 @@ impl FaceMesher<'_> {
             }
             if self.evaluate(cdt, t, chart, locals, gaps, nodes).0 {
                 continue;
+            }
+            if self.spline.is_some() {
+                // T-b: a failing triangle this small will not certify (a
+                // vanishing normal, a collapsed row).
+                let q = self.lift(cdt.vertices(t).map(|v| &locals[(v - CORNERS) as usize]));
+                let extent = |f: fn(&Point2) -> f64| {
+                    let (lo, hi) = q
+                        .iter()
+                        .map(f)
+                        .fold((f64::INFINITY, f64::NEG_INFINITY), |(l, h), x| {
+                            (l.min(x), h.max(x))
+                        });
+                    hi - lo
+                };
+                if extent(|q| q.x) <= floor.0 && extent(|q| q.y) <= floor.1 {
+                    return Err(FaceError::Fatal(Error::ComputationLimit(
+                        "tessellation refinement",
+                    )));
+                }
             }
             let v = cdt.vertices(t);
             let fixed = cdt.fixed(t);
@@ -1121,9 +1391,12 @@ impl FaceMesher<'_> {
             };
             debug_assert_eq!(vertex as usize, CORNERS as usize + locals.len());
             let uv = chart.inverse(surface, p);
-            let exact = bounds::surface_point(surface, uv).ok_or(FaceError::Fatal(
-                Error::Unrepresentable("tessellation node"),
-            ))?;
+            let uv = self.spline.map_or(uv, |cells| cells.clamp(uv));
+            let exact = self
+                .surface_point(uv)
+                .ok_or(FaceError::Fatal(Error::Unrepresentable(
+                    "tessellation node",
+                )))?;
             let (x, error) = bounds::settle(&exact);
             if !(error.is_finite() && x.x.is_finite() && x.y.is_finite() && x.z.is_finite()) {
                 return Err(FaceError::Fatal(Error::Unrepresentable(

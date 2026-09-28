@@ -2,10 +2,11 @@
 
 A parallel track of `REVIEW_NOTES.md`: deflection-controlled, watertight
 triangle meshes of bodies, for display and for downstream consumers that
-need triangles. T-a, described here, covers faces on planes, cylinders,
-cones, spheres and tori bounded by lines, circles and arcs: profiles and
-prisms (S5), the primitives (S3), sheets and wires (S6) and imported bodies
-of those. T-b adds spline edges, pcurves and faces; T-c procedural
+need triangles. T-a covers faces on planes, cylinders, cones, spheres and
+tori bounded by lines, circles and arcs: profiles and prisms (S5), the
+primitives (S3), sheets and wires (S6) and imported bodies of those. T-b
+adds spline edges, pcurves and faces on nonperiodic spline surfaces
+(`Splines (T-b)` below); T-c procedural
 intersection edges (D13 of `TOPOLOGY_MODEL.md`) once faces carry them. The
 decisions were recorded before any code (`REVIEW_NOTES.md`, parallel
 tracks).
@@ -54,8 +55,12 @@ node of each vertex, and the largest bounds.
   boundary chords that cross between line edges, or still cross after
   twelve doublings of a face's curved edges, `InvalidTopology` and
   `ComputationLimit`; more than 4,000,000 nodes `ComputationLimit`; a loop
-  wound twice or both ways, a vertex loop that is not a pole, and spline
-  geometry `OutOfDomain` (T-b). Tessellation does not validate the body.
+  wound twice or both ways, a vertex loop that is not a pole, a spline
+  surface periodic in either parameter and a spline edge or surface that
+  is not C1 `OutOfDomain` (T-b); a spline edge still over the request
+  after twelve doublings, or a spline face's triangle failing below
+  `2^-30` of its parameter span, `ComputationLimit`. Tessellation does not
+  validate the body.
 
 ## Certified bounds
 
@@ -123,6 +128,49 @@ spectral norm (plane 0; cylinder `r`, 0, 0; cone `|R + v sin α|`, `|sin α|`,
   `(u, v)` (a sphere's poles single nodes with fans), shrunk until every
   triangle's certified bounds hold.
 
+## Splines (T-b)
+
+T-b adds spline edges (`Curve3::BSpline`: rational or not, periodic or
+not, over ranges, reversed, ring edges), spline pcurves on every surface,
+and faces on nonperiodic spline surfaces (`tessellation/spline.rs`). The
+contract is T-a's; a spline edge's node at fraction `k/n` carries the
+span's parameter there, and a segment's certified map is onto the arc
+between its nodes' parameters. Decisions: `REVIEW_NOTES.md`, T-b; bounds:
+`MATHEMATICS.md`, tessellation bounds for splines.
+
+* **Cells.** Each spline's range (a surface's domain) is cut into its exact
+  Bézier pieces (patches), enclosed in the `Fast` tier and halved by de
+  Casteljau into cells: curves three times, surfaces three times per
+  direction (fewer beyond 1,024 cells or 2^18 controls). Node positions,
+  partials and normals are evaluated by de Casteljau on a cell.
+* **Bounds.** A cell bounds `|C'|`, `|C''|` (`|S_u|`, …, `|S_vv|`) by its
+  control net's first and second differences, a rational cell through the
+  weights' lower bound; rational cells of low degree bound the quotient's
+  derivatives through the Bernstein coefficients of their numerators
+  instead, which keeps exact cancellations. A segment deviates by
+  `D2 h² / 8` plus its nodes' gaps and its tangent turns by the smaller of
+  `D2 h / s` and the tangent numerator's rate `|N × N'| / |N|²`; a
+  triangle deviates by T-a's `(a U² + 2 b U V + c V²) / 8` over the cells
+  meeting its parameter box, and its normal turns by the smallest of the
+  Lipschitz bound `(M_u U + M_v V) / μ`, twice the widest angle of the
+  cells' normal cones about the normal at the box's centre, and the rate
+  `(|M × M_u| U + |M × M_v| V) / |M|²` per cell.
+* **Edges.** A spline edge starts from the least uniform count its largest
+  `D2` allows, then every segment is checked; an edge with a fin on a
+  spline face also needs each boundary segment's thin-triangle condition
+  over the cells of its chord's box. A failure doubles the count, at most
+  twelve times. A spline pcurve on an analytic surface enters T-a's
+  thin-triangle condition through its speed, and T-a's `v` range through
+  its control hull.
+* **Faces.** A spline face is meshed in the affine chart `(g_u (u - u_c),
+  g_v (v - v_c))`, `g_u`, `g_v` the partials' lengths at its region's
+  centre, refined as T-a's curved faces; pcurve and Steiner points are
+  clamped into the domain (their gaps are measured at the clamped point).
+  The tangential correction and fan map of T-a are not used on splines.
+* **Continuity.** Every spline edge and surface is tested C1 by R4's exact
+  removal before it is meshed; a C0 knot would break the deviation
+  argument.
+
 ## Evidence
 
 * **Independent reference.** `tessellation_reference.py` derives each
@@ -162,12 +210,14 @@ spectral norm (plane 0; cylinder `r`, 0, 0; cone `|R + v sin α|`, `|sin α|`,
   reference's expectations with its own closed-form surface distances
   (samples within each triangle's bound), closedness, orientation, the
   Euler characteristic, the volume bound, determinism and convergence; the
-  parameters' errors; wire bodies' polylines and a typed budget error; the
-  spline cases of `brep-cases.txt` out of domain; and every one of the 54
-  certified `data/occ` solids without spline geometry (planes, cylinders,
-  cones, spheres and tori with general loops, merged seams and holes),
-  whose volume must lie within the deflection times the areas of its
-  certified mass enclosure.
+  parameters' errors; wire bodies' polylines and a typed budget error (the
+  spline cases of `brep-cases.txt` were out of domain until T-b); and every
+  one of the 54 certified `data/occ` solids without spline geometry
+  (planes, cylinders, cones, spheres and tori with general loops, merged
+  seams and holes), whose volume must lie within the deflection times the
+  areas of its certified mass enclosure (since T-b the four with spline
+  geometry too, without the volume band: their mass enclosure takes
+  minutes).
 * **Native bridge.** `compare_tessellation.py` reproduces the capture and
   the `.brep` texts, requires the kernel's meshes (`tessellation_probe`) to
   pass every check of the reference on all 56 (they do) and compares OCCT's
@@ -197,9 +247,56 @@ face is its boundary's triangulation only). Where the ratio exceeds one the
 kernel pays for a bound that holds everywhere, not only at sampled points;
 OCCT's excess deflections above are the other side of that trade.
 
+T-b's evidence, in the same order:
+
+* **Reference and fixtures.** `tessellation_reference.py` gained planar
+  B-spline profile pieces (exact Bézier pieces from Fractions, distances by
+  projection, membership by each piece's root parity, exact areas and
+  lengths by quadrature), a dome (a box under a spline graph) and spline
+  sheets with a rectangular parameter hole, trimmed through the
+  projection's parameters; `test_tessellation_reference.py` requires it to
+  decide a spline profile's membership and distance around its extreme
+  point and to name every mutation of a hand-made dome mesh.
+  `tessellation-spline-cases.txt` holds twelve bodies (listed in
+  `VALIDATION.md`) at T-a's two settings, all valid for the reference
+  validator; the T-a fixtures are unchanged.
+* **Native capture before code.** The same probe, unchanged, on the kernel
+  writer's `.brep` texts (`brep_io_probe parts`):
+  `fixtures/occt-spline-tessellation-preimplementation`, committed before
+  `tessellation/spline.rs` existed (`capture.json` records its absence).
+  Every OCCT solid is watertight after the join; OCCT exceeds the request
+  on the dome and the trimmed sheet at the fine setting, and its recorded
+  deflection understates the dome's measured one at both settings. The
+  probe's measurements agree with the reference's within `1.6e-16` of each
+  case's scale (`6.5e-14` on the far translate).
+* **Kernel tests and bridge.** `VALIDATION.md`, T-b: all 24 fixture meshes
+  pass every check of the reference; 21 match OCCT, 3 differences are
+  reviewed (`occt-tessellation-divergences.json`). The T-a bridge is
+  unchanged (56 of 56, 42 matches, 14 reviewed).
+* **Fuzzing.** The `tessellation` target builds spline prisms and spline
+  sheets as validated parts, checks centroids against its own binary64
+  projection and a prism's volume against a quadrature of its profile
+  (`FUZZING.md`). A clean local 600-second campaign at `d638bd0b`
+  (AddressSanitizer, standard 20-second/2 GiB limits) ran 1,217 mutation
+  executions after replaying 251 inputs in 118 s (19,511 coverage edges,
+  1,265 MB peak) without an artifact; the first campaign's two slow units
+  are regressions.
+
+Node counts against OCCT on the spline fixtures (kernel/OCCT, coarse and
+fine): the quadratic, cubic and far bulges 1.4–1.7, the rational
+quarter-circle corner 1.3, the wave with holes 1.8–2.0, the sharp rational
+corner 3.6 and 1.4, the stadium's spline edge 1.0–1.1 and pcurve 1.1 and
+2.3, the ring face 1.1 and 0.8, the dome 4.8 and 1.8, the trimmed sheet
+2.4 and 1.7, the rational sheet 7.2 and 5.9. The parametric bound pays for
+tangential acceleration, which a rational parametrization with uneven
+weights has plenty of, and for the thin-triangle condition's 0.45 share;
+OCCT's excess deflections on three rows are the other side of that trade.
+
 ## Acceptance
 
 T-a's acceptance needs kernel CI green at the accepted revision (the
 tessellation bridge on macOS and Linux), the schedule run's full fuzz
 replay green there, and a clean local 600-second `tessellation` campaign.
-Recorded here once met.
+T-b's needs the same, with the spline bridge (`--family spline`) on both
+platforms (Linux's BRepMesh rows need their own reviewed record if they
+differ). Recorded here once met.

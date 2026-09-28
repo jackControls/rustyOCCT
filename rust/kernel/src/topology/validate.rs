@@ -26,7 +26,7 @@ use std::f64::consts::TAU;
 use std::fmt;
 
 mod bernstein;
-mod continuity;
+pub(crate) mod continuity;
 mod mass;
 mod projection;
 mod quadrature;

@@ -1452,6 +1452,94 @@ the first fixture, never deferred.
     carry them, through their certified parameterisation. Later, not
     decided: relative deflection, a minimum-angle quality guarantee,
     parallel faces.
+
+  T-b decisions, recorded before its code (2026-09-28):
+
+  * **Scope.** Spline edges (`Curve3::BSpline`, rational or not, periodic
+    or not, over any range, reversed spans and ring edges over a full
+    period included), spline pcurves on every surface T-a meshes and on
+    spline surfaces, and faces on nonperiodic spline surfaces, rational or
+    not, with the other T-a kinds beside them. Out of scope, `OutOfDomain`:
+    a spline surface periodic in either parameter (validation, mass
+    properties and the reader do not certify or take one either; S4); a
+    spline face without loops or with a vertex loop (no poles); a spline
+    edge or surface that is not C1 inside its range, by R4's exact test
+    (the bounds below need C1 across knots; pcurves enter no bound, only
+    their nodes' gaps, so they are not tested). Where a spline surface's
+    normal vanishes in a face (a collapsed row of poles) or an edge's
+    derivative vanishes, no turn can be certified: `ComputationLimit`,
+    after a bounded refinement.
+  * **Contract.** T-a's, unchanged. A spline edge's node at fraction `k/n`
+    carries the parameter `u_k = SplineSpan::parameter(k/n)` (binary64,
+    monotone, the range's ends exact), and a segment's certified map is
+    onto the curve's arc between `u_k` and `u_{k+1}`, affine in the
+    parameter; a spline face's parameter points are in the surface's own
+    `(u, v)`.
+  * **Bounds.** From the exact Bézier pieces of the span's range
+    (`bezier_arcs_in`) and patches of the surface (`bezier_patches`),
+    enclosed in the `Fast` tier and halved by de Casteljau (curves three
+    times, surfaces twice per direction, less when a surface has many
+    patches) into cells. On a cell of parameter length `L` (or `L_u`,
+    `L_v`), degree `p` (`q`), homogeneous controls `(w_i P_i, w_i)`,
+    `Q_i = P_i - c` for its first control `c`: `R = max |Q_i|`,
+    `ω = min w_i` (the weights' lower bound, positive), the numerator
+    `A = w (C - c)` and `w` bounded by their control nets' first and
+    second differences (`|A'| <= p/L max |Δ(wQ)_i|`, `|A''| <= p(p-1)/L²
+    max |Δ²(wQ)_i|`, mixed differences for `A_uv`), then
+    `|C'| <= D1 = (|A'| + |w'| R)/ω` and `|C''| <= D2 = (|A''| + 2 |w'| D1
+    + |w''| R)/ω`, and for a surface `|S_uu|`, `|S_uv|`, `|S_vv|` the same
+    way from `A = w (S - c)` (`MATHEMATICS.md`). A nonrational cell reduces
+    to `p(p-1)/L² max |Δ² P_i|`. A segment of parameter length `h` deviates
+    by at most `D2 h² / 8` over the cells it meets, plus its end nodes'
+    gaps, and its tangent turns by at most `D2 h / s`, `s` the enclosed
+    `|C'|` at its middle less `D2 h / 2` (no bound when not positive). A
+    triangle deviates by T-a's `(a U² + 2 b U V + c V²) / 8` with `a`, `b`,
+    `c` over the cells meeting its parameter box, plus its nodes' gaps; its
+    normal turns by at most `(M_u U + M_v V) / m`, `M_u = a D_v + D_u b >=
+    |∂_u (S_u × S_v)|`, `M_v = b D_v + D_u c`, `m` the enclosed
+    `|S_u × S_v|` at the box's centre less `(M_u U + M_v V) / 2`. T-a's
+    tangential correction and fan map rely on analytic structure and are
+    not used on splines. Node positions and gaps are evaluated by de
+    Casteljau on the cells in the same tier.
+  * **Algorithm.** A spline edge starts from the least uniform count its
+    largest `D2` allows (0.9 of the request, as T-a), then every segment's
+    certified bound is checked and any excess doubles the count. Every edge
+    with a fin on a spline face (the line edges of a spline wall too) also
+    needs, for each boundary segment, T-a's thin-triangle condition over
+    the cells of its chord's box (0.45 of the request); a failure doubles.
+    At most twelve doublings, then `ComputationLimit`. A spline pcurve on
+    an analytic surface gives T-a's thin-triangle condition its extents
+    from `D1` in `u` and `v` and its `v` range from its control hull. A
+    spline face is meshed in the affine chart `(g_u (u - u_c), g_v (v -
+    v_c))`, `g_u`, `g_v` the lengths of `S_u`, `S_v` at its region's
+    centre, and refined as T-a's curved faces; a triangle still failing
+    when its parameter box is within `2^-30` of the face's parameter span
+    in both directions is `ComputationLimit`. Analytic-only topologies mesh
+    exactly as in T-a.
+  * **Evidence first.** `tessellation_reference.py` gains planar B-spline
+    pieces (exact Bézier pieces in `Fraction`s, distances by projection in
+    binary64 from sampled starts, crossing parity from each piece's roots,
+    exact area and length by mpmath), so prisms with spline profiles are
+    `Prism`s, plus a dome (a box under a spline graph) and spline sheets
+    with holes, measured by projection onto their surfaces and edges.
+    `generate_tessellation_fixtures.py` adds `tessellation-spline-cases.txt`
+    and `-expected.tsv`: twelve bodies in the B-rep line protocol
+    (`generate_brep_fixtures.prism`: quadratic, cubic and rational spline
+    walls, a wave with a spline and a circular hole, a sharp rational
+    corner, a rigidly moved cubic bulge, degree-1 spline edges and pcurves
+    on a stadium's cylinder; a plane face in a periodic spline ring; the
+    dome; a trimmed bicubic sheet whose hole edges are iso-curve ranges; a
+    rational biquadratic sheet) at T-a's two settings, the T-a files
+    unchanged; `--check` in CI. The native capture
+    (`occt-spline-tessellation-preimplementation`, the same probe on the
+    kernel writer's `.brep` texts, `brep_io_probe parts`) comes before any
+    kernel code, its `capture.json` recording
+    `rust_spline_tessellation_exists: false` (no
+    `tessellation/spline.rs`). The kernel's meshes must pass every check of
+    the reference; OCCT's differences get fingerprinted reviews. The kernel
+    tests also mesh every valid spline case of `brep-cases.txt` and the
+    certified `data/occ` solids with spline geometry; the `tessellation`
+    fuzz target gains spline prisms and sheets.
 * **STEP import**, after S6, reusing the converter architecture, with the
   OCCT STEP reader as the native oracle.
 
@@ -1960,8 +2048,58 @@ the first fixture, never deferred.
   * Clean local 600-second `tessellation` campaign at `c9dbf4f6`
     (AddressSanitizer, standard limits): 4,855 mutation executions after
     209 s of replay (350 inputs, 14,000 edges, 961 MB peak), no artifact.
-  * Open for the user: U9 (a display mode without a bound). T-b (spline
-    edges and faces) and T-c (procedural edges) pending.
+  * Open for the user: U9 (a display mode without a bound). T-c
+    (procedural edges) pending.
+  * T-b implemented (`TESSELLATION.md`, splines); gate pending CI (the
+    spline bridge on macOS and Linux; a Linux BRepMesh that meshes the
+    splines differently needs its own reviewed capture record), the
+    schedule replay and the acceptance of the clean campaign below.
+    * The decisions above (`e065cd45`), then the reference's spline bodies
+      and twelve spline fixtures at two settings with `--check`
+      (`394f1491`), then the native `BRepMesh_IncrementalMesh` capture of
+      all 24 meshes (`130cb8b3`), all before any kernel spline
+      tessellation code.
+    * `tessellation/spline.rs` (cells, their bounds, cones and rates) and
+      `tessellation/spline/poly.rs` (tensor Bernstein polynomials in the
+      `Fast` tier). All 24 spline fixture meshes pass every check of the
+      reference; the bridge gives 21 matches and 3 reviewed differences
+      (OCCT beyond the request on the dome and the trimmed sheet at the
+      fine setting, its recorded deflection understating the dome's); the
+      17 valid B-rep fixture cases with spline geometry and all 58
+      certified `data/occ` solids mesh within the contract; the T-a
+      bridge is unchanged (56 of 56, 42 matches, 14 reviewed).
+    * Decisions taken in implementation, none of them a user decision:
+      the first measurements (the rational quarter-circle wall at 34 times
+      BRepMesh's nodes, the sharp rational corner at 7,900) led to three
+      sharper certificates kept beside the recorded bounds, the smallest
+      winning (`MATHEMATICS.md`, numerators): rational cells of low degree
+      bound their derivatives through the Bernstein coefficients of the
+      quotient rule's numerators, surface cells carry the cone of their
+      normal numerator's coefficients, and normal and tangent turns use the
+      rates `|M × M_u| / |M|²` per cell; surface cells are halved three
+      times per direction rather than twice (the rational sheet's nodes
+      fell from 9,402 to 5,387); a spline solid's volume is not checked
+      against its certified mass enclosure in the corpus test (minutes per
+      solid); the tests' and the fuzz target's distances to spline surfaces
+      are projections with their own binary64 Cox-de Boor evaluation from
+      the four nearest points of a knot-aware grid (a projection from one
+      point of a 33 × 33 grid found the wrong basin on a degree-8 corpus
+      surface, where the kernel's own parametric claim held at every
+      centroid, checked with its exact evaluation); the fuzz target's
+      weights stay within 0.7 to 1.5, its spline deflections at or above a
+      64th of the size and angles from 0.35 rad, its spline prisms on
+      axis-aligned frames, and a spline prism's volume is checked against a
+      quadrature of its profile: uneven weights inflate the rational bounds
+      by the weights' ratio to a high power, and the certified mass
+      enclosure, the validator's fluxes on tilted spline walls and the
+      kernel's exact evaluation cost seconds per input under the sanitizer
+      (the first campaign's two slow units, retained as regressions).
+    * Clean local 600-second `tessellation` campaign at `d638bd0b`
+      (AddressSanitizer, standard limits): 1,217 mutation executions after
+      118 s of replay (251 inputs, 19,511 edges, 1,265 MB peak), no
+      artifact. The first campaign, before the fuzz target's changes above,
+      saved two slow units (retained as regressions,
+      `fuzz/regressions/README.md`).
 * STEP import (parallel track) — STEP-a implemented (`VALIDATION.md`,
   `SOURCE_MAP.md`); gate pending CI, the schedule replay and the clean
   campaign.

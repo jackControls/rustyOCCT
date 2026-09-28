@@ -1,16 +1,21 @@
-//! Tessellation (T-a of REVIEW_NOTES.md) of structure-aware bodies: prisms
-//! of polygons with square and circular holes, filleted and notched arc
-//! profiles, their face bodies, cones, spheres and zones, tori, v-segments
-//! and wedges, each possibly moved rigidly, at a deflection from an eighth
-//! to a 2048th of the body's size and an angle from 0.2 rad to π/2. Every
+//! Tessellation (T-a and T-b of REVIEW_NOTES.md) of structure-aware bodies:
+//! prisms of polygons with square and circular holes, filleted and notched
+//! arc profiles, their face bodies, cones, spheres and zones, tori,
+//! v-segments and wedges, each possibly moved rigidly, and (T-b) prisms
+//! with spline sides and face bodies on spline surfaces (`spline.rs`), at a
+//! deflection from an eighth to a 2048th of the body's size (a 64th for
+//! splines) and an angle from 0.2 rad (0.35 for splines) to π/2. Every
 //! result must be a mesh (no error on a buildable body): distinct nodes per
 //! triangle, every mesh edge in two triangles traversed once each way (a
 //! face body's boundary edges once), the Euler characteristic of the body's
 //! boundary, every reported bound within the request, 12 barycentric
 //! samples of every triangle within its reported bound of its face's whole
-//! surface (closed-form distances, independent of the kernel's evaluation),
-//! a solid's enclosed volume within the deflection times the areas of its
-//! mass properties, and the same mesh again, bit for bit.
+//! surface (closed-form distances, independent of the kernel's evaluation;
+//! on a spline surface the centroids of up to 64 triangles per face, by
+//! projection), a solid's enclosed volume within the deflection times the
+//! areas of its mass properties (a spline prism's by quadrature of its
+//! profile), and the same mesh again, bit for bit (a spline body's up to
+//! 500 triangles).
 use crate::identity::{arc_path, build, cone_spec, spec, sphere_spec, torus_spec};
 use libfuzzer_sys::arbitrary::{Result, Unstructured};
 use rusty_occt::identity::OperationId;
@@ -20,9 +25,14 @@ use rusty_occt::{Body, Boundary, Frame3, Point3, Profile, Solid, Tolerance, Vec3
 use std::collections::{BTreeMap, BTreeSet};
 use std::f64::consts::FRAC_PI_2;
 
+mod spline;
+
 enum Built {
     Solid(Solid),
     Face(Body, usize),
+    /// T-b: a spline prism (a solid, with its volume and area by
+    /// quadrature) or a spline face body.
+    Spline(Topology, Option<(f64, f64)>),
 }
 
 fn unit(u: &mut Unstructured) -> Result<f64> {
@@ -40,7 +50,9 @@ fn moved(solid: Solid, transforms: &[rusty_occt::RigidTransform]) -> Solid {
 }
 
 fn body(u: &mut Unstructured) -> Result<Option<Built>> {
-    Ok(match u.int_in_range(0u8..=6)? {
+    Ok(match u.int_in_range(0u8..=8)? {
+        7 => spline::prism(u)?.map(|(t, v, a)| Built::Spline(t, Some((v, a)))),
+        8 => spline::sheet(u)?.map(|t| Built::Spline(t, None)),
         0 => {
             let Some(s) = spec(u)? else { return Ok(None) };
             build(&s, None, 1.0, false).map(|solid| Built::Solid(moved(solid, &s.transforms)))
@@ -112,7 +124,7 @@ fn body(u: &mut Unstructured) -> Result<Option<Built>> {
             s.build(1.0)
                 .map(|(solid, _)| Built::Solid(moved(solid, &s.transforms)))
         }
-        _ => {
+        6 => {
             // A prism's profile as a face body.
             let Some(s) = spec(u)? else { return Ok(None) };
             let Some(solid) = build(&s, None, 1.0, false) else {
@@ -124,6 +136,7 @@ fn body(u: &mut Unstructured) -> Result<Option<Built>> {
                 .ok()
                 .map(|(b, _)| Built::Face(b, holes))
         }
+        _ => unreachable!("kinds 0 to 8"),
     })
 }
 
@@ -191,10 +204,26 @@ fn contract(t: &Topology, mesh: &Mesh, p: Parameters) -> (i64, usize, f64, f64) 
     let origin = Point3::new(0.0, 0.0, 0.0);
     for f in &mesh.faces {
         let surface = &t.faces()[f.face.index()].surface;
+        let projection = match surface {
+            Surface::BSpline(s) => Some(spline::Projection::new(s)),
+            _ => None,
+        };
+        let stride = f.triangles.len().div_ceil(64).max(1);
         for k in f.triangles.clone() {
             let x = mesh.triangles[k].map(|n| mesh.nodes[n]);
             let bound = mesh.triangle_bounds[k];
             assert!(bound.deflection <= p.deflection() && bound.angle <= p.angle());
+            if let Some(projection) = &projection {
+                if (k - f.triangles.start) % stride == 0 {
+                    let centroid = Point3::new(
+                        (x[0].x + x[1].x + x[2].x) / 3.0,
+                        (x[0].y + x[1].y + x[2].y) / 3.0,
+                        (x[0].z + x[1].z + x[2].z) / 3.0,
+                    );
+                    let d = projection.distance(centroid);
+                    assert!(d <= bound.deflection + eps, "centroid {d} beyond {bound:?}");
+                }
+            }
             for i in 0..=4 {
                 for j in 0..=4 - i {
                     let l = [i as f64 / 4.0, j as f64 / 4.0, (4 - i - j) as f64 / 4.0];
@@ -206,6 +235,9 @@ fn contract(t: &Topology, mesh: &Mesh, p: Parameters) -> (i64, usize, f64, f64) 
                         l[0] * x[0].y + l[1] * x[1].y + l[2] * x[2].y,
                         l[0] * x[0].z + l[1] * x[1].z + l[2] * x[2].z,
                     );
+                    if projection.is_some() {
+                        continue;
+                    }
                     let d = surface_distance(surface, s);
                     assert!(d <= bound.deflection + eps, "sample {d} beyond {bound:?}");
                 }
@@ -223,13 +255,21 @@ pub fn check_tessellation(data: &[u8]) {
     let Ok(Some(built)) = body(&mut u) else {
         return;
     };
-    let (Ok(k), Ok(a)) = (u.int_in_range(3u8..=11), u.int_in_range(0u8..=5)) else {
+    // Splines: a deflection down to a 64th of the size and an angle from
+    // 0.35 rad, which keep an input within seconds under the sanitizer.
+    let (finest, sharpest) = if matches!(built, Built::Spline(..)) {
+        (6, 1)
+    } else {
+        (11, 0)
+    };
+    let (Ok(k), Ok(a)) = (u.int_in_range(3u8..=finest), u.int_in_range(sharpest..=5u8)) else {
         return;
     };
     let angle = [0.2, 0.35, 0.5, 0.8, 1.2, FRAC_PI_2][a as usize];
     let topology = match &built {
         Built::Solid(s) => s.topology(),
         Built::Face(b, _) => b.topology(),
+        Built::Spline(t, _) => t,
     };
     let points: Vec<Point3> = topology
         .vertices()
@@ -274,6 +314,25 @@ pub fn check_tessellation(data: &[u8]) {
             assert_eq!(euler, 1 - *holes as i64);
             assert!(boundary >= 3 * (1 + holes));
         }
+        Built::Spline(_, Some((exact, surface))) => {
+            assert_eq!(euler, 2);
+            assert_eq!(boundary, 0, "not closed");
+            // The certified mass enclosure of a spline wall costs seconds
+            // under the sanitizer: the profile's quadrature instead.
+            let slack = p.deflection() * (surface + area) * (1.0 + 1e-6) + 1e-9 * exact;
+            assert!(
+                (volume - exact).abs() <= slack,
+                "volume {volume} against {exact}"
+            );
+        }
+        Built::Spline(_, None) => {
+            assert_eq!(euler, 1);
+            assert!(boundary >= 3);
+        }
     }
-    assert_eq!(tessellate(topology, p).unwrap(), mesh, "deterministic");
+    // A spline body's second tessellation is a sanitizer's seconds: the
+    // smaller meshes only.
+    if !matches!(built, Built::Spline(..)) || mesh.triangles.len() <= 500 {
+        assert_eq!(tessellate(topology, p).unwrap(), mesh, "deterministic");
+    }
 }

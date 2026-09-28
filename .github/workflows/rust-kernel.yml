@@ -273,11 +273,12 @@ jobs:
       - name: Compare pairs of lines and conics with IntTools_EdgeEdge and the exact reference
         if: ${{ !cancelled() }}
         run: target/math-oracle-venv/bin/python rust/tools/compare_curve_curve.py --occt-root target/brep-sdk/install --sdk-manifest target/brep-sdk/build-manifest.json
-      - name: Test the tessellation reference's deliberate failures and compare tessellations with BRepMesh_IncrementalMesh
+      - name: Test the tessellation reference's deliberate failures and compare analytic and spline tessellations with BRepMesh_IncrementalMesh
         if: ${{ !cancelled() }}
         run: |
           target/math-oracle-venv/bin/python rust/tools/test_tessellation_reference.py
           target/math-oracle-venv/bin/python rust/tools/compare_tessellation.py --occt-root target/brep-sdk/install --sdk-manifest target/brep-sdk/build-manifest.json
+          target/math-oracle-venv/bin/python rust/tools/compare_tessellation.py --family spline --occt-root target/brep-sdk/install --sdk-manifest target/brep-sdk/build-manifest.json
       - name: Preserve source provenance, native observations, and differences
         if: always()
         uses: actions/upload-artifact@v4.6.2
@@ -296,6 +297,7 @@ jobs:
             target/curve-curve-oracle/
             target/split-oracle/
             target/tessellation-oracle/
+            target/spline-tessellation-oracle/
             target/brep-sdk/build-manifest.json
             target/brep-sdk/*.log
             target/brep-sdk/build/CMakeCache.txt

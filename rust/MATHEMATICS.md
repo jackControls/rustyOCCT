@@ -2106,3 +2106,129 @@ other loops' line pcurves and chords, over every `u` alias (`+1` where a
 piece runs in `-u`, `-1` in `+u`), plus one for a north pole, equal the
 face's sign (`+1` forward): the region lies left of its boundary, so
 directly below a piece running in `-u`.
+## Tessellation bounds for splines (T-b)
+
+T-a's deviation argument needs only that the map is `C1` with bounded
+second derivatives on pieces: Taylor's formula with integral remainder
+holds for `C1` functions whose derivative is absolutely continuous, so a
+segment or triangle may straddle a knot where the cell is `C1` (checked
+exactly, R4) and its second derivative jumps. What changes is where
+`a >= |S_uu|`, `b >= |S_uv|`, `c >= |S_vv|` (and `|C''|`) come from.
+
+**Cells.** A spline's range is cut into its exact Bézier pieces, and each
+piece into cells by de Casteljau halving in the `Fast` tier: every control
+of a cell is an interval containing the exact control of the exact
+subdivision, since each halving is a convex combination evaluated with
+outward rounding. A cell covers the parameter interval `[t_0, t_0 + L]` (a
+surface cell `[u_0, u_0 + L_u] × [v_0, v_0 + L_v]`) and is a rational
+Bézier curve of degree `p` in `τ = (t - t_0)/L`: `C = A/w`,
+`A = Σ B^p_i(τ) w_i P_i`, `w = Σ B^p_i(τ) w_i`, `w_i > 0`.
+
+**Translation.** For any point `c` (the cell's first control),
+`A_c = A - w c = Σ B^p_i w_i Q_i` with `Q_i = P_i - c`, and
+`A_c = w (C - c)`. `C - c` is the convex combination
+`Σ (w_i B^p_i / w) Q_i` (positive weights), so `|C - c| <= R = max |Q_i|`,
+and `w >= ω = min w_i`.
+
+**Differences.** The derivative in `t` of a Bézier polynomial is
+`p/L Σ B^{p-1}_i Δ_i`, `Δ_i` the first differences of its controls, and
+its second `p (p-1)/L² Σ B^{p-2}_i Δ²_i`; each is a convex combination of
+the differences and a norm is convex, so `|A_c'| <= p/L max |Δ(wQ)_i|`,
+`|A_c''| <= p(p-1)/L² max |Δ²(wQ)_i|`, `|w'| <= p/L max |Δ w_i|` and
+`|w''| <= p(p-1)/L² max |Δ² w_i|`. A tensor cell has the same bounds per
+direction, and `∂_u ∂_v` of `Σ B^p_i B^q_j X_ij` is
+`pq/(L_u L_v) Σ B^{p-1}_i B^{q-1}_j Δ_u Δ_v X_ij`.
+
+**Quotients.** Differentiating `A_c = w (C - c)`:
+
+    A_c'  = w' (C - c) + w C',
+    A_c'' = w'' (C - c) + 2 w' C' + w C'',
+
+so `|C'| <= D1 = (|A_c'| + |w'| R) / ω` and
+`|C''| <= D2 = (|A_c''| + 2 |w'| D1 + |w''| R) / ω`. For a surface, from
+`A_c = w (S - c)`:
+
+    S_u  = (A_u - w_u (S - c)) / w,
+    S_uu = (A_uu - 2 w_u S_u - w_uu (S - c)) / w,
+    S_uv = (A_uv - w_u S_v - w_v S_u - w_uv (S - c)) / w,
+
+and `S_vv` like `S_uu`: `D_u = (|A_u| + |w_u| R)/ω`,
+`a = (|A_uu| + 2 |w_u| D_u + |w_uu| R)/ω`,
+`b = (|A_uv| + |w_u| D_v + |w_v| D_u + |w_uv| R)/ω`,
+`c = (|A_vv| + 2 |w_v| D_v + |w_vv| R)/ω`. With equal weights the `w`
+differences vanish and the bounds are the control net's own differences.
+
+**Segments.** A segment between parameters `u_k` and `u_{k+1}`, `h` apart,
+maps `λ` to `C((1 - λ) u_k + λ u_{k+1})`; T-a's argument with `V = 0`
+bounds its deviation from the chord of the exact points by `D2 h² / 8`,
+`D2` the largest over the cells it meets, and the nodes' gaps add. The
+unit tangent `T = C'/|C'|` has `|T'| <= |C''| / |C'|`, so it turns by at
+most `D2 h / s` for a lower bound `s` of `|C'|` on the segment: `|C'|` at
+the middle (by de Casteljau on the cell in the tier,
+`C' = (A_c' - w' (C - c))/w`) less `D2 h / 2`.
+
+**Normals.** With `m = S_u × S_v`, `N = m/|m|` has
+`N_u = (m_u - N (N · m_u)) / |m|`, of length at most `|m_u| / |m|`;
+`m_u = S_uu × S_v + S_u × S_uv`, so `|m_u| <= M_u = a D_v + D_u b` and
+`|m_v| <= M_v = b D_v + D_u c` over the cells. On a triangle's parameter
+box of extents `U`, `V` about its centre `o`,
+`|m| >= μ = |m(o)| - (M_u U + M_v V)/2`, and when `μ > 0` the normal turns
+by at most `(M_u U + M_v V)/μ` along any path in the triangle, as in T-a.
+The analytic surfaces' tangential correction and fan map rely on their
+structure (`S_uv` parallel to `S_u`, poles) and are not used.
+
+**Numerators (implementation).** The first measurements (the fixtures'
+rational quarter-circle wall at 34 times BRepMesh's nodes, 811 against 24,
+and their sharp rational corner at 7,900 times, 354,559 against 45) showed
+the quotient rule's triangle inequality and `|m_u|` losing to
+cancellations the exact expressions keep. Three sharper
+certificates are kept beside the ones above, the smallest bound winning;
+each works on Bernstein polynomials of the cell (products, differences and
+derivatives of enclosed coefficients in the tier, a polynomial bounded by
+its largest coefficient):
+
+* *Rational cells* (degrees at most 6 for curves, 3 for surfaces). `C' =
+  N_1 / w²`, `C'' = N_2 / w³` with `N_1 = A' w - A w'`,
+  `N_2 = (A'' w - A w'') w - 2 w' N_1`, so `|C'| <= max |N_1| / ω²` and
+  `|C''| <= max |N_2| / ω³`; for a surface `S_u = N_u / w²`,
+  `S_uu = ((A_uu w - A w_uu) w - 2 w_u N_u) / w³`,
+  `S_uv = ((A_uv w + A_u w_v - A_v w_u - A w_uv) w - 2 w_v N_u) / w³` and
+  `S_vv` likewise. On a ruled rational wall `A_uv w - A_v w_u` vanishes
+  identically, and so does its enclosure, up to rounding.
+* *Normal cones* (surface cells of degrees at most 6, rational ones at most
+  3). `M = A_u × A_v` (nonrational) or `M = N_u × N_v` (rational) is a
+  positive multiple of `S_u × S_v`, `w²` or `w⁴` times it in the cell's own
+  parameters. With its value `o` at the cell's middle as axis, if every
+  coefficient `M_k` has `M_k · o > 0`, every normal of the cell lies in the
+  cone of half-angle `α = atan max_k |M_k × o| / (M_k · o)` (a positive
+  combination of vectors in a convex cone stays in it), and
+  `|M| >= min_k M_k · o / |o|`. Over a triangle's box, with `d` the normal
+  at its centre, each normal is within `β_c + α_c` of `d` (`β_c` the angle
+  between `d` and a cell's axis), so any two within twice the largest; and
+  `|S_u × S_v| >= |M| / w_max^e`.
+* *Rates.* Pointwise `|N_u| = |M × M_u| / |M|²` for any positive multiple
+  `M` (the tangential part of `M_u` cancels in the cross product, and so
+  does the derivative of the multiple), so on a cell
+  `|N_u| <= max |M × M_u| / (min |M|)²` from the coefficients of the
+  polynomial `M × M_u` (surface degrees at most 4, rational at most 2); a
+  triangle's box takes the largest over its cells. For an edge the same
+  holds with `N` a multiple of `C'` (`A'`, or `N_1`): the tangent turns
+  over a cell's part `[τ_a, τ_b]` by at most
+  `max |N × N'| (τ_b - τ_a) / μ²`, `μ` the enclosed `|N|` at the part's
+  middle less `max |N'| (τ_b - τ_a)`, summed over the cells a segment
+  meets.
+
+A cell's multiple `M` depends on its parameter lengths (`L_u L_v` in its
+own parameters) and on the weights; each cell's ratio is formed with its
+own `M` before the largest is taken, so no two cells' multiples are
+compared.
+
+**Counts.** An edge on a spline face needs, for each boundary segment with
+parameter extents `Δu`, `Δv` between its pcurve's nodes,
+`(a Δu² + 2 b Δu Δv + c Δv²)/8 <= 0.45 δ` and
+`(M_u Δu + M_v Δv)/μ <= 0.45 θ` over the cells of the chord's box: T-a's
+thin-triangle condition with local coefficients. A spline pcurve on an
+analytic surface enters T-a's condition with the extents `H max |u'|` and
+`H max |v'|` (`H` its parameter length, `D1` per coordinate over its
+cells) and its `v` range from its control hull (a rational curve with
+positive weights lies in the convex hull of its poles).

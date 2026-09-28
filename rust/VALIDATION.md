@@ -657,6 +657,30 @@ welded meshes: 42 matches and 14 reviewed differences (OCCT beyond the
 request on seven rows, degenerate triangles at poles;
 `TESSELLATION.md`).
 
+## Tessellation of splines (T-b)
+
+`generate_tessellation_fixtures.py --check` also writes twelve spline
+bodies (prisms with quadratic, cubic and rational spline walls, a wave with
+a spline and a circular hole, a sharp rational corner, a far translate,
+degree-1 spline edges and pcurves on a stadium's cylinder; a plane face in
+a periodic spline ring; a box under a spline graph; a trimmed bicubic sheet
+and a rational biquadratic sheet), each checked valid by the reference
+validator, and what `tessellation_reference.py` derives from each case
+alone. `tessellation.rs` meshes all 24 (areas, volumes, the Euler
+characteristic, closedness, determinism, triangle centroids within their
+bounds of the surface by a projection evaluated by Cox-de Boor in the test),
+the 17 valid B-rep fixture cases with spline geometry against their
+certified mass enclosures, and every one of the 58 certified `data/occ`
+solids, the four with spline geometry among them. `tessellation/spline.rs`
+tests that the cells enclose the exact points and partials and that their
+bounds hold, on rational and nonrational surfaces up to degree 8.
+`compare_tessellation.py --family spline` reproduces the pre-implementation
+capture and the `.brep` texts, runs the reference's full check on the
+kernel's meshes (all 24 pass) and on OCCT's: 21 matches and 3 reviewed
+differences (OCCT beyond the request on the dome and the trimmed sheet at
+the fine setting, its recorded deflection understating the dome's at both;
+`TESSELLATION.md`).
+
 ## Height split and stacked fuse
 
 `generate_split_merge_fixtures.py --check` writes 174 scenarios from the
@@ -916,6 +940,7 @@ only numbers carry an allowance.
 | `occt-tessellation-preimplementation/inputs.txt` (`compare_tessellation.py`) | the kernel's regenerated `.brep` texts and settings against the captured ones | `2^-50` per number relative to its size (at least 1); every other token exact | the kernel writes frames and rotated points with the platform's trigonometry, which moves a value by an ulp of its own magnitude: the first Linux run's texts differed from the macOS capture, and a later one by a coordinate of -9.999999999999998 for -10, beyond an absolute `2^-50` |
 | `occt-split-preimplementation` (`compare_split.py`) | the native pieces' volumes, areas and centres per side against the reference | `2e-8` relative | BRepGProp's error on pieces with elliptic faces reached `8.8e-9` in the capture (`disc_through_caps`); planar pieces agree to `1e-15` |
 | `occt-tessellation-preimplementation/native.txt` (`compare_tessellation.py`) | OCCT's weld gap, own deflections, measured distances, area and volume of the 56 meshes on each run | `1e-9` relative or `1e-15` absolute; statuses and every count exact | BRepMesh and the probe's projections evaluate with platform trigonometry |
+| `occt-spline-tessellation-preimplementation/inputs.txt` and `native.txt` (`compare_tessellation.py --family spline`) | the kernel's `.brep` texts of the twelve spline bodies and OCCT's rows of their 24 meshes on each run | as for T-a's: `2^-50` per number relative to its size, `1e-9` relative or `1e-15` absolute per measurement; statuses and counts exact; another platform reproduces its own reviewed record (`platform-<name>/`) | the writer and BRepMesh evaluate splines with platform arithmetic |
 | `occt-procedural-*-preimplementation`, `occt-torus-curve-preimplementation`, `occt-torus-pair-preimplementation`, `occt-ruled-curve-preimplementation` (`compare_procedural_intersections.py`, `compare_torus_curves.py`, `compare_ruled_curves.py`) | the native lines' counts, points and samples on each run | `1e-9` relative per number on the capture's platform; another platform reproduces its own reviewed record (`platform-<name>/`) exactly in counts | IntPatch walks and approximates lines with platform arithmetic; near degeneracies its pieces differ |
 | `occt-step-preimplementation/native.txt` (`compare_step.py`) | OCCT's bodies of the 22 STEP fixtures on each run | `1e-9` relative per volume, area and centre coordinate; statuses, classes, counts and verdicts exact; no platform record | `STEPControl_Reader` and `BRepGProp` evaluate with platform trigonometry; the macOS capture agrees with the closed forms within `7.6e-15` |
 | `prism-properties-baseline.tsv` (T1) | kernel mass properties, bounds and classifications before and after the migration | none: each host regenerates its own rows at `26fc457f` and must reproduce them bitwise | frames and rotations use the platform's trigonometry, so rows differ across hosts in the last bits |

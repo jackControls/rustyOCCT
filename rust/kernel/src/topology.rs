@@ -29,7 +29,7 @@ use crate::{
 use std::collections::BTreeMap;
 use std::f64::consts::TAU;
 
-mod validate;
+pub(crate) mod validate;
 pub(crate) use validate::{conic_point_fast, projection_range, section_rates};
 pub use validate::{EdgeEnd, Entity, Issue, IssueKind};
 
