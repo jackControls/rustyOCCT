@@ -82,6 +82,7 @@ jobs:
           target/math-oracle-venv/bin/python rust/tools/generate_curve_curve_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_split_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_boolean_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_curved_boolean_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_tessellation_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_step_fixtures.py --check
       - name: Run unchanged upstream tests on both kernels

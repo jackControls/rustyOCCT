@@ -399,6 +399,63 @@ height); its horizontal edges on a spline are its lifted restrictions.
   history (independent check, every input entity covered, repeated
   exactly) and hand cases (a turned box's quarter, its rigid motion and
   classification, a cavity, a cut in two, touching solids refused).
+* **S9c.1 evidence (arcs in any position), before its kernel code.**
+  `curved_boolean_reference.py` (mpmath, 40 digits) takes each prism on its
+  exact model (the stored axes as rationals) and slices both solids by the
+  planes parallel to both axes (`d = n_A x n_B`, or `n x e` for parallel
+  axes): each section is a union of parallelograms, one per chord of the
+  profile (its ends `L(s) + k sqrt(Q(s))`, exact), so a slice's common, cut
+  and fuse are convex clippings whose areas and moments are Green's theorem
+  over segments (the decisions' ellipse arcs appear only in slices of
+  another direction; here they bound the planar faces' regions of the area
+  part). Breakpoints are the real roots of exact polynomials (three lines
+  of the slice concurrent, two parallel ones coinciding, a trace through a
+  vertex or tangent to a circle: surds squared away, spurious roots
+  filtered by the meeting lying on both sections' boundaries), and each
+  interval is integrated by Gauss-Legendre after `s = a + (b - a)(1 - cos
+  t)/2` (end-point square roots analytic), refined to 1e-33 of the case's
+  size to the fourth. Areas: every input face is swept by lines of its own
+  parameters (`v` on caps, the height on flat and cylindrical walls), each
+  line cut at its crossings of the other solid's boundary and its pieces
+  classified at their midpoints (inside, outside, or on a coplanar or
+  coincident face of the same or opposite orientation, decided in
+  rationals), the class lengths integrated with the surface's own element
+  between breakpoints found the same way (in `tan(theta / 2)` on
+  cylinders). Solids: the slices' arrangements of lines, faces joined
+  across one line within an interval and by overlapping limits across a
+  breakpoint. `generate_curved_boolean_fixtures.py --check` writes
+  `boolean-curved-cases.txt`, `boolean-curved-expected.tsv` and
+  `boolean-curved-frames.tsv` (the stored axes' bits) with 44 cases (14
+  fuses, 13 cuts, 17 commons): a tilted cylinder through a box, a box
+  corner in a cylinder (exact and leaning), Steinmetz solids (perpendicular,
+  oblique, both axes tilted), parallel cylinders with coplanar caps, coaxial
+  cylinders, a tilted pin through a square hole, a coaxial pin filling a
+  round hole (coincident cylinders of opposite orientations), a tilted
+  cylinder across a hole's wall, a stadium in a turned and in a tilted
+  frame, quarter cylinders, and 7 `degenerate` with reasons (a plane
+  tangent along a generatrix, cylinders tangent outside and inside, the
+  Steinmetz cut touching itself at two points); 35 `solid`, 2 `empty`, 16
+  in exact frames only. Frames are those whose stored axes the kernel gives
+  bit for bit: not `ROT`, whose `x` differs from `stored_axes` in its last
+  bit on macOS arm64 (the platform `hypot`); `R125` (`x` along `(12, 5,
+  0)`) turns instead. Checks before writing: closed forms (9.2e-41 in exact
+  frames, 1.9e-16 in turned ones: the stored axes' departure from
+  orthonormal), `fuse = A + B - common` and `cut = A - common` with each
+  operation sliced apart (2e-41), the area identity and every face's
+  classes against its closed-form area (2e-40), a second slicing direction
+  for parallel axes (1.4e-41), Monte-Carlo volumes and centres (2.7
+  standard errors at worst), and S9a's and S9b's references on their 90
+  fixtures (every count; S9b's 25 printed digits exactly, S9a's within
+  2.4e-17, its frame coordinates taking the axes as orthonormal). A scan
+  for near coincidences moved two fixtures off coincidences of the slicing.
+  `compare_curved_boolean.py` (`compare_boolean.py` through its `make_set`
+  hook, which also repaired `compare_polyhedral.py`: since the spline set it
+  had checked S9a's capture) reproduces `occt-boolean-curved-preimplementation`
+  (`rust_curved_boolean_exists` false): every result valid with the
+  reference's solid count, the degenerate ones included, all 44 within
+  8.6e-9 (`across_hole_common`, BRepGProp on faces bounded by ellipses), no
+  review; four solids' counts change when unified (coplanar caps merged, a
+  tangency's imprint); the kernel's probe `unsupported` on all 44.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

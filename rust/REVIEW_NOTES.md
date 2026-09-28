@@ -3066,3 +3066,29 @@ Decisions for S9, recorded before its code (2026-09-28):
     3,293 inputs, 1,396 MB); at `cfc641c9` `split` (1,898, 3,396 inputs,
     1,900 MB) and `step` (13,991, 743 inputs) clean, `boolean` a timeout in
     its replay (`fuzz/regressions/README.md`).
+  * S9c: decisions recorded (2026-09-28); S9c.1's evidence came before any
+    kernel code (`BOOLEAN.md`): `curved_boolean_reference.py` (slices
+    parallel to both axes, breakpoints as exact polynomial roots, faces
+    swept in their own parameters) and 44 fixtures
+    (`generate_curved_boolean_fixtures.py --check`: 35 solid, 2 empty, 7
+    degenerate with reasons; closed forms within 9.2e-41 in exact frames and
+    1.9e-16 in turned ones, identities 2e-40, Monte Carlo 2.7 sigma, S9a's
+    and S9b's references on their 90 fixtures) in frames the kernel stores
+    bit for bit (`ROT` is not: its `x` differs in the last bit on macOS
+    arm64), and the capture `occt-boolean-curved-preimplementation`
+    (`compare_curved_boolean.py`: all 44 valid with the reference's solids,
+    within 8.6e-9, no review; the kernel `unsupported` on all 44).
+    `compare_polyhedral.py` had checked S9a's capture since the spline set;
+    `compare_boolean.make_set` now lets each wrapper choose its set.
+    Amendments, from the evidence: (a) a cylinder's exact model is the
+    affine one on its frame's stored axes (in a turned frame slightly
+    elliptic), so two cylinders are one surface only when their frames' axes
+    are equal bit for bit or exactly orthonormal and their exact models
+    agree; others within rounding of each other are `Degenerate`, as the
+    reference refuses them; (b) two cylinders whose surfaces meet in a curve
+    other than lines, circles or ellipses are S9c.2's (`OutOfDomain` until
+    then) even when their bounded faces do not touch; (c) a tangency between
+    the inputs is refused (`Degenerate`) whether or not the result involves
+    it (an empty common, a cut leaving the object unchanged), S9a's rule;
+    OCCT returns valid results there, recorded as declared refusals. S9c.1's
+    kernel next.

@@ -67,7 +67,12 @@ BOUND = 2e-8
 
 
 class Set:
-    """A fixture set: S9a's (the default) or S9a.2's spline profiles."""
+    """A fixture set: S9a's (the default) or S9a.2's spline profiles. A
+    wrapper running another set (`compare_polyhedral.py`,
+    `compare_curved_boolean.py`) replaces `make_set` with a subclass giving
+    its cases, expected rows, capture, reviews, the capture's flag that the
+    kernel code did not exist (`exists_key`, `exists`) and whether the kernel
+    must still refuse every case (`before_code`)."""
 
     def __init__(self, splines):
         self.splines = splines
@@ -79,6 +84,19 @@ class Set:
         self.output = ROOT/('target/boolean-spline-oracle' if splines else 'target/boolean-oracle')
         self.reviews = ROOT/('rust/fixtures/occt-boolean-spline-divergences.json' if splines
                              else 'rust/fixtures/occt-boolean-divergences.json')
+        self.exists_key = 'rust_spline_boolean_exists' if splines else 'rust_boolean_exists'
+
+    def exists(self):
+        """Whether the kernel code the capture came before exists now."""
+        return rust_spline_boolean_exists() if self.splines else KERNEL_FILE.exists()
+
+    def before_code(self):
+        """True while the kernel must refuse every case (`unsupported`)."""
+        return self.splines and not rust_spline_boolean_exists()
+
+
+def make_set(splines):
+    return Set(splines)
 
 
 SET = Set(False)
@@ -238,8 +256,7 @@ def capture(executable, env, sdk_manifest):
                             capture_output=True, check=True).stdout.splitlines()
     revision = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True, capture_output=True,
                               check=True).stdout.strip()
-    exists = ({'rust_spline_boolean_exists': rust_spline_boolean_exists()} if SET.splines
-              else {'rust_boolean_exists': KERNEL_FILE.exists()})
+    exists = {SET.exists_key: SET.exists()}
     write(CAPTURE/'capture.json', {
         'source_reference': SOURCE, 'oracle': next(iter(record['stderr'].splitlines()), None),
         'platform': sys.platform, 'rust_revision': revision, **exists,
@@ -251,7 +268,7 @@ def capture(executable, env, sdk_manifest):
 def captured(observed):
     CAPTURE = SET.capture
     metadata = json.loads((CAPTURE/'capture.json').read_text())
-    exists = metadata['rust_spline_boolean_exists'] if SET.splines else metadata['rust_boolean_exists']
+    exists = metadata[SET.exists_key]
     if metadata['source_reference'] != SOURCE or exists:
         raise ValueError('Boolean capture was not the recorded pre-implementation one')
     for field, name in [('input_sha256', 'inputs.txt'), ('probe_source_sha256', 'oracle.cpp'),
@@ -283,7 +300,7 @@ def main():
     parser.add_argument('--splines', action='store_true', help="S9a.2's spline set")
     args = parser.parse_args()
     global SET
-    SET = Set(args.splines)
+    SET = make_set(args.splines)
     output = (args.output or SET.output).resolve()
     output.mkdir(parents=True, exist_ok=True)
     prefix = args.occt_root.resolve()
@@ -308,10 +325,11 @@ def main():
     report = {'source_reference': SOURCE, 'oracle': oracle, 'cases': 0, 'rust_probe_exists': PROBE.exists(),
               'rust_within_reference': 0, 'rust_unsupported': [], 'rust_probe_failed': [], 'rust_refused': [],
               'matches': [], 'reviewed_differences': [], 'failures': []}
-    # S9a.2's spline set before its kernel code: every case unsupported.
-    pre_splines = SET.splines and not rust_spline_boolean_exists()
-    if SET.splines:
-        report['rust_spline_boolean_exists'] = not pre_splines
+    # A set before its kernel code (S9a.2's splines, S9c's arcs in frames
+    # with different axes): every case unsupported.
+    pre_splines = SET.before_code()
+    if SET.exists_key != 'rust_boolean_exists':
+        report[SET.exists_key] = not pre_splines
     rust = None
     if not args.native_only and PROBE.exists():
         rust, report['rust_probe_failed'] = rust_rows()
@@ -322,8 +340,8 @@ def main():
         found = differences(case, native, expected[name])
         if pre_splines and rust is not None and (rust[name] != [['unsupported']]
                                                  or name in report['rust_probe_failed']):
-            report['failures'].append({'case': name, 'reason': 'rust_spline_boolean_before_its_code',
-                                       'rust': rust[name]})
+            reason = SET.exists_key[:-len('_exists')]+'_before_its_code'
+            report['failures'].append({'case': name, 'reason': reason, 'rust': rust[name]})
             continue
         if rust is None or rust[name] == [['unsupported']]:
             # No probe yet, or a case of a later sub-step: listed, and the
