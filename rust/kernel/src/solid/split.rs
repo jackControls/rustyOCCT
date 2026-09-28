@@ -87,6 +87,12 @@ impl Solid {
         let (a, b, c) = (dot(m, x), dot(m, y), dot(m, n));
         let d: R = (0..3).map(|i| q(m[i]) * (q(o[i]) - q(p0[i]))).sum();
         let profile = match &self.construction {
+            // S8b.3 splits spline prisms.
+            Construction::Prism(profile) if profile.has_spline() => {
+                return Err(Error::OutOfDomain(
+                    "a prism of a spline profile split (S8b.3)",
+                ))
+            }
             Construction::Prism(profile) => (**profile).clone(),
             Construction::Cone { .. } | Construction::Sphere { .. } => {
                 return Ok(self
@@ -741,7 +747,8 @@ impl Section {
                 let (p, e) = (points[j], points[(j + 1) % n]);
                 let (fp, fe) = (f(p), f(e));
                 let mut cuts: Vec<PointId> = Vec::new();
-                let kind = match segments[j] {
+                let kind = match segments[j].clone() {
+                    Segment::Spline(_) => unreachable!("spline prisms are refused before (S8b.3)"),
                     Segment::Line => {
                         if sign(&fp) * sign(&fe) < 0 {
                             let t = &fp / (&fp - &fe);
@@ -1487,9 +1494,10 @@ fn boundary_of(
         let mut rev = Vec::with_capacity(n);
         for k in 0..n {
             // Segment from point k+1 back to k, reversed.
-            let (_, seg, origin) = items[(n - 1 - k) % n];
+            let (_, seg, origin) = items[(n - 1 - k) % n].clone();
             let from = items[(n - k) % n].0;
             let seg = match seg {
+                Segment::Spline(_) => unreachable!("spline prisms are refused before (S8b.3)"),
                 Segment::Line => Segment::Line,
                 Segment::Arc {
                     center,
@@ -1506,7 +1514,7 @@ fn boundary_of(
         items = rev;
     }
     let points: Vec<Point2> = items.iter().map(|i| positions[&i.0]).collect();
-    let segments: Vec<Segment> = items.iter().map(|i| i.1).collect();
+    let segments: Vec<Segment> = items.iter().map(|i| i.1.clone()).collect();
     // A piece whose boundary touches itself within the resolution (a line
     // grazing a circle, cutting a sliver off it) is thinner than it.
     let boundary = Boundary::path(points.clone(), segments, tolerance).map_err(|e| match e {

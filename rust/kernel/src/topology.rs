@@ -2007,7 +2007,7 @@ impl Topology {
                                 center,
                                 radius,
                                 ccw,
-                            } = segments[i]
+                            } = segments[i].clone()
                             else {
                                 return Ok(None);
                             };
@@ -2032,6 +2032,17 @@ impl Topology {
                             (&top, high, &mut top_edges),
                         ] {
                             let edge = match arc_of(i, height)? {
+                                // S8b: a spline segment lifted to the cap.
+                                None if matches!(segments[i], Segment::Spline(_)) => {
+                                    let Segment::Spline(span) = &segments[i] else {
+                                        unreachable!("matched above")
+                                    };
+                                    topology.add_edge(
+                                        Some(ends[i]),
+                                        Some(ends[j]),
+                                        lifted_spline(span, frame, height)?,
+                                    )
+                                }
                                 None => topology.add_line(ends[i], ends[j]),
                                 Some((arc_frame, radius, start, sweep)) => topology.add_edge(
                                     Some(ends[i]),
@@ -2096,6 +2107,87 @@ impl Topology {
                             derive(EntityKind::Face, Role::Wall, 0, vec![seg(i)]),
                         ));
                         let (surface, sense, fins) = match arc_of(i, low)? {
+                            // S8b: the spline's degree-(p, 1) wall, its
+                            // pcurves lines in its (u, v) as an arc's are.
+                            None if matches!(segments[i], Segment::Spline(_)) => {
+                                let Segment::Spline(span) = &segments[i] else {
+                                    unreachable!("matched above")
+                                };
+                                let (surface, a, b) = spline_wall(span, frame, low, high)?;
+                                let fin = |edge, sense, from: (f64, f64), to: (f64, f64)| Fin {
+                                    edge,
+                                    sense,
+                                    pcurve: Curve2::LineSegment {
+                                        start: Point2::new(from.0, from.1),
+                                        end: Point2::new(to.0, to.1),
+                                    },
+                                    enclosure: None,
+                                };
+                                let fins = if inner {
+                                    vec![
+                                        fin(
+                                            bottom_edges[i],
+                                            Orientation::Reversed,
+                                            (b, 0.0),
+                                            (a, 0.0),
+                                        ),
+                                        fin(
+                                            vertical[i],
+                                            Orientation::Forward,
+                                            (a, 0.0),
+                                            (a, height),
+                                        ),
+                                        fin(
+                                            top_edges[i],
+                                            Orientation::Forward,
+                                            (a, height),
+                                            (b, height),
+                                        ),
+                                        fin(
+                                            vertical[j],
+                                            Orientation::Reversed,
+                                            (b, height),
+                                            (b, 0.0),
+                                        ),
+                                    ]
+                                } else {
+                                    vec![
+                                        fin(
+                                            bottom_edges[i],
+                                            Orientation::Forward,
+                                            (a, 0.0),
+                                            (b, 0.0),
+                                        ),
+                                        fin(
+                                            vertical[j],
+                                            Orientation::Forward,
+                                            (b, 0.0),
+                                            (b, height),
+                                        ),
+                                        fin(
+                                            top_edges[i],
+                                            Orientation::Reversed,
+                                            (b, height),
+                                            (a, height),
+                                        ),
+                                        fin(
+                                            vertical[i],
+                                            Orientation::Reversed,
+                                            (a, height),
+                                            (a, 0.0),
+                                        ),
+                                    ]
+                                };
+                                // Its normal is the right of increasing u: away
+                                // from the material on an outer boundary run
+                                // with u, on a hole run against it.
+                                let sense = if span.is_reversed() == inner {
+                                    Orientation::Forward
+                                } else {
+                                    Orientation::Reversed
+                                };
+                                (surface, sense, fins)
+                            }
                             None => {
                                 let origin = topology.vertices[bottom[start].0].position;
                                 let tangent = topology.vertices[bottom[end].0].position - origin;
@@ -2477,8 +2569,13 @@ impl Topology {
             let mut edges = Vec::with_capacity(count);
             for i in 0..count {
                 let j = (i + 1) % count;
-                let edge = match segments.map(|s| s[i]) {
+                let edge = match segments.map(|s| s[i].clone()) {
                     None | Some(Segment::Line) => topology.add_line(vertices[i], vertices[j]),
+                    Some(Segment::Spline(span)) => topology.add_edge(
+                        Some(vertices[i]),
+                        Some(vertices[j]),
+                        lifted_spline(&span, frame, 0.0)?,
+                    ),
                     Some(Segment::Arc {
                         center,
                         radius,
@@ -3379,6 +3476,61 @@ impl Topology {
     }
 }
 
+/// A spline profile segment lifted to `height` on `frame` (S8b): its poles
+/// placed by the frame, its knots unchanged, run as the segment runs.
+fn lifted_spline(
+    span: &SplineSpan<crate::BSplineCurve2>,
+    frame: Frame3,
+    height: f64,
+) -> Result<Curve3> {
+    let c = span.curve().as_curve3();
+    let poles = c
+        .poles()
+        .iter()
+        .map(|p| frame.point(Point2::new(p.x, p.y), height))
+        .collect();
+    let lifted = crate::BSplineCurve3::new(
+        c.degree(),
+        poles,
+        None,
+        c.knots().to_vec(),
+        c.multiplicities().to_vec(),
+    )?;
+    let whole = SplineSpan::whole(lifted);
+    Ok(Curve3::BSpline(if span.is_reversed() {
+        whole.reversed()
+    } else {
+        whole
+    }))
+}
+
+/// A spline segment's wall (S8b): the degree-(p, 1) surface over its knots
+/// and `[0, high - low]`, its poles the profile's lifted to `low` and `high`;
+/// with the parameters `u` at the segment's start and end.
+fn spline_wall(
+    span: &SplineSpan<crate::BSplineCurve2>,
+    frame: Frame3,
+    low: f64,
+    high: f64,
+) -> Result<(Surface, f64, f64)> {
+    let c = span.curve().as_curve3();
+    let mut poles = Vec::with_capacity(2 * c.poles().len());
+    for p in c.poles() {
+        poles.push(frame.point(Point2::new(p.x, p.y), low));
+        poles.push(frame.point(Point2::new(p.x, p.y), high));
+    }
+    let u = c.knot_vector().clone();
+    let v = crate::KnotVector::new(1, vec![0.0, high - low], vec![2, 2])?;
+    let surface = crate::BSplineSurface3::new(u, v, poles, None)?;
+    let (first, last) = c.domain();
+    let (a, b) = if span.is_reversed() {
+        (last, first)
+    } else {
+        (first, last)
+    };
+    Ok((Surface::BSpline(surface), a, b))
+}
+
 /// A planar curve's pcurve on the plane of `frame`, in the use's direction:
 /// lines by their ends, arcs and circles turned with the two normals,
 /// ellipses sharing the plane's x axis (S8a.2).
@@ -3469,8 +3621,31 @@ pub(crate) fn plane_pcurve(curve: &Curve3, sense: Orientation, frame: Frame3) ->
                     .expect("a conic or section projects onto a plane"),
             ))
         }
-        Curve3::BSpline(_) => {
-            unreachable!("the extrusion builder creates only lines, circles and arcs")
+        // S8b: a spline in the plane, its poles in the frame's coordinates
+        // (the curve's image by the affine map), run as the use runs.
+        Curve3::BSpline(span) => {
+            let c = span.curve();
+            let poles = c
+                .poles()
+                .iter()
+                .map(|p| {
+                    let [x, y, _] = frame.coordinates(*p);
+                    Point2::new(x, y)
+                })
+                .collect();
+            let weights = c.is_rational().then(|| c.weights().to_vec());
+            let planar = crate::BSplineCurve2::new(
+                c.degree(),
+                poles,
+                weights,
+                c.knots().to_vec(),
+                c.multiplicities().to_vec(),
+            )
+            .expect("a spline's image is a spline");
+            let [first, last] = span.range();
+            let within = SplineSpan::new(planar, first, last).expect("the same range");
+            let flip = span.is_reversed() != (sense == Orientation::Reversed);
+            Curve2::BSpline(if flip { within.reversed() } else { within })
         }
     }
 }

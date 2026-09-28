@@ -1101,6 +1101,19 @@ Decisions for S8b, recorded before its code (2026-09-28):
   separated beyond a ball about it. Area moments are exact Bernstein
   integrals; point location uses the crossing parity and the certified
   point-to-spline distance.
+* **S8b.1 amendments, from its implementation (2026-09-28).** (a) A
+  spline segment's control polygon turns through less than a quarter-turn
+  (every leg's direction within an open right angle of every other):
+  `OutOfDomain` otherwise, the caller splitting a longer spline at interior
+  knots into several segments. This keeps each segment's pieces seen from
+  its own ends in half-turn cones, so the adjacent-pair rule (disjoint
+  direction sectors from the shared point) decides every valid join
+  without a special case for a spline curling back towards its neighbour.
+  (b) The screen subdivides exact rational Bézier control points; each box
+  is the outward binary64 hull of its exact points, so there is one tier
+  and it is certified. (c) Point location takes the crossing parity of the
+  `+x` ray with exact `y`-monotone pieces, and a point within the
+  resolution of a spline, or undecided, is on the boundary, as for arcs.
 * **S8b.2, spline prisms.** A spline segment's wall is the exact degree-(p,
   1) B-spline surface over its knots and the heights (its poles the
   profile's lifted by the frame, rounded); its cap edges are `Curve3`

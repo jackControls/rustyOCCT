@@ -189,7 +189,8 @@ fn pseg(profile: &Profile, b: usize, j: usize) -> PSeg {
         BoundaryKind::Polygon(points) => PSeg::Line(points[j], points[(j + 1) % points.len()]),
         BoundaryKind::Path { points, segments } => {
             let (s, e) = (points[j], points[(j + 1) % points.len()]);
-            match segments[j] {
+            match segments[j].clone() {
+                Segment::Spline(_) => unreachable!("spline prisms are refused before (S8b.3)"),
                 Segment::Line => PSeg::Line(s, e),
                 Segment::Arc {
                     center,

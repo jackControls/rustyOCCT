@@ -1077,6 +1077,18 @@ fn bounds(profile: &Profile, frame: Frame3, low: f64, high: f64) -> Bounds3 {
             }
             let (x, y) = (frame.x().to_array(), frame.y().to_array());
             for segment in segments {
+                // S8b: a spline lies in its control points' hull.
+                if let crate::profile::Segment::Spline(span) = segment {
+                    for height in [low, high] {
+                        for p in span.curve().poles() {
+                            let world = frame.point(p, height).to_array();
+                            for i in 0..3 {
+                                min[i] = min[i].min(world[i]);
+                                max[i] = max[i].max(world[i]);
+                            }
+                        }
+                    }
+                }
                 if let crate::profile::Segment::Arc { center, radius, .. } = segment {
                     for height in [low, high] {
                         let c = frame.point(*center, height).to_array();

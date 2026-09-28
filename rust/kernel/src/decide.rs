@@ -9,6 +9,7 @@
 //! intervals and, in the rare case they cannot decide, answers
 //! "degenerate", the conservative result for a validity screen.
 pub(crate) mod arcs;
+pub(crate) mod splines;
 
 use crate::certified::{pi, Fast, Interval, Real};
 use crate::Point2;
@@ -195,6 +196,17 @@ fn area_perimeter<T: Real>(outline: &Outline) -> Option<(T, T)> {
                 match segment {
                     crate::profile::Segment::Line => {
                         perimeter = perimeter.add(&T::from_r(&dist2_r(a, b)).sqrt());
+                    }
+                    // S8b: the spline's exact twice-area in place of its
+                    // chord's, its length between the chord and the control
+                    // polygon.
+                    crate::profile::Segment::Spline(span) => {
+                        let parts = splines::spline(span)?;
+                        let origin = [R::from_integer(0.into()), R::from_integer(0.into())];
+                        let g = splines::green(&parts, &origin);
+                        let chord = q(a.x) * q(b.y) - q(b.x) * q(a.y);
+                        twice = twice.add(&T::from_r(&(&g[0] * R::from_integer(2.into()) - chord)));
+                        perimeter = perimeter.add(&splines::length_bounds::<T>(&parts));
                     }
                     crate::profile::Segment::Arc {
                         center,
