@@ -38,6 +38,18 @@ of lines and splines its area and first moments by Green's theorem in exact
 Fractions (Bernstein product integrals over Bezier pieces from blossoms, not
 from knot insertion), a check of the slicing.
 
+S8e: a face or wire body (a case with `make`, S6) lies on its frame's plane
+`w = 0`, and the plane's trace there is `a u + b v + d = 0` (`Planar`). A
+sheet's side is a prism of height one cut parallel to its axis (the same
+slicing: area and first moments), its perimeter the boundary strictly on
+the side plus the trace where it bounds the side; a wire's side is its
+boundary's pieces on it (the elements cut exactly where the trace crosses or
+touches them, a piece along the trace taking the side of the piece before it
+in stored order), lengths and moments in closed form for lines and arcs and
+by quadrature for splines. Rows: `side S area perimeter cx cy cz` for a
+sheet, `side S length 0 cx cy cz` for a wire (a curve's boundary, its ends,
+has no length).
+
 A side holding no solid (the plane missing, touching a vertex, an edge or a
 ruling, or lying in a cap: every stored point certainly on the other side or
 on the plane) gives no piece: one `whole` row. A side may hold several pieces
@@ -982,3 +994,205 @@ def torus_rows(frame, params, plane):
         V, mu, mv, mw = [x+y for x, y in zip(p.volume_moments(True), p.volume_moments(False))]
         return [('whole', V, p.area(True)+p.area(False)-2*p.cut_area(), p.world(mu/V, mv/V, mw/V))]
     return sides
+
+
+# ------------------------------------------------------------------ S8e
+
+def _sign(x):
+    return (x > 0)-(x < 0)
+
+
+class Planar:
+    """A face or wire body (S6: a case with `make`) on its stored frame's
+    plane `w = 0`. The plane's trace there is `g = a u + b v + d = 0`, the
+    exact rationals of `Prism` (`c` plays no part); `below` is `g < 0`.
+
+    A sheet's side is the profile's section by the trace: its area and first
+    moments are a prism's of height one by a plane parallel to its axis (the
+    same slicing), its perimeter the length of its boundary strictly on the
+    side plus the parts of the trace bounding it (between consecutive
+    contacts of the trace with the boundary, where a point just off the
+    trace on that side is inside the profile). A wire's pieces are its first
+    boundary's elements cut where `g` vanishes, in stored order: lines
+    exactly (the crossing a rational point), arcs by exact tangency (`(a cx +
+    b cy + d)^2` against `r^2 (a^2 + b^2)`) and their crossing angles,
+    splines at their Bezier pieces' roots; a piece lying along the trace
+    takes the side of the piece before it in stored order (S8e's
+    decisions). Lengths and moments: lines and arcs in closed form, splines
+    by `mp.quad` of the speed."""
+
+    def __init__(self, case, plane):
+        import dataclasses
+        assert case.make in ('face', 'wire')
+        boundaries = case.boundaries if case.make == 'face' else case.boundaries[:1]
+        solid = dataclasses.replace(case, make=None, start=0.0, end=1.0, boundaries=boundaries)
+        self.prism = Prism(solid, plane)
+        self.prism.c = F(0)
+        self.make = case.make
+        self.a, self.b, self.d = self.prism.a, self.prism.b, self.prism.d
+        self.els = self.prism.els
+
+    def g(self, u, v):
+        return M(self.a)*u+M(self.b)*v+M(self.d)
+
+    def world(self, u, v):
+        p = self.prism
+        return tuple(M(p.o[i])+u*M(p.x[i])+v*M(p.y[i]) for i in range(3))
+
+    def pieces(self, e):
+        """The element's pieces in its direction, each `(sign, length, mu,
+        mv, start, end)`: cut where `g` changes sign and where it touches
+        zero (an arc's tangency, a spline's even root), `sign` 0 for a line
+        lying along the trace."""
+        a, b, d = self.a, self.b, self.d
+        if e[0] == 'L':
+            p, q = [tuple(F(c) for c in pt) for pt in (e[1], e[2])]
+            f0, f1 = a*p[0]+b*p[1]+d, a*q[0]+b*q[1]+d
+            parts = [(p, q)]
+            if f0*f1 < 0:
+                t = f0/(f0-f1)
+                r = (p[0]+t*(q[0]-p[0]), p[1]+t*(q[1]-p[1]))
+                parts = [(p, r), (r, q)]
+            out = []
+            for s, t in parts:
+                fm = a*(s[0]+t[0])/2+b*(s[1]+t[1])/2+d
+                length = mp.sqrt(M((t[0]-s[0])**2+(t[1]-s[1])**2))
+                mid = (M(s[0]+t[0])/2, M(s[1]+t[1])/2)
+                out.append((_sign(fm), length, length*mid[0], length*mid[1],
+                            (M(s[0]), M(s[1])), (M(t[0]), M(t[1]))))
+            return out
+        if e[0] == 'A':
+            _, _, _, (cx, cy, r), _ = e
+            a0, sw = arc_angles(e)
+            k = -(a*F(cx)+b*F(cy)+d)
+            R2 = F(r)**2*(a*a+b*b)
+            rels = []
+            if a or b:
+                phi = mp.atan2(M(b), M(a))
+                if k*k < R2:
+                    alpha = mp.acos(M(k)/mp.sqrt(M(R2)))
+                    roots = [phi+alpha, phi-alpha]
+                elif k*k == R2:
+                    roots = [phi if k > 0 else phi+mp.pi]
+                else:
+                    roots = []
+                for t in roots:
+                    rel = (t-a0) % (2*mp.pi) if sw > 0 else (a0-t) % (2*mp.pi)
+                    if M(10)**-30 < rel < abs(sw)-M(10)**-30:
+                        rels.append(rel)
+            rels = [M(0)]+sorted(rels)+[abs(sw)]
+            direction = 1 if sw > 0 else -1
+            point = lambda t: (M(cx)+r*mp.cos(t), M(cy)+r*mp.sin(t))
+            out = []
+            for r0, r1 in zip(rels, rels[1:]):
+                t0, t1 = a0+direction*r0, a0+direction*r1
+                lo, hi = min(t0, t1), max(t0, t1)
+                sign = _sign(self.g(*point((t0+t1)/2)))
+                length = M(r)*(hi-lo)
+                mu = M(r)*(M(cx)*(hi-lo)+M(r)*(mp.sin(hi)-mp.sin(lo)))
+                mv = M(r)*(M(cy)*(hi-lo)-M(r)*(mp.cos(hi)-mp.cos(lo)))
+                # The element's own ends exactly: its stored points.
+                start = (M(e[1][0]), M(e[1][1])) if r0 == 0 else point(t0)
+                end = (M(e[2][0]), M(e[2][1])) if r1 == abs(sw) else point(t1)
+                out.append((sign, length, mu, mv, start, end))
+            return out
+        out = []
+        for piece in e[3]:
+            ts = [M(0)]+(piece.line_roots(a, b, -d) if a or b else [])+[M(1)]
+            for t0, t1 in zip(ts, ts[1:]):
+                sign = _sign(self.g(*piece.point((t0+t1)/2)))
+                assert sign != 0, 'a spline along the trace'
+                length = mp.quad(piece.speed, [t0, t1])
+                mu = mp.quad(lambda t: piece.point(t)[0]*piece.speed(t), [t0, t1])
+                mv = mp.quad(lambda t: piece.point(t)[1]*piece.speed(t), [t0, t1])
+                out.append((sign, length, mu, mv, piece.point(t0), piece.point(t1)))
+        return out
+
+    def trace_length(self, sign):
+        """The length of the trace bounding the side `sign` of the profile:
+        between consecutive contacts of the trace with the boundary, where a
+        point just off the trace's midpoint on that side is inside."""
+        a, b, d = M(self.a), M(self.b), M(self.d)
+        norm = mp.sqrt(a*a+b*b)
+        foot = (-a*d/norm**2, -b*d/norm**2)
+        dirv = (-b/norm, a/norm)
+        ts = []
+        for e in self.els:
+            for piece in self.pieces(e):
+                for pt in piece[4:6]:
+                    if abs(self.g(*pt)) <= M(10)**-28:
+                        ts.append((pt[0]-foot[0])*dirv[0]+(pt[1]-foot[1])*dirv[1])
+        ts.sort()
+        kept = [t for i, t in enumerate(ts) if i == 0 or t-ts[i-1] > M(10)**-30]
+        delta = M(10)**-25
+        total = M(0)
+        for t0, t1 in zip(kept, kept[1:]):
+            tm = (t0+t1)/2
+            x = foot[0]+tm*dirv[0]+sign*delta*a/norm
+            y = foot[1]+tm*dirv[1]+sign*delta*b/norm
+            if sum(1 for v in crossings(self.els, x) if v < y) % 2 == 1:
+                total += t1-t0
+        return total
+
+    def perimeter(self, sign=None):
+        """The boundary's length on a side (strictly), or all of it."""
+        return sum(q[1] for e in self.els for q in self.pieces(e) if sign is None or q[0] == sign)
+
+    def sheet_rows(self):
+        p = self.prism
+        has_below, has_above = p.sides()
+        if not (has_below and has_above):
+            V, mu, mv, _ = p.volume_moments(None)
+            return [('whole', V, self.perimeter(), self.world(mu/V, mv/V))]
+        out = []
+        for name, below, s in (('below', True, -1), ('above', False, 1)):
+            V, mu, mv, _ = p.volume_moments(below)
+            out.append((name, V, self.perimeter(s)+self.trace_length(s), self.world(mu/V, mv/V)))
+        return out
+
+    def wire_pieces(self):
+        """The wire's pieces in stored order, each along the trace given the
+        side of the piece before it (cyclically); every piece `-1` (below)
+        when the whole wire lies along the trace."""
+        seq = [q for e in self.els for q in self.pieces(e)]
+        if all(q[0] == 0 for q in seq):
+            return [(-1,)+q[1:] for q in seq]
+        out = []
+        for i, q in enumerate(seq):
+            j = i
+            while seq[j][0] == 0:
+                j = (j-1) % len(seq)
+            out.append((seq[j][0],)+q[1:])
+        return out
+
+    def wire_runs(self):
+        """{side: its number of open wires}: the maximal cyclic runs of
+        pieces on one side, or {'whole': 1}."""
+        seq = [q[0] for q in self.wire_pieces()]
+        if len(set(seq)) == 1:
+            return {'whole': 1}
+        runs = {}
+        for i, s in enumerate(seq):
+            if seq[i-1] != s:
+                key = 'below' if s < 0 else 'above'
+                runs[key] = runs.get(key, 0)+1
+        return runs
+
+    def wire_rows(self):
+        pieces = self.wire_pieces()
+        def row(name, chosen):
+            L = sum(q[1] for q in chosen)
+            return (name, L, M(0), self.world(sum(q[2] for q in chosen)/L, sum(q[3] for q in chosen)/L))
+        if len(set(q[0] for q in pieces)) == 1:
+            return [row('whole', pieces)]
+        return [row('below', [q for q in pieces if q[0] < 0]), row('above', [q for q in pieces if q[0] > 0])]
+
+    def rows(self):
+        return self.sheet_rows() if self.make == 'face' else self.wire_rows()
+
+
+def planar_rows(case, plane):
+    """S8e: a face body's sides (`side S area perimeter cx cy cz`) or a wire
+    body's (`side S length 0 cx cy cz`); a trace missing or touching the
+    body, or a plane parallel to it, gives one `whole` row."""
+    return Planar(case, plane).rows()
