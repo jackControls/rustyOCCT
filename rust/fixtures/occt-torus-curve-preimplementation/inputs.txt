@@ -1,0 +1,96 @@
+case tc_through_tube
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface cylinder 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 0.3
+end
+case tc_hole_cut
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface cylinder 1.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case tc_rings
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface cylinder 0.25 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case tc_across_hole
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface cylinder 0.0 0.0 0.0 0.0 1.0 0.0 1.0 -0.0 0.0 1.75
+end
+case tc_enclosing
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface cylinder 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 2.25
+end
+case tc_vertical_through
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface cylinder 2.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.25
+end
+case tc_skew
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface cylinder 0.0 1.0 0.25 0.5773502691896258 0.5773502691896258 0.5773502691896258 -0.40824829046386296 0.8164965809277259 -0.40824829046386296 0.4
+end
+case tc_tilted
+surface torus 1.0 2.0 3.0 0.0 0.6 0.8 1.0 -0.0 0.0 2.0 0.5
+surface cylinder 1.0 2.0 3.0 1.0 0.0 0.0 0.0 1.0 0.0 0.3
+end
+case tc_miss
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface cylinder 0.0 0.0 5.0 1.0 0.0 0.0 0.0 1.0 0.0 0.5
+end
+case tc_tangent_hole
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface cylinder 0.5 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case tc_tangent_outer
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface cylinder 3.5 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case tc_tangent_over
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface cylinder 0.0 0.0 1.0 1.0 0.0 0.0 0.0 1.0 0.0 0.5
+end
+case tc_saddle
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface cylinder 3.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5
+end
+case tc_near_outer_in
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface cylinder 3.5 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0000009536743164
+end
+case tc_near_outer_out
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface cylinder 3.5 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.9999990463256836
+end
+case tc_near_over
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface cylinder 0.0 0.0 1.0 1.0 0.0 0.0 0.0 1.0 0.0 0.5000009536743164
+end
+case tc_near_saddle_wide
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface cylinder 3.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5000009536743164
+end
+case tc_near_saddle_narrow
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface cylinder 3.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.4999990463256836
+end
+case tk_skew
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface cone 3.0 0.0 0.0 -1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.2
+end
+case tk_parallel
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface cone 0.5 0.0 3.0 0.0 0.0 -1.0 1.0 0.0 0.0 0.0 0.6
+end
+case tk_through_tube
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface cone 2.0 0.0 2.0 0.0 0.0 -1.0 1.0 0.0 0.0 0.0 0.1
+end
+case tk_irrational_apex
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface cone 2.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.2 0.3
+end
+case tk_tilted
+surface torus 1.0 2.0 3.0 0.0 0.6 0.8 1.0 -0.0 0.0 2.0 0.5
+surface cone 3.0 2.0 3.0 1.0 0.0 0.0 0.0 1.0 0.0 0.25 0.3
+end
+case tk_miss
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+surface cone 0.0 0.0 5.0 1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.1
+end

@@ -700,6 +700,61 @@ Decisions for S7b.3, recorded before its code (2026-09-27):
   predicates) and a `GeomInt_IntSS` capture of the S7b.3a cases before any
   kernel torus intersection code.
 
+Decisions for S7b.3b, recorded before its code (2026-09-27):
+
+* **Meridians again.** A torus and a cylinder, a cone or another torus off
+  its axis are parameterised on the torus's meridians (of two tori the first
+  by stored data), `(phi, t)` on the flat parameter torus, in the frame whose
+  `x` is the other axis's component normal to the torus's axis (the
+  direction to the other's origin when the axes are parallel). The curve is
+  the zero set of `G(phi, t) = f(p(phi, t))`, `f` the other surface's
+  implicit function (a quadric: `G` of degree two in `cos t`, `sin t`, up to
+  four points per meridian; a torus: four, up to eight). The
+  parameterisation is a diffeomorphism, so the curve's topology is that of
+  `G = 0` on the flat torus; no closed form separates the branches.
+* **The curve as a graph.** Vertices are the tangencies (singular points);
+  edges are arcs between them, or closed smooth components without one.
+  Each arc is a chain of tracks (graphs `t_i(phi)` over a `phi`-range)
+  joined at folds, where a component turns in `phi` (`G = G_t = 0`). A
+  closed smooth component keeps its winding numbers on the torus. S8 and S9
+  consume the arcs as edges.
+* **Certified construction.** Folds are found by subdivision of the
+  parameter torus (binary64 intervals, a box they cannot settle again in
+  rational intervals; the mean-value form excludes a box where `G` or `G_t`
+  certainly does not vanish) and certified by the Krawczyk operator of
+  `(G, G_t)` (a unique regular solution); a work budget bounds it (S7b.1's
+  lesson). Each fold, and each tangency, gets a box on whose top and bottom
+  edges `G` does not vanish and whose side edges carry the certified simple
+  roots of its local picture (two on one side and none on the other for a
+  fold, two and two for a crossing, none for an isolated point), with a
+  unique critical point of `G` inside for a tangency. Between them the
+  branches are followed by chains of certified windows (a sign change of `G`
+  across the window for every `phi` in its step, `G_t` of one sign on it),
+  which fixes how branches continue (through `t = pi` too) and gives every
+  point evaluation its window. A box or window that cannot be certified
+  within the budget is `ComputationLimit`.
+* **Tangency exactly.** A singular point of the curve is a tangency of the
+  surfaces. A torus is the pipe of radius `r` about its spine circle and a
+  cylinder the pipe of radius `r_c` about its axis, so they touch exactly
+  where the distance between the spine and the axis has a critical value
+  `r + r_c` or `|r - r_c|`: three conics in a rational basis of the spine's
+  plane, decided by exact resultants and real root isolation
+  (`polynomial::real`), the basis sheared until distinct critical points
+  have distinct coordinates. The contact is an isolated point or two
+  crossing branches by the certified sign of the Hessian of `G` there; a
+  higher contact, and an axis meeting the spine with `r = r_c`, are
+  `ComputationLimit`. A cone is never exactly tangent to a torus for a
+  binary64 half-angle (its `cos` and `sin` are transcendental). Two tori
+  touch where their spines have a critical distance `r1 +- r2` (S7b.3b.2).
+* **Order.** S7b.3b.1: a torus and a cylinder or a cone. S7b.3b.2: two tori.
+  Each keeps the evidence order: an independent reference (the same
+  meridians; every meridian's roots from 80-digit polynomial roots in
+  `z = e^{it}`; the critical meridians as the real roots of the resultant of
+  `z^2 G` and `z^2 G_t`, a trigonometric polynomial found from exact samples;
+  components by continuity between meridians placed about them; tangencies
+  by a Groebner basis in sympy) and a `GeomInt_IntSS` capture before the
+  kernel code.
+
 ### S8 — general planar split and face trimming (SplitBody job)
 
 Split any supported solid by an arbitrary plane: face/plane intersection

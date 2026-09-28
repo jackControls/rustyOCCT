@@ -1,0 +1,77 @@
+{
+  "note": "Reviewed GeomInt_IntSS differences from the S7b.3b reference.",
+  "reviews": [
+    {
+      "case": "tc_tangent_hole",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "514676241ef9d501f283ef54d1aee529e4aec6e8668e0795d818b24e3311f22e",
+      "differences": [
+        "missed_tangent_point"
+      ],
+      "reason": "GeomInt_IntSS returns nothing for a cylinder in a torus's hole touching its inner equator: the isolated tangency is not found. The kernel decides it exactly (a critical distance r + r_c between the spine and the axis).",
+      "independent_evidence": "The torus has major radius 2 and minor 0.5 about the z axis (inner equator radius 1.5); the cylinder has radius 1 about the vertical line x = 0.5, y = 0, so its farthest points from the z axis are at distance 1.5, reached only at (1.5, 0, z), which is on the torus only at z = 0.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "tc_tangent_outer",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "514676241ef9d501f283ef54d1aee529e4aec6e8668e0795d818b24e3311f22e",
+      "differences": [
+        "missed_tangent_point"
+      ],
+      "reason": "GeomInt_IntSS returns nothing for a cylinder touching a torus's outer equator from outside: the isolated tangency is not found. The kernel decides it exactly.",
+      "independent_evidence": "The cylinder has radius 1 about the vertical line x = 3.5, y = 0; it reaches x = 2.5 only on the line (2.5, 0, z), which meets the torus (outer equator radius 2.5) only at z = 0.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "tc_tangent_over",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "514676241ef9d501f283ef54d1aee529e4aec6e8668e0795d818b24e3311f22e",
+      "differences": [
+        "missed_tangent_point"
+      ],
+      "reason": "GeomInt_IntSS returns nothing for a cylinder resting on top of a torus's tube: the two isolated tangencies are not found. The kernel decides them exactly.",
+      "independent_evidence": "The cylinder has radius 0.5 about the line y = 0, z = 1, so it lies in z >= 0.5 and reaches z = 0.5 only on the line (x, 0, 0.5); the torus lies in z <= 0.5 and reaches it on its top circle of radius 2, so they touch exactly at (2, 0, 0.5) and (-2, 0, 0.5).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "tc_near_saddle_wide",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "c4dab2ddcf9d4b955e1332f7bbb491eac9f5266123af6b033469045190a99201",
+      "differences": [
+        "off_curve"
+      ],
+      "reason": "One of GeomInt_IntSS's approximated lines is 4.9e-6 from the surfaces near a nearly singular point (the cylinder 2^-20 beyond tangency at a saddle of the torus), where the two branches pass within 1e-3 of each other; the other samples are within 1e-7.",
+      "independent_evidence": "The exact tangency at the saddle (1.5, 0, 0) for the radius 1.5 is decided by the reference and the kernel; at 1.5 + 2^-20 the reference's folds at phi = +-0.000797 separate two components winding once round the tube, which the native lines cover.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "tk_skew",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "4dc713ef21c39ae4110dff59eebd5ce630cca901db7101de65f6e659e21342df",
+      "differences": [
+        "off_curve"
+      ],
+      "reason": "One of GeomInt_IntSS's ten approximated lines (the piece from (2.4892, 0, -0.1036) to (2.4979, -0.1018, 0)) is up to 2.6e-4 from the cone, an approximation error of the walking line; its other lines are within 1e-7 of both surfaces.",
+      "independent_evidence": "The reference's components (two loops where the narrow cone enters and leaves the tube near phi = 0, two curves winding round the tube near phi = pi) are all covered by native samples; the line's end points lie on both surfaces within 1e-7.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "tk_irrational_apex",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "6ccc4477df01103e9a87569e143c8eb36e7fabda873b3b19a9d1a675c50c71bb",
+      "differences": [
+        "off_curve"
+      ],
+      "reason": "Two of GeomInt_IntSS's four approximated lines (the lower loop near (2, 0, -0.498)) are up to 1.6e-4 from the cone, an approximation error of the walking line.",
+      "independent_evidence": "The reference's two loops (where the cone enters the tube's top and bottom) are both covered by native samples; the lines' end points lie on both surfaces within 1e-7.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}
