@@ -134,9 +134,51 @@ quadratic surd's sign).
   apex or pole into a copy per half; chord ends `Generated` from their
   ring, chords from their disc, meridians from the wall, the cut face from
   the wall and the discs.
-* Other planes cut a cone in a conic and a zone in a circle whose pcurves
-  are transcendental graphs over the angle, which wait for D13's procedural
-  edges (S8d.2): `OutOfDomain`.
+* Other planes cut a cone in a conic and a zone in a circle (S8d.2, below).
+
+## Conic sections (S8d.2)
+
+`solid/split/conic.rs`: a cone, frustum, zone or cap by a plane neither
+normal to its axis nor containing it. Exact on the stored data: whether the
+plane misses, touches or crosses each end circle (`(c w + d)^2` against `r^2
+(a^2 + b^2)` on the stored radius), whether it passes through an apex, a
+pole or a frustum's virtual apex, which conic it cuts from a cone, and
+whether a zone's closed circle winds round the axis (`d^2 < R^2 c^2`).
+
+* **Sections.** An ellipse, hyperbola or parabola on a cone (`EllipseArc`,
+  `HyperbolaArc`, `ParabolaArc`), the two rulings through a frustum's virtual
+  apex (or within the resolution of it), a circle on a sphere
+  (`CircularArc`), all explicit (D13); cut at the rims' crossings into the
+  arcs inside the solid (`MATHEMATICS.md`). Their pcurves are `Projection`s
+  on the wall and exact on the cut plane (an ellipse's `EllipseArc` on a
+  frame sharing its axes, a circle's arc, a hyperbola's or parabola's
+  projection).
+* **Pieces.** Each is a general body (`Construction::Half`, rebuilt the same
+  way under a rigid motion): its part of the wall, bounded by its rim arcs
+  or rings and the section's arcs (loops chained through their vertices and
+  walked on the cover, a wall wound once about the axis when it holds a
+  ring, round an apex or pole on its side as a vertex loop, with a hole where
+  a zone's circle does not wind round the axis), its end discs or their
+  parts closed by chords, and the cut face.
+* **Configurations.** A closed section (no rim crossed); one crossing one
+  rim twice (a tongue); two arcs joining the rims; a closed section touching
+  one or both rims keeps a vertex at each touch (the wall a bigon, as S8a.2's
+  touch). `Degenerate`: a plane touching one rim while crossing the other or
+  touching a rim with a zone's side circle (a wall pinched mid-loop), within
+  the resolution of a rim's tangent, of an apex or pole, or of a frustum's
+  virtual apex where the conic's axes collapse, a cone section within
+  binary64 of a parabola (its axes over a million times the solid), or a
+  piece thinner than the resolution. `OutOfDomain`: a plane through an apex
+  or pole off the axis (rulings through the apex, a circle through the
+  pole).
+* **History.** The wall, the region, and each crossed rim and disc `Split`
+  into one child per piece (below first); a rim, disc, apex or pole whole in
+  one piece keeps its id (`Modified` when a touch gives it a vertex,
+  otherwise `Unchanged`); crossing and touch vertices `Generated` from their
+  rim, chords from their disc, section edges from the wall, the cut face
+  from the wall and the discs it crosses.
+* Pieces are not written to `.brep` yet (a projection pcurve is
+  `Unwritable` until D13's interchange approximation).
 
 ## Tori (S8d.1)
 
@@ -188,6 +230,17 @@ everywhere, `|d| - R |(a, b)| >= r |m|`, decided by squares.
   `MakeSphere` splits captured before any kernel code, all within 2e-8 but
   two reviewed BRepGProp errors on spheres cut at an angle. The kernel is
   inside the reference on the 16 cases S8c.1 splits, its counts OCCT's.
+* **Conic sections (S8d.2).** `split-conic-cases.txt` holds 12 more cases (a
+  closed ellipse, a parabola, hyperbolas across one rim and both, a tongue at
+  the top, the rulings through a virtual apex, an ellipse touching both
+  rims, tilted cones and zones, a zone's side cap, a cap with its pole,
+  circle arcs across both rims) beside S8c's three captured before any code;
+  `occt-split-conic-postimplementation` holds their native splits, captured
+  after `conic.rs` existed and recorded as such. The kernel is inside the
+  reference on all 15; three match OCCT and twelve are reviewed count
+  differences (OCCT's seam at `u = 0` splits a strip, tongue, bigon or side
+  cap into two faces, or a rim or section arc it crosses), one of them also
+  BRepGProp's error on a cap cut at an angle.
 * **Kernel.** `tests/split.rs`: every side's sums of the kernel's enclosures
   contain the reference's volume, area and moments; histories pass the
   independent check, cover every input entity and repeat exactly; oblique
@@ -199,4 +252,6 @@ everywhere, `|d| - R |(a, b)| >= r |m|`, decided by squares.
   degenerate on purpose (oblique ones through a cap's vertex or touching a
   cap's circle or arc); volumes add up, pieces lie on their sides and move
   rigidly with their ids, and the split's own history check runs in its
-  debug build.
+  debug build. Cones, spheres, zones, caps and tori (a first byte of 224 on)
+  are cut by nine plane modes, S8d.2's among them (touching a rim, parallel
+  to a ruling, through a frustum's virtual apex).

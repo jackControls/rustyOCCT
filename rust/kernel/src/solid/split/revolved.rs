@@ -237,11 +237,7 @@ impl Solid {
             // S8c.2: a plane containing the axis.
             return Ok(Some(pieces));
         } else if let Some((radius, low, high)) = sphere {
-            if !(low == -FRAC_PI_2 && high == FRAC_PI_2) {
-                return Err(Error::OutOfDomain(
-                    "a sphere zone by a plane not normal to its axis (S8d)",
-                ));
-            }
+            debug_assert!(low == -FRAC_PI_2 && high == FRAC_PI_2);
             // Caps on a frame along the plane's normal, cut at the plane's
             // signed distance from the centre: F(centre) = d, so the plane
             // lies at -d / |m| along it.
@@ -275,8 +271,8 @@ impl Solid {
                 [End::Cut, End::Pole],
             ));
         } else {
-            return Err(Error::OutOfDomain(
-                "a cone by a plane neither normal to nor containing its axis (S8d)",
+            return Err(Error::InvalidTopology(
+                "a cone or zone the meridian and conic splits did not take",
             ));
         }
         pieces.sort_by_key(|p| p.0);

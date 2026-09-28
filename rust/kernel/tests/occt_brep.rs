@@ -312,14 +312,12 @@ fn corpus_matches_the_independent_reader() {
             }
         }
     }
-    assert_eq!(imported, 58);
+    assert_eq!(imported, 59);
     // What the validator cannot certify yet: a sphere face whose loop passes
-    // both poles between two seam pairs (the seam merge keeps them), and
-    // containment in a cylinder face's loops with spline pcurves.
-    let pinned = [
-        ("Ball.brep", "108", vec!["seam_edge"]),
-        ("Motor-c.brep", "378", vec!["uncertified_containment"]),
-    ];
+    // both poles between two seam pairs (the seam merge keeps them). (Motor-c
+    // 378's hole with spline pcurves in a wound cylinder face certifies since
+    // S8d.2's signed +v ray.)
+    let pinned = [("Ball.brep", "108", vec!["seam_edge"])];
     let pinned: Vec<(String, String, Vec<&str>)> = pinned
         .into_iter()
         .map(|(f, r, k)| (f.to_string(), r.to_string(), k))

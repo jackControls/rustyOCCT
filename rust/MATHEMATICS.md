@@ -1889,3 +1889,76 @@ enclosures of `S(p)` or `C(t)` (`Fast`, with its certified `cos_sin` and
 `2π`), their gaps the enclosures' reach; a vertex's gap is its distance from
 the enclosed exact point; every bound is summed and multiplied in the same
 tier and rounded up.
+
+## Conic sections and certified projections (S8d.2)
+
+**A cone's plane section.** In the cone's frame the plane is `F = a u + b v
++ c w + d`, `|m|^2 = a^2 + b^2 + c^2`; the cone has half-angle `α` (`tan α =
+(r1 - r0) / H`), apex `V` (virtual on a frustum) and axis `k` pointing from
+`V` into the solid. With `N` the unit normal, `h = F(V) / |m|`, `e1` the
+axis's direction projected on the plane (`κ1 = |k - (k.N) N|`, `κn = k.N`),
+`e2 = N x e1` and the origin at `V`'s foot `O = V - h N`, a point `O + x e1 + y
+e2` lies on the cone when `(x κ1 - h κn)^2 = (h^2 + x^2 + y^2) cos^2 α`:
+
+    A x^2 + C y^2 + D x + F0 = 0,  A = cos^2 α - κ1^2,  C = cos^2 α,
+    D = 2 h κ1 κn,  F0 = h^2 (cos^2 α - κn^2),
+
+symmetric about `e1`. The kind is exact: `sign(A) = sign(H^2 |m|^2 - (a^2 +
+b^2)(H^2 + (r1 - r0)^2))` on the stored binary64 data. `A > 0` is an
+ellipse centred at `x = -D / 2A` with semi-axes `sqrt(G / A)` along `e1` and
+`sqrt(G / C)` across (`G = D^2 / 4A - F0`, so the first is the major one);
+`A < 0` a hyperbola with `G < 0`, transverse semi-axis `sqrt(G / A)` along
+`e1`, conjugate `sqrt(-G / C)`, its branch the one where `x κ1 - h κn > 0`;
+`A = 0` the parabola `x = -F0 / D - (C / D) y^2`, focal distance `|D| / 4C`.
+A plane through the apex (`F(V) = 0` exactly, or within the resolution of a
+frustum's virtual apex) cuts the rulings through its rim crossings. A
+sphere's section is the circle of radius `sqrt(R^2 - d^2 / |m|^2)` about the
+centre's foot.
+
+**Crossings and arcs.** The plane meets an end circle of radius `r` at height
+`w` where `k + r |(a, b)| cos(φ - atan2(b, a)) = 0`, `k = c w + d`: it misses,
+touches or crosses as `k^2` is above, equal to or below `r^2 (a^2 + b^2)`
+(exact). The crossings' parameters on the conic, sorted (cyclically on an
+ellipse or circle), cut it into arcs; an arc belongs to the solid when its
+midpoint's height lies between the ends. The wall's side on an arc's left
+(about the outward normal) is the side the plane's normal points to from
+`n_s x T` at its midpoint.
+
+**Taylor jets.** A jet is the truncated Taylor series `sum c_k s^k` of a
+function of the fraction about a base, each coefficient an enclosure in the
+certified tiers. Sums, products, quotients (`d_k = (n_k - sum_{j<k} d_j
+e_{k-j}) / e_0`), square roots, `exp` (and `cosh`, `sinh`), `cos` and `sin`
+(by their coupled recurrences) and `atan2(y, x)` (the integral of `(x y' - y
+x') / (x^2 + y^2)` from a base angle) follow the usual recurrences. With the
+base an interval `I`, `c_k` encloses `f^(k)(t) / k!` for every `t` in `I`.
+`Real::exp` halves its argument to `|x| <= 1/2`, sums 14 terms with the
+remainder bound `2 |x|^15 / 15!` and squares back.
+
+**Projections.** A `Projection` pcurve evaluates its edge's point jet (a
+conic's closed form in `cos`, `sin`, `cosh`, `sinh` of the parameter) in
+the surface's frame and inverts the surface map: `u = atan2(y, x)` (turned
+by the recorded lift, `ref + atan2` of the vector rotated back by `ref`, so
+the branch cut stays opposite), `v = z`, `z / cos α`, `atan2(z, ρ)` or
+`atan2(z, ρ - R)` as the surface needs.
+
+**Certified quadrature.** `∫_0^1 g` over a piece `[lo, hi]` with midpoint
+`m` is the Taylor polynomial of order `n` about `m` integrated exactly over
+`[lo - m, hi - m]` plus a remainder at most `sup_I |c_{n+1}| (|lo - m|^{n+2}
++ |hi - m|^{n+2}) / (n + 2)`, `c_{n+1}` the interval jet's next coefficient
+over the piece. Pieces are bisected (at most 40 times) until every remainder
+is within its share of `1e-12` (absolute for areas, fluxes and other sign
+decisions; relative to each integrand's largest value at eight points, at
+least one, for mass moments); several integrands share one evaluation of
+the projection per piece. Interval jets over a piece overestimate their
+high coefficients geometrically (about fourfold per order through the
+quotient in `atan2`), so order 14 is used: the remainder's power of the
+piece's width outruns the overestimation. The pieces gather where the
+section's angle about the axis turns fast (near an apex or pole),
+logarithmically in its distance.
+
+**Holes in wound faces.** An unwound loop in a face wound in `u` lies inside
+when the signed crossings of the `+v` ray from its first point with the
+other loops' line pcurves and chords, over every `u` alias (`+1` where a
+piece runs in `-u`, `-1` in `+u`), plus one for a north pole, equal the
+face's sign (`+1` forward): the region lies left of its boundary, so
+directly below a piece running in `-u`.

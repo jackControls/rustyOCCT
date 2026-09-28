@@ -159,7 +159,11 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
 * **Inner loops.** The first point of each inner loop must lie inside the outer
   loop. A `+u` ray uses a half-open crossing rule. Arcs are split at their
   `v` extrema `π/2 + kπ`, using a certified `π`, so each piece is monotone.
-  An unwound loop on a wound face is `uncertified_containment` for now.
+  An unwound loop on a wound face (S8d.2: a hole in a band) lies inside
+  when the signed crossings of the `+v` ray from its first point with the
+  other loops' lines and chords over every `u` alias, plus one for a north
+  pole, equal the face's sign; other pcurves on those loops are
+  `uncertified_containment`.
 * **Region orientation.** The flux of `x/3` through a face is
   `-∮ v f(u) du` over its loops, closed chords included, with
   `f = S·(S_u × S_v)` integrated in `v` from 0: for a plane `f = o·(x×y)`, for
@@ -610,5 +614,8 @@ ray. This validator certifies the supplied boundary; it does not make an
 invalid import valid. Free and non-manifold edges, wire edges and acorn
 vertices are representable but rejected: every current operation requires a
 solid. Faces without loops (closed surfaces), unwound loops on wound faces
-(certified only as `uncertified_containment`) and windings in `v` wait
-for the surfaces and operations that need them.
+whose other loops are not lines (`uncertified_containment`) and windings in
+`v` wait for the surfaces and operations that need them. A `Projection`
+pcurve (S8d.2) of its fin's own edge on its face's own surface deviates by
+zero by definition; its integrals come from certified Taylor quadrature and
+its `+u` ray crossings are not decided (`TOPOLOGY_MODEL.md`).

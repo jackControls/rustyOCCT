@@ -1869,4 +1869,37 @@ the first fixture, never deferred.
     (half-turn wedges); inside the reference on the 8 such cases, six
     reviewed count differences (OCCT's seams, and its split along the
     circle where a plane touches the tube's top). S8d.2 (D13's engine) next.
+  * S8d.2 implemented. D13's engine (`47c27792`): `HyperbolaArc` and
+    `ParabolaArc` edges, `Projection` pcurves with certified Taylor jets
+    (`jet.rs`, `topology/validate/projection.rs`) through validation, mass,
+    tessellation and interop. The builder (`solid/split/conic.rs`): cones,
+    frusta, zones and caps by planes neither normal to nor containing their
+    axis, as general bodies (`Construction::Half`). Inside the reference on
+    S8c's three conic cases and 12 more (`split-conic-cases.txt`); three
+    match OCCT, twelve reviewed count differences (its seam at `u = 0`),
+    one also BRepGProp's error on a cap. Amendments to the decisions, made
+    while building it:
+    - A plane touching one rim while crossing the other, or touching a rim
+      with a zone's side circle, pinches a wall mid-loop and is
+      `Degenerate` (as S8a.2's tangent arc); a closed section touching a
+      rim keeps a vertex there (as S8a.2's touch). A plane through an apex
+      or pole off the axis is `OutOfDomain`; one within the resolution of a
+      frustum's virtual apex cuts its rulings.
+    - A zone's circle not round the axis leaves a hole in the other piece's
+      band: the validator now certifies an unwound loop in a wound face by
+      a signed `+v` ray over the other loops' lines (`BREP_VALIDATION.md`),
+      which also certifies `Motor-c.brep` 378 (59 corpus solids certified).
+    - The quadrature's order is 14 (interval jets overestimate their high
+      coefficients about fourfold per order through `atan2`'s quotient);
+      mass moments share one evaluation per piece and take their width
+      relative to their size, sign decisions keep it absolute.
+    - The 12 added cases' native capture came after `conic.rs` existed and
+      is recorded as such (`occt-split-conic-postimplementation/NOTES.md`);
+      the capture before any code is S8c's.
+    - The `split` fuzz target's per-input limit is 60 s: a cap cut near its
+      pole takes 8.8 s under ASan, the quadrature refining where the
+      section's angle about the axis turns fast. A parametrization without
+      that refinement is a follow-up.
+    Pending: the Linux record of the new capture after CI, and a clean
+    600-second `split` campaign.
 * S9 — pending

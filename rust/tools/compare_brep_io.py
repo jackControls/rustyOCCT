@@ -370,7 +370,7 @@ def main():
                      for (r, verdict, c), native in zip(solids, observed[name]) if verdict == 'representable'}
     # Representable structure the kernel's validator does not certify yet
     # (S4), pinned as in occt_brep.rs.
-    uncertified = {('Ball.brep', 108), ('Motor-c.brep', 378)}
+    uncertified = {('Ball.brep', 108)}
     if set(representable) - uncertified != set(imported):
         report['failures'].append({'case': 'corpus', 'reason': 'imported solids differ from the representable ones',
                                    'imported': sorted(map(list, imported)),

@@ -225,8 +225,9 @@ impl<T: Real> Jet<T> {
 /// hi - m]` and bounds the remainder by its interval jet's next coefficient
 /// times `(|lo - m|^{n+2} + |hi - m|^{n+2}) / (n + 2)`; pieces whose
 /// remainder is wider than their share of `width` are bisected, at most
-/// `depth` times. `None` when an evaluation fails (a division by an
-/// enclosure of zero).
+/// `depth` times. `None` when an evaluation fails (a
+/// division by an enclosure of zero).
+#[cfg(test)]
 pub(crate) fn integrate<T: Real>(
     g: &dyn Fn(&Jet<T>) -> Option<Jet<T>>,
     a: f64,
@@ -235,48 +236,102 @@ pub(crate) fn integrate<T: Real>(
     width: f64,
     depth: usize,
 ) -> Option<T> {
-    let mut total = zero::<T>();
+    let many = |t: &Jet<T>| g(t).map(|j| vec![j]);
+    integrate_many(&many, 1, a, b, order, width, depth, false)?.pop()
+}
+
+/// Integrands of one variable's jet, evaluated together.
+pub(crate) type Integrands<'a, T> = &'a dyn Fn(&Jet<T>) -> Option<Vec<Jet<T>>>;
+
+/// [`integrate`] of `n` integrands at once from one evaluation per piece
+/// (the jets they share computed once): a piece is bisected until every
+/// integrand's remainder is within its share, of `width` itself or, when
+/// `relative`, of `width` times the integrand's scale (its largest value at
+/// eight points, at least one: mass moments, not signs).
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn integrate_many<T: Real>(
+    g: Integrands<'_, T>,
+    n: usize,
+    a: f64,
+    b: f64,
+    order: usize,
+    width: f64,
+    depth: usize,
+    relative: bool,
+) -> Option<Vec<T>> {
+    let mut totals = vec![zero::<T>(); n];
     let mut stack = vec![(a, b, 0usize)];
+    let pow = |x: &T, k: usize| (0..k).fold(T::exact_f64(1.0), |p, _| p.mul(x));
+    let mag = |x: &T| {
+        let (xl, xh) = x.bounds_f64();
+        T::exact_f64(xl.abs().max(xh.abs()))
+    };
+    // Each integrand's scale when the width asked for is relative to it: its
+    // largest value at eight points, at least one.
+    let mut scales = vec![1.0f64; n];
+    if relative {
+        for k in 0..8 {
+            let t = a + (b - a) * (f64::from(k) + 0.5) / 8.0;
+            if let Some(at) = g(&Jet::variable(T::exact_f64(t), 0)) {
+                for (scale, jet) in scales.iter_mut().zip(&at) {
+                    let (lo, hi) = jet.c[0].bounds_f64();
+                    let size = lo.abs().max(hi.abs());
+                    if size.is_finite() {
+                        *scale = scale.max(size);
+                    }
+                }
+            }
+        }
+    }
     while let Some((lo, hi, level)) = stack.pop() {
         let mid = 0.5 * lo + 0.5 * hi;
         let (l, m, h) = (T::exact_f64(lo), T::exact_f64(mid), T::exact_f64(hi));
         let (s0, s1) = (l.sub(&m), h.sub(&m));
-        // The remainder: the next coefficient over the piece.
-        let over = g(&Jet::variable(l.union(&h), order + 1))?;
-        let (nlo, nhi) = over.c[order + 1].bounds_f64();
-        let sup = T::exact_f64(nlo.abs().max(nhi.abs()));
-        let pow = |x: &T, k: usize| (0..k).fold(T::exact_f64(1.0), |p, _| p.mul(x));
-        let mag = |x: &T| {
-            let (xl, xh) = x.bounds_f64();
-            T::exact_f64(xl.abs().max(xh.abs()))
-        };
         let reach = pow(&mag(&s0), order + 2).add(&pow(&mag(&s1), order + 2));
-        let bound = sup
-            .mul(&reach)
-            .div(&T::exact_f64((order + 2) as f64))?
-            .bounds_f64()
-            .1;
+        // The remainders: the next coefficients over the piece (unbounded
+        // where the integrands' jets are not defined over all of it).
+        let bounds: Vec<f64> = match g(&Jet::variable(l.union(&h), order + 1)) {
+            Some(over) if over.len() == n => over
+                .iter()
+                .map(|j| {
+                    let (nlo, nhi) = j.c[order + 1].bounds_f64();
+                    T::exact_f64(nlo.abs().max(nhi.abs()))
+                        .mul(&reach)
+                        .div(&T::exact_f64((order + 2) as f64))
+                        .map_or(f64::INFINITY, |x| x.bounds_f64().1)
+                })
+                .collect(),
+            _ => vec![f64::INFINITY; n],
+        };
         let share = width * (hi - lo) / (b - a);
         // A NaN bound never settles.
-        let settled = bound <= share;
+        let settled = bounds
+            .iter()
+            .zip(&scales)
+            .all(|(bound, scale)| *bound <= share * scale);
         if !settled && level < depth && lo < mid && mid < hi {
             stack.push((lo, mid, level + 1));
             stack.push((mid, hi, level + 1));
             continue;
         }
-        if !bound.is_finite() {
+        if !bounds.iter().all(|bound| bound.is_finite()) {
             return None;
         }
         let at = g(&Jet::variable(m, order))?;
-        let mut piece = zero::<T>();
-        for k in 0..=order {
-            let span = pow(&s1, k + 1).sub(&pow(&s0, k + 1));
-            piece = piece.add(&at.c[k].mul(&span).div(&T::exact_f64((k + 1) as f64))?);
+        if at.len() != n {
+            return None;
         }
-        let remainder = T::exact_f64(-bound).union(&T::exact_f64(bound));
-        total = total.add(&piece).add(&remainder);
+        for ((total, jet), bound) in totals.iter_mut().zip(&at).zip(&bounds) {
+            let mut piece = zero::<T>();
+            for k in 0..=order {
+                let span = pow(&s1, k + 1).sub(&pow(&s0, k + 1));
+                piece = piece.add(&jet.c[k].mul(&span).div(&T::exact_f64((k + 1) as f64))?);
+            }
+            let remainder = T::exact_f64(-bound).union(&T::exact_f64(*bound));
+            *total = total.add(&piece).add(&remainder);
+        }
     }
-    Some(total)
+    Some(totals)
 }
 
 #[cfg(test)]

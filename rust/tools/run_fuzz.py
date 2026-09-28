@@ -31,7 +31,11 @@ INPUT_SECONDS = 20
 # larger per-input workload. Existing targets keep their original 20s limit.
 # surface_editing joined on measurement: a CI input took 8.2 s under local
 # AddressSanitizer, above 20 s / 2.6 (fuzz/regressions/README.md).
-TARGET_INPUT_SECONDS = {"surface_knots": 60, "degree_elevation": 60, "surface_editing": 60}
+# split joined in S8d.2: a cap split by a plane passing near its pole takes
+# 8.8 s under ASan (its certified quadrature refines where the section's
+# angle about the axis turns fast), within 20 s but without margin.
+TARGET_INPUT_SECONDS = {"surface_knots": 60, "degree_elevation": 60, "surface_editing": 60,
+                        "split": 60}
 # Targets whose exact oracles churn enough temporary BigInts that default ASan
 # quarantine and allocator retention, not live data, exhaust the RSS gate.
 # brep_validation joined in S4d: a 180 s campaign reached 2,064 MB after
@@ -121,9 +125,11 @@ def seed_corpus(target):
                     data[10] = frame
                     save(bytes(data))
         # S8c and S8d: a cone, a sphere, a zone, a cap and a torus (a first
-        # byte of 224 on) in every plane mode, both frames.
+        # byte of 224 on) in every plane mode (S8d.2's touching a rim,
+        # parallel to a ruling and through a virtual apex among them), both
+        # frames.
         for kind in range(5):
-            for mode in range(6):
+            for mode in range(9):
                 for frame in range(2):
                     data = bytearray((j*41+kind*13+mode*19+frame*7+5)%256 for j in range(24))
                     data[:3] = bytes([224, kind, mode])

@@ -9,12 +9,12 @@
 //! integrate` over the fraction.
 use super::{c, V2, V3};
 use crate::certified::Real;
-use crate::jet::{integrate, Jet};
+use crate::jet::{integrate_many, Jet};
 use crate::topology::{Curve3, Projection, Surface};
 use crate::Frame3;
 
 /// Integration widths and depths for the integrals along projections.
-pub(super) const ORDER: usize = 6;
+pub(super) const ORDER: usize = 14;
 pub(super) const WIDTH: f64 = 1e-12;
 pub(super) const DEPTH: usize = 40;
 
@@ -199,9 +199,40 @@ pub(super) fn projection_at<T: Real>(p: &Projection, t: f64) -> Option<V2<T>> {
 pub(super) type AlongIntegrand<'a, T> =
     &'a dyn Fn(&Jet<T>, &Jet<T>, &Jet<T>, &Jet<T>) -> Option<Jet<T>>;
 
+/// Integrands along a projection: from the jets of `u`, `v`, `u'`, `v'`.
+pub(super) type AlongIntegrands<'a, T> =
+    &'a dyn Fn(&Jet<T>, &Jet<T>, &Jet<T>, &Jet<T>) -> Option<Vec<Jet<T>>>;
+
 /// An enclosure of `integral_0^1 g(u, v, u', v') df` along a projection,
 /// `g` given the jets of `u`, `v` and their derivatives in the fraction.
 pub(super) fn integrate_along<T: Real>(p: &Projection, g: AlongIntegrand<'_, T>) -> Option<T> {
+    along(
+        p,
+        1,
+        &|u, v, du, dv| g(u, v, du, dv).map(|j| vec![j]),
+        false,
+    )?
+    .pop()
+}
+
+/// The integrals of `n` integrands along a projection at once, its jets
+/// computed once per piece, each to `WIDTH`, relative to its scale for mass
+/// moments and absolute for sign decisions.
+pub(super) fn integrate_along_many<T: Real>(
+    p: &Projection,
+    n: usize,
+    relative: bool,
+    g: AlongIntegrands<'_, T>,
+) -> Option<Vec<T>> {
+    along(p, n, g, relative)
+}
+
+fn along<T: Real>(
+    p: &Projection,
+    n: usize,
+    g: AlongIntegrands<'_, T>,
+    relative: bool,
+) -> Option<Vec<T>> {
     let integrand = |f: &Jet<T>| {
         // One order more, so the derivatives keep the order asked for.
         let longer = Jet::variable(f.c[0].clone(), f.order() + 1);
@@ -212,7 +243,7 @@ pub(super) fn integrate_along<T: Real>(p: &Projection, g: AlongIntegrand<'_, T>)
         };
         g(&cut(&u), &cut(&v), &cut(&du), &cut(&dv))
     };
-    integrate(&integrand, 0.0, 1.0, ORDER, WIDTH, DEPTH)
+    integrate_many(&integrand, n, 0.0, 1.0, ORDER, WIDTH, DEPTH, relative)
 }
 
 /// The certified ranges `[u_lo, u_hi, v_lo, v_hi]` a projection reaches:

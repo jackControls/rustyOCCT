@@ -252,7 +252,7 @@ pub fn check_split(data: &[u8]) {
 fn check_revolved(data: &[u8]) {
     use std::f64::consts::FRAC_PI_2;
     let mut b = Bytes(data, 0);
-    let (kind, mode) = (b.next() % 5, b.next() % 6);
+    let (kind, mode) = (b.next() % 5, b.next() % 9);
     let s = 0.5 + f64::from(b.next() % 16) / 4.0;
     let t = f64::from(b.next() % 16) / 4.0;
     let h = 0.5 + f64::from(b.next() % 16) / 4.0;
@@ -268,18 +268,16 @@ fn check_revolved(data: &[u8]) {
         return;
     };
     // A cone (t may be zero: an apex), a whole sphere, a zone or a cap.
-    let (made, low_w, high_w, whole) = match kind {
+    let (made, low_w, high_w) = match kind {
         0 => (
             Solid::cone_with(OperationId(1), frame, s, t, h, tolerance),
             0.0,
             h,
-            false,
         ),
         1 => (
             Solid::sphere_with(OperationId(1), frame, s, -FRAC_PI_2, FRAC_PI_2, tolerance),
             -s,
             s,
-            true,
         ),
         2 => {
             let (lo, hi) = (
@@ -290,14 +288,12 @@ fn check_revolved(data: &[u8]) {
                 Solid::sphere_with(OperationId(1), frame, s, lo, hi, tolerance),
                 s * lo.sin(),
                 s * hi.sin(),
-                false,
             )
         }
         3 => (
             Solid::sphere_with(OperationId(1), frame, s, 0.25, FRAC_PI_2, tolerance),
             s * 0.25f64.sin(),
             s,
-            false,
         ),
         // S8d.1: a whole torus (its tube's radius from t, the gap to the
         // axis from s).
@@ -316,12 +312,13 @@ fn check_revolved(data: &[u8]) {
                 ),
                 -minor,
                 minor,
-                false,
             )
         }
     };
     let Ok((solid, _)) = made else { return };
     let at = |w: f64| frame.point(rusty_occt::Point2::new(0.0, 0.0), w);
+    // Tilted planes cut a torus in spiric sections (S8d.3).
+    let spiric = kind == 4;
     let (point, normal, may_refuse) = match mode {
         // Normal to the axis at a dyadic height, at an end, or beyond.
         0 => (
@@ -330,11 +327,11 @@ fn check_revolved(data: &[u8]) {
             false,
         ),
         1 => (at(high_w), frame.normal() * -1.0, false),
-        // Through a dyadic point, tilted: a whole sphere always splits.
+        // Through a dyadic point, tilted.
         2 | 3 => {
             let p = Point3::new(b.dyadic(), b.dyadic(), b.dyadic());
             let n = Vec3::new(b.small(), b.small(), b.small() + 0.5);
-            (o + (p - Point3::ORIGIN) * 0.25, n, !whole)
+            (o + (p - Point3::ORIGIN) * 0.25, n, spiric)
         }
         // Containing the axis (S8c.2): always split.
         4 => (
@@ -342,11 +339,47 @@ fn check_revolved(data: &[u8]) {
             frame.x() * b.small() + frame.y() * (b.small() + 0.5),
             false,
         ),
-        _ => (
+        5 => (
             at(0.5 * (low_w + high_w)),
             frame.x() + frame.normal(),
-            !whole,
+            spiric,
         ),
+        // S8d.2: through a point of a cone's end circle, containing its
+        // tangent there (touching the rim, or crossing it when tilted).
+        6 => {
+            let (w, r) = if b.next() % 2 == 0 { (0.0, s) } else { (h, t) };
+            let (w, r) = if kind == 0 {
+                (w, r)
+            } else {
+                (low_w, (s * s - low_w * low_w).max(0.0).sqrt())
+            };
+            (
+                frame.point(rusty_occt::Point2::new(r, 0.0), w),
+                frame.x() * b.small() + frame.normal() * (b.small() + 0.5),
+                spiric,
+            )
+        }
+        // Parallel to a cone's ruling at u = 0 (a parabola).
+        7 => (
+            at(low_w + (high_w - low_w) * f64::from(b.next() % 17) / 16.0)
+                + frame.x() * (b.small() * 0.25),
+            frame.x() * h + frame.normal() * (s - t),
+            spiric,
+        ),
+        // Through a frustum's virtual apex (its rulings), or a sphere's
+        // centre.
+        _ => {
+            let w = if kind == 0 && s != t {
+                -s * h / (t - s)
+            } else {
+                0.0
+            };
+            (
+                at(w),
+                frame.x() + frame.y() * (b.small() * 0.25) + frame.normal() * (b.small() * 0.25),
+                spiric,
+            )
+        }
     };
     if normal.length() == 0.0 {
         return;
@@ -363,6 +396,8 @@ fn check_revolved(data: &[u8]) {
         Ok((pieces, _)) => pieces,
         Err(Error::ComputationLimit(_) | Error::Degenerate(_)) => return,
         Err(Error::OutOfDomain(_)) if may_refuse => return,
+        // A plane through an apex or pole off the axis (S8d.2's domain).
+        Err(Error::OutOfDomain(m)) if m.contains("apex or pole") => return,
         Err(e) => panic!("unexpected error {e}"),
     };
     let total: f64 = pieces.iter().map(|(_, p)| p.mass_properties().volume).sum();

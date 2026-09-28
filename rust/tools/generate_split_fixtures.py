@@ -137,6 +137,30 @@ def primitive_cases():
     ]
 
 
+def conic_cases():
+    """(kind, name, frame, params, plane): cones, frusta, zones and caps by
+    planes neither normal to their axes nor containing them (S8d.2), beside
+    S8c's apex_oblique, frustum_parallel and zone_oblique: a closed ellipse,
+    a parabola, hyperbolas, a tongue at the top, the rulings through a
+    frustum's virtual apex, an ellipse touching both rims, a zone's side cap
+    and circle arcs across both rims."""
+    cone, sphere = 'cone', 'sphere'
+    return [
+        (cone, 'apex_ellipse', XY, (2.0, 0.0, 3.0), (0.0, 0.0, 1.0, -0.2, 0.0, 1.0)),
+        (cone, 'apex_parabola', XY, (2.0, 0.0, 2.0), (0.5, 0.0, 0.0, 1.0, 0.0, 1.0)),
+        (cone, 'apex_hyperbola', XY, (2.0, 0.0, 3.0), (0.8, 0.0, 0.0, 1.0, 0.0, 0.0)),
+        (cone, 'frustum_top_tongue', XY, (2.0, 1.0, 3.0), (0.6, 0.0, 3.0, 1.0, 0.0, 1.0)),
+        (cone, 'frustum_rulings', XY, (2.0, 1.0, 3.0), (0.0, 0.0, 6.0, 1.0, 0.0, 0.1)),
+        (cone, 'frustum_touch_both', XY, (2.0, 1.0, 3.0), (2.0, 0.0, 0.0, 1.0, 0.0, 1.0)),
+        (cone, 'widening_oblique', XY, (1.0, 2.5, 0.5), (0.0, 0.0, 0.25, 0.3, 0.2, 1.0)),
+        (cone, 'tilted_oblique', TILT, (2.0, 0.5, 3.0), (1.0, -0.8, 2.1, 1.0, 3.0, 4.0)),
+        (sphere, 'zone_side_cap', XY, (2.0, -0.5, 1.0), (1.8, 0.0, 0.0, 1.0, 0.0, 0.0)),
+        (sphere, 'cap_oblique', XY, (2.0, 0.25, HALF_PI), (0.0, 0.0, 1.2, 1.0, 0.0, 1.0)),
+        (sphere, 'zone_both_rims', XY, (2.0, -0.5, 1.0), (0.3, 0.0, 0.0, 1.0, 0.0, 0.2)),
+        (sphere, 'tilted_zone_oblique', TILT, (1.5, -0.7, 0.9), (1.25, -2.0, 0.5, 1.0, -1.0, 0.5)),
+    ]
+
+
 def torus_cases():
     """(name, frame, (major, minor), plane): whole tori (S8d)."""
     return [
@@ -182,6 +206,11 @@ def generate():
         lines.append(primitive_line(kind, name, frame, params, plane))
         for row in ref.revolved_rows(kind, frame, params, plane):
             prim.append(f'{name}\t{ref.text(row)}')
+    clines, conics = [], ['# case\trow (S8d.2, split_reference.revolved_rows)']
+    for kind, name, frame, params, plane in conic_cases():
+        clines.append(primitive_line(kind, name, frame, params, plane))
+        for row in ref.revolved_rows(kind, frame, params, plane):
+            conics.append(f'{name}\t{ref.text(row)}')
     tlines, tori = [], ['# case\trow (S8d, split_reference.torus_rows)']
     for name, frame, params, plane in torus_cases():
         tlines.append(primitive_line('torus', name, frame, params+(2*math.pi,), plane))
@@ -191,6 +220,8 @@ def generate():
             'split-frames.tsv': '\n'.join(frames)+'\n',
             'split-primitive-cases.txt': '\n'.join(lines)+'\n',
             'split-primitive-expected.tsv': '\n'.join(prim)+'\n',
+            'split-conic-cases.txt': '\n'.join(clines)+'\n',
+            'split-conic-expected.tsv': '\n'.join(conics)+'\n',
             'split-torus-cases.txt': '\n'.join(tlines)+'\n',
             'split-torus-expected.tsv': '\n'.join(tori)+'\n'}
 
@@ -207,7 +238,8 @@ def main():
                 raise SystemExit(f'{path} is stale')
         else:
             path.write_text(contents)
-    print(len(cases()), 'cases,', len(primitive_cases()), 'primitive cases,', len(torus_cases()), 'tori')
+    print(len(cases()), 'cases,', len(primitive_cases()), 'primitive cases,', len(conic_cases()),
+          'conic cases,', len(torus_cases()), 'tori')
 
 
 if __name__ == '__main__':

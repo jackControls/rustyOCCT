@@ -114,13 +114,36 @@ pub(super) fn point_integrands<T: Real>(p: &[T; 3], n: &[T; 3], norm: &T) -> [T;
     ]
 }
 
-/// `sum of c v^k cos^a u sin^b u` over boxes.
-/// `trig_integral` from a constant `lower` to a jet `v`.
-fn trig_integral_jet<T: Real>(
+/// Powers of a jet, memoized.
+struct Powers<'a, T: Real> {
+    base: &'a Jet<T>,
+    list: Vec<Jet<T>>,
+}
+
+impl<'a, T: Real> Powers<'a, T> {
+    fn new(base: &'a Jet<T>) -> Self {
+        Self {
+            base,
+            list: vec![Jet::constant(c::<T>(1.0), base.order())],
+        }
+    }
+
+    fn get(&mut self, k: u8) -> Jet<T> {
+        while self.list.len() <= usize::from(k) {
+            let next = self.list[self.list.len() - 1].mul(self.base);
+            self.list.push(next);
+        }
+        self.list[usize::from(k)].clone()
+    }
+}
+
+/// `trig_integral_jet` with the `cos`/`sin` jets of each frequency shared.
+fn trig_integral_jet_shared<T: Real>(
     cos_power: u8,
     sin_power: u8,
     lower: &T,
     v: &Jet<T>,
+    waves: &mut BTreeMap<u32, (Jet<T>, Jet<T>)>,
 ) -> Option<Jet<T>> {
     let n = v.order();
     let mut total = Jet::constant(c::<T>(0.0), n);
@@ -130,7 +153,10 @@ fn trig_integral_jet<T: Real>(
             continue;
         }
         let g = c::<T>(f as f64);
-        let (c1, s1) = v.scale(&g).cos_sin();
+        let (c1, s1) = waves
+            .entry(f as u32)
+            .or_insert_with(|| v.scale(&g).cos_sin())
+            .clone();
         let (c0, s0) = T::cos_sin(&lower.mul(&g));
         let cos_part = s1.add_constant(&s0.neg()).scale(&c(alpha));
         let sin_part = c1.neg().add_constant(&c0).scale(&c(beta));
@@ -139,50 +165,98 @@ fn trig_integral_jet<T: Real>(
     Some(total)
 }
 
-/// `sph_antiderivative` on jets of `u` and `v`.
-fn sph_antiderivative_jet<T: Real>(
-    f: &Sph<T>,
+/// `sph_antiderivative_jet` of several integrands at once, the jets they
+/// share (powers of `cos u`, `sin u`, the trigonometric integrals in `v`)
+/// computed once.
+fn sph_antiderivative_jets<T: Real>(
+    fs: &[Sph<T>],
     u: &Jet<T>,
     v: &Jet<T>,
     lower: &T,
-) -> Option<Jet<T>> {
+) -> Option<Vec<Jet<T>>> {
     let (co, si) = u.cos_sin();
+    let (mut pc, mut ps) = (Powers::new(&co), Powers::new(&si));
+    let mut integrals: BTreeMap<(u8, u8), Jet<T>> = BTreeMap::new();
+    let mut waves: BTreeMap<u32, (Jet<T>, Jet<T>)> = BTreeMap::new();
     let n = u.order();
-    let power = |x: &Jet<T>, k: u8| (0..k).fold(Jet::constant(c::<T>(1.0), n), |acc, _| acc.mul(x));
-    let mut total = Jet::constant(c::<T>(0.0), n);
-    for ((a, b, cc, d), x) in f {
-        let along_u = power(&co, *a).mul(&power(&si, *b));
-        total = total.add(&along_u.mul(&trig_integral_jet(*cc, *d, lower, v)?).scale(x));
+    let mut out = Vec::with_capacity(fs.len());
+    for f in fs {
+        // Grouped by the power of `cos u` and `sin u`: one product each.
+        let mut groups: BTreeMap<(u8, u8), Jet<T>> = BTreeMap::new();
+        for ((a, b, cc, d), x) in f {
+            let along_v = match integrals.get(&(*cc, *d)) {
+                Some(j) => j.clone(),
+                None => {
+                    let j = trig_integral_jet_shared(*cc, *d, lower, v, &mut waves)?;
+                    integrals.insert((*cc, *d), j.clone());
+                    j
+                }
+            };
+            let term = along_v.scale(x);
+            let entry = groups
+                .entry((*a, *b))
+                .or_insert_with(|| Jet::constant(c::<T>(0.0), n));
+            *entry = entry.add(&term);
+        }
+        let mut total = Jet::constant(c::<T>(0.0), n);
+        for ((a, b), w) in groups {
+            total = total.add(&pc.get(a).mul(&ps.get(b)).mul(&w));
+        }
+        out.push(total);
     }
-    Some(total)
+    Some(out)
 }
 
-/// `rev_eval` on jets.
-fn rev_eval_jet<T: Real>(f: &Rev<T>, u: &Jet<T>, v: &Jet<T>) -> Jet<T> {
+/// `rev_eval_jet` of several integrands at once, sharing the powers.
+fn rev_eval_jets<T: Real>(fs: &[Rev<T>], u: &Jet<T>, v: &Jet<T>) -> Vec<Jet<T>> {
     let (co, si) = u.cos_sin();
+    let (mut pc, mut ps, mut pv) = (Powers::new(&co), Powers::new(&si), Powers::new(v));
     let n = u.order();
-    let power = |x: &Jet<T>, k: u8| (0..k).fold(Jet::constant(c::<T>(1.0), n), |acc, _| acc.mul(x));
-    let mut total = Jet::constant(c::<T>(0.0), n);
-    for ((k, a, b), x) in f {
-        total = total.add(
-            &power(v, *k)
-                .mul(&power(&co, *a))
-                .mul(&power(&si, *b))
-                .scale(x),
-        );
-    }
-    total
+    let mut uv: BTreeMap<(u8, u8), Jet<T>> = BTreeMap::new();
+    fs.iter()
+        .map(|f| {
+            // Grouped by the powers of `cos u` and `sin u`: one product each.
+            let mut groups: BTreeMap<(u8, u8), Jet<T>> = BTreeMap::new();
+            for ((k, a, b), x) in f {
+                let entry = groups
+                    .entry((*a, *b))
+                    .or_insert_with(|| Jet::constant(c::<T>(0.0), n));
+                *entry = entry.add(&pv.get(*k).scale(x));
+            }
+            let mut total = Jet::constant(c::<T>(0.0), n);
+            for ((a, b), w) in groups {
+                let along_u = uv
+                    .entry((a, b))
+                    .or_insert_with(|| pc.get(a).mul(&ps.get(b)))
+                    .clone();
+                total = total.add(&along_u.mul(&w));
+            }
+            total
+        })
+        .collect()
 }
 
-/// A planar polynomial `sum c u^a v^b` on jets.
-fn planar_eval_jet<T: Real>(f: &Planar<T>, x: &Jet<T>, y: &Jet<T>) -> Jet<T> {
+/// `planar_eval_jet` of several polynomials at once, sharing the powers.
+fn planar_eval_jets<T: Real>(fs: &[Planar<T>], x: &Jet<T>, y: &Jet<T>) -> Vec<Jet<T>> {
+    let (mut px, mut py) = (Powers::new(x), Powers::new(y));
     let n = x.order();
-    let power = |z: &Jet<T>, k: u8| (0..k).fold(Jet::constant(c::<T>(1.0), n), |acc, _| acc.mul(z));
-    let mut total = Jet::constant(c::<T>(0.0), n);
-    for ((a, b), cf) in f {
-        total = total.add(&power(x, *a).mul(&power(y, *b)).scale(cf));
-    }
-    total
+    fs.iter()
+        .map(|f| {
+            // Grouped by the power of `x`: one product each.
+            let mut groups: BTreeMap<u8, Jet<T>> = BTreeMap::new();
+            for ((a, b), cf) in f {
+                let entry = groups
+                    .entry(*a)
+                    .or_insert_with(|| Jet::constant(c::<T>(0.0), n));
+                *entry = entry.add(&py.get(*b).scale(cf));
+            }
+            let mut total = Jet::constant(c::<T>(0.0), n);
+            for (a, w) in groups {
+                total = total.add(&px.get(a).mul(&w));
+            }
+            total
+        })
+        .collect()
 }
 
 fn rev_eval<T: Real>(f: &Rev<T>, u: &T, v: &T) -> T {
@@ -725,7 +799,7 @@ fn torus_terms<T: Real>(fr: &FrameV<T>, major: f64, minor: f64, d: &V3<T>) -> [S
 /// parallel contributes nothing). No edge loops: the whole surface, bounded
 /// on the cover by the north pole's line (a sphere) or by both periods (a
 /// torus).
-fn trig_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>]) -> Option<Vec<T>> {
+fn trig_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>], relative: bool) -> Option<Vec<T>> {
     let torus = matches!(face.surface, Surface::Torus { .. });
     let turns: i32 = loops.iter().map(|lp| lp.winding).sum();
     let wound_u = loops.iter().any(|lp| lp.winding != 0);
@@ -799,15 +873,19 @@ fn trig_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>]) -> Option<Vec<T>
                 Curve2::LineSegment { start, end } => (start, end),
                 // -∫ F(u, v) du along a projection (S8d.2), with jets.
                 Curve2::Projection(pr) => {
-                    let mut values = Vec::with_capacity(fs.len());
-                    for f in fs {
-                        values.push(super::projection::integrate_along::<T>(
-                            pr,
-                            &|uu, v, du, _| {
-                                Some(sph_antiderivative_jet(f, uu, v, &lower)?.mul(du).neg())
-                            },
-                        )?);
-                    }
+                    let values = super::projection::integrate_along_many::<T>(
+                        pr,
+                        fs.len(),
+                        relative,
+                        &|uu, v, du, _| {
+                            Some(
+                                sph_antiderivative_jets(fs, uu, v, &lower)?
+                                    .iter()
+                                    .map(|j| j.mul(du).neg())
+                                    .collect(),
+                            )
+                        },
+                    )?;
                     accumulate(values);
                     continue;
                 }
@@ -887,7 +965,8 @@ pub(super) fn sphere_flux<T: Real>(face: &Face, loops: &[Lp], origin: &V3<T>) ->
     };
     // S.N = 3 times the volume integrand.
     let flux = scaled(&terms[0], &c(3.0));
-    trig_face(face, loops, &[flux])?.pop()
+    // A sign decision: the width absolute.
+    trig_face(face, loops, &[flux], false)?.pop()
 }
 
 /// The fourteen face integrals over the face region (loops carry its
@@ -940,6 +1019,26 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
                 .collect::<Option<_>>()?;
             for lp in loops {
                 for u in &lp.fins {
+                    // -∫ F du along a projection onto the plane (S8d.2), every
+                    // term from one set of jets.
+                    if let Curve2::Projection(pr) = &u.pcurve {
+                        let values = super::projection::integrate_along_many::<T>(
+                            pr,
+                            TERMS,
+                            true,
+                            &|x, y, dx, _| {
+                                let (x, y) = (x.add_constant(&ou.neg()), y.add_constant(&ov.neg()));
+                                Some(
+                                    planar_eval_jets(&anti, &x, &y)
+                                        .iter()
+                                        .map(|j| j.mul(dx).neg())
+                                        .collect(),
+                                )
+                            },
+                        )?;
+                        accumulate(values.try_into().ok()?);
+                        continue;
+                    }
                     let values: [Option<T>; TERMS] = std::array::from_fn(|k| match &u.pcurve {
                         Curve2::LineSegment { start, end } => {
                             planar_line(&anti[k], &at(start.x, start.y), &at(end.x, end.y))
@@ -971,13 +1070,7 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
                         ),
                         Curve2::BSpline(spline) => planar_spline(&anti[k], spline, &o),
                         Curve2::Sinusoid { .. } => None,
-                        // -∫ F du along a projection onto the plane (S8d.2).
-                        Curve2::Projection(pr) => {
-                            super::projection::integrate_along::<T>(pr, &|x, y, dx, _| {
-                                let (x, y) = (x.add_constant(&ou.neg()), y.add_constant(&ov.neg()));
-                                Some(planar_eval_jet(&anti[k], &x, &y).mul(dx).neg())
-                            })
-                        }
+                        Curve2::Projection(_) => unreachable!("integrated above"),
                     });
                     accumulate(values.try_map_all()?);
                 }
@@ -994,7 +1087,7 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
             let fr = frame::<T>(f);
             let d = vsub(&fr.o, reference);
             let terms = sphere_terms(&fr, *radius, &d);
-            accumulate(trig_face(face, loops, &terms)?.try_into().ok()?);
+            accumulate(trig_face(face, loops, &terms, true)?.try_into().ok()?);
         }
         Surface::Torus {
             frame: f,
@@ -1004,7 +1097,7 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
             let fr = frame::<T>(f);
             let d = vsub(&fr.o, reference);
             let terms = torus_terms(&fr, *major, *minor, &d);
-            accumulate(trig_face(face, loops, &terms)?.try_into().ok()?);
+            accumulate(trig_face(face, loops, &terms, true)?.try_into().ok()?);
         }
         Surface::BSpline(surface) => {
             let values = super::spline_flux::spline_face_integrals(surface, loops, reference)?;
@@ -1085,14 +1178,19 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
                             rev_sinusoid(&anti, *start, *sweep, a)?
                         }
                         // -∫ F(u, v) du along a projection (S8d.2), with jets.
-                        Curve2::Projection(pr) => anti
-                            .iter()
-                            .map(|f| {
-                                super::projection::integrate_along::<T>(pr, &|uu, v, du, _| {
-                                    Some(rev_eval_jet(f, uu, v).mul(du).neg())
-                                })
-                            })
-                            .collect::<Option<Vec<T>>>()?,
+                        Curve2::Projection(pr) => super::projection::integrate_along_many::<T>(
+                            pr,
+                            anti.len(),
+                            true,
+                            &|uu, v, du, _| {
+                                Some(
+                                    rev_eval_jets(&anti, uu, v)
+                                        .iter()
+                                        .map(|j| j.mul(du).neg())
+                                        .collect(),
+                                )
+                            },
+                        )?,
                         Curve2::CircularArc { .. } | Curve2::EllipseArc { .. } => return None,
                     };
                     accumulate(values.try_into().ok()?);

@@ -355,14 +355,25 @@ fn primitive_expected(text: &str) -> BTreeMap<String, Vec<(String, [f64; 5])>> {
 
 /// S8c: every cone, frustum, sphere and zone the kernel splits has each
 /// side's volume and area inside the sums of its pieces' enclosures and
-/// its centre inside theirs; the planes it leaves to S8d (a conic or a
-/// zone's circle) are the only ones refused.
+/// its centre inside theirs (the conic and circle cases since S8d.2).
 #[test]
 fn primitive_splits_match_the_reference() {
     check_primitive_sides(
         include_str!("../../fixtures/split-primitive-cases.txt"),
         include_str!("../../fixtures/split-primitive-expected.tsv"),
-        &["apex_oblique", "frustum_parallel", "zone_oblique"],
+        &[],
+    );
+}
+
+/// S8d.2: cones, frusta, zones and caps by planes neither normal to their
+/// axes nor containing them: every conic configuration (closed, one rim,
+/// both rims, touching, the rulings through a virtual apex) likewise.
+#[test]
+fn conic_splits_match_the_reference() {
+    check_primitive_sides(
+        include_str!("../../fixtures/split-conic-cases.txt"),
+        include_str!("../../fixtures/split-conic-expected.tsv"),
+        &[],
     );
 }
 
@@ -447,6 +458,7 @@ fn check_primitive_sides(cases: &str, expected: &str, later: &[&str]) {
 fn primitive_histories_are_complete_and_deterministic() {
     let text = [
         include_str!("../../fixtures/split-primitive-cases.txt"),
+        include_str!("../../fixtures/split-conic-cases.txt"),
         include_str!("../../fixtures/split-torus-cases.txt"),
     ]
     .concat();

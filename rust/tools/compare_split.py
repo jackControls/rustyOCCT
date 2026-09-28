@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Source-pinned BRepAlgoAPI_Splitter observations beside the S8 reference:
-prisms of line and arc profiles split by a plane (S8a), and cones, frusta,
+prisms of line and arc profiles split by a plane (S8a), cones, frusta,
 spheres and zones (S8c: `split-primitive-cases.txt`, built natively by
-BRepPrimAPI_MakeCone and MakeSphere on the kernel's stored frame axes).
+BRepPrimAPI_MakeCone and MakeSphere on the kernel's stored frame axes), whole
+tori (S8d) and cones and zones cut in conics (S8d.2:
+`split-conic-cases.txt`, whose capture came after the kernel code and is
+recorded as such).
 
 The independent reference (split_reference.py) gives every case of
 split-cases.txt the totals of each side (volume, area, centre); the native
@@ -12,7 +15,8 @@ each side the native pieces' volumes and areas must sum to the reference's
 within 2e-8 relative (BRepGProp's accuracy on elliptic faces) and their
 common centre lie within 2e-8 of the case's size; the sides present must
 agree. `--capture` records the native
-observations before any kernel code for the split exists; later runs must
+observations, before any kernel code for the split exists except under a
+post-implementation key; later runs must
 reproduce them (on another platform, its reviewed record). Differences need a
 fingerprinted review. The kernel's pieces (`split_probe`) must have the
 reference's sides, their volumes', areas' and centres' sums inside the
@@ -45,7 +49,13 @@ CAPTURES = {
             ROOT/'rust/kernel/src/solid/split/revolved.rs'),
     's8d': (ROOT/'rust/fixtures/occt-split-torus-preimplementation',
             ROOT/'rust/kernel/src/solid/split/torus.rs'),
+    's8d2': (ROOT/'rust/fixtures/occt-split-conic-postimplementation',
+             ROOT/'rust/kernel/src/solid/split/conic.rs'),
 }
+# Captures taken after their kernel code (S8d.2's conic configurations beyond
+# the three S8c captured before it): recorded as such, never as references
+# made before the code.
+POST_IMPLEMENTATION = {'s8d2'}
 # OCCT's BRepGProp on the split pieces' elliptic faces (a plane across an arc
 # or a circle's wall) errs by up to 8.8e-9 relative in the pre-implementation
 # capture (disc_through_caps); planar pieces agree to 1e-15.
@@ -61,8 +71,9 @@ def native_input(key='s8a'):
             blocks.append(f'case {name}\ntorus {axis}\nsplit '
                           + ' '.join(repr(float(v)) for v in plane)+'\nend')
         return '\n'.join(blocks)+'\n'
-    if key == 's8c':
-        for kind, name, frame, params, plane in fixtures.primitive_cases():
+    if key in ('s8c', 's8d2'):
+        listed = fixtures.primitive_cases() if key == 's8c' else fixtures.conic_cases()
+        for kind, name, frame, params, plane in listed:
             o, x, _, n = stored_axes(frame)
             axis = ' '.join(repr(float(v)) for v in list(o)+list(n)+list(x)+list(params))
             blocks.append(f'case {name}\n{kind} {axis}\nsplit '
@@ -93,6 +104,7 @@ def expected_rows():
     out = {}
     text = (ROOT/'rust/fixtures/split-expected.tsv').read_text().splitlines()[1:] + \
         (ROOT/'rust/fixtures/split-primitive-expected.tsv').read_text().splitlines()[1:] + \
+        (ROOT/'rust/fixtures/split-conic-expected.tsv').read_text().splitlines()[1:] + \
         (ROOT/'rust/fixtures/split-torus-expected.tsv').read_text().splitlines()[1:]
     for line in text:
         name, row = line.split('\t')
@@ -149,6 +161,7 @@ def rust_rows():
                    cwd=ROOT, check=True)
     text = (ROOT/'rust/fixtures/split-cases.txt').read_text() + \
         (ROOT/'rust/fixtures/split-primitive-cases.txt').read_text() + \
+        (ROOT/'rust/fixtures/split-conic-cases.txt').read_text() + \
         (ROOT/'rust/fixtures/split-torus-cases.txt').read_text()
     rows = subprocess.run([str(ROOT/'target/release/examples/split_probe')], input=text,
                           text=True, capture_output=True, timeout=600, check=True).stdout
@@ -233,8 +246,9 @@ def captured(observed_by_key):
     for key, (CAPTURE, _) in CAPTURES.items():
         observed = observed_by_key[key]
         metadata = json.loads((CAPTURE/'capture.json').read_text())
-        if metadata['source_reference'] != SOURCE or metadata['rust_split_exists']:
-            raise ValueError('split capture was not a clean pre-implementation reference')
+        if metadata['source_reference'] != SOURCE \
+                or metadata['rust_split_exists'] != (key in POST_IMPLEMENTATION):
+            raise ValueError('split capture was not the recorded pre- or post-implementation one')
         for field, name in [('input_sha256', 'inputs.txt'), ('probe_source_sha256', 'oracle.cpp'),
                             ('observations_sha256', 'native.txt')]:
             if metadata[field] != digest(CAPTURE/name):
@@ -290,6 +304,7 @@ def main():
     rust = None if args.native_only else rust_rows()
     everything = [(case, plane, case.name) for case, plane in fixtures.cases()] + \
         [(c, c[4], c[1]) for c in fixtures.primitive_cases()] + \
+        [(c, c[4], c[1]) for c in fixtures.conic_cases()] + \
         [(('torus', c[0], c[1], c[2], c[3]), c[3], c[0]) for c in fixtures.torus_cases()]
     for case, plane, name in everything:
         report['cases'] += 1

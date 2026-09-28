@@ -72,30 +72,32 @@ pub(crate) struct Half {
 /// An end of the primitive: its height, its circle's radius (zero at an
 /// apex or pole) and, on a sphere, its latitude.
 #[derive(Clone, Copy)]
-struct EndSpec {
-    w: f64,
-    radius: f64,
+pub(super) struct EndSpec {
+    pub(super) w: f64,
+    pub(super) radius: f64,
     /// The wall's `v` there: a cone's distance along its generatrix, a
     /// sphere's latitude.
-    v: f64,
+    pub(super) v: f64,
 }
 
 /// A piece before naming: its side, parts and every slot's provenance.
-struct Built {
-    side: Side,
-    parts: TopologyParts,
-    plans: Vec<(Slot, Plan)>,
+pub(super) struct Built {
+    pub(super) side: Side,
+    pub(super) parts: TopologyParts,
+    pub(super) plans: Vec<(Slot, Plan)>,
 }
 
 /// A slot's provenance: an input entity by role (and end: 0 bottom, 1 top)
-/// split into this piece's child, or new from input entities.
+/// split into this piece's child, kept whole in this piece (S8d.2), or new
+/// from input entities.
 #[derive(Clone)]
-enum Plan {
+pub(super) enum Plan {
     Child(Role, usize),
+    Kept(Role, usize),
     New(Vec<(Role, usize)>, Role, u32),
 }
 
-fn ends(primitive: &Primitive) -> [EndSpec; 2] {
+pub(super) fn ends(primitive: &Primitive) -> [EndSpec; 2] {
     match *primitive {
         Primitive::Cone {
             bottom,
@@ -154,6 +156,23 @@ pub(super) fn contains_axis(plane: &[R; 4], w0: f64, w1: f64, tolerance: Toleran
         let f = c * q(*w) + d;
         &f * &f * R::from_integer(16.into()) <= &tol * &tol * &m2
     })
+}
+
+/// Both pieces of the primitive on `frame`, below first: halves when the
+/// plane contains the axis (S8c.2), conic pieces otherwise (S8d.2).
+fn pieces_of(
+    primitive: &Primitive,
+    frame: Frame3,
+    tolerance: Tolerance,
+    plane: &[R; 4],
+    world_normal: Vec3,
+) -> Result<Vec<Built>> {
+    let [bottom, top] = ends(primitive);
+    if contains_axis(plane, bottom.w, top.w, tolerance) {
+        halves(primitive, frame, tolerance, plane, world_normal)
+    } else {
+        super::conic::pieces(primitive, frame, tolerance, plane)
+    }
 }
 
 /// Both halves of the primitive on `frame`, below first.
@@ -617,7 +636,7 @@ impl Half {
         let world = frame.x() * rational_f64(a)
             + frame.y() * rational_f64(b)
             + frame.normal() * rational_f64(c);
-        let mut built = halves(&self.primitive, frame, self.tolerance, &self.plane, world)?;
+        let mut built = pieces_of(&self.primitive, frame, self.tolerance, &self.plane, world)?;
         if self.index >= built.len() {
             return Err(Error::InvalidTopology("a split half rebuilt differently"));
         }
@@ -696,7 +715,8 @@ fn piece_solid(
 }
 
 impl Solid {
-    /// S8c.2's halves; `None` when the plane does not contain the axis.
+    /// S8c.2's halves and S8d.2's conic pieces; `None` when the solid is
+    /// not a cone, frustum or zone.
     pub(super) fn split_meridian(
         &self,
         context: &Context,
@@ -731,11 +751,8 @@ impl Solid {
             ),
             _ => return Ok(None),
         };
-        if !contains_axis(coefficients, self.start, self.end, tolerance) {
-            return Ok(None);
-        }
         let operation = context.operation;
-        let built = halves(
+        let built = pieces_of(
             &primitive,
             self.frame,
             tolerance,
@@ -750,6 +767,7 @@ impl Solid {
                 .ok_or(Error::InvalidTopology("a revolved entity without its role"))
         };
         let mut relations = Vec::new();
+        let mut kept_ids: BTreeSet<EntityId> = BTreeSet::new();
         let mut split: BTreeMap<EntityId, Vec<EntityId>> = BTreeMap::new();
         let mut pieces = Vec::new();
         for (k, piece) in built.into_iter().enumerate() {
@@ -774,6 +792,11 @@ impl Solid {
                         };
                         split.entry(from).or_default().push(d.id());
                         d
+                    }
+                    Plan::Kept(role, end) => {
+                        let id = resolve(*role, *end)?;
+                        kept_ids.insert(id);
+                        input.derivation(id).expect("a derivation").clone()
                     }
                     Plan::New(from, role, ordinal) => {
                         let parents = from
@@ -825,7 +848,24 @@ impl Solid {
         for (from, into) in split {
             relations.push(Relation::Split { from, into });
         }
-        // Every input entity is split (a half keeps none whole).
+        // A kept entity is `Modified` when its geometry or bounding ids
+        // changed (a touch's vertex on a rim).
+        let before = input.entity_set(self.resolution());
+        for id in &kept_ids {
+            let changed = pieces.iter().any(|(_, piece)| {
+                let after = piece.topology.entity_set(piece.resolution());
+                after.entities.get(id).is_some_and(|info| {
+                    let old = &before.entities[id];
+                    old.geometry != info.geometry || old.structure != info.structure
+                })
+            });
+            relations.push(if changed {
+                Relation::Modified { from: *id, to: *id }
+            } else {
+                Relation::Unchanged { id: *id }
+            });
+        }
+        // Every input entity is split, kept or cut.
         let covered: BTreeSet<EntityId> = relations.iter().flat_map(Relation::sources).collect();
         if input.ids().any(|(id, _)| !covered.contains(&id)) {
             return Err(Error::InvalidTopology(

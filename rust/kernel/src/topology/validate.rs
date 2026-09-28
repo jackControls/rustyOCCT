@@ -1891,6 +1891,41 @@ fn cover_crossings<T: Real>(loops: &[&Lp], p: &V2<T>) -> Option<u32> {
     Some(count)
 }
 
+/// Signed crossings of the +v ray from p with the loops' line pcurves and
+/// chords, over every u alias: +1 where a piece runs in -u, -1 in +u (the
+/// region on the left lies below a piece running in -u). None when a
+/// decision is not certified or a pcurve is not a line.
+fn signed_cover_crossings<T: Real>(loops: &[&Lp], p: &V2<T>) -> Option<i64> {
+    let mut count = 0;
+    for lp in loops {
+        let mut segments = chords::<T>(lp);
+        for u in &lp.fins {
+            let Curve2::LineSegment { start, end } = &u.pcurve else {
+                return None;
+            };
+            segments.push(([c(start.x), c(start.y)], [c(end.x), c(end.y)]));
+        }
+        for (a, b) in segments {
+            for k in alias_range(&a[0], &b[0], &p[0])? {
+                let u = p[0].sub(&c(TAU * k as f64));
+                // Half-open in u: exactly one end strictly right of u.
+                let (ra, rb) = (above(&a[0], &u)?, above(&b[0], &u)?);
+                if ra == rb {
+                    continue;
+                }
+                let slope = b[1].sub(&a[1]).div(&b[0].sub(&a[0]))?;
+                let v = a[1].add(&u.sub(&a[0]).mul(&slope));
+                match v.sub(&p[1]).sign()? {
+                    Ordering::Greater => count += if rb { -1 } else { 1 },
+                    Ordering::Less => {}
+                    Ordering::Equal => return None,
+                }
+            }
+        }
+    }
+    Some(count)
+}
+
 /// Every k with p.u - k TAU possibly within the u span of a..b, plus one each
 /// side; None for spans too wide to enumerate.
 fn alias_range<T: Real>(a: &T, b: &T, pu: &T) -> Option<std::ops::RangeInclusive<i64>> {
@@ -3743,7 +3778,29 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                 );
                 match sign {
                     Some(s) if s == want_inner => {
-                        add(&mut issues, K::UncertifiedContainment, En::Loop(fi, *li));
+                        // Inside when the signed crossings of the +v ray from
+                        // its first point with the other loops, a north pole
+                        // counting as one more above, give the face's sign
+                        // (S8d.2: a hole in a band).
+                        let others: Vec<&Lp> = edge_loops
+                            .iter()
+                            .filter(|(l, _)| l != li)
+                            .map(|(_, other)| *other)
+                            .collect();
+                        let want: i64 = if forward { 1 } else { -1 };
+                        let polar = if pole && north { want } else { 0 };
+                        let start = &lp.fins[0].pcurve;
+                        match tiered(
+                            None,
+                            || signed_cover_crossings::<Fast>(&others, &pcurve_at(start, 0.0)),
+                            || signed_cover_crossings::<I>(&others, &pcurve_at(start, 0.0)),
+                        ) {
+                            Some(n) if n + polar == want => {}
+                            Some(_) => add(&mut issues, K::InnerLoopOutside, En::Loop(fi, *li)),
+                            None => {
+                                add(&mut issues, K::UncertifiedContainment, En::Loop(fi, *li));
+                            }
+                        }
                     }
                     Some(_) => {
                         add(&mut issues, K::LoopWinding, En::Loop(fi, *li));

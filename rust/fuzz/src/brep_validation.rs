@@ -85,7 +85,7 @@ fn reversed(p: &Curve2) -> Curve2 {
             start_angle: start_angle + sweep_angle,
             sweep_angle: -sweep_angle,
         },
-        Curve2::EllipseArc { .. } | Curve2::Sinusoid { .. } => {
+        Curve2::EllipseArc { .. } | Curve2::Sinusoid { .. } | Curve2::Projection(_) => {
             unreachable!("cavity prisms have no plane sections")
         }
     }
@@ -208,7 +208,7 @@ fn shift_v(p: &Curve2, dv: f64) -> Curve2 {
             start_angle: *start_angle,
             sweep_angle: *sweep_angle,
         },
-        Curve2::EllipseArc { .. } | Curve2::Sinusoid { .. } => {
+        Curve2::EllipseArc { .. } | Curve2::Sinusoid { .. } | Curve2::Projection(_) => {
             unreachable!("cavity prisms have no plane sections")
         }
     }
@@ -986,6 +986,32 @@ fn similar(parts: &mut TopologyParts, s: f64, t: [f64; 3]) {
                 start_angle: *start_angle,
                 sweep_angle: *sweep_angle,
             },
+            // A hyperbola's axes scale; a parabola's focal distance and its
+            // parameter (its y coordinate) scale.
+            Curve3::HyperbolaArc {
+                frame,
+                major,
+                minor,
+                start,
+                sweep,
+            } => Curve3::HyperbolaArc {
+                frame: moved(frame),
+                major: major * s,
+                minor: minor * s,
+                start: *start,
+                sweep: *sweep,
+            },
+            Curve3::ParabolaArc {
+                frame,
+                focal,
+                start,
+                sweep,
+            } => Curve3::ParabolaArc {
+                frame: moved(frame),
+                focal: focal * s,
+                start: start * s,
+                sweep: sweep * s,
+            },
             Curve3::BSpline(c) => {
                 let moved = spline3(
                     c.curve(),
@@ -1085,6 +1111,7 @@ fn similar(parts: &mut TopologyParts, s: f64, t: [f64; 3]) {
                         a: a.map(|x| x * s),
                     }
                 }
+                Curve2::Projection(_) => unreachable!("scaled fixtures have no projections"),
                 Curve2::BSpline(span) => {
                     let (c, [first, last]) = (span.curve(), span.range());
                     let c3 = c.as_curve3();
@@ -1141,7 +1168,10 @@ fn shifted(p: &Curve2, d: f64) -> Curve2 {
                 last,
             ))
         }
-        Curve2::CircularArc { .. } | Curve2::EllipseArc { .. } | Curve2::Sinusoid { .. } => {
+        Curve2::CircularArc { .. }
+        | Curve2::EllipseArc { .. }
+        | Curve2::Sinusoid { .. }
+        | Curve2::Projection(_) => {
             unreachable!("spline uses have line or spline pcurves")
         }
     }

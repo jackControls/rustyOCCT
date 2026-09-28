@@ -754,10 +754,11 @@ and two with loops through a pole, and ten with tori since S3, six more with
 B-spline edges, pcurves and surfaces since S4; horn and spindle tori are
 `NonRingToroidalSurface`, and periodic spline surfaces and seams on spline
 surfaces are unsupported) and synthesized counts equal to the original
-counts. 58 of them are certified; `occt_brep.rs` pins the two the validator
-does not certify yet with their issue kinds (a sphere loop that passes both
-poles between two kept seam pairs, `seam_edge`, and containment in a
-cylinder face with spline pcurves, `uncertified_containment`). Every one of the 564 identity cases (546 prisms, six
+counts. 59 of them are certified; `occt_brep.rs` pins the one the validator
+does not certify yet with its issue kind (a sphere loop that passes both
+poles between two kept seam pairs, `seam_edge`); `Motor-c.brep` 378, a hole
+with spline pcurves in a wound cylinder face, certifies since S8d.2's signed
+ray. Every one of the 564 identity cases (546 prisms, six
 cones, six spheres and six tori) and the 13 arc prisms of S5
 writes, reads back and imports to the same counts with bit-identical
 vertices, twice. Malformed text gives typed errors.
@@ -769,7 +770,7 @@ every corpus file, and their counts, must be exactly the reader's (77). Then
 native OCCT reads everything the kernel writes. Each of the 577 identity
 and arc-prism writes must be one valid solid whose counts equal the synthesized counts and
 whose volume, area and centroid equal the kernel's mass properties (exact for
-prisms, arc prisms' closed forms, certified midpoints for cones, spheres and tori). Each of the 58 certified corpus
+prisms, arc prisms' closed forms, certified midpoints for cones, spheres and tori). Each of the 59 certified corpus
 solids, written back, must be one valid solid with the original's counts,
 volume, area and centroid. The worst property
 difference observed is 6.6e-14 relative (macOS, since S3), against a bound of 1e-11.

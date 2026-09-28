@@ -804,6 +804,39 @@ S8a.2 of `REVIEW_NOTES.md` splits prisms by planes oblique to their axis
   are the ellipse's, the edge's parameter its angle; a sinusoid pcurve has
   no OCCT record and is `Unwritable`. The reader keeps skipping ellipses.
 
+## Conic sections and projections (S8d.2)
+
+S8d.2 of `REVIEW_NOTES.md` splits cones, frusta and sphere zones by planes
+neither normal to their axis nor containing it (`SPLIT.md`): D13's
+procedural pcurves with explicit conic edges.
+
+* **Cells.** `Curve3::HyperbolaArc` is `origin + major cosh t x + minor sinh
+  t y`, `t = start + sweep f` (OCCT's `Geom_Hyperbola`); `Curve3::ParabolaArc`
+  is `origin + t^2 / (4 focal) x + t y` (`Geom_Parabola`). `Curve2::Projection`
+  is the exact inverse of its face's surface map applied to its fin's edge
+  (at fraction `f` the edge's point at `f`, or `1 - f` for a reversed use),
+  continuous on the surface's cover: `u` (and a torus's `v`) is the
+  representative nearest the linear interpolation of lifts recorded every
+  thirty-second of the edge, consecutive lifts within a quarter period.
+* **Validation.** A projection of the fin's own edge onto the face's own
+  stored surface deviates by zero by definition; its ends, gaps and
+  degeneracy come from certified evaluation, and its twice-areas, periodic
+  areas, orientation fluxes and mass moments from certified Taylor
+  quadrature (`MATHEMATICS.md`). `+u` ray crossings of a projection are not
+  decided: a split's projection loops are outer loops, or holes whose own
+  first point is tested against the other loops.
+* **Tessellation.** A hyperbola's segment deflects at most `σ max(major,
+  minor) cosh(T)` times the step squared over eight (`T` the largest
+  `|t|`) and turns at most `major / minor` times the step; a parabola's at
+  most `σ / (2 focal)` times the step squared over eight, turning `1 / (2
+  focal)` times the step. A projection's `(u, v)` range is the union of its
+  certified enclosures on 64 pieces.
+* **Interop.** The writer prints `Geom_Hyperbola` and `Geom_Parabola` (3D
+  records 5 and 6); a projection pcurve has no record until D13's
+  interchange approximation (a B-spline whose certified bound becomes the
+  edge's tolerance), so every S8d.2 piece is `Unwritable` for now. The
+  reader keeps skipping the conics.
+
 ## Acceptance
 
 Record each milestone's clean revision, kernel CI job count, fuzz CI target

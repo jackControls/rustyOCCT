@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 36405331033 (commit 9a5fb2a4), ubuntu-latest, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "8bf7147da4ece063c0880e750a9969a8c4ca5ba5e2f2914c8f3a4920d7882ff5",
+  "review": "The same statuses, sides, piece counts and face, edge and vertex counts as the macOS capture for all 12 tori; volumes, areas and centres within 2.3e-14 relative (the spiric pieces' B-spline sections included)."
+}

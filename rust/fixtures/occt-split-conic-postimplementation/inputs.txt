@@ -1,0 +1,48 @@
+case apex_ellipse
+cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.0 3.0
+split 0.0 0.0 1.0 -0.2 0.0 1.0
+end
+case apex_parabola
+cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.0 2.0
+split 0.5 0.0 0.0 1.0 0.0 1.0
+end
+case apex_hyperbola
+cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.0 3.0
+split 0.8 0.0 0.0 1.0 0.0 0.0
+end
+case frustum_top_tongue
+cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 1.0 3.0
+split 0.6 0.0 3.0 1.0 0.0 1.0
+end
+case frustum_rulings
+cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 1.0 3.0
+split 0.0 0.0 6.0 1.0 0.0 0.1
+end
+case frustum_touch_both
+cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 1.0 3.0
+split 2.0 0.0 0.0 1.0 0.0 1.0
+end
+case widening_oblique
+cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 2.5 0.5
+split 0.0 0.0 0.25 0.3 0.2 1.0
+end
+case tilted_oblique
+cone 1.0 -2.0 0.5 0.0 0.6 0.8 1.0 -0.0 0.0 2.0 0.5 3.0
+split 1.0 -0.8 2.1 1.0 3.0 4.0
+end
+case zone_side_cap
+sphere 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 -0.5 1.0
+split 1.8 0.0 0.0 1.0 0.0 0.0
+end
+case cap_oblique
+sphere 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.25 1.5707963267948966
+split 0.0 0.0 1.2 1.0 0.0 1.0
+end
+case zone_both_rims
+sphere 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 -0.5 1.0
+split 0.3 0.0 0.0 1.0 0.0 0.2
+end
+case tilted_zone_oblique
+sphere 1.0 -2.0 0.5 0.0 0.6 0.8 1.0 -0.0 0.0 1.5 -0.7 0.9
+split 1.25 -2.0 0.5 1.0 -1.0 0.5
+end
