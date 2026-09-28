@@ -251,8 +251,11 @@ jobs:
         run: |
           target/math-oracle-venv/bin/python rust/tools/compare_analytic_intersections.py --occt-root target/brep-sdk/install --sdk-manifest target/brep-sdk/build-manifest.json
           target/math-oracle-venv/bin/python rust/tools/compare_procedural_intersections.py --occt-root target/brep-sdk/install --sdk-manifest target/brep-sdk/build-manifest.json
-          target/math-oracle-venv/bin/python rust/tools/compare_torus_curves.py --occt-root target/brep-sdk/install --sdk-manifest target/brep-sdk/build-manifest.json
+      - name: Compare a torus's traced curves with GeomInt_IntSS and the exact reference
+        if: ${{ !cancelled() }}
+        run: target/math-oracle-venv/bin/python rust/tools/compare_torus_curves.py --occt-root target/brep-sdk/install --sdk-manifest target/brep-sdk/build-manifest.json
       - name: Test the tessellation reference's deliberate failures and compare tessellations with BRepMesh_IncrementalMesh
+        if: ${{ !cancelled() }}
         run: |
           target/math-oracle-venv/bin/python rust/tools/test_tessellation_reference.py
           target/math-oracle-venv/bin/python rust/tools/compare_tessellation.py --occt-root target/brep-sdk/install --sdk-manifest target/brep-sdk/build-manifest.json
