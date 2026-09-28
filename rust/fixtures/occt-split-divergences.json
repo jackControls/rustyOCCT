@@ -1028,6 +1028,31 @@
       "reason": "BRepAlgoAPI_Splitter splits the spline wall's two cap edges where the plane touches them (6 faces, 14 edges, 10 vertices); the kernel's split cuts nothing at a tangency (S8 decisions: an even root of the line's function on the spline is a touch) and returns the prism unchanged (6 faces, 12 edges, 8 vertices). The volume, area and centre agree with the reference.",
       "independent_evidence": "The plane x = 11 meets the bulge's quadratic (poles (10, 0), (12, 3), (10, 6)), x(t) = 10 + 4 t (1 - t), only at t = 1/2, the point (11, 3), a double root: the prism lies in x <= 11.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "sheet_wave_knot",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "8d477f59a46cd7cf887c4381ce407f0642b9a54f54fa26d0d65ac5d4db1e40f4",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration of the lower face, bounded by the wave's two spans after its interior knot 1 (a quadratic B-spline of three spans), gives the area 41.820163043 instead of 41.875 (1.3e-03 relative) and moves its centre by 4.7e-03; the upper face, bounded by one span, agrees to 3e-16, and both perimeters within 6e-10. The pieces are valid, their sides the reference's. The kernel has no Body::split_by_plane yet (S8e): the case is rust_unsupported.",
+      "independent_evidence": "The plane (normal (1, 0, 1) through (6.5, 0, 0)) traces u = 6.5 on the sheet, through the wave's knot point (6.5, 6.5). Green's theorem in exact Fractions over the lower piece's boundary (the rectangle's sides to (6.5, 0), the chord to (6.5, 6.5), the wave's Bezier pieces from blossoms after knot 1) gives area 335/8 = 41.875 and centre (15887/5025, 32561/10050) = (3.1615920398, 3.2399004975), the reference's. A scratch variant of occt_split_oracle.cpp (not the captured probe) calling BRepGProp::SurfaceProperties with an adaptive accuracy of 1e-13 on the same face gives 41.874999999999993 and centre (3.1615920398009947, 3.2399004975124379).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "sheet_lens_tilted",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "c21376d3dc2ea75c7435e7edba75b82b89b377efd66cc0bb924e501509caeea0",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp::LinearProperties measures the lens hole's upper cubic (poles (7, 5), (6, 8), (4, 8), (3, 5), whole in the upper face) 6.3908443697 instead of 6.3909760774, and the lower cubic's middle part (in the lower face) 4.3116150454 instead of 4.3116133826: the perimeters are 37.524632048 and 29.366040029 against the reference's 37.524763756 and 29.366038366 (3.5e-06 and 5.7e-08 relative). Areas and centres agree within 1.3e-15. The pieces are valid, their sides the reference's. The kernel has no Body::split_by_plane yet (S8e): the case is rust_unsupported.",
+      "independent_evidence": "The cubic's length by mpmath quadrature of |B'(t)| at 30 digits is 6.39097607738270, and the reference's lens length 12.7819521548 is twice it (the lens is symmetric about v = 5). A scratch variant of occt_split_oracle.cpp (not the captured probe) measuring every edge of the two faces with GCPnts_AbscissaPoint::Length at 1e-13 gives the upper cubic 6.3909760773827013 and the perimeters 37.524763755981105 and 29.366038366375562, the reference's within 1e-15; LinearProperties and the abscissa agree on every line edge.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     }
   ]
 }
