@@ -153,7 +153,12 @@ fn section_angles<T: Real>(s: &Spiric, fraction: &Jet<T>) -> Option<[Jet<T>; 2]>
             .div(&cv.scale(&small).add_constant(&big))?;
         let ab = a.square().add(&b.square()).sqrt();
         let x = q.scale(&c::<T>(1.0).div(&ab)?);
-        let phi = T::atan2(&b, &a)?;
+        // The angle of (a, b) turned back by its binary64 value, so the
+        // branch cut stays opposite (b = 0 with a < 0 lies on it).
+        let reference = s.plane[1].atan2(s.plane[0]);
+        let (co, si) = T::cos_sin(&c(reference));
+        let (ar, br) = (a.mul(&co).add(&b.mul(&si)), b.mul(&co).sub(&a.mul(&si)));
+        let phi = T::atan2(&br, &ar)?.add(&c(reference));
         [acos_jet(&x)?.scale(&sign).add_constant(&phi), t]
     } else {
         let (cu, su) = t.cos_sin();

@@ -762,6 +762,17 @@ passes near the pole, where the projection quadrature refines while
 the section's angle about the axis turns fast. It is within the split
 target's 60-second input limit (S8d.2).
 
+## Split: a torus section's angle on atan2's branch cut
+
+`split/crash-412e2b4737d69bc31fd08b7e0b52e0a139a45e98.bin` was replayed from
+the corpus by the first S8d.3 campaign: a thin torus (major 3, minor 0.25)
+cut by a plane whose normal has no `y` part and a negative `x` part, so the
+section's loops are graphs over `v` about `u = atan2(0, negative) = pi`, on
+the binary64 tier's branch cut, where it declines. Every point of the rings
+was then unknown and validation could certify no gap. The angle is now that
+of the normal's trace turned back by its binary64 value, as the jets' angles
+are. The input replays in well under a second.
+
 ## STEP: a torus band's ring starting a rounding below its seam
 
 `step/crash-6b0ff1a4f7646a3f2fce7e959be0fc3033928e74.bin` was found by the
