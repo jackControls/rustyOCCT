@@ -2073,6 +2073,18 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             Ok(names.iter().map(|n| format!("{n} ")).collect())
         }
         "dsetsignal" => Ok(String::new()),
+        // DRAW's numeric variables set by `dset` (the boolean group's begin
+        // sets SCALE); `protect` only guards a variable against deletion.
+        "dset" if args.len() >= 3 && args.len() % 2 == 1 => {
+            for pair in args[1..].chunks(2) {
+                let numbers = &session.numbers;
+                let v = draw_geometry::evaluate(&pair[1], &|n| numbers.get(n).copied())
+                    .map_err(|e| error(&e))?;
+                session.numbers.insert(pair[0].clone(), v);
+            }
+            Ok(String::new())
+        }
+        "protect" if args.len() >= 2 => Ok(String::new()),
         // S8e: OCCT's General Fuse splitter with one plane face as the tool.
         "bclearobjects" | "bcleartools" if args.len() == 1 => {
             if command == "bclearobjects" {

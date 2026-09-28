@@ -126,10 +126,31 @@ group, and stale success records are removed before each run.
 | `lowalgos/intss/bug23177_2` | Viewer skipped | Viewer skipped | The same with another plane through the axis (S7) |
 | `lowalgos/intss/bug24648` | Viewer skipped | Viewer skipped | A cone and a coaxial torus: every curve a circle (S7) |
 | `lowalgos/intss/bug21750` | Unsupported | Unverified | Cylinders antiparallel up to rounding: OCCT snaps them to two lines, the kernel's exact predicates find crossing axes and one closed curve, and the case then calls the undefined `Error:` (S7, a recorded divergence) |
+| `bugs/heal/bug29502` | Unsupported | Pass | A whole cylinder band split by a vertex (`bsplit`), then `unifysamedom`; the `heal` group loads `XSDRAW` (S8e) |
+| `bugs/heal/bug33171_1` | Unsupported | Viewer skipped | A prism split by four prisms of open polylines, `bopcheck`, `unifysamedom` (S8e) |
+| `bugs/modalg_7/bug21264` | Unsupported | Unverified | Progress reports of the Boolean and splitter commands (`XProgress`); no geometric query (S8e) |
+| `bugs/modalg_7/bug30092` | Unsupported | Pass | A face on an offset surface split by an edge with a grown tolerance; the restore needs offset surfaces; needs the dataset (S8e) |
+| `bugs/modalg_7/bug32578` | Unsupported | Viewer skipped | A face split by many edges with a fuzzy value (`bfuzzyvalue`); needs the dataset (S8e) |
+| `bugs/moddata_3/bug31587_1` to `_6` | Unsupported | Pass | A box split by another box's faces, edges, wires, vertices or open polylines, then `removeinternals` (S8e) |
+| `boolean/splitter/A5`, `B5`; `bugs/modalg_7/bug28113_1`, `bug28113_2`, `bug29789`, `bug29955`, `bug31201_1` to `_3`, `bug31462`, `bug32644` | Private data | Private data | Splits of restored shapes (`bsplit`, and `bapisplit` in `B5`) whose files are not in the public dataset (S8e) |
 
 There are **five original geometry tests passing on both backends** and four
 more evaluated on both with their image commands recorded (`buc60769`, and
 S7's `lowalgos/intss` cases `bug23177_1`, `bug23177_2` and `bug24648`).
+S8e registers the upstream `bsplit` group as capability sentinels: `boolean/splitter/A5`
+and `B5` and the 22 `bugs` cases that call `bsplit` (with `bug29333_1` and
+`bug29333_2`, registered before). They need S9's general builder: tools that
+are edges, vertices, several faces or shapes of their own, and restored
+curved shapes. Of the thirteen that run on public data, native DRAW passes
+ten (the two `bug29333` cases among them), evaluates two more with their
+image commands recorded (`bug33171_1`, `bug32578`) and makes no geometric
+query in `bug21264`; the other eleven need data Open Cascade keeps private.
+The Rust adapter reports each of the thirteen unsupported. The host forwards the group's commands (`bbuild`, `bapibuild`,
+`bop` and its operations, `bbop`, `bapibop`, `bcut`, `btuc`, `bsection`,
+`bopcheck`, `boptions`, `bfuzzyvalue`, `removeinternals`, `unifysamedom`,
+`vertex`, `settolerance`, `XProgress`, `dset`, `protect`) to either backend;
+the Rust worker rejects all but `dset` (DRAW's numeric variables) and
+`protect` (a no-op), which the `boolean` group's `begin` calls.
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4
