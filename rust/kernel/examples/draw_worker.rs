@@ -1919,26 +1919,20 @@ fn boolean_failure(e: rusty_occt::Error) -> Failure {
 }
 
 /// A Boolean's result solid that is a general body, not a prism: S9a.2's
-/// stack or S9b.1's polyhedron. The kernel's Booleans take prisms only, so
-/// every result solid without a profile is one of the two.
+/// stack or S9b's polyhedron (every result solid without a profile).
 fn general(s: &Solid) -> bool {
     s.profile().is_none()
 }
 
 /// A Boolean argument: one solid the adapter made (a prism, a cone, a
 /// sphere or a torus; the kernel decides what it supports), or a Boolean
-/// result of one prism; and whether OCCT's shape reuses its shapes. A
-/// stack or a polyhedron is refused as the kernel refuses it
-/// (`OutOfDomain`): a Boolean of general bodies is S9b.2's.
+/// result of one solid (a prism, a stack or a polyhedron: S9b.2 takes the
+/// last two on their stored geometry); and whether OCCT's shape reuses
+/// its shapes.
 fn boolean_argument(shape: &Shape) -> Result<(&Solid, bool)> {
     match shape {
         Shape::Solid(s) => Ok((s, false)),
         Shape::Uncopied(s) => Ok((s, true)),
-        Shape::Boolean { solids, .. } if solids.len() == 1 && general(&solids[0]) => {
-            Err(boolean_unsupported(
-                "an argument that is a Boolean's stack or polyhedron, not a prism (S9b.2)",
-            ))
-        }
         Shape::Boolean { solids, uncopied } if solids.len() == 1 => Ok((&solids[0], *uncopied)),
         Shape::Boolean { .. } => Err(boolean_unsupported("an argument of several solids or none")),
         _ => Err(boolean_unsupported(
@@ -1968,8 +1962,11 @@ fn rebuilt(s: &Solid, operation: OperationId) -> Result<Solid> {
 /// kernel's ids are not (every `box` is a cuboid of the unspecified
 /// operation, a `copy` keeps its ids), and a Boolean's history needs its
 /// inputs' ids apart: a tool sharing ids with the object is built again.
-/// So is a Boolean result, which the kernel's Boolean does not take as an
-/// input (its entities descend from the inputs, not from its profile).
+/// So is a Boolean result that is a prism, which the kernel's Boolean
+/// indexes by its profile (its entities descend from the inputs); a stack
+/// or a polyhedron is taken as it is (S9b.2, on its stored geometry), the
+/// other argument built again when they share ids (two general bodies
+/// sharing ids are unsupported).
 fn boolean(
     object: &Shape,
     tool: &Shape,
@@ -1978,16 +1975,24 @@ fn boolean(
 ) -> Result<Shape> {
     let (a, ua) = boolean_argument(object)?;
     let (b, ub) = boolean_argument(tool)?;
-    let a = match object {
-        Shape::Boolean { .. } => rebuilt(a, operations[1])?,
+    let mut a = match object {
+        Shape::Boolean { .. } if !general(a) => rebuilt(a, operations[1])?,
         _ => a.clone(),
     };
-    let ids: BTreeSet<_> = a.topology().ids().map(|(id, _)| id).collect();
-    let b = match tool {
-        Shape::Boolean { .. } => rebuilt(b, operations[2])?,
-        _ if b.topology().ids().any(|(id, _)| ids.contains(&id)) => rebuilt(b, operations[2])?,
+    let mut b = match tool {
+        Shape::Boolean { .. } if !general(b) => rebuilt(b, operations[2])?,
         _ => b.clone(),
     };
+    let ids: BTreeSet<_> = a.topology().ids().map(|(id, _)| id).collect();
+    if b.topology().ids().any(|(id, _)| ids.contains(&id)) {
+        if !general(&b) {
+            b = rebuilt(&b, operations[2])?;
+        } else if !general(&a) {
+            a = rebuilt(&a, operations[1])?;
+        } else {
+            return Err(boolean_unsupported("two stacks or polyhedra sharing ids"));
+        }
+    }
     let (a, b, operation) = (&a, &b, operations[0]);
     let (solids, _) = match op {
         BooleanOp::Common => a.common(operation, b),

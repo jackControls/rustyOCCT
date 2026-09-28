@@ -183,16 +183,18 @@ class BridgeTests(unittest.TestCase):
             with self.subTest(wrong=wrong):
                 self.expect(boxes + wrong, "failed")
         # Outside S9a, never an answer: arcs in frames with other axes
-        # (S9c), a stack as an argument (S9a.2 builds it, S9b.2 takes it),
-        # prisms touching along an edge (Degenerate), a cone, a section,
+        # (S9c), a stack as an argument whose result's top face touches
+        # itself at a vertex (Degenerate: a tower's corner on the corner of
+        # a notch), prisms touching along an edge (Degenerate), a cone
+        # (curved faces, S9c), a section,
         # several objects, a result of two solids as an argument,
         # unifysamedom of other shapes, counts of an uncopied prism's result
         # and a Boolean's history.
         for gap, why in [
-                (boxes + "pcylinder k 1 2\ntrotate k 0 0 0 1 0 0 30\ncatch {bfuse r a k}", "different axes"),
-                (boxes + "box t 1 1 2 1 1 1\nbfuse r a t\ncheckprops r -v 33\ncatch {bcut s r b}", "stack"),
+                (boxes + "pcylinder k 1 2\ntrotate k 0 0 0 1 0 0 30\ncatch {bfuse r a k}", "S9c"),
+                (boxes + "box t 1 1 2 1 1 1\nbfuse r a t\ncheckprops r -v 33\ncatch {bcut s r b}", "egenerate"),
                 (boxes + "box t 4 4 0 1 1 2\ncatch {bfuse r a t}", "egenerate"),
-                (boxes + "pcone k 1 0 2\ncatch {bcommon r a k}", "prisms"),
+                (boxes + "pcone k 1 0 2\ncatch {bcommon r a k}", "curved"),
                 (boxes + "baddobjects a\nbaddtools b\ncatch {bapibop r 4}", "bapibop r 4"),
                 (boxes + "baddobjects a b\nbaddtools b\ncatch {bapibop r 1}", "one object"),
                 (boxes + "box d 9 9 9 1 1 1\nbfuse r a d\ncatch {bcut s r b}", "several solids"),
@@ -224,20 +226,34 @@ class BridgeTests(unittest.TestCase):
                       "bfuse s a b\nunifysamedom u s\nchecknbshapes u -face 10 -vertex 16"]:
             with self.subTest(wrong=wrong):
                 self.expect(stacks + wrong, "failed")
-        # A stack is no Boolean argument: the kernel's Booleans take prisms.
-        for gap in ["bcut h o c\ncheckprops h -v 56\ncatch {bfuse r h a}",
-                    "bfuse s a b\ncheckprops s -v 48\ncatch {bcommon r o s}",
-                    "bfuse s a b\ncheckprops s -v 48\nbop s o\ncatch {bopcut r}"]:
-            with self.subTest(gap=gap):
-                self.assertIn("stack", self.expect(stacks + gap, "unsupported")["unsupported"])
+        # A stack is a Boolean argument again (S9b.2, on its stored
+        # geometry): the box's lower half fills the cavity's lower half, the
+        # step lies inside the cube, and fused with it is the cube.
+        for again in self.STACKS_AGAIN:
+            with self.subTest(again=again):
+                self.expect(self.STACKS + again, "pass")
 
     @unittest.skipUnless(os.environ.get("RUSTY_TEST_DRAW_EXE"), "optional native DRAW cross-check")
     def test_boolean_stacks_against_native_occt(self):
-        # The same stacks' values on native DRAW, after unifysamedom.
+        # The same stacks' values on native DRAW, after unifysamedom, and
+        # the stacks given to a Boolean again.
         self.expect("box o 0 0 0 4 4 4\nbox c 1 1 1 2 2 2\nbcut h o c\ncheckshape h\n"
                     "checkprops h -v 56 -s 120\nunifysamedom u h\ncheckprops u -l 144\n"
                     "checknbshapes u -vertex 16 -edge 24 -wire 12 -face 12 -shell 2 -solid 1 -compound 1\n",
                     "pass", backend="occt", draw_exe=os.environ["RUSTY_TEST_DRAW_EXE"])
+        for again in self.STACKS_AGAIN:
+            with self.subTest(again=again):
+                self.expect(self.STACKS + again, "pass", backend="occt",
+                            draw_exe=os.environ["RUSTY_TEST_DRAW_EXE"])
+
+    # S9b.2: stacks given to a Boolean again.
+    STACKS = "box o 0 0 0 4 4 4\nbox c 1 1 1 2 2 2\nbox a 0 0 0 4 4 2\nbox b 0 0 2 2 4 2\n"
+    STACKS_AGAIN = ["bcut h o c\ncheckprops h -v 56\nbfuse r h a\ncheckprops r -v 60",
+                    "bfuse s a b\ncheckprops s -v 48\nbcommon r o s\ncheckprops r -v 48",
+                    "bfuse s a b\ncheckprops s -v 48\nbop s o\nbopfuse r\ncheckprops r -v 64"]
+    # S9b.2: polyhedra given to a Boolean again.
+    POLYHEDRA_AGAIN = ["bcut h o c\ncheckprops h -v 63\nbfuse r h a\ncheckprops r -v 63",
+                       "bfuse l a b\ncheckprops l -v 4\nbop l o\nbopcut r\ncheckprops r -v 2"]
 
     # S9b.1's polyhedra: a 2 x 1 x 1 box and its copy turned a quarter turn
     # about z fuse into an L (the walls at y = 0 one face); a unit box
@@ -273,12 +289,15 @@ class BridgeTests(unittest.TestCase):
                       "bcut h o c\nunifysamedom u h\nchecknbshapes u -solid 2"]:
             with self.subTest(wrong=wrong):
                 self.expect(self.POLYHEDRA + wrong, "failed")
-        # A polyhedron is no Boolean argument (S9b.2); nor are arcs in a
-        # turned frame (S9c), and a turned box's corner on a face is
-        # degenerate.
-        for gap, why in [("bcut h o c\ncheckprops h -v 63\ncatch {bfuse r h a}", "polyhedron"),
-                         ("bfuse l a b\ncheckprops l -v 4\nbop o l\ncatch {bopcut r}", "polyhedron"),
-                         ("pcylinder k 1 1\ntrotate k 2 2 2 1 1 1 30\ncatch {bcut r o k}", "S9c"),
+        # A polyhedron is a Boolean argument again (S9b.2): the box at the
+        # cube's corner leaves the cube with its cavity, and the L less the
+        # cube is its arm outside, touching the cube's face.
+        for again in self.POLYHEDRA_AGAIN:
+            with self.subTest(again=again):
+                self.expect(self.POLYHEDRA + again, "pass")
+        # Arcs in a turned frame are S9c's, and a turned box's corner on a
+        # face is degenerate.
+        for gap, why in [("pcylinder k 1 1\ntrotate k 2 2 2 1 1 1 30\ncatch {bcut r o k}", "S9c"),
                          ("box d 0 0 0 2 2 1\ntrotate d 0 0 0 0 0 1 45\nttranslate d 2 0 0\n"
                           "box e 0 0 0 4 4 1\ncatch {bcut r e d}", "egenerate")]:
             with self.subTest(why=why):
@@ -289,6 +308,10 @@ class BridgeTests(unittest.TestCase):
         # The same polyhedra's values on native DRAW, after unifysamedom.
         self.expect(self.POLYHEDRA + self.POLYHEDRA_CHECKS, "pass", backend="occt",
                     draw_exe=os.environ["RUSTY_TEST_DRAW_EXE"])
+        for again in self.POLYHEDRA_AGAIN:
+            with self.subTest(again=again):
+                self.expect(self.POLYHEDRA + again, "pass", backend="occt",
+                            draw_exe=os.environ["RUSTY_TEST_DRAW_EXE"])
 
     def test_native_selector_picks_by_geometry(self):
         picks = self.root / "picks.txt"

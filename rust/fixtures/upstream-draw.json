@@ -3635,9 +3635,9 @@
     },
     {
       "path": "tests/boolean/bcut_simple/H6",
-      "expected_rust": "unsupported",
+      "expected_rust": "viewer_skipped",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9a's Boolean group, a capability sentinel: pockets cut from a prism one after another; the first cut is a stack (S9a.2), which the next bcut takes as its object: a Boolean of a stack, not a prism (S9b.2)."
+      "purpose": "S9a's Boolean group: pockets cut from a prism one after another; the first cut is a stack (S9a.2), which the next bcut takes as its object (S9b.2, on its stored geometry)."
     },
     {
       "path": "tests/boolean/bopfuse_simple/B2",
@@ -5519,15 +5519,15 @@
     },
     {
       "path": "tests/boolean/bopfuse_simple/H3",
-      "expected_rust": "unsupported",
+      "expected_rust": "viewer_skipped",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9b.1's Boolean group, a capability sentinel: a box turned 45 degrees about z, its corner on the other's wall within rounding: a direction of zero length (Degenerate)."
+      "purpose": "S9b.1's Boolean group: a box turned 45 degrees about z, its corner on the other's wall within rounding (inside it exactly); refused as a direction of zero length until the result's face frames took the face's whole vector area (S9b.2)."
     },
     {
       "path": "tests/boolean/bcut_simple/J4",
-      "expected_rust": "unsupported",
+      "expected_rust": "viewer_skipped",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9b.1's Boolean group, a capability sentinel: pockets cut one after another by prisms of profiles in a plane facing -z; the first cut is a polyhedron (S9b.1), which the next bcut takes as its object: a Boolean of a polyhedron, not a prism (S9b.2)."
+      "purpose": "S9b.1's Boolean group: pockets cut one after another by prisms of profiles in a plane facing -z; the first cut is a polyhedron (S9b.1), which the next bcut takes as its object (S9b.2, on its stored geometry)."
     }
   ],
   "derived_sources": {

@@ -480,8 +480,9 @@ handled alike: their measures and counts are read from their topology,
 `unifysamedom` returns them unchanged (coplanar fragments are joined into
 maximal faces and collinear edges joined as they are built), and native
 DRAW's unified counts agree on every polyhedron checked. A stack or a
-polyhedron given to another Boolean is reported unsupported (the kernel's
-Booleans take prisms; S9b.2). `ttranslate` and `trotate` move a prism by
+polyhedron given to another Boolean is taken as it is (S9b.2, on its
+stored geometry; the prism argument built again when they share ids).
+`ttranslate` and `trotate` move a prism by
 the kernel's rigid motion, a prism in the moved frame; `tcopy`, like
 `copy`, gives the same shape. A `trotate` by whole quarter turns about a
 coordinate axis turns a prism's frame exactly (a signed permutation of
