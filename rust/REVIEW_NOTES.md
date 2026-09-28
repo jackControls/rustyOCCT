@@ -1287,6 +1287,77 @@ split and merge relations. Native `BOPAlgo` bridge; the `boolean` group has
 ledger's largest lever. Tangent and coincident faces are declared cases from
 the first fixture, never deferred.
 
+Decisions for S9, recorded before its code (2026-09-28):
+
+* **Operations.** `Solid::fuse(operation, other)`, `Solid::cut(operation,
+  tool)` and `Solid::common(operation, other)` return the result's solids
+  (each a maximal connected solid region, ordered by the lowest input face
+  id it keeps, none for an empty result) and the operation's history
+  (`Fuse`, `Cut`, `Common`). A result that is itself a prism of one of the
+  inputs' frames (one profile over one height range) is built as one,
+  keeping the prism's exact queries; any other is a general body built
+  through `TopologyParts` and validated before it is returned. A rigid
+  motion of a general body moves its stored geometry (frames and points,
+  rounded), measures its enclosures again and keeps every id.
+* **Order.** S9a: two prisms whose frames have bitwise-equal axes and whose
+  origins differ by a vector with binary64 coordinates in them (the
+  coordinates decided exactly), of lines, arcs and circles: the Boolean is
+  a stack of height slabs (between the four caps' heights), each slab's
+  profile the 2D Boolean of the profiles present in it, consecutive slabs
+  with equal profiles merged (M3's fuse). S9a.1: results that are one
+  prism (every common; a cut whose tool spans the object's heights; a fuse
+  of equal height ranges, or whose slabs all have one profile). S9a.2: the
+  other stacks, general bodies whose caps between slabs are the regions
+  where consecutive profiles differ (`OutOfDomain` until then). S9b: prisms of line profiles in any relative position
+  (polyhedra: exact plane arrangements). S9c: arc walls in any position
+  (cylinders against planes and each other, S7 and D13's curves). S9d:
+  cones, spheres and tori. Splines join each sub-step when their pairwise
+  intersections are exact (S9a.2: spline profiles, spline/line from S8b.3,
+  spline/conic from S7d.2, spline/spline by resultants).
+* **2D Booleans (S9a).** The two profiles' boundaries are arranged
+  exactly: every crossing of two segments is decided on the stored data
+  (lines by rational crossings, a line and an arc by a quadratic surd, two
+  circles by their radical line), rounded to binary64 as a new vertex; a
+  crossing within the resolution of a vertex, or two crossings within it
+  of each other, is `Degenerate` as in S8. Every piece of either boundary
+  is classified against the other profile at a point strictly inside it
+  (exact side predicates, or the certified `Profile::classify`): inside,
+  outside, or on its boundary (a shared piece, with the same or the
+  opposite direction). Fuse keeps each profile's pieces outside the other
+  and the shared pieces of the same direction, cut keeps the object's
+  pieces outside the tool, the tool's inside the object reversed and the
+  shared pieces of opposite directions, common keeps each profile's pieces
+  inside the other and the shared pieces of the same direction; the kept
+  pieces are traced into cycles (S8's rule: the next piece at a vertex the
+  first clockwise from the incoming one), counter-clockwise ones outer
+  boundaries and clockwise ones holes, each validated as a profile.
+* **Degeneracies, exactly and from the first fixture.** Coincident
+  boundary pieces (collinear overlapping segments, arcs of one circle),
+  tangent arcs, a vertex of one on the other's boundary, identical
+  profiles, one inside the other, disjoint and touching profiles, and
+  caps at equal heights are fixtures, never deferred. Pieces thinner than
+  the resolution are `Degenerate`; a result touching itself at a point or
+  along an edge (two solids sharing an edge) is `Degenerate` until the
+  kernel holds non-manifold bodies.
+* **History.** An input face, edge or vertex kept whole keeps its id
+  (`Unchanged`, or `Modified` when its geometry or bounding ids changed);
+  one kept in parts is `Split`; faces and edges of both inputs lying on one
+  another (coplanar caps, coincident walls) are `Merged` into one result
+  entity; an input entity not kept is `Deleted`; new edges and vertices
+  where the inputs' faces meet are `Generated` from the faces they lie on.
+  The region is `Merged` (fuse), `Split` or `Modified` as the solids are.
+  The independent history check applies unchanged.
+* **Evidence first** per sub-step: an independent reference (mpmath: the
+  result's volume, area and centre by slicing both solids at every height
+  and clipping their sections exactly, in Fractions for lines and by
+  Green's theorem for arcs), fixtures of every class above in both frames,
+  and a native `BRepAlgoAPI_Fuse`/`Cut`/`Common` capture (the result's
+  validity, solids, counts, volume, area and centre) before the kernel
+  code; then the kernel, a probe and `compare_boolean.py` with
+  fingerprinted reviews, a `boolean` fuzz target, and the upstream
+  `boolean` group's self-contained cases through the DRAW adapter
+  (`bfuse`, `bcut`, `bcommon`, `bop`/`bopfuse`...).
+
 ### Parallel tracks
 
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
