@@ -1,0 +1,133 @@
+puts "Derived case, not an original OCCT test: Booleans of prisms in frames with different axes (S9b.1)"
+puts "Written for rusty-occt; see rust/UPSTREAM_TESTS.md (derived cases)."
+
+# The kernel builds these results as polyhedra: general bodies decided on
+# the inputs' exact models and unified as built (coplanar fragments facing
+# one way joined into maximal faces, edges joined where they run straight
+# on between the same two faces), as OCCT's unifysamedom leaves them.
+# Counts and lengths per use are checked on the unified result, volumes
+# and areas on the raw one.
+
+# Quarter turns. A 2 x 1 x 1 box and its copy turned 90 degrees about z
+# meet along the face x = 0: their fuse is an L-shaped prism (L area 4,
+# perimeter 10) whose walls at y = 0 are one face across both boxes. The
+# adapter turns the copy's frame exactly (a quarter turn is a signed
+# permutation of coordinates).
+box a 0 0 0 2 1 1
+tcopy a b
+trotate b 0 0 0 0 0 1 90
+bfuse l a b
+checkshape l
+checkprops l -v 4 -s 18 -deps 1e-9
+unifysamedom ul l
+checkprops ul -l 52 -deps 1e-9
+checknbshapes ul -vertex 12 -edge 18 -wire 8 -face 8 -shell 1 -solid 1 -compound 1
+
+# A 4 x 2 x 1 bar and its copy turned 90 degrees about z cross in a plus
+# sign: the fuse (area 12, perimeter 16, 12 corners), the common (the
+# 2 x 2 middle) and the cut and its reverse (two 1 x 2 ends each).
+box c -2 -1 0 4 2 1
+tcopy c d
+trotate d 0 0 0 0 0 1 90
+bfuse cross c d
+checkshape cross
+checkprops cross -v 12 -s 40 -deps 1e-9
+unifysamedom ucross cross
+checkprops ucross -l 88 -deps 1e-9
+checknbshapes ucross -vertex 24 -edge 36 -wire 14 -face 14 -shell 1 -solid 1 -compound 1
+bcommon mid c d
+checkprops mid -v 4 -s 16 -deps 1e-9
+unifysamedom umid mid
+checkprops umid -l 40 -deps 1e-9
+checknbshapes umid -vertex 8 -edge 12 -wire 6 -face 6 -shell 1 -solid 1 -compound 1
+bcut ends c d
+checkshape ends
+checkprops ends -v 4 -s 20 -deps 1e-9
+unifysamedom uends ends
+checkprops uends -l 64 -deps 1e-9
+checknbshapes uends -vertex 16 -edge 24 -wire 12 -face 12 -shell 2 -solid 2 -compound 1
+bop c d
+boptuc arms
+checkprops arms -v 4 -s 20 -deps 1e-9
+
+# A bar turned 45 degrees about z through a box: the 2 x 2 x 3 bar over
+# [-1, 2] turned about the centre of the 2 x 2 x 1 box it passes through.
+# With r = sqrt(2), their common is a regular octagon of inradius 1 (area
+# 8 r - 8, sides 2 (r - 1)); the cut leaves four corner triangles (legs 2
+# - r, perimeter 2 each), the fuse the box and the bar less the octagon's
+# prism. Native DRAW prints six significant digits, hence -deps 1e-5 for
+# these values.
+box s 0 0 0 2 2 1
+box bar 0 0 -1 2 2 3
+trotate bar 1 1 0 0 0 1 45
+bcommon oct s bar
+checkshape oct
+# Volume 8 r - 8; area twice that plus the perimeter 16 (r - 1).
+checkprops oct -v 3.313708498984761 -s 13.254833995939045 -deps 1e-5
+unifysamedom uoct oct
+# Lengths per use: two octagons and eight verticals, twice: 64 r - 48.
+checkprops uoct -l 42.50966799187809 -deps 1e-5
+checknbshapes uoct -vertex 16 -edge 24 -wire 10 -face 10 -shell 1 -solid 1 -compound 1
+bcut corners s bar
+checkshape corners
+# Volume 4 - (8 r - 8) = 12 - 8 r; area twice that plus 4 x 2.
+checkprops corners -v 0.6862915010152388 -s 9.372583002030478 -deps 1e-5
+unifysamedom ucorners corners
+# Lengths per use: four prisms of two triangles and three verticals, twice.
+checkprops ucorners -l 56 -deps 1e-9
+checknbshapes ucorners -vertex 24 -edge 36 -wire 20 -face 20 -shell 4 -solid 4 -compound 1
+bop s bar
+bopfuse star
+checkshape star
+# Volume 4 + 12 - (8 r - 8) = 24 - 8 r. Area: the bar's ends 8 and walls
+# 24 less the octagon's four sides on them over [0, 1] (8 r - 8), the
+# box's faces 8 less the octagon twice (16 r - 16) and its walls 8 less
+# the octagon's other four sides (8 r - 8): 80 - 32 r.
+checkprops star -v 12.686291501015239 -s 34.745166004060955 -deps 1e-5
+
+# A tilted bar cutting a box in two: the 1 x 4 x 8 bar turned 45 degrees
+# about the y axis through (2, 0, 1), across a 4 x 2 x 2 box. Across the
+# box it is the slab |x - z - 1| <= r / 2, of width r along x: the common
+# is a parallelogram prism (area 2 r, depth 2) and the cut two trapezoid
+# prisms (area 4 - r, perimeter 6 + r, depth 2 each).
+box k 0 0 0 4 2 2
+box tb 1.5 -1 -3 1 4 8
+trotate tb 2 0 1 0 1 0 45
+bcut halves k tb
+checkshape halves
+# Volume 16 - 4 r; area 2 (4 - r) + 2 (6 + r) = 20 each.
+checkprops halves -v 10.34314575050762 -s 40 -deps 1e-5
+unifysamedom uhalves halves
+# Lengths per use: two trapezoids and four edges of 2 each, twice: 80 + 8 r.
+checkprops uhalves -l 91.31370849898477 -deps 1e-5
+checknbshapes uhalves -vertex 16 -edge 24 -wire 12 -face 12 -shell 2 -solid 2 -compound 1
+bcommon strip k tb
+checkshape strip
+# Volume 4 r; area 2 x 2 r (the ends) + 2 x 2 r (floor and roof) + 2 x 4 r.
+checkprops strip -v 5.656854249492381 -s 22.627416997969522 -deps 1e-5
+unifysamedom ustrip strip
+# Lengths per use: two parallelograms (perimeter 6 r) and four edges of 2.
+checkprops ustrip -l 49.941125496954285 -deps 1e-5
+checknbshapes ustrip -vertex 8 -edge 12 -wire 6 -face 6 -shell 1 -solid 1 -compound 1
+
+# A closed cavity: a unit box turned 30 degrees about the diagonal (1, 1,
+# 1) through its centre (2, 2, 2), strictly inside a 4 x 4 x 4 box. The
+# cut is one solid of two shells, the outer box's and the cavity's.
+box o 0 0 0 4 4 4
+box cv 1.5 1.5 1.5 1 1 1
+trotate cv 2 2 2 1 1 1 30
+bcut hollow o cv
+checkshape hollow
+checkprops hollow -v 63 -s 102 -deps 1e-9
+unifysamedom uhollow hollow
+checkprops uhollow -l 120 -deps 1e-9
+checknbshapes uhollow -vertex 16 -edge 24 -wire 12 -face 12 -shell 2 -solid 1 -compound 1
+bclearobjects
+bcleartools
+baddobjects o
+baddtools cv
+bfillds
+bbop ghollow 2
+checkprops ghollow -v 63 -s 102 -deps 1e-9
+bcommon inner o cv
+checkprops inner -v 1 -s 6 -deps 1e-9

@@ -182,14 +182,14 @@ class BridgeTests(unittest.TestCase):
                       "bcommon r a b\nchecknbshapes r -compound 0", "bfuse r a b\nchecknbshapes r -solid 2"]:
             with self.subTest(wrong=wrong):
                 self.expect(boxes + wrong, "failed")
-        # Outside S9a, never an answer: frames with other axes (S9b), a
-        # stack as an argument (S9a.2 builds it, S9b takes it), prisms
-        # touching along an edge (Degenerate), a cone, a section, several
-        # objects, a result of two solids as an argument, unifysamedom of
-        # other shapes, counts of an uncopied prism's result and a
-        # Boolean's history.
+        # Outside S9a, never an answer: arcs in frames with other axes
+        # (S9c), a stack as an argument (S9a.2 builds it, S9b.2 takes it),
+        # prisms touching along an edge (Degenerate), a cone, a section,
+        # several objects, a result of two solids as an argument,
+        # unifysamedom of other shapes, counts of an uncopied prism's result
+        # and a Boolean's history.
         for gap, why in [
-                (boxes + "trotate b 0 0 0 0 0 1 30\ncatch {bfuse r a b}", "different axes"),
+                (boxes + "pcylinder k 1 2\ntrotate k 0 0 0 1 0 0 30\ncatch {bfuse r a k}", "different axes"),
                 (boxes + "box t 1 1 2 1 1 1\nbfuse r a t\ncheckprops r -v 33\ncatch {bcut s r b}", "stack"),
                 (boxes + "box t 4 4 0 1 1 2\ncatch {bfuse r a t}", "egenerate"),
                 (boxes + "pcone k 1 0 2\ncatch {bcommon r a k}", "prisms"),
@@ -238,6 +238,57 @@ class BridgeTests(unittest.TestCase):
                     "checkprops h -v 56 -s 120\nunifysamedom u h\ncheckprops u -l 144\n"
                     "checknbshapes u -vertex 16 -edge 24 -wire 12 -face 12 -shell 2 -solid 1 -compound 1\n",
                     "pass", backend="occt", draw_exe=os.environ["RUSTY_TEST_DRAW_EXE"])
+
+    # S9b.1's polyhedra: a 2 x 1 x 1 box and its copy turned a quarter turn
+    # about z fuse into an L (the walls at y = 0 one face); a unit box
+    # turned 30 degrees about (1, 1, 1) inside a 4 x 4 x 4 box leaves a
+    # cavity, one solid of two shells.
+    POLYHEDRA = ("box a 0 0 0 2 1 1\ntcopy a b\ntrotate b 0 0 0 0 0 1 90\n"
+                 "box o 0 0 0 4 4 4\nbox c 1.5 1.5 1.5 1 1 1\ntrotate c 2 2 2 1 1 1 30\n")
+    POLYHEDRA_CHECKS = ("bfuse l a b\ncheckshape l\ncheckprops l -v 4 -s 18\nunifysamedom ul l\n"
+                        "checkprops ul -l 52\n"
+                        "checknbshapes ul -vertex 12 -edge 18 -wire 8 -face 8 -shell 1 -solid 1 -compound 1\n"
+                        "bcut h o c\ncheckshape h\ncheckprops h -v 63 -s 102\nunifysamedom uh h\n"
+                        "checkprops uh -l 120\n"
+                        "checknbshapes uh -vertex 16 -edge 24 -wire 12 -face 12 -shell 2 -solid 1 -compound 1\n")
+
+    def test_boolean_polyhedra(self):
+        self.expect(self.POLYHEDRA + self.POLYHEDRA_CHECKS, "pass")
+        # A quarter turn about any coordinate axis, either way, turns the
+        # frame exactly: each L's coplanar walls are one face.
+        for box, turn in [("0 0 0 1 2 1", "1 0 0 90"), ("0 0 0 2 1 1", "0 1 0 90"),
+                          ("0 0 0 2 1 1", "0 0 -1 270"), ("0 0 0 2 1 1", "0 0 1 -270")]:
+            with self.subTest(turn=turn):
+                self.expect(f"box p {box}\ncopy p q\ntrotate q 0 0 0 {turn}\nbfuse l p q\n"
+                            "checkprops l -v 4 -s 18\nunifysamedom u l\ncheckprops u -l 52\n"
+                            "checknbshapes u -vertex 12 -edge 18 -wire 8 -face 8 -shell 1 -solid 1\n", "pass")
+        # A polyhedron's measures and counts are the kernel's, never echoed:
+        # among them the counts of the L with its walls 6.1e-17 apart, as
+        # a quarter turn rounded in radians would leave them.
+        for wrong in ["bfuse l a b\ncheckprops l -v 4.5", "bfuse l a b\ncheckprops l -s 20",
+                      "bfuse l a b\nunifysamedom u l\nchecknbshapes u -vertex 14 -edge 21 -face 9",
+                      "bfuse l a b\nunifysamedom u l\ncheckprops u -l 54",
+                      "bcut h o c\ncheckprops h -v 64", "bcut h o c\nunifysamedom u h\ncheckprops u -l 60",
+                      "bcut h o c\nunifysamedom u h\nchecknbshapes u -shell 1",
+                      "bcut h o c\nunifysamedom u h\nchecknbshapes u -solid 2"]:
+            with self.subTest(wrong=wrong):
+                self.expect(self.POLYHEDRA + wrong, "failed")
+        # A polyhedron is no Boolean argument (S9b.2); nor are arcs in a
+        # turned frame (S9c), and a turned box's corner on a face is
+        # degenerate.
+        for gap, why in [("bcut h o c\ncheckprops h -v 63\ncatch {bfuse r h a}", "polyhedron"),
+                         ("bfuse l a b\ncheckprops l -v 4\nbop o l\ncatch {bopcut r}", "polyhedron"),
+                         ("pcylinder k 1 1\ntrotate k 2 2 2 1 1 1 30\ncatch {bcut r o k}", "S9c"),
+                         ("box d 0 0 0 2 2 1\ntrotate d 0 0 0 0 0 1 45\nttranslate d 2 0 0\n"
+                          "box e 0 0 0 4 4 1\ncatch {bcut r e d}", "egenerate")]:
+            with self.subTest(why=why):
+                self.assertIn(why, self.expect(self.POLYHEDRA + gap, "unsupported")["unsupported"])
+
+    @unittest.skipUnless(os.environ.get("RUSTY_TEST_DRAW_EXE"), "optional native DRAW cross-check")
+    def test_boolean_polyhedra_against_native_occt(self):
+        # The same polyhedra's values on native DRAW, after unifysamedom.
+        self.expect(self.POLYHEDRA + self.POLYHEDRA_CHECKS, "pass", backend="occt",
+                    draw_exe=os.environ["RUSTY_TEST_DRAW_EXE"])
 
     def test_native_selector_picks_by_geometry(self):
         picks = self.root / "picks.txt"

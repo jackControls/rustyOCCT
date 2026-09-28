@@ -3023,8 +3023,12 @@ Decisions for S9, recorded before its code (2026-09-28):
     kernel met it), and two solids sharing a vertex are `Degenerate`; (e) a
     result's rigid motion moves its stored geometry (the decisions' rule for
     general bodies): rebuilding its exact model in moved frames changed
-    near-coincident results. Pending: the campaign, S9b.2, the DRAW survey
-    of the 647 upstream cases in frames with different axes.
+    near-coincident results. Pending: the campaign, S9b.2. DRAW survey
+    (2026-09-28, `UPSTREAM_TESTS.md`): of the boolean group's 1,802
+    self-contained cases Rust evaluates 704 (404 before), none failing; of
+    the 647 in frames with different axes 298 evaluate (two boxes, one
+    turned; the adapter turns quarter turns exactly), 233 are arcs (S9c),
+    114 `Degenerate`, 2 give a polyhedron to another Boolean (S9b.2).
   * S9b.2 implemented: a Boolean's stack or polyhedral result, a plane's
     piece and any solid of planar faces and straight edges are inputs
     (`tests/polyhedral_booleans.rs`: two pockets cut in turn, a turned box
