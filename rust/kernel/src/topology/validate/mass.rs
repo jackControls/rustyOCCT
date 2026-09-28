@@ -972,6 +972,25 @@ fn trig_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>], mass: bool) -> O
         let flip = |p: &V2<T>| -> V2<T> { [p[1].clone(), p[0].clone()] };
         for lp in loops {
             for u in &lp.fins {
+                // +∫ G(v, u) dv along a projection (S8d.3), `G` the swapped
+                // integrands' antiderivative in `u` from 0.
+                if let Curve2::Projection(pr) = &u.pcurve {
+                    let values = super::projection::integrate_along_many::<T>(
+                        pr,
+                        swapped.len(),
+                        mass,
+                        &|uu, v, _, dv| {
+                            Some(
+                                sph_antiderivative_jets(&swapped, v, uu, &c(0.0))?
+                                    .iter()
+                                    .map(|j| j.mul(dv))
+                                    .collect(),
+                            )
+                        },
+                    )?;
+                    accumulate(values);
+                    continue;
+                }
                 let Curve2::LineSegment { start, end } = &u.pcurve else {
                     return None;
                 };
@@ -984,11 +1003,36 @@ fn trig_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>], mass: bool) -> O
                 accumulate(values.iter().map(|x| x.neg()).collect());
             }
             for (a, b) in chords::<T>(lp) {
-                let values = sph_lines(&swapped, &flip(&a), &flip(&b), &c(0.0))?;
+                // A closing chord within rounding of a turn (a ring's end
+                // on its start a period on) is enclosed over its box.
+                let (fa, fb) = (flip(&a), flip(&b));
+                let values = match sph_lines(&swapped, &fa, &fb, &c(0.0)) {
+                    Some(values) => values,
+                    None => swapped
+                        .iter()
+                        .map(|f| {
+                            let g = |uu: &T, v: &T| sph_antiderivative(f, uu, v, &c(0.0));
+                            super::chord_enclosure(&fa, &fb, &g)
+                        })
+                        .collect::<Option<_>>()?,
+                };
                 accumulate(values.iter().map(|x| x.neg()).collect());
             }
         }
         return Some(totals);
+    }
+    // A torus face whose loops run as holes is the torus less them (S8d.3):
+    // the whole torus, then the loops' integrals.
+    if torus && !wound_u {
+        let want_inner = if face.sense == Orientation::Forward {
+            Ordering::Less
+        } else {
+            Ordering::Greater
+        };
+        if super::loop_area::<T>(&loops[0]).sign()? == want_inner {
+            let whole = sph_parallel(fs, &two_pi, &c(0.0), &two_pi, &c(0.0))?;
+            accumulate(whole.iter().map(|x| x.mul(&c(sign))).collect());
+        }
     }
     let lower = if torus {
         c(0.0)
@@ -1588,7 +1632,8 @@ fn curve_moments<T: Real>(curve: &Curve3, reference: &V3<T>) -> Option<(T, V3<T>
         Curve3::BSpline(_)
         | Curve3::EllipseArc { .. }
         | Curve3::HyperbolaArc { .. }
-        | Curve3::ParabolaArc { .. } => None,
+        | Curve3::ParabolaArc { .. }
+        | Curve3::Section(_) => None,
     }
 }
 

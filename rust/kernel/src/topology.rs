@@ -30,7 +30,7 @@ use std::collections::BTreeMap;
 use std::f64::consts::TAU;
 
 mod validate;
-pub(crate) use validate::{conic_point_fast, projection_range};
+pub(crate) use validate::{conic_point_fast, projection_range, section_rates};
 pub use validate::{EdgeEnd, Entity, Issue, IssueKind};
 
 macro_rules! index_type {
@@ -207,6 +207,59 @@ pub enum Curve3 {
         start: f64,
         sweep: f64,
     },
+    /// A plane's section of a torus (S8d.3), a graph over one of its angles.
+    Section(Box<Spiric>),
+}
+
+/// A plane's section of a torus as a graph over one of its angles (S8d.3).
+/// In `frame` (the torus's, `major` and `minor` its radii) the plane is
+/// `a x + b y + c z + d = 0` (`plane`, a unit normal). Over `u` (`over_v`
+/// false), `u = start + sweep f` and `v = psi + sign acos(-(major alpha +
+/// d) / W)`, with `alpha = a cos u + b sin u` and `(W cos psi, W sin psi) =
+/// (minor alpha, minor c)`; over `v`, `v = start + sweep f` and `u = atan2(b,
+/// a) + sign acos(q / |(a, b)|)`, with `q = -(c minor sin v + d) / (major +
+/// minor cos v)`. The point is `frame.point(((major + minor cos v) cos u,
+/// (major + minor cos v) sin u), minor sin v)`. An edge's range keeps each
+/// `acos` argument strictly inside `(-1, 1)` (no turning point), so it is
+/// analytic.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Spiric {
+    pub frame: Frame3,
+    pub major: f64,
+    pub minor: f64,
+    pub plane: [f64; 4],
+    pub over_v: bool,
+    pub sign: f64,
+    pub start: f64,
+    pub sweep: f64,
+}
+
+impl Spiric {
+    /// The torus's angles `(u, v)` at a fraction (principal values).
+    pub fn angles(&self, fraction: f64) -> (f64, f64) {
+        let [a, b, c, d] = self.plane;
+        let (big, small) = (self.major, self.minor);
+        let t = self.start + self.sweep * fraction;
+        if self.over_v {
+            let q = -(c * small * t.sin() + d) / (big + small * t.cos());
+            let u = b.atan2(a) + self.sign * (q / a.hypot(b)).clamp(-1.0, 1.0).acos();
+            (u, t)
+        } else {
+            let alpha = a * t.cos() + b * t.sin();
+            let (x, y) = (small * alpha, small * c);
+            let ratio = -(big * alpha + d) / x.hypot(y);
+            (t, y.atan2(x) + self.sign * ratio.clamp(-1.0, 1.0).acos())
+        }
+    }
+
+    pub fn point(&self, fraction: f64) -> Point3 {
+        let (u, v) = self.angles(fraction);
+        let rho = self.major + self.minor * v.cos();
+        self.frame.point(
+            Point2::new(rho * u.cos(), rho * u.sin()),
+            self.minor * v.sin(),
+        )
+    }
 }
 
 /// A pcurve defined as the exact inverse of its face's surface map applied
@@ -541,6 +594,7 @@ impl Curve3 {
                 let t = start + sweep * fraction;
                 frame.point(Point2::new(t * t / (4.0 * focal), t), 0.0)
             }
+            Self::Section(s) => s.point(fraction),
         }
     }
 }
@@ -3405,14 +3459,14 @@ pub(crate) fn plane_pcurve(curve: &Curve3, sense: Orientation, frame: Frame3) ->
                 sweep_angle: turn * sweep,
             }
         }
-        // A hyperbola or parabola in the plane: its exact projection
-        // (S8d.2), lifted from its start.
-        Curve3::HyperbolaArc { .. } | Curve3::ParabolaArc { .. } => {
+        // A hyperbola, a parabola or a torus section in the plane: its exact
+        // projection (S8d.2, S8d.3), lifted from its start.
+        Curve3::HyperbolaArc { .. } | Curve3::ParabolaArc { .. } | Curve3::Section(_) => {
             let reversed = sense == Orientation::Reversed;
             let start = local(curve.point(if reversed { 1.0 } else { 0.0 }));
             Curve2::Projection(Box::new(
                 Projection::new(curve.clone(), Surface::Plane(frame), reversed, start, 8)
-                    .expect("a conic projects onto a plane"),
+                    .expect("a conic or section projects onto a plane"),
             ))
         }
         Curve3::BSpline(_) => {

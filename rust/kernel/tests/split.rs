@@ -384,37 +384,18 @@ fn torus_splits_match_the_reference() {
     check_primitive_sides(
         include_str!("../../fixtures/split-torus-cases.txt"),
         include_str!("../../fixtures/split-torus-expected.tsv"),
-        &[
-            "torus_parallel_outer",
-            "torus_parallel_inner",
-            "torus_oblique",
-            "torus_oblique_tube",
-        ],
+        &[],
     );
 }
 
-/// S8d.3: tori cut in spiric sections (bands, caps, C-shaped pieces),
-/// refused until their code lands.
+/// S8d.3: tori cut in spiric sections (bands, caps, C-shaped pieces)
+/// likewise.
 #[test]
 fn spiric_splits_match_the_reference() {
     check_primitive_sides(
         include_str!("../../fixtures/split-spiric-cases.txt"),
         include_str!("../../fixtures/split-spiric-expected.tsv"),
-        &[
-            "torus_gentle",
-            "torus_band_offset",
-            "torus_top_band",
-            "torus_top_cap",
-            "torus_cap_outer",
-            "torus_peanut",
-            "torus_hole_slice",
-            "torus_two_ovals",
-            "torus_steep",
-            "torus_skew_ovals",
-            "torus_small_tube",
-            "torus_tilted_spiric",
-            "torus_tilted_band",
-        ],
+        &[],
     );
 }
 

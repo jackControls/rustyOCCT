@@ -10,11 +10,11 @@
 use super::{c, V2, V3};
 use crate::certified::Real;
 use crate::jet::{integrate_many, Jet};
-use crate::topology::{Curve3, Projection, Surface};
+use crate::topology::{Curve3, Projection, Spiric, Surface};
 use crate::Frame3;
 
 /// Integration widths and depths for the integrals along projections.
-pub(super) const ORDER: usize = 14;
+pub(super) const ORDER: usize = 12;
 pub(super) const WIDTH: f64 = 1e-12;
 pub(super) const DEPTH: usize = 40;
 
@@ -37,7 +37,7 @@ fn frame_of(s: &Surface) -> Option<&Frame3> {
 
 /// A point of a conic edge (hyperbola or parabola) at a fraction, enclosed.
 pub(super) fn conic_point<T: Real>(curve: &Curve3, t: f64) -> Option<V3<T>> {
-    let jet = conic_jet(curve, &Jet::variable(c::<T>(t), 0))?;
+    let jet = curve_jet(curve, &Jet::variable(c::<T>(t), 0))?;
     Some(jet.map(|j| j.c[0].clone()))
 }
 
@@ -123,8 +123,68 @@ pub(super) fn curve_jet<T: Real>(curve: &Curve3, fraction: &Jet<T>) -> Option<[J
             world(frame, &co.scale(&c(*major)), &si.scale(&c(*minor)))
         }
         Curve3::HyperbolaArc { .. } | Curve3::ParabolaArc { .. } => conic_jet(curve, fraction)?,
+        Curve3::Section(s) => section_jet(s, fraction)?,
         Curve3::BSpline(_) => return None,
     })
+}
+
+/// `acos(x)` on jets: the angle of `(x, sqrt(1 - x^2))`, in `[0, pi]`.
+fn acos_jet<T: Real>(x: &Jet<T>) -> Option<Jet<T>> {
+    let one = Jet::constant(c::<T>(1.0), x.order());
+    let y = one.sub(&x.square()).sqrt()?;
+    angle_near(&y, x, std::f64::consts::FRAC_PI_2)
+}
+
+/// The jets of a torus section's angles `(u, v)` in the fraction (S8d.3),
+/// each near its own principal value at the base.
+fn section_angles<T: Real>(s: &Spiric, fraction: &Jet<T>) -> Option<[Jet<T>; 2]> {
+    let [a, b, cc, d] = s.plane.map(c::<T>);
+    let (big, small) = (c::<T>(s.major), c::<T>(s.minor));
+    let t = fraction.scale(&c(s.sweep)).add_constant(&c(s.start));
+    let (lo, hi) = t.c[0].bounds_f64();
+    let base = 0.5 * lo + 0.5 * hi;
+    let sign = c::<T>(s.sign);
+    Some(if s.over_v {
+        let (cv, sv) = t.cos_sin();
+        let q = sv
+            .scale(&cc.mul(&small))
+            .add_constant(&d)
+            .neg()
+            .div(&cv.scale(&small).add_constant(&big))?;
+        let ab = a.square().add(&b.square()).sqrt();
+        let x = q.scale(&c::<T>(1.0).div(&ab)?);
+        let phi = T::atan2(&b, &a)?;
+        [acos_jet(&x)?.scale(&sign).add_constant(&phi), t]
+    } else {
+        let (cu, su) = t.cos_sin();
+        let alpha = cu.scale(&a).add(&su.scale(&b));
+        let x = alpha.scale(&small);
+        let y = Jet::constant(small.mul(&cc), t.order());
+        let w = x.square().add(&y.square()).sqrt()?;
+        let ratio = alpha.scale(&big).add_constant(&d).neg().div(&w)?;
+        let (ab, cf) = (
+            s.plane[0] * base.cos() + s.plane[1] * base.sin(),
+            s.plane[2],
+        );
+        let psi = angle_near(&y, &x, (s.minor * cf).atan2(s.minor * ab))?;
+        [t, psi.add(&acos_jet(&ratio)?.scale(&sign))]
+    })
+}
+
+/// The jets of a torus section's world point in the fraction (S8d.3).
+fn section_jet<T: Real>(s: &Spiric, fraction: &Jet<T>) -> Option<[Jet<T>; 3]> {
+    let (big, small) = (c::<T>(s.major), c::<T>(s.minor));
+    let [u, v] = section_angles(s, fraction)?;
+    let ((cu, su), (cv, sv)) = (u.cos_sin(), v.cos_sin());
+    let rho = cv.scale(&small).add_constant(&big);
+    let [x, y] = [rho.mul(&cu), rho.mul(&su)];
+    let mut out = world(&s.frame, &x, &y);
+    let n = s.frame.normal().to_array();
+    let z = sv.scale(&small);
+    for (k, o) in out.iter_mut().enumerate() {
+        *o = o.add(&z.scale(&c(n[k])));
+    }
+    Some(out)
 }
 
 /// `atan2(y, x)` near `reference`: the reference plus the angle of the
@@ -145,6 +205,28 @@ pub(super) fn projection_jet<T: Real>(p: &Projection, fraction: &Jet<T>) -> Opti
     } else {
         fraction.clone()
     };
+    // A torus section on its own torus: its angles, lifted (S8d.3).
+    if let (
+        Curve3::Section(sec),
+        Surface::Torus {
+            frame,
+            major,
+            minor,
+        },
+    ) = (&p.curve, &p.surface)
+    {
+        if sec.frame == *frame && sec.major == *major && sec.minor == *minor {
+            let [u, v] = section_angles(sec, &f)?;
+            let (lo, hi) = fraction.c[0].bounds_f64();
+            let lift = p.lift(0.5 * lo + 0.5 * hi);
+            let near = |j: Jet<T>, target: f64| {
+                let (a, b) = j.c[0].bounds_f64();
+                let k = ((target - (0.5 * a + 0.5 * b)) / std::f64::consts::TAU).round();
+                j.add_constant(&c(k * std::f64::consts::TAU))
+            };
+            return Some([near(u, lift.x), near(v, lift.y)]);
+        }
+    }
     let point = curve_jet(&p.curve, &f)?;
     let frame = frame_of(&p.surface)?;
     let (o, x, y, n) = (
@@ -251,6 +333,64 @@ fn along<T: Real>(
     integrate_many(&integrand, n, 0.0, 1.0, ORDER, WIDTH, DEPTH, relative)
 }
 
+/// Crossings of the `+u` ray from `p` with a projection pcurve (half-open
+/// in `v`: a piece counts when exactly one of its ends lies strictly above
+/// `p.v`), from certified pieces: none where `v` or `u` keeps clear of the
+/// ray, one where `v` is monotone (its derivative's enclosure excludes zero)
+/// with its ends on either side and `u` right of `p` all along; others are
+/// bisected, at most 40 times. `None` when undecided.
+pub(super) fn crossings<T: Real>(pr: &Projection, p: &V2<T>) -> Option<u32> {
+    use std::cmp::Ordering;
+    if T::EXACT {
+        return None;
+    }
+    let at = |f: f64| projection_at::<T>(pr, f);
+    let mut count = 0;
+    let mut stack = vec![(0.0f64, 1.0f64, 0usize)];
+    while let Some((lo, hi, depth)) = stack.pop() {
+        let base = T::exact_f64(lo).union(&T::exact_f64(hi));
+        let mid = 0.5 * lo + 0.5 * hi;
+        // Not enclosed over the whole piece: halves.
+        let Some([u, v]) = projection_jet(pr, &Jet::variable(base, 1)) else {
+            if depth >= 40 || !(lo < mid && mid < hi) {
+                return None;
+            }
+            stack.push((lo, mid, depth + 1));
+            stack.push((mid, hi, depth + 1));
+            continue;
+        };
+        let dv = v.c[0].sub(&p[1]).sign();
+        let du = u.c[0].sub(&p[0]).sign();
+        // Clear of the ray over the whole piece.
+        if matches!(dv, Some(Ordering::Less) | Some(Ordering::Greater))
+            || du == Some(Ordering::Less)
+        {
+            continue;
+        }
+        let monotone = matches!(
+            v.c[1].sign(),
+            Some(Ordering::Less) | Some(Ordering::Greater)
+        );
+        if monotone {
+            let (a, b) = (at(lo)?, at(hi)?);
+            let above = |x: &T| Some(x.sub(&p[1]).sign()? == Ordering::Greater);
+            if above(&a[1])? == above(&b[1])? {
+                continue;
+            }
+            if du == Some(Ordering::Greater) {
+                count += 1;
+                continue;
+            }
+        }
+        if depth >= 40 || !(lo < mid && mid < hi) {
+            return None;
+        }
+        stack.push((lo, mid, depth + 1));
+        stack.push((mid, hi, depth + 1));
+    }
+    Some(count)
+}
+
 /// The certified ranges `[u_lo, u_hi, v_lo, v_hi]` a projection reaches:
 /// its enclosures over `pieces` equal parts of the fraction.
 pub(crate) fn projection_range(p: &Projection, pieces: usize) -> Option<[f64; 4]> {
@@ -276,7 +416,49 @@ pub(crate) fn projection_range(p: &Projection, pieces: usize) -> Option<[f64; 4]
     out.iter().all(|x| x.is_finite()).then_some(out)
 }
 
-/// A conic edge's point at a fraction in binary64 intervals (tessellation).
+/// A conic edge's or a torus section's point at a fraction in binary64
+/// intervals (tessellation).
 pub(crate) fn conic_point_fast(curve: &Curve3, t: f64) -> Option<[crate::certified::Fast; 3]> {
     conic_point(curve, t)
+}
+
+/// A curve's rates over its fraction (S8d.3's sections): the largest
+/// `|C''|` and the largest `|C''| / |C'|` (the tangent's turn per unit
+/// fraction), from interval jets on `pieces` equal parts.
+pub(crate) fn section_rates(curve: &Curve3, pieces: usize) -> Option<(f64, f64)> {
+    use crate::certified::Fast;
+    let (mut second, mut turn) = (0.0f64, 0.0f64);
+    for k in 0..pieces {
+        let (a, b) = (k as f64 / pieces as f64, (k + 1) as f64 / pieces as f64);
+        let base = Fast::exact_f64(a).union(&Fast::exact_f64(b));
+        let jet = curve_jet(curve, &Jet::variable(base, 2))?;
+        let norm = |k: usize| {
+            let parts = jet.iter().map(|j| {
+                let (lo, hi) = j.c[k].bounds_f64();
+                (
+                    lo.abs().max(hi.abs()),
+                    if lo > 0.0 {
+                        lo
+                    } else if hi < 0.0 {
+                        -hi
+                    } else {
+                        0.0
+                    },
+                )
+            });
+            parts.fold((0.0f64, 0.0f64), |(big, small), (b, s)| {
+                (big + b * b, small + s * s)
+            })
+        };
+        let (d2, _) = norm(2);
+        let (_, d1_low) = norm(1);
+        let c2 = 2.0 * d2.sqrt();
+        let c1 = d1_low.sqrt();
+        if !(c2.is_finite() && c1 > 0.0) {
+            return None;
+        }
+        second = second.max(c2);
+        turn = turn.max(c2 / c1);
+    }
+    Some((second * (1.0 + 1e-12), turn * (1.0 + 1e-12)))
 }

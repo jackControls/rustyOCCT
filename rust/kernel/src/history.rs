@@ -570,7 +570,8 @@ fn circle_of(c: &Curve3) -> Option<(crate::Frame3, f64)> {
         | Curve3::BSpline(_)
         | Curve3::EllipseArc { .. }
         | Curve3::HyperbolaArc { .. }
-        | Curve3::ParabolaArc { .. } => None,
+        | Curve3::ParabolaArc { .. }
+        | Curve3::Section(_) => None,
     }
 }
 

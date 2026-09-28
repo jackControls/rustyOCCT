@@ -1012,6 +1012,7 @@ fn similar(parts: &mut TopologyParts, s: f64, t: [f64; 3]) {
                 start: start * s,
                 sweep: sweep * s,
             },
+            Curve3::Section(_) => unreachable!("scaled fixtures have no torus sections"),
             Curve3::BSpline(c) => {
                 let moved = spline3(
                     c.curve(),

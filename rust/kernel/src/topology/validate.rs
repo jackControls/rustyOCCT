@@ -30,7 +30,7 @@ mod continuity;
 mod mass;
 mod projection;
 mod quadrature;
-pub(crate) use projection::{conic_point_fast, projection_range};
+pub(crate) use projection::{conic_point_fast, projection_range, section_rates};
 mod spline_deviation;
 mod spline_flux;
 mod spline_taylor;
@@ -321,7 +321,8 @@ fn arc_of(c: &Curve3) -> Option<(&Frame3, [f64; 2], f64, f64)> {
         Curve3::LineSegment { .. }
         | Curve3::BSpline(_)
         | Curve3::HyperbolaArc { .. }
-        | Curve3::ParabolaArc { .. } => None,
+        | Curve3::ParabolaArc { .. }
+        | Curve3::Section(_) => None,
     }
 }
 
@@ -385,8 +386,8 @@ fn curve_at<T: Real>(curve: &Curve3, t: f64) -> V3<T> {
             let (a, b) = (v3::<T>(start.to_array()), v3::<T>(end.to_array()));
             vadd(&a, &vscale(&vsub(&b, &a), &c(t)))
         }
-        Curve3::HyperbolaArc { .. } | Curve3::ParabolaArc { .. } => {
-            projection::conic_point::<T>(curve, t).expect("a conic evaluates")
+        Curve3::HyperbolaArc { .. } | Curve3::ParabolaArc { .. } | Curve3::Section(_) => {
+            projection::conic_point::<T>(curve, t).expect("a conic or section evaluates")
         }
         _ => {
             let (f, [rx, ry], start, sweep) = arc_of(curve).unwrap();
@@ -796,9 +797,10 @@ impl<T: Real> Harmonic<T> {
 /// Add C(t); false for a spline, which is not a harmonic sum.
 fn add_curve<T: Real>(h: &mut Harmonic<T>, curve: &Curve3, forward: bool) -> bool {
     match curve {
-        Curve3::BSpline(_) | Curve3::HyperbolaArc { .. } | Curve3::ParabolaArc { .. } => {
-            return false
-        }
+        Curve3::BSpline(_)
+        | Curve3::HyperbolaArc { .. }
+        | Curve3::ParabolaArc { .. }
+        | Curve3::Section(_) => return false,
         Curve3::LineSegment { start, end } => {
             let (a, b) = (v3::<T>(start.to_array()), v3::<T>(end.to_array()));
             if forward {
@@ -1152,6 +1154,18 @@ fn curve_valid(curve: &Curve3, tol: &R, fast_tol2: &Fast, exact_tol2: &I) -> boo
             sweep,
             ..
         } => finite(&[*focal, *start, *sweep]) && *focal > 0.0 && *sweep != 0.0,
+        // A torus section (S8d.3): a ring torus, a unit plane, a range within
+        // a turn.
+        Curve3::Section(s) => {
+            finite(&[s.major, s.minor, s.start, s.sweep, s.sign])
+                && finite(&s.plane)
+                && r(s.minor) > *tol
+                && s.major > s.minor
+                && (s.sign == 1.0 || s.sign == -1.0)
+                && s.sweep != 0.0
+                && s.sweep.abs() <= TAU
+                && (s.plane[0].hypot(s.plane[1]).hypot(s.plane[2]) - 1.0).abs() <= 1e-12
+        }
         _ => {
             let (_, [rx, ry], start, sweep) = arc_of(curve).unwrap();
             finite(&[rx, ry, start, sweep])
@@ -1851,7 +1865,8 @@ fn crossings<T: Real>(loops: &[&Lp], p: &V2<T>) -> Option<u32> {
                         &scaled,
                     )?
                 }
-                Curve2::Sinusoid { .. } | Curve2::Projection(_) => return None,
+                Curve2::Projection(pr) => projection::crossings::<T>(pr, p)?,
+                Curve2::Sinusoid { .. } => return None,
             };
         }
     }
@@ -2731,6 +2746,8 @@ fn closed_curve(curve: &Curve3) -> bool {
             sweep_angle.abs() == TAU
         }
         Curve3::HyperbolaArc { .. } | Curve3::ParabolaArc { .. } => false,
+        // A torus section over a whole turn of its angle (S8d.3).
+        Curve3::Section(s) => s.sweep.abs() == TAU,
         Curve3::LineSegment { .. } => false,
         // A spline ring edge is a full period; its seam is tested for C1.
         Curve3::BSpline(span) => span.is_closed_period(),
@@ -3815,13 +3832,28 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
             }
             continue;
         }
+        // A torus face whose first loop runs as a hole is the torus less its
+        // loops (S8d.3): every loop then has the inner sign, and no outer
+        // loop holds them.
+        let complement = matches!(face.surface, Surface::Torus { .. })
+            && edge_loops.first().is_some_and(|(_, lp)| {
+                tiered(
+                    None,
+                    || loop_area::<Fast>(lp).sign(),
+                    || loop_area::<I>(lp).sign(),
+                ) == Some(want_inner)
+            });
         for (pos, (li, lp)) in edge_loops.iter().enumerate() {
             let sign = tiered(
                 None,
                 || loop_area::<Fast>(lp).sign(),
                 || loop_area::<I>(lp).sign(),
             );
-            let want = if pos == 0 { want_outer } else { want_inner };
+            let want = if pos == 0 && !complement {
+                want_outer
+            } else {
+                want_inner
+            };
             match sign {
                 Some(s) if s == want => {}
                 Some(_) => {
@@ -3834,15 +3866,23 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                 }
             }
         }
-        if let Some((_, outer)) = edge_loops.first() {
+        if let Some((_, outer)) = edge_loops.first().filter(|_| !complement) {
             for (li, lp) in edge_loops.iter().skip(1) {
                 let start = &lp.fins[0].pcurve;
                 let outer = [*outer];
-                match tiered(
-                    None,
-                    || crossings::<Fast>(&outer, &pcurve_at(start, 0.0)),
-                    || crossings::<I>(&outer, &pcurve_at(start, 0.0)),
-                ) {
+                // Any point of the inner loop decides: its start, else two
+                // points along its first fin (a start on the ray through
+                // another loop's start, as two rings' may be, is undecided).
+                let decide = || {
+                    [0.0, 0.376_953_125, 0.678_710_937_5].iter().find_map(|&t| {
+                        tiered(
+                            None,
+                            || crossings::<Fast>(&outer, &pcurve_at(start, t)),
+                            || crossings::<I>(&outer, &pcurve_at(start, t)),
+                        )
+                    })
+                };
+                match decide() {
                     Some(n) if n % 2 == 1 => {}
                     Some(_) => add(&mut issues, K::InnerLoopOutside, En::Loop(fi, *li)),
                     None => add(&mut issues, K::UncertifiedContainment, En::Loop(fi, *li)),

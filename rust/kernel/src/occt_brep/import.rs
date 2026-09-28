@@ -724,7 +724,7 @@ fn on_plane(plane: &Frame3, curve: &Curve3) -> Curve2 {
             }
         }
         // A hyperbola or parabola on a plane: its exact projection (S8d.2).
-        Curve3::HyperbolaArc { .. } | Curve3::ParabolaArc { .. } => {
+        Curve3::HyperbolaArc { .. } | Curve3::ParabolaArc { .. } | Curve3::Section(_) => {
             crate::topology::plane_pcurve(curve, crate::topology::Orientation::Forward, *plane)
         }
         // Axis-aligned with the plane (the kernel's own ellipses, whose

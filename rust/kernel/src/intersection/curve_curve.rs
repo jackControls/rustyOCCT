@@ -193,6 +193,9 @@ impl Exact {
             AnalyticCurve::Edge(Curve3::ParabolaArc { .. }) => {
                 return Err(Error::OutOfDomain("a parabola edge"))
             }
+            AnalyticCurve::Edge(Curve3::Section(_)) => {
+                return Err(Error::OutOfDomain("a torus section edge"))
+            }
             // An ellipse edge's whole ellipse (S8a.2).
             AnalyticCurve::Edge(Curve3::EllipseArc {
                 frame,

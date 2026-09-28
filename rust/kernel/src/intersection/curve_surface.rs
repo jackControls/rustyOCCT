@@ -114,6 +114,11 @@ pub fn curve_surface(curve: &Curve3, surface: &Surface) -> Result<CurveSurfaceIn
                 "a parabola edge against an analytic surface",
             ))
         }
+        Curve3::Section(_) => {
+            return Err(Error::OutOfDomain(
+                "a torus section edge against an analytic surface",
+            ))
+        }
         // An ellipse edge's whole ellipse, by its angle (S8a.2).
         Curve3::EllipseArc {
             frame,

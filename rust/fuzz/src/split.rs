@@ -317,8 +317,8 @@ fn check_revolved(data: &[u8]) {
     };
     let Ok((solid, _)) = made else { return };
     let at = |w: f64| frame.point(rusty_occt::Point2::new(0.0, 0.0), w);
-    // Tilted planes cut a torus in spiric sections (S8d.3).
-    let spiric = kind == 4;
+    // Every plane splits since S8d.3 (a torus's two caps aside).
+    let spiric = false;
     let (point, normal, may_refuse) = match mode {
         // Normal to the axis at a dyadic height, at an end, or beyond.
         0 => (
@@ -396,8 +396,11 @@ fn check_revolved(data: &[u8]) {
         Ok((pieces, _)) => pieces,
         Err(Error::ComputationLimit(_) | Error::Degenerate(_)) => return,
         Err(Error::OutOfDomain(_)) if may_refuse => return,
-        // A plane through an apex or pole off the axis (S8d.2's domain).
-        Err(Error::OutOfDomain(m)) if m.contains("apex or pole") => return,
+        // A plane through an apex or pole off the axis (S8d.2's domain), a
+        // torus cut in two caps (S8d.3's).
+        Err(Error::OutOfDomain(m)) if m.contains("apex or pole") || m.contains("two caps") => {
+            return
+        }
         Err(e) => panic!("unexpected error {e}"),
     };
     let total: f64 = pieces.iter().map(|(_, p)| p.mass_properties().volume).sum();

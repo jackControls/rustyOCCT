@@ -306,9 +306,16 @@ impl Solid {
             }
             return self.name_wedges(context, pieces).map(Some);
         }
-        Err(Error::OutOfDomain(
-            "a torus by a plane neither normal to nor containing its axis (S8d.3)",
-        ))
+        // S8d.3: spiric sections.
+        let built = super::spiric::pieces(
+            self.frame,
+            major,
+            minor,
+            &[a.clone(), b.clone(), c.clone(), d.clone()],
+            tolerance,
+        )?;
+        self.name_torus_pieces(context, built, tolerance, &[a, b, c, d])
+            .map(Some)
     }
 
     /// Name general torus pieces: the wall and region split, the rest new
@@ -544,9 +551,18 @@ pub(super) fn rebuilt_band(
     tolerance: Tolerance,
     operation: OperationId,
 ) -> Result<(Topology, Side)> {
-    let [_, _, c, d] = plane;
-    let h = rational_f64(&(-d / c));
-    let mut built = bands(frame, major, minor, h, *c > zero(), tolerance)?;
+    let [a, b, c, d] = plane;
+    let ab2 = a * a + b * b;
+    let widest = major + minor;
+    let tol = tolerance.linear();
+    let normal = ab2 == zero()
+        || &ab2 * q(widest) * q(widest) * R::from_integer(16.into()) <= q(tol) * q(tol) * c * c;
+    let mut built = if normal {
+        let h = rational_f64(&(-d / c));
+        bands(frame, major, minor, h, *c > zero(), tolerance)?
+    } else {
+        super::spiric::pieces(frame, major, minor, plane, tolerance)?
+    };
     if index >= built.len() {
         return Err(Error::InvalidTopology("a torus band rebuilt differently"));
     }

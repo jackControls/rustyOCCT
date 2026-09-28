@@ -44,6 +44,7 @@ struct EdgeGeometry {
 /// the edge.
 fn curve_record(c: &Curve3, ring_start: Option<f64>) -> EdgeGeometry {
     match c {
+        Curve3::Section(_) => unreachable!("sections are refused before their records"),
         Curve3::BSpline(span) => EdgeGeometry {
             record: bspline_record(span.curve(), |p| nums(&p.to_array())),
             range: span.range(),
@@ -259,6 +260,7 @@ fn bspline_surface_record(s: &BSplineSurface3) -> String {
 /// The point of a curve at its own parameter `t` (as `curve_record` writes it).
 fn curve_at(c: &Curve3, t: f64) -> Point3 {
     match c {
+        Curve3::Section(_) => unreachable!("sections are refused before their records"),
         Curve3::BSpline(span) => span.curve().point(t).expect("a parameter in the range"),
         Curve3::LineSegment { start, end } => {
             let d = *end - *start;
@@ -1024,6 +1026,14 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
                 num(*radius)
             ),
         });
+    }
+    // A torus section (S8d.3) has no record until D13's interchange
+    // approximation.
+    if t.edges()
+        .iter()
+        .any(|e| matches!(e.curve, Curve3::Section(_)))
+    {
+        return Err(unwritable("a torus section edge (D13)"));
     }
     // Edge geometry and pcurves per face.
     let geometry: Vec<EdgeGeometry> = t

@@ -391,6 +391,13 @@ fn segment_count(
             1.0 / (2.0 * focal.abs()) * (1.0 + 1e-12),
             *sweep,
         )),
+        // A torus section (S8d.3): its rates per unit fraction.
+        Curve3::Section(s) => {
+            let (second, turn) = crate::topology::section_rates(&edge.curve, 64).ok_or(
+                Error::ComputationLimit("a torus section's curvature enclosure"),
+            )?;
+            Some((&s.frame, second, turn, 1.0))
+        }
         Curve3::LineSegment { .. } | Curve3::BSpline(_) => None,
     } {
         let sigma = bounds::frame_norm(frame);
