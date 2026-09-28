@@ -610,7 +610,7 @@ impl Half {
         topology: Topology,
         operation: OperationId,
     ) -> Result<Solid> {
-        piece_solid(self, frame, topology, operation)
+        piece_solid(self, frame, topology, operation, None)
     }
 
     pub(crate) fn tolerance(&self) -> Tolerance {
@@ -620,6 +620,16 @@ impl Half {
     /// The same half in another frame, its ids external (the caller
     /// restores them).
     pub(crate) fn rebuilt(&self, operation: OperationId, frame: Frame3) -> Result<Solid> {
+        self.rebuilt_with(operation, frame, None)
+    }
+
+    /// [`Half::rebuilt`] with its mass properties known (a rigid motion's).
+    pub(crate) fn rebuilt_with(
+        &self,
+        operation: OperationId,
+        frame: Frame3,
+        known: Option<crate::solid::MassProperties>,
+    ) -> Result<Solid> {
         if let Primitive::Torus { major, minor } = self.primitive {
             let (topology, _) = super::torus::rebuilt_band(
                 frame,
@@ -630,7 +640,7 @@ impl Half {
                 self.tolerance,
                 operation,
             )?;
-            return piece_solid(self.clone(), frame, topology, operation);
+            return piece_solid(self.clone(), frame, topology, operation, known);
         }
         let [a, b, c, _] = &self.plane;
         let world = frame.x() * rational_f64(a)
@@ -643,7 +653,7 @@ impl Half {
         let piece = built.swap_remove(self.index);
         let topology = Topology::from_parts(piece.parts.with_measured_enclosures(), self.tolerance)
             .map_err(|issues| Error::InvalidTopology(super::oblique::issue_name(&issues)))?;
-        piece_solid(self.clone(), frame, topology, operation)
+        piece_solid(self.clone(), frame, topology, operation, known)
     }
 
     /// Inside where the primitive and the plane's side both hold; on the
@@ -695,11 +705,16 @@ fn piece_solid(
     frame: Frame3,
     topology: Topology,
     operation: OperationId,
+    known: Option<crate::solid::MassProperties>,
 ) -> Result<Solid> {
-    let mass = topology
-        .mass_enclosure()
-        .ok_or(Error::Unrepresentable("a split half's mass properties"))?
-        .midpoints();
+    // A rigid copy's mass properties are its source's moved.
+    let mass = match known {
+        Some(mass) => mass,
+        None => topology
+            .mass_enclosure()
+            .ok_or(Error::Unrepresentable("a split half's mass properties"))?
+            .midpoints(),
+    };
     let bounds = super::oblique::edge_bounds(&topology);
     let [bottom, top] = ends(&half.primitive);
     Ok(Solid {
@@ -842,7 +857,7 @@ impl Solid {
             };
             pieces.push((
                 piece.side,
-                piece_solid(half, self.frame, topology, operation)?,
+                piece_solid(half, self.frame, topology, operation, None)?,
             ));
         }
         for (from, into) in split {

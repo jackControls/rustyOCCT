@@ -28,6 +28,33 @@ pub struct MassProperties {
     pub inertia: [[f64; 3]; 3],
 }
 
+impl MassProperties {
+    /// The same properties after a rigid motion: the centroid moved, the
+    /// inertia turned (`Q I Q^T`).
+    pub(crate) fn moved(&self, transform: RigidTransform) -> Self {
+        let q: [[f64; 3]; 3] = [crate::Vec3::X, crate::Vec3::Y, crate::Vec3::Z]
+            .map(|e| transform.vector(e).to_array());
+        // q[j][i] is the i-th component of the j-th rotated axis: Q = q^T.
+        let inertia = std::array::from_fn(|a| {
+            std::array::from_fn(|b| {
+                let mut s = 0.0;
+                for i in 0..3 {
+                    for j in 0..3 {
+                        s += q[i][a] * self.inertia[i][j] * q[j][b];
+                    }
+                }
+                s
+            })
+        });
+        Self {
+            volume: self.volume,
+            surface_area: self.surface_area,
+            centroid: transform.point(self.centroid),
+            inertia,
+        }
+    }
+}
+
 /// How a solid was made: a normal extrusion of a profile, a right circular
 /// cone or frustum, a sphere or zone, or a torus, v-segment or wedge (S3 of
 /// REVIEW_NOTES.md).
@@ -939,10 +966,14 @@ impl Solid {
     ) -> Result<(Self, History)> {
         let (level, operation) = (context.level, context.operation);
         replayable(level)?;
-        let mut solid = self.rebuilt(
-            self.operation,
-            self.frame.transformed(transform, self.resolution())?,
-        )?;
+        let frame = self.frame.transformed(transform, self.resolution())?;
+        let mut solid = match &self.construction {
+            // A split half's certified mass is costly: its source's, moved.
+            Construction::Half(half) => {
+                half.rebuilt_with(self.operation, frame, Some(self.mass.moved(transform)))?
+            }
+            _ => self.rebuilt(self.operation, frame)?,
+        };
         // A rigid copy keeps every id, whatever operation named them.
         solid.topology = solid.topology.with_identity_of(&self.topology);
         let ids: Vec<EntityId> = self.topology.ids().map(|(id, _)| id).collect();
