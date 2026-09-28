@@ -142,18 +142,18 @@ group, and stale success records are removed before each run.
 | `boolean/bcommon_simple/A1`, `bopcommon_simple/ZL6` | Unsupported | Viewer skipped | A sphere and a box, two cones: solids other than prisms (S9d; S9a sentinels) |
 | `boolean/bfuse_complex/J5` | Unsupported | Viewer skipped | Crossed cylinders: arcs in frames with different axes (S9c) |
 | `boolean/bopcommon_simple/C3`, `bopcut_simple/F6`, `G8`, `bopfuse_simple/N6` | Unsupported | Viewer skipped | A box turned by 45, 30 or 115 degrees with a corner on the other box's corner, wall or edge within rounding: a face thinner than the resolution, a face using an edge both ways, a face touching itself at a vertex, two solids touching at a point (S9b.1's `Degenerate`) |
-| `boolean/bcut_simple/H6` | Viewer skipped | Viewer skipped | Pockets cut from a prism one after another: the first cut is a stack (S9a.2), which the next `bcut` takes as its object (S9b.2, on its stored geometry) |
-| `boolean/bcut_simple/J4` | Viewer skipped | Viewer skipped | Pockets cut one after another by prisms of profiles in a plane facing -z: the first cut is a polyhedron (S9b.1), which the next `bcut` takes as its object (S9b.2) |
-| `boolean/bopfuse_simple/H3` | Viewer skipped | Viewer skipped | A box turned 45 degrees with its corner on the other's wall within rounding (inside it exactly): refused as a direction of zero length until S9b.2's face frames took each face's whole vector area |
+| `boolean/bcut_simple/H4` to `L2` (35 cases) | Viewer skipped | Viewer skipped | Pockets cut from a prism one after another by prisms of profiles in planes facing z or -z (`J3`'s last tool moved by `ttranslate`): the first cut is a stack (S9a.2; in `J4` and `J7` a polyhedron, S9b.1), which the next `bcut` takes as its object, on its stored geometry (S9b.2; in `J2` to `J7` and `K7` a third `bcut` takes the second's result): `checkprops -s` and the group's `checkshape`; each records a `checkview` |
+| `boolean/bopfuse_simple/H3`, `H4` | Viewer skipped | Viewer skipped | A box turned 45 degrees with its corner on the other's wall within rounding (`H3`'s inside it exactly): refused as a direction of zero length until S9b.2's face frames took each face's whole vector area |
+| `boolean/bcut_simple/L3` | Unsupported | Viewer skipped | A pocket and then a hole cut from a disc prism: the first cut is a stack with cylindrical walls, which the next `bcut` takes as its object; S9b.2 takes stored geometry of planar faces and straight edges only (a curved input is S9c's) |
 | `boolean/bfuse_simple/E1` | Unsupported | Viewer skipped | Prisms with arcs sized by `SCALE`: the tool's profile does not translate exactly into the object's frame, so the kernel decides them on exact models, which for arcs is S9c's |
 | `boolean/bopcommon_simple/C8` | Unsupported | Viewer skipped | An angle `atan2(1,2)*180/pi` in `dset`, which the adapter does not evaluate |
 | `boolean/bopcommon_simple/S5`, `bopcut_simple/ZC7`, `S4`, `bopfuse_simple/U7`, `B3`, `boptuc_simple/R1` | Unsupported | Viewer skipped | Box corners on or tangent to a cylinder, boxes touching along an edge: pieces thinner than the resolution, results touching themselves (at a point or along an edge) or each other, a hole touching its boundary (the kernel's `Degenerate`) |
 | `boolean/bcut_simple/G8` | Unsupported | Viewer skipped | A semi-infinite prism of an exploded face (`explode`, `SemiInf`) |
 
-There are **five original geometry tests passing on both backends** and 708
+There are **five original geometry tests passing on both backends** and 745
 more evaluated on both with their image commands recorded (`buc60769`,
 S7's `lowalgos/intss` cases `bug23177_1`, `bug23177_2` and `bug24648`, and
-704 Boolean cases of S9a, S9a.2 and S9b.1).
+741 Boolean cases of S9a, S9a.2, S9b.1 and S9b.2).
 S8e registers the upstream `bsplit` group as capability sentinels: `boolean/splitter/A5`
 and `B5` and the 22 `bugs` cases that call `bsplit` (with `bug29333_1` and
 `bug29333_2`, registered before). They need S9's general builder: tools that
@@ -289,6 +289,60 @@ added for S9b.1's refusals: `bopcut_simple/F6` (a face using an edge both
 ways), `G8` (a face touching itself at a vertex), `bopfuse_simple/N6` (two
 solids touching at a point), `H3` (a direction of zero length) and
 `bcut_simple/J4` (a Boolean of a polyhedron).
+
+**S9b.2's Boolean results as arguments in the Boolean group.** The same
+1,802 cases were run again on both backends after S9b.2 and the adapter's
+change giving stacks and polyhedra to Booleans (2026-09-28,
+`survey_upstream_tests.py --boolean`, the public dataset read through
+`--data-dir`; no case loads it). Native DRAW's statuses are unchanged
+(1,579 evaluated, 223 not forwarded). Rust evaluates 741, each evaluated by
+native DRAW too and `viewer_skipped` on both; no case fails on Rust. Every
+one is registered: 37 more than S9b.1's survey (`bcut_simple/H6`, `J4` and
+`bopfuse_simple/H3`, registered with the adapter's change, and 34 new). 35
+are `bcut_simple/H4` to `L2`, pockets cut from a prism one after another by
+prisms of profiles in planes facing z or -z: the first cut is a stack (33)
+or a polyhedron (`J4`, `J7`), which the next `bcut` takes as its object on
+its stored geometry; in seven (`J2` to `J7`, `K7`) a third `bcut` takes the
+second's result. The other two, `bopfuse_simple/H3` and `H4`, are boxes
+turned 45 degrees with a corner on the other's wall within rounding, which
+S9b.1 refused as a direction of zero length: S9b.2's face frames take each
+face's whole vector area. The S9b.2 kernel with the adapter before its
+change evaluated 706 (`H3` and `H4` besides S9b.1's 704), every stack or
+polyhedron given to a Boolean refused. Of S9b.1's 39 stacks and polyhedra
+given to another Boolean, 35 evaluate and 4 (`bcut_simple/L3` to `L6`, a
+pocket and then a hole cut from a disc) are stacks with cylindrical walls,
+which S9b.2 refuses as curved. The kernel now gives every curved input one
+reason, a solid with curved faces or edges in any position (S9c): 493
+cases (the spheres, cones and tori it refused, the arcs in frames with
+different axes, `bfuse_simple/E1` and these four). After the adapter's
+change, two cones, spheres or tori sharing ids (61 cases) were refused as
+two stacks or polyhedra sharing ids; the adapter now names a solid other
+than a prism sharing ids. The 838 cases native DRAW evaluates and Rust
+does not, by reason:
+
+| Reason | Cases | Since S9b.1's survey |
+| --- | --- | --- |
+| Solids other than prisms (spheres, cones, tori): refused by the kernel 255, by the adapter 61 (a solid other than a prism sharing ids with the other argument) | 316 | 0 |
+| Arcs in frames with different axes (S9c): cylinders turned by `trotate` 233, `bfuse_simple/E1` (its tool's profile does not translate exactly) 1 | 234 | 0 |
+| A stack with cylindrical walls as a Boolean argument (S9c) | 4 | new (from a stack as a Boolean argument) |
+| `Degenerate`, S9b.1's: a face thinner than the resolution | 99 | 0 |
+| `Degenerate`, S9b.1's: a face using an edge both ways | 9 | 0 |
+| `Degenerate`, S9b.1's: two solids touching at a point 1, a face touching itself at a vertex 1 | 2 | -2 (`H3`, `H4` evaluate) |
+| `Degenerate`: a result thinner than the resolution | 63 | 0 |
+| `Degenerate`: a profile piece thinner than the resolution | 24 | 0 |
+| `Degenerate`: a result touching itself at a point | 11 | 0 |
+| `Degenerate`: a result touching itself along an edge | 6 | 0 |
+| `Degenerate`: a result's hole outside its boundary 8, two results touching 4 | 12 | 0 |
+| `atan2` in `dset`, which the adapter does not evaluate | 48 | 0 |
+| `explode` without the native selector (a Boolean's result into solids 4, a `pcylinder` into faces 4, a face of a box 1) | 9 | 0 |
+| A `pcylinder` on a plane `pl1` | 1 | 0 |
+
+The previous survey's 39 stacks and polyhedra as Boolean arguments are gone
+from the reasons. The sentinels were checked again: `bcut_simple/H6`, `J4`
+and `bopfuse_simple/H3` evaluate (registered so with the adapter's change;
+their purposes say why), the others are refused as before. One sentinel is
+added for S9b.2's refusal: `bcut_simple/L3` (a stack with cylindrical walls
+given to a Boolean, S9c).
 
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
@@ -519,21 +573,24 @@ No spline profile is among them: the adapter builds no spline edge
 S9a.2's spline profiles are not reachable through DRAW yet.
 
 The adapter reports unsupported, never an answer, whatever the kernel
-refuses: arcs in frames with different axes (S9c), results touching
-themselves or each other, faces and pieces thinner than the resolution, a
-face using an edge both ways or touching itself at a vertex, and two
-solids sharing a vertex (`Degenerate`), `ComputationLimit`,
-`LimitExceeded` and `PrecisionLoss`; also several objects or tools, a
-section (`bbop`/`bapibop` 4, `bopsection`), an argument of several solids,
-a stack or a polyhedron as an argument (the kernel's Booleans take prisms:
-a Boolean of a Boolean's general body is S9b.2's), restored shapes and
-split results. Two things the kernel's Boolean requires of its inputs the
-adapter supplies: their ids apart (every `box` is a cuboid of the
-unspecified operation, and a `copy` keeps its ids), and a construction
-indexed by profile element (a Boolean result's entities descend from its
-inputs); a tool sharing ids with the object, and a Boolean result used as
-an argument, are extruded again from their profile under an operation of
-their own. `savehistory` after a Boolean is unsupported.
+refuses: arcs in frames with different axes and a stack with curved
+walls as an argument (S9c), results touching themselves or each other,
+faces and pieces thinner than the resolution, a face using an edge both
+ways or touching itself at a vertex, and two solids sharing a vertex
+(`Degenerate`), `ComputationLimit`, `LimitExceeded` and `PrecisionLoss`;
+also several objects or tools, a section (`bbop`/`bapibop` 4,
+`bopsection`), an argument of several solids, two stacks or polyhedra
+sharing ids, a cone, a sphere or a torus sharing ids with the other
+argument, restored shapes and split results. Two things the kernel's
+Boolean requires of its inputs the adapter supplies: their ids apart
+(every `box` is a cuboid of the unspecified operation, and a `copy` keeps
+its ids), and a construction indexed by profile element (a Boolean
+result's entities descend from its inputs); a tool sharing ids with the
+object, and a Boolean result that is a prism used as an argument, are
+extruded again from their profile under an operation of their own. A stack
+or a polyhedron is taken as it is (S9b.2, on its stored geometry), the
+other argument extruded again when they share ids. `savehistory` after a
+Boolean is unsupported.
 
 The history cases use `prism ... Copy`. Without `Copy`, OCCT builds the prism's end face
 as the start face moved by a location, reusing its `TShape`s. DRAW's
@@ -587,7 +644,8 @@ instead.
   For Booleans (S9a): `bfuse`, `bcut`, `bcommon`, `btuc name object tool`;
   `bop object tool` then `bopfuse`, `bopcut`, `boptuc` or `bopcommon name`;
   `bbop name 0..3` after `bfillds` and `bapibop name 0..3` with one object
-  and one tool; `unifysamedom name result` of a unified Boolean result, a
+  and one tool, each a solid or a Boolean result of one solid, a stack or a
+  polyhedron too (S9b.2); `unifysamedom name result` of a unified Boolean result, a
   stack's or a polyhedron's too (S9a.2, S9b.1; see `boolean_prisms`,
   `boolean_stacks` and `boolean_polyhedra` above); `checkshape`,
   `nbshapes`, `vprops`, `sprops` and `lprops` of any Boolean result, a

@@ -9,8 +9,42 @@
     "tests/boolean/bcommon_simple/J1": "767998e1bf6f2423a097f608b559fb452daeaef72028dbfd3102645b5c8eded7",
     "tests/boolean/bcut_simple/G7": "32b95d55c8a08b2b39d2c64e39d1fa4502bbb3fa78c92949bd0bb27e3365b319",
     "tests/boolean/bcut_simple/G8": "7f630a0200be640a8501b44c0532bc623a761872e90fd9e863dd1dd4c865d5c8",
+    "tests/boolean/bcut_simple/H4": "7b1c1af963eed279cf52dc97968534208bb05c2c26717fbe81e48c4c22ae2a21",
+    "tests/boolean/bcut_simple/H5": "93c3fa9d7ba36ac5f4c12d247b594d147f53f6db68e3e0c0cf79ca3c6b207286",
     "tests/boolean/bcut_simple/H6": "bfbc1499a2c945ba7c1da4796987dbefa45bffcf1550f17a6ac60f73e0262ebd",
+    "tests/boolean/bcut_simple/H7": "e9615c14c6d9092243102c8f2655d3a17a9626b68b63bcaa062f4a28553c43dd",
+    "tests/boolean/bcut_simple/H8": "e6db0c33a2ca3258e2bb159b090bfcdf211489ff917b7763944d72badce834a9",
+    "tests/boolean/bcut_simple/H9": "e8f91e636b1b7cfbc72896d821f62b7e25763bcf388a041016a9ef942a580604",
+    "tests/boolean/bcut_simple/I1": "7db32bd4547c3fba7ffd2e481b634a54867d0f73ab602c2b19f176b750bd2e7b",
+    "tests/boolean/bcut_simple/I2": "e68438c0b74a61682925a9cc4863bf4a0ae022edad0568e3d2f67679925dcde4",
+    "tests/boolean/bcut_simple/I3": "1121f90051dd78ff6f98aea8216d576de2465a9f5835d99aae2a8f59dd82933b",
+    "tests/boolean/bcut_simple/I4": "70b2863d7a14dfa7dcfe258ab9cc6b028d67a084a1822d2329283f84ca4e60a2",
+    "tests/boolean/bcut_simple/I5": "5260887a9c7f7e0608afd28fd826572123b94536ad35e2acd534681a4e394a79",
+    "tests/boolean/bcut_simple/I6": "8a71f2d0a86a9a73f40c9ee1ad898bb000a6502a1c07d4fcae3765bf2f0c214f",
+    "tests/boolean/bcut_simple/I7": "e1dd7fbb997d4ddc43cd6ccf515133d437a0d372ce308a7cfdf7187a3ae99b65",
+    "tests/boolean/bcut_simple/I8": "872be4a4483d785dedbf963160463859dd0bd32ee325a8559052a8f7857b963f",
+    "tests/boolean/bcut_simple/I9": "7fcc14f6c38f5041a211ddb580c8f7fd4a175ee606a1e8a4dc4330508de98c54",
+    "tests/boolean/bcut_simple/J1": "a0cd2d8f0b1f121b21eee894a870eed6cb1a4ace5b21be264c1408074306f1a7",
+    "tests/boolean/bcut_simple/J2": "415d123d029fb179ec39e8d3af082ffd622f6710af8e77f626721e7968473b8a",
+    "tests/boolean/bcut_simple/J3": "b07a312517c6c5bb1b44626683bea934107e71e6f3b95daccb5f3e846c46f454",
     "tests/boolean/bcut_simple/J4": "4916cd52eebbf8ae2b595b6513698c6a3dfe1b89caff49ed4d4d9d7e726475b4",
+    "tests/boolean/bcut_simple/J5": "9a77c7e621e101deeb0aaa3985693222578b280c26e88e956d1c078831662785",
+    "tests/boolean/bcut_simple/J6": "ecc92d5e0ba96c5e28ffe0cb32cd4ea4f72a8800f2d1dfac7f307340a0ad5843",
+    "tests/boolean/bcut_simple/J7": "7695d777079369b072ce7b5a4b111ca94b4e210340e44b0986a69126deb10ee2",
+    "tests/boolean/bcut_simple/J8": "d5076865fa251fe7fb27b8420d00ecf174cb6afc54295fded076e40862f6f1e1",
+    "tests/boolean/bcut_simple/J9": "2b2699a00cf715cc917e61104db561629dfe591ac0d66c4319b1a0787ce80574",
+    "tests/boolean/bcut_simple/K1": "adfd42850aeacd83abb6f6db888d3e2bfd88bf786c903604d087756e441e0bd8",
+    "tests/boolean/bcut_simple/K2": "aaa68bad91782ba389566a5a1a232a0f19db7c68df12f5eaa5de7b7531e43d43",
+    "tests/boolean/bcut_simple/K3": "d1abeb9afa5acc67990c5cc93db89b1f855d55c7aa3bbde2615e4d03dca6e031",
+    "tests/boolean/bcut_simple/K4": "04a9efe5be3488ea68dce9dfef993f861acec9969d15f2157958d226875c8366",
+    "tests/boolean/bcut_simple/K5": "adfd42850aeacd83abb6f6db888d3e2bfd88bf786c903604d087756e441e0bd8",
+    "tests/boolean/bcut_simple/K6": "aaa68bad91782ba389566a5a1a232a0f19db7c68df12f5eaa5de7b7531e43d43",
+    "tests/boolean/bcut_simple/K7": "dbaae3db4ec461918a35bde4a45926d72372fcff369b2227b4547b2a5b038df1",
+    "tests/boolean/bcut_simple/K8": "379048c352a34d3d01b9ea2d15be2eca4a91bbcbcbb127b4e68df364efdd48e8",
+    "tests/boolean/bcut_simple/K9": "e76d8c19678accea3a6c1a8669b1c7b8ae2bb5340fae3400016b88b2b35fe10f",
+    "tests/boolean/bcut_simple/L1": "55adf1152d6898abe9af8216812dedece1734da5e9fa777d2f75dc0cd747ab51",
+    "tests/boolean/bcut_simple/L2": "7047581cf64b1f4c5f030773bea7f4d14aea041d1bf51e889aec01287a0fba38",
+    "tests/boolean/bcut_simple/L3": "127512131950cac96cc7343692101c7041cc6dcf006289d976df48cd2f63b632",
     "tests/boolean/bcut_simple/L8": "f4eaa30c6004c82263238dabf6c6d77395449e900e5c899cdb9c37e1f14f74c3",
     "tests/boolean/begin": "d69546786e4458613f453d5083979bd5e2e67ae1f0f01b93f1bd93825e3a66bd",
     "tests/boolean/bfuse_complex/J5": "cda6d3fe80781b6537b23d7fb33728a0ff0eddfeff7025ea8f359cfbe64c632c",
@@ -442,6 +476,7 @@
     "tests/boolean/bopfuse_simple/G7": "4dcc4b531bca9f65bd9668c99128a2c5d9f01ede0f8fbb8b72810fa2f1fba8b6",
     "tests/boolean/bopfuse_simple/G8": "16d838541b1c690ead0959cba0752b011db1a88c118db829cf8f5c2925a03d4a",
     "tests/boolean/bopfuse_simple/H3": "02f585004fcb54e24bf4c209b39bf60bd16f776f0c806b78c01f5db4a34160cc",
+    "tests/boolean/bopfuse_simple/H4": "1494496b25815f10fad1d3dc4399b26e54c9308deaf0f72ac397c09b0a5ebd3c",
     "tests/boolean/bopfuse_simple/H6": "2da68c64f9ba9cf22883eb609e83a6b42e18a055a4c446759acaa99d0db7f0f8",
     "tests/boolean/bopfuse_simple/H9": "056f11fe0bfdbb9804d8f2acb110ad592ddce3acb2e423699ee011dfcc8215ec",
     "tests/boolean/bopfuse_simple/I1": "ecacbd55e1e325189bb2546501800cc064ec942e5cdc81438dd3e47bb093d292",
@@ -5528,6 +5563,216 @@
       "expected_rust": "viewer_skipped",
       "expected_occt": "viewer_skipped",
       "purpose": "S9b.1's Boolean group: pockets cut one after another by prisms of profiles in a plane facing -z; the first cut is a polyhedron (S9b.1), which the next bcut takes as its object (S9b.2, on its stored geometry)."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/H4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in planes facing z and -z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/H5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in planes facing z and -z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/H7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in one plane facing z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/H8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in one plane facing -z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/H9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in one plane facing -z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/I1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in planes facing z and -z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/I2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in planes facing z and -z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/I3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in planes facing z and -z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/I4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in planes facing z and -z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/I5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in one plane facing z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/I6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in one plane facing z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/I7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in one plane facing -z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/I8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in one plane facing -z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/I9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in planes facing z and -z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/J1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in planes facing z and -z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/J2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in planes facing z and -z); the first cut is a stack (S9a.2), which the next bcut takes as its object, and the third the second's result (on their stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/J3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in planes facing z and -z; ttranslate); the first cut is a stack (S9a.2), which the next bcut takes as its object, and the third the second's result (on their stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/J5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in one plane facing z); the first cut is a stack (S9a.2), which the next bcut takes as its object, and the third the second's result (on their stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/J6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in planes facing z and -z); the first cut is a stack (S9a.2), which the next bcut takes as its object, and the third the second's result (on their stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/J7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in planes facing z and -z); the first cut is a polyhedron (S9b.1), which the next bcut takes as its object, and the third the second's result (on their stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/J8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in one plane facing z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/J9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in one plane facing z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/K1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in planes facing z and -z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/K2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in planes facing z and -z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/K3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in planes facing z and -z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/K4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in planes facing z and -z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/K5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in planes facing z and -z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/K6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in planes facing z and -z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/K7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in planes facing z and -z); the first cut is a stack (S9a.2), which the next bcut takes as its object, and the third the second's result (on their stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/K8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in planes facing z and -z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/K9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in planes facing z and -z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/L1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in planes facing z and -z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/L2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2: pockets cut from a prism one after another by bcut (profiles in one plane facing z); the first cut is a stack (S9a.2), which the next bcut takes as its object (on its stored geometry); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/H4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.1: bop and bopfuse of two boxes in frames with different axes (a box turned 45 degrees about z, its corner on the other's wall within rounding; dset numbers), decided as polyhedra; refused as a direction of zero length until the result's face frames took the face's whole vector area (S9b.2); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/L3",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9b.2's Boolean group, a capability sentinel: a pocket and then a hole cut from a disc prism; the first cut is a stack with cylindrical walls, which the next bcut takes as its object: a Boolean of a solid with curved faces (S9c)."
     }
   ],
   "derived_sources": {
