@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 36370909261 (commit be9d330f), ubuntu-latest, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "344811decb3fb0a5b7590d93b27c6d4db6de4f0bbdbb141d07a6bf667532e8f1",
+  "review": "The same statuses and counts as the macOS capture for all 24 cases; the walking lines of tk_through_tube and tk_tilted start elsewhere along the same curves (samples up to 0.38 relative apart), tc_near_saddle_wide differs in rounding. Against the reference: the three missed isolated tangencies (the same empty outputs), and tc_near_saddle_wide (4.9e-6), tk_skew (2.6e-4) and tk_irrational_apex (1.6e-4) approximated lines off the surfaces, the magnitudes of the macOS capture (reviewed for Linux in occt-torus-curve-divergences.json)."
+}

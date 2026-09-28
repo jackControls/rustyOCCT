@@ -24,7 +24,7 @@ import sys
 import tempfile
 
 from build_pinned_occt import SOURCE, digest
-from compare_brep import review_for, run, sha, write
+from compare_brep import review_for, run, same_inputs, sha, write
 from compare_brep_io import build
 from compare_degree_elevation import verify_sdk
 from compare_occt import ROOT
@@ -162,8 +162,15 @@ def captured(observed, text):
             raise ValueError('tessellation evidence changed: '+name)
     if (CAPTURE/'oracle.cpp').read_text() != SOURCE_FILE.read_text():
         raise ValueError('the native probe differs from the captured one')
+    # The kernel writes the .brep texts with the platform's trigonometry
+    # (frames, rotations): structure exact, numbers within compare_brep's
+    # NUMBER_DRIFT (VALIDATION.md's allowances).
     if (CAPTURE/'inputs.txt').read_text() != text:
-        raise ValueError('the kernel\'s .brep texts or the settings differ from the captured ones')
+        try:
+            same_inputs((CAPTURE/'inputs.txt').read_text(), text)
+        except ValueError as e:
+            raise ValueError('the kernel\'s .brep texts or the settings differ from the captured ones: '
+                             + str(e)) from None
     was, _ = parse_native((CAPTURE/'native.txt').read_text())
     if set(was) != set(observed):
         raise ValueError('native cases differ from the capture')

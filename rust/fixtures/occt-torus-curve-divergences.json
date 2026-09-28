@@ -120,6 +120,42 @@
       "reason": "GeomInt_IntSS returns nothing for two tori 2^-20 closer than touching at their outer equators: the tiny loop (about 1e-3 across) is missed.",
       "independent_evidence": "The reference's critical meridians (a resultant) and its folds at phi = +-0.00049 give one loop of two folds near (2.5, 0, 0); its points lie on both tori within 1e-70.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "tc_near_saddle_wide",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "d689157421b44aa9a63198a7974e96e9e8b0249f83c9c09ee9040970d6ad344a",
+      "differences": [
+        "off_curve"
+      ],
+      "reason": "One of GeomInt_IntSS's approximated lines is 4.9e-6 from the surfaces near a nearly singular point (the cylinder 2^-20 beyond tangency at a saddle of the torus), where the two branches pass within 1e-3 of each other; the other samples are within 1e-7.",
+      "independent_evidence": "The exact tangency at the saddle (1.5, 0, 0) for the radius 1.5 is decided by the reference and the kernel; at 1.5 + 2^-20 the reference's folds at phi = +-0.000797 separate two components winding once round the tube, which the native lines cover.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the approximated lines sampled from other starting points"
+    },
+    {
+      "case": "tk_skew",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "a680fba842f523992ebfa6b767dc06092952b60c6825b72d7baf65bba9e21314",
+      "differences": [
+        "off_curve"
+      ],
+      "reason": "One of GeomInt_IntSS's ten approximated lines (the piece from (2.4892, 0, -0.1036) to (2.4979, -0.1018, 0)) is up to 2.6e-4 from the cone, an approximation error of the walking line; its other lines are within 1e-7 of both surfaces.",
+      "independent_evidence": "The reference's components (two loops where the narrow cone enters and leaves the tube near phi = 0, two curves winding round the tube near phi = pi) are all covered by native samples; the line's end points lie on both surfaces within 1e-7.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the approximated lines sampled from other starting points"
+    },
+    {
+      "case": "tk_irrational_apex",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "3708e8cd8724fcb4f4df8b1727fd244043ef235ed7980464f22795b47614b57f",
+      "differences": [
+        "off_curve"
+      ],
+      "reason": "Two of GeomInt_IntSS's four approximated lines (the lower loop near (2, 0, -0.498)) are up to 1.6e-4 from the cone, an approximation error of the walking line.",
+      "independent_evidence": "The reference's two loops (where the cone enters the tube's top and bottom) are both covered by native samples; the lines' end points lie on both surfaces within 1e-7.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the approximated lines sampled from other starting points"
     }
   ]
 }

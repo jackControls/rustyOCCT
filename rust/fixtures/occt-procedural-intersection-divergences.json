@@ -84,6 +84,30 @@
       "reason": "GeomInt_IntSS returns nothing for a sphere enclosing a torus and touching its outer equator from outside: the isolated tangency is not found. The kernel decides it exactly (P(-m) = 0 with the vertex below -m).",
       "independent_evidence": "The torus has major radius 2 and minor 1 about the z axis (outer equator radius 3); the sphere has radius 3.25 about (0.25, 0, 0), so it passes through (-3, 0, 0) on the outer equator, and the torus's points are otherwise inside it.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "cs_near_viviani",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "110afa756fd9f9b2a1362b0bb4336467ee6c92f07050e9a1c1d4126a93f90ec9",
+      "differences": [
+        "off_curve"
+      ],
+      "reason": "GeomInt_IntSS approximates its walking lines by B-splines; near the nearly singular neck of this loop, where the two branches come within 2^-20 of meeting, one of its samples is 2.3e-5 from the exact curve by closest-point distance (above the 1e-6 bound; the other 50 are within it). The kernel's points are certified on the exact curve.",
+      "independent_evidence": "The sphere radius is 2 - 2^-20 against a Viviani sphere of radius 2 (cylinder radius 1 about x = 1): the exact curve is one loop whose parameter range on the cylinder closes at u = +-3.1396, the discriminant being -3.8e-6 at u = pi; the reference at 80 digits puts 50 of OCCT's 51 samples within 2e-6 of the curve and the last at 2.3e-5 by closest-point distance.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the approximated lines sampled from other starting points"
+    },
+    {
+      "case": "ks_near_tangent",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "abf884adf1d5225b93b6bca4fe19cfd0159158e0e8112d64226fd87f5d84ad01",
+      "differences": [
+        "off_curve"
+      ],
+      "reason": "The sphere is 2^-20 beyond tangency to both nappes of the cone, so the surfaces meet at a very small angle and the two tiny loops are ill-conditioned: a point within 2e-9 of both surfaces can lie about 1e-6 from the exact curve. OCCT's approximated samples are that close to both surfaces, and one is 1.55e-6 from the exact curve by closest-point distance, just above the 1.5e-6 bound of this case. The kernel's points are certified on the exact curve.",
+      "independent_evidence": "The centre (1.5, 0, 0) is 1.5 cos 0.5 = 1.3163738428355591 from each generatrix of the cone of half-angle 0.5 about z with apex at the origin; the radius exceeds that by 2^-20, so the reference finds two loops of half-width 0.0022 rad around u = 0 and u = pi. OCCT's worst sample is 2.2e-9 from the sphere and 1.1e-9 from the cone, and 1.55e-6 from the nearest point of the exact curve.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the approximated lines sampled from other starting points"
     }
   ]
 }

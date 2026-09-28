@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 36370909261 (commit be9d330f), ubuntu-latest, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "e3b260035eb53f48cc103e20e2d6b282fc85cb6b8f0ea859d14fd9296197bacd",
+  "review": "The same statuses and counts as the macOS capture for all 58 cases; seven walking lines start elsewhere along the same curves (up to 3.4e-4 relative on tp_near_villarceau). Against the reference: the three missed tangent points, the same empty outputs as on macOS; every other case matches."
+}

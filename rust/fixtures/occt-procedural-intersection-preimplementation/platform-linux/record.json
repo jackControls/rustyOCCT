@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 36370909261 (commit be9d330f), ubuntu-latest, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "1bd0d333ea4d8c199ff1fcde2cc28d67e1cfa16013ea827a02bb7602f402f8fc",
+  "review": "The same statuses and line and point counts as the macOS capture for all 20 cases; samples of four walking lines start elsewhere along the same curves (up to 2.8e-6 relative, 3.9e-5 on cs_tilted). Against the exact reference the Linux run shows the capture's differences: the two missed tangent points (the same empty output) and cs_near_viviani's approximated samples 2.3e-5 from the curve (reviewed for Linux in occt-procedural-intersection-divergences.json)."
+}

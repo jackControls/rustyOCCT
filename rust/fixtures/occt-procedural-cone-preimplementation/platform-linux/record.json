@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 36370909261 (commit be9d330f), ubuntu-latest, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "72e569f157b27d165d84e54a89d118a2b1059d47c70bd10e244454109afcedb7",
+  "review": "The same statuses and counts as the macOS capture for all 15 cases; the walking lines of ck_rings and ck_tilted start elsewhere along the same curves (samples up to 3.8e-4 relative apart), ck_two_loops differs in rounding. Against the reference: ks_near_tangent's approximated samples 1.55e-6 from the curve, as on macOS (reviewed for Linux)."
+}
