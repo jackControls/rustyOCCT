@@ -223,6 +223,27 @@ void is generated from the tool's region.
   S9a.2: a tower and a pocket with their counts, classification and rigid
   motion, a plug filling a hole over part of its height, a cavity, a tool
   through a round wall).
+* **S9b evidence (polyhedra in any position).** `polyhedral_reference.py`
+  decides each prism on its exact model (the stored axes as rationals),
+  cuts each profile into trapezoids so each prism is a union of convex
+  cells, and clips every pair of cells by exact half-spaces in Fractions:
+  the common's volume and moments exactly, the fuse and cut by inclusion
+  and exclusion (checked against the result's own convex cells), areas by
+  splitting each boundary face by the other prism's cells' planes and
+  classifying each piece on both sides by an infinitesimal push, solids by
+  convex cells sharing positive area. `generate_polyhedral_fixtures.py
+  --check` writes `boolean-polyhedra-cases.txt` and
+  `boolean-polyhedra-expected.tsv` (45 cases: a turned box, a tilted bar
+  cutting a box in two, coplanar caps and walls of either orientation, an
+  edge and a vertex on a face, a tilted corner, a box inside another, apart,
+  an L profile, a bar through a hole and across it, both inputs turned),
+  after checking the reference against S9a's slicing on its 21 polygon
+  cases (within 2.3e-17: the stored axes' departure from orthonormal),
+  `area(A u B) + area(A n B) = area(A) + area(B)` (3e-41) and the closed
+  forms of axis-aligned boxes. `compare_polyhedral.py` reproduces the
+  `BRepAlgoAPI` capture `occt-boolean-polyhedra-preimplementation`, taken
+  before S9b's kernel module: every result valid with the reference's solid
+  count, all 45 within 7.9e-16, no review.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

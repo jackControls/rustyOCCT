@@ -655,6 +655,15 @@ reference with the reference's solid count (42 cases; 5 empty, 6 stacks)
 and refuses the 3 degenerate ones, every count equal to OCCT's after
 unifying; `booleans.rs` checks the same and every history.
 
+S9b (`BOOLEAN.md`), before any kernel code: `generate_polyhedral_fixtures.py
+--check` writes 45 Booleans of polyhedral prisms in frames with different
+axes (15 of each operation) from `polyhedral_reference.py` (exact convex
+cells and half-space clipping in Fractions), after checking it against S9a's
+slicing reference on the 21 polygon cases of S9a (2.3e-17), the area
+identity of fuse and common (3e-41) and closed forms of boxes;
+`compare_polyhedral.py` reproduces the `BRepAlgoAPI` capture: every result
+valid with the reference's solid count, all 45 within 7.9e-16, no review.
+
 The `GeomInt_IntSS` captures were taken on macOS arm64; IntPatch's walking
 lines differ on Linux near degeneracies (the first Linux run changed
 `cc_near_figure_inside`). A run on another platform reproduces that
