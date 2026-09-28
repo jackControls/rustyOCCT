@@ -2576,3 +2576,29 @@ Decisions for S9, recorded before its code (2026-09-28):
     merges the inputs' collinear edges when unified, which the decisions
     leave open for the traced profile. No probe yet: all 45
     `rust_unsupported`. S9a.1 next.
+  * S9a.1 implemented (`profile/boolean.rs`, `solid/boolean.rs`,
+    `OperationKind::{Fuse, Cut, Common}` coded 11 to 13): all 45 fixtures as
+    the reference and OCCT's unified counts (36 results, 5 of them empty, 3
+    refused, 6 stacks `OutOfDomain`; 45 matches, no review); the `boolean`
+    fuzz target. Amendments, from its implementation: (a) a result's
+    boundary keeps no vertex where it does not turn: consecutive collinear
+    lines and arcs of one circle in one sense are joined into one segment
+    continuing every input segment it holds (OCCT's unified result; the
+    evidence left it open), a cycle left as one arc its whole circle; (b) a
+    tangency cuts nothing (the pieces on either side lie on one side of the
+    other boundary; a result touching itself there is refused when traced or
+    validated), and a circle cut at one point only stays whole; (c) a cut's
+    tool faces the other way where it bounds the result, so its walls,
+    edges and vertices there are `Generated` from the tool's, not continued
+    (a `Split` child shares its parent's orientation); (d) several inputs
+    reaching several results have no single relation: each such result is
+    `Generated` from its parents and those inputs are `Deleted`; (e) a fuse
+    of meeting ranges is one prism when the profiles are identical, the
+    input holding the other (in 2D and in height), or both inputs when the
+    profiles are apart; (f) `decide::arcs` decides an arc's side of a
+    direction per orientation (one certain side settles it) and a line's
+    crossing of a circle is off an arc whose side excludes its direction
+    wherever it lies along the line (a profile's line through an arc's
+    centre from a point just off its circle was refused as touching it).
+    Pending: the DRAW commands and upstream cases, the campaign, the Linux
+    record of the capture after CI; S9a.2's stacks next.
