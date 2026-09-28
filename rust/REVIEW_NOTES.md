@@ -2747,3 +2747,11 @@ Decisions for S9, recorded before its code (2026-09-28):
     pattern search and a stack cap's overlaps to its pieces' memberships
     (the input six times faster). Pending: the campaign; S9a.2's spline
     profiles next (their evidence first).
+  * S9b's evidence (a parallel start, before S9a.2's splines end): the
+    decisions above, then `polyhedral_reference.py` and 45 fixtures
+    (`generate_polyhedral_fixtures.py --check`: S9a's slicing on its 21
+    polygon cases within 2.3e-17, the area identity within 3e-41, boxes'
+    closed forms exact) and the `BRepAlgoAPI` capture before the kernel
+    module (`compare_polyhedral.py`: 45 matches, no review). Amendment: the
+    decisions' fixtures of a stack and a plane piece as inputs wait for the
+    case protocol to chain operations; the kernel's tests take them.
