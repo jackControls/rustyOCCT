@@ -19,7 +19,10 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCE = '3d097a0328e71b826377d4814ab05ec3c3d23871'
 MODULES = ('FoundationClasses', 'ModelingData', 'ModelingAlgorithms',
            'Visualization', 'ApplicationFramework', 'DataExchange', 'Draw')
-TOOLKITS = ('TKG3d', 'TKGeomAlgo', 'TKTopAlgo', 'TKPrim', 'TKBO', 'TKMesh')
+# TKDESTEP (the STEP reader, STEP import track) pulls in TKXSBase, TKDE and,
+# through TKXCAF, the application framework and TKV3d/TKService; it builds with
+# every optional third-party product off.
+TOOLKITS = ('TKG3d', 'TKGeomAlgo', 'TKTopAlgo', 'TKPrim', 'TKBO', 'TKMesh', 'TKDESTEP')
 
 
 def digest(path):
