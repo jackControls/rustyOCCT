@@ -327,6 +327,29 @@ everywhere, `|d| - R |(a, b)| >= r |m|`, decided by squares.
   kernel (S8b.3) is inside the reference on all 17; one more reviewed
   difference: OCCT splits the bulge's cap edges where a plane touches them
   (`bulge_tangent`), the kernel returns the prism.
+* **Sheets and wires (S8e), before the code.** A case may be a face or wire
+  body (`make face` or `make wire` in place of `offsets`; natively a `make`
+  row in place of the prism vector). `split_reference.planar_rows` gives a
+  sheet's sides as a prism of height one cut parallel to its axis (area and
+  first moments by the same slicing) and its perimeter as its boundary on
+  the side plus the trace bounding it, and a wire's sides from its
+  boundary's pieces cut exactly where the trace crosses or touches them (a
+  piece along the trace on the side of the piece before it in stored
+  order): rows `side S area perimeter cx cy cz` and `side S length 0 cx cy
+  cz`. Checked within 1e-38 against closed forms (a square's halves, circle
+  arcs and segments, a U's and a holed square's perimeters, a quadratic's
+  length), exact half-plane clipping of polygons, straight splines, Green's
+  theorem and the sides' sums. `split-sheet-cases.txt` holds 25 cases
+  (crossing, through vertices and a knot's point, along an edge between
+  prongs and between runs, tangent to an arc, a hole and a spline, missing,
+  parallel, containing; lines, arcs, circles, holes and S8b's splines; both
+  frames) and `occt-split-sheet-preimplementation` their
+  `BRepAlgoAPI_Splitter` splits, the probe grouping a split wire's edges
+  into runs (OCCT keeps it one wire): every piece valid, sides and runs the
+  reference's, 23 within 2e-8 and two reviewed BRepGProp errors (a face
+  bounded by two spans of the wave, 1.3e-3 in area; `LinearProperties` on a
+  cubic, 3.5e-6 in perimeter). The probe cannot build a body case yet: all
+  25 `rust_unsupported`.
 * **Kernel.** `tests/split.rs`: every side's sums of the kernel's enclosures
   contain the reference's volume, area and moments; histories pass the
   independent check, cover every input entity and repeat exactly; oblique
