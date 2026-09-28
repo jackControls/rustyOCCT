@@ -1,0 +1,21 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 GeomAPI_IntCS",
+  "platform": "darwin",
+  "rust_revision": "ce1c7e80dd224c34b32ce604080bdc4351305e6a",
+  "rust_curve_surface_exists": false,
+  "rust_worktree_uncommitted": [
+    "?? rust/fixtures/curve-surface-cases.txt",
+    "?? rust/fixtures/curve-surface-expected.tsv",
+    "?? rust/fixtures/curve-surface-frames.tsv",
+    "?? rust/fixtures/occt-curve-surface-preimplementation/",
+    "?? rust/tools/compare_curve_surface.py",
+    "?? rust/tools/curve_surface_reference.py",
+    "?? rust/tools/generate_curve_surface_fixtures.py",
+    "?? rust/tools/occt_curve_surface_oracle.cpp"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "9ff15e58ad01b31e0eee6494435a56bee23edb0c5aefae0ab00aae05b45d8545",
+  "probe_source_sha256": "03d9a96320e53fcb323e65d5755942b9d34bcc598f1a6cc054f533c8763aaf33",
+  "observations_sha256": "a8c67ba04aa5b2ab072b032ee502251075ac50355d9d77d783d2513479238d9a"
+}

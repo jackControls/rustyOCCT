@@ -824,6 +824,46 @@ Decisions for S7b.4, recorded before its code (2026-09-28):
   reference, the factors in closed form) and a `GeomInt_IntSS` capture of 13
   pairs before the kernel code.
 
+Decisions for S7c, recorded before its code (2026-09-28):
+
+* **Scope and order.** S7c.1: the topology's analytic edges (lines, circles
+  and arcs of a `Frame3`) against every analytic surface (plane, cylinder,
+  cone, sphere, torus): what S8's split needs beside the existing
+  spline/plane intersections. S7c.2: S7a's ellipses and hyperbolas (the
+  edges S8 and S9 create) against every analytic surface, and spline edges
+  against cones and tori. Procedural and traced curves against surfaces
+  come with S9, where they become edges.
+* **Exact curves.** A line is the exact set through its two rational points,
+  parameterised `p0 + s (p1 - p0)`; a circle the exact point set of its
+  stored frame (the plane through the origin normal to the stored normal,
+  the stored radius), parameterised by the angle from the stored x axis as
+  `Curve3::Circle`. A segment or an arc keeps the points within its range;
+  S7c.1 intersects the whole curve.
+* **Methods.** A line against a plane, cylinder, sphere or torus: the
+  surface's function along it is a polynomial of degree one, two or four
+  with rational coefficients, its real roots isolated exactly with their
+  multiplicities (`polynomial::real`). A circle against them: in a rational
+  basis `(U, V)` of its plane the surface's function reduced modulo the
+  circle's conic `E0` is `c0(u) + c1(u) v`; the points are the real roots of
+  the resultant `a2 c0^2 - a1 c0 c1 + a0 c1^2` with `v = -c0 / c1` (the basis
+  sheared as in `tangency.rs`), their multiplicities the contacts, exactly;
+  the angle is a certified `atan2` in the stored frame. A cone's `cos` and
+  `sin` are transcendental: a line's quadratic and a circle's trigonometric
+  polynomial of degree two in intervals, a root certified by a sign change
+  and a derivative of one sign (a tangency there is `ComputationLimit`).
+* **Degeneracies, exactly.** The function's being zero identically along the
+  curve (`c0 = c1 = 0`, or the zero polynomial) is `Contained`: a line in a
+  plane or along a cylinder, a circle in a plane, on a sphere, on a coaxial
+  cylinder, a torus's meridian or parallel. A double root is a tangency.
+* **Results.** `curve_surface(curve, surface)` gives `Empty`, `Contained`, or
+  points, each with its curve parameter and point enclosed and its contact
+  (crossing or tangent).
+* **Evidence first**: an independent reference (sympy: the exact polynomial
+  along a line, `real_roots` with multiplicities; the circle's two
+  equations by a Groebner basis, a tangency where their gradients are
+  parallel; 80-digit roots for cones) and a native `GeomAPI_IntCS` capture
+  of 36 cases before the kernel code.
+
 ### S8 — general planar split and face trimming (SplitBody job)
 
 Split any supported solid by an arbitrary plane: face/plane intersection

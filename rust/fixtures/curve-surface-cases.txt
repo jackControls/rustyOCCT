@@ -1,0 +1,144 @@
+case l_plane_cross
+curve line 0.0 0.0 -1.0 1.0 1.0 1.0
+surface plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+end
+case l_plane_parallel
+curve line 0.0 0.0 1.0 1.0 2.0 1.0
+surface plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+end
+case l_plane_contained
+curve line 1.0 0.0 0.0 0.0 3.0 0.0
+surface plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+end
+case l_cylinder_two
+curve line -2.0 0.25 0.5 2.0 0.25 0.5
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case l_cylinder_tangent
+curve line -2.0 1.0 0.5 2.0 1.0 1.5
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case l_cylinder_ruling
+curve line 1.0 0.0 0.0 1.0 0.0 1.0
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case l_cylinder_miss
+curve line -2.0 3.0 0.0 2.0 3.0 1.0
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case l_sphere_two
+curve line -3.0 0.5 0.25 3.0 0.5 0.25
+surface sphere 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case l_sphere_tangent
+curve line -3.0 2.0 0.0 3.0 2.0 0.0
+surface sphere 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case l_sphere_miss
+curve line -3.0 3.0 0.0 3.0 3.0 1.0
+surface sphere 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+end
+case l_cone_two
+curve line -3.0 0.25 1.0 3.0 0.25 1.0
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
+end
+case l_cone_nappes
+curve line 0.25 0.0 -2.0 0.25 0.5 2.0
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
+end
+case l_cone_narrow
+curve line -3.0 0.0 0.25 3.0 0.0 0.5
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.05
+end
+case l_cone_miss
+curve line -3.0 1.0 0.25 3.0 1.0 0.5
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.05
+end
+case l_torus_four
+curve line -3.0 0.0 0.0 3.0 0.0 0.0
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+end
+case l_torus_top
+curve line -3.0 0.0 0.5 3.0 0.0 0.5
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+end
+case l_torus_inner
+curve line 1.5 0.0 -1.0 1.5 0.0 1.0
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+end
+case l_torus_axis
+curve line 0.0 0.0 -1.0 0.0 0.0 1.0
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+end
+case l_torus_tilted
+curve line -3.0 0.5 0.25 3.0 1.0 -0.25
+surface torus 0.0 0.5 0.0 0.0 3.0 4.0 1.0 0.0 0.0 2.0 0.5
+end
+case c_plane_cross
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface plane 0.5 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+end
+case c_plane_tangent
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface plane 1.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+end
+case c_plane_contained
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface plane 5.0 7.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+end
+case c_plane_parallel
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+end
+case c_plane_tilted
+curve circle 0.0 0.5 0.0 0.0 3.0 4.0 1.0 0.0 0.0 1.5
+surface plane 0.25 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+end
+case c_sphere_two
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface sphere 1.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case c_sphere_tangent
+curve circle 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface sphere 2.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case c_sphere_contained
+curve circle 0.0 0.0 3.0 0.0 0.0 1.0 1.0 0.0 0.0 4.0
+surface sphere 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0
+end
+case c_cylinder_four
+curve circle 0.0 0.0 0.0 0.0 1.0 0.0 1.0 0.0 0.0 1.0
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.5
+end
+case c_cylinder_tangent
+curve circle 1.5 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.5
+end
+case c_cylinder_contained
+curve circle 0.0 0.0 2.0 0.0 0.0 1.0 1.0 0.0 0.0 0.5
+surface cylinder 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.5
+end
+case c_cone_two
+curve circle 1.0 0.0 1.0 1.0 0.0 0.0 0.0 1.0 0.0 1.0
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
+end
+case c_torus_meridian
+curve circle 2.0 0.0 0.0 0.0 1.0 0.0 1.0 0.0 0.0 0.5
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+end
+case c_torus_parallel
+curve circle 0.0 0.0 0.5 0.0 0.0 1.0 1.0 0.0 0.0 2.0
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+end
+case c_torus_cross
+curve circle 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 2.0
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+end
+case c_torus_tangent
+curve circle 0.5 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 3.0
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+end
+case c_torus_tilted
+curve circle 0.0 0.5 0.25 0.0 3.0 4.0 1.0 0.0 0.0 1.75
+surface torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 0.5
+end
