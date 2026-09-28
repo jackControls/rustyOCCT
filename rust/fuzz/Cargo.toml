@@ -194,3 +194,10 @@ path = "fuzz_targets/analytic_intersections.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "tessellation"
+path = "fuzz_targets/tessellation.rs"
+test = false
+doc = false
+bench = false

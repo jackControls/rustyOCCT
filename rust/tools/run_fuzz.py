@@ -20,7 +20,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear','brep_validation','identity','history','split_merge','attributes','brep_io','analytic_intersections']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear','brep_validation','identity','history','split_merge','attributes','brep_io','analytic_intersections','tessellation']
 STARTUP_SECONDS = 600
 MAX_STARTUP_SECONDS = 3600
 # surface_knots' retained CI corpus replays slower than the cap allows: 2,766 s
@@ -146,6 +146,14 @@ def seed_corpus(target):
         for k in range(112):
             data=bytearray((j*89+k*37+11)%256 for j in range(176))
             save(bytes(data))
+        save(bytes([0]))
+    elif target == 'tessellation':
+        # Every body kind (polygon prism, arc prism, arc face, cone, sphere,
+        # torus, polygon face), each with varied shapes, frames, motions,
+        # deflections and angles.
+        for kind in range(7):
+            for k in range(12):
+                save(bytes([kind])+bytes((j*61+k*47+kind*19+3)%256 for j in range(96)))
         save(bytes([0]))
     elif target == 'identity':
         # Polygon sides, holes, labels and transforms all vary with the bytes.

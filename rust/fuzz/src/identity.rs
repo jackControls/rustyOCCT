@@ -695,7 +695,7 @@ fn check_cone(data: &[u8]) {
 /// S5: a `w x h` rectangle whose corners are filleted (radius 0 for a sharp
 /// corner) and whose top side may carry a concave half-circle notch; every
 /// value dyadic, so each arc's points lie exactly on its circle.
-fn arc_path(u: &mut Unstructured) -> Result<(Vec<Point2>, Vec<Segment>, f64)> {
+pub(crate) fn arc_path(u: &mut Unstructured) -> Result<(Vec<Point2>, Vec<Segment>, f64)> {
     let (w, h) = (
         1.0 + f64::from(u.int_in_range(0u8..=63)?) / 16.0,
         1.0 + f64::from(u.int_in_range(0u8..=63)?) / 16.0,
