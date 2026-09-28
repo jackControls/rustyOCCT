@@ -2001,6 +2001,37 @@ keeps to it: each homogeneous coordinate against each bound,
 coefficients or else its exact signs at the ends and between its real
 roots.
 
+## Booleans of profiles (S9a)
+
+**Crossings.** Two segments `p + t d1` and `r + u d2` (binary64 ends,
+exact rationals) cross at `t = (r - p) x d2 / (d1 x d2)`, `u = (r - p) x
+d1 / (d1 x d2)` when `d1 x d2 != 0` and both lie in `[0, 1]`; with `d1 x d2
+= 0` and `(r - p) x d1 = 0` they lie on one line and each one's ends
+strictly inside the other (by the exact parameter `(x - p) . d1 / |d1|^2`)
+cut it. A line `a x + b y + d = 0` through a segment's ends and a circle
+`(c, r)`: with `f = a c_x + b c_y + d`, the sign of `f^2 - r^2 (a^2 + b^2)`
+decides two meetings, a tangency or none, the meetings `c - f (a, b) /
+(a^2 + b^2) +- sqrt(r^2 (a^2 + b^2) - f^2) (-b, a) / (a^2 + b^2)` enclosed.
+Two circles meet on their radical line `2 (c2 - c1) . X + |c1|^2 - r1^2 -
+|c2|^2 + r2^2 = 0`, so as a line and the first circle; equal centres and
+radii are one circle. A meeting's place along a segment is its enclosed
+parameter, along an arc its angular position (exact orientation signs from
+the arc's start, S8's `ArcPos`); cuts whose order the enclosures leave
+open are `ComputationLimit`.
+
+**Classes and tracing.** A piece between two cuts lies wholly inside,
+outside or on the other boundary: on it only when it shares its ends and
+its line or circle (and, for arcs, its sense: the same ends in the same
+sense, or swapped in the opposite one); otherwise its class is the
+certified point classification at the fraction `0.4453125` along it (off
+the midpoint, where symmetric configurations put their touch points). The
+kept pieces, directed region-left, form cycles in which every end starts
+exactly one piece; the sign of `½∮(x dy - y dx)` (a chord's term plus
+`r^2 (φ - sin φ)/2` per arc of sweep `φ`) separates outer boundaries from
+holes. Joining consecutive pieces is exact: two lines when `u x v = 0` and
+`u . v > 0` for their direction vectors, two arcs when their centres,
+radii and senses are equal.
+
 ## Tessellation bounds (T-a)
 
 A mesh triangle has nodes `X_i` and parameter points `p_i` on its face's
