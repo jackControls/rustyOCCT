@@ -3,13 +3,16 @@
 //! U shapes, squares with round or square holes) on dyadic sizes, the tool
 //! offset by a dyadic vector in the axis-aligned frame (its origin moved) or
 //! sharing the tilted frame's origin, its heights equal to the object's,
-//! spanning them, overlapping them or disjoint from them. Fuse, cut and
-//! common never panic and fail only as documented (a stack of slabs,
-//! S9a.2's; a result thinner than the resolution or touching itself; an
-//! undecided comparison); each result validates as it is built and its
-//! history passes the independent check (debug builds); when all three
-//! succeed their volumes agree, `V(A ∪ B) = V(A) + V(B) - V(A ∩ B)` and
-//! `V(A - B) = V(A) - V(A ∩ B)`; every result moves rigidly with its ids.
+//! spanning them, overlapping them, disjoint from them, inside them or on
+//! them. Fuse, cut and common never panic and fail only as documented (a
+//! cavity among several solids, S9a.2's, or a tool whose profile or offset
+//! rounds, S9b's; a result thinner than the
+//! resolution or touching itself; an undecided comparison); each result
+//! validates as it is built and its history passes the independent check
+//! (debug builds); when all three succeed their volumes agree,
+//! `V(A ∪ B) = V(A) + V(B) - V(A ∩ B)` and `V(A - B) = V(A) - V(A ∩ B)`;
+//! every result moves rigidly with its ids, and each of its vertices
+//! classifies on its boundary.
 use crate::analytic_intersections::Bytes;
 use crate::split::profile;
 use rusty_occt::identity::OperationId;
@@ -57,10 +60,14 @@ pub fn check_boolean(data: &[u8]) {
         };
         (Frame3::xy(), f)
     };
-    let (lo, hi) = match (flags >> 1) % 4 {
-        0 => (0.0, h),
-        1 => (-1.0, h + 1.0),
-        2 => (h / 2.0, h * 1.5),
+    // S9a.2 added heights inside the object's (pockets, cavities) and on
+    // its top (touching stacks), chosen by a byte after the others.
+    let (lo, hi) = match (b.next() % 3, (flags >> 1) % 4) {
+        (1, _) => (h / 4.0, h * 0.75),
+        (2, _) => (h, h + 1.0),
+        (_, 0) => (0.0, h),
+        (_, 1) => (-1.0, h + 1.0),
+        (_, 2) => (h / 2.0, h * 1.5),
         _ => (h + 1.0, h + 2.0),
     };
     let Ok((a, _)) = Solid::extrude_with(OperationId(1), pa, fa, 0.0, h) else {
@@ -72,7 +79,14 @@ pub fn check_boolean(data: &[u8]) {
     let run = |r: Result<(Vec<Solid>, rusty_occt::history::History), Error>| -> Option<Vec<Solid>> {
         match r {
             Ok((out, _)) => Some(out),
-            Err(Error::OutOfDomain(_) | Error::Degenerate(_) | Error::ComputationLimit(_)) => None,
+            Err(Error::Degenerate(_) | Error::ComputationLimit(_)) => None,
+            // A tool offset or profile that rounds (S9b's), or a cavity
+            // among several solids (S9a.2's).
+            Err(Error::OutOfDomain(m))
+                if m.contains("cavity") || m.contains("translate") || m.contains("binary64") =>
+            {
+                None
+            }
             Err(e) => panic!("unexpected error {e}"),
         }
     };
@@ -111,6 +125,13 @@ pub fn check_boolean(data: &[u8]) {
                 .expect("a result moves rigidly");
             let ids = |s: &Solid| s.topology().ids().map(|(id, _)| id).collect::<Vec<_>>();
             assert_eq!(ids(piece), ids(&moved), "a moved result keeps its ids");
+            for v in piece.topology().vertices() {
+                assert_eq!(
+                    piece.classify(v.position).expect("a vertex classifies"),
+                    rusty_occt::Location::Boundary,
+                    "a result's vertex on its boundary"
+                );
+            }
         }
     }
 }

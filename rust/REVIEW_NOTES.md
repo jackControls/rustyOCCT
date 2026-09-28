@@ -1308,7 +1308,7 @@ Decisions for S9, recorded before its code (2026-09-28):
   prism (every common; a cut whose tool spans the object's heights; a fuse
   of equal height ranges, or whose slabs all have one profile). S9a.2: the
   other stacks, general bodies whose caps between slabs are the regions
-  where consecutive profiles differ (`OutOfDomain` until then). S9b: prisms of line profiles in any relative position
+  where consecutive profiles differ (implemented). S9b: prisms of line profiles in any relative position
   (polyhedra: exact plane arrangements). S9c: arc walls in any position
   (cylinders against planes and each other, S7 and D13's curves). S9d:
   cones, spheres and tori. Splines join each sub-step when their pairwise
@@ -1357,6 +1357,41 @@ Decisions for S9, recorded before its code (2026-09-28):
   fingerprinted reviews, a `boolean` fuzz target, and the upstream
   `boolean` group's self-contained cases through the DRAW adapter
   (`bfuse`, `bcut`, `bcommon`, `bop`/`bopfuse`...).
+* **S9a.2's spline profiles, decisions recorded before their code
+  (2026-09-28).** Either profile may hold S8b's nonrational B-spline
+  segments (degree at most 7, open, simple). Meetings are exact on each
+  Bézier span: a line by the roots of its equation on the span (S8b.3's),
+  a circle by the roots of `(x - c_x)^2 + (y - c_y)^2 - r^2` on it (degree
+  `2p`, S7d.2's substitution), another span by resultants: each span's
+  implicit equation (its Bézout matrix's determinant, exact) on the
+  other's parametrization gives a polynomial of degree `p q` in that
+  parameter, both ways, and each root in one span is paired with the one
+  root in the other whose certified points' boxes meet (two candidates, or
+  none, is `ComputationLimit`). A root of even multiplicity where the two
+  curves stay on one side of each other is a tangency and cuts nothing
+  (S9a.1's amendment (b)); a meeting within the resolution of a stored
+  vertex is that vertex, and one within it of another meeting is
+  `Degenerate`, as S9a.1's. Two spline segments share pieces only when they
+  are one curve (equal degree, knots and poles, in either direction); any
+  other overlap (an identically vanishing resultant, or a line or circle
+  containing a spline's span) is `OutOfDomain`. A spline piece between two
+  cuts is its segment's restriction (S8b.3's knot insertion), classified at
+  the fraction `0.4453125` of its parameter range by the certified
+  `Profile::classify`, and a traced result joins consecutive pieces of one
+  segment into its restriction between their outer ends (a boundary keeps
+  no vertex where it does not turn). In stacks a spline piece's wall is
+  S8b's degree-`(p, 1)` surface, joined with the walls of the same piece
+  across slab heights and with those of the adjacent pieces of the same
+  segment across their shared end. History follows S9a's rules, supports
+  by S8b's spline arms (`arcs_within`). Evidence first: the reference
+  extended to spline boundaries (each atom's area and moments by Green's
+  theorem over the classified pieces, the spline meetings by 40-digit root
+  finding independent of the resultants), spline fixtures of every class
+  above (a spline crossing a line, an arc and another spline, a tangency, a
+  shared spline, a spline hole, stacks with spline walls, both frames) and
+  a native capture before the kernel code; then the kernel, the probe and
+  `compare_boolean.py`, the `boolean` target's spline profiles and a
+  campaign.
 
 ### Parallel tracks
 
@@ -2599,6 +2634,48 @@ Decisions for S9, recorded before its code (2026-09-28):
     direction per orientation (one certain side settles it) and a line's
     crossing of a circle is off an arc whose side excludes its direction
     wherever it lies along the line (a profile's line through an arc's
-    centre from a point just off its circle was refused as touching it).
-    Pending: the DRAW commands and upstream cases, the campaign, the Linux
-    record of the capture after CI; S9a.2's stacks next.
+    centre from a point just off its circle was refused as touching it);
+    (g) inputs sharing an entity id (built by one operation, one solid
+    twice, or a result with an input whose entities it keeps) are refused
+    (`InvalidLabel`): the history names each input's entities by id; a
+    result, renamed, is an input again (its entities read off the prism
+    built afresh from its profile). The DRAW adapter runs `bfuse`, `bcut`,
+    `bcommon`, `btuc`, `bop` with its operations, `bbop` and `bapibop`
+    (`UPSTREAM_TESTS.md`): the derived case `boolean_prisms` and 320
+    upstream cases evaluate on both backends, none fails; the other 1,258
+    native ones wait for S9a.2 (163), S9b (962) or are refused or not
+    adapted. Campaigns at `d7e515d9`: `split` clean (1,951 mutation
+    executions after a 1,351 s replay of 3,006 inputs, 30,519 edges,
+    1,931 MB peak); `boolean` stopped at the 2 GiB gate on an input that
+    peaks at 6 MB alone, so the target joined the allocator-purge targets
+    (`FUZZING.md`; `split`, listed there, now calls the purge too). An
+    earlier `split` campaign found a zone's split rim one ulp off its
+    circle (the latitude's sine fused with its cosine into one `sincos`):
+    ring heights and radii now come from out-of-line `scaled_sin` and
+    `scaled_cos` (`fuzz/regressions/README.md`). Pending: the Linux record
+    of the capture after CI.
+  * S9a.2's stacks implemented (`solid/boolean/stack.rs`,
+    `Construction::Stack`): all 45 fixtures as the reference and OCCT's
+    unified counts (42 results, 6 of them stacks, 3 refused; 45 matches,
+    no review); `tests/booleans.rs` hand stacks (a tower, a pocket, a plug
+    filling a hole over part of its height, a cavity, a tool through a
+    round wall); the `boolean` target's heights inside and on top of the
+    object, its 661-input corpus replaying clean with the history check.
+    Amendments, from the implementation: (a) one arrangement of both
+    profiles serves every slab (each piece knows which operands lie on its
+    left and right; a slab's region is a set function of the two), where
+    the decision named each slab boundary's regions; the caps between slabs
+    are traced from it as the upward and downward differences; (b) walls
+    on one line or circle facing one way join across slab heights and
+    piece ends where nothing else meets them, and edges keep no vertex
+    where they run straight on between the same faces (OCCT's unified
+    result, as S9a.1's amendment (a)); (c) a closed cavity (a tool inside
+    the object in 2D and in height) is a second shell of the solid and a
+    bounded void generated from the tool's region; one beside several
+    solids is `OutOfDomain`; (d) a result touching itself along an edge
+    (four faces) or a face meeting itself is `Degenerate`; (e) a horizontal
+    face continues the caps at its height facing its way whose region it
+    overlaps, decided by an exact 2D common; (f) the order's spline
+    profiles (S9 Order: "S9a.2: spline profiles") are S9a.2's second
+    part, after the stacks. Pending: the campaign, the DRAW survey of the
+    163 stacked upstream cases; S9a.2's spline profiles next.

@@ -383,22 +383,54 @@ fn a_holed_box_and_a_tool() {
     check(&a, &b, &c, &h);
 }
 
+/// Faces, edges and vertices of each solid.
+fn counts(out: &[Solid]) -> Vec<[usize; 3]> {
+    out.iter()
+        .map(|s| {
+            let t = s.topology();
+            [t.faces().len(), t.edges().len(), t.vertices().len()]
+        })
+        .collect()
+}
+
 #[test]
-fn stacks_wait_for_s9a2() {
-    use rusty_occt::Error;
+fn stacks_of_boxes() {
+    // S9a.2: a tower on a box, and a pocket in it.
     let a = prism(rect(0.0, 0.0, 4.0, 4.0), vec![], Frame3::xy(), 0.0, 1.0, 1);
     let b = prism(rect(1.0, 1.0, 3.0, 3.0), vec![], Frame3::xy(), 0.5, 2.0, 2);
-    assert!(matches!(
-        a.fuse(OperationId(3), &b),
-        Err(Error::OutOfDomain(_))
-    ));
-    assert!(matches!(
-        a.cut(OperationId(4), &b),
-        Err(Error::OutOfDomain(_))
-    ));
+    let (f, h) = a.fuse(OperationId(3), &b).unwrap();
+    assert!((volume(&f) - 20.0).abs() < 1e-12, "{}", volume(&f));
+    assert_eq!(counts(&f), [[11, 24, 16]]);
+    check(&a, &b, &f, &h);
+    let (c, h) = a.cut(OperationId(4), &b).unwrap();
+    assert!((volume(&c) - 14.0).abs() < 1e-12, "{}", volume(&c));
+    assert_eq!(counts(&c), [[11, 24, 16]]);
+    check(&a, &b, &c, &h);
     let (m, h) = a.common(OperationId(5), &b).unwrap();
     assert!((volume(&m) - 2.0).abs() < 1e-12);
     check(&a, &b, &m, &h);
+    // The stack classifies, moves rigidly with its ids and volume.
+    use rusty_occt::Location;
+    let at = |x, y, z| c[0].classify(Point3::new(x, y, z)).unwrap();
+    assert_eq!(at(2.0, 2.0, 0.25), Location::Inside);
+    assert_eq!(at(2.0, 2.0, 0.75), Location::Outside);
+    assert_eq!(at(2.0, 2.0, 0.5), Location::Boundary);
+    assert_eq!(at(0.5, 0.5, 0.75), Location::Inside);
+    assert_eq!(at(0.5, 0.5, 1.0), Location::Boundary);
+    let at = |x, y, z| f[0].classify(Point3::new(x, y, z)).unwrap();
+    assert_eq!(at(2.0, 2.0, 1.5), Location::Inside);
+    assert_eq!(at(0.5, 0.5, 1.5), Location::Outside);
+    assert_eq!(at(3.0, 2.0, 1.5), Location::Boundary);
+    let turn = rusty_occt::RigidTransform::rotation(
+        Point3::new(1.0, 0.0, 0.0),
+        Vec3::new(1.0, 2.0, 2.0),
+        0.5,
+    )
+    .unwrap();
+    let (moved, _) = f[0].transform_with(OperationId(6), turn).unwrap();
+    assert!((moved.mass_properties().volume - 20.0).abs() < 1e-9);
+    let ids = |s: &Solid| s.topology().ids().map(|(id, _)| id).collect::<Vec<_>>();
+    assert_eq!(ids(&moved), ids(&f[0]));
 }
 
 /// Per case: its declared kind and the reference's solid count and totals.
@@ -437,12 +469,6 @@ fn every_case_matches_the_reference() {
             "degenerate" => {
                 if rows != ["refused"] {
                     failures.push(format!("{}: {rows:?} not refused", case.name));
-                }
-                continue;
-            }
-            "stack" => {
-                if rows != ["unsupported"] {
-                    failures.push(format!("{}: {rows:?} for a stack", case.name));
                 }
                 continue;
             }
@@ -536,7 +562,6 @@ fn fixture_histories_are_complete_and_deterministic() {
 /// fused boundary came from one input alone, its hole's filled).
 #[test]
 fn a_fuse_filling_a_hole_is_a_stack() {
-    use rusty_occt::Error;
     let holed = prism(
         rect(-4.0, -4.0, 4.0, 4.0),
         vec![circle(0.0, 0.0, 1.5)],
@@ -546,14 +571,20 @@ fn a_fuse_filling_a_hole_is_a_stack() {
         1,
     );
     let plug = prism(circle(0.0, 0.0, 2.0), vec![], Frame3::xy(), 0.0, 2.0, 2);
-    assert!(matches!(
-        plug.fuse(OperationId(3), &holed),
-        Err(Error::OutOfDomain(_))
-    ));
-    assert!(matches!(
-        holed.fuse(OperationId(4), &plug),
-        Err(Error::OutOfDomain(_))
-    ));
+    // S9a.2: the plug fills the hole over part of its height.
+    let pi = std::f64::consts::PI;
+    for (f, h) in [
+        plug.fuse(OperationId(3), &holed).unwrap(),
+        holed.fuse(OperationId(4), &plug).unwrap(),
+    ] {
+        assert_eq!(f.len(), 1);
+        assert!(
+            (volume(&f) - (256.0 - 4.5 * pi)).abs() < 1e-9,
+            "{}",
+            volume(&f)
+        );
+        check(&plug, &holed, &f, &h);
+    }
     let solid = prism(
         rect(-4.0, -4.0, 4.0, 4.0),
         vec![],
@@ -562,14 +593,136 @@ fn a_fuse_filling_a_hole_is_a_stack() {
         1.0,
         5,
     );
-    assert!(matches!(
-        solid.fuse(OperationId(6), &holed),
-        Err(Error::OutOfDomain(_))
-    ));
+    let (f, h) = solid.fuse(OperationId(6), &holed).unwrap();
+    assert!(
+        (volume(&f) - (256.0 - 6.75 * pi)).abs() < 1e-9,
+        "{}",
+        volume(&f)
+    );
+    check(&solid, &holed, &f, &h);
     // Inside in 2D and in height: the holder, unchanged.
     let small = prism(rect(2.0, 2.0, 3.0, 3.0), vec![], Frame3::xy(), 0.0, 1.0, 7);
     let (f, h) = holed.fuse(OperationId(8), &small).unwrap();
     assert_eq!(f.len(), 1);
     assert_eq!(f[0].topology().body_id(), holed.topology().body_id());
     check(&holed, &small, &f, &h);
+}
+
+#[test]
+fn a_result_is_an_input_again() {
+    // A Boolean's result, renamed, is a prism another Boolean takes.
+    let a = prism(rect(0.0, 0.0, 4.0, 4.0), vec![], Frame3::xy(), 0.0, 2.0, 1);
+    let b = prism(rect(2.0, 2.0, 6.0, 6.0), vec![], Frame3::xy(), 0.0, 2.0, 2);
+    let (f, _) = a.fuse(OperationId(3), &b).unwrap();
+    let c = prism(rect(1.0, 1.0, 5.0, 5.0), vec![], Frame3::xy(), -1.0, 3.0, 4);
+    let (cut, h) = f[0].cut(OperationId(5), &c).unwrap();
+    assert!((volume(&cut) - 28.0).abs() < 1e-12, "{}", volume(&cut));
+    check(&f[0], &c, &cut, &h);
+    let up = rusty_occt::RigidTransform::translation(Vec3::new(0.0, 0.0, 0.5)).unwrap();
+    let moved = cut[0].transform_with(OperationId(7), up).unwrap().0;
+    let e = prism(rect(0.0, 0.0, 6.0, 6.0), vec![], Frame3::xy(), 0.5, 2.5, 8);
+    let (again, h) = moved.fuse(OperationId(9), &e).unwrap();
+    assert!((volume(&again) - 72.0).abs() < 1e-12, "{}", volume(&again));
+    check(&moved, &e, &again, &h);
+    // A result and an input it keeps entities of share those ids.
+    assert!(matches!(
+        moved.fuse(OperationId(10), &f[0]),
+        Err(rusty_occt::Error::InvalidLabel(_))
+    ));
+}
+
+#[test]
+fn inputs_sharing_ids_are_refused() {
+    // Built by one operation, two prisms share every id: the history could
+    // not tell them apart.
+    let a = prism(rect(0.0, 0.0, 4.0, 4.0), vec![], Frame3::xy(), 0.0, 2.0, 1);
+    let b = prism(rect(2.0, 2.0, 6.0, 6.0), vec![], Frame3::xy(), 0.0, 2.0, 1);
+    for r in [a.fuse(OperationId(3), &b), a.cut(OperationId(3), &a)] {
+        assert!(
+            matches!(r, Err(rusty_occt::Error::InvalidLabel(_))),
+            "{:?}",
+            r.map(|x| x.0.len())
+        );
+    }
+}
+
+#[test]
+fn a_cut_leaving_a_cavity() {
+    // S9a.2: a tool inside the object in 2D and in height leaves a closed
+    // void: one solid of two shells, the void a bounded region.
+    use rusty_occt::topology::RegionKind;
+    use rusty_occt::Location;
+    let a = prism(rect(0.0, 0.0, 4.0, 4.0), vec![], Frame3::xy(), 0.0, 4.0, 1);
+    let b = prism(circle(2.0, 2.0, 1.0), vec![], Frame3::xy(), 1.0, 3.0, 2);
+    let (c, h) = a.cut(OperationId(3), &b).unwrap();
+    assert_eq!(c.len(), 1);
+    let v = 64.0 - 2.0 * std::f64::consts::PI;
+    assert!((volume(&c) - v).abs() < 1e-9, "{}", volume(&c));
+    check(&a, &b, &c, &h);
+    let t = c[0].topology();
+    let kinds: Vec<RegionKind> = t.regions().iter().map(|r| r.kind).collect();
+    assert_eq!(
+        kinds,
+        [RegionKind::Void, RegionKind::Solid, RegionKind::Void]
+    );
+    assert_eq!(t.regions()[1].shells.len(), 2);
+    let at = |x, y, z| c[0].classify(Point3::new(x, y, z)).unwrap();
+    assert_eq!(at(2.0, 2.0, 2.0), Location::Outside);
+    assert_eq!(at(2.0, 2.0, 0.5), Location::Inside);
+    assert_eq!(at(2.0, 2.0, 1.0), Location::Boundary);
+    assert_eq!(at(3.0, 2.0, 2.0), Location::Boundary);
+    // The fuse is the object.
+    let (f, h) = a.fuse(OperationId(4), &b).unwrap();
+    assert_eq!(f[0].topology().body_id(), a.topology().body_id());
+    check(&a, &b, &f, &h);
+}
+
+#[test]
+fn a_tool_through_a_round_wall() {
+    // Fuzzing (boolean, S9a.2): a holed square over the middle of a
+    // stadium's height leaves a window in its round wall, a loop on the
+    // cylinder's sheet of the wall's outer loop.
+    let (s, t) = (1.5, 2.375);
+    let stadium = Boundary::path(
+        vec![
+            Point2::new(0.0, -t),
+            Point2::new(s, -t),
+            Point2::new(s, t),
+            Point2::new(0.0, t),
+        ],
+        vec![
+            Segment::Line,
+            Segment::Arc {
+                center: Point2::new(s, 0.0),
+                radius: t,
+                ccw: true,
+            },
+            Segment::Line,
+            Segment::Arc {
+                center: Point2::new(0.0, 0.0),
+                radius: t,
+                ccw: true,
+            },
+        ],
+        tol(),
+    )
+    .unwrap();
+    let a = prism(stadium, vec![], Frame3::xy(), 0.0, 0.5, 1);
+    let b = prism(
+        rect(-5.5, -6.0, 2.5, 2.0),
+        vec![circle(-1.5, -2.0, 1.625)],
+        Frame3::xy(),
+        0.125,
+        0.375,
+        2,
+    );
+    let (c, h) = a.cut(OperationId(3), &b).unwrap();
+    check(&a, &b, &c, &h);
+    let (f, h) = a.fuse(OperationId(4), &b).unwrap();
+    check(&a, &b, &f, &h);
+    let (m, h) = a.common(OperationId(5), &b).unwrap();
+    check(&a, &b, &m, &h);
+    let (va, vb) = (a.mass_properties().volume, b.mass_properties().volume);
+    assert!((volume(&c) - (va - volume(&m))).abs() < 1e-9);
+    assert!((volume(&f) - (va + vb - volume(&m))).abs() < 1e-9);
 }

@@ -73,6 +73,10 @@ pub(crate) struct Piece2 {
     pub(crate) profile: Profile,
     pub(crate) segments: Vec<Vec<Vec<Origin2>>>,
     pub(crate) vertices: Vec<Vec<PId>>,
+    /// Per boundary (outer first), its arrangement pieces in the order the
+    /// region lies on their left, each with whether it runs along its
+    /// segment's stored direction (S9a.2's stacks).
+    pub(crate) cycles: Vec<Vec<(usize, bool)>>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -531,6 +535,9 @@ struct Edge {
     e: Point2,
     shape: Shape,
     origins: Vec<Origin2>,
+    /// The arrangement pieces it joins, in order, each with whether it runs
+    /// along its segment's stored direction.
+    parts: Vec<(usize, bool)>,
 }
 
 impl Piece {
@@ -581,7 +588,138 @@ pub(crate) struct Arranged {
 /// provenance, in a deterministic order (by their first segment's origin).
 pub(crate) fn boolean(a: &Profile, b: &Profile, op: Op2) -> Result<Boolean2> {
     let arranged = arrange(&[a], &[b], a.tolerance())?;
-    select_trace(&arranged, op, a.tolerance())
+    select_trace(&arranged, op, false, true, a.tolerance())
+}
+
+/// A piece's class against the other set (S9a.2).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Class {
+    Inside,
+    Outside,
+    /// On the other set's boundary: the partner piece, and whether their
+    /// region-left directions agree.
+    Shared {
+        partner: usize,
+        agree: bool,
+    },
+}
+
+/// A piece's curve, in its segment's stored direction.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) enum Curve {
+    Line,
+    Arc {
+        center: Point2,
+        radius: f64,
+        ccw: bool,
+    },
+    /// A whole circle (uncut), counter-clockwise from angle 0.
+    Circle {
+        center: Point2,
+        radius: f64,
+    },
+}
+
+/// One piece of an arrangement, for S9a.2's stacks.
+#[derive(Debug, Clone)]
+pub(crate) struct PieceView {
+    pub(crate) op: Operand,
+    pub(crate) b: usize,
+    pub(crate) j: usize,
+    pub(crate) from: Option<PId>,
+    pub(crate) to: Option<PId>,
+    pub(crate) p: Point2,
+    pub(crate) e: Point2,
+    pub(crate) curve: Curve,
+    pub(crate) class: Class,
+    /// Whether it stands for its place: not the `B` side of a shared pair.
+    pub(crate) representative: bool,
+    /// Whether the region left and right of its stored direction lies in
+    /// `A` and in `B`.
+    pub(crate) left: [bool; 2],
+    pub(crate) right: [bool; 2],
+}
+
+impl Arranged {
+    /// Every piece, in segment order and then along each segment.
+    pub(crate) fn pieces(&self) -> Vec<PieceView> {
+        let hole = |o: Operand, b: usize| self.holes[if o == Operand::A { 0 } else { 1 }][b];
+        self.pieces
+            .iter()
+            .enumerate()
+            .map(|(i, piece)| {
+                let seg = &self.arr.segs[piece.seg];
+                let curve = match seg.shape {
+                    Shape::Line => Curve::Line,
+                    Shape::Arc {
+                        center,
+                        radius,
+                        ccw,
+                    } => Curve::Arc {
+                        center,
+                        radius,
+                        ccw,
+                    },
+                    Shape::Circle { center, radius } if piece.from.is_some() => Curve::Arc {
+                        center,
+                        radius,
+                        ccw: true,
+                    },
+                    Shape::Circle { center, radius } => Curve::Circle { center, radius },
+                };
+                let class = match self.partner.get(&i) {
+                    Some(&(k, same)) => {
+                        let other = &self.arr.segs[self.pieces[k].seg];
+                        Class::Shared {
+                            partner: k,
+                            agree: same == (hole(seg.op, seg.b) == hole(other.op, other.b)),
+                        }
+                    }
+                    None => match self.place[i] {
+                        Some(Location::Inside) => Class::Inside,
+                        _ => Class::Outside,
+                    },
+                };
+                // Its own profile's material lies left of a stored outer
+                // boundary (counter-clockwise), right of a hole; the
+                // other's on both sides, neither, or as its partner's.
+                let own = !hole(seg.op, seg.b);
+                let (other_left, other_right) = match class {
+                    Class::Inside => (true, true),
+                    Class::Outside => (false, false),
+                    Class::Shared { agree, .. } => (own == agree, own != agree),
+                };
+                let (left, right) = if seg.op == Operand::A {
+                    ([own, other_left], [!own, other_right])
+                } else {
+                    ([other_left, own], [other_right, !own])
+                };
+                PieceView {
+                    op: seg.op,
+                    b: seg.b,
+                    j: seg.j,
+                    from: piece.from,
+                    to: piece.to,
+                    p: piece.p,
+                    e: piece.e,
+                    curve,
+                    class,
+                    representative: seg.op == Operand::A || !self.partner.contains_key(&i),
+                    left,
+                    right,
+                }
+            })
+            .collect()
+    }
+    /// A point's canonical id (a vertex of `B` equal to one of `A`'s is
+    /// `A`'s).
+    pub(crate) fn canon(&self, p: PId) -> PId {
+        self.arr.canon(p)
+    }
+    /// A point's rounded position.
+    pub(crate) fn position(&self, p: PId) -> Point2 {
+        self.arr.positions[&self.arr.canon(p)]
+    }
 }
 
 /// Where a point lies against a set of disjoint profiles.
@@ -844,8 +982,16 @@ pub(crate) fn arrange(a: &[&Profile], b: &[&Profile], tolerance: Tolerance) -> R
 
 /// The operation's pieces of an arrangement, traced into its result
 /// profiles.
-fn select_trace(arranged: &Arranged, op: Op2, tolerance: Tolerance) -> Result<Boolean2> {
-    let tol = tolerance.linear();
+///
+/// With `swap` the operands' roles are exchanged (a cut keeps `B - A`);
+/// with `join` a cycle keeps no vertex where it does not turn.
+pub(crate) fn select_trace(
+    arranged: &Arranged,
+    op: Op2,
+    swap: bool,
+    join: bool,
+    tolerance: Tolerance,
+) -> Result<Boolean2> {
     let Arranged {
         arr,
         pieces,
@@ -854,16 +1000,101 @@ fn select_trace(arranged: &Arranged, op: Op2, tolerance: Tolerance) -> Result<Bo
         holes,
     } = arranged;
     let hole = |o: Operand, b: usize| holes[if o == Operand::A { 0 } else { 1 }][b];
-    // The kept pieces, directed with the region on their left: a hole's
-    // stored direction reversed.
-    let mut edges: Vec<Edge> = Vec::new();
-    let seg_ref = |piece: &Piece, arr: &Arrangement| -> SegRef {
+    // The kept pieces, each reversed when the region lies on its right: a
+    // hole's stored direction reversed, and a kept tool's once more.
+    let mut kept: Vec<(usize, bool)> = Vec::new();
+    for (i, piece) in pieces.iter().enumerate() {
+        let seg = &arr.segs[piece.seg];
+        let (inside, outside) = (Some(Location::Inside), Some(Location::Outside));
+        // The first operand of the rule: A, or B when swapped.
+        let first = if swap { Operand::B } else { Operand::A };
+        let role = if seg.op == first {
+            Operand::A
+        } else {
+            Operand::B
+        };
+        let keep_flip: Option<bool> = match partner.get(&i) {
+            Some(&(k, same)) => {
+                // In region-left directions: a hole's reversed.
+                let other = &arr.segs[pieces[k].seg];
+                let agree = same == (hole(seg.op, seg.b) == hole(other.op, other.b));
+                match (op, role, agree) {
+                    (Op2::Fuse | Op2::Common, Operand::A, true) => Some(false),
+                    (Op2::Cut, Operand::A, false) => Some(false),
+                    _ => None,
+                }
+            }
+            None => match (op, role, place[i]) {
+                (Op2::Fuse, _, p) if p == outside => Some(false),
+                (Op2::Common, _, p) if p == inside => Some(false),
+                (Op2::Cut, Operand::A, p) if p == outside => Some(false),
+                (Op2::Cut, Operand::B, p) if p == inside => Some(true),
+                _ => None,
+            },
+        };
+        if let Some(flip) = keep_flip {
+            kept.push((i, hole(seg.op, seg.b) != flip));
+        }
+    }
+    traced(arranged, &kept, join, tolerance)
+}
+
+/// The region of a set function of the operands (`keep(in A, in B)`),
+/// traced into profiles (S9a.2's caps between slabs): the pieces with the
+/// region on one side only, a piece shared by both boundaries once (as
+/// `A`'s).
+pub(crate) fn select_with(
+    arranged: &Arranged,
+    keep: &dyn Fn(bool, bool) -> bool,
+    join: bool,
+    tolerance: Tolerance,
+) -> Result<Boolean2> {
+    let mut kept: Vec<(usize, bool)> = Vec::new();
+    for (i, view) in arranged.pieces().iter().enumerate() {
+        if !view.representative {
+            continue;
+        }
+        let (l, r) = (
+            keep(view.left[0], view.left[1]),
+            keep(view.right[0], view.right[1]),
+        );
+        if l != r {
+            kept.push((i, r));
+        }
+    }
+    traced(arranged, &kept, join, tolerance)
+}
+
+/// Kept pieces `(piece, reversed)`, the region on the left of each as
+/// traversed, traced into profiles.
+fn traced(
+    arranged: &Arranged,
+    kept: &[(usize, bool)],
+    join: bool,
+    tolerance: Tolerance,
+) -> Result<Boolean2> {
+    let tol = tolerance.linear();
+    let Arranged {
+        arr,
+        pieces,
+        partner,
+        ..
+    } = arranged;
+    let seg_ref = |piece: &Piece| -> SegRef {
         let seg = &arr.segs[piece.seg];
         (seg.op, seg.b, seg.j, (!piece.whole).then_some(piece.part))
     };
-    let directed = |piece: &Piece, arr: &Arrangement, flip: bool, origin: Origin2| -> Edge {
+    let mut edges: Vec<Edge> = Vec::new();
+    // Whole circles keep a direction flag in their origin's order: a
+    // reversed whole circle is a clockwise cycle.
+    let mut circle_cw: BTreeSet<usize> = BTreeSet::new();
+    for &(i, reverse) in kept {
+        let piece = &pieces[i];
         let seg = &arr.segs[piece.seg];
-        let reverse = hole(seg.op, seg.b) != flip;
+        let origin = Origin2 {
+            from: seg_ref(piece),
+            shared: partner.get(&i).map(|&(k, _)| seg_ref(&pieces[k])),
+        };
         let shape = match seg.shape {
             Shape::Arc {
                 center,
@@ -886,54 +1117,18 @@ fn select_trace(arranged: &Arranged, op: Op2, tolerance: Tolerance) -> Result<Bo
         } else {
             (piece.from, piece.to, piece.p, piece.e)
         };
-        let shape = match shape {
-            Shape::Circle { center, radius } if reverse => Shape::Circle { center, radius },
-            s => s,
-        };
-        Edge {
+        if piece.from.is_none() && reverse {
+            circle_cw.insert(edges.len());
+        }
+        edges.push(Edge {
             from,
             to,
             p,
             e,
             shape,
             origins: vec![origin],
-        }
-    };
-    // Whole circles keep a direction flag in their origin's order: a
-    // reversed whole circle is a clockwise cycle.
-    let mut circle_cw: BTreeSet<usize> = BTreeSet::new();
-    for (i, piece) in pieces.iter().enumerate() {
-        let seg = &arr.segs[piece.seg];
-        let (inside, outside) = (Some(Location::Inside), Some(Location::Outside));
-        let keep_flip: Option<bool> = match partner.get(&i) {
-            Some(&(k, same)) => {
-                // In region-left directions: a hole's reversed.
-                let other = &arr.segs[pieces[k].seg];
-                let agree = same == (hole(seg.op, seg.b) == hole(other.op, other.b));
-                match (op, seg.op, agree) {
-                    (Op2::Fuse | Op2::Common, Operand::A, true) => Some(false),
-                    (Op2::Cut, Operand::A, false) => Some(false),
-                    _ => None,
-                }
-            }
-            None => match (op, seg.op, place[i]) {
-                (Op2::Fuse, _, p) if p == outside => Some(false),
-                (Op2::Common, _, p) if p == inside => Some(false),
-                (Op2::Cut, Operand::A, p) if p == outside => Some(false),
-                (Op2::Cut, Operand::B, p) if p == inside => Some(true),
-                _ => None,
-            },
-        };
-        let Some(flip) = keep_flip else { continue };
-        let origin = Origin2 {
-            from: seg_ref(piece, arr),
-            shared: partner.get(&i).map(|&(k, _)| seg_ref(&pieces[k], arr)),
-        };
-        let edge = directed(piece, arr, flip, origin);
-        if piece.from.is_none() && (hole(seg.op, seg.b) != flip) {
-            circle_cw.insert(edges.len());
-        }
-        edges.push(edge);
+            parts: vec![(i, !reverse)],
+        });
     }
     // Cycles: each kept piece's end starts exactly one kept piece.
     let mut starts: BTreeMap<PId, usize> = BTreeMap::new();
@@ -973,36 +1168,41 @@ fn select_trace(arranged: &Arranged, op: Op2, tolerance: Tolerance) -> Result<Bo
         cycles.push((cycle, area > 0.0));
     }
     // Outer boundaries and their holes, with no vertex where a boundary
-    // does not turn.
-    let mut outers: Vec<Traced> = Vec::new();
-    let mut holes: Vec<Traced> = Vec::new();
+    // does not turn when joined.
+    type Cycle = (Traced, Vec<(usize, bool)>);
+    let mut outers: Vec<Cycle> = Vec::new();
+    let mut holes: Vec<Cycle> = Vec::new();
     for (cycle, ccw) in &cycles {
-        let merged = merged(cycle.iter().map(|&k| edges[k].clone()).collect());
+        let raw: Vec<Edge> = cycle.iter().map(|&k| edges[k].clone()).collect();
+        let parts: Vec<(usize, bool)> = raw.iter().flat_map(|e| e.parts.clone()).collect();
+        let merged = if join { merged(raw) } else { raw };
         let built = boundary_of(&merged.iter().collect::<Vec<_>>(), !ccw, tolerance)?;
         if *ccw {
-            outers.push(built);
+            outers.push((built, parts));
         } else {
-            holes.push(built);
+            holes.push((built, parts));
         }
     }
-    let mut owned: Vec<Vec<Traced>> = vec![Vec::new(); outers.len()];
+    let mut owned: Vec<Vec<Cycle>> = vec![Vec::new(); outers.len()];
     for hole in holes {
-        let sample = hole.0.sample();
+        let sample = hole.0 .0.sample();
         let owner = outers
             .iter()
-            .position(|(o, ..)| o.locate(sample, tolerance) == Location::Inside)
+            .position(|((o, ..), _)| o.locate(sample, tolerance) == Location::Inside)
             .ok_or(Error::Degenerate("a result's hole outside its boundary"))?;
         owned[owner].push(hole);
     }
     let mut out = Vec::new();
-    for ((outer, segs, verts), hs) in outers.into_iter().zip(owned) {
+    for (((outer, segs, verts), parts), hs) in outers.into_iter().zip(owned) {
         let mut segments = vec![segs];
         let mut vertices = vec![verts];
+        let mut cycles = vec![parts];
         let mut hole_boundaries = Vec::new();
-        for (h, s, v) in hs {
+        for ((h, s, v), c) in hs {
             hole_boundaries.push(h);
             segments.push(s);
             vertices.push(v);
+            cycles.push(c);
         }
         let profile = Profile::new(outer, hole_boundaries, tolerance).map_err(|e| match e {
             Error::InvalidHole(_) | Error::SelfIntersection | Error::IntersectingBoundaries(..) => {
@@ -1014,6 +1214,7 @@ fn select_trace(arranged: &Arranged, op: Op2, tolerance: Tolerance) -> Result<Bo
             profile,
             segments,
             vertices,
+            cycles,
         });
     }
     // Separate results must not touch.
@@ -1071,6 +1272,8 @@ fn merged(mut cycle: Vec<Edge>) -> Vec<Edge> {
         let (a, b) = (cycle[i].clone(), cycle[j].clone());
         let mut origins = a.origins.clone();
         origins.extend(b.origins.iter().copied());
+        let mut parts = a.parts.clone();
+        parts.extend(b.parts.iter().copied());
         let joined = Edge {
             from: a.from,
             to: b.to,
@@ -1078,6 +1281,7 @@ fn merged(mut cycle: Vec<Edge>) -> Vec<Edge> {
             e: b.e,
             shape: a.shape,
             origins,
+            parts,
         };
         // Keep the cycle's start where it was when the join wraps round.
         if j == 0 {

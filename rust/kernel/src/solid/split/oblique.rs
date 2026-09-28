@@ -1917,7 +1917,7 @@ pub(super) fn issue_name(issues: &[crate::topology::Issue]) -> &'static str {
 /// Axis-aligned bounds of a body from its edges (planar and cylindrical
 /// faces reach their extremes on their boundaries): lines by their ends,
 /// arcs and ellipse arcs by their ends and the extremes inside them.
-pub(super) fn edge_bounds(t: &Topology) -> crate::Bounds3 {
+pub(crate) fn edge_bounds(t: &Topology) -> crate::Bounds3 {
     let (mut lo, mut hi) = ([f64::INFINITY; 3], [f64::NEG_INFINITY; 3]);
     let mut add = |p: Point3| {
         for (i, x) in p.to_array().into_iter().enumerate() {

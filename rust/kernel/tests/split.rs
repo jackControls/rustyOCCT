@@ -651,3 +651,40 @@ fn torus_fixtures_build_with_the_reference_volume() {
         assert!(!rows.is_empty(), "{}", case.name);
     }
 }
+
+#[test]
+fn a_zone_rim_split_obliquely_stays_on_its_circle() {
+    // Fuzzing (split): a zone's rim split by an oblique plane was a circle
+    // one ulp off the rim's (its height's sine fused with the cosine into
+    // one `sincos`), so its arcs were off their parent's support.
+    let tolerance = Tolerance::default();
+    let frame = Frame3::new(
+        Point3::new(-1.375, -8.0, 1.25),
+        Vec3::new(0.0, 0.0, 1.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tolerance,
+    )
+    .unwrap();
+    let (zone, _) =
+        rusty_occt::Solid::sphere_with(OperationId(1), frame, 4.25, -1.375, 0.75, tolerance)
+            .unwrap();
+    let plane = Frame3::new(
+        Point3::new(-0.3125, -9.46875, -0.015625),
+        Vec3::new(
+            -0.5962847939999439,
+            0.29814239699997197,
+            -0.7453559924999299,
+        ),
+        Vec3::new(1.0, 0.0, 0.0),
+        tolerance,
+    )
+    .unwrap();
+    let (pieces, h) = zone.split_by_plane(OperationId(2), plane).unwrap();
+    let ins = [zone.topology().entity_set(zone.resolution())];
+    let outs: Vec<_> = pieces
+        .iter()
+        .map(|(_, p)| p.topology().entity_set(p.resolution()))
+        .collect();
+    let issues = history::check(&ins, &outs, &h);
+    assert!(issues.is_empty(), "{issues:?}");
+}

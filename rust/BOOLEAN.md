@@ -4,8 +4,8 @@ S9 of `REVIEW_NOTES.md` fuses, cuts and intersects solids (the Combine
 job): the faces intersected (S7), split (S8), classified by regions and
 assembled into shells and regions, with complete histories. This document
 describes what is implemented; the decisions are in `REVIEW_NOTES.md` (S9).
-S9a.1 is implemented (`profile/boolean.rs`, `solid/boolean.rs`); S9a.2 and
-S9b on are not.
+S9a is implemented (`profile/boolean.rs`, `solid/boolean.rs`, S9a.2's
+stacks in `solid/boolean/stack.rs`); S9b on are not.
 
 ## Contract
 
@@ -18,8 +18,9 @@ frames (one profile over one height range) is built as one, keeping the
 prism's exact queries; any other is a general body built through
 `TopologyParts` and validated before it is returned. An error is one of:
 
-* `OutOfDomain`: a pair of a later sub-step (S9a.2's stacks before S9a.2,
-  frames whose axes differ before S9b).
+* `OutOfDomain`: a pair of a later sub-step (frames whose axes differ, or
+  an offset or a profile that rounds, before S9b; spline profiles), or a
+  cavity in a result of several solids.
 * `Degenerate`: a crossing within the resolution of a vertex, two crossings
   within it of each other, a piece thinner than the resolution, or a result
   touching itself at a point or along an edge (two solids sharing an edge,
@@ -27,6 +28,9 @@ prism's exact queries; any other is a general body built through
   bodies.
 * `ComputationLimit`: two cuts of a segment, or a crossing at a segment's
   end, whose order its enclosures leave undecided.
+* `InvalidLabel`: inputs sharing an entity id (built by one operation, one
+  solid twice, or a result and an input whose entities it keeps), which
+  the history could not tell apart.
 
 ### Prisms in one frame (S9a)
 
@@ -77,6 +81,35 @@ object; a fuse of equal ranges the 2D fuse over them, of meeting ranges and
 identical profiles one prism over their union, of an input inside the other
 (in 2D and in height) that input, of profiles apart both inputs.
 
+S9a.2 (`solid/boolean/stack.rs`) builds every other result, a stack, as
+general bodies from one arrangement of both profiles: each piece knows
+whether the region on its left and on its right lies in the object and in
+the tool, and in each slab the result's region is a set function of the
+two (`A ∪ B`, `A`, `B`, `A - B` or nothing). A piece is a wall in a slab
+where the result holds one side and not the other; at each slab height the
+upward faces (the result below and not above) and the downward ones (above
+and not below) are traced from the arrangement as a result profile is,
+without joining. Walls on one line facing one way, or on one circle facing
+one way, join across a slab height and across a piece's end where only
+the two meet there; a horizontal face joins nothing. An edge is a chain of
+fine edges (a piece at a height, or a point's vertical over a slab) running
+straight on (collinear lines, arcs of one circle, one vertical line)
+between the same two faces, its ends vertices; a closed chain of arcs is a
+circle. Four faces at an edge, or a face meeting itself at an edge or a
+vertex, is `Degenerate` (the result touching itself). Each connected set of
+faces is a solid; one whose lowest face faces up bounds a cavity, a second
+shell of the solid around it and a bounded void inside it (`OutOfDomain`
+beside several solids). A plane wall's frame is the prism's (x its
+region-left direction, its normal leaving the material), a cylinder wall's
+its circle's centre at the face's lowest height, its pcurves lines in
+(angle, height) continuing round each loop and every loop on the sheet of
+the first (the outer, first on any face, by its signed area). Each solid is
+validated as it is built; its mass properties are the general certified
+enclosure's, its classification the slabs' set function at the point's
+height over both profiles' classifications (a point on a profile's
+boundary taking both memberships, on a slab height both slabs), and a
+rigid motion rebuilds it in the moved frame (ids kept, mass moved).
+
 History: each result entity continues the input entities it is a part of
 (a cap the caps at its height of the inputs whose material it holds, a wall
 or cap edge the walls or cap edges its segment joins, a vertical edge or cap
@@ -93,6 +126,18 @@ edge where two walls cross, a cap edge inside a wall where the other
 input's cap meets it) is `Generated` from what it lies on; an input
 continued by nothing is `Deleted`. Inputs returned whole keep every id. The
 independent history check runs in debug builds and every test.
+
+In a stack a wall continues the input walls it lies on facing their way
+(any other it lies on, and a cut's tool's, it touches); a horizontal face
+the input caps at its height facing its way whose region it overlaps (an
+exact 2D common), touching a cut's tool's cap facing the other way; an edge
+or vertex at an input's end height continues its cap edges or vertices,
+and one inside an input's height range lies on that input's wall or
+vertical edge and on the caps its faces lie on; a vertical edge continues
+the vertical edges of its point's input vertices over their ranges and
+lies on the walls through the point; a solid continues the regions of the
+inputs whose faces it continues (a cut's: the object's), and a cavity's
+void is generated from the tool's region.
 
 ## Evidence
 
@@ -162,10 +207,10 @@ independent history check runs in debug builds and every test.
   keeps each input's cap and wall images and its cylinders' seams (counts
   compared after unifying). `compare_boolean.py` runs the probe
   (`examples/boolean_probe.rs`) on every case.
-* **Kernel (S9a.1).** All 45 cases: 36 results inside the reference with
+* **Kernel (S9a).** All 45 cases: 42 results inside the reference with
   the reference's solid count (each solid's volume, area and centre
-  enclosed), 5 of them empty, the 3 degenerate ones refused and the 6
-  S9a.2 stacks `OutOfDomain`; every kernel count equals OCCT's after
+  enclosed), 5 of them empty and 6 S9a.2 stacks among them, and the 3
+  degenerate ones refused; every kernel count equals OCCT's after
   unifying (the kernel's joined collinear lines and cocircular arcs are
   OCCT's unified faces and edges; its seamless circles counted as OCCT's
   seams by `Topology::occt_counts`), no review. `tests/booleans.rs` checks
@@ -174,12 +219,16 @@ independent history check runs in debug builds and every test.
   every class (overlaps, a lens, a hole, identical, disjoint, inside, a
   shared wall, tangent cylinders inside and outside, arcs of one circle, a
   vertex on an edge, a holed box, frames with equal axes and offset
-  origins, stacks refused).
+  origins, a result taken as an input again, inputs sharing ids refused;
+  S9a.2: a tower and a pocket with their counts, classification and rigid
+  motion, a plug filling a hole over part of its height, a cavity, a tool
+  through a round wall).
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
-  sharing the tilted one's origin, heights equal, spanning, overlapping or
-  disjoint; fuse, cut and common with the volume identities and rigid
-  motions of the results.
+  sharing the tilted one's origin, heights equal, spanning, overlapping,
+  disjoint, inside (pockets, cavities) or on top (touching stacks); fuse,
+  cut and common with the volume identities, rigid motions of the results
+  and every result vertex classified on its boundary.
 
 ## DRAW commands
 
