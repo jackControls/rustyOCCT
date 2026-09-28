@@ -4,7 +4,341 @@
   "sources": {
     "resources/DrawResources/CheckCommands.tcl": "ff1a6ab0a57e4746346587b3bee439128d8494bf28f14c2f2d854d10136525ff",
     "resources/DrawResources/TestCommands.tcl": "badd93f0168b28f8f150c59507cc0bf63e8f0462fcb479095af2b4c6bfb236ab",
+    "tests/boolean/bcommon_simple/A1": "0bf3ab9bd586c0830ad6f4a80c9f635e9fef6827fce2491c0cca50ccf912e728",
+    "tests/boolean/bcommon_simple/I5": "f8086ea8e06eb760a0c43c005db9a40d8b4f5573d5af050e7d3c06206a29f49e",
+    "tests/boolean/bcommon_simple/J1": "767998e1bf6f2423a097f608b559fb452daeaef72028dbfd3102645b5c8eded7",
+    "tests/boolean/bcut_simple/G8": "7f630a0200be640a8501b44c0532bc623a761872e90fd9e863dd1dd4c865d5c8",
+    "tests/boolean/bcut_simple/H6": "bfbc1499a2c945ba7c1da4796987dbefa45bffcf1550f17a6ac60f73e0262ebd",
     "tests/boolean/begin": "d69546786e4458613f453d5083979bd5e2e67ae1f0f01b93f1bd93825e3a66bd",
+    "tests/boolean/bfuse_complex/J5": "cda6d3fe80781b6537b23d7fb33728a0ff0eddfeff7025ea8f359cfbe64c632c",
+    "tests/boolean/bfuse_simple/E1": "b4c9767189a819abcfeb8ed2afcab1928383f12242e579053078d9c42c4bff59",
+    "tests/boolean/bfuse_simple/L2": "eee3cb4bcb138fbda94f62144a4be688fb17e1aa49f731b40e6e2871e441c5e5",
+    "tests/boolean/bopcommon_simple/A1": "f4390fc464cd35b5996363eebf706b73684dc228bdf8a5502393c56b5f9bca6c",
+    "tests/boolean/bopcommon_simple/A2": "30e69fe59d9934441839671729872bc666b113b74e2b3c409389a68e92b20832",
+    "tests/boolean/bopcommon_simple/A3": "3d84cb51b2d2395d1ebb1af2e8b03043b9b5af4f1a595e5c8013cb2e0470d623",
+    "tests/boolean/bopcommon_simple/A4": "1802c4959f444f6539c151c0f536599539206a20184621a98c5ea398acb5b377",
+    "tests/boolean/bopcommon_simple/A5": "ea8ed29adb9e61869b5a537edbf9e607c135a7d731c4d351a01c194709d0861e",
+    "tests/boolean/bopcommon_simple/A6": "0b61f6a6baa44e81baeea486500c4c8d6ac15a3a7d4196a54cd414f63ac109da",
+    "tests/boolean/bopcommon_simple/A7": "6b701a0025bf3177cc2e5c3862064e68ff955a9998e42cc9f17021ee5940904d",
+    "tests/boolean/bopcommon_simple/A8": "1a6c371d9b74e7912f9b1d7af60822497c6b87fa2a5f0ecee125ad758680cab5",
+    "tests/boolean/bopcommon_simple/A9": "59c9c7cfef07b3b63db05b71535a3f72d0777d991d594803ffb2996656c444ec",
+    "tests/boolean/bopcommon_simple/B1": "10632892907ab7aeac37968bfc3429e97444d6faad9f9d65a25e66922ffd7991",
+    "tests/boolean/bopcommon_simple/B2": "6e8cdb40835987d0f81e50911a3b6cfb9c99c4ebd4f2f168716c07d0234566b4",
+    "tests/boolean/bopcommon_simple/B3": "d4f97c750d56386b274032b22a6b9ce6acb4d7c84365e31d845741bc008d8037",
+    "tests/boolean/bopcommon_simple/B4": "0c9d62f788fb6c81b5c0a0d03f56110e799798a0fadac735e3999a313b435927",
+    "tests/boolean/bopcommon_simple/B5": "53ddc6d15ca9c29f9d12c212deec79fd2916a6545b228e500ee47c84e4e66b72",
+    "tests/boolean/bopcommon_simple/B6": "062c9547459b7a74602b03106034b98b8afd69b373e551b2c2cbe4002796b885",
+    "tests/boolean/bopcommon_simple/B7": "28086411b365a617180919d9eca7af6453cbe4b73ac63d04caa9c08e26997c25",
+    "tests/boolean/bopcommon_simple/B8": "862c277ee96a749c13e220690994fc638520ac3d8811ee88e8b55bc57f2e1f4f",
+    "tests/boolean/bopcommon_simple/B9": "f6109a8fa943e531254a655b634a7d1e711e590dfc0f7a67be6d7908d126c727",
+    "tests/boolean/bopcommon_simple/C1": "6846c4eb7ddfa988b56b0dc570167a2b54405d00f109ffd5f7d3dd42e9ffa9cf",
+    "tests/boolean/bopcommon_simple/C2": "b34d2d3ec2a09cfecf64ec5fb7a2e83ca2a4ca946583055777e22b3a5ecca52e",
+    "tests/boolean/bopcommon_simple/C3": "3539f668cff8e4b18cac521505cf3d47295ca9315b9549fff255374a30f266ca",
+    "tests/boolean/bopcommon_simple/C8": "a182eb725f877382a023cb812128adb06c5505ea92bd5d276fa8828a455f06da",
+    "tests/boolean/bopcommon_simple/E2": "cd66b3f185c6465099bcbf54334f3e18c7ac9b6ba4a28101c4297f75dc480f6b",
+    "tests/boolean/bopcommon_simple/E3": "8da7d32e8c7413d610134cc74bc7fec16a79214a7cec6f9acb189461a86aab61",
+    "tests/boolean/bopcommon_simple/E4": "d6ed57ab589c9ec411219b9e7acca4baa2514b260ab87b73a5c80420e459e491",
+    "tests/boolean/bopcommon_simple/E5": "c7cc0c30786a8bc0d78453149cace925dcb09e410229b9ebb5288852c98a2480",
+    "tests/boolean/bopcommon_simple/E6": "0d528f9bc9cc31607ef37e2e94d11ff69ea4bc2ab144ac23569968e1a84c9e16",
+    "tests/boolean/bopcommon_simple/E7": "621422edbec6653471d8f4cc661a0dec2ab2b16a9b0437baa2c8687fd14a290d",
+    "tests/boolean/bopcommon_simple/E8": "73f10aa8d785c28b9ce8aee1007c0861c239cdb025d9a49896385c8144b51c8e",
+    "tests/boolean/bopcommon_simple/E9": "f9b9ac6cf0241af9bc6e687a154d644f91ddfad4f6a53bd0a3ff30898e06e2a3",
+    "tests/boolean/bopcommon_simple/F1": "30816f1cf3b02d6e191b66daa2cef85ecc2080bf1d8198d6d6c2cedfe3d05eaa",
+    "tests/boolean/bopcommon_simple/F2": "a92f35976b7f6daa82928ef94e13ac4341705ded378e8fb5a8797b32a0eabe8a",
+    "tests/boolean/bopcommon_simple/F3": "6a9461c8a3b3359d7636532fd826cdd267f9b40dcd95992990e51eb4d7902d3d",
+    "tests/boolean/bopcommon_simple/F4": "1f46808319f17e4efa04d9412bbd81bbb824476183c9c2fdfff19a3dbcaf4927",
+    "tests/boolean/bopcommon_simple/J9": "5314d5614de3f8805ca97dfe9ade0fe3ce56d8192d83206c41ed50af07e16d48",
+    "tests/boolean/bopcommon_simple/K1": "ff6102aa35d54507b503eefccc155e2bbbef64c021710f2b3e3ee4c112545af6",
+    "tests/boolean/bopcommon_simple/K5": "6a5a0cef8af688e9dad5b041e8b88cd19b75cf5314e0627fb2720f22daed9c0c",
+    "tests/boolean/bopcommon_simple/P3": "d6950b131bdc890a119c41d363ad998bec43baa690d923c1066d748801fee271",
+    "tests/boolean/bopcommon_simple/P4": "16d991dccc2f12f6352ceb257597440b45e75df0a82020d75df3e88e3fc7e1b8",
+    "tests/boolean/bopcommon_simple/P8": "719897050597cb740055e914c852f786b3ac2d33822bd969a7577e2a7aa35ef3",
+    "tests/boolean/bopcommon_simple/R1": "5264766f67abd4ebdba8397acc6dd14d3b71b6353e61b7e376a3cb4ee28eada1",
+    "tests/boolean/bopcommon_simple/R3": "7f1babc22adf9d560394035c92581d9500ead0da0be760a4152cd2250d32ad97",
+    "tests/boolean/bopcommon_simple/R5": "ea12c071cb34937f101f27fb5e8167b682887abbf8a4c8ddd147422dd8f4ceb7",
+    "tests/boolean/bopcommon_simple/R6": "fdef8bdb57b01a9123a449180ee6718deceee69871421ac675b778e681ec1f15",
+    "tests/boolean/bopcommon_simple/R7": "3191b71957a83a2dda5545a5ed7783be3752e18d7d014732ea6602380c5ca42a",
+    "tests/boolean/bopcommon_simple/R8": "65e5602f4654b2c1a56770e7c17a43cdeb69072167d60cce551dffa27655671d",
+    "tests/boolean/bopcommon_simple/R9": "392f9fec15db1506c4f61257e49a032d2fd9e9939061cb2de6586f79e1402a89",
+    "tests/boolean/bopcommon_simple/S1": "96693269a34e1d650a58873803ee42089970ab50c3733cb4ff0aa4538c1a16e7",
+    "tests/boolean/bopcommon_simple/S4": "7ccec955a31162f76f037c32d27abc825b04e1cbf2d06d3de197775d7fd86f1e",
+    "tests/boolean/bopcommon_simple/S5": "db218ebd737f966690bebc54cac5662f25502605dd775f6e64831afd0a6946fd",
+    "tests/boolean/bopcommon_simple/S6": "722a1a557a6bbcf75511ad1fab1dbe6a38488d29d735657889d97e15ef05cb9a",
+    "tests/boolean/bopcommon_simple/S7": "0f3407dca7ba18dd328f6c7110a838403bb9b5cfb8a8ac53aaf58993cb06af6c",
+    "tests/boolean/bopcommon_simple/S9": "046dfa646c870f64012953d8c2cda5a8a81665afd0bf189a993076dc4792ef50",
+    "tests/boolean/bopcommon_simple/T1": "f2156c92b4307599510e88cd0ccb508b2d445dafcd4d91877819b72da5760f49",
+    "tests/boolean/bopcommon_simple/T3": "12dc237900ab9a08143e6541f1b3cc38100ee9589829d183c2e85c522744f79a",
+    "tests/boolean/bopcommon_simple/T5": "8a4387c046cb1b43899a62f1c7969397f9be9db1083f9d62ccba7aa719090595",
+    "tests/boolean/bopcommon_simple/U3": "2126fea094a19a8f28f6dcafff1e3beb8c2e8ffda6a07bb948a93fb0974374eb",
+    "tests/boolean/bopcommon_simple/U4": "8ed267bba6f38f7431f675da521b925016ee99323fcfd20bc1af3ee8ac8f34c9",
+    "tests/boolean/bopcommon_simple/U5": "8969930b7f9ff841ad3df39b7ebce4ac4bdcd48a37640b26a61678fd25af0487",
+    "tests/boolean/bopcommon_simple/U6": "83ace796d7aa94d1f2a4ccfea36bb95d228f5e7d7e40e86dfbfe700c9b9a1890",
+    "tests/boolean/bopcommon_simple/U7": "d50f6767d7fdf610f85a3da9f5316c0832b46aae6efc16f6639aff31bfb5f2aa",
+    "tests/boolean/bopcommon_simple/U8": "5961ccf713eb1398648e60b43e2b9be6283b5ab6cbfa71fbfe44ea6fa346bb12",
+    "tests/boolean/bopcommon_simple/V1": "4370b2cc22e1e231bebeb7c2287bfe0be0e0fc1c7c8f76a87cc7b885e3d8803b",
+    "tests/boolean/bopcommon_simple/V4": "6db8c51e30e6f4e0e043b4009ac16d36480cf6856e203316835e89b86f1afd1d",
+    "tests/boolean/bopcommon_simple/V5": "6f0dcf1a12b0e21d8d30c2c92c180902ca745bc593c1552ec39e9bb0e4911d80",
+    "tests/boolean/bopcommon_simple/V7": "ac3d91e3a0fe5986e1fd30a90ca3bdcfc011bb77d1b5c23af46f38b40ae6477a",
+    "tests/boolean/bopcommon_simple/V9": "d2da0c706c91aad4a7979474da53a5be516aab68404d4835310aaf12a8ef941f",
+    "tests/boolean/bopcommon_simple/W1": "086a6debcdb8aa79200505529460aefc866e9ca577a168cc01829645b0955a08",
+    "tests/boolean/bopcommon_simple/W2": "232072e810cb4239b7e0c073368b33157eb1a5a17ad460bb0816384fd059d036",
+    "tests/boolean/bopcommon_simple/W3": "6f6895c94dbe859001ca5e19279aef2b81b3c57375c7170c74bfe8be3a6b998b",
+    "tests/boolean/bopcommon_simple/W4": "0f9e86aba9894190425f8dbecd8172404c3440d767578531fcf4f6b650638f87",
+    "tests/boolean/bopcommon_simple/W5": "e30a48eb8f29df9025c5aac3a9c4620f8a8de7151143209ef18e3b95fc3d579b",
+    "tests/boolean/bopcommon_simple/W8": "847cf350eddc09dbec1ca841396d19bfa5b58b74fc70b66eb42ca2d06c2c8304",
+    "tests/boolean/bopcommon_simple/X1": "b72109dd6abbd63098ccb9557a351be63e5ef7023a3e70ae1a4f70a942f468d2",
+    "tests/boolean/bopcommon_simple/X2": "3688d7d2852cf96c2c091cc10aab9510cb9f32563e4f328cbb5cf5d2d1f6cc32",
+    "tests/boolean/bopcommon_simple/X4": "3cc052ba5b90ffffaa367c3f729a99640b97e250cc7ecc91e20a1d506d6eaaec",
+    "tests/boolean/bopcommon_simple/X5": "6050ecd0235b5ad25205004bb883f06f5b5a84379a18c60f018bc5a404d366e0",
+    "tests/boolean/bopcommon_simple/X7": "f57dcd41c9ca647972103fd97adf9d2ad2a9e3f3f2bf672dd24e1f3027a753c3",
+    "tests/boolean/bopcommon_simple/X9": "cd2906eaeffc5e806e7919c5187dd79d08d21cdbb011116d68240b35c77c2a68",
+    "tests/boolean/bopcommon_simple/Y7": "f2e28b4172e2635445fdd03568b40ede8a41a1a3528aab841fd67154773ea74a",
+    "tests/boolean/bopcommon_simple/Y8": "5137319589c14322fdf060635065f5de9036d613dd9054de061416bdb475e286",
+    "tests/boolean/bopcommon_simple/Y9": "a03be846905a30ba2fe79f1c15e3681956c2abc80696c51f053fdc00f06d79ca",
+    "tests/boolean/bopcommon_simple/Z1": "4fb1b35ee177096f568406cc67e07d31fbd4b46cf3f4716d28c808df2deb1d97",
+    "tests/boolean/bopcommon_simple/Z2": "3e2df9dbcbee7eb313e55b78b615836896ba2f68231670d7cf32edeab77be3cd",
+    "tests/boolean/bopcommon_simple/Z3": "e444a8bc2804093c17a3f62b01b43a0e2f149c507bc894069bc34fbca5717d1f",
+    "tests/boolean/bopcommon_simple/Z5": "f78ad048eb1e50f3cc7cafb3e2ceba8a72cad7d351c460141a1aa75bd9c7c478",
+    "tests/boolean/bopcommon_simple/Z8": "d7300c2a7ef104de7b9690a7f4f77ab2d7f42c986660120a90527cddbbab2572",
+    "tests/boolean/bopcommon_simple/Z9": "2633bd14b139b5bc043572030f65ecd7dd6ca2f427824d86d2e822788a72dfef",
+    "tests/boolean/bopcommon_simple/ZA1": "08c107e407d3fabd0a1a452bef47a1095404d15343513d5f1b85d1c7b1c73f02",
+    "tests/boolean/bopcommon_simple/ZA5": "e9ea8793e40791815180cdfba2023ada6b408fbe359309856607a3cc0aabe735",
+    "tests/boolean/bopcommon_simple/ZA6": "65b72bf605170a2d1a3a47885b22b537e6bb44bf4519d145a3b75631648461ca",
+    "tests/boolean/bopcommon_simple/ZA8": "9c1befaf490c1aca562f8a72a0fbda1e167caafb8f74f3c7d2da08bdb19fdf84",
+    "tests/boolean/bopcommon_simple/ZA9": "97987b47c1ea1f13c779cf76fed25b68eba185024997767b6600494ae5f94a2d",
+    "tests/boolean/bopcommon_simple/ZB1": "198834bb169040ece3046e300d96808d3229a5f46235998f69f7305dd76d4058",
+    "tests/boolean/bopcommon_simple/ZB3": "2054b46135f05a9e58f140ccd2813c4b6e3150901f3e7de3d0f949cdb5bf7b65",
+    "tests/boolean/bopcommon_simple/ZB7": "03b09d24397b5e0eb15dd53afedc467d937a764579bdc56baac55b597366e7d8",
+    "tests/boolean/bopcommon_simple/ZB8": "29e33e8b2ec69d40fb3cef5a9ed4cd5f49d2b76811e4c3b7ac61a8cdd59dad52",
+    "tests/boolean/bopcommon_simple/ZC1": "5a28997e4bb3ce4d27ba2dc9edcd7a994d358fa8649c180fa671445100b5546f",
+    "tests/boolean/bopcommon_simple/ZC2": "7db58ff14f82b4566e75c5846e7525bbc0b7b8cbee0788dc084b36dad84707d6",
+    "tests/boolean/bopcommon_simple/ZC3": "24078aec62255cfdcd4f2bca3bb6166cfa67f22384014a8882e12cea29e751c0",
+    "tests/boolean/bopcommon_simple/ZC6": "e4a375ea61f556a9546a4d62aa929277b101e302bb009a20021a30842362cf58",
+    "tests/boolean/bopcommon_simple/ZC7": "b8783b1f6aee0619d792283a17281a1551054e83133118b50bf42e8854c9511b",
+    "tests/boolean/bopcommon_simple/ZC8": "71b38530e07011d75c7c9e6b7a2bac038b4e7d710cd2ea31571af83b3a525fde",
+    "tests/boolean/bopcommon_simple/ZC9": "51c9805e8f712d7b907fa9d2a3649c28aa5b149ec1c1f8b8342bff393d21da88",
+    "tests/boolean/bopcommon_simple/ZD1": "3c936a3b315002a20e19d8b2e359883c7d45411c9b3ec76897016baf4bc26a9f",
+    "tests/boolean/bopcommon_simple/ZD2": "02bf575d0cd4ac3512402672f81498ba5713ae2364e55e5c9091a0fb347a958a",
+    "tests/boolean/bopcommon_simple/ZD3": "2e17a95e9d349647fcce85eef3d2aa1721a95ff1867d49e4a21100d7f2309dda",
+    "tests/boolean/bopcommon_simple/ZD4": "854a9497503c794b572093cbbec35214c0f8678ebeed740b51b0e77052b679dd",
+    "tests/boolean/bopcommon_simple/ZF4": "f9f1b609c74b0fba98f68da8cd2095d27e402733fe8498346a462db9acb31069",
+    "tests/boolean/bopcommon_simple/ZL6": "3d506ac5cc37c22022f6826f75f4b5158e273106455c438eb3cdbd3a91ac68ad",
+    "tests/boolean/bopcommon_simple/ZN3": "453e172b346fa4039b99bef7d60398b07c1d40de5fc9a18b5c6aafed5acc99db",
+    "tests/boolean/bopcommon_simple/ZN4": "29fa65292f9d0236c23d357f3f80fbde824d9a328c59c6149395191aef19dc26",
+    "tests/boolean/bopcommon_simple/ZN5": "8edf1e438d2948598b4eff5ef4f1ba0f1d5f336093f37eb02023f4e414060bf9",
+    "tests/boolean/bopcommon_simple/ZN6": "59b1c45c7143965a9063f949ef8cf04a1eac711eb2188e723ed58bc8f37e7130",
+    "tests/boolean/bopcommon_simple/ZN7": "36399b26f95042f61967e8019ae3ebe824523a7f8c5f5ebb2092557c4349bc02",
+    "tests/boolean/bopcommon_simple/ZN8": "a70fa3467480e504d4da58aad6f6889dbe45855bbe19b6d7b5440f01d80a8318",
+    "tests/boolean/bopcommon_simple/ZN9": "a0a8c6e17a5b3dbfe0b301fb356c02531190d79588baec36634db272b84745b1",
+    "tests/boolean/bopcommon_simple/ZO1": "a975e8953886061b7efeb7e285f2fda458dcbc6590b696e034035f07f7cbe577",
+    "tests/boolean/bopcommon_simple/ZO2": "7f72bb7903992ee5967adb20c41f1d62b1789e36375b2c2ff34e00a149e6ef17",
+    "tests/boolean/bopcommon_simple/ZO3": "0c961f11e6f032d29f6a989628c26c59a70b29dcbaea9c08c7e8b91e817a9632",
+    "tests/boolean/bopcommon_simple/ZO4": "d0bb57d017eeb7820fa39b5d66aa3817833d5f79ffe0bc2290a9edf7c6233364",
+    "tests/boolean/bopcommon_simple/ZO5": "c8f3144676425dcac34eaac7a050872bb3be8c68212f1a5d7048a9c145034bbc",
+    "tests/boolean/bopcommon_simple/ZO6": "7a5cad401f7a8fead4a261ec84e25b258db67e1d6585e65100557bc62f13a4db",
+    "tests/boolean/bopcommon_simple/ZO9": "d87d84f08612f2daa7341d8f824bb37d29c71812018032339b810749d8a3a4c3",
+    "tests/boolean/bopcommon_simple/ZP1": "159cb7cbe9f1b43fbc8de098531a6e4aa05e9f496921fc982b7dda728bd2b38c",
+    "tests/boolean/bopcommon_simple/ZP2": "2633bd14b139b5bc043572030f65ecd7dd6ca2f427824d86d2e822788a72dfef",
+    "tests/boolean/bopcut_simple/A1": "33a47c479212e110f668d06186b201a6c75eaf1011fb6f2f74b70b6cd77d8368",
+    "tests/boolean/bopcut_simple/A2": "7df41dc992e2f806ba3579eb1003c9cdd2c3a684e0ef2e4311b544207654d5c0",
+    "tests/boolean/bopcut_simple/A3": "ae3bb43a37e78f5a7bb79c1c9f8e184b3fd7c80a6c545932b2985ec84d58d1a2",
+    "tests/boolean/bopcut_simple/A4": "e79771ab02a01781588088c126f0b6a032c56f16fd633dde28fdf649aad2b80b",
+    "tests/boolean/bopcut_simple/A6": "e7eb84d60fe16ae1d99b8eae798ebde4fb695b0e1fa45c8c69d518d160d52b95",
+    "tests/boolean/bopcut_simple/A7": "556efa6f19f520479063e29e14ece47deb8eb50776ac529e3c2d863708afbd03",
+    "tests/boolean/bopcut_simple/A8": "6a48bf1557df76fd3d42d807cb885e17f0243b930cc0769e195af6a3c29949f1",
+    "tests/boolean/bopcut_simple/A9": "e703c07c6707cdeaf6970e29a5c488d179cef5ad9a3ac71e93cab6b4f03708ef",
+    "tests/boolean/bopcut_simple/B3": "84211088a16fc17361b12ae82237842e08b205624039ebd8c02d5ceefd36938a",
+    "tests/boolean/bopcut_simple/B4": "2824a84aca1587269281724af96e5d672f7d8d5bb72a524764c524438ce3e025",
+    "tests/boolean/bopcut_simple/B7": "5fce422dd1e76144fcd26388ccb28e8b16acae8648148a965b342a67d7a5f66d",
+    "tests/boolean/bopcut_simple/B8": "b5c52ebeceafa741356a5241868c6a3e16028aba7c36b13cacfb6156316f0400",
+    "tests/boolean/bopcut_simple/B9": "ad94efb557ff6adfb84c53350946305bbc52f925e7e777b8ec3984c38a1508ab",
+    "tests/boolean/bopcut_simple/C2": "048503ca6cb123cf12076141dd28900f783b5580fab5da5311816e1344350e7b",
+    "tests/boolean/bopcut_simple/E4": "1acd2cb7b2187f56a1132c5ce67270e1f612f3e7503f5da9f613d973778af35f",
+    "tests/boolean/bopcut_simple/E8": "8c1a79e50e57edffb4e94208d5f749795aea29a34d4b42783e106b2f0fafde94",
+    "tests/boolean/bopcut_simple/F3": "9c660d3fd4ca2bff56984e12306d941d6573e202b1555b02cf2ebeaaa7d8b3e3",
+    "tests/boolean/bopcut_simple/J9": "ca31308732f23d6f8856f66cbbe64244626a217a4b93bcac166e4ecc52c112cf",
+    "tests/boolean/bopcut_simple/K1": "8ee4fe3ebeff821eae140836c0a85162e73484832b052b151bffd721f359b36c",
+    "tests/boolean/bopcut_simple/K5": "fb8bd114a496caef4a712c132992b09d3259bf6310fb2c26f45ef40bde12953c",
+    "tests/boolean/bopcut_simple/R1": "344f61ce6abbe88b21dd1fed45329ca27fea70cacce5d5bc0e005b42b41c7d4f",
+    "tests/boolean/bopcut_simple/R3": "d48fa97bb435d0ba7008abe1a2bd3ce20ff326581b90a66ba5fac24e0b1d2e16",
+    "tests/boolean/bopcut_simple/R5": "82054defe307ab263a36bd339654ca712cf6ce4a9bf5284a0febf9f4a72be3cc",
+    "tests/boolean/bopcut_simple/R6": "6070ce442f59f6978527b8978a41c904dd529023a2728210b05cdf6067c03f60",
+    "tests/boolean/bopcut_simple/R7": "12b084d47e4c3d51bc69a05d54b61d5c2e812378cfeae987bfbe5cef93cf61ff",
+    "tests/boolean/bopcut_simple/R8": "1467c252fa24f52d86a8ff72107ab65ccd2a8a57a5210cf26228aad4d1e14106",
+    "tests/boolean/bopcut_simple/R9": "f35f46bad3f449ed21880d186055bbf225b4eba19f50f04cd703aa4b68277e51",
+    "tests/boolean/bopcut_simple/S1": "fe368c0b426be4c3898ab94cb08711daded53ce8d8f631746576fb40cadec375",
+    "tests/boolean/bopcut_simple/S4": "10c7182681c35967294901d21bbccd3963ac548b6d9fc8cde196895f3fd45066",
+    "tests/boolean/bopcut_simple/S6": "65f505abee3977aca6f3b2efad9a3eac62972a272234678ab1d37d808aa6a741",
+    "tests/boolean/bopcut_simple/S7": "5aaf1404c693323593a7fb4ac815b9c0abc971427a4e607057ab9c83c2950ad0",
+    "tests/boolean/bopcut_simple/S9": "e336c4a0aa2f27e95c7dde6ec45b17d074911f201032153e744d32244d18ae32",
+    "tests/boolean/bopcut_simple/T1": "75b058d5bfcb42ab842ba4c9046451ff36fe126e6b014ee24db059909e7a9433",
+    "tests/boolean/bopcut_simple/T3": "77f4274fa4fd8c5168afc4080a9dcc10ebafa7aa16bed1c444a83d107fe31367",
+    "tests/boolean/bopcut_simple/T5": "a1a0c8da036dd3b8cac2614ff6ea6d7a639b55a0877bdb3fcb6146360c14f394",
+    "tests/boolean/bopcut_simple/U3": "cec8fd87dc7f1d90a61f2798282d1f5074e089840ac2911a130cbc2f9e0c0c84",
+    "tests/boolean/bopcut_simple/U4": "1712934cc7aa408919a0a46d7694a6ed340fa2a1e687c98bc5de5495eba8c6ee",
+    "tests/boolean/bopcut_simple/U5": "c2c145aa0c8a3593179bc90f6bd86ae4a7e71816b1a10548de731c7109a497ea",
+    "tests/boolean/bopcut_simple/U6": "8d6dca87f44e7433f25be4a497468b35cfa9d55da56dfe0d0c357be6dc70155e",
+    "tests/boolean/bopcut_simple/U7": "e0d717adbf3a504daeff8d6c83f503a185e3a0e45da3ec4777afcf92aebe0af7",
+    "tests/boolean/bopcut_simple/U8": "79f7de3981067b04743444b4ce1ff202fe35b7ba49688d6e3790228310b047d9",
+    "tests/boolean/bopcut_simple/Z9": "63be45fc0ab33120318c57577fdca477b28342cae41541981c2ec373c9f27809",
+    "tests/boolean/bopcut_simple/ZA5": "f8ed01f557b4157a3fd6cfe91ddc133b238cbee67aa23964cf85ead6f48e376d",
+    "tests/boolean/bopcut_simple/ZA6": "75558b07993a10bab212743b63de1e6258b9facd820d5b84a911f4f9586b68f4",
+    "tests/boolean/bopcut_simple/ZA8": "802ba058bec3f29a5c8e66c0c8457fb289eefa8e173833a6d948dd85a0713485",
+    "tests/boolean/bopcut_simple/ZA9": "1332d057c19d208c83d4df2291f3628d7a87c6a79dad4c559ba34ac108e8f3c7",
+    "tests/boolean/bopcut_simple/ZB1": "a5886e213d0757d17a0e9b7b755047ff7c64f97731ed21ebe0d8d74c7ecc0de4",
+    "tests/boolean/bopcut_simple/ZC7": "8f116d5acd981c0ea31b31c0024a470bad1236c0f18107cc75fbfe1f25363cb3",
+    "tests/boolean/bopcut_simple/ZC8": "c13678e523fc0dcd7c684e1e2dd173002b4c3dbbe5563e7503380094526ba260",
+    "tests/boolean/bopcut_simple/ZD2": "d871baea2c67fdf833aace196bc0b14cb29afe946d05b1c9dd2d173129970854",
+    "tests/boolean/bopcut_simple/ZD3": "da7725a5a344ee104080b50c1f184440d4c2f0791d710d5d4c247e12ecc06efd",
+    "tests/boolean/bopcut_simple/ZD4": "e00a8476ed6ba845c4f0929b862b35aca1dca4be1d772bee1ea7b39419e538fc",
+    "tests/boolean/bopcut_simple/ZF4": "ca0e61ea9508e8c2fb0867861c88ae891f4cac3b5f4349fb2093e893e1e98346",
+    "tests/boolean/bopcut_simple/ZN3": "10bf2981a9aec383ae9820dd538c8c385e2a6d7c3ea3a6f4de719c900980c64c",
+    "tests/boolean/bopcut_simple/ZN8": "8133911b8490f01480bbc3cbd9f82444ec9bb6b7ab36d16ab8d598b959daf569",
+    "tests/boolean/bopcut_simple/ZN9": "77154d2d4e89a61082065baf7f52fde59c54c0abd1166a19ebe41181cd529cf6",
+    "tests/boolean/bopcut_simple/ZO1": "7097760a7c6e3b5ceb5a2429c7dd767bedab89e966d190968ae650e70e4d45e1",
+    "tests/boolean/bopcut_simple/ZO6": "2cf707f5aab72ca8077f712ce9e516db4a7fa1437a4b9f6cfc19cc7124356df2",
+    "tests/boolean/bopcut_simple/ZO9": "2e9ad1a965ee6c3de115c6e7a5e4fec0f93bbf43448892bebc2782500084de8d",
+    "tests/boolean/bopcut_simple/ZP1": "9fb21fe11bbd4dad5e06299fade8409ac440fe17e1e42d7f475f4bb8d1b3878a",
+    "tests/boolean/bopcut_simple/ZP2": "63be45fc0ab33120318c57577fdca477b28342cae41541981c2ec373c9f27809",
+    "tests/boolean/bopfuse_simple/A1": "18b1b65a93ab37daba14ac6bdc6c8ca8fb6a8df7b60d865930106057e680f0e1",
+    "tests/boolean/bopfuse_simple/A2": "9afd1302c422fa047ff2e05998cfd0b225dba0cd5b0b8046421d3190ca74662c",
+    "tests/boolean/bopfuse_simple/A3": "aa0df30c55a6ed18aba46139b66183dc141794ca9a2125aff9953cf558317302",
+    "tests/boolean/bopfuse_simple/A5": "7f1d1bd3a2515b3e9b13e09cd9e0e4e9a3090b34de59ba52a7d7e6e235247ca5",
+    "tests/boolean/bopfuse_simple/A6": "bce185857acc29f98a212a9c2062893861ac9ca978d72f442343c2c1832b4129",
+    "tests/boolean/bopfuse_simple/A7": "b36a5c92830c2b53673521f01c9b6aed0d4469ffbf96cc52ecd9def1c37019da",
+    "tests/boolean/bopfuse_simple/A8": "2a5c3e2fce9a35cf280f120fb612ea1f79b97cd1e69a696663546d48f3397022",
+    "tests/boolean/bopfuse_simple/A9": "bba450fb21ada8ed0868198e5d55564908e31b95da08b4185876e010e7e65130",
+    "tests/boolean/bopfuse_simple/B1": "a58a58a500c1858536283c9352ef48bdc8192f612d7718c3b9b0a6c15f2b75f2",
+    "tests/boolean/bopfuse_simple/B2": "7b1b26ec33dbd9f35eb92f150b591549e086efd9460861fb3d4d3c0ba03cf8ea",
+    "tests/boolean/bopfuse_simple/B7": "ac6298d2ff9d8d149a742308c0ad146c8143f71faa01f1315f52797bf51f69b4",
+    "tests/boolean/bopfuse_simple/B8": "ba3526fbd45bdc5efb030b230c912611d3907f808744cf5cdbbb23aa40dd7c37",
+    "tests/boolean/bopfuse_simple/B9": "e2b606f02bbfa774cad54c8f4a2e24453df3d71d3b01337a945b734bb8b6ab29",
+    "tests/boolean/bopfuse_simple/E2": "01b10a3062276b9c946cb4734fb092a6df21a3d8b89acc3dda9f7a27fa182157",
+    "tests/boolean/bopfuse_simple/J9": "fba00ddcf4f32a9dc6dd243a4cd1ae4cf92990c82b6d68d77715931d16101fff",
+    "tests/boolean/bopfuse_simple/K1": "972f59fa45d235415d3b05c1856603441c65e02ff4ed928768a67ea6423283c0",
+    "tests/boolean/bopfuse_simple/K5": "f49f4616d740c09adda40ea322ce9f1384e3c085aca47751ba0d078733cdeb37",
+    "tests/boolean/bopfuse_simple/R1": "852dbc258722fd3c4836951f3327b269b7e95606c43d274b43e0b8953800f257",
+    "tests/boolean/bopfuse_simple/R3": "0e8fe9d288e37d623afd0570d60b2b4769f278802ba37cfbbadb6cb524f1103d",
+    "tests/boolean/bopfuse_simple/R5": "af576394ac6f495e406ab03320a112a321b448d8dcb5c2810d92838d00cb7065",
+    "tests/boolean/bopfuse_simple/R6": "06d1f9f9605e8da716e685488bf532186835846cda74d019fb1e4893b947128d",
+    "tests/boolean/bopfuse_simple/R7": "192c1d7f11810b06986bfac05d1bfc98859cd849051ec7d6cf491a484ff1310d",
+    "tests/boolean/bopfuse_simple/R8": "cfb213721e84e991323d4433bd0358522a916bef4bd6fc6bf36e2df664c519b8",
+    "tests/boolean/bopfuse_simple/R9": "88bfe17f2d9da88db328ddc56e92ef43a28300da972a55c0b49cf6b4a74a8744",
+    "tests/boolean/bopfuse_simple/S1": "1ca04b34aeb5e67e1994f22ecbb4c806528aacc28937e75980eec19c0b34c9f7",
+    "tests/boolean/bopfuse_simple/S4": "b3ca24ffbaf0ae6360120bfa8b552553cf6b6a2ab275281a690f33a4a5f868a6",
+    "tests/boolean/bopfuse_simple/S6": "b9fc8fec215fa3bc4728aed80e38f0376af79deaed1b665f553af36762bf0f53",
+    "tests/boolean/bopfuse_simple/S7": "486cdc21981a4d436c11a89fd8a0b03bfadc880aa5ccbcdc8bffdbadc8310b68",
+    "tests/boolean/bopfuse_simple/S9": "f4faf6bbcf0164d65c5bf235c09d7d7c5aa8dc997e17e90d6471a1bd4376d321",
+    "tests/boolean/bopfuse_simple/T1": "2d4c4fec0314c5f52ed2740756e02611e1f2ace617527e2814e689fd96aa8619",
+    "tests/boolean/bopfuse_simple/T3": "317ad8681285451189c424a9614a2707de68ddeeb1dca1f8b94cd732009ededb",
+    "tests/boolean/bopfuse_simple/T5": "ce5538c5f6cc19c454809ca9690f0394772b4300459af21a6a063af3c104fa7b",
+    "tests/boolean/bopfuse_simple/U3": "af5a6fb0866781bb1faefb028da16bdfcff7c6cc63445417a2e69cb1cb62ec05",
+    "tests/boolean/bopfuse_simple/U4": "ff04c28c2ba68f1033b715a0c93780f53daf27b0219e4c05ecb5ac83ffad5df4",
+    "tests/boolean/bopfuse_simple/U5": "dcaeaa2c8e3db4c211dd7612aaeb1e9df4f7c56241f69c9e956965728fd5eecf",
+    "tests/boolean/bopfuse_simple/U6": "955110bda07e9b2b06da87380b3442069538a0f4043f0c0b6936b689a4634544",
+    "tests/boolean/bopfuse_simple/U7": "32ae46fb0edc0f5c6d7ae7a7c66523659018421ef57f9aca8fbadd3b70fa3d51",
+    "tests/boolean/bopfuse_simple/V1": "3cf424f1ccf7b9be014eb293254f652bb9e0a6833f6f92bdfe2a0ebdce70ccaf",
+    "tests/boolean/bopfuse_simple/V4": "caf5a4bd5713ef4f92cb508803424f4ac6fde3756ed0f830a890add4f8865bd4",
+    "tests/boolean/bopfuse_simple/Z5": "8adade02d3b4830ccb8cc64c28b9827bb3b0d039f865ab1371c93cbccc1c7471",
+    "tests/boolean/bopfuse_simple/ZA1": "d279a06297853226563a32d918db35711b74564905789bf310291bdda6830075",
+    "tests/boolean/bopfuse_simple/ZA5": "6bfdfbf5b6820bff2a9952ab496db577cdd496b76134719ecbf4800a5458c46b",
+    "tests/boolean/bopfuse_simple/ZA6": "0d2dd1a8d883e64d41e919fe3d0f433ea45217a3d1fbf7a09c9268f09bf2b540",
+    "tests/boolean/bopfuse_simple/ZA8": "936d9b90c56c92f8bce64672f5492dccda258d8ae4aa13d65383924121d31d1e",
+    "tests/boolean/bopfuse_simple/ZA9": "b91b3ed1c8515901262816e8b55d226c137f0f50bf3a027110f6c48e5f716417",
+    "tests/boolean/bopfuse_simple/ZB1": "b3ede2c44125b80b51a799cd20eaad25d2b7b78344e857c5896f1c69668a151f",
+    "tests/boolean/bopfuse_simple/ZC9": "79151e79d5c52075de107b76268dfafb2a7b8240def97c8827fafca79ec14d5f",
+    "tests/boolean/bopfuse_simple/ZD1": "492a6bf70b35516561690e8a6f0f83019256d1e4dcd636bfd6877b7c99213884",
+    "tests/boolean/bopfuse_simple/ZD2": "2ec98328d3da30ba4822bb89ffb82006472db50c96cca53b2a34c28e36d550fb",
+    "tests/boolean/bopfuse_simple/ZD4": "cdc54b62dde6537d546ddd67b87642ce1819c406fee4e42de689af72878f6f01",
+    "tests/boolean/bopfuse_simple/ZF4": "7355d16e96889c2c318c41dcb7d3197b60069853f6c9d3db9d4c46629e98a4b5",
+    "tests/boolean/bopfuse_simple/ZN4": "7b35d664b74c1e74564eaad69414842c673f89ecf9973e372844ee829a8e070f",
+    "tests/boolean/bopfuse_simple/ZN5": "7ccb3fabeb4c2518fa5969e27d3ff7479472d99a4c578df45e0bb1a480832091",
+    "tests/boolean/bopfuse_simple/ZN6": "413c30af49eaadc501d2312a9f86580d271af9278e204c2b2fac47e7bd67ff26",
+    "tests/boolean/bopfuse_simple/ZN7": "10053dd78ea605e0fb38dead40d7e9d175a3c00d699ba1f4ef7265c1d4306ec8",
+    "tests/boolean/bopfuse_simple/ZN8": "9cd28a6a5a7ce6038f2d2377fe2f44c2bd31b21a662edfbc450eaabc0868827c",
+    "tests/boolean/bopfuse_simple/ZN9": "499242e4ddae07a50b6bb77f439c04cf3013f2f85a63b5714f78ea8c9f691d1f",
+    "tests/boolean/bopfuse_simple/ZO1": "357c676b9cce92c24d2eb1503f1a4c04d4e87496e7f60e9a5d5f1d61b1f3dc1d",
+    "tests/boolean/bopfuse_simple/ZO2": "d0e309568166b6fa7e209a97f009432abd5fb61d3127c4997b144a61afd31605",
+    "tests/boolean/bopfuse_simple/ZO3": "8be3f77a50589c3c3d0dacde6954bc0ed8c8cadf280d3982e0e7f545884f424f",
+    "tests/boolean/bopfuse_simple/ZO4": "fa184a64ca8f3cb0f26c263a53573aba1284141f8e0f3dad9c671fc5d7753557",
+    "tests/boolean/bopfuse_simple/ZO5": "4520df3f1987a0785f565c57bf0ca099d51927a20868860104a4913048fac56d",
+    "tests/boolean/bopfuse_simple/ZO6": "71c6cf3a872aa4598fb2215c1f2a6e978c97b7860efdc20ebc0a0af5f5c47be5",
+    "tests/boolean/boptuc_simple/A1": "99a24059b97328ad630ccf4a8578814b03eed0757337160af670beb9a0e1da04",
+    "tests/boolean/boptuc_simple/A2": "42a0f6c22708d580e4995c92d712e810dc084c7ffd732ece8203b8aa15b58326",
+    "tests/boolean/boptuc_simple/A3": "de72339d116c06638ba05c74cd6f695daefca4c33cf01f2ab5490708885686ce",
+    "tests/boolean/boptuc_simple/A4": "45c9b3c1a4bf9ca0c27c0f7862766c608d68e1c9c6919800c8eb770d8aad1c0c",
+    "tests/boolean/boptuc_simple/A5": "def8d8bf90323e3126676f1123d7237295319114b53a1f0f349353a54fb532e4",
+    "tests/boolean/boptuc_simple/A6": "6b7e80c6061c3f871aaf5e54d26246ef6f8e79449306e85c8012e0c679da88fe",
+    "tests/boolean/boptuc_simple/A7": "342acb800a9afc8e5a921751bc0915638f7b3a2566c19c337adc2fe56d2d8f5a",
+    "tests/boolean/boptuc_simple/A8": "30602369f717f43e89280b0fdd116664971b5bdd98752f9a5411067232a97e3a",
+    "tests/boolean/boptuc_simple/A9": "651cdc3a09697d1316c91584d3c4cf63c37457c389cc71c3491e07bd5b8e54bc",
+    "tests/boolean/boptuc_simple/B1": "9f935db32acba44747888e726480b32e4215a0985f0724c3c5a8a6f12d2c49a4",
+    "tests/boolean/boptuc_simple/B2": "fce22163cd9843f81946377c7a35801025ffe4dce49faf2a717a4bb91dab3e53",
+    "tests/boolean/boptuc_simple/B3": "d620cf1aeb4362f9129af5df30a8bda9456f253f6d339cf2ec670cf21cf72e24",
+    "tests/boolean/boptuc_simple/B4": "f6ac50f35b26a4ebf4f76ab231cf9e77e1b05f1b5067721206526e1e5c9fda9c",
+    "tests/boolean/boptuc_simple/B5": "20b3e04abc1af8e0c91d28318ff52ae6bdb2def7a4d7e8390a7cb633b07d2589",
+    "tests/boolean/boptuc_simple/B6": "5451ed5cc45424a2d7803e82b355f7c6c4f469a1791950278160622772eedaef",
+    "tests/boolean/boptuc_simple/B7": "624f21a43e0d25cd8890b8b88e3671169abc318583be01e3e50c8dfb7977c0c9",
+    "tests/boolean/boptuc_simple/B8": "2c69e13390531bd0570d0caf60bf1c4a9e63e5da1f39e1abda22bebd776fec24",
+    "tests/boolean/boptuc_simple/B9": "0123b5ab515ea70350416892fd171cf7568084c267b034a646053d1703892a64",
+    "tests/boolean/boptuc_simple/C1": "ca8d58fffede31d118e7958e6b4f3df4f4b0be44f8ea2c074d2869679f09214b",
+    "tests/boolean/boptuc_simple/C2": "b0cc3025d704957c2c974825d0f9ba5139fcfa16604aaf30d978c27b4d5e8be2",
+    "tests/boolean/boptuc_simple/E2": "d1078e5fd91f05dd556297a0b5e47b0573a2b8eb8c5c04428a7c86697a7015e9",
+    "tests/boolean/boptuc_simple/E3": "9ff0112cda6c16a3c03d3297c1924bdadcf17d9cf877193dca737ab09cbcfcb0",
+    "tests/boolean/boptuc_simple/E4": "be757b0928c1aa1bc5bcf9945ecdda23346b5b1bc9b42caaba207baa6ec5fe1a",
+    "tests/boolean/boptuc_simple/E5": "96556d03c4e72ddc091e5c075bce014c48e01d50ea5c7371ee32524b2d82b96b",
+    "tests/boolean/boptuc_simple/E6": "c97b9975d338e8dbe790bfe78cd84559e380f9a94f929bcd5e03e45cad122b4d",
+    "tests/boolean/boptuc_simple/E7": "e3cc47bc9ea2d798ef97a2583bfb76f180e75173fb8cbda59da14e2f59ad9d28",
+    "tests/boolean/boptuc_simple/E8": "a554178a9dc36748f80fcb1b3b705d222511144e01141ae4dc17f9233103e0f8",
+    "tests/boolean/boptuc_simple/E9": "049858940b200ae755315a69b8ab5080491d579fad16c010ae68812fed0566fd",
+    "tests/boolean/boptuc_simple/F1": "2578b40d7e90308b43ca89efedac4363336dcfada51b3486adbeeace12901d15",
+    "tests/boolean/boptuc_simple/F2": "fe3eb2701d07a5ad5937f33f27b8aadf8463723afef577d4bc668ba8c0d20b07",
+    "tests/boolean/boptuc_simple/F3": "d07861dd45eea957d5f9ac5ca1483f40667371197417ac9001f3d9eacacc6a8b",
+    "tests/boolean/boptuc_simple/F4": "711e42e6b4d6568fb55c720a7cc2af4d24d5aae0d1786a157ddccec607e5c8c2",
+    "tests/boolean/boptuc_simple/J9": "f30b3e9e2b868fd12873833b036f8058e775d2f3ecfb71968189b56c4e529b00",
+    "tests/boolean/boptuc_simple/K1": "10d9e0660dd5a2656d48b85422aef9dbc35c9135fd54174cfee54047c8a5251b",
+    "tests/boolean/boptuc_simple/K5": "e3cbc7fff387b5e1c531490ffeb8905095f0c3ac8ef3a43a83db010bf760b27a",
+    "tests/boolean/boptuc_simple/R1": "5590a29f5bfcce528b843e00fd8dc79fb107a43129caa2fba6a1a71b51ddfdd9",
+    "tests/boolean/boptuc_simple/U7": "9883a4259bf34bb15bd322c0bbda24e64431e6e073f75b381b4340a5453d643e",
+    "tests/boolean/boptuc_simple/U8": "42cccdd0d613099419af8cffe2797fa530381323d9ebcaa38adbe988096a9eb2",
+    "tests/boolean/boptuc_simple/V1": "eb2656cb144e662694d98c7d53f6b266be54b140c36b451171ac4a137e0925b1",
+    "tests/boolean/boptuc_simple/V4": "43f82dbe520b8c7a2511c1817d24defc878fd08e09c936ae75081d7d1e91245d",
+    "tests/boolean/boptuc_simple/Z2": "b38d6e4ea6df769dccddce8e9bd4582fd5aaae6c3fe7939bc846ad3c810ef04a",
+    "tests/boolean/boptuc_simple/Z3": "d38638d5fcff09dac2e2f3a3eb090f80ac3b641711c94ddb026d6043233c1c63",
+    "tests/boolean/boptuc_simple/Z5": "71560dae3604532844f59de74ace1513b96c1151623eaf4812ae565da53d9079",
+    "tests/boolean/boptuc_simple/Z8": "204e8df1e11883aedef29823433abd948a9ddbb51c5e92fea8f58cebe1e9f066",
+    "tests/boolean/boptuc_simple/ZA1": "788fdf1ffbf8d3ad9044ab87b1cb5e2c7edc5be37124a12c68e757d637d499c2",
+    "tests/boolean/boptuc_simple/ZA5": "18619f702cd99c1fd7a7ab098fdc91498d9bea93cc164bb8fad9bc5ca1121ff6",
+    "tests/boolean/boptuc_simple/ZA6": "e6ce6761798098607f45fc3eef8c1a85712ab31a13a592f3730c0a0fbe2527da",
+    "tests/boolean/boptuc_simple/ZA8": "b10d7f8fe45ea8cf0979b295b7d0a5d7e0ecbaff2cffc765a35d8c70932bd6fc",
+    "tests/boolean/boptuc_simple/ZA9": "6e3d354ad638f442a19af71aefebf68a712bbed49ae0e78359b2e389f3171e28",
+    "tests/boolean/boptuc_simple/ZB1": "4e10c0bfe459a9d1821cbd301cdcafdd207e42fc54786e50b3a5378130ac7ad4",
+    "tests/boolean/boptuc_simple/ZB3": "2b1e4ad3a89697f7bfdfcf03b09ee0de4970899b5617664f35848661ee272ed9",
+    "tests/boolean/boptuc_simple/ZB7": "9d6fa51587f6e88f74540e4d824370292bdd75b74157fdaf9864f49aa6527fad",
+    "tests/boolean/boptuc_simple/ZB8": "a5c12da9590a8617c86a5c6322b0711bd8e7ba04618d64fc73dac7196f9df182",
+    "tests/boolean/boptuc_simple/ZC1": "5100ae1b04314aee8c040cc0989413bd6dab4cceb120506ed56f2827d0292510",
+    "tests/boolean/boptuc_simple/ZC2": "941d2d4d0151da480345d9271635bc91eed622570b55456fbc139127ff8b1a4e",
+    "tests/boolean/boptuc_simple/ZC3": "a738539892453eec9c642d2d557b0125897dcb16dc6bfa849493fff0355360e2",
+    "tests/boolean/boptuc_simple/ZC8": "efb1732fbcc53c42c9e7f1514303560bb057b61f0e33745930111d7ac69c7b58",
+    "tests/boolean/boptuc_simple/ZC9": "af6248c673e26226aeae4b77bf8f3a05c9388b74e172c6e0c6fcc2aa8a3d0e4e",
+    "tests/boolean/boptuc_simple/ZD1": "f0bdb5aa325e8a89147888431bb2ae0152a49fde9b30fc4247188f028a1bed40",
+    "tests/boolean/boptuc_simple/ZD2": "fc1157dafa260b3ce444126fc67ce8cad90d23066c5bb054f49b775c5876d10a",
+    "tests/boolean/boptuc_simple/ZD4": "e9372e99f5fcaf86ef6f1d7399838451c773726df004bde455039b1a58c415ff",
+    "tests/boolean/boptuc_simple/ZF4": "dee82a15736d998a9fcb8aa65f4addef8e1fc6d0c696d27b6d67da03f5d88e51",
+    "tests/boolean/boptuc_simple/ZN4": "22187faa639e26763f6fcfa6470960757e86f59ace4e31292969a3d854dad962",
+    "tests/boolean/boptuc_simple/ZN5": "0bd8fb5fafa714ef2daa8d9b0ea0ef058c4e3eeca561955b47885fdbdb094958",
+    "tests/boolean/boptuc_simple/ZN6": "3b64b7176e3c4b1aaf0d9296d7237e2d6b01d5cebf31a6d4fc094e2b74a6778a",
+    "tests/boolean/boptuc_simple/ZN7": "4ff9efa47ddeaa3169b2ac7d7da798798f225bc721046c48e091162ce7bef29c",
+    "tests/boolean/boptuc_simple/ZN8": "3d5ceb3933571c1cc42d3e0e4cdd33c10022e455fcf851e18e1d020872bf6c80",
+    "tests/boolean/boptuc_simple/ZN9": "edc426c0cfbcbebdfe39ca53b8cf4230a073b77e08df230580f91876e04902af",
+    "tests/boolean/boptuc_simple/ZO1": "9d626b7cf3b3284cc7b37e8a51c10b55460647451087809a3b186315acbbe9e2",
+    "tests/boolean/boptuc_simple/ZO2": "374c67eaea239c3c3b4517cff35e5735f395b6de5f97146be7f6a1a244735864",
+    "tests/boolean/boptuc_simple/ZO3": "bc50c9c24fbeddd820ad44a9efe13d10d7be2382a11746513b9d0274a3ace840",
+    "tests/boolean/boptuc_simple/ZO4": "c665ce2d00b4c4fc7cde786511b332517fbdd00d7b28a9a3dff271b424cccdf1",
+    "tests/boolean/boptuc_simple/ZO5": "a8285ece3c1e888aa5f4b37fa82d253209024b2d6a4ba1743a197df326959184",
+    "tests/boolean/boptuc_simple/ZO6": "22d1cb51bd97dcdd17fa9024bafe64c6d279a5632eec3018b43b0a25267dbe2b",
+    "tests/boolean/boptuc_simple/ZO9": "713fdcfd35f6ba62bfb96568502395a3353a1b64bd2af8b2a41abb97b8d74763",
+    "tests/boolean/boptuc_simple/ZP1": "ff099d7b539f89611cd07829371e264ce6165576e11a913fe75ee5c5dcc73294",
     "tests/boolean/end": "c9af5276f45a782d2c8bd14514d6ecd8bb47d3765a037018608d20ca79efe557",
     "tests/boolean/parse.rules": "08f82593d2eacd0dcb4ef65b9dfcb472b6ce2e7c4faeae1e5645fa26d9fa6c64",
     "tests/boolean/splitter/A5": "50047314a7612585ebd704ffec835df3b80bf71aed5c80dc939b464e820c4a96",
@@ -439,6 +773,2010 @@
       "expected_rust": "unsupported",
       "expected_occt": "pass",
       "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: a box split by open polylines, then removeinternals."
+    },
+    {
+      "path": "tests/boolean/bcommon_simple/I5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bcommon of two boxes in one frame (ttranslate); checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcommon_simple/J1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bcommon of two cylinders in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bfuse_simple/L2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bfuse of two cylinders in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/A1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/A2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/A3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/A4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/A5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/A6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/A7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/A8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/A9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/B1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/B2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/B3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/B4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/B5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/B6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/B7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/B8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/B9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/C1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/C2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/E2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/E3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/E4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/E5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/E6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/E7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/E8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/E9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/F1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/F2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/F3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/F4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/J9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/K1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/K5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/P3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/P4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/P8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/R1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/R3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/R5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/R6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/R7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/R8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/R9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/S1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/S4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/S6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/S7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/S9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/T1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/T3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/T5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/U3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/U4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/U5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/U6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/U7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/U8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/V1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/V4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/V5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/V7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/V9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/W1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/W2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/W3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/W4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/W5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/W8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/X1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/X2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/X4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/X5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/X7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/X9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/Y7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/Y8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/Y9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/Z1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/Z2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/Z3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/Z5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/Z8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/Z9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZA1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZA5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZA6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZA8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZA9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZB1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZB3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZB7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZB8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZC1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZC2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZC3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZC6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZC7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZC8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two cylinders in one frame (ttranslate); checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZC9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two cylinders in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZD1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two cylinders in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZD2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two cylinders in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZD3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two cylinders in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZD4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two cylinders in one frame (ttranslate); checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZF4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of two cylinders in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZN3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZN4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZN5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZN6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZN7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZN8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZN9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZO1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZO2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZO3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZO4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZO5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZO6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZO9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (ttranslate); checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZP1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (ttranslate); checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZP2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcommon of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/A1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/A2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/A3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/A4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/A6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/A7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/A8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/A9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/B3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/B4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/B7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/B8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/B9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/C2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/E4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/E8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/F3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/J9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/K1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/K5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/R1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/R3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/R5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/R6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/R7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/R8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/R9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/S1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/S6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/S7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/S9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/T1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/T3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/T5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/U3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/U4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/U5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/U6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/U7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/U8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/Z9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZA5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZA6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZA8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZA9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZB1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZC8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two cylinders in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZD2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two cylinders in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZD3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two cylinders in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZD4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two cylinders in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZF4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of two cylinders in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZN3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZN8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZN9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZO1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZO6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZO9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZP1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZP2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopcut of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/A1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/A2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/A3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/A5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/A6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/A7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/A8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/A9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/B1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/B7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/B8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/B9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/E2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/J9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/K1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/K5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/R1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/R3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/R5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/R6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/R7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/R8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/R9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/S1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/S4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/S6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/S7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/S9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/T1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/T3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/T5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/U3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/U4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/U5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/U6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/V1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/V4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/Z5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZA1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZA5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZA6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZA8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZA9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZB1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZC9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of two cylinders in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZD1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of two cylinders in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZD2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of two cylinders in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZD4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of two cylinders in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZF4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of two cylinders in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZN4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZN5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZN6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZN7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZN8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZN9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZO1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZO2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZO3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZO4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZO5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZO6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and bopfuse of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/A1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/A2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/A3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/A4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/A5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/A6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/A7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/A8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/A9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/B1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/B2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/B3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/B4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/B5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/B6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/B7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/B8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/B9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/C1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/C2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/E2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/E3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/E4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/E5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/E6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/E7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/E8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/E9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/F1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/F2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/F3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/F4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/J9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/K1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/K5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two boxes in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/U7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/U8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/V1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (dset numbers); checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/V4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/Z2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/Z3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/Z5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (dset numbers); checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/Z8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZA1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZA5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZA6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZA8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZA9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZB1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZB3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZB7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZB8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZC1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZC2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZC3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (dset numbers); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZC8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two cylinders in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZC9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two cylinders in one frame (ttranslate); checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZD1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two cylinders in one frame (ttranslate); checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZD2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two cylinders in one frame; checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZD4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two cylinders in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZF4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of two cylinders in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZN4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (ttranslate); checkprops -s empty and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZN5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZN6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZN7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZN8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZN9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZO1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZO2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZO3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZO4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZO5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZO6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZO9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZP1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a: bop and boptuc of a box and a cylinder in one frame (ttranslate); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcommon_simple/A1",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a's Boolean group, a capability sentinel: a sphere and a box: solids other than prisms (S9d)."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZL6",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a's Boolean group, a capability sentinel: two cones: solids other than prisms (S9d)."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/C3",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a's Boolean group, a capability sentinel: a box rotated 45 degrees: frames with different axes (S9b)."
+    },
+    {
+      "path": "tests/boolean/bfuse_complex/J5",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a's Boolean group, a capability sentinel: crossed cylinders: frames with different axes (S9c)."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/H6",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a's Boolean group, a capability sentinel: pockets cut from a prism: a cut leaving a stack of prisms (S9a.2)."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/B2",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a's Boolean group, a capability sentinel: a small box fused at a corner: a fuse of different heights (S9a.2)."
+    },
+    {
+      "path": "tests/boolean/bfuse_simple/E1",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a's Boolean group, a capability sentinel: SCALE-sized prisms whose offset is not binary64 in the frame (S9b)."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/C8",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a's Boolean group, a capability sentinel: an atan2 angle in dset, which the adapter does not evaluate."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/S5",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a's Boolean group, a capability sentinel: a box corner on the cylinder: a profile piece thinner than the resolution (Degenerate)."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZC7",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a's Boolean group, a capability sentinel: a box corner tangent to a cylinder: a result thinner than the resolution (Degenerate)."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/S4",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a's Boolean group, a capability sentinel: a result touching itself at a point (Degenerate)."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/U7",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a's Boolean group, a capability sentinel: a box tangent to a cylinder: two results touching (Degenerate)."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/R1",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a's Boolean group, a capability sentinel: a box minus its inscribed cylinder: a hole touching its boundary (Degenerate)."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/G8",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9a's Boolean group, a capability sentinel: a semi-infinite prism of an exploded face (explode, SemiInf)."
     }
   ],
   "derived_sources": {
