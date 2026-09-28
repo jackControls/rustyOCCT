@@ -2092,6 +2092,12 @@ the first fixture, never deferred.
       pole takes 8.8 s under ASan, the quadrature refining where the
       section's angle about the axis turns fast. A parametrization without
       that refinement is a follow-up.
-    Pending: the Linux record of the new capture after CI, and a clean
-    600-second `split` campaign.
+    Two campaigns found a cap's rim crossed within rounding of its tangent
+    (`2f60b19f`) and a prism's trace passing a U's vertices within rounding
+    (`a4e1c9df`), both now `Degenerate` with their regressions; the third,
+    at `a4e1c9df`, was clean: 2,051 mutation executions after a 995 s
+    replay, 20,798 edges, 1,903 MB peak (the target now purges the
+    allocator as the other heavy ones do), one slow unit (10 s under
+    AddressSanitizer, kept as a regression). Pending: the Linux record of
+    the conic capture after CI.
 * S9 — pending
