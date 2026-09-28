@@ -238,6 +238,67 @@ fn up(x: Fast) -> f64 {
     }
 }
 
+/// Increasing parameter breaks (cell ends), exact, with their binary64
+/// values where exact (compared directly) and their enclosures.
+#[derive(Debug, Clone)]
+struct Breaks {
+    exact: Vec<R>,
+    value: Vec<Option<f64>>,
+    enclosed: Vec<Fast>,
+}
+
+impl Breaks {
+    fn new(exact: Vec<R>) -> Self {
+        let value = exact
+            .iter()
+            .map(|r| {
+                let (lo, hi) = Fast::from_r(r).bounds_f64();
+                (lo == hi).then_some(lo)
+            })
+            .collect();
+        let enclosed = exact.iter().map(Fast::from_r).collect();
+        Self {
+            exact,
+            value,
+            enclosed,
+        }
+    }
+
+    fn cmp(&self, k: usize, x: f64) -> std::cmp::Ordering {
+        match self.value[k] {
+            Some(b) => x.total_cmp(&b),
+            None => R::from_float(x).map_or(std::cmp::Ordering::Equal, |x| x.cmp(&self.exact[k])),
+        }
+    }
+
+    /// The cell `k` with `x <= b[k + 1]` first (the last when beyond).
+    fn find(&self, x: f64) -> usize {
+        let n = self.exact.len() - 1;
+        let (mut lo, mut hi) = (0, n - 1);
+        while lo < hi {
+            let mid = (lo + hi) / 2;
+            if self.cmp(mid + 1, x) == std::cmp::Ordering::Greater {
+                lo = mid + 1;
+            } else {
+                hi = mid;
+            }
+        }
+        lo
+    }
+
+    /// `x`'s local parameter in cell `k`, clamped to `[0, 1]`.
+    fn local(&self, k: usize, x: f64, length: &Fast) -> Option<Fast> {
+        use std::cmp::Ordering::{Greater, Less};
+        if self.cmp(k, x) != Greater {
+            Some(c(0.0))
+        } else if self.cmp(k + 1, x) != Less {
+            Some(c(1.0))
+        } else {
+            c(x).sub(&self.enclosed[k]).div(length)
+        }
+    }
+}
+
 // ------------------------------------------------------------------ curves
 
 #[derive(Debug, Clone)]
@@ -263,6 +324,7 @@ struct CurveCell {
 #[derive(Debug, Clone)]
 pub(super) struct CurveCells {
     cells: Vec<CurveCell>,
+    breaks: Breaks,
     degree: usize,
 }
 
@@ -296,7 +358,18 @@ impl CurveCells {
         if cells.is_empty() {
             return Err(Error::ComputationLimit("tessellation spline cells"));
         }
-        Ok(Self { cells, degree })
+        let breaks = Breaks::new(
+            cells
+                .iter()
+                .map(|x| x.lo.clone())
+                .chain(std::iter::once(cells[cells.len() - 1].hi.clone()))
+                .collect(),
+        );
+        Ok(Self {
+            cells,
+            breaks,
+            degree,
+        })
     }
 
     /// The largest `|C'|` bound: the curve's speed in its parameter.
@@ -311,26 +384,12 @@ impl CurveCells {
 
     /// The cell whose exact range contains `u` (clamped to the range).
     fn locate(&self, u: f64) -> Option<(&CurveCell, Fast)> {
-        let x = R::from_float(u)?;
-        let cell = self
-            .cells
-            .iter()
-            .find(|cell| cell.lo <= x && x <= cell.hi)
-            .or_else(|| {
-                if x < self.cells[0].lo {
-                    self.cells.first()
-                } else {
-                    self.cells.last()
-                }
-            })?;
-        let t = if x < cell.lo {
-            c(0.0)
-        } else if x > cell.hi {
-            c(1.0)
-        } else {
-            c(u).sub(&Fast::from_r(&cell.lo)).div(&cell.length)?
-        };
-        Some((cell, t))
+        if !u.is_finite() {
+            return None;
+        }
+        let k = self.breaks.find(u);
+        let cell = &self.cells[k];
+        Some((cell, self.breaks.local(k, u, &cell.length)?))
     }
 
     /// The exact point at parameter `u` (the range's end nearest when `u`
@@ -604,8 +663,8 @@ fn cone_of(m: &[V3], centre: &V3, factor: f64) -> Option<Cone> {
 /// The cells of a nonperiodic spline surface over its domain, a tensor grid.
 #[derive(Debug, Clone)]
 pub(super) struct SurfaceCells {
-    ubreaks: Vec<R>,
-    vbreaks: Vec<R>,
+    ubreaks: Breaks,
+    vbreaks: Breaks,
     /// Outward binary64 bounds of the breaks.
     uf: Vec<(f64, f64)>,
     vf: Vec<(f64, f64)>,
@@ -710,6 +769,7 @@ impl SurfaceCells {
             }
         }
         let cells: Vec<SurfaceCell> = cells.into_iter().map(|x| x.expect("every cell")).collect();
+        let (ubreaks, vbreaks) = (Breaks::new(ubreaks), Breaks::new(vbreaks));
         let ((ua, ub), (va, vb)) = surface.domain();
         Ok(Self {
             ubreaks,
@@ -729,36 +789,13 @@ impl SurfaceCells {
     }
 
     fn cell_at(&self, uv: Point2) -> Option<(&SurfaceCell, Fast, Fast)> {
-        let (u, v) = (R::from_float(uv.x)?, R::from_float(uv.y)?);
-        let find = |breaks: &[R], x: &R| -> usize {
-            let n = breaks.len() - 1;
-            (0..n).find(|k| *x <= breaks[k + 1]).unwrap_or(n - 1)
-        };
-        let (i, j) = (find(&self.ubreaks, &u), find(&self.vbreaks, &v));
-        let cell = &self.cells[i * (self.vbreaks.len() - 1) + j];
-        let local = |x: &R, lo: &R, hi: &R, value: f64, length: &Fast| -> Option<Fast> {
-            if x <= lo {
-                Some(c(0.0))
-            } else if x >= hi {
-                Some(c(1.0))
-            } else {
-                c(value).sub(&Fast::from_r(lo)).div(length)
-            }
-        };
-        let s = local(
-            &u,
-            &self.ubreaks[i],
-            &self.ubreaks[i + 1],
-            uv.x,
-            &cell.lengths[0],
-        )?;
-        let t = local(
-            &v,
-            &self.vbreaks[j],
-            &self.vbreaks[j + 1],
-            uv.y,
-            &cell.lengths[1],
-        )?;
+        if !(uv.x.is_finite() && uv.y.is_finite()) {
+            return None;
+        }
+        let (i, j) = (self.ubreaks.find(uv.x), self.vbreaks.find(uv.y));
+        let cell = &self.cells[i * (self.vbreaks.exact.len() - 1) + j];
+        let s = self.ubreaks.local(i, uv.x, &cell.lengths[0])?;
+        let t = self.vbreaks.local(j, uv.y, &cell.lengths[1])?;
         Some((cell, s, t))
     }
 
@@ -860,7 +897,7 @@ impl SurfaceCells {
     /// The largest coefficients over the cells meeting a parameter box.
     pub(super) fn coefficients(&self, u0: f64, u1: f64, v0: f64, v1: f64) -> Coefficients {
         let (i0, i1, j0, j1) = self.range(u0, u1, v0, v1);
-        let nv = self.vbreaks.len() - 1;
+        let nv = self.vbreaks.exact.len() - 1;
         let mut out = [0.0f64; 5];
         for i in i0..=i1 {
             for j in j0..=j1 {
@@ -950,7 +987,7 @@ impl SurfaceCells {
         let none = (f64::INFINITY, 0.0, f64::INFINITY);
         let d = [c(d.x), c(d.y), c(d.z)];
         let (i0, i1, j0, j1) = self.range(u0, u1, v0, v1);
-        let nv = self.vbreaks.len() - 1;
+        let nv = self.vbreaks.exact.len() - 1;
         let (mut angle, mut least, mut rated) = (0.0f64, f64::INFINITY, 0.0f64);
         for i in i0..=i1 {
             for j in j0..=j1 {

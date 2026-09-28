@@ -7,11 +7,10 @@ mod brep_protocol;
 #[path = "support/identity_protocol.rs"]
 #[allow(dead_code)]
 mod identity_protocol;
-use rusty_occt::curve::{DerivativeOrder, KnotSide};
 use rusty_occt::occt_brep::{import, read};
 use rusty_occt::tessellation::{tessellate, Mesh, Parameters};
 use rusty_occt::topology::{Surface, Topology};
-use rusty_occt::{BSplineSurface3, Error, Point3, Tolerance, Vec3};
+use rusty_occt::{BSplineSurface3, Error, KnotVector, Point3, Tolerance, Vec3};
 use std::collections::BTreeMap;
 
 /// Barycentric samples: the order-4 lattice without the vertices.
@@ -68,43 +67,140 @@ fn surface_distance(surface: &Surface, p: Point3) -> f64 {
     }
 }
 
-/// Distances to a spline surface over its domain by projection: the
-/// nearest points of a grid with four samples per knot span in each
-/// direction (at most 257), each followed by Gauss-Newton iterations clamped
-/// to the domain, with the kernel's exact evaluation (independent of the
-/// tessellation's cells). A projection can only overstate a distance.
+/// Distances to a spline surface over its domain, independent of the
+/// kernel's evaluation and of the tessellation's cells: the surface's basis
+/// functions and their derivatives by the Cox-de Boor recurrence in
+/// binary64 (The NURBS Book, A2.2 and A2.3), the rational quotient rule;
+/// from the four nearest points of a grid with four samples per knot span
+/// (at least 9 per direction, at most 257), Gauss-Newton iterations clamped to the
+/// domain. A projection can only overstate a distance (by rounding, far
+/// below the check's allowance).
 struct SplineDistance<'a> {
     surface: &'a BSplineSurface3,
+    flat: [Vec<f64>; 2],
     grid: Vec<(Point3, f64, f64)>,
+}
+
+/// The flat knot sequence of a nonperiodic basis.
+fn flat(k: &KnotVector) -> Vec<f64> {
+    k.knots()
+        .iter()
+        .zip(k.multiplicities())
+        .flat_map(|(x, m)| std::iter::repeat_n(*x, *m))
+        .collect()
+}
+
+/// The span `s` with `flat[s] <= x < flat[s + 1]` (the last nonempty one at
+/// the domain's end), and the basis values and first derivatives there.
+fn basis_at(flat: &[f64], p: usize, x: f64) -> (usize, Vec<f64>, Vec<f64>) {
+    let n = flat.len() - p - 1;
+    let mut s = p;
+    while s + 1 < n && flat[s + 1] <= x {
+        s += 1;
+    }
+    let mut ndu = vec![vec![0.0; p + 1]; p + 1];
+    ndu[0][0] = 1.0;
+    let (mut left, mut right) = (vec![0.0; p + 1], vec![0.0; p + 1]);
+    for j in 1..=p {
+        left[j] = x - flat[s + 1 - j];
+        right[j] = flat[s + j] - x;
+        let mut saved = 0.0;
+        for r in 0..j {
+            ndu[j][r] = right[r + 1] + left[j - r];
+            let temp = ndu[r][j - 1] / ndu[j][r];
+            ndu[r][j] = saved + right[r + 1] * temp;
+            saved = left[j - r] * temp;
+        }
+        ndu[j][j] = saved;
+    }
+    let values: Vec<f64> = (0..=p).map(|j| ndu[j][p]).collect();
+    // First derivatives: p (N_{r,p-1} / du - N_{r+1,p-1} / du').
+    let derivatives = (0..=p)
+        .map(|r| {
+            let mut d = 0.0;
+            if r >= 1 {
+                d += ndu[r - 1][p - 1] / ndu[p][r - 1];
+            }
+            if r < p {
+                d -= ndu[r][p - 1] / ndu[p][r];
+            }
+            p as f64 * d
+        })
+        .collect();
+    (s, values, derivatives)
 }
 
 impl<'a> SplineDistance<'a> {
     fn new(surface: &'a BSplineSurface3) -> Self {
+        let flat = [flat(surface.u_knots()), flat(surface.v_knots())];
+        let mut out = Self {
+            surface,
+            flat,
+            grid: Vec::new(),
+        };
         let ((u0, u1), (v0, v1)) = surface.domain();
-        let count = |k: &rusty_occt::KnotVector| (4 * (k.knots().len() - 1)).clamp(16, 256);
+        let count = |k: &KnotVector| (4 * (k.knots().len() - 1)).clamp(8, 256);
         let (nu, nv) = (count(surface.u_knots()), count(surface.v_knots()));
-        let mut grid = Vec::new();
         for i in 0..=nu {
             for j in 0..=nv {
                 let (u, v) = (
                     (u0 + (u1 - u0) * i as f64 / nu as f64).min(u1),
                     (v0 + (v1 - v0) * j as f64 / nv as f64).min(v1),
                 );
-                grid.push((surface.point(u, v).unwrap(), u, v));
+                let point = out.jet(u, v).0;
+                out.grid.push((point, u, v));
             }
         }
-        Self { surface, grid }
+        out
+    }
+
+    /// `(S, S_u, S_v)` in binary64.
+    fn jet(&self, u: f64, v: f64) -> (Point3, Vec3, Vec3) {
+        let s = self.surface;
+        let (p, q) = (s.u_knots().degree(), s.v_knots().degree());
+        let nv = s.v_knots().pole_count();
+        let (su, nu_, du_) = basis_at(&self.flat[0], p, u);
+        let (sv, nv_, dv_) = basis_at(&self.flat[1], q, v);
+        let (mut a, mut au, mut av) = ([0.0; 3], [0.0; 3], [0.0; 3]);
+        let (mut w, mut wu, mut wv) = (0.0, 0.0, 0.0);
+        for i in 0..=p {
+            for j in 0..=q {
+                let index = (su - p + i) * nv + (sv - q + j);
+                let (pole, weight) = (s.poles()[index].to_array(), s.weights()[index]);
+                let (b, bu, bv) = (nu_[i] * nv_[j], du_[i] * nv_[j], nu_[i] * dv_[j]);
+                for k in 0..3 {
+                    a[k] += b * weight * pole[k];
+                    au[k] += bu * weight * pole[k];
+                    av[k] += bv * weight * pole[k];
+                }
+                w += b * weight;
+                wu += bu * weight;
+                wv += bv * weight;
+            }
+        }
+        let point = [a[0] / w, a[1] / w, a[2] / w];
+        let d = |x: [f64; 3], dw: f64| {
+            Vec3::new(
+                (x[0] - dw * point[0]) / w,
+                (x[1] - dw * point[1]) / w,
+                (x[2] - dw * point[2]) / w,
+            )
+        };
+        (
+            Point3::new(point[0], point[1], point[2]),
+            d(au, wu),
+            d(av, wv),
+        )
     }
 
     fn distance(&self, p: Point3) -> f64 {
-        let mut order: Vec<(f64, f64, f64)> = self
+        let mut near: Vec<(f64, f64, f64)> = self
             .grid
             .iter()
             .map(|(q, u, v)| (q.distance(p), *u, *v))
             .collect();
-        order.sort_by(|a, b| a.0.total_cmp(&b.0));
-        order
-            .iter()
+        near.sort_by(|a, b| a.0.total_cmp(&b.0));
+        near.iter()
             .take(4)
             .map(|&(d, u, v)| d.min(self.descend(p, u, v)))
             .fold(f64::INFINITY, f64::min)
@@ -112,39 +208,27 @@ impl<'a> SplineDistance<'a> {
 
     fn descend(&self, p: Point3, mut u: f64, mut v: f64) -> f64 {
         let ((u0, u1), (v0, v1)) = self.surface.domain();
-        let vector = |b: [rusty_occt::ScalarInterval; 3]| {
-            Vec3::new(
-                b[0].representative(),
-                b[1].representative(),
-                b[2].representative(),
-            )
-        };
         let mut best = f64::INFINITY;
-        for _ in 0..20 {
-            let e = self
-                .surface
-                .evaluate(u, v, DerivativeOrder::First, [KnotSide::Automatic; 2])
-                .unwrap();
-            let r = e.position() - p;
+        for _ in 0..30 {
+            let (point, su, sv) = self.jet(u, v);
+            let r = point - p;
             best = best.min(r.length());
-            let (su, sv) = (
-                vector(e.derivative_bounds(1, 0).unwrap()),
-                vector(e.derivative_bounds(0, 1).unwrap()),
-            );
             let (a, b, c) = (su.dot(su), su.dot(sv), sv.dot(sv));
             let (g, h) = (-r.dot(su), -r.dot(sv));
             let det = a * c - b * b;
             if det.is_nan() || det <= 0.0 {
                 break;
             }
-            let (du, dv) = ((g * c - h * b) / det, (a * h - b * g) / det);
-            let (nu, nv) = ((u + du).clamp(u0, u1), (v + dv).clamp(v0, v1));
+            let (nu, nv) = (
+                (u + (g * c - h * b) / det).clamp(u0, u1),
+                (v + (a * h - b * g) / det).clamp(v0, v1),
+            );
             if (nu - u).abs() <= 1e-15 * (u1 - u0) && (nv - v).abs() <= 1e-15 * (v1 - v0) {
                 break;
             }
             (u, v) = (nu, nv);
         }
-        best.min(self.surface.point(u, v).unwrap().distance(p))
+        best
     }
 }
 
@@ -218,14 +302,14 @@ fn contract(name: &str, t: &Topology, mesh: &Mesh, p: Parameters, solid: bool) -
     let (mut area, mut volume) = (0.0, 0.0);
     for f in &mesh.faces {
         let surface = &t.faces()[f.face.index()].surface;
-        // A spline face: the centroids of at most 100 of its triangles,
+        // A spline face: the centroids of at most 1000 of its triangles,
         // evenly spread, by projection.
         let spline = match surface {
             Surface::BSpline(s) => Some(SplineDistance::new(s)),
             _ => None,
         };
         let stride = if spline.is_some() {
-            f.triangles.len().div_ceil(100).max(1)
+            f.triangles.len().div_ceil(1000).max(1)
         } else {
             1
         };
