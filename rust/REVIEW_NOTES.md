@@ -1392,6 +1392,60 @@ Decisions for S9, recorded before its code (2026-09-28):
   a native capture before the kernel code; then the kernel, the probe and
   `compare_boolean.py`, the `boolean` target's spline profiles and a
   campaign.
+* **S9b, decisions recorded before its code (2026-09-28).** Polyhedra in
+  any relative position: two solids each a prism of a line profile
+  (polygons with polygon holes) in any frame, or a Boolean's stack or a
+  plane's piece of such a prism (every face planar, every edge a line).
+  * **Exact models.** Each input is decided on its construction's exact
+    model, never on its rounded vertices: a point of a prism is `o + u x +
+    v y + w n` in rationals from the frame's stored binary64 origin and
+    axes and the profile's and heights' binary64 values, a face's plane the
+    exact plane through its model points (a cap's normal `n`, a wall's `(q
+    - p) x n` for its segment `pq`), a plane piece's cut plane its stored
+    exact coefficients; so every model vertex lies exactly on its faces'
+    planes. An input without such a model (an imported body, a sheet) is
+    `OutOfDomain` until S9c's general faces.
+  * **Arrangement.** Every face of one input is intersected with every
+    face of the other exactly: two non-parallel planes meet in a rational
+    line, clipped to each face's polygon by exact parameters along it; a
+    face's pieces are the exact 2D arrangement of its polygon with those
+    segments in its plane (projected on its normal's largest coordinate
+    plane, rational throughout), coplanar faces arranged with each other's
+    polygons. Each piece is classified against the other solid at a
+    rational interior point (exact ray parity along a direction chosen off
+    every edge, or on the other's coplanar face with the same or opposite
+    orientation) and kept as S9a keeps pieces; kept pieces sharing a plane
+    and orientation join into maximal faces, collinear edges into one, as
+    OCCT's unified result.
+  * **Rounding.** Result vertices are the exact model's points rounded to
+    binary64, faces' planes their exact planes rounded (origin and normal),
+    each solid validated with measured enclosures; a rounding the
+    validation refuses is `PrecisionLoss`. Degeneracies are S9a's: a
+    result touching itself along an edge or at a vertex, a piece thinner
+    than the resolution (measured on the exact model), `Degenerate`.
+  * **Results.** General bodies holding their exact model (the inputs'
+    constructions, the operation and the solid's index), so a rigid motion
+    rebuilds them in the moved frames as S8's pieces and S9a.2's stacks do,
+    and a result is an input again; histories by S9a's rules (a face
+    continues the input faces whose plane and orientation it shares and
+    whose polygon it overlaps, an edge or vertex those it lies on, new
+    edges and vertices generated from the faces meeting there).
+  * **Evidence first.** A reference in Fractions independent of the
+    arrangement: each profile cut into convex pieces (ear clipping with
+    exact orientation), each prism a union of convex prisms, and every
+    pair's intersection by exact half-space clipping, giving the common's
+    volume and moments exactly; fuse and cut by inclusion and exclusion;
+    areas by clipping each face polygon against the other solid's convex
+    pieces (inside, outside, or on a coplanar face with either
+    orientation); solid counts by union-find over convex cells sharing
+    positive area. Fixtures of every class (rotated boxes, a tilted tool,
+    coplanar faces of either orientation, an edge on a face, edges crossing,
+    a vertex on a face, identical, nested, touching and apart solids, a
+    stack and a plane piece as inputs, both inputs rotated), a native
+    `BRepAlgoAPI_Fuse`/`Cut`/`Common` capture before the kernel code, then
+    the kernel, the probe and `compare_boolean.py`, the `boolean` target's
+    rotated frames, the DRAW survey's 647 cases of frames with different
+    axes and a campaign.
 
 ### Parallel tracks
 
@@ -2677,5 +2731,8 @@ Decisions for S9, recorded before its code (2026-09-28):
     face continues the caps at its height facing its way whose region it
     overlaps, decided by an exact 2D common; (f) the order's spline
     profiles (S9 Order: "S9a.2: spline profiles") are S9a.2's second
-    part, after the stacks. Pending: the campaign, the DRAW survey of the
-    163 stacked upstream cases; S9a.2's spline profiles next.
+    part, after the stacks; (g) a stack's rigid motion rebuilds it from its
+    construction in the moved frame (as S8's pieces), keeping its ids and
+    moving its mass, rather than moving its stored geometry. Pending: the
+    campaign, the DRAW survey of the 163 stacked upstream cases; S9a.2's
+    spline profiles next (their evidence first).
