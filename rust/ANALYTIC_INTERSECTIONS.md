@@ -348,6 +348,49 @@ cylinder, and hundreds of separate points along a torus's meridian or
 parallel), and the kernel inside the reference on all 36
 (`compare_curve_surface.py`, `curve_surface.rs`).
 
+## Ellipses, hyperbolas and splines against surfaces (S7c.2)
+
+`intersection::conic_surface(conic, surface)` takes an `intersection::Conic`,
+an ellipse or one branch of a hyperbola with stored binary64 data as OCCT's
+`Geom_Ellipse` and `Geom_Hyperbola` (a `Frame3` and semi-axes `major`,
+`minor`; an ellipse's major the larger): the exact point sets `o + major cos
+t x + minor sin t y` and `o + major cosh t x + minor sinh t y` in the stored
+axes, `t` in `(-pi, pi]` or real. The results are `curve_surface`'s.
+
+* **Exact surfaces.** A point `o + xi x + eta y` is on the conic exactly when
+  `minor^2 xi^2 +- major^2 eta^2 = major^2 minor^2`, so S7c.1's resultant
+  applies unchanged (`curve_surface::section`, shared with the circle):
+  exact multiplicities and containment; the hyperbola keeps the roots with
+  `xi > 0`, certainly. The parameter is a certified `atan2(eta / minor, xi /
+  major)` or `asinh(eta / minor)` (a certified logarithm in `certified.rs`).
+* **Cones.** An ellipse is the circle's trigonometric polynomial; a
+  hyperbola's function times `4 z^2`, `z = e^t`, is a quartic in `z > 0`
+  with interval coefficients, isolated between Cauchy bounds of it and its
+  reciprocal; `t = ln z`.
+
+`spline_torus(curve, torus)` substitutes a rational B-spline's homogeneous
+span polynomials into the torus's quartic (degree `4 p`) and returns
+`spline_sphere`'s result type: every root with its contact orders, every
+span on the torus an overlap. `spline_cone(curve, cone)` writes the cone as
+`rho = |r + h tan a|`, so `W^2 F = Q0 + tau Q1 + tau^2 Q2` with exact `Q`s
+and `tau = tan a / |a|` transcendental: a span is on the cone exactly when
+all three vanish (an overlap between exact knots), a root common to all
+three is exact with its order in their gcd (a rational apex: a tangency),
+and the other roots are certified in intervals (`SplineConeIntersection`).
+
+Evidence: the reference extended (the conics' rational parameterisations
+`tan(t / 2)` and `tanh(t / 2)` substituted exactly, the splines' exact span
+polynomials, sympy's `real_roots`; 80 digits for cones) and 35 fixture cases
+(`e_`, `h_`, `s_`: crossings, tangencies to a plane, a sphere, a cylinder
+and a torus, containment in a plane, the hyperbola's other branch, a line's
+two tangencies to a torus's top, exact rational quarter circles on a torus's
+parallel and a cone's reference circle, a partial overlap, a rational apex,
+misses), with each conic's stored axes checked bit for bit; a
+`GeomAPI_IntCS` capture before the kernel code
+(`fixtures/occt-conic-spline-surface-preimplementation`): 30 native matches
+and 5 reviewed differences (containment and overlaps never native
+segments), and the kernel inside the reference on all 35.
+
 ## Evidence
 
 * **Independent reference.** `analytic_intersection_reference.py` computes

@@ -12,8 +12,12 @@
 //! circle; and an exact dyadic translation keeps the result wherever the
 //! moved frames keep their stored axes.
 use crate::analytic_intersections::{distance, frame, make, translated, Bytes};
-use rusty_occt::intersection::{curve_surface, CurveSurfaceIntersection};
+use rusty_occt::intersection::{
+    conic_surface, curve_surface, spline_cone, spline_torus, Conic, CurvePoint,
+    CurveSurfaceIntersection,
+};
 use rusty_occt::topology::{Curve3, Surface};
+use rusty_occt::BSplineCurve3;
 use rusty_occt::{Error, Point3, RigidTransform, Vec3};
 
 fn mid([lo, hi]: [f64; 2]) -> f64 {
@@ -62,6 +66,9 @@ pub fn check_curve_surface(data: &[u8]) {
         _ => r,
     };
     let (x, y, axis) = (f.x(), f.y(), f.normal());
+    if shape >= 128 {
+        return check_conic_or_spline(&mut b, shape - 128, mode, &s, reach);
+    }
     let curve = if shape % 2 == 0 {
         let (p0, d) = match mode {
             0 => (
@@ -193,5 +200,202 @@ pub fn check_curve_surface(data: &[u8]) {
             std::mem::discriminant(&t),
             "translated"
         ),
+    }
+}
+
+fn conic_at(c: &Conic, t: f64) -> Point3 {
+    match *c {
+        Conic::Ellipse {
+            frame,
+            major,
+            minor,
+        } => frame.origin() + frame.x() * (major * t.cos()) + frame.y() * (minor * t.sin()),
+        Conic::Hyperbola {
+            frame,
+            major,
+            minor,
+        } => frame.origin() + frame.x() * (major * t.cosh()) + frame.y() * (minor * t.sinh()),
+    }
+}
+
+/// Points sorted with ordered enclosures, each `at` its parameter and on
+/// the surface.
+fn check_points(points: &[CurvePoint], s: &Surface, at: &dyn Fn(f64) -> Option<Point3>) {
+    let scale = |p: Point3| (p - Point3::ORIGIN).length().max(1.0) * 8.0;
+    for w in points.windows(2) {
+        assert!(mid(w[0].parameter) <= mid(w[1].parameter), "sorted");
+    }
+    for p in points {
+        assert!(p.parameter[0] <= p.parameter[1], "ordered enclosure");
+        for [lo, hi] in p.point {
+            assert!(lo <= hi, "ordered enclosure");
+        }
+        let q = Point3::new(mid(p.point[0]), mid(p.point[1]), mid(p.point[2]));
+        if let Some(on) = at(mid(p.parameter)) {
+            assert!(
+                (on - q).length() <= 1e-9 * scale(q),
+                "{p:?} is not the curve's point at its parameter"
+            );
+        }
+        let gap = distance(s, q - Point3::ORIGIN);
+        assert!(gap <= 1e-9 * scale(q), "{gap}: {p:?} off {s:?}");
+    }
+}
+
+/// S7c.2: an ellipse or a hyperbola (independent; coaxial at the surface's
+/// radius; beside it touching at a vertex; in a plane through the axis), or
+/// a rational B-spline against a torus or a cone (independent poles, or the
+/// exact rational quarter circle on the surface's reference circle).
+fn check_conic_or_spline(b: &mut Bytes, shape: u8, mode: u8, s: &Surface, reach: f64) {
+    let f = crate::analytic_intersections::frame_of(s);
+    let (o, x, axis) = (f.origin(), f.x(), f.normal());
+    let scale = |p: Point3| (p - Point3::ORIGIN).length().max(1.0) * 8.0;
+    if shape % 3 == 2 {
+        if !matches!(s, Surface::Torus { .. } | Surface::Cone { .. }) {
+            return;
+        }
+        let degree = 1 + usize::from(b.next() % 3);
+        let n = degree + 1 + usize::from(b.next() % 3);
+        let poles: Vec<Point3> = if mode == 1 {
+            // The quarter circle of radius `reach` about the axis, at the
+            // surface's origin (a cone's reference circle; a torus's outer
+            // equator), then independent poles.
+            let y = f.y();
+            let mut p = vec![o + x * reach, o + (x + y) * reach, o + y * reach];
+            while p.len() < n {
+                p.push(Point3::new(b.dyadic(), b.dyadic(), b.dyadic()));
+            }
+            p.truncate(n.max(3));
+            p
+        } else {
+            (0..n)
+                .map(|_| Point3::new(b.dyadic(), b.dyadic(), b.dyadic()))
+                .collect()
+        };
+        let n = poles.len();
+        let degree = if mode == 1 { 2 } else { degree.min(n - 1) };
+        let weights: Vec<f64> = (0..n)
+            .map(|i| {
+                if mode == 1 && i == 2 {
+                    2.0
+                } else if mode == 1 && i < 2 {
+                    1.0
+                } else {
+                    [1.0, 2.0, 0.5, 1.5][usize::from(b.next() % 4)]
+                }
+            })
+            .collect();
+        // Clamped, uniform interior knots.
+        let spans = n - degree;
+        let knots: Vec<f64> = (0..=spans).map(|k| k as f64).collect();
+        let mut mults = vec![1; spans + 1];
+        mults[0] = degree + 1;
+        mults[spans] = degree + 1;
+        if mode == 1 && spans > 1 {
+            // The quarter circle is the first span exactly.
+            mults[1] = degree;
+        }
+        let total: usize = mults.iter().sum();
+        if total != n + degree + 1 {
+            return;
+        }
+        let Ok(c) = BSplineCurve3::new(degree, poles, Some(weights), knots, mults) else {
+            return;
+        };
+        let at = |t: f64| c.point(t).ok();
+        match s {
+            Surface::Torus { .. } => {
+                let found = match spline_torus(&c, s) {
+                    Ok(r) => r,
+                    Err(Error::ComputationLimit(_)) => return,
+                    Err(e) => panic!("unexpected error {e}"),
+                };
+                for o in found.overlaps() {
+                    let (lo, hi) = o.parameters();
+                    for k in 0..=4 {
+                        let p = at(lo + (hi - lo) * f64::from(k) / 4.0).unwrap();
+                        let gap = distance(s, p - Point3::ORIGIN);
+                        assert!(gap <= 1e-9 * scale(p), "{gap}: overlap off {s:?}");
+                    }
+                }
+                let points: Vec<CurvePoint> = found
+                    .points()
+                    .iter()
+                    .map(|p| CurvePoint {
+                        parameter: [p.parameter().lower(), p.parameter().upper()],
+                        point: p.coordinate_bounds().map(|x| [x.lower(), x.upper()]),
+                        tangent: false,
+                    })
+                    .collect();
+                check_points(&points, s, &at);
+            }
+            _ => {
+                let found = match spline_cone(&c, s) {
+                    Ok(r) => r,
+                    Err(Error::ComputationLimit(_)) => return,
+                    Err(e) => panic!("unexpected error {e}"),
+                };
+                for [lo, hi] in &found.overlaps {
+                    assert!(lo < hi, "an overlap");
+                    for k in 0..=4 {
+                        let p = at(lo + (hi - lo) * f64::from(k) / 4.0).unwrap();
+                        let gap = distance(s, p - Point3::ORIGIN);
+                        assert!(gap <= 1e-9 * scale(p), "{gap}: overlap off {s:?}");
+                    }
+                }
+                check_points(&found.points, s, &at);
+            }
+        }
+        return;
+    }
+    let hyperbola = shape % 3 == 1;
+    let m = 0.25 + f64::from(b.next() % 16) / 8.0;
+    let small = 0.25 + f64::from(b.next() % 16) / 16.0;
+    let (c, cn, major, minor) = match mode {
+        0 => (
+            Point3::new(b.dyadic(), b.dyadic(), b.dyadic()),
+            Vec3::new(b.small(), b.small(), b.small()),
+            m.max(small),
+            m.min(small),
+        ),
+        1 => (o + axis * b.dyadic(), axis, reach, reach.min(small)),
+        2 => (o + x * (reach + m), axis, m, m.min(small)),
+        _ => (o, x, reach.max(small), reach.min(small)),
+    };
+    let Some(cf) = frame(c, cn) else { return };
+    let conic = if hyperbola {
+        Conic::Hyperbola {
+            frame: cf,
+            major,
+            minor,
+        }
+    } else {
+        Conic::Ellipse {
+            frame: cf,
+            major,
+            minor,
+        }
+    };
+    let result = match conic_surface(&conic, s) {
+        Ok(r) => r,
+        Err(Error::ComputationLimit(_)) => return,
+        Err(e) => panic!("unexpected error {e}"),
+    };
+    match &result {
+        CurveSurfaceIntersection::Empty => {}
+        CurveSurfaceIntersection::Contained => {
+            for k in 0..6 {
+                let p = conic_at(&conic, -1.5 + 0.6 * f64::from(k));
+                let gap = distance(s, p - Point3::ORIGIN);
+                assert!(
+                    gap <= 1e-9 * scale(p),
+                    "{gap}: contained {conic:?} off {s:?}"
+                );
+            }
+        }
+        CurveSurfaceIntersection::Points(points) => {
+            assert!(!points.is_empty());
+            check_points(points, s, &|t| Some(conic_at(&conic, t)));
+        }
     }
 }

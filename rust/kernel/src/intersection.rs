@@ -15,6 +15,7 @@ use num_bigint::{BigInt, BigUint, Sign};
 use std::cmp::Ordering;
 
 mod analytic;
+mod conic_surface;
 mod curve_surface;
 mod curved;
 mod exact_spline;
@@ -24,12 +25,14 @@ mod ruled_curves;
 mod spline_linear;
 mod spline_plane;
 mod spline_quadric;
+mod spline_revolved;
 mod spline_surface;
 mod tangency;
 mod toroidal;
 mod torus_curves;
 pub use crate::proximity::LinearPrimitive3;
 pub use analytic::{surface_surface, AnalyticItem, Enclosure, Enclosure3, SurfaceIntersection};
+pub use conic_surface::{conic_surface, Conic};
 pub use curve_surface::{curve_surface, CurvePoint, CurveSurfaceIntersection};
 pub use curved::{
     line_circle, line_cylinder, line_sphere, segment_circle, segment_cylinder, segment_sphere,
@@ -61,6 +64,7 @@ pub use spline_quadric::{
     spline_cylinder_with_options, spline_sphere, spline_sphere_in, spline_sphere_in_with_options,
     spline_sphere_with_options,
 };
+pub use spline_revolved::{spline_cone, spline_torus, SplineConeIntersection};
 pub use spline_surface::{
     ExactSplineSurfaceIntersection as ExactSplinePlaneIntersection,
     ExactSplineSurfaceOverlap as ExactSplinePlaneOverlap,

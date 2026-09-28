@@ -599,6 +599,12 @@ parameter. `compare_curve_surface.py` reproduces the `GeomAPI_IntCS`
 pre-implementation capture: 29 matches and 7 reviewed differences (missed
 containment), the kernel inside the reference on all 36.
 
+S7c.2: the same generator adds 35 ellipses, hyperbolas and splines
+(against tori and cones), `curve_surface.rs` checks each conic's stored axes
+bit for bit besides the normals, and `compare_curve_surface.py` reproduces
+the second pre-implementation capture: 30 matches and 5 reviewed
+differences, the kernel inside the reference on all 71 cases.
+
 The `GeomInt_IntSS` captures were taken on macOS arm64; IntPatch's walking
 lines differ on Linux near degeneracies (the first Linux run changed
 `cc_near_figure_inside`). A run on another platform reproduces that

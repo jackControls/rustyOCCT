@@ -1649,6 +1649,31 @@ moves the roots where `c1` vanishes. `c0 = c1 = 0` identically is
 `F = 0` on the whole circle; `E0` being irreducible, a zero resultant
 implies it.
 
+The same holds for any plane conic `E0` whose square terms do not both
+vanish in the sheared basis: an ellipse or a hyperbola of stored axes `x`,
+`y` (S7c.2), `minor^2 xi^2 +- major^2 eta^2 = major^2 minor^2` with `xi = u
++ k v`, `eta = v`; a shear making the hyperbola's `v^2` term vanish (`k =
+major / minor`) is skipped.
+
+**A spline against a cone.** With `h = (D . a) / (|a| W)` and `rho^2 =
+(|D|^2 - (D . a)^2 / |a|^2) / W^2` for `D = X - o W`, the cone `rho^2 = (r +
+h tan a)^2` is `W^2 F = Q0 + tau Q1 + tau^2 Q2 = 0` with rational `Q0 =
+|D|^2 - (D . a)^2 / |a|^2 - r^2 W^2`, `Q1 = -2 r (D . a) W`, `Q2 = -(D . a)^2`
+and `tau = tan a / |a|`. For rational `a != 0`, `e^{2 i a}` is transcendental
+(Lindemann-Weierstrass), hence `tan a` and `tau` (`|a|` algebraic). A
+polynomial identity `sum tau^i Q_i = 0` in the curve parameter makes each
+coefficient a polynomial in `tau` with rational coefficients vanishing at
+`tau`, so all of them vanish: `F = 0` on a span exactly when `Q0 = Q1 = Q2 =
+0`. At a common root `s0` of the `Q`s the coefficient of `(s - s0)^m` in `F`
+is `sum tau^i c_{i,m}`, zero exactly when every `c_{i,m}` is: the order of
+`s0` in `F` is its least order in the `Q`s, its order in their gcd.
+
+**Certified logarithms.** `ln x = k ln 2 + 2 atanh((m - 1) / (m + 1))` for
+`x = 2^k m`, `m` in `[2/3, 4/3]` (the series argument at most `1/5`, its
+remainder below `25/24 |y|^(2N+1) / (2N + 1)`), `ln 2 = 2 atanh(1/3)`;
+`asinh x = ln(x + sqrt(x^2 + 1))`, odd. Both are monotone, so an interval's
+image is the hull of its ends'.
+
 ## C1 of spline cells (R4)
 
 A cell is C1 in its own parameterisation (U3 of `REVIEW_NOTES.md`). For a

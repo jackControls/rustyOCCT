@@ -178,6 +178,29 @@ def circle_rows(frame, radius, surface):
     return rows or ['empty']
 
 
+def _normalized(v):
+    """Vec3::normalized: divided by its largest component, then by the
+    chained `hypot` of the scaled components."""
+    from brep_reference import hypot_rn
+    scale = max(abs(x) for x in v)
+    w = tuple(x/scale for x in v)
+    n = hypot_rn(hypot_rn(w[0], w[1]), w[2])
+    return tuple(x/n for x in w)
+
+
+def stored_axes(frame):
+    """Frame3::new's stored (origin, x, y, normal), emulated step by step
+    (`frame_axes` skips the scaling, which a tilted conic's `y` feels);
+    `curve-surface-frames.tsv` records the bits and the kernel's tests check
+    them."""
+    def cross(a, b):
+        return (a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0])
+    origin, normal, hint = frame[0:3], _normalized(frame[3:6]), _normalized(frame[6:9])
+    y = _normalized(cross(normal, hint))
+    x = _normalized(cross(y, normal))
+    return origin, x, y, normal
+
+
 def conic_rows(frame, major, minor, hyperbola, surface):
     """An ellipse `o + A cos t x + B sin t y` or a hyperbola's branch
     `o + A cosh t x + B sinh t y` (the stored axes `x`, `y`) against a
@@ -187,7 +210,7 @@ def conic_rows(frame, major, minor, hyperbola, surface):
     ellipse's trigonometric polynomial of degree two; the hyperbola's quartic
     in `z = e^t`)."""
     import sympy as sy
-    o, x, y, _ = frame_axes(frame)
+    o, x, y, _ = stored_axes(frame)
     A, B = F(major), F(minor)
     om, xm, ym = [mpf(v) for v in o], [mpf(v) for v in x], [mpf(v) for v in y]
     Am, Bm = mpf(A), mpf(B)
@@ -333,10 +356,13 @@ def spline_rows(spline, surface):
                 if inside(r):
                     rows.append(('point', r, point(r), 'tangent' if roots.count(r) > 1 else 'crossing'))
             continue
+        # tau is transcendental: a common root's order in F is its order in
+        # the gcd.
         common = sy.gcd(sy.gcd(polys[0], polys[1]), polys[2])
-        exact_roots = [r for r in set(sy.real_roots(sy.Poly(common, s))) if inside(r)] if sy.Poly(common, s).degree() > 0 else []
-        for r in exact_roots:
-            rows.append(('point', r, point(r), 'tangent'))
+        found = sy.real_roots(sy.Poly(common, s)) if sy.Poly(common, s).degree() > 0 else []
+        for r in sorted(set(found), key=lambda z: float(z)):
+            if inside(r):
+                rows.append(('point', r, point(r), 'tangent' if found.count(r) > 1 else 'crossing'))
         rest = [sy.quo(p, common, s) if common != 1 else p for p in polys]
         tau = mp.tan(mpf(surface.angle))/mp.sqrt(mpf(F(aa.p, aa.q)))
         coeffs = [mp.mpf(0)]*(1+max(sy.Poly(p, s).degree() for p in rest))

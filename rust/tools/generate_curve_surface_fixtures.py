@@ -177,7 +177,7 @@ def rows(curve, surface_block):
 
 def generate():
     blocks, out = [], ['# case\trow (S7c.1, curve_surface_reference.py)']
-    frames = ['# case\tsurface\tstored unit normal (the reference\'s Frame3::new, as hex bits)']
+    frames = ['# case\tframe (0 the circle\'s or conic\'s, else the surface\'s; x, y a conic\'s stored axes)\tstored unit vector (the reference\'s Frame3::new, as hex bits)']
     for name, curve, surface in cases():
         block = encode(name, curve, surface)
         blocks.append(block+'\nend')
@@ -188,6 +188,11 @@ def generate():
         for k, values in enumerate(framed):
             _, _, _, n = frame_axes(tuple(values[:9]))
             frames.append(f'{name}\t{k}\t'+' '.join(struct.pack('>d', v).hex() for v in n))
+        if curve[0] in ('ellipse', 'hyperbola'):
+            # A conic's point set depends on its stored axes too.
+            _, x, y, _ = ref.stored_axes(tuple(curve[1][:9]))
+            for key, axis in (('x', x), ('y', y)):
+                frames.append(f'{name}\t{key}\t'+' '.join(struct.pack('>d', v).hex() for v in axis))
     return {'curve-surface-cases.txt': '\n'.join(blocks)+'\n',
             'curve-surface-expected.tsv': '\n'.join(out)+'\n',
             'curve-surface-frames.tsv': '\n'.join(frames)+'\n'}

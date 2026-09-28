@@ -1384,8 +1384,18 @@ the first fixture, never deferred.
     intervals; the kernel inside the reference on all 36, the bridge 29
     matches and 7 reviewed differences (a contained curve never a native
     segment); fuzz target `curve_surface`.
-  * S7c.2 (ellipses, hyperbolas, splines against cones and tori) and S7d
-    (curve/curve) pending.
+  * S7c.2 implemented: the reference (rational parameterisations, exact
+    span polynomials) and a `GeomAPI_IntCS` capture of 35 ellipses,
+    hyperbolas and splines came before `intersection/conic_surface.rs` and
+    `spline_revolved.rs`; conics by S7c.1's resultant (shared as
+    `section`), a hyperbola against a cone as a quartic in `e^t`, splines
+    against tori exactly and against cones with exact overlaps and apexes
+    (`tan a` transcendental); the kernel inside the reference on all 71,
+    the bridge 59 matches and 12 reviewed differences. A tilted conic's
+    stored `y` showed that `frame_axes` omits `Vec3::normalized`'s scaling:
+    the S7c.2 reference emulates it and the fixtures record each conic's
+    stored axes (the shared helper stays, its captured inputs unchanged).
+  * S7d (curve/curve) pending.
 * Tessellation (parallel track) — T-a implemented (`TESSELLATION.md`);
   gate pending CI, the schedule replay and the clean campaign.
   * The decisions above, the independent reference

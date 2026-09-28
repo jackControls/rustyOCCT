@@ -112,14 +112,14 @@ pub fn curve_surface(curve: &Curve3, surface: &Surface) -> Result<CurveSurfaceIn
 /// sphere), `(|w|^2 + R^2 - r^2)^2 - 4 R^2 (|w|^2 - (w . a)^2 / |a|^2)` (a
 /// torus), all rational; a cone's `cos^2 h |p - V|^2 - ((p - V) . a)^2` in
 /// intervals.
-struct Implicit {
+pub(super) struct Implicit {
     kind: Kind,
     o: X,
     a: X,
     r: R,
     minor: R,
     /// A cone's half-angle and radius at its origin.
-    cone: Option<(f64, R)>,
+    pub(super) cone: Option<(f64, R)>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -132,7 +132,7 @@ enum Kind {
 }
 
 impl Implicit {
-    fn of(s: &Surface) -> Result<Self> {
+    pub(super) fn of(s: &Surface) -> Result<Self> {
         let (kind, f, r, minor, cone) = match s {
             Surface::Plane(f) => (Kind::Plane, f, 0.0, 0.0, None),
             Surface::Cylinder { frame, radius } => (Kind::Cylinder, frame, *radius, 0.0, None),
@@ -200,7 +200,7 @@ impl Implicit {
         }
     }
     /// A cone's apex, axis and `cos^2` in a tier.
-    fn cone<T: Real>(&self) -> Result<(E<T>, E<T>, T)> {
+    pub(super) fn cone<T: Real>(&self) -> Result<(E<T>, E<T>, T)> {
         let (h, r) = self.cone.clone().expect("a cone");
         let (c, s) = T::cos_sin(&T::exact_f64(h));
         let a = unit::<T>(&self.a)?;
@@ -343,23 +343,80 @@ fn circle_exact(c: &Circle, s: &Implicit) -> Result<CurveSurfaceIntersection> {
         .find(|u| !u.iter().all(zero))
         .expect("a nonzero normal");
     let v0 = cross(&c.n, &u0);
-    let two = R::from_integer(2.into());
+    // |xi U + eta V|^2 = r^2.
+    let conic = |xi: &B, eta: &B| {
+        let w: [B; 3] = std::array::from_fn(|i| badd(&bscale(xi, &u0[i]), &bscale(eta, &v0[i])));
+        badd(&bdot(&w, &w), &vec![vec![-(&c.r * &c.r)]])
+    };
+    Ok(match section(&c.o, &u0, &v0, &conic, s)? {
+        Section::Contained => CurveSurfaceIntersection::Contained,
+        Section::Points(points) => CurveSurfaceIntersection::Points(
+            points
+                .into_iter()
+                .map(|p| {
+                    Ok(CurvePoint {
+                        parameter: c.angle(&p.point)?,
+                        point: bounds3(&p.point),
+                        tangent: p.tangent,
+                    })
+                })
+                .collect::<Result<_>>()?,
+        ),
+    })
+}
+
+/// A plane conic's intersection with an exact surface.
+pub(super) enum Section {
+    Contained,
+    Points(Vec<SectionPoint>),
+}
+
+/// A point `o + xi e1 + eta e2` of a plane conic on a surface.
+pub(super) struct SectionPoint {
+    pub(super) xi: I,
+    pub(super) eta: I,
+    pub(super) point: E<I>,
+    pub(super) tangent: bool,
+}
+
+/// The points `o + xi e1 + eta e2` (rational `e1`, `e2`) with `conic(xi,
+/// eta) = 0` (a quadratic whose square terms are not both zero) on a
+/// plane, cylinder, sphere or torus. With `xi = u + k v`, `eta = v` (a shear
+/// `k` chosen so that `c1` vanishes at no root) the conic is
+/// `a2 v^2 + a1 v + a0`, the surface's function reduced modulo it `c0 + c1 v`, and the
+/// points the real roots of `a2 c0^2 - a1 c0 c1 + a0 c1^2` with `v = -c0 /
+/// c1`: one point per root, whose multiplicity is its intersection
+/// multiplicity. `c0 = c1 = 0` is containment.
+pub(super) fn section(
+    o: &X,
+    e1: &X,
+    e2: &X,
+    conic: &dyn Fn(&B, &B) -> B,
+    s: &Implicit,
+) -> Result<Section> {
+    let one = R::from_integer(1.into());
     for shear in [0i64, 1, -2, 3, -5, 7, 11, -13] {
         let sh = R::new(shear.into(), 7.into());
-        let u = u0.clone();
-        let v: X = std::array::from_fn(|i| &v0[i] + &u0[i] * &sh);
-        // E0 = a2 v^2 + a1 v + a0.
-        let a0: P = vec![-(&c.r * &c.r), rz(), dot(&u, &u)];
-        let a1: P = vec![rz(), &two * dot(&u, &v)];
-        let a2 = dot(&v, &v);
-        let p: [B; 3] = std::array::from_fn(|i| bl(c.o[i].clone(), u[i].clone(), v[i].clone()));
+        let xi: B = vec![vec![rz(), one.clone()], vec![sh.clone()]];
+        let eta: B = vec![vec![], vec![one.clone()]];
+        let e = conic(&xi, &eta);
+        let get = |k: usize| e.get(k).cloned().unwrap_or_default();
+        let (a0, a1, top) = (get(0), get(1), get(2));
+        // a2 is a constant (the conic is quadratic); zero for this shear
+        // only when v^2 cancels (a hyperbola's asymptote).
+        let a2 = top.first().cloned().unwrap_or_else(rz);
+        if zero(&a2) || e.len() > 3 {
+            continue;
+        }
+        let v: X = std::array::from_fn(|i| &e2[i] + &e1[i] * &sh);
+        let p: [B; 3] = std::array::from_fn(|i| bl(o[i].clone(), e1[i].clone(), v[i].clone()));
         let (c0, c1) = reduce(&s.at(&p), &a0, &a1, &a2);
         let (i0, i1) = (
             IntPolynomial::from_rationals(&c0),
             IntPolynomial::from_rationals(&c1),
         );
         if i0.is_zero() && i1.is_zero() {
-            return Ok(CurveSurfaceIntersection::Contained);
+            return Ok(Section::Contained);
         }
         let res = padd(
             &padd(
@@ -370,7 +427,7 @@ fn circle_exact(c: &Circle, s: &Implicit) -> Result<CurveSurfaceIntersection> {
         );
         let resultant = IntPolynomial::from_rationals(&res);
         if resultant.is_zero() {
-            return Err(limit("a circle's resultant"));
+            return Err(limit("a conic's resultant"));
         }
         let bound = cauchy(&res);
         let mut budget = Budget::new(RootIsolationOptions::default());
@@ -389,22 +446,23 @@ fn circle_exact(c: &Circle, s: &Implicit) -> Result<CurveSurfaceIntersection> {
             let uu = root_interval(&mut root);
             let vv = enclose(&c0, &uu)
                 .div(&enclose(&c1, &uu))
-                .ok_or(limit("a circle's point"))?
+                .ok_or(limit("a conic's point"))?
                 .neg();
             let point: E<I> = std::array::from_fn(|i| {
-                I::exact(c.o[i].clone())
-                    .add(&uu.mul(&I::exact(u[i].clone())))
+                I::exact(o[i].clone())
+                    .add(&uu.mul(&I::exact(e1[i].clone())))
                     .add(&vv.mul(&I::exact(v[i].clone())))
             });
-            out.push(CurvePoint {
-                parameter: c.angle(&point)?,
-                point: bounds3(&point),
+            out.push(SectionPoint {
+                xi: uu.add(&vv.mul(&I::exact(sh.clone()))),
+                eta: vv,
+                point,
                 tangent,
             });
         }
-        return Ok(CurveSurfaceIntersection::Points(out));
+        return Ok(Section::Points(out));
     }
-    Err(limit("a circle's points"))
+    Err(limit("a conic's points"))
 }
 
 /// A circle against a cone: `G(theta) = f(o + r (cos theta x + sin theta y))`
@@ -413,9 +471,31 @@ fn circle_exact(c: &Circle, s: &Implicit) -> Result<CurveSurfaceIntersection> {
 /// (the mean-value form excluding a box), each certified by a sign change
 /// and a derivative of one sign and narrowed by bisection on certain signs.
 fn circle_cone(c: &Circle, s: &Implicit) -> Result<CurveSurfaceIntersection> {
-    let fast = Ring::<Fast>::new(c, s)?;
+    let (ax, ay) = (c.x.clone().map(|x| x * &c.r), c.y.clone().map(|y| y * &c.r));
+    Ok(CurveSurfaceIntersection::Points(
+        trig_cone(&c.o, &ax, &ay, s)?
+            .into_iter()
+            .map(|(parameter, point)| CurvePoint {
+                parameter,
+                point,
+                tangent: false,
+            })
+            .collect(),
+    ))
+}
+
+/// The points `o + cos t ax + sin t ay` (a circle or an ellipse) on a cone,
+/// `t` in `(-pi, pi]` unless it straddles `pi`: its roots isolated by
+/// certified subdivision over one turn.
+pub(super) fn trig_cone(
+    o: &X,
+    ax: &X,
+    ay: &X,
+    s: &Implicit,
+) -> Result<Vec<(Enclosure, Enclosure3)>> {
+    let fast = Ring::<Fast>::new(o, ax, ay, s)?;
     let cut = match cut(&fast) {
-        Err(Error::ComputationLimit(_)) => cut(&Ring::<I>::new(c, s)?)?,
+        Err(Error::ComputationLimit(_)) => cut(&Ring::<I>::new(o, ax, ay, s)?)?,
         other => other?,
     };
     // Binary64 intervals first; the boxes they leave undecided (merged)
@@ -432,7 +512,7 @@ fn circle_cone(c: &Circle, s: &Implicit) -> Result<CurveSurfaceIntersection> {
     let mut budget = 16;
     let exact = match clusters.is_empty() {
         true => None,
-        false => Some(Ring::<I>::new(c, s)?),
+        false => Some(Ring::<I>::new(o, ax, ay, s)?),
     };
     for cluster in clusters {
         let ring = exact.as_ref().expect("an exact ring for the clusters");
@@ -456,13 +536,9 @@ fn circle_cone(c: &Circle, s: &Implicit) -> Result<CurveSurfaceIntersection> {
             tt = tt.add(&tau);
         }
         let (p, _) = fast.at(&span(t[0], t[1]));
-        out.push(CurvePoint {
-            parameter: bounds(&tt),
-            point: bounds3(&p),
-            tangent: false,
-        });
+        out.push((bounds(&tt), bounds3(&p)));
     }
-    Ok(CurveSurfaceIntersection::Points(out))
+    Ok(out)
 }
 
 /// A circle and a cone in one tier, the cone's apex, axis and `cos^2`
@@ -471,20 +547,18 @@ struct Ring<T> {
     o: E<T>,
     x: E<T>,
     y: E<T>,
-    r: T,
     v: E<T>,
     a: E<T>,
     c2: T,
 }
 
 impl<T: Real> Ring<T> {
-    fn new(c: &Circle, s: &Implicit) -> Result<Self> {
+    fn new(o: &X, ax: &X, ay: &X, s: &Implicit) -> Result<Self> {
         let (v, a, c2) = s.cone::<T>()?;
         Ok(Self {
-            o: e3(&c.o),
-            x: e3(&c.x),
-            y: e3(&c.y),
-            r: T::from_r(&c.r),
+            o: e3(o),
+            x: e3(ax),
+            y: e3(ay),
             v,
             a,
             c2,
@@ -493,9 +567,9 @@ impl<T: Real> Ring<T> {
     /// The circle's point at `t` and `(G, G')` there.
     fn at(&self, t: &T) -> (E<T>, (T, T)) {
         let (ct, st) = T::cos_sin(t);
-        let (o, x, y, r) = (&self.o, &self.x, &self.y, &self.r);
-        let p: E<T> = std::array::from_fn(|i| o[i].add(&r.mul(&x[i].mul(&ct).add(&y[i].mul(&st)))));
-        let dp: E<T> = std::array::from_fn(|i| r.mul(&y[i].mul(&ct).sub(&x[i].mul(&st))));
+        let (o, x, y) = (&self.o, &self.x, &self.y);
+        let p: E<T> = std::array::from_fn(|i| o[i].add(&x[i].mul(&ct).add(&y[i].mul(&st))));
+        let dp: E<T> = std::array::from_fn(|i| y[i].mul(&ct).sub(&x[i].mul(&st)));
         let w = esub(&p, &self.v);
         let form = |x: &E<T>, y: &E<T>| {
             edot(x, y)

@@ -248,6 +248,91 @@ pub(crate) fn atan2(y: &Interval, x: &Interval) -> Option<Interval> {
     }
 }
 
+/// sum_{k<ATAN_TERMS} y^(2k+1)/(2k+1) for |y| <= 1/5, plus the remainder
+/// bound |y|^(2N+1) / ((2N+1) (1 - y^2)) <= 25/24 |y|^(2N+1) / (2N+1).
+fn atanh_series(y: &Interval) -> Interval {
+    let mut total = Interval::exact(zero());
+    let y2 = y.square();
+    let mut power = y.clone();
+    for k in 0..ATAN_TERMS {
+        total = total.add(&power.scale(&R::new(1.into(), BigInt::from(2 * k + 1))));
+        power = power.mul(&y2);
+    }
+    let bound = power.abs_hi() * R::new(25.into(), 24.into()) / int((2 * ATAN_TERMS + 1) as i64);
+    total.add(&Interval::new(-&bound, bound))
+}
+
+/// ln 2 = 2 atanh(1/3), certified (1/3 is inside the series' reach after
+/// one halving of its remainder bound: its terms shrink ninefold).
+fn ln2() -> &'static Interval {
+    static LN2: OnceLock<Interval> = OnceLock::new();
+    LN2.get_or_init(|| {
+        let y = Interval::exact(R::new(1.into(), 3.into()));
+        let y2 = y.square();
+        let mut total = Interval::exact(zero());
+        let mut power = y.clone();
+        for k in 0..2 * ATAN_TERMS {
+            total = total.add(&power.scale(&R::new(1.into(), BigInt::from(2 * k + 1))));
+            power = power.mul(&y2);
+        }
+        // Remainder <= |y|^(2N+1) / ((2N+1) (1 - 1/9)).
+        let bound = power.abs_hi() * R::new(9.into(), 8.into());
+        total.add(&Interval::new(-&bound, bound)).scale(&int(2))
+    })
+}
+
+/// ln x of an exact positive rational, certified: `x = 2^k m` with
+/// `m` in `[2/3, 4/3]`, `ln m = 2 atanh((m - 1) / (m + 1))`.
+fn ln_exact(x: &R) -> Interval {
+    debug_assert!(sgn(x) == Sign::Plus);
+    let mut k = x.numer().bits() as i64 - x.denom().bits() as i64;
+    let two = int(2);
+    let pow = |k: i64| {
+        if k >= 0 {
+            R::from_integer(BigInt::from(1) << k as usize)
+        } else {
+            R::new(1.into(), BigInt::from(1) << (-k) as usize)
+        }
+    };
+    let mut m = x / pow(k);
+    while m > R::new(4.into(), 3.into()) {
+        m /= &two;
+        k += 1;
+    }
+    while m < R::new(2.into(), 3.into()) {
+        m *= &two;
+        k -= 1;
+    }
+    let y = (&m - one()) / (&m + one());
+    atanh_series(&Interval::exact(y))
+        .scale(&two)
+        .add(&ln2().scale(&int(k)))
+}
+
+/// ln over an interval (monotone); None unless it is certainly positive.
+pub(crate) fn ln(z: &Interval) -> Option<Interval> {
+    (sgn(z.lo()) == Sign::Plus)
+        .then(|| Interval::new(ln_exact(z.lo()).lo().clone(), ln_exact(z.hi()).hi().clone()))
+}
+
+/// asinh x = ln(x + sqrt(x^2 + 1)) of an exact rational (odd), certified.
+fn asinh_exact(x: &R) -> Interval {
+    if sgn(x) == Sign::Minus {
+        return asinh_exact(&-x).neg();
+    }
+    let root = Interval::exact(x * x + one()).sqrt();
+    let arg = root.add(&Interval::exact(x.clone()));
+    ln(&arg).expect("x + sqrt(x^2 + 1) >= 1")
+}
+
+/// asinh over an interval (monotone).
+pub(crate) fn asinh(z: &Interval) -> Interval {
+    Interval::new(
+        asinh_exact(z.lo()).lo().clone(),
+        asinh_exact(z.hi()).hi().clone(),
+    )
+}
+
 /// (cos x, sin x) for an exact rational x, certified.
 pub(crate) fn cos_sin(x: &R) -> (Interval, Interval) {
     if sgn(x) == Sign::NoSign {
@@ -320,6 +405,23 @@ mod tests {
         // x is a binary64 approximation: allow its rounding.
         let tol = 4.0 * f64::EPSILON * x.abs().max(1.0);
         num_float(i.lo()) <= x + tol && x - tol <= num_float(i.hi())
+    }
+
+    #[test]
+    fn logarithms_and_asinh_are_tight_and_contain_binary64_values() {
+        for &x in &[1.0f64, 0.5, 2.0, 3.0, 0.1, 10.0, 1e-30, 1e30, 1.75, 0.6] {
+            let r = R::from_float(x).unwrap();
+            let l = ln(&Interval::exact(r.clone())).unwrap();
+            assert!(width(&l) < 1e-40, "{x}");
+            assert!(contains(&l, x.ln()), "ln {x}");
+            for v in [x, -x] {
+                let a = asinh(&Interval::exact(R::from_float(v).unwrap()));
+                assert!(width(&a) < 1e-40, "{v}");
+                assert!(contains(&a, v.asinh()), "asinh {v}");
+            }
+        }
+        assert!(ln(&Interval::exact(zero())).is_none());
+        assert!(contains(ln2(), std::f64::consts::LN_2) && width(ln2()) < 1e-60);
     }
 
     #[test]

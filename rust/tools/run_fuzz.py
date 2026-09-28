@@ -109,6 +109,14 @@ def seed_corpus(target):
                     data = bytearray((j*53+kind*13+shape*29+mode*5+7)%256 for j in range(32))
                     data[:3] = bytes([kind, shape, mode])
                     save(bytes(data))
+        # S7c.2: an ellipse, a hyperbola and a spline (shape bytes 128 to
+        # 130) in every mode.
+        for kind in (0, 1, 2, 3, 224):
+            for shape in (128, 129, 130):
+                for mode in range(4):
+                    data = bytearray((j*59+kind*17+shape*23+mode*11+5)%256 for j in range(48))
+                    data[:3] = bytes([kind, shape, mode])
+                    save(bytes(data))
         save(bytes([0]))
     if target == 'analytic_intersections':
         # Every kind pair (plane, cylinder, cone, sphere) in every mode

@@ -1,83 +1,20 @@
-//! S7c.1: lines and circles against planes, cylinders, cones, spheres and
-//! tori, against the independent reference (`fixtures/curve-surface-*.txt|tsv`
-//! from `tools/generate_curve_surface_fixtures.py`).
-use rusty_occt::intersection::{curve_surface, CurvePoint, CurveSurfaceIntersection};
+//! S7c: lines and circles (S7c.1), ellipses, hyperbolas and splines (S7c.2)
+//! against planes, cylinders, cones, spheres and tori, against the
+//! independent reference (`fixtures/curve-surface-*.txt|tsv` from
+//! `tools/generate_curve_surface_fixtures.py`).
+#[path = "support/curve_surface_protocol.rs"]
+mod protocol;
+use protocol::{cases, rows, Case, Curve};
+use rusty_occt::intersection::{
+    conic_surface, curve_surface, spline_cone, spline_torus, Conic, CurveSurfaceIntersection,
+};
 use rusty_occt::topology::{Curve3, SplineSpan, Surface};
 use rusty_occt::{BSplineCurve3, Error, Frame3, Point3, Tolerance, Vec3};
 use std::collections::BTreeMap;
 use std::f64::consts::{PI, TAU};
 
-fn frame(v: &[f64]) -> Frame3 {
-    Frame3::new(
-        Point3::new(v[0], v[1], v[2]),
-        Vec3::new(v[3], v[4], v[5]),
-        Vec3::new(v[6], v[7], v[8]),
-        Tolerance::default(),
-    )
-    .unwrap()
-}
-
-fn numbers(words: &[&str]) -> Vec<f64> {
-    words.iter().map(|w| w.parse().unwrap()).collect()
-}
-
-fn curve(words: &[&str]) -> Curve3 {
-    let v = numbers(&words[1..]);
-    match words[0] {
-        "line" => Curve3::LineSegment {
-            start: Point3::new(v[0], v[1], v[2]),
-            end: Point3::new(v[3], v[4], v[5]),
-        },
-        _ => Curve3::Circle {
-            frame: frame(&v),
-            radius: v[9],
-        },
-    }
-}
-
-fn surface(words: &[&str]) -> Surface {
-    let v = numbers(&words[1..]);
-    let frame = frame(&v);
-    match words[0] {
-        "plane" => Surface::Plane(frame),
-        "sphere" => Surface::Sphere {
-            frame,
-            radius: v[9],
-        },
-        "cylinder" => Surface::Cylinder {
-            frame,
-            radius: v[9],
-        },
-        "torus" => Surface::Torus {
-            frame,
-            major: v[9],
-            minor: v[10],
-        },
-        _ => Surface::Cone {
-            frame,
-            radius: v[9],
-            half_angle: v[10],
-        },
-    }
-}
-
-fn cases() -> Vec<(String, Curve3, Surface)> {
-    include_str!("../../fixtures/curve-surface-cases.txt")
-        .split("\nend")
-        .filter(|b| !b.trim().is_empty())
-        .map(|block| {
-            let lines: Vec<Vec<&str>> = block
-                .trim()
-                .lines()
-                .map(|l| l.split_whitespace().collect())
-                .collect();
-            (
-                lines[0][1].to_string(),
-                curve(&lines[1][1..]),
-                surface(&lines[2][1..]),
-            )
-        })
-        .collect()
+fn all() -> Vec<Case> {
+    cases(include_str!("../../fixtures/curve-surface-cases.txt"))
 }
 
 fn expected() -> BTreeMap<String, Vec<Vec<String>>> {
@@ -94,48 +31,72 @@ fn expected() -> BTreeMap<String, Vec<Vec<String>>> {
     out
 }
 
-fn stored(c: &Curve3) -> Option<&Frame3> {
+fn curve_frame(c: &Curve) -> Option<Frame3> {
     match c {
-        Curve3::Circle { frame, .. } | Curve3::CircularArc { frame, .. } => Some(frame),
+        Curve::Edge(Curve3::Circle { frame, .. })
+        | Curve::Conic(Conic::Ellipse { frame, .. })
+        | Curve::Conic(Conic::Hyperbola { frame, .. }) => Some(*frame),
         _ => None,
     }
 }
 
-fn surface_frame(s: &Surface) -> &Frame3 {
+fn surface_frame(s: &Surface) -> Frame3 {
     match s {
         Surface::Plane(f)
         | Surface::Cylinder { frame: f, .. }
         | Surface::Cone { frame: f, .. }
         | Surface::Sphere { frame: f, .. }
-        | Surface::Torus { frame: f, .. } => f,
+        | Surface::Torus { frame: f, .. } => *f,
         Surface::BSpline(_) => unreachable!(),
     }
 }
 
-/// The kernel stores the frames the reference intersected, bit for bit.
+/// The kernel stores the frames the reference intersected, bit for bit: the
+/// normals, and a conic's axes.
 #[test]
-fn stored_normals_are_the_reference_inputs() {
-    let all: BTreeMap<String, (Curve3, Surface)> =
-        cases().into_iter().map(|(n, c, s)| (n, (c, s))).collect();
+fn stored_frames_are_the_reference_inputs() {
+    let all: BTreeMap<String, Case> = all().into_iter().map(|c| (c.name.clone(), c)).collect();
     let rows: Vec<&str> = include_str!("../../fixtures/curve-surface-frames.tsv")
         .lines()
         .skip(1)
         .collect();
-    let circles = all.values().filter(|(c, _)| stored(c).is_some()).count();
-    assert_eq!(rows.len(), all.len() + circles);
+    let mut checked = 0;
     for row in rows {
         let words: Vec<&str> = row.split('\t').collect();
-        let (c, s) = &all[words[0]];
-        // A circle's frame, then the surface's.
-        let framed: Vec<&Frame3> = stored(c).into_iter().chain([surface_frame(s)]).collect();
-        let frame = framed[words[1].parse::<usize>().unwrap()];
+        let case = &all[words[0]];
+        let own = curve_frame(&case.curve);
+        let got = match words[1] {
+            "x" => own.unwrap().x(),
+            "y" => own.unwrap().y(),
+            k => {
+                let framed: Vec<Frame3> = own
+                    .into_iter()
+                    .chain([surface_frame(&case.surface)])
+                    .collect();
+                framed[k.parse::<usize>().unwrap()].normal()
+            }
+        };
         let want: Vec<u64> = words[2]
             .split(' ')
             .map(|h| u64::from_str_radix(h, 16).unwrap())
             .collect();
-        let got: Vec<u64> = frame.normal().to_array().map(f64::to_bits).to_vec();
-        assert_eq!(got, want, "{}", words[0]);
+        assert_eq!(
+            got.to_array().map(f64::to_bits).to_vec(),
+            want,
+            "{}",
+            words[0]
+        );
+        checked += 1;
     }
+    let conics = all
+        .values()
+        .filter(|c| matches!(c.curve, Curve::Conic(_)))
+        .count();
+    let framed = all
+        .values()
+        .filter(|c| curve_frame(&c.curve).is_some())
+        .count();
+    assert_eq!(checked, all.len() + framed + 2 * conics);
 }
 
 fn inside(x: f64, [lo, hi]: [f64; 2], turn: bool) -> bool {
@@ -146,93 +107,141 @@ fn inside(x: f64, [lo, hi]: [f64; 2], turn: bool) -> bool {
         .any(|s| lo - slack <= x + s && x + s <= hi + slack)
 }
 
-fn check(
-    name: &str,
-    circle: bool,
-    got: &CurveSurfaceIntersection,
-    rows: &[Vec<String>],
-) -> Result<(), String> {
-    match got {
-        CurveSurfaceIntersection::Empty if rows[0][0] == "empty" => Ok(()),
-        CurveSurfaceIntersection::Contained if rows[0][0] == "contained" => Ok(()),
-        CurveSurfaceIntersection::Points(points) if points.len() == rows.len() => {
-            for (p, row) in points.iter().zip(rows) {
-                let want: Vec<f64> = row[1..5].iter().map(|w| w.parse().unwrap()).collect();
-                let contact = if p.tangent { "tangent" } else { "crossing" };
-                if row[0] != "point" || row[5] != contact {
-                    return Err(format!("{name}: {contact} for {row:?}"));
-                }
-                if !inside(want[0], p.parameter, circle)
-                    || (0..3).any(|k| !inside(want[1 + k], p.point[k], false))
-                {
-                    return Err(format!("{name}: {p:?} misses {row:?}"));
+fn check(case: &Case, got: &[String], want: &[Vec<String>]) -> Result<(), String> {
+    let name = &case.name;
+    let turn = matches!(
+        case.curve,
+        Curve::Edge(Curve3::Circle { .. }) | Curve::Conic(Conic::Ellipse { .. })
+    );
+    if got.len() != want.len() {
+        return Err(format!("{name}: {got:?} for {want:?}"));
+    }
+    for (g, w) in got.iter().zip(want) {
+        let g: Vec<&str> = g.split(' ').collect();
+        if g[0] != w[0] {
+            return Err(format!("{name}: {g:?} for {w:?}"));
+        }
+        match w[0].as_str() {
+            "empty" | "contained" => {}
+            "overlap" => {
+                let (a, b): (f64, f64) = (w[1].parse().unwrap(), w[2].parse().unwrap());
+                if g[1].parse::<f64>().unwrap() != a || g[2].parse::<f64>().unwrap() != b {
+                    return Err(format!("{name}: {g:?} for {w:?}"));
                 }
             }
-            Ok(())
+            _ => {
+                let numbers: Vec<f64> = w[1..5].iter().map(|x| x.parse().unwrap()).collect();
+                let bound = |k: usize| -> [f64; 2] {
+                    [g[1 + 2 * k].parse().unwrap(), g[2 + 2 * k].parse().unwrap()]
+                };
+                if g[9] != w[5] {
+                    return Err(format!("{name}: contact {g:?} for {w:?}"));
+                }
+                if !inside(numbers[0], bound(0), turn)
+                    || (1..4).any(|k| !inside(numbers[k], bound(k), false))
+                {
+                    return Err(format!("{name}: {g:?} misses {w:?}"));
+                }
+            }
         }
-        other => Err(format!("{name}: {other:?} for {rows:?}")),
     }
+    Ok(())
 }
 
 #[test]
 fn every_case_matches_the_exact_reference() {
     let want = expected();
-    let all = cases();
+    let all = all();
     assert_eq!(all.len(), want.len());
     let mut failures = Vec::new();
-    for (name, c, s) in &all {
-        let got = curve_surface(c, s).unwrap_or_else(|e| panic!("{name}: {e}"));
-        if let Err(why) = check(name, stored(c).is_some(), &got, &want[name]) {
+    for case in &all {
+        let got = rows(case).unwrap_or_else(|e| panic!("{}: {e}", case.name));
+        if let Err(why) = check(case, &got, &want[&case.name]) {
             failures.push(why);
         }
     }
     assert!(failures.is_empty(), "{failures:#?}");
 }
 
-/// An arc is its whole circle, and every point lies on the curve.
+/// A point's curve position at its parameter, in binary64.
+fn at(c: &Curve, t: f64) -> Option<Point3> {
+    Some(match c {
+        Curve::Edge(Curve3::LineSegment { start, end }) => *start + (*end - *start) * t,
+        Curve::Edge(Curve3::Circle { frame, radius }) => {
+            frame.origin() + (frame.x() * t.cos() + frame.y() * t.sin()) * *radius
+        }
+        Curve::Conic(Conic::Ellipse {
+            frame,
+            major,
+            minor,
+        }) => frame.origin() + frame.x() * (major * t.cos()) + frame.y() * (minor * t.sin()),
+        Curve::Conic(Conic::Hyperbola {
+            frame,
+            major,
+            minor,
+        }) => frame.origin() + frame.x() * (major * t.cosh()) + frame.y() * (minor * t.sinh()),
+        Curve::Spline(s) => s.point(t).ok()?,
+        _ => return None,
+    })
+}
+
+/// An arc is its whole circle; every point is its curve's point at its
+/// parameter; points are sorted.
 #[test]
 fn arcs_are_their_circles_and_points_lie_on_the_curve() {
-    for (name, c, s) in cases() {
-        let got = curve_surface(&c, &s).unwrap();
-        if let Curve3::Circle { frame, radius } = c {
+    for case in all() {
+        let got = rows(&case).unwrap();
+        if let Curve::Edge(Curve3::Circle { frame, radius }) = case.curve {
             let arc = Curve3::CircularArc {
                 frame,
                 radius,
                 start_angle: 0.3,
                 sweep_angle: 1.0,
             };
-            assert_eq!(curve_surface(&arc, &s).unwrap(), got, "{name}");
+            let circle = curve_surface(&Curve3::Circle { frame, radius }, &case.surface).unwrap();
+            assert_eq!(
+                curve_surface(&arc, &case.surface).unwrap(),
+                circle,
+                "{}",
+                case.name
+            );
         }
-        let CurveSurfaceIntersection::Points(points) = got else {
-            continue;
-        };
-        for w in points.windows(2) {
-            assert!(w[0].parameter[1] <= w[1].parameter[0], "{name}: unsorted");
-        }
-        for CurvePoint {
-            parameter, point, ..
-        } in points
-        {
-            let t = 0.5 * parameter[0] + 0.5 * parameter[1];
-            let at = match &c {
-                Curve3::LineSegment { start, end } => *start + (*end - *start) * t,
-                Curve3::Circle { frame, radius } => {
-                    frame.origin() + (frame.x() * t.cos() + frame.y() * t.sin()) * *radius
-                }
-                _ => unreachable!(),
+        let mut last = f64::NEG_INFINITY;
+        for row in got {
+            let w: Vec<&str> = row.split(' ').collect();
+            if w[0] != "point" {
+                continue;
+            }
+            let n: Vec<f64> = w[1..9].iter().map(|x| x.parse().unwrap()).collect();
+            assert!(n[0] >= last, "{}: unsorted", case.name);
+            last = n[1];
+            let t = 0.5 * n[0] + 0.5 * n[1];
+            let Some(p) = at(&case.curve, t) else {
+                continue;
             };
-            let mid = point.map(|[lo, hi]| 0.5 * lo + 0.5 * hi);
+            let mid = [
+                0.5 * (n[2] + n[3]),
+                0.5 * (n[4] + n[5]),
+                0.5 * (n[6] + n[7]),
+            ];
             let gap = (0..3)
-                .map(|k| (at.to_array()[k] - mid[k]).abs())
+                .map(|k| (p.to_array()[k] - mid[k]).abs())
                 .fold(0.0, f64::max);
-            assert!(gap < 1e-9, "{name}: {gap}");
+            assert!(gap < 1e-9, "{}: {gap}", case.name);
         }
     }
 }
 
 #[test]
 fn unsupported_and_degenerate_inputs_are_errors() {
-    let plane = Surface::Plane(frame(&[0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0]));
+    let frame = Frame3::new(
+        Point3::new(0.0, 0.0, 0.0),
+        Vec3::new(0.0, 0.0, 1.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        Tolerance::default(),
+    )
+    .unwrap();
+    let plane = Surface::Plane(frame);
     let point = Point3::new(1.0, 2.0, 3.0);
     let degenerate = Curve3::LineSegment {
         start: point,
@@ -244,10 +253,39 @@ fn unsupported_and_degenerate_inputs_are_errors() {
     ));
     let poles = vec![Point3::new(0.0, 0.0, -1.0), Point3::new(1.0, 0.0, 1.0)];
     let spline = BSplineCurve3::new(1, poles, None, vec![0.0, 1.0], vec![2, 2]).unwrap();
-    let edge = Curve3::BSpline(SplineSpan::whole(spline));
+    let edge = Curve3::BSpline(SplineSpan::whole(spline.clone()));
     assert!(matches!(
         curve_surface(&edge, &plane),
         Err(Error::OutOfDomain(_))
+    ));
+    assert!(matches!(
+        spline_torus(&spline, &plane),
+        Err(Error::OutOfDomain(_))
+    ));
+    assert!(matches!(
+        spline_cone(&spline, &plane),
+        Err(Error::OutOfDomain(_))
+    ));
+    // An ellipse's major semi-axis is the larger, as OCCT's.
+    for (major, minor) in [(1.0, 2.0), (0.0, 0.0), (-1.0, 1.0)] {
+        let e = Conic::Ellipse {
+            frame,
+            major,
+            minor,
+        };
+        assert!(matches!(
+            conic_surface(&e, &plane),
+            Err(Error::OutOfDomain(_))
+        ));
+    }
+    let nan = Conic::Hyperbola {
+        frame,
+        major: f64::NAN,
+        minor: 1.0,
+    };
+    assert!(matches!(
+        conic_surface(&nan, &plane),
+        Err(Error::NonFinite(_))
     ));
 }
 
@@ -256,7 +294,13 @@ fn unsupported_and_degenerate_inputs_are_errors() {
 #[test]
 fn lines_through_a_sphere_cross_it_twice() {
     let sphere = Surface::Sphere {
-        frame: frame(&[1.0, -2.0, 0.5, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0]),
+        frame: Frame3::new(
+            Point3::new(1.0, -2.0, 0.5),
+            Vec3::new(0.0, 0.0, 1.0),
+            Vec3::new(1.0, 0.0, 0.0),
+            Tolerance::default(),
+        )
+        .unwrap(),
         radius: 1.5,
     };
     for k in 0..40 {
@@ -272,5 +316,45 @@ fn lines_through_a_sphere_cross_it_twice() {
         assert!(points.iter().all(|p| !p.tangent));
         let s = [0, 1].map(|i| 0.5 * points[i].parameter[0] + 0.5 * points[i].parameter[1]);
         assert!((s[0] + s[1] - 1.0).abs() < 1e-12, "{k}: {s:?}");
+    }
+}
+
+/// An ellipse about a sphere's centre in a plane through it, with semi-axes
+/// either side of the radius: four crossings, symmetric in the angle; a
+/// hyperbola's branch meets it twice where its vertex is inside.
+#[test]
+fn conics_about_a_sphere_centre_cross_it_symmetrically() {
+    let o = Point3::new(0.5, 0.25, -1.0);
+    let frame = Frame3::new(
+        o,
+        Vec3::new(0.0, 0.0, 1.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        Tolerance::default(),
+    )
+    .unwrap();
+    let sphere = Surface::Sphere { frame, radius: 1.5 };
+    for k in 1..12 {
+        let minor = 0.125 * f64::from(k);
+        let e = Conic::Ellipse {
+            frame,
+            major: 2.0,
+            minor,
+        };
+        let got = conic_surface(&e, &sphere).unwrap();
+        let CurveSurfaceIntersection::Points(points) = got else {
+            panic!("{k}: {got:?}");
+        };
+        assert_eq!(points.len(), 4, "{k}");
+        let h = Conic::Hyperbola {
+            frame,
+            major: 1.0,
+            minor,
+        };
+        let CurveSurfaceIntersection::Points(points) = conic_surface(&h, &sphere).unwrap() else {
+            panic!("{k}");
+        };
+        assert_eq!(points.len(), 2, "{k}");
+        let t = [0, 1].map(|i| 0.5 * points[i].parameter[0] + 0.5 * points[i].parameter[1]);
+        assert!((t[0] + t[1]).abs() < 1e-12, "{k}: {t:?}");
     }
 }
