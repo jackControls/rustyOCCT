@@ -79,6 +79,12 @@ pub enum OperationKind {
     MakeWire,
     /// `Solid::split_by_plane` (S8).
     PlaneSplit,
+    /// `Solid::fuse` (S9).
+    Fuse,
+    /// `Solid::cut` (S9).
+    Cut,
+    /// `Solid::common` (S9).
+    Common,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -211,6 +217,9 @@ fn operation_code(kind: OperationKind) -> u8 {
         OperationKind::MakeFace => 8,
         OperationKind::MakeWire => 9,
         OperationKind::PlaneSplit => 10,
+        OperationKind::Fuse => 11,
+        OperationKind::Cut => 12,
+        OperationKind::Common => 13,
     }
 }
 
