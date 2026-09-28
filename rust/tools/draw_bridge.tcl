@@ -116,11 +116,13 @@ proc runCommand {command args} {
         # DRAW permits numeric Tcl expressions, e.g. 2e-7+1e-14. Preserve that
         # behavior through the actual interpreter, not a Python expression parser.
         # Names precede the numbers; prism's numbers are followed by a mode.
-        set leading {box {1 end} trotate {1 end} ttranslate {1 end} polyline {1 end} prism {2 4} pcylinder {1 end} pcone {1 end} psphere {1 end} ptorus {1 end} plane {1 end} cylinder {1 end} circle {1 end} line {1 end} mkface {2 end} mkedge {2 end}}
+        set leading {box {1 end} trotate {1 end} ttranslate {1 end} polyline {1 end} prism {2 4} pcylinder {1 end} pcone {1 end} psphere {1 end} ptorus {1 end} plane {1 end} cylinder {1 end} circle {1 end} line {1 end} sphere {1 end} cone {1 end} torus {1 end} mkface {2 end} mkedge {2 end}}
         if {[dict exists $leading $command]} {
             lassign [dict get $leading $command] first last
             set converted [lrange $args 0 [expr {$first - 1}]]
             foreach value [lrange $args $first $last] {
+                # Draw::Atof reads `4.99,` as 4.99.
+                set value [string trimright $value ,]
                 if {[catch {interp eval testcase [list expr $value]} number]} {
                     return [unsupportedCommand $command {*}$args]
                 }
@@ -150,15 +152,26 @@ proc runCommand {command args} {
         }
     }
     if {$result ne ""} {logPuts $result}
-    if {$command in {checkshape nbshapes vprops sprops lprops isbbinterf isdeleted}} {incr ::queries}
+    if {$command in {checkshape nbshapes vprops sprops lprops isbbinterf isdeleted xdistcs dump dval}} {incr ::queries}
     # DBRep::Set binds DRAW shape names as Tcl variables as well.
     if {$::backend eq "rust"} {
-        if {$command in {box pcylinder pcone psphere ptorus polyline profile mkplane prism generated modified plane cylinder circle line mkface mkedge}} {
+        if {$command in {box pcylinder pcone psphere ptorus polyline profile mkplane prism generated modified plane cylinder circle line sphere cone torus mkface mkedge}} {
             interp eval testcase [list set [lindex $args 0] [lindex $args 0]]
         }
         if {$command in {copy restore}} {interp eval testcase [list set [lindex $args 1] [lindex $args 1]]}
-        if {$command eq "explode"} {
+        if {$command in {explode intersect}} {
             foreach name $result {interp eval testcase [list set $name $name]}
+        }
+        # Draw::Set binds numbers (bounds) as Tcl variables too; renamevar
+        # moves the binding.
+        if {$command eq "bounds"} {
+            foreach name [lrange $args 1 end] {interp eval testcase [list set $name $name]}
+        }
+        if {$command eq "renamevar"} {
+            foreach {old new} $args {
+                interp eval testcase [list unset -nocomplain $old]
+                interp eval testcase [list set $new $new]
+            }
         }
     }
     return $result
@@ -189,7 +202,7 @@ if {[catch {
     interp alias testcase help {} metadata
     interp alias testcase cpulimit {} cpuLimit
     interp alias testcase locate_data_file {} locateData
-    foreach command {box copy ttranslate trotate isdraw whatis checkshape nbshapes vprops sprops lprops isbbinterf explode compound bcommon bfuse restore prism polyline profile mkplane savehistory generated modified isdeleted pcylinder pcone psphere ptorus plane cylinder circle mkface line mkedge mkvolume bclearobjects bcleartools baddobjects baddtools bfillds bsplit bbuild} {
+    foreach command {box copy ttranslate trotate isdraw whatis checkshape nbshapes vprops sprops lprops isbbinterf explode compound bcommon bfuse restore prism polyline profile mkplane savehistory generated modified isdeleted pcylinder pcone psphere ptorus plane cylinder circle sphere cone torus intersect bounds dval renamevar dump xdistcs directory dsetsignal mkface line mkedge mkvolume bclearobjects bcleartools baddobjects baddtools bfillds bsplit bbuild} {
         interp alias testcase $command {} runCommand $command
     }
     # The variables upstream's _run_test (TestCommands.tcl) sets for a case.

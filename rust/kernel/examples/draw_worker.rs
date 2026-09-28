@@ -16,6 +16,9 @@ use rusty_occt::{
     Tolerance, Vec3,
 };
 use std::collections::{BTreeMap, BTreeSet};
+
+#[path = "../tests/support/draw_geometry.rs"]
+mod draw_geometry;
 use std::f64::consts::TAU;
 use std::io::{self, BufRead, Write};
 
@@ -48,13 +51,51 @@ impl Polyline {
     }
 }
 
-/// A DRAW surface or curve (S6), in its DRAW placement.
+/// A DRAW surface or curve (S6), in its DRAW placement; since S7 also
+/// spheres, cones (the half-angle in radians) and tori, and `intersect`'s
+/// curves.
 #[derive(Clone)]
 enum Geom {
     Plane(Frame3),
     Cylinder(Frame3, f64),
     Line(Point3, Vec3),
     Circle(Frame3, f64),
+    Sphere(Frame3, f64),
+    Cone(Frame3, f64, f64),
+    Torus(Frame3, f64, f64),
+    Curve(draw_geometry::Curve),
+}
+
+impl Geom {
+    /// The analytic surface, for `intersect` and `xdistcs`.
+    fn surface(&self) -> Option<Surface> {
+        Some(match *self {
+            Geom::Plane(frame) => Surface::Plane(frame),
+            Geom::Cylinder(frame, radius) => Surface::Cylinder { frame, radius },
+            Geom::Sphere(frame, radius) => Surface::Sphere { frame, radius },
+            Geom::Cone(frame, half_angle, radius) => Surface::Cone {
+                frame,
+                radius,
+                half_angle,
+            },
+            Geom::Torus(frame, major, minor) => Surface::Torus {
+                frame,
+                major,
+                minor,
+            },
+            _ => return None,
+        })
+    }
+
+    /// The curve, for `bounds`, `xdistcs` and `dump`.
+    fn curve(&self) -> Option<draw_geometry::Curve> {
+        Some(match self {
+            Geom::Line(p, d) => draw_geometry::Curve::Line(*p, *d),
+            Geom::Circle(f, r) => draw_geometry::Curve::Circle(*f, *r),
+            Geom::Curve(c) => c.clone(),
+            _ => return None,
+        })
+    }
 }
 
 #[derive(Clone)]
@@ -128,10 +169,25 @@ struct Session {
     selector: Option<Vec<Pick>>,
     /// Restored bodies so far, for their tags.
     restored: u64,
+    /// DRAW's numeric variables (S7: `bounds`, `dval`).
+    numbers: BTreeMap<String, f64>,
 }
 
 fn unsupported(args: &[String]) -> Failure {
     Failure::Unsupported(format!("unsupported DRAW signature: {}", args.join(" ")))
+}
+/// Tcl's `string match` for `*` and `?`.
+fn glob(pattern: &str, name: &str) -> bool {
+    fn go(p: &[u8], n: &[u8]) -> bool {
+        match (p.first(), n.first()) {
+            (None, None) => true,
+            (Some(b'*'), _) => go(&p[1..], n) || (!n.is_empty() && go(p, &n[1..])),
+            (Some(b'?'), Some(_)) => go(&p[1..], &n[1..]),
+            (Some(a), Some(b)) if a == b => go(&p[1..], &n[1..]),
+            _ => false,
+        }
+    }
+    go(pattern.as_bytes(), name.as_bytes())
 }
 fn error(message: &str) -> Failure {
     Failure::Error(message.into())
@@ -1280,6 +1336,185 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             shapes.insert(args[1].clone(), Shape::Geometry(g));
             Ok(String::new())
         }
+        // S7 (lowalgos): DRAW's analytic surfaces (`anasurface`: a placement,
+        // then the radius; a cone's half-angle in degrees, then its radius; a
+        // torus's major and minor radii).
+        "sphere" | "cone" | "torus"
+            if matches!(
+                (command, args.len()),
+                ("sphere", 3 | 6 | 9 | 12) | ("cone" | "torus", 4 | 7 | 10 | 13)
+            ) =>
+        {
+            let n = numbers(&args[2..])?;
+            let params = if command == "sphere" { 1 } else { 2 };
+            let (axes, p) = n.split_at(n.len() - params);
+            let frame = if axes.is_empty() {
+                Frame3::xy()
+            } else {
+                placement(axes, t)?
+            };
+            let g = match command {
+                "sphere" => Geom::Sphere(frame, p[0]),
+                "cone" => Geom::Cone(frame, p[0].to_radians(), p[1]),
+                _ => Geom::Torus(frame, p[0], p[1]),
+            };
+            shapes.insert(args[1].clone(), Shape::Geometry(g));
+            Ok(String::new())
+        }
+        "intersect" if args.len() == 4 || args.len() == 5 => {
+            let surface = |name: &str| -> Result<Surface> {
+                geometry(shapes, name)?
+                    .surface()
+                    .ok_or_else(|| Failure::Unsupported(format!("{name}: not an analytic surface")))
+            };
+            let (a, b) = (surface(&args[2])?, surface(&args[3])?);
+            let (curves, points) = match draw_geometry::intersect(&a, &b) {
+                Ok(found) => found,
+                Err(why) if why.contains("computation budget") || why.contains("not yet") => {
+                    return Err(Failure::Unsupported(format!("intersect: {why}")))
+                }
+                Err(why) => return Err(error(&why)),
+            };
+            if curves.is_empty() && points.is_empty() {
+                return Err(error("No intersections found!"));
+            }
+            let name = &args[1];
+            let mut names = Vec::new();
+            for (k, c) in curves.into_iter().enumerate() {
+                names.push(if k == 0 && points.is_empty() {
+                    name.clone()
+                } else {
+                    format!("{name}_{}", k + 1)
+                });
+                shapes.insert(names[k].clone(), Shape::Geometry(Geom::Curve(c)));
+            }
+            // DRAW names a single curve `res`, several `res_1 .. res_n`.
+            if names.len() > 1 && names[0] == *name {
+                let c = shapes.remove(name).expect("the first curve");
+                names[0] = format!("{name}_1");
+                shapes.insert(names[0].clone(), c);
+            }
+            for (k, p) in points.into_iter().enumerate() {
+                let n = format!("{name}_p_{}", k + 1);
+                shapes.insert(
+                    n.clone(),
+                    Shape::Geometry(Geom::Curve(draw_geometry::Curve::Line(
+                        p,
+                        Vec3::new(1.0, 0.0, 0.0),
+                    ))),
+                );
+                names.push(n);
+            }
+            Ok(names.iter().map(|n| format!("{n} ")).collect())
+        }
+        "bounds" if args.len() == 4 => {
+            let c = geometry(shapes, &args[1])?
+                .curve()
+                .ok_or_else(|| Failure::Unsupported(format!("{}: not a curve", args[1])))?;
+            let [lo, hi] = c.bounds();
+            session.numbers.insert(args[2].clone(), lo);
+            session.numbers.insert(args[3].clone(), hi);
+            Ok(String::new())
+        }
+        "dval" if args.len() == 2 => {
+            let numbers = &session.numbers;
+            let v = draw_geometry::evaluate(&args[1], &|n| numbers.get(n).copied())
+                .map_err(|e| error(&e))?;
+            Ok(draw_geometry::format_g(v, 17))
+        }
+        "renamevar" if args.len() >= 3 && args.len() % 2 == 1 => {
+            for pair in args[1..].chunks(2) {
+                if let Some(shape) = shapes.remove(&pair[0]) {
+                    shapes.insert(pair[1].clone(), shape);
+                } else if let Some(v) = session.numbers.remove(&pair[0]) {
+                    session.numbers.insert(pair[1].clone(), v);
+                } else {
+                    return Err(error(&format!("{} does not exist", pair[0])));
+                }
+            }
+            Ok(String::new())
+        }
+        "dump" if args.len() == 2 => {
+            let g = geometry(shapes, &args[1])?;
+            let body = match (g.curve(), g) {
+                (Some(c), _) => c.kind().to_string(),
+                (None, Geom::Plane(_)) => "Plane".into(),
+                (None, Geom::Cylinder(..)) => "CylindricalSurface".into(),
+                (None, Geom::Sphere(..)) => "SphericalSurface".into(),
+                (None, Geom::Cone(..)) => "ConicalSurface".into(),
+                (None, _) => "ToroidalSurface".into(),
+            };
+            Ok(format!(
+                "\n\n*********** Dump of {} *************\n{body}\n",
+                args[1]
+            ))
+        }
+        "xdistcs" if (6..=8).contains(&args.len()) => {
+            let numbers = &session.numbers;
+            let value = |s: &str| {
+                draw_geometry::evaluate(s, &|n| numbers.get(n).copied()).map_err(|e| error(&e))
+            };
+            let c = match geometry(shapes, &args[1]).ok().and_then(Geom::curve) {
+                Some(c) => c,
+                None => return Ok(format!("Error: {} is not a curve!\n", args[1])),
+            };
+            let s = match geometry(shapes, &args[2]).ok().and_then(Geom::surface) {
+                Some(s) => s,
+                None => return Ok(format!("Error: {} is not a surface!\n", args[2])),
+            };
+            let (t1, t2) = (value(&args[3])?, value(&args[4])?);
+            let n = (value(&args[5])? as usize).max(2);
+            let tol = args
+                .get(6)
+                .map(|a| value(a))
+                .transpose()?
+                .unwrap_or(f64::MAX);
+            let warn = args
+                .get(7)
+                .map(|a| value(a))
+                .transpose()?
+                .unwrap_or(f64::MAX);
+            let mut out = String::new();
+            let (mut max, mut at) = (0.0f64, t1);
+            for i in 0..n {
+                let t = if i + 1 == n {
+                    t2
+                } else {
+                    t1 + (t2 - t1) / (n - 1) as f64 * i as f64
+                };
+                let p = c.point(t).map_err(|e| error(&e))?;
+                let d = draw_geometry::distance(&s, p);
+                if d > tol {
+                    out += &format!("Error in {}:", args[1]);
+                } else if d > warn {
+                    out += "Attention (critical value of tolerance) :";
+                }
+                out += &format!(
+                    " T={}\tD={}\n",
+                    draw_geometry::format_g(t, 6),
+                    draw_geometry::format_g(d, 6)
+                );
+                if d > max {
+                    (max, at) = (d, t);
+                }
+            }
+            out += &format!(
+                "Max distance = {}\nParam = {}\n",
+                draw_geometry::format_g(max, 17),
+                draw_geometry::format_g(at, 17)
+            );
+            Ok(out)
+        }
+        "directory" if args.len() <= 2 => {
+            let pattern = args.get(1).map(String::as_str).unwrap_or("*");
+            let names: Vec<&String> = shapes
+                .keys()
+                .chain(session.numbers.keys())
+                .filter(|n| glob(pattern, n))
+                .collect();
+            Ok(names.iter().map(|n| format!("{n} ")).collect())
+        }
+        "dsetsignal" => Ok(String::new()),
         "mkface" if args.len() == 7 => {
             let b = numbers(&args[3..])?;
             let shape = match geometry(shapes, &args[2])?.clone() {
@@ -1876,6 +2111,23 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
         }
         .into()),
         "whatis" if args.len() == 2 => {
+            // DRAW's `dtyp`: geometry and numbers as DrawTrSurf and
+            // Draw_Number describe themselves; nothing for an unknown name.
+            match shapes.get(&args[1]) {
+                Some(Shape::Geometry(g)) => {
+                    let what = if g.curve().is_some() {
+                        " a 3d curve"
+                    } else {
+                        "a surface"
+                    };
+                    return Ok(format!("{} is a {what}", args[1]));
+                }
+                None if session.numbers.contains_key(&args[1]) => {
+                    return Ok(format!("{} is a numeric", args[1]))
+                }
+                None => return Ok(format!("{} is a ", args[1])),
+                _ => {}
+            }
             let shape = get(shapes, &args[1])?;
             Ok(format!(
                 "{} is a shape {} FORWARD Free Modified",

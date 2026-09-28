@@ -3,7 +3,8 @@
 # builds a shape), "DRAW Graphic Commands" and "geometric display commands",
 # plus the shape display commands disp, donly, erase, clear and display and
 # the image checks checkview and checkcolor, from native DRAWEXE
-# (OCCT 7.9.3) after pload MODELING VISUALIZATION.
+# (OCCT 7.9.3) after pload MODELING VISUALIZATION; and don, Tcl's unambiguous
+# abbreviation of donly in interactive DRAW, which lowalgos cases use (S7).
 2dfit
 2dmd
 2dmu
@@ -35,6 +36,7 @@ discr
 disp
 display
 dmode
+don
 donly
 dptv
 dtext

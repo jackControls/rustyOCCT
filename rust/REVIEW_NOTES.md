@@ -1472,7 +1472,19 @@ the first fixture, never deferred.
     gcd of the conic's plane and equation on each span; the kernel inside
     the reference on all 13, the bridge 11 matches and 2 reviewed
     differences; `curve_curve` fuzzes splines too.
-  * The `lowalgos` group pending.
+  * The `lowalgos` group: the Rust DRAW adapter gained DRAW's analytic
+    surfaces (`sphere`, `cone`, `torus`), `intersect` (circles, ellipses,
+    lines and hyperbolas' branches as DRAW curves, a procedural loop, ring
+    or figure-eight and a traced track as parameterised curves), numeric
+    variables (`bounds`, `dval`, `renamevar`, `directory`), `dump`,
+    geometry-aware `whatis` and `xdistcs` with OCCT's output. Seven
+    self-contained `intss` cases are registered: three evaluated on both
+    backends (a torus with a plane through its axis, twice; a cone with a
+    coaxial torus), four recorded divergences (OCCT's piece counts of
+    walking lines against the kernel's closed loops; antiparallel axes
+    snapped by tolerance). The other self-contained cases need trimmed and
+    extruded surfaces, and the data cases B-spline surfaces, beyond S7's
+    analytic scope (UPSTREAM_TESTS.md).
 * Tessellation (parallel track) — T-a implemented (`TESSELLATION.md`);
   gate pending CI, the schedule replay and the clean campaign.
   * The decisions above, the independent reference

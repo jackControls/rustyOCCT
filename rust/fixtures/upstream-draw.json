@@ -23,6 +23,17 @@
     "tests/bugs/moddata_1/begin": "5808c58aa3201cb4a5dd9513407fcf273dbc2b2763b2b395c11932a432f2a10b",
     "tests/bugs/moddata_1/buc60769": "8ece4a587d65d59a1922f08f1898735e6cf01bf2bbc0675b3616dcd129e03400",
     "tests/bugs/parse.rules": "946ccdde3ded0ec98d7559cdfd530afd0e7e4c941524b02b389a739ab86e3db6",
+    "tests/lowalgos/begin": "f140a7dcc998993c45da7684d2664548b333170abd2ec809bc51fbaafcadf869",
+    "tests/lowalgos/end": "6c353dcde0e39fe44c9ce7699f12ac43db0569da02ef1a7fcf1069a28ae3fa4b",
+    "tests/lowalgos/intss/begin": "e0b2d007544669401d0c51ea63e2741995a48522704d809fef7e6fba493a4e33",
+    "tests/lowalgos/intss/bug21750": "a4fbd6b4d3e817e40d9bb545e55f31f022f1ee7a273e72693e8f244efd41a9e0",
+    "tests/lowalgos/intss/bug23177_1": "2a2a8ec47d9d277392b64ba050842dceb13a0253339347e7b8108a143a57a2ec",
+    "tests/lowalgos/intss/bug23177_2": "fbedf452b4ce94e52bfa98fd219bfad4df14a15f50660557434ae612accb6c01",
+    "tests/lowalgos/intss/bug23178": "1ad44fb4a74e263ca35e91d9ef5bd1e8278fcc58a1a714f0e271c0ae7c7f1f45",
+    "tests/lowalgos/intss/bug24648": "936fa681e0b20c1b949af76521bf5009c83ee469641746dbda89935d6493cc90",
+    "tests/lowalgos/intss/bug28222_2": "b30bcde9da5d0bb16b4141baa2e20c4efbb7d39bd3afadba09e4f84ca3ad48a8",
+    "tests/lowalgos/intss/bug28222_3": "a8b9d0ef4dbc8907f4017988ea67ab56579c273cff2ba0660943f128c8d10c4d",
+    "tests/lowalgos/parse.rules": "7c45f736fc607899b577e3f58ca250b0e473993d38974eb64a333c58c780b604",
     "tests/parse.rules": "ad8124e361f53b16f5ca3c3f7eec2e18eb855309f38c08ea0ab7ebb2a5971977"
   },
   "cases": [
@@ -207,6 +218,48 @@
         "count synthesizer",
         "surface and linear properties"
       ]
+    },
+    {
+      "path": "tests/lowalgos/intss/bug23177_1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S7 (lowalgos): a torus and a plane through its axis, two meridian circles; dump, bounds, dval and xdistcs on both surfaces."
+    },
+    {
+      "path": "tests/lowalgos/intss/bug23177_2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S7 (lowalgos): a torus and a plane through its axis, two meridian circles; dump, bounds, dval and xdistcs on both surfaces."
+    },
+    {
+      "path": "tests/lowalgos/intss/bug24648",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S7 (lowalgos): a cone and a coaxial torus, circles; dump must name each a circle."
+    },
+    {
+      "path": "tests/lowalgos/intss/bug23178",
+      "expected_rust": "failed",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S7 (lowalgos), a recorded divergence: two crossing cylinders; the kernel returns one closed loop, every xdistcs sample within 4e-15 of both, where the case counts the 6 pieces IntPatch splits its walking line into."
+    },
+    {
+      "path": "tests/lowalgos/intss/bug28222_2",
+      "expected_rust": "failed",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S7 (lowalgos), a recorded divergence: two crossing cylinders; the kernel returns 2 closed loops, every xdistcs sample within 1.5e-14 of both, where the case counts the 4 pieces of IntPatch's walking lines."
+    },
+    {
+      "path": "tests/lowalgos/intss/bug28222_3",
+      "expected_rust": "failed",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S7 (lowalgos), a recorded divergence: a thin cylinder crossing a thick one; the kernel returns one closed loop, every xdistcs sample within 2e-15 of both, where the case counts the 2 pieces of IntPatch's walking line."
+    },
+    {
+      "path": "tests/lowalgos/intss/bug21750",
+      "expected_rust": "unsupported",
+      "expected_occt": "unverified",
+      "purpose": "S7 (lowalgos), a recorded divergence: two cylinders whose axes are antiparallel only up to rounding; OCCT snaps them to parallel and reports two lines, the kernel's exact predicates find crossing axes and one closed curve, and the case then calls the undefined command `Error:`."
     }
   ],
   "derived_sources": {
