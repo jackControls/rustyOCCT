@@ -1081,6 +1081,58 @@ Decisions for S8c, recorded before its code (2026-09-28):
   extended with `BRepPrimAPI_MakeCone`/`MakeSphere` and a capture before
   the kernel code.
 
+Decisions for S8e, recorded before its code (2026-09-28):
+
+* **Scope.** S6's bodies by a plane: `Body::split_by_plane(operation,
+  plane)` returns the pieces with their sides (below first) and the
+  history, as `Solid::split_by_plane` does. A body is a planar sheet
+  (`Body::face_from_profile`) or a closed wire (`Body::wire_from_boundary`)
+  on its frame's plane, of lines, arcs, circles and (S8b) splines; the
+  plane's trace on the body's plane is the line `a u + b v + d = 0` in the
+  frame's coordinates, its coefficients exact rationals of the stored data.
+* **Parallel planes.** A plane parallel to the body's (`a = b = 0`) cuts
+  nothing: the body is returned itself, every entity `Unchanged`, on the
+  side it lies on, or `Below` when it lies in the plane (a face in the
+  plane stays whole, S8's rule).
+* **Sheets.** The face's pieces are the profile's section by the trace
+  (S8a.1's and S8b.3's `Section`, unchanged: exact sides, crossings,
+  tangencies and chords); each piece is a planar sheet of its profile on
+  the body's frame, renamed by provenance as a prism's caps are: a whole
+  edge or vertex keeps its id, parts are `Split` children with canonical
+  ordinals, a vertex on the plane is split into one copy per piece, each
+  cut edge (a chord) is `Generated` from the face and each cut vertex from
+  the edge it cuts; the face is `Split` into one child per piece. A trace
+  missing or touching the face returns the body.
+* **Wires.** A closed wire's crossings with the trace (the same exact
+  section of its boundary, without chords) cut it into runs; each maximal
+  run of consecutive pieces on one side is one open wire (a new
+  construction: a path of segments with two free ends, its edges and
+  vertices on the frame's plane, validated as a wire body), a run's order
+  the boundary's stored order from the run's first piece. An edge lying
+  along the trace joins the run it continues in stored order; a wire
+  touching the trace without crossing it returns the body. History: whole
+  edges keep their ids, parts are `Split`, a crossing's vertex is
+  `Generated` from the edge it cuts and a stored vertex on the plane
+  between two runs is split into one copy per run; the wire's region (the
+  void) is unchanged.
+* **Upstream.** The `bsplit` group (`boolean/splitter/A5`, `B5` and the
+  cases of `bugs/*` that call `bsplit`) is registered in
+  `upstream-draw.json` as capability sentinels (their shapes need the
+  general builder of S9; native DRAW must pass them where the dataset is
+  present). A derived case `split_plane` drives the adapter's
+  `bclearobjects`, `baddobjects`, `baddtools`, `bfillds` and `bsplit` with a
+  plane face (`plane` then `mkface`) as the tool on a prism, a sheet and a
+  wire, checking `checkshape`, `checknbshapes` and `checkprops` of the
+  result on both backends.
+* **Evidence first**: the reference extended to sheets (each side's area
+  and centroid from the profile's section) and wires (each side's length
+  and centroid, exactly for lines and arcs, by quadrature for splines),
+  fixtures of every class (crossing, through a vertex, along an edge,
+  tangent to an arc or a hole, missing, parallel, containing the body, in
+  both frames; lines, arcs, circles, holes and splines), and a native
+  `BRepAlgoAPI_Splitter` capture of sheets and wires split by a plane face
+  (each piece's area or length, centre and counts) before the kernel code.
+
 Decisions for S8b, recorded before its code (2026-09-28):
 
 * **Unblocked.** T-b tessellates spline edges, pcurves and faces and F8
@@ -2377,4 +2429,22 @@ the first fixture, never deferred.
     one new review: OCCT splits the bulge's cap edges where a plane touches
     them). Pending: the campaign, and the Linux record of the spline capture
     after CI.
+  * S8e: decisions recorded (2026-09-28); its evidence came before any
+    kernel code (`5fe8d268`): face and wire bodies in the case protocol
+    (`make`, natively a `make` row in place of the prism vector), the
+    reference's `planar_rows` (a sheet's side: area, perimeter and centre
+    from the profile's section; a wire's: length and centre from its
+    boundary cut where the trace crosses or touches it, a piece along the
+    trace on the side of the piece before it; rows `side S area perimeter
+    cx cy cz` and `side S length 0 cx cy cz`), checked within 1e-38 against
+    closed forms, exact clipping, Green's theorem and the sides' sums, 25
+    cases (`split-sheet-cases.txt`) and `occt-split-sheet-preimplementation`:
+    every piece valid, the sides and wires' runs the reference's, 23 within
+    2e-8 and two reviewed BRepGProp errors (a face bounded by two spans of
+    the wave, 1.3e-3; `LinearProperties` on the lens's cubic, 3.5e-6). OCCT
+    keeps a split wire one wire (the probe groups its runs), splits edges
+    at tangencies, keeps circles' seam vertices and splits the sheet whose
+    hole the plane touches (the decisions: `Degenerate`). The probe cannot
+    build a body case yet: all 25 `rust_unsupported` (128 cases: 75
+    matches, 53 reviewed). `Body::split_by_plane` next.
 * S9 — pending

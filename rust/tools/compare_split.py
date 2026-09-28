@@ -28,6 +28,15 @@ The spline cases go to the probe one at a time: until the kernel reads
 spline segments (S8b.1), a probe that fails on a case (it cannot parse the
 `B` segment) or prints a row other than a piece or a limit reports that case
 `unsupported` too, and the report lists it under `rust_probe_failed`.
+
+S8e: `split-sheet-cases.txt` holds face and wire bodies (a `make` row);
+their rows carry a sheet's area and perimeter or a wire's length and 0 in
+place of the volume and area (`generate_split_fixtures.py`), and the native
+probe reports its pieces the same way (a sheet's faces; a wire's runs of
+split edges on one side, grouped by the probe). They go to the Rust probe
+one at a time as the spline cases do: until `Body::split_by_plane` exists
+the probe cannot build a body case, and each is `unsupported` and listed
+under `rust_probe_failed`.
 """
 import argparse
 import json
@@ -60,6 +69,8 @@ CAPTURES = {
              ROOT/'rust/kernel/src/solid/split/spiric.rs'),
     's8b': (ROOT/'rust/fixtures/occt-split-spline-preimplementation',
             ROOT/'rust/kernel/src/solid/split/spline.rs'),
+    's8e': (ROOT/'rust/fixtures/occt-split-sheet-preimplementation',
+            ROOT/'rust/kernel/src/body/split.rs'),
 }
 # Captures taken after their kernel code (S8d.2's conic configurations beyond
 # the three S8c captured before it): recorded as such, never as references
@@ -89,7 +100,8 @@ def native_input(key='s8a'):
             blocks.append(f'case {name}\n{kind} {axis}\nsplit '
                           + ' '.join(repr(float(v)) for v in plane)+'\nend')
         return '\n'.join(blocks)+'\n'
-    for case, plane in fixtures.spline_cases() if key == 's8b' else fixtures.cases():
+    listed = {'s8b': fixtures.spline_cases, 's8e': fixtures.planar_cases}.get(key, fixtures.cases)()
+    for case, plane in listed:
         text = native_case(case)
         body, _ = text.rsplit('\nend', 1)
         blocks.append(body+'\nsplit '+' '.join(repr(float(v)) for v in plane)+'\nend')
@@ -117,7 +129,8 @@ def expected_rows():
         (ROOT/'rust/fixtures/split-conic-expected.tsv').read_text().splitlines()[1:] + \
         (ROOT/'rust/fixtures/split-torus-expected.tsv').read_text().splitlines()[1:] + \
         (ROOT/'rust/fixtures/split-spiric-expected.tsv').read_text().splitlines()[1:] + \
-        (ROOT/'rust/fixtures/split-spline-expected.tsv').read_text().splitlines()[1:]
+        (ROOT/'rust/fixtures/split-spline-expected.tsv').read_text().splitlines()[1:] + \
+        (ROOT/'rust/fixtures/split-sheet-expected.tsv').read_text().splitlines()[1:]
     for line in text:
         name, row = line.split('\t')
         w = row.split()
@@ -182,10 +195,11 @@ def rust_rows():
     for line in rows.splitlines():
         w = line.split()
         out.setdefault(w[0], []).append(w[1:])
-    # S8b: one case at a time; a probe failure or an unknown row is
-    # `unsupported` (the kernel does not read spline segments yet).
+    # S8b and S8e: one case at a time; a probe failure or an unknown row is
+    # `unsupported` (a kernel without spline segments, or without
+    # `Body::split_by_plane`).
     failed = []
-    for case, plane in fixtures.spline_cases():
+    for case, plane in fixtures.spline_cases()+fixtures.planar_cases():
         run_ = subprocess.run([str(ROOT/'target/release/examples/split_probe')],
                               input=fixtures.encode(case, plane)+'\n', text=True, capture_output=True,
                               timeout=600)
@@ -337,7 +351,8 @@ def main():
         [(c, c[4], c[1]) for c in fixtures.conic_cases()] + \
         [(('torus', c[0], c[1], c[2], c[3]), c[3], c[0]) for c in fixtures.torus_cases()] + \
         [(('torus', c[0], c[1], c[2], c[3]), c[3], c[0]) for c in fixtures.spiric_cases()] + \
-        [(case, plane, case.name) for case, plane in fixtures.spline_cases()]
+        [(case, plane, case.name) for case, plane in fixtures.spline_cases()] + \
+        [(case, plane, case.name) for case, plane in fixtures.planar_cases()]
     for case, plane, name in everything:
         report['cases'] += 1
         rows = expected[name]
