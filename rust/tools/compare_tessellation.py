@@ -1,22 +1,24 @@
 #!/usr/bin/env python3
-"""Source-pinned BRepMesh_IncrementalMesh observations beside the tessellation reference (T-a).
+"""Source-pinned BRepMesh_IncrementalMesh observations beside the tessellation reference (T-a, T-b).
 
-The bodies of tessellation-cases.txt are written as `.brep` text by the
-kernel's existing writer (brep_io_probe `prisms` and `bodies`), read
+The bodies of tessellation-cases.txt (T-a) or tessellation-spline-cases.txt
+(T-b, `--family spline`) are written as `.brep` text by the kernel's
+existing writer (brep_io_probe `prisms` and `bodies`, or `parts`), read
 natively and meshed by BRepMesh_IncrementalMesh at each case's settings
 (occt_tessellation_oracle.cpp): node and triangle counts, OCCT's own
 deflections, the deflection measured by sampling against each face's
 surface, watertightness after joining nodes through OCCT's edge polygons,
 orientation, area and volume. `--capture` records these native rows before
-any kernel tessellation code exists; later runs must reproduce them, and
-must write the same `.brep` texts. The native meshes are also checked by the
-independent reference (tessellation_reference.py): where OCCT exceeds the
-requested deflection, leaves gaps, misorients a triangle or understates its
-own deflection, the difference needs a fingerprinted review. The kernel's
-meshes (`tessellation_probe`) must pass every check of the reference on
-every case and setting; there is no review for them.
+the family's kernel tessellation code exists; later runs must reproduce
+them, and must write the same `.brep` texts. The native meshes are also
+checked by the independent reference (tessellation_reference.py): where OCCT
+exceeds the requested deflection, leaves gaps, misorients a triangle or
+understates its own deflection, the difference needs a fingerprinted review.
+The kernel's meshes (`tessellation_probe`) must pass every check of the
+reference on every case and setting; there is no review for them.
 """
 import argparse
+from dataclasses import dataclass
 import json
 from pathlib import Path
 import subprocess
@@ -33,10 +35,7 @@ import generate_tessellation_fixtures as fixtures
 import tessellation_reference as ref
 
 SOURCE_FILE = ROOT/'rust/tools/occt_tessellation_oracle.cpp'
-CAPTURE = ROOT/'rust/fixtures/occt-tessellation-preimplementation'
 REVIEWS = ROOT/'rust/fixtures/occt-tessellation-divergences.json'
-KERNEL_FILE = ROOT/'rust/kernel/src/tessellation.rs'
-CASES = ROOT/'rust/fixtures/tessellation-cases.txt'
 TOOLKITS = ['TKMesh', 'TKTopAlgo', 'TKBRep', 'TKGeomAlgo', 'TKGeomBase', 'TKG3d', 'TKG2d', 'TKMath',
             'TKernel']
 # Native rows on every run: statuses and counts exact, reals within this
@@ -48,8 +47,35 @@ FIELDS = ('status', 'faces', 'unmeshed', 'nodes', 'welded', 'triangles', 'degene
           'face_distance', 'edge_distance', 'area', 'volume')
 
 
+@dataclass
+class Family:
+    """A family of fixtures with its own pre-implementation capture."""
+    cases: Path         # the fixture blocks with their `mesh` rows
+    capture: Path
+    kernel_file: Path   # absent when the capture was taken
+    exists_key: str     # capture.json's record of that absence
+    probe_args: tuple   # tessellation_probe's arguments
+
+    def objects(self):
+        if self.cases.name == 'tessellation-cases.txt':
+            return {c.name: c for c in fixtures.cases()}
+        return {c.name: c for c in fixtures.spline_cases()}
+
+
+FAMILIES = {
+    'analytic': Family(ROOT/'rust/fixtures/tessellation-cases.txt',
+                       ROOT/'rust/fixtures/occt-tessellation-preimplementation',
+                       ROOT/'rust/kernel/src/tessellation.rs', 'rust_tessellation_exists', ()),
+    # T-b: the spline cells' bounds live in tessellation/spline.rs.
+    'spline': Family(ROOT/'rust/fixtures/tessellation-spline-cases.txt',
+                     ROOT/'rust/fixtures/occt-spline-tessellation-preimplementation',
+                     ROOT/'rust/kernel/src/tessellation/spline.rs', 'rust_spline_tessellation_exists',
+                     ('parts',)),
+}
+
+
 def split_cases(text):
-    """[(name, identity block without mesh rows, [(setting, deflection, angle)])]."""
+    """[(name, block without mesh rows, [(setting, deflection, angle)])]."""
     out = []
     for block in text.split('\nend'):
         if not block.strip():
@@ -61,22 +87,21 @@ def split_cases(text):
     return out
 
 
-def case_objects():
-    return {c.name: c for c in fixtures.cases()}
-
-
-def brep_texts():
+def brep_texts(family):
     """{case: .brep text} from the kernel's writer."""
     subprocess.run(['cargo', '+stable', 'build', '--release', '--locked', '--example', 'brep_io_probe'],
                    cwd=ROOT, check=True)
     probe = str(ROOT/'target/release/examples/brep_io_probe')
-    cases = split_cases(CASES.read_text())
-    objects = case_objects()
-    solids = ''.join(b for n, b, _ in cases if objects[n].make is None)
-    faces = ''.join(b for n, b, _ in cases if objects[n].make is not None)
+    cases = split_cases(family.cases.read_text())
     out = {}
     with tempfile.TemporaryDirectory() as tmp:
-        for mode, text in (('prisms', solids), ('bodies', faces)):
+        if family.probe_args:
+            runs = (('parts', ''.join(b for _, b, _ in cases)),)
+        else:
+            objects = family.objects()
+            runs = (('prisms', ''.join(b for n, b, _ in cases if objects[n].make is None)),
+                    ('bodies', ''.join(b for n, b, _ in cases if objects[n].make is not None)))
+        for mode, text in runs:
             subprocess.run([probe, mode, tmp], input=text, text=True, capture_output=True, check=True,
                            timeout=600)
         for name, _, _ in cases:
@@ -84,9 +109,9 @@ def brep_texts():
     return out
 
 
-def native_input(texts):
+def native_input(family, texts):
     rows = []
-    cases = split_cases(CASES.read_text())
+    cases = split_cases(family.cases.read_text())
     for name, _, _ in cases:
         rows.append(f'body {name}')
         rows.append(texts[name].rstrip('\n'))
@@ -132,10 +157,11 @@ def same_row(was, now):
     return True
 
 
-def capture(executable, env, sdk_manifest, text):
+def capture(family, executable, env, sdk_manifest, text):
     record = run(executable, text, env)
     if record['exit_code'] != 0:
         raise SystemExit('native tessellation run failed: '+json.dumps(record)[:2000])
+    CAPTURE = family.capture
     CAPTURE.mkdir(parents=True, exist_ok=True)
     (CAPTURE/'inputs.txt').write_text(text)
     (CAPTURE/'native.txt').write_text(record['stdout'])
@@ -147,7 +173,7 @@ def capture(executable, env, sdk_manifest, text):
     write(CAPTURE/'capture.json', {
         'source_reference': SOURCE, 'oracle': next(iter(record['stderr'].splitlines()), None),
         'platform': sys.platform, 'rust_revision': revision,
-        'rust_tessellation_exists': KERNEL_FILE.exists(),
+        family.exists_key: family.kernel_file.exists(),
         'rust_worktree_uncommitted': status, 'sdk_manifest_sha256': digest(sdk_manifest),
         'input_sha256': digest(CAPTURE/'inputs.txt'), 'probe_source_sha256': digest(CAPTURE/'oracle.cpp'),
         'observations_sha256': digest(CAPTURE/'native.txt')})
@@ -172,9 +198,10 @@ def drifted_inputs(captured, current):
             raise ValueError(f'current native corpus moved {a} to {b}')
 
 
-def captured(observed, text):
+def captured(family, observed, text):
+    CAPTURE = family.capture
     metadata = json.loads((CAPTURE/'capture.json').read_text())
-    if metadata['source_reference'] != SOURCE or metadata['rust_tessellation_exists']:
+    if metadata['source_reference'] != SOURCE or metadata[family.exists_key]:
         raise ValueError('tessellation capture was not a clean pre-implementation reference')
     for key, name in [('input_sha256', 'inputs.txt'), ('probe_source_sha256', 'oracle.cpp'),
                       ('observations_sha256', 'native.txt')]:
@@ -200,12 +227,13 @@ def captured(observed, text):
             raise ValueError(f'native observation of {key} differs from the capture: {observed[key]}')
 
 
-def rust_meshes():
+def rust_meshes(family):
     """{(case, setting): Mesh | error text} from the kernel's probe."""
     subprocess.run(['cargo', '+stable', 'build', '--release', '--locked', '--example', 'tessellation_probe'],
                    cwd=ROOT, check=True)
-    out = subprocess.run([str(ROOT/'target/release/examples/tessellation_probe')], input=CASES.read_text(),
-                         text=True, capture_output=True, timeout=1800, check=True).stdout
+    out = subprocess.run([str(ROOT/'target/release/examples/tessellation_probe'), *family.probe_args],
+                         input=family.cases.read_text(), text=True, capture_output=True, timeout=1800,
+                         check=True).stdout
     return ref.parse_meshes(out)
 
 
@@ -233,12 +261,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--occt-root', type=Path, required=True)
     parser.add_argument('--sdk-manifest', type=Path, required=True)
-    parser.add_argument('--output', type=Path, default=ROOT/'target/tessellation-oracle')
+    parser.add_argument('--family', choices=sorted(FAMILIES), default='analytic',
+                        help='the T-a fixtures (planes, cylinders, cones, spheres, tori) or the T-b splines')
+    parser.add_argument('--output', type=Path)
     parser.add_argument('--strict-native', action='store_true')
     parser.add_argument('--capture', action='store_true',
                         help='record the native observations (before the kernel code exists only)')
     args = parser.parse_args()
-    output = args.output.resolve()
+    family = FAMILIES[args.family]
+    default = 'tessellation-oracle' if args.family == 'analytic' else 'spline-tessellation-oracle'
+    output = (args.output or ROOT/'target'/default).resolve()
     output.mkdir(parents=True, exist_ok=True)
     prefix = args.occt_root.resolve()
     verify_sdk(prefix, args.sdk_manifest)
@@ -247,12 +279,12 @@ def main():
             raise ValueError('independent fixture regeneration changed: '+name)
     executable, env, loaded, command = build(prefix, output, SOURCE_FILE, 'tessellation-oracle',
                                              ('TKMesh', 'TKBRep'), TOOLKITS)
-    text = native_input(brep_texts())
+    text = native_input(family, brep_texts(family))
     if args.capture:
-        if KERNEL_FILE.exists():
+        if family.kernel_file.exists():
             raise SystemExit('the kernel\'s tessellation exists: a capture now would not precede it')
-        capture(executable, env, args.sdk_manifest, text)
-        print('captured', len(parse_native((CAPTURE/'native.txt').read_text())[0]), 'native meshes')
+        capture(family, executable, env, args.sdk_manifest, text)
+        print('captured', len(parse_native((family.capture/'native.txt').read_text())[0]), 'native meshes')
         return
     record = run(executable, text, env)
     dumped = subprocess.run([str(executable), 'dump'], input=text, text=True, capture_output=True,
@@ -261,16 +293,16 @@ def main():
         raise SystemExit('native tessellation run failed: '+json.dumps(record)[:2000])
     (output/'native-observed.txt').write_text(record['stdout'])
     observed, _ = parse_native(record['stdout'])
-    captured(observed, text)
+    captured(family, observed, text)
     native_meshes = ref.parse_meshes(parse_native(dumped.stdout)[1])
     oracle = next(iter(record['stderr'].splitlines()), None)
     reviews = [] if args.strict_native or not REVIEWS.exists() else json.loads(REVIEWS.read_text())['reviews']
     report = {'source_reference': SOURCE, 'oracle': oracle, 'meshes': 0,
               'rust_passes_reference': 0, 'matches': [], 'reviewed_differences': [], 'failures': [],
               'counts': {}}
-    rust = rust_meshes()
-    objects = case_objects()
-    for name, _, settings in split_cases(CASES.read_text()):
+    rust = rust_meshes(family)
+    objects = family.objects()
+    for name, _, settings in split_cases(family.cases.read_text()):
         case = objects[name]
         for setting, deflection, angle in settings:
             key = f'{name}/{setting}'

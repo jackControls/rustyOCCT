@@ -10,12 +10,19 @@
 //! F SH SO` and the certified area or length and centre (`lo hi` each) or
 //! `-`. `bodies OUT` reads the face and wire body cases
 //! (`identity-sheet-cases.txt`), writes each as `OUT/NAME.brep` and prints
-//! `NAME V E W F SH SO` and its certified measure.
+//! `NAME V E W F SH SO` and its certified measure. `parts OUT` (T-b of the
+//! tessellation track) reads B-rep line-protocol blocks
+//! (`tessellation-spline-cases.txt`, `mesh` rows ignored), writes each body
+//! as `OUT/NAME.brep` and prints `NAME V E W F SH SO`.
+#[path = "../tests/support/brep_protocol.rs"]
+#[allow(dead_code)]
+mod brep_protocol;
 #[path = "../tests/support/identity_protocol.rs"]
 #[allow(dead_code)]
 mod identity_protocol;
 use rusty_occt::occt_brep::{import, read, write};
 use rusty_occt::topology::{OcctCounts, Topology};
+use rusty_occt::Tolerance;
 use std::io::Read;
 
 fn counts(c: OcctCounts) -> String {
@@ -117,6 +124,23 @@ fn main() {
                     counts(body.topology().occt_counts()),
                     measure(body.topology())
                 );
+            }
+        }
+        "parts" => {
+            for block in input.split("\nend").filter(|b| !b.trim().is_empty()) {
+                let rows: String = block
+                    .trim()
+                    .lines()
+                    .filter(|l| !l.starts_with("mesh "))
+                    .map(|l| format!("{l}\n"))
+                    .collect();
+                let (name, tolerance, parts) = brep_protocol::parse(rows.trim());
+                let topology =
+                    Topology::from_parts(parts, Tolerance::new(tolerance, 1e-12).unwrap())
+                        .unwrap_or_else(|e| panic!("{name}: {e:?}"));
+                let text = write(&topology, tolerance).unwrap_or_else(|e| panic!("{name}: {e:?}"));
+                std::fs::write(out.join(format!("{name}.brep")), text).unwrap();
+                println!("{name} {}", counts(topology.occt_counts()));
             }
         }
         other => panic!("mode {other}"),
