@@ -739,8 +739,8 @@ input replays in 0.002 s.
 `split/slow-unit-4238fd63c6db929689705944f50d5785839ac17b.bin` was saved by
 the clean 600-second S8d.2 campaign at `a4e1c9df`, a slow-unit diagnostic
 (10 s under AddressSanitizer, 0.92 s in release) with no wrong answer: a cap
-(latitude 0.25 to its pole) cut by a plane parallel to a ruling mode, whose
-circle passes near the pole, where the projection quadrature refines while
+(latitude 0.25 to its pole) cut by the target's plane mode 7, whose circle
+passes near the pole, where the projection quadrature refines while
 the section's angle about the axis turns fast. It is within the split
 target's 60-second input limit (S8d.2).
 

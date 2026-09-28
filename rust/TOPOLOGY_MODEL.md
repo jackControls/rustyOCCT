@@ -833,8 +833,16 @@ procedural pcurves with explicit conic edges.
   most `σ / (2 focal)` times the step squared over eight, turning `1 / (2
   focal)` times the step. A projection's `(u, v)` range is the union of its
   certified enclosures on 64 pieces.
+* **Torus sections (S8d.3).** `Curve3::Section` is a plane's section of a
+  torus as a graph over one of its angles (`v = psi +- acos(-C / W)` over
+  `u`, `u = atan2(b, a) +- acos(q / |(a, b)|)` over `v`), each edge's range
+  clear of the turning points; a whole turn is a ring. Its jets come from
+  the formula; on its own torus its projection is its own angles, lifted.
+  Its segments' bounds come from interval jets of order 2 on 64 pieces
+  (the largest `|C''|` and `|C''| / |C'|`). A face on a torus whose loops
+  all run as holes is the torus less them.
 * **Interop.** The writer prints `Geom_Hyperbola` and `Geom_Parabola` (3D
-  records 5 and 6); a projection pcurve has no record until D13's
+  records 5 and 6), and refuses a torus section; a projection pcurve has no record until D13's
   interchange approximation (a B-spline whose certified bound becomes the
   edge's tolerance), so every S8d.2 piece is `Unwritable` for now. The
   reader keeps skipping the conics.

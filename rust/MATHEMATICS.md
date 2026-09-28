@@ -2081,6 +2081,25 @@ piece's width outruns the overestimation. The pieces gather where the
 section's angle about the axis turns fast (near an apex or pole),
 logarithmically in its distance.
 
+**A torus's plane section (S8d.3).** With `alpha = a cos u + b sin u`, the
+plane on the torus is `F = C + W cos(v - psi)`, `C = R alpha + d`, `(W cos
+psi, W sin psi) = r (alpha, c)`; the section exists where `D = W^2 - C^2 =
+-(R^2 - r^2) alpha^2 - 2 R d alpha + r^2 c^2 - d^2 >= 0`, between the roots
+`alpha_{1,2} = (-R d -+ r sqrt(c^2 (R^2 - r^2) + d^2)) / (R^2 - r^2)`
+(always real). `alpha` ranges over `[-rho, rho]`: both roots beyond it give
+two loops over every `u` (about the axis), one inside a single `u`-interval
+whose ends meet the branches `v = psi +- acos(-C / W)` in one contractible
+loop, both inside two intervals, their loops about the tube when `C` has
+opposite signs at the two roots (the branches meet at `psi` at one end and
+`psi + pi` at the other) and contractible otherwise. Each comparison is the
+sign of `x + y sqrt(e) - z sqrt(f)` on rationals, decided by squaring twice.
+Over `v` the section is `u = atan2(b, a) +- acos(q / rho)`, `q = -(c r sin v
++ d) / (R + r cos v)`, valid for every `v` exactly when the loops wind about
+the tube. A cap's branches over `u` are joined round each turning point
+(where `D = 0`, a vertical tangent) by a graph over `v` from the points
+where `|dv / du| = 1` nearest it (`dv/du = -F_u / F_v`); between them the
+slope never vanishes, so the graph over `v` has no turning point there.
+
 **Holes in wound faces.** An unwound loop in a face wound in `u` lies inside
 when the signed crossings of the `+v` ray from its first point with the
 other loops' line pcurves and chords, over every `u` alias (`+1` where a

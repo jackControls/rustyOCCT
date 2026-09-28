@@ -200,8 +200,22 @@ everywhere, `|d| - R |(a, b)| >= r |m|`, decided by squares.
   faces and their circles `Generated` from the wall. The history checker's
   support test knows tori (axes parallel, centres and radii within the
   tolerance).
-* Other planes cut the tube in spiric curves (S8d.3); tori other than whole
-  ones wait with them: `OutOfDomain`.
+* **Any other plane** (S8d.3, `solid/split/spiric.rs`): on the torus `F = C
+  + W cos(v - psi)` (`alpha = a cos u + b sin u`, `C = R alpha + d`, `W =
+  r |(alpha, c)|`), so the section exists over `u` where a quadratic in
+  `alpha` is non-negative; its roots against `+-|(a, b)|` decide exactly
+  (surds on the stored data) between two loops about the axis (the pieces
+  tube bands, their cut face a planar annulus), one contractible loop (a cap
+  and the torus less that disc, each with a planar disc) and two loops about
+  the tube (C-shaped pieces, two discs each); two caps on one side are
+  `OutOfDomain`, a tangency or a plane within the resolution of one
+  `Degenerate`. The loops about the axis are `Curve3::Section` graphs over
+  `u` for a whole turn, those about the tube over `v`; a cap's loop is two
+  graphs over `u` and two over `v` round its turning points, joined where
+  the slope is one, so every edge is analytic. Pieces are general bodies
+  (`Construction::Half` with the torus) with `Projection` pcurves; the wall
+  and region `Split`, everything else `Generated` from the wall.
+* Tori other than whole ones: `OutOfDomain`.
 
 ## Evidence
 
@@ -241,6 +255,13 @@ everywhere, `|d| - R |(a, b)| >= r |m|`, decided by squares.
   differences (OCCT's seam at `u = 0` splits a strip, tongue, bigon or side
   cap into two faces, or a rim or section arc it crosses), one of them also
   BRepGProp's error on a cap cut at an angle.
+* **Spiric sections (S8d.3).** `split-spiric-cases.txt` holds 13 tori (bands,
+  caps and C-shaped pieces, both frames) with the reference
+  (`split_reference.torus_rows`) and `occt-split-spiric-preimplementation`,
+  captured before any kernel code for them; with S8d's four spiric cases the
+  kernel is inside the reference on all 17. OCCT approximates the sections by
+  B-splines (BRepGProp's volumes and areas off by 1.6e-7 to 7.6e-4) and keeps
+  the torus's seams: 17 reviewed differences.
 * **Kernel.** `tests/split.rs`: every side's sums of the kernel's enclosures
   contain the reference's volume, area and moments; histories pass the
   independent check, cover every input entity and repeat exactly; oblique

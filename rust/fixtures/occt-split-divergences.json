@@ -106,9 +106,10 @@
       "native_sha256": "ace8c828a07cb7614f3466ea05c4835be207dc4cf6d5ab77a7669052212810cd",
       "differences": [
         "centre",
-        "measure"
+        "measure",
+        "rust_entity_counts"
       ],
-      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves, which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 2.8e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves, which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 2.8e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's cap (S8d.3) is bounded by four analytic torus-section edges (graphs over u on its two branches, over v round its turning points, a vertex at each switch), the other piece is the torus less that disc (2 faces, 4 edges, 4 vertices on each side, no seam synthesized for a face whose loops do not wind); OCCT's section is B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane x = 3.5, parallel to the axis through the tube's outer half, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264 to the reference's precision, as the native ones do to about 1e-7.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
@@ -119,9 +120,10 @@
       "native_sha256": "038312cc5c68e02e901dae2f660c11fe0109abc8a2f267b1dd62080dbee33a6f",
       "differences": [
         "centre",
-        "measure"
+        "measure",
+        "rust_entity_counts"
       ],
-      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves, which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 5.5e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves, which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 5.5e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's cap (S8d.3) is bounded by four analytic torus-section edges (graphs over u on its two branches, over v round its turning points, a vertex at each switch), the other piece is the torus less that disc (2 faces, 4 edges, 4 vertices on each side, no seam synthesized for a face whose loops do not wind); OCCT's section is B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane x = 2.5, parallel to the axis through the tube's inner half, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264 to the reference's precision, as the native ones do to about 1e-7.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
@@ -132,9 +134,10 @@
       "native_sha256": "0f6221df05650ce9dbeb460c53d5e2f333c64c620a03a761cb46f027cfada567",
       "differences": [
         "centre",
-        "measure"
+        "measure",
+        "rust_entity_counts"
       ],
-      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves, which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 8.9e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves, which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 8.9e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's pieces (S8d.3) are tube bands wound about the axis between two torus-section rings (graphs over u), each closed by the planar annulus between them (2 faces, 3 edges, 2 vertices on each side, one synthesized seam); OCCT's section edges are B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (0, 0, 0.25) with normal (0.25, 0, 1), cutting the tube all round, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264 to the reference's precision, as the native ones do to about 1e-7.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
@@ -145,9 +148,10 @@
       "native_sha256": "477f099aa7659207f50564110d67380335516aa5c2ac5db9f722a157373a68f3",
       "differences": [
         "centre",
-        "measure"
+        "measure",
+        "rust_entity_counts"
       ],
-      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves, which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 2.0e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves, which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 2.0e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's cap (S8d.3) is bounded by four analytic torus-section edges (graphs over u on its two branches, over v round its turning points, a vertex at each switch), the other piece is the torus less that disc (2 faces, 4 edges, 4 vertices on each side, no seam synthesized for a face whose loops do not wind); OCCT's section is B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (3, 0, 0) with normal (1, 0, 1), cutting the tube on one side of the axis, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264 to the reference's precision, as the native ones do to about 1e-7.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
@@ -474,9 +478,10 @@
       "native_sha256": "886645d56d854b758e887a4727553933aee8e3958bd69e610c528c28c51571c1",
       "differences": [
         "centre",
-        "measure"
+        "measure",
+        "rust_entity_counts"
       ],
-      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves, which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 2.8e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves, which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 2.8e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's cap (S8d.3) is bounded by four analytic torus-section edges (graphs over u on its two branches, over v round its turning points, a vertex at each switch), the other piece is the torus less that disc (2 faces, 4 edges, 4 vertices on each side, no seam synthesized for a face whose loops do not wind); OCCT's section is B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane x = 3.5, parallel to the axis through the tube's outer half, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264 to the reference's precision, as the native ones do to about 1e-7.",
       "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 2.3e-14 relative of the macOS capture's"
     },
@@ -487,9 +492,10 @@
       "native_sha256": "19373a82074c0b8abcdb44fbb66d79a37d6c0c5d193a031b879aa6ebe4ecfee3",
       "differences": [
         "centre",
-        "measure"
+        "measure",
+        "rust_entity_counts"
       ],
-      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves, which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 5.5e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves, which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 5.5e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's cap (S8d.3) is bounded by four analytic torus-section edges (graphs over u on its two branches, over v round its turning points, a vertex at each switch), the other piece is the torus less that disc (2 faces, 4 edges, 4 vertices on each side, no seam synthesized for a face whose loops do not wind); OCCT's section is B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane x = 2.5, parallel to the axis through the tube's inner half, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264 to the reference's precision, as the native ones do to about 1e-7.",
       "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 2.3e-14 relative of the macOS capture's"
     },
@@ -500,9 +506,10 @@
       "native_sha256": "ac3860af21f569b69346145af8ca3d6b59ee860099130e87b01f811de86873a8",
       "differences": [
         "centre",
-        "measure"
+        "measure",
+        "rust_entity_counts"
       ],
-      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves, which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 8.9e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves, which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 8.9e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's pieces (S8d.3) are tube bands wound about the axis between two torus-section rings (graphs over u), each closed by the planar annulus between them (2 faces, 3 edges, 2 vertices on each side, one synthesized seam); OCCT's section edges are B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (0, 0, 0.25) with normal (0.25, 0, 1), cutting the tube all round, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264 to the reference's precision, as the native ones do to about 1e-7.",
       "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 2.3e-14 relative of the macOS capture's"
     },
@@ -513,9 +520,10 @@
       "native_sha256": "f3fba83dcea5c1f8a78577ada075b1e2713963f27041cb66881f9dfffd139d0d",
       "differences": [
         "centre",
-        "measure"
+        "measure",
+        "rust_entity_counts"
       ],
-      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves, which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 2.0e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves, which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 2.0e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's cap (S8d.3) is bounded by four analytic torus-section edges (graphs over u on its two branches, over v round its turning points, a vertex at each switch), the other piece is the torus less that disc (2 faces, 4 edges, 4 vertices on each side, no seam synthesized for a face whose loops do not wind); OCCT's section is B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (3, 0, 0) with normal (1, 0, 1), cutting the tube on one side of the axis, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264 to the reference's precision, as the native ones do to about 1e-7.",
       "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 2.3e-14 relative of the macOS capture's"
     },
@@ -622,9 +630,10 @@
       "native_sha256": "b6b52778fcd34ec8c26360af42cf491859782316ddc1de20c6a5d143dbaf0d0f",
       "differences": [
         "centre",
-        "measure"
+        "measure",
+        "rust_entity_counts"
       ],
-      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (two loops winding about the axis), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 1.9e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (two loops winding about the axis), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 1.9e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's pieces (S8d.3) are tube bands wound about the axis between two torus-section rings (graphs over u), each closed by the planar annulus between them (2 faces, 3 edges, 2 vertices on each side, one synthesized seam); OCCT's section edges are B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (0, 0, 0) with normal (0.1, 0, 1) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
@@ -635,9 +644,10 @@
       "native_sha256": "a46f078c32faefc03f5c529356651723d1b43a77025d53de9ff29a0c5ef94a8d",
       "differences": [
         "centre",
-        "measure"
+        "measure",
+        "rust_entity_counts"
       ],
-      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (two loops winding about the axis), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 1.6e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (two loops winding about the axis), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 1.6e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's pieces (S8d.3) are tube bands wound about the axis between two torus-section rings (graphs over u), each closed by the planar annulus between them (2 faces, 3 edges, 2 vertices on each side, one synthesized seam); OCCT's section edges are B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (0, 0, 0.3) with normal (0.15, 0.05, 1) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
@@ -648,9 +658,10 @@
       "native_sha256": "ffbab04fd147d50e2c2277fdb4f6d08660b9c798501af8162af902d2256fdd2e",
       "differences": [
         "centre",
-        "measure"
+        "measure",
+        "rust_entity_counts"
       ],
-      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (two loops winding about the axis), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 1.8e-06 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (two loops winding about the axis), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 1.8e-06 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's pieces (S8d.3) are tube bands wound about the axis between two torus-section rings (graphs over u), each closed by the planar annulus between them (2 faces, 3 edges, 2 vertices on each side, one synthesized seam); OCCT's section edges are B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (0, 0, 0.8) with normal (0.05, 0, 1) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
@@ -661,9 +672,10 @@
       "native_sha256": "085365ad0f45b1b71e4fdf3b02f23ff2d83be8274723c841d0bd3875cd4851d3",
       "differences": [
         "centre",
-        "measure"
+        "measure",
+        "rust_entity_counts"
       ],
-      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (one contractible loop), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 1.8e-06 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (one contractible loop), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 1.8e-06 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's cap (S8d.3) is bounded by four analytic torus-section edges (graphs over u on its two branches, over v round its turning points, a vertex at each switch), the other piece is the torus less that disc (2 faces, 4 edges, 4 vertices on each side, no seam synthesized for a face whose loops do not wind); OCCT's section is B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (0, 0, 0.9) with normal (0.3, 0, 1) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
@@ -674,9 +686,10 @@
       "native_sha256": "a2993d2225dc346e7411aa1aa91354e51c1da582fb31fbdeec98b68319d70540",
       "differences": [
         "centre",
-        "measure"
+        "measure",
+        "rust_entity_counts"
       ],
-      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (one contractible loop), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 5.3e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (one contractible loop), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 5.3e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's cap (S8d.3) is bounded by four analytic torus-section edges (graphs over u on its two branches, over v round its turning points, a vertex at each switch), the other piece is the torus less that disc (2 faces, 4 edges, 4 vertices on each side, no seam synthesized for a face whose loops do not wind); OCCT's section is B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (3.6, 0, 0) with normal (1, 0, 0) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
@@ -687,9 +700,10 @@
       "native_sha256": "27d941f8622e0e7456bf950e98259871f393bf0ac231ae0cc89a29dc0366eaf3",
       "differences": [
         "centre",
-        "measure"
+        "measure",
+        "rust_entity_counts"
       ],
-      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (one contractible loop), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 1.0e-06 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (one contractible loop), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 1.0e-06 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's cap (S8d.3) is bounded by four analytic torus-section edges (graphs over u on its two branches, over v round its turning points, a vertex at each switch), the other piece is the torus less that disc (2 faces, 4 edges, 4 vertices on each side, no seam synthesized for a face whose loops do not wind); OCCT's section is B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (2.2, 0, 0) with normal (1, 0, 0) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
@@ -700,9 +714,10 @@
       "native_sha256": "90fb9322fa7081c03569b6db30cb5892eb61ec1151b5122851037c2a64715c82",
       "differences": [
         "centre",
-        "measure"
+        "measure",
+        "rust_entity_counts"
       ],
-      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (one contractible loop), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 2.0e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (one contractible loop), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 2.0e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's cap (S8d.3) is bounded by four analytic torus-section edges (graphs over u on its two branches, over v round its turning points, a vertex at each switch), the other piece is the torus less that disc (2 faces, 4 edges, 4 vertices on each side, no seam synthesized for a face whose loops do not wind); OCCT's section is B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (2.05, 0, 0) with normal (1, 0, 0.3) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
@@ -713,9 +728,10 @@
       "native_sha256": "73a6b876a01b1e43b77ebaec592b4c5d4bb1571ab5d38e700f2ca6e3b1c8fb20",
       "differences": [
         "centre",
-        "measure"
+        "measure",
+        "rust_entity_counts"
       ],
-      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (two loops winding about the tube), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 4.5e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (two loops winding about the tube), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 4.5e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's pieces (S8d.3) are C-shaped: each wall lies between two torus-section rings wound about the tube (graphs over v), closed by two planar discs (3 faces, 3 edges, 2 vertices on each side, one synthesized seam); OCCT's section edges are B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (1.5, 0, 0) with normal (1, 0, 0) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
@@ -726,9 +742,10 @@
       "native_sha256": "981341ea60f2d80e796da1120ce87763ae4ffbbcce66bb55b3450797a4f508b1",
       "differences": [
         "centre",
-        "measure"
+        "measure",
+        "rust_entity_counts"
       ],
-      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (two loops winding about the tube), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 9.2e-06 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (two loops winding about the tube), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 9.2e-06 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's pieces (S8d.3) are C-shaped: each wall lies between two torus-section rings wound about the tube (graphs over v), closed by two planar discs (3 faces, 3 edges, 2 vertices on each side, one synthesized seam); OCCT's section edges are B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (0, 0, 0) with normal (1, 0, 1) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
@@ -739,9 +756,10 @@
       "native_sha256": "57d4d575d747af3e35a0c34a94f2559aee730d1eed3efb2c402d2850dfa6ced2",
       "differences": [
         "centre",
-        "measure"
+        "measure",
+        "rust_entity_counts"
       ],
-      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (two loops winding about the tube), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 5.7e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (two loops winding about the tube), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 5.7e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's pieces (S8d.3) are C-shaped: each wall lies between two torus-section rings wound about the tube (graphs over v), closed by two planar discs (3 faces, 3 edges, 2 vertices on each side, one synthesized seam); OCCT's section edges are B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (0.5, 0.2, 0) with normal (1, 0.3, 0.4) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
@@ -752,9 +770,10 @@
       "native_sha256": "274983d3d966cb1accc34045e1b960c9110054179238abf0a2c936fd80157c4d",
       "differences": [
         "centre",
-        "measure"
+        "measure",
+        "rust_entity_counts"
       ],
-      "reason": "The plane cuts the torus (major 4, minor 0.5) in spiric curves (two loops winding about the tube), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 7.6e-04 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "reason": "The plane cuts the torus (major 4, minor 0.5) in spiric curves (two loops winding about the tube), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 7.6e-04 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's pieces (S8d.3) are C-shaped: each wall lies between two torus-section rings wound about the tube (graphs over v), closed by two planar discs (3 faces, 3 edges, 2 vertices on each side, one synthesized seam); OCCT's section edges are B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (0, 0, 0.1) with normal (0.2, 0, 1) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 19.7392088.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
@@ -765,9 +784,10 @@
       "native_sha256": "6425174eea9c18d53438675043a765a114ac1cc7232f6019cb0257943516b044",
       "differences": [
         "centre",
-        "measure"
+        "measure",
+        "rust_entity_counts"
       ],
-      "reason": "The plane cuts the torus (major 2.5, minor 0.75) in spiric curves (one contractible loop), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 6.9e-04 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "reason": "The plane cuts the torus (major 2.5, minor 0.75) in spiric curves (one contractible loop), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 6.9e-04 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's cap (S8d.3) is bounded by four analytic torus-section edges (graphs over u on its two branches, over v round its turning points, a vertex at each switch), the other piece is the torus less that disc (2 faces, 4 edges, 4 vertices on each side, no seam synthesized for a face whose loops do not wind); OCCT's section is B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (1, -1.82, 0.74) with normal (1, 3, 4) on the tilted frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 27.7582624.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
@@ -778,9 +798,10 @@
       "native_sha256": "06917049d329a8967eb00044dbd72c269ddc687e239d87a86d0563c280239a43",
       "differences": [
         "centre",
-        "measure"
+        "measure",
+        "rust_entity_counts"
       ],
-      "reason": "The plane cuts the torus (major 2.5, minor 0.75) in spiric curves (two loops winding about the axis), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 3.6e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "reason": "The plane cuts the torus (major 2.5, minor 0.75) in spiric curves (two loops winding about the axis), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 3.6e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's pieces (S8d.3) are tube bands wound about the axis between two torus-section rings (graphs over u), each closed by the planar annulus between them (2 faces, 3 edges, 2 vertices on each side, one synthesized seam); OCCT's section edges are B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (1, -1.82, 0.74) with normal (0.3, 3, 4) on the tilted frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 27.7582624.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     }

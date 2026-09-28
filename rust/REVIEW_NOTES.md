@@ -2100,4 +2100,12 @@ the first fixture, never deferred.
     allocator as the other heavy ones do), one slow unit (10 s under
     AddressSanitizer, kept as a regression). Pending: the Linux record of
     the conic capture after CI.
+  * S8d.3 implemented (`solid/split/spiric.rs`): whole tori by any plane in
+    spiric sections, `Curve3::Section` graphs over either angle (bands,
+    caps with four analytic edges, C-shaped pieces), the torus less discs in
+    validation and mass, `v`-wound projection integrals, projection ray
+    crossings. Inside the reference on all 17 spiric cases (13 new, captured
+    natively before the code, and S8d's four); 17 reviewed differences
+    (OCCT's B-spline sections and seams). A section on its own torus
+    evaluates by its angles (twice as fast); the quadrature's order is 12.
 * S9 — pending

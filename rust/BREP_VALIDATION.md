@@ -163,7 +163,11 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   when the signed crossings of the `+v` ray from its first point with the
   other loops' lines and chords over every `u` alias, plus one for a north
   pole, equal the face's sign; other pcurves on those loops are
-  `uncertified_containment`.
+  `uncertified_containment`. On a torus a face whose first loop runs as a
+  hole is the torus less its loops (S8d.3): every loop then has the inner
+  sign and no outer loop holds them. An inner loop's containment is tried
+  at its start and at two points along its first fin (two rings may start
+  on one ray).
 * **Region orientation.** The flux of `x/3` through a face is
   `-∮ v f(u) du` over its loops, closed chords included, with
   `f = S·(S_u × S_v)` integrated in `v` from 0: for a plane `f = o·(x×y)`, for
@@ -644,4 +648,6 @@ whose other loops are not lines (`uncertified_containment`) and windings in
 `v` wait for the surfaces and operations that need them. A `Projection`
 pcurve (S8d.2) of its fin's own edge on its face's own surface deviates by
 zero by definition; its integrals come from certified Taylor quadrature and
-its `+u` ray crossings are not decided (`TOPOLOGY_MODEL.md`).
+its `+u` ray crossings from certified pieces (none where `u` or `v` keeps
+clear of the ray, one where `v` is monotone with its ends on either side,
+others bisected; `TOPOLOGY_MODEL.md`).
