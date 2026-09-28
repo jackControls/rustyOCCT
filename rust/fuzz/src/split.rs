@@ -243,8 +243,9 @@ pub fn check_split(data: &[u8]) {
 /// S8c: a cone, frustum, apex cone, sphere or zone on dyadic sizes, in an
 /// axis-aligned or a tilted frame, split by a plane normal to its axis at a
 /// dyadic height, through an apex, a pole or a cap, a whole sphere by any
-/// plane through a dyadic point, or a plane containing the axis or oblique
-/// to it (their conics wait for S8d: `OutOfDomain` then). The split never
+/// plane through a dyadic point, a plane containing the axis, or one oblique
+/// to it (a cone's conic or a zone's circle waits for S8d: `OutOfDomain`
+/// then). The split never
 /// panics and fails only as documented; volumes add up, pieces lie on their
 /// sides and move rigidly with their ids.
 fn check_revolved(data: &[u8]) {
@@ -314,11 +315,11 @@ fn check_revolved(data: &[u8]) {
             let n = Vec3::new(b.small(), b.small(), b.small() + 0.5);
             (o + (p - Point3::ORIGIN) * 0.25, n, !whole)
         }
-        // Containing the axis.
+        // Containing the axis (S8c.2): always split.
         4 => (
             o,
             frame.x() * b.small() + frame.y() * (b.small() + 0.5),
-            !whole,
+            false,
         ),
         _ => (
             at(0.5 * (low_w + high_w)),

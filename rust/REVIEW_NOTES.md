@@ -1656,5 +1656,12 @@ the first fixture, never deferred.
     by planes normal to their axis (within a quarter of the resolution),
     whole spheres by any plane, pieces the same primitives named by
     provenance; inside the reference on 16 of the 23 primitive cases, counts
-    OCCT's. S8c.2 (planes containing the axis) next.
+    OCCT's. Clean 600-second `split` campaign at `8f0dc704` (4,508
+    mutation executions after 331 s of replay, 1,270 MB peak, no artifact).
+  * S8c.2 implemented (`solid/split/meridian.rs`): a cone, frustum or zone
+    by a plane containing its axis, each half a general body on the
+    input's own surfaces (`Construction::Half`); inside the reference on
+    the four meridian cases, three reviewed count differences (OCCT's seam
+    at angle 0 inside one half). The conic and circle sections (three
+    cases) wait for S8d.
 * S9 — pending

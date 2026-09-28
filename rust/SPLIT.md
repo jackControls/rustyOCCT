@@ -119,9 +119,24 @@ quadratic surd's sign).
   `Generated` from it (role `Pole`). The history checker's support test
   knows cones (axes parallel, half-angles equal, the piece on the whole's
   surface within the tolerance) and spheres (centres and radii within it).
-* Planes containing the axis come with S8c.2; other planes cut a cone in a
-  conic and a zone in a circle whose pcurves wait for D13's procedural edges
-  (S8d): `OutOfDomain`.
+* **Containing the axis** (S8c.2, `solid/split/meridian.rs`; `c = d = 0`,
+  or within a quarter of the resolution over the height): each piece is a
+  half over the angles on its side, from where the plane's trace leaves the
+  axis to its opposite. Its wall lies on the input's own surface, bounded
+  by the end circles' halves (arcs on the input's rings) and two meridians
+  (a cone's rulings, a sphere's great-circle arcs, `u`-constant pcurves);
+  the end discs' halves close with chords along the trace; the cut face in
+  the plane is bounded by the meridians and the chords, and an apex or pole
+  ends both meridians (the wall's loop passes it). Each half is a general
+  body (`Construction::Half`: the primitive, the plane in its frame, its
+  index, so a rigid motion rebuilds it and it classifies points). Names:
+  the wall, region, discs and rings `Split` into one child per half, an
+  apex or pole into a copy per half; chord ends `Generated` from their
+  ring, chords from their disc, meridians from the wall, the cut face from
+  the wall and the discs.
+* Other planes cut a cone in a conic and a zone in a circle whose pcurves
+  are transcendental graphs over the angle, which wait for D13's procedural
+  edges (S8d): `OutOfDomain`.
 
 ## Evidence
 

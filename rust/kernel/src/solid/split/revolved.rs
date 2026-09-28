@@ -226,6 +226,16 @@ impl Solid {
             };
             pieces.push((sl, lower, [end, End::Cut]));
             pieces.push((su, upper, [End::Cut, end]));
+        } else if let Some(pieces) = match sphere {
+            Some((_, low, high)) if low == -FRAC_PI_2 && high == FRAC_PI_2 => None,
+            _ => self.split_meridian(
+                context,
+                plane,
+                &[a.clone(), b.clone(), c.clone(), d.clone()],
+            )?,
+        } {
+            // S8c.2: a plane containing the axis.
+            return Ok(Some(pieces));
         } else if let Some((radius, low, high)) = sphere {
             if !(low == -FRAC_PI_2 && high == FRAC_PI_2) {
                 return Err(Error::OutOfDomain(
@@ -266,7 +276,7 @@ impl Solid {
             ));
         } else {
             return Err(Error::OutOfDomain(
-                "a cone by a plane not normal to its axis (S8d)",
+                "a cone by a plane neither normal to nor containing its axis (S8d)",
             ));
         }
         pieces.sort_by_key(|p| p.0);

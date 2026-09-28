@@ -2,7 +2,9 @@
 //! (`fixtures/split-*.txt|tsv` from `tools/generate_split_fixtures.py`).
 #[path = "support/split_protocol.rs"]
 mod protocol;
-use protocol::{build_primitive, cases, plane_frame, primitive_cases, rows, split, Case};
+use protocol::{
+    build_primitive, cases, plane_frame, primitive_cases, primitive_split, rows, split, Case,
+};
 use rusty_occt::history::{self, Relation};
 use rusty_occt::identity::OperationId;
 use rusty_occt::{Frame3, Point3, Side, Tolerance, Vec3};
@@ -331,5 +333,117 @@ fn primitive_fixtures_build_with_the_reference_volume() {
         // Its split answers (pieces, or a later sub-step's `unsupported`).
         let rows = protocol::primitive_rows(&case).unwrap_or_else(|e| panic!("{}: {e}", case.name));
         assert!(!rows.is_empty(), "{}", case.name);
+    }
+}
+
+/// A side's summed enclosures: volume, area and the three first moments.
+type SideSums = ([f64; 2], [f64; 2], [[f64; 2]; 3]);
+
+/// The primitive cases' expected sides: (side, [volume, area, cx, cy, cz]).
+fn primitive_expected() -> BTreeMap<String, Vec<(String, [f64; 5])>> {
+    let mut out: BTreeMap<String, Vec<(String, [f64; 5])>> = BTreeMap::new();
+    for line in include_str!("../../fixtures/split-primitive-expected.tsv")
+        .lines()
+        .filter(|l| !l.starts_with('#'))
+    {
+        let (name, row) = line.split_once('\t').unwrap();
+        let w: Vec<&str> = row.split(' ').collect();
+        let v: Vec<f64> = w[2..7].iter().map(|x| x.parse().unwrap()).collect();
+        out.entry(name.to_string())
+            .or_default()
+            .push((w[1].to_string(), [v[0], v[1], v[2], v[3], v[4]]));
+    }
+    out
+}
+
+/// S8c: every cone, frustum, sphere and zone the kernel splits has each
+/// side's volume and area inside the sums of its pieces' enclosures and
+/// its centre inside theirs; the planes it leaves to S8d (a conic or a
+/// zone's circle) are the only ones refused.
+#[test]
+fn primitive_splits_match_the_reference() {
+    let want = primitive_expected();
+    let later = ["apex_oblique", "frustum_parallel", "zone_oblique"];
+    let mut failures = Vec::new();
+    for case in primitive_cases(include_str!("../../fixtures/split-primitive-cases.txt")) {
+        let name = case.name.clone();
+        let pieces = match primitive_split(&case) {
+            Ok((_, pieces, _)) => pieces,
+            Err(rusty_occt::Error::OutOfDomain(_)) if later.contains(&name.as_str()) => continue,
+            Err(e) => {
+                failures.push(format!("{name}: {e}"));
+                continue;
+            }
+        };
+        let rows = &want[&name];
+        let mut sides: BTreeMap<String, SideSums> = BTreeMap::new();
+        for (side, piece) in &pieces {
+            let key = if rows[0].0 == "whole" {
+                "whole".to_string()
+            } else {
+                format!("{side:?}").to_lowercase()
+            };
+            let m = piece.topology().mass_enclosure().unwrap();
+            let e = sides
+                .entry(key)
+                .or_insert(([0.0; 2], [0.0; 2], [[0.0; 2]; 3]));
+            e.0 = [e.0[0] + m.volume[0], e.0[1] + m.volume[1]];
+            e.1 = [e.1[0] + m.surface_area[0], e.1[1] + m.surface_area[1]];
+            for i in 0..3 {
+                let p = [
+                    m.volume[0] * m.centroid[i][0],
+                    m.volume[0] * m.centroid[i][1],
+                    m.volume[1] * m.centroid[i][0],
+                    m.volume[1] * m.centroid[i][1],
+                ];
+                e.2[i] = [
+                    e.2[i][0] + p.iter().copied().fold(f64::MAX, f64::min),
+                    e.2[i][1] + p.iter().copied().fold(f64::MIN, f64::max),
+                ];
+            }
+        }
+        for (side, v) in rows {
+            let Some((vol, area, moments)) = sides.get(side) else {
+                failures.push(format!("{name}: no {side}"));
+                continue;
+            };
+            let inside = |x: f64, [lo, hi]: [f64; 2], rel: f64| {
+                lo - rel * x.abs().max(1.0) <= x && x <= hi + rel * x.abs().max(1.0)
+            };
+            if !inside(v[0], *vol, 1e-20)
+                || !inside(v[1], *area, 1e-20)
+                || (0..3).any(|i| !inside(v[0] * v[2 + i], moments[i], 1e-12))
+            {
+                failures.push(format!("{name} {side}: {vol:?} {area:?} miss {v:?}"));
+            }
+        }
+    }
+    assert!(failures.is_empty(), "{failures:#?}");
+}
+
+/// S8c: the primitives' split histories pass the independent check, cover
+/// every input entity and repeat exactly.
+#[test]
+fn primitive_histories_are_complete_and_deterministic() {
+    for case in primitive_cases(include_str!("../../fixtures/split-primitive-cases.txt")) {
+        let Ok((solid, pieces, h)) = primitive_split(&case) else {
+            continue;
+        };
+        let name = &case.name;
+        let sets_in = [solid.topology().entity_set(solid.resolution())];
+        let sets_out: Vec<_> = pieces
+            .iter()
+            .map(|(_, p)| p.topology().entity_set(p.resolution()))
+            .collect();
+        let issues = history::check(&sets_in, &sets_out, &h);
+        assert!(issues.is_empty(), "{name}: {issues:?}");
+        let covered: std::collections::BTreeSet<_> =
+            h.relations.iter().flat_map(Relation::sources).collect();
+        for (id, _) in solid.topology().ids() {
+            assert!(covered.contains(&id), "{name}: {id:?} has no relation");
+        }
+        let (_, again, h2) = primitive_split(&case).unwrap();
+        assert_eq!(h, h2, "{name}");
+        assert_eq!(pieces.len(), again.len(), "{name}");
     }
 }

@@ -62,6 +62,42 @@
       "reason": "BRepGProp measures the two caps of a sphere of radius 1.5 in the tilted frame 4.7e-4 relative from their exact volumes: their sum, 14.138748, exceeds the sphere's 14.137167 (4/3 pi 1.5^3); its areas and centres err likewise. The pieces are valid; OCCT's default integration precision on these spherical faces is the cause, not the split.",
       "independent_evidence": "The plane (normal (1, -1, 0.5) through (1.25, -2, 0.5)) lies 1/6 from the centre (1, -2, 0.5): the caps have heights 4/3 and 5/3, volumes 5.8953344 and 8.2418326, and areas 2 pi R h plus their disc, as the reference integrates.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "frustum_meridian",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "df87a072bfdbab3acaaa07033a05c0143bcd7b02934f71fe2c4307d54b581e79",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT keeps the cone's seam at angle 0 (the frame's x axis), inside the half with x > 0: that half has 5 faces, 9 edges and 6 vertices. The kernel has no seams (TOPOLOGY_MODEL.md): each half is its wall, two half discs and the cut face, bounded by two half arcs, two chords and two rulings (4 faces, 6 edges, 4 vertices, OCCT's count of the other half). Volumes, areas and centres agree with the reference.",
+      "independent_evidence": "The plane x = 0 contains the axis; angle 0 points along +x, into the half above the plane (normal +x).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "apex_meridian",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "eb45a837dcbd094a95685d0522ec9b4017a6ce6eac58ec0db7af3fd88cab10fc",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT keeps the cone's seam at angle 0 inside the half above the plane (4 faces, 8 edges, 4 vertices); the kernel's halves are each the wall, a half disc and the cut triangle, the wall's loop passing the apex (3 faces, 5 edges counting that pass as OCCT's degenerated edge, 3 vertices: OCCT's count of the other half). Volumes, areas and centres agree with the reference.",
+      "independent_evidence": "The plane through the axis with normal (1, 1, 0): angle 0, along +x, lies on its positive side.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "cap_meridian",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "4665e53392d44ddef9977e6865d14c33089d869d94307f396edf9b359cdf31ac",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT keeps the sphere's seam at angle 0 inside the half above the plane (4 faces, 8 edges, 4 vertices); the kernel's halves are each the half zone, a half disc and the cut face bounded by two great-circle arcs meeting at the pole (3 faces, 5 edges counting the pole pass, 3 vertices: OCCT's count of the other half). Volumes, areas and centres agree with the reference.",
+      "independent_evidence": "The plane through the axis with normal (1, 1, 0): angle 0, along +x, lies on its positive side; the zone reaches the pole.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     }
   ]
 }

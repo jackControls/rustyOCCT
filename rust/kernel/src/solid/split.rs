@@ -21,8 +21,10 @@ use num_rational::BigRational as R;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 
+mod meridian;
 mod oblique;
 mod revolved;
+pub(super) use meridian::Half;
 pub(super) use oblique::Clipped;
 
 fn zero() -> R {

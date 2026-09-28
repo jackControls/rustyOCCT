@@ -58,6 +58,9 @@ enum Construction {
     },
     /// A piece of a prism split by a plane oblique to its axis (S8a.2).
     Clipped(Box<split::Clipped>),
+    /// A half of a cone or sphere zone split by a plane containing its
+    /// axis (S8c.2).
+    Half(Box<split::Half>),
 }
 
 /// An immutable, validated normal extrusion of one planar material region,
@@ -284,6 +287,7 @@ impl Solid {
             Construction::Clipped(clipped) => {
                 clipped.rebuilt(operation, frame, self.start, self.end)
             }
+            Construction::Half(half) => half.rebuilt(operation, frame),
         }
     }
 
@@ -651,7 +655,7 @@ impl Solid {
             Construction::Sphere { .. } => Err(Error::OutOfDomain(
                 "split and fuse rebuild prisms; this solid is a sphere",
             )),
-            Construction::Clipped(_) => Err(Error::OutOfDomain(
+            Construction::Clipped(_) | Construction::Half(_) => Err(Error::OutOfDomain(
                 "a prism operation on a split piece (S8b)",
             )),
             Construction::Torus { .. } => Err(Error::OutOfDomain(
@@ -763,7 +767,8 @@ impl Solid {
             Construction::Cone { .. }
             | Construction::Sphere { .. }
             | Construction::Torus { .. }
-            | Construction::Clipped(_) => None,
+            | Construction::Clipped(_)
+            | Construction::Half(_) => None,
         }
     }
     /// The body's resolution.
@@ -771,6 +776,7 @@ impl Solid {
         match &self.construction {
             Construction::Prism(profile) => profile.tolerance(),
             Construction::Clipped(clipped) => clipped.tolerance(),
+            Construction::Half(half) => half.tolerance(),
             Construction::Cone { tolerance, .. }
             | Construction::Sphere { tolerance, .. }
             | Construction::Torus { tolerance, .. } => *tolerance,
@@ -816,6 +822,7 @@ impl Solid {
                 let (low, high) = (self.start.min(self.end), self.start.max(self.end));
                 return clipped.classify([x, y, z], low, high, tolerance);
             }
+            Construction::Half(half) => return half.classify([x, y, z], tolerance),
             Construction::Cone { bottom, top, .. } => {
                 let z = finite(z, "axial coordinate")?;
                 let local = [finite(x, "coordinate")?, finite(y, "coordinate")?, z];
