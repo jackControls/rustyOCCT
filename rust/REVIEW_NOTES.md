@@ -419,7 +419,9 @@ Findings that shape the next moves:
 * **F8. Spline mass enclosures are first order.** Areas of nonrational
   spline walls are enclosed within 0.2–0.6%, the rational corner's volume
   within 5%. Recorded honestly and decided as later work; not yet
-  production-grade for measurement.
+  production-grade for measurement. (Addressed 2026-09-28 by the certified
+  quadrature of the parallel track: within `1e-12` of each property's
+  scale on every spline fixture.)
 * **F9. Profiles still accept only polygons and circles.** Arcs exist in
   the topology and the validator's fixtures but not in `Boundary`, so the
   application's first job, Extrude of a sketch with arcs and fillets, cannot
@@ -1089,9 +1091,10 @@ the first fixture, never deferred.
     coefficient, theirs is `2 h^17/17` times it and Gauss's `K_8 (2h)^17`,
     about `π h (h/2)^16`, 2,500 times smaller; they need a second series at
     the centre instead of eight point values, and in two dimensions
-    bivariate series. The node values are cheap and tight. `n = 8` puts the remainder at the sixteenth coefficient: for an
-    integrand analytic within `ρ` of the piece, `(h/2ρ)^16` falls below
-    `2^-40` at `h/ρ` about `0.35`, a few halvings on the fixtures.
+    bivariate series. The node values are cheap and tight. `n = 8` puts
+    the remainder at the sixteenth coefficient: for an integrand analytic
+    within `ρ` of the piece, `(h/2ρ)^16` falls below `2^-40` at `h/ρ`
+    about `0.35`, a few halvings on the fixtures.
   * **What it integrates.** (a) `∫ M/W^k` of Bernstein polynomials along a
     rational spline pcurve piece (planes, and rational pcurves on
     nonrational patches). (b) `-∫ F(u(τ), v(τ)) u'(τ) dτ` along spline
@@ -1138,6 +1141,94 @@ the first fixture, never deferred.
     cylinder's parallel: route (b) with `du ≠ 0`) and
     `spline_bulge_split_wall` (the bulge with a knot in its wall's `v`
     direction: route (c) with a column below).
+
+  Amended during the implementation (2026-09-28):
+
+  * **Acceptance** at `2^-44` rather than `2^-40`, with the floor taken
+    from the first rule (four times its rounding width, scaled by the
+    piece's relative size), so that the remainders are formed first and the
+    node sum only for accepted pieces. A series undefined over a whole
+    piece (an enclosure too wide to exclude a zero, as `|N|^2` over the
+    whole rational wall) sends the piece to its halves instead of failing.
+    The widths on the fixtures come from rounding: `2^-40` and `2^-44` gave
+    the same enclosures.
+  * **Nodes and weights** are bisected exactly down to `2^-100`, so that
+    they lift into binary64 as adjacent values: brackets of `2^-52` had
+    left node sums `1e-13` wide.
+  * **Integrands are written once** over a small `Num` trait: node values
+    evaluate on plain enclosures, remainders on series (the rational wall
+    took twice as long with every node value a one-term series).
+  * **Rational pcurves on planes** go through route (b), `F(u(τ), v(τ))
+    u'(τ)` from the pcurve's own coordinates translated exactly to the
+    face's reference point, not through (a): the high-degree Bernstein
+    `M` of `∫ M/W^k` evaluates in binary64 with node values up to `6e-12`
+    wide relative to themselves on the rounded corner's caps. (a) remains
+    for rational pcurves on nonrational patches.
+  * **The reference** agrees with itself on halved pieces within `1e-20` of
+    each property's scale (the bulge's area differs by `1.9e-22` relative,
+    the rest by `1e-30` or less), not `1e-25`; the rounded corner's weight
+    is the binary64 value of `√2/2`, so only the bulges have exact closed
+    forms (`20/3`, `40/3 + 8 + √2 + asinh 1`), checked to the same bound.
+  * **Evidence**: `spline_rounded_corner_split_wall` beside the bulge's
+    (every term of a rational wall with a column below). The stadium is
+    narrow (half width `0.25`) at tolerance `1e-6`: M5's measured
+    enclosure of an arc edge's use by a spline pcurve along a parallel is
+    the Taylor bound on at most `2^8` pieces (`Taylor::upper_bound`),
+    about `r (π/256)^3/4`, `4.6e-7` for a unit half turn, above `1e-7` and
+    above the bound the reference declares. Validation itself certifies
+    such a use at `1e-7`; the measurement's cap is recorded below.
+  * **Work** is bounded: at most 2,048 pieces or boxes per integral, and a
+    series still undefined after twelve halvings in all is a singularity,
+    not a wide enclosure; either hands the integral to the first-order
+    route.
+  * **Target**: asserted at `1e-12` of each property's scale, since that is
+    what the rule reaches with room to spare.
+  * **Sheet bridge**: the bulge's lone spline wall (`sheet_spline_wall`) is
+    now enclosed to `1e-15`, and OCCT's area of it is `1.8e-8` relative
+    above `√2 + asinh 1` (its centre `4.6e-9` off), beyond S6's `1e-9`
+    allowance; that row allows `2e-8`, as S4d allows `1e-8` for the whole
+    bulge.
+
+  F8 status (2026-09-28): implemented (decisions `b960b1a4`, evidence
+  `3ad6b53f`, kernel `eca706b2`). Relative widths before → after, as
+  volume / area / centroid (by `V^(1/3)`) / inertia (by `V^(5/3)`):
+
+  | Case | S4d first order | F8 quadrature |
+  | --- | --- | --- |
+  | `spline_bulge` | `6e-15` / `2.2e-3` / `2e-14` / `1.3e-13` | `6.4e-15` / `3.6e-15` / `2.0e-14` / `1.3e-13` |
+  | `spline_cubic_bulge` | `8e-15` / `5.4e-3` / `2e-14` / `1.6e-13` | `7.6e-15` / `3.6e-15` / `2.4e-14` / `1.6e-13` |
+  | `spline_bulge_hole_inside` | `7e-15` / `2.1e-3` / `2e-14` / `1.4e-13` | `7.4e-15` / `4.9e-15` / `2.2e-14` / `1.4e-13` |
+  | `spline_bulge_split_wall` | `6e-15` / `2.2e-3` / — / — | `6.4e-15` / `3.8e-15` / `2.0e-14` / `1.3e-13` |
+  | `spline_rounded_corner` | `5.2e-2` / `1.4e-2` / `0.10` / `0.62` | `7.2e-15` / `5.6e-15` / `1.3e-14` / `7.4e-14` |
+  | `spline_rounded_corner_far` | `5.2e-2` / `1.4e-2` / `0.10` / `0.62` | `7.2e-15` / `5.6e-15` / `5.0e-13` / `7.4e-14` |
+  | `spline_rounded_corner_split_wall` | `5.2e-2` / `1.3e-2` / — / — | `7.2e-15` / `5.6e-15` / `1.3e-14` / `7.4e-14` |
+  | `spline_stadium_parallel` | `2.2e-2` / `3e-15` / — / — | `4.1e-15` / `2.1e-15` / `1.5e-14` / `1.1e-13` |
+  | `spline_face_c1` | `7e-15` / `7e-15` / `9e-15` / `4.5e-14` | `7.4e-15` / `3.6e-15` / `8.7e-15` / `4.5e-14` |
+
+  The eight plane and edge cases stay at `1.5e-15` / `1.6e-15` /
+  `2.6e-15` / `1.6e-14` and the two stadiums at `3e-15` (exact before and
+  after). The far corner's centroid is the rounding of world coordinates
+  near 7.5 against a body `1.8e-3` across. (The S4d column for the three new
+  models is from the native bridge's absolute widths.) The native bridge
+  (`--family spline`, 10 matches, 3 reviewed, no failures) and the sheet
+  bridge pass; `spline_parallels_integrate_as_their_lines` exercises the
+  cone, sphere and torus routes. Performance, the mean of ten
+  `mass_enclosure` calls in release on this machine, first order → F8:
+  `spline_bulge` 114 → 56 ms, `spline_cubic_bulge` 204 → 130,
+  `spline_face_c1` 286 → 200 (the exact moments of nonrational walls now
+  dominate), `spline_rounded_corner` 152 → 65, its knotted wall 150 → 111,
+  `spline_stadium_parallel` 10.8 → 11.7, the plane and stadium cases
+  unchanged (1.3–5.5). Validation is unchanged: it does not call the rule.
+  A series still undefined after twelve halvings in all, or more than
+  2,048 pieces or boxes in one integral, means a singularity (a degenerate
+  patch edge where `|N|` vanishes) and hands the integral to the first-order
+  route at once; `√τ` on the square gives up in 0.15 s in release.
+
+  Left open: M5's measured enclosure of an arc edge's use by a spline
+  pcurve along a parallel stops at `2^8` Taylor pieces (above) and could
+  refine towards the resolution; route (a) along rational pcurves on
+  nonrational patches has no fixture; periodic spline surfaces stay
+  unsupported (S4).
 * **Tessellation**, deflection-controlled and watertight, once S5 lands;
   the application needs it for display and it needs nothing from S7–S9.
 

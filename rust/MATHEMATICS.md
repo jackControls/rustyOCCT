@@ -1390,7 +1390,9 @@ Along a spline pcurve on a cylinder or cone each term's antiderivative
 `F` (a polynomial in `v` times `cos^a u sin^b u`) is enclosed over the
 pieces' boxes by the Green integral. The reference integrates the same
 properties by Green's theorem with nested Gauss–Legendre quadrature of the
-exact surface jets, broken at knots.
+exact surface jets, broken at knots. Since F8 every one of these
+first-order routes is only the fallback of the certified quadrature
+below.
 
 **UV gaps on spline surfaces.** A spline surface has no length scale, so
 the gap between consecutive pcurves' ends is measured in 3D: both ends
@@ -1435,12 +1437,15 @@ held as an interval.
 
 **Nodes and weights.** The nodes are the roots of the Legendre polynomial
 `P_n` (`(k + 1) P_(k+1) = (2k + 1) x P_k - k P_(k-1)`). Each binary64
-approximation `x̃` is widened to `[x̃ - δ, x̃ + δ]` until the exact rational
-values of `P_n` at the two ends have opposite signs, which brackets exactly
-one root for `δ` far below the roots' spacing; the weight
-`w = 2 / ((1 - x^2) P_n'(x)^2)` (with `(1 - x^2) P_n' = n (P_(n-1) - x
-P_n)`) is enclosed over the bracket in rational interval arithmetic. The
-rational brackets are computed once per thread and lifted into either tier.
+approximation `x̃` (Newton's iteration) is widened to `[x̃ - δ, x̃ + δ]`
+until the exact rational values of `P_n` at the two ends have opposite
+signs; the `n` brackets are disjoint, so each holds exactly one of the `n`
+roots. Each is then bisected exactly, by the sign of `P_n` at its
+midpoint, down to `2^-100`, and the weight `w = 2 / ((1 - x^2) P_n'(x)^2)`
+(with `(1 - x^2) P_n' = n (P_(n-1) - x P_n)`) is enclosed over it in
+rational interval arithmetic. Lifted into binary64 intervals the nodes and
+weights are then adjacent values; brackets of `2^-52` had left node sums
+`1e-13` wide. The rational enclosures are computed once per process.
 
 **Coefficients by interval Taylor arithmetic.** A truncated series
 `a = Σ_(k<L) a_k ε^k` stands for `a(x + ε)`. With `a_0`, `b_0` enclosures
@@ -1455,16 +1460,20 @@ operations are inclusion isotone, so evaluating them on the inputs'
 enclosures at `X + ε` encloses the coefficient at every `x ∈ X`, in
 particular at `ξ`. The same evaluation certifies smoothness: a division
 runs only when `b_0` excludes zero and a square root only when `a_0` is
-positive, over all of `X`, so the integrand is analytic on the piece. A
-series of length 1 is a plain enclosure; the node values use it.
+positive, over all of `X`, so the integrand is analytic on the piece. The
+integrands are written once over both kinds of number: the node values
+evaluate on plain enclosures, the remainders on series.
 
-**What is integrated.** (a) Along a rational spline pcurve piece, `∫_0^1
-M/W^k`, `M` and `W` Bernstein (a plane's flux and mass integrands, and the
-patch-exact route of a rational pcurve on a nonrational patch). (b) Along a
-spline pcurve on a cylinder, cone, sphere or torus, `-∫_0^1 F(u(τ), v(τ))
-u'(τ) dτ`, `u = U/W`, `v = V/W`, `u' = (U'W - UW')/W^2`, `F` the
-closed-form antiderivative in `v`: polynomials in `v` times `cos^a u sin^b
-u` (cylinder, cone), or `cos^a u sin^b u` times the Fourier form
+**What is integrated.** (a) Along a rational spline pcurve piece on a
+nonrational patch (the patch-exact route of the moments), `∫_0^1 M/W^k`,
+`M` and `W` Bernstein. (b) Along a rational spline pcurve on a plane, and
+any spline pcurve on a cylinder, cone, sphere or torus, `-∫_0^1 F(u(τ),
+v(τ)) u'(τ) dτ`, `u = U/W`, `v = V/W`, `u' = (U'W - UW')/W^2`, `F` the
+closed-form antiderivative in `v`: a polynomial in `(u, v)` (plane; the
+pcurve is translated to the face's reference point exactly, on its
+homogeneous poles, so a far face keeps its scale), polynomials in `v` times
+`cos^a u sin^b u` (cylinder, cone), or `cos^a u sin^b u` times the Fourier
+form
 `α_0 (v - v_l) + Σ_f (α_f (sin f v - sin f v_l) + β_f (cos f v_l - cos f
 v)) / f` of `∫_(v_l)^v cos^c sin^d` (sphere, torus). (c) On a spline
 surface, the terms that are not tensor polynomials: every term on a
@@ -1488,15 +1497,33 @@ one patch: lines are split exactly where they cross knot lines, a spline
 pcurve piece is located by its control points, a chord (a gap between
 pcurve ends) by certain ends; anything else falls back to the strips.
 
+On a plane the first form would also serve, `M/W^k` with `M` the
+Bernstein expansion of `F(U/W, V/W) W^d (U'W - UW')`, but its degree is
+the integrand's times the pcurve's and its node values in binary64 were up
+to `6e-12` wide relative to themselves on the rounded corner's caps, where
+`F(u, v) u'` from the pcurve's own coordinates stays at rounding.
+
 **Adaptivity.** The first rule on a whole piece gives `s_k = Σ W |f_k|`
-at its nodes, the piece's absolute integral of each integrand. A piece or
-box of relative size `a` (its length or area as a fraction of the piece's)
-is accepted when each remainder is at most `2^-40 a s_k`, or at most four
-times the rounding width of its own node sum (an integrand that vanishes);
-otherwise it is halved across the direction with the larger remainder, up
-to twelve halvings per direction, where it is accepted as it is. The
+at its nodes, the piece's absolute integral of each integrand, and `r_k`,
+the rounding width of its node sum. A piece or box of relative size `a`
+(its length or area as a fraction of the piece's) is accepted when each
+remainder is at most `a max(2^-44 s_k, 4 r_k)`; the remainders are formed
+first and the node sum only for an accepted piece. Otherwise it is halved
+across the direction with the larger remainder against that budget, up to
+twelve halvings per direction, where it is accepted as it is. A series
+undefined over a whole piece (an enclosure too wide to exclude a zero, as
+`|N|^2` over a whole rational patch) sends the piece to its halves; after
+twelve halvings in all it is taken for a singularity (a degenerate patch
+edge where `|N|` vanishes), and after 2,048 pieces or boxes in one integral
+the work is too; either way the rule gives up and the first-order route
+runs. The
 acceptance rule only decides the work: every accepted enclosure is sound
 by the remainder above, and the result's width is reported, not assumed.
+On the fixtures the widths come from rounding (`2^-40` and `2^-44` gave
+the same enclosures), `7.6e-15` of the volume, `5.6e-15` of the area,
+`2.3e-14` of `V^(1/3)` for the centroid and `1.6e-13` of `V^(5/3)` for the
+inertia at worst, where the first-order routes gave `2e-3`–`5e-3` of the
+nonrational walls' areas and `5e-2` to `0.6` on the rational corner.
 
 ## Profiles with circular arcs (S5)
 
