@@ -60,13 +60,19 @@ of the profiles' boundary pieces by their classes:
 Consecutive slabs with equal regions (a zero symmetric difference) are
 merged, empty ones dropped: the result is one prism per solid (S9a.1) when
 one run of slabs remains, otherwise a stack (S9a.2).
+
+S9a.2's spline profiles (S8b's nonrational spline segments, either profile)
+go through `SplinePair` (see the section at the end): meetings by root
+finding independent of resultants, atoms by Green's theorem over the
+classified pieces, checked against this slicing. `make_pair` chooses; a pair
+of line, arc and circle profiles is `Pair`, unchanged.
 """
 from fractions import Fraction as F
 import math
 
 import mpmath as mp
 
-from identity_reference import arc_sweep, stored
+from identity_reference import Spline, arc_sweep, stored
 from curve_surface_reference import stored_axes
 
 mp.mp.dps = 40
@@ -203,6 +209,11 @@ def profile_elements(boundaries, tolerance, du=F(0), dv=F(0)):
                 p, q = points[i], points[(i+1) % n]
                 if segs[i] is None:
                     items.append(Line(move(p), move(q)))
+                elif isinstance(segs[i], Spline):
+                    # S9a.2: a nonrational spline segment, its Bezier spans
+                    # (blossoms) translated exactly.
+                    segs[i].check(p, q)
+                    items.append(SplineSeg([tuple(move(c) for c in ctrl) for ctrl in segs[i].pieces()]))
                 else:
                     assert isinstance(segs[i], tuple), 'S9a: lines, arcs and circles'
                     cx, cy, r, _ = segs[i]
@@ -220,6 +231,8 @@ def profile_elements(boundaries, tolerance, du=F(0), dv=F(0)):
 # ------------------------------------------------------------------ curves
 
 def x_at(key, v):
+    if key[0] == 'S':
+        return spline_x_at(key, v)
     if key[0] == 'L':
         return M(key[1])*v+M(key[2])
     _, cx, cy, r, sigma = key
@@ -229,6 +242,8 @@ def x_at(key, v):
 
 def integrals(key, v0, v1):
     """The integrals over [v0, v1] of u, u^2 / 2 and u v along the curve."""
+    if key[0] == 'S':
+        return spline_integrals(key, v0, v1)
     if key[0] == 'L':
         a, b = M(key[1]), M(key[2])
         d1, d2, d3 = v1-v0, (v1**2-v0**2)/2, (v1**3-v0**3)/3
@@ -607,7 +622,7 @@ def rows(obj, operation, tool):
     coordinates) or `empty`, then per merged run of slabs `slab w0 w1 area
     perimeter` (the heights in the object's frame, the run's profile's area
     and boundary length)."""
-    pair = Pair(obj, tool)
+    pair = make_pair(obj, tool)
     solids, V, A, centre, runs = pair.result(operation)
     if solids == 0:
         return ['empty'], pair
@@ -622,3 +637,826 @@ def step(pair, operation):
     prism), S9a.2 otherwise (a stack)."""
     runs = pair.result(operation)[4]
     return 'S9a.1' if len(runs) <= 1 else 'S9a.2'
+
+
+# ================================================================== S9a.2: splines
+#
+# Profiles holding S8b's nonrational spline segments. Nothing below is used
+# by a pair of line, arc and circle profiles (`make_pair` returns `Pair` for
+# them), so S9a's rows are unchanged.
+#
+# A spline segment is its Bezier spans (blossoms, exact Fractions), each a
+# polynomial curve on `s` in [0, 1]; the element's parameter `t` in [0, 1]
+# runs over the spans in order (`t = (i + s) / n`). Meetings are found on
+# each span, without resultants:
+#
+# * a line or a circle: the exact polynomial of the other curve's equation
+#   on the span (`cross(d, C(s) - p)`, degree p; `|C(s) - c|^2 - r^2`,
+#   degree 2p), split into square-free factors (Yun's algorithm in
+#   Fractions, so a root's multiplicity is exact: even is a tangency), each
+#   factor's roots in [0, 1] isolated by Bernstein subdivision in Fractions
+#   and Descartes' rule of signs, refined by bisection to 40 digits and
+#   polished by `mp.findroot` (Newton), and checked against `mp.polyroots`
+#   of the whole polynomial (the same real roots in (0, 1), counted with
+#   multiplicity);
+# * another span: both spans' Bezier forms subdivided in Fractions while
+#   their control boxes meet, to parameter widths of 2^-26, then Newton's
+#   method on `C1(s) = C2(u)` from each surviving pair of boxes (the root
+#   required inside the boxes, its residual below 1e-35 and the crossing
+#   transversal), duplicates merged. Two segments of one curve (equal spans,
+#   in either direction) share their pieces instead and meet nowhere.
+#
+# Every piece is classified at its midpoint as S9a's are (`on` the other
+# boundary within 1e-25 of the case's size, else by a ray's parity; a ray
+# meets a span where the 40-digit polynomial `cross(u, C(s) - x)` has a
+# root, the ray rejected and retried when the root is at a span's end or
+# multiple), and at its quarter points, which must agree (a meeting missed
+# inside a piece would make them differ). The atoms' areas and first
+# moments are Green's theorem over the classified pieces: `AB` is bounded by
+# each profile's pieces inside the other and the shared pieces of the same
+# direction, `A` by the object's pieces outside the tool, the tool's inside
+# it reversed and the object's shared pieces of opposite directions, `B`
+# likewise; each piece's `x dy`, `x^2 / 2 dy` and `-y^2 / 2 dx` integrals in
+# closed form (a spline span's as the exact antiderivative of polynomials in
+# `s`, evaluated at the pieces' parameters in 40 digits). Lengths: a spline
+# piece's by `mp.quad` of its speed. The slicing of S9a runs as well (a
+# spline span crosses `v = const` once on each of its `y`-monotone runs,
+# between the roots of `y'(s)`; every span end, `y` extreme and meeting is a
+# break): its atoms are the check of the classified pieces', and its
+# intervals give the solids as S9a's.
+
+ROOT_CHECKS = {}
+
+
+def _record(kind, value):
+    ROOT_CHECKS[kind] = max(ROOT_CHECKS.get(kind, M(0)), M(value))
+
+
+# ------------------------------------------------------------------ exact polynomials (ascending)
+
+def ptrim(c):
+    c = list(c)
+    while len(c) > 1 and c[-1] == 0:
+        c.pop()
+    return c
+
+
+def padd(a, b):
+    n = max(len(a), len(b))
+    return ptrim([(a[i] if i < len(a) else 0)+(b[i] if i < len(b) else 0) for i in range(n)])
+
+
+def psub(a, b):
+    return padd(a, [-x for x in b])
+
+
+def pmul(a, b):
+    out = [F(0)]*(len(a)+len(b)-1)
+    for i, x in enumerate(a):
+        if x:
+            for j, y in enumerate(b):
+                out[i+j] += x*y
+    return ptrim(out)
+
+
+def pder(c):
+    return ptrim([k*c[k] for k in range(1, len(c))]) or [F(0)]
+
+
+def pint(c):
+    return [F(0)]+[c[k]/(k+1) for k in range(len(c))]
+
+
+def pdeg(c):
+    c = ptrim(c)
+    return -1 if len(c) == 1 and c[0] == 0 else len(c)-1
+
+
+def pdivmod(a, b):
+    a, b = ptrim(a), ptrim(b)
+    if len(a) < len(b):
+        return [F(0)], a
+    q = [F(0)]*(len(a)-len(b)+1)
+    r = list(a)
+    while len(r) >= len(b) and pdeg(r) >= 0:
+        k = len(r)-len(b)
+        f = r[-1]/b[-1]
+        q[k] = f
+        for i in range(len(b)):
+            r[i+k] -= f*b[i]
+        assert r[-1] == 0
+        r.pop()
+        r = ptrim(r) if r else [F(0)]
+    return ptrim(q), r
+
+
+def pgcd(a, b):
+    a, b = ptrim(a), ptrim(b)
+    while pdeg(b) >= 0:
+        a, b = b, pdivmod(a, b)[1]
+    return [x/a[-1] for x in a]
+
+
+def squarefree(f):
+    """Yun's square-free factorization of an exact polynomial: [(factor,
+    multiplicity)] with every factor square-free and of positive degree."""
+    f = ptrim(f)
+    d = pder(f)
+    g = pgcd(f, d)
+    b, c = pdivmod(f, g)[0], pdivmod(d, g)[0]
+    dd = psub(c, pder(b))
+    out, i = [], 1
+    while pdeg(b) > 0:
+        a = pgcd(b, dd)
+        b, c = pdivmod(b, a)[0], pdivmod(dd, a)[0]
+        if pdeg(a) > 0:
+            out.append((a, i))
+        dd = psub(c, pder(b))
+        i += 1
+    return out
+
+
+def peval(c, t):
+    out = 0
+    for x in reversed(c):
+        out = out*t+x
+    return out
+
+
+def pmp(c):
+    return [M(x) for x in c]
+
+
+def power_of(ctrl):
+    """Power-basis coefficients (ascending) of a Bezier coordinate."""
+    from math import comb
+    n = len(ctrl)-1
+    return [comb(n, k)*sum((-1)**(k-i)*comb(k, i)*ctrl[i] for i in range(k+1)) for k in range(n+1)]
+
+
+def bernstein_of(c):
+    """Bernstein coefficients on [0, 1] of an ascending power polynomial."""
+    from math import comb
+    n = len(c)-1
+    return [sum((F(comb(i, k), comb(n, k))*c[k] if isinstance(c[k], F) else
+                 M(comb(i, k))/comb(n, k)*c[k]) for k in range(i+1)) for i in range(n+1)]
+
+
+def halves(b):
+    """De Casteljau at 1/2 of Bernstein coefficients (numbers or points)."""
+    cur, left, right = list(b), [b[0]], [b[-1]]
+    mid = (lambda x, y: tuple((x[i]+y[i])/2 for i in range(2))) if isinstance(b[0], tuple) else \
+        (lambda x, y: (x+y)/2)
+    for _ in range(len(b)-1):
+        cur = [mid(x, y) for x, y in zip(cur, cur[1:])]
+        left.append(cur[0])
+        right.append(cur[-1])
+    return left, right[::-1]
+
+
+def variations(b):
+    s = [x > 0 for x in b if x != 0]
+    return sum(1 for u, v in zip(s, s[1:]) if u != v)
+
+
+# ------------------------------------------------------------------ roots on [0, 1]
+
+def _bisect(f, a, b, fa):
+    """The root of `f` (mpf) in [a, b] where it changes sign, `fa` whether
+    it is positive at `a`, to 2^-150."""
+    lo, hi = M(a), M(b)
+    for _ in range(150):
+        mid = (lo+hi)/2
+        fm = f(mid)
+        if fm == 0:
+            return mid
+        if (fm > 0) == fa:
+            lo = mid
+        else:
+            hi = mid
+    return (lo+hi)/2
+
+
+def exact_roots(c, check=True):
+    """The real roots in [0, 1] of an exact nonzero polynomial with their
+    multiplicities: [(t, m)] sorted (t an mpf, exact where the root is a
+    subdivision point)."""
+    c = ptrim(c)
+    if pdeg(c) < 0:
+        raise ArithmeticError('an identically vanishing equation (OutOfDomain in the decisions)')
+    out = []
+    for f, m in squarefree(c):
+        fm, dm = pmp(f), pmp(pder(f))
+        exact, brackets = set(), []
+        stack = [(F(0), F(1), bernstein_of(f))]
+        while stack:
+            a, b, B = stack.pop()
+            if B[0] == 0:
+                exact.add(a)
+            if B[-1] == 0:
+                exact.add(b)
+            V = variations(B)
+            if V == 0:
+                continue
+            if V == 1 and B[0] != 0 and B[-1] != 0:
+                brackets.append((a, b))
+                continue
+            L, R = halves(B)
+            mid = (a+b)/2
+            stack += [(a, mid, L), (mid, b, R)]
+        for r in exact:
+            out.append((M(r), m))
+        for a, b in brackets:
+            t = _bisect(lambda x: peval(fm, x), a, b, peval(f, a) > 0)
+            try:
+                polished = mp.findroot(lambda x: peval(fm, x), t, solver='newton', df=lambda x: peval(dm, x))
+                if M(a) <= polished <= M(b):
+                    _record('findroot', abs(polished-t))
+                    t = polished
+            except (ValueError, ZeroDivisionError):
+                pass
+            assert M(a) <= t <= M(b)
+            out.append((t, m))
+    out.sort()
+    if check and pdeg(c) > 0:
+        _polyroots_check(c, out)
+    return out
+
+
+def _polyroots_check(c, roots):
+    """`mp.polyroots` of the whole polynomial must have the same real roots
+    in (0, 1), counted with multiplicity; records the largest distance of a
+    simple root from its polyroots twin."""
+    desc = [M(x) for x in reversed(ptrim(c))]
+    with mp.workdps(80):
+        found = mp.polyroots(desc, maxsteps=500, extraprec=400)
+    tiny = M(10)**-12
+    real = sorted(mp.re(r) for r in found if abs(mp.im(r)) < tiny and tiny < mp.re(r) < 1-tiny)
+    want = [t for t, m in roots for _ in range(m) if tiny < t < 1-tiny]
+    assert len(real) == len(want), ('polyroots disagree', [mp.nstr(t, 12) for t in want],
+                                    [mp.nstr(t, 12) for t in real])
+    for t, m in roots:
+        if m == 1 and tiny < t < 1-tiny:
+            _record('polyroots', min(abs(t-r) for r in real))
+
+
+def float_roots(c, width=M(10)**-24):
+    """The roots in [0, 1] of an mpf polynomial by Bernstein subdivision:
+    (roots, clusters), clusters the midpoints of intervals narrower than
+    `width` that may hold several (a multiple root)."""
+    roots, clusters = [], []
+    stack = [(M(0), M(1), bernstein_of(c))]
+    while stack:
+        a, b, B = stack.pop()
+        if B[0] == 0:
+            roots.append(a)
+        V = variations(B)
+        if V == 0:
+            continue
+        if V == 1 and B[0] != 0 and B[-1] != 0 and (B[0] > 0) != (B[-1] > 0):
+            roots.append(_bisect(lambda x: peval(c, x), a, b, B[0] > 0))
+            continue
+        if b-a < width:
+            clusters.append((a+b)/2)
+            continue
+        L, R = halves(B)
+        mid = (a+b)/2
+        stack += [(a, mid, L), (mid, b, R)]
+    if peval(c, M(1)) == 0:
+        roots.append(M(1))
+    return sorted(set(roots)), clusters
+
+
+# ------------------------------------------------------------------ spans and spline elements
+
+class Span:
+    """One Bezier span on `s` in [0, 1]: exact controls and power
+    coefficients, its `y`-monotone runs and exact Green antiderivatives."""
+
+    def __init__(self, ctrl):
+        self.ctrl = tuple((F(x), F(y)) for x, y in ctrl)
+        self.X = power_of([p[0] for p in self.ctrl])
+        self.Y = power_of([p[1] for p in self.ctrl])
+        self.Xm, self.Ym = pmp(self.X), pmp(self.Y)
+        self.dX, self.dY = pder(self.X), pder(self.Y)
+        self.dXm, self.dYm = pmp(self.dX), pmp(self.dY)
+        self._runs, self._anti, self.cache = None, None, {}
+
+    def point(self, s):
+        if s == 0:
+            return M(self.ctrl[0][0]), M(self.ctrl[0][1])
+        if s == 1:
+            return M(self.ctrl[-1][0]), M(self.ctrl[-1][1])
+        return peval(self.Xm, s), peval(self.Ym, s)
+
+    def deriv(self, s):
+        return peval(self.dXm, s), peval(self.dYm, s)
+
+    def speed(self, s):
+        dx, dy = self.deriv(s)
+        return mp.sqrt(dx*dx+dy*dy)
+
+    def runs(self):
+        """[(a, b, y(a), y(b))]: the `y`-monotone runs between the roots of
+        `y'(s)`."""
+        if self._runs is None:
+            ts = [M(0), M(1)]
+            if pdeg(self.dY) > 0:
+                ts += [t for t, _ in exact_roots(self.dY) if 0 < t < 1]
+            ts = sorted(set(ts))
+            self._runs = [(a, b, self.point(a)[1], self.point(b)[1]) for a, b in zip(ts, ts[1:])]
+        return self._runs
+
+    def solve_y(self, v, a, b, ya, yb):
+        """The `s` in the run [a, b] where `y(s) = v` (clamped to the run)."""
+        key = (a, v)
+        if key not in self.cache:
+            if (v-ya)*(yb-ya) <= 0:
+                s = a
+            elif (v-yb)*(ya-yb) <= 0:
+                s = b
+            else:
+                s = _bisect(lambda x: peval(self.Ym, x)-v, a, b, ya-v > 0)
+            self.cache[key] = s
+        return self.cache[key]
+
+    def antiderivatives(self):
+        """Exact antiderivatives (as mpf coefficients) of `x y'`, `x^2 y' /
+        2`, `x y y'` and `y^2 x' / 2`."""
+        if self._anti is None:
+            X, Y, dX, dY = self.X, self.Y, self.dX, self.dY
+            half = [F(1, 2)]
+            self._anti = [pmp(pint(p)) for p in (pmul(X, dY), pmul(half, pmul(pmul(X, X), dY)),
+                                                  pmul(pmul(X, Y), dY), pmul(half, pmul(pmul(Y, Y), dX)))]
+        return self._anti
+
+    def green(self, s0, s1):
+        """`(x dy, x^2 / 2 dy, -y^2 / 2 dx)` integrated over [s0, s1]."""
+        a = self.antiderivatives()
+        d = lambda k: peval(a[k], s1)-peval(a[k], s0)
+        return d(0), d(1), -d(3)
+
+    def slice(self, s0, s1):
+        """`(x dy, x^2 / 2 dy, x y dy)` over [s0, s1]: a slicing band's."""
+        a = self.antiderivatives()
+        d = lambda k: peval(a[k], s1)-peval(a[k], s0)
+        return d(0), d(1), d(2)
+
+
+_SPANS = {}
+
+
+def canonical_span(ctrl):
+    """One `Span` per curve (its controls in either direction), so the two
+    profiles' crossings of a shared span are one and the same."""
+    key = min(tuple(ctrl), tuple(reversed(ctrl)))
+    if key not in _SPANS:
+        _SPANS[key] = Span(key)
+    return _SPANS[key]
+
+
+class SplineSeg:
+    kind = 'S'
+
+    def __init__(self, ctrls):
+        self.ctrls = [tuple(c) for c in ctrls]
+        self.spans = [Span(c) for c in self.ctrls]
+        self.canon = [canonical_span(c) for c in self.ctrls]
+        self.n = len(self.spans)
+        self.p, self.q = self.ctrls[0][0], self.ctrls[-1][-1]
+        self._length = None
+
+    def curve(self):
+        """The curve regardless of direction."""
+        fwd = tuple(self.ctrls)
+        bwd = tuple(tuple(reversed(c)) for c in reversed(self.ctrls))
+        return min(fwd, bwd)
+
+    def reversed(self):
+        return SplineSeg([tuple(reversed(c)) for c in reversed(self.ctrls)])
+
+    def locate(self, t):
+        i = min(int(mp.floor(t*self.n)), self.n-1)
+        return i, t*self.n-i
+
+    def point(self, t):
+        if t == 0:
+            return M(self.p[0]), M(self.p[1])
+        if t == 1:
+            return M(self.q[0]), M(self.q[1])
+        i, s = self.locate(t)
+        return self.spans[i].point(s)
+
+    def tangent(self, t):
+        i, s = self.locate(t)
+        return self.spans[i].deriv(s)
+
+    def sub(self, t0, t1):
+        """(span, s0, s1) for each span overlapping [t0, t1]."""
+        for i, span in enumerate(self.spans):
+            a, b = M(i)/self.n, M(i+1)/self.n
+            lo, hi = max(t0, a), min(t1, b)
+            if hi > lo:
+                yield span, (M(0) if lo == a else (lo-a)*self.n), (M(1) if hi == b else (hi-a)*self.n)
+
+    def piece_length(self, t0, t1):
+        return sum((mp.quad(span.speed, [s0, s1]) for span, s0, s1 in self.sub(t0, t1)), M(0))
+
+    def length(self):
+        if self._length is None:
+            self._length = self.piece_length(M(0), M(1))
+        return self._length
+
+    def green(self, t0, t1):
+        out = [M(0)]*3
+        for span, s0, s1 in self.sub(t0, t1):
+            for k, v in enumerate(span.green(s0, s1)):
+                out[k] += v
+        return out
+
+    def closest(self, pt):
+        """(distance, t) of the nearest point to `pt` (exact Fractions or
+        mpf): the ends and every root of `(C(s) - pt) . C'(s)` per span."""
+        exact = isinstance(pt[0], F)
+        best = None
+        for i, span in enumerate(self.spans):
+            if exact:
+                g = padd(pmul(psub(span.X, [pt[0]]), span.dX), pmul(psub(span.Y, [pt[1]]), span.dY))
+                ss = [t for t, _ in exact_roots(g, check=False)] if pdeg(g) >= 0 else []
+            else:
+                px, py = M(pt[0]), M(pt[1])
+                X, Y = list(span.Xm), list(span.Ym)
+                X[0] -= px
+                Y[0] -= py
+                g = [M(0)]*(max(len(X)+len(span.dXm), len(Y)+len(span.dYm))-1)
+                for a, x in enumerate(X):
+                    for b, y in enumerate(span.dXm):
+                        g[a+b] += x*y
+                for a, x in enumerate(Y):
+                    for b, y in enumerate(span.dYm):
+                        g[a+b] += x*y
+                roots, clusters = float_roots(g)
+                ss = roots+clusters
+            for s in [M(0), M(1)]+list(ss):
+                x, y = span.point(s)
+                d = mp.sqrt((x-M(pt[0]))**2+(y-M(pt[1]))**2)
+                if best is None or d < best[0]:
+                    best = (d, (i+s)/self.n)
+        return best
+
+    def param(self, pt):
+        return self.closest(pt)[1]
+
+    def crossings(self, v):
+        out = []
+        for span in self.canon:
+            for a, b, ya, yb in span.runs():
+                if min(ya, yb) < v < max(ya, yb):
+                    key = ('S', span, a, b, ya, yb)
+                    out.append((spline_x_at(key, v), key))
+        return out
+
+
+def spline_x_at(key, v):
+    _, span, a, b, ya, yb = key
+    return span.point(span.solve_y(v, a, b, ya, yb))[0]
+
+
+def spline_integrals(key, v0, v1):
+    _, span, a, b, ya, yb = key
+    return span.slice(span.solve_y(v0, a, b, ya, yb), span.solve_y(v1, a, b, ya, yb))
+
+
+# ------------------------------------------------------------------ pieces of lines and arcs
+
+def line_green(e, t0, t1):
+    X, Y = [e.p[0], e.d[0]], [e.p[1], e.d[1]]
+    half = [F(1, 2)]
+    anti = [pmp(pint(p)) for p in (pmul(X, pder(Y)), pmul(half, pmul(pmul(X, X), pder(Y))),
+                                    pmul(half, pmul(pmul(Y, Y), pder(X))))]
+    d = lambda k: peval(anti[k], t1)-peval(anti[k], t0)
+    return d(0), d(1), -d(2)
+
+
+def arc_green(e, t0, t1):
+    cx, cy, r = M(e.c[0]), M(e.c[1]), M(e.r)
+    a, b = e.angle(t0), e.angle(t1)
+    d = lambda f: f(b)-f(a)
+    c1 = d(mp.sin)
+    c2 = (b-a)/2+d(lambda t: mp.sin(2*t))/4
+    c3 = d(lambda t: mp.sin(t)-mp.sin(t)**3/3)
+    s1 = -d(mp.cos)
+    s2 = (b-a)/2-d(lambda t: mp.sin(2*t))/4
+    s3 = d(lambda t: -mp.cos(t)+mp.cos(t)**3/3)
+    # x dy = (cx + r cos) r cos dt; x^2 / 2 dy = (cx + r cos)^2 r cos dt / 2;
+    # -y^2 / 2 dx = (cy + r sin)^2 r sin dt / 2.
+    return (r*(cx*c1+r*c2), r*(cx*cx*c1+2*cx*r*c2+r*r*c3)/2, r*(cy*cy*s1+2*cy*r*s2+r*r*s3)/2)
+
+
+def piece_green(e, t0, t1):
+    if e.kind == 'S':
+        return e.green(t0, t1)
+    if e.kind == 'L':
+        return line_green(e, t0, t1)
+    return arc_green(e, t0, t1)
+
+
+def piece_length(e, t0, t1):
+    if e.kind == 'S':
+        return e.piece_length(t0, t1)
+    return e.length()*(t1-t0)
+
+
+def gdistance(pt, f):
+    if f.kind == 'S':
+        return f.closest(pt)[0]
+    return distance(tuple(M(x) for x in pt), f)
+
+
+def gparam(e, pt):
+    if e.kind == 'S':
+        return e.param(pt)
+    return e.param(tuple(M(x) for x in pt))
+
+
+# ------------------------------------------------------------------ meetings
+
+def _span_span(P, Q):
+    """[(s, u)] where spans P and Q cross (subdivision, then Newton)."""
+    def box(c):
+        xs, ys = [p[0] for p in c], [p[1] for p in c]
+        return min(xs), max(xs), min(ys), max(ys)
+
+    def meets(a, b):
+        return a[0] <= b[1] and b[0] <= a[1] and a[2] <= b[3] and b[2] <= a[3]
+    limit = F(1, 2**26)
+    stack = [(P.ctrl, F(0), F(1), Q.ctrl, F(0), F(1))]
+    candidates, steps = [], 0
+    while stack:
+        cp, s0, s1, cq, u0, u1 = stack.pop()
+        steps += 1
+        assert steps < 400000, 'spline/spline subdivision did not settle (an overlap?)'
+        if not meets(box(cp), box(cq)):
+            continue
+        if s1-s0 <= limit and u1-u0 <= limit:
+            candidates.append((s0, s1, u0, u1))
+            continue
+        if s1-s0 >= u1-u0:
+            L, R = halves(cp)
+            m = (s0+s1)/2
+            stack += [(L, s0, m, cq, u0, u1), (R, m, s1, cq, u0, u1)]
+        else:
+            L, R = halves(cq)
+            m = (u0+u1)/2
+            stack += [(cp, s0, s1, L, u0, m), (cp, s0, s1, R, m, u1)]
+    roots = []
+    pad = M(2)**-20
+    for s0, s1, u0, u1 in candidates:
+        s, u = M(s0+s1)/2, M(u0+u1)/2
+        for _ in range(80):
+            (x1, y1), (x2, y2) = P.point(s), Q.point(u)
+            fx, fy = x1-x2, y1-y2
+            (a, b), (c, d) = P.deriv(s), Q.deriv(u)
+            det = b*c-a*d
+            if det == 0:
+                break
+            ds, du = (fx*d-c*fy)/det, (b*fx-a*fy)/det
+            s, u = s+ds, u+du
+            if abs(ds)+abs(du) < M(10)**-45:
+                break
+        if not (M(s0)-pad <= s <= M(s1)+pad and M(u0)-pad <= u <= M(u1)+pad):
+            continue
+        if not (-M(10)**-28 <= s <= 1+M(10)**-28 and -M(10)**-28 <= u <= 1+M(10)**-28):
+            continue
+        s, u = min(max(s, M(0)), M(1)), min(max(u, M(0)), M(1))
+        (x1, y1), (x2, y2) = P.point(s), Q.point(u)
+        residual = mp.sqrt((x1-x2)**2+(y1-y2)**2)
+        assert residual < M(10)**-35, 'Newton did not converge'
+        _record('newton_residual', residual)
+        (a, b), (c, d) = P.deriv(s), Q.deriv(u)
+        sine = abs(a*d-b*c)/mp.sqrt((a*a+b*b)*(c*c+d*d))
+        assert sine > M(10)**-8, 'a spline/spline tangency (not in the fixtures)'
+        if not any(abs(s-s2)+abs(u-u2) < M(10)**-25 for s2, u2 in roots):
+            roots.append((s, u))
+    return roots
+
+
+def _spline_other(e, f):
+    """[(te, tf, kind, point)] where spline e meets line, arc or spline f."""
+    out = []
+    tol = M(10)**-28
+    if f.kind == 'S':
+        if e.curve() == f.curve():
+            return []
+        for i, P in enumerate(e.spans):
+            for j, Q in enumerate(f.spans):
+                for s, u in _span_span(P, Q):
+                    out.append(((i+s)/e.n, (j+u)/f.n, 'cross', P.point(s)))
+        return out
+    for i, span in enumerate(e.spans):
+        if f.kind == 'L':
+            (px, py), (dx, dy) = f.p, f.d
+            g = psub(pmul([dx], psub(span.Y, [py])), pmul([dy], psub(span.X, [px])))
+        else:
+            g = psub(padd(pmul(psub(span.X, [f.c[0]]), psub(span.X, [f.c[0]])),
+                          pmul(psub(span.Y, [f.c[1]]), psub(span.Y, [f.c[1]]))), [f.r*f.r])
+        for s, m in exact_roots(g):
+            pt = span.point(s)
+            tf = f.param(pt)
+            if not (f.kind == 'A' and f.full):
+                if not (-tol <= tf <= 1+tol):
+                    continue
+                tf = min(max(tf, M(0)), M(1))
+            out.append(((i+s)/e.n, tf, 'touch' if m % 2 == 0 else 'cross', pt))
+    return out
+
+
+# ------------------------------------------------------------------ the pair with splines
+
+class SplinePair(Pair):
+    """`Pair` for profiles holding splines: the atoms by Green's theorem over
+    the classified pieces, checked against the slicing (`slice_atoms`)."""
+
+    def __init__(self, obj, tool):
+        self.axes = tuple(tuple(F(c) for c in v) for v in stored_axes(obj.frame))
+        taxes = tuple(tuple(F(c) for c in v) for v in stored_axes(tool.frame))
+        assert self.axes[1:] == taxes[1:], 'S9a: frames with bitwise-equal axes'
+        o, x, y, n = self.axes
+        D = tuple(taxes[0][i]-o[i] for i in range(3))
+        det = lambda a, b, c: (a[0]*(b[1]*c[2]-b[2]*c[1])-a[1]*(b[0]*c[2]-b[2]*c[0])
+                               + a[2]*(b[0]*c[1]-b[1]*c[0]))
+        den = det(x, y, n)
+        a, b, c = det(D, y, n)/den, det(x, D, n)/den, det(x, y, D)/den
+        for value in (a, b, c):
+            assert F(float(value)) == value, 'S9a: the origins\' offset must be binary64 in the frame'
+        self.offset = (a, b, c)
+        self.A = profile_elements(obj.boundaries, obj.tolerance)
+        self.B = profile_elements(tool.boundaries, tool.tolerance, a, b)
+        self.heights = {'A': tuple(sorted((F(obj.start), F(obj.end)))),
+                        'B': tuple(sorted((F(tool.start)+c, F(tool.end)+c)))}
+        coords = [abs(M(v)) for e in self.A+self.B for v in (*e.p, *e.q)]
+        coords += [abs(M(e.c[i]))+M(e.r) for e in self.A+self.B if e.kind == 'A' for i in range(2)]
+        coords += [abs(M(v)) for e in self.A+self.B if e.kind == 'S' for ctrl in e.ctrls for p in ctrl
+                   for v in p]
+        self.scale = max([M(1)]+coords)
+        self.eps = M(10)**-25*self.scale
+        self._meetings = {}
+        self._bands()
+        self.slice_atoms = self.atoms
+        self.classes, self.atoms = self._green()
+
+    def meetings(self, e, f):
+        """[(te, tf, kind, point)] where elements e and f meet."""
+        key = (id(e), id(f))
+        if key not in self._meetings:
+            if e.kind == 'S':
+                found = _spline_other(e, f)
+            elif f.kind == 'S':
+                found = [(te, tf, k, pt) for tf, te, k, pt in _spline_other(f, e)]
+            else:
+                found = [(e.param(pt), f.param(pt), 'cross', pt) for pt in meet(e, f)
+                         if within(e, pt, M(10)**-28) and within(f, pt, M(10)**-28)]
+            self._meetings[key] = found
+            self._meetings[(id(f), id(e))] = [(tf, te, k, pt) for te, tf, k, pt in found]
+        return self._meetings[key]
+
+    def _breaks(self):
+        vs = set()
+        for e in self.A+self.B:
+            vs.add(M(e.p[1]))
+            vs.add(M(e.q[1]))
+            if e.kind == 'A':
+                vs.add(M(e.c[1])+M(e.r))
+                vs.add(M(e.c[1])-M(e.r))
+            if e.kind == 'S':
+                for span in e.canon:
+                    for _, _, ya, yb in span.runs():
+                        vs.update((ya, yb))
+        for e in self.A:
+            for f in self.B:
+                if e.kind != 'S' and f.kind != 'S':
+                    for pt in meet(e, f):
+                        vs.add(pt[1])
+                else:
+                    for *_, pt in self.meetings(e, f):
+                        vs.add(pt[1])
+        out = []
+        for v in sorted(vs):
+            if not out or v-out[-1] > M(10)**-30*self.scale:
+                out.append(v)
+        return out
+
+    def _classify(self, pt, tangent, Y):
+        near = min(Y, key=lambda f: gdistance(pt, f))
+        if gdistance(pt, near) <= self.eps:
+            other = near.tangent(gparam(near, pt))
+            dot = tangent[0]*other[0]+tangent[1]*other[1]
+            norm = mp.sqrt((tangent[0]**2+tangent[1]**2)*(other[0]**2+other[1]**2))
+            assert abs(dot) > M(10)**-10*norm, 'a shared piece crossing the other boundary'
+            return 'on_same' if dot > 0 else 'on_opposite'
+        for attempt in range(8):
+            phi = M(0.7)+attempt*M(0.37)
+            u = (mp.cos(phi), mp.sin(phi))
+            count, ambiguous = 0, False
+            for f in Y:
+                if f.kind == 'S':
+                    for span in f.spans:
+                        g = [u[0]*y-u[1]*x for x, y in zip(span.Xm, span.Ym)]
+                        g[0] -= u[0]*pt[1]-u[1]*pt[0]
+                        roots, clusters = float_roots(g)
+                        for s in roots+clusters:
+                            x, y = span.point(s)
+                            if (x-pt[0])*u[0]+(y-pt[1])*u[1] <= 0:
+                                continue
+                            if s in clusters or s < M(10)**-25 or s > 1-M(10)**-25:
+                                ambiguous = True
+                            else:
+                                count += 1
+                elif f.kind == 'L':
+                    d = (M(f.d[0]), M(f.d[1]))
+                    den = u[0]*d[1]-u[1]*d[0]
+                    if den == 0:
+                        continue
+                    w = (M(f.p[0])-pt[0], M(f.p[1])-pt[1])
+                    s = (w[0]*d[1]-w[1]*d[0])/den
+                    t = (w[0]*u[1]-w[1]*u[0])/den
+                    if s > 0 and -M(10)**-25 < t < 1+M(10)**-25:
+                        if abs(t) < M(10)**-25 or abs(t-1) < M(10)**-25:
+                            ambiguous = True
+                        elif 0 < t < 1:
+                            count += 1
+                else:
+                    w = (pt[0]-M(f.c[0]), pt[1]-M(f.c[1]))
+                    b = u[0]*w[0]+u[1]*w[1]
+                    disc = b*b-(w[0]**2+w[1]**2-M(f.r)**2)
+                    if disc <= 0:
+                        ambiguous = ambiguous or abs(disc) < M(10)**-25*self.scale**2
+                        continue
+                    for s in (-b+mp.sqrt(disc), -b-mp.sqrt(disc)):
+                        if s <= 0:
+                            continue
+                        if f.full:
+                            count += 1
+                            continue
+                        t = f.param((pt[0]+s*u[0], pt[1]+s*u[1]))
+                        if abs(t) < M(10)**-25 or abs(t-1) < M(10)**-25:
+                            ambiguous = True
+                        elif 0 < t < 1:
+                            count += 1
+            if not ambiguous:
+                return 'inside' if count % 2 else 'outside'
+        raise ArithmeticError('no unambiguous ray')
+
+    def pieces(self, X, Y):
+        """Each element of X cut at its meetings with Y's elements and Y's
+        vertices on it, classified at its midpoint and its quarter points,
+        which must agree: (element, t0, t1, length, class)."""
+        out = []
+        for e in X:
+            ts = [M(0), M(1)]
+            for f in Y:
+                ts += [te for te, *_ in self.meetings(e, f)]
+                if gdistance(f.p, e) <= self.eps:
+                    ts.append(gparam(e, f.p))
+            ts = sorted(min(max(t, M(0)), M(1)) for t in ts)
+            cuts = [ts[0]]
+            for t in ts[1:]:
+                if t-cuts[-1] > M(10)**-28:
+                    cuts.append(t)
+            cuts[-1] = M(1)
+            for t0, t1 in zip(cuts, cuts[1:]):
+                classes = []
+                for w in (M(1)/4, M(1)/2, M(3)/4):
+                    tm = t0+w*(t1-t0)
+                    classes.append(self._classify(e.point(tm), e.tangent(tm), Y))
+                assert len(set(classes)) == 1, ('a piece classified differently along it', classes)
+                out.append((e, t0, t1, piece_length(e, t0, t1), classes[1]))
+        return out
+
+    def _green(self):
+        classes = {}
+        atoms = {a: [M(0), M(0), M(0)] for a in ATOMS}
+        rules = {('A', 'outside'): (('A', 1),), ('A', 'inside'): (('AB', 1), ('B', -1)),
+                 ('A', 'on_same'): (('AB', 1),), ('A', 'on_opposite'): (('A', 1),),
+                 ('B', 'outside'): (('B', 1),), ('B', 'inside'): (('AB', 1), ('A', -1)),
+                 ('B', 'on_same'): (), ('B', 'on_opposite'): (('B', 1),)}
+        self.piece_list = {}
+        for name, X, Y in (('A', self.A, self.B), ('B', self.B, self.A)):
+            self.piece_list[name] = self.pieces(X, Y)
+            for e, t0, t1, length, cls in self.piece_list[name]:
+                classes[(name, cls)] = classes.get((name, cls), M(0))+length
+                g = piece_green(e, t0, t1)
+                for atom, sign in rules[(name, cls)]:
+                    for k in range(3):
+                        atoms[atom][k] += sign*g[k]
+        return classes, atoms
+
+
+def has_splines(case):
+    return any(b.segments is not None and any(isinstance(s, Spline) for s in b.segments)
+               for b in case.boundaries)
+
+
+def make_pair(obj, tool):
+    """S9a's `Pair`, or `SplinePair` when either profile holds a spline."""
+    return SplinePair(obj, tool) if has_splines(obj) or has_splines(tool) else Pair(obj, tool)

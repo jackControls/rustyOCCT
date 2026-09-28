@@ -4,8 +4,11 @@ S9 of `REVIEW_NOTES.md` fuses, cuts and intersects solids (the Combine
 job): the faces intersected (S7), split (S8), classified by regions and
 assembled into shells and regions, with complete histories. This document
 describes what is implemented; the decisions are in `REVIEW_NOTES.md` (S9).
-S9a is implemented (`profile/boolean.rs`, `solid/boolean.rs`, S9a.2's
-stacks in `solid/boolean/stack.rs`); S9b on are not.
+S9a is implemented (`profile/boolean.rs` with its spline meetings in
+`profile/boolean/splines.rs`, `solid/boolean.rs`, S9a.2's stacks in
+`solid/boolean/stack.rs`), and S9b.1's polyhedral prisms in any relative
+position (`solid/boolean/polyhedra.rs`); S9b.2 (general polyhedral
+inputs), S9c and S9d are not.
 
 ## Contract
 
@@ -18,9 +21,10 @@ frames (one profile over one height range) is built as one, keeping the
 prism's exact queries; any other is a general body built through
 `TopologyParts` and validated before it is returned. An error is one of:
 
-* `OutOfDomain`: a pair of a later sub-step (frames whose axes differ, or
-  an offset or a profile that rounds, before S9b; spline profiles), or a
-  cavity in a result of several solids.
+* `OutOfDomain`: a pair of a later sub-step (arcs or circles in frames
+  whose axes differ, S9c; an input other than a prism, S9b.2), two spline
+  segments along one curve in different forms or a spline span along a
+  line, or a stack's cavity in a result of several solids.
 * `Degenerate`: a crossing within the resolution of a vertex, two crossings
   within it of each other, a piece thinner than the resolution, or a result
   touching itself at a point or along an edge (two solids sharing an edge,
@@ -139,6 +143,73 @@ lies on the walls through the point; a solid continues the regions of the
 inputs whose faces it continues (a cut's: the object's), and a cavity's
 void is generated from the tool's region.
 
+### Polyhedral prisms in any position (S9b.1)
+
+Two prisms of line profiles (polygons with polygon holes) whose frames'
+axes differ, or whose offset or tool profile would round in S9a's frame,
+are decided on their constructions' exact models (`solid/boolean/
+polyhedra.rs`): a point `o + u x + v y + w n` in rationals from the stored
+binary64 origin, axes, profile and heights, a cap's plane normal to `x * y`
+(the stored axes are not exactly orthogonal), a wall's the plane of its
+segment's direction and `n`, so every model vertex lies exactly on its
+faces' planes. Each boundary face, as convex pieces (the cap's trapezoids,
+the wall's rectangle), is split by every plane of the other prism's faces;
+each fragment's centroid, pushed an infinitesimal step along its normal
+and against it, is classified exactly against the other prism's convex
+cells (the profile's trapezoids swept, closed half-spaces), and the
+fragment kept, oriented to leave the result's material, where the set
+function differs across it (the object's fragment once where both
+boundaries lie). Kept fragments are made conforming (each edge split at
+every kept vertex on it, found exactly), joined across shared edges into
+maximal faces of one oriented plane, their edges joined where they run
+straight on between the same two faces. A face with a vertex within the
+resolution of another vertex or of an edge not ending there (on the exact
+model), an edge with four faces, or two solids sharing a vertex is
+`Degenerate`. Each connected set of faces is a shell: an outer one
+(positive exact volume) or a cavity of the outer shell holding it (exact
+ray parity). Vertices and planes are rounded once, each solid validated as
+it is built. A result's rigid motion moves its stored geometry (vertices,
+lines and plane frames; the pcurves in those frames unchanged) and
+measures its enclosures again; its classification is the set function of
+both inputs' classifications within its bounds.
+
+History: a face continues the input faces its fragments come from facing
+their way (a cut's tool's, or one facing the other way, it touches); an
+edge along an input edge (exactly) continues it, one elsewhere lies on the
+faces meeting there; a vertex at an input vertex continues it, one
+elsewhere lies on the input edges and faces through it; a solid continues
+the regions of the inputs whose faces it continues (a cut's: the object's),
+a cavity's void is generated from the tool's region.
+
+### Spline profiles (S9a.2)
+
+Either profile may hold S8b's nonrational spline segments
+(`profile/boolean/splines.rs`). A spline meets a line where the line's
+equation has a root on one of its Bézier arcs (S8b.3's `meets`), a circle
+where `(x - c_x)^2 + (y - c_y)^2 - r^2` does (degree `2p`, the same
+isolation), and another spline where each arc's parameter is a root of the
+resultant of the other arc's implicit equation on it: `Res_t(x(t) - X,
+y(t) - Y)` (a Sylvester determinant, exact) evaluated on the other arc's
+points at `p q + 1` rational parameters and interpolated exactly, both ways,
+each root paired with the one root whose certified point box meets it
+(refined until one partner or none remains; two is `ComputationLimit`). A
+crossing is at the spline's parameter rounded to binary64, the vertex the
+curve's exact point there rounded; a root of even multiplicity is a
+tangency and cuts nothing, one of two splines is refused (`Degenerate`),
+and an identically vanishing resultant or equation (a spline along another
+curve) is `OutOfDomain` unless the two segments are one curve, equal or
+with reversed poles and mirrored knots, whose pieces are then shared like
+one circle's. A vertex within the resolution of a spline cuts it at its
+nearest parameter (the distance's derivative's roots, decided exactly at
+the rounded parameter). Pieces are ordered by parameter, classified at the
+fraction `0.4453125` of their parameter range, and a traced result joins
+consecutive pieces of one segment into its exact restriction between their
+outer ends (S8b.3's knot insertion), its end poles set to the result's
+vertices (within rounding of the restriction's own ends). A stack's walls
+on one spline segment are one face on that segment's whole degree-`(p, 1)`
+wall (S8b's) where they join, their pcurves lines in (curve parameter,
+height); its horizontal edges on a spline are its lifted restrictions.
+
 ## Evidence
 
 * **Case protocol.** A Boolean case (`identity_reference.
@@ -207,6 +278,58 @@ void is generated from the tool's region.
   keeps each input's cap and wall images and its cylinders' seams (counts
   compared after unifying). `compare_boolean.py` runs the probe
   (`examples/boolean_probe.rs`) on every case.
+* **Spline profiles (S9a.2), before their kernel code.** The reference's
+  `SplinePair` (`boolean_reference.py`, chosen by `make_pair` when either
+  profile holds S8b's spline segments; S9a's pairs are unchanged) takes each
+  spline as its Bezier spans (blossoms, exact). Meetings without resultants:
+  with a line or a circle, the exact polynomial of its equation on the span
+  split into square-free factors (Yun's algorithm in Fractions: a root's
+  multiplicity is exact, even is a tangency), roots isolated by Bernstein
+  subdivision and Descartes' rule, refined by bisection to 40 digits and
+  polished by `mp.findroot`, checked against `mp.polyroots`; with another
+  span, both Bezier forms subdivided while their control boxes meet, then
+  Newton on `C1(s) = C2(u)` (residual below 1e-35, transversal); segments
+  of one curve share their pieces. Pieces are classified at their midpoints
+  (ray parity, rays meeting a span by the same isolation) and must agree at
+  their quarter points; the atoms are Green's theorem over the classified
+  pieces (spline pieces as exact antiderivatives of polynomials in the span
+  parameter), the lengths `mp.quad` of the speed, and S9a's slicing (breaks
+  at every span end, `y` extreme and meeting) gives the check and the
+  solids. `generate_boolean_fixtures.py --check` writes 46 cases
+  (`boolean-spline-cases.txt`, `boolean-spline-expected.tsv`; 14 fuses, 16
+  cuts, 16 commons, 18 tilted): a spline crossing lines, arcs, circles and
+  another spline (four times, and at both splines' interior knots),
+  tangencies of a spline and a line (inside and outside) and a circle,
+  identical profiles and one spline shared in the same and the opposite
+  direction, a spline hole (cut through, filled, a common), a vertex on a
+  spline and a spline's end on an edge, profiles inside and apart, and
+  stacks (a step, a pocket, a slot through a spline wall, a plug in a spline
+  hole, crossing waves); declared 36 `prisms`, 5 `stack`, 4 `empty`, 1
+  `degenerate` (a disc's hole tangent to the dome's apex). A tool holding a
+  spline is given in the object's frame coordinates (offset along the axis
+  only). Checks before writing: Green over pieces against the slicing
+  (8.3e-40), each profile against exact Green's theorem (5.2e-41) and
+  Bernstein products (3.9e-41), Gauss-Legendre quadrature of every spline
+  piece (3.7e-39), lengths (2.8e-41), the identities (1.6e-40), straight
+  splines against their polygon (exact), 8 hand results (dome cut by lines:
+  parabolic segments and `asinh` lengths; rectangles, squares, a disc;
+  8.6e-41), roots against `polyroots` (4.8e-41), Newton residuals
+  (1.8e-40), and the atoms against 16 and 32 chords per span extrapolated
+  (2.1e-4 relative, within a quarter of the chords' own difference).
+  Natively (`compare_boolean.py --splines`, capture
+  `occt-boolean-spline-preimplementation`, `rust_spline_boolean_exists`
+  false): every result valid with the reference's solid count, 37 within
+  2e-8, 9 reviewed (`occt-boolean-spline-divergences.json`): BRepGProp's
+  integration of faces bounded by B-spline edges errs by 2.6e-8 to 8.0e-4
+  (the three-span wave S8b's split capture reviewed), while Green's theorem
+  over OCCT's own cap edges agrees with the reference within 4.5e-8. OCCT
+  keeps tangency points as vertices and edges (a tangency cuts nothing in
+  the decisions) and returns one valid solid for the degenerate case.
+  The kernel (S9a.2's splines): 45 results inside the reference, the
+  degenerate one refused, every count OCCT's after unifying but four
+  reviewed tangencies (OCCT keeps the touching point as vertices and edges
+  on the dome's wall); `tests/booleans.rs` checks the same and every
+  fixture's history.
 * **Kernel (S9a).** All 45 cases: 42 results inside the reference with
   the reference's solid count (each solid's volume, area and centre
   enclosed), 5 of them empty and 6 S9a.2 stacks among them, and the 3
@@ -223,6 +346,37 @@ void is generated from the tool's region.
   S9a.2: a tower and a pocket with their counts, classification and rigid
   motion, a plug filling a hole over part of its height, a cavity, a tool
   through a round wall).
+* **S9b evidence (polyhedra in any position).** `polyhedral_reference.py`
+  decides each prism on its exact model (the stored axes as rationals),
+  cuts each profile into trapezoids so each prism is a union of convex
+  cells, and clips every pair of cells by exact half-spaces in Fractions:
+  the common's volume and moments exactly, the fuse and cut by inclusion
+  and exclusion (checked against the result's own convex cells), areas by
+  splitting each boundary face by the other prism's cells' planes and
+  classifying each piece on both sides by an infinitesimal push, solids by
+  convex cells sharing positive area. `generate_polyhedral_fixtures.py
+  --check` writes `boolean-polyhedra-cases.txt` and
+  `boolean-polyhedra-expected.tsv` (45 cases: a turned box, a tilted bar
+  cutting a box in two, coplanar caps and walls of either orientation, an
+  edge and a vertex on a face, a tilted corner, a box inside another, apart,
+  an L profile, a bar through a hole and across it, both inputs turned),
+  after checking the reference against S9a's slicing on its 21 polygon
+  cases (within 2.3e-17: the stored axes' departure from orthonormal),
+  `area(A u B) + area(A n B) = area(A) + area(B)` (3e-41) and the closed
+  forms of axis-aligned boxes. `compare_polyhedral.py` reproduces the
+  `BRepAlgoAPI` capture `occt-boolean-polyhedra-preimplementation`, taken
+  before S9b's kernel module: every result valid with the reference's solid
+  count, all 45 within 7.9e-16, no review. The kernel (S9b.1): 41 results
+  inside the reference, the 4 degenerate ones refused (two solids touching
+  along an edge or at a vertex, two walls of a tool's edge passing within
+  rounding of the object's edge: a neck thinner than the resolution, the
+  last declared after the kernel met it), every count OCCT's after
+  unifying but two reviewed (OCCT keeps a tool's touching edge or vertex as
+  an imprint on the object's face; the kernel's regularized cut is the
+  object). `tests/polyhedral_booleans.rs` checks the same, every fixture's
+  history (independent check, every input entity covered, repeated
+  exactly) and hand cases (a turned box's quarter, its rigid motion and
+  classification, a cavity, a cut in two, touching solids refused).
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

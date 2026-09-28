@@ -2113,6 +2113,19 @@ Decisions for S9, recorded before its code (2026-09-28):
   times). Keep the certified contract as the only mode, or add a display
   mode with sampled control and no bound (fewer triangles, OCCT's
   behaviour)? Until answered, only the certified mode exists.
+* **U10 (recorded 2026-09-28 by the implementing agent, from STEP-b).**
+  R4's continuity criterion is homogeneous: a knot of multiplicity equal to
+  the degree passes only if the homogeneous curve is C1 there. The usual
+  NURBS circle (rational quarter arcs joined at double knots, every STEP
+  and IGES writer's circle) is C1 as a rational curve but not in
+  homogeneous form, so the kernel refuses it (`edge_not_c1`,
+  `pcurve_not_c1`, `face_not_c1`): the STEP-b fixture `rational_cylinder`
+  and 21 bodies of the local dataset. Options: (a) keep the homogeneous
+  criterion (such files stay refused); (b) test C1 of the rational curve
+  exactly at such knots (`(P' w - P w') / w^2` equal from both sides, in
+  rationals), keeping OCCT's cells and counts; (c) split edges and faces at
+  such knots on import (each piece C-infinity; more cells than OCCT's).
+  The implementing agent recommends (b). Until answered, (a) holds.
 
 ## Status
 
@@ -2907,4 +2920,56 @@ Decisions for S9, recorded before its code (2026-09-28):
     certified bounds to the leading-bits bracket before the binary64
     pattern search and a stack cap's overlaps to its pieces' memberships
     (the input six times faster). Pending: the campaign; S9a.2's spline
-    profiles next (their evidence first).
+    profiles next. Their evidence exists before their code (`3951925a`,
+    `BOOLEAN.md`): 46 spline cases (36 prisms, 5 stacks, 4 empty, 1
+    degenerate; 18 tilted), the reference checked within 3.7e-39 (chords
+    2.1e-4), and `occt-boolean-spline-preimplementation`: all valid with the
+    reference's solids, 37 within 2e-8, 9 reviewed (BRepGProp on B-spline
+    faces, up to 8.0e-4), the kernel `unsupported` on all 46.
+  * S9a.2's spline profiles implemented (`profile/boolean/splines.rs`):
+    all 46 spline fixtures as the reference (45 results, the degenerate one
+    refused) and OCCT's unified counts but four reviewed tangencies (OCCT
+    keeps the touching point as vertices and edges); every fixture's
+    history checked; the `boolean` target's spline profiles (900 spline
+    variants of its corpus replaying clean). Amendments, from the
+    implementation: (a) two splines tangent where they meet are refused
+    (`Degenerate`): the decisions left that tangency's side undecided and no
+    fixture holds one; (b) one curve in either direction is equal poles,
+    knots and range, or reversed poles with knots and range mirrored
+    exactly; (c) a spline piece's end poles are set to the arrangement's
+    vertex (a crossing of two splines is one point; each restriction's own
+    end is within rounding of it); (d) a stack's walls on one spline
+    segment lie on that segment's whole degree-`(p, 1)` wall, joined across
+    its pieces' ends and slab heights; (e) `translated` moves a spline's
+    poles exactly (it cloned them: an offset spline tool failed as an
+    invalid curve, found by the evidence track). Pending: the campaign.
+  * S9b's evidence (a parallel start, before S9a.2's splines end): the
+    decisions above, then `polyhedral_reference.py` and 45 fixtures
+    (`generate_polyhedral_fixtures.py --check`: S9a's slicing on its 21
+    polygon cases within 2.3e-17, the area identity within 3e-41, boxes'
+    closed forms exact) and the `BRepAlgoAPI` capture before the kernel
+    module (`compare_polyhedral.py`: 45 matches, no review). Amendment: the
+    decisions' fixtures of a stack and a plane piece as inputs wait for the
+    case protocol to chain operations; the kernel's tests take them.
+  * S9b.1 implemented (`solid/boolean/polyhedra.rs`,
+    `Construction::Polyhedron`): prisms of line profiles in any relative
+    position (and S9a's pairs whose offset or tool profile would round),
+    all 45 fixtures as the reference (41 results, 4 refused as declared) and
+    OCCT's unified counts but two reviewed imprints; histories checked for
+    every fixture; the `boolean` target's turned, leaning and tilted tools,
+    its corpus replaying clean. Amendments, from the implementation: (a) the
+    decisions' input set is split: S9b.1 takes prisms, S9b.2 the Boolean's
+    stacks, plane pieces and S9b results as inputs (their naming needs keys
+    beyond a prism's slots); (b) a cap's exact plane is normal to `x * y`,
+    not the stored `n` (the stored axes are not exactly orthogonal, so the
+    lifted profile points lie on the plane of `x` and `y`); (c) faces are
+    fragments of each input face split by every plane of the other's faces
+    (not a 2D arrangement per face), joined back into maximal faces; (d) a
+    face with a vertex within the resolution of another vertex or of an
+    edge not ending there is `Degenerate` (a neck thinner than the
+    resolution; the fixture `ell_tilted` fuse and cut declared so after the
+    kernel met it), and two solids sharing a vertex are `Degenerate`; (e) a
+    result's rigid motion moves its stored geometry (the decisions' rule for
+    general bodies): rebuilding its exact model in moved frames changed
+    near-coincident results. Pending: the campaign, S9b.2, the DRAW survey
+    of the 647 upstream cases in frames with different axes.

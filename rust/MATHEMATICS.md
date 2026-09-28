@@ -2032,6 +2032,22 @@ holes. Joining consecutive pieces is exact: two lines when `u x v = 0` and
 `u . v > 0` for their direction vectors, two arcs when their centres,
 radii and senses are equal.
 
+**Splines (S9a.2).** On a Bézier arc `(x(s), y(s))` of degree `p` (power
+basis, rational coefficients) a circle's condition `(x - c_x)^2 + (y -
+c_y)^2 - r^2` is a polynomial of degree `2p`; its real roots in `[0, 1]`
+are isolated with their multiplicities (square-free factors), a simple
+root a crossing. Two arcs `P(t)` (degree `p`) and `Q(s)` (degree `q`)
+meet where `f(Q(s)) = 0` for `P`'s implicit polynomial `f(X, Y) = Res_t(x_P(t)
+- X, y_P(t) - Y)`: `f(Q(s))` has degree at most `p q` in `s`, so its values
+at `s_k = k / (p q)`, `k = 0..pq`, each an exact Sylvester determinant
+(fraction-free elimination), give it by Newton interpolation; likewise in
+`t`. A root `s*` lies on `P`'s whole algebraic curve, perhaps off the arc
+or on another branch, so it is kept only when a root `t*` in `[0, 1]` has
+a certified point box `P([t*])` meeting `Q([s*])`, refined until the
+pairing is one to one. A vertex `v` within the resolution of an arc is at
+a root of `(B(s) - v) . B'(s)` or an end, the distance decided exactly at
+the rounded parameter.
+
 **Stacks (S9a.2).** Each piece's two sides carry exact memberships: its
 own profile's material lies left of a stored outer boundary and right of a
 hole, the other's on both sides (inside), neither (outside) or on the side

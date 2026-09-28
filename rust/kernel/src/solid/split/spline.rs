@@ -22,7 +22,7 @@ use crate::{BSplineCurve2, Error, Point2, Result};
 use num_rational::BigRational as R;
 use std::cmp::Ordering;
 
-pub(super) type Span = SplineSpan<BSplineCurve2>;
+pub(crate) type Span = SplineSpan<BSplineCurve2>;
 
 fn one() -> R {
     R::from_integer(1.into())
@@ -30,13 +30,13 @@ fn one() -> R {
 
 /// An exact Bézier arc of a spline: its control points and its range of
 /// the curve's parameter.
-struct Arc {
-    cps: Vec<[R; 2]>,
-    domain: [R; 2],
+pub(crate) struct Arc {
+    pub(crate) cps: Vec<[R; 2]>,
+    pub(crate) domain: [R; 2],
 }
 
 /// The curve's arcs in increasing parameter.
-fn arcs(span: &Span) -> Result<Vec<Arc>> {
+pub(crate) fn arcs(span: &Span) -> Result<Vec<Arc>> {
     Ok(span
         .curve()
         .as_curve3()
@@ -62,7 +62,7 @@ fn binomial(n: usize, k: usize) -> R {
 }
 
 /// Bernstein coefficients over `[0, 1]` in ascending powers.
-fn power(c: &[R]) -> Vec<R> {
+pub(crate) fn power(c: &[R]) -> Vec<R> {
     let n = c.len() - 1;
     let mut out = vec![zero(); n + 1];
     for (i, ci) in c.iter().enumerate() {
@@ -78,11 +78,11 @@ fn power(c: &[R]) -> Vec<R> {
     out
 }
 
-fn eval(p: &[R], s: &R) -> R {
+pub(crate) fn eval(p: &[R], s: &R) -> R {
     p.iter().rev().fold(zero(), |acc, c| acc * s + c)
 }
 
-fn eval_interval(p: &[R], s: &I) -> I {
+pub(crate) fn eval_interval(p: &[R], s: &I) -> I {
     p.iter().rev().fold(I::exact(zero()), |acc, c| {
         acc.mul(s).add(&I::exact(c.clone()))
     })
@@ -100,7 +100,7 @@ fn budget() -> Budget {
 }
 
 /// The distinct roots of `p` in `[0, 1]`, increasing.
-fn roots(p: &[R]) -> Result<Vec<AlgebraicRoot>> {
+pub(crate) fn roots(p: &[R]) -> Result<Vec<AlgebraicRoot>> {
     let mut roots = isolate(
         &IntPolynomial::from_rationals(p),
         zero(),
@@ -158,22 +158,22 @@ pub(super) fn takes(span: &Span, line: [&R; 3], want: Ordering) -> Result<bool> 
 /// A crossing of the line: its rounded curve parameter, the curve's exact
 /// point there and that point rounded.
 #[derive(Debug, Clone)]
-pub(super) struct Crossing {
-    pub(super) t: f64,
-    pub(super) exact: [R; 2],
-    pub(super) rounded: Point2,
+pub(crate) struct Crossing {
+    pub(crate) t: f64,
+    pub(crate) exact: [R; 2],
+    pub(crate) rounded: Point2,
 }
 
 /// Where a spline segment meets the line strictly inside it.
 #[derive(Debug, Clone, Default)]
-pub(super) struct Meeting {
+pub(crate) struct Meeting {
     /// Crossings along the segment's stored direction.
-    pub(super) crossings: Vec<Crossing>,
+    pub(crate) crossings: Vec<Crossing>,
     /// Enclosures of the points where it touches the line.
-    pub(super) touches: Vec<[I; 2]>,
+    pub(crate) touches: Vec<[I; 2]>,
     /// The line function's sign on each piece between crossings (one more
     /// than the crossings), along the stored direction.
-    pub(super) sides: Vec<i8>,
+    pub(crate) sides: Vec<i8>,
 }
 
 enum Event {
@@ -183,7 +183,7 @@ enum Event {
 }
 
 /// The binary64 nearest a root's curve parameter `u0 + s (u1 - u0)`.
-fn rounded_parameter(root: &mut AlgebraicRoot, domain: &[R; 2]) -> f64 {
+pub(crate) fn rounded_parameter(root: &mut AlgebraicRoot, domain: &[R; 2]) -> f64 {
     let map = |s: &R| &domain[0] + s * (&domain[1] - &domain[0]);
     for _ in 0..80 {
         let (lo, hi) = root.isolator();
@@ -198,7 +198,15 @@ fn rounded_parameter(root: &mut AlgebraicRoot, domain: &[R; 2]) -> f64 {
 }
 
 /// The segment's crossings, touches and sides with `a x + b y + d = 0`.
-pub(super) fn meets(span: &Span, line: [&R; 3]) -> Result<Meeting> {
+pub(crate) fn meets(span: &Span, line: [&R; 3]) -> Result<Meeting> {
+    meets_with(span, &|cps: &[[R; 2]]| line_poly(cps, line))
+}
+
+/// The segment's crossings, touches and sides with the zero set of a
+/// polynomial condition on its points, given per Bézier arc in the arc's
+/// parameter (ascending powers): a line's `a x + b y + d` (degree `p`), a
+/// circle's `(x - c_x)^2 + (y - c_y)^2 - r^2` (degree `2 p`).
+pub(crate) fn meets_with(span: &Span, condition: &dyn Fn(&[[R; 2]]) -> Vec<R>) -> Result<Meeting> {
     let tangent =
         || Error::Degenerate("a plane tangent to a spline profile segment where it crosses it");
     let curve = span.curve().as_curve3();
@@ -207,7 +215,7 @@ pub(super) fn meets(span: &Span, line: [&R; 3]) -> Result<Meeting> {
     let count = arcs.len();
     let mut events: Vec<Event> = Vec::new();
     for (k, arc) in arcs.iter().enumerate() {
-        let p = line_poly(&arc.cps, line);
+        let p = condition(&arc.cps);
         if p.iter().all(|c| c == &zero()) {
             return Err(Error::OutOfDomain(
                 "a spline profile segment along the plane",
@@ -346,7 +354,7 @@ fn insert(knots: &mut Vec<R>, poles: &mut Vec<[R; 2]>, p: usize, u: &R) -> usize
 
 /// The spline's curve restricted to `[t0, t1]` of its parameter, exactly by
 /// knot insertion, its poles rounded; traversed in the span's direction.
-pub(super) fn restrict(span: &Span, t0: f64, t1: f64) -> Result<Span> {
+pub(crate) fn restrict(span: &Span, t0: f64, t1: f64) -> Result<Span> {
     let curve = span.curve().as_curve3();
     let p = curve.degree();
     let (first, last) = curve.domain();
@@ -397,7 +405,7 @@ pub(super) fn restrict(span: &Span, t0: f64, t1: f64) -> Result<Span> {
 
 /// A piece's direction at its start (`start`) or end, along its traversal:
 /// its first or last nonzero control leg.
-pub(super) fn tangent(span: &Span, start: bool) -> (f64, f64) {
+pub(crate) fn tangent(span: &Span, start: bool) -> (f64, f64) {
     let poles = span.curve().poles();
     let forward = start != span.is_reversed();
     let legs: Vec<(f64, f64)> = poles
@@ -420,7 +428,7 @@ pub(super) fn tangent(span: &Span, start: bool) -> (f64, f64) {
 /// Twice the signed area between a piece and its chord, `∮ x dy - y dx`
 /// along the piece less the chord's, in binary64 from its Bézier arcs'
 /// control points in the power basis (for a cycle's orientation only).
-pub(super) fn twice_area_beyond_chord(span: &Span) -> f64 {
+pub(crate) fn twice_area_beyond_chord(span: &Span) -> f64 {
     let Ok(arcs) = arcs(span) else {
         return 0.0;
     };
@@ -471,7 +479,7 @@ pub(super) fn twice_area_beyond_chord(span: &Span) -> f64 {
 
 /// The part of a spline's curve between parameters `u0` and `u1`, traversed
 /// from `u0` (the same restriction a section of the curve makes).
-pub(super) fn piece(span: &Span, u0: f64, u1: f64) -> Result<Span> {
+pub(crate) fn piece(span: &Span, u0: f64, u1: f64) -> Result<Span> {
     let whole = SplineSpan::whole(span.curve().clone());
     let part = restrict(&whole, u0.min(u1), u0.max(u1))?;
     Ok(if u0 > u1 { part.reversed() } else { part })

@@ -16,6 +16,18 @@ boolean.rs` absent); later runs must reproduce them (on another platform,
 its reviewed record `platform-<name>/`). Differences need a fingerprinted
 review in occt-boolean-divergences.json.
 
+`--splines` runs S9a.2's spline set instead (`boolean-spline-cases.txt`,
+`generate_boolean_fixtures.spline_cases`, the oracle building each B-spline
+segment as a Geom_BSplineCurve edge) against `boolean-spline-expected.tsv`
+and its capture `occt-boolean-spline-preimplementation` (reviews in
+occt-boolean-spline-divergences.json), recorded while the
+kernel refuses spline profiles (`OutOfDomain("a Boolean of spline profiles
+(S9a.2)")` in `rust/kernel/src/profile/boolean.rs`: the capture's
+`rust_spline_boolean_exists` is false). While that refusal stands, the probe
+must report `unsupported` on every spline case (a probe failure or any
+other row is a failure) and the cases are listed under `rust_unsupported`;
+once it is gone, the kernel's rows are compared as S9a's.
+
 The kernel's side runs only when `rust/kernel/examples/boolean_probe.rs`
 exists; until then every case is listed under `rust_unsupported` and the
 report's `rust_probe_exists` is false. The probe reads the cases on stdin and
@@ -42,20 +54,43 @@ from compare_brep_io import TOOLKITS, build
 from compare_curve_surface import platform_record
 from compare_degree_elevation import verify_sdk
 from compare_occt import ROOT
-from identity_reference import native_boolean_case
+from identity_reference import Spline, native_boolean_case
 import generate_boolean_fixtures as fixtures
 
 SOURCE_FILE = ROOT/'rust/tools/occt_boolean_oracle.cpp'
-REVIEWS = ROOT/'rust/fixtures/occt-boolean-divergences.json'
-CAPTURE = ROOT/'rust/fixtures/occt-boolean-preimplementation'
 KERNEL_FILE = ROOT/'rust/kernel/src/solid/boolean.rs'
+PROFILE_BOOLEAN = ROOT/'rust/kernel/src/profile/boolean.rs'
+SPLINE_REFUSAL = 'OutOfDomain("a Boolean of spline profiles (S9a.2)")'
 PROBE = ROOT/'rust/kernel/examples/boolean_probe.rs'
 # Split's allowance: BRepGProp's error on curved faces.
 BOUND = 2e-8
 
 
+class Set:
+    """A fixture set: S9a's (the default) or S9a.2's spline profiles."""
+
+    def __init__(self, splines):
+        self.splines = splines
+        self.cases = fixtures.spline_cases if splines else fixtures.cases
+        self.expected = ROOT/('rust/fixtures/boolean-spline-expected.tsv' if splines
+                              else 'rust/fixtures/boolean-expected.tsv')
+        self.capture = ROOT/('rust/fixtures/occt-boolean-spline-preimplementation' if splines
+                             else 'rust/fixtures/occt-boolean-preimplementation')
+        self.output = ROOT/('target/boolean-spline-oracle' if splines else 'target/boolean-oracle')
+        self.reviews = ROOT/('rust/fixtures/occt-boolean-spline-divergences.json' if splines
+                             else 'rust/fixtures/occt-boolean-divergences.json')
+
+
+SET = Set(False)
+
+
+def rust_spline_boolean_exists():
+    """False while the kernel refuses every Boolean of spline profiles."""
+    return SPLINE_REFUSAL not in PROFILE_BOOLEAN.read_text()
+
+
 def native_input():
-    return '\n'.join(native_boolean_case(c.obj, c.operation, c.tool) for c in fixtures.cases())+'\n'
+    return '\n'.join(native_boolean_case(c.obj, c.operation, c.tool) for c in SET.cases())+'\n'
 
 
 def parse_native(stdout):
@@ -75,7 +110,7 @@ def parse_native(stdout):
 def expected_rows():
     """{case: {'expect': (kind, step), 'result': (N, volume, area, centre) or None, 'slabs': [...]}}."""
     out = {}
-    for line in (ROOT/'rust/fixtures/boolean-expected.tsv').read_text().splitlines()[1:]:
+    for line in SET.expected.read_text().splitlines()[1:]:
         name, row = line.split('\t')
         w = row.split()
         e = out.setdefault(name, {'result': None, 'slabs': []})
@@ -96,6 +131,7 @@ def case_scale(case):
             values += [abs(b.circle[0])+b.circle[2], abs(b.circle[1])+b.circle[2]]
         else:
             values += [abs(x) for p in b.points for x in p]
+            values += [abs(x) for s in b.segments or [] if isinstance(s, Spline) for p in s.poles for x in p]
     return max(values)
 
 
@@ -137,7 +173,7 @@ def rust_rows():
     subprocess.run(['cargo', '+stable', 'build', '--release', '--locked', '--example', 'boolean_probe'],
                    cwd=ROOT, check=True)
     out, failed = {}, []
-    for case in fixtures.cases():
+    for case in SET.cases():
         run_ = subprocess.run([str(ROOT/'target/release/examples/boolean_probe')], input=case.encode()+'\n',
                               text=True, capture_output=True, timeout=600)
         rows = [line.split() for line in run_.stdout.splitlines()]
@@ -193,6 +229,7 @@ def capture(executable, env, sdk_manifest):
     record = run(executable, text, env)
     if record['exit_code'] != 0:
         raise SystemExit('native Boolean run failed: '+json.dumps(record)[:2000])
+    CAPTURE = SET.capture
     CAPTURE.mkdir(parents=True, exist_ok=True)
     (CAPTURE/'inputs.txt').write_text(text)
     (CAPTURE/'native.txt').write_text(record['stdout'])
@@ -201,18 +238,21 @@ def capture(executable, env, sdk_manifest):
                             capture_output=True, check=True).stdout.splitlines()
     revision = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True, capture_output=True,
                               check=True).stdout.strip()
+    exists = ({'rust_spline_boolean_exists': rust_spline_boolean_exists()} if SET.splines
+              else {'rust_boolean_exists': KERNEL_FILE.exists()})
     write(CAPTURE/'capture.json', {
         'source_reference': SOURCE, 'oracle': next(iter(record['stderr'].splitlines()), None),
-        'platform': sys.platform, 'rust_revision': revision,
-        'rust_boolean_exists': KERNEL_FILE.exists(),
+        'platform': sys.platform, 'rust_revision': revision, **exists,
         'rust_worktree_uncommitted': status, 'sdk_manifest_sha256': digest(sdk_manifest),
         'input_sha256': digest(CAPTURE/'inputs.txt'), 'probe_source_sha256': digest(CAPTURE/'oracle.cpp'),
         'observations_sha256': digest(CAPTURE/'native.txt')})
 
 
 def captured(observed):
+    CAPTURE = SET.capture
     metadata = json.loads((CAPTURE/'capture.json').read_text())
-    if metadata['source_reference'] != SOURCE or metadata['rust_boolean_exists']:
+    exists = metadata['rust_spline_boolean_exists'] if SET.splines else metadata['rust_boolean_exists']
+    if metadata['source_reference'] != SOURCE or exists:
         raise ValueError('Boolean capture was not the recorded pre-implementation one')
     for field, name in [('input_sha256', 'inputs.txt'), ('probe_source_sha256', 'oracle.cpp'),
                         ('observations_sha256', 'native.txt')]:
@@ -236,12 +276,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--occt-root', type=Path, required=True)
     parser.add_argument('--sdk-manifest', type=Path, required=True)
-    parser.add_argument('--output', type=Path, default=ROOT/'target/boolean-oracle')
+    parser.add_argument('--output', type=Path)
     parser.add_argument('--strict-native', action='store_true')
     parser.add_argument('--capture', action='store_true')
     parser.add_argument('--native-only', action='store_true')
+    parser.add_argument('--splines', action='store_true', help="S9a.2's spline set")
     args = parser.parse_args()
-    output = args.output.resolve()
+    global SET
+    SET = Set(args.splines)
+    output = (args.output or SET.output).resolve()
     output.mkdir(parents=True, exist_ok=True)
     prefix = args.occt_root.resolve()
     verify_sdk(prefix, args.sdk_manifest)
@@ -259,19 +302,29 @@ def main():
     observed = parse_native(record['stdout'])
     captured(observed)
     oracle = next(iter(record['stderr'].splitlines()), None)
-    reviews = [] if args.strict_native or not REVIEWS.exists() else json.loads(REVIEWS.read_text())['reviews']
+    reviews = [] if args.strict_native or not SET.reviews.exists() else \
+        json.loads(SET.reviews.read_text())['reviews']
     expected = expected_rows()
     report = {'source_reference': SOURCE, 'oracle': oracle, 'cases': 0, 'rust_probe_exists': PROBE.exists(),
               'rust_within_reference': 0, 'rust_unsupported': [], 'rust_probe_failed': [], 'rust_refused': [],
               'matches': [], 'reviewed_differences': [], 'failures': []}
+    # S9a.2's spline set before its kernel code: every case unsupported.
+    pre_splines = SET.splines and not rust_spline_boolean_exists()
+    if SET.splines:
+        report['rust_spline_boolean_exists'] = not pre_splines
     rust = None
     if not args.native_only and PROBE.exists():
         rust, report['rust_probe_failed'] = rust_rows()
-    for case in fixtures.cases():
+    for case in SET.cases():
         name = case.name
         report['cases'] += 1
         native = observed[name]
         found = differences(case, native, expected[name])
+        if pre_splines and rust is not None and (rust[name] != [['unsupported']]
+                                                 or name in report['rust_probe_failed']):
+            report['failures'].append({'case': name, 'reason': 'rust_spline_boolean_before_its_code',
+                                       'rust': rust[name]})
+            continue
         if rust is None or rust[name] == [['unsupported']]:
             # No probe yet, or a case of a later sub-step: listed, and the
             # native comparison still made.

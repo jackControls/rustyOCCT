@@ -4,9 +4,10 @@
 //! offset by a dyadic vector in the axis-aligned frame (its origin moved) or
 //! sharing the tilted frame's origin, its heights equal to the object's,
 //! spanning them, overlapping them, disjoint from them, inside them or on
-//! them. Fuse, cut and common never panic and fail only as documented (a
-//! cavity among several solids, S9a.2's, or a tool whose profile or offset
-//! rounds, S9b's; a result thinner than the
+//! them, their profiles lines and arcs or the split target's splines
+//! (S9a.2). Fuse, cut and common never panic and fail only as documented (a
+//! cavity among several solids, S9a.2's, or arcs in frames with different
+//! axes, S9c's; S9b turns, leans or tilts the tool's frame; a result thinner than the
 //! resolution or touching itself; an undecided comparison); each result
 //! validates as it is built and its history passes the independent check
 //! (debug builds); when all three succeed their volumes agree,
@@ -14,7 +15,7 @@
 //! every result moves rigidly with its ids, and each of its vertices
 //! classifies on its boundary.
 use crate::analytic_intersections::Bytes;
-use crate::split::profile;
+use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
 use rusty_occt::{Error, Frame3, Point3, Solid, Tolerance, Vec3};
 
@@ -34,7 +35,7 @@ pub fn check_boolean(data: &[u8]) {
         f64::from(b.next() % 33) / 8.0 - 2.0,
     );
     let h = 0.5 + f64::from(b.next() % 8) / 4.0;
-    let (Some(pa), Some(pb)) = (profile(ka, s1, t1), profile(kb, s2, t2)) else {
+    let (Some(mut pa), Some(mut pb)) = (profile(ka, s1, t1), profile(kb, s2, t2)) else {
         return;
     };
     let tolerance = Tolerance::default();
@@ -70,6 +71,37 @@ pub fn check_boolean(data: &[u8]) {
         (_, 2) => (h / 2.0, h * 1.5),
         _ => (h + 1.0, h + 2.0),
     };
+    // S9b: the tool's frame turned about the axis, leaning or tilted
+    // (frames with different axes), chosen by a byte after the others.
+    let fb = match (tilted, b.next() % 4) {
+        (false, turn @ 1..=3) => {
+            let (normal, x) = match turn {
+                1 => (Vec3::new(0.0, 0.0, 1.0), Vec3::new(3.0, 4.0, 0.0)),
+                2 => (Vec3::new(3.0, 0.0, 4.0), Vec3::new(0.0, 1.0, 0.0)),
+                _ => (Vec3::new(0.0, 3.0, 4.0), Vec3::new(1.0, 0.0, 0.0)),
+            };
+            let Ok(f) = Frame3::new(Point3::new(dx, dy, h / 2.0), normal, x, tolerance) else {
+                return;
+            };
+            f
+        }
+        _ => fb,
+    };
+    // S9a.2: the split target's spline profiles for the object, the tool
+    // or both, chosen by a byte after the others.
+    let splines = b.next() % 4;
+    if splines & 1 == 1 {
+        let Some(p) = spline_profile(ka, s1, t1) else {
+            return;
+        };
+        pa = p;
+    }
+    if splines & 2 == 2 {
+        let Some(p) = spline_profile(kb, s2, t2) else {
+            return;
+        };
+        pb = p;
+    }
     let Ok((a, _)) = Solid::extrude_with(OperationId(1), pa, fa, 0.0, h) else {
         return;
     };
@@ -80,10 +112,15 @@ pub fn check_boolean(data: &[u8]) {
         match r {
             Ok((out, _)) => Some(out),
             Err(Error::Degenerate(_) | Error::ComputationLimit(_)) => None,
-            // A tool offset or profile that rounds (S9b's), or a cavity
-            // among several solids (S9a.2's).
+            // A cavity among several solids (S9a.2's), or arcs in frames
+            // with different axes (S9c's).
+            // Splines along one curve of different forms, or a spline span
+            // along a line (S9a.2's).
             Err(Error::OutOfDomain(m))
-                if m.contains("cavity") || m.contains("translate") || m.contains("binary64") =>
+                if m.contains("cavity")
+                    || m.contains("S9c")
+                    || m.contains("different forms")
+                    || m.contains("along the plane") =>
             {
                 None
             }

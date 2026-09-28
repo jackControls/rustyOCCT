@@ -23,7 +23,9 @@
 use super::{At, What};
 use crate::identity::OperationId;
 use crate::identity::{EntityKind, Role};
-use crate::profile::boolean::{arrange, select_with, Curve, Op2, Operand, PId, PieceView};
+use crate::profile::boolean::{
+    arrange, pinned, select_with, Arranged, Curve, Op2, Operand, PId, PieceView,
+};
 use crate::solid::split::q;
 use crate::solid::{Construction, MassProperties, Solid};
 use crate::topology::Topology;
@@ -244,7 +246,7 @@ fn circle(v: &PieceView) -> Option<(Point2, f64)> {
         Curve::Arc { center, radius, .. } | Curve::Circle { center, radius } => {
             Some((center, radius))
         }
-        Curve::Line => None,
+        Curve::Line | Curve::Spline { .. } => None,
     }
 }
 
@@ -258,6 +260,12 @@ fn stored_ccw(v: &PieceView) -> bool {
 
 /// Whether two pieces lie on one line or one circle.
 fn same_carrier(x: &PieceView, y: &PieceView) -> bool {
+    if let (Curve::Spline { index: i, .. }, Curve::Spline { index: j, .. }) = (x.curve, y.curve) {
+        return i == j;
+    }
+    if matches!(x.curve, Curve::Spline { .. }) || matches!(y.curve, Curve::Spline { .. }) {
+        return false;
+    }
     match (circle(x), circle(y)) {
         (None, None) => {
             let d = |v: &PieceView| [q(v.e.x) - q(v.p.x), q(v.e.y) - q(v.p.y)];
@@ -275,7 +283,7 @@ fn same_carrier(x: &PieceView, y: &PieceView) -> bool {
 }
 
 /// A point of a piece (off its ends).
-fn sample(v: &PieceView) -> Point2 {
+fn sample(v: &PieceView, arranged: &Arranged) -> Point2 {
     let f = 0.4453125;
     match v.curve {
         Curve::Line => Point2::new(v.p.x + (v.e.x - v.p.x) * f, v.p.y + (v.e.y - v.p.y) * f),
@@ -292,6 +300,13 @@ fn sample(v: &PieceView) -> Point2 {
             let a = TAU * f;
             Point2::new(center.x + radius * a.cos(), center.y + radius * a.sin())
         }
+        Curve::Spline { index, range } => arranged
+            .spline(index)
+            .curve()
+            .point(range.0 + (range.1 - range.0) * f)
+            .unwrap_or_else(|_| {
+                Point2::new(v.p.x + (v.e.x - v.p.x) * f, v.p.y + (v.e.y - v.p.y) * f)
+            }),
     }
 }
 
@@ -428,12 +443,14 @@ pub(super) fn build(stack: &Stack, frame: Frame3) -> Result<Vec<Component>> {
             Fine::V(..) => {
                 let (x, y) = (&views[g1], &views[g2]);
                 same_carrier(x, y)
-                    && match circle(x) {
-                        Some(_) => {
+                    && match (x.curve, circle(x)) {
+                        // Pieces of one spline segment: one stored direction.
+                        (Curve::Spline { .. }, _) => region_left(g1, s1) == region_left(g2, s2),
+                        (_, Some(_)) => {
                             (stored_ccw(x) == region_left(g1, s1))
                                 == (stored_ccw(y) == region_left(g2, s2))
                         }
-                        None => {
+                        (_, None) => {
                             let d = |v: &PieceView, ml: bool| {
                                 let (a, b) = if ml { (v.p, v.e) } else { (v.e, v.p) };
                                 [q(b.x) - q(a.x), q(b.y) - q(a.y)]
@@ -594,6 +611,33 @@ pub(super) fn build(stack: &Stack, frame: Frame3) -> Result<Vec<Component>> {
                 start: parts.vertices[sv.expect("a vertex").0].position,
                 end: parts.vertices[ev.expect("a vertex").0].position,
             },
+            Fine::H(g, k) if matches!(views[g].curve, Curve::Spline { .. }) => {
+                // A spline's restriction between the chain's ends, pinned to
+                // its vertices and lifted to the level.
+                let Curve::Spline { index, .. } = views[g].curve else {
+                    unreachable!("a spline")
+                };
+                let param = |(f, d): (Fine, bool), start: bool| -> f64 {
+                    let Fine::H(h, _) = f else {
+                        unreachable!("a horizontal chain")
+                    };
+                    let Curve::Spline { range, .. } = views[h].curve else {
+                        unreachable!("a spline chain")
+                    };
+                    if d == start {
+                        range.0
+                    } else {
+                        range.1
+                    }
+                };
+                let (t0, t1) = (param(first, true), param(last, false));
+                let part = crate::solid::split::spline::piece(arranged.spline(index), t0, t1)?;
+                let (ps, pe) = (
+                    arranged.position(s.expect("a start").0),
+                    arranged.position(e.expect("an end").0),
+                );
+                crate::topology::lifted_spline(&pinned(&part, ps, pe)?, frame, heights[k])?
+            }
             Fine::H(g, k) => match circle(&views[g]) {
                 None => Curve3::LineSegment {
                     start: parts.vertices[sv.expect("a vertex").0].position,
@@ -645,6 +689,15 @@ pub(super) fn build(stack: &Stack, frame: Frame3) -> Result<Vec<Component>> {
         sense: Orientation,
         loops: Vec<(Vec<Fin>, [i32; 2])>,
     }
+    // Each vertex's point, and each spline's parameter at its pieces' ends.
+    let node_of: BTreeMap<VertexId, Node> = vertex_of.iter().map(|(n, v)| (*v, *n)).collect();
+    let mut t_of: BTreeMap<(usize, PId), f64> = BTreeMap::new();
+    for v in &views {
+        if let (Curve::Spline { index, range }, Some(p), Some(e)) = (v.curve, v.from, v.to) {
+            t_of.insert((index, p), range.0);
+            t_of.insert((index, e), range.1);
+        }
+    }
     let mut built: Vec<Built> = Vec::new();
     for group in &groups {
         let first = cells[group[0]];
@@ -656,6 +709,15 @@ pub(super) fn build(stack: &Stack, frame: Frame3) -> Result<Vec<Component>> {
             })
             .min()
             .expect("a cell");
+        let high = group
+            .iter()
+            .map(|&c| match cells[c] {
+                Cell::Wall(_, s) => s + 1,
+                Cell::Cap(k, ..) => k,
+            })
+            .max()
+            .expect("a cell");
+        let mut spline_wall: Option<(usize, f64)> = None;
         let (surface, sense, cylinder) = match first {
             Cell::Cap(k, up, _) => {
                 let normal = if up { n } else { -n };
@@ -666,6 +728,29 @@ pub(super) fn build(stack: &Stack, frame: Frame3) -> Result<Vec<Component>> {
                     tolerance,
                 )?;
                 (Surface::Plane(plane), Orientation::Forward, None)
+            }
+            Cell::Wall(g, s) if matches!(views[g].curve, Curve::Spline { .. }) => {
+                // The whole spline segment's wall over the group's heights:
+                // its normal the right of increasing `u`, so forward where
+                // the material lies left of the curve's parameter.
+                let Curve::Spline { index, .. } = views[g].curve else {
+                    unreachable!("a spline")
+                };
+                let span = arranged.spline(index);
+                let (surface, _, _) = crate::topology::spline_wall(
+                    &crate::topology::SplineSpan::whole(span.curve().clone()),
+                    frame,
+                    heights[low],
+                    heights[high],
+                )?;
+                let left_of_u = material_left[&(g, s)] != span.is_reversed();
+                spline_wall = Some((index, heights[low]));
+                let sense = if left_of_u {
+                    Orientation::Forward
+                } else {
+                    Orientation::Reversed
+                };
+                (surface, sense, None)
             }
             Cell::Wall(g, s) => {
                 let v = &views[g];
@@ -867,7 +952,41 @@ pub(super) fn build(stack: &Stack, frame: Frame3) -> Result<Vec<Component>> {
                     };
                     out.push((fins, [turns, 0], key));
                 }
-                _ => unreachable!("a plane or a cylinder"),
+                (_, None) => {
+                    // A spline wall: lines in (curve parameter, height).
+                    let (index, base) = spline_wall.expect("a spline wall");
+                    let at = |v: VertexId| -> Result<Point2> {
+                        let node = node_of[&v];
+                        let t = *t_of.get(&(index, node.0)).ok_or(Error::InvalidTopology(
+                            "a spline wall's vertex off its spline",
+                        ))?;
+                        Ok(Point2::new(t, heights[node.1] - base))
+                    };
+                    let mut twice = 0.0;
+                    for &(e, o) in &cycle {
+                        let (a, b) = fin_ends(e, o);
+                        let (from, to) = (
+                            at(a.ok_or(Error::InvalidTopology("a spline wall's ring"))?)?,
+                            at(b.ok_or(Error::InvalidTopology("a spline wall's ring"))?)?,
+                        );
+                        twice += from.x * to.y - to.x * from.y;
+                        fins.push(Fin {
+                            edge: e,
+                            sense: o,
+                            pcurve: Curve2::LineSegment {
+                                start: from,
+                                end: to,
+                            },
+                            enclosure: None,
+                        });
+                    }
+                    let key = if sense == Orientation::Forward {
+                        twice
+                    } else {
+                        -twice
+                    };
+                    out.push((fins, [0, 0], key));
+                }
             }
         }
         // The outer loop (counter-clockwise about the face's normal) comes
@@ -1046,7 +1165,7 @@ pub(super) fn build(stack: &Stack, frame: Frame3) -> Result<Vec<Component>> {
             if !(v.left[x] || v.right[x]) {
                 continue;
             }
-            if alone || profile.classify(sample(v))? != crate::Location::Outside {
+            if alone || profile.classify(sample(v, &arranged))? != crate::Location::Outside {
                 return Ok(true);
             }
         }
