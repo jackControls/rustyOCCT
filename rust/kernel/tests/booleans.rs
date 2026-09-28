@@ -1,5 +1,9 @@
-//! S9a: Booleans of prisms in one frame.
-use rusty_occt::history::{self, History};
+//! S9a: Booleans of prisms in one frame, against the independent reference
+//! (`fixtures/boolean-*.txt|tsv` from `tools/generate_boolean_fixtures.py`)
+//! and on hand-made cases.
+#[path = "support/boolean_protocol.rs"]
+mod protocol;
+use rusty_occt::history::{self, History, Relation};
 use rusty_occt::identity::OperationId;
 use rusty_occt::{Boundary, Frame3, Point2, Point3, Profile, Segment, Solid, Tolerance, Vec3};
 
@@ -395,4 +399,131 @@ fn stacks_wait_for_s9a2() {
     let (m, h) = a.common(OperationId(5), &b).unwrap();
     assert!((volume(&m) - 2.0).abs() < 1e-12);
     check(&a, &b, &m, &h);
+}
+
+/// Every fixture: a result's solids' sums of enclosures contain the
+/// reference's volume, area and moments; its solid count is the
+/// reference's; a degenerate case is refused and an S9a.2 stack is
+/// `OutOfDomain`.
+#[test]
+fn every_case_matches_the_reference() {
+    let mut expect: std::collections::BTreeMap<String, (String, Option<(usize, [f64; 5])>)> =
+        Default::default();
+    for line in include_str!("../../fixtures/boolean-expected.tsv")
+        .lines()
+        .filter(|l| !l.starts_with('#'))
+    {
+        let (name, row) = line.split_once('\t').unwrap();
+        let w: Vec<&str> = row.split(' ').collect();
+        let entry = expect
+            .entry(name.to_string())
+            .or_insert((String::new(), None));
+        match w[0] {
+            "expect" => entry.0 = w[1].to_string(),
+            "result" => {
+                let v: Vec<f64> = w[2..7].iter().map(|x| x.parse().unwrap()).collect();
+                entry.1 = Some((w[1].parse().unwrap(), [v[0], v[1], v[2], v[3], v[4]]));
+            }
+            _ => {}
+        }
+    }
+    let mut failures = Vec::new();
+    for case in protocol::cases(include_str!("../../fixtures/boolean-cases.txt")) {
+        let (kind, want) = &expect[&case.name];
+        let rows = protocol::rows(&case).unwrap_or_else(|e| panic!("{}: {e}", case.name));
+        match kind.as_str() {
+            "degenerate" => {
+                if rows != ["refused"] {
+                    failures.push(format!("{}: {rows:?} not refused", case.name));
+                }
+                continue;
+            }
+            "stack" => {
+                if rows != ["unsupported"] {
+                    failures.push(format!("{}: {rows:?} for a stack", case.name));
+                }
+                continue;
+            }
+            "empty" => {
+                if rows != ["empty"] {
+                    failures.push(format!("{}: {rows:?} not empty", case.name));
+                }
+                continue;
+            }
+            _ => {}
+        }
+        let (count, v) = want.expect("a result");
+        let solids: Vec<Vec<f64>> = rows
+            .iter()
+            .map(|r| {
+                r.split(' ')
+                    .skip(1)
+                    .take(10)
+                    .map(|x| x.parse().unwrap())
+                    .collect()
+            })
+            .collect();
+        if solids.len() != count {
+            failures.push(format!(
+                "{}: {} solids for {count}",
+                case.name,
+                solids.len()
+            ));
+            continue;
+        }
+        let sum = |i: usize| solids.iter().map(|s| s[i]).sum::<f64>();
+        let inside =
+            |x: f64, lo: f64, hi: f64| lo - 1e-20 * x.abs() <= x && x <= hi + 1e-20 * x.abs();
+        if !inside(v[0], sum(0), sum(1)) || !inside(v[1], sum(2), sum(3)) {
+            failures.push(format!("{}: measures miss {v:?}", case.name));
+        }
+        for i in 0..3 {
+            let (mut lo, mut hi) = (0.0, 0.0);
+            for s in &solids {
+                let p = [
+                    s[0] * s[4 + 2 * i],
+                    s[0] * s[5 + 2 * i],
+                    s[1] * s[4 + 2 * i],
+                    s[1] * s[5 + 2 * i],
+                ];
+                lo += p.iter().copied().fold(f64::MAX, f64::min);
+                hi += p.iter().copied().fold(f64::MIN, f64::max);
+            }
+            let m = v[0] * v[2 + i];
+            let allow = 1e-12 * m.abs().max(1.0);
+            if !(lo - allow <= m && m <= hi + allow) {
+                failures.push(format!("{}: moment {i} misses", case.name));
+            }
+        }
+    }
+    assert!(failures.is_empty(), "{failures:#?}");
+}
+
+/// Every fixture's history passes the independent check, covers every input
+/// entity and repeats exactly.
+#[test]
+fn fixture_histories_are_complete_and_deterministic() {
+    for case in protocol::cases(include_str!("../../fixtures/boolean-cases.txt")) {
+        let Ok((a, b, out, h)) = protocol::run(&case) else {
+            continue;
+        };
+        check(&a, &b, &out, &h);
+        let covered: std::collections::BTreeSet<_> =
+            h.relations.iter().flat_map(Relation::sources).collect();
+        for s in [&a, &b] {
+            for (id, _) in s.topology().ids() {
+                assert!(
+                    covered.contains(&id),
+                    "{}: {id:?} has no relation",
+                    case.name
+                );
+            }
+        }
+        let (_, _, again, h2) = protocol::run(&case).unwrap();
+        assert_eq!(h, h2, "{}", case.name);
+        let ids = |s: &Solid| s.topology().ids().map(|(id, _)| id).collect::<Vec<_>>();
+        for (x, y) in out.iter().zip(&again) {
+            assert_eq!(ids(x), ids(y), "{}", case.name);
+        }
+    }
 }

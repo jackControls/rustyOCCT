@@ -67,10 +67,11 @@ pub(crate) struct Boolean2 {
 }
 
 /// A result profile with, per boundary (outer first) and per stored
-/// segment, its provenance and its start point's.
+/// segment, its provenance (the input pieces it joins, in order along it)
+/// and its start point's.
 pub(crate) struct Piece2 {
     pub(crate) profile: Profile,
-    pub(crate) segments: Vec<Vec<Origin2>>,
+    pub(crate) segments: Vec<Vec<Vec<Origin2>>>,
     pub(crate) vertices: Vec<Vec<PId>>,
 }
 
@@ -503,7 +504,7 @@ struct Edge {
     p: Point2,
     e: Point2,
     shape: Shape,
-    origin: Origin2,
+    origins: Vec<Origin2>,
 }
 
 impl Piece {
@@ -820,7 +821,7 @@ pub(crate) fn boolean(a: &Profile, b: &Profile, op: Op2) -> Result<Boolean2> {
             p,
             e,
             shape,
-            origin,
+            origins: vec![origin],
         }
     };
     // Whole circles keep a direction flag in their origin's order: a
@@ -896,15 +897,13 @@ pub(crate) fn boolean(a: &Profile, b: &Profile, op: Op2) -> Result<Boolean2> {
         let area = signed_area(&cycle.iter().map(|&k| &edges[k]).collect::<Vec<_>>());
         cycles.push((cycle, area > 0.0));
     }
-    // Outer boundaries and their holes.
+    // Outer boundaries and their holes, with no vertex where a boundary
+    // does not turn.
     let mut outers: Vec<Traced> = Vec::new();
     let mut holes: Vec<Traced> = Vec::new();
     for (cycle, ccw) in &cycles {
-        let built = boundary_of(
-            &cycle.iter().map(|&k| &edges[k]).collect::<Vec<_>>(),
-            !ccw,
-            tolerance,
-        )?;
+        let merged = merged(cycle.iter().map(|&k| edges[k].clone()).collect());
+        let built = boundary_of(&merged.iter().collect::<Vec<_>>(), !ccw, tolerance)?;
         if *ccw {
             outers.push(built);
         } else {
@@ -950,7 +949,7 @@ pub(crate) fn boolean(a: &Profile, b: &Profile, op: Op2) -> Result<Boolean2> {
             }
         }
     }
-    out.sort_by_key(|p| p.segments[0].iter().min().copied());
+    out.sort_by_key(|p| p.segments[0].iter().flatten().min().copied());
     Ok(Boolean2 {
         pieces: out,
         crosses: arr.cross_segs,
@@ -958,7 +957,71 @@ pub(crate) fn boolean(a: &Profile, b: &Profile, op: Op2) -> Result<Boolean2> {
 }
 
 /// A traced boundary with its segments' and vertices' provenance.
-type Traced = (Boundary, Vec<Origin2>, Vec<PId>);
+type Traced = (Boundary, Vec<Vec<Origin2>>, Vec<PId>);
+
+/// A cycle with consecutive collinear lines, and consecutive arcs of one
+/// circle in one sense, joined (their shared vertex a point where the
+/// boundary does not turn); a cycle left as one arc back to its start is
+/// its whole circle.
+fn merged(mut cycle: Vec<Edge>) -> Vec<Edge> {
+    let joins = |a: &Edge, b: &Edge| match (a.shape, b.shape) {
+        (Shape::Line, Shape::Line) => {
+            let d = |e: &Edge| [q(e.e.x) - q(e.p.x), q(e.e.y) - q(e.p.y)];
+            let (u, v) = (d(a), d(b));
+            &u[0] * &v[1] - &u[1] * &v[0] == zero() && &u[0] * &v[0] + &u[1] * &v[1] > zero()
+        }
+        (
+            Shape::Arc {
+                center: c1,
+                radius: r1,
+                ccw: s1,
+            },
+            Shape::Arc {
+                center: c2,
+                radius: r2,
+                ccw: s2,
+            },
+        ) => c1 == c2 && r1 == r2 && s1 == s2,
+        _ => false,
+    };
+    loop {
+        let n = cycle.len();
+        if n < 2 {
+            break;
+        }
+        let Some(i) = (0..n).find(|&i| joins(&cycle[i], &cycle[(i + 1) % n])) else {
+            break;
+        };
+        let j = (i + 1) % n;
+        let (a, b) = (cycle[i].clone(), cycle[j].clone());
+        let mut origins = a.origins.clone();
+        origins.extend(b.origins.iter().copied());
+        let joined = Edge {
+            from: a.from,
+            to: b.to,
+            p: a.p,
+            e: b.e,
+            shape: a.shape,
+            origins,
+        };
+        // Keep the cycle's start where it was when the join wraps round.
+        if j == 0 {
+            cycle.remove(n - 1);
+            cycle[0] = joined;
+        } else {
+            cycle[i] = joined;
+            cycle.remove(j);
+        }
+    }
+    if cycle.len() == 1 && cycle[0].from.is_some() && cycle[0].from == cycle[0].to {
+        if let Shape::Arc { center, radius, .. } = cycle[0].shape {
+            cycle[0].shape = Shape::Circle { center, radius };
+            cycle[0].from = None;
+            cycle[0].to = None;
+        }
+    }
+    cycle
+}
 
 /// A cycle's signed area (binary64, for its orientation).
 fn signed_area(cycle: &[&Edge]) -> f64 {
@@ -992,11 +1055,11 @@ fn boundary_of(cycle: &[&Edge], hole: bool, tolerance: Tolerance) -> Result<Trac
         };
         return Ok((
             Boundary::circle(center, radius, tolerance)?,
-            vec![cycle[0].origin],
+            vec![cycle[0].origins.clone()],
             vec![],
         ));
     }
-    let mut items: Vec<(PId, Point2, Segment, Origin2)> = cycle
+    let mut items: Vec<(PId, Point2, Segment, Vec<Origin2>)> = cycle
         .iter()
         .map(|e| {
             let seg = match e.shape {
@@ -1012,7 +1075,7 @@ fn boundary_of(cycle: &[&Edge], hole: bool, tolerance: Tolerance) -> Result<Trac
                 },
                 Shape::Circle { .. } => unreachable!("a cut circle is arcs"),
             };
-            (e.from.expect("a vertex"), e.p, seg, e.origin)
+            (e.from.expect("a vertex"), e.p, seg, e.origins.clone())
         })
         .collect();
     if hole {
@@ -1061,7 +1124,7 @@ fn boundary_of(cycle: &[&Edge], hole: bool, tolerance: Tolerance) -> Result<Trac
     }
     Ok((
         boundary,
-        items.iter().map(|i| i.3).collect(),
+        items.iter().map(|i| i.3.clone()).collect(),
         items.iter().map(|i| i.0).collect(),
     ))
 }

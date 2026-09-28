@@ -314,15 +314,35 @@ impl Solid {
                         Vec::new(),
                     );
                 } else {
-                    // Different ranges: separate only when the profiles
-                    // share no area and do not touch.
-                    let common = boolean(pa, &pb, Op2::Common)?;
+                    // Different ranges meeting: one prism when every slab
+                    // has one profile (identical profiles over the ranges'
+                    // union), an input when it holds the other, both when
+                    // their profiles are apart; any other stack is S9a.2's.
                     let fused = boolean(pa, &pb, Op2::Fuse)?;
-                    if common.pieces.is_empty()
-                        && fused.pieces.len() == 2
-                        && hb[1] != ha[0]
-                        && hb[0] != ha[1]
-                    {
+                    let only = |from: Operand| {
+                        fused.pieces.len() == 1
+                            && fused.pieces[0]
+                                .segments
+                                .iter()
+                                .flatten()
+                                .flatten()
+                                .all(|o| o.from.0 == from || o.shared.is_some_and(|s| s.0 == from))
+                    };
+                    let identical = fused.pieces.len() == 1
+                        && fused.pieces[0]
+                            .segments
+                            .iter()
+                            .flatten()
+                            .flatten()
+                            .all(|o| o.shared.is_some());
+                    let within = |x: [f64; 2], y: [f64; 2]| y[0] >= x[0] && y[1] <= x[1];
+                    if identical {
+                        ([ha[0].min(hb[0]), ha[1].max(hb[1])], fused)
+                    } else if only(Operand::A) && within(ha, hb) {
+                        return self.finish(context, other, op, vec![self.clone()], Vec::new());
+                    } else if only(Operand::B) && within(hb, ha) {
+                        return self.finish(context, other, op, vec![other.clone()], Vec::new());
+                    } else if fused.pieces.len() == 2 {
                         return self.finish(
                             context,
                             other,
@@ -330,10 +350,11 @@ impl Solid {
                             vec![self.clone(), other.clone()],
                             Vec::new(),
                         );
+                    } else {
+                        return Err(Error::OutOfDomain(
+                            "a fuse of prisms of different heights (S9a.2)",
+                        ));
                     }
-                    return Err(Error::OutOfDomain(
-                        "a fuse of prisms of different heights (S9a.2)",
-                    ));
                 }
             }
         };
@@ -356,7 +377,7 @@ impl Solid {
                     members.insert(Operand::A);
                 }
                 Op2::Fuse => {
-                    for o in piece.segments.iter().flatten() {
+                    for o in piece.segments.iter().flatten().flatten() {
                         members.insert(o.from.0);
                         if let Some(s) = o.shared {
                             members.insert(s.0);
@@ -427,8 +448,10 @@ impl Solid {
                     }
                 };
                 let seg_refs = |rb: usize, rj: usize| -> Vec<SegRef> {
-                    let o: Origin2 = piece.segments[rb][rj];
-                    std::iter::once(o.from).chain(o.shared).collect()
+                    piece.segments[rb][rj]
+                        .iter()
+                        .flat_map(|o: &Origin2| std::iter::once(o.from).chain(o.shared))
+                        .collect()
                 };
                 match (d.entity, what, element) {
                     (EntityKind::Region, ..) => {
