@@ -1548,6 +1548,54 @@ where `A v^2 + 2 B v + C = 0` and the curve is `v = (-B +- sqrt(D)) / A`,
   `(k1^2 + 1) z^2 + 2 k1 (k0 - R) z + (k0 - R)^2 - r^2 = 0` with
   `k0 = s (r_c - g z_a tan h)`, `k1 = s g tan h`.
 
+## Traced torus curves (S7b.3b)
+
+* **The field.** On the parameter torus `G(phi, t) = f(p)` with
+  `f(p) = (p - q)^T Q (p - q) - k`, `Q = c2 - u u^T`; with `w = p - q`,
+  `G_phi = 2 Q w . p_phi`, `G_t = 2 Q w . p_t` and
+  `G_ab = 2 p_a^T Q p_b + 2 Q w . p_ab`, where `p_phi = rho e'`,
+  `p_t = r (cos t a - sin t e)`, `p_pp = -rho e`, `p_pt = -r sin t e'`,
+  `p_tt = -r (cos t e + sin t a)`, `rho = R + r cos t`.
+* **Folds.** Over a box `B` with middle `m`, `G(B)` and `G_t(B)` are in
+  their mean-value forms `G(m) + grad G(B) (B - m)`; a box where either
+  excludes zero holds no fold. The Krawczyk operator
+  `K = m - Y F(m) + (1 - Y J(B)) (B - m)`, `F = (G, G_t)`,
+  `J = [[G_phi, G_t], [G_pt, G_tt]]`, `Y` the inverse of `J`'s midpoint,
+  maps `B` into its interior only when `B` holds exactly one zero of `F`,
+  regular; `K` then encloses it, and iterating narrows it. For a tangency
+  the same operator of `grad G` with the Hessian certifies a unique critical
+  point in its box.
+* **A fold's box.** `G_phi` of one sign on the box makes each piece of the
+  zero set a graph over `t`; with no zero on the top and bottom edges its
+  pieces end on the sides, and two certified roots on one side and none on
+  the other leave exactly one arc, turning at the fold. The two branches at
+  `phi` from the fold are about `sqrt(2 |phi - phi_f| |G_phi / G_tt|)`
+  apart, which sizes the box's height. A tangency's box: with a unique
+  critical point inside (a saddle or an extremum) no closed piece can lie in
+  it, so two and two side roots give two branches crossing at the tangency,
+  none an isolated point.
+* **Tracks.** A window `W` over a step `[phi0, phi1]` holds exactly one root
+  for every `phi` of the step when `G_t` keeps a sign on the step times `W`
+  and `G` has opposite certain signs on `W`'s ends for every `phi`, the
+  latter by the mean-value form in `phi` (the natural extension overestimates
+  it by the branch's own motion). The window is predicted from the slope
+  `dt/dphi = -G_phi / G_t` with a margin of one and a half times the
+  predicted motion.
+* **Tangency.** In a rational basis `(U, V)` of the spine's plane the three
+  conics are `E0 = |u U + v V|^2 - R^2`, `E1 = M (d + u U + v V) .
+  (a x (u U + v V))` (`d = o - o2`, `M` the projector normal to the axis)
+  and `E2 = |M (d + u U + v V)|^2 - k`, each quadratic in `v`. With
+  `E0 = a2 v^2 + a1 v + a0` and `E1 = b2 v^2 + b1 v + b0`, the resultant is
+  `(a2 b0 - a0 b2)^2 - (a2 b1 - a1 b2)(a1 b0 - a0 b1)`, of degree four in
+  `u`, and the common root `v = (a2 b0 - a0 b2) / (a1 b2 - a2 b1)`; `E2`'s
+  numerator at it vanishes on the algebraic root exactly when the critical
+  point is a tangency. `V` is sheared (`V + s U`, `s` a small rational)
+  until no critical point makes the denominator vanish (two critical points
+  with one `u`).
+* **Points.** The interval Newton operator `N(T) = m - G(m) / G_t(T)`
+  contains every root of `G(phi, .)` in `T`; intersected with `T` it
+  converges quadratically.
+
 ## C1 of spline cells (R4)
 
 A cell is C1 in its own parameterisation (U3 of `REVIEW_NOTES.md`). For a

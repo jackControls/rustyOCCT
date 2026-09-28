@@ -11,8 +11,8 @@ S7d curve/curve intersections.
 
 `intersection::surface_surface(a, b)` takes two topology `Surface` values and
 returns `Empty`, `Same`, `Items` (points, lines, circles, ellipses and
-hyperbolas), `Procedural` (S7b) or `NotConic` (a pair not yet
-parameterised); a spline surface is out of domain. It is symmetric in its
+hyperbolas), `Procedural` (S7b), `Traced` (S7b.3b) or `NotConic` (a pair not
+yet parameterised); a spline surface is out of domain. It is symmetric in its
 arguments.
 
 * **Exact surfaces.** A surface is the exact point set its stored binary64
@@ -56,7 +56,7 @@ arguments.
 | Cylinder/cylinder | parallel axes: two lines, one or none; coaxial: the same or empty; equal radii with crossing axes: two ellipses in the bisecting planes; otherwise not a conic |
 | Coaxial pairs | a cylinder, cone or sphere centred on the other's axis: circles where the radius functions of the axial coordinate agree, the apex where both pass through it, or the same surface |
 | Other quadric pairs | procedural curves (S7b.1, S7b.2); two cones and a cone's rational apex on a sphere not yet |
-| Tori | a plane or a sphere: procedural curves, or circles in the special cases; coaxial pairs: circles (S7b.3a); a cylinder, cone or torus off the axis not yet (S7b.3b) |
+| Tori | a plane or a sphere: procedural curves, or circles in the special cases; coaxial pairs: circles (S7b.3a); a cylinder or a cone off the axis: traced curves (S7b.3b.1); two tori off a common axis not yet (S7b.3b.2) |
 
 The plane/cone section uses a closed form: with the apex `V`, the plane's
 unit normal `n`, `cos b = n . a` (the unit axis), `D = (V - o) . n` and
@@ -195,6 +195,55 @@ the kernel inside the reference on all 58. The fixture's stored normals are
 checked bit for bit (`procedural-intersection-frames.tsv`): a near-Villarceau
 case is sensitive to one unit in the last place of the normal, and the
 platform's `hypot` can round a non-Pythagorean normal differently.
+
+## A torus with a cylinder or a cone (S7b.3b.1)
+
+A cylinder or a cone off the torus's axis meets a meridian circle in up to
+four points and no closed form separates them: the result is a
+`TracedCurve` (`SurfaceIntersection::Traced`), the zero set of
+`G(phi, t) = f(p(phi, t))` on the flat parameter torus (the meridian
+parameterisation of S7b.3a; `x` along the other axis's component normal to
+the torus's axis), as a graph.
+
+* **Tangencies** (the curve's singular points) are decided exactly: a torus
+  and a cylinder are pipes about the spine circle and the axis, and touch
+  where a critical distance between them is `r + r_c` or `|r - r_c|`, found
+  from exact resultants of three conics in the spine's plane and decided on
+  the algebraic roots (`tangency.rs`). Each is a `Node`, crossing or isolated
+  by the certified sign of the Hessian of `G`. A cone is never exactly
+  tangent to a torus for a binary64 half-angle.
+* **Folds**, where a component turns in `phi` (`G = G_t = 0`), are found by
+  subdivision of the parameter torus with mean-value exclusion and
+  certified by the Krawczyk operator; each is a `Fold` with enclosed angles
+  and point.
+* **Boxes and tracks.** Every fold and tangency gets a box with no zero of
+  `G` on its top and bottom and the certified simple roots of its local
+  picture on its sides. Outside them each branch is a `Track`, a chain of
+  certified windows (`G` changes sign across the window for every `phi` of
+  the step, `G_t` keeps a sign), followed once round the torus from a
+  meridian outside every box; the windows fix how branches continue (through
+  `t = pi` too) and bracket every point evaluation.
+* **Components.** `Smooth` (a closed curve, its folds and winding numbers
+  `[w_phi, w_t]`), `Crossing` (branches through crossings) and `Isolated`
+  (a tangency point). `TracedCurve::point_at(track, phi)` and `t_at` give
+  enclosed points: binary64 intervals, then rational ones narrowed by the
+  interval Newton operator from the binary64 bracket when those are wider
+  than `1e-12` relative. A budget exhausted anywhere is `ComputationLimit`;
+  a higher contact, or an axis meeting the spine with `r = r_c`, too.
+
+Evidence: `torus_curve_reference.py` (80-digit polynomial roots of every
+meridian in `z = e^{it}`, the critical meridians as the real roots of a
+resultant of `z^2 G` and `z^2 G_t`, components by continuity, tangencies by a
+Groebner basis in sympy) and 24 fixture cases (`torus-curve-*`: loops through
+the tube, round the hole, rings, curves winding round the tube, tilted
+frames, isolated tangencies from outside, inside the hole and over the tube,
+a crossing at a saddle, near cases of each); a `GeomInt_IntSS` capture before
+any kernel code (`fixtures/occt-torus-curve-preimplementation`): 18 native
+matches and 6 reviewed differences (three missed isolated tangencies, three
+approximated lines off the surfaces), and the kernel inside the reference on
+all 24 (`compare_torus_curves.py`, `torus_curves.rs`: folds, tangencies and
+rings' points enclosed, components and winding numbers equal, order
+independence, points along every track on both surfaces).
 
 ## Evidence
 

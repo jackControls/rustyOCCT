@@ -48,7 +48,11 @@ fn main() {
         match surface_surface(&a, &b) {
             Ok(SurfaceIntersection::Empty) => println!("{name} empty"),
             Ok(SurfaceIntersection::Same) => println!("{name} same"),
-            Ok(SurfaceIntersection::NotConic | SurfaceIntersection::Procedural(_)) => {
+            Ok(
+                SurfaceIntersection::NotConic
+                | SurfaceIntersection::Procedural(_)
+                | SurfaceIntersection::Traced(_),
+            ) => {
                 println!("{name} not_conic")
             }
             Ok(SurfaceIntersection::Items(items)) => {

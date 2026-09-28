@@ -617,3 +617,26 @@ square of their distance from it, and the input did not finish in 600 s. The
 discriminant has a closed form in the canonical frame, so the ends are now
 `+-arccos c` by one certified arctangent; the input replays in 0.09 s
 without a sanitizer.
+
+## Analytic intersections: a traced curve's point at its track's end
+
+`analytic_intersections/crash-a90f9c5a16e0f0758da7f17d68ce3a9ac2822040.bin`
+was found by a local 300-second campaign before S7b.3b.1 was committed: a
+cone and a torus (a kind byte of 224 or more) sharing an origin. The check
+evaluates every track at `lo + (hi - lo) j / 4`; for `j = 4` the sum rounded
+one unit beyond the track's end, and `TracedCurve::point_at` refused the
+meridian as outside the track. A meridian within rounding of the range's end
+is now clamped to it (and a branch between two boxes' sides at one meridian
+keeps its root as a window).
+
+## Analytic intersections: rational point evaluation on a traced curve
+
+`analytic_intersections/timeout-5b31d67b3c1f9d25363f62841d8a4fe690bfd195.bin`
+was found by the same campaign: a torus of major radius 0.5 and minor 0.25
+and a cylinder of radius 0.25 through its centre on an oblique axis, with two
+exact tangencies. Near the folds binary64 intervals resolve a track's root
+only to about their rounding over `|G_t|`, so points fell back to rational
+intervals, narrowed by bisection: dozens of rational cosines per point, over
+20 s per input under AddressSanitizer. The rational tier now narrows the
+binary64 bracket by the interval Newton operator (a few evaluations); the
+input replays in 1.5 s without a sanitizer.

@@ -23,7 +23,9 @@ mod spline_linear;
 mod spline_plane;
 mod spline_quadric;
 mod spline_surface;
+mod tangency;
 mod toroidal;
+mod torus_curves;
 pub use crate::proximity::LinearPrimitive3;
 pub use analytic::{surface_surface, AnalyticItem, Enclosure, Enclosure3, SurfaceIntersection};
 pub use curved::{
@@ -66,6 +68,7 @@ pub use spline_surface::{
     SplineSurfaceContact, SplineSurfaceIntersection, SplineSurfaceOptions, SplineSurfaceOverlap,
     SplineSurfacePoint,
 };
+pub use torus_curves::{Fold, Node, TracedComponent, TracedCurve, Track};
 
 /// Plane defined by three exactly noncollinear finite points.
 /// No rounded unit normal is used to define its geometry.

@@ -1062,7 +1062,17 @@ the first fixture, never deferred.
     the platform's `hypot` can store a non-Pythagorean normal one unit in the
     last place away from the reference's emulation: the procedural fixture
     now checks stored normals bit for bit, as S7a's does.
-  * S7b.3b (a torus with a cylinder, cone or torus off its axis),
-    unbounded components (two cones), S7c and S7d pending.
+  * S7b.3b.1 implemented: the independent reference and a native capture of
+    24 torus/cylinder and torus/cone pairs came before any kernel code;
+    `intersection/torus_curves.rs` traces the curve as a certified graph
+    (folds by subdivision and Krawczyk, branches by certified windows,
+    components with winding numbers) and `tangency.rs` decides the
+    tangencies exactly from the pipes' spine and axis; the kernel inside the
+    reference on all 24, the bridge 18 matches and 6 reviewed differences.
+    The fuzz target found a track's end refused after rounding and a point
+    evaluation too slow in rational intervals (interval Newton now); both
+    are checked-in regressions.
+  * S7b.3b.2 (two tori off a common axis), unbounded components (two
+    cones), S7c and S7d pending.
 * S8 — pending
 * S9 — pending

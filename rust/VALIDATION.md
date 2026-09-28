@@ -567,6 +567,23 @@ the kernel inside the reference on all 93, the stored normals checked bit
 for bit (`procedural-intersection-frames.tsv`), and every circle and sampled
 curve point on both surfaces.
 
+S7b.3b.1: `generate_torus_curve_fixtures.py --check` writes 24 torus/cylinder
+and torus/cone pairs and their rows from `torus_curve_reference.py` (80-digit
+meridian roots, critical meridians from a resultant, tangencies from a
+Groebner basis); `torus_curves.rs` requires the stored normals, every
+reference fold, tangency and ring point inside the kernel's enclosures, the
+same components and winding numbers, order independence and points along
+every track on both surfaces. `compare_torus_curves.py` reproduces the
+pre-implementation `GeomInt_IntSS` capture: 18 matches and 6 reviewed
+differences, the kernel inside the reference on all 24.
+
+The `GeomInt_IntSS` captures are platform records (macOS arm64): IntPatch's
+walking lines differ on Linux in their last digits and, near degeneracies,
+in their pieces. On the capture's platform every run reproduces the capture
+exactly; elsewhere the capture's integrity and cases are checked, the
+observations are held to the reference, and a review holds for the same
+case and kinds of difference (`capture_reproduced` in the report).
+
 ## Height split and stacked fuse
 
 `generate_split_merge_fixtures.py --check` writes 174 scenarios from the

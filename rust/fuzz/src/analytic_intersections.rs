@@ -8,7 +8,8 @@
 //! conic lies on both surfaces; and an exact dyadic translation moves every
 //! item with the surfaces. A procedural curve (S7b: the other quadric pairs,
 //! a torus with a plane or a sphere) is the same whatever the argument order,
-//! and points along every loop, ring and figure-eight lie on both surfaces.
+//! and points along every loop, ring and figure-eight, and every track of a
+//! traced curve (S7b.3b), lie on both surfaces.
 //! A kind byte of 224 or more makes a torus (S7b.3a; the bytes below keep
 //! their earlier meaning), whose shared-axis modes give its coaxial pairs
 //! and planes normal to its axis.
@@ -282,6 +283,29 @@ pub fn check_analytic_intersections(data: &[u8]) {
                         let gap = distance(s, p);
                         assert!(gap <= 1e-9 * scale, "{gap} off {s:?} at {t}");
                     }
+                }
+            }
+        }
+        return;
+    }
+    // A traced curve (S7b.3b): points along every track lie on both
+    // surfaces (inside the tracks: at their ends, beside folds, points need
+    // rational intervals, slow under a sanitizer).
+    if let SurfaceIntersection::Traced(c) = &result {
+        for (k, track) in c.tracks().iter().enumerate() {
+            let [lo, hi] = track.phi;
+            for j in 1..=3 {
+                let phi = lo + (hi - lo) * f64::from(j) / 4.0;
+                let e = match c.point_at(k, phi) {
+                    Ok(e) => e,
+                    Err(Error::ComputationLimit(_)) => continue,
+                    Err(e) => panic!("a point inside a track: {e}"),
+                };
+                let p = Vec3::new(mid(e[0]), mid(e[1]), mid(e[2]));
+                let scale = p.length().max(1.0) * 8.0;
+                for s in [&s1, &s2] {
+                    let gap = distance(s, p);
+                    assert!(gap <= 1e-9 * scale, "{gap} off {s:?} at {phi}");
                 }
             }
         }

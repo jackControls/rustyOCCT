@@ -132,9 +132,12 @@ pub enum SurfaceIntersection {
     /// A procedural curve (D13, S7b): the other quadric pairs, and a torus
     /// with a plane or a sphere.
     Procedural(Box<super::procedural::ProceduralCurve>),
+    /// A traced curve (D13, S7b.3b): a torus and a cylinder or a cone off its
+    /// axis, as a graph of certified tracks, folds and tangencies.
+    Traced(Box<super::torus_curves::TracedCurve>),
     /// A curve that is not a conic, of a pair not yet parameterised (two
     /// cones, a cone's apex on a sphere, a sphere containing a torus's
-    /// meridian circle, a torus and a cylinder, cone or torus off its axis).
+    /// meridian circle, two tori off a common axis).
     NotConic,
 }
 
