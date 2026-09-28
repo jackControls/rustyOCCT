@@ -1224,6 +1224,14 @@ the first fixture, never deferred.
   patch edge where `|N|` vanishes) and hands the integral to the first-order
   route at once; `√τ` on the square gives up in 0.15 s in release.
 
+  Clean local 600-second campaign of `brep_validation` at `6bb3d280`
+  (AddressSanitizer, standard 20-second/2 GiB limits, allocator purge,
+  fresh seed corpus of 601 inputs): 1,839 mutation executions after 312 s
+  of replay (2,483 in all), 19,922 edges, peak RSS 1,307 MB, no artifact.
+  Mutation 32 now also runs the rational corner, the knotted walls and the
+  stadium's spline parallel and checks the area, so the target is slower
+  per input than S4d's campaign (4,266 mutation executions at `ac92ec89`).
+
   Left open: M5's measured enclosure of an arc edge's use by a spline
   pcurve along a parallel stops at `2^8` Taylor pieces (above) and could
   refine towards the resolution; route (a) along rational pcurves on
