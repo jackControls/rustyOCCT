@@ -536,6 +536,9 @@ mod tests {
 /// Arithmetic used by certified geometric checks. Implementations must only
 /// return enclosures: every result contains the exact real value.
 pub(crate) trait Real: Clone + std::fmt::Debug {
+    /// Whether this is the exact (rational) tier, too slow for long Taylor
+    /// series (D13's projections evaluate in binary64 only).
+    const EXACT: bool = false;
     /// The exact value of a finite binary64 number.
     fn exact_f64(x: f64) -> Self;
     /// An enclosure of an exact rational.
@@ -610,6 +613,7 @@ pub(crate) trait Real: Clone + std::fmt::Debug {
 }
 
 impl Real for Interval {
+    const EXACT: bool = true;
     fn exact_f64(x: f64) -> Self {
         Self::from_f64(x)
     }

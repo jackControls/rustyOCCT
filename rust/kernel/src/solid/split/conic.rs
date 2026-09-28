@@ -325,7 +325,9 @@ fn setup(
                 .div(&I::exact(q(end.radius) * q(end.radius) * &ab2).sqrt())
                 .ok_or(Error::Degenerate("a rim's radius"))?;
             let delta = mid(&ratio).clamp(-1.0, 1.0).acos();
-            if 2.0 * end.radius * delta.sin() <= tol {
+            // The smaller segment's sagitta: the rim's reach past the chord.
+            let sagitta = end.radius * (1.0 - delta.cos().abs());
+            if 2.0 * end.radius * delta.sin() <= tol || sagitta <= tol {
                 return Err(Error::Degenerate(
                     "a plane within the resolution of a rim's tangent",
                 ));
@@ -487,9 +489,10 @@ fn setup(
     }
     // The section's arcs inside the solid.
     let height_of = |p: Point3| frame.coordinates(p)[2];
-    let inside = |p: Point3| {
+    // How far inside the ends a point lies (negative outside).
+    let margin = |p: Point3| {
         let w = height_of(p);
-        ends[0].w < w && w < ends[1].w
+        (w - ends[0].w).min(ends[1].w - w)
     };
     let mut arcs: Vec<SectionArc> = Vec::new();
     let mut spans: Vec<(Option<usize>, Option<usize>, Curve3)> = Vec::new();
@@ -540,6 +543,7 @@ fn setup(
         } else {
             let n = order.len();
             let pairs = if section.periodic() { n } else { n - 1 };
+            let mut candidates = Vec::new();
             for s in 0..pairs {
                 let (i, j) = (order[s], order[(s + 1) % n]);
                 let (t0, mut t1) = (key(i), key(j));
@@ -547,7 +551,44 @@ fn setup(
                     t1 += TAU;
                 }
                 let curve = section.arc(t0, t1 - t0);
-                if inside(curve.point(0.5)) {
+                candidates.push((i, j, margin(curve.point(0.5)), curve));
+            }
+            // Inside and outside alternate at each crossing (not at a touch):
+            // anchored at the arc farthest from the ends (an open conic's
+            // rays lie outside), so an arc within rounding of an end never
+            // decides by its own midpoint.
+            let flips = |i: usize| rims[crossings[i].end] == Rim::Cross;
+            let mut inside_at: Vec<bool> = vec![false; candidates.len()];
+            let anchor = if section.periodic() {
+                (0..candidates.len())
+                    .max_by(|&x, &y| candidates[x].2.abs().total_cmp(&candidates[y].2.abs()))
+                    .expect("an arc")
+            } else {
+                usize::MAX
+            };
+            if anchor == usize::MAX {
+                let mut status = false;
+                for (k, c) in candidates.iter().enumerate() {
+                    if flips(c.0) {
+                        status = !status;
+                    }
+                    inside_at[k] = status;
+                }
+            } else {
+                let m = candidates.len();
+                inside_at[anchor] = candidates[anchor].2 > 0.0;
+                for step in 1..m {
+                    let k = (anchor + step) % m;
+                    let before = (anchor + step - 1) % m;
+                    inside_at[k] = if flips(candidates[k].0) {
+                        !inside_at[before]
+                    } else {
+                        inside_at[before]
+                    };
+                }
+            }
+            for ((i, j, _, curve), inside) in candidates.into_iter().zip(inside_at) {
+                if inside {
                     spans.push((Some(i), Some(j), curve));
                 }
             }
@@ -622,18 +663,42 @@ fn setup(
                 });
             }
             Rim::Cross => {
+                // The two arcs lie on opposite sides: the one whose middle is
+                // farther from the plane decides.
                 let (i, j) = (per_end[e][0], per_end[e][1]);
-                for (x, y) in [(i, j), (j, i)] {
-                    let start = crossings[x].angle;
-                    let sweep = (crossings[y].angle - start).rem_euclid(TAU);
-                    let (s, co) = (start + 0.5 * sweep).sin_cos();
+                let arcs: Vec<(usize, usize, f64, f64, f64)> = [(i, j), (j, i)]
+                    .into_iter()
+                    .map(|(x, y)| {
+                        let start = crossings[x].angle;
+                        let sweep = (crossings[y].angle - start).rem_euclid(TAU);
+                        let (s, co) = (start + 0.5 * sweep).sin_cos();
+                        (
+                            x,
+                            y,
+                            start,
+                            sweep,
+                            f_at([end.radius * co, end.radius * s, end.w]),
+                        )
+                    })
+                    .collect();
+                let first = side_of(if arcs[0].4.abs() >= arcs[1].4.abs() {
+                    arcs[0].4
+                } else {
+                    -arcs[1].4
+                });
+                for (k, &(x, y, start, sweep, _)) in arcs.iter().enumerate() {
+                    let side = match (k, first) {
+                        (0, side) => side,
+                        (_, Side::Below) => Side::Above,
+                        (_, Side::Above) => Side::Below,
+                    };
                     rim_parts.push(RimPart {
                         end: e,
                         from: Some(x),
                         to: Some(y),
                         start,
                         sweep,
-                        side: side_of(f_at([end.radius * co, end.radius * s, end.w])),
+                        side,
                     });
                 }
             }

@@ -706,6 +706,22 @@ binary64 mass tier could not sign that closing chord's `du` and fell back to
 rational intervals (6.3 s in release, a timeout under AddressSanitizer);
 the chord is now enclosed over its box in either tier (0.3 s).
 
+## Split: a cap's rim crossed within rounding of its tangent
+
+`split/crash-69190d85572d409cd66f328d6e3a1fbeb4878c66.bin` came from the
+first S8d.2 campaign: a cap (radius 3.5, from latitude 0.25 to its pole) cut
+by a plane through its rim's point containing the rim's tangent there. The
+point is rounded, so the plane crosses the stored rim at two points 1.4e-7
+apart (above the resolution) around a segment whose sagitta is 7e-16. The
+tiny rim arc's side and the section arcs' in-band status were decided by
+midpoints within rounding of the plane and the rim, and both rim arcs fell
+on one side (an open loop). Sides are now decided on the arc farthest from
+the plane or the ends and propagated (a crossed rim's arcs lie on opposite
+sides; arcs alternate at crossings, not at touches), a crossing whose segment
+is thinner than the resolution is `Degenerate`, and a projection's
+quadrature never falls back to rational jets (a fix of the same run: the
+sliver had sent the mass to them for 204 s). The input replays in 0.01 s.
+
 ## STEP: a torus band's ring starting a rounding below its seam
 
 `step/crash-6b0ff1a4f7646a3f2fce7e959be0fc3033928e74.bin` was found by the

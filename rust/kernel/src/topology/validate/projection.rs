@@ -233,6 +233,11 @@ fn along<T: Real>(
     g: AlongIntegrands<'_, T>,
     relative: bool,
 ) -> Option<Vec<T>> {
+    // Rational jets of this order grow without bound: binary64 intervals
+    // only (their failure is reported, never retried exactly).
+    if T::EXACT {
+        return None;
+    }
     let integrand = |f: &Jet<T>| {
         // One order more, so the derivatives keep the order asked for.
         let longer = Jet::variable(f.c[0].clone(), f.order() + 1);
