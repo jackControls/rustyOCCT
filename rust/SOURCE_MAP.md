@@ -635,3 +635,30 @@ are not split; the largest sampled deviation is stored as the face's
 | `tessellation/cdt.rs` | [BRepMesh_Delaun.cxx](../src/ModelingAlgorithms/TKMesh/BRepMesh/BRepMesh_Delaun.cxx) | Exact orientation predicates, a filtered in-circle that never flips on doubt, Sloan's constraint recovery; crossing chords refine the edges instead of being repaired. |
 | refinement and bounds | [BRepMesh_DelaunayDeflectionControlMeshAlgo.hxx](../src/ModelingAlgorithms/TKMesh/BRepMesh/BRepMesh_DelaunayDeflectionControlMeshAlgo.hxx) | OCCT samples each triangle's centre and links' middles for at most 11 passes and records what remains; the kernel certifies every triangle's deviation over the whole triangle (`MATHEMATICS.md`) and refines until it holds. |
 | `Mesh` | [Poly_Triangulation.hxx](../src/FoundationClasses/TKMath/Poly/Poly_Triangulation.hxx), [Poly_PolygonOnTriangulation.hxx](../src/FoundationClasses/TKMath/Poly/Poly_PolygonOnTriangulation.hxx) | One node array for the whole body, triangles grouped by face and oriented out of the material; OCCT stores one triangulation per face in its surface's orientation and joins them through the edges' polygons. |
+
+## STEP import (STEP-a)
+
+The source review covered OCCT's Part 21 lexer and grammar (`step.lex`,
+`step.yacc`, `StepData_StepReaderData`: simple and complex instances,
+typed parameters, `\S\` and the other string directives, the header),
+`STEPControl_Reader` and `STEPControl_ActorRead` (roots, units through
+`StepData_Factors`, the uncertainty as the healing precision while entities
+are built at `Precision::Confusion`), `StepToTopoDS_Builder` (a manifold
+solid, voids reversed when their oriented shell is `.F.`),
+`StepToTopoDS_TranslateShell`, `StepToTopoDS_TranslateFace` (a wire reversed
+when its bound's orientation differs from `same_sense`, the face reversed
+when `same_sense` is false, a vertex loop alone on a sphere the natural
+bounds), `StepToTopoDS_TranslateEdgeLoop`, `StepToTopoDS_TranslateEdge`
+(vertices swapped when an edge curve's `same_sense` is false),
+`StepToTopoDS_TranslateVertexLoop` (a degenerated edge) and `StepToGeom`
+(placements, lines, circles, elementary surfaces), with `TopoDSToStep`'s
+writer for the fixtures' conventions (degenerated edges dropped, voids
+written reversed), at `3d097a0328e71b826377d4814ab05ec3c3d23871`.
+
+| Rust | OCCT | Notes |
+| --- | --- | --- |
+| `step::part21` | [step.lex](../src/DataExchange/TKDESTEP/StepFile/step.lex), [step.yacc](../src/DataExchange/TKDESTEP/StepFile/step.yacc), [StepData_StepReaderData.cxx](../src/DataExchange/TKDESTEP/StepData/StepData_StepReaderData.cxx) | Schema-free; strings kept raw; a dangling reference, a duplicate entity number or a nesting deeper than 64 is an error, where OCCT reports it and goes on. |
+| `step::import` | [STEPControl_Reader.cxx](../src/DataExchange/TKDESTEP/STEPControl/STEPControl_Reader.cxx), [STEPControl_ActorRead.cxx](../src/DataExchange/TKDESTEP/STEPControl/STEPControl_ActorRead.cxx) | Every solid and surface-model shell in entity order, in its representation's units; no product structure, no placements (`AssemblyPlacement`), no shape healing. The uncertainty is each entity's imported tolerance, which the validator verifies; OCCT uses it as its healing precision instead. |
+| body, shell and face translation | [StepToTopoDS_Builder.cxx](../src/DataExchange/TKDESTEP/StepToTopoDS/StepToTopoDS_Builder.cxx), [StepToTopoDS_TranslateShell.cxx](../src/DataExchange/TKDESTEP/StepToTopoDS/StepToTopoDS_TranslateShell.cxx), [StepToTopoDS_TranslateFace.cxx](../src/DataExchange/TKDESTEP/StepToTopoDS/StepToTopoDS_TranslateFace.cxx) | The same orientation rules, into an `occt_brep::Document` that the `.brep` converter turns into cells. |
+| edges, loops and vertices | [StepToTopoDS_TranslateEdge.cxx](../src/DataExchange/TKDESTEP/StepToTopoDS/StepToTopoDS_TranslateEdge.cxx), [StepToTopoDS_TranslateEdgeLoop.cxx](../src/DataExchange/TKDESTEP/StepToTopoDS/StepToTopoDS_TranslateEdgeLoop.cxx), [StepToTopoDS_TranslateVertex.cxx](../src/DataExchange/TKDESTEP/StepToTopoDS/StepToTopoDS_TranslateVertex.cxx) | An edge runs along its curve between its vertices' projections. OCCT projects a missing pcurve and repairs with ShapeFix; the kernel derives rulings, parallels and meridians exactly as straight segments on the universal cover and adds the degenerated edge at a pole on the face's side. |
+| geometry | [StepToGeom.cxx](../src/DataExchange/TKDESTEP/StepToGeom/StepToGeom.cxx) | Placements by ISO 10303-42's `build_axes` (OCCT's `gp_Ax2` picks another `x` when the reference direction is absent, which moves no point); a trimmed curve as its basis with its sense; a torus with a negative major radius is `NegativeMajorRadius` (OCCT flips the face). |

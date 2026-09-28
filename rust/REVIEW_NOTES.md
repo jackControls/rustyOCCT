@@ -1263,6 +1263,123 @@ the first fixture, never deferred.
 * **STEP import**, after S6, reusing the converter architecture, with the
   OCCT STEP reader as the native oracle.
 
+  STEP import decisions, recorded before its code (2026-09-28, by the
+  implementing agent of the parallel track; none is a user decision):
+
+  * **Architecture.** `step::read` parses a Part 21 exchange structure into
+    instances by entity number; `step::import` translates its bodies into
+    OCCT's shape structure, the `occt_brep::Document` the `.brep` reader
+    produces (as `StepToTopoDS` translates into `TopoDS`), and converts that
+    with the existing `occt_brep::import`: seam merging, poles, windings,
+    orientations, enclosures and validation are the `.brep` converter's,
+    unchanged. What the STEP layer adds is the entity graph, units, the
+    uncertainty, the degenerated edges OCCT's reader adds at poles, and the
+    pcurves STEP does not carry. Every body passes `Topology::from_parts`
+    or is an import failure with the validator's issues, as a `.brep` body.
+  * **Schemas.** AP203 (`CONFIG_CONTROL_DESIGN` and the second edition's
+    `AP203_CONFIGURATION_CONTROLLED_3D_DESIGN_OF_MECHANICAL_PARTS_AND_ASSEMBLIES_MIM_LF`),
+    AP214 (`AUTOMOTIVE_DESIGN`) and AP242
+    (`AP242_MANAGED_MODEL_BASED_3D_ENGINEERING_MIM_LF`), geometry and
+    topology only; any other `FILE_SCHEMA` is `StepError::Schema`. The
+    parser itself is schema-free: Part 21 edition 2 syntax (header, one or
+    more `DATA` sections, simple and complex instances, every parameter
+    kind, comments, `''` and `\X\`, `\X2\`, `\X4\` string encodings kept
+    raw), with a nesting limit and entity numbers checked. *Amended in
+    implementation:* AP214's committee drafts (`AUTOMOTIVE_DESIGN_CC1`,
+    `_CC2` and the like, named by 61 of the local dataset's files) have
+    its geometry and topology and are read; inside a string `\\` and `\S\`
+    with the character after it are kept raw (`\S\'` does not end the
+    string).
+  * **Entities.** Bodies: `MANIFOLD_SOLID_BREP` (a solid), `BREP_WITH_VOIDS`
+    (a solid whose `ORIENTED_CLOSED_SHELL`s with orientation `.F.` are
+    cavities, as OCCT writes and reads them) and `SHELL_BASED_SURFACE_MODEL`
+    (each `OPEN_SHELL` or `CLOSED_SHELL` a free shell: a sheet or a closed
+    shell, S6). Topology: `CLOSED_SHELL`, `OPEN_SHELL`,
+    `ORIENTED_CLOSED_SHELL`, `ADVANCED_FACE` (and `FACE_SURFACE`),
+    `FACE_BOUND`, `FACE_OUTER_BOUND`, `EDGE_LOOP`, `ORIENTED_EDGE`,
+    `EDGE_CURVE`, `VERTEX_POINT`, and `VERTEX_LOOP` as the only bound of a
+    sphere or torus face (the whole surface, as OCCT reads it). Geometry:
+    `CARTESIAN_POINT`, `DIRECTION`, `VECTOR`, `AXIS2_PLACEMENT_3D`, `LINE`,
+    `CIRCLE`, `PLANE`, `CYLINDRICAL_SURFACE`, `CONICAL_SURFACE`,
+    `SPHERICAL_SURFACE`, `TOROIDAL_SURFACE`; `TRIMMED_CURVE`,
+    `SURFACE_CURVE` and `SEAM_CURVE` as their basis or 3D curve (an edge is
+    bounded by its vertices; OCCT also takes the 3D curve); later
+    sub-steps add `ELLIPSE`, the B-spline curves and surfaces (rational as
+    complex instances) and `PCURVE`. Orientations follow
+    `StepToTopoDS`: an edge runs along its curve, its vertices swapped when
+    `same_sense` is false; a wire is reversed when its bound's orientation
+    differs from its face's `same_sense`, and the face is reversed when
+    `same_sense` is false. Anything else a body reaches is reported by
+    entity name and counted, never approximated.
+  * **Bodies found.** Every solid and surface-model item, in entity-number
+    order, imported once, in the coordinates of the representation listing
+    it. Placements between representations (assemblies, `MAPPED_ITEM`) are
+    not applied: such a file reports `AssemblyPlacement` and its bodies are
+    still imported in their own coordinates.
+  * **Units and uncertainty.** The length unit of the body's
+    representation context (`SI_UNIT` with its prefix, or a
+    `CONVERSION_BASED_UNIT` through its `LENGTH_MEASURE_WITH_UNIT`) scales
+    every coordinate and radius to millimetres by one binary64
+    multiplication (none in millimetres), as OCCT's default
+    `xstep.cascade.unit`; the plane angle unit (radian, or a conversion
+    such as degrees) scales cone semi-angles. The context's
+    `UNCERTAINTY_MEASURE_WITH_UNIT` for length, scaled alike, is each
+    vertex's, edge's and face's imported tolerance, floored at `1e-7` mm and
+    capped at `1` mm (OCCT's `read.precision.mode` "File" and
+    `read.maxprecision.val`); without one, `1e-7` mm. A body's resolution
+    is then that tolerance, as for a `.brep` body. *Amended in
+    implementation:* OCCT uses the uncertainty only as its healing
+    precision and builds every entity at `Precision::Confusion` (its
+    observed tolerances stay `1e-7` on files declaring `0.1`); the kernel,
+    which does not heal, keeps the file's claim, verified by the validator.
+    A measure with unit may be a complex instance whose value and unit sit
+    in its `MEASURE_WITH_UNIT` record.
+  * **Pcurves.** STEP-a derives every pcurve and ignores the file's: on a
+    plane, the edge's own data in the plane's coordinates (the `.brep`
+    converter's `CurveOnPlane`); on a cylinder, cone, sphere or torus, the
+    edge's image under the surface's inverse map when that image is a
+    straight segment in `(u, v)`: rulings of cylinders and cones, parallels
+    (circles about the axis), and meridians of spheres and tori (circles in
+    a plane through the axis). Each use's segment continues the last in the
+    universal cover; a seam's second use lies one period from its first;
+    at a pole (a sphere's, a cone's apex) the next use's `u` is the nearest
+    branch in the direction that keeps the face on the loop's left, and the
+    gap becomes a degenerated edge, as OCCT's reader adds one. The
+    validator certifies every derived pcurve against its edge within the
+    imported enclosure, so a wrong derivation is an import failure, never a
+    wrong body. Any other edge on a curved surface is `PCurveNotDerived`,
+    and a periodic face whose loops wind without a seam is
+    `PeriodicFaceWithoutSeam`, for now. Later sub-steps take a file's
+    `PCURVE` where nothing exact can be derived (B-spline surfaces).
+  * **Errors and determinism.** Malformed text is `StepError::Syntax`
+    (line and expectation), a reference to a missing instance
+    `StepError::Reference`, a wrong schema `StepError::Schema`; a body's
+    unsupported constructs are its `Rejected::Unsupported` names and are
+    also counted per file, as `.brep` import does. Nothing panics on any
+    input (the `step` fuzz target). The result is a function of the text:
+    bodies by entity number, every table in a fixed order, no hashing.
+  * **Entity ids.** Each imported body records its STEP entity number;
+    the topology's ids are the `External` derivations
+    (`OperationKind::External`, role `External`) that `.brep` import gives,
+    one per slot. STEP names, colours, layers and product structure are not
+    carried.
+  * **Out of scope.** Assemblies and placements, colours, names, layers,
+    PMI and validation properties, tessellated and polyloop geometry,
+    offset and swept surfaces, Part 21 edition 3 anchors and references,
+    and writing STEP.
+  * **Sub-steps.** STEP-a: the parser, and solids and sheets on planes,
+    cylinders, cones, spheres and tori bounded by lines and circles, with
+    units, uncertainty and derived pcurves. STEP-b: ellipses (arcs on
+    planes, sinusoid pcurves on cylinders) and B-spline curves and surfaces
+    with the file's `PCURVE`s on spline surfaces. STEP-c: a local survey of
+    the dataset's 322 `.stp` files (U1: local only, nothing committed) by
+    unsupported construct, which orders what follows. Each keeps the
+    evidence order: an independent reference (`step_reference.py`) of
+    fixtures authored here, then a native `STEPControl_Reader` capture
+    (counts, validity, volume, area, centre) before the kernel's importer
+    for it exists, then the importer, a probe, `compare_step.py` with
+    fingerprinted reviews, the `step` fuzz target and the docs.
+
 ### Decisions pending from the user
 
 * **U6.** Approve the CI budget policy above? **Answered 2026-09-27: yes.**
@@ -1653,6 +1770,43 @@ the first fixture, never deferred.
     209 s of replay (350 inputs, 14,000 edges, 961 MB peak), no artifact.
   * Open for the user: U9 (a display mode without a bound). T-b (spline
     edges and faces) and T-c (procedural edges) pending.
+* STEP import (parallel track) — STEP-a implemented (`VALIDATION.md`,
+  `SOURCE_MAP.md`); gate pending CI, the schedule replay and the clean
+  campaign.
+  * The decisions above (`a5435624`), then the evidence before any importer
+    code (`cab82ecb`): the Part 21 reader with its tests, 22 STEP files
+    authored for the track (`generate_step_fixtures.py`: boxes in three
+    schemas and three units with every orientation flag flipped, prisms, a
+    void, cylinders, cones, frusta in degrees, spheres, tori, two solids, an
+    open box and a hand-written syntax file), the independent reference
+    (`step_reference.py`: its own Part 21 parser, OCCT's counts, closed
+    forms) and the native `STEPControl_Reader` capture
+    (`fixtures/occt-step-preimplementation`, the importer absent), which
+    matches the reference on all 22 within `7.6e-15`. The pinned SDK now
+    builds the STEP reader (`build_pinned_occt.py --toolkit TKDESTEP`, CI job
+    `pinned-step-oracle`).
+  * `step::import` builds OCCT's shape structure and converts it with the
+    `.brep` converter; every fixture body imports, validates and contains
+    the reference's measures within `1e-12` with OCCT's counts
+    (`tests/step.rs`); `compare_step.py` gives 22 matches, 0 reviewed
+    differences, 0 failures; the `step` fuzz target (no panic, typed errors,
+    determinism, validated bodies, `.brep` round trips).
+  * The first clean campaign (at `5c35dd8a`) found the `.brep` writer
+    leaving a torus band's rings a period below its latitude seam; fixed
+    with a regression at `517b66a8` (`fuzz/regressions/README.md`), after
+    which `compare_brep_io.py` (6,834 matches) and `compare_tessellation.py`
+    (42 and 14 reviewed) are unchanged. Clean local 600-second campaign at
+    `517b66a8` (AddressSanitizer, standard limits): 175,774 mutation
+    executions after 149 s of replay (150 seeds), 751 MB peak, no artifact.
+  * Local survey of the dataset's 336 STEP files (U1): no panic, 464 bodies
+    import; the constructs that stop the rest, in order, are B-spline curves
+    and surfaces (577 bodies), seamless periodic faces (106), extrusion and
+    revolution surfaces (165), non-straight pcurves on curved surfaces (35)
+    and ellipses (11) (`VALIDATION.md`).
+  * Next: STEP-b (ellipses; B-spline curves and surfaces with rational
+    complex instances, the file's `PCURVE`s on spline surfaces), then
+    seamless periodic faces (windings from the derived pcurves), the swept
+    surfaces, and placements; STEP-c the recorded corpus survey.
 * S8 — in progress: decisions recorded (2026-09-28).
   * S8a.1 implemented: the quadrature reference and a
     `BRepAlgoAPI_Splitter` capture of 26 prisms came before

@@ -201,6 +201,7 @@ target/math-oracle-venv/bin/python rust/tools/generate_closed_clip_fixtures.py -
 target/math-oracle-venv/bin/python rust/tools/generate_affine_parameter_fixtures.py --check
 target/math-oracle-venv/bin/python rust/tools/generate_brep_fixtures.py --check
 target/math-oracle-venv/bin/python rust/tools/generate_tessellation_fixtures.py --check
+target/math-oracle-venv/bin/python rust/tools/generate_step_fixtures.py --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo check --workspace --lib --locked --target wasm32-unknown-unknown
 cargo run --locked --example plate
@@ -836,6 +837,55 @@ round trips of every writable import to identical counts and vertices.
   `brep_validation`, `identity`, `history` and `brep_io` fuzz targets build
   and mutate cones.
 
+## STEP import (STEP-a)
+
+`generate_step_fixtures.py --check` writes 22 small STEP files authored for
+the track (`fixtures/step`): boxes in AP203, AP214 and AP242, in metres and
+inches and with every orientation flag flipped; an L prism, a plate with a
+hole, a box with a void, cylinders (one tilted), a half cylinder, an apex
+cone, frusta with the semi-angle in radians and degrees, a sphere, a
+hemisphere, a torus, a quarter-torus elbow, two solids in one file, an open
+box as a surface model and a hand-written corner tetrahedron exercising the
+syntax. `step_reference.py` is written without Rust: its own Part 21 parser
+gives each body's class and OCCT's counts from the file, and closed forms of
+the construction parameters (mpmath, 60 digits) its volume, area and
+centre (`step-expected.tsv`, identical on Python 3.9 and 3.12).
+`step::part21`'s unit tests cover every parameter kind, complex instances,
+comments, several data sections, the string directives and every syntax
+error; `tests/step.rs` requires all 23 bodies to import as the reference
+says (class, OCCT's counts, enclosures containing its measures within
+`1e-12` relative, the files' uncertainty as resolution, `External` ids),
+deterministically, and every construct outside STEP-a to be named:
+`ELLIPSE`, `PCurveNotDerived`, `PeriodicFaceWithoutSeam`, `VERTEX_LOOP`,
+`UnitsUndetermined`, `AssemblyPlacement`, the schema error, and a moved
+vertex as an import failure with `vertex_off_curve`.
+
+`compare_step.py` builds `occt_step_oracle.cpp` against a pinned SDK with
+`TKDESTEP` (`build_pinned_occt.py --toolkit TKDESTEP`) and reads each file
+with `STEPControl_Reader`. The native observations were captured before the
+importer existed (`fixtures/occt-step-preimplementation`): all 22 files
+match the reference (counts and verdicts exactly, measures within
+`7.6e-15`), and every run must reproduce them. The kernel's bodies must
+contain the reference's measures within `1e-12` and OCCT's within `1e-9`,
+with OCCT's counts: 22 matches, 0 reviewed differences, 0 failures.
+`test_step_oracle.py` checks that wrong counts, verdicts, measures, centres
+and bodies on either side are caught.
+
+A local survey of the public dataset's 336 `.stp` and `.step` files (U1:
+local only, nothing recorded from their contents) found no panic: 464
+bodies of 114 files import and validate; 896 are rejected, each by its
+first construct outside STEP-a (B-spline curves 367 with their rational
+form, B-spline surfaces 210 with their rational and quasi-uniform forms,
+periodic faces without a seam 106, extrusion and revolution surfaces 165,
+`PCurveNotDerived` 35, ellipses 11, a negative major radius and a vertex
+loop); 11 fail validation (void shells written the wrong way round, faces
+of inconsistent orientation, data beyond their uncertainty, all of which
+OCCT's reader repairs with ShapeFix); and 22 files are refused: 17 of
+schemas outside AP203, AP214 and AP242, five malformed (a duplicate entity
+number, two dangling references, a corrupted record, an apostrophe not
+doubled inside a string, which OCCT's lexer accepts when no `,` or `)`
+follows it).
+
 ## Cross-platform allowances
 
 Every capture compared across hosts is listed here, with its bound and
@@ -859,6 +909,7 @@ only numbers carry an allowance.
 | `occt-split-preimplementation` (`compare_split.py`) | the native pieces' volumes, areas and centres per side against the reference | `2e-8` relative | BRepGProp's error on pieces with elliptic faces reached `8.8e-9` in the capture (`disc_through_caps`); planar pieces agree to `1e-15` |
 | `occt-tessellation-preimplementation/native.txt` (`compare_tessellation.py`) | OCCT's weld gap, own deflections, measured distances, area and volume of the 56 meshes on each run | `1e-9` relative or `1e-15` absolute; statuses and every count exact | BRepMesh and the probe's projections evaluate with platform trigonometry |
 | `occt-procedural-*-preimplementation`, `occt-torus-curve-preimplementation`, `occt-torus-pair-preimplementation`, `occt-ruled-curve-preimplementation` (`compare_procedural_intersections.py`, `compare_torus_curves.py`, `compare_ruled_curves.py`) | the native lines' counts, points and samples on each run | `1e-9` relative per number on the capture's platform; another platform reproduces its own reviewed record (`platform-<name>/`) exactly in counts | IntPatch walks and approximates lines with platform arithmetic; near degeneracies its pieces differ |
+| `occt-step-preimplementation/native.txt` (`compare_step.py`) | OCCT's bodies of the 22 STEP fixtures on each run | `1e-9` relative per volume, area and centre coordinate; statuses, classes, counts and verdicts exact; no platform record | `STEPControl_Reader` and `BRepGProp` evaluate with platform trigonometry; the macOS capture agrees with the closed forms within `7.6e-15` |
 | `prism-properties-baseline.tsv` (T1) | kernel mass properties, bounds and classifications before and after the migration | none: each host regenerates its own rows at `26fc457f` and must reproduce them bitwise | frames and rotations use the platform's trigonometry, so rows differ across hosts in the last bits |
 
 Native bridges that compare against reviewed differences use no numeric

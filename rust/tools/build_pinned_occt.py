@@ -19,7 +19,10 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCE = '3d097a0328e71b826377d4814ab05ec3c3d23871'
 MODULES = ('FoundationClasses', 'ModelingData', 'ModelingAlgorithms',
            'Visualization', 'ApplicationFramework', 'DataExchange', 'Draw')
-TOOLKITS = ('TKG3d', 'TKGeomAlgo', 'TKTopAlgo', 'TKPrim', 'TKBO', 'TKMesh')
+# TKDESTEP (the STEP reader, STEP import track) pulls in TKXSBase, TKDE and,
+# through TKXCAF, the application framework and TKV3d/TKService; it builds with
+# every optional third-party product off.
+TOOLKITS = ('TKG3d', 'TKGeomAlgo', 'TKTopAlgo', 'TKPrim', 'TKBO', 'TKMesh', 'TKDESTEP')
 
 
 def digest(path):
@@ -88,6 +91,8 @@ def main():
                    '-DBUILD_GTEST=OFF', '-DBUILD_DOC_Overview=OFF', '-DBUILD_DOC_RefMan=OFF',
                    '-DUSE_TK=OFF', '-DUSE_FREETYPE=OFF', '-DUSE_TBB=OFF',
                    '-DUSE_OPENGL=OFF', '-DUSE_GLES2=OFF',
+                   # TKService (under TKDESTEP) would link X11 on Linux.
+                   '-DUSE_XLIB=OFF',
                    '-DBUILD_ADDITIONAL_TOOLKITS='+';'.join(record['toolkits'])]
         command.extend('-DBUILD_MODULE_'+name+'=OFF' for name in MODULES)
         run('configure', command)

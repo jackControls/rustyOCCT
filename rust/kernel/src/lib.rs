@@ -3,7 +3,8 @@
 //! This first implementation supports normal extrusions of simple polygons and
 //! circles, including disjoint polygonal/circular holes. It retains analytic
 //! curves, surfaces, oriented topology and face parameter curves. It does not
-//! yet implement general Boolean operations, blends or STEP; faces with
+//! yet implement general Boolean operations or blends, and reads STEP files
+//! (`step`) only as far as the kernel represents their bodies; faces with
 //! analytic geometry tessellate within certified bounds (`tessellation`).
 //!
 //! All distances are in millimetres, angles in radians. Geometric constructors
@@ -44,6 +45,7 @@ mod profile;
 pub mod proximity;
 mod solid;
 pub mod spline;
+pub mod step;
 pub mod surface;
 pub mod tessellation;
 pub mod topology;
