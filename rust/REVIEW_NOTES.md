@@ -1111,6 +1111,26 @@ Decisions for S8d, recorded before its code (2026-09-28):
   A) +- acos(C / |(A, B)|)` with `A, B, C` affine in `cos u, sin u`,
   evaluated with certified enclosures; its pcurves are `Projection`s. Tori
   by any plane.
+* **S8d.3 refined, before its code (2026-09-28).** A plane cuts a whole
+  torus in two loops winding once about the axis (the pieces tube bands,
+  their walls wound in `u`), two loops winding once about the tube (the
+  pieces C-shaped, their walls wound in `v`), or one contractible loop (a
+  cap whose wall is a disc on the torus, and the rest, whose wall is the
+  torus less that disc: unwound loops only, covering both periods), or it
+  touches or misses the tube. The transitions (Villarceau circles, the
+  lemniscate where a plane parallel to the axis touches the inner equator,
+  tangency at a point) are `Degenerate`. `Curve3::Section` is the section
+  as a graph over `u` (`v = atan2(B, A) +- acos(-C / |(A, B)|)`, `A, B, C`
+  affine in `cos u`, `sin u`) or over `v` (`u` likewise), whichever keeps
+  the slope within one; a loop is cut where its slope crosses one, a vertex
+  there, so no edge reaches a turning point and each stays analytic: its
+  jets, D13's quadrature and the tessellation's interval second
+  derivatives apply unchanged. The validator learns the torus less discs
+  (a face on a torus whose edge loops are all unwound with the inner
+  sign), its mass the whole torus less the holes' Green integrals.
+  Evidence first: `split-spiric-cases.txt` (bands, caps, C-shapes, a tilted
+  frame) with the reference and a native capture before
+  `solid/split/spiric.rs` exists.
 * **Tessellation and interop.** Segment bounds come from second-derivative
   enclosures (closed forms for conics, interval evaluation otherwise). The
   `.brep` writer approximates a `Projection` or a `Section` by a B-spline
