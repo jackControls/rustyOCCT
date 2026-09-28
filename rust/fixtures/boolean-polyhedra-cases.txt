@@ -1,0 +1,501 @@
+case turned_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame 4.0 2.0 0.0 0.0 0.0 1.0 3.0 4.0 0.0
+offsets -1.0 4.0
+boundary P 4 0.0 0.0 6.0 0.0 6.0 6.0 0.0 6.0
+end
+case turned_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 4.0 2.0 0.0 0.0 0.0 1.0 3.0 4.0 0.0
+offsets -1.0 4.0
+boundary P 4 0.0 0.0 6.0 0.0 6.0 6.0 0.0 6.0
+end
+case turned_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean common 93
+op 92
+frame 4.0 2.0 0.0 0.0 0.0 1.0 3.0 4.0 0.0
+offsets -1.0 4.0
+boundary P 4 0.0 0.0 6.0 0.0 6.0 6.0 0.0 6.0
+end
+case bar_tilted_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame -1.0 5.0 2.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -5.0 5.0
+boundary P 4 0.0 -1.0 12.0 -1.0 12.0 1.0 0.0 1.0
+end
+case bar_tilted_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame -1.0 5.0 2.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -5.0 5.0
+boundary P 4 0.0 -1.0 12.0 -1.0 12.0 1.0 0.0 1.0
+end
+case bar_tilted_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean common 93
+op 92
+frame -1.0 5.0 2.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -5.0 5.0
+boundary P 4 0.0 -1.0 12.0 -1.0 12.0 1.0 0.0 1.0
+end
+case caps_same_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame 4.0 2.0 0.0 0.0 0.0 1.0 3.0 4.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 6.0 0.0 6.0 6.0 0.0 6.0
+end
+case caps_same_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 4.0 2.0 0.0 0.0 0.0 1.0 3.0 4.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 6.0 0.0 6.0 6.0 0.0 6.0
+end
+case caps_same_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean common 93
+op 92
+frame 4.0 2.0 0.0 0.0 0.0 1.0 3.0 4.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 6.0 0.0 6.0 6.0 0.0 6.0
+end
+case caps_opposite_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame 4.0 2.0 0.0 0.0 0.0 1.0 3.0 4.0 0.0
+offsets 5.0 8.0
+boundary P 4 0.0 0.0 6.0 0.0 6.0 6.0 0.0 6.0
+end
+case caps_opposite_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 4.0 2.0 0.0 0.0 0.0 1.0 3.0 4.0 0.0
+offsets 5.0 8.0
+boundary P 4 0.0 0.0 6.0 0.0 6.0 6.0 0.0 6.0
+end
+case caps_opposite_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean common 93
+op 92
+frame 4.0 2.0 0.0 0.0 0.0 1.0 3.0 4.0 0.0
+offsets 5.0 8.0
+boundary P 4 0.0 0.0 6.0 0.0 6.0 6.0 0.0 6.0
+end
+case walls_same_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -2.0 5.0
+boundary P 4 2.0 0.0 8.0 0.0 8.0 3.0 2.0 3.0
+end
+case walls_same_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -2.0 5.0
+boundary P 4 2.0 0.0 8.0 0.0 8.0 3.0 2.0 3.0
+end
+case walls_same_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -2.0 5.0
+boundary P 4 2.0 0.0 8.0 0.0 8.0 3.0 2.0 3.0
+end
+case walls_opposite_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets 2.0 8.0
+boundary P 4 2.0 5.0 8.0 5.0 8.0 8.0 2.0 8.0
+end
+case walls_opposite_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets 2.0 8.0
+boundary P 4 2.0 5.0 8.0 5.0 8.0 8.0 2.0 8.0
+end
+case walls_opposite_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets 2.0 8.0
+boundary P 4 2.0 5.0 8.0 5.0 8.0 8.0 2.0 8.0
+end
+case edge_on_face_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame 3.0 5.0 5.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 4 0.0 -3.0 4.0 -3.0 4.0 0.0 0.0 0.0
+end
+case edge_on_face_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 3.0 5.0 5.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 4 0.0 -3.0 4.0 -3.0 4.0 0.0 0.0 0.0
+end
+case edge_on_face_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean common 93
+op 92
+frame 3.0 5.0 5.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 4 0.0 -3.0 4.0 -3.0 4.0 0.0 0.0 0.0
+end
+case vertex_on_face_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame 5.0 5.0 5.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 3 0.0 0.0 -2.0 -4.0 2.0 -4.0
+end
+case vertex_on_face_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 5.0 5.0 5.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 3 0.0 0.0 -2.0 -4.0 2.0 -4.0
+end
+case vertex_on_face_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean common 93
+op 92
+frame 5.0 5.0 5.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 3 0.0 0.0 -2.0 -4.0 2.0 -4.0
+end
+case corner_tilted_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame 10.0 5.0 5.0 3.0 0.0 4.0 0.0 1.0 0.0
+offsets -2.0 2.0
+boundary P 4 -2.0 -2.0 2.0 -2.0 2.0 2.0 -2.0 2.0
+end
+case corner_tilted_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 10.0 5.0 5.0 3.0 0.0 4.0 0.0 1.0 0.0
+offsets -2.0 2.0
+boundary P 4 -2.0 -2.0 2.0 -2.0 2.0 2.0 -2.0 2.0
+end
+case corner_tilted_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean common 93
+op 92
+frame 10.0 5.0 5.0 3.0 0.0 4.0 0.0 1.0 0.0
+offsets -2.0 2.0
+boundary P 4 -2.0 -2.0 2.0 -2.0 2.0 2.0 -2.0 2.0
+end
+case inside_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame 4.0 4.0 1.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 2.0
+boundary P 4 0.0 0.0 2.0 0.0 2.0 2.0 0.0 2.0
+end
+case inside_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 4.0 4.0 1.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 2.0
+boundary P 4 0.0 0.0 2.0 0.0 2.0 2.0 0.0 2.0
+end
+case inside_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean common 93
+op 92
+frame 4.0 4.0 1.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 2.0
+boundary P 4 0.0 0.0 2.0 0.0 2.0 2.0 0.0 2.0
+end
+case apart_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame 14.0 4.0 1.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 2.0
+boundary P 4 0.0 0.0 2.0 0.0 2.0 2.0 0.0 2.0
+end
+case apart_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 14.0 4.0 1.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 2.0
+boundary P 4 0.0 0.0 2.0 0.0 2.0 2.0 0.0 2.0
+end
+case apart_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean common 93
+op 92
+frame 14.0 4.0 1.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 2.0
+boundary P 4 0.0 0.0 2.0 0.0 2.0 2.0 0.0 2.0
+end
+case ell_tilted_fuse 1e-07
+op 91
+frame 1.0 1.0 0.0 0.0 0.0 1.0 3.0 4.0 0.0
+offsets 0.0 4.0
+boundary P 6 0.0 0.0 8.0 0.0 8.0 3.0 3.0 3.0 3.0 8.0 0.0 8.0
+boolean fuse 93
+op 92
+frame 2.0 4.0 1.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -2.0 3.0
+boundary P 4 0.0 -2.0 6.0 -2.0 6.0 2.0 0.0 2.0
+end
+case ell_tilted_cut 1e-07
+op 91
+frame 1.0 1.0 0.0 0.0 0.0 1.0 3.0 4.0 0.0
+offsets 0.0 4.0
+boundary P 6 0.0 0.0 8.0 0.0 8.0 3.0 3.0 3.0 3.0 8.0 0.0 8.0
+boolean cut 93
+op 92
+frame 2.0 4.0 1.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -2.0 3.0
+boundary P 4 0.0 -2.0 6.0 -2.0 6.0 2.0 0.0 2.0
+end
+case ell_tilted_common 1e-07
+op 91
+frame 1.0 1.0 0.0 0.0 0.0 1.0 3.0 4.0 0.0
+offsets 0.0 4.0
+boundary P 6 0.0 0.0 8.0 0.0 8.0 3.0 3.0 3.0 3.0 8.0 0.0 8.0
+boolean common 93
+op 92
+frame 2.0 4.0 1.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -2.0 3.0
+boundary P 4 0.0 -2.0 6.0 -2.0 6.0 2.0 0.0 2.0
+end
+case through_hole_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boundary P 4 2.0 2.0 8.0 2.0 8.0 8.0 2.0 8.0
+boolean fuse 93
+op 92
+frame 0.0 2.5 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -2.0 8.5
+boundary P 4 4.0 -0.25 6.0 -0.25 6.0 0.25 4.0 0.25
+end
+case through_hole_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boundary P 4 2.0 2.0 8.0 2.0 8.0 8.0 2.0 8.0
+boolean cut 93
+op 92
+frame 0.0 2.5 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -2.0 8.5
+boundary P 4 4.0 -0.25 6.0 -0.25 6.0 0.25 4.0 0.25
+end
+case through_hole_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boundary P 4 2.0 2.0 8.0 2.0 8.0 8.0 2.0 8.0
+boolean common 93
+op 92
+frame 0.0 2.5 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -2.0 8.5
+boundary P 4 4.0 -0.25 6.0 -0.25 6.0 0.25 4.0 0.25
+end
+case across_hole_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boundary P 4 3.0 3.0 7.0 3.0 7.0 7.0 3.0 7.0
+boolean fuse 93
+op 92
+frame -1.0 0.5 1.0 0.0 0.0 1.0 3.0 4.0 0.0
+offsets 0.0 2.0
+boundary P 4 -2.0 -1.0 14.0 -1.0 14.0 1.0 -2.0 1.0
+end
+case across_hole_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boundary P 4 3.0 3.0 7.0 3.0 7.0 7.0 3.0 7.0
+boolean cut 93
+op 92
+frame -1.0 0.5 1.0 0.0 0.0 1.0 3.0 4.0 0.0
+offsets 0.0 2.0
+boundary P 4 -2.0 -1.0 14.0 -1.0 14.0 1.0 -2.0 1.0
+end
+case across_hole_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boundary P 4 3.0 3.0 7.0 3.0 7.0 7.0 3.0 7.0
+boolean common 93
+op 92
+frame -1.0 0.5 1.0 0.0 0.0 1.0 3.0 4.0 0.0
+offsets 0.0 2.0
+boundary P 4 -2.0 -1.0 14.0 -1.0 14.0 1.0 -2.0 1.0
+end
+case both_turned_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 3.0 4.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 6.0 0.0 6.0 6.0 0.0 6.0
+boolean fuse 93
+op 92
+frame 2.0 3.25 2.5 3.0 0.0 4.0 0.0 1.0 0.0
+offsets -2.0 2.0
+boundary P 4 -3.0 -3.0 3.0 -3.0 3.0 3.0 -3.0 3.0
+end
+case both_turned_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 3.0 4.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 6.0 0.0 6.0 6.0 0.0 6.0
+boolean cut 93
+op 92
+frame 2.0 3.25 2.5 3.0 0.0 4.0 0.0 1.0 0.0
+offsets -2.0 2.0
+boundary P 4 -3.0 -3.0 3.0 -3.0 3.0 3.0 -3.0 3.0
+end
+case both_turned_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 3.0 4.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 6.0 0.0 6.0 6.0 0.0 6.0
+boolean common 93
+op 92
+frame 2.0 3.25 2.5 3.0 0.0 4.0 0.0 1.0 0.0
+offsets -2.0 2.0
+boundary P 4 -3.0 -3.0 3.0 -3.0 3.0 3.0 -3.0 3.0
+end

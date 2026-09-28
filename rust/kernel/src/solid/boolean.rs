@@ -24,6 +24,7 @@
 //! single relation says it: each such result is `Generated` from its
 //! parents and those inputs are `Deleted`. An input continued by nothing is
 //! `Deleted`.
+pub(crate) mod polyhedra;
 pub(crate) mod stack;
 
 use super::{replayable, Construction, Context, Solid};
@@ -288,9 +289,7 @@ impl Solid {
         };
         let (fa, fb) = (self.frame, other.frame);
         if fa.x() != fb.x() || fa.y() != fb.y() || fa.normal() != fb.normal() {
-            return Err(Error::OutOfDomain(
-                "a Boolean of prisms in frames with different axes (S9b)",
-            ));
+            return self.polyhedral(context, other, op);
         }
         // The origins' offset in the axes, exactly (Cramer's rule).
         let v = |x: [f64; 3]| x.map(q);
@@ -317,14 +316,10 @@ impl Solid {
             det3(&x, &y, &d) / &det,
         );
         let (Some(du), Some(dv), Some(dw)) = (as_f64(&du), as_f64(&dv), as_f64(&dw)) else {
-            return Err(Error::OutOfDomain(
-                "prisms whose frames' offset is not binary64 in their axes (S9b)",
-            ));
+            return self.polyhedral(context, other, op);
         };
         let Some(pb) = translated(pb, du, dv)? else {
-            return Err(Error::OutOfDomain(
-                "a tool whose profile does not translate exactly (S9b)",
-            ));
+            return self.polyhedral(context, other, op);
         };
         let heights = |s: &Solid, dw: f64| -> Option<[f64; 2]> {
             let (lo, hi) = (s.start.min(s.end), s.start.max(s.end));
@@ -333,9 +328,7 @@ impl Solid {
         };
         let ha = heights(self, 0.0).expect("its own heights");
         let Some(hb) = heights(other, dw) else {
-            return Err(Error::OutOfDomain(
-                "a tool whose heights do not translate exactly (S9b)",
-            ));
+            return self.polyhedral(context, other, op);
         };
         // S9a.1: the result's profiles and height range, or a shortcut.
         let whole = |s: &Solid| -> Result<Vec<Solid>> { Ok(vec![s.clone()]) };
@@ -658,36 +651,84 @@ impl Solid {
             index: 0,
         };
         let components = stack::build(&stack, self.frame)?;
-        let (index_a, index_b) = (index(self)?, index(other)?);
-        let resolve = |keys: &[stack::Key]| -> Result<Vec<EntityId>> {
-            keys.iter()
-                .map(|(o, at, what, b, j)| {
-                    let index = if *o == Operand::A { &index_a } else { &index_b };
-                    index
-                        .get(&(*at, *what, *b, *j))
-                        .copied()
-                        .ok_or(Error::InvalidTopology("a stack's input entity"))
-                })
-                .collect()
-        };
+        let resolve = self.resolver(other)?;
         let mut solids = Vec::new();
         let mut plans = Vec::new();
         for (i, component) in components.into_iter().enumerate() {
-            let mut named = Vec::new();
-            for (slot, continues, touches, entity, role) in &component.plans {
-                let (mut c, mut t) = (resolve(continues)?, resolve(touches)?);
-                c.sort();
-                c.dedup();
-                t.sort();
-                t.dedup();
-                named.push((*slot, c, t, *entity, *role));
-            }
+            let named = resolve(&component.plans)?;
             let piece = stack::Stack {
                 index: i,
                 ..stack.clone()
             };
             solids.push(piece.solid(component, self.frame, context.operation, None)?);
             plans.push(named);
+        }
+        self.finish(context, other, op, solids, plans)
+    }
+
+    /// Resolves plans of input keys into the inputs' ids.
+    #[allow(clippy::type_complexity)]
+    fn resolver(
+        &self,
+        other: &Solid,
+    ) -> Result<impl Fn(&[stack::KeyPlan]) -> Result<Vec<SlotPlan>>> {
+        let (index_a, index_b) = (index(self)?, index(other)?);
+        Ok(move |plans: &[stack::KeyPlan]| {
+            let resolve = |keys: &[stack::Key]| -> Result<Vec<EntityId>> {
+                let mut ids = keys
+                    .iter()
+                    .map(|(o, at, what, b, j)| {
+                        let index = if *o == Operand::A { &index_a } else { &index_b };
+                        index
+                            .get(&(*at, *what, *b, *j))
+                            .copied()
+                            .ok_or(Error::InvalidTopology("a result's input entity"))
+                    })
+                    .collect::<Result<Vec<_>>>()?;
+                ids.sort();
+                ids.dedup();
+                Ok(ids)
+            };
+            plans
+                .iter()
+                .map(|(slot, continues, touches, entity, role)| {
+                    Ok((
+                        *slot,
+                        resolve(continues)?,
+                        resolve(touches)?,
+                        *entity,
+                        *role,
+                    ))
+                })
+                .collect()
+        })
+    }
+
+    /// S9b: polyhedral prisms in any relative position, the results general
+    /// bodies named by their provenance.
+    fn polyhedral(
+        &self,
+        context: &Context,
+        other: &Solid,
+        op: Op2,
+    ) -> Result<(Vec<Solid>, History)> {
+        let poly = polyhedra::Polyhedron {
+            a: polyhedra::PrismData::of(self)?,
+            b: polyhedra::PrismData::of(other)?,
+            op,
+            index: 0,
+        };
+        let components = polyhedra::build(&poly)?;
+        let resolve = self.resolver(other)?;
+        let mut solids = Vec::new();
+        let mut plans = Vec::new();
+        for (i, component) in components.into_iter().enumerate() {
+            plans.push(resolve(&component.plans)?);
+            let piece = polyhedra::Polyhedron {
+                index: i,
+                ..poly.clone()
+            };
+            solids.push(piece.solid(component, context.operation, None)?);
         }
         self.finish(context, other, op, solids, plans)
     }

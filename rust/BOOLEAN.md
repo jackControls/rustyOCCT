@@ -5,7 +5,9 @@ job): the faces intersected (S7), split (S8), classified by regions and
 assembled into shells and regions, with complete histories. This document
 describes what is implemented; the decisions are in `REVIEW_NOTES.md` (S9).
 S9a is implemented (`profile/boolean.rs`, `solid/boolean.rs`, S9a.2's
-stacks in `solid/boolean/stack.rs`); S9b on are not.
+stacks in `solid/boolean/stack.rs`) but for spline profiles, and S9b.1's
+polyhedral prisms in any relative position (`solid/boolean/polyhedra.rs`);
+S9b.2 (general polyhedral inputs), S9c and S9d are not.
 
 ## Contract
 
@@ -18,9 +20,9 @@ frames (one profile over one height range) is built as one, keeping the
 prism's exact queries; any other is a general body built through
 `TopologyParts` and validated before it is returned. An error is one of:
 
-* `OutOfDomain`: a pair of a later sub-step (frames whose axes differ, or
-  an offset or a profile that rounds, before S9b; spline profiles), or a
-  cavity in a result of several solids.
+* `OutOfDomain`: a pair of a later sub-step (arcs or circles in frames
+  whose axes differ, S9c; spline profiles, S9a.2; an input other than a
+  prism, S9b.2), or a stack's cavity in a result of several solids.
 * `Degenerate`: a crossing within the resolution of a vertex, two crossings
   within it of each other, a piece thinner than the resolution, or a result
   touching itself at a point or along an edge (two solids sharing an edge,
@@ -138,6 +140,44 @@ the vertical edges of its point's input vertices over their ranges and
 lies on the walls through the point; a solid continues the regions of the
 inputs whose faces it continues (a cut's: the object's), and a cavity's
 void is generated from the tool's region.
+
+### Polyhedral prisms in any position (S9b.1)
+
+Two prisms of line profiles (polygons with polygon holes) whose frames'
+axes differ, or whose offset or tool profile would round in S9a's frame,
+are decided on their constructions' exact models (`solid/boolean/
+polyhedra.rs`): a point `o + u x + v y + w n` in rationals from the stored
+binary64 origin, axes, profile and heights, a cap's plane normal to `x * y`
+(the stored axes are not exactly orthogonal), a wall's the plane of its
+segment's direction and `n`, so every model vertex lies exactly on its
+faces' planes. Each boundary face, as convex pieces (the cap's trapezoids,
+the wall's rectangle), is split by every plane of the other prism's faces;
+each fragment's centroid, pushed an infinitesimal step along its normal
+and against it, is classified exactly against the other prism's convex
+cells (the profile's trapezoids swept, closed half-spaces), and the
+fragment kept, oriented to leave the result's material, where the set
+function differs across it (the object's fragment once where both
+boundaries lie). Kept fragments are made conforming (each edge split at
+every kept vertex on it, found exactly), joined across shared edges into
+maximal faces of one oriented plane, their edges joined where they run
+straight on between the same two faces. A face with a vertex within the
+resolution of another vertex or of an edge not ending there (on the exact
+model), an edge with four faces, or two solids sharing a vertex is
+`Degenerate`. Each connected set of faces is a shell: an outer one
+(positive exact volume) or a cavity of the outer shell holding it (exact
+ray parity). Vertices and planes are rounded once, each solid validated as
+it is built. A result's rigid motion moves its stored geometry (vertices,
+lines and plane frames; the pcurves in those frames unchanged) and
+measures its enclosures again; its classification is the set function of
+both inputs' classifications within its bounds.
+
+History: a face continues the input faces its fragments come from facing
+their way (a cut's tool's, or one facing the other way, it touches); an
+edge along an input edge (exactly) continues it, one elsewhere lies on the
+faces meeting there; a vertex at an input vertex continues it, one
+elsewhere lies on the input edges and faces through it; a solid continues
+the regions of the inputs whose faces it continues (a cut's: the object's),
+a cavity's void is generated from the tool's region.
 
 ## Evidence
 
@@ -272,6 +312,37 @@ void is generated from the tool's region.
   S9a.2: a tower and a pocket with their counts, classification and rigid
   motion, a plug filling a hole over part of its height, a cavity, a tool
   through a round wall).
+* **S9b evidence (polyhedra in any position).** `polyhedral_reference.py`
+  decides each prism on its exact model (the stored axes as rationals),
+  cuts each profile into trapezoids so each prism is a union of convex
+  cells, and clips every pair of cells by exact half-spaces in Fractions:
+  the common's volume and moments exactly, the fuse and cut by inclusion
+  and exclusion (checked against the result's own convex cells), areas by
+  splitting each boundary face by the other prism's cells' planes and
+  classifying each piece on both sides by an infinitesimal push, solids by
+  convex cells sharing positive area. `generate_polyhedral_fixtures.py
+  --check` writes `boolean-polyhedra-cases.txt` and
+  `boolean-polyhedra-expected.tsv` (45 cases: a turned box, a tilted bar
+  cutting a box in two, coplanar caps and walls of either orientation, an
+  edge and a vertex on a face, a tilted corner, a box inside another, apart,
+  an L profile, a bar through a hole and across it, both inputs turned),
+  after checking the reference against S9a's slicing on its 21 polygon
+  cases (within 2.3e-17: the stored axes' departure from orthonormal),
+  `area(A u B) + area(A n B) = area(A) + area(B)` (3e-41) and the closed
+  forms of axis-aligned boxes. `compare_polyhedral.py` reproduces the
+  `BRepAlgoAPI` capture `occt-boolean-polyhedra-preimplementation`, taken
+  before S9b's kernel module: every result valid with the reference's solid
+  count, all 45 within 7.9e-16, no review. The kernel (S9b.1): 41 results
+  inside the reference, the 4 degenerate ones refused (two solids touching
+  along an edge or at a vertex, two walls of a tool's edge passing within
+  rounding of the object's edge: a neck thinner than the resolution, the
+  last declared after the kernel met it), every count OCCT's after
+  unifying but two reviewed (OCCT keeps a tool's touching edge or vertex as
+  an imprint on the object's face; the kernel's regularized cut is the
+  object). `tests/polyhedral_booleans.rs` checks the same, every fixture's
+  history (independent check, every input entity covered, repeated
+  exactly) and hand cases (a turned box's quarter, its rigid motion and
+  classification, a cavity, a cut in two, touching solids refused).
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

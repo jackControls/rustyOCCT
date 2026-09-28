@@ -92,6 +92,9 @@ enum Construction {
     /// A solid of a Boolean of two prisms that is a stack of slabs of
     /// different regions (S9a.2).
     Stack(Box<boolean::stack::Stack>),
+    /// A solid of a Boolean of polyhedral prisms in any relative position
+    /// (S9b).
+    Polyhedron(Box<boolean::polyhedra::Polyhedron>),
 }
 
 /// An immutable, validated normal extrusion of one planar material region,
@@ -320,6 +323,14 @@ impl Solid {
             }
             Construction::Half(half) => half.rebuilt(operation, frame),
             Construction::Stack(stack) => stack.rebuilt_with(operation, frame, None),
+            Construction::Polyhedron(poly) => {
+                if frame != self.frame {
+                    return Err(Error::OutOfDomain(
+                        "a polyhedral Boolean's result moves with its motion",
+                    ));
+                }
+                poly.rebuilt_with(operation, None, None)
+            }
         }
     }
 
@@ -696,8 +707,8 @@ impl Solid {
             Construction::Clipped(_) | Construction::Half(_) => Err(Error::OutOfDomain(
                 "a prism operation on a split piece (S8b)",
             )),
-            Construction::Stack(_) => Err(Error::OutOfDomain(
-                "a prism operation on a Boolean's stack (S9b)",
+            Construction::Stack(_) | Construction::Polyhedron(_) => Err(Error::OutOfDomain(
+                "a prism operation on a Boolean's result (S9b)",
             )),
             Construction::Torus { .. } => Err(Error::OutOfDomain(
                 "split and fuse rebuild prisms; this solid is a torus",
@@ -810,7 +821,8 @@ impl Solid {
             | Construction::Torus { .. }
             | Construction::Clipped(_)
             | Construction::Half(_)
-            | Construction::Stack(_) => None,
+            | Construction::Stack(_)
+            | Construction::Polyhedron(_) => None,
         }
     }
     /// The body's resolution.
@@ -820,6 +832,7 @@ impl Solid {
             Construction::Clipped(clipped) => clipped.tolerance(),
             Construction::Half(half) => half.tolerance(),
             Construction::Stack(stack) => stack.tolerance(),
+            Construction::Polyhedron(poly) => poly.tolerance(),
             Construction::Cone { tolerance, .. }
             | Construction::Sphere { tolerance, .. }
             | Construction::Torus { tolerance, .. } => *tolerance,
@@ -869,6 +882,7 @@ impl Solid {
             Construction::Stack(stack) => {
                 return stack.classify([x, y, z], [self.start, self.end], tolerance)
             }
+            Construction::Polyhedron(poly) => return poly.classify(point, self.bounds, tolerance),
             Construction::Cone { bottom, top, .. } => {
                 let z = finite(z, "axial coordinate")?;
                 let local = [finite(x, "coordinate")?, finite(y, "coordinate")?, z];
@@ -991,6 +1005,13 @@ impl Solid {
             Construction::Half(half) => {
                 half.rebuilt_with(self.operation, frame, Some(self.mass.moved(transform)))?
             }
+            // A polyhedral Boolean's stored geometry moves (S9b).
+            Construction::Polyhedron(poly) => poly.moved(
+                &self.topology,
+                self.operation,
+                transform,
+                self.mass.moved(transform),
+            )?,
             // A stack's too (S9a.2).
             Construction::Stack(stack) => {
                 stack.rebuilt_with(self.operation, frame, Some(self.mass.moved(transform)))?

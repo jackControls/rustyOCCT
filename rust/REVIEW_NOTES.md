@@ -2746,9 +2746,43 @@ Decisions for S9, recorded before its code (2026-09-28):
     certified bounds to the leading-bits bracket before the binary64
     pattern search and a stack cap's overlaps to its pieces' memberships
     (the input six times faster). Pending: the campaign; S9a.2's spline
+<<<<<<< HEAD
     profiles next. Their evidence exists before their code (`3951925a`,
     `BOOLEAN.md`): 46 spline cases (36 prisms, 5 stacks, 4 empty, 1
     degenerate; 18 tilted), the reference checked within 3.7e-39 (chords
     2.1e-4), and `occt-boolean-spline-preimplementation`: all valid with the
     reference's solids, 37 within 2e-8, 9 reviewed (BRepGProp on B-spline
     faces, up to 8.0e-4), the kernel `unsupported` on all 46.
+=======
+    profiles next (their evidence first).
+  * S9b's evidence (a parallel start, before S9a.2's splines end): the
+    decisions above, then `polyhedral_reference.py` and 45 fixtures
+    (`generate_polyhedral_fixtures.py --check`: S9a's slicing on its 21
+    polygon cases within 2.3e-17, the area identity within 3e-41, boxes'
+    closed forms exact) and the `BRepAlgoAPI` capture before the kernel
+    module (`compare_polyhedral.py`: 45 matches, no review). Amendment: the
+    decisions' fixtures of a stack and a plane piece as inputs wait for the
+    case protocol to chain operations; the kernel's tests take them.
+  * S9b.1 implemented (`solid/boolean/polyhedra.rs`,
+    `Construction::Polyhedron`): prisms of line profiles in any relative
+    position (and S9a's pairs whose offset or tool profile would round),
+    all 45 fixtures as the reference (41 results, 4 refused as declared) and
+    OCCT's unified counts but two reviewed imprints; histories checked for
+    every fixture; the `boolean` target's turned, leaning and tilted tools,
+    its corpus replaying clean. Amendments, from the implementation: (a) the
+    decisions' input set is split: S9b.1 takes prisms, S9b.2 the Boolean's
+    stacks, plane pieces and S9b results as inputs (their naming needs keys
+    beyond a prism's slots); (b) a cap's exact plane is normal to `x * y`,
+    not the stored `n` (the stored axes are not exactly orthogonal, so the
+    lifted profile points lie on the plane of `x` and `y`); (c) faces are
+    fragments of each input face split by every plane of the other's faces
+    (not a 2D arrangement per face), joined back into maximal faces; (d) a
+    face with a vertex within the resolution of another vertex or of an
+    edge not ending there is `Degenerate` (a neck thinner than the
+    resolution; the fixture `ell_tilted` fuse and cut declared so after the
+    kernel met it), and two solids sharing a vertex are `Degenerate`; (e) a
+    result's rigid motion moves its stored geometry (the decisions' rule for
+    general bodies): rebuilding its exact model in moved frames changed
+    near-coincident results. Pending: the campaign, S9b.2, the DRAW survey
+    of the 647 upstream cases in frames with different axes.
+>>>>>>> s9b
