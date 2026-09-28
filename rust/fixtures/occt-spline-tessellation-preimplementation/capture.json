@@ -1,0 +1,14 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 BRepMesh_IncrementalMesh",
+  "platform": "darwin",
+  "rust_revision": "394f1491c0f63e0e96139767ba24cbf9efdeb200",
+  "rust_spline_tessellation_exists": false,
+  "rust_worktree_uncommitted": [
+    "?? rust/fixtures/occt-spline-tessellation-preimplementation/"
+  ],
+  "sdk_manifest_sha256": "9030342301863f6d88a15131f0b8664ecee6465d683bf9fc045756a5dcb2e678",
+  "input_sha256": "65f1f57bba34b2930655003ef3ed737eac40b9e1a42df392bf040237738b3f46",
+  "probe_source_sha256": "c8bc7498894184854a14989a52a8d3c6279088977d262bfcd19fcd093096f1d7",
+  "observations_sha256": "2c9b8edea5d070a3a8a0818903ffed9682e9db136e439814b754d55c5b068c65"
+}
