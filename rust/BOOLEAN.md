@@ -396,9 +396,28 @@ unsupported. S9a.2's stacks are Boolean results like the prisms:
 `checkshape`, `nbshapes`, `vprops`, `sprops` and `lprops` read their
 topology (a closed cavity is a solid of two shells), and `unifysamedom`
 returns them unchanged, since the kernel builds them unified; native
-DRAW's unified counts agree on every stack checked. A stack given to
-another Boolean is reported unsupported (the kernel's Booleans take
-prisms; S9b). The derived cases `boolean_prisms` and `boolean_stacks` (a
-step, a pocket, a box cut in two by a slab, a closed cavity, a tool
-through a round wall) and 404 cases of upstream's `boolean` group (84 of
-them stacks) evaluate on both backends.
+DRAW's unified counts agree on every stack checked. S9b.1's polyhedra are
+handled alike: their measures and counts are read from their topology,
+`unifysamedom` returns them unchanged (coplanar fragments are joined into
+maximal faces and collinear edges joined as they are built), and native
+DRAW's unified counts agree on every polyhedron checked. A stack or a
+polyhedron given to another Boolean is reported unsupported (the kernel's
+Booleans take prisms; S9b.2). `ttranslate` and `trotate` move a prism by
+the kernel's rigid motion, a prism in the moved frame; `tcopy`, like
+`copy`, gives the same shape. A `trotate` by whole quarter turns about a
+coordinate axis turns a prism's frame exactly (a signed permutation of
+coordinates, the origin by DRAW's location arithmetic): the kernel's
+rotation rounds the cosine of a quarter turn to 6.1e-17, as OCCT's
+`gp_Trsf` does, and OCCT's tolerances absorb it, while the kernel's exact
+decisions would find a wall turned onto another's plane tilted off it (a
+box and its quarter-turned copy fused into an L would keep a crease: 9
+unified faces where OCCT has 8). The derived cases `boolean_prisms`,
+`boolean_stacks` (a step, a pocket, a box cut in two by a slab, a closed
+cavity, a tool through a round wall) and `boolean_polyhedra` (quarter
+turns, a bar turned 45 degrees through a box, a tilted bar cutting a box
+in two, a turned box inside another) and 704 cases of upstream's
+`boolean` group (86 of them stacks, 298 polyhedra of two boxes, one
+turned) evaluate on both backends. Of the upstream cases in frames with
+different axes the rest are refused: arcs in turned frames (S9c), solids
+other than prisms, and S9b.1's `Degenerate` (a turned box's corner on
+another's wall, edge or corner within rounding).
