@@ -271,6 +271,9 @@ jobs:
       - name: Compare prisms split by planes with BRepAlgoAPI_Splitter and the quadrature reference
         if: ${{ !cancelled() }}
         run: target/math-oracle-venv/bin/python rust/tools/compare_split.py --occt-root target/brep-sdk/install --sdk-manifest target/brep-sdk/build-manifest.json
+      - name: Compare Booleans of two prisms with BRepAlgoAPI_Fuse, Cut and Common and the slicing reference
+        if: ${{ !cancelled() }}
+        run: target/math-oracle-venv/bin/python rust/tools/compare_boolean.py --occt-root target/brep-sdk/install --sdk-manifest target/brep-sdk/build-manifest.json
       - name: Compare pairs of lines and conics with IntTools_EdgeEdge and the exact reference
         if: ${{ !cancelled() }}
         run: target/math-oracle-venv/bin/python rust/tools/compare_curve_curve.py --occt-root target/brep-sdk/install --sdk-manifest target/brep-sdk/build-manifest.json
@@ -297,6 +300,7 @@ jobs:
             target/curve-surface-oracle/
             target/curve-curve-oracle/
             target/split-oracle/
+            target/boolean-oracle/
             target/tessellation-oracle/
             target/spline-tessellation-oracle/
             target/brep-sdk/build-manifest.json
