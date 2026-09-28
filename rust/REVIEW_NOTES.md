@@ -986,6 +986,62 @@ curves, loop splitting on the universal cover, region classification, the
 geometry. Native `BRepAlgoAPI_Splitter` bridge; upstream `bsplit` cases.
 The first general topology-changing algorithm, and the rehearsal for S9.
 
+Decisions for S8, recorded before its code (2026-09-28):
+
+* **Order.** S8a: prisms of line and arc profiles (polygons, circles,
+  stadiums, holes): planar faces and cylindrical walls, so the new edges are
+  segments and the walls' sections (lines, circles or ellipse arcs). S8b:
+  spline prisms (a plane crossing a linear extrusion of a spline meets it in
+  an affine image of the profile, an exact spline). S8c: the cylinder, cone
+  and sphere primitives (conic arcs, a cone's lines through its apex). S8d:
+  tori (D13's procedural edges). S8e: the upstream `bsplit` group and the
+  sheets and wires. Each sub-step keeps the evidence order.
+* **Operation.** `Solid::split_by_plane(operation, plane)` (`plane` a
+  `Frame3`: origin and normal) returns the pieces as solids, those against
+  the normal first, then along it, each in a deterministic order (by the
+  lowest id of its input faces), with the operation's history. A plane
+  missing the solid returns it unchanged. Each piece is a general body built
+  through `TopologyParts` and validated before it is returned.
+* **Exact decisions, binary64 geometry.** Which side of the plane every
+  vertex lies on, whether an edge or a face crosses, touches or lies in the
+  plane, and where boundaries meet the section are exact predicates on the
+  stored data (S7's intersections). New vertices, edges and pcurves store
+  binary64 data rounded from those exact or enclosed values; as everywhere
+  in the topology (TOPOLOGY_MODEL.md) each fin carries its certified
+  enclosure and the body's validation certifies every new entity within the
+  resolution. D13's exact representation applies to procedural edges
+  (S8d), whose pcurves are their exact projections.
+* **New edge and pcurve kinds.** `Curve3` gains ellipse and hyperbola arcs
+  (S7c.2's `Conic` data with a start angle or parameter and a sweep) and,
+  in S8d, procedural edges. `Curve2` gains, on a planar face, ellipse and
+  hyperbola arcs in the plane's frame, and on a cylinder the plane section's
+  graph `v = a0 + a1 cos u + a2 sin u` over `u = u0 + sweep f` (on a cone
+  the quotient of two such, S8c). Validation, `.brep` I/O (OCCT's
+  `Geom_Ellipse`, `Geom_Hyperbola`, and B-spline pcurves where OCCT has no
+  analytic kind), tessellation and mass properties take each kind as it
+  lands.
+* **Degeneracies, exactly.** A face lying in the plane is not cut: it and
+  its solid stay on the side the rest of the solid is on (a cap in the
+  plane: the solid is unchanged). A plane tangent to a wall along a ruling,
+  or through a vertex or along an edge without crossing the solid there,
+  cuts nothing at that contact. Pieces meet the plane only in their cut
+  faces: one planar face per region of the solid's section, with its holes.
+* **History.** A face, edge or region crossing the plane is `Split` into one
+  child per piece it reaches (ordinal by piece); entities on one side are
+  `Unchanged` in their piece; each cut face is `Generated` from every face
+  its boundary runs along, each cut edge from the face it cuts and each cut
+  vertex from the edge it cuts, as M3's height split does. The height split
+  of M3 stays, and on its inputs the general split gives the same pieces.
+* **Evidence first**: an independent reference (mpmath: each piece's volume
+  and centre by quadrature of the clipped height over the profile, its area
+  as its caps', walls' and cut faces' by the same slicing; the pieces'
+  face, edge and vertex counts come from the native capture and the
+  kernel's validation, not from a second arrangement), fixtures of every class
+  (planes crossing caps and walls at angles, parallel and normal to the
+  axis, through a vertex, containing an edge, tangent to an arc wall,
+  missing, in a cap), and a native `BRepAlgoAPI_Splitter` capture (each
+  piece's volume, area, centre and counts) before the kernel code.
+
 ### S9 — Booleans for the analytic family (Combine job)
 
 Fuse, cut and common: intersect faces (S7), split (S8), classify by
@@ -1519,5 +1575,5 @@ the first fixture, never deferred.
     209 s of replay (350 inputs, 14,000 edges, 961 MB peak), no artifact.
   * Open for the user: U9 (a display mode without a bound). T-b (spline
     edges and faces) and T-c (procedural edges) pending.
-* S8 — pending
+* S8 — in progress: decisions recorded (2026-09-28); S8a next.
 * S9 — pending

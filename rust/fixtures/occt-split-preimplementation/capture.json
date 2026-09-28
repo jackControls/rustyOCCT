@@ -1,0 +1,22 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+  "platform": "darwin",
+  "rust_revision": "70834be71ce1e2be9b8077287123558550881c93",
+  "rust_split_exists": false,
+  "rust_worktree_uncommitted": [
+    " M rust/REVIEW_NOTES.md",
+    "?? rust/fixtures/occt-split-preimplementation/",
+    "?? rust/fixtures/split-cases.txt",
+    "?? rust/fixtures/split-expected.tsv",
+    "?? rust/fixtures/split-frames.tsv",
+    "?? rust/tools/compare_split.py",
+    "?? rust/tools/generate_split_fixtures.py",
+    "?? rust/tools/occt_split_oracle.cpp",
+    "?? rust/tools/split_reference.py"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "c2861390b93aeb3bcd2de0fcf53e1c91c7ec35745a1bffcb95d0100d6594c558",
+  "probe_source_sha256": "2c5fc482ff2eb494ebcf40285833078143d73a7dd1b8d3762fb09486cd9a716f",
+  "observations_sha256": "9d82e0647332e487c237a40a221dd6456f1ff59aebba037e2bdb9a34d2c9e117"
+}
