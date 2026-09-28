@@ -40,15 +40,15 @@ TARGET_INPUT_SECONDS = {"surface_knots": 60, "degree_elevation": 60, "surface_ed
 # 2,048 MB RSS limit on two planes (0.011 s alone), after rational-interval
 # cone isolation had churned temporary BigInts. curve_surface joined in S7c.1:
 # a 600 s campaign peaked at 1,904 MB after exact circle/cone and torus
-# resultants.
+# resultants. curve_curve joined in S7d.1: 1,351 MB within a 600 s campaign.
 ALLOCATOR_TARGETS = {'surface_knots', 'degree_elevation', 'spline_linear', 'brep_validation',
-                     'analytic_intersections', 'curve_surface'}
+                     'analytic_intersections', 'curve_surface', 'curve_curve'}
 # Targets whose allocation stack traces are kept to five frames: with the
 # default thirty, AddressSanitizer's stack depot grew analytic_intersections
 # to 1,489 MB in 120 s (33 MB without a sanitizer); five frames keep it at
 # 227 MB and still name each allocation's site in a report. curve_surface
-# joined with it (the same exact intersection machinery).
-SHORT_STACK_TARGETS = {'analytic_intersections', 'curve_surface'}
+# and curve_curve joined with it (the same exact intersection machinery).
+SHORT_STACK_TARGETS = {'analytic_intersections', 'curve_surface', 'curve_curve'}
 # The pinned libFuzzer checks stop_file between MutateAndTestOne batches,
 # not between each callback. Keep its default mutation sequence length.
 MUTATION_DEPTH = 5
