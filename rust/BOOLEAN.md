@@ -207,6 +207,55 @@ void is generated from the tool's region.
   keeps each input's cap and wall images and its cylinders' seams (counts
   compared after unifying). `compare_boolean.py` runs the probe
   (`examples/boolean_probe.rs`) on every case.
+* **Spline profiles (S9a.2), before their kernel code.** The reference's
+  `SplinePair` (`boolean_reference.py`, chosen by `make_pair` when either
+  profile holds S8b's spline segments; S9a's pairs are unchanged) takes each
+  spline as its Bezier spans (blossoms, exact). Meetings without resultants:
+  with a line or a circle, the exact polynomial of its equation on the span
+  split into square-free factors (Yun's algorithm in Fractions: a root's
+  multiplicity is exact, even is a tangency), roots isolated by Bernstein
+  subdivision and Descartes' rule, refined by bisection to 40 digits and
+  polished by `mp.findroot`, checked against `mp.polyroots`; with another
+  span, both Bezier forms subdivided while their control boxes meet, then
+  Newton on `C1(s) = C2(u)` (residual below 1e-35, transversal); segments
+  of one curve share their pieces. Pieces are classified at their midpoints
+  (ray parity, rays meeting a span by the same isolation) and must agree at
+  their quarter points; the atoms are Green's theorem over the classified
+  pieces (spline pieces as exact antiderivatives of polynomials in the span
+  parameter), the lengths `mp.quad` of the speed, and S9a's slicing (breaks
+  at every span end, `y` extreme and meeting) gives the check and the
+  solids. `generate_boolean_fixtures.py --check` writes 46 cases
+  (`boolean-spline-cases.txt`, `boolean-spline-expected.tsv`; 14 fuses, 16
+  cuts, 16 commons, 18 tilted): a spline crossing lines, arcs, circles and
+  another spline (four times, and at both splines' interior knots),
+  tangencies of a spline and a line (inside and outside) and a circle,
+  identical profiles and one spline shared in the same and the opposite
+  direction, a spline hole (cut through, filled, a common), a vertex on a
+  spline and a spline's end on an edge, profiles inside and apart, and
+  stacks (a step, a pocket, a slot through a spline wall, a plug in a spline
+  hole, crossing waves); declared 36 `prisms`, 5 `stack`, 4 `empty`, 1
+  `degenerate` (a disc's hole tangent to the dome's apex). A tool holding a
+  spline is given in the object's frame coordinates (offset along the axis
+  only). Checks before writing: Green over pieces against the slicing
+  (8.3e-40), each profile against exact Green's theorem (5.2e-41) and
+  Bernstein products (3.9e-41), Gauss-Legendre quadrature of every spline
+  piece (3.7e-39), lengths (2.8e-41), the identities (1.6e-40), straight
+  splines against their polygon (exact), 8 hand results (dome cut by lines:
+  parabolic segments and `asinh` lengths; rectangles, squares, a disc;
+  8.6e-41), roots against `polyroots` (4.8e-41), Newton residuals
+  (1.8e-40), and the atoms against 16 and 32 chords per span extrapolated
+  (2.1e-4 relative, within a quarter of the chords' own difference).
+  Natively (`compare_boolean.py --splines`, capture
+  `occt-boolean-spline-preimplementation`, `rust_spline_boolean_exists`
+  false): every result valid with the reference's solid count, 37 within
+  2e-8, 9 reviewed (`occt-boolean-spline-divergences.json`): BRepGProp's
+  integration of faces bounded by B-spline edges errs by 2.6e-8 to 8.0e-4
+  (the three-span wave S8b's split capture reviewed), while Green's theorem
+  over OCCT's own cap edges agrees with the reference within 4.5e-8. OCCT
+  keeps tangency points as vertices and edges (a tangency cuts nothing in
+  the decisions) and returns one valid solid for the degenerate case. The
+  probe reports `unsupported` on all 46, which the comparison requires
+  while the kernel refuses spline profiles.
 * **Kernel (S9a).** All 45 cases: 42 results inside the reference with
   the reference's solid count (each solid's volume, area and centre
   enclosed), 5 of them empty and 6 S9a.2 stacks among them, and the 3
