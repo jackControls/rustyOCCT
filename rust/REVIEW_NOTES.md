@@ -1719,6 +1719,13 @@ the first fixture, never deferred.
     (`tests/step.rs`); `compare_step.py` gives 22 matches, 0 reviewed
     differences, 0 failures; the `step` fuzz target (no panic, typed errors,
     determinism, validated bodies, `.brep` round trips).
+  * The first clean campaign (at `5c35dd8a`) found the `.brep` writer
+    leaving a torus band's rings a period below its latitude seam; fixed
+    with a regression at `517b66a8` (`fuzz/regressions/README.md`), after
+    which `compare_brep_io.py` (6,834 matches) and `compare_tessellation.py`
+    (42 and 14 reviewed) are unchanged. Clean local 600-second campaign at
+    `517b66a8` (AddressSanitizer, standard limits): 175,774 mutation
+    executions after 149 s of replay (150 seeds), 751 MB peak, no artifact.
   * Local survey of the dataset's 336 STEP files (U1): no panic, 464 bodies
     import; the constructs that stop the rest, in order, are B-spline curves
     and surfaces (577 bodies), seamless periodic faces (106), extrusion and
