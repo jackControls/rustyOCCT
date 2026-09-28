@@ -20,7 +20,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 FUZZ = ROOT/'rust/fuzz'
-TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear','brep_validation','identity','history','split_merge','attributes','brep_io','analytic_intersections','tessellation','curve_surface','curve_curve','split','step']
+TARGETS = ['predicates','intersections','modeling','curved','splines','surfaces','roots','spline_intersections','proximity','linear_sets','bezier_editing','surface_editing','knot_editing','exact_spline_intersections','surface_knots','degree_elevation','spline_proximity','spline_linear','brep_validation','identity','history','split_merge','attributes','brep_io','analytic_intersections','tessellation','curve_surface','curve_curve','split','step','boolean']
 STARTUP_SECONDS = 600
 MAX_STARTUP_SECONDS = 3600
 # surface_knots' retained CI corpus replays slower than the cap allows: 2,766 s
@@ -158,6 +158,16 @@ def seed_corpus(target):
                     data = bytearray((j*41+kind*13+mode*19+frame*7+5)%256 for j in range(24))
                     data[:3] = bytes([224, kind, mode])
                     data[9] = frame
+                    save(bytes(data))
+        save(bytes([0]))
+    if target == 'boolean':
+        # S9a: every pair of line and arc profile kinds, both frames, the
+        # four height relations (equal, spanning, overlapping, disjoint).
+        for ka in range(6):
+            for kb in range(6):
+                for flags in range(8):
+                    data = bytearray((j*29+ka*13+kb*7+flags*17+1)%256 for j in range(16))
+                    data[:3] = bytes([ka, kb, flags])
                     save(bytes(data))
         save(bytes([0]))
     if target == 'curve_curve':

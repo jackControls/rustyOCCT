@@ -24,7 +24,8 @@ FNV_PRIME = 0x0000000001000000000000000000013B
 MASK = (1 << 128)-1
 
 KIND = {'extrude': 1, 'transform': 2, 'external': 3, 'composite': 4, 'height_split': 5,
-        'stacked_fuse': 6, 'revolve': 7, 'make_face': 8, 'make_wire': 9, 'plane_split': 10}
+        'stacked_fuse': 6, 'revolve': 7, 'make_face': 8, 'make_wire': 9, 'plane_split': 10,
+        'fuse': 11, 'cut': 12, 'common': 13}
 ENTITY = {'vertex': 1, 'edge': 2, 'face': 3, 'body': 4, 'region': 5}
 DIMENSION = {'vertex': 0, 'edge': 1, 'face': 2, 'body': 3, 'region': 3}
 ROLE = {'start_cap': 1, 'end_cap': 2, 'wall': 3, 'bottom_edge': 4, 'top_edge': 5,

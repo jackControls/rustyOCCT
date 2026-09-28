@@ -139,7 +139,7 @@ fn spline_profile(kind: u8, s: f64, t: f64) -> Option<Profile> {
     Profile::new(outer, holes, tol).ok()
 }
 
-fn profile(kind: u8, s: f64, t: f64) -> Option<Profile> {
+pub(crate) fn profile(kind: u8, s: f64, t: f64) -> Option<Profile> {
     let tol = Tolerance::default();
     let (outer, holes) = match kind % 6 {
         0 => (Boundary::rectangle(s, t, tol).ok()?, vec![]),

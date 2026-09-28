@@ -44,6 +44,9 @@ fn encode(d: &Derivation) -> Vec<u8> {
         OperationKind::MakeFace => 8,
         OperationKind::MakeWire => 9,
         OperationKind::PlaneSplit => 10,
+        OperationKind::Fuse => 11,
+        OperationKind::Cut => 12,
+        OperationKind::Common => 13,
     });
     out.push(match d.entity {
         EntityKind::Vertex => 1,
