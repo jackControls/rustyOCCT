@@ -892,6 +892,13 @@ fn plane_of(p: &Polyline, tolerance: Tolerance) -> Result<(Frame3, Vec<Point2>)>
 /// it has arcs (S5), in its plane's frame, with its labels.
 fn boundary_of(p: &Polyline, tolerance: Tolerance) -> Result<(Frame3, Boundary)> {
     let (frame, local) = plane_of(p, tolerance)?;
+    // A whole circle (`profile ... C r 360`, S9a): one arc from its point
+    // back to it, the kernel's circle.
+    if let ([_], [Some((center, radius, _))]) = (local.as_slice(), p.arcs.as_slice()) {
+        let [x, y, _] = frame.coordinates(*center);
+        let circle = Boundary::circle(Point2::new(x, y), *radius, tolerance)?;
+        return Ok((frame, circle.with_labels(p.labels.clone())?));
+    }
     let boundary = if p.has_arcs() {
         let segments = p
             .arcs
@@ -2312,10 +2319,10 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
         // DRAW's numeric variables set by `dset` (the boolean group's begin
         // sets SCALE); `protect` only guards a variable against deletion.
         "dset" if args.len() >= 3 && args.len() % 2 == 1 => {
+            // An expression the evaluator cannot read (a function other
+            // than sqrt) is a capability gap.
             for pair in args[1..].chunks(2) {
-                let numbers = &session.numbers;
-                let v = draw_geometry::evaluate(&pair[1], &|n| numbers.get(n).copied())
-                    .map_err(|e| error(&e))?;
+                let v = draw_number(&pair[1], &session.numbers)?;
                 session.numbers.insert(pair[0].clone(), v);
             }
             Ok(String::new())

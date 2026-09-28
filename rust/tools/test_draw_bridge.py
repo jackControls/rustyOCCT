@@ -174,7 +174,10 @@ class BridgeTests(unittest.TestCase):
                     "bclearobjects\nbcleartools\nbaddobjects a\nbaddtools b\nbfillds\nbbop c 2\n"
                     "checkprops c -v 24\nbapibop f 1\ncheckprops f -v 56\n"
                     # A result is an argument again; DRAW variables in numbers.
-                    "dset h sqrt(4)\nbox e 2 2 h 2 2 h/2\nbfuse s m e\ncheckprops s -v 12\n", "pass")
+                    "dset h sqrt(4)\nbox e 2 2 h 2 2 h/2\nbfuse s m e\ncheckprops s -v 12\n"
+                    # A whole circle of `profile`, cut from a box as a hole.
+                    "profile o O 0 0 0 F 2 1 C 1 360\nprism p o 0 0 2 Copy\nbcut k a p\n"
+                    "checkprops k -v [expr {32 - 2 * acos(-1)}] -deps 1e-5\n", "pass")
         for wrong in ["bfuse r a b\ncheckprops r -v 64", "bcut r a b\ncheckprops r -s 64",
                       "bcommon r a b\nchecknbshapes r -compound 0", "bfuse r a b\nchecknbshapes r -solid 2"]:
             with self.subTest(wrong=wrong):
@@ -195,7 +198,8 @@ class BridgeTests(unittest.TestCase):
                 (boxes + "catch {unifysamedom u a}", "unifysamedom u a"),
                 (boxes + "polyline w 0 0 0 1 0 0 1 1 0 0 0 0\nmkplane p w\nprism q p 0 0 2\nbfuse r a q\n"
                  "checkprops r -v 32\ncatch {nbshapes r}", "uncopied"),
-                (boxes + "bfuse r a b\ncatch {savehistory h}", "savehistory h")]:
+                (boxes + "bfuse r a b\ncatch {savehistory h}", "savehistory h"),
+                (boxes + "catch {dset x atan2(1,2)}", "atan2")]:
             with self.subTest(why=why):
                 self.assertIn(why, self.expect(gap, "unsupported")["unsupported"])
 
