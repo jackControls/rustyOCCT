@@ -783,6 +783,127 @@ the first fixture, never deferred.
   F8 from 5% to the enclosure widths of the analytic family.
 * **Tessellation**, deflection-controlled and watertight, once S5 lands;
   the application needs it for display and it needs nothing from S7–S9.
+
+  Decisions for tessellation, recorded before its code (2026-09-27):
+
+  * **Contract.** `tessellation::tessellate(&Topology, Parameters)` (and
+    `Solid::tessellate`, `Body::tessellate`) returns a `Mesh`: nodes,
+    triangles grouped by face, and one polyline per edge. Every edge is
+    discretized once, and every face that uses it takes exactly its
+    polyline's nodes and segments as boundary, so neighbouring faces share
+    nodes and the mesh is watertight by construction: no gaps, no
+    T-junctions, no welding by distance. A vertex is one node at its stored
+    position. Every triangle's normal (right-hand rule) leaves the solid
+    region behind its face; a face between void regions follows its
+    oriented normal. So a closed shell gives a closed, consistently oriented
+    2-manifold mesh (every mesh edge in exactly two triangles, in opposite
+    directions) whose Euler characteristic is the shell's; an open sheet a
+    manifold with its boundary polylines; wire edges polylines only; an
+    acorn one node. These properties are checked on every result; a failed
+    check is an error, never a returned mesh.
+  * **Deflection.** Two absolute bounds, as `IMeshTools_Parameters::
+    Deflection` and `Angle` of OCCT's BRepMesh: a linear deflection `δ > 0`
+    and an angle `0 < θ <= π/2`. Each triangle comes with the explicit map
+    `Σ λ_i X_i ↦ S(Σ λ_i p_i)` onto its surface, `X_i` its nodes and `p_i`
+    their parameter points on the universal cover, and each edge segment with
+    the map to its curve's arc between the same fractions. The certified
+    bound is that no point moves farther than `δ` under these maps (a
+    parametric, Fréchet-type bound): every mesh point lies within `δ` of its
+    face's surface, as BRepMesh measures deflection, and every polyline point
+    within `δ` of its edge. The parameter triangles cover the face's domain
+    up to the slivers between its pcurves and their chords (none along a
+    line pcurve; on a plane no wider than the edge's own deflection), where
+    the map lands on the surface just outside the face, so every mesh point
+    lies within `2δ` of the face itself. The surface normal turns by at most
+    `θ` over each triangle's parameter triangle, and an edge's tangent by at
+    most `θ` over each segment. The mesh reports each triangle's and
+    segment's bounds and their maxima; both maxima are at most the request.
+  * **How the bounds are certified.** For a parameter triangle with extents
+    `U`, `V` and bounds `a >= |S_uu|`, `b >= |S_uv|`, `c >= |S_vv|` over its
+    box, linear interpolation deviates by at most `(a U^2 + 2 b U V + c
+    V^2) / 8` (Taylor with integral remainder at the interpolated point, and
+    the variance of a distribution on an interval of length `U` is at most
+    `U^2 / 4`); the triangle's bound adds its nodes' gaps `|X_i - S(p_i)|`,
+    the vertex and edge points against the face's surface at their pcurve
+    points. `a`, `b`, `c` are closed forms per surface (plane 0; cylinder
+    `r`, 0, 0; cone `|R + v sin α|`, `|sin α|`, 0; sphere `R |cos v|`,
+    `R |sin v|`, `R`; torus `R + r cos v`, `r |sin v|`, `r`) times a bound on
+    the stored frame's spectral norm, and everything is evaluated in the
+    `Fast` outward-rounded tier of `certified.rs`, trigonometry included. An
+    arc segment deviates by at most `r φ^2 / 8` for its sweep `φ`, a line
+    segment by its end gaps. The normal turn is at most `n_u U + n_v V` with
+    `|N_u|`, `|N_v|` in closed form (cylinder 1, 0; cone `cos α`, 0; sphere
+    and torus `|cos v|`, 1), with a `1e-12` relative allowance for the stored
+    frames' departure from orthonormality. The derivation goes in
+    `MATHEMATICS.md`.
+  * **Algorithm.** Edges first: each edge's segment count, uniform in its
+    fraction, is the least meeting its curve's `δ` and `θ` and, for each
+    curved face using it, the thin-triangle condition at `δ/2` and `θ/2`
+    (a triangle on a boundary segment cannot have smaller extents than the
+    segment, so the segment must leave the face room). Then each face in a
+    planar chart of its domain on the cover: a plane in its frame
+    coordinates; a periodic face whose loops do not wind in the sinusoidal
+    chart `((u - u_c) |S_u|(v), s(v))`, `s` the arc length along `v`, which
+    collapses a pole to a point; a face wound in `u` in an annulus chart
+    `P(v) (cos u, sin u)`, `P` exponential in `s(v)` with its range capped,
+    or the distance along the meridian from the pole when a vertex loop
+    closes the band; a torus face wound in `v` the same with `u` and `v`
+    exchanged. A constrained Delaunay triangulation of the chart polygons
+    with exact orientation predicates (and a filtered in-circle test that
+    never flips on doubt) gives the triangles; a boundary chord crossing
+    another, a node on another's segment, or a loop on the wrong side of its
+    chords (nesting changed by coarse chords) doubles the counts of that
+    face's curved edges and starts again, within a budget. Curved faces are
+    refined by Steiner points (the midpoint of the longest unconstrained
+    edge, else the centroid, both strictly inside the domain) until every
+    triangle's certified bounds hold, its lifted parameter triangle has the
+    chart's orientation and its flat normal agrees with the surface's.
+    Planar faces need no interior points. A face without loops (the whole
+    sphere, the whole torus) is a structured grid in `(u, v)` refined until
+    every triangle's bounds hold. Everything is deterministic: fixed
+    orders, no hashing, no threads, a pseudo-random walk with a fixed seed.
+  * **Seams, poles and windings.** No seam is meshed: the charts are
+    homeomorphisms of the face's domain, so there is nothing to weld (OCCT
+    duplicates seam nodes and joins them through its seam edges). A pole is
+    one node (the vertex of its vertex loop, or of a loop passing through
+    it); a triangle's parameter point at a pole takes the mean `u` of its
+    other two, since every `u` maps there. A loop wound more than once, or
+    in both directions, and a vertex loop that is not a pole are
+    `OutOfDomain`.
+  * **Degenerate and limit cases.** Non-finite or non-positive deflection,
+    or an angle outside `(0, π/2]`: `NonFinite` or `OutOfDomain`. A node gap
+    above `δ/2` (a pcurve far from its edge, possible only on imported or
+    invalid bodies): `InvalidTopology`. Boundary chords that still cross
+    after the refinement budget, or crossing line edges: `InvalidTopology`.
+    More than 4,000,000 nodes: `ComputationLimit`. Tessellation does not
+    validate the body, but every bound it reports is certified.
+  * **Evidence first.** An independent reference
+    (`tessellation_reference.py`, mpmath) derives each fixture body's
+    boundary from the case alone (planar regions with arcs, cylinder
+    patches, the meridians of cones, spheres and tori, exact distances from a
+    point to each), its exact area, volume and Euler characteristic, and
+    checks a mesh: closedness and opposite orientations, the Euler
+    characteristic, nodes on the boundary, sampled deflection from each
+    face's whole surface against the request and against each triangle's
+    reported bound, sampled distance from the boundary within `2δ`, edge
+    polylines within `δ`, normals leaving the solid, and volume within `δ`
+    times the areas. A native capture of `BRepMesh_IncrementalMesh` on
+    the same bodies, read from the `.brep` text the kernel's writer already
+    produces, records node and triangle counts, OCCT's own deflection, the
+    deflection measured by sampling, watertightness after joining nodes
+    through OCCT's edge polygons, orientation, area and volume, before any
+    kernel tessellation code exists. Differences (OCCT beyond the requested
+    deflection, gaps) are reviewed with fingerprints.
+  * **Split.** T-a (now): faces on planes, cylinders, cones, spheres and
+    tori with line, circle and arc edges: profiles, prisms, the S3
+    primitives, S6 sheets and wires, and imported bodies of those. T-b:
+    spline edges, pcurves and faces, with second-derivative bounds from the
+    second differences of the control net over each Bézier piece (rational
+    ones through the weights' lower bound); until then spline geometry is
+    `OutOfDomain`. T-c: procedural intersection edges (D13) once faces
+    carry them, through their certified parameterisation. Later, not
+    decided: relative deflection, a minimum-angle quality guarantee,
+    parallel faces.
 * **STEP import**, after S6, reusing the converter architecture, with the
   OCCT STEP reader as the native oracle.
 

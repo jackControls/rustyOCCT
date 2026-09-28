@@ -1,0 +1,23 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 BRepMesh_IncrementalMesh",
+  "platform": "darwin",
+  "rust_revision": "6ec5f269bc3c3b78c0f9e624b20f8fcae115fb6a",
+  "rust_tessellation_exists": false,
+  "rust_worktree_uncommitted": [
+    " M rust/REVIEW_NOTES.md",
+    " M rust/tools/build_pinned_occt.py",
+    " M rust/tools/compare_brep_io.py",
+    "?? rust/fixtures/occt-tessellation-preimplementation/",
+    "?? rust/fixtures/tessellation-cases.txt",
+    "?? rust/fixtures/tessellation-expected.tsv",
+    "?? rust/tools/compare_tessellation.py",
+    "?? rust/tools/generate_tessellation_fixtures.py",
+    "?? rust/tools/occt_tessellation_oracle.cpp",
+    "?? rust/tools/tessellation_reference.py"
+  ],
+  "sdk_manifest_sha256": "9030342301863f6d88a15131f0b8664ecee6465d683bf9fc045756a5dcb2e678",
+  "input_sha256": "afbac80e8d9da149730a2ca776d7b6193e93f4ea3a4a0365ac2144d19b932a1e",
+  "probe_source_sha256": "c8bc7498894184854a14989a52a8d3c6279088977d262bfcd19fcd093096f1d7",
+  "observations_sha256": "b05d327ed59279d1ec0f9eb16c17009335b891d205bda54521c6202ee95a50b2"
+}

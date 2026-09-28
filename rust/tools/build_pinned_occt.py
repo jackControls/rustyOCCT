@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCE = '3d097a0328e71b826377d4814ab05ec3c3d23871'
 MODULES = ('FoundationClasses', 'ModelingData', 'ModelingAlgorithms',
            'Visualization', 'ApplicationFramework', 'DataExchange', 'Draw')
-TOOLKITS = ('TKG3d', 'TKGeomAlgo', 'TKTopAlgo', 'TKPrim', 'TKBO')
+TOOLKITS = ('TKG3d', 'TKGeomAlgo', 'TKTopAlgo', 'TKPrim', 'TKBO', 'TKMesh')
 
 
 def digest(path):

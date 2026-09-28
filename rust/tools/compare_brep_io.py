@@ -59,12 +59,12 @@ PROPERTY_BOUND = 1e-11
 MEASURE_BOUND = 1e-9
 
 
-def build(prefix, output, source=SOURCE_FILE, name='oracle', required=('TKTopAlgo', 'TKBRep')):
+def build(prefix, output, source=SOURCE_FILE, name='oracle', required=('TKTopAlgo', 'TKBRep'), toolkits=TOOLKITS):
     include, lib = prefix/'include/opencascade', prefix/'lib'
     executable = output/name
     command = shlex.split(os.environ.get('CXX', 'c++'))+[
         '-std=c++17', '-O2', str(source), '-I'+str(include), '-L'+str(lib),
-        '-Wl,-rpath,'+str(lib), '-o', str(executable)]+['-l'+name for name in TOOLKITS]
+        '-Wl,-rpath,'+str(lib), '-o', str(executable)]+['-l'+name for name in toolkits]
     built = subprocess.run(command, text=True, capture_output=True)
     (output/'native-build.log').write_text(built.stdout+built.stderr)
     built.check_returncode()
