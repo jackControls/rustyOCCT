@@ -126,3 +126,14 @@ are `Generated` from the faces they lie on; the region is `Merged` (fuse),
   compared after unifying). `compare_boolean.py` runs a probe
   (`examples/boolean_probe.rs`) only when it exists; until then all 45 are
   `rust_unsupported`.
+
+## DRAW commands
+
+The DRAW adapter (`examples/draw_worker.rs`, `UPSTREAM_TESTS.md`) runs
+OCCT's Boolean commands of one object and one tool through `Solid::fuse`,
+`cut` and `common`: `bfuse`, `bcut`, `bcommon`, `btuc`, `bop` with
+`bopfuse`, `bopcut`, `boptuc` and `bopcommon`, and `bbop`/`bapibop` 0 to 3
+on the General Fuse arguments, returning OCCT's compound of the result's
+solids and reporting every refusal (`OutOfDomain`, `Degenerate`, ...)
+unsupported; the derived case `boolean_prisms` and 320 cases of upstream's
+`boolean` group evaluate on both backends.

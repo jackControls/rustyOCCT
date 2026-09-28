@@ -2728,13 +2728,13 @@
       "path": "tests/boolean/bopfuse_simple/B2",
       "expected_rust": "unsupported",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9a's Boolean group, a capability sentinel: a small box fused at a corner: a fuse of different heights (S9a.2)."
+      "purpose": "S9a's Boolean group, a capability sentinel: a smaller box against a face of another: a fuse of different heights (S9a.2)."
     },
     {
       "path": "tests/boolean/bfuse_simple/E1",
       "expected_rust": "unsupported",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9a's Boolean group, a capability sentinel: SCALE-sized prisms whose offset is not binary64 in the frame (S9b)."
+      "purpose": "S9a's Boolean group, a capability sentinel: SCALE-sized prisms, the tool's profile not translating exactly into the object's frame (S9b)."
     },
     {
       "path": "tests/boolean/bopcommon_simple/C8",
