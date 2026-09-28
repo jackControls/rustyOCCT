@@ -2141,6 +2141,29 @@ the first fixture, never deferred.
       artifact. The first campaign, before the fuzz target's changes above,
       saved two slow units (retained as regressions,
       `fuzz/regressions/README.md`).
+    * `Motor-c.brep` 378 (certified since S8d.2, pinned at the merge as a
+      `ComputationLimit`) meshes: its four spline blends (rational by
+      weights `1 - 2e-15`, degrees 2 and 5) have cusp corners, where both
+      boundary rows leave `(1, 0)` along `-x` (the controls exactly
+      collinear), so `S_u × S_v` vanishes there and the normal's limit
+      turns 0.45 rad between the two rows. Every turn bound divided by a
+      least `|M|` that is zero on a box at the corner (the blends' degree
+      also leaves them without cones and rates), so the first segment of
+      the blend's edge along `u = 1` stayed infinite at every count and
+      twelve doublings (4,096 segments) ended the edge loop; skipping the
+      check only moved the failure to the face's refinement. Not a bound
+      that fails to shrink but none at all: the thin-triangle check and the
+      triangles now also take the corner turn (`MATHEMATICS.md`, cusp
+      corners), a second-order Taylor bound of `M` at the corner on its
+      patch and three nested boxes; a first-order one (`G y` alone) reached
+      only `v < 0.0057` of the patch's `0.0401` and left the edge at 0.2254
+      against 0.225 after 4,096 segments. The solid now meshes in about
+      11 s (release): 101,696 triangles, the cusp edges at 2,048 and 1,024
+      segments (at 1,024, the segment straddling the end of the corner's
+      patch, `V / D` = 0.024 from the corner, turns 0.253 under the
+      Lipschitz bound), within twelve doublings. The corpus test asserts all 59 certified solids; its
+      spline projection adds a compass search where Gauss-Newton stalls at
+      the cusp (a centroid at 4.6e-4 against a bound of 3.3e-5 before it).
 * STEP import (parallel track) — STEP-a implemented (`VALIDATION.md`,
   `SOURCE_MAP.md`); gate pending CI, the schedule replay and the clean
   campaign.

@@ -154,7 +154,16 @@ between its nodes' parameters. Decisions: `REVIEW_NOTES.md`, T-b; bounds:
   meeting its parameter box, and its normal turns by the smallest of the
   Lipschitz bound `(M_u U + M_v V) / μ`, twice the widest angle of the
   cells' normal cones about the normal at the box's centre, and the rate
-  `(|M × M_u| U + |M × M_v| V) / |M|²` per cell.
+  `(|M × M_u| U + |M × M_v| V) / |M|²` per cell. At a cusp corner of the
+  domain (its boundary rows leave it in one direction, so `S_u × S_v`
+  vanishes there, tested exactly on the controls) all three are infinite
+  on boxes at the corner; triangles and boundary segments inside the
+  corner's patch, or one of three nested boxes toward it, also take the
+  corner turn: the widest angle between the quadratic Bézier controls of
+  `M`'s second-order Taylor polynomial at the corner over the triangle
+  (for a triangle at the corner, of its rays) plus `π` times the third
+  derivatives' remainder over their least norm, the corner itself
+  excluded.
 * **Edges.** A spline edge starts from the least uniform count its largest
   `D2` allows, then every segment is checked; an edge with a fin on a
   spline face also needs each boundary segment's thin-triangle condition
@@ -215,7 +224,7 @@ between its nodes' parameters. Decisions: `REVIEW_NOTES.md`, T-b; bounds:
   one of the 54 certified `data/occ` solids without spline geometry
   (planes, cylinders, cones, spheres and tori with general loops, merged
   seams and holes), whose volume must lie within the deflection times the
-  areas of its certified mass enclosure (since T-b the four with spline
+  areas of its certified mass enclosure (since T-b the five with spline
   geometry too, without the volume band: their mass enclosure takes
   minutes).
 * **Native bridge.** `compare_tessellation.py` reproduces the capture and

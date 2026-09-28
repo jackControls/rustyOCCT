@@ -671,6 +671,302 @@ pub(super) struct SurfaceCells {
     cells: Vec<SurfaceCell>,
     degrees: [usize; 2],
     domain: [f64; 4],
+    /// The domain corners where `S_u × S_v` vanishes exactly.
+    corners: Vec<Corner>,
+}
+
+/// Halvings of a singular corner's patch toward the corner: its Taylor data
+/// on the patch and on each nested box (deeper boxes bound the third
+/// derivatives more tightly, until rounding takes over).
+const CORNER_LEVELS: usize = 3;
+
+/// A domain corner `c` where the parametric normal vanishes: its boundary
+/// rows leave it in one direction (a cusp), and the normal's limit depends
+/// on the direction of approach. On boxes `[c, c ± 2^-k L]` of its patch,
+/// in each box's own parameters `y` from `c` (`M` the patch's positive
+/// multiple of `S_u × S_v`, exactly zero at `c`),
+/// `M(c + y) = G y + H[y, y] / 2 + E`, `G = [M_s M_t](c)`, `H` the second
+/// derivatives at `c` and `|E| <= T(y) / 6`, `T` the third derivatives'
+/// bounds on the box at `|y_s|`, `|y_t|`.
+#[derive(Debug, Clone)]
+struct Corner {
+    at: Point2,
+    levels: Vec<CornerBox>,
+}
+
+#[derive(Debug, Clone)]
+struct CornerBox {
+    /// The box, inner binary64 bounds `[u0, u1, v0, v1]`.
+    inner: [f64; 4],
+    lengths: [Fast; 2],
+    /// `M_s`, `M_t` at the corner.
+    g: [V3; 2],
+    /// `M_ss`, `M_st`, `M_tt` at the corner.
+    h: [V3; 3],
+    /// Bounds of `|M_sss|`, `|M_sst|`, `|M_stt|`, `|M_ttt|` on the box.
+    third: [f64; 4],
+}
+
+impl CornerBox {
+    /// The normal's turn over a parameter triangle `p` inside the box, the
+    /// corner excluded. With `Y` the vertices' offsets from `c` but a zero
+    /// one and `h(y) = G y + H[y, y] / 2`, every `M(c + y)` for `y` in `Y`'s
+    /// hull lies within `|E| <= T / 6` of `h(y)`, and `h` over the hull
+    /// within the convex cone of its quadratic Bézier controls, the blossoms
+    /// `h[y_i, y_j]`. A triangle at the corner is its rays `c + r y`,
+    /// `0 < r <= 1`: `M / r` lies within `r² T / 6` of `G y + r H[y, y] / 2`,
+    /// in the cone of the `G y_i` and the `h[y_i, y_j]`. So every normal is
+    /// within `asin ε` of the cone, `ε = T / (6 μ)`, `T` at the largest
+    /// `|y_s|`, `|y_t|` and `μ` the controls' least component along their
+    /// mean direction; the controls pairwise within 90°, the cone's
+    /// directions span their widest pairwise angle, and the normal turns by
+    /// at most that plus `2 asin ε <= π ε` (`ε < 1`).
+    fn turn(&self, at: Point2, p: [Point2; 3]) -> f64 {
+        let mut offsets: Vec<[Fast; 2]> = Vec::with_capacity(3);
+        let mut at_corner = false;
+        let (mut reach_s, mut reach_t) = (0.0f64, 0.0f64);
+        let abs = |x: &Fast| {
+            let (lo, hi) = x.bounds_f64();
+            (-lo).max(hi)
+        };
+        for q in p {
+            if q.x == at.x && q.y == at.y {
+                at_corner = true;
+                continue;
+            }
+            let (Some(s), Some(t)) = (
+                c(q.x).sub(&c(at.x)).div(&self.lengths[0]),
+                c(q.y).sub(&c(at.y)).div(&self.lengths[1]),
+            ) else {
+                return f64::INFINITY;
+            };
+            reach_s = reach_s.max(abs(&s));
+            reach_t = reach_t.max(abs(&t));
+            offsets.push([s, t]);
+        }
+        let linear = |y: &[Fast; 2]| -> V3 {
+            std::array::from_fn(|k| self.g[0][k].mul(&y[0]).add(&self.g[1][k].mul(&y[1])))
+        };
+        // H[y, z] and the blossom h[y, z] = G (y + z) / 2 + H[y, z] / 2.
+        let form = |y: &[Fast; 2], z: &[Fast; 2]| -> V3 {
+            let mixed = y[0].mul(&z[1]).add(&y[1].mul(&z[0]));
+            std::array::from_fn(|k| {
+                self.h[0][k]
+                    .mul(&y[0].mul(&z[0]))
+                    .add(&self.h[1][k].mul(&mixed))
+                    .add(&self.h[2][k].mul(&y[1].mul(&z[1])))
+            })
+        };
+        let half = c(0.5);
+        let blossom = |y: &[Fast; 2], z: &[Fast; 2]| -> V3 {
+            let (a, b, q) = (linear(y), linear(z), form(y, z));
+            std::array::from_fn(|k| a[k].add(&b[k]).add(&q[k]).mul(&half))
+        };
+        let mut images: Vec<V3> = Vec::with_capacity(6);
+        for (i, y) in offsets.iter().enumerate() {
+            if at_corner {
+                images.push(linear(y));
+            }
+            for z in &offsets[i..] {
+                images.push(blossom(y, z));
+            }
+        }
+        if images.is_empty() {
+            return f64::INFINITY;
+        }
+        // The widest pairwise angle, each certainly below 90°: every
+        // direction of their convex cone lies within it of every other. Its
+        // tangent `|x × y| / x · y` bounded first, one arctangent after.
+        let mut tangent = 0.0f64;
+        for i in 0..images.len() {
+            for j in i + 1..images.len() {
+                let (x, y) = (&images[i], &images[j]);
+                let dot = lower(&x[0].mul(&y[0]).add(&x[1].mul(&y[1])).add(&x[2].mul(&y[2])));
+                if dot.is_nan() || dot <= 0.0 {
+                    return f64::INFINITY;
+                }
+                let Some(ratio) = c(norm_upper(&cross3(x, y))).div(&c(dot)) else {
+                    return f64::INFINITY;
+                };
+                tangent = tangent.max(up(ratio));
+            }
+        }
+        let Some(spread) = Fast::atan2(&c(tangent), &c(1.0)).map(|x| upper(&x)) else {
+            return f64::INFINITY;
+        };
+        // μ: the images' least component along their mean direction.
+        let mid = |x: &Fast| {
+            let (lo, hi) = x.bounds_f64();
+            0.5 * lo + 0.5 * hi
+        };
+        let mut sum = Vec3::new(0.0, 0.0, 0.0);
+        for x in &images {
+            let v = Vec3::new(mid(&x[0]), mid(&x[1]), mid(&x[2]));
+            let l = v.length();
+            if !(l.is_finite() && l > 0.0) {
+                return f64::INFINITY;
+            }
+            sum = sum + v * (1.0 / l);
+        }
+        let d = [c(sum.x), c(sum.y), c(sum.z)];
+        let length = c(norm_upper(&d));
+        let mut least = f64::INFINITY;
+        for x in &images {
+            let along = x[0].mul(&d[0]).add(&x[1].mul(&d[1])).add(&x[2].mul(&d[2]));
+            least = least.min(c(lower(&along)).div(&length).map_or(0.0, |x| lower(&x)));
+        }
+        if least.is_nan() || least <= 0.0 {
+            return f64::INFINITY;
+        }
+        let [a, b, e, f] = self.third;
+        let (s, t) = (c(reach_s), c(reach_t));
+        let three = c(3.0);
+        let cubic = c(a)
+            .mul(&s.square().mul(&s))
+            .add(&three.mul(&c(b)).mul(&s.square().mul(&t)))
+            .add(&three.mul(&c(e)).mul(&s.mul(&t.square())))
+            .add(&c(f).mul(&t.square().mul(&t)));
+        let Some(epsilon) = cubic.div(&c(6.0).mul(&c(least))) else {
+            return f64::INFINITY;
+        };
+        if upper(&epsilon).is_nan() || upper(&epsilon) >= 1.0 {
+            return f64::INFINITY;
+        }
+        // 2 asin ε <= π ε on [0, 1]; π rounded up.
+        up(c(spread).add(&c(3.141_592_653_589_794).mul(&epsilon)))
+    }
+}
+
+/// The corners of a patch grid's domain where the exact controls make
+/// `S_u × S_v` vanish: there `S_u` is a nonzero multiple of the corner
+/// control's difference to its neighbour along `u` (rational or not),
+/// likewise `S_v`.
+fn singular_corners(
+    patches: &[crate::surface::ExactBezierSurface3],
+    nu: usize,
+    nv: usize,
+) -> Vec<Corner> {
+    let mut out = Vec::new();
+    for (pi, a) in [(0, 0usize), (nu - 1, 1)] {
+        for (pj, b) in [(0, 0usize), (nv - 1, 1)] {
+            if let Some(corner) = singular_corner(&patches[pi * nv + pj], a, b) {
+                out.push(corner);
+            }
+        }
+    }
+    out
+}
+
+fn singular_corner(
+    patch: &crate::surface::ExactBezierSurface3,
+    a: usize,
+    b: usize,
+) -> Option<Corner> {
+    let [p, q] = patch.degrees();
+    // Rational `M = N_u × N_v` has degrees `(4p - 1, 4q - 1)`: binomials
+    // stay exact in binary64 up to 56.
+    if p == 0 || q == 0 || 4 * p > 57 || 4 * q > 57 {
+        return None;
+    }
+    let controls = patch.homogeneous_poles();
+    let point = |i: usize, j: usize| -> [R; 3] {
+        let h = &controls[i * (q + 1) + j];
+        [&h[0] / &h[3], &h[1] / &h[3], &h[2] / &h[3]]
+    };
+    let (ic, jc) = (a * p, b * q);
+    let centre = point(ic, jc);
+    let along_u = point(if a == 0 { 1 } else { p - 1 }, jc);
+    let along_v = point(ic, if b == 0 { 1 } else { q - 1 });
+    let du: [R; 3] = std::array::from_fn(|k| &along_u[k] - &centre[k]);
+    let dv: [R; 3] = std::array::from_fn(|k| &along_v[k] - &centre[k]);
+    let zero = R::from_integer(0.into());
+    let vanishes = (0..3).all(|k| {
+        let (m, n) = ((k + 1) % 3, (k + 2) % 3);
+        &du[m] * &dv[n] - &du[n] * &dv[m] == zero
+    });
+    if !vanishes {
+        return None;
+    }
+    let exact = |x: &R| {
+        let (l, h) = Fast::from_r(x).bounds_f64();
+        (l == h).then_some(l)
+    };
+    let [[u0, u1], [v0, v1]] = patch.domain().clone();
+    let at = Point2::new(
+        exact(if a == 0 { &u0 } else { &u1 })?,
+        exact(if b == 0 { &v0 } else { &v1 })?,
+    );
+    let two = R::from_integer(2.into());
+    let (mut u, mut v) = ([u0, u1], [v0, v1]);
+    let mut net: Vec<H> = controls.iter().map(H::exact).collect();
+    let mut levels = Vec::with_capacity(CORNER_LEVELS + 1);
+    for level in 0..=CORNER_LEVELS {
+        if level > 0 {
+            let (l, r) = halve(&net, p, q, 0);
+            let (l, r) = halve(if a == 0 { &l } else { &r }, p, q, 1);
+            net = if b == 0 { l } else { r };
+            let (um, vm) = ((&u[0] + &u[1]) / &two, (&v[0] + &v[1]) / &two);
+            u[1 - a] = um;
+            v[1 - b] = vm;
+        }
+        match corner_box(&net, p, q, a, b, &u, &v) {
+            Some(x) => levels.push(x),
+            None => break,
+        }
+    }
+    (!levels.is_empty()).then_some(Corner { at, levels })
+}
+
+fn corner_box(
+    net: &[H],
+    p: usize,
+    q: usize,
+    a: usize,
+    b: usize,
+    u: &[R; 2],
+    v: &[R; 2],
+) -> Option<CornerBox> {
+    let (_, wq, w, _, _) = translated(net)?;
+    let poly: Poly3 = std::array::from_fn(|k| Poly::new([p, q], wq.iter().map(|x| x[k]).collect()));
+    let (ps, pt) = (poly::derivative3(&poly, 0), poly::derivative3(&poly, 1));
+    let m = if w.iter().any(|x| x != &w[0]) {
+        let ww = Poly::new([p, q], w);
+        let (ws, wt) = (ww.derivative(0), ww.derivative(1));
+        let ns = poly::sub33(&poly::mul3(&ps, &ww), &poly::mul3(&poly, &ws));
+        let nt = poly::sub33(&poly::mul3(&pt, &ww), &poly::mul3(&poly, &wt));
+        poly::cross3(&ns, &nt)
+    } else {
+        poly::cross3(&ps, &pt)
+    };
+    let d = |x: &Poly3, axis: usize| poly::derivative3(x, axis);
+    let (ms, mt) = (d(&m, 0), d(&m, 1));
+    let (mss, mst, mtt) = (d(&ms, 0), d(&ms, 1), d(&mt, 1));
+    let third = [
+        poly::largest3(&d(&mss, 0)),
+        poly::largest3(&d(&mss, 1)),
+        poly::largest3(&d(&mtt, 0)),
+        poly::largest3(&d(&mtt, 1)),
+    ];
+    if !third.iter().all(|x| x.is_finite()) {
+        return None;
+    }
+    let (s, t) = (c(a as f64), c(b as f64));
+    let value = |x: &Poly3| -> V3 { std::array::from_fn(|k| x[k].value(&s, &t)) };
+    // Inner bounds: the lower end's upper, the upper end's lower.
+    let (lo, hi) = (
+        |x: &R| Fast::from_r(x).bounds_f64().1,
+        |x: &R| Fast::from_r(x).bounds_f64().0,
+    );
+    Some(CornerBox {
+        inner: [lo(&u[0]), hi(&u[1]), lo(&v[0]), hi(&v[1])],
+        lengths: [
+            Fast::from_r(&(&u[1] - &u[0])),
+            Fast::from_r(&(&v[1] - &v[0])),
+        ],
+        g: [value(&ms), value(&mt)],
+        h: [value(&mss), value(&mst), value(&mtt)],
+        third,
+    })
 }
 
 /// Coefficients over a parameter box: `[a, b, c, |S_u|, |S_v|]` bounds.
@@ -779,6 +1075,7 @@ impl SurfaceCells {
             cells,
             degrees: [p, q],
             domain: [ua, ub, va, vb],
+            corners: singular_corners(&patches, nu, nv),
         })
     }
 
@@ -914,7 +1211,8 @@ impl SurfaceCells {
     /// parameter triangle, and the parametric normal `S_u × S_v` at its box's
     /// centre: T-a's `(a U² + 2 b U V + c V²) / 8` over the cells meeting the
     /// box, and `(M_u U + M_v V) / μ` with `M_u = a D_v + D_u b`,
-    /// `M_v = b D_v + D_u c` and `μ` the least `|S_u × S_v|` over the box.
+    /// `M_v = b D_v + D_u c` and `μ` the least `|S_u × S_v|` over the box;
+    /// inside a singular corner's patch also its corner turn.
     pub(super) fn triangle_bound(&self, p: [Point2; 3]) -> (f64, f64, Option<Vec3>) {
         let span = |f: fn(&Point2) -> f64| {
             p.iter()
@@ -925,7 +1223,29 @@ impl SurfaceCells {
         };
         let (u0, u1) = span(|q| q.x);
         let (v0, v1) = span(|q| q.y);
-        self.box_bound(u0, u1, v0, v1)
+        let (deviation, turn, normal) = self.box_bound(u0, u1, v0, v1);
+        (deviation, turn.min(self.corner_turn(p)), normal)
+    }
+
+    /// The normal's turn over a parameter triangle (or segment, a vertex
+    /// repeated) inside a singular corner's boxes, the corner itself (where
+    /// the normal is undefined) excluded: the least of `CornerBox::turn`
+    /// over the boxes containing it; infinite outside them.
+    fn corner_turn(&self, p: [Point2; 3]) -> f64 {
+        let mut best = f64::INFINITY;
+        for corner in &self.corners {
+            for level in &corner.levels {
+                let [u0, u1, v0, v1] = level.inner;
+                if !p
+                    .iter()
+                    .all(|q| q.x >= u0 && q.x <= u1 && q.y >= v0 && q.y <= v1)
+                {
+                    break;
+                }
+                best = best.min(level.turn(corner.at, p));
+            }
+        }
+        best
     }
 
     /// `triangle_bound` of a parameter box.
@@ -1325,6 +1645,139 @@ mod tests {
                     assert!(within(norm(0, 1), dv), "{p} {q} {uv:?}");
                 }
             }
+        }
+    }
+
+    /// A cusp corner (both boundary rows leave `(1, 0)` along `-x`, so
+    /// `S_u × S_v` vanishes there and the normal's limit depends on the
+    /// direction): on triangles and segments at and near the corner, the
+    /// corner turn bounds the widest angle between sampled exact normals,
+    /// and shrinks with the triangles (rational or not).
+    #[test]
+    fn corner_turns_enclose_the_normals_at_a_cusp() {
+        for rational in [false, true] {
+            let (p, q) = (2, 3);
+            let u = crate::KnotVector::new(p, vec![0.0, 1.0], vec![p + 1, p + 1]).unwrap();
+            let v = crate::KnotVector::new(q, vec![0.0, 0.5, 1.0], vec![q + 1, 1, q + 1]).unwrap();
+            let (nu, nv) = (u.pole_count(), v.pole_count());
+            let mut poles = Vec::new();
+            let mut weights = Vec::new();
+            for i in 0..nu {
+                for j in 0..nv {
+                    let (x, y) = ((nu - 1 - i) as f64, j as f64);
+                    poles.push(if i == nu - 1 {
+                        crate::Point3::new(-0.3 * y, 0.0, 0.0)
+                    } else if i == nu - 2 && j == 0 {
+                        crate::Point3::new(1.0, 0.0, 0.0)
+                    } else {
+                        crate::Point3::new(x - 0.3 * y, 0.6 * x + 0.1 * y, 0.4 * x * y)
+                    });
+                    weights.push(if rational {
+                        1.0 + 0.25 * ((i + 2 * j) % 3) as f64
+                    } else {
+                        1.0
+                    });
+                }
+            }
+            let s = BSplineSurface3::new(u, v, poles, Some(weights)).unwrap();
+            let cells = SurfaceCells::new(&s).unwrap();
+            assert_eq!(cells.corners.len(), 1);
+            assert_eq!(cells.corners[0].at, Point2::new(1.0, 0.0));
+            let normal = |uv: Point2| {
+                let side = |x: f64| {
+                    if x >= 1.0 {
+                        KnotSide::Left
+                    } else {
+                        KnotSide::Right
+                    }
+                };
+                let e = s
+                    .evaluate(uv.x, uv.y, DerivativeOrder::First, [side(uv.x), side(uv.y)])
+                    .unwrap();
+                let d = |i, j| {
+                    let b = e.derivative_bounds(i, j).unwrap();
+                    Vec3::new(
+                        b[0].representative(),
+                        b[1].representative(),
+                        b[2].representative(),
+                    )
+                };
+                let m = d(1, 0).cross(d(0, 1));
+                m * (1.0 / m.length())
+            };
+            let c0 = Point2::new(1.0, 0.0);
+            let mut previous = f64::INFINITY;
+            for h in [0.2, 0.05, 0.01] {
+                // A fan at the corner, a segment along each boundary row from
+                // it and triangles beside it.
+                let shapes = [
+                    [c0, Point2::new(1.0, h), Point2::new(1.0 - h, 0.0)],
+                    [c0, Point2::new(1.0, h), Point2::new(1.0 - h, h)],
+                    [c0, Point2::new(1.0, h), Point2::new(1.0, h)],
+                    [c0, Point2::new(1.0 - h, 0.0), Point2::new(1.0 - h, 0.0)],
+                    [
+                        Point2::new(1.0, h),
+                        Point2::new(1.0, 2.0 * h),
+                        Point2::new(1.0 - h, 2.0 * h),
+                    ],
+                    [
+                        Point2::new(1.0 - h, h),
+                        Point2::new(1.0 - 2.0 * h, h),
+                        Point2::new(1.0 - h, 0.0),
+                    ],
+                ];
+                for (k, t) in shapes.iter().enumerate() {
+                    let bound = cells.corner_turn(*t);
+                    if h == 0.01 {
+                        // Along a row from the corner the normal barely turns;
+                        // a fan's triangles turn by their sector's spread.
+                        let most = if k == 2 || k == 3 { 2.0 * h } else { 0.15 };
+                        assert!(bound < most, "{rational} {k}: {bound}");
+                    }
+                    if k == 0 {
+                        assert!(bound <= previous, "{rational} {h}: {bound}");
+                        previous = bound;
+                    }
+                    if !bound.is_finite() {
+                        continue;
+                    }
+                    let mut normals = Vec::new();
+                    for i in 0..=8 {
+                        for j in 0..=8 - i {
+                            let (a, b) = (i as f64 / 8.0, j as f64 / 8.0);
+                            // Toward the first vertex geometrically too.
+                            for r in [1.0, 1e-3, 1e-6] {
+                                let (a, b) = (r * a, r * b);
+                                let w = 1.0 - a - b;
+                                let x = Point2::new(
+                                    t[0].x * w + t[1].x * a + t[2].x * b,
+                                    t[0].y * w + t[1].y * a + t[2].y * b,
+                                );
+                                if x != c0 {
+                                    normals.push(normal(x));
+                                }
+                            }
+                        }
+                    }
+                    let mut widest = 0.0f64;
+                    for x in &normals {
+                        for y in &normals {
+                            widest = widest.max(x.cross(*y).length().atan2(x.dot(*y)));
+                        }
+                    }
+                    assert!(
+                        widest <= bound + 1e-9,
+                        "{rational} {h} {k}: {widest} > {bound}"
+                    );
+                }
+            }
+            // Away from the corner's patch: no corner turn.
+            let far = [
+                Point2::new(0.5, 0.6),
+                Point2::new(0.6, 0.6),
+                Point2::new(0.5, 0.7),
+            ];
+            assert_eq!(cells.corner_turn(far), f64::INFINITY);
         }
     }
 }

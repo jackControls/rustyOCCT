@@ -193,7 +193,10 @@ impl<'a> SplineDistance<'a> {
         )
     }
 
-    fn distance(&self, p: Point3) -> f64 {
+    /// An upper bound of a point's distance to the surface: Gauss-Newton
+    /// from the four nearest grid points, and with `compass` a compass
+    /// search from each one's best point after it.
+    fn distance(&self, p: Point3, compass: bool) -> f64 {
         let mut near: Vec<(f64, f64, f64)> = self
             .grid
             .iter()
@@ -202,17 +205,22 @@ impl<'a> SplineDistance<'a> {
         near.sort_by(|a, b| a.0.total_cmp(&b.0));
         near.iter()
             .take(4)
-            .map(|&(d, u, v)| d.min(self.descend(p, u, v)))
+            .map(|&(d, u, v)| d.min(self.descend(p, u, v, compass)))
             .fold(f64::INFINITY, f64::min)
     }
 
-    fn descend(&self, p: Point3, mut u: f64, mut v: f64) -> f64 {
+    /// Gauss-Newton from a seed, then (with `compass`) a compass search from
+    /// its best point: Newton stalls where `S_u × S_v` nearly vanishes, at a
+    /// cusp corner. Any surface point's distance bounds the distance.
+    fn descend(&self, p: Point3, mut u: f64, mut v: f64, compass: bool) -> f64 {
         let ((u0, u1), (v0, v1)) = self.surface.domain();
-        let mut best = f64::INFINITY;
+        let mut best = (f64::INFINITY, u, v);
         for _ in 0..30 {
             let (point, su, sv) = self.jet(u, v);
             let r = point - p;
-            best = best.min(r.length());
+            if r.length() < best.0 {
+                best = (r.length(), u, v);
+            }
             let (a, b, c) = (su.dot(su), su.dot(sv), sv.dot(sv));
             let (g, h) = (-r.dot(su), -r.dot(sv));
             let det = a * c - b * b;
@@ -228,7 +236,25 @@ impl<'a> SplineDistance<'a> {
             }
             (u, v) = (nu, nv);
         }
-        best
+        let (mut d, mut u, mut v) = best;
+        let mut step = if compass { 1e-3 } else { 0.0 };
+        while step > 1e-15 {
+            let mut moved = false;
+            for (du, dv) in [(1.0, 0.0), (-1.0, 0.0), (0.0, 1.0), (0.0, -1.0)] {
+                let (x, y) = (
+                    (u + du * step * (u1 - u0)).clamp(u0, u1),
+                    (v + dv * step * (v1 - v0)).clamp(v0, v1),
+                );
+                let e = self.jet(x, y).0.distance(p);
+                if e < d {
+                    (d, u, v, moved) = (e, x, y, true);
+                }
+            }
+            if !moved {
+                step *= 0.5;
+            }
+        }
+        d
     }
 }
 
@@ -334,7 +360,10 @@ fn contract(name: &str, t: &Topology, mesh: &Mesh, p: Parameters, solid: bool) -
                     l[0] * x[0].z + l[1] * x[1].z + l[2] * x[2].z,
                 );
                 let d = match &spline {
-                    Some(spline) => spline.distance(s),
+                    // The compass search only where Newton lands beyond.
+                    Some(spline) => Some(spline.distance(s, false))
+                        .filter(|d| *d <= bound.deflection + eps)
+                        .unwrap_or_else(|| spline.distance(s, true)),
                     None => surface_distance(surface, s),
                 };
                 assert!(
@@ -661,7 +690,7 @@ fn imported_corpus_solids_meet_the_contract() {
         .map(|l| l.split('\t').next().unwrap())
         .collect();
     files.dedup();
-    let (mut meshed, mut limited) = (0, Vec::<String>::new());
+    let mut meshed = 0;
     for name in files {
         let text = std::fs::read_to_string(format!("{root}{name}")).unwrap();
         let im = import(&solids_only(read(&text).unwrap()));
@@ -698,19 +727,7 @@ fn imported_corpus_solids_meet_the_contract() {
             let size = (0..3).map(|k| hi[k] - lo[k]).fold(cube.max(1e-3), f64::max);
             let p = Parameters::new(size * 2e-3, 0.5).unwrap();
             let label = format!("{name} {}", solid.record);
-            let mesh = match tessellate(t, p) {
-                Ok(mesh) => mesh,
-                // Certified since S8d.2 (a hole with spline pcurves in a
-                // wound cylinder face): its spline edge's segment check does
-                // not converge within the budget (a T-b follow-up).
-                Err(rusty_occt::Error::ComputationLimit(_))
-                    if name == "Motor-c.brep" && solid.record == 378 =>
-                {
-                    limited.push(label);
-                    continue;
-                }
-                Err(e) => panic!("{label}: {e}"),
-            };
+            let mesh = tessellate(t, p).unwrap_or_else(|e| panic!("{label}: {e}"));
             let m = contract(&label, t, &mesh, p, true);
             if let Some(mass) = (!spline).then(|| t.mass_enclosure()).flatten() {
                 let [v0, v1] = mass.volume;
@@ -727,7 +744,6 @@ fn imported_corpus_solids_meet_the_contract() {
         }
     }
     // The 59 certified corpus solids, the five with spline geometry among
-    // them, but Motor-c 378 (pinned above).
-    assert_eq!(meshed, 58);
-    assert_eq!(limited, ["Motor-c.brep 378"]);
+    // them (Motor-c 378's spline faces with cusp corners, T-b).
+    assert_eq!(meshed, 59);
 }
