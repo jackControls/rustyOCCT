@@ -14,18 +14,6 @@
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
-      "case": "ka_sphere_near",
-      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
-      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
-      "native_sha256": "ce7a009d755a64713f8b1442e9bb545a4a01899aa00043ed5727e51872ae6421",
-      "differences": [
-        "missed_component"
-      ],
-      "reason": "GeomInt_IntSS misses the tiny loop beside the apex when the sphere's radius exceeds the apex's distance by 2^-20 (the loop is about 2e-6 across); it finds the other ring.",
-      "independent_evidence": "The reference's scan gives two components, one a ring within 1e-6 of the apex (its point at u = 0 is at t = -1.9e-6), whose points lie on both surfaces within 1e-70.",
-      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
-    },
-    {
       "case": "kk_common_apex",
       "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
       "oracle": "OCCT 8.1.0 GeomInt_IntSS",

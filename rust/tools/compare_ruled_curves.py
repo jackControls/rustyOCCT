@@ -174,32 +174,55 @@ def rust_rows():
     return out
 
 
+def row_inside(got, row):
+    """A kernel row's enclosures contain a reference row's numbers (up to
+    1e-25 relative, the printing; its first two, angles, modulo a turn)."""
+    kind = row[0]
+    numbers = [float(x) for x in row[1:] if x not in ('crossing', 'isolated')]
+    words = [x for x in row[1:] if x in ('crossing', 'isolated')]
+    values = [x for x in got[1:] if x not in ('crossing', 'isolated')]
+    if got[0] != kind or words != [x for x in got[1:] if x in ('crossing', 'isolated')] \
+            or len(values) != 2*len(numbers):
+        return False
+    for k, x in enumerate(numbers):
+        lo, hi = float(values[2*k]), float(values[2*k+1])
+        slack = 1e-25*abs(x)
+        turn = 2*math.pi if k < 2 and kind in ('fold', 'node', 'ring') else 0.0
+        if not any(lo-slack <= x+s <= hi+slack for s in {0.0, turn, -turn}):
+            return False
+    return True
+
+
 def rust_differences(rust, expected):
-    """The kernel against the reference, row by row: kinds, words and counts
-    equal, every reference number inside the kernel's enclosure (up to
-    1e-25 relative, the printing; angles modulo a turn)."""
+    """The kernel against the reference: kinds and counts equal, components
+    word for word, every other reference row inside the kernel's row in the
+    same place, except lines and points (S7a's items, ordered by enclosures'
+    middles, which ties of equal values leave to rounding): each inside one
+    kernel row of its kind."""
     want = [e.split() for e in expected]
-    if len(rust) != len(want) or any(g[0] != w[0] for g, w in zip(rust, want)):
+    if sorted(g[0] for g in rust) != sorted(w[0] for w in want) or len(rust) != len(want):
+        return ['rust_class']
+    items = [w for w in want if w[0] in ('line', 'point')]
+    if items:
+        left = [g for g in rust if g[0] in ('line', 'point')]
+        for row in items:
+            hit = next((g for g in left if row_inside(g, row)), None)
+            if hit is None:
+                return ['rust_outside_reference']
+            left.remove(hit)
+        want = [w for w in want if w[0] not in ('line', 'point')]
+        rust = [g for g in rust if g[0] not in ('line', 'point')]
+    if any(g[0] != w[0] for g, w in zip(rust, want)):
         return ['rust_class']
     for got, row in zip(rust, want):
-        kind = row[0]
-        if kind in ('empty',):
+        if row[0] == 'empty':
             continue
-        if kind in ('component', 'cluster'):
+        if row[0] in ('component', 'cluster'):
             if got != row:
                 return ['rust_components']
             continue
-        numbers = [float(x) for x in row[1:] if x not in ('crossing', 'isolated')]
-        words = [x for x in row[1:] if x in ('crossing', 'isolated')]
-        values = [x for x in got[1:] if x not in ('crossing', 'isolated')]
-        if words != [x for x in got[1:] if x in ('crossing', 'isolated')] or len(values) != 2*len(numbers):
-            return ['rust_values']
-        for k, x in enumerate(numbers):
-            lo, hi = float(values[2*k]), float(values[2*k+1])
-            slack = 1e-25*abs(x)
-            turn = 2*math.pi if k < 2 and kind in ('fold', 'node', 'ring') else 0.0
-            if not any(lo-slack <= x+s <= hi+slack for s in {0.0, turn, -turn}):
-                return ['rust_outside_reference']
+        if not row_inside(got, row):
+            return ['rust_outside_reference']
     return []
 
 

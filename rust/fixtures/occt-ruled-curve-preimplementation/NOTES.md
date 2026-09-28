@@ -4,7 +4,7 @@ Source reference `3d097a0328e71b826377d4814ab05ec3c3d23871`, OCCT 8.1.0
 built headless with exception checks. `capture.json` records the Rust
 revision and that no kernel code for these pairs existed
 (`rust/kernel/src/intersection/ruled_curves.rs` absent). `inputs.txt` holds
-the 13 cases of `ruled-curve-cases.txt` with the kernel's stored frame axes;
+the 12 cases of `ruled-curve-cases.txt` with the kernel's stored frame axes;
 `oracle.cpp` is `occt_procedural_intersection_oracle.cpp` as captured, and
 `native.txt` its rows: `GeomInt_IntSS` with tolerance `1e-7`, each line's
 closedness and 17 samples, and each isolated point.
@@ -22,8 +22,7 @@ closedness and 17 samples, and each isolated point.
   about `1.3e5`, their approximation errors growing along them (hundreds
   there); the comparison holds them to the surfaces near the apex.
 * Reviewed (`occt-ruled-curve-divergences.json`): the apex lying on the
-  sphere as an isolated point is missed, and the tiny loop beside the apex
-  when the sphere is `2^-20` larger; of two cones with one apex, two of the
+  sphere as an isolated point is missed; of two cones with one apex, two of the
   four common generatrices are returned (each twice), and the apex alone is
   missed. Native lines of infinite parameter range (a `Geom_Line`, a
   hyperbola's branches) are compared by their finite samples, a straight one
@@ -32,3 +31,8 @@ closedness and 17 samples, and each isolated point.
 `compare_ruled_curves.py` requires every later run to reproduce these rows
 (on another platform, its reviewed record) and compares the kernel's results
 with both.
+
+The capture was retaken with the kernel's ruled curve code set aside after
+`ka_sphere_near` left the fixtures: a cone and a sphere with the apex off it
+are S7b.2's closed form (`procedural-intersection-cases.txt` has its near
+cases).

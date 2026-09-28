@@ -2,7 +2,7 @@
   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
   "oracle": "OCCT 8.1.0 GeomInt_IntSS",
   "platform": "darwin",
-  "rust_revision": "25916b72fbdfe9319c5f4e5eae6dfb8d5f186d0e",
+  "rust_revision": "eaf5ed1dc8e118779d4bf8b449210e8ea805cce1",
   "rust_ruled_curve_exists": false,
   "rust_worktree_uncommitted": [
     " M rust/fixtures/occt-ruled-curve-preimplementation/inputs.txt",
@@ -10,12 +10,11 @@
     " M rust/fixtures/ruled-curve-cases.txt",
     " M rust/fixtures/ruled-curve-expected.tsv",
     " M rust/fixtures/ruled-curve-frames.tsv",
-    " M rust/kernel/src/intersection/torus_curves.rs",
     " M rust/tools/generate_ruled_curve_fixtures.py",
     " M rust/tools/ruled_curve_reference.py"
   ],
   "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
-  "input_sha256": "508606dfa7357c030a85547182fe87d5e8a935c53335e596894fa7ea55de5f35",
+  "input_sha256": "00cc35bace2d3d367603ab27b9bbb8dbf1b12ec5ef692688c165496b894a428b",
   "probe_source_sha256": "c5d56eb5325d7f932729e371c655839c3e1bcc1daf645fe192020d3504f12090",
-  "observations_sha256": "b4d6ec5f9c62475dd8cc462af127e1545ae104e519fffccb37dfd1e6a97b0cdd"
+  "observations_sha256": "95c3fbabcb51312c4232070479ba0b60660e54b6ac932373ae4c94df8807120f"
 }

@@ -246,7 +246,7 @@ def factor_rows(cv, ab, head):
     # The curve meets infinity where alpha vanishes (psi = pi / 2).
     as_ = [ab(u)[0] for u in us]
     infinite = sum(1 for k in range(n) if (as_[k] > 0) != (as_[(k+1) % n] > 0))
-    rows_ = [('component', 0, 1, abs(w), infinite), ('ring', u1, p0, point)]
+    rows_ = [('component', 0, 1, w, infinite), ('ring', u1, p0, point)]
     return ([head] if head else [])+rows_
 
 

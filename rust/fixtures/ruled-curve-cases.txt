@@ -46,7 +46,3 @@ case ka_cylinder_parallel
 surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.2
 surface cylinder 1.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
 end
-case ka_sphere_near
-surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
-surface sphere 0.75 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0 1.2500009536743164
-end

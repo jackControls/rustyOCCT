@@ -11,8 +11,10 @@ reference computes `Frame3::new`'s (every normal has a zero coordinate and a
 Pythagorean pair, which the platform's `hypot` cannot round differently).
 Exact cases: an apex on a sphere (isolated), on a cylinder (crossing, and
 with parallel axes), parallel cones of equal half-angles (the circle at
-infinity common); unbounded components where rulings are parallel to
-generatrices. No Rust result supplies an expectation.
+infinity common), two cones with one apex; unbounded components where
+rulings are parallel to generatrices. A cone and a sphere or a cylinder with
+the apex off it are S7b.2's (`procedural-intersection-cases.txt`). No Rust
+result supplies an expectation.
 """
 import argparse
 from pathlib import Path
@@ -30,7 +32,6 @@ TILT = (0.0, 3.0, 4.0)
 
 def cases():
     o = (0.0, 0.0, 0.0)
-    near = 2.0**-20
     return [
         # Two cones.
         ('kk_cross', cone(o, Z, 0.0, 0.5), cone((3.0, 0.0, 0.0), X, 0.0, 0.4)),
@@ -46,7 +47,6 @@ def cases():
         ('ka_sphere', cone(o, Z, 0.0, 0.5), sphere((0.75, 0.0, 1.0), 1.25)),
         ('ka_cylinder', cone(o, Z, 0.0, 0.5), cylinder((1.0, 0.0, 0.0), Y, 1.0)),
         ('ka_cylinder_parallel', cone(o, Z, 0.0, 0.2), cylinder((1.0, 0.0, 0.0), Z, 1.0)),
-        ('ka_sphere_near', cone(o, Z, 0.0, 0.5), sphere((0.75, 0.0, 1.0), 1.25+near)),
     ]
 
 
