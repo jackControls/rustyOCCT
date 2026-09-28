@@ -579,6 +579,16 @@ independence and points along every track on both surfaces.
 captures (one per sub-step): 28 matches and 10 reviewed differences, the
 kernel inside the reference on all 38.
 
+S7b.4: `generate_ruled_curve_fixtures.py --check` writes 12 pairs of two cones
+and of a cone's apex on a sphere or a cylinder, and their rows from
+`ruled_curve_reference.py`; `ruled_curves.rs` requires the stored normals,
+every reference fold, apex, line and ring point inside the kernel's
+enclosures, the same components, winding numbers and crossings of infinity,
+order independence and finite points along every track on both surfaces.
+`compare_ruled_curves.py` reproduces the pre-implementation capture: 9
+matches and 3 reviewed differences, the kernel inside the reference on all
+12.
+
 The `GeomInt_IntSS` captures were taken on macOS arm64; IntPatch's walking
 lines differ on Linux near degeneracies (the first Linux run changed
 `cc_near_figure_inside`). A run on another platform reproduces that
@@ -806,8 +816,9 @@ only numbers carry an allowance.
 | `occt-torus-preimplementation/native.txt` (`compare_primitives.py --family torus`) | OCCT's counts, properties, faces, edges and vertices of the 22 tori on each run | the bridge's own `1e-9` of the case's size, as for the cones | as for the cones |
 | `occt-torus-revolve-capture/native.txt` (`compare_revolve_history.py --family torus`) | every number of each case's native block on each run | `2^-40` × the case's size or the value | as for the cones |
 | `occt-spline-preimplementation/native.txt` (`compare_brep.py --family spline`) | OCCT's statuses, counts, tolerances, vertex gaps and use deviations of the ten spline models on each run | tolerances, statuses and counts exact; measurements within `2^-46` of the case's size or `1e-9` relative, as for M5 | OCCT evaluates splines and trigonometry with platform arithmetic; every valid model's measurement is rounding, at most `9.2e-16` |
+| `occt-tessellation-preimplementation/inputs.txt` (`compare_tessellation.py`) | the kernel's regenerated `.brep` texts and settings against the captured ones | `2^-50` absolute per number, as `compare_brep.py`'s inputs; every other token exact | the kernel writes frames and rotated points with the platform's trigonometry; the first Linux run's texts differed from the macOS capture |
 | `occt-tessellation-preimplementation/native.txt` (`compare_tessellation.py`) | OCCT's weld gap, own deflections, measured distances, area and volume of the 56 meshes on each run | `1e-9` relative or `1e-15` absolute; statuses and every count exact | BRepMesh and the probe's projections evaluate with platform trigonometry |
-| `occt-procedural-*-preimplementation`, `occt-torus-curve-preimplementation`, `occt-torus-pair-preimplementation` (`compare_procedural_intersections.py`, `compare_torus_curves.py`) | the native lines' counts, points and samples on each run | `1e-9` relative per number on the capture's platform; another platform reproduces its own reviewed record (`platform-<name>/`) exactly in counts | IntPatch walks and approximates lines with platform arithmetic; near degeneracies its pieces differ |
+| `occt-procedural-*-preimplementation`, `occt-torus-curve-preimplementation`, `occt-torus-pair-preimplementation`, `occt-ruled-curve-preimplementation` (`compare_procedural_intersections.py`, `compare_torus_curves.py`, `compare_ruled_curves.py`) | the native lines' counts, points and samples on each run | `1e-9` relative per number on the capture's platform; another platform reproduces its own reviewed record (`platform-<name>/`) exactly in counts | IntPatch walks and approximates lines with platform arithmetic; near degeneracies its pieces differ |
 | `prism-properties-baseline.tsv` (T1) | kernel mass properties, bounds and classifications before and after the migration | none: each host regenerates its own rows at `26fc457f` and must reproduce them bitwise | frames and rotations use the platform's trigonometry, so rows differ across hosts in the last bits |
 
 Native bridges that compare against reviewed differences use no numeric

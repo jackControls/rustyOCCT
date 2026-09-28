@@ -1609,6 +1609,18 @@ where `A v^2 + 2 B v + C = 0` and the curve is `v = (-B +- sqrt(D)) / A`,
   with `v = -c0 / c1`, and `E2` vanishes there exactly when `d0 c1 - d1 c0`
   does. The second spine's point is `o2 - sigma R2 M w / rho`, `sigma` the
   sign of `Q`.
+* **A cone's rulings (S7b.4).** With `d(u) = cos h a + sin h (cos u x +
+  sin u y)`, `d_u = sin h (cos u y - sin u x)` and `d_uu = -sin h (cos u x +
+  sin u y)`: `A = Q(d, d)`, `A_u = 2 Q(d, d_u)`, `A_uu = 2 Q(d_u, d_u) +
+  2 Q(d, d_uu)`, `B = Q(V - q, d)` with `B_u`, `B_uu` along, and `C` constant.
+  Substituting `v = tan(t / 2)` into `A v^2 + 2 B v + C` and multiplying by
+  `cos^2(t / 2)` gives `G = ((A + C) + (C - A) cos t) / 2 + B sin t`, of
+  degree one in `t`; the factors are `alpha sin psi + beta cos psi` with
+  `(alpha, beta) = (A, 2 B)` (the apex on the other surface, `C = 0`) or
+  `(2 B, C)` (twins, `A = 0`). On a factor's chart the apex's rulings are
+  the roots of `B`: `b1 cos u + b2 sin u = -b0`, two when
+  `b1^2 + b2^2 > b0^2`, at `u = atan2(b2, b1) +- arccos(-b0 / sqrt(b1^2 +
+  b2^2))`.
 * **Points.** The interval Newton operator `N(T) = m - G(m) / G_t(T)`
   contains every root of `G(phi, .)` in `T`; intersected with `T` it
   converges quadratically.

@@ -55,7 +55,7 @@ arguments.
 | Sphere/sphere | a circle; tangent: a point; concentric: empty or the same; else empty |
 | Cylinder/cylinder | parallel axes: two lines, one or none; coaxial: the same or empty; equal radii with crossing axes: two ellipses in the bisecting planes; otherwise not a conic |
 | Coaxial pairs | a cylinder, cone or sphere centred on the other's axis: circles where the radius functions of the axial coordinate agree, the apex where both pass through it, or the same surface |
-| Other quadric pairs | procedural curves (S7b.1, S7b.2); two cones and a cone's rational apex on a sphere not yet |
+| Other quadric pairs | procedural curves (S7b.1, S7b.2); two cones, and a cone's rational apex on a sphere or a cylinder: traced curves, possibly unbounded (S7b.4); two cones with one apex: their common generatrices |
 | Tori | a plane or a sphere: procedural curves, or circles in the special cases; coaxial pairs: circles (S7b.3a); a cylinder, a cone or another torus off the axis: traced curves (S7b.3b) |
 
 The plane/cone section uses a closed form: with the apex `V`, the plane's
@@ -258,6 +258,47 @@ three approximated lines off the surfaces), and the kernel inside the
 reference on all 38 (`compare_torus_curves.py`, `torus_curves.rs`: folds,
 tangencies and rings' points enclosed, components and winding numbers equal,
 order independence, points along every track on both surfaces).
+
+## Two cones, and a cone's apex on another surface (S7b.4)
+
+On the first cone's rulings through its apex (of two cones the first by
+stored data), `V + v d(u)`, the other quadric is `A(u) v^2 + 2 B(u) v + C`.
+With `v = tan(t / 2)` the curve and its points at infinity are the zero set
+of `G(u, t) = ((A + C) + (C - A) cos t) / 2 + B sin t`, smooth on a torus, so
+S7b.3b's traced graph applies with this chart (`TracedCurve::period` is
+`2 pi`). A component crossing `t = pi` is unbounded: each component counts
+its crossings of infinity (`infinite`; it may cross and return, winding
+zero), from the certified roots of `G(u, pi)` along `u`, each on its track.
+A point at infinity has no enclosure (`point_at` is `ComputationLimit` there).
+
+* **Factors**, decided by exact predicates. A rational apex on a sphere or a
+  cylinder (`C = 0`) leaves `A sin psi + 2 B cos psi` (`v = tan psi`,
+  `period() = pi`): one point per ruling, through the apex where
+  `B(u) = b0 + b1 cos u + b2 sin u` vanishes; the apex is a `Node`, a
+  crossing when `b1^2 + b2^2 > b0^2` (two roots, certified), isolated when
+  less. Parallel cones of equal half-angles (`A = 0` identically) leave
+  `2 B sin psi + C cos psi`, the conic in their radical plane, with the
+  circle at infinity common. Two cones with one rational apex meet in their
+  common generatrices: S7a's lines along the certified roots of `A(u)`, or
+  the apex alone.
+* **Nodes elsewhere** need symmetric data (a cone's `cos` and `sin` are
+  transcendental): two congruent cones whose axes cross at a point
+  equidistant from their apexes meet in two conics crossing where the cones
+  touch. The certification cannot settle those nodes: `ComputationLimit`.
+
+Evidence: `ruled_curve_reference.py` (the same projective parameterisation,
+`A`, `B`, `C` from the other surface evaluated on the ruling at
+`v = -1, 0, 1`, the torus reference's scan and components, the factors and
+the common generatrices in closed form) and 12 fixture cases (`kk_`: crossing,
+parallel, unbounded, tilted, irrational apexes, a miss, twins, one apex with
+four generatrices and with none; `ka_`: an apex on a sphere, on a crossing
+cylinder and on a parallel one); a `GeomInt_IntSS` capture before the kernel
+code (`fixtures/occt-ruled-curve-preimplementation`): 9 native matches (the
+unbounded lines, which run to `1e5` with growing approximation errors, held
+to the surfaces within 20 of the apex) and 3 reviewed differences (an
+isolated apex missed, two of four common generatrices, the lone apex
+missed), and the kernel inside the reference on all 12
+(`compare_ruled_curves.py`, `ruled_curves.rs`).
 
 ## Evidence
 

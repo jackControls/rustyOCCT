@@ -40,6 +40,11 @@ use std::cmp::Ordering;
 
 /// The binary64 value just above pi (next_up needs Rust 1.86).
 const PI_HI: f64 = 3.1415926535897936;
+
+/// The binary64 value just above a positive `x`.
+fn above(x: f64) -> f64 {
+    f64::from_bits(x.to_bits() + 1)
+}
 const TAU: f64 = 2.0 * std::f64::consts::PI;
 
 // ------------------------------------------------------------------ public
@@ -72,12 +77,17 @@ pub enum TracedComponent {
         tracks: Vec<usize>,
         folds: usize,
         winding: [i64; 2],
+        /// Its crossings of the points at infinity (a cone's rulings: an
+        /// unbounded component crosses them, and may return); zero on a
+        /// torus.
+        infinite: usize,
     },
     /// Branches through crossings: their tracks, folds and nodes.
     Crossing {
         tracks: Vec<usize>,
         folds: usize,
         nodes: Vec<usize>,
+        infinite: usize,
     },
     /// An isolated tangency point.
     Isolated { node: usize },
@@ -99,16 +109,35 @@ struct Step {
     window: [f64; 2],
 }
 
-/// A torus's curve with a cylinder or a cone, as a graph of tracks, folds
-/// and tangencies (D13's procedural curve for S7b.3b).
+/// Which chart a traced curve lives on.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum ChartKind {
+    /// A torus's meridians (S7b.3b).
+    Meridians,
+    /// A cone's rulings with `v = tan(t / 2)` (S7b.4).
+    Rulings,
+    /// A cone's rulings through its apex on the other surface: the factor
+    /// `A sin psi + 2 B cos psi` (S7b.4).
+    Apex,
+    /// Parallel cones of equal half-angles: the factor `2 B sin psi +
+    /// C cos psi` (S7b.4).
+    Twins,
+}
+
+/// A torus's curve with a cylinder, a cone or another torus, or a cone's
+/// with another quadric, as a graph of tracks, folds and tangencies (D13's
+/// procedural curve for S7b.3b and S7b.4).
 #[derive(Debug, Clone, PartialEq)]
 pub struct TracedCurve {
-    carrier: Surface,
-    other: Surface,
-    folds: Vec<Fold>,
-    nodes: Vec<Node>,
-    tracks: Vec<Track>,
-    components: Vec<TracedComponent>,
+    pub(super) carrier: Surface,
+    pub(super) other: Surface,
+    pub(super) chart: ChartKind,
+    /// The chart's period in `t`: `2 pi`, or `pi` for a factor's `psi`.
+    pub(super) period: f64,
+    pub(super) folds: Vec<Fold>,
+    pub(super) nodes: Vec<Node>,
+    pub(super) tracks: Vec<Track>,
+    pub(super) components: Vec<TracedComponent>,
 }
 
 impl TracedCurve {
@@ -130,6 +159,13 @@ impl TracedCurve {
     }
     pub fn components(&self) -> &[TracedComponent] {
         &self.components
+    }
+    /// The period of the chart's second parameter: `2 pi` (a torus's tube
+    /// angle, or `t` with `v = tan(t / 2)` on a cone's rulings), or `pi` for
+    /// the factor `psi` (`v = tan psi`) of a cone through its apex on the
+    /// other surface or of parallel twin cones.
+    pub fn period(&self) -> f64 {
+        self.period
     }
     /// The curve's point on `track` at meridian angle `phi` (any turn of it
     /// inside the track's range), enclosed; an error outside the range.
@@ -157,23 +193,31 @@ impl TracedCurve {
             .iter()
             .find(|s| s.phi[0] <= at && at <= s.phi[1])
             .ok_or(Error::OutOfDomain("a meridian outside the track"))?;
-        let fast = Field::<Fast>::of(&self.carrier, &self.other)?;
+        let fast = self.chart::<Fast>()?;
+        let fast = fast.as_ref();
         let narrow = |p: &Enclosure3| {
             p.iter()
                 .all(|[a, b]| b - a <= 1e-12 * a.abs().max(b.abs()).max(1.0))
         };
         // Binary64 intervals resolve t only to about their rounding over
         // |G_t|; rational ones narrow further from their bracket.
-        let bracket = match root_in(&fast, at, step.window) {
-            Ok(t) => match point(&fast, at, t) {
+        let bracket = match root_in(fast, at, step.window) {
+            Ok(t) => match point(fast, at, t) {
                 Ok(p) if narrow(&p) => return Ok((t, p)),
                 _ => t,
             },
             Err(_) => step.window,
         };
-        let exact = Field::<I>::of(&self.carrier, &self.other)?;
-        let t = newton(&exact, at, bracket)?;
-        Ok((t, point(&exact, at, t)?))
+        let exact = self.chart::<I>()?;
+        let t = newton(exact.as_ref(), at, bracket)?;
+        Ok((t, point(exact.as_ref(), at, t)?))
+    }
+    /// The chart in a certified tier.
+    fn chart<T: Real + 'static>(&self) -> Result<Box<dyn Chart<T>>> {
+        Ok(match self.chart {
+            ChartKind::Meridians => Box::new(Field::<T>::of(&self.carrier, &self.other)?),
+            kind => super::ruled_curves::chart::<T>(kind, &self.carrier, &self.other)?,
+        })
     }
 }
 
@@ -235,13 +279,37 @@ struct Field<T> {
 }
 
 /// `G` and its derivatives up to the second order.
-struct Jet<T> {
-    g: T,
-    gp: T,
-    gt: T,
-    gpp: T,
-    gpt: T,
-    gtt: T,
+pub(super) struct Jet<T> {
+    pub(super) g: T,
+    pub(super) gp: T,
+    pub(super) gt: T,
+    pub(super) gpp: T,
+    pub(super) gpt: T,
+    pub(super) gtt: T,
+}
+
+/// A function `G(u, t)` on a parameter torus (`u` mod `2 pi`, `t` mod the
+/// chart's period) whose zero set is the curve, with the point of the curve
+/// at a parameter: the torus's meridians here, a cone's rulings in
+/// `ruled_curves.rs`.
+pub(super) trait Chart<T: Real> {
+    fn value(&self, u: &T, t: &T) -> T;
+    fn jet(&self, u: &T, t: &T) -> Jet<T>;
+    /// The curve's point at `(u, t)`; an error at infinity.
+    fn at(&self, u: &T, t: &T) -> Result<E<T>>;
+}
+
+impl<T: Real> Chart<T> for Field<T> {
+    fn value(&self, u: &T, t: &T) -> T {
+        Field::value(self, u, t)
+    }
+    fn jet(&self, u: &T, t: &T) -> Jet<T> {
+        Field::jet(self, u, t)
+    }
+    fn at(&self, u: &T, t: &T) -> Result<E<T>> {
+        let [p, ..] = self.frame(u, t);
+        Ok(p)
+    }
 }
 
 /// The rational `x` direction of the torus's frame.
@@ -378,9 +446,8 @@ impl<T: Real> Field<T> {
     }
 }
 
-fn point<T: Real>(f: &Field<T>, phi: f64, t: [f64; 2]) -> Result<Enclosure3> {
-    let [p, ..] = f.frame(&T::exact_f64(phi), &span(t[0], t[1]));
-    Ok(bounds3(&p))
+fn point<T: Real>(f: &dyn Chart<T>, phi: f64, t: [f64; 2]) -> Result<Enclosure3> {
+    Ok(bounds3(&f.at(&T::exact_f64(phi), &span(t[0], t[1]))?))
 }
 
 fn certain<T: Real>(x: &T) -> bool {
@@ -404,7 +471,7 @@ fn offset<T: Real>(e: [f64; 2], m: f64) -> T {
 /// enclosure `G(m) + G_t(piece) (piece - m)`, a piece kept as a root when `G`
 /// changes sign between its ends and `G_t` keeps a sign on it.
 fn roots_on<T: Real>(
-    f: &Field<T>,
+    f: &dyn Chart<T>,
     phi: f64,
     lo: f64,
     hi: f64,
@@ -426,9 +493,24 @@ fn roots_on<T: Real>(
             continue;
         }
         let (sa, sb) = (sign(&at(a)), sign(&at(b)));
-        if sa.is_some() && sb.is_some() && sa != sb && certain(&j.gt) {
-            out.push(newton(f, phi, [a, b])?);
-            continue;
+        if certain(&j.gt) {
+            // Monotone on the piece: a root where the ends' signs differ,
+            // or exactly at an end (a subdivision point can hit a symmetric
+            // root), else none.
+            let exact = |x: f64| at(x).sign() == Some(Ordering::Equal);
+            if sa.is_some() && sb.is_some() {
+                if sa != sb {
+                    out.push(newton(f, phi, [a, b])?);
+                }
+                continue;
+            }
+            if sa.is_none() && exact(a) || sb.is_none() && exact(b) {
+                let x = if sa.is_none() && exact(a) { a } else { b };
+                if !out.iter().any(|r: &Enclosure| r[0] == x && r[1] == x) {
+                    out.push([x, x]);
+                }
+                continue;
+            }
         }
         if depth == 0 || !(a < m && m < b) {
             return Err(limit("a meridian's roots"));
@@ -462,7 +544,7 @@ fn narrow(
 }
 
 /// The root of `G(phi, .)` in a certified window.
-fn root_in<T: Real>(f: &Field<T>, phi: f64, w: [f64; 2]) -> Result<Enclosure> {
+fn root_in<T: Real>(f: &dyn Chart<T>, phi: f64, w: [f64; 2]) -> Result<Enclosure> {
     let p = T::exact_f64(phi);
     let s = |t: f64| sign(&f.value(&p, &T::exact_f64(t)));
     let (a, b) = (s(w[0]), s(w[1]));
@@ -476,7 +558,7 @@ fn root_in<T: Real>(f: &Field<T>, phi: f64, w: [f64; 2]) -> Result<Enclosure> {
 /// one sign) narrowed by the interval Newton operator `m - G(m) / G_t(T)`,
 /// which keeps every root of the bracket: quadratically, a few evaluations
 /// where bisection would need dozens.
-fn newton<T: Real>(f: &Field<T>, phi: f64, w: [f64; 2]) -> Result<Enclosure> {
+fn newton<T: Real>(f: &dyn Chart<T>, phi: f64, w: [f64; 2]) -> Result<Enclosure> {
     let p = T::exact_f64(phi);
     let mut b = w;
     for _ in 0..12 {
@@ -503,9 +585,80 @@ fn newton<T: Real>(f: &Field<T>, phi: f64, w: [f64; 2]) -> Result<Enclosure> {
     Ok(b)
 }
 
+/// The certified simple roots of `G(., t)` over `u` in `[-pi, pi]` (`t`
+/// exact): where the curve crosses the line `t` (a cone's points at
+/// infinity).
+pub(super) fn roots_along(
+    fast: &dyn Chart<Fast>,
+    exact: &dyn Chart<I>,
+    t: f64,
+) -> Result<Vec<Enclosure>> {
+    fn run<T: Real>(f: &dyn Chart<T>, t: f64, budget: &mut usize) -> Result<Vec<Enclosure>> {
+        let tt = T::exact_f64(t);
+        let at = |u: f64| f.value(&T::exact_f64(u), &tt);
+        let mut out = Vec::new();
+        let mut pending = vec![(-PI_HI, PI_HI, 60usize)];
+        while let Some((a, b, depth)) = pending.pop() {
+            *budget = budget
+                .checked_sub(1)
+                .ok_or(limit("a curve's crossings of infinity"))?;
+            let m = 0.5 * a + 0.5 * b;
+            let j = f.jet(&span(a, b), &tt);
+            if certain(&j.g) {
+                continue;
+            }
+            let mv = at(m).add(&j.gp.mul(&offset::<T>([a, b], m)));
+            if certain(&mv) {
+                continue;
+            }
+            let (sa, sb) = (sign(&at(a)), sign(&at(b)));
+            if sa.is_some() && sb.is_some() && sa != sb && certain(&j.gp) {
+                out.push(narrow(|u| sign(&at(u)), a, b, sa));
+                continue;
+            }
+            if depth == 0 || !(a < m && m < b) {
+                return Err(limit("a curve's crossings of infinity"));
+            }
+            pending.push((m, b, depth - 1));
+            pending.push((a, m, depth - 1));
+        }
+        out.sort_by(|x, y| x[0].total_cmp(&y[0]));
+        Ok(dedupe_seam(out, TAU))
+    }
+    let mut budget = 20_000;
+    match run(fast, t, &mut budget) {
+        Err(Error::ComputationLimit(_)) => run(exact, t, &mut budget),
+        other => other,
+    }
+}
+
+impl TracedCurve {
+    /// The track through `(u, t)` (some turn of each), if any.
+    pub(super) fn track_through(&self, u: Enclosure, t: f64) -> Option<usize> {
+        let m = mid(u);
+        self.tracks.iter().position(|tr| {
+            let k = ((tr.phi[0] - m) / TAU).ceil();
+            let at = m + k * TAU;
+            tr.steps.iter().any(|s| {
+                s.phi[0] <= at
+                    && at <= s.phi[1]
+                    && [-2.0, -1.0, 0.0, 1.0, 2.0].iter().any(|j| {
+                        s.window[0] <= t + j * self.period && t + j * self.period <= s.window[1]
+                    })
+            })
+        })
+    }
+}
+
 /// No zero of `G` on `[p0, p1] x {t}`: subdivision with the mean-value
 /// enclosure in `phi`.
-fn edge_free<T: Real>(f: &Field<T>, p0: f64, p1: f64, t: f64, budget: &mut usize) -> Result<bool> {
+fn edge_free<T: Real>(
+    f: &dyn Chart<T>,
+    p0: f64,
+    p1: f64,
+    t: f64,
+    budget: &mut usize,
+) -> Result<bool> {
     let tt = T::exact_f64(t);
     let mut pending = vec![(p0, p1, 40usize)];
     while let Some((a, b, depth)) = pending.pop() {
@@ -550,7 +703,7 @@ enum Kraw {
 /// The Krawczyk operator of `(G, G_t)` (a fold) or of `(G_phi, G_t)` (a
 /// critical point of `G`) on a box: `Unique` when it maps the box into its
 /// interior (one regular zero there, inside the returned box).
-fn krawczyk<T: Real>(f: &Field<T>, b: &Bx, critical: bool) -> Kraw {
+fn krawczyk<T: Real>(f: &dyn Chart<T>, b: &Bx, critical: bool) -> Kraw {
     let m = [mid(b[0]), mid(b[1])];
     let (mp, mt) = (T::exact_f64(m[0]), T::exact_f64(m[1]));
     let jm = f.jet(&mp, &mt);
@@ -608,7 +761,7 @@ fn krawczyk<T: Real>(f: &Field<T>, b: &Bx, critical: bool) -> Kraw {
 }
 
 /// A fold's box refined by repeated Krawczyk steps.
-fn refine<T: Real>(f: &Field<T>, mut b: Bx, critical: bool) -> Bx {
+fn refine<T: Real>(f: &dyn Chart<T>, mut b: Bx, critical: bool) -> Bx {
     for _ in 0..40 {
         match krawczyk(f, &inflate(&b, 1e-3), critical) {
             Kraw::Unique(k)
@@ -635,7 +788,7 @@ enum Verdict {
     Split,
 }
 
-fn verdict<T: Real>(f: &Field<T>, b: &Bx) -> Verdict {
+fn verdict<T: Real>(f: &dyn Chart<T>, b: &Bx) -> Verdict {
     let (p, t) = (span::<T>(b[0][0], b[0][1]), span::<T>(b[1][0], b[1][1]));
     let jb = f.jet(&p, &t);
     if certain(&jb.g) || certain(&jb.gt) {
@@ -663,9 +816,15 @@ fn inside(b: &Bx, z: &Bx) -> bool {
 /// Every fold on the parameter torus, outside the tangencies' boxes: a
 /// subdivision of `[-pi, pi]^2` (binary64 intervals, a box they cannot settle
 /// at a small size again in rational intervals) within a work budget.
-fn folds(fast: &Field<Fast>, exact: &Field<I>, zones: &[Bx]) -> Result<Vec<Bx>> {
+fn folds(
+    fast: &dyn Chart<Fast>,
+    exact: &dyn Chart<I>,
+    period: f64,
+    zones: &[Bx],
+) -> Result<Vec<Bx>> {
     let mut out: Vec<Bx> = Vec::new();
-    let mut pending = vec![([[-PI_HI, PI_HI], [-PI_HI, PI_HI]], 0usize)];
+    let half = above(0.5 * period);
+    let mut pending = vec![([[-PI_HI, PI_HI], [-half, half]], 0usize)];
     // The fixtures need at most about two thousand boxes and no rational
     // one (each costs tens of milliseconds): binary64 intervals fail only
     // beside a nearly singular point, where a few rational boxes rarely
@@ -680,7 +839,7 @@ fn folds(fast: &Field<Fast>, exact: &Field<I>, zones: &[Bx]) -> Result<Vec<Bx>> 
             |z: &Bx, k: f64, l: f64| [[z[0][0] + k, z[0][1] + k], [z[1][0] + l, z[1][1] + l]];
         if zones.iter().any(|z| {
             [-TAU, 0.0, TAU].iter().any(|k| {
-                [-TAU, 0.0, TAU]
+                [-period, 0.0, period]
                     .iter()
                     .any(|l| inside(&b, &shifted(z, *k, *l)))
             })
@@ -701,7 +860,8 @@ fn folds(fast: &Field<Fast>, exact: &Field<I>, zones: &[Bx]) -> Result<Vec<Bx>> 
                 let k = refine(fast, k, false);
                 let same = |o: &Bx| {
                     (0..2).all(|r| {
-                        [-TAU, 0.0, TAU]
+                        let p = if r == 0 { TAU } else { period };
+                        [-p, 0.0, p]
                             .iter()
                             .any(|s| o[r][0] <= k[r][1] + s && k[r][0] + s <= o[r][1])
                     })
@@ -739,7 +899,7 @@ fn folds(fast: &Field<Fast>, exact: &Field<I>, zones: &[Bx]) -> Result<Vec<Bx>> 
 /// A fold's or a tangency's box: no zero of `G` on its top and bottom edges,
 /// the certified roots on its sides.
 #[derive(Clone)]
-struct Local {
+pub(super) struct Local {
     b: Bx,
     left: Vec<Enclosure>,
     right: Vec<Enclosure>,
@@ -754,7 +914,7 @@ enum LocalKind {
 
 type Sides = (Vec<Enclosure>, Vec<Enclosure>);
 
-fn local_edges<T: Real>(f: &Field<T>, b: &Bx) -> Result<Option<Sides>> {
+fn local_edges<T: Real>(f: &dyn Chart<T>, b: &Bx) -> Result<Option<Sides>> {
     let mut budget = 20_000;
     for t in [b[1][0], b[1][1]] {
         if !edge_free(f, b[0][0], b[0][1], t, &mut budget)? {
@@ -772,7 +932,7 @@ fn local_edges<T: Real>(f: &Field<T>, b: &Bx) -> Result<Option<Sides>> {
 
 /// The box of a fold at `k`: `G_phi` of one sign on it, no zero on its top
 /// and bottom, two roots on one side and none on the other.
-fn fold_box(fast: &Field<Fast>, exact: &Field<I>, k: &Bx) -> Result<Local> {
+fn fold_box(fast: &dyn Chart<Fast>, exact: &dyn Chart<I>, k: &Bx) -> Result<Local> {
     let c = [mid(k[0]), mid(k[1])];
     let j = fast.jet(&Fast::exact_f64(c[0]), &Fast::exact_f64(c[1]));
     let ratio = {
@@ -819,8 +979,8 @@ fn fold_box(fast: &Field<Fast>, exact: &Field<I>, k: &Bx) -> Result<Local> {
 /// its top and bottom, two roots on each side for a crossing, none for an
 /// isolated point.
 fn node_box(
-    fast: &Field<Fast>,
-    exact: &Field<I>,
+    fast: &dyn Chart<Fast>,
+    exact: &dyn Chart<I>,
     at: &Bx,
     crossing: bool,
     index: usize,
@@ -892,7 +1052,7 @@ struct Traced {
 /// a window where `G` changes sign across the ends for every `phi` of the step
 /// and `G_t` keeps a sign; the root at `phi1` narrowed in it.
 fn step<T: Real>(
-    f: &Field<T>,
+    f: &dyn Chart<T>,
     phi0: f64,
     w0: Enclosure,
     phi1: f64,
@@ -946,8 +1106,8 @@ fn step<T: Real>(
 
 /// A branch followed from `phi0` (root `w0`) to `phi1`, adaptively.
 fn follow(
-    fast: &Field<Fast>,
-    exact: &Field<I>,
+    fast: &dyn Chart<Fast>,
+    exact: &dyn Chart<I>,
     phi0: f64,
     w0: Enclosure,
     phi1: f64,
@@ -989,9 +1149,9 @@ fn follow(
     Ok((steps, w))
 }
 
-fn overlaps_mod(a: Enclosure, b: Enclosure) -> Option<f64> {
+fn overlaps_mod(a: Enclosure, b: Enclosure, period: f64) -> Option<f64> {
     for k in [-2.0, -1.0, 0.0, 1.0, 2.0] {
-        let s = k * TAU;
+        let s = k * period;
         if a[0] <= b[1] + s && b[0] + s <= a[1] {
             return Some(s);
         }
@@ -1003,7 +1163,7 @@ fn overlaps_mod(a: Enclosure, b: Enclosure) -> Option<f64> {
 
 /// `atan2(y, x)` enclosed, continued across `pi` when `x` is certainly
 /// negative (an angle at `pi` is `pi + atan2(-y, -x)`).
-fn angle(y: &I, x: &I) -> Result<I> {
+pub(super) fn angle(y: &I, x: &I) -> Result<I> {
     if x.sign() == Some(Ordering::Less) {
         let a = crate::certified::atan2(&y.neg(), &x.neg()).ok_or(limit("a tangency's angle"))?;
         let p = crate::certified::pi();
@@ -1060,29 +1220,45 @@ pub(super) fn intersect(torus: &Surface, other: &Surface) -> Result<TracedCurve>
             ));
         }
     }
-    let found = folds(&fast, &exact, &zones)?;
-    let mut locals: Vec<Local> = nodes.iter().map(|(_, l)| l.clone()).collect();
+    let locals: Vec<Local> = nodes.iter().map(|(_, l)| l.clone()).collect();
+    let nodes: Vec<Node> = nodes.into_iter().map(|(n, _)| n).collect();
+    let (folds, tracks, components) = graph(&fast, &exact, TAU, locals, &nodes)?;
+    Ok(TracedCurve {
+        carrier: torus.clone(),
+        other: other.clone(),
+        chart: ChartKind::Meridians,
+        period: TAU,
+        folds,
+        nodes,
+        tracks,
+        components,
+    })
+}
+
+/// The traced graph on a chart with period `period` in `t`, given the
+/// tangencies' boxes: folds and their boxes, tracks, components.
+pub(super) fn graph(
+    fast: &dyn Chart<Fast>,
+    exact: &dyn Chart<I>,
+    period: f64,
+    mut locals: Vec<Local>,
+    nodes: &[Node],
+) -> Result<(Vec<Fold>, Vec<Track>, Vec<TracedComponent>)> {
+    let zones: Vec<Bx> = locals.iter().map(|l| l.b).collect();
+    let found = folds(fast, exact, period, &zones)?;
     let mut fold_rows = Vec::new();
     for k in &found {
-        locals.push(fold_box(&fast, &exact, k)?);
-        let [p, ..] = exact.frame(&span(k[0][0], k[0][1]), &span(k[1][0], k[1][1]));
+        locals.push(fold_box(fast, exact, k)?);
+        let p = exact.at(&span(k[0][0], k[0][1]), &span(k[1][0], k[1][1]))?;
         fold_rows.push(Fold {
             phi: k[0],
             t: k[1],
             point: bounds3(&p),
         });
     }
-    let nodes: Vec<Node> = nodes.into_iter().map(|(n, _)| n).collect();
-    let (tracks, ends) = sweep(&fast, &exact, &locals)?;
-    let components = assemble(&tracks, &ends, &locals, &nodes);
-    Ok(TracedCurve {
-        carrier: torus.clone(),
-        other: other.clone(),
-        folds: fold_rows,
-        nodes,
-        tracks,
-        components,
-    })
+    let (tracks, ends) = sweep(fast, exact, period, &locals)?;
+    let components = assemble(&tracks, &ends, &locals, nodes, period);
+    Ok((fold_rows, tracks, components))
 }
 
 /// A live branch of the sweep.
@@ -1097,8 +1273,9 @@ struct Live {
 /// Every branch followed once round the torus from a meridian outside every
 /// box, stopping at boxes' sides and starting again beyond them.
 fn sweep(
-    fast: &Field<Fast>,
-    exact: &Field<I>,
+    fast: &dyn Chart<Fast>,
+    exact: &dyn Chart<I>,
+    period: f64,
     locals: &[Local],
 ) -> Result<(Vec<Track>, Vec<Traced>)> {
     // The start: the middle of the widest gap between the boxes' ranges.
@@ -1139,12 +1316,13 @@ fn sweep(
     let mut budget = 200_000usize;
     let first = {
         let mut rb = 100_000usize;
-        let roots = match roots_on(fast, start, -PI_HI, PI_HI, &mut rb) {
+        let half = above(0.5 * period);
+        let roots = match roots_on(fast, start, -half, half, &mut rb) {
             Ok(r) => r,
-            Err(Error::ComputationLimit(_)) => roots_on(exact, start, -PI_HI, PI_HI, &mut rb)?,
+            Err(Error::ComputationLimit(_)) => roots_on(exact, start, -half, half, &mut rb)?,
             Err(e) => return Err(e),
         };
-        dedupe_seam(roots)
+        dedupe_seam(roots, period)
     };
     let mut live: Vec<Live> = first
         .iter()
@@ -1205,7 +1383,7 @@ fn sweep(
                 let hits: Vec<usize> = live
                     .iter()
                     .enumerate()
-                    .filter(|(_, l)| overlaps_mod(l.root, *root).is_some())
+                    .filter(|(_, l)| overlaps_mod(l.root, *root, period).is_some())
                     .map(|(k, _)| k)
                     .collect();
                 let [k] = hits[..] else {
@@ -1230,7 +1408,7 @@ fn sweep(
         let own = if side == 0 { 0 } else { roots.len() };
         let within = live
             .iter()
-            .filter(|l| overlaps_mod(l.root, window).is_some())
+            .filter(|l| overlaps_mod(l.root, window, period).is_some())
             .count();
         if within != own {
             return Err(limit("a branch inside a box"));
@@ -1242,7 +1420,7 @@ fn sweep(
         let hits: Vec<usize> = first
             .iter()
             .enumerate()
-            .filter(|(_, r)| overlaps_mod(l.root, **r).is_some())
+            .filter(|(_, r)| overlaps_mod(l.root, **r, period).is_some())
             .map(|(j, _)| j)
             .collect();
         let [j] = hits[..] else {
@@ -1256,10 +1434,10 @@ fn sweep(
 
 /// Roots over `[-pi, pi]` (binary64 bounds of pi): a root in the sliver
 /// beyond pi is the one near -pi, found twice.
-fn dedupe_seam(mut r: Vec<Enclosure>) -> Vec<Enclosure> {
+fn dedupe_seam(mut r: Vec<Enclosure>, period: f64) -> Vec<Enclosure> {
     if r.len() >= 2 {
         let (first, last) = (r[0], r[r.len() - 1]);
-        if last[0] - TAU <= first[1] + 1e-12 && first[0] + TAU <= last[1] + 1e-12 {
+        if last[0] - period <= first[1] + 1e-12 && first[0] + period <= last[1] + 1e-12 {
             r.pop();
         }
     }
@@ -1273,6 +1451,7 @@ fn assemble(
     ends: &[Traced],
     locals: &[Local],
     nodes: &[Node],
+    period: f64,
 ) -> Vec<TracedComponent> {
     let n = tracks.len();
     let mut partner: Vec<[Option<(usize, usize)>; 2]> = vec![[None, None]; n];
@@ -1381,6 +1560,7 @@ fn assemble(
                 tracks: members,
                 folds,
                 nodes: node_set,
+                infinite: 0,
             });
             continue;
         }
@@ -1399,14 +1579,14 @@ fn assemble(
                 break;
             };
             let jump = ends[next].t[ns] - d.t[b];
-            wt += jump - TAU * (jump / TAU).round();
+            wt += jump - period * (jump / period).round();
             cur = next;
             fwd = ns == 0;
             if (cur == members[0] && fwd) || order.len() > members.len() {
                 break;
             }
         }
-        let mut w = [(wp / TAU).round() as i64, (wt / TAU).round() as i64];
+        let mut w = [(wp / TAU).round() as i64, (wt / period).round() as i64];
         if w[0] < 0 || (w[0] == 0 && w[1] < 0) {
             w = [-w[0], -w[1]];
         }
@@ -1414,6 +1594,7 @@ fn assemble(
             tracks: order,
             folds,
             winding: w,
+            infinite: 0,
         });
     }
     out

@@ -3,7 +3,7 @@
 //! `tools/generate_analytic_intersection_fixtures.py`).
 use rusty_occt::intersection::{surface_surface, AnalyticItem, SurfaceIntersection};
 use rusty_occt::topology::Surface;
-use rusty_occt::{Frame3, Point3, RigidTransform, Tolerance, Vec3};
+use rusty_occt::{Error, Frame3, Point3, RigidTransform, Tolerance, Vec3};
 use std::collections::BTreeMap;
 
 fn surface(words: &[&str]) -> Surface {
@@ -74,8 +74,9 @@ fn matches(got: &SurfaceIntersection, want: &[String]) -> Result<(), String> {
         (SurfaceIntersection::Empty, ["empty"])
         | (SurfaceIntersection::Same, ["same"])
         | (SurfaceIntersection::NotConic, ["not_conic"])
-        // A procedural curve (S7b) is not a conic.
-        | (SurfaceIntersection::Procedural(_), ["not_conic"]) => Ok(()),
+        // A procedural or traced curve (S7b) is not a conic.
+        | (SurfaceIntersection::Procedural(_), ["not_conic"])
+        | (SurfaceIntersection::Traced(_), ["not_conic"]) => Ok(()),
         (SurfaceIntersection::Items(items), _) if items.len() == want.len() => {
             for (item, row) in items.iter().zip(want) {
                 let mut w = row.split(' ');
@@ -138,7 +139,14 @@ fn every_case_matches_the_exact_reference() {
     let mut failures = Vec::new();
     let all = cases();
     for (name, a, b) in &all {
-        let got = surface_surface(a, b).unwrap_or_else(|e| panic!("{name}: {e}"));
+        let got = match surface_surface(a, b) {
+            Ok(got) => got,
+            // Two congruent cones whose axes cross at a point equidistant
+            // from their apexes meet in two conics crossing where the cones
+            // touch: S7b.4 does not certify such a node.
+            Err(Error::ComputationLimit(_)) if want[name] == ["not_conic"] => continue,
+            Err(e) => panic!("{name}: {e}"),
+        };
         if let Err(why) = matches(&got, &want[name]) {
             failures.push(format!("{name}: {why}"));
         }
@@ -154,7 +162,7 @@ fn every_case_matches_the_exact_reference() {
 #[test]
 fn enclosures_are_a_few_ulps_wide() {
     for (name, a, b) in cases() {
-        if let SurfaceIntersection::Items(items) = surface_surface(&a, &b).unwrap() {
+        if let Ok(SurfaceIntersection::Items(items)) = surface_surface(&a, &b) {
             for item in items {
                 for [lo, hi] in item.values() {
                     let ulp = f64::EPSILON * lo.abs().max(hi.abs()).max(f64::MIN_POSITIVE);
@@ -172,7 +180,7 @@ fn returned_curves_lie_on_both_surfaces() {
     let mid = |[lo, hi]: [f64; 2]| 0.5 * lo + 0.5 * hi;
     let v = |x: &[[f64; 2]; 3]| Vec3::new(mid(x[0]), mid(x[1]), mid(x[2]));
     for (name, a, b) in cases() {
-        let SurfaceIntersection::Items(items) = surface_surface(&a, &b).unwrap() else {
+        let Ok(SurfaceIntersection::Items(items)) = surface_surface(&a, &b) else {
             continue;
         };
         for item in items {
@@ -275,8 +283,10 @@ fn translations_move_the_items() {
         }
     };
     for (name, a, b) in cases() {
-        let before = surface_surface(&a, &b).unwrap();
-        let after = surface_surface(&mv(&a), &mv(&b)).unwrap();
+        let (Ok(before), Ok(after)) = (surface_surface(&a, &b), surface_surface(&mv(&a), &mv(&b)))
+        else {
+            continue;
+        };
         match (&before, &after) {
             (SurfaceIntersection::Items(x), SurfaceIntersection::Items(y)) => {
                 assert_eq!(x.len(), y.len(), "{name}");

@@ -19,6 +19,7 @@ mod curved;
 mod exact_spline;
 mod linear_sets;
 mod procedural;
+mod ruled_curves;
 mod spline_linear;
 mod spline_plane;
 mod spline_quadric;

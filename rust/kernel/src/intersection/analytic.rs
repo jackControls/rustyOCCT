@@ -273,7 +273,7 @@ fn nearest(p: &E, d: &E) -> Result<E> {
     Ok(esub(p, &escale(d, &k)))
 }
 
-fn line(p: &E, d: &E) -> Result<AnalyticItem> {
+pub(super) fn line(p: &E, d: &E) -> Result<AnalyticItem> {
     Ok(AnalyticItem::Line {
         point: bounds3(&nearest(p, d)?),
         direction: bounds3(&unit_enclosed(d)?),
@@ -382,6 +382,9 @@ pub fn surface_surface(a: &Surface, b: &Surface) -> Result<SurfaceIntersection> 
         }
     };
     if let Out::NotConic = items {
+        if let Some(found) = super::ruled_curves::intersect(sa, sb)? {
+            return Ok(found);
+        }
         match super::procedural::intersect(sa, sb)? {
             Some(super::procedural::Found::Empty) => return Ok(SurfaceIntersection::Empty),
             Some(super::procedural::Found::Point(p)) => {

@@ -121,6 +121,7 @@ fn main() {
                     tracks,
                     folds,
                     winding,
+                    ..
                 } => {
                     comps.push(("component", vec![*folds as i64, winding[0], winding[1]]));
                     if *folds == 0 {

@@ -65,6 +65,9 @@ fn main() {
                     println!("{name} {} {}", item.kind(), values.join(" "));
                 }
             }
+            // A pair S7b could not certify (two congruent cones crossing at a
+            // node, S7b.4) is outside S7a's classes too.
+            Err(rusty_occt::Error::ComputationLimit(_)) => println!("{name} limit"),
             Err(e) => println!("{name} error {e}"),
         }
     }

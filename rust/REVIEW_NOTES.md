@@ -810,9 +810,14 @@ Decisions for S7b.4, recorded before its code (2026-09-28):
   infinity common and the conic `2 B sin psi + C cos psi = 0` in their radical
   plane. Both are traced on the `(u, psi)` torus with the same machinery.
 * **Tangency.** A cone's `cos` and `sin` are transcendental for every
-  nonzero binary64 half-angle, so two cones, or a cone and a sphere or a
-  cylinder, are never exactly tangent away from the apex; a box the
-  certification cannot settle is `ComputationLimit`.
+  nonzero binary64 half-angle, so a tangency away from the apex needs a
+  symmetric configuration. *Amended in implementation:* such configurations
+  occur exactly: two congruent cones whose axes cross at a point equidistant
+  from their apexes (S7a's `kk_crossing`) meet in two conics crossing where
+  the cones touch, whatever the half-angle. Those nodes are not decided
+  exactly: the certification cannot settle them and the result is
+  `ComputationLimit`, which S7a's comparison accepts for that `not_conic`
+  row.
 * **Evidence first**: the reference (the same projective parameterisation
   with `A`, `B`, `C` found by evaluating the other surface on the ruling at
   `v = -1, 0, 1`, the scan, critical meridians and components of the torus
@@ -1273,8 +1278,16 @@ the first fixture, never deferred.
     criticality and distance conditions modulo the first spine's circle; the
     kernel inside the reference on all 38 torus cases, the bridge 28
     matches and 10 reviewed differences.
-  * Unbounded components (two cones, a cone's apex on a sphere), S7c and
-    S7d pending.
+  * S7b.4 implemented: the projective ruling reference and a native
+    capture of 12 pairs came before `intersection/ruled_curves.rs`; the
+    traced machinery takes a chart (a torus's meridians, a cone's rulings,
+    the apex and twin factors), components count their crossings of
+    infinity, the apex is a node, two cones with one apex give their common
+    generatrices; the kernel inside the reference on all 12, the bridge 9
+    matches and 3 reviewed differences. S7a's `kk_crossing` (two congruent
+    cones crossing symmetrically, two conics meeting at nodes) is
+    `ComputationLimit`, which its comparison accepts.
+  * S7c (curve/surface) and S7d (curve/curve) pending.
 * Tessellation (parallel track) — T-a implemented (`TESSELLATION.md`);
   gate pending CI, the schedule replay and the clean campaign.
   * The decisions above, the independent reference
