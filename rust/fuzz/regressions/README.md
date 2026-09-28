@@ -814,3 +814,16 @@ back: the writer reduced the `+v` ring's start, `-1.2e-16`, into `[0, 2 pi)`
 for the latitude seam and left the rings' pcurves where they were, a period
 below it. The writer now shifts a face's line pcurves into `[v0, v0 + 2 pi]`
 as it does in `u`; the input replays in 0.06 s.
+
+## Boolean: a tool filling the object's hole over part of its height
+
+`boolean/crash-769e2af11386b1251080b11d3dc937f416957d63.bin` was found by the
+first campaign of the S9a target at `56f26e85`: a stadium inside a square
+with a round hole, filling the hole over part of the square's height, fused
+in the tilted frame. The heights differ, so the result is a stack (S9a.2);
+the kernel returned the square unchanged because the fused profile's
+boundary came from the square alone (the hole's pieces, inside the stadium,
+were dropped), which it took for the stadium lying inside the square. The
+volumes' identity caught it. Containment in 2D is now an empty exact cut,
+and identical profiles are two empty cuts; the input is `OutOfDomain` and
+replays in 0.03 s.

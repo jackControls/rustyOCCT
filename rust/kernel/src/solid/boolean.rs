@@ -318,31 +318,21 @@ impl Solid {
                     // has one profile (identical profiles over the ranges'
                     // union), an input when it holds the other, both when
                     // their profiles are apart; any other stack is S9a.2's.
+                    // Containment in 2D is an empty exact cut (a fuse's
+                    // boundary coming from one input alone is not: the
+                    // other may fill that one's hole).
                     let fused = boolean(pa, &pb, Op2::Fuse)?;
-                    let only = |from: Operand| {
-                        fused.pieces.len() == 1
-                            && fused.pieces[0]
-                                .segments
-                                .iter()
-                                .flatten()
-                                .flatten()
-                                .all(|o| o.from.0 == from || o.shared.is_some_and(|s| s.0 == from))
-                    };
-                    let identical = fused.pieces.len() == 1
-                        && fused.pieces[0]
-                            .segments
-                            .iter()
-                            .flatten()
-                            .flatten()
-                            .all(|o| o.shared.is_some());
+                    let a_in_b = boolean(pa, &pb, Op2::Cut)?.pieces.is_empty();
+                    let b_in_a = boolean(&pb, pa, Op2::Cut)?.pieces.is_empty();
+                    let apart = boolean(pa, &pb, Op2::Common)?.pieces.is_empty();
                     let within = |x: [f64; 2], y: [f64; 2]| y[0] >= x[0] && y[1] <= x[1];
-                    if identical {
+                    if a_in_b && b_in_a {
                         ([ha[0].min(hb[0]), ha[1].max(hb[1])], fused)
-                    } else if only(Operand::A) && within(ha, hb) {
+                    } else if b_in_a && within(ha, hb) {
                         return self.finish(context, other, op, vec![self.clone()], Vec::new());
-                    } else if only(Operand::B) && within(hb, ha) {
+                    } else if a_in_b && within(hb, ha) {
                         return self.finish(context, other, op, vec![other.clone()], Vec::new());
-                    } else if fused.pieces.len() == 2 {
+                    } else if apart && fused.pieces.len() == 2 {
                         return self.finish(
                             context,
                             other,
