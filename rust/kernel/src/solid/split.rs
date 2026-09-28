@@ -713,10 +713,18 @@ impl Section {
                 }
             };
             let n = points.len();
+            let reach = q(tolerance.linear());
             for (j, p) in points.iter().enumerate() {
                 positions.insert(PointId::Vertex(bi, j), *p);
-                if f(*p) == zero() {
+                let fp = f(*p);
+                if fp == zero() {
                     on_line.insert(PointId::Vertex(bi, j), along(&exact2(*p)));
+                } else if &fp * &fp <= &reach * &reach * (&a * &a + &b * &b) {
+                    // Off the line by less than the resolution: its crossings
+                    // and pieces would be thinner than it.
+                    return Err(Error::Degenerate(
+                        "a split within the resolution of a profile vertex",
+                    ));
                 }
                 incident
                     .entry(PointId::Vertex(bi, j))
