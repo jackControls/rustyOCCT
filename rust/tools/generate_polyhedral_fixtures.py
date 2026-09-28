@@ -121,9 +121,9 @@ def cases():
     wide = ([square(0.0, 0.0, 10.0, 10.0), square(2.0, 2.0, 8.0, 8.0)], XY, 0.0, 5.0)
     out += trio('through_hole', wide, ([square(4.0, -0.25, 6.0, 0.25)], at(TILT, (0.0, 2.5, 0.0)), -2.0, 8.5),
                 ('solid', 'solid', 'empty'))
-    out += trio('across_hole', holed, ([square(-2.0, -1.0, 14.0, 1.0)], at(ROT, (-1.0, 0.0, 1.0)), 0.0, 2.0))
+    out += trio('across_hole', holed, ([square(-2.0, -1.0, 14.0, 1.0)], at(ROT, (-1.0, 0.5, 1.0)), 0.0, 2.0))
     out += trio('both_turned', ([square(0.0, 0.0, 6.0, 6.0)], at(ROT, (0.0, 0.0, 0.0)), 0.0, 5.0),
-                ([square(-3.0, -3.0, 3.0, 3.0)], at(LEAN, (2.0, 3.0, 2.5)), -2.0, 2.0))
+                ([square(-3.0, -3.0, 3.0, 3.0)], at(LEAN, (2.0, 3.25, 2.5)), -2.0, 2.0))
     return out
 
 
