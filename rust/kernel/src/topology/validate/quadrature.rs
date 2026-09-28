@@ -33,6 +33,13 @@ const LENGTH: usize = 2 * NODES + 1;
 const RELATIVE: f64 = 1.0 / 17_592_186_044_416.0;
 /// Halvings per direction before a piece is accepted as it is.
 const DEPTH: u32 = 12;
+/// Pieces (or boxes) one integral may examine, and the halvings (summed
+/// over the directions) past which a series still undefined means a
+/// singularity, not a wide enclosure: then the rule gives up and the
+/// first-order route runs (a degenerate patch edge, where `|N|` vanishes,
+/// would otherwise be refined down to the depth limit all along it).
+const WORK: usize = 2048;
+const SINGULAR: u32 = 12;
 
 fn zero<T: Real>() -> T {
     T::exact_f64(0.0)
@@ -525,11 +532,19 @@ fn integrate_1d<T: Real, F: Integrand1<T>>(f: &F) -> Option<Vec<T>> {
         .collect();
     let mut total: Vec<T> = vec![zero(); first.len()];
     let mut stack = vec![(0.0_f64, 1.0_f64, 0_u32)];
+    let mut work = 0;
     while let Some((a, b, depth)) = stack.pop() {
+        work += 1;
+        if work > WORK {
+            return None;
+        }
         // A series undefined over the whole piece (an enclosure too wide to
         // exclude a zero) is retried on its halves; the node sum is formed
         // only for accepted pieces.
         let rest = remainder(a, b);
+        if rest.is_none() && depth >= SINGULAR {
+            return None;
+        }
         let accepted = rest
             .as_ref()
             .is_some_and(|e| within(&e.iter().map(magnitude).collect::<Vec<_>>(), b - a, &scale));
@@ -606,12 +621,20 @@ fn integrate_2d<T: Real, F: Integrand2<T>>(f: &F) -> Option<Vec<T>> {
         .collect();
     let mut total: Vec<T> = vec![zero(); first.len()];
     let mut stack = vec![(whole, [0_u32; 2])];
+    let mut work = 0;
     while let Some((bx, depth)) = stack.pop() {
+        work += 1;
+        if work > WORK {
+            return None;
+        }
         let area = (bx[0][1] - bx[0][0]) * (bx[1][1] - bx[1][0]);
         // A series undefined over the whole box (an enclosure too wide to
         // exclude a zero) is retried on halves across the less divided
         // side; the node sum is formed only for accepted boxes.
         let rest = remainders(bx);
+        if rest.is_none() && depth[0] + depth[1] >= SINGULAR {
+            return None;
+        }
         let (accepted, axis) = match &rest {
             Some((et, es)) => {
                 let t: Vec<f64> = et.iter().map(magnitude).collect();
@@ -1108,6 +1131,31 @@ mod tests {
         for (k, w) in want.iter().enumerate() {
             assert!(contains(&root.coefficient(k), w), "sqrt {k}");
         }
+    }
+
+    /// `√t` (and `√τ` on the square) is not analytic at `0`: the rule gives
+    /// up there, after a bounded amount of work, rather than refining down
+    /// to the depth limit along the singular side.
+    struct Root;
+
+    impl Integrand1<Fast> for Root {
+        fn at<N: Num<Fast>>(&self, t: &N) -> Option<Vec<N>> {
+            Some(vec![t.sqrt()?])
+        }
+    }
+
+    impl Integrand2<Fast> for Root {
+        fn at<N: Num<Fast>>(&self, tau: &N, sigma: &N) -> Option<Vec<N>> {
+            Some(vec![tau.sqrt()?.mul(sigma)])
+        }
+    }
+
+    #[test]
+    fn singular_integrands_give_up() {
+        let clock = std::time::Instant::now();
+        assert!(integrate_1d(&Root).is_none());
+        assert!(integrate_2d(&Root).is_none());
+        assert!(clock.elapsed().as_secs_f64() < 5.0);
     }
 
     /// `∫_0^1 dt/(1 + t²) = π/4` and `∫_0^1 dt/(1 + t²)² = π/8 + 1/4`, with
