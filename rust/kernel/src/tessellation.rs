@@ -1,5 +1,5 @@
-//! Deflection-controlled, watertight tessellation (T-a of `REVIEW_NOTES.md`,
-//! `TESSELLATION.md`).
+//! Deflection-controlled, watertight tessellation (T-a and T-b of
+//! `REVIEW_NOTES.md`, `TESSELLATION.md`).
 //!
 //! Every edge is discretized once, uniformly in its fraction; every face
 //! that uses the edge takes exactly that polyline as boundary, so faces
@@ -9,10 +9,12 @@
 //! in the sinusoidal chart `((u - u_c) |S_u|(v), s(v))`, which collapses a
 //! pole to a point, a face wound in `u` in an annulus chart `P(v) (cos u,
 //! sin u)` and a torus face wound in `v` the same way with `u` and `v`
-//! exchanged; a whole sphere or torus is a structured grid. No seam is
-//! meshed. A constrained Delaunay triangulation of the chart polygons
-//! (`cdt.rs`) is refined by Steiner points until every triangle's certified
-//! deflection and normal turn (`bounds.rs`) are within the request.
+//! exchanged; a whole sphere or torus is a structured grid; a nonperiodic
+//! spline face (T-b) in an affine chart of its `(u, v)`. No seam is meshed.
+//! A constrained Delaunay triangulation of the chart polygons (`cdt.rs`) is
+//! refined by Steiner points until every triangle's certified deflection and
+//! normal turn (`bounds.rs`; `spline.rs` for spline cells) are within the
+//! request.
 //!
 //! The bound reported for a triangle is certified: under the map
 //! `Σ λ_i X_i ↦ S(Σ λ_i p_i)`, `X_i` its nodes and `p_i` their parameter

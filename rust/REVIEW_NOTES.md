@@ -1667,8 +1667,58 @@ the first fixture, never deferred.
   * Clean local 600-second `tessellation` campaign at `c9dbf4f6`
     (AddressSanitizer, standard limits): 4,855 mutation executions after
     209 s of replay (350 inputs, 14,000 edges, 961 MB peak), no artifact.
-  * Open for the user: U9 (a display mode without a bound). T-b (spline
-    edges and faces) and T-c (procedural edges) pending.
+  * Open for the user: U9 (a display mode without a bound). T-c
+    (procedural edges) pending.
+  * T-b implemented (`TESSELLATION.md`, splines); gate pending CI (the
+    spline bridge on macOS and Linux; a Linux BRepMesh that meshes the
+    splines differently needs its own reviewed capture record), the
+    schedule replay and the acceptance of the clean campaign below.
+    * The decisions above (`e065cd45`), then the reference's spline bodies
+      and twelve spline fixtures at two settings with `--check`
+      (`394f1491`), then the native `BRepMesh_IncrementalMesh` capture of
+      all 24 meshes (`130cb8b3`), all before any kernel spline
+      tessellation code.
+    * `tessellation/spline.rs` (cells, their bounds, cones and rates) and
+      `tessellation/spline/poly.rs` (tensor Bernstein polynomials in the
+      `Fast` tier). All 24 spline fixture meshes pass every check of the
+      reference; the bridge gives 21 matches and 3 reviewed differences
+      (OCCT beyond the request on the dome and the trimmed sheet at the
+      fine setting, its recorded deflection understating the dome's); the
+      17 valid B-rep fixture cases with spline geometry and all 58
+      certified `data/occ` solids mesh within the contract; the T-a
+      bridge is unchanged (56 of 56, 42 matches, 14 reviewed).
+    * Decisions taken in implementation, none of them a user decision:
+      the first measurements (the rational quarter-circle wall at 34 times
+      BRepMesh's nodes, the sharp rational corner at 7,900) led to three
+      sharper certificates kept beside the recorded bounds, the smallest
+      winning (`MATHEMATICS.md`, numerators): rational cells of low degree
+      bound their derivatives through the Bernstein coefficients of the
+      quotient rule's numerators, surface cells carry the cone of their
+      normal numerator's coefficients, and normal and tangent turns use the
+      rates `|M × M_u| / |M|²` per cell; surface cells are halved three
+      times per direction rather than twice (the rational sheet's nodes
+      fell from 9,402 to 5,387); a spline solid's volume is not checked
+      against its certified mass enclosure in the corpus test (minutes per
+      solid); the tests' and the fuzz target's distances to spline surfaces
+      are projections with their own binary64 Cox-de Boor evaluation from
+      the four nearest points of a knot-aware grid (a projection from one
+      point of a 33 × 33 grid found the wrong basin on a degree-8 corpus
+      surface, where the kernel's own parametric claim held at every
+      centroid, checked with its exact evaluation); the fuzz target's
+      weights stay within 0.7 to 1.5, its spline deflections at or above a
+      64th of the size and angles from 0.35 rad, its spline prisms on
+      axis-aligned frames, and a spline prism's volume is checked against a
+      quadrature of its profile: uneven weights inflate the rational bounds
+      by the weights' ratio to a high power, and the certified mass
+      enclosure, the validator's fluxes on tilted spline walls and the
+      kernel's exact evaluation cost seconds per input under the sanitizer
+      (the first campaign's two slow units, retained as regressions).
+    * Clean local 600-second `tessellation` campaign at `d638bd0b`
+      (AddressSanitizer, standard limits): 1,217 mutation executions after
+      118 s of replay (251 inputs, 19,511 edges, 1,265 MB peak), no
+      artifact. The first campaign, before the fuzz target's changes above,
+      saved two slow units (retained as regressions,
+      `fuzz/regressions/README.md`).
 * S8 — in progress: decisions recorded (2026-09-28).
   * S8a.1 implemented: the quadrature reference and a
     `BRepAlgoAPI_Splitter` capture of 26 prisms came before
