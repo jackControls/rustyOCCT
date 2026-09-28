@@ -2,7 +2,10 @@
 // each input block is an explicit prism construction produced by
 // identity_reference.native_case (a `plane` row with the profile's frame at
 // the extrusion's start offset, `wire` rows: P polygons, S paths of line and
-// arc segments, C circles, holes reversed here; a `prism` vector), or (S8c)
+// arc segments (S8b: and nonrational B-spline segments `B p n` with n 3D
+// poles on the profile plane, `k` knots and multiplicities, each an edge of
+// a Geom_BSplineCurve between the path's vertices), C circles, holes reversed
+// here; a `prism` vector), or (S8c)
 // a `cone ox oy oz nx ny nz xx xy xz r1 r2 h` or `sphere ox oy oz nx ny nz xx
 // xy xz R a1 a2` row built by BRepPrimAPI_MakeCone or MakeSphere on that
 // gp_Ax2 (S8d: `torus ... R r angle`, MakeTorus), with a `split ox oy oz nx
@@ -24,6 +27,8 @@
 #include <BRepPrimAPI_MakeSphere.hxx>
 #include <BRepPrimAPI_MakeTorus.hxx>
 #include <GProp_GProps.hxx>
+#include <Geom_BSplineCurve.hxx>
+#include <NCollection_Array1.hxx>
 #include <NCollection_IndexedMap.hxx>
 #include <Standard_Failure.hxx>
 #include <Standard_Version.hxx>
@@ -59,6 +64,34 @@ int count(const TopoDS_Shape& s, TopAbs_ShapeEnum type) {
   ShapeMap map;
   TopExp::MapShapes(s, type, map);
   return map.Extent();
+}
+
+// A path segment: a line (no data), an arc (centre, radius, ccw) or a
+// B-spline curve (S8b).
+struct Segment {
+  std::vector<double> arc;
+  Handle(Geom_BSplineCurve) spline;
+};
+
+Handle(Geom_BSplineCurve) spline(std::istringstream& in) {
+  int degree, n, k;
+  if (!(in >> degree >> n)) throw Standard_Failure("spline header");
+  NCollection_Array1<gp_Pnt> poles(1, n);
+  for (int i = 1; i <= n; ++i) {
+    auto p = numbers(in, 3);
+    poles.SetValue(i, gp_Pnt(p[0], p[1], p[2]));
+  }
+  if (!(in >> k)) throw Standard_Failure("spline knots");
+  auto u = numbers(in, k);
+  NCollection_Array1<double> knots(1, k);
+  NCollection_Array1<int> mults(1, k);
+  for (int i = 1; i <= k; ++i) knots.SetValue(i, u[i - 1]);
+  for (int i = 1; i <= k; ++i) {
+    int m;
+    if (!(in >> m)) throw Standard_Failure("spline multiplicities");
+    mults.SetValue(i, m);
+  }
+  return new Geom_BSplineCurve(poles, knots, mults, degree);
 }
 
 struct Piece {
@@ -102,21 +135,30 @@ int main() {
             int n;
             in >> n;
             std::vector<TopoDS_Vertex> vs;
-            std::vector<std::vector<double>> arcs;
+            std::vector<Segment> segments;
             for (int j = 0; j < n; ++j) {
               auto p = numbers(in, 3);
               vs.push_back(BRepBuilderAPI_MakeVertex(gp_Pnt(p[0], p[1], p[2])));
+              Segment segment;
               if (shape == "S") {
                 std::string seg;
                 in >> seg;
-                arcs.push_back(seg == "A" ? numbers(in, 5) : std::vector<double>{});
-              } else {
-                arcs.push_back({});
+                if (seg == "A")
+                  segment.arc = numbers(in, 5);
+                else if (seg == "B")
+                  segment.spline = spline(in);
+                else if (seg != "L")
+                  throw Standard_Failure("unknown segment");
               }
+              segments.push_back(segment);
             }
             for (int j = 0; j < n; ++j) {
-              const auto& a = arcs[j];
-              if (a.empty()) {
+              const auto& a = segments[j].arc;
+              if (!segments[j].spline.IsNull()) {
+                BRepBuilderAPI_MakeEdge me(segments[j].spline, vs[j], vs[(j + 1) % n]);
+                if (!me.IsDone()) throw Standard_Failure("spline edge");
+                mw.Add(me.Edge());
+              } else if (a.empty()) {
                 mw.Add(BRepBuilderAPI_MakeEdge(vs[j], vs[(j + 1) % n]));
               } else {
                 gp_Dir normal = a[4] != 0 ? frame.Direction() : frame.Direction().Reversed();
