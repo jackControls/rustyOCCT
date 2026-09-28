@@ -71,14 +71,27 @@ fn at_of(place: Place) -> (At, Option<What>) {
     }
 }
 
-/// A prism's entities by (end, what, boundary, element index).
+/// A prism's entities by (end, what, boundary, element index). The keys
+/// are read off the prism built afresh from its profile (a Boolean's
+/// result, renamed, keeps its structure slot for slot but not its
+/// builder's parents).
 fn index(solid: &Solid) -> Result<BTreeMap<(At, What, usize, usize), EntityId>> {
-    let t = &solid.topology;
-    let places: BTreeMap<Slot, Place> = t.layout().iter().copied().collect();
     let profile = match &solid.construction {
         Construction::Prism(p) => p,
         _ => unreachable!("a prism"),
     };
+    let fresh = Solid::build(
+        OperationId::UNSPECIFIED,
+        (**profile).clone(),
+        solid.frame,
+        solid.start,
+        solid.end,
+    )?;
+    let t = &fresh.topology;
+    if t.layout() != solid.topology.layout() {
+        return Err(Error::InvalidTopology("a prism unlike its profile's"));
+    }
+    let places: BTreeMap<Slot, Place> = t.layout().iter().copied().collect();
     // Labels back to stored elements.
     let mut labels = BTreeMap::new();
     for (b, boundary) in profile.boundaries().enumerate() {
@@ -118,6 +131,10 @@ fn index(solid: &Solid) -> Result<BTreeMap<(At, What, usize, usize), EntityId>> 
             }
             _ => return Err(Error::InvalidTopology("a prism slot of unknown place")),
         };
+        let id = solid
+            .topology
+            .id_of(slot)
+            .ok_or(Error::InvalidTopology("a prism slot without an id"))?;
         out.insert(key, id);
     }
     Ok(out)
@@ -223,6 +240,16 @@ impl Solid {
         op: Op2,
     ) -> Result<(Vec<Solid>, History)> {
         replayable(context.level)?;
+        // The history names each input's entities by id: inputs sharing
+        // ids (built by one operation, or one solid twice) cannot be told
+        // apart.
+        let ids: BTreeSet<EntityId> = self.topology.ids().map(|(id, _)| id).collect();
+        if other.topology.ids().any(|(id, _)| ids.contains(&id))
+            || ids.contains(&other.topology.body_id())
+            || self.topology.body_id() == other.topology.body_id()
+        {
+            return Err(Error::InvalidLabel("Boolean inputs sharing entity ids"));
+        }
         let (Construction::Prism(pa), Construction::Prism(pb)) =
             (&self.construction, &other.construction)
         else {

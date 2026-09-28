@@ -27,6 +27,9 @@ prism's exact queries; any other is a general body built through
   bodies.
 * `ComputationLimit`: two cuts of a segment, or a crossing at a segment's
   end, whose order its enclosures leave undecided.
+* `InvalidLabel`: inputs sharing an entity id (built by one operation, one
+  solid twice, or a result and an input whose entities it keeps), which
+  the history could not tell apart.
 
 ### Prisms in one frame (S9a)
 

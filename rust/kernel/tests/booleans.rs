@@ -573,3 +573,41 @@ fn a_fuse_filling_a_hole_is_a_stack() {
     assert_eq!(f[0].topology().body_id(), holed.topology().body_id());
     check(&holed, &small, &f, &h);
 }
+
+#[test]
+fn a_result_is_an_input_again() {
+    // A Boolean's result, renamed, is a prism another Boolean takes.
+    let a = prism(rect(0.0, 0.0, 4.0, 4.0), vec![], Frame3::xy(), 0.0, 2.0, 1);
+    let b = prism(rect(2.0, 2.0, 6.0, 6.0), vec![], Frame3::xy(), 0.0, 2.0, 2);
+    let (f, _) = a.fuse(OperationId(3), &b).unwrap();
+    let c = prism(rect(1.0, 1.0, 5.0, 5.0), vec![], Frame3::xy(), -1.0, 3.0, 4);
+    let (cut, h) = f[0].cut(OperationId(5), &c).unwrap();
+    assert!((volume(&cut) - 28.0).abs() < 1e-12, "{}", volume(&cut));
+    check(&f[0], &c, &cut, &h);
+    let up = rusty_occt::RigidTransform::translation(Vec3::new(0.0, 0.0, 0.5)).unwrap();
+    let moved = cut[0].transform_with(OperationId(7), up).unwrap().0;
+    let e = prism(rect(0.0, 0.0, 6.0, 6.0), vec![], Frame3::xy(), 0.5, 2.5, 8);
+    let (again, h) = moved.fuse(OperationId(9), &e).unwrap();
+    assert!((volume(&again) - 72.0).abs() < 1e-12, "{}", volume(&again));
+    check(&moved, &e, &again, &h);
+    // A result and an input it keeps entities of share those ids.
+    assert!(matches!(
+        moved.fuse(OperationId(10), &f[0]),
+        Err(rusty_occt::Error::InvalidLabel(_))
+    ));
+}
+
+#[test]
+fn inputs_sharing_ids_are_refused() {
+    // Built by one operation, two prisms share every id: the history could
+    // not tell them apart.
+    let a = prism(rect(0.0, 0.0, 4.0, 4.0), vec![], Frame3::xy(), 0.0, 2.0, 1);
+    let b = prism(rect(2.0, 2.0, 6.0, 6.0), vec![], Frame3::xy(), 0.0, 2.0, 1);
+    for r in [a.fuse(OperationId(3), &b), a.cut(OperationId(3), &a)] {
+        assert!(
+            matches!(r, Err(rusty_occt::Error::InvalidLabel(_))),
+            "{:?}",
+            r.map(|x| x.0.len())
+        );
+    }
+}

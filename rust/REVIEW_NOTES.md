@@ -2599,6 +2599,15 @@ Decisions for S9, recorded before its code (2026-09-28):
     direction per orientation (one certain side settles it) and a line's
     crossing of a circle is off an arc whose side excludes its direction
     wherever it lies along the line (a profile's line through an arc's
-    centre from a point just off its circle was refused as touching it).
-    Pending: the DRAW commands and upstream cases, the campaign, the Linux
-    record of the capture after CI; S9a.2's stacks next.
+    centre from a point just off its circle was refused as touching it);
+    (g) inputs sharing an entity id (built by one operation, one solid
+    twice, or a result with an input whose entities it keeps) are refused
+    (`InvalidLabel`): the history names each input's entities by id; a
+    result, renamed, is an input again (its entities read off the prism
+    built afresh from its profile). The DRAW adapter runs `bfuse`, `bcut`,
+    `bcommon`, `btuc`, `bop` with its operations, `bbop` and `bapibop`
+    (`UPSTREAM_TESTS.md`): the derived case `boolean_prisms` and 320
+    upstream cases evaluate on both backends, none fails; the other 1,258
+    native ones wait for S9a.2 (163), S9b (962) or are refused or not
+    adapted. Pending: the campaign, the Linux record of the capture after
+    CI; S9a.2's stacks next.
