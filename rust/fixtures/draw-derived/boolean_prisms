@@ -1,0 +1,147 @@
+puts "Derived case, not an original OCCT test: Booleans of prisms in one frame (S9a)"
+puts "Written for rusty-occt; see rust/UPSTREAM_TESTS.md (derived cases)."
+
+# OCCT's Boolean result keeps the arguments' face and edge images apart;
+# the kernel's result is merged, as after unifysamedom. Counts and lengths
+# per use are checked on the unified result, volumes and areas on the raw
+# one.
+
+# Two 4 x 4 x 2 boxes overlapping in a 2 x 2 square.
+box a 0 0 0 4 4 2
+box b 2 2 0 4 4 2
+# The fuse: an octagon of area 28 and perimeter 24.
+bfuse f a b
+checkshape f
+checkprops f -v 56 -s 104 -deps 1e-9
+unifysamedom uf f
+checkprops uf -l 128 -deps 1e-9
+checknbshapes uf -vertex 16 -edge 24 -wire 10 -face 10 -shell 1 -solid 1 -compound 1
+# The cut: a hexagon of area 12 and perimeter 16.
+bcut c a b
+checkshape c
+checkprops c -v 24 -s 56 -deps 1e-9
+unifysamedom uc c
+checkprops uc -l 88 -deps 1e-9
+checknbshapes uc -vertex 12 -edge 18 -wire 8 -face 8 -shell 1 -solid 1 -compound 1
+# The common: a 2 x 2 x 2 box.
+bcommon m a b
+checkshape m
+checkprops m -v 8 -s 24 -deps 1e-9
+unifysamedom um m
+checkprops um -l 48 -deps 1e-9
+checknbshapes um -vertex 8 -edge 12 -wire 6 -face 6 -shell 1 -solid 1 -compound 1
+# The same through bop and its operations; boptuc is the tool minus the
+# object, the cut's mirror image (area 12, perimeter 16).
+bop a b
+bopfuse bf
+checkprops bf -v 56 -s 104 -deps 1e-9
+bopcommon bm
+checkprops bm -v 8 -s 24 -deps 1e-9
+bopcut bc
+checkprops bc -v 24 -s 56 -deps 1e-9
+boptuc bt
+checkshape bt
+checkprops bt -v 24 -s 56 -deps 1e-9
+unifysamedom ubt bt
+checkprops ubt -l 88 -deps 1e-9
+# And through the General Fuse arguments: bbop 0 is the common, bapibop 2
+# the cut.
+bclearobjects
+bcleartools
+baddobjects a
+baddtools b
+bfillds
+bbop gm 0
+checkprops gm -v 8 -s 24 -deps 1e-9
+bapibop gc 2
+checkprops gc -v 24 -s 56 -deps 1e-9
+
+# A radius 1 cylinder (pcylinder) and a box on its -x side, of equal
+# heights 2: the common is a half cylinder (its arc away from OCCT's seam).
+pcylinder cy 1 2
+box h -3 -2 0 3 4 2
+bcommon hc cy h
+checkshape hc
+# Volume pi, area 3 pi + 4, lengths per use 2 (2 pi + 8).
+checkprops hc -v 3.141592653589793 -s 13.42477796076938 -deps 1e-5
+unifysamedom uhc hc
+checkprops uhc -l 28.566370614359172 -deps 1e-5
+checknbshapes uhc -vertex 4 -edge 6 -wire 4 -face 4 -shell 1 -solid 1 -compound 1
+
+# A hole cut through a 4 x 4 x 2 box by the cylinder: OCCT's hole wall
+# has a seam and a vertex on each circle.
+box hb -2 -2 0 4 4 2
+bcut hole hb cy
+checkshape hole
+# Volume 32 - 2 pi, area 64 + 2 pi; lengths per use: the box's edges
+# twice (80), each circle twice and the seam twice (8 pi + 4).
+checkprops hole -v 25.716814692820414 -s 70.2831853071796 -deps 1e-5
+unifysamedom uhole hole
+checkprops uhole -l 109.13274122871834 -deps 1e-5
+checknbshapes uhole -vertex 10 -edge 15 -wire 9 -face 7 -shell 1 -solid 1 -compound 1
+
+# A bar through a 6 x 2 x 2 box, spanning its heights, cuts it in two
+# solids: 2 x 2 x 2 and 3 x 2 x 2.
+box s 0 0 0 6 2 2
+box bar 2 -1 -1 1 4 4
+bcut two s bar
+checkshape two
+checkprops two -v 20 -s 56 -l 104 -deps 1e-9
+checknbshapes two -vertex 16 -edge 24 -wire 12 -face 12 -shell 2 -solid 2 -compound 1
+
+# Disjoint boxes: the fuse keeps both, the common is empty.
+box d1 0 0 0 1 1 1
+box d2 3 0 5 1 1 1
+bfuse dd d1 d2
+checkshape dd
+checkprops dd -v 2 -s 12 -l 48 -deps 1e-9
+checknbshapes dd -vertex 16 -edge 24 -wire 12 -face 12 -shell 2 -solid 2 -compound 1
+bcommon de d1 d2
+checkshape de
+checkprops de -s empty -v empty
+checknbshapes de -vertex 0 -edge 0 -face 0 -solid 0 -compound 1 -shape 1
+
+# One box inside another: the fuse is the outer box, the common the inner
+# one; a square hole through the outer box's heights.
+box o 0 0 0 10 10 10
+box in 2 2 2 2 2 2
+bfuse oi o in
+checkshape oi
+checkprops oi -v 1000 -s 600 -deps 1e-9
+checknbshapes oi -vertex 8 -edge 12 -wire 6 -face 6 -shell 1 -solid 1 -compound 1
+bcommon io o in
+checkprops io -v 8 -s 24 -deps 1e-9
+box ih 2 2 0 2 2 10
+bcut sq o ih
+checkshape sq
+# Volume 1000 - 40, area 2 (100 - 4) + 400 + 80.
+checkprops sq -v 960 -s 672 -deps 1e-9
+unifysamedom usq sq
+checknbshapes usq -vertex 16 -edge 24 -wire 12 -face 10 -shell 1 -solid 1 -compound 1
+
+# Stacked boxes of one 2 x 3 profile, touching at z = 1 and overlapping
+# over [2, 3]: each fuse is one box.
+box s1 0 0 0 2 3 1
+box s2 0 0 1 2 3 2
+bfuse st s1 s2
+checkshape st
+checkprops st -v 18 -s 42 -deps 1e-9
+unifysamedom ust st
+checkprops ust -l 64 -deps 1e-9
+checknbshapes ust -vertex 8 -edge 12 -wire 6 -face 6 -shell 1 -solid 1 -compound 1
+box s3 0 0 2 2 3 2
+bfuse so st s3
+checkprops so -v 24 -s 52 -deps 1e-9
+
+# A stadium prism (profile with half circles, Copy) and a bar across it:
+# a cross of area 10 + pi and perimeter 14 + 2 pi, twelve vertices.
+profile sp F 0 -1 X 3 C 1 180 X -3 C 1 180
+prism sd sp 0 0 2 Copy
+box q 1 -3 0 1 6 2
+bfuse cross sd q
+checkshape cross
+# Volume 20 + 2 pi, area 48 + 6 pi, lengths per use 104 + 8 pi.
+checkprops cross -v 26.283185307179586 -s 66.84955592153875 -deps 1e-5
+unifysamedom ucross cross
+checkprops ucross -l 129.13274122871834 -deps 1e-5
+checknbshapes ucross -vertex 24 -edge 36 -wire 14 -face 14 -shell 1 -solid 1 -compound 1

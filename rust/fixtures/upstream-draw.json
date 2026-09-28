@@ -282,6 +282,20 @@
       ]
     },
     {
+      "path": "rust/fixtures/draw-derived/boolean_prisms",
+      "derived": true,
+      "context": "tests/bugs/modalg_7",
+      "expected_rust": "pass",
+      "expected_occt": "pass",
+      "purpose": "Derived: Booleans of prisms in one frame (S9a) through bfuse, bcut, bcommon, bop with bopfuse/bopcut/boptuc/bopcommon, and bbop/bapibop on the General Fuse arguments: overlapping boxes, a box and a pcylinder (a half cylinder, a hole), a box cut in two, disjoint boxes (two solids, an empty common), one box inside another, stacked boxes of one profile and a stadium prism with a bar; checkshape, volumes and areas on the result, counts and lengths per use after unifysamedom.",
+      "verifies": [
+        "Booleans of prisms",
+        "count synthesizer",
+        "per-use length synthesis",
+        "mass properties"
+      ]
+    },
+    {
       "path": "tests/boolean/splitter/A5",
       "data": true,
       "expected_rust": "private_data",
@@ -437,7 +451,8 @@
     "rust/fixtures/draw-derived/ptorus_counts": "78532ada7afe493ad5f518b80c3e7d164159ec7d7f745000a5f639e00a5cbb42",
     "rust/fixtures/draw-derived/profile_arcs": "0c08732ec213a66e283600cbccee85fa1a75e19bafc25dd6b7ddc3e012f53e64",
     "rust/fixtures/draw-derived/faces_and_edges": "dd70b02e9fdf8f094bac0b97663a2528f4a7e7e245e6f5aea0247f0eaac406c0",
-    "rust/fixtures/draw-derived/split_plane": "1eb4b5e184e7b886f259292b334f80e783a02c96867dd8d282f02c1807a10b9f"
+    "rust/fixtures/draw-derived/split_plane": "1eb4b5e184e7b886f259292b334f80e783a02c96867dd8d282f02c1807a10b9f",
+    "rust/fixtures/draw-derived/boolean_prisms": "b44258c5638c514650565a760e03b67d3f95e06a609313371d0f576b9b431902"
   },
   "ledger": {
     "survey": {
