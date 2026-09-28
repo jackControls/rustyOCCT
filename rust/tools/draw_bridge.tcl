@@ -124,7 +124,9 @@ proc runCommand {command args} {
                 # Draw::Atof reads `4.99,` as 4.99.
                 set value [string trimright $value ,]
                 if {[catch {interp eval testcase [list expr $value]} number]} {
-                    return [unsupportedCommand $command {*}$args]
+                    # Not a Tcl expression: Draw::Atof may still read it
+                    # with DRAW's variables (dset), which the worker holds.
+                    set number $value
                 }
                 lappend converted $number
             }
@@ -155,7 +157,7 @@ proc runCommand {command args} {
     if {$command in {checkshape nbshapes vprops sprops lprops isbbinterf isdeleted xdistcs dump dval}} {incr ::queries}
     # DBRep::Set binds DRAW shape names as Tcl variables as well.
     if {$::backend eq "rust"} {
-        if {$command in {box pcylinder pcone psphere ptorus polyline profile mkplane prism generated modified plane cylinder circle line sphere cone torus mkface mkedge bsplit bapisplit}} {
+        if {$command in {box pcylinder pcone psphere ptorus polyline profile mkplane prism generated modified plane cylinder circle line sphere cone torus mkface mkedge bsplit bapisplit bfuse bcut bcommon btuc bopfuse bopcut boptuc bopcommon bbop bapibop unifysamedom}} {
             interp eval testcase [list set [lindex $args 0] [lindex $args 0]]
         }
         if {$command in {copy restore}} {interp eval testcase [list set [lindex $args 1] [lindex $args 1]]}

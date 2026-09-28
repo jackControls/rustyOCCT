@@ -373,6 +373,11 @@ pub fn evaluate(text: &str, var: &dyn Fn(&str) -> Option<f64>) -> Result<f64, St
                     if name == "pi" {
                         return Ok(std::f64::consts::PI);
                     }
+                    // Draw's `sqrt(...)` (the Boolean group's `dset r sqrt(2)`).
+                    self.skip();
+                    if name == "sqrt" && self.s.get(self.i) == Some(&b'(') {
+                        return Ok(self.factor()?.sqrt());
+                    }
                     (self.var)(name).ok_or_else(|| format!("{name} is not a number"))
                 }
                 _ => Err("a malformed expression".into()),
