@@ -610,7 +610,7 @@ circles, ellipses and hyperbolas and their rows from
 `curve_curve_reference.py`; `curve_curve.rs` requires every frame's stored
 normal and axes, the reference's classes, contacts and counts, every
 reference number inside the kernel's enclosures, and swapped curves to swap
-the parameters exactly. `compare_curve_curve.py` reproduces the
+the parameters (overlapping enclosures) with the same contacts. `compare_curve_curve.py` reproduces the
 `IntTools_EdgeEdge` pre-implementation capture: 41 matches, the kernel
 inside the reference on all 41.
 

@@ -116,7 +116,9 @@ fn every_case_matches_the_exact_reference() {
     assert!(failures.is_empty(), "{failures:#?}");
 }
 
-/// The order of the curves swaps the parameters and keeps the rest.
+/// The order of the curves swaps the parameters and keeps the rest (two
+/// conics in one plane are computed through the first: the enclosures may
+/// differ, the values not).
 #[test]
 fn swapping_the_curves_swaps_the_parameters() {
     for case in all() {
@@ -127,9 +129,10 @@ fn swapping_the_curves_swaps_the_parameters() {
                 assert_eq!(p.len(), q.len(), "{}", case.name);
                 for p in p {
                     let hit = q.iter().any(|q| {
+                        let overlap = |[a, b]: [f64; 2], [c, d]: [f64; 2]| a <= d && c <= b;
                         q.tangent == p.tangent
-                            && q.parameters[0] == p.parameters[1]
-                            && q.parameters[1] == p.parameters[0]
+                            && overlap(q.parameters[0], p.parameters[1])
+                            && overlap(q.parameters[1], p.parameters[0])
                             && (0..3).all(|k| {
                                 q.point[k][0] <= p.point[k][1] && p.point[k][0] <= q.point[k][1]
                             })

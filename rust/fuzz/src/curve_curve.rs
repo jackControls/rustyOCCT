@@ -197,9 +197,13 @@ pub fn check_curve_curve(data: &[u8]) {
                 assert!(mid(w[0].parameters[0]) <= mid(w[1].parameters[0]), "sorted");
             }
             for p in p {
+                // Two conics in one plane are computed through the first:
+                // the enclosures differ, the values and contacts do not.
+                let overlap = |[a, b]: [f64; 2], [c, d]: [f64; 2]| a <= d && c <= b;
                 assert!(
                     q.iter().any(|q| q.tangent == p.tangent
-                        && q.parameters == [p.parameters[1], p.parameters[0]]),
+                        && overlap(q.parameters[0], p.parameters[1])
+                        && overlap(q.parameters[1], p.parameters[0])),
                     "swapped parameters"
                 );
                 let x = Point3::new(mid(p.point[0]), mid(p.point[1]), mid(p.point[2]));
