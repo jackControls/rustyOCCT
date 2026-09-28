@@ -1154,6 +1154,115 @@ impl Topology {
         }
         parts
     }
+    /// Its boundary data moved rigidly: vertices, curves and surfaces (their
+    /// frames and poles) moved, pcurves unchanged (each surface's parameters
+    /// move with it), enclosures cleared to measure again. `OutOfDomain` for
+    /// a curve other than a line, a conic arc, a circle or a B-spline.
+    pub(crate) fn moved_parts(
+        &self,
+        motion: crate::RigidTransform,
+        tolerance: Tolerance,
+    ) -> Result<TopologyParts> {
+        let mut parts = self.to_parts();
+        for v in &mut parts.vertices {
+            v.position = motion.point(v.position);
+        }
+        let move_span =
+            |span: &SplineSpan<crate::BSplineCurve3>| -> Result<SplineSpan<crate::BSplineCurve3>> {
+                let c = span.curve();
+                let poles = c.poles().iter().map(|p| motion.point(*p)).collect();
+                let [first, last] = span.range();
+                let moved = SplineSpan::new(c.with_poles(poles)?, first, last)?;
+                Ok(if span.is_reversed() {
+                    moved.reversed()
+                } else {
+                    moved
+                })
+            };
+        for e in &mut parts.edges {
+            e.curve = match &e.curve {
+                Curve3::LineSegment { start, end } => Curve3::LineSegment {
+                    start: motion.point(*start),
+                    end: motion.point(*end),
+                },
+                Curve3::Circle { frame, radius } => Curve3::Circle {
+                    frame: frame.transformed(motion, tolerance)?,
+                    radius: *radius,
+                },
+                Curve3::CircularArc {
+                    frame,
+                    radius,
+                    start_angle,
+                    sweep_angle,
+                } => Curve3::CircularArc {
+                    frame: frame.transformed(motion, tolerance)?,
+                    radius: *radius,
+                    start_angle: *start_angle,
+                    sweep_angle: *sweep_angle,
+                },
+                Curve3::EllipseArc {
+                    frame,
+                    major,
+                    minor,
+                    start_angle,
+                    sweep_angle,
+                } => Curve3::EllipseArc {
+                    frame: frame.transformed(motion, tolerance)?,
+                    major: *major,
+                    minor: *minor,
+                    start_angle: *start_angle,
+                    sweep_angle: *sweep_angle,
+                },
+                Curve3::BSpline(span) => Curve3::BSpline(move_span(span)?),
+                _ => {
+                    return Err(Error::OutOfDomain(
+                        "moving a body's hyperbolic, parabolic or section edge",
+                    ))
+                }
+            };
+        }
+        for f in &mut parts.faces {
+            f.surface = match &f.surface {
+                Surface::Plane(frame) => Surface::Plane(frame.transformed(motion, tolerance)?),
+                Surface::Cylinder { frame, radius } => Surface::Cylinder {
+                    frame: frame.transformed(motion, tolerance)?,
+                    radius: *radius,
+                },
+                Surface::Cone {
+                    frame,
+                    radius,
+                    half_angle,
+                } => Surface::Cone {
+                    frame: frame.transformed(motion, tolerance)?,
+                    radius: *radius,
+                    half_angle: *half_angle,
+                },
+                Surface::Sphere { frame, radius } => Surface::Sphere {
+                    frame: frame.transformed(motion, tolerance)?,
+                    radius: *radius,
+                },
+                Surface::Torus {
+                    frame,
+                    major,
+                    minor,
+                } => Surface::Torus {
+                    frame: frame.transformed(motion, tolerance)?,
+                    major: *major,
+                    minor: *minor,
+                },
+                Surface::BSpline(s) => {
+                    let poles = s.poles().iter().map(|p| motion.point(*p)).collect();
+                    Surface::BSpline(crate::BSplineSurface3::new(
+                        s.u_knots().clone(),
+                        s.v_knots().clone(),
+                        poles,
+                        Some(s.weights().to_vec()),
+                    )?)
+                }
+            };
+        }
+        Ok(parts)
+    }
     /// The same topology with every spline edge traversed along its curve:
     /// an edge whose span is flagged reversed runs from its end to its start
     /// over the unflagged span, each of its fins used the other way (a fin's

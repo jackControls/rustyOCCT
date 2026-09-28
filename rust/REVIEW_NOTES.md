@@ -3025,3 +3025,44 @@ Decisions for S9, recorded before its code (2026-09-28):
     general bodies): rebuilding its exact model in moved frames changed
     near-coincident results. Pending: the campaign, S9b.2, the DRAW survey
     of the 647 upstream cases in frames with different axes.
+  * S9b.2 implemented: a Boolean's stack or polyhedral result, a plane's
+    piece and any solid of planar faces and straight edges are inputs
+    (`tests/polyhedral_booleans.rs`: two pockets cut in turn, a turned box
+    against a stack, an S9b result against a prism, a plane's piece
+    against a box, each result's history checked and the volume
+    identities; the `boolean` target's first results chained against a
+    turned box). Amendment, from the implementation: such an input is
+    decided on its stored geometry, not a construction model (its faces'
+    triangles exact, its side by exact ray parity), and its fragments join
+    back by the stored face they come from; a line-profile prism keeps its
+    construction model. A result's inputs are kept as solids (its rigid
+    motion moves them too, for classification). A stack's rigid motion now
+    moves its stored geometry too (S9b.1's amendment (e), replacing S9a.2's
+    (g)): rebuilding spline stacks in the moved frame was most of the
+    `cfc641c9` campaign's timeout. Replaying the corpus with the chained
+    stage (debug assertions) found: (a) a tilted stack's stored model open
+    where its cap's trapezoids spanned a run of collinear edges without
+    their middle vertices (stored vertices are not collinear exactly):
+    stored faces are now triangulated on their own vertices (ears clipped,
+    the fattest first, holes bridged; the zipped trapezoids a fallback
+    under an exact area check), so neighbouring faces share their stored
+    edges exactly; (b) a stack touching itself at a vertex (a lens hole's
+    corner on the edge line of a block standing on the box) reported as a
+    non-manifold vertex (`InvalidTopology`, at `cfc641c9` too): now
+    `Degenerate`, S9a's rule; (c) exact fragments of stored models are
+    slow: 131 s in release for one chained input before splitting planes
+    were filtered by bounding boxes, fragments classified at short
+    interior points in one ray cast off the other's planes, and the ray
+    casts and collinearity tests given integer forms over common
+    denominators after binary64 filters; about 1 to 2 s an operation on a
+    stored model of 50 to 150 triangles remains (coordinates of ~900
+    bits: three stored planes' intersections), 25 times that under ASan.
+    The `boolean` target chains one result of at most 12 faces (cut and
+    common against the box), its per-input limit is 60 s, and Bernstein
+    degree elevation no longer brackets `i / n` from rationals (the
+    certified mass of spline walls, most of a spline stack's cost).
+    Campaigns: at `326ad26c` `boolean` clean (1,206 mutation executions
+    after the replay of 999 inputs, 324 MB peak) and `split` clean (2,356,
+    3,293 inputs, 1,396 MB); at `cfc641c9` `split` (1,898, 3,396 inputs,
+    1,900 MB) and `step` (13,991, 743 inputs) clean, `boolean` a timeout in
+    its replay (`fuzz/regressions/README.md`).

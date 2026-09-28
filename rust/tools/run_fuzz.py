@@ -34,8 +34,11 @@ INPUT_SECONDS = 20
 # split joined in S8d.2: a cap split by a plane passing near its pole takes
 # 8.8 s under ASan (its certified quadrature refines where the section's
 # angle about the axis turns fast), within 20 s but without margin.
+# boolean joined in S9b.2: its results as inputs again (the stored model's
+# exact fragments) and S9a.2's spline stacks take up to about 30 s under ASan
+# (fuzz/regressions/README.md).
 TARGET_INPUT_SECONDS = {"surface_knots": 60, "degree_elevation": 60, "surface_editing": 60,
-                        "split": 60}
+                        "split": 60, "boolean": 60}
 # Targets whose exact oracles churn enough temporary BigInts that default ASan
 # quarantine and allocator retention, not live data, exhaust the RSS gate.
 # brep_validation joined in S4d: a 180 s campaign reached 2,064 MB after

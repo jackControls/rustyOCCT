@@ -88,6 +88,29 @@ impl Stack {
         self.solid(component, frame, operation, known)
     }
 
+    /// The solid moved rigidly: its stored geometry moved (the decisions'
+    /// rule for general bodies), its enclosures measured again.
+    pub(crate) fn moved(
+        &self,
+        topology: &Topology,
+        frame: Frame3,
+        operation: OperationId,
+        motion: crate::RigidTransform,
+        mass: MassProperties,
+    ) -> Result<Solid> {
+        let parts = topology.moved_parts(motion, self.tolerance())?;
+        self.solid(
+            Component {
+                parts,
+                plans: Vec::new(),
+                heights: [0.0, 0.0],
+            },
+            frame,
+            operation,
+            Some(mass),
+        )
+    }
+
     /// A component as a solid (external ids).
     pub(super) fn solid(
         &self,
@@ -99,6 +122,15 @@ impl Stack {
         let topology =
             Topology::from_parts(component.parts.with_measured_enclosures(), self.tolerance())
                 .map_err(|issues| {
+                    // S9a's rule: a result touching itself at a vertex (a
+                    // corner of one slab's region on another slab's edge
+                    // line) is degenerate.
+                    if issues
+                        .iter()
+                        .any(|i| i.kind == crate::topology::IssueKind::NonManifoldVertex)
+                    {
+                        return Error::Degenerate("a result touching itself at a vertex");
+                    }
                     Error::InvalidTopology(issues.first().map_or("a stack", |i| i.kind.name()))
                 })?;
         let mass = match known {

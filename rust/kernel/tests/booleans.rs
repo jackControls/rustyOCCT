@@ -432,6 +432,43 @@ fn stacks_of_boxes() {
     assert_eq!(ids(&moved), ids(&f[0]));
 }
 
+#[test]
+fn a_stack_touching_itself_at_a_vertex_is_degenerate() {
+    // A diamond hole's corner on the edge line of a block standing on the
+    // box: the hole's wedge below and the open quarter above the box's top
+    // meet at that point only (found by the `boolean` target).
+    let diamond = Boundary::polygon(
+        vec![
+            Point2::new(-1.0, 0.0),
+            Point2::new(0.0, -1.0),
+            Point2::new(1.0, 0.0),
+            Point2::new(0.0, 1.0),
+        ],
+        tol(),
+    )
+    .unwrap();
+    let a = prism(
+        rect(-2.0, -2.0, 2.0, 2.0),
+        vec![diamond],
+        Frame3::xy(),
+        0.0,
+        1.0,
+        1,
+    );
+    let block = prism(
+        rect(-1.0, -1.5, 3.5, 0.375),
+        vec![],
+        Frame3::xy(),
+        1.0,
+        2.0,
+        2,
+    );
+    assert!(matches!(
+        a.fuse(OperationId(3), &block),
+        Err(rusty_occt::Error::Degenerate(_))
+    ));
+}
+
 /// Per case: its declared kind and the reference's solid count and totals.
 type Expected = std::collections::BTreeMap<String, (String, Option<(usize, [f64; 5])>)>;
 

@@ -6,9 +6,10 @@ assembled into shells and regions, with complete histories. This document
 describes what is implemented; the decisions are in `REVIEW_NOTES.md` (S9).
 S9a is implemented (`profile/boolean.rs` with its spline meetings in
 `profile/boolean/splines.rs`, `solid/boolean.rs`, S9a.2's stacks in
-`solid/boolean/stack.rs`), and S9b.1's polyhedral prisms in any relative
-position (`solid/boolean/polyhedra.rs`); S9b.2 (general polyhedral
-inputs), S9c and S9d are not.
+`solid/boolean/stack.rs`), and S9b's polyhedral Booleans in any relative
+position (`solid/boolean/polyhedra.rs`: prisms, and any planar solid with
+straight edges as an input, a Boolean's result or a plane's piece among
+them); S9c and S9d are not.
 
 ## Contract
 
@@ -22,7 +23,8 @@ prism's exact queries; any other is a general body built through
 `TopologyParts` and validated before it is returned. An error is one of:
 
 * `OutOfDomain`: a pair of a later sub-step (arcs or circles in frames
-  whose axes differ, S9c; an input other than a prism, S9b.2), two spline
+  whose axes differ, and inputs with curved faces or edges other than
+  prisms in one frame, S9c), two spline
   segments along one curve in different forms or a spline span along a
   line, or a stack's cavity in a result of several solids.
 * `Degenerate`: a crossing within the resolution of a vertex, two crossings
@@ -172,6 +174,26 @@ it is built. A result's rigid motion moves its stored geometry (vertices,
 lines and plane frames; the pcurves in those frames unchanged) and
 measures its enclosures again; its classification is the set function of
 both inputs' classifications within its bounds.
+
+S9b.2: an input other than a line-profile prism (a Boolean's stack or
+polyhedral result, a plane's piece, any solid of planar faces and straight
+edges) is decided on its stored geometry: its vertices as rationals, each
+face cut into triangles of its own vertices in its projection on the
+normal's largest coordinate plane (ears clipped, the fattest first, holes
+bridged; so each triangle is exactly planar and neighbouring faces share
+their stored edges exactly), or, when that fails the exact area check, its
+trapezoids zipped through every corner on their sides; its side by exact
+ray parity. Fragments of one stored face join back into one face (their
+triangles' planes differ within rounding); a prism's fragments join by
+their exact planes as before. Its entities are named by their ids.
+
+Cost: a part is split only by the other's planes whose faces' bounding box
+meets its own (the other's surface near it is all that can cross it); a
+fragment is classified at a point of short dyadic coordinates inside it
+(the centroid of its shortest fan triangle for a sliver), in one ray cast
+when it lies on none of the other's planes; the ray casts and the
+conforming step's collinearity tests take their signs from integer forms
+over common denominators, after binary64 filters.
 
 History: a face continues the input faces its fragments come from facing
 their way (a cut's tool's, or one facing the other way, it touches); an

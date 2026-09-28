@@ -80,13 +80,16 @@ pub(super) fn product<T: Real>(a: &Bern<T>, b: &Bern<T>) -> Bern<T> {
 pub(super) fn elevate<T: Real>(a: &Bern<T>, degree: usize) -> Bern<T> {
     let mut a = a.clone();
     while a.len() - 1 < degree {
-        let n = a.len() as i64;
-        let mut next = Vec::with_capacity(a.len() + 1);
+        // `(i a[i-1] + (n - i) a[i]) / n` in the tier: small integers are
+        // exact binary64s (converting `i / n` from a rational is slow).
+        let n = a.len();
+        let tn = T::exact_f64(n as f64);
+        let mut next = Vec::with_capacity(n + 1);
         next.push(a[0].clone());
-        for i in 1..a.len() {
-            let f = c::<T>(&ratio(i as i64, n));
-            let g = c::<T>(&ratio(n - i as i64, n));
-            next.push(f.mul(&a[i - 1]).add(&g.mul(&a[i])));
+        for i in 1..n {
+            let (f, g) = (T::exact_f64(i as f64), T::exact_f64((n - i) as f64));
+            let x = f.mul(&a[i - 1]).add(&g.mul(&a[i]));
+            next.push(x.div(&tn).expect("a positive degree"));
         }
         next.push(a[a.len() - 1].clone());
         a = next;

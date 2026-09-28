@@ -855,3 +855,33 @@ latitude's sine next to its cosine, which the compiler fused into one
 zone's builder took `sin` alone. Every revolved builder now takes a ring's
 height and radius from out-of-line `scaled_sin` and `scaled_cos`; the input
 replays in 0.5 s.
+
+## Boolean: spline stacks' slow unit, a stack touching itself, a chained stack
+
+`boolean/timeout-d0a3de29450a8c2ba8c2ce0f33b80aac23e5e11d.bin` was saved by
+the 600-second campaign of the boolean target at `cfc641c9` as a timeout (26
+seconds under AddressSanitizer against the 20-second limit): lens-hole
+spline profiles as stacks, their three results measured (the certified mass
+enclosure of spline walls), then each piece moved rigidly by rebuilding its
+stack in the moved frame. A result's rigid motion now moves its stored
+geometry, Bernstein degree elevation divides once by the degree in the
+certified tier (it bracketed `i / n` from rationals), and the input replays
+in 1.8 s in release and 27 s under the sanitizer: the target's per-input
+limit is now 60 s, as the split target's.
+
+`boolean/replay-7baa6762d444c7fb869dfa8d1d0f6f44fbaaf8f44ecae5253a71d003a84400ee.bin`
+and `boolean/replay-01782c8ee258a903615e59c13d8449ca8de1d520.bin` are corpus
+inputs that failed when S9b.2's chained stage was replayed over the corpus
+with debug assertions (original corpus names). The first (at `cfc641c9`
+too, before the chained stage): a square with a lens hole whose corner lies
+on the edge line of a block standing on it; the stack touches itself at
+that vertex and validation reported a non-manifold vertex (`InvalidTopology`)
+where S9a's rules refuse (`Degenerate`); it replays refused. The second: a
+tilted stack given to a Boolean again, whose stored model's cap triangles
+spanned a run of collinear edges without their middle vertices (stored
+vertices, not collinear exactly), leaving the model open; stored faces are
+now triangulated on their own vertices (ears clipped), and
+`tests/polyhedral_booleans.rs` holds the stack. Chaining larger results
+took up to 165 s an input under the sanitizer (the stored models' exact
+fragments), so the target chains first results of at most 12 faces (this
+input's 21-face stack is no longer chained).
