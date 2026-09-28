@@ -100,13 +100,23 @@ def seed_corpus(target):
 
     if target == 'split':
         # Every profile kind and plane mode (parallel, through a vertex,
-        # along an edge, tangent, normal, in a cap, oblique), both frames.
+        # along an edge, tangent, normal, in a cap, oblique, oblique through
+        # a vertex, touching a cap's circle), both frames.
         for kind in range(6):
-            for mode in range(7):
+            for mode in range(9):
                 for frame in range(2):
                     data = bytearray((j*37+kind*11+mode*17+frame*5+13)%256 for j in range(24))
                     data[:2] = bytes([kind, mode])
                     data[10] = frame
+                    save(bytes(data))
+        # S8c: a cone, a sphere, a zone and a cap (a first byte of 224 on)
+        # in every plane mode, both frames.
+        for kind in range(4):
+            for mode in range(6):
+                for frame in range(2):
+                    data = bytearray((j*41+kind*13+mode*19+frame*7+5)%256 for j in range(24))
+                    data[:3] = bytes([224, kind, mode])
+                    data[9] = frame
                     save(bytes(data))
         save(bytes([0]))
     if target == 'curve_curve':

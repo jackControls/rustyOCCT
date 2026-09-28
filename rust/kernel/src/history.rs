@@ -619,6 +619,7 @@ fn same_surface(piece: &EntityInfo, whole: &Geometry, tol: f64, edges: &Entities
     if oa != ob {
         return Some(false);
     }
+    let tol_f = tol;
     let tol = r(tol)?;
     let zero = R::from_integer(0.into());
     match (a, b) {
@@ -692,6 +693,54 @@ fn same_surface(piece: &EntityInfo, whole: &Geometry, tol: f64, edges: &Entities
                 slack >= zero
                     && cross(&na, &nb).iter().all(|x| *x == zero)
                     && on_axis(fa.origin(), &exact(fb.origin().to_array())?, &nb, &slack)?,
+            )
+        }
+        // A sphere: centres within the tolerance less the radius difference.
+        (
+            Surface::Sphere {
+                frame: fa,
+                radius: ra,
+            },
+            Surface::Sphere {
+                frame: fb,
+                radius: rb,
+            },
+        ) => {
+            let dr = r(*ra)? - r(*rb)?;
+            let slack = &tol - if dr < zero { -dr } else { dr };
+            let d = minus(
+                &exact(fa.origin().to_array())?,
+                &exact(fb.origin().to_array())?,
+            );
+            Some(slack >= zero && dot(&d, &d) <= &slack * &slack)
+        }
+        // A cone (S8c): axes parallel and half-angles equal to 1e-12, the
+        // piece's origin on the whole's axis and its radius the whole's at
+        // that height, both within the tolerance (the surfaces then agree
+        // within it over a piece of the whole's extent).
+        (
+            Surface::Cone {
+                frame: fa,
+                radius: ra,
+                half_angle: ha,
+            },
+            Surface::Cone {
+                frame: fb,
+                radius: rb,
+                half_angle: hb,
+            },
+        ) => {
+            let (na, nb) = (fa.normal(), fb.normal());
+            let d = fa.origin() - fb.origin();
+            let along = d.dot(nb);
+            let off = (d - nb * along).length();
+            let radius = rb + along * hb.tan();
+            Some(
+                na.cross(nb).length() <= 1e-12
+                    && na.dot(nb) > 0.0
+                    && (ha - hb).abs() <= 1e-12
+                    && off <= tol_f
+                    && (ra - radius).abs() <= tol_f,
             )
         }
         _ => Some(false),

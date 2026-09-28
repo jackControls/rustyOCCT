@@ -1644,4 +1644,17 @@ the first fixture, never deferred.
     so a rigid motion rebuilds them and they classify points; the mesher
     accepts a vertex twice on one loop when the two uses lie a period apart
     on the cover.
+  * S8a.2 accepted locally: a clean 600-second `split` campaign at
+    `c5a96c53` (AddressSanitizer: 7,994 mutation executions after 286 s of
+    replay, 1,249 MB peak, no artifact) after three fixes it drove (a hole
+    grazed within the resolution, a sliver piece, a winding loop's closing
+    chord the binary64 mass tier could not sign) and the speed-ups they
+    needed (an arc's crossings ordered by orientation signs instead of
+    exact arctangents, a binary64 certified arctangent, a rebuild making
+    only its own piece).
+  * S8c.1 implemented (`solid/split/revolved.rs`): cones, frusta and zones
+    by planes normal to their axis (within a quarter of the resolution),
+    whole spheres by any plane, pieces the same primitives named by
+    provenance; inside the reference on 16 of the 23 primitive cases, counts
+    OCCT's. S8c.2 (planes containing the axis) next.
 * S9 — pending

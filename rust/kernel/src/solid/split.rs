@@ -22,6 +22,7 @@ use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 
 mod oblique;
+mod revolved;
 pub(super) use oblique::Clipped;
 
 fn zero() -> R {
@@ -69,15 +70,7 @@ impl Solid {
         plane: Frame3,
     ) -> Result<(Vec<(Side, Solid)>, History)> {
         replayable(context.level)?;
-        let profile = match &self.construction {
-            Construction::Prism(profile) => (**profile).clone(),
-            _ => {
-                return Err(Error::OutOfDomain(
-                    "split_by_plane: prisms (S8a); primitives come with S8c",
-                ))
-            }
-        };
-        // The plane in the prism's frame coordinates: a u + b v + c w + d.
+        // The plane in the solid's frame coordinates: a u + b v + c w + d.
         let dot = |u: [f64; 3], v: [f64; 3]| -> R { (0..3).map(|i| q(u[i]) * q(v[i])).sum() };
         let m = plane.normal().to_array();
         let (x, y, n) = (
@@ -88,6 +81,19 @@ impl Solid {
         let (o, p0) = (self.frame.origin().to_array(), plane.origin().to_array());
         let (a, b, c) = (dot(m, x), dot(m, y), dot(m, n));
         let d: R = (0..3).map(|i| q(m[i]) * (q(o[i]) - q(p0[i]))).sum();
+        let profile = match &self.construction {
+            Construction::Prism(profile) => (**profile).clone(),
+            Construction::Cone { .. } | Construction::Sphere { .. } => {
+                return Ok(self
+                    .split_revolved(context, &plane, [a, b, c, d])?
+                    .expect("a cone or sphere"))
+            }
+            _ => {
+                return Err(Error::OutOfDomain(
+                    "split_by_plane: prisms (S8a), cones and spheres (S8c); tori come with S8d",
+                ))
+            }
+        };
         let (low, high) = (q(self.start.min(self.end)), q(self.start.max(self.end)));
         if on_one_side(&profile, [&a, &b, &c, &d], &low, &high)? {
             return Ok(self.unchanged(context));

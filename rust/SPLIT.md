@@ -96,6 +96,33 @@ coefficients exact rationals of the stored data (the frame's axes as stored).
   planes, not a cylinder's section, which OCCT has no analytic pcurve for
   (`Unwritable`).
 
+## Cones and spheres (S8c.1)
+
+`solid/split/revolved.rs`. In the solid's frame the plane is `a u + b v + c w
++ d`; which side the solid lies on is exact (the function's extremes over a
+cone are over its end circles, `c w + d +- r |(a, b)|`, an apex at `c w +
+d`; over a zone at the sphere's extreme points `d +- R |m|` when their
+heights lie between its ends, otherwise over its end circles: each a
+quadratic surd's sign).
+
+* **Normal to the axis** (`a = b = 0`, or within a quarter of the
+  resolution over the solid's widest circle: a tilted frame's stored axes):
+  the cut at `w = -d / c` rounded; the pieces are the same primitive, a cone
+  or frustum between exact heights with the radius there rounded, a zone
+  between latitudes with `asin(w / R)` rounded, so they keep the
+  primitives' exact queries.
+* **A whole sphere, any plane**: two caps on a frame whose axis is the
+  plane's normal, cut at the plane's signed distance from the centre.
+* **History**: the wall and the region `Split` (below first), the ends a
+  piece keeps the input's (`Unchanged`, or `Modified` by a rounding), the
+  cut disc and ring `Generated` from the wall, a whole sphere's caps' poles
+  `Generated` from it (role `Pole`). The history checker's support test
+  knows cones (axes parallel, half-angles equal, the piece on the whole's
+  surface within the tolerance) and spheres (centres and radii within it).
+* Planes containing the axis come with S8c.2; other planes cut a cone in a
+  conic and a zone in a circle whose pcurves wait for D13's procedural edges
+  (S8d): `OutOfDomain`.
+
 ## Evidence
 
 * **Independent reference.** `split_reference.py` (mpmath) gives each side's
@@ -114,6 +141,15 @@ coefficients exact rationals of the stored data (the frame's axes as stored).
   kernel three reviewed count differences: OCCT splits an arc wall along a
   tangent ruling, and keeps a seam in a cut cylinder (parallel to the axis,
   and through a plane touching both caps' circles).
+* **Revolved solids (S8c).** `split_reference.revolved_rows` slices each
+  cone, frustum, sphere or zone into discs cut by the plane's line and
+  integrates their areas and moments along the axis (areas: the ends'
+  parts, the lateral surface's angle below, the cut face's chords);
+  `split-primitive-cases.txt` holds 23 cases and
+  `occt-split-primitive-preimplementation` their `BRepPrimAPI_MakeCone` and
+  `MakeSphere` splits captured before any kernel code, all within 2e-8 but
+  two reviewed BRepGProp errors on spheres cut at an angle. The kernel is
+  inside the reference on the 16 cases S8c.1 splits, its counts OCCT's.
 * **Kernel.** `tests/split.rs`: every side's sums of the kernel's enclosures
   contain the reference's volume, area and moments; histories pass the
   independent check, cover every input entity and repeat exactly; oblique
