@@ -402,3 +402,18 @@ pub(crate) fn sum(values: impl Iterator<Item = f64>) -> f64 {
     }
     total + correction
 }
+
+/// `radius sin(angle)`, out of line: a caller taking the cosine of the same
+/// angle could otherwise get both from one fused `sincos`, which may differ
+/// from `sin` in the last place, and every builder of a revolved solid's
+/// rings must agree bit for bit (a zone's split rims are its rims).
+#[inline(never)]
+pub(crate) fn scaled_sin(radius: f64, angle: f64) -> f64 {
+    radius * angle.sin()
+}
+
+/// `radius cos(angle)`, out of line as [`scaled_sin`].
+#[inline(never)]
+pub(crate) fn scaled_cos(radius: f64, angle: f64) -> f64 {
+    radius * angle.cos()
+}

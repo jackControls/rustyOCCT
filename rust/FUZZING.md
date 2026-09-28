@@ -235,6 +235,13 @@ without it. The campaign-wide growth is therefore freed-block quarantine and
 allocator retention from exact BigInt churn, not live data. The input limit,
 2 GiB gate and all assertions are unchanged.
 
+`boolean` uses them too (S9a.1): a 600-second campaign at `d7e515d9` left
+its 348-input replay at 1,443 MB and stopped at the 2 GiB gate after 1,125
+mutations, on an input that peaks at 6 MB alone; its exact arrangements churn
+BigRationals as the others do. `split`, listed since S8d.2, only now calls
+the purge between inputs from its target (it had the quarantine setting
+alone).
+
 The mutation timer starts when the pinned libFuzzer reports `INITED`, after
 corpus replay. Its `max_total_time` flag includes initialization and previously
 allowed a growing corpus to consume the entire short campaign; this was caught

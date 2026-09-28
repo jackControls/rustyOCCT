@@ -827,3 +827,17 @@ were dropped), which it took for the stadium lying inside the square. The
 volumes' identity caught it. Containment in 2D is now an empty exact cut,
 and identical profiles are two empty cuts; the input is `OutOfDomain` and
 replays in 0.03 s.
+
+## Split: a zone's rim one ulp off its circle
+
+`split/crash-674ebdd30b135f3807e5587ebe7e453e412265cb.bin` was found by a
+600-second campaign of the split target at `56f26e85`: a zone of a radius
+4.25 sphere between latitudes -1.375 and 0.75, split by an oblique plane
+crossing its upper rim. The rim's arcs on the pieces lay on a circle one ulp
+above the zone's rim, so the history check (debug build) found the split
+arcs off their parent's support. The split's end heights took the
+latitude's sine next to its cosine, which the compiler fused into one
+`sincos` whose sine differs from `sin` in the last place on macOS; the
+zone's builder took `sin` alone. Every revolved builder now takes a ring's
+height and radius from out-of-line `scaled_sin` and `scaled_cos`; the input
+replays in 0.5 s.

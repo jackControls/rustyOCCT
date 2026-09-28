@@ -120,12 +120,12 @@ pub(super) fn ends(primitive: &Primitive) -> [EndSpec; 2] {
                 w: if latitude == pole {
                     pole.signum() * radius
                 } else {
-                    radius * latitude.sin()
+                    crate::math::scaled_sin(radius, latitude)
                 },
                 radius: if latitude == pole {
                     0.0
                 } else {
-                    radius * latitude.cos()
+                    crate::math::scaled_cos(radius, latitude)
                 },
                 v: latitude,
             };

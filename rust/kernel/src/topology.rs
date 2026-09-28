@@ -3041,12 +3041,15 @@ impl Topology {
             (low, low == -half, Role::StartCap, 0, Role::BottomEdge, 1),
             (high, high == half, Role::EndCap, 2, Role::TopEdge, 2),
         ];
-        let heights = [radius * low.sin(), radius * high.sin()];
+        let heights = [
+            crate::math::scaled_sin(radius, low),
+            crate::math::scaled_sin(radius, high),
+        ];
         if heights[1] - heights[0] <= tol {
             return Err(Error::Degenerate("sphere zone height"));
         }
         for (latitude, pole, ..) in ends {
-            if !pole && radius * latitude.cos() <= tol {
+            if !pole && crate::math::scaled_cos(radius, latitude) <= tol {
                 return Err(Error::Degenerate("sphere cap radius"));
             }
         }
@@ -3112,7 +3115,7 @@ impl Topology {
                 }
                 continue;
             }
-            let ring_radius = radius * latitude.cos();
+            let ring_radius = crate::math::scaled_cos(radius, latitude);
             let centre = frame.point(Point2::default(), z);
             let normal = if upper {
                 frame.normal()
@@ -3320,7 +3323,10 @@ impl Topology {
                 + minor
                     * minor
                     * ((high - low) / 2.0 + ((2.0 * high).sin() - (2.0 * low).sin()) / 4.0);
-            let (z_low, z_high) = (minor * low.sin(), minor * high.sin());
+            let (z_low, z_high) = (
+                crate::math::scaled_sin(minor, low),
+                crate::math::scaled_sin(minor, high),
+            );
             if area.abs() <= tol * tol || (z_high - z_low).abs() <= tol {
                 return Err(Error::Degenerate("torus segment"));
             }
@@ -3339,7 +3345,7 @@ impl Topology {
                 (high, z_high, Role::EndCap, 2, Role::TopEdge, 2, true),
             ];
             for (latitude, z, cap_role, segment, edge_role, rim, upper_end) in ends {
-                let ring_radius = major + minor * latitude.cos();
+                let ring_radius = major + crate::math::scaled_cos(minor, latitude);
                 let centre = frame.point(Point2::default(), z);
                 let lower = if upper_end { z < z_low } else { z < z_high };
                 let normal = if lower {

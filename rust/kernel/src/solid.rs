@@ -336,7 +336,10 @@ impl Solid {
         let (start, end) = if high - low == std::f64::consts::TAU {
             (0.0, 0.0)
         } else {
-            (minor * low.sin(), minor * high.sin())
+            (
+                crate::math::scaled_sin(minor, low),
+                crate::math::scaled_sin(minor, high),
+            )
         };
         // Within the whole torus's box: the discs of radius major + minor at
         // heights -minor and minor.
@@ -466,7 +469,10 @@ impl Solid {
     ) -> Result<Self> {
         tolerance.resolve(&[radius])?;
         let topology = Topology::sphere(frame, radius, low, high, tolerance, operation)?;
-        let (start, end) = (radius * low.sin(), radius * high.sin());
+        let (start, end) = (
+            crate::math::scaled_sin(radius, low),
+            crate::math::scaled_sin(radius, high),
+        );
         let (start, end) = (
             if low == -std::f64::consts::FRAC_PI_2 {
                 -radius
@@ -484,7 +490,7 @@ impl Solid {
         let widest = if low <= 0.0 && 0.0 <= high {
             radius
         } else {
-            (radius * low.cos()).max(radius * high.cos())
+            crate::math::scaled_cos(radius, low).max(crate::math::scaled_cos(radius, high))
         };
         let (mut min, mut max) = ([f64::INFINITY; 3], [f64::NEG_INFINITY; 3]);
         let (x, y) = (frame.x().to_array(), frame.y().to_array());
