@@ -567,19 +567,24 @@ def check(case, deflection, angle, mesh):
     for a, bb, c, face, bound, _ in mesh.triangles:
         p, q, r = mesh.nodes[a], mesh.nodes[bb], mesh.nodes[c]
         _, whole = b.shape.patches[patch[face]]
+        here = 0.0
         for l1, l2, l3 in SAMPLES:
             s = tuple(l1*x+l2*y+l3*z for x, y, z in zip(p, q, r))
             d = whole(s)
-            worst = max(worst, d)
+            here = max(here, d)
             if d > bound+eps:
                 unsound += 1
             off_face = max(off_face, b.shape.distance(s))
+        worst = max(worst, here)
         nrm = cross(sub(q, p), sub(r, p))
         area += norm(nrm)/2
         volume += dot(p, cross(q, r))/6
         if b.solid and norm(nrm) > 0:
+            # Twice the triangle's own deviation, at least the request's:
+            # a centroid that far inside the solid is still left by an
+            # outward normal.
             centre = tuple((x+y+z)/3 for x, y, z in zip(p, q, r))
-            step = 2*deflection/norm(nrm)
+            step = 2*max(deflection, here)/norm(nrm)
             if b.shape.inside(tuple(x+step*v for x, v in zip(centre, nrm))):
                 inward += 1
     if worst > deflection+eps:
@@ -600,7 +605,7 @@ def check(case, deflection, angle, mesh):
                 if d > min(deflection, bound)+eps:
                     failures.append('edge_deflection')
     exact_area, exact_volume = float(b.area), float(b.volume)
-    if b.solid and not abs(volume-exact_volume) <= deflection*(exact_area+area)+eps*exact_area:
+    if b.solid and not (volume > 0 and abs(volume-exact_volume) <= deflection*(exact_area+area)+eps*exact_area):
         failures.append('volume')
     return {'nodes': len(used), 'triangles': len(mesh.triangles), 'euler': euler,
             'deflection': worst, 'off_face': off_face, 'edge_deflection': edge_worst,

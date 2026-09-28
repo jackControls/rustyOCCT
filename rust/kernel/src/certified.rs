@@ -815,6 +815,13 @@ fn bracket(x: &R) -> Option<Fast> {
     None
 }
 
+impl Fast {
+    /// An enclosure of 2 pi.
+    pub(crate) fn two_pi() -> Self {
+        fast_half_pi().mul(&Fast::exact_f64(4.0))
+    }
+}
+
 /// pi/2 lies strictly between FRAC_PI_2 and the next binary64 number (checked
 /// against the Machin enclosure in tests).
 fn fast_half_pi() -> Fast {

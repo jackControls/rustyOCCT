@@ -18,7 +18,6 @@ every case and setting; there is no review for them.
 """
 import argparse
 import json
-import math
 from pathlib import Path
 import subprocess
 import sys
@@ -30,7 +29,6 @@ from compare_brep_io import build
 from compare_degree_elevation import verify_sdk
 from compare_occt import ROOT
 import generate_tessellation_fixtures as fixtures
-import identity_reference as ident
 import tessellation_reference as ref
 
 SOURCE_FILE = ROOT/'rust/tools/occt_tessellation_oracle.cpp'
@@ -40,14 +38,10 @@ KERNEL_FILE = ROOT/'rust/kernel/src/tessellation.rs'
 CASES = ROOT/'rust/fixtures/tessellation-cases.txt'
 TOOLKITS = ['TKMesh', 'TKTopAlgo', 'TKBRep', 'TKGeomAlgo', 'TKGeomBase', 'TKG3d', 'TKG2d', 'TKMath',
             'TKernel']
-# Native rows: counts must be equal, reals within this relative bound (on
-# the capture's platform; see PLATFORM_* for others).
+# Native rows on every run: statuses and counts exact, reals within this
+# relative bound (or 1e-15 absolute), as listed in VALIDATION.md's allowance
+# table: BRepMesh and the probe's projections use platform trigonometry.
 REAL_BOUND = 1e-9
-# Another platform's libm may move BRepMesh's nodes by ulps and so change
-# its Delaunay choices: counts within 2%, reals within 1e-6 relative, as in
-# the allowance table of VALIDATION.md.
-PLATFORM_COUNT = 0.02
-PLATFORM_REAL = 1e-6
 FIELDS = ('status', 'faces', 'unmeshed', 'nodes', 'welded', 'triangles', 'degenerate', 'free',
           'nonmanifold', 'misoriented', 'weld_gap', 'face_deflection', 'edge_deflection',
           'face_distance', 'edge_distance', 'area', 'volume')
@@ -118,19 +112,21 @@ def parse_native(stdout):
     return rows, '\n'.join(dump)+'\n'
 
 
-def same_row(was, now, platform_changed):
-    count = PLATFORM_COUNT if platform_changed else 0.0
-    real = PLATFORM_REAL if platform_changed else REAL_BOUND
+COUNTS = ('faces', 'unmeshed', 'nodes', 'welded', 'triangles', 'degenerate', 'free', 'nonmanifold',
+          'misoriented')
+
+
+def same_row(was, now):
     if set(was) != set(now) or was['status'] != now['status']:
         return False
     for key, a in was.items():
         b = now[key]
         if key == 'status':
             continue
-        if isinstance(a, int) and isinstance(b, int):
-            if abs(a-b) > count*max(abs(a), 1):
+        if key in COUNTS:
+            if a != b:
                 return False
-        elif abs(a-b) > real*max(abs(a), abs(b), 1e-300) and abs(a-b) > 1e-15:
+        elif abs(a-b) > REAL_BOUND*max(abs(a), abs(b)) and abs(a-b) > 1e-15:
             return False
     return True
 
@@ -171,11 +167,9 @@ def captured(observed, text):
     was, _ = parse_native((CAPTURE/'native.txt').read_text())
     if set(was) != set(observed):
         raise ValueError('native cases differ from the capture')
-    moved = metadata['platform'] != sys.platform
     for key, row in was.items():
-        if not same_row(row, observed[key], moved):
+        if not same_row(row, observed[key]):
             raise ValueError(f'native observation of {key} differs from the capture: {observed[key]}')
-    return moved
 
 
 def rust_meshes():
@@ -238,11 +232,11 @@ def main():
     if record['exit_code'] != 0 or dumped.returncode != 0:
         raise SystemExit('native tessellation run failed: '+json.dumps(record)[:2000])
     observed, _ = parse_native(record['stdout'])
-    moved = captured(observed, text)
+    captured(observed, text)
     native_meshes = ref.parse_meshes(parse_native(dumped.stdout)[1])
     oracle = next(iter(record['stderr'].splitlines()), None)
     reviews = [] if args.strict_native or not REVIEWS.exists() else json.loads(REVIEWS.read_text())['reviews']
-    report = {'source_reference': SOURCE, 'oracle': oracle, 'platform_allowance': moved, 'meshes': 0,
+    report = {'source_reference': SOURCE, 'oracle': oracle, 'meshes': 0,
               'rust_passes_reference': 0, 'matches': [], 'reviewed_differences': [], 'failures': [],
               'counts': {}}
     rust = rust_meshes()
@@ -272,13 +266,10 @@ def main():
             if not found:
                 report['matches'].append(key)
                 continue
+            # The fingerprint is this run's row: a platform whose row
+            # differs in the last bits gets its own review.
             evidence = {'case': key, 'source_reference': SOURCE, 'oracle': oracle,
                         'native_sha256': sha(json.dumps(row, sort_keys=True)), 'differences': found}
-            if moved:
-                # Rows reproduce within the platform allowance, not bit for
-                # bit: the fingerprint is the capture's row.
-                was, _ = parse_native((CAPTURE/'native.txt').read_text())
-                evidence['native_sha256'] = sha(json.dumps(was[(name, setting)], sort_keys=True))
             review = review_for(evidence, reviews)
             report['reviewed_differences' if review else 'failures'].append(
                 review or dict(evidence, native=native, row=row))

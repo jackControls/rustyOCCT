@@ -33,8 +33,11 @@ as much as OCCT.
   (`0.045` against `0.03`), `sphere` fine (`0.0103` against `0.005`),
   `sphere_far` fine (`0.0041` against `0.002`), `sphere_zone` coarse
   (`0.094` against `0.05`) and fine (`0.0096` against `0.005`),
-  `torus_segment` fine (`0.035` against `0.008`, with inward normals) and
-  `torus_inner_half` fine (`0.035` against `0.008`). OCCT's own recorded
+  `torus_segment` fine (`0.035` against `0.008`) and `torus_inner_half`
+  fine (`0.035` against `0.008`). (The inward normals first reported on
+  `torus_segment` were the reference's: it offset each centroid by twice the
+  request, less than that mesh's own deviation; it now offsets by twice the
+  larger of the two.) OCCT's own recorded
   `Poly_Triangulation::Deflection` states the excess on each of them.
 * Apexes and poles give degenerate triangles (two nodes joined into one):
   one per apex or pole on `cone_apex`, `cone_inverted`, `hemisphere`, two

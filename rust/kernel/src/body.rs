@@ -224,6 +224,14 @@ impl Body {
     pub fn topology(&self) -> &Topology {
         &self.topology
     }
+    /// A watertight mesh of the body within certified deflection and angle
+    /// bounds (`tessellation::tessellate`).
+    pub fn tessellate(
+        &self,
+        parameters: crate::tessellation::Parameters,
+    ) -> Result<crate::tessellation::Mesh> {
+        crate::tessellation::tessellate(&self.topology, parameters)
+    }
     pub fn operation(&self) -> OperationId {
         self.operation
     }
