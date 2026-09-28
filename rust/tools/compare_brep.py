@@ -545,11 +545,15 @@ def rust_measures():
     return out
 
 
-def measure_differences(enclosure, native):
+def measure_differences(enclosure, native, name=''):
     """S6: the certified area or length and centre contain OCCT's
     `BRepGProp` values up to 1e-9 of the row's largest magnitude (OCCT's
-    integration error; its circle centre is 7e-15 off the origin)."""
-    allowance = 1e-9*max([1.0]+[abs(x) for x in native])
+    integration error; its circle centre is 7e-15 off the origin). F8: the
+    bulge's spline wall is enclosed to 1e-15 around its closed form
+    sqrt 2 + asinh 1, where OCCT's area is 1.8e-8 relative above it (its
+    centre 4.6e-9 off): that row allows 2e-8."""
+    relative = 2e-8 if name == 'sheet_spline_wall' else 1e-9
+    allowance = relative*max([1.0]+[abs(x) for x in native])
     labels = ['measure', 'cx', 'cy', 'cz']
     return [label for label, (lo, hi), x in zip(labels, enclosure, native)
             if not lo-allowance <= x <= hi+allowance]
@@ -743,7 +747,7 @@ def main():
                 report['failures'].append({'case': m.name, 'reason': ' '.join(found), 'detail': detail})
             if sheet:
                 kind, measured = kernel_measures[m.name]
-                found = (measure_differences(measured, measures[m.name]) if measured
+                found = (measure_differences(measured, measures[m.name], m.name) if measured
                          else ['not measured'])
                 report['measures_compared'] += 1
                 report['measure_classes'][m.name] = kind

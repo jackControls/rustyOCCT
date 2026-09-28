@@ -27,6 +27,7 @@ use std::fmt;
 mod bernstein;
 mod continuity;
 mod mass;
+mod quadrature;
 mod spline_deviation;
 mod spline_flux;
 mod spline_taylor;
