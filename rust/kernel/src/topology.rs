@@ -1693,6 +1693,11 @@ impl Topology {
             centre: e.centre,
         })
     }
+    /// The total length of every edge, each once, certified: a sheet's
+    /// perimeter, a wire's length (S8e).
+    pub fn edge_length_enclosure(&self) -> Option<[f64; 2]> {
+        validate::edge_length(&self.view())
+    }
     /// A face's area and centre of gravity, from certified enclosures.
     pub fn face_area_and_centre(&self, face: FaceId) -> Option<(f64, Point3)> {
         let (area, centre) = validate::face_mass(&self.view(), face.0, self.reference_point())?;
@@ -2544,12 +2549,7 @@ impl Topology {
                     radius,
                     ccw,
                 } => {
-                    let arc_frame = Frame3::new(
-                        frame.point(*center, 0.0),
-                        frame.normal(),
-                        frame.x(),
-                        tolerance,
-                    )?;
+                    let arc_frame = frame.at(frame.point(*center, 0.0));
                     let (p, q) = (points[i], points[i + 1]);
                     topology.add_edge(
                         Some(a),
@@ -2691,12 +2691,7 @@ impl Topology {
                     (points.as_slice(), Some(segments.as_slice()))
                 }
                 BoundaryKind::Circle { center, radius } => {
-                    let circle = Frame3::new(
-                        frame.point(*center, 0.0),
-                        frame.normal(),
-                        frame.x(),
-                        tolerance,
-                    )?;
+                    let circle = frame.at(frame.point(*center, 0.0));
                     let edge = topology.add_ring(Curve3::Circle {
                         frame: circle,
                         radius: *radius,
@@ -2732,12 +2727,7 @@ impl Topology {
                         radius,
                         ccw,
                     }) => {
-                        let arc_frame = Frame3::new(
-                            frame.point(center, 0.0),
-                            frame.normal(),
-                            frame.x(),
-                            tolerance,
-                        )?;
+                        let arc_frame = frame.at(frame.point(center, 0.0));
                         let a = points[i];
                         topology.add_edge(
                             Some(vertices[i]),

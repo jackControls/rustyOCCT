@@ -204,7 +204,8 @@ def rust_rows():
                               input=fixtures.encode(case, plane)+'\n', text=True, capture_output=True,
                               timeout=600)
         rows = [line.split() for line in run_.stdout.splitlines()]
-        if run_.returncode != 0 or not rows or any(w[0] != case.name or w[1] not in ('piece', 'limit', 'unsupported')
+        if run_.returncode != 0 or not rows or any(w[0] != case.name or w[1] not in ('piece', 'limit', 'unsupported',
+                                                                                    'refused')
                                                    for w in rows):
             failed.append(case.name)
             out[case.name] = [['unsupported']]
@@ -213,14 +214,19 @@ def rust_rows():
     return out, failed
 
 
-def rust_differences(rust, rows, native):
+def rust_differences(rust, rows, native, rounding=0.0):
     """Each side's sums of the kernel's enclosures contain the reference's
-    totals (1e-20 relative slack for the reference's quadrature); the piece
+    totals (1e-20 relative slack for the reference's quadrature, and for a
+    wire `rounding`: its enclosure is its stored arcs' length `r |sweep|`,
+    exactly, whose new vertices are the exact split's rounded); the piece
     counts per side and each piece's face, edge and vertex counts equal the
     native ones."""
     out = []
     if rust and rust[0][0] == 'limit':
         return ['rust_limit']
+    # A documented Degenerate (S8e: a sheet pinched by a tangent hole).
+    if rust and rust[0][0] == 'refused':
+        return ['rust_refused']
     pieces = [(w[1], [float(x) for x in w[2:4]], [float(x) for x in w[4:6]],
                [[float(x) for x in w[6+2*i:8+2*i]] for i in range(3)], [int(x) for x in w[12:15]])
               for w in rust if w[0] == 'piece']
@@ -243,12 +249,13 @@ def rust_differences(rust, rows, native):
         return ['rust_sides']
     for side, (v, a, c) in want.items():
         (vlo, vhi), (alo, ahi), moments, _ = sides[side]
-        slack = lambda x: 1e-20*abs(x)
+        slack = lambda x: 1e-20*abs(x)+rounding
         if not (vlo-slack(v) <= v <= vhi+slack(v)) or not (alo-slack(a) <= a <= ahi+slack(a)):
             out.append('rust_measure_outside_reference')
         for i in range(3):
             m = v*c[i]
-            if not (moments[i][0]-1e-12*max(1.0, abs(m)) <= m <= moments[i][1]+1e-12*max(1.0, abs(m))):
+            allow = 1e-12*max(1.0, abs(m))+rounding*max(1.0, abs(c[i]))
+            if not (moments[i][0]-allow <= m <= moments[i][1]+allow):
                 out.append('rust_centre_outside_reference')
     if native is not None and native[0] == 'done':
         mine = sorted((side, tuple(counts)) for side, _, _, _, counts in pieces)
@@ -363,7 +370,10 @@ def main():
             # the native comparison still made.
             report['rust_unsupported'].append(name)
         elif rust is not None:
-            wrong = rust_differences(rust[name], rows, native)
+            # A wire's new vertices, rounded, move its length by a few ulps
+            # of the case's size (S8e).
+            rounding = 2.0**-40*case_scale(case, plane) if getattr(case, 'make', None) == 'wire' else 0.0
+            wrong = rust_differences(rust[name], rows, native, rounding)
             if any(w in ('rust_limit', 'rust_pieces', 'rust_sides', 'rust_measure_outside_reference',
                          'rust_centre_outside_reference') for w in wrong):
                 report['failures'].append({'case': name, 'reason': ' '.join(wrong), 'rust': rust[name]})

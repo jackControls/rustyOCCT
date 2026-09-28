@@ -1781,6 +1781,23 @@ fn solve_measure<T: Real>(view: &View, reference: [f64; 3]) -> Option<SheetMeasu
     })
 }
 
+/// The total length of every edge of a body, each once, certified (a
+/// sheet's perimeter; a wire's length): `None` where an edge's length is
+/// not enclosed (an ellipse's, a rational spline's).
+pub(crate) fn edge_length(view: &View) -> Option<[f64; 2]> {
+    fn total<T: Real>(view: &View) -> Option<[f64; 2]> {
+        let origin: V3<T> = std::array::from_fn(|_| c(0.0));
+        let mut sum = c::<T>(0.0);
+        for edge in view.edges {
+            let (length, _) = curve_moments::<T>(&edge.curve, &origin)?;
+            sum = sum.add(&length);
+        }
+        let (lo, hi) = sum.bounds_f64();
+        (lo.is_finite() && hi.is_finite()).then_some([lo, hi])
+    }
+    total::<Fast>(view).or_else(|| total::<I>(view))
+}
+
 /// A sheet's area or a wire's length and its centre, certified.
 pub(crate) fn sheet_measure(view: &View, reference: [f64; 3]) -> Option<SheetMeasure> {
     super::bernstein::clear_memo();

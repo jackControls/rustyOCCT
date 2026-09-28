@@ -2452,4 +2452,23 @@ the first fixture, never deferred.
     hole the plane touches (the decisions: `Degenerate`). The probe cannot
     build a body case yet: all 25 `rust_unsupported` (128 cases: 75
     matches, 53 reviewed). `Body::split_by_plane` next.
+  * S8e implemented (`body/split.rs`, `Topology::open_wire`): sheets by
+    their profiles' sections, closed wires into open wires of their runs,
+    renamed by provenance; a spline wire's length by certified quadrature;
+    a certified perimeter (`Topology::edge_length_enclosure`). All 128 split
+    cases inside the reference (70 matches, 58 reviewed); five new reviews:
+    OCCT splits edges at the tangent sheet's arc and the tangent wire's
+    spline, keeps circles' seam vertices (a disc and a circle wire), and
+    splits the sheet whose hole the plane touches, which the kernel refuses
+    (`refused`, a documented `Degenerate`, is now a probe row the
+    comparison reviews). The DRAW adapter drives `bsplit` with one plane
+    face on prisms, sheets and wires (the derived case `split_plane`, on
+    both backends) and the upstream `bsplit` group is registered as
+    capability sentinels. Amendments: a wire's certified length is its
+    stored arcs' `r |sweep|` exactly, whose new vertices are the exact
+    split's rounded, so its comparison allows `2^-40` of the case's size;
+    a sheet's or wire's arcs and circles take the face frame's axes bit for
+    bit (`Frame3::at`: normalizing a unit vector again is not idempotent,
+    and the history check compares circle normals exactly). Pending: the
+    campaign, the Linux record of the sheet capture after CI.
 * S9 — pending

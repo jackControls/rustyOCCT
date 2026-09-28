@@ -382,16 +382,18 @@ everywhere, `|d| - R |(a, b)| >= r |m|`, decided by squares.
   into runs (OCCT keeps it one wire): every piece valid, sides and runs the
   reference's, 23 within 2e-8 and two reviewed BRepGProp errors (a face
   bounded by two spans of the wave, 1.3e-3 in area; `LinearProperties` on a
-  cubic, 3.5e-6 in perimeter). The probe cannot build a body case yet: all
-  25 `rust_unsupported`.
+  cubic, 3.5e-6 in perimeter). The kernel (S8e) is inside the reference on
+  all 25; five more reviews: OCCT splits edges where the plane touches a
+  sheet's arc and a wire's spline, keeps circles' seam vertices, and splits
+  the sheet whose hole the plane touches, which the kernel refuses.
 * **Kernel.** `tests/split.rs`: every side's sums of the kernel's enclosures
   contain the reference's volume, area and moments; histories pass the
   independent check, cover every input entity and repeat exactly; oblique
   pieces move rigidly with their ids, classify, tessellate and write where
   OCCT has records; spline pieces (parallel, knot, oblique and holed) move,
-  tessellate and round-trip through `.brep`; `compare_split.py`: all 103
-  cases inside the reference, 52 matching the native counts and 51
-  reviewed.
+  tessellate and round-trip through `.brep`; sheets and wires match the
+  reference and their histories check; `compare_split.py`: all 128 cases
+  inside the reference, 70 matching the native counts and 58 reviewed.
 * **Fuzzing.** The `split` target cuts rectangles, regular polygons,
   stadiums, U shapes and holed squares in two frames with planes chosen
   degenerate on purpose (oblique ones through a cap's vertex or touching a
