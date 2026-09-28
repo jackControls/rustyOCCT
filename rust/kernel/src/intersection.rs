@@ -23,6 +23,7 @@ mod spline_linear;
 mod spline_plane;
 mod spline_quadric;
 mod spline_surface;
+mod toroidal;
 pub use crate::proximity::LinearPrimitive3;
 pub use analytic::{surface_surface, AnalyticItem, Enclosure, Enclosure3, SurfaceIntersection};
 pub use curved::{

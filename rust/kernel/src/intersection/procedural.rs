@@ -52,24 +52,32 @@ pub enum Component {
     Loop { u: [Enclosure; 2] },
     /// One branch over a whole turn: a closed ring.
     Ring { branch: Branch },
-    /// Both branches over a whole turn, touching at the node (at `u = pi`,
-    /// enclosed).
+    /// Both branches over a whole turn, touching at the node (enclosed: at
+    /// `u = pi` for the ruled surfaces, `0` or `pi` on a torus).
     FigureEight { node: Enclosure },
 }
 
-/// D13's procedural curve: two surfaces, the ruled one's parameterisation
-/// and the components.
+/// D13's procedural curve: two surfaces, the parameterisation on the first
+/// (a ruled surface's rulings, a torus's meridians) and the components.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ProceduralCurve {
-    ruled: Surface,
+    carrier: Surface,
     other: Surface,
     components: Vec<Component>,
 }
 
 impl ProceduralCurve {
-    /// The surface the curve is parameterised on.
-    pub fn ruled(&self) -> &Surface {
-        &self.ruled
+    pub(super) fn new(carrier: Surface, other: Surface, components: Vec<Component>) -> Self {
+        Self {
+            carrier,
+            other,
+            components,
+        }
+    }
+    /// The surface the curve is parameterised on: a cylinder or cone by the
+    /// angle of its ruling, a torus by the angle of its meridian.
+    pub fn carrier(&self) -> &Surface {
+        &self.carrier
     }
     pub fn other(&self) -> &Surface {
         &self.other
@@ -78,11 +86,14 @@ impl ProceduralCurve {
         &self.components
     }
     /// A certified enclosure of the curve's points on `branch` at every
-    /// parameter in `u = [lo, hi]`; an error where the ruling certainly misses
-    /// the other surface.
+    /// parameter in `u = [lo, hi]`; an error where the ruling or meridian
+    /// certainly misses the other surface.
     pub fn point_at(&self, u: Enclosure, branch: Branch) -> Result<Enclosure3> {
+        if matches!(self.carrier, Surface::Torus { .. }) {
+            return super::toroidal::point_at(&self.carrier, &self.other, u, branch);
+        }
         let [lo, hi] = u;
-        let fast = Setup::<Fast>::of(&self.ruled, &self.other)
+        let fast = Setup::<Fast>::of(&self.carrier, &self.other)
             .and_then(|s| s.point(&span(lo, hi), branch).map(|p| bounds3(&p)));
         // Near a loop's end D is small and its square root widens binary64
         // intervals: rational intervals then, for an exact parameter.
@@ -96,84 +107,84 @@ impl ProceduralCurve {
             Ok(p) if wide(&p) => {}
             other => return other,
         }
-        let s = Setup::<I>::of(&self.ruled, &self.other)?;
+        let s = Setup::<I>::of(&self.carrier, &self.other)?;
         Ok(bounds3(&s.point(&span(lo, hi), branch)?))
     }
 }
 
 // ------------------------------------------------------------------ helpers
 
-type X = [R; 3];
-type E<T> = [T; 3];
+pub(super) type X = [R; 3];
+pub(super) type E<T> = [T; 3];
 
-fn q(x: f64) -> R {
+pub(super) fn q(x: f64) -> R {
     R::from_float(x).expect("finite surface data")
 }
-fn zero(x: &R) -> bool {
+pub(super) fn zero(x: &R) -> bool {
     x.numer().sign() == Sign::NoSign
 }
-fn dot(a: &X, b: &X) -> R {
+pub(super) fn dot(a: &X, b: &X) -> R {
     &a[0] * &b[0] + &a[1] * &b[1] + &a[2] * &b[2]
 }
-fn cross(a: &X, b: &X) -> X {
+pub(super) fn cross(a: &X, b: &X) -> X {
     [
         &a[1] * &b[2] - &a[2] * &b[1],
         &a[2] * &b[0] - &a[0] * &b[2],
         &a[0] * &b[1] - &a[1] * &b[0],
     ]
 }
-fn sub(a: &X, b: &X) -> X {
+pub(super) fn sub(a: &X, b: &X) -> X {
     [&a[0] - &b[0], &a[1] - &b[1], &a[2] - &b[2]]
 }
-fn scale(a: &X, k: &R) -> X {
+pub(super) fn scale(a: &X, k: &R) -> X {
     [&a[0] * k, &a[1] * k, &a[2] * k]
 }
 /// The component of `w` perpendicular to `a`.
-fn perpendicular(w: &X, a: &X) -> X {
+pub(super) fn perpendicular(w: &X, a: &X) -> X {
     sub(w, &scale(a, &(dot(w, a) / dot(a, a))))
 }
-fn i<T: Real>(x: &R) -> T {
+pub(super) fn i<T: Real>(x: &R) -> T {
     T::from_r(x)
 }
-fn e3<T: Real>(v: &X) -> E<T> {
+pub(super) fn e3<T: Real>(v: &X) -> E<T> {
     [i(&v[0]), i(&v[1]), i(&v[2])]
 }
-fn edot<T: Real>(a: &E<T>, b: &E<T>) -> T {
+pub(super) fn edot<T: Real>(a: &E<T>, b: &E<T>) -> T {
     a[0].mul(&b[0]).add(&a[1].mul(&b[1])).add(&a[2].mul(&b[2]))
 }
-fn ecross<T: Real>(a: &E<T>, b: &E<T>) -> E<T> {
+pub(super) fn ecross<T: Real>(a: &E<T>, b: &E<T>) -> E<T> {
     [
         a[1].mul(&b[2]).sub(&a[2].mul(&b[1])),
         a[2].mul(&b[0]).sub(&a[0].mul(&b[2])),
         a[0].mul(&b[1]).sub(&a[1].mul(&b[0])),
     ]
 }
-fn eadd<T: Real>(a: &E<T>, b: &E<T>) -> E<T> {
+pub(super) fn eadd<T: Real>(a: &E<T>, b: &E<T>) -> E<T> {
     [a[0].add(&b[0]), a[1].add(&b[1]), a[2].add(&b[2])]
 }
-fn esub<T: Real>(a: &E<T>, b: &E<T>) -> E<T> {
+pub(super) fn esub<T: Real>(a: &E<T>, b: &E<T>) -> E<T> {
     [a[0].sub(&b[0]), a[1].sub(&b[1]), a[2].sub(&b[2])]
 }
-fn escale<T: Real>(a: &E<T>, k: &T) -> E<T> {
+pub(super) fn escale<T: Real>(a: &E<T>, k: &T) -> E<T> {
     [a[0].mul(k), a[1].mul(k), a[2].mul(k)]
 }
-fn limit(what: &'static str) -> Error {
+pub(super) fn limit(what: &'static str) -> Error {
     Error::ComputationLimit(what)
 }
-fn unit<T: Real>(v: &X) -> Result<E<T>> {
+pub(super) fn unit<T: Real>(v: &X) -> Result<E<T>> {
     let n = i::<T>(&dot(v, v)).sqrt();
     let d = |x: &R| i::<T>(x).div(&n).ok_or(limit("a unit direction"));
     Ok([d(&v[0])?, d(&v[1])?, d(&v[2])?])
 }
-fn bounds<T: Real>(x: &T) -> Enclosure {
+pub(super) fn bounds<T: Real>(x: &T) -> Enclosure {
     let (lo, hi) = x.bounds_f64();
     [lo, hi]
 }
-fn bounds3<T: Real>(v: &E<T>) -> Enclosure3 {
+pub(super) fn bounds3<T: Real>(v: &E<T>) -> Enclosure3 {
     [bounds(&v[0]), bounds(&v[1]), bounds(&v[2])]
 }
 /// The enclosure `[lo, hi]` (binary64 ends) in a tier.
-fn span<T: Real>(lo: f64, hi: f64) -> T {
+pub(super) fn span<T: Real>(lo: f64, hi: f64) -> T {
     if lo == hi {
         T::exact_f64(lo)
     } else {
@@ -181,11 +192,11 @@ fn span<T: Real>(lo: f64, hi: f64) -> T {
     }
 }
 /// Pi in a tier.
-fn pi<T: Real>() -> T {
+pub(super) fn pi<T: Real>() -> T {
     let p = crate::certified::pi();
     T::from_r(p.lo()).union(&T::from_r(p.hi()))
 }
-fn positive<T: Real>(x: &T) -> Result<bool> {
+pub(super) fn positive<T: Real>(x: &T) -> Result<bool> {
     match x.sign() {
         Some(Ordering::Greater) => Ok(true),
         Some(Ordering::Less) => Ok(false),
@@ -502,7 +513,7 @@ fn classify_sphere(c: &Quad, s: &Quad) -> Class {
 // ------------------------------------------------------------------ loops
 
 /// `arccos c` for `c` in `(-1, 1)`, enclosed.
-fn arccos(c: &I) -> Result<Enclosure> {
+pub(super) fn arccos(c: &I) -> Result<Enclosure> {
     let sine = I::exact_f64(1.0).sub(&c.square()).sqrt();
     let t = crate::certified::atan2(&sine, c).ok_or(limit("a loop's half-range"))?;
     Ok(bounds(&t))
@@ -799,11 +810,11 @@ pub(crate) fn intersect(a: &Surface, b: &Surface) -> Result<Option<Found>> {
         if components.is_empty() {
             Found::Empty
         } else {
-            Found::Curve(Box::new(ProceduralCurve {
-                ruled: ruled.clone(),
-                other: other.clone(),
+            Found::Curve(Box::new(ProceduralCurve::new(
+                ruled.clone(),
+                other.clone(),
                 components,
-            }))
+            )))
         }
     };
     let off_axis = |axis: &Quad, p: &X| !perpendicular(&sub(p, &axis.o), &axis.a).iter().all(zero);
@@ -867,11 +878,11 @@ pub(crate) fn intersect(a: &Surface, b: &Surface) -> Result<Option<Found>> {
 /// loop, its closed-form range.
 fn closed(ruled: &Surface, other: &Surface, class: Class, p: &Quad, o: &Quad) -> Result<Found> {
     let curve = |components| {
-        Found::Curve(Box::new(ProceduralCurve {
-            ruled: ruled.clone(),
-            other: other.clone(),
+        Found::Curve(Box::new(ProceduralCurve::new(
+            ruled.clone(),
+            other.clone(),
             components,
-        }))
+        )))
     };
     Ok(match class {
         Class::Empty => Found::Empty,

@@ -6,10 +6,12 @@
 //! only by a certified comparison it cannot decide; it is symmetric in its
 //! arguments; every enclosure is ordered; every returned point, line and
 //! conic lies on both surfaces; and an exact dyadic translation moves every
-//! item with the surfaces. A procedural curve (S7b.1: cylinders with
-//! crossing axes, a cylinder and a sphere off its axis) is the same whatever
-//! the argument order, and points along every loop, ring and figure-eight
-//! lie on both surfaces.
+//! item with the surfaces. A procedural curve (S7b: the other quadric pairs,
+//! a torus with a plane or a sphere) is the same whatever the argument order,
+//! and points along every loop, ring and figure-eight lie on both surfaces.
+//! A kind byte of 224 or more makes a torus (S7b.3a; the bytes below keep
+//! their earlier meaning), whose shared-axis modes give its coaxial pairs
+//! and planes normal to its axis.
 use rusty_occt::intersection::{
     surface_surface, AnalyticItem, Branch, Component, SurfaceIntersection,
 };
@@ -42,6 +44,14 @@ fn frame(o: Point3, n: Vec3) -> Option<Frame3> {
 }
 
 fn make(kind: u8, f: Frame3, radius: f64, angle: f64) -> Surface {
+    if kind >= 224 {
+        // Minor radius at most the major's less a quarter: a ring torus.
+        return Surface::Torus {
+            frame: f,
+            major: radius + 0.25,
+            minor: (0.125 + angle / 2.0).min(radius),
+        };
+    }
     match kind % 4 {
         0 => Surface::Plane(f),
         1 => Surface::Cylinder { frame: f, radius },
@@ -59,7 +69,8 @@ fn frame_of(s: &Surface) -> Frame3 {
         Surface::Plane(f)
         | Surface::Cylinder { frame: f, .. }
         | Surface::Cone { frame: f, .. }
-        | Surface::Sphere { frame: f, .. } => *f,
+        | Surface::Sphere { frame: f, .. }
+        | Surface::Torus { frame: f, .. } => *f,
         _ => unreachable!(),
     }
 }
@@ -82,6 +93,7 @@ fn distance(s: &Surface, p: Vec3) -> f64 {
             let shift = radius * ca + h * sa;
             (radial * ca - shift).abs().min((radial * ca + shift).abs())
         }
+        Surface::Torus { major, minor, .. } => ((radial - major).hypot(h) - minor).abs(),
         _ => unreachable!(),
     }
 }
@@ -177,6 +189,11 @@ fn translated(s: &Surface, t: RigidTransform) -> Surface {
             radius: *radius,
             half_angle: *half_angle,
         },
+        Surface::Torus { major, minor, .. } => Surface::Torus {
+            frame: f,
+            major: *major,
+            minor: *minor,
+        },
         _ => unreachable!(),
     }
 }
@@ -231,7 +248,7 @@ pub fn check_analytic_intersections(data: &[u8]) {
         }
         _ => assert_eq!(result, swapped, "symmetric"),
     }
-    // A procedural curve (S7b.1): points along every component lie on both
+    // A procedural curve (S7b): points along every component lie on both
     // surfaces.
     if let SurfaceIntersection::Procedural(c) = &result {
         for comp in c.components() {

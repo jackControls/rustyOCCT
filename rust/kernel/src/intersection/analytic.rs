@@ -129,11 +129,12 @@ pub enum SurfaceIntersection {
     Same,
     /// Points, lines and conics, canonically ordered.
     Items(Vec<AnalyticItem>),
-    /// A procedural curve (D13, S7b): two cylinders with crossing axes, a
-    /// cylinder and a sphere off its axis.
+    /// A procedural curve (D13, S7b): the other quadric pairs, and a torus
+    /// with a plane or a sphere.
     Procedural(Box<super::procedural::ProceduralCurve>),
-    /// A curve that is not a conic, of a pair not yet parameterised (cones
-    /// and tori, S7b.2 and S7b.3).
+    /// A curve that is not a conic, of a pair not yet parameterised (two
+    /// cones, a cone's apex on a sphere, a sphere containing a torus's
+    /// meridian circle, a torus and a cylinder, cone or torus off its axis).
     NotConic,
 }
 
@@ -281,7 +282,7 @@ fn exact_line(p: &X, d: &X) -> Result<AnalyticItem> {
         direction: bounds3(&unit(d)?),
     })
 }
-fn circle(centre: &E, normal: &X, radius: &I) -> Result<AnalyticItem> {
+pub(super) fn circle(centre: &E, normal: &X, radius: &I) -> Result<AnalyticItem> {
     Ok(AnalyticItem::Circle {
         centre: bounds3(centre),
         normal: bounds3(&unit(normal)?),
@@ -336,10 +337,13 @@ impl Q {
     }
 }
 
-/// The intersection of two analytic surfaces (S7a). A torus pair and a pair
-/// whose intersection is not a conic are [`SurfaceIntersection::NotConic`];
-/// a spline surface is out of domain.
+/// The intersection of two analytic surfaces: points, lines and conics
+/// (S7a), procedural curves (S7b), and [`SurfaceIntersection::NotConic`]
+/// for the pairs not yet parameterised; a spline surface is out of domain.
 pub fn surface_surface(a: &Surface, b: &Surface) -> Result<SurfaceIntersection> {
+    if matches!(a, Surface::Torus { .. }) || matches!(b, Surface::Torus { .. }) {
+        return super::toroidal::intersect(a, b);
+    }
     let (sa, sb) = (a, b);
     let (Some(mut a), Some(mut b)) = (Q::of(a), Q::of(b)) else {
         if matches!(a, Surface::BSpline(_)) || matches!(b, Surface::BSpline(_)) {
@@ -387,36 +391,39 @@ pub fn surface_surface(a: &Surface, b: &Surface) -> Result<SurfaceIntersection> 
         }
     }
     Ok(match items {
-        Out::Items(mut items) => {
-            let key = |x: &AnalyticItem| {
-                (
-                    x.kind(),
-                    x.values()
-                        .iter()
-                        .map(|[lo, hi]| 0.5 * lo + 0.5 * hi)
-                        .collect::<Vec<_>>(),
-                )
-            };
-            items.sort_by(|x, y| {
-                let (kx, vx) = key(x);
-                let (ky, vy) = key(y);
-                kx.cmp(ky).then_with(|| {
-                    vx.iter()
-                        .zip(&vy)
-                        .map(|(a, b)| a.total_cmp(b))
-                        .find(|o| *o != Ordering::Equal)
-                        .unwrap_or(Ordering::Equal)
-                })
-            });
-            if items.is_empty() {
-                SurfaceIntersection::Empty
-            } else {
-                SurfaceIntersection::Items(items)
-            }
-        }
+        Out::Items(items) => sorted(items),
         Out::Same => SurfaceIntersection::Same,
         Out::NotConic => SurfaceIntersection::NotConic,
     })
+}
+
+/// Items in canonical order (by kind, then by their numbers), or `Empty`.
+pub(super) fn sorted(mut items: Vec<AnalyticItem>) -> SurfaceIntersection {
+    let key = |x: &AnalyticItem| {
+        (
+            x.kind(),
+            x.values()
+                .iter()
+                .map(|[lo, hi]| 0.5 * lo + 0.5 * hi)
+                .collect::<Vec<_>>(),
+        )
+    };
+    items.sort_by(|x, y| {
+        let (kx, vx) = key(x);
+        let (ky, vy) = key(y);
+        kx.cmp(ky).then_with(|| {
+            vx.iter()
+                .zip(&vy)
+                .map(|(a, b)| a.total_cmp(b))
+                .find(|o| *o != Ordering::Equal)
+                .unwrap_or(Ordering::Equal)
+        })
+    });
+    if items.is_empty() {
+        SurfaceIntersection::Empty
+    } else {
+        SurfaceIntersection::Items(items)
+    }
 }
 
 /// A pair's outcome before sorting.

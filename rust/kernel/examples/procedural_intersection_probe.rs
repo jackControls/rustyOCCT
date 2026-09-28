@@ -1,14 +1,13 @@
 //! Test-only input for compare_procedural_intersections.py: reads the case
 //! protocol of `procedural-intersection-cases.txt` on stdin and prints per
-//! case `NAME empty`, `NAME point` with its enclosure, or the curve's rows in
-//! the reference's order, every number as `lo hi`: `loop` (the range's two
+//! case `NAME empty`, `NAME same`, `NAME not_conic`, one row per point or
+//! circle with its enclosed values, or the curve's rows in the reference's
+//! order, every number as `lo hi`: `loop` (the range's two
 //! enclosures, the points at each end, the points on both branches at the
 //! range's middle), `rings` (points at 0 and pi on each branch) or
 //! `figure_eight` (the node, and the points opposite it on each branch); a
 //! curve of several loops prints one `loop` row each.
-use rusty_occt::intersection::{
-    surface_surface, AnalyticItem, Branch, Component, SurfaceIntersection,
-};
+use rusty_occt::intersection::{surface_surface, Branch, Component, SurfaceIntersection};
 use rusty_occt::topology::Surface;
 use rusty_occt::{Frame3, Point3, Tolerance, Vec3};
 use std::io::Read;
@@ -23,6 +22,12 @@ fn surface(words: &[&str]) -> Surface {
     )
     .unwrap();
     match words[0] {
+        "plane" => Surface::Plane(frame),
+        "torus" => Surface::Torus {
+            frame,
+            major: v[9],
+            minor: v[10],
+        },
         "cylinder" => Surface::Cylinder {
             frame,
             radius: v[9],
@@ -62,11 +67,12 @@ fn main() {
         let (a, b) = (surface(&lines[1][1..]), surface(&lines[2][1..]));
         match surface_surface(&a, &b) {
             Ok(SurfaceIntersection::Empty) => println!("{name} empty"),
+            Ok(SurfaceIntersection::Same) => println!("{name} same"),
+            Ok(SurfaceIntersection::NotConic) => println!("{name} not_conic"),
             Ok(SurfaceIntersection::Items(items)) => {
-                let [AnalyticItem::Point(p)] = items.as_slice() else {
-                    panic!("{name}: {items:?}");
-                };
-                println!("{name} point {}", text(p));
+                for item in items {
+                    println!("{name} {} {}", item.kind(), text(&item.values()));
+                }
             }
             Ok(SurfaceIntersection::Procedural(c)) => {
                 let at = |u: [f64; 2], b| c.point_at(u, b).unwrap().to_vec();
@@ -80,9 +86,11 @@ fn main() {
                         println!("{name} rings {}", text(&values));
                     }
                     [Component::FigureEight { node }] => {
+                        // Opposite the node: at pi, or at 0 on a torus.
+                        let opposite = if node[0] <= 0.0 { PI } else { [0.0, 0.0] };
                         let mut values = at(*node, Branch::Plus);
-                        values.extend(at([0.0, 0.0], Branch::Plus));
-                        values.extend(at([0.0, 0.0], Branch::Minus));
+                        values.extend(at(opposite, Branch::Plus));
+                        values.extend(at(opposite, Branch::Minus));
                         println!("{name} figure_eight {}", text(&values));
                     }
                     loops => {

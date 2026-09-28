@@ -560,7 +560,12 @@ reviewed differences, the kernel inside the reference on all 20. S7b.2 adds
 15 cylinder/cone and sphere/cone cases and a second capture taken before any
 kernel cone code: 31 matches and 4 reviewed differences over the 35, the
 kernel inside the reference on all 35, loop ends narrowed to a few units in
-the last place.
+the last place. S7b.3a adds 58 torus cases (a plane or a sphere in every
+class, the special and coaxial circles) and a third capture taken before
+any kernel torus code: 86 matches and 7 reviewed differences over the 93,
+the kernel inside the reference on all 93, the stored normals checked bit
+for bit (`procedural-intersection-frames.tsv`), and every circle and sampled
+curve point on both surfaces.
 
 ## Height split and stacked fuse
 

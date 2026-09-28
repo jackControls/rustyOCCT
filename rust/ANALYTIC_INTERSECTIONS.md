@@ -11,8 +11,9 @@ S7d curve/curve intersections.
 
 `intersection::surface_surface(a, b)` takes two topology `Surface` values and
 returns `Empty`, `Same`, `Items` (points, lines, circles, ellipses and
-hyperbolas) or `NotConic` (S7b); a spline surface is out of domain. It is
-symmetric in its arguments.
+hyperbolas), `Procedural` (S7b) or `NotConic` (a pair not yet
+parameterised); a spline surface is out of domain. It is symmetric in its
+arguments.
 
 * **Exact surfaces.** A surface is the exact point set its stored binary64
   data define: a plane through the stored origin with the stored normal; a
@@ -54,7 +55,8 @@ symmetric in its arguments.
 | Sphere/sphere | a circle; tangent: a point; concentric: empty or the same; else empty |
 | Cylinder/cylinder | parallel axes: two lines, one or none; coaxial: the same or empty; equal radii with crossing axes: two ellipses in the bisecting planes; otherwise not a conic |
 | Coaxial pairs | a cylinder, cone or sphere centred on the other's axis: circles where the radius functions of the axial coordinate agree, the apex where both pass through it, or the same surface |
-| Other quadric pairs, tori | not a conic (S7b) |
+| Other quadric pairs | procedural curves (S7b.1, S7b.2); two cones and a cone's rational apex on a sphere not yet |
+| Tori | a plane or a sphere: procedural curves, or circles in the special cases; coaxial pairs: circles (S7b.3a); a cylinder, cone or torus off the axis not yet (S7b.3b) |
 
 The plane/cone section uses a closed form: with the apex `V`, the plane's
 unit normal `n`, `cos b = n . a` (the unit axis), `D = (V - o) . n` and
@@ -143,6 +145,56 @@ one reviewed difference (samples of the near-tangent loops, ill-conditioned,
 15. Native samples are compared by closest-point distance: near a loop's end
 the branches are vertical in the ruled parameterisation, so a sample's own
 angle is not its nearest parameter.
+
+## Tori (S7b.3a)
+
+A torus (major `R`, minor `r < R`) is parameterised by the angle `phi` of
+its meridian in an exactly orthonormal frame whose `x` is the component
+normal to the axis of the plane's stored normal, or of the direction from
+the torus's origin to the sphere's centre:
+`C(phi) + r (cos t e + sin t a)`, `C = o + R e(phi)`. On a meridian circle a
+plane or a sphere is `f0 + alpha cos t + beta sin t`, so each `phi` gives two
+points, `t = atan2(beta, alpha) +- arccos(-f0 / sqrt(alpha^2 + beta^2))`,
+evaluated algebraically (`MATHEMATICS.md`); the branches are `+` and `-`.
+
+* **Classes.** `D = alpha^2 + beta^2 - f0^2` is a quadratic `P(c)` in
+  `c = m cos phi` with rational coefficients and a negative leading one,
+  `m` the length of that normal component. The exact signs of `P(m)`
+  (`phi = 0`) and `P(-m)` (`phi = pi`), numbers `u + v sqrt(q)`, and of the
+  vertex against `+-m` give every class: empty, a tangent point at `0` or
+  `pi`, one loop around `0` or `pi`, two mirror loops, two loops sharing an
+  end at `0` or `pi` (a node), two rings, a figure-eight with its node at
+  `0` or `pi`, and Villarceau-like pairs of loops `[0, pi]`, `[pi, 2 pi]`
+  sharing both ends. A loop's ends are `arccos` of a root of `P` over `m`.
+  `P`'s discriminant is a sum of squares, zero only for a plane containing
+  the axis or a sphere centred in the equatorial plane with
+  `rho^2 = r^2 + |w|^2 - R^2`: empty when the centre is nearer the axis than
+  `R`, else the sphere contains a meridian circle (`NotConic`).
+* **Special cases.** A plane containing the axis: two meridian circles. A
+  plane normal to the axis: circles of radius `R +- sqrt(r^2 - z^2)` (one of
+  radius `R` when tangent). Coaxial pairs meet where their meridians meet in
+  a half-plane: a sphere or another torus (two circles, exact classes, one
+  when tangent; the same torus is `Same`, a concentric one of another minor
+  radius `Empty`), a cylinder (a vertical line), a cone (two lines through
+  the apex, a quadratic per nappe with a certified discriminant, never
+  exactly tangent). All are circles about the axis.
+* **Points.** `ProceduralCurve::point_at` on a torus curve evaluates the
+  meridian's point in binary64 intervals, rational ones when those cannot
+  decide or are too wide; `carrier()` is the torus.
+
+Evidence: 58 fixture cases (`tp_`, `ts_`, `tx_`: every class exactly, with
+spheres on rational centres for the tangencies a binary64 plane normal
+cannot make exactly, near cases beside them, tilted frames), the reference
+extended with the meridian parameterisation (`D` by evaluating the other
+surface on the meridian circle at three angles, its own exact predicates on
+`P` found by exact interpolation, every simple loop end checked as a sign
+change of that `D`), and a `GeomInt_IntSS` capture taken before any kernel
+torus code (`fixtures/occt-procedural-torus-preimplementation`): 55 native
+matches and 3 reviewed differences (tangent points `GeomInt_IntSS` misses),
+the kernel inside the reference on all 58. The fixture's stored normals are
+checked bit for bit (`procedural-intersection-frames.tsv`): a near-Villarceau
+case is sensitive to one unit in the last place of the normal, and the
+platform's `hypot` can round a non-Pythagorean normal differently.
 
 ## Evidence
 

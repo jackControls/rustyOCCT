@@ -1,7 +1,8 @@
-//! S7b.1 and S7b.2: procedural intersection curves of two cylinders with
-//! crossing axes, a cylinder and a sphere off its axis, a cylinder and a cone
-//! (axes not coaxial) and a sphere and a cone (the centre off the axis),
-//! against the independent reference (`fixtures/procedural-intersection-*.txt|tsv` from
+//! S7b.1, S7b.2 and S7b.3a: procedural intersection curves of two cylinders
+//! with crossing axes, a cylinder and a sphere off its axis, a cylinder and a
+//! cone (axes not coaxial), a sphere and a cone (the centre off the axis) and
+//! a torus with a plane or a sphere, and the circles of a torus's special and
+//! coaxial pairs, against the independent reference (`fixtures/procedural-intersection-*.txt|tsv` from
 //! `tools/generate_procedural_intersection_fixtures.py`).
 use rusty_occt::intersection::{
     surface_surface, AnalyticItem, Branch, Component, ProceduralCurve, SurfaceIntersection,
@@ -20,6 +21,12 @@ fn surface(words: &[&str]) -> Surface {
     )
     .unwrap();
     match words[0] {
+        "plane" => Surface::Plane(frame),
+        "torus" => Surface::Torus {
+            frame,
+            major: v[9],
+            minor: v[10],
+        },
         "cylinder" => Surface::Cylinder {
             frame,
             radius: v[9],
@@ -89,10 +96,23 @@ fn check(got: &SurfaceIntersection, rows: &[(String, Vec<f64>)]) -> Result<(), S
     let kinds: Vec<&str> = rows.iter().map(|(k, _)| k.as_str()).collect();
     match got {
         SurfaceIntersection::Empty if kinds == ["empty"] => Ok(()),
-        SurfaceIntersection::Items(items) => match (items.as_slice(), rows) {
-            ([AnalyticItem::Point(e)], [(k, p)]) if k == "point" && contains3(*e, p) => Ok(()),
-            (other, _) => Err(format!("{other:?} for {kinds:?}")),
-        },
+        SurfaceIntersection::Same if kinds == ["same"] => Ok(()),
+        SurfaceIntersection::NotConic if kinds == ["not_conic"] => Ok(()),
+        // Points and circles, one row each in canonical order.
+        SurfaceIntersection::Items(items) => {
+            let ok = items.len() == rows.len()
+                && items.iter().zip(rows).all(|(item, (k, r))| {
+                    let v = item.values();
+                    item.kind() == k
+                        && v.len() == r.len()
+                        && v.iter().zip(r).all(|(e, x)| contains(*e, *x))
+                });
+            if ok {
+                Ok(())
+            } else {
+                Err(format!("{items:?} for {kinds:?}"))
+            }
+        }
         SurfaceIntersection::Procedural(c) => check_curve(c, rows),
         other => Err(format!("{other:?} for {kinds:?}")),
     }
@@ -139,9 +159,10 @@ fn check_curve(c: &ProceduralCurve, rows: &[(String, Vec<f64>)]) -> Result<(), S
             if !contains3(at(*node, Branch::Plus)?, &r[0..3]) {
                 return Err("node".into());
             }
-            // Opposite the node.
-            if !contains3(at([0.0, 0.0], Branch::Plus)?, &r[3..6])
-                || !contains3(at([0.0, 0.0], Branch::Minus)?, &r[6..9])
+            // Opposite the node (at pi, or at 0 on a torus).
+            let opposite = if node[0] <= 0.0 { PI } else { [0.0, 0.0] };
+            if !contains3(at(opposite, Branch::Plus)?, &r[3..6])
+                || !contains3(at(opposite, Branch::Minus)?, &r[6..9])
             {
                 return Err("opposite the node".into());
             }
@@ -187,6 +208,38 @@ fn check_curve(c: &ProceduralCurve, rows: &[(String, Vec<f64>)]) -> Result<(), S
     }
 }
 
+/// The kernel stores the frames the reference intersected, bit for bit.
+#[test]
+fn stored_normals_are_the_reference_inputs() {
+    let all = cases();
+    let rows: Vec<&str> = include_str!("../../fixtures/procedural-intersection-frames.tsv")
+        .lines()
+        .skip(1)
+        .collect();
+    assert_eq!(rows.len(), 2 * all.len());
+    for ((name, a, b), pair) in all.iter().zip(rows.chunks(2)) {
+        for (s, row) in [a, b].into_iter().zip(pair) {
+            let frame = match s {
+                Surface::Plane(f)
+                | Surface::Cylinder { frame: f, .. }
+                | Surface::Cone { frame: f, .. }
+                | Surface::Sphere { frame: f, .. }
+                | Surface::Torus { frame: f, .. } => f,
+                _ => unreachable!(),
+            };
+            let want: Vec<u64> = row
+                .split('\t')
+                .nth(2)
+                .unwrap()
+                .split(' ')
+                .map(|h| u64::from_str_radix(h, 16).unwrap())
+                .collect();
+            let got: Vec<u64> = frame.normal().to_array().map(f64::to_bits).to_vec();
+            assert_eq!(got, want, "{name}");
+        }
+    }
+}
+
 #[test]
 fn every_case_matches_the_exact_reference() {
     let want = expected();
@@ -200,7 +253,7 @@ fn every_case_matches_the_exact_reference() {
         assert_eq!(surface_surface(b, a).unwrap(), got, "{name}: order");
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
-    assert_eq!(all.len(), 35);
+    assert_eq!(all.len(), 93);
 }
 
 /// Points along every component lie on both surfaces.
@@ -237,11 +290,12 @@ fn sampled_points_lie_on_both_surfaces() {
         }
         for (t, branch) in params {
             let e = c.point_at([t, t], branch).unwrap();
-            for k in 0..3 {
-                assert!(e[k][1] - e[k][0] <= 1e-12, "{name}: wide {e:?}");
+            for [lo, hi] in e {
+                let size = lo.abs().max(hi.abs()).max(1.0);
+                assert!(hi - lo <= 1e-12 * size, "{name}: wide {e:?}");
             }
             let p = Vec3::new(e[0][0], e[1][0], e[2][0]);
-            for s in [c.ruled(), c.other()] {
+            for s in [c.carrier(), c.other()] {
                 let gap = distance(s, p);
                 assert!(gap <= 1e-12, "{name}: {gap} off {s:?} at {t}");
             }
@@ -271,6 +325,61 @@ fn distance(s: &Surface, p: Vec3) -> f64 {
             let shift = radius * c + h * s;
             (rho * c - shift).abs().min((rho * c + shift).abs())
         }
+        Surface::Plane(frame) => (p - (frame.origin() - Point3::ORIGIN))
+            .dot(frame.normal())
+            .abs(),
+        Surface::Torus {
+            frame,
+            major,
+            minor,
+        } => {
+            let rel = p - (frame.origin() - Point3::ORIGIN);
+            let h = rel.dot(frame.normal());
+            let rho = (rel - frame.normal() * h).length();
+            ((rho - major).hypot(h) - minor).abs()
+        }
         _ => unreachable!(),
     }
+}
+
+/// Points around every circle of a torus's special and coaxial pairs lie on
+/// both surfaces.
+#[test]
+fn circles_lie_on_both_surfaces() {
+    let mut count = 0;
+    for (name, a, b) in cases() {
+        let Ok(SurfaceIntersection::Items(items)) = surface_surface(&a, &b) else {
+            continue;
+        };
+        for item in items {
+            let AnalyticItem::Circle {
+                centre,
+                normal,
+                radius,
+            } = item
+            else {
+                continue;
+            };
+            count += 1;
+            let mid = |e: [f64; 2]| 0.5 * e[0] + 0.5 * e[1];
+            let c = Vec3::new(mid(centre[0]), mid(centre[1]), mid(centre[2]));
+            let n = Vec3::new(mid(normal[0]), mid(normal[1]), mid(normal[2]));
+            let u = if n.x.abs() < 0.9 {
+                Vec3::new(1.0, 0.0, 0.0)
+            } else {
+                Vec3::new(0.0, 1.0, 0.0)
+            };
+            let u = (u - n * u.dot(n)).normalized().unwrap();
+            let v = n.cross(u);
+            for k in 0..12 {
+                let (s, co) = (f64::from(k) * std::f64::consts::FRAC_PI_6).sin_cos();
+                let p = c + (u * co + v * s) * mid(radius);
+                for surface in [&a, &b] {
+                    let gap = distance(surface, p);
+                    assert!(gap <= 1e-12, "{name}: {gap} off {surface:?}");
+                }
+            }
+        }
+    }
+    assert!(count >= 30, "{count} circles");
 }

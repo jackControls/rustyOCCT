@@ -1478,7 +1478,7 @@ axis.
   `tan a` parts agree separately (the same surface); a rational apex on the
   other surface is a point.
 
-## Procedural intersection curves (S7b.1)
+## Procedural intersection curves (S7b)
 
 On the ruled cylinder (axis `a` unit, radius `r`), in the frame whose `x` is
 the unit common normal towards the other surface, a ruling
@@ -1520,6 +1520,33 @@ where `A v^2 + 2 B v + C = 0` and the curve is `v = (-B +- sqrt(D)) / A`,
   the natural interval extension needs pieces as small as the square of
   their distance from the loop, the mean-value form only as small as the
   distance.
+* **A torus and a plane or a sphere (S7b.3a).** On the meridian circle
+  `p(t) = C + r (cos t e + sin t a)`, `C = o + R e`, a plane `n . (p - q)`
+  is `f0 + alpha cos t + beta sin t` with `f0 = n . (C - q)`,
+  `alpha = r n . e`, `beta = r n . a`; a sphere `|p - s|^2 - rho^2` has
+  `f0 = |C - s|^2 + r^2 - rho^2`, `alpha = 2 r (C - s) . e`,
+  `beta = 2 r (C - s) . a`. With `D = alpha^2 + beta^2 - f0^2` the unit
+  vector `(cos t, sin t) = (-alpha f0 -+ beta sqrt(D), -beta f0 +- alpha
+  sqrt(D)) / (alpha^2 + beta^2)` needs no trigonometry. Writing
+  `c = m cos phi` (`m` the length of the plane normal's, or of `s - o`'s,
+  component normal to the axis, `x` along it): for a plane
+  `D = r^2 c^2 + r^2 (n . a)^2 - (d0 + R c)^2`, `d0 = n . (o - q)`; for a
+  sphere `D = 4 r^2 (R - c)^2 + 4 r^2 w_a^2 - (K - 2 R c)^2` with
+  `w = s - o`, `w_a = w . a`, `K = R^2 + |w|^2 + r^2 - rho^2`. Both have
+  the leading coefficient `(r^2 - R^2)` (times 4) `< 0`; the plane's
+  discriminant is `4 r^2 (d0^2 + (R^2 - r^2)(n . a)^2)` and the sphere's
+  `16 r^2 ((K - 2 R^2)^2 + 4 (R^2 - r^2) w_a^2)`, zero only in the special
+  cases. `D(phi) = P(m cos phi)` has double roots in `phi` only at
+  `phi = 0, pi` (where `P(+-m) = 0`) or at the vertex, so every node and
+  tangency is one of the exact classes.
+* **Coaxial pairs.** In the half-plane `(rho, z)` the meridian circle
+  `(rho - R)^2 + z^2 = r^2` meets a sphere's circle, another torus's
+  meridian circle (the radical line; tangent when the centres' distance is
+  `r1 + r2` or `|r1 - r2|`, rational squares), a cylinder's line
+  `rho = r_c`, and a cone's lines `rho = s (r_c + g (z - z_a) tan h)`
+  (`s = +-1` the nappe, `g = +-1` the axis's direction): the quadratic
+  `(k1^2 + 1) z^2 + 2 k1 (k0 - R) z + (k0 - R)^2 - r^2 = 0` with
+  `k0 = s (r_c - g z_a tan h)`, `k1 = s g tan h`.
 
 ## C1 of spline cells (R4)
 

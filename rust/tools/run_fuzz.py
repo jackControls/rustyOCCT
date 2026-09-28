@@ -104,6 +104,13 @@ def seed_corpus(target):
                     data = bytearray((j*43+k1*11+k2*7+mode*3+1)%256 for j in range(24))
                     data[:3] = bytes([k1, k2, mode])
                     save(bytes(data))
+        # A torus (a kind byte of 224 or more, S7b.3a) with every kind and
+        # another torus, in every mode.
+        for k1 in (0, 1, 2, 3, 224):
+            for mode in range(5):
+                data = bytearray((j*41+k1*13+mode*5+3)%256 for j in range(24))
+                data[:3] = bytes([k1, 240, mode])
+                save(bytes(data))
     if target == 'brep_io':
         # A prism of the identity structure or an upstream file, then up to
         # six token and line mutations of its .brep text.
