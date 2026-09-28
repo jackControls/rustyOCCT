@@ -1,0 +1,44 @@
+case kk_cross
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
+surface cone 3.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.4
+end
+case kk_parallel
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
+surface cone 1.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.3
+end
+case kk_unbounded
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.9
+surface cone 2.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.8
+end
+case kk_tilted
+surface cone 1.0 2.0 3.0 0.0 0.6 0.8 1.0 -0.0 0.0 0.25 0.4
+surface cone 3.0 2.0 3.0 1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.3
+end
+case kk_irrational_apexes
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.5 0.5
+surface cone 3.0 0.0 1.0 1.0 0.0 0.0 0.0 1.0 0.0 0.25 0.4
+end
+case kk_miss
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.3
+surface cone 0.0 2.0 1.0 1.0 0.0 0.0 0.0 1.0 0.0 0.25 0.35
+end
+case kk_twins
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
+surface cone 1.0 0.0 0.5 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
+end
+case ka_sphere
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
+surface sphere 0.75 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0 1.25
+end
+case ka_cylinder
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
+surface cylinder 1.0 0.0 0.0 0.0 1.0 0.0 1.0 -0.0 0.0 1.0
+end
+case ka_cylinder_parallel
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.2
+surface cylinder 1.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0
+end
+case ka_sphere_near
+surface cone 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.0 0.5
+surface sphere 0.75 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0 1.2500009536743164
+end

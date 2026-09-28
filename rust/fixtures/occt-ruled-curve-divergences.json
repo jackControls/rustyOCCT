@@ -1,0 +1,29 @@
+{
+  "note": "Reviewed GeomInt_IntSS differences from the S7b.4 reference.",
+  "reviews": [
+    {
+      "case": "ka_sphere",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "12e68f2ac91692da09b876c24e8373e9d343fc48f4a7a22dddf6b902a0e5fbe9",
+      "differences": [
+        "missed_tangent_point"
+      ],
+      "reason": "GeomInt_IntSS finds the ring where the sphere cuts the cone but not the cone's apex, which lies on the sphere as an isolated point of the intersection. The kernel decides the apex exactly (a rational apex and exact rationals) and its type from B's roots.",
+      "independent_evidence": "The cone of half-angle 0.5 has its apex at the origin; the sphere of radius 1.25 about (0.75, 0, 1) passes through it (0.75^2 + 1^2 = 1.25^2). On the rulings V + v d(u), B(u) = (V - c) . d(u) = -(0.75 sin 0.5 cos u + cos 0.5) stays negative, so no branch of the curve reaches the apex: it is isolated.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "ka_sphere_near",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "ce7a009d755a64713f8b1442e9bb545a4a01899aa00043ed5727e51872ae6421",
+      "differences": [
+        "missed_component"
+      ],
+      "reason": "GeomInt_IntSS misses the tiny loop beside the apex when the sphere's radius exceeds the apex's distance by 2^-20 (the loop is about 2e-6 across); it finds the other ring.",
+      "independent_evidence": "The reference's scan gives two components, one a ring within 1e-6 of the apex (its point at u = 0 is at t = -1.9e-6), whose points lie on both surfaces within 1e-70.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}

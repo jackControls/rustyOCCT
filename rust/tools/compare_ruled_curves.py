@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
-"""Source-pinned GeomInt_IntSS observations beside the S7b.3b reference: a
-torus and a cylinder, a cone or another torus off its axis.
+"""Source-pinned GeomInt_IntSS observations beside the S7b.4 reference: two
+cones, and a cone whose rational apex lies on a sphere or a cylinder.
 
-The independent reference (torus_curve_reference.py) gives every case of
-torus-curve-cases.txt its canonical rows (folds, tangencies, components with
-their winding numbers, rings' points); the native probe
-(occt_procedural_intersection_oracle.cpp, planes to tori) runs GeomInt_IntSS
-on the kernel's stored frames and samples its lines. Every native sample
-must lie on both surfaces within 1e-6 of the case's size, and every
-component of the reference curve must carry native samples; an isolated
-tangency must be matched by a native point or sample at it, an empty
-reference by no line. `--capture` records the native observations before
-any kernel code for these pairs exists; later runs must reproduce them.
-Differences need a fingerprinted review. The kernel's certified curves
-(`torus_curve_probe`) must have the reference's components and tangency
-types, and contain its folds, tangencies and rings' points.
+The independent reference (ruled_curve_reference.py) gives every case of
+ruled-curve-cases.txt its canonical rows (folds, components with their
+winding numbers and crossings of infinity, rings' points, the apex); the
+native probe (occt_procedural_intersection_oracle.cpp) runs GeomInt_IntSS on
+the kernel's stored frames and samples its lines. Every native sample must
+within 20 of the apex lie on both surfaces within 1e-6 of the case's size,
+and every component of the reference curve (cut 20 from the apex) must carry
+native samples; an
+isolated apex must be matched by a native point or sample at it, an empty
+reference by no line. `--capture` records the native observations before any
+kernel code for these pairs exists; later runs must reproduce them (on
+another platform, its reviewed record). Differences need a fingerprinted
+review. The kernel's certified curves (`ruled_curve_probe`) must have the
+reference's components, crossings of infinity and apex, and contain its
+folds and rings' points.
 """
 import argparse
 import json
@@ -30,21 +32,19 @@ from compare_degree_elevation import verify_sdk
 from compare_occt import ROOT
 from compare_procedural_intersections import parse_native, platform_record
 import analytic_intersection_reference as ana
-import generate_torus_curve_fixtures as fixtures
-import torus_curve_reference as ref
+import generate_ruled_curve_fixtures as fixtures
+import ruled_curve_reference as ref
 from identity_reference import frame_axes
 
 SOURCE_FILE = ROOT/'rust/tools/occt_procedural_intersection_oracle.cpp'
-REVIEWS = ROOT/'rust/fixtures/occt-torus-curve-divergences.json'
-KERNEL_FILE = ROOT/'rust/kernel/src/intersection/torus_curves.rs'
+REVIEWS = ROOT/'rust/fixtures/occt-ruled-curve-divergences.json'
+KERNEL_FILE = ROOT/'rust/kernel/src/intersection/ruled_curves.rs'
 BOUND = 1e-6
 # Each sub-step's native observations were captured before its kernel code:
 # (directory, case-name prefixes, whether its kernel code exists).
 CAPTURES = {
-    's7b3b1': (ROOT/'rust/fixtures/occt-torus-curve-preimplementation', ('tc_', 'tk_'),
-               lambda: KERNEL_FILE.exists()),
-    's7b3b2': (ROOT/'rust/fixtures/occt-torus-pair-preimplementation', ('tt_',),
-               lambda: KERNEL_FILE.exists() and 'torus_pair' in KERNEL_FILE.read_text()),
+    's7b4': (ROOT/'rust/fixtures/occt-ruled-curve-preimplementation', ('kk_', 'ka_'),
+             lambda: KERNEL_FILE.exists()),
 }
 
 
@@ -68,8 +68,8 @@ def surfaces_of(name, a, b):
 
 
 def surface_distance(s, p):
-    """The distance from a point to a torus, cylinder or cone of a case (a
-    cone: its nearer nappe)."""
+    """The distance from a point to a torus, cylinder, sphere or cone of a case
+    (a cone: its nearer nappe)."""
     o, a = s.axes()
     o = [float(x) for x in o]
     a = [float(x) for x in a]
@@ -80,6 +80,8 @@ def surface_distance(s, p):
     rho = math.sqrt(max(0.0, sum(x*x for x in rel)-h*h))
     if s.kind == 'torus':
         return abs(math.hypot(rho-s.radius, h)-s.minor)
+    if s.kind == 'sphere':
+        return abs(math.sqrt(sum(x*x for x in rel))-s.radius)
     if s.kind == 'cylinder':
         return abs(rho-s.radius)
     ca, sa = math.cos(s.angle), math.sin(s.angle)
@@ -97,8 +99,14 @@ def differences(surfaces, native, rows):
     tol = BOUND*scale
     if rows == ['empty']:
         return [] if not samples and not points else ['spurious']
+    # Unbounded native lines run far out (1e5 here) with approximation errors
+    # growing along them: samples are held to the surfaces within the
+    # reference's reach of the apex.
+    cone, other = ref.order(*surfaces)
+    apex = [float(x) for x in ref.RulingChart(cone, other).V]
+    within = [p for p in samples+points if math.dist(p, apex) < 20]
     out = []
-    if any(surface_distance(s, p) > tol for s in surfaces for p in samples+points):
+    if any(surface_distance(s, p) > tol for s in surfaces for p in within):
         out.append('off_curve')
     comps, isolated = ref.curve_samples(*surfaces)
     for q in isolated:
@@ -118,10 +126,10 @@ def differences(surfaces, native, rows):
 def rust_rows():
     """{case: [(kind, [values])]} from the kernel's probe: enclosures as
     (lo, hi) pairs, integers and words as they are."""
-    subprocess.run(['cargo', '+stable', 'build', '--release', '--locked', '--example', 'torus_curve_probe'],
+    subprocess.run(['cargo', '+stable', 'build', '--release', '--locked', '--example', 'ruled_curve_probe'],
                    cwd=ROOT, check=True)
-    text = (ROOT/'rust/fixtures/torus-curve-cases.txt').read_text()
-    rows = subprocess.run([str(ROOT/'target/release/examples/torus_curve_probe')], input=text,
+    text = (ROOT/'rust/fixtures/ruled-curve-cases.txt').read_text()
+    rows = subprocess.run([str(ROOT/'target/release/examples/ruled_curve_probe')], input=text,
                           text=True, capture_output=True, timeout=1200, check=True).stdout
     out = {}
     for line in rows.splitlines():
@@ -164,7 +172,7 @@ def capture(executable, env, key, sdk_manifest):
     text = native_input(prefixes)
     record = run(executable, text, env)
     if record['exit_code'] != 0:
-        raise SystemExit('native torus curve run failed: '+json.dumps(record)[:2000])
+        raise SystemExit('native ruled curve run failed: '+json.dumps(record)[:2000])
     CAPTURE.mkdir(parents=True, exist_ok=True)
     (CAPTURE/'inputs.txt').write_text(text)
     (CAPTURE/'native.txt').write_text(record['stdout'])
@@ -176,7 +184,7 @@ def capture(executable, env, key, sdk_manifest):
     write(CAPTURE/'capture.json', {
         'source_reference': SOURCE, 'oracle': next(iter(record['stderr'].splitlines()), None),
         'platform': sys.platform, 'rust_revision': revision,
-        'rust_torus_curve_exists': exists(),
+        'rust_ruled_curve_exists': exists(),
         'rust_worktree_uncommitted': status, 'sdk_manifest_sha256': digest(sdk_manifest),
         'input_sha256': digest(CAPTURE/'inputs.txt'), 'probe_source_sha256': digest(CAPTURE/'oracle.cpp'),
         'observations_sha256': digest(CAPTURE/'native.txt')})
@@ -187,12 +195,12 @@ def captured(observed):
     compare_procedural_intersections.platform_record)."""
     for CAPTURE, prefixes, _ in CAPTURES.values():
         metadata = json.loads((CAPTURE/'capture.json').read_text())
-        if metadata['source_reference'] != SOURCE or metadata['rust_torus_curve_exists']:
-            raise ValueError('torus curve capture was not a clean pre-implementation reference')
+        if metadata['source_reference'] != SOURCE or metadata['rust_ruled_curve_exists']:
+            raise ValueError('ruled curve capture was not a clean pre-implementation reference')
         for key, name in [('input_sha256', 'inputs.txt'), ('probe_source_sha256', 'oracle.cpp'),
                           ('observations_sha256', 'native.txt')]:
             if metadata[key] != digest(CAPTURE/name):
-                raise ValueError('torus curve evidence changed: '+name)
+                raise ValueError('ruled curve evidence changed: '+name)
         if (CAPTURE/'inputs.txt').read_text() != native_input(prefixes):
             raise ValueError('the native inputs differ from the captured ones')
         was = parse_native(platform_record(CAPTURE, metadata))
@@ -211,7 +219,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--occt-root', type=Path, required=True)
     parser.add_argument('--sdk-manifest', type=Path, required=True)
-    parser.add_argument('--output', type=Path, default=ROOT/'target/torus-curve-oracle')
+    parser.add_argument('--output', type=Path, default=ROOT/'target/ruled-curve-oracle')
     parser.add_argument('--strict-native', action='store_true')
     parser.add_argument('--capture', choices=sorted(CAPTURES),
                         help='record one sub-step\'s native observations (before its implementation only)')
@@ -223,17 +231,17 @@ def main():
     prefix = args.occt_root.resolve()
     verify_sdk(prefix, args.sdk_manifest)
     expected = {}
-    for line in (ROOT/'rust/fixtures/torus-curve-expected.tsv').read_text().splitlines()[1:]:
+    for line in (ROOT/'rust/fixtures/ruled-curve-expected.tsv').read_text().splitlines()[1:]:
         name, row = line.split('\t')
         expected.setdefault(name, []).append(row)
-    executable, env, loaded, command = build(prefix, output, SOURCE_FILE, 'torus-curve-oracle', ('TKGeomAlgo',))
+    executable, env, loaded, command = build(prefix, output, SOURCE_FILE, 'ruled-curve-oracle', ('TKGeomAlgo',))
     if args.capture:
         capture(executable, env, args.capture, args.sdk_manifest)
         print('captured', args.capture)
         return
     record = run(executable, native_input(), env)
     if record['exit_code'] != 0:
-        raise SystemExit('native torus curve run failed: '+json.dumps(record)[:2000])
+        raise SystemExit('native ruled curve run failed: '+json.dumps(record)[:2000])
     (output/'native-observed.txt').write_text(record['stdout'])
     observed = parse_native(record['stdout'])
     captured(observed)

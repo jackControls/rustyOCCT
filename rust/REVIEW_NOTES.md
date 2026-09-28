@@ -782,6 +782,41 @@ Decisions for S7b.3b.2, recorded before its code (2026-09-27):
   five equations), and a `GeomInt_IntSS` capture of 14 pairs before the
   kernel code.
 
+Decisions for S7b.4, recorded before its code (2026-09-28):
+
+* **Scope.** Two cones not coaxial and without a common apex (S7a's), and a
+  cone whose rational apex lies exactly on a sphere or a cylinder: the pairs
+  S7b.2 left `NotConic` or could not certify. Their curves may be unbounded
+  (a branch escapes where a ruling of the first cone is parallel to a
+  generatrix of the second) or pass through the apex.
+* **The projective ruling.** On the first cone's rulings through its apex
+  (of two cones the first by stored data), `V + v d(u)`, the other quadric is
+  `A(u) v^2 + 2 B(u) v + C`; with `v = tan(t / 2)`,
+  `G(u, t) = ((A + C) + (C - A) cos t) / 2 + B sin t` is smooth on the torus
+  `(u, t)` mod `2 pi` and its zero set is the curve with its points at
+  infinity (`t = pi`). S7b.3b's traced graph applies unchanged (its field
+  becomes a chart: the torus's meridians or the cone's rulings); a component
+  crossing `t = pi` is unbounded, and its crossings of infinity are counted
+  (it may cross and return, winding zero).
+* **Factors.** The apex exactly on the other surface (`C = 0`): `G = sin(t/2)
+  (A sin(t/2) + 2 B cos(t/2))`, the apex for every ruling and the curve
+  `A sin psi + 2 B cos psi = 0` (`psi = t / 2`, period `pi`), one point per
+  ruling, through the apex where `B` vanishes (a crossing there, or the apex
+  isolated when `B` keeps a sign; a double root of `B` is
+  `ComputationLimit`). Parallel cones of equal half-angles (`A = 0`
+  identically): `G = cos(t/2) (C cos(t/2) + 2 B sin(t/2))`, the circle at
+  infinity common and the conic `2 B sin psi + C cos psi = 0` in their radical
+  plane. Both are traced on the `(u, psi)` torus with the same machinery.
+* **Tangency.** A cone's `cos` and `sin` are transcendental for every
+  nonzero binary64 half-angle, so two cones, or a cone and a sphere or a
+  cylinder, are never exactly tangent away from the apex; a box the
+  certification cannot settle is `ComputationLimit`.
+* **Evidence first**: the reference (the same projective parameterisation
+  with `A`, `B`, `C` found by evaluating the other surface on the ruling at
+  `v = -1, 0, 1`, the scan, critical meridians and components of the torus
+  reference, the factors in closed form) and a `GeomInt_IntSS` capture of 11
+  pairs before the kernel code.
+
 ### S8 — general planar split and face trimming (SplitBody job)
 
 Split any supported solid by an arbitrary plane: face/plane intersection
