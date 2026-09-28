@@ -2548,4 +2548,31 @@ Decisions for S9, recorded before its code (2026-09-28):
     (the target's RSS cap is 2,048 MB), three slow units kept as
     regressions, the slowest 18 s under AddressSanitizer. Pending: the
     Linux records of the spline and sheet captures after CI.
-* S9 — pending
+* S9 — in progress:
+  * S9a: decisions recorded (2026-09-28); its evidence came before any
+    kernel code (`71eb169a`, `BOOLEAN.md`): Boolean cases in the case
+    protocol (the object's prism rows, `boolean fuse|cut|common ID`, the
+    tool's rows; natively the two constructions joined by a `boolean` row),
+    the reference `boolean_reference.py` (the tool moved into the object's
+    frame by its exactly solved, binary64 offset; each slab's region a union
+    of the atoms inside both profiles, the object's only and the tool's
+    only, their areas and moments by exact slicing in closed form, their
+    boundaries by pieces classified against the other profile; walls, caps
+    as symmetric differences of consecutive slabs, solids by union-find,
+    touching regions separate), checked within 1.2e-38 against Green's
+    theorem, `fuse = A + B - common` and `cut = A - common`, exact Fraction
+    clipping and boundary classes of polygons, closed-form lenses and hand
+    results, 45 cases (`boolean-cases.txt`: 15 fuses, 17 cuts, 13 commons;
+    every class of the decisions in both frames, 13 in the tilted one; 31
+    prisms, 6 S9a.2 stacks, 5 empty, 3 degenerate)
+    and `occt-boolean-preimplementation`: every `BRepAlgoAPI_Fuse`/`Cut`/
+    `Common` result valid with the reference's solid count, all 45 within
+    2e-8 (6.1e-15 at worst), no review. Touching conventions (the
+    regularized Boolean, as OCCT): a shared wall fuses into one solid, a
+    common or cut leaving only a face, an edge or a point is empty. OCCT
+    differs from the decisions where the result touches itself: two valid
+    solids for prisms touching along a vertical edge, one for a hole
+    tangent to the outer circle (the fixtures expect `Degenerate`); and it
+    merges the inputs' collinear edges when unified, which the decisions
+    leave open for the traced profile. No probe yet: all 45
+    `rust_unsupported`. S9a.1 next.
