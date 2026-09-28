@@ -1261,6 +1261,26 @@ impl Topology {
                 }
             };
         }
+        // An exact projection's pcurve holds its edge's curve and its face's
+        // surface: both moved (its parameters move with them).
+        let mut face_of_fin: BTreeMap<usize, usize> = BTreeMap::new();
+        for (fi, f) in parts.faces.iter().enumerate() {
+            for l in &f.loops {
+                if let Loop::Edges { fins, .. } = &parts.loops[l.0] {
+                    for fin in fins {
+                        face_of_fin.insert(fin.0, fi);
+                    }
+                }
+            }
+        }
+        for (k, fin) in parts.fins.iter_mut().enumerate() {
+            if let Curve2::Projection(pr) = &mut fin.pcurve {
+                pr.curve = parts.edges[fin.edge.0].curve.clone();
+                if let Some(&fi) = face_of_fin.get(&k) {
+                    pr.surface = parts.faces[fi].surface.clone();
+                }
+            }
+        }
         Ok(parts)
     }
     /// The same topology with every spline edge traversed along its curve:

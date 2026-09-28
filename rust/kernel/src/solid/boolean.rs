@@ -24,6 +24,7 @@
 //! single relation says it: each such result is `Generated` from its
 //! parents and those inputs are `Deleted`. An input continued by nothing is
 //! `Deleted`.
+pub(crate) mod curved;
 pub(crate) mod polyhedra;
 pub(crate) mod stack;
 

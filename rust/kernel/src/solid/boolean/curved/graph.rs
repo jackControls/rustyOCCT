@@ -1,0 +1,1076 @@
+//! S9c.1's arrangement: the vertices where an edge of one solid meets a
+//! face of the other (and where two equal cylinders' ellipses cross), each
+//! edge split at the vertices on it, the section edges (the parts of two
+//! faces' meeting curves inside both faces, between vertices), and each
+//! face's pieces traced from them: at a vertex the next edge is the first
+//! clockwise from the one arrived by (exact angles about the face's
+//! normal), each loop's orientation and nesting from its binary64 image in
+//! the face's parameters. Each piece is classified at a point of one of
+//! its edges pushed into it and then off the face either way (the other
+//! solid's exact membership), and kept as S9b.1 keeps fragments.
+use super::meet::*;
+use super::model::*;
+use super::num::*;
+use crate::profile::boolean::Op2;
+use crate::solid::split::{q, zero};
+use crate::{Error, Result};
+use num_rational::BigRational as R;
+use std::cmp::Ordering;
+use std::collections::{BTreeMap, BTreeSet};
+use std::f64::consts::TAU;
+
+/// A seam conflict: a meeting at a full circle's seam, retried at another.
+pub(super) const SEAM: &str = "a meeting at a circle's seam";
+
+fn seam() -> Error {
+    Error::ComputationLimit(SEAM)
+}
+
+/// What a vertex is.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub(super) enum VKey {
+    /// A model vertex of an operand.
+    Input(usize, usize),
+    /// Edge `e` of operand `o` through face `f` of the other: root `k`.
+    Pierce(usize, usize, usize, usize),
+    /// Where two equal cylinders' ellipses cross: faces `fa` (A), `fb` (B).
+    Cross(usize, usize, usize),
+}
+
+#[derive(Debug, Clone)]
+pub(super) struct Vx {
+    pub(super) p: QV,
+    pub(super) key: VKey,
+    /// The faces it lies on: (operand, face).
+    pub(super) faces: BTreeSet<(usize, usize)>,
+}
+
+/// The curve an arrangement edge lies on.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub(super) enum CurveRef {
+    /// A model edge: operand and edge.
+    Edge(usize, usize),
+    /// A section's branch: section and branch.
+    Section(usize, usize),
+}
+
+/// An arrangement edge: a curve's piece between two vertices.
+#[derive(Debug, Clone)]
+pub(super) struct GEdge {
+    pub(super) curve: CurveRef,
+    pub(super) crv: Crv,
+    pub(super) ends: [usize; 2],
+    pub(super) pos: [Pos; 2],
+    /// Whether the edge runs with the curve's parameter.
+    pub(super) with: bool,
+    /// A point strictly inside it, and its place.
+    pub(super) mid: QV,
+    pub(super) mid_pos: Pos,
+}
+
+/// Two faces' meeting: A's face `fa`, B's face `fb`, its branches.
+#[derive(Debug, Clone)]
+pub(super) struct Sec {
+    pub(super) fa: usize,
+    pub(super) fb: usize,
+}
+
+/// A loop of half-edges `(edge, forward)`.
+pub(super) type HLoop = Vec<(usize, bool)>;
+
+/// A face's piece: its loops (the outer first) of half-edges `(edge,
+/// forward)` running with the face's own normal, whether the result keeps
+/// it and whether its material lies behind the input face (`behind`: the
+/// face keeps its orientation).
+#[derive(Debug, Clone)]
+pub(super) struct Piece {
+    pub(super) op: usize,
+    pub(super) face: usize,
+    pub(super) loops: Vec<Vec<(usize, bool)>>,
+    pub(super) keep: bool,
+    pub(super) behind: bool,
+}
+
+pub(super) struct Arr {
+    pub(super) models: [Prism; 2],
+    pub(super) vx: Vec<Vx>,
+    pub(super) edges: Vec<GEdge>,
+    pub(super) secs: Vec<Sec>,
+    pub(super) pieces: Vec<Piece>,
+}
+
+fn boxes_meet(a: &([f64; 3], [f64; 3]), b: &([f64; 3], [f64; 3])) -> bool {
+    (0..3).all(|k| a.0[k] <= b.1[k] && b.0[k] <= a.1[k])
+}
+
+fn coincident() -> Error {
+    Error::OutOfDomain("coincident surfaces in a Boolean of arcs in any position (S9c)")
+}
+
+/// The line key of a point: `x . d / |d|^2` (its parameter less a constant
+/// of the line).
+fn line_key(x: &QV, d: &V) -> Qd {
+    qdot(x, d).scale(&(int(1) / dot(d, d)))
+}
+
+/// The place of a point on a curve.
+pub(super) fn place(crv: &Crv, x: &QV) -> Pos {
+    match crv {
+        Crv::Line { d, .. } => Pos::T(line_key(x, d)),
+        Crv::Conic { c, a, b } => Pos::Ang(conic_angle(c, a, b, x)),
+    }
+}
+
+/// The cross product's sign of two directions of any fields.
+fn cross2(u: &[Qd; 2], v: &[Qd; 2]) -> Ordering {
+    mixed_dot_sign(&[u[0].clone(), u[1].neg()], &[v[1].clone(), v[0].clone()])
+}
+
+fn dot2(u: &[Qd; 2], v: &[Qd; 2]) -> Ordering {
+    mixed_dot_sign(&[u[0].clone(), u[1].clone()], &[v[0].clone(), v[1].clone()])
+}
+
+fn same_dir(u: &[Qd; 2], v: &[Qd; 2]) -> bool {
+    cross2(u, v) == Ordering::Equal && dot2(u, v) == Ordering::Greater
+}
+
+/// Whether `x` lies strictly within the counter-clockwise turn from `a` to
+/// `b` (a full turn when `a` and `b` agree).
+pub(super) fn between_ccw(a: &[Qd; 2], x: &[Qd; 2], b: &[Qd; 2]) -> bool {
+    if same_dir(a, x) || same_dir(x, b) {
+        return false;
+    }
+    match cross2(a, b) {
+        Ordering::Greater => cross2(a, x) == Ordering::Greater && cross2(x, b) == Ordering::Greater,
+        Ordering::Less => !(cross2(b, x) != Ordering::Less && cross2(x, a) != Ordering::Less),
+        Ordering::Equal => {
+            if dot2(a, b) == Ordering::Greater {
+                true
+            } else {
+                cross2(a, x) == Ordering::Greater
+            }
+        }
+    }
+}
+
+/// Whether `x` comes strictly between `a` and `b` running from `a` with
+/// the angle (`ccw`) or against it.
+fn between_run(a: &[Qd; 2], x: &[Qd; 2], b: &[Qd; 2], ccw: bool) -> bool {
+    if ccw {
+        between_ccw(a, x, b)
+    } else {
+        between_ccw(b, x, a)
+    }
+}
+
+/// The binary64 angle of a `(cos, sin)`.
+fn angle_f64(cs: &[Qd; 2]) -> f64 {
+    cs[1].to_f64().atan2(cs[0].to_f64())
+}
+
+/// A rational `(cos, sin)` strictly between `a` and `b` running with the
+/// angle or against it (`b = a`: a full turn).
+fn rational_between(a: &[Qd; 2], b: &[Qd; 2], ccw: bool) -> Result<[R; 2]> {
+    let (t0, t1) = (angle_f64(a), angle_f64(b));
+    let mut sweep = if ccw { t1 - t0 } else { t0 - t1 };
+    sweep = sweep.rem_euclid(TAU);
+    if sweep == 0.0 {
+        sweep = TAU;
+    }
+    for frac in [0.5, 0.25, 0.75, 0.125, 0.875] {
+        let t = if ccw {
+            t0 + sweep * frac
+        } else {
+            t0 - sweep * frac
+        };
+        let half = t / 2.0;
+        // The chart whose parameter stays small.
+        let cs = if half.cos().abs() >= 0.5 {
+            let s = q(half.tan());
+            let one = int(1);
+            let den = &one + &s * &s;
+            [(&one - &s * &s) / &den, int(2) * &s / &den]
+        } else {
+            let c = q(half.cos() / half.sin());
+            let one = int(1);
+            let den = &c * &c + &one;
+            [(&c * &c - &one) / &den, int(2) * &c / &den]
+        };
+        let x = [Qd::rat(cs[0].clone()), Qd::rat(cs[1].clone())];
+        if between_run(a, &x, b, ccw) {
+            return Ok(cs);
+        }
+    }
+    Err(Error::Degenerate(
+        "two meetings within rounding along an arc",
+    ))
+}
+
+/// A rational strictly between two numbers (`a < b`).
+fn rational_between_num(a: &Qd, b: &Qd) -> Result<R> {
+    let (ia, ib) = (a.interval(), b.interval());
+    let m = (ia.hi() + ib.lo()) / int(2);
+    let x = Qd::rat(m.clone());
+    if a.cmp(&x) == Ordering::Less && x.cmp(b) == Ordering::Less {
+        return Ok(m);
+    }
+    Err(Error::Degenerate(
+        "two meetings within rounding along a line",
+    ))
+}
+
+/// Builds the arrangement of two models.
+pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
+    // Cylinder pairs.
+    let mut pairs: BTreeMap<(usize, usize), CylPair> = BTreeMap::new();
+    for (fa, a) in models[0].faces.iter().enumerate() {
+        let Surf::Cyl { c: ca, r: ra, .. } = &a.surf else {
+            continue;
+        };
+        for (fb, b) in models[1].faces.iter().enumerate() {
+            let Surf::Cyl { c: cb, r: rb, .. } = &b.surf else {
+                continue;
+            };
+            let bx = [&models[0].boxes[fa], &models[1].boxes[fb]];
+            let pair = cyl_pair(&models[0], ca, ra, bx, &models[1], cb, rb)?;
+            if matches!(pair, CylPair::Same) && boxes_meet(bx[0], bx[1]) {
+                return Err(coincident());
+            }
+            pairs.insert((fa, fb), pair);
+        }
+    }
+    let pair_of = |o: usize, own: usize, other: usize| -> Option<&CylPair> {
+        if o == 0 {
+            pairs.get(&(own, other))
+        } else {
+            pairs.get(&(other, own))
+        }
+    };
+    // Vertices: the inputs'.
+    let mut vx: Vec<Vx> = Vec::new();
+    let mut on_edge: BTreeMap<(usize, usize), Vec<(usize, Pos)>> = BTreeMap::new();
+    let mut input_vx: [Vec<usize>; 2] = [Vec::new(), Vec::new()];
+    for (o, m) in models.iter().enumerate() {
+        for (i, v) in m.verts.iter().enumerate() {
+            input_vx[o].push(vx.len());
+            vx.push(Vx {
+                p: qv(&v.p),
+                key: VKey::Input(o, i),
+                faces: BTreeSet::new(),
+            });
+        }
+        for (ei, e) in m.edges.iter().enumerate() {
+            let (s, t) = (input_vx[o][e.start], input_vx[o][e.end]);
+            for f in e.faces {
+                vx[s].faces.insert((o, f));
+                vx[t].faces.insert((o, f));
+            }
+            let (ps, pt) = match (&e.curve, &e.arc) {
+                (Crv::Line { d, .. }, _) => {
+                    (Pos::T(line_key(&vx[s].p, d)), Pos::T(line_key(&vx[t].p, d)))
+                }
+                (Crv::Conic { .. }, Some((a, b, _))) => (
+                    Pos::Ang([Qd::rat(a[0].clone()), Qd::rat(a[1].clone())]),
+                    Pos::Ang([Qd::rat(b[0].clone()), Qd::rat(b[1].clone())]),
+                ),
+                _ => unreachable!("an arc edge has its ends' angles"),
+            };
+            on_edge
+                .entry((o, ei))
+                .or_default()
+                .extend([(s, ps), (t, pt)]);
+        }
+    }
+    // Pierces: every edge against every face of the other.
+    for o in 0..2 {
+        let (me, other) = (&models[o], &models[1 - o]);
+        for (ei, e) in me.edges.iter().enumerate() {
+            let ebox = intersect(&me.boxes[e.faces[0]], &me.boxes[e.faces[1]]);
+            // An arc edge's own cylinder (its wall).
+            let wall = e
+                .faces
+                .iter()
+                .copied()
+                .find(|&f| matches!(me.faces[f].surf, Surf::Cyl { .. }));
+            let own = match (&e.curve, wall) {
+                (Crv::Conic { .. }, Some(w)) => match &me.faces[w].surf {
+                    Surf::Cyl { c, r, .. } => Some((me, c, r)),
+                    Surf::Plane { .. } => None,
+                },
+                _ => None,
+            };
+            let virtual_edge = e.id.is_none();
+            for (g, gface) in other.faces.iter().enumerate() {
+                if !boxes_meet(&ebox, &other.boxes[g]) {
+                    continue;
+                }
+                let pair = match (&gface.surf, wall, &e.curve) {
+                    (Surf::Cyl { .. }, Some(w), Crv::Conic { .. }) => pair_of(o, w, g),
+                    _ => None,
+                };
+                let meet = edge_surface(&e.curve, own, other, g, pair)?;
+                let points = match meet {
+                    EdgeMeet::None => continue,
+                    EdgeMeet::Along => {
+                        // The edge on the face's surface: coincident when
+                        // the face's region reaches it.
+                        return Err(if virtual_edge { seam() } else { coincident() });
+                    }
+                    EdgeMeet::Points(p) => p,
+                };
+                for (k, (_, x)) in points.into_iter().enumerate() {
+                    let pos = place(&e.curve, &x);
+                    let (ps, pt) = {
+                        let l = &on_edge[&(o, ei)];
+                        (l[0].1.clone(), l[1].1.clone())
+                    };
+                    let inside = match (&pos, &ps, &pt) {
+                        (Pos::T(t), Pos::T(a), Pos::T(b)) => match (t.cmp(a), t.cmp(b)) {
+                            (Ordering::Greater, Ordering::Less) => Some(true),
+                            (Ordering::Equal, _) | (_, Ordering::Equal) => None,
+                            _ => Some(false),
+                        },
+                        (Pos::Ang(x2), Pos::Ang(a), Pos::Ang(b)) => {
+                            let ccw = e.arc.as_ref().expect("an arc").2;
+                            if same_dir(x2, a) || same_dir(x2, b) {
+                                None
+                            } else {
+                                Some(between_run(a, x2, b, ccw))
+                            }
+                        }
+                        _ => unreachable!("places of one kind"),
+                    };
+                    let region = other.in_face(g, &x);
+                    match (inside, region) {
+                        (_, Loc::Out) | (Some(false), _) => continue,
+                        (None, _) => {
+                            // An input vertex on the other's face.
+                            let seamy = virtual_edge
+                                || on_circle(other, g)
+                                || me.verts[if same_end(&pos, &ps) { e.start } else { e.end }]
+                                    .id
+                                    .is_none();
+                            return Err(if seamy {
+                                seam()
+                            } else {
+                                Error::Degenerate("a vertex of one input on the other's face")
+                            });
+                        }
+                        (Some(true), Loc::On) => {
+                            return Err(if virtual_edge || on_circle(other, g) {
+                                seam()
+                            } else {
+                                Error::Degenerate(
+                                    "an edge of one input meeting an edge of the other",
+                                )
+                            });
+                        }
+                        (Some(true), Loc::In) => {}
+                    }
+                    let id = vx.len();
+                    let mut faces: BTreeSet<(usize, usize)> =
+                        e.faces.iter().map(|&f| (o, f)).collect();
+                    faces.insert((1 - o, g));
+                    vx.push(Vx {
+                        p: x,
+                        key: VKey::Pierce(o, ei, g, k),
+                        faces,
+                    });
+                    on_edge.entry((o, ei)).or_default().push((id, pos));
+                }
+            }
+        }
+    }
+    // The crossings of equal cylinders' ellipses.
+    for ((fa, fb), pair) in &pairs {
+        let CylPair::Crossing(cross) = pair else {
+            continue;
+        };
+        for (k, x) in cross.points.iter().enumerate() {
+            match (models[0].in_face(*fa, x), models[1].in_face(*fb, x)) {
+                (Loc::In, Loc::In) => {
+                    vx.push(Vx {
+                        p: x.clone(),
+                        key: VKey::Cross(*fa, *fb, k),
+                        faces: BTreeSet::from([(0, *fa), (1, *fb)]),
+                    });
+                }
+                (Loc::Out, _) | (_, Loc::Out) => {}
+                _ => return Err(seam()),
+            }
+        }
+    }
+    // Model edges split at their vertices.
+    let mut edges: Vec<GEdge> = Vec::new();
+    let mut half: BTreeMap<(usize, usize), Vec<(usize, bool)>> = BTreeMap::new();
+    for ((o, ei), list) in &on_edge {
+        let e = &models[*o].edges[*ei];
+        let mut list = list.clone();
+        let ccw = e.arc.as_ref().is_none_or(|a| a.2);
+        let start = list[0].1.clone();
+        let cmp = |x: &Pos, y: &Pos| -> Ordering { order_on(x, y, &start, ccw) };
+        let (first, last) = (list.remove(0), list.remove(0));
+        list.sort_by(|x, y| cmp(&x.1, &y.1));
+        for w in list.windows(2) {
+            if cmp(&w[0].1, &w[1].1) == Ordering::Equal {
+                return Err(Error::Degenerate("two meetings at one point of an edge"));
+            }
+        }
+        let mut chain = vec![first];
+        chain.extend(list);
+        chain.push(last);
+        for w in chain.windows(2) {
+            let (mid, mid_pos) = midpoint(&e.curve, &w[0].1, &w[1].1, ccw)?;
+            let gid = edges.len();
+            edges.push(GEdge {
+                curve: CurveRef::Edge(*o, *ei),
+                crv: e.curve.clone(),
+                ends: [w[0].0, w[1].0],
+                pos: [w[0].1.clone(), w[1].1.clone()],
+                with: ccw,
+                mid,
+                mid_pos,
+            });
+            half.entry((*o, e.faces[0])).or_default().push((gid, true));
+            half.entry((*o, e.faces[1])).or_default().push((gid, false));
+        }
+    }
+    // Sections.
+    let mut secs: Vec<Sec> = Vec::new();
+    for fa in 0..models[0].faces.len() {
+        for fb in 0..models[1].faces.len() {
+            if !boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]) {
+                continue;
+            }
+            let pair = pairs.get(&(fa, fb));
+            let curves = match section(&models[0], fa, &models[1], fb, pair)? {
+                Section::Same => return Err(coincident()),
+                Section::Curves(c) => c,
+            };
+            if curves.is_empty() {
+                continue;
+            }
+            let si = secs.len();
+            // Vertices on both faces.
+            let on: Vec<usize> = (0..vx.len())
+                .filter(|&v| vx[v].faces.contains(&(0, fa)) && vx[v].faces.contains(&(1, fb)))
+                .collect();
+            for (bi, crv) in curves.iter().enumerate() {
+                let mut list: Vec<(usize, Pos)> = on
+                    .iter()
+                    .filter(|&&v| on_curve(crv, &vx[v].p))
+                    .map(|&v| (v, place(crv, &vx[v].p)))
+                    .collect();
+                let closed = matches!(crv, Crv::Conic { .. });
+                let zero_dir = Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())]);
+                list.sort_by(|x, y| order_on(&x.1, &y.1, &zero_dir, true));
+                for w in list.windows(2) {
+                    if order_on(&w[0].1, &w[1].1, &zero_dir, true) == Ordering::Equal {
+                        return Err(Error::Degenerate("two meetings at one point of a section"));
+                    }
+                }
+                let n = list.len();
+                let segments: Vec<(usize, usize)> = if closed {
+                    if n == 0 {
+                        // A closed section with no vertex: never inside both
+                        // faces (every cylinder's seams cross its sections).
+                        let x = conic_point_r(crv, &[int(1), zero()]);
+                        if models[0].in_face(fa, &x) == Loc::In
+                            && models[1].in_face(fb, &x) == Loc::In
+                        {
+                            return Err(Error::ComputationLimit(
+                                "a closed section without vertices",
+                            ));
+                        }
+                        Vec::new()
+                    } else {
+                        (0..n).map(|i| (i, (i + 1) % n)).collect()
+                    }
+                } else {
+                    (0..n.saturating_sub(1)).map(|i| (i, i + 1)).collect()
+                };
+                for (i, j) in segments {
+                    let (a, b) = (&list[i], &list[j]);
+                    let (mid, mid_pos) = midpoint(crv, &a.1, &b.1, true)?;
+                    let la = models[0].in_face(fa, &mid);
+                    let lb = models[1].in_face(fb, &mid);
+                    match (la, lb) {
+                        (Loc::In, Loc::In) => {}
+                        (Loc::Out, _) | (_, Loc::Out) => continue,
+                        _ => return Err(seam()),
+                    }
+                    let gid = edges.len();
+                    edges.push(GEdge {
+                        curve: CurveRef::Section(si, bi),
+                        crv: crv.clone(),
+                        ends: [a.0, b.0],
+                        pos: [a.1.clone(), b.1.clone()],
+                        with: true,
+                        mid,
+                        mid_pos,
+                    });
+                    for key in [(0, fa), (1, fb)] {
+                        let h = half.entry(key).or_default();
+                        h.push((gid, true));
+                        h.push((gid, false));
+                    }
+                }
+            }
+            secs.push(Sec { fa, fb });
+        }
+    }
+    let mut arr = Arr {
+        models,
+        vx,
+        edges,
+        secs,
+        pieces: Vec::new(),
+    };
+    // Pieces.
+    for ((o, f), hs) in &half {
+        let loops = arr.trace(*o, *f, hs)?;
+        let pieces = arr.group(*o, *f, loops)?;
+        for loops in pieces {
+            let (keep, behind) = arr.classify(*o, *f, &loops[0], op)?;
+            arr.pieces.push(Piece {
+                op: *o,
+                face: *f,
+                loops,
+                keep,
+                behind,
+            });
+        }
+    }
+    Ok(arr)
+}
+
+fn intersect(a: &([f64; 3], [f64; 3]), b: &([f64; 3], [f64; 3])) -> ([f64; 3], [f64; 3]) {
+    let mut out = *a;
+    for k in 0..3 {
+        out.0[k] = a.0[k].max(b.0[k]);
+        out.1[k] = a.1[k].min(b.1[k]);
+    }
+    out
+}
+
+/// Whether a face is a full circle's half wall (its sides are a seam).
+fn on_circle(m: &Prism, f: usize) -> bool {
+    match m.faces[f].kind {
+        FaceKind::Wall(b, _) => m.bounds[b].circle,
+        FaceKind::Cap(_) => false,
+    }
+}
+
+fn same_end(pos: &Pos, end: &Pos) -> bool {
+    match (pos, end) {
+        (Pos::T(a), Pos::T(b)) => a.cmp(b) == Ordering::Equal,
+        (Pos::Ang(a), Pos::Ang(b)) => same_dir(a, b),
+        _ => false,
+    }
+}
+
+/// The order of two places along a curve from `start` (lines by key,
+/// conics by the angle turned from `start` with or against the angle).
+fn order_on(x: &Pos, y: &Pos, start: &Pos, ccw: bool) -> Ordering {
+    match (x, y, start) {
+        (Pos::T(a), Pos::T(b), _) => a.cmp(b),
+        (Pos::Ang(a), Pos::Ang(b), Pos::Ang(s)) => {
+            if same_dir(a, b) {
+                return Ordering::Equal;
+            }
+            if same_dir(a, s) {
+                return Ordering::Less;
+            }
+            if same_dir(b, s) {
+                return Ordering::Greater;
+            }
+            // a before b when a lies between the start and b.
+            if between_run(s, a, b, ccw) {
+                Ordering::Less
+            } else {
+                Ordering::Greater
+            }
+        }
+        _ => unreachable!("places of one kind"),
+    }
+}
+
+fn conic_point_r(crv: &Crv, cs: &[R; 2]) -> QV {
+    let Crv::Conic { c, a, b } = crv else {
+        unreachable!("a conic")
+    };
+    conic_point(c, a, b, &[Qd::rat(cs[0].clone()), Qd::rat(cs[1].clone())])
+}
+
+/// A point strictly between two places on a curve, and its place.
+fn midpoint(crv: &Crv, a: &Pos, b: &Pos, ccw: bool) -> Result<(QV, Pos)> {
+    match (crv, a, b) {
+        (Crv::Line { p, d }, Pos::T(ta), Pos::T(tb)) => {
+            let (lo, hi) = if ta.cmp(tb) == Ordering::Less {
+                (ta, tb)
+            } else {
+                (tb, ta)
+            };
+            let k = rational_between_num(lo, hi)?;
+            // p + (k - key(p)) d.
+            let t = Qd::rat(k.clone()).sub(&line_key(p, d));
+            let x = qadd(p, &qscale(d, &t));
+            Ok((x, Pos::T(Qd::rat(k))))
+        }
+        (Crv::Conic { .. }, Pos::Ang(sa), Pos::Ang(sb)) => {
+            let cs = rational_between(sa, sb, ccw)?;
+            let x = conic_point_r(crv, &cs);
+            Ok((
+                x,
+                Pos::Ang([Qd::rat(cs[0].clone()), Qd::rat(cs[1].clone())]),
+            ))
+        }
+        _ => unreachable!("places of the curve's kind"),
+    }
+}
+
+/// Whether a point lies on a curve (exactly).
+fn on_curve(crv: &Crv, x: &QV) -> bool {
+    match crv {
+        Crv::Line { p, d } => {
+            // (x - p) x d = 0, compared term by term (fields may differ).
+            let xc = [
+                x[1].scale(&d[2]).sub(&x[2].scale(&d[1])),
+                x[2].scale(&d[0]).sub(&x[0].scale(&d[2])),
+                x[0].scale(&d[1]).sub(&x[1].scale(&d[0])),
+            ];
+            let pc = [
+                p[1].scale(&d[2]).sub(&p[2].scale(&d[1])),
+                p[2].scale(&d[0]).sub(&p[0].scale(&d[2])),
+                p[0].scale(&d[1]).sub(&p[1].scale(&d[0])),
+            ];
+            xc.iter().zip(&pc).all(|(a, b)| a.cmp(b) == Ordering::Equal)
+        }
+        Crv::Conic { c, a, b } => {
+            let cs = conic_angle(c, a, b, x);
+            let back = conic_point(c, a, b, &cs);
+            let unit = cs[0].mul(&cs[0]).add(&cs[1].mul(&cs[1])).add_r(&int(-1));
+            qv_eq(&back, x) && unit.sign() == Ordering::Equal
+        }
+    }
+}
+
+impl Arr {
+    /// A half-edge's direction of travel at a place (unit-free).
+    fn travel(&self, gid: usize, fwd: bool, pos: &Pos) -> QV {
+        let e = &self.edges[gid];
+        let t = tangent(&e.crv, pos);
+        if e.with == fwd {
+            t
+        } else {
+            t.map(|x| x.neg())
+        }
+    }
+
+    fn start_of(&self, h: (usize, bool)) -> usize {
+        let e = &self.edges[h.0];
+        if h.1 {
+            e.ends[0]
+        } else {
+            e.ends[1]
+        }
+    }
+
+    fn end_of(&self, h: (usize, bool)) -> usize {
+        self.start_of((h.0, !h.1))
+    }
+
+    fn pos_at_start(&self, h: (usize, bool)) -> &Pos {
+        &self.edges[h.0].pos[if h.1 { 0 } else { 1 }]
+    }
+
+    /// The face's loops: from each half-edge, the next is the first
+    /// clockwise (about the face's outward normal) from the way back.
+    fn trace(&self, o: usize, f: usize, hs: &[(usize, bool)]) -> Result<Vec<Vec<(usize, bool)>>> {
+        let mut out_of: BTreeMap<usize, Vec<(usize, bool)>> = BTreeMap::new();
+        for &h in hs {
+            out_of.entry(self.start_of(h)).or_default().push(h);
+        }
+        let mut used: BTreeSet<(usize, bool)> = BTreeSet::new();
+        let mut loops = Vec::new();
+        for &h0 in hs {
+            if used.contains(&h0) {
+                continue;
+            }
+            let mut lp = vec![h0];
+            used.insert(h0);
+            let mut h = h0;
+            loop {
+                let v = self.end_of(h);
+                let next = self.next_on(o, f, v, h, out_of.get(&v).map_or(&[][..], |x| x))?;
+                if next == h0 {
+                    break;
+                }
+                if !used.insert(next) {
+                    return Err(Error::InvalidTopology("a face's pieces do not close"));
+                }
+                lp.push(next);
+                h = next;
+            }
+            loops.push(lp);
+        }
+        Ok(loops)
+    }
+
+    /// The outgoing half-edge after arriving at `v` along `h`.
+    pub(super) fn next_on(
+        &self,
+        o: usize,
+        f: usize,
+        v: usize,
+        h: (usize, bool),
+        outs: &[(usize, bool)],
+    ) -> Result<(usize, bool)> {
+        let back = (h.0, !h.1);
+        let cands: Vec<(usize, bool)> = outs.iter().copied().filter(|&c| c != back).collect();
+        if cands.is_empty() {
+            return if outs.contains(&back) {
+                Ok(back)
+            } else {
+                Err(Error::InvalidTopology("a face's piece ends at a vertex"))
+            };
+        }
+        if cands.len() == 1 {
+            return Ok(cands[0]);
+        }
+        let p = &self.vx[v].p;
+        let n = self.models[o].normal_at(f, p);
+        let r = self.travel(back.0, back.1, self.pos_at_start(back));
+        let nr = qcross(&n, &r);
+        let coords = |c: (usize, bool)| -> [Qd; 2] {
+            let t = self.travel(c.0, c.1, self.pos_at_start(c));
+            [qqdot(&r, &t), qqdot(&nr, &t)]
+        };
+        let zero_dir = [Qd::rat(int(1)), Qd::rat(zero())];
+        let mut best: Option<((usize, bool), [Qd; 2])> = None;
+        for c in cands {
+            let a = coords(c);
+            if same_dir(&a, &zero_dir) {
+                return Err(Error::Degenerate("two curves tangent at a vertex"));
+            }
+            best = match best {
+                None => Some((c, a)),
+                Some((bc, ba)) => match angle_cmp(&a, &ba) {
+                    Ordering::Greater => Some((c, a)),
+                    Ordering::Less => Some((bc, ba)),
+                    Ordering::Equal => {
+                        return Err(Error::Degenerate("two curves tangent at a vertex"))
+                    }
+                },
+            };
+        }
+        Ok(best.expect("a candidate").0)
+    }
+
+    /// Points of a half-edge in binary64, along its run.
+    pub(super) fn samples(&self, h: (usize, bool)) -> Vec<[f64; 3]> {
+        let e = &self.edges[h.0];
+        match &e.crv {
+            Crv::Line { .. } => {
+                let (a, b) = (qv_f64(&self.vx[e.ends[0]].p), qv_f64(&self.vx[e.ends[1]].p));
+                if h.1 {
+                    vec![a, b]
+                } else {
+                    vec![b, a]
+                }
+            }
+            Crv::Conic { c, a, b } => {
+                let (Pos::Ang(p0), Pos::Ang(p1)) = (&e.pos[0], &e.pos[1]) else {
+                    unreachable!("a conic's places")
+                };
+                let (t0, t1) = (angle_f64(p0), angle_f64(p1));
+                let mut sweep = if e.with { t1 - t0 } else { t0 - t1 };
+                sweep = sweep.rem_euclid(TAU);
+                if sweep == 0.0 {
+                    sweep = TAU;
+                }
+                let sweep = if e.with { sweep } else { -sweep };
+                let f = |x: &V| x.clone().map(|y| crate::solid::split::rational_f64(&y));
+                let (cf, af, bf) = (f(c), f(a), f(b));
+                let n = 24;
+                let mut pts: Vec<[f64; 3]> = (0..=n)
+                    .map(|i| {
+                        let t = t0 + sweep * i as f64 / n as f64;
+                        [0, 1, 2].map(|k| cf[k] + af[k] * t.cos() + bf[k] * t.sin())
+                    })
+                    .collect();
+                if !h.1 {
+                    pts.reverse();
+                }
+                pts
+            }
+        }
+    }
+
+    /// A face's binary64 parameters of a point: the plane's frame
+    /// coordinates, or a cylinder's turn from its arc's start and height;
+    /// and the orientation of those parameters against the outward normal.
+    pub(super) fn params(&self, o: usize, f: usize) -> impl Fn([f64; 3]) -> [f64; 2] + '_ {
+        let m = &self.models[o];
+        let face = &m.faces[f];
+        let fl = |x: &V| x.clone().map(|y| crate::solid::split::rational_f64(&y));
+        let (of, xf, yf, nf) = (fl(&m.f.o), fl(&m.f.x), fl(&m.f.y), fl(&m.f.n));
+        let surf = face.surf.clone();
+        let kind = face.kind;
+        move |p: [f64; 3]| -> [f64; 2] {
+            match &surf {
+                Surf::Plane { .. } => {
+                    let crate::topology::Surface::Plane(frame) = &face.stored else {
+                        unreachable!("a plane face")
+                    };
+                    let c = frame.coordinates(crate::Point3::new(p[0], p[1], p[2]));
+                    [c[0], c[1]]
+                }
+                Surf::Cyl { c, r, .. } => {
+                    // Local coordinates by the (nearly orthonormal) axes'
+                    // Gram solve.
+                    let d = [p[0] - of[0], p[1] - of[1], p[2] - of[2]];
+                    let l = solve3(&xf, &yf, &nf, &d);
+                    let (cu, cv) = (
+                        crate::solid::split::rational_f64(&c[0]),
+                        crate::solid::split::rational_f64(&c[1]),
+                    );
+                    let rf = crate::solid::split::rational_f64(r);
+                    let theta = (l[1] - cv).atan2(l[0] - cu);
+                    let FaceKind::Wall(b, j) = kind else {
+                        unreachable!("a wall")
+                    };
+                    let Seg::Arc {
+                        c: ac,
+                        p: ap,
+                        q: aq,
+                        ccw,
+                        ..
+                    } = &m.bounds[b].segs[j]
+                    else {
+                        unreachable!("an arc wall")
+                    };
+                    let fv = crate::solid::split::rational_f64;
+                    let sweep = crate::profile::arc_sweep(
+                        crate::Point2::new(fv(&ac[0]), fv(&ac[1])),
+                        crate::Point2::new(fv(&ap[0]), fv(&ap[1])),
+                        crate::Point2::new(fv(&aq[0]), fv(&aq[1])),
+                        *ccw,
+                    )
+                    .abs();
+                    let a0 = (crate::solid::split::rational_f64(&ap[1])
+                        - crate::solid::split::rational_f64(&ac[1]))
+                    .atan2(
+                        crate::solid::split::rational_f64(&ap[0])
+                            - crate::solid::split::rational_f64(&ac[0]),
+                    );
+                    let turn = if *ccw { theta - a0 } else { a0 - theta };
+                    // Within the arc's sweep: a point at its start may turn
+                    // a rounding below zero.
+                    let mut t = turn.rem_euclid(TAU);
+                    if t > (TAU + sweep) / 2.0 {
+                        t -= TAU;
+                    }
+                    [t * rf, l[2]]
+                }
+            }
+        }
+    }
+
+    /// The sign turning the parameters' area into the area about the face's
+    /// outward normal.
+    pub(super) fn param_sign(&self, o: usize, f: usize) -> f64 {
+        let m = &self.models[o];
+        let face = &m.faces[f];
+        match &face.surf {
+            Surf::Plane { m: out, .. } => {
+                let crate::topology::Surface::Plane(frame) = &face.stored else {
+                    unreachable!("a plane face")
+                };
+                let n = frame.normal().to_array();
+                let o = out.clone().map(|y| crate::solid::split::rational_f64(&y));
+                if n[0] * o[0] + n[1] * o[1] + n[2] * o[2] > 0.0 {
+                    1.0
+                } else {
+                    -1.0
+                }
+            }
+            Surf::Cyl { inside, .. } => {
+                let FaceKind::Wall(b, j) = face.kind else {
+                    unreachable!("a wall")
+                };
+                let Seg::Arc { ccw, .. } = &m.bounds[b].segs[j] else {
+                    unreachable!("an arc wall")
+                };
+                // (turn, height) runs with (angle, height) on a
+                // counter-clockwise arc, whose frame's area is about the
+                // radial outward normal.
+                let s = if *ccw { 1.0 } else { -1.0 };
+                if *inside {
+                    s
+                } else {
+                    -s
+                }
+            }
+        }
+    }
+
+    /// A loop's binary64 polygon in the face's parameters.
+    pub(super) fn polygon(&self, o: usize, f: usize, lp: &[(usize, bool)]) -> Vec<[f64; 2]> {
+        let par = self.params(o, f);
+        let mut out = Vec::new();
+        for &h in lp {
+            let s = self.samples(h);
+            for p in &s[..s.len() - 1] {
+                out.push(par(*p));
+            }
+        }
+        out
+    }
+
+    /// Loops grouped into pieces: each counter-clockwise loop (about the
+    /// outward normal) with the clockwise ones it holds nearest.
+    fn group(&self, o: usize, f: usize, loops: Vec<Vec<(usize, bool)>>) -> Result<Vec<Vec<HLoop>>> {
+        let sign = self.param_sign(o, f);
+        let polys: Vec<Vec<[f64; 2]>> = loops.iter().map(|l| self.polygon(o, f, l)).collect();
+        let areas: Vec<f64> = polys.iter().map(|p| sign * area(p)).collect();
+        let scale = polys
+            .iter()
+            .flatten()
+            .fold(1.0f64, |m, p| m.max(p[0].abs()).max(p[1].abs()));
+        let tiny = 1e-20 * scale * scale;
+        let mut outers: Vec<usize> = Vec::new();
+        let mut holes: Vec<usize> = Vec::new();
+        for (i, a) in areas.iter().enumerate() {
+            if a.abs() <= tiny {
+                return Err(Error::Degenerate("a piece thinner than the resolution"));
+            }
+            if *a > 0.0 {
+                outers.push(i);
+            } else {
+                holes.push(i);
+            }
+        }
+        let mut pieces: Vec<Vec<Vec<(usize, bool)>>> =
+            outers.iter().map(|&i| vec![loops[i].clone()]).collect();
+        for h in holes {
+            let probe = polys[h][0];
+            let mut best: Option<(usize, f64)> = None;
+            let hole_edges: BTreeSet<usize> = loops[h].iter().map(|x| x.0).collect();
+            for (k, &i) in outers.iter().enumerate() {
+                // The piece the hole bounds from inside shares its edges.
+                if loops[i].iter().any(|x| hole_edges.contains(&x.0)) {
+                    continue;
+                }
+                let (inside, dist) = winding(&polys[i], probe);
+                if dist <= 1e-9 * scale {
+                    return Err(Error::Degenerate("a hole touching a piece's boundary"));
+                }
+                if inside && best.is_none_or(|(_, a)| areas[i] < a) {
+                    best = Some((k, areas[i]));
+                }
+            }
+            let (k, _) = best.ok_or(Error::InvalidTopology("a hole outside every piece"))?;
+            pieces[k].push(loops[h].clone());
+        }
+        Ok(pieces)
+    }
+
+    /// Whether the result keeps a piece and whether its material lies
+    /// behind the face: from the other solid's membership at a point of its
+    /// first edge pushed into it, then off the face either way.
+    fn classify(
+        &self,
+        o: usize,
+        f: usize,
+        outer: &[(usize, bool)],
+        op: Op2,
+    ) -> Result<(bool, bool)> {
+        let h = outer[0];
+        let e = &self.edges[h.0];
+        let x = &e.mid;
+        let t = self.travel(h.0, h.1, &e.mid_pos);
+        let n = self.models[o].normal_at(f, x);
+        let inward = qcross(&n, &t);
+        let neg_n = n.clone().map(|y| y.neg());
+        let other = &self.models[1 - o];
+        let front = other.member(x, &[inward.clone(), n]);
+        let back = other.member(x, &[inward, neg_n]);
+        let (front, back) = match (front, back) {
+            (Loc::On, _) | (_, Loc::On) => {
+                return Err(Error::Degenerate("a piece on the other's boundary"))
+            }
+            (a, b) => (a == Loc::In, b == Loc::In),
+        };
+        Ok(if o == 0 {
+            (
+                holds(op, false, front) != holds(op, true, back),
+                holds(op, true, back),
+            )
+        } else {
+            (
+                front == back && holds(op, front, false) != holds(op, back, true),
+                holds(op, back, true),
+            )
+        })
+    }
+}
+
+pub(super) fn holds(op: Op2, a: bool, b: bool) -> bool {
+    match op {
+        Op2::Fuse => a || b,
+        Op2::Cut => a && !b,
+        Op2::Common => a && b,
+    }
+}
+
+/// Twice... the signed area of a polygon.
+pub(super) fn area(p: &[[f64; 2]]) -> f64 {
+    let n = p.len();
+    (0..n)
+        .map(|i| {
+            let (a, b) = (p[i], p[(i + 1) % n]);
+            a[0] * b[1] - a[1] * b[0]
+        })
+        .sum::<f64>()
+        / 2.0
+}
+
+/// Whether a point lies inside a polygon (winding), and its distance from
+/// the polygon.
+pub(super) fn winding(poly: &[[f64; 2]], x: [f64; 2]) -> (bool, f64) {
+    let n = poly.len();
+    let mut wind = 0i32;
+    let mut dist = f64::INFINITY;
+    for i in 0..n {
+        let (a, b) = (poly[i], poly[(i + 1) % n]);
+        let (dx, dy) = (b[0] - a[0], b[1] - a[1]);
+        let len2 = dx * dx + dy * dy;
+        let t = if len2 > 0.0 {
+            (((x[0] - a[0]) * dx + (x[1] - a[1]) * dy) / len2).clamp(0.0, 1.0)
+        } else {
+            0.0
+        };
+        let (px, py) = (a[0] + t * dx - x[0], a[1] + t * dy - x[1]);
+        dist = dist.min((px * px + py * py).sqrt());
+        let cross = dx * (x[1] - a[1]) - dy * (x[0] - a[0]);
+        if a[1] <= x[1] {
+            if b[1] > x[1] && cross > 0.0 {
+                wind += 1;
+            }
+        } else if b[1] <= x[1] && cross < 0.0 {
+            wind -= 1;
+        }
+    }
+    (wind != 0, dist)
+}
+
+/// Solves `a u + b v + c w = d` (binary64, Cramer).
+pub(super) fn solve3(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3], d: &[f64; 3]) -> [f64; 3] {
+    let det = |x: &[f64; 3], y: &[f64; 3], z: &[f64; 3]| {
+        x[0] * (y[1] * z[2] - y[2] * z[1]) - x[1] * (y[0] * z[2] - y[2] * z[0])
+            + x[2] * (y[0] * z[1] - y[1] * z[0])
+    };
+    let dd = det(a, b, c);
+    [det(d, b, c) / dd, det(a, d, c) / dd, det(a, b, d) / dd]
+}
