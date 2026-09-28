@@ -365,10 +365,17 @@ fn pcurve_record(
                 }
                 _ => {
                     let l = du.hypot(dv);
-                    (du / l, dv / l)
+                    // A pcurve whose length is not its edge's parameter span
+                    // (on a spline surface, whose parameters are no lengths:
+                    // a STEP file's, STEP-b) runs over the span as the fin's
+                    // fractions do; otherwise at unit speed.
+                    if span > 0.0 && (l - span).abs() > 1e-12 * l.max(span) {
+                        (du / span, dv / span)
+                    } else {
+                        (du / l, dv / l)
+                    }
                 }
             };
-            let _ = span;
             format!(
                 "1 {} {}",
                 nums(&[a.x - dx * t0, a.y - dy * t0]),

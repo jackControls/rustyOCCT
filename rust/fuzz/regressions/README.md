@@ -815,6 +815,20 @@ for the latitude seam and left the rings' pcurves where they were, a period
 below it. The writer now shifts a face's line pcurves into `[v0, v0 + 2 pi]`
 as it does in `u`; the input replays in 0.06 s.
 
+## STEP: a line pcurve on a spline surface that is not its edge's length
+
+`step/crash-19bd352aea32baea4b0ecbdf14c4a2985ce70d18.bin` was found by the
+first smoke run of the STEP-b target (60 s, local): the B-spline prism,
+whose side surface's `v` runs over `[0, 1]` while its vertical edges are 4
+long. The import is valid (the file's line pcurves over the fins'
+fractions), but its `.brep` text did not read back: the writer wrote every
+line pcurve at unit speed against its edge's parameter, right on planes and
+along rulings and circles where the pcurve's length is the edge's, wrong
+here (`(0, 4)` for `(0, 1)`). A line pcurve whose length is not its edge's
+span now runs over the span; every other one is written as before. The
+input replays in 0.05 s, and `tests/step.rs` round-trips the four spline
+bodies.
+
 ## Boolean: a tool filling the object's hole over part of its height
 
 `boolean/crash-769e2af11386b1251080b11d3dc937f416957d63.bin` was found by the

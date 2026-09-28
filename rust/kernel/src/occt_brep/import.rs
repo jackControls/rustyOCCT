@@ -302,6 +302,31 @@ impl Walk<'_> {
                     None => return self.no("BSplineRangeOutsideDomain"),
                 }
             }
+            read::Curve3::Ellipse {
+                p,
+                x,
+                y,
+                major,
+                minor,
+                ..
+            } => {
+                let (x, y) = (ct.vector(*x), ct.vector(*y));
+                let frame =
+                    Frame3::new(p3(ct.point(*p)), v3(cross(x, y)), v3(x), self.placement).ok()?;
+                // A closed edge is a whole ellipse, as for a circle.
+                let sweep = if start == end && ((l - f) - TAU).abs() <= 1e-12 * TAU {
+                    TAU
+                } else {
+                    l - f
+                };
+                Curve3::EllipseArc {
+                    frame,
+                    major: *major,
+                    minor: *minor,
+                    start_angle: f,
+                    sweep_angle: sweep,
+                }
+            }
             read::Curve3::Other(name) => return self.no(name),
         };
         let e = self.edges.len();
@@ -357,7 +382,9 @@ impl Walk<'_> {
         // the edge's range (SameRange), so theirs is snapped alike. So is a
         // degenerated edge's turn around the apex.
         let turn = match &self.edges[edge].curve {
-            Some(Curve3::CircularArc { sweep_angle, .. }) => *sweep_angle == TAU,
+            Some(
+                Curve3::CircularArc { sweep_angle, .. } | Curve3::EllipseArc { sweep_angle, .. },
+            ) => *sweep_angle == TAU,
             None => true,
             _ => false,
         };
@@ -416,6 +443,11 @@ impl Walk<'_> {
                     None => return self.no("BSplineRangeOutsideDomain"),
                 }
             }
+            read::Curve2::Sinusoid { u0, du, a } => Curve2::Sinusoid {
+                start: u0 + f * du,
+                sweep: (l - f) * du,
+                a: *a,
+            },
             read::Curve2::Other(name) => return self.no(name),
         })
     }
@@ -727,8 +759,27 @@ fn on_plane(plane: &Frame3, curve: &Curve3) -> Curve2 {
         Curve3::HyperbolaArc { .. } | Curve3::ParabolaArc { .. } | Curve3::Section(_) => {
             crate::topology::plane_pcurve(curve, crate::topology::Orientation::Forward, *plane)
         }
+        // An ellipse whose axes are not the plane's (a STEP file's, STEP-b):
+        // its exact projection onto the plane (D13).
+        Curve3::EllipseArc { frame, .. }
+            if frame.x().cross(plane.x()).length() > 4.0 * f64::EPSILON
+                || frame.x().dot(plane.x()) < 0.0 =>
+        {
+            let start = uv(curve.point(0.0));
+            Curve2::Projection(Box::new(
+                crate::topology::Projection::new(
+                    curve.clone(),
+                    Surface::Plane(*plane),
+                    false,
+                    start,
+                    8,
+                )
+                .expect("a curve projects onto a plane"),
+            ))
+        }
         // Axis-aligned with the plane (the kernel's own ellipses, whose
-        // frames share the plane's axes); validation rejects any other.
+        // frames share the plane's axes, and a STEP file's sharing them);
+        // validation rejects one off the plane.
         Curve3::EllipseArc {
             frame,
             major,
@@ -1166,7 +1217,13 @@ fn to_cell(walk: Walk, tol: f64, mode: Mode) -> Result<TopologyParts, &'static s
         }
     }
     removed.retain(|e| !still_used.contains(e));
-    let closed = |c: &Option<Curve3>| matches!(c, Some(Curve3::CircularArc { sweep_angle, .. }) if sweep_angle.abs() == TAU);
+    let closed = |c: &Option<Curve3>| {
+        matches!(
+            c,
+            Some(Curve3::CircularArc { sweep_angle, .. } | Curve3::EllipseArc { sweep_angle, .. })
+                if sweep_angle.abs() == TAU
+        )
+    };
     let mut other_use = poles;
     for (i, e) in walk.edges.iter().enumerate() {
         if !(removed.contains(&i) || closed(&e.curve) && e.start == e.end) {

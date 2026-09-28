@@ -7,13 +7,18 @@
 //! truncated). Reading never panics: malformed text is a typed `StepError`.
 //! Importing never panics, gives the same result twice, and every body is
 //! a topology that validates, and writes and reads back as `.brep` with its
-//! counts when the writer expresses it, or is rejected with its unsupported
-//! names or its validation issues. An unmutated fixture imports every body.
+//! counts when the writer expresses it (the `.brep` reader does not read
+//! ellipse records yet, so a body written with one is not read back), or is
+//! rejected with its unsupported names or its validation issues. An
+//! unmutated fixture imports every body, except the quarter-arc rational
+//! cylinder, which the validator refuses (R4). STEP-b's fixtures bring
+//! ellipses, B-spline curves and surfaces, rational complex instances and
+//! the file's pcurves into the mutations.
 use libfuzzer_sys::arbitrary::{Result, Unstructured};
 use rusty_occt::occt_brep::{self, Rejected};
 use rusty_occt::step::{self, StepImport};
 
-const FIXTURES: [&str; 22] = [
+const FIXTURES: [&str; 29] = [
     include_str!("../../fixtures/step/box.stp"),
     include_str!("../../fixtures/step/box_ap203.stp"),
     include_str!("../../fixtures/step/box_ap242.stp"),
@@ -36,13 +41,31 @@ const FIXTURES: [&str; 22] = [
     include_str!("../../fixtures/step/syntax.stp"),
     include_str!("../../fixtures/step/torus.stp"),
     include_str!("../../fixtures/step/two_solids.stp"),
+    include_str!("../../fixtures/step/ellipse_sheet.stp"),
+    include_str!("../../fixtures/step/cylinder_oblique.stp"),
+    include_str!("../../fixtures/step/bspline_plate.stp"),
+    include_str!("../../fixtures/step/bspline_prism.stp"),
+    include_str!("../../fixtures/step/bspline_patch.stp"),
+    include_str!("../../fixtures/step/bspline_trimmed.stp"),
+    include_str!("../../fixtures/step/rational_cylinder.stp"),
 ];
+
+/// The fixture whose unmutated body the validator refuses: rational
+/// quarter arcs are not C1 in homogeneous form (R4).
+const NOT_C1: usize = 28;
 
 /// Tokens a mutation may put in place of another: other entities, loop and
 /// shell kinds, flags, references, special numbers and punctuation.
-const WORDS: [&str; 34] = [
+const WORDS: [&str; 41] = [
     "ELLIPSE",
     "B_SPLINE_CURVE_WITH_KNOTS",
+    "B_SPLINE_SURFACE_WITH_KNOTS",
+    "RATIONAL_B_SPLINE_CURVE",
+    "RATIONAL_B_SPLINE_SURFACE",
+    "BEZIER_CURVE",
+    "SURFACE_CURVE",
+    "PCURVE",
+    "DEFINITIONAL_REPRESENTATION",
     "VERTEX_LOOP",
     "POLY_LOOP",
     "FACE_SURFACE",
@@ -189,6 +212,12 @@ fn check_text(bytes: &[u8]) -> Option<StepImport> {
                 if let Ok(text) = occt_brep::write(t, body.tolerance.linear()) {
                     let doc = occt_brep::read(&text).expect("the writer's text reads");
                     let back = occt_brep::import(&doc);
+                    // The reader names ellipse records unsupported (STEP-b).
+                    if back.unsupported.contains_key("Ellipse")
+                        || back.unsupported.contains_key("Ellipse2d")
+                    {
+                        continue;
+                    }
                     let again = back
                         .solids
                         .iter()
@@ -229,7 +258,11 @@ pub fn check_step(data: &[u8]) {
             if u.ratio(1, 8).unwrap_or(true) {
                 let imported = check_text(base.as_bytes()).expect("a fixture reads and imports");
                 assert!(
-                    imported.bodies.iter().all(|b| b.result.is_ok()),
+                    imported.bodies.iter().all(|b| if pick == NOT_C1 {
+                        matches!(b.result, Err(Rejected::Invalid { .. }))
+                    } else {
+                        b.result.is_ok()
+                    }),
                     "an unmutated fixture imports every body"
                 );
                 return;

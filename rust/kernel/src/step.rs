@@ -6,6 +6,7 @@ use std::fmt;
 
 mod import;
 pub mod part21;
+mod spline;
 
 pub use import::{import, Item, StepBody, StepImport};
 pub use part21::{read, Exchange, Instance, Parameter, Record};

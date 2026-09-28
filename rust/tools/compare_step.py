@@ -18,7 +18,10 @@ need a fingerprinted review. The kernel's bodies (`step_probe`) must be the refe
 with enclosures containing the reference's measures up to 1e-12 relative
 (the file's decimal data are binary64: a surface and its edges agree only
 to rounding), and OCCT's up to 1e-9, and their synthesized OCCT counts must
-equal the native ones (a difference needs a review).
+equal the native ones (a difference needs a review). A body the kernel
+rejects as unsupported, or whose enclosures miss the reference, fails; one
+it imports but its validator refuses (`rust_invalid:` and the issue kinds)
+needs a review.
 """
 import argparse
 import json
@@ -168,6 +171,11 @@ def rust_differences(rust, rows, native):
         w = bodies.get(r[0])
         if w is None or w[0] != r[1]:
             return ['rust_bodies']
+        if w[1] == 'invalid':
+            # A validation failure (a body OCCT accepts that a kernel rule
+            # refuses) is reviewable, fingerprinted by its issue kinds.
+            kinds = sorted({x.split(':')[0] for x in w[2:] if ':' in x})
+            return ['rust_invalid:'+','.join(kinds)]
         if w[1] != 'ok':
             return ['rust_rejected']
         counts = [int(x) for x in w[2:8]]
@@ -280,7 +288,8 @@ def main():
             if any(w in ('rust_error', 'rust_bodies', 'rust_rejected', 'rust_outside_reference') for w in wrong):
                 report['failures'].append({'case': name, 'reason': ' '.join(wrong), 'rust': rust.get(name)})
                 continue
-            report['rust_within_reference'] += 1
+            if not any(w.startswith('rust_invalid') for w in wrong):
+                report['rust_within_reference'] += 1
             found = sorted(set(found+wrong))
         if not found:
             report['matches'].append(name)

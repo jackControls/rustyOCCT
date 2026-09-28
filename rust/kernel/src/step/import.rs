@@ -1,9 +1,10 @@
-//! STEP bodies into the cell model (STEP-a of the STEP import track in
-//! `REVIEW_NOTES.md`). Each solid or surface-model shell becomes OCCT's shape
-//! structure, an `occt_brep::Document` built as `StepToTopoDS` builds its
-//! `TopoDS` shapes, and the `.brep` converter turns that into cells: seams
-//! merge into windings, degenerated edges into poles, and the result passes
-//! `Topology::from_parts` or is rejected with every validation issue.
+//! STEP bodies into the cell model (STEP-a and STEP-b of the STEP import
+//! track in `REVIEW_NOTES.md`). Each solid or surface-model shell becomes
+//! OCCT's shape structure, an `occt_brep::Document` built as `StepToTopoDS`
+//! builds its `TopoDS` shapes, and the `.brep` converter turns that into
+//! cells: seams merge into windings, degenerated edges into poles, and the
+//! result passes `Topology::from_parts` or is rejected with every validation
+//! issue.
 //!
 //! What STEP does not carry is supplied here: lengths in millimetres, the
 //! file's uncertainty as every entity's tolerance, and the pcurves. On a
@@ -12,9 +13,13 @@
 //! meridian is a straight segment in `(u, v)`, placed to continue the last
 //! in the universal cover, and a loop's passage through a pole gets the
 //! degenerated edge OCCT's reader adds, running the way that keeps the face
-//! on the loop's left. The validator certifies every such pcurve against
-//! its edge.
+//! on the loop's left. An ellipse that is a cylinder's plane section gets the
+//! exact sinusoid over the same cover (STEP-b). On a B-spline surface the
+//! file's own pcurve is taken (`spline.rs`), over the range where its image
+//! meets the edge's vertices. The validator certifies every such pcurve
+//! against its edge.
 use super::part21::{Exchange, Instance, Parameter};
+use super::spline;
 use super::StepError;
 use crate::occt_brep::read::{self as brep, Data, Document, EdgeRep, Kind, Orient, Shape, Sub};
 use crate::occt_brep::{self, Rejected};
@@ -117,7 +122,7 @@ const NAMES: [&str; 45] = [
 
 /// A construct the kernel cannot (yet) represent, or malformed data, by
 /// name.
-type Named<T> = Result<T, &'static str>;
+pub(super) type Named<T> = Result<T, &'static str>;
 
 /// The name reported for an instance of an unexpected type.
 fn name_of(i: &Instance) -> &'static str {
@@ -128,7 +133,7 @@ fn name_of(i: &Instance) -> &'static str {
         .unwrap_or("UnknownEntity")
 }
 
-fn real(p: &Parameter) -> Named<f64> {
+pub(super) fn real(p: &Parameter) -> Named<f64> {
     match p {
         Parameter::Real(x) => Ok(*x),
         Parameter::Integer(i) => Ok(*i as f64),
@@ -137,7 +142,7 @@ fn real(p: &Parameter) -> Named<f64> {
     }
 }
 
-fn reference(p: &Parameter) -> Named<u64> {
+pub(super) fn reference(p: &Parameter) -> Named<u64> {
     match p {
         Parameter::Reference(n) => Ok(*n),
         _ => Err("MalformedEntity"),
@@ -152,7 +157,7 @@ fn boolean(p: &Parameter) -> Named<bool> {
     }
 }
 
-fn list(p: &Parameter) -> Named<&[Parameter]> {
+pub(super) fn list(p: &Parameter) -> Named<&[Parameter]> {
     match p {
         Parameter::List(items) => Ok(items),
         _ => Err("MalformedEntity"),
@@ -352,8 +357,23 @@ fn units(x: &Exchange, contexts: &BTreeMap<u64, u64>, item: u64) -> Named<Units>
 /// A curve an edge lies on, in millimetres.
 #[derive(Debug, Clone, Copy)]
 enum Curve {
-    Line { p: [f64; 3], d: [f64; 3] },
-    Circle { axes: Axes, r: f64 },
+    Line {
+        p: [f64; 3],
+        d: [f64; 3],
+    },
+    Circle {
+        axes: Axes,
+        r: f64,
+    },
+    /// `o + a1 cos t x + a2 sin t y` (STEP-b), the semi-axes in either
+    /// order.
+    Ellipse {
+        axes: Axes,
+        a1: f64,
+        a2: f64,
+    },
+    /// A B-spline curve, the entity of its data (STEP-b).
+    BSpline(u64),
 }
 
 /// A surface a face lies on, in millimetres and radians.
@@ -451,13 +471,16 @@ impl Carrier {
 }
 
 /// A use's pcurve in the walking direction: a segment in `(u, v)`, with
-/// whether each end is at a pole.
+/// whether each end is at a pole; or, with `sinus`, the sinusoid `v = a0 +
+/// a1 cos u + a2 sin u` from `a` to `b` (an ellipse on a cylinder, STEP-b),
+/// which a shift by whole turns in `u` leaves unchanged.
 #[derive(Debug, Clone, Copy)]
 struct Segment {
     a: [f64; 2],
     b: [f64; 2],
     pole_a: bool,
     pole_b: bool,
+    sinus: Option<[f64; 3]>,
 }
 
 /// An edge record already made, by its `EDGE_CURVE`.
@@ -470,6 +493,13 @@ struct EdgeInfo {
     end: u64,
     curve: Curve,
     range: [f64; 2],
+    /// The `EDGE_CURVE`'s geometry, which may carry the file's pcurves.
+    geometry: u64,
+    /// The record's first and last points (its vertices), and whether they
+    /// are one vertex.
+    from: [f64; 3],
+    to: [f64; 3],
+    closed: bool,
 }
 
 /// One `ORIENTED_EDGE` of a loop.
@@ -481,7 +511,7 @@ struct Use {
     head: u64,
 }
 
-struct Build<'a> {
+pub(super) struct Build<'a> {
     x: &'a Exchange,
     units: Units,
     doc: Document,
@@ -498,7 +528,7 @@ fn orient(forward: bool) -> Orient {
 }
 
 impl<'a> Build<'a> {
-    fn instance(&self, n: u64) -> Named<&'a Instance> {
+    pub(super) fn instance(&self, n: u64) -> Named<&'a Instance> {
         // The reader checked every reference.
         let x: &'a Exchange = self.x;
         x.instances.get(&n).ok_or("MalformedEntity")
@@ -506,7 +536,7 @@ impl<'a> Build<'a> {
 
     /// The parameters of `n`'s record `name`, exactly `count` of them;
     /// `n`'s own name when it is another entity.
-    fn params(&self, n: u64, name: &str, count: usize) -> Named<&'a [Parameter]> {
+    pub(super) fn params(&self, n: u64, name: &str, count: usize) -> Named<&'a [Parameter]> {
         let i = self.instance(n)?;
         let r = i.record(name).ok_or_else(|| name_of(i))?;
         if r.parameters.len() == count {
@@ -529,13 +559,27 @@ impl<'a> Build<'a> {
         }
     }
 
-    fn point(&self, n: u64) -> Named<[f64; 3]> {
+    pub(super) fn point(&self, n: u64) -> Named<[f64; 3]> {
         let p = self.params(n, "CARTESIAN_POINT", 2)?;
         let [a, b, c] = list(&p[1])? else {
             return Err("MalformedEntity");
         };
         let s = self.units.length;
         self.finite([real(a)? * s, real(b)? * s, real(c)? * s])
+    }
+
+    /// A point in a surface's parameters (a pcurve's), unscaled.
+    pub(super) fn point2(&self, n: u64) -> Named<[f64; 2]> {
+        let p = self.params(n, "CARTESIAN_POINT", 2)?;
+        let [a, b] = list(&p[1])? else {
+            return Err("MalformedEntity");
+        };
+        let q = [real(a)?, real(b)?];
+        if q.iter().all(|c| c.is_finite()) {
+            Ok(q)
+        } else {
+            Err("NonFiniteGeometry")
+        }
     }
 
     fn direction(&self, n: u64) -> Named<[f64; 3]> {
@@ -609,6 +653,24 @@ impl<'a> Build<'a> {
                 },
                 false,
             ));
+        }
+        if i.record("ELLIPSE").is_some() {
+            let p = self.params(n, "ELLIPSE", 4)?;
+            let axes = self.placement(reference(&p[1])?)?;
+            return Ok((
+                Curve::Ellipse {
+                    axes,
+                    a1: self.length(&p[2])?,
+                    a2: self.length(&p[3])?,
+                },
+                false,
+            ));
+        }
+        if spline::is_curve(i) {
+            return Ok((Curve::BSpline(n), false));
+        }
+        if let Some(name) = spline::knotless(i) {
+            return Err(name);
         }
         for name in ["SURFACE_CURVE", "SEAM_CURVE"] {
             if i.record(name).is_some() {
@@ -698,7 +760,8 @@ impl<'a> Build<'a> {
         }
         let p = self.params(n, "EDGE_CURVE", 5)?;
         let (v1, v2) = (reference(&p[1])?, reference(&p[2])?);
-        let (curve, reversed) = self.curve(reference(&p[3])?, 0)?;
+        let geometry = reference(&p[3])?;
+        let (curve, reversed) = self.curve(geometry, 0)?;
         let along_basis = boolean(&p[4])? != reversed;
         let (start, end) = if along_basis { (v1, v2) } else { (v2, v1) };
         let (a, b) = (self.vertex(start)?, self.vertex(end)?);
@@ -736,6 +799,38 @@ impl<'a> Build<'a> {
                     [f, f + sweep],
                 )
             }
+            Curve::Ellipse { axes, a1, a2 } => {
+                let angle = |q: [f64; 3]| {
+                    let [x, y, _] = axes.local(q);
+                    (y / a2).atan2(x / a1)
+                };
+                let f = angle(pa);
+                let sweep = if start == end {
+                    TAU
+                } else {
+                    (angle(pb) - f).rem_euclid(TAU)
+                };
+                if sweep <= 0.0 {
+                    return Err("ZeroLengthEdge");
+                }
+                (
+                    brep::Curve3::Ellipse {
+                        p: axes.o,
+                        n: axes.z,
+                        x: axes.x,
+                        y: axes.y,
+                        major: a1,
+                        minor: a2,
+                    },
+                    [f, f + sweep],
+                )
+            }
+            Curve::BSpline(entity) => {
+                let (record, kernel) = spline::curve3(self, entity)?;
+                let range =
+                    spline::curve_range(&kernel, pa, pb, start == end, self.units.tolerance)?;
+                (brep::Curve3::BSpline(record), range)
+            }
         };
         self.doc.curves.push(record_curve);
         let rep = EdgeRep::Curve {
@@ -770,6 +865,10 @@ impl<'a> Build<'a> {
             end: v2,
             curve,
             range,
+            geometry,
+            from: pa,
+            to: pb,
+            closed: start == end,
         };
         self.edges.insert(n, info);
         Ok(info)
@@ -806,6 +905,7 @@ impl<'a> Build<'a> {
                     b: [um, v(p1)],
                     pole_a: carrier.pole(p0, tol).is_some(),
                     pole_b: carrier.pole(p1, tol).is_some(),
+                    sinus: None,
                 }
             }
             (Curve::Circle { axes, r }, _) => {
@@ -831,6 +931,7 @@ impl<'a> Build<'a> {
                         b: [u0 + du, v0],
                         pole_a: false,
                         pole_b: false,
+                        sinus: None,
                     }
                 } else if meridian {
                     // The meridian plane's longitude: the centre's on a
@@ -865,9 +966,53 @@ impl<'a> Build<'a> {
                         b: [um, v1],
                         pole_a: carrier.pole(p0, tol).is_some(),
                         pole_b: carrier.pole(p1, tol).is_some(),
+                        sinus: None,
                     }
                 } else {
                     return Err("PCurveNotDerived");
+                }
+            }
+            (Curve::Ellipse { axes, a1, a2 }, &Carrier::Cylinder(_, r)) => {
+                // The section of the cylinder by the ellipse's plane: its
+                // centre on the axis, its axes projecting onto the axis's
+                // normal plane as two perpendicular radii. Then the angle
+                // about the axis is `phi +- t` and the height the sinusoid
+                // of the plane `n . (p - c) = 0` over it.
+                let c = axis.local(axes.o);
+                let flat = |d: [f64; 3], s: f64| [s * dot(d, axis.x), s * dot(d, axis.y)];
+                let (px, py) = (flat(axes.x, a1), flat(axes.y, a2));
+                let n = [
+                    dot(axes.z, axis.x),
+                    dot(axes.z, axis.y),
+                    dot(axes.z, axis.z),
+                ];
+                let near = |x: f64, y: f64| (x - y).abs() <= 10.0 * tol;
+                if n[2].abs() <= angle_tol
+                    || !near(c[0].hypot(c[1]), 0.0)
+                    || !near(px[0].hypot(px[1]), r)
+                    || !near(py[0].hypot(py[1]), r)
+                    || !near((px[0] * py[0] + px[1] * py[1]) / r, 0.0)
+                {
+                    return Err("PCurveNotDerived");
+                }
+                let a = [
+                    (n[0] * c[0] + n[1] * c[1] + n[2] * c[2]) / n[2],
+                    -r * n[0] / n[2],
+                    -r * n[1] / n[2],
+                ];
+                let v = |u: f64| a[0] + a[1] * u.cos() + a[2] * u.sin();
+                let (sine, cosine) = f.sin_cos();
+                let p0 = std::array::from_fn(|k| {
+                    axes.o[k] + a1 * cosine * axes.x[k] + a2 * sine * axes.y[k]
+                });
+                let u0 = carrier.uv(p0)[0];
+                let u1 = u0 + n[2].signum() * (l - f);
+                Segment {
+                    a: [u0, v(u0)],
+                    b: [u1, v(u1)],
+                    pole_a: false,
+                    pole_b: false,
+                    sinus: Some(a),
                 }
             }
             _ => return Err("PCurveNotDerived"),
@@ -878,6 +1023,7 @@ impl<'a> Build<'a> {
                 b: s.a,
                 pole_a: s.pole_b,
                 pole_b: s.pole_a,
+                sinus: s.sinus,
             };
         }
         Ok(s)
@@ -927,6 +1073,9 @@ fn walk(
     degenerated
 }
 
+/// A pcurve record (1-based) and its range.
+type Placed = (usize, [f64; 2]);
+
 fn line2(doc: &mut Document, a: [f64; 2], b: [f64; 2]) -> usize {
     doc.curves2d.push(brep::Curve2::Line {
         p: a,
@@ -935,9 +1084,56 @@ fn line2(doc: &mut Document, a: [f64; 2], b: [f64; 2]) -> usize {
     doc.curves2d.len()
 }
 
+/// A use's derived pcurve over `[0, 1]`: a segment, or a sinusoid from `a`
+/// to `b` in `u`.
+fn segment2(doc: &mut Document, a: [f64; 2], b: [f64; 2], sinus: Option<[f64; 3]>) -> usize {
+    match sinus {
+        None => line2(doc, a, b),
+        Some(c) => {
+            doc.curves2d.push(brep::Curve2::Sinusoid {
+                u0: a[0],
+                du: b[0] - a[0],
+                a: c,
+            });
+            doc.curves2d.len()
+        }
+    }
+}
+
 impl<'a> Build<'a> {
-    /// A face: its surface record, its wires with the derived pcurves and
-    /// degenerated edges, its orientation in the shell (`same_sense`).
+    /// The file's pcurve of an edge geometry on the surface `surface`: the
+    /// first `PCURVE` of its `SURFACE_CURVE` or `SEAM_CURVE` (through
+    /// trimmed curves) whose basis is that surface (STEP-b).
+    fn pcurve_on(&self, geometry: u64, surface: u64) -> Named<spline::Pcurve> {
+        let mut n = geometry;
+        for _ in 0..8 {
+            let i = self.instance(n)?;
+            if i.record("TRIMMED_CURVE").is_some() {
+                n = reference(&self.params(n, "TRIMMED_CURVE", 6)?[1])?;
+                continue;
+            }
+            let Some(name) = ["SURFACE_CURVE", "SEAM_CURVE"]
+                .into_iter()
+                .find(|k| i.record(k).is_some())
+            else {
+                return Err("PCurveNotDerived");
+            };
+            for a in list(&self.params(n, name, 4)?[2])? {
+                let a = reference(a)?;
+                if self.instance(a)?.record("PCURVE").is_some()
+                    && reference(&self.params(a, "PCURVE", 3)?[1])? == surface
+                {
+                    return Ok(spline::pcurve(self, a)?.1);
+                }
+            }
+            return Err("PCurveNotDerived");
+        }
+        Err("MalformedEntity")
+    }
+
+    /// A face: its surface record, its wires with the derived pcurves (or,
+    /// on a spline surface, the file's) and degenerated edges, its
+    /// orientation in the shell (`same_sense`).
     fn face(&mut self, n: u64) -> Named<(usize, bool)> {
         let i = self.instance(n)?;
         let name = ["ADVANCED_FACE", "FACE_SURFACE"]
@@ -946,15 +1142,29 @@ impl<'a> Build<'a> {
             .ok_or_else(|| name_of(i))?;
         let p = self.params(n, name, 4)?;
         let same_sense = boolean(&p[3])?;
-        let carrier = self.surface(reference(&p[2])?)?;
-        self.doc.surfaces.push(carrier.record());
+        let surface_entity = reference(&p[2])?;
+        let si = self.instance(surface_entity)?;
+        // An elementary surface, or a spline's kernel surface (STEP-b).
+        let (carrier, spline_surface) = if spline::is_surface(si) {
+            let (record, kernel) = spline::surface(self, surface_entity)?;
+            self.doc
+                .surfaces
+                .push(brep::Surface::BSpline(Box::new(record)));
+            (None, Some(kernel))
+        } else if let Some(name) = spline::knotless(si) {
+            return Err(name);
+        } else {
+            let carrier = self.surface(surface_entity)?;
+            self.doc.surfaces.push(carrier.record());
+            (Some(carrier), None)
+        };
         let surface = self.doc.surfaces.len();
         let tol = self.units.tolerance;
         let bounds: Vec<u64> = list(&p[1])?.iter().map(reference).collect::<Named<_>>()?;
         let mut wires = Vec::new();
         // Per edge record, the pcurves of its uses in this face by stored
         // orientation (OCCT's first and second pcurve on a closed surface).
-        let mut pcurves: BTreeMap<usize, [Option<usize>; 2]> = BTreeMap::new();
+        let mut pcurves: BTreeMap<usize, [Option<Placed>; 2]> = BTreeMap::new();
         let mut uses_in_face: BTreeMap<usize, usize> = BTreeMap::new();
         let mut winds = false;
         for b in bounds {
@@ -968,7 +1178,7 @@ impl<'a> Build<'a> {
             let li = self.instance(lp)?;
             if li.record("VERTEX_LOOP").is_some() {
                 // The whole sphere or torus (ISO 10303-42), as OCCT reads it.
-                if matches!(carrier, Carrier::Sphere(..) | Carrier::Torus(..))
+                if matches!(carrier, Some(Carrier::Sphere(..) | Carrier::Torus(..)))
                     && list(&p[1])?.len() == 1
                 {
                     continue;
@@ -995,7 +1205,7 @@ impl<'a> Build<'a> {
             // Pcurves on curved surfaces, placed in the universal cover.
             let mut segments = Vec::new();
             let mut degenerated = Vec::new();
-            if !matches!(carrier, Carrier::Plane(_)) {
+            if let Some(carrier) = carrier.filter(|c| !matches!(c, Carrier::Plane(_))) {
                 for u in &uses {
                     segments.push(self.segment(&carrier, u)?);
                 }
@@ -1005,6 +1215,23 @@ impl<'a> Build<'a> {
                     && ((last[0] - first[0]).abs() > 1.0
                         || carrier.periodic_v() && (last[1] - first[1]).abs() > 1.0);
             }
+            // On a spline surface, the file's pcurves, each over the range
+            // where its image meets the edge's vertices (STEP-b).
+            let mut placed = Vec::new();
+            if let Some(kernel) = &spline_surface {
+                for u in &uses {
+                    let pcurve = self.pcurve_on(u.edge.geometry, surface_entity)?;
+                    let (from, to) = (u.edge.from, u.edge.to);
+                    placed.push(Some(spline::pcurve_range(
+                        kernel,
+                        pcurve,
+                        from,
+                        to,
+                        u.edge.closed,
+                        tol,
+                    )?));
+                }
+            }
             let mut subs = Vec::new();
             for (k, u) in uses.iter().enumerate() {
                 subs.push(Sub {
@@ -1013,9 +1240,16 @@ impl<'a> Build<'a> {
                     location: 0,
                 });
                 *uses_in_face.entry(u.edge.record).or_default() += 1;
-                if let Some(s) = segments.get(k) {
+                let made = if let Some(s) = segments.get(k) {
                     let (a, b) = if u.along { (s.a, s.b) } else { (s.b, s.a) };
-                    let c2 = line2(&mut self.doc, a, b);
+                    Some((segment2(&mut self.doc, a, b, s.sinus), [0.0, 1.0]))
+                } else if let Some((record, range)) = placed.get_mut(k).and_then(Option::take) {
+                    self.doc.curves2d.push(record);
+                    Some((self.doc.curves2d.len(), range))
+                } else {
+                    None
+                };
+                if let Some(c2) = made {
                     // BRep_Tool::CurveOnSurface: the second pcurve serves the
                     // use stored reversed in the unoriented face.
                     let stored = u.along == wire_forward;
@@ -1074,9 +1308,10 @@ impl<'a> Build<'a> {
             return Err("PeriodicFaceWithoutSeam");
         }
         for (record, slots) in pcurves {
-            let pcurves: Vec<usize> = match slots {
-                [Some(a), Some(b)] => vec![a, b],
-                [Some(a), None] | [None, Some(a)] => vec![a],
+            // Derived pcurves share `[0, 1]`; a spline face's edge has one.
+            let (pcurves, range) = match slots {
+                [Some(a), Some(b)] => (vec![a.0, b.0], a.1),
+                [Some(a), None] | [None, Some(a)] => (vec![a.0], a.1),
                 [None, None] => continue,
             };
             if let Data::Edge { reps, .. } = &mut self.doc.shapes[record].data {
@@ -1084,7 +1319,7 @@ impl<'a> Build<'a> {
                     pcurves,
                     surface,
                     location: 0,
-                    range: [0.0, 1.0],
+                    range,
                 });
             }
         }

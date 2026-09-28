@@ -24,6 +24,18 @@ pub enum Curve3 {
     /// `Geom_BSplineCurve` (record 7), or a trimmed one (record 8) read as
     /// its basis: an edge's range bounds the part it uses.
     BSpline(BSplineRecord<3>),
+    /// `P + major cos u X + minor sin u Y`: an ellipse with its semi-axes
+    /// along `x` and `y` in either order (STEP's `ELLIPSE`; STEP-b of the
+    /// STEP import track). Only the STEP translation makes it: this reader
+    /// still names ellipse records (3) `Ellipse`, unsupported.
+    Ellipse {
+        p: [f64; 3],
+        n: [f64; 3],
+        x: [f64; 3],
+        y: [f64; 3],
+        major: f64,
+        minor: f64,
+    },
     Other(&'static str),
 }
 
@@ -67,6 +79,15 @@ pub enum Curve2 {
     },
     /// `Geom2d_BSplineCurve` (record 7), or a trimmed one read as its basis.
     BSpline(BSplineRecord<2>),
+    /// `(u, a0 + a1 cos u + a2 sin u)` at `u = u0 + t du`: a plane's section
+    /// of a cylinder (S8a.2's `Curve2::Sinusoid`), which OCCT would hold as
+    /// an approximated B-spline. Only the STEP translation derives it
+    /// (STEP-b); no `.brep` record is one.
+    Sinusoid {
+        u0: f64,
+        du: f64,
+        a: [f64; 3],
+    },
     Other(&'static str),
 }
 
