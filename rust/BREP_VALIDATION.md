@@ -232,15 +232,21 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   evaluates it); an inexact end leaves it `uncertified_uv_gap`. A vertex
   loop on a spline surface is `uncertified_vertex_loop`. Mass properties
   are enclosed with every spline geometry except a periodic spline surface
-  (S4d): exactly along spline pcurves on planes; by the Green integral
-  along spline pcurves on cylinders, cones, spheres and tori; on a
-  nonrational spline surface the volume and moments exactly (their
-  integrands are tensor polynomials) and the area terms by strips; on a
-  rational one every term by strips. The Green integral and the strips are
-  first order: on the fixtures the nonrational walls' areas are enclosed
-  within 0.2–0.6%, and the rational corner's volume within 5% and its
-  inertia far more loosely (the shift to the centroid multiplies the
-  moments' widths).
+  (S4d, F8): exactly along nonrational spline pcurves on planes, and the
+  volume and moments of a nonrational spline surface exactly (their
+  integrands are tensor polynomials); everything else (rational pcurves on
+  planes, spline pcurves on cylinders, cones, spheres and tori, the area
+  terms of a nonrational spline surface and every term of a rational one)
+  by a certified eight-node Gauss–Legendre quadrature whose remainders are
+  bounded by interval Taylor series (F8, `MATHEMATICS.md`), with S4d's
+  first-order Green integrals and strips as the fallback where it cannot
+  run. On the fixtures every enclosure lies within `1e-12` of its
+  property's scale (at worst `7.6e-15` of the volume, `5.6e-15` of the
+  area, `2.3e-14` of `V^(1/3)` for the centroid and `1.6e-13` of
+  `V^(5/3)` for the inertia), where S4d's first-order enclosures were
+  0.2–0.6% on the nonrational walls' areas and 5% on the rational corner's
+  volume. Validation's orientation fluxes need signs only and keep the S4d
+  routes.
 
 ## Two arithmetic tiers
 
@@ -390,15 +396,27 @@ Evidence:
   S4d). Ten are the spline models of S4 (`spline_models()`, with OCCT
   rows for `compare_brep.py --family spline`): prisms with a spline side
   and a ruled spline wall, and a stadium with spline geometry on its
-  cylinder, with their mutations. 63 cases are valid. `brep_validation.rs`
+  cylinder, with their mutations. Three are F8's (`quadrature_models()`,
+  with OCCT rows): a narrow stadium with a spline pcurve along a cylinder's
+  parallel, and the bulge and the rounded corner with a knot in their
+  walls. 63 cases are valid. `brep_validation.rs`
   requires Rust's complete sorted issue list to equal the reference's for
-  every case. For the sixteen valid spline cases, `cell_reference.mass_properties`
+  every case. For the nineteen valid spline cases, `cell_reference.mass_properties`
   integrates volume, area, centroid and inertia by Green's theorem in UV
   with nested Gauss–Legendre quadrature of the exact surface jets
-  (`brep-spline-mass.tsv`, twenty digits; the bulge's area is its closed
-  form `40/3 + 8 + √2 + asinh 1` to all of them), and
-  `spline_mass_encloses_the_reference` requires every kernel enclosure to
-  contain them.
+  (`brep-spline-mass.tsv`, twenty digits). F8: generation integrates every
+  case again with each quadrature interval halved on the faces whose
+  integrands 24 nodes do not integrate exactly, and requires agreement
+  within `1e-20` of each property's scale (the bulge's area differs by
+  `1.9e-22` relative, the rest by `1e-30` or less), and the bulges' volume
+  and area to equal their closed forms `20/3` and `40/3 + 8 + √2 + asinh 1`
+  to the same bound. `spline_mass_encloses_the_reference` requires every
+  kernel enclosure to contain the reference within that bound and the
+  rounding of the printed digits, and to be within `1e-12` of its
+  property's scale; `spline_parallels_integrate_as_their_lines` writes the
+  parallels of a cone, a sphere zone and two tori as degree-1 spline
+  pcurves and requires the quadrature's enclosures to overlap the closed
+  forms' along the lines, as narrowly.
 * The existing prism suites (`invariants`, `occt_regression`, `modeling`)
   build every solid through the new validator.
 
@@ -557,17 +575,25 @@ record was needed. The slowest Linux native case took 0.007 seconds.
 `compare_brep.py --family spline` runs the ten spline models of S4 against
 their pre-implementation captures: the S4a rows (statuses, counts,
 tolerances and deviations) and the S4d `BRepGProp` rows
-(`occt-spline-properties`), both reproduced on every run. It has 7 matches
+(`occt-spline-properties`), both reproduced on every run; and the three
+models of F8 against theirs (`occt-spline-quadrature-preimplementation`,
+all four rows, captured before the certified quadrature). It has 10 matches
 and 3 reviewed differences: `spline_c0_bulge` (BRepCheck has no continuity
 status; the kernel reports the C0 knot), and the two shifted pcurves (the
 edge's `InvalidCurveOnSurface` makes `BRepCheck_Analyzer` skip the wire
 checks and mark the face `UnorientableShape`, and `Closed2d` accepts the
-gaps under its 1% rule, as for the prism shifts). For the five models
+gaps under its 1% rule, as for the prism shifts). For the eight models
 valid on both sides, the kernel's enclosures are at least OCCT's measured
 deviations and at most its tolerances, and its certified volume, area,
 centroid and inertia contain `BRepGProp`'s values within OCCT's error
 estimate plus `1e-8` relative: OCCT's area of `spline_bulge` is `1.7e-9`
-relative from the closed form while it estimates `2e-16`.
+relative from the closed form while it estimates `2e-16`. With F8 the
+kernel's absolute widths there are `7e-15`–`1.2e-13` for volumes and areas
+and at most `4.1e-12` for the inertia's entries, so OCCT's own integration error, not the
+kernel's enclosure, is what the allowance absorbs. The sheet bridge allows
+the bulge's lone spline wall (`sheet_spline_wall`) `2e-8` of its row's
+scale for the same reason: OCCT's area is `1.8e-8` relative above the
+closed form `√2 + asinh 1`, and its centre `4.6e-9` off.
 
 ## Acceptance
 

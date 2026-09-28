@@ -44,7 +44,7 @@ fn complete_issue_sets_match_the_independent_oracle() {
         checked += 1;
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
-    assert_eq!((checked, valid), (expected.len(), 78));
+    assert_eq!((checked, valid), (expected.len(), 81));
 }
 
 /// Measured enclosures (M5) of every valid case: never below the reference's
@@ -135,7 +135,7 @@ fn measured_enclosures_lie_between_the_reference_gap_and_its_declared_bound() {
         }
     }
     assert_eq!(compared, lows.values().map(Vec::len).sum::<usize>());
-    assert_eq!(lows.len(), 78);
+    assert_eq!(lows.len(), 81);
     // The gaps moved half the resolution compare without the allowance
     // mattering: a vertex, a cap fin, and a side fin with its face.
     assert!(strict >= 4, "{strict}");
@@ -168,44 +168,145 @@ fn spline_pcurves_on_planes_integrate() {
 
 /// Every valid spline case's certified mass enclosure (S4d) contains the
 /// independent reference's quadrature (`brep-spline-mass.tsv`): volume,
-/// area, centroid and the inertia about it.
+/// area, centroid and the inertia about it. The reference agrees with
+/// itself on halved pieces within `1e-20` of each property's scale
+/// (`generate_brep_fixtures.spline_mass`), so the only slack is that and
+/// the rounding of its twenty printed digits.
+///
+/// F8: every enclosure's width is within `1e-12` of its property's scale,
+/// the analytic family's (the first-order enclosures of S4d were 2e-3 to 5e-3
+/// on nonrational walls' areas and 5e-2 to 0.6 on the rational corner):
+/// the volume and area relative to themselves, the centroid to the body's
+/// length `L = V^(1/3)` (plus the rounding of its world coordinates), the
+/// inertia to `V L^2`.
 #[test]
 fn spline_mass_encloses_the_reference() {
-    let cases = include_str!("../../fixtures/brep-cases.txt");
     let mut checked = 0;
+    let mut worst = [0.0_f64; 4];
     for line in include_str!("../../fixtures/brep-spline-mass.tsv")
         .lines()
         .skip(1)
     {
         let (name, values) = line.split_once('\t').unwrap();
         let want: Vec<f64> = values.split(' ').map(|x| x.parse().unwrap()).collect();
-        let block = cases
-            .split("\nend")
-            .find(|b| b.trim().lines().next() == Some(&format!("case {name}")))
-            .unwrap();
-        let (_, tolerance, parts) = parse(block.trim());
-        let t = rusty_occt::topology::Topology::from_parts(
-            parts,
-            Tolerance::new(tolerance, 1e-12).unwrap(),
-        )
-        .expect("a valid case");
-        let m = t
+        let m = topology_of(name)
             .mass_enclosure()
             .unwrap_or_else(|| panic!("{name}: integrated"));
         let mut got = vec![m.volume, m.surface_area];
         got.extend(m.centroid);
         got.extend(m.inertia.iter().flatten().copied());
         assert_eq!(got.len(), want.len(), "{name}");
+        // Volume, area, centroid, inertia: the reference's scale of each.
+        let group = |k: usize| match k {
+            0 => 0..1,
+            1 => 1..2,
+            2..=4 => 2..5,
+            _ => 5..14,
+        };
+        let scale = |k: usize| want[group(k)].iter().fold(0.0_f64, |a, x| a.max(x.abs()));
         for (k, ([lo, hi], x)) in got.iter().zip(&want).enumerate() {
-            let slack = 1e-12 * x.abs().max(1.0);
+            let slack = 1e-20 * scale(k) + 4.0 * f64::EPSILON * x.abs() + 1e-25;
             assert!(
                 lo - slack <= *x && *x <= hi + slack,
                 "{name} value {k}: {x} outside [{lo}, {hi}]"
             );
         }
+        let length = want[0].cbrt();
+        let relative = |k: usize| {
+            let [lo, hi] = got[k];
+            let (width, x) = (hi - lo, want[k].abs());
+            match k {
+                0 | 1 => width / x,
+                2..=4 => (width - 8.0 * f64::EPSILON * x).max(0.0) / length,
+                _ => width / (want[0] * length * length),
+            }
+        };
+        for (k, w) in (0..14).map(|k| (k, relative(k))) {
+            let kind = [0, 1, 2, 2, 2, 3][k.min(5)];
+            worst[kind] = worst[kind].max(w);
+            assert!(w <= 1e-12, "{name} value {k}: relative width {w:e}");
+        }
         checked += 1;
     }
-    assert_eq!(checked, 16);
+    assert_eq!(checked, 19);
+    eprintln!(
+        "relative widths: volume {:.1e}, area {:.1e}, centroid {:.1e}, inertia {:.1e}",
+        worst[0], worst[1], worst[2], worst[3]
+    );
+}
+
+/// F8: a parallel of a cone, sphere or torus written as a degree-1 spline
+/// pcurve bounds the same face as the line it replaces (both are linear in
+/// the fraction), so the mass enclosures along the spline, by the certified
+/// quadrature of `F(u, v) du`, overlap the closed forms' along the line and
+/// are as narrow (within `1e-12` of each property's scale). The spline's
+/// use is certified by Taylor bounds, which need a coarser enclosure than
+/// the line's harmonic one: the case runs at tolerance `1e-4`.
+#[test]
+fn spline_parallels_integrate_as_their_lines() {
+    for name in [
+        "cone_frustum",
+        "sphere_zone",
+        "torus_segment",
+        "torus_outer_half",
+    ] {
+        let block = include_str!("../../fixtures/brep-cases.txt")
+            .split("\nend")
+            .find(|b| b.trim().lines().next() == Some(&format!("case {name}")))
+            .unwrap()
+            .trim();
+        let mut replaced = 0;
+        let text: Vec<String> = block
+            .lines()
+            .map(|line| {
+                let w: Vec<&str> = line.split_whitespace().collect();
+                if line.starts_with("tolerance") {
+                    return "tolerance 0.0001".to_string();
+                }
+                // A use `u e S line u0 v0 u1 v1 enc x` along a parallel.
+                if w.len() == 10 && w[0] == "u" && w[3] == "line" && w[5] == w[7] {
+                    replaced += 1;
+                    let poles = w[4..8].join(" ");
+                    return format!(
+                        "u {} {} bspline 1 0 2 0.0 1.0 2 2 2 {poles} 1.0 1.0 enc 1e-5",
+                        w[1], w[2]
+                    );
+                }
+                line.to_string()
+            })
+            .collect();
+        assert!(replaced > 0, "{name}");
+        let (_, tolerance, parts) = parse(&text.join("\n"));
+        let spline = rusty_occt::topology::Topology::from_parts(
+            parts,
+            Tolerance::new(tolerance, 1e-12).unwrap(),
+        )
+        .unwrap_or_else(|issues| panic!("{name}: {issues:?}"))
+        .mass_enclosure()
+        .expect("integrated");
+        let line = topology_of(name).mass_enclosure().expect("integrated");
+        let pair = |m: &rusty_occt::topology::MassEnclosure| {
+            let mut out = vec![m.volume, m.surface_area];
+            out.extend(m.centroid);
+            out.extend(m.inertia.iter().flatten().copied());
+            out
+        };
+        let volume = line.volume[1];
+        let length = volume.cbrt();
+        for (k, ([a, b], [c, d])) in pair(&spline).into_iter().zip(pair(&line)).enumerate() {
+            assert!(
+                a <= d && c <= b,
+                "{name} value {k}: [{a}, {b}] and [{c}, {d}]"
+            );
+            let scale = match k {
+                0 => volume,
+                1 => line.surface_area[1],
+                2..=4 => length,
+                _ => volume * length * length,
+            };
+            assert!(b - a <= 1e-12 * scale, "{name} value {k}: width {}", b - a);
+        }
+    }
 }
 
 fn topology_of(name: &str) -> rusty_occt::topology::Topology {
@@ -231,13 +332,17 @@ fn classes_match_the_independent_reference() {
         assert_eq!(topology_of(name).class().name(), class, "{name}");
         checked += 1;
     }
-    assert_eq!(checked, 78);
+    assert_eq!(checked, 81);
 }
 
 /// S6: each valid sheet's, wire's and acorn's certified area or length and
 /// centre contains OCCT's `BRepGProp` value from the pre-implementation
 /// capture, up to `1e-9` of the row's largest magnitude (OCCT's own
-/// integration error; the circle's centre is `7e-15` off its origin).
+/// integration error; the circle's centre is `7e-15` off its origin). F8:
+/// the bulge's spline wall is now enclosed to `1e-15` around its closed
+/// form `√2 + asinh 1`, and OCCT's area is `1.8e-8` relative above it (its
+/// centre `4.6e-9` off), so that row allows `2e-8`, as S4d allows `1e-8`
+/// for the bulge's total area.
 #[test]
 fn sheet_and_wire_measures_contain_the_native_properties() {
     let mut checked = 0;
@@ -262,7 +367,12 @@ fn sheet_and_wire_measures_contain_the_native_properties() {
         let m = t
             .measure_enclosure()
             .unwrap_or_else(|| panic!("{name}: measured"));
-        let slack = 1e-9 * want.iter().fold(1.0_f64, |a, x| a.max(x.abs()));
+        let relative = if name == "sheet_spline_wall" {
+            2e-8
+        } else {
+            1e-9
+        };
+        let slack = relative * want.iter().fold(1.0_f64, |a, x| a.max(x.abs()));
         for (k, ([lo, hi], x)) in std::iter::once(m.measure)
             .chain(m.centre)
             .zip(&want)

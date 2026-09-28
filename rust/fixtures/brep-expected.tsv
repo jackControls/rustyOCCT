@@ -169,3 +169,6 @@ acorn_point
 sheet_square_vertex_moved	vertex_off_curve:edge 0 start;vertex_off_curve:edge 3 end
 sheet_open_box_pcurve_shift	pcurve_off_edge:use 0.0.0;uv_gap:use 0.0.0;uv_gap:use 0.0.3
 wire_disconnected	disconnected_shell:shell 0;unused_edge:edge 1;unused_edge:edge 3
+spline_stadium_parallel	
+spline_bulge_split_wall	
+spline_rounded_corner_split_wall	

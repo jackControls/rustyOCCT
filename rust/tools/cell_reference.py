@@ -1236,8 +1236,11 @@ def _surface_jet(s, u, v, interval):
 
 
 def _upper(v):
-    """An upper bound of the norm of a vector of intervals."""
-    return mp.sqrt(sum(max(abs(x.a), abs(x.b))**2 for x in v))
+    """An upper bound of the norm of a vector of intervals (the squares'
+    sum taken from the endpoints' magnitudes, then rounded up: an interval
+    sum of squares of wide intervals has no single square root)."""
+    total = mp.fsum(max(abs(mp.mpf(x.a)), abs(mp.mpf(x.b)))**2 for x in v)
+    return mp.sqrt(total)*(1+mp.mpf(2)**-100)
 
 
 def taylor_deviation(curve, s, p, forward, tol):
@@ -1329,14 +1332,34 @@ def spline_face_flux(c, f):
     return total
 
 
-def face_mass_terms(c, f, ref):
+def polynomial_face(c, f):
+    """Whether every integrand of `face_mass_terms` on the face is a
+    polynomial of degree below 48 along each quadrature, so that 24
+    Gauss-Legendre nodes integrate it exactly: a plane whose pcurves are
+    lines and nonrational splines (the integrands have degree at most 5 in
+    (u, v), the splines degree at most 3)."""
+    if not isinstance(f.surface, Plane):
+        return False
+    for lid in f.loops:
+        for k in c.loops[lid].fins:
+            p = c.fins[k].pcurve
+            if isinstance(p, BSpline2):
+                if len(set(p.weights)) > 1 or p.basis.degree > 3:
+                    return False
+            elif not isinstance(p, Line2):
+                return False
+    return True
+
+
+def face_mass_terms(c, f, ref, split=1):
     """The fourteen mass integrals of a face relative to `ref`, in the
     kernel's order (volume, first moments, second moments, mixed moments
     xy, yz, zx, |N| and the face centre's three p|N|), by Green's theorem
     in UV with nested Gauss-Legendre quadrature of the exact surface jets:
     G(u, v) = integral of the integrands in v from the domain's start (0 on
     an analytic surface, broken at knots on a spline one), then -loop
-    integral of G du. None where the kernel's route has no counterpart
+    integral of G du, with every quadrature interval cut into `split` equal
+    parts. None where the kernel's route has no counterpart
     here: a periodic spline surface, a loop winding in v, a face whose
     windings do not cancel, an arc pcurve on a curved surface."""
     s = f.surface
@@ -1372,7 +1395,7 @@ def face_mass_terms(c, f, ref):
         points = [x for x in cuts if x < v]+[v] if v >= cuts[0] else [cuts[0], v]
         total = [mp.mpf(0)]*14
         for a, b in zip(points, points[1:]):
-            part = gauss_terms(lambda w: density(u, w), a, b)
+            part = gauss_terms(lambda w: density(u, w), a, b, split)
             total = [x+y for x, y in zip(total, part)]
         return total
 
@@ -1398,20 +1421,22 @@ def face_mass_terms(c, f, ref):
                         a = mp.mpf(p.start)+mp.mpf(p.sweep)*t
                         du = -p.radius*mp.sin(a)*p.sweep
                     return [-x*du for x in G(q[0], q[1])]
-                part = gauss_terms(integrand, mp_of(t0), mp_of(t1))
+                part = gauss_terms(integrand, mp_of(t0), mp_of(t1), split)
                 total = [x+y for x, y in zip(total, part)]
         for a0, b0 in chords:
             if b0[0] != a0[0]:
                 part = gauss_terms(lambda t: [-x*(b0[0]-a0[0]) for x in
-                                              G(a0[0]+(b0[0]-a0[0])*t, a0[1]+(b0[1]-a0[1])*t)], 0, 1)
+                                              G(a0[0]+(b0[0]-a0[0])*t, a0[1]+(b0[1]-a0[1])*t)], 0, 1, split)
                 total = [x+y for x, y in zip(total, part)]
     return total
 
 
-def mass_properties(c):
+def mass_properties(c, terms_of=None):
     """Volume, surface area, centroid and the inertia matrix about it
     (products of inertia negated, as OCCT's MatrixOfInertia) of the solid
-    regions, from `face_mass_terms`; None when a face is not integrated."""
+    regions, from `face_mass_terms` (or `terms_of(c, face, ref)`); None when
+    a face is not integrated."""
+    terms_of = terms_of or face_mass_terms
     ref = c.vertices[0] if c.vertices else (0.0, 0.0, 0.0)
     region = [mp.mpf(0)]*10
     area = mp.mpf(0)
@@ -1421,7 +1446,7 @@ def mass_properties(c):
             continue
         for si in r.shells:
             for fi, side in c.shells[si].sides:
-                terms = face_mass_terms(c, c.faces[fi], ref)
+                terms = terms_of(c, c.faces[fi], ref)
                 if terms is None:
                     return None
                 sign = 1 if side == 'F' else -1
@@ -1440,12 +1465,20 @@ def mass_properties(c):
             'inertia': inertia}
 
 
-def gauss_terms(f, a, b):
-    """`gauss` of a vector-valued integrand."""
+def gauss_terms(f, a, b, split=1):
+    """`gauss` of a vector-valued integrand, on `split` equal parts of
+    [a, b]."""
     nodes = _gauss_nodes(mp.mp.prec)
-    half, mid = (mp.mpf(b)-mp.mpf(a))/2, (mp.mpf(b)+mp.mpf(a))/2
-    values = [f(mid+half*x) for x, _ in nodes]
-    return [half*mp.fsum(w*v[k] for (_, w), v in zip(nodes, values)) for k in range(len(values[0]))]
+    a, b = mp.mpf(a), mp.mpf(b)
+    total = None
+    for k in range(split):
+        lo = a if k == 0 else a+(b-a)*k/split
+        hi = b if k == split-1 else a+(b-a)*(k+1)/split
+        half, mid = (hi-lo)/2, (hi+lo)/2
+        values = [f(mid+half*x) for x, _ in nodes]
+        part = [half*mp.fsum(w*v[i] for (_, w), v in zip(nodes, values)) for i in range(len(values[0]))]
+        total = part if total is None else [x+y for x, y in zip(total, part)]
+    return total
 
 
 def gauss(f, a, b):
@@ -1571,13 +1604,13 @@ def face_flux(c, f):
     s = f.surface
     if isinstance(s, BSplineSurface):
         return spline_face_flux(c, f)
-    # On an analytic curved surface the kernel integrates a spline pcurve
-    # only on a cylinder and only at constant u (it adds nothing there).
+    # On an analytic curved surface the reference integrates a spline pcurve
+    # only on a cylinder (constant u adds nothing; F8's parallel does).
     if not isinstance(s, Plane):
         for lid in f.loops:
             for k in c.loops[lid].fins:
                 p = c.fins[k].pcurve
-                if isinstance(p, BSpline2) and (not isinstance(s, Cylinder) or len({q[0] for q in p.poles}) > 1):
+                if isinstance(p, BSpline2) and not isinstance(s, Cylinder):
                     return None
     o, x, y, n = axes(s.frame)
     if isinstance(s, Cone):

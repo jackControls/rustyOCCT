@@ -736,7 +736,14 @@ tolerances on the 21 cases valid on both sides. See
 `compare_brep.py --family spline` does the same for the spline models, and
 also requires the kernel's mass enclosures to contain `BRepGProp`'s
 properties, captured before any kernel code integrated spline surfaces
-(7 matches, 3 reviewed differences).
+(10 matches, 3 reviewed differences; the three F8 models captured before
+the certified quadrature). The allowance is OCCT's error estimate plus
+`1e-8` relative, and `2e-8` for the sheet bridge's lone spline wall: F8's
+enclosures are within `1e-12` of each property's scale, so it absorbs
+OCCT's own integration error (`1.7e-9` on the bulge's area, `1.8e-8` on
+its wall's), not the kernel's width. Against the independent reference
+the spline masses allow `1e-20` of each property's scale, the reference's
+own verified quadrature error.
 
 ## OCCT `.brep` interop
 

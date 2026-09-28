@@ -1179,11 +1179,13 @@ fn shifted(p: &Curve2, d: f64) -> Curve2 {
 
 /// Mutation 32 (S4b-d): a valid spline fixture (spline prisms by exact
 /// composition, a stadium with spline geometry on its cylinder by Taylor
-/// enclosures), moved exactly, is valid, and its certified volume and
+/// enclosures), moved exactly, is valid, and its certified volume, area and
 /// centroid contain the independent reference's, moved; then one mutation
-/// with its predicted issues. The rational corner is too slow here under
-/// AddressSanitizer (seconds per input); the fixture
-/// `spline_rounded_corner_far` pins the far, small case this found.
+/// with its predicted issues. The fixture `spline_rounded_corner_far` pins
+/// the far, small case this found. F8: the rational corner, out while its
+/// first-order enclosures took seconds per input under AddressSanitizer,
+/// integrates by the certified quadrature as fast as the bulge and is back,
+/// with the knotted walls and the stadium's spline parallel.
 fn spline_prism(b: &mut Bytes) {
     let text = include_str!("../../fixtures/brep-cases.txt");
     let names = [
@@ -1191,6 +1193,10 @@ fn spline_prism(b: &mut Bytes) {
         "case spline_cubic_bulge",
         "case spline_stadium_pcurve",
         "case spline_stadium_edge",
+        "case spline_rounded_corner",
+        "case spline_stadium_parallel",
+        "case spline_bulge_split_wall",
+        "case spline_rounded_corner_split_wall",
     ];
     let blocks: Vec<&str> = text
         .split("\nend")
@@ -1224,6 +1230,12 @@ fn spline_prism(b: &mut Bytes) {
         "{name}: {:?} {}",
         m.volume,
         want[0] * s.powi(3)
+    );
+    assert!(
+        inside(m.surface_area, want[1] * s * s, s * s * want[1]),
+        "{name}: {:?} {}",
+        m.surface_area,
+        want[1] * s * s
     );
     for k in 0..3 {
         let c = want[2 + k] * s + t[k];

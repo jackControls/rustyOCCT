@@ -242,8 +242,14 @@ fn locate<'a, T: Real>(patches: &'a [Patch<T>], points: &[(R, R)]) -> Option<&'a
 
 /// `-∫ G dū` along one piece in one patch, for every integrand. The piece
 /// is homogeneous `(U, V, W)` in global `(u, v)`, as exact Bernstein
-/// coordinates.
-fn piece_integrals<T: Real>(patch: &Patch<T>, uv: &[Bern<T>; 3], uniform: bool) -> Option<Vec<T>> {
+/// coordinates. With `high`, a rational piece is integrated by the certified
+/// quadrature (F8) where it applies.
+fn piece_integrals<T: Real>(
+    patch: &Patch<T>,
+    uv: &[Bern<T>; 3],
+    uniform: bool,
+    high: bool,
+) -> Option<Vec<T>> {
     let [[u0, u1], [v0, v1]] = &patch.domain;
     let [pu, pv, pw] = uv;
     let local = |x: &Bern<T>, lo: &R, hi: &R| {
@@ -278,7 +284,13 @@ fn piece_integrals<T: Real>(patch: &Patch<T>, uv: &[Bern<T>; 3], uniform: bool) 
             let (m, n) = (g.len() - 1, g[0].len() - 1);
             let k = composed(g, &bases_u[&m], &bases_v[&n]);
             let integrand: Bern<T> = product(&k, &du).iter().map(|x| x.neg()).collect();
-            quotient_integral(&integrand, pw, (m + n + 2) as i32, uniform)
+            let power = (m + n + 2) as i32;
+            if high && !uniform {
+                if let Some(x) = super::quadrature::quotient_integral(&integrand, pw, power) {
+                    return Some(x);
+                }
+            }
+            quotient_integral(&integrand, pw, power, uniform)
         })
         .collect()
 }
@@ -292,11 +304,13 @@ fn add_all<T: Real>(total: &mut Option<Vec<T>>, values: Vec<T>) {
 
 /// `-∮ G dū` of the integrands `integrands(patch)` over a face on a
 /// nonrational, nonperiodic spline surface, exactly up to the tier's
-/// rounding, or `None` when a piece does not lie in one patch.
+/// rounding (with `high`, rational pcurve pieces by the certified
+/// quadrature), or `None` when a piece does not lie in one patch.
 fn exact_green<T: Real>(
     surface: &BSplineSurface3,
     loops: &[Lp],
     integrands: &dyn Fn(&ExactBezierSurface3) -> Vec<Tensor<T>>,
+    high: bool,
 ) -> Option<Vec<T>> {
     if surface.is_rational() || surface.u_knots().is_periodic() || surface.v_knots().is_periodic() {
         return None;
@@ -365,7 +379,7 @@ fn exact_green<T: Real>(
                 let patch = locate(&patches, &points)?;
                 let uniform = piece[3].iter().all(|x| *x == piece[3][0]);
                 let uv = [lift(&piece[0]), lift(&piece[1]), lift(&piece[3])];
-                add_all(&mut total, piece_integrals(patch, &uv, uniform)?);
+                add_all(&mut total, piece_integrals(patch, &uv, uniform, high)?);
             }
         }
         // Chords closing the loop's gaps: their ends must certainly share a
@@ -384,7 +398,7 @@ fn exact_green<T: Real>(
                 vec![a[1].clone(), b[1].clone()],
                 one,
             ];
-            add_all(&mut total, piece_integrals(patch, &uv, true)?);
+            add_all(&mut total, piece_integrals(patch, &uv, true, high)?);
         }
     }
     let count = patches.first()?.g.len();
@@ -398,7 +412,7 @@ pub(super) fn spline_face_flux<T: Real>(
     loops: &[Lp],
     origin: &[T; 3],
 ) -> Option<T> {
-    exact_green(surface, loops, &|q| flux_integrand(q, origin))?.pop()
+    exact_green(surface, loops, &|q| flux_integrand(q, origin), false)?.pop()
 }
 
 /// Strips of the `v` domain for the enclosed flux.
@@ -539,7 +553,8 @@ fn cross<T: Real>(a: &[T; 3], b: &[T; 3]) -> [T; 3] {
 /// The fourteen mass integrals of a face on a nonperiodic spline surface
 /// relative to `origin` (S4d): on a nonrational surface whose pieces each
 /// lie in one patch, the ten volume and moment terms exactly and the four
-/// with `|N|` by strips; otherwise all fourteen by strips.
+/// with `|N|` by the certified quadrature (F8); otherwise all fourteen by
+/// the quadrature. Where it cannot run, the strips.
 pub(super) fn spline_face_integrals<T: Real>(
     surface: &BSplineSurface3,
     loops: &[Lp],
@@ -556,11 +571,14 @@ pub(super) fn spline_face_integrals<T: Real>(
             values[10..].to_vec()
         })
     };
-    if let Some(mut exact) = exact_green(surface, loops, &|q| moment_integrands(q, origin)) {
-        exact.extend(enclosed_green(surface, loops, origin, 4, &|jet| {
-            terms(jet, false)
-        })?);
+    use super::quadrature::spline_face;
+    if let Some(mut exact) = exact_green(surface, loops, &|q| moment_integrands(q, origin), true) {
+        exact.extend(
+            spline_face(surface, loops, origin, false)
+                .or_else(|| enclosed_green(surface, loops, origin, 4, &|jet| terms(jet, false)))?,
+        );
         return Some(exact);
     }
-    enclosed_green(surface, loops, origin, 14, &|jet| terms(jet, true))
+    spline_face(surface, loops, origin, true)
+        .or_else(|| enclosed_green(surface, loops, origin, 14, &|jet| terms(jet, true)))
 }

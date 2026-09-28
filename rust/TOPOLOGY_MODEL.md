@@ -749,7 +749,9 @@ interop.
   not certified.
 * **Mass properties.** Enclosed with every spline geometry but a periodic
   spline surface (S4d): exact volume and moments on nonrational spline
-  surfaces, first-order enclosures (strips, Green integrals) for areas, for
+  surfaces; since F8 certified Gauss–Legendre quadrature within `1e-12` of
+  each property's scale on the fixtures (first-order strips and Green
+  integrals only as a fallback) for areas, for
   rational surfaces and along spline pcurves on curved surfaces.
 * **Interop.** The reader takes curve record 7, 2D curve record 7 and
   surface record 9; a trimmed curve (record 8) whose basis is a line,

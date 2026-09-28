@@ -1,0 +1,21 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "rust_revision": "b960b1a4f8ac23f1c23d6e89afff84bee8a9967d",
+  "platform": "darwin",
+  "rust_quadrature_exists": false,
+  "rust_worktree_uncommitted": [
+    " M rust/fixtures/brep-cases.txt",
+    " M rust/fixtures/brep-classes.tsv",
+    " M rust/fixtures/brep-enclosure-lows.tsv",
+    " M rust/fixtures/brep-expected.tsv",
+    " M rust/fixtures/brep-spline-mass.tsv",
+    " M rust/tools/cell_reference.py",
+    " M rust/tools/compare_brep.py",
+    " M rust/tools/generate_brep_fixtures.py",
+    "?? rust/fixtures/occt-spline-quadrature-preimplementation/"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "c5fe7300956cab9334834667e27f4f6af5e6ae5ed2e9b7bf2cccdc264be88716",
+  "probe_source_sha256": "92131a5c210e5ec55e8950e8662d99b23dc7b6e66c32802c59eb3cfd9b9fd584",
+  "observations_sha256": "149b36693c92bae3b968922b6888496276d746e1d3a3783a5f9260cd5f9a70e7"
+}

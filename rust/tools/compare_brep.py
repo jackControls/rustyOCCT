@@ -40,6 +40,9 @@ SPLINES = ROOT/'rust/fixtures/occt-spline-preimplementation'
 # S4d: BRepGProp properties of the spline models, captured before any kernel
 # code integrates a spline surface or a spline pcurve on a cylinder or cone.
 PROPERTIES = ROOT/'rust/fixtures/occt-spline-properties'
+# F8: native observations of the spline models added for the certified
+# quadrature, captured before the kernel integrates them by it.
+QUADRATURE = ROOT/'rust/fixtures/occt-spline-quadrature-preimplementation'
 # S6: native observations of sheets, closed shells without a solid, wires
 # and an acorn, captured before any kernel code accepts them.
 SHEETS = ROOT/'rust/fixtures/occt-sheet-preimplementation'
@@ -78,6 +81,12 @@ def native_rows():
 def spline_rows():
     """The same for the spline models (S4)."""
     return [(m, *reference.native(m)) for m in generate_brep_fixtures.spline_models()]
+
+
+@functools.lru_cache(maxsize=None)
+def quadrature_rows():
+    """The same for the spline models of the certified quadrature (F8)."""
+    return [(m, *reference.native(m)) for m in generate_brep_fixtures.quadrature_models()]
 
 
 def sheet_rows():
@@ -241,6 +250,66 @@ def properties_capture(observed):
         allowance = (1e-9+max(was['volume_error'], was['area_error']))*scale
         if any(abs(a-b) > allowance for a, b in zip(flat(was), flat(now))):
             raise ValueError('native properties of '+name+' differ from the capture')
+
+
+def capture_quadrature(executable, env, oracle_source, sdk_manifest):
+    """Record every native row of the F8 models, properties included, before
+    the kernel integrates them by the certified quadrature."""
+    rows = []
+    for m, text, _ in quadrature_rows():
+        record = run(executable, text, dict(env, BREP_ORACLE_PROPERTIES='1'))
+        lines = record['stdout'].splitlines()
+        if record['exit_code'] != 0 or len(lines) != 4:
+            raise ValueError('native quadrature capture failed for '+m.name+': '+record['stderr'])
+        decode_tolerances(lines[2], m.name)
+        decode_properties(lines[3], m.name)
+        rows.extend(lines)
+    QUADRATURE.mkdir(parents=True, exist_ok=True)
+    (QUADRATURE/'inputs.txt').write_text('\n'.join(text for _, text, _ in quadrature_rows())+'\n')
+    (QUADRATURE/'native.txt').write_text('\n'.join(rows)+'\n')
+    (QUADRATURE/'oracle.cpp').write_text(oracle_source.read_text())
+    status = subprocess.run(['git', 'status', '--porcelain', '--', 'rust'], cwd=ROOT, text=True,
+                            capture_output=True, check=True).stdout.splitlines()
+    revision = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True, capture_output=True,
+                              check=True).stdout.strip()
+    write(QUADRATURE/'capture.json', {
+        'source_reference': SOURCE, 'rust_revision': revision, 'platform': sys.platform,
+        'rust_quadrature_exists': False, 'rust_worktree_uncommitted': status,
+        'sdk_manifest_sha256': digest(sdk_manifest), 'input_sha256': digest(QUADRATURE/'inputs.txt'),
+        'probe_source_sha256': digest(QUADRATURE/'oracle.cpp'),
+        'observations_sha256': digest(QUADRATURE/'native.txt')})
+
+
+def quadrature_capture(observed):
+    """The F8 observations are unchanged and reproduce: statuses and counts
+    exactly, tolerances as for M5, properties within 1e-9 relative or OCCT's
+    own error estimate (as the S4d capture)."""
+    metadata = json.loads((QUADRATURE/'capture.json').read_text())
+    if (metadata['source_reference'] != SOURCE or metadata['rust_quadrature_exists']
+            or any(line[3:].startswith('rust/kernel') for line in metadata['rust_worktree_uncommitted'])):
+        raise ValueError('quadrature capture was not a clean pre-implementation reference')
+    for key, name in [('input_sha256', 'inputs.txt'), ('probe_source_sha256', 'oracle.cpp'),
+                      ('observations_sha256', 'native.txt')]:
+        if metadata[key] != digest(QUADRATURE/name):
+            raise ValueError('quadrature evidence changed: '+name)
+    same_inputs((QUADRATURE/'inputs.txt').read_text(),
+                '\n'.join(text for _, text, _ in quadrature_rows())+'\n')
+    lines = (QUADRATURE/'native.txt').read_text().splitlines()
+    sizes = {m.name: case_size(m) for m, _, _ in quadrature_rows()}
+    for k in range(0, len(lines), 4):
+        name = lines[k].split()[0]
+        now = observed.get(name)
+        if now is None or now[:2] != lines[k:k+2]:
+            raise ValueError('native quadrature observations of '+name+' differ from the capture')
+        if not same_tolerances(decode_tolerances(lines[k+2], name), decode_tolerances(now[2], name),
+                               sizes[name]*2.0**-46):
+            raise ValueError('native quadrature tolerance observations of '+name+' differ from the capture')
+        was, got = decode_properties(lines[k+3], name), decode_properties(now[3], name)
+        flat = lambda p: [p['volume'], p['area'], *p['centre'], *sum(p['inertia'], [])]
+        scale = max(abs(x) for x in flat(was)) or 1.0
+        allowance = (1e-9+max(was['volume_error'], was['area_error']))*scale
+        if any(abs(a-b) > allowance for a, b in zip(flat(was), flat(got))):
+            raise ValueError('native quadrature properties of '+name+' differ from the capture')
 
 
 def spline_capture(observed):
@@ -476,11 +545,15 @@ def rust_measures():
     return out
 
 
-def measure_differences(enclosure, native):
+def measure_differences(enclosure, native, name=''):
     """S6: the certified area or length and centre contain OCCT's
     `BRepGProp` values up to 1e-9 of the row's largest magnitude (OCCT's
-    integration error; its circle centre is 7e-15 off the origin)."""
-    allowance = 1e-9*max([1.0]+[abs(x) for x in native])
+    integration error; its circle centre is 7e-15 off the origin). F8: the
+    bulge's spline wall is enclosed to 1e-15 around its closed form
+    sqrt 2 + asinh 1, where OCCT's area is 1.8e-8 relative above it (its
+    centre 4.6e-9 off): that row allows 2e-8."""
+    relative = 2e-8 if name == 'sheet_spline_wall' else 1e-9
+    allowance = relative*max([1.0]+[abs(x) for x in native])
     labels = ['measure', 'cx', 'cy', 'cz']
     return [label for label, (lo, hi), x in zip(labels, enclosure, native)
             if not lo-allowance <= x <= hi+allowance]
@@ -567,6 +640,8 @@ def main():
                         help='record the S4a spline observations (before implementation only)')
     parser.add_argument('--capture-properties', action='store_true',
                         help='record the S4d spline properties (before implementation only)')
+    parser.add_argument('--capture-quadrature', action='store_true',
+                        help='record the F8 spline models (before the certified quadrature only)')
     args = parser.parse_args()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -589,7 +664,7 @@ def main():
     enclosures = rust_enclosures()
     masses = rust_masses()
     kernel_measures = rust_measures()
-    cases = spline_rows() if spline else sheet_rows() if sheet else native_rows()
+    cases = spline_rows()+quadrature_rows() if spline else sheet_rows() if sheet else native_rows()
     executable, env, loaded, command = build(prefix, output, cases[0][1])
     if args.capture_splines:
         capture_splines(executable, env, SOURCE_FILE, args.sdk_manifest)
@@ -599,9 +674,13 @@ def main():
         capture_properties(executable, env, SOURCE_FILE, args.sdk_manifest)
         print('captured', len(cases), 'properties rows')
         return
+    if args.capture_quadrature:
+        capture_quadrature(executable, env, SOURCE_FILE, args.sdk_manifest)
+        print('captured', len(quadrature_rows()), 'quadrature cases')
+        return
     if spline:
         env = dict(env, BREP_ORACLE_PROPERTIES='1')
-    properties, measures = {}, {}
+    properties, properties_row, measures = {}, {}, {}
     if args.capture_enclosures:
         capture_enclosures(executable, env, SOURCE_FILE, args.sdk_manifest)
         print('captured', len(cases), 'tolerance rows')
@@ -634,7 +713,8 @@ def main():
             if spline:
                 if len(rows) != 4:
                     raise ValueError(f'malformed native output for {m.name}')
-                properties[m.name] = decode_properties(rows.pop(), m.name)
+                properties_row[m.name] = rows.pop()
+                properties[m.name] = decode_properties(properties_row[m.name], m.name)
             if sheet:
                 if len(rows) != 4:
                     raise ValueError(f'malformed native output for {m.name}')
@@ -667,7 +747,7 @@ def main():
                 report['failures'].append({'case': m.name, 'reason': ' '.join(found), 'detail': detail})
             if sheet:
                 kind, measured = kernel_measures[m.name]
-                found = (measure_differences(measured, measures[m.name]) if measured
+                found = (measure_differences(measured, measures[m.name], m.name) if measured
                          else ['not measured'])
                 report['measures_compared'] += 1
                 report['measure_classes'][m.name] = kind
@@ -703,7 +783,10 @@ def main():
     # side does.
     if spline:
         spline_capture(native_lines)
-        properties_capture(properties)
+        original = {m.name for m, _, _ in spline_rows()}
+        properties_capture({k: v for k, v in properties.items() if k in original})
+        quadrature_capture({name: native_lines[name]+[properties_row[name]]
+                            for name in native_lines if name not in original})
         report['properties_rows_reproduced'] = len(properties)
     elif sheet:
         sheet_capture(native_lines)

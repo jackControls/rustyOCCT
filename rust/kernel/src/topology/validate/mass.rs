@@ -18,6 +18,7 @@
 //! vanishes, so the pole needs no term of its own; on any other face it
 //! starts at `v = 0`, since a nearly cylindrical cone's far apex would make
 //! the terms of a band's two loops cancel.
+use super::quadrature::{AlongPcurve, Num};
 use super::*;
 
 /// Integrands, per face: the volume term, the three first moments, the six
@@ -271,6 +272,133 @@ fn rev_eval<T: Real>(f: &Rev<T>, u: &T, v: &T) -> T {
         );
     }
     total
+}
+
+/// Every `F` of `fs` at `(u, v)`, sharing their monomials: the integrands
+/// of the certified quadrature (F8) along spline pcurves on planes.
+fn planar_series<T: Real, N: Num<T>>(fs: &[Planar<T>], u: &N, v: &N) -> Vec<N> {
+    let mut monomials: BTreeMap<(u8, u8), N> = BTreeMap::new();
+    fs.iter()
+        .map(|f| {
+            f.iter().fold(u.lift(&c(0.0)), |acc, ((i, j), x)| {
+                let m = monomials
+                    .entry((*i, *j))
+                    .or_insert_with(|| u.powi(*i).mul(&v.powi(*j)));
+                acc.add(&m.scale(x))
+            })
+        })
+        .collect()
+}
+
+/// `sum of c v^k cos^a u sin^b u` of every `F` of `fs` at `(u, v)`.
+fn rev_series<T: Real, N: Num<T>>(fs: &[Rev<T>], u: &N, v: &N) -> Vec<N> {
+    let (co, si) = u.cos_sin();
+    let mut monomials: BTreeMap<(u8, u8, u8), N> = BTreeMap::new();
+    fs.iter()
+        .map(|f| {
+            f.iter().fold(u.lift(&c(0.0)), |acc, ((k, a, b), x)| {
+                let m = monomials
+                    .entry((*k, *a, *b))
+                    .or_insert_with(|| v.powi(*k).mul(&co.powi(*a)).mul(&si.powi(*b)));
+                acc.add(&m.scale(x))
+            })
+        })
+        .collect()
+}
+
+/// `integral from lower to v of cos^p sin^q` at `v`, from the exact Fourier
+/// expansion (as `trig_integral`).
+fn trig_series<T: Real, N: Num<T>>(cos_power: u8, sin_power: u8, lower: &T, v: &N) -> Option<N> {
+    let mut total = v.lift(&c(0.0));
+    for &(f, alpha, beta) in fourier(cos_power, sin_power).iter() {
+        if f == 0 {
+            total = total.add(&v.shift(&lower.neg()).scale(&c(alpha)));
+            continue;
+        }
+        let g = c::<T>(f as f64);
+        let (c0, s0) = T::cos_sin(&lower.mul(&g));
+        let (c1, s1) = v.scale(&g).cos_sin();
+        let cos_part = s1.shift(&s0.neg()).scale(&c(alpha));
+        let sin_part = c1.neg().shift(&c0).scale(&c(beta));
+        total = total.add(&cos_part.add(&sin_part).scale(&c::<T>(1.0).div(&g)?));
+    }
+    Some(total)
+}
+
+/// `F(u, v) = integral from lower to v of f dv` of every `f` of `fs` (a
+/// sphere's or torus's integrands) at `(u, v)`.
+fn sph_series<T: Real, N: Num<T>>(fs: &[Sph<T>], u: &N, v: &N, lower: &T) -> Option<Vec<N>> {
+    let (co, si) = u.cos_sin();
+    let mut along_u: BTreeMap<(u8, u8), N> = BTreeMap::new();
+    let mut along_v: BTreeMap<(u8, u8), N> = BTreeMap::new();
+    let mut out = Vec::with_capacity(fs.len());
+    for f in fs {
+        let mut total = u.lift(&c(0.0));
+        for ((a, b, cc, d), x) in f {
+            let tv = match along_v.entry((*cc, *d)) {
+                std::collections::btree_map::Entry::Occupied(e) => e.into_mut(),
+                std::collections::btree_map::Entry::Vacant(e) => {
+                    e.insert(trig_series(*cc, *d, lower, v)?)
+                }
+            };
+            let tu = along_u
+                .entry((*a, *b))
+                .or_insert_with(|| co.powi(*a).mul(&si.powi(*b)));
+            total = total.add(&tu.mul(tv).scale(x));
+        }
+        out.push(total);
+    }
+    Some(out)
+}
+
+/// The antiderivatives along a spline pcurve, for the certified quadrature
+/// (F8): on a plane, a cylinder or cone, a sphere or torus (from `lower`).
+enum Along<'a, T> {
+    Plane(&'a [Planar<T>]),
+    Revolution(&'a [Rev<T>]),
+    Trigonometric(&'a [Sph<T>], T),
+}
+
+impl<T: Real> AlongPcurve<T> for Along<'_, T> {
+    fn at<N: Num<T>>(&self, u: &N, v: &N) -> Option<Vec<N>> {
+        match self {
+            Along::Plane(fs) => Some(planar_series(fs, u, v)),
+            Along::Revolution(fs) => Some(rev_series(fs, u, v)),
+            Along::Trigonometric(fs, lower) => sph_series(fs, u, v, lower),
+        }
+    }
+}
+
+fn zero_about() -> [R; 2] {
+    [R::from_integer(0.into()), R::from_integer(0.into())]
+}
+
+/// `-integral of F du` of every `F` along a spline pcurve translated by
+/// `-about`, by the certified quadrature (F8), or `None` where it cannot run.
+fn along_spline<T: Real>(
+    along: &Along<T>,
+    count: usize,
+    curve: &crate::topology::SplineSpan<crate::BSplineCurve2>,
+    about: &[R; 2],
+) -> Option<Vec<T>> {
+    let values = super::quadrature::pcurve_integrals(curve, about, count, along)?;
+    Some(values.iter().map(|x| x.neg()).collect())
+}
+
+/// `-integral of F du` of every `F` of `fs` along a rational spline pcurve on
+/// a plane, relative to `about`, by the certified quadrature (F8); `None`
+/// for a nonrational one (exact by `planar_spline`) or where the rule cannot
+/// run.
+fn planar_quadrature<T: Real>(
+    fs: &[Planar<T>],
+    curve: &crate::topology::SplineSpan<crate::BSplineCurve2>,
+    about: &[R; 2],
+) -> Option<Vec<T>> {
+    let weights = curve.curve().as_curve3().weights();
+    if weights.iter().all(|w| *w == weights[0]) {
+        return None;
+    }
+    along_spline(&Along::Plane(fs), fs.len(), curve, about)
 }
 
 /// The fourteen integrands from the position `p` relative to the reference,
@@ -799,7 +927,9 @@ fn torus_terms<T: Real>(fr: &FrameV<T>, major: f64, minor: f64, d: &V3<T>) -> [S
 /// parallel contributes nothing). No edge loops: the whole surface, bounded
 /// on the cover by the north pole's line (a sphere) or by both periods (a
 /// torus).
-fn trig_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>], relative: bool) -> Option<Vec<T>> {
+/// `mass` for mass moments rather than a sign: F8's quadrature on spline
+/// pcurves and widths relative to each moment on projections (S8d.2).
+fn trig_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>], mass: bool) -> Option<Vec<T>> {
     let torus = matches!(face.surface, Surface::Torus { .. });
     let turns: i32 = loops.iter().map(|lp| lp.winding).sum();
     let wound_u = loops.iter().any(|lp| lp.winding != 0);
@@ -876,7 +1006,7 @@ fn trig_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>], relative: bool) 
                     let values = super::projection::integrate_along_many::<T>(
                         pr,
                         fs.len(),
-                        relative,
+                        mass,
                         &|uu, v, du, _| {
                             Some(
                                 sph_antiderivative_jets(fs, uu, v, &lower)?
@@ -890,8 +1020,17 @@ fn trig_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>], relative: bool) 
                     continue;
                 }
                 // -∫ F(u, v) du along a spline, F each integrand's
-                // antiderivative in v from `lower`, enclosed (S4d).
+                // antiderivative in v from `lower`: by the certified
+                // quadrature for mass properties (F8), else enclosed (S4d).
                 Curve2::BSpline(spline) => {
+                    let along = Along::Trigonometric(fs, lower.clone());
+                    let quadrature = mass
+                        .then(|| along_spline(&along, fs.len(), spline, &zero_about()))
+                        .flatten();
+                    if let Some(values) = quadrature {
+                        accumulate(values);
+                        continue;
+                    }
                     let mut values = Vec::with_capacity(fs.len());
                     for f in fs {
                         let g = |uu: &T, v: &T| sph_antiderivative(f, uu, v, &lower);
@@ -965,7 +1104,7 @@ pub(super) fn sphere_flux<T: Real>(face: &Face, loops: &[Lp], origin: &V3<T>) ->
     };
     // S.N = 3 times the volume integrand.
     let flux = scaled(&terms[0], &c(3.0));
-    // A sign decision: the width absolute.
+    // A sign decision.
     trig_face(face, loops, &[flux], false)?.pop()
 }
 
@@ -1038,6 +1177,14 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
                         )?;
                         accumulate(values.try_into().ok()?);
                         continue;
+                    }
+                    // A rational spline pcurve by the certified quadrature
+                    // (F8), where it runs.
+                    if let Curve2::BSpline(spline) = &u.pcurve {
+                        if let Some(values) = planar_quadrature(&anti, spline, &o) {
+                            accumulate(values.try_into().ok()?);
+                            continue;
+                        }
                     }
                     let values: [Option<T>; TERMS] = std::array::from_fn(|k| match &u.pcurve {
                         Curve2::LineSegment { start, end } => {
@@ -1164,15 +1311,26 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
                         Curve2::LineSegment { start, end } => {
                             rev_lines(&anti, &[c(start.x), c(start.y)], &[c(end.x), c(end.y)])?
                         }
-                        // -∫ F(u, v) du along a spline, enclosed (S4d).
+                        // -∫ F(u, v) du along a spline: by the certified
+                        // quadrature (F8), else enclosed (S4d).
                         Curve2::BSpline(spline) => {
-                            let g = |uu: &T, v: &T| {
-                                Some(anti.iter().map(|f| rev_eval(f, uu, v)).collect())
-                            };
-                            super::bernstein::green_integrals(spline, super::SPLINE_DEPTH, &g)?
-                                .iter()
-                                .map(|x| x.neg())
-                                .collect()
+                            let along = Along::Revolution(&anti);
+                            match along_spline(&along, anti.len(), spline, &zero_about()) {
+                                Some(values) => values,
+                                None => {
+                                    let g = |uu: &T, v: &T| {
+                                        Some(anti.iter().map(|f| rev_eval(f, uu, v)).collect())
+                                    };
+                                    super::bernstein::green_integrals(
+                                        spline,
+                                        super::SPLINE_DEPTH,
+                                        &g,
+                                    )?
+                                    .iter()
+                                    .map(|x| x.neg())
+                                    .collect()
+                                }
+                            }
                         }
                         Curve2::Sinusoid { start, sweep, a } => {
                             rev_sinusoid(&anti, *start, *sweep, a)?

@@ -29,6 +29,7 @@ mod bernstein;
 mod continuity;
 mod mass;
 mod projection;
+mod quadrature;
 pub(crate) use projection::{conic_point_fast, projection_range};
 mod spline_deviation;
 mod spline_flux;
