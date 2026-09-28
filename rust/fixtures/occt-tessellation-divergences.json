@@ -1,5 +1,5 @@
 {
-  "note": "Reviewed BRepMesh_IncrementalMesh differences from the tessellation contract and the exact-boundary reference (T-a).",
+  "note": "Reviewed BRepMesh_IncrementalMesh differences from the tessellation contract and the exact-boundary reference (T-a, and T-b's spline family).",
   "reviews": [
     {
       "case": "cone_apex/coarse",
@@ -174,6 +174,43 @@
       ],
       "reason": "BRepMesh_IncrementalMesh exceeds the requested absolute deflection 0.008: the largest distance of its triangles from the face's surface is 0.0354, and its own Poly_Triangulation::Deflection records 0.0354, which states the excess. Its control (BRepMesh_DelaunayDeflectionControlMeshAlgo) samples each triangle's centre and its links' middles and inserts nodes for at most 11 passes; the deviation left after the last pass, or on boundary links it does not split, is recorded, not refined. Its triangles then lie more than twice the request from the face itself (off_face), by the same excess.",
       "independent_evidence": "The independent reference samples every triangle at 12 barycentric points and measures the exact distance from the face's whole surface (closed form, from the case alone): 0.0354; the probe's own ElSLib projection gives 0.0354. The kernel's mesh of the same body and setting (10678 triangles against OCCT's 4430) passes every check of the reference with a certified bound of 0.008.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "spline_dome/coarse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepMesh_IncrementalMesh",
+      "native_sha256": "975547381d1fef97ddf994e9a900eadd5fef77a35faae6cbcea38572397bc1d6",
+      "differences": [
+        "occt_deflection_understated"
+      ],
+      "reason": "BRepMesh_IncrementalMesh stays within the requested absolute deflection 0.03 (its largest distance from the dome's spline surface is 0.02986), but its own Poly_Triangulation::Deflection records 0.02829, less than that distance: the recorded value comes from its control's samples (each triangle's centre and its links' middles), not from the whole triangle, so it understates the mesh's deflection on the spline surface.",
+      "independent_evidence": "The independent reference samples every triangle at 12 barycentric points and measures the distance from the face's whole surface by projection onto the exact Bezier patches of the spline graph (from the case alone): 0.02986, beside a recorded 0.02829; the probe's own GeomAPI_ProjectPointOnSurf gives 0.02986. The kernel's mesh of the same body and setting (248 triangles against OCCT's 48) passes every check of the reference with a certified bound of 0.02939.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "spline_dome/fine",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepMesh_IncrementalMesh",
+      "native_sha256": "a3809496225604762c056bd09c83addaa08fd31db75f9881dee3e8a68f3ece9c",
+      "differences": [
+        "occt_deflection_exceeded",
+        "occt_deflection_understated"
+      ],
+      "reason": "BRepMesh_IncrementalMesh exceeds the requested absolute deflection 0.003 on the dome's spline top: the largest distance of its triangles from the surface is 0.00385, and its own Poly_Triangulation::Deflection records 0.00377, which also understates it. Its control (BRepMesh_DelaunayDeflectionControlMeshAlgo) samples each triangle's centre and its links' middles and inserts nodes for at most 11 passes; the deviation left is recorded, not refined, and the record is a sample, not a bound.",
+      "independent_evidence": "The independent reference samples every triangle at 12 barycentric points and measures the distance from the face's whole surface by projection onto the exact Bezier patches of the spline graph (from the case alone): 0.00385; the probe's own GeomAPI_ProjectPointOnSurf gives 0.00385. The kernel's mesh of the same body and setting (1410 triangles against OCCT's 774) passes every check of the reference with a certified bound of 0.002985.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "sheet_spline_hole/fine",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepMesh_IncrementalMesh",
+      "native_sha256": "14a5dca4ac8b88b06948377fb15b39bc5867dab8a31b896c0fa080836995a1d1",
+      "differences": [
+        "occt_deflection_exceeded"
+      ],
+      "reason": "BRepMesh_IncrementalMesh exceeds the requested absolute deflection 0.005375 on the trimmed bicubic sheet: the largest distance of its triangles from the surface is 0.00630, which its own Poly_Triangulation::Deflection (0.00752) states. Its control samples each triangle's centre and its links' middles for at most 11 passes and records the deviation left.",
+      "independent_evidence": "The independent reference samples every triangle at 12 barycentric points and measures the distance from the sheet's whole surface by projection onto its exact Bezier patches (from the case alone): 0.00630; the probe's own GeomAPI_ProjectPointOnSurf gives 0.00630. The kernel's mesh of the same body and setting (1612 triangles against OCCT's 941) passes every check of the reference with a certified bound of 0.005363.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     }
   ]

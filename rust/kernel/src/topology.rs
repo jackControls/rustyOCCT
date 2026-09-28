@@ -29,7 +29,7 @@ use crate::{
 use std::collections::BTreeMap;
 use std::f64::consts::TAU;
 
-mod validate;
+pub(crate) mod validate;
 pub use validate::{EdgeEnd, Entity, Issue, IssueKind};
 
 macro_rules! index_type {

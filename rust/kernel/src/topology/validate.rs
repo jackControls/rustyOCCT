@@ -25,7 +25,7 @@ use std::f64::consts::TAU;
 use std::fmt;
 
 mod bernstein;
-mod continuity;
+pub(crate) mod continuity;
 mod mass;
 mod spline_deviation;
 mod spline_flux;

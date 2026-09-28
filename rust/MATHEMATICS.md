@@ -1961,6 +1961,52 @@ by at most `(M_u U + M_v V)/μ` along any path in the triangle, as in T-a.
 The analytic surfaces' tangential correction and fan map rely on their
 structure (`S_uv` parallel to `S_u`, poles) and are not used.
 
+**Numerators (implementation).** The first measurements (the fixtures'
+rational quarter-circle wall at 34 times BRepMesh's nodes, 811 against 24,
+and their sharp rational corner at 7,900 times, 354,559 against 45) showed
+the quotient rule's triangle inequality and `|m_u|` losing to
+cancellations the exact expressions keep. Three sharper
+certificates are kept beside the ones above, the smallest bound winning;
+each works on Bernstein polynomials of the cell (products, differences and
+derivatives of enclosed coefficients in the tier, a polynomial bounded by
+its largest coefficient):
+
+* *Rational cells* (degrees at most 6 for curves, 3 for surfaces). `C' =
+  N_1 / w²`, `C'' = N_2 / w³` with `N_1 = A' w - A w'`,
+  `N_2 = (A'' w - A w'') w - 2 w' N_1`, so `|C'| <= max |N_1| / ω²` and
+  `|C''| <= max |N_2| / ω³`; for a surface `S_u = N_u / w²`,
+  `S_uu = ((A_uu w - A w_uu) w - 2 w_u N_u) / w³`,
+  `S_uv = ((A_uv w + A_u w_v - A_v w_u - A w_uv) w - 2 w_v N_u) / w³` and
+  `S_vv` likewise. On a ruled rational wall `A_uv w - A_v w_u` vanishes
+  identically, and so does its enclosure, up to rounding.
+* *Normal cones* (surface cells of degrees at most 6, rational ones at most
+  3). `M = A_u × A_v` (nonrational) or `M = N_u × N_v` (rational) is a
+  positive multiple of `S_u × S_v`, `w²` or `w⁴` times it in the cell's own
+  parameters. With its value `o` at the cell's middle as axis, if every
+  coefficient `M_k` has `M_k · o > 0`, every normal of the cell lies in the
+  cone of half-angle `α = atan max_k |M_k × o| / (M_k · o)` (a positive
+  combination of vectors in a convex cone stays in it), and
+  `|M| >= min_k M_k · o / |o|`. Over a triangle's box, with `d` the normal
+  at its centre, each normal is within `β_c + α_c` of `d` (`β_c` the angle
+  between `d` and a cell's axis), so any two within twice the largest; and
+  `|S_u × S_v| >= |M| / w_max^e`.
+* *Rates.* Pointwise `|N_u| = |M × M_u| / |M|²` for any positive multiple
+  `M` (the tangential part of `M_u` cancels in the cross product, and so
+  does the derivative of the multiple), so on a cell
+  `|N_u| <= max |M × M_u| / (min |M|)²` from the coefficients of the
+  polynomial `M × M_u` (surface degrees at most 4, rational at most 2); a
+  triangle's box takes the largest over its cells. For an edge the same
+  holds with `N` a multiple of `C'` (`A'`, or `N_1`): the tangent turns
+  over a cell's part `[τ_a, τ_b]` by at most
+  `max |N × N'| (τ_b - τ_a) / μ²`, `μ` the enclosed `|N|` at the part's
+  middle less `max |N'| (τ_b - τ_a)`, summed over the cells a segment
+  meets.
+
+A cell's multiple `M` depends on its parameter lengths (`L_u L_v` in its
+own parameters) and on the weights; each cell's ratio is formed with its
+own `M` before the largest is taken, so no two cells' multiples are
+compared.
+
 **Counts.** An edge on a spline face needs, for each boundary segment with
 parameter extents `Δu`, `Δv` between its pcurve's nodes,
 `(a Δu² + 2 b Δu Δv + c Δv²)/8 <= 0.45 δ` and
