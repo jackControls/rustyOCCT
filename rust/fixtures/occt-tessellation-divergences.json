@@ -175,6 +175,130 @@
       "reason": "BRepMesh_IncrementalMesh exceeds the requested absolute deflection 0.008: the largest distance of its triangles from the face's surface is 0.0354, and its own Poly_Triangulation::Deflection records 0.0354, which states the excess. Its control (BRepMesh_DelaunayDeflectionControlMeshAlgo) samples each triangle's centre and its links' middles and inserts nodes for at most 11 passes; the deviation left after the last pass, or on boundary links it does not split, is recorded, not refined. Its triangles then lie more than twice the request from the face itself (off_face), by the same excess.",
       "independent_evidence": "The independent reference samples every triangle at 12 barycentric points and measures the exact distance from the face's whole surface (closed form, from the case alone): 0.0354; the probe's own ElSLib projection gives 0.0354. The kernel's mesh of the same body and setting (10678 triangles against OCCT's 4430) passes every check of the reference with a certified bound of 0.008.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "cone_apex/coarse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepMesh_IncrementalMesh",
+      "native_sha256": "e97f89c9a07082893e2999616d71ff2554f28ebaa02645e1fcfcd5f87e88c7f3",
+      "differences": [
+        "occt_degenerate_triangles"
+      ],
+      "reason": "BRepMesh_IncrementalMesh exceeds the requested absolute deflection 0.03: the largest distance of its triangles from the face's surface is 0.0451, and its own Poly_Triangulation::Deflection records 0.0542, which states the excess. Its control (BRepMesh_DelaunayDeflectionControlMeshAlgo) samples each triangle's centre and its links' middles and inserts nodes for at most 11 passes; the deviation left after the last pass, or on boundary links it does not split, is recorded, not refined. BRepMesh discretizes the degenerated edge at an apex or pole into several nodes of the pole line in the face's parameter space, all at one point in space, and leaves 1 triangle(s) with two of them; joined through the edge's polygon (as the edge's own vertex), such a triangle has two equal nodes and no area. The kernel has no degenerated edge (D4): the pole is one node, and its fan triangles are certified by their fan map. On Linux this row shows only occt_degenerate_triangles: the others macOS showed come from nodes BRepMesh places differently there.",
+      "independent_evidence": "The independent reference samples every triangle at 12 barycentric points and measures the exact distance from the face's whole surface (closed form, from the case alone): 0.0451; the probe's own ElSLib projection gives 0.0451. The kernel's mesh of the same body and setting (54 triangles against OCCT's 163) passes every check of the reference with a certified bound of 0.0126. The probe joins every node of a degenerated edge's Poly_PolygonOnTriangulation with the edge's vertex; 1 triangle(s) of the face keep two joined nodes. The mesh is otherwise closed and oriented after the join, and the reference's checks of the remaining triangles pass.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; BRepMesh places a few nodes differently from macOS (the platform record), with the differences listed"
+    },
+    {
+      "case": "cone_apex/fine",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepMesh_IncrementalMesh",
+      "native_sha256": "363e3bcc8198254702e8b1a1b895cb0eb9dd8bdcff775d8f4f4b03ca00df928f",
+      "differences": [
+        "occt_degenerate_triangles"
+      ],
+      "reason": "BRepMesh discretizes the degenerated edge at an apex or pole into several nodes of the pole line in the face's parameter space, all at one point in space, and leaves 1 triangle(s) with two of them; joined through the edge's polygon (as the edge's own vertex), such a triangle has two equal nodes and no area. The kernel has no degenerated edge (D4): the pole is one node, and its fan triangles are certified by their fan map.",
+      "independent_evidence": "The probe joins every node of a degenerated edge's Poly_PolygonOnTriangulation with the edge's vertex; 1 triangle(s) of the face keep two joined nodes. The mesh is otherwise closed and oriented after the join, and the reference's checks of the remaining triangles pass.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; BRepMesh places a few nodes differently from macOS (the platform record), with the differences listed"
+    },
+    {
+      "case": "cone_inverted/coarse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepMesh_IncrementalMesh",
+      "native_sha256": "67a0189733dab77e322036fd6de27f016ce736d519613c41aaf523185400046e",
+      "differences": [
+        "occt_degenerate_triangles"
+      ],
+      "reason": "BRepMesh discretizes the degenerated edge at an apex or pole into several nodes of the pole line in the face's parameter space, all at one point in space, and leaves 1 triangle(s) with two of them; joined through the edge's polygon (as the edge's own vertex), such a triangle has two equal nodes and no area. The kernel has no degenerated edge (D4): the pole is one node, and its fan triangles are certified by their fan map.",
+      "independent_evidence": "The probe joins every node of a degenerated edge's Poly_PolygonOnTriangulation with the edge's vertex; 1 triangle(s) of the face keep two joined nodes. The mesh is otherwise closed and oriented after the join, and the reference's checks of the remaining triangles pass.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; BRepMesh places a few nodes differently from macOS (the platform record), with the differences listed"
+    },
+    {
+      "case": "cone_inverted/fine",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepMesh_IncrementalMesh",
+      "native_sha256": "17b457b06493835512208684e1dd45c3261036c151b7636df42c61a1f5fb1741",
+      "differences": [
+        "occt_degenerate_triangles"
+      ],
+      "reason": "BRepMesh discretizes the degenerated edge at an apex or pole into several nodes of the pole line in the face's parameter space, all at one point in space, and leaves 1 triangle(s) with two of them; joined through the edge's polygon (as the edge's own vertex), such a triangle has two equal nodes and no area. The kernel has no degenerated edge (D4): the pole is one node, and its fan triangles are certified by their fan map.",
+      "independent_evidence": "The probe joins every node of a degenerated edge's Poly_PolygonOnTriangulation with the edge's vertex; 1 triangle(s) of the face keep two joined nodes. The mesh is otherwise closed and oriented after the join, and the reference's checks of the remaining triangles pass.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; BRepMesh places a few nodes differently from macOS (the platform record), with the differences listed"
+    },
+    {
+      "case": "sphere/coarse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepMesh_IncrementalMesh",
+      "native_sha256": "f59068cb360d45adf0bdd982eeecbe13da84d43f5d7d87abc162f50b183ec1cd",
+      "differences": [
+        "occt_degenerate_triangles"
+      ],
+      "reason": "BRepMesh discretizes the degenerated edge at an apex or pole into several nodes of the pole line in the face's parameter space, all at one point in space, and leaves 2 triangle(s) with two of them; joined through the edge's polygon (as the edge's own vertex), such a triangle has two equal nodes and no area. The kernel has no degenerated edge (D4): the pole is one node, and its fan triangles are certified by their fan map.",
+      "independent_evidence": "The probe joins every node of a degenerated edge's Poly_PolygonOnTriangulation with the edge's vertex; 2 triangle(s) of the face keep two joined nodes. The mesh is otherwise closed and oriented after the join, and the reference's checks of the remaining triangles pass.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; BRepMesh places a few nodes differently from macOS (the platform record), with the differences listed"
+    },
+    {
+      "case": "sphere/fine",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepMesh_IncrementalMesh",
+      "native_sha256": "9518f68b90c5513e57546d7326c6db50fa5f9cded2d98a6131c6582cba2f19b4",
+      "differences": [
+        "occt_deflection_exceeded",
+        "occt_off_face",
+        "occt_degenerate_triangles"
+      ],
+      "reason": "BRepMesh_IncrementalMesh exceeds the requested absolute deflection 0.005: the largest distance of its triangles from the face's surface is 0.0103, and its own Poly_Triangulation::Deflection records 0.0103, which states the excess. Its control (BRepMesh_DelaunayDeflectionControlMeshAlgo) samples each triangle's centre and its links' middles and inserts nodes for at most 11 passes; the deviation left after the last pass, or on boundary links it does not split, is recorded, not refined. Its triangles then lie more than twice the request from the face itself (off_face), by the same excess. BRepMesh discretizes the degenerated edge at an apex or pole into several nodes of the pole line in the face's parameter space, all at one point in space, and leaves 2 triangle(s) with two of them; joined through the edge's polygon (as the edge's own vertex), such a triangle has two equal nodes and no area. The kernel has no degenerated edge (D4): the pole is one node, and its fan triangles are certified by their fan map.",
+      "independent_evidence": "The independent reference samples every triangle at 12 barycentric points and measures the exact distance from the face's whole surface (closed form, from the case alone): 0.0103; the probe's own ElSLib projection gives 0.0103. The kernel's mesh of the same body and setting (10920 triangles against OCCT's 10108) passes every check of the reference with a certified bound of 0.00458. The probe joins every node of a degenerated edge's Poly_PolygonOnTriangulation with the edge's vertex; 2 triangle(s) of the face keep two joined nodes. The mesh is otherwise closed and oriented after the join, and the reference's checks of the remaining triangles pass.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; BRepMesh places a few nodes differently from macOS (the platform record), with the differences listed"
+    },
+    {
+      "case": "hemisphere/coarse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepMesh_IncrementalMesh",
+      "native_sha256": "15b302cfa1f7ebfe0c1ba48d9b45f733359b3022b00fc5d077a5076b7f367d0c",
+      "differences": [
+        "occt_degenerate_triangles"
+      ],
+      "reason": "BRepMesh discretizes the degenerated edge at an apex or pole into several nodes of the pole line in the face's parameter space, all at one point in space, and leaves 1 triangle(s) with two of them; joined through the edge's polygon (as the edge's own vertex), such a triangle has two equal nodes and no area. The kernel has no degenerated edge (D4): the pole is one node, and its fan triangles are certified by their fan map.",
+      "independent_evidence": "The probe joins every node of a degenerated edge's Poly_PolygonOnTriangulation with the edge's vertex; 1 triangle(s) of the face keep two joined nodes. The mesh is otherwise closed and oriented after the join, and the reference's checks of the remaining triangles pass.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; BRepMesh places a few nodes differently from macOS (the platform record), with the differences listed"
+    },
+    {
+      "case": "sphere_far/coarse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepMesh_IncrementalMesh",
+      "native_sha256": "5f528d27e1a17bd2b10a92545ece139a66107bca6cb7fff4ee6535a5e1832d77",
+      "differences": [
+        "occt_degenerate_triangles"
+      ],
+      "reason": "BRepMesh discretizes the degenerated edge at an apex or pole into several nodes of the pole line in the face's parameter space, all at one point in space, and leaves 2 triangle(s) with two of them; joined through the edge's polygon (as the edge's own vertex), such a triangle has two equal nodes and no area. The kernel has no degenerated edge (D4): the pole is one node, and its fan triangles are certified by their fan map.",
+      "independent_evidence": "The probe joins every node of a degenerated edge's Poly_PolygonOnTriangulation with the edge's vertex; 2 triangle(s) of the face keep two joined nodes. The mesh is otherwise closed and oriented after the join, and the reference's checks of the remaining triangles pass.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; BRepMesh places a few nodes differently from macOS (the platform record), with the differences listed"
+    },
+    {
+      "case": "sphere_far/fine",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepMesh_IncrementalMesh",
+      "native_sha256": "2a1568eddd1e5613fc3db07001415cf7a67d5ad8a561e1821883a6cc19d8f904",
+      "differences": [
+        "occt_deflection_exceeded",
+        "occt_off_face",
+        "occt_degenerate_triangles"
+      ],
+      "reason": "BRepMesh_IncrementalMesh exceeds the requested absolute deflection 0.002: the largest distance of its triangles from the face's surface is 0.00412, and its own Poly_Triangulation::Deflection records 0.00413, which states the excess. Its control (BRepMesh_DelaunayDeflectionControlMeshAlgo) samples each triangle's centre and its links' middles and inserts nodes for at most 11 passes; the deviation left after the last pass, or on boundary links it does not split, is recorded, not refined. Its triangles then lie more than twice the request from the face itself (off_face), by the same excess. BRepMesh discretizes the degenerated edge at an apex or pole into several nodes of the pole line in the face's parameter space, all at one point in space, and leaves 2 triangle(s) with two of them; joined through the edge's polygon (as the edge's own vertex), such a triangle has two equal nodes and no area. The kernel has no degenerated edge (D4): the pole is one node, and its fan triangles are certified by their fan map.",
+      "independent_evidence": "The independent reference samples every triangle at 12 barycentric points and measures the exact distance from the face's whole surface (closed form, from the case alone): 0.00412; the probe's own ElSLib projection gives 0.00412. The kernel's mesh of the same body and setting (10920 triangles against OCCT's 10108) passes every check of the reference with a certified bound of 0.00183. The probe joins every node of a degenerated edge's Poly_PolygonOnTriangulation with the edge's vertex; 2 triangle(s) of the face keep two joined nodes. The mesh is otherwise closed and oriented after the join, and the reference's checks of the remaining triangles pass.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; BRepMesh places a few nodes differently from macOS (the platform record), with the differences listed"
+    },
+    {
+      "case": "torus_segment/fine",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepMesh_IncrementalMesh",
+      "native_sha256": "c4fca3c35ad8d9bedca80589dc15179d996b9ce00cea5a60596d1db75f54acc4",
+      "differences": [
+        "occt_deflection_exceeded"
+      ],
+      "reason": "BRepMesh_IncrementalMesh exceeds the requested absolute deflection 0.008: the largest distance of its triangles from the face's surface is 0.0351, and its own Poly_Triangulation::Deflection records 0.0351, which states the excess. Its control (BRepMesh_DelaunayDeflectionControlMeshAlgo) samples each triangle's centre and its links' middles and inserts nodes for at most 11 passes; the deviation left after the last pass, or on boundary links it does not split, is recorded, not refined. Its triangles then lie more than twice the request from the face itself (off_face), by the same excess. On Linux this row shows only occt_deflection_exceeded: the others macOS showed come from nodes BRepMesh places differently there.",
+      "independent_evidence": "The independent reference samples every triangle at 12 barycentric points and measures the exact distance from the face's whole surface (closed form, from the case alone): 0.0351; the probe's own ElSLib projection gives 0.0351. The kernel's mesh of the same body and setting (7736 triangles against OCCT's 3142) passes every check of the reference with a certified bound of 0.008.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; BRepMesh places a few nodes differently from macOS (the platform record), with the differences listed"
     }
   ]
 }

@@ -222,6 +222,104 @@
       "reason": "OCCT keeps the torus's seam at the tube's angle v = 0 (its outer equator) inside the piece whose band passes it, which then has 3 faces, 5 edges and 3 vertices; the kernel has no seams (TOPOLOGY_MODEL.md): each piece is its band of the tube, wound once about the axis between two parallels, and the planar annulus between them (2 faces, 3 edges, 2 vertices in OCCT's counting, as OCCT's other piece). Volumes, areas and centres agree with the reference.",
       "independent_evidence": "The plane is normal to the torus's axis, so it cuts the tube in two parallels; the band on the side holding the outer equator (v = 0) contains OCCT's seam.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "stadium_tangent",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "07cc0d1bb74bdb16e4d4be77cf6f48d6ee9f3274da7353db06dad30505afb6e0",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI_Splitter splits the arc wall along the line where the plane touches it (7 faces, 15 edges, 10 vertices); the kernel's split cuts nothing at a tangency (S8 decisions) and returns the prism unchanged (6 faces, 12 edges, 8 vertices). The volume, area and centre agree with the reference.",
+      "independent_evidence": "The plane x = 4 touches the stadium's right arc (centre (3, 0), radius 1) at (4, 0) only: the prism lies in x <= 4.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within rounding of the capture"
+    },
+    {
+      "case": "disc_vertical",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "7467b7d2158589a78646ecd5c315157d99a8ce638a415553fd67dd69ec073c07",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT's cylinder keeps its seam at the frame's x axis (angle 0), inside the piece with x > 1: that piece has 5 faces, 9 edges, 6 vertices; the kernel has no seams (TOPOLOGY_MODEL.md), both pieces 4 faces, 6 edges, 4 vertices. Volumes, areas and centres agree with the reference.",
+      "independent_evidence": "The plane x = 1 cuts the disc of radius 2 at angles +-60 degrees; the arc between them contains angle 0, OCCT's seam.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within rounding of the capture"
+    },
+    {
+      "case": "disc_through_caps",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "2797b75d7bc9e6858eb781c3c87c67844f619c1b0fe86fec3caaf642c711005b",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "The plane x + z = 2 touches the bottom cap's circle at (2, 0, 0) and the top cap's at (-2, 0, 4). OCCT keeps the cylinder's seam at angle 0 (the frame's x axis) in both pieces: the lower piece's wall is bounded by the seam from the touch point (3 faces, 3 edges, 2 vertices), the upper piece's wall is cut along it (4 faces, 5 edges, 3 vertices). The kernel has no seams (TOPOLOGY_MODEL.md): each piece is its cap, its elliptic cut face and its wall, the cap's circle and the ellipse meeting at the one vertex where the plane touches the cap's edge (3 faces, 2 edges, 1 vertex). Volumes, areas and centres agree with the reference.",
+      "independent_evidence": "The cap circles have radius 2 about the axis; the plane's traces on the caps, x = 2 at z = 0 and x = -2 at z = 4, are tangent to them, so each piece's wall has zero height at one point, where the kernel places its vertex.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within rounding of the capture"
+    },
+    {
+      "case": "sphere_oblique",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "9854d0f160b5777da0c19bda90656bf411848434651c452dc4d62fe8f2fbb609",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp measures the two caps a plane cuts from a sphere of radius 2 at 6.6e-8 relative from their exact volumes and areas (20.496799011 and 13.013523149 against 20.496797670 and 13.013523969), beyond the 2e-8 allowance for elliptic faces; its centres move by up to 5e-8.",
+      "independent_evidence": "The plane lies 0.3 from the centre (normal (1, 2, 2) / 3 through (0.3, 0.2, 0.1)): the caps have heights 1.7 and 2.3, volumes pi h^2 (3R - h) / 3 = 13.0135240 and 20.4967977, as the reference integrates.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within rounding of the capture"
+    },
+    {
+      "case": "sphere_tilted",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "3ba8a9784fb8dd3a22788a5ddc67a38a400326a6f59db1a2457f2f0f37a50384",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp measures the two caps of a sphere of radius 1.5 in the tilted frame 4.7e-4 relative from their exact volumes: their sum, 14.138748, exceeds the sphere's 14.137167 (4/3 pi 1.5^3); its areas and centres err likewise. The pieces are valid; OCCT's default integration precision on these spherical faces is the cause, not the split.",
+      "independent_evidence": "The plane (normal (1, -1, 0.5) through (1.25, -2, 0.5)) lies 1/6 from the centre (1, -2, 0.5): the caps have heights 4/3 and 5/3, volumes 5.8953344 and 8.2418326, and areas 2 pi R h plus their disc, as the reference integrates.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within rounding of the capture"
+    },
+    {
+      "case": "frustum_meridian",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "fd2f1f839e978bd76ee6ea0b70e7bc788829c556225d29c1b535495b65026146",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT keeps the cone's seam at angle 0 (the frame's x axis), inside the half with x > 0: that half has 5 faces, 9 edges and 6 vertices. The kernel has no seams (TOPOLOGY_MODEL.md): each half is its wall, two half discs and the cut face, bounded by two half arcs, two chords and two rulings (4 faces, 6 edges, 4 vertices, OCCT's count of the other half). Volumes, areas and centres agree with the reference.",
+      "independent_evidence": "The plane x = 0 contains the axis; angle 0 points along +x, into the half above the plane (normal +x).",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within rounding of the capture"
+    },
+    {
+      "case": "apex_meridian",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "28f9e2f07ce7960595699cc5d5d889bdf01de56f43d4d679757538d6aa35ae79",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT keeps the cone's seam at angle 0 inside the half above the plane (4 faces, 8 edges, 4 vertices); the kernel's halves are each the wall, a half disc and the cut triangle, the wall's loop passing the apex (3 faces, 5 edges counting that pass as OCCT's degenerated edge, 3 vertices: OCCT's count of the other half). Volumes, areas and centres agree with the reference.",
+      "independent_evidence": "The plane through the axis with normal (1, 1, 0): angle 0, along +x, lies on its positive side.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within rounding of the capture"
+    },
+    {
+      "case": "cap_meridian",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "34fc5ef48903d823a2374438ea17db0ee0e4ae96ee7c88557091b2968b616b9c",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT keeps the sphere's seam at angle 0 inside the half above the plane (4 faces, 8 edges, 4 vertices); the kernel's halves are each the half zone, a half disc and the cut face bounded by two great-circle arcs meeting at the pole (3 faces, 5 edges counting the pole pass, 3 vertices: OCCT's count of the other half). Volumes, areas and centres agree with the reference.",
+      "independent_evidence": "The plane through the axis with normal (1, 1, 0): angle 0, along +x, lies on its positive side; the zone reaches the pole.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within rounding of the capture"
     }
   ]
 }
