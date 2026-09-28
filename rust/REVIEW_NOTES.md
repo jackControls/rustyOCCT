@@ -2113,6 +2113,19 @@ Decisions for S9, recorded before its code (2026-09-28):
   times). Keep the certified contract as the only mode, or add a display
   mode with sampled control and no bound (fewer triangles, OCCT's
   behaviour)? Until answered, only the certified mode exists.
+* **U10 (recorded 2026-09-28 by the implementing agent, from STEP-b).**
+  R4's continuity criterion is homogeneous: a knot of multiplicity equal to
+  the degree passes only if the homogeneous curve is C1 there. The usual
+  NURBS circle (rational quarter arcs joined at double knots, every STEP
+  and IGES writer's circle) is C1 as a rational curve but not in
+  homogeneous form, so the kernel refuses it (`edge_not_c1`,
+  `pcurve_not_c1`, `face_not_c1`): the STEP-b fixture `rational_cylinder`
+  and 21 bodies of the local dataset. Options: (a) keep the homogeneous
+  criterion (such files stay refused); (b) test C1 of the rational curve
+  exactly at such knots (`(P' w - P w') / w^2` equal from both sides, in
+  rationals), keeping OCCT's cells and counts; (c) split edges and faces at
+  such knots on import (each piece C-infinity; more cells than OCCT's).
+  The implementing agent recommends (b). Until answered, (a) holds.
 
 ## Status
 
