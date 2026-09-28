@@ -2,10 +2,10 @@
 //! entity rows with structural locators found from geometry alone.
 use rusty_occt::history::{History, Relation};
 use rusty_occt::identity::{InputLabel, OperationId, Parent, ProfileElement, Role};
-use rusty_occt::topology::{Curve3, FaceId, Slot, Surface};
+use rusty_occt::topology::{Curve3, FaceId, Slot, SplineSpan, Surface};
 use rusty_occt::{
-    Body, Boundary, BoundaryLabels, Frame3, Point2, Point3, Profile, RigidTransform, Segment,
-    Solid, Tolerance, Vec3,
+    BSplineCurve2, Body, Boundary, BoundaryLabels, Frame3, Point2, Point3, Profile, RigidTransform,
+    Segment, Solid, Tolerance, Vec3,
 };
 
 pub struct CaseSpec {
@@ -77,7 +77,8 @@ pub fn parse(block: &str) -> CaseSpec {
                         Boundary::circle(Point2::new(f(2), f(3)), f(4), spec.tolerance).unwrap();
                     (b, 5)
                 } else if w[1] == "S" {
-                    // S5: each point, then its segment: L, or A cx cy r ccw.
+                    // S5: each point, then its segment: L, or A cx cy r ccw,
+                    // or (S8b) B p n x0 y0 ... k u0 ... m0 ...
                     let n: usize = w[2].parse().unwrap();
                     let (mut points, mut segments, mut k) = (Vec::new(), Vec::new(), 3);
                     for _ in 0..n {
@@ -85,6 +86,23 @@ pub fn parse(block: &str) -> CaseSpec {
                         if w[k + 2] == "L" {
                             segments.push(Segment::Line);
                             k += 3;
+                        } else if w[k + 2] == "B" {
+                            let degree: usize = w[k + 3].parse().unwrap();
+                            let count: usize = w[k + 4].parse().unwrap();
+                            let mut at = k + 5;
+                            let poles: Vec<Point2> = (0..count)
+                                .map(|i| Point2::new(f(at + 2 * i), f(at + 2 * i + 1)))
+                                .collect();
+                            at += 2 * count;
+                            let knots: usize = w[at].parse().unwrap();
+                            let values: Vec<f64> = (0..knots).map(|i| f(at + 1 + i)).collect();
+                            let mults: Vec<usize> = (0..knots)
+                                .map(|i| w[at + 1 + knots + i].parse().unwrap())
+                                .collect();
+                            let curve =
+                                BSplineCurve2::new(degree, poles, None, values, mults).unwrap();
+                            segments.push(Segment::Spline(SplineSpan::whole(curve)));
+                            k = at + 1 + 2 * knots;
                         } else {
                             segments.push(Segment::Arc {
                                 center: Point2::new(f(k + 3), f(k + 4)),

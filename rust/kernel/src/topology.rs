@@ -1131,6 +1131,37 @@ fn fill<T>(
 }
 
 impl Topology {
+    /// The same topology with every spline edge traversed along its curve:
+    /// an edge whose span is flagged reversed runs from its end to its start
+    /// over the unflagged span, each of its fins used the other way (a fin's
+    /// pcurve is in its use's direction, so it stays). For writers whose
+    /// records follow the curve (S8b).
+    pub(crate) fn spline_edges_along_curves(&self) -> Topology {
+        let mut t = self.clone();
+        for e in 0..t.edges.len() {
+            let Curve3::BSpline(span) = &t.edges[e].curve else {
+                continue;
+            };
+            if !span.is_reversed() {
+                continue;
+            }
+            let span = span.reversed();
+            let edge = &mut t.edges[e];
+            edge.curve = Curve3::BSpline(span);
+            std::mem::swap(&mut edge.start, &mut edge.end);
+            for f in edge.fins.clone() {
+                let fin = &mut t.fins[f.0];
+                fin.sense = match fin.sense {
+                    Orientation::Forward => Orientation::Reversed,
+                    Orientation::Reversed => Orientation::Forward,
+                };
+            }
+        }
+        t
+    }
+}
+
+impl Topology {
     fn view(&self) -> validate::View<'_> {
         validate::View {
             vertices: &self.vertices,
@@ -3478,7 +3509,7 @@ impl Topology {
 
 /// A spline profile segment lifted to `height` on `frame` (S8b): its poles
 /// placed by the frame, its knots unchanged, run as the segment runs.
-fn lifted_spline(
+pub(crate) fn lifted_spline(
     span: &SplineSpan<crate::BSplineCurve2>,
     frame: Frame3,
     height: f64,
@@ -3507,7 +3538,7 @@ fn lifted_spline(
 /// A spline segment's wall (S8b): the degree-(p, 1) surface over its knots
 /// and `[0, high - low]`, its poles the profile's lifted to `low` and `high`;
 /// with the parameters `u` at the segment's start and end.
-fn spline_wall(
+pub(crate) fn spline_wall(
     span: &SplineSpan<crate::BSplineCurve2>,
     frame: Frame3,
     low: f64,

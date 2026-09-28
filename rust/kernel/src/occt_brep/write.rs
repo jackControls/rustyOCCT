@@ -615,14 +615,10 @@ impl Records {
 /// Version 1 `.brep` text of every solid region of `topology`; one solid is
 /// the root, several a compound.
 pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
-    let t = topology;
-    // A spline edge traversed against its curve would need mirrored knots.
-    if t.edges()
-        .iter()
-        .any(|e| matches!(&e.curve, Curve3::BSpline(s) if s.is_reversed()))
-    {
-        return Err(unwritable("a spline edge against its curve"));
-    }
+    // A spline edge traversed against its curve is written along it, used
+    // the other way (its records follow the curve's parameter).
+    let along = topology.spline_edges_along_curves();
+    let t = &along;
     let tol = num(tolerance);
     let mut curves2d: Vec<String> = Vec::new();
     let mut curves: Vec<String> = Vec::new();

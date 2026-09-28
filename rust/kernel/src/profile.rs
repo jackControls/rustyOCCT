@@ -760,17 +760,6 @@ pub struct Profile {
 }
 
 impl Profile {
-    /// Whether any boundary has a spline segment (S8b).
-    pub(crate) fn has_spline(&self) -> bool {
-        std::iter::once(&self.outer)
-            .chain(self.holes.iter())
-            .any(|b| match &b.kind {
-                BoundaryKind::Path { segments, .. } => {
-                    segments.iter().any(|s| matches!(s, Segment::Spline(_)))
-                }
-                _ => false,
-            })
-    }
     pub fn new(outer: Boundary, holes: Vec<Boundary>, tolerance: Tolerance) -> Result<Self> {
         if holes.len() > MAX_HOLES {
             return Err(Error::LimitExceeded("profile holes"));

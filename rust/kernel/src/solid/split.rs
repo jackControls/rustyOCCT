@@ -26,6 +26,7 @@ mod meridian;
 mod oblique;
 mod revolved;
 mod spiric;
+mod spline;
 mod torus;
 pub(super) use meridian::Half;
 pub(super) use oblique::Clipped;
@@ -87,12 +88,6 @@ impl Solid {
         let (a, b, c) = (dot(m, x), dot(m, y), dot(m, n));
         let d: R = (0..3).map(|i| q(m[i]) * (q(o[i]) - q(p0[i]))).sum();
         let profile = match &self.construction {
-            // S8b.3 splits spline prisms.
-            Construction::Prism(profile) if profile.has_spline() => {
-                return Err(Error::OutOfDomain(
-                    "a prism of a spline profile split (S8b.3)",
-                ))
-            }
             Construction::Prism(profile) => (**profile).clone(),
             Construction::Cone { .. } | Construction::Sphere { .. } => {
                 return Ok(self
@@ -565,7 +560,7 @@ enum SegOrigin {
     Chord(usize),
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 enum Kind {
     Line,
     Arc {
@@ -573,6 +568,8 @@ enum Kind {
         radius: f64,
         ccw: bool,
     },
+    /// A spline piece, in its traversal's direction.
+    Spline(Box<spline::Span>),
 }
 
 /// A directed piece of the arrangement.
@@ -614,6 +611,8 @@ struct Section {
     incident: BTreeMap<PointId, Vec<(usize, usize)>>,
     /// Every point's binary64 position.
     positions: BTreeMap<PointId, Point2>,
+    /// A spline crossing's curve parameter (S8b.3).
+    params: BTreeMap<PointId, f64>,
     /// The boundary's pieces with their sides (a hole's reversed).
     edges: Vec<Edge2>,
 }
@@ -630,6 +629,7 @@ impl Section {
         let f = |p: Point2| &a * q(p.x) + &b * q(p.y) + &d;
         let sign = |x: &R| x.cmp(&zero()) as i8;
         let mut positions: BTreeMap<PointId, Point2> = BTreeMap::new();
+        let mut params: BTreeMap<PointId, f64> = BTreeMap::new();
         let mut on_line: BTreeMap<PointId, I> = BTreeMap::new();
         // The line's parameter: position along (-b, a).
         let along = |p: &[I; 2]| {
@@ -747,8 +747,46 @@ impl Section {
                 let (p, e) = (points[j], points[(j + 1) % n]);
                 let (fp, fe) = (f(p), f(e));
                 let mut cuts: Vec<PointId> = Vec::new();
+                // A spline's pieces and their sides, along the segment.
+                let mut spline_parts: Option<(Vec<Kind>, Vec<i8>)> = None;
                 let kind = match segments[j].clone() {
-                    Segment::Spline(_) => unreachable!("spline prisms are refused before (S8b.3)"),
+                    Segment::Spline(span) => {
+                        let meeting = spline::meets(&span, [&a, &b, &d])?;
+                        for t in &meeting.touches {
+                            tangents.push(along(t));
+                        }
+                        let (first, last) = span.curve().as_curve3().domain();
+                        // The pieces' curve parameters, along the segment.
+                        let mut ts: Vec<f64> = meeting.crossings.iter().map(|c| c.t).collect();
+                        if span.is_reversed() {
+                            ts.insert(0, last);
+                            ts.push(first);
+                        } else {
+                            ts.insert(0, first);
+                            ts.push(last);
+                        }
+                        let mut kinds = Vec::new();
+                        for w in ts.windows(2) {
+                            let (t0, t1) = (w[0].min(w[1]), w[0].max(w[1]));
+                            kinds.push(Kind::Spline(Box::new(spline::restrict(&span, t0, t1)?)));
+                        }
+                        for (k, c) in meeting.crossings.iter().enumerate() {
+                            let id = PointId::Cross(bi, j, k);
+                            positions.insert(id, c.rounded);
+                            params.insert(id, c.t);
+                            on_line.insert(
+                                id,
+                                along(&[
+                                    I::exact(c.exact[0].clone()),
+                                    I::exact(c.exact[1].clone()),
+                                ]),
+                            );
+                            incident.entry(id).or_default().push((bi, j));
+                            cuts.push(id);
+                        }
+                        spline_parts = Some((kinds, meeting.sides));
+                        Kind::Line
+                    }
                     Segment::Line => {
                         if sign(&fp) * sign(&fe) < 0 {
                             let t = &fp / (&fp - &fe);
@@ -824,7 +862,17 @@ impl Section {
                     } else {
                         SegOrigin::Part(bi, j, k)
                     };
-                    let side = match kind {
+                    if let Some((kinds, sides)) = &spline_parts {
+                        boundary_edges.push(Edge2 {
+                            from: s,
+                            to: e,
+                            kind: kinds[k].clone(),
+                            origin,
+                            side: sides[k],
+                        });
+                        continue;
+                    }
+                    let side = match kind.clone() {
                         Kind::Line => {
                             let mid = [
                                 positions[&s].x * 0.5 + positions[&e].x * 0.5,
@@ -856,11 +904,12 @@ impl Section {
                             ccw,
                             &[a.clone(), b.clone(), d.clone()],
                         )?,
+                        Kind::Spline(_) => unreachable!("a spline's pieces are pushed above"),
                     };
                     boundary_edges.push(Edge2 {
                         from: s,
                         to: e,
-                        kind,
+                        kind: kind.clone(),
                         origin,
                         side,
                     });
@@ -871,8 +920,10 @@ impl Section {
                 boundary_edges.reverse();
                 for e in &mut boundary_edges {
                     std::mem::swap(&mut e.from, &mut e.to);
-                    if let Kind::Arc { ccw, .. } = &mut e.kind {
-                        *ccw = !*ccw;
+                    match &mut e.kind {
+                        Kind::Arc { ccw, .. } => *ccw = !*ccw,
+                        Kind::Spline(span) => **span = span.reversed(),
+                        Kind::Line => {}
                     }
                 }
             }
@@ -981,6 +1032,7 @@ impl Section {
             shared,
             incident,
             positions,
+            params,
             edges,
         })
     }
@@ -1189,17 +1241,36 @@ fn on_one_side(profile: &Profile, plane: [&R; 4], low: &R, high: &R) -> Result<b
             signs.extend(points.iter().map(|p| vertex(*p)));
             let n = points.len();
             for (j, seg) in segments.iter().enumerate() {
-                if let Segment::Arc {
-                    center,
-                    radius,
-                    ccw,
-                } = seg
-                {
-                    signs.extend(arc(
+                match seg {
+                    Segment::Arc {
+                        center,
+                        radius,
+                        ccw,
+                    } => signs.extend(arc(
                         *center,
                         *radius,
                         Some((points[j], points[(j + 1) % n], *ccw)),
-                    )?);
+                    )?),
+                    // A spline: whether the function takes each sign on it,
+                    // exactly between its roots.
+                    Segment::Spline(span) => {
+                        let (top, bottom) = (d + &w_max, d + &w_min);
+                        let above = spline::takes(span, [a, b, &top], Ordering::Greater)?;
+                        let below = spline::takes(span, [a, b, &bottom], Ordering::Less)?;
+                        signs.push((
+                            if above {
+                                Ordering::Greater
+                            } else {
+                                Ordering::Equal
+                            },
+                            if below {
+                                Ordering::Less
+                            } else {
+                                Ordering::Equal
+                            },
+                        ));
+                    }
+                    Segment::Line => {}
                 }
             }
         }
@@ -1414,9 +1485,10 @@ fn trace(
 /// A piece's direction at its start (`start`) or end, as a vector.
 fn tangent(e: &Edge2, positions: &BTreeMap<PointId, Point2>, start: bool) -> (f64, f64) {
     let (ps, pe) = (positions[&e.from], positions[&e.to]);
-    match e.kind {
+    match &e.kind {
         Kind::Line => (pe.x - ps.x, pe.y - ps.y),
-        Kind::Arc { center, ccw, .. } => {
+        Kind::Spline(span) => spline::tangent(span, start),
+        &Kind::Arc { center, ccw, .. } => {
             let p = if start { ps } else { pe };
             let (rx, ry) = (p.x - center.x, p.y - center.y);
             if ccw {
@@ -1433,6 +1505,9 @@ fn signed_area(cycle: &[Edge2], positions: &BTreeMap<PointId, Point2>) -> f64 {
     for e in cycle {
         let (p, r) = (positions[&e.from], positions[&e.to]);
         twice += p.x * r.y - r.x * p.y;
+        if let Kind::Spline(span) = &e.kind {
+            twice += spline::twice_area_beyond_chord(span);
+        }
         if let Kind::Arc {
             center,
             radius,
@@ -1462,7 +1537,7 @@ fn boundary_of(
 ) -> Result<(Boundary, Vec<SegOrigin>, Vec<PointId>)> {
     // A single whole circle.
     if cycle.len() == 1 && cycle[0].from == cycle[0].to {
-        if let Kind::Arc { center, radius, .. } = cycle[0].kind {
+        if let Kind::Arc { center, radius, .. } = cycle[0].kind.clone() {
             return Ok((
                 Boundary::circle(center, radius, tolerance)?,
                 vec![cycle[0].origin],
@@ -1473,8 +1548,9 @@ fn boundary_of(
     let mut items: Vec<(PointId, Segment, SegOrigin)> = cycle
         .iter()
         .map(|e| {
-            let seg = match e.kind {
+            let seg = match e.kind.clone() {
                 Kind::Line => Segment::Line,
+                Kind::Spline(span) => Segment::Spline(*span),
                 Kind::Arc {
                     center,
                     radius,
@@ -1497,7 +1573,7 @@ fn boundary_of(
             let (_, seg, origin) = items[(n - 1 - k) % n].clone();
             let from = items[(n - k) % n].0;
             let seg = match seg {
-                Segment::Spline(_) => unreachable!("spline prisms are refused before (S8b.3)"),
+                Segment::Spline(span) => Segment::Spline(span.reversed()),
                 Segment::Line => Segment::Line,
                 Segment::Arc {
                     center,

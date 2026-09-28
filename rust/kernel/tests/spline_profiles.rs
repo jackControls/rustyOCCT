@@ -177,3 +177,37 @@ fn a_spline_crossing_its_path_is_refused() {
     ];
     assert!(Boundary::path(points, segments, tol()).is_err());
 }
+
+#[test]
+fn a_prism_with_a_clockwise_spline_hole_writes_and_reads_back() {
+    // A 10 x 10 square with a lens hole of two cubics given clockwise: its
+    // stored spans run against their curves (the prism's cap edges too).
+    let outer = Boundary::rectangle(10.0, 10.0, tol()).expect("a square");
+    let points = vec![Point2::new(3.0, 5.0), Point2::new(7.0, 5.0)];
+    let segments = vec![
+        spline(
+            &[(3.0, 5.0), (4.0, 7.0), (6.0, 7.0), (7.0, 5.0)],
+            vec![0.0, 1.0],
+            vec![4, 4],
+        ),
+        spline(
+            &[(7.0, 5.0), (6.0, 3.0), (4.0, 3.0), (3.0, 5.0)],
+            vec![0.0, 1.0],
+            vec![4, 4],
+        ),
+    ];
+    let hole = Boundary::path(points, segments, tol()).expect("a lens");
+    let profile = Profile::new(outer, vec![hole], tol()).expect("a profile");
+    let (solid, _) = Solid::extrude_with(OperationId(1), profile, Frame3::xy(), 0.0, 2.0)
+        .expect("a prism with a spline hole");
+    let text = rusty_occt::occt_brep::write(solid.topology(), 1e-7).expect("writable");
+    let doc = rusty_occt::occt_brep::read(&text).expect("readable");
+    let back = rusty_occt::occt_brep::import(&doc);
+    assert_eq!(back.solids.len(), 1);
+    let read = back.solids[0].result.as_ref().expect("a certified solid");
+    let (a, b) = (
+        solid.mass_properties().volume,
+        read.mass_enclosure().expect("certified mass").volume,
+    );
+    assert!(b[0] - 1e-9 * a <= a && a <= b[1] + 1e-9 * a, "{a} {b:?}");
+}

@@ -663,6 +663,19 @@ fn same_surface(piece: &EntityInfo, whole: &Geometry, tol: f64, edges: &Entities
                     Geometry::Curve(Curve3::LineSegment { start, end }) => {
                         within(on_piece(*start)?) && within(on_piece(*end)?)
                     }
+                    // A nonrational spline lies in its poles' hull, and the
+                    // projection and the distance are affine (S8b).
+                    Geometry::Curve(Curve3::BSpline(span)) => {
+                        let curve = span.curve();
+                        !curve.is_rational()
+                            && curve
+                                .poles()
+                                .iter()
+                                .map(|p| Some(within(on_piece(*p)?)))
+                                .collect::<Option<Vec<bool>>>()?
+                                .into_iter()
+                                .all(|x| x)
+                    }
                     Geometry::Curve(c) => {
                         // Only a circle parallel to both planes projects to
                         // a circle whose distance is its centre's.
@@ -775,8 +788,130 @@ fn same_surface(piece: &EntityInfo, whole: &Geometry, tol: f64, edges: &Entities
                     && (ra - rb).abs() <= tol_f,
             )
         }
+        // A spline wall (S8b): both extrusions of a curve (degree 1 across
+        // two rows of poles) along parallel directions, the piece's rows on
+        // the whole's extruded surface over the piece's `u` range.
+        (Surface::BSpline(sa), Surface::BSpline(sb)) => Some(on_extrusion(sa, sb, tol_f)),
         _ => Some(false),
     }
+}
+
+/// A nonrational spline curve's exact Bézier arcs over `[a, b]` of its
+/// parameter, as control points.
+fn arcs_over(curve: &crate::BSplineCurve3, a: f64, b: f64) -> Option<Vec<Vec<[R; 3]>>> {
+    if curve.is_rational() {
+        return None;
+    }
+    Some(
+        curve
+            .bezier_arcs_in(a, b)
+            .ok()?
+            .iter()
+            .map(|arc| {
+                arc.homogeneous_poles()
+                    .iter()
+                    .map(|h| [&h[0] / &h[3], &h[1] / &h[3], &h[2] / &h[3]])
+                    .collect()
+            })
+            .collect(),
+    )
+}
+
+/// A spline curve piece over `[a, b]` of its parameter lies on a whole
+/// spline curve: over the same range their exact Bézier arcs pair up and
+/// every control point differs by at most `tol` (a restriction keeps its
+/// parameter; the difference of two arcs is the arc of the differences).
+/// With `across`, only the parts of the differences across it count.
+fn arcs_within(
+    piece: &crate::BSplineCurve3,
+    whole: &crate::BSplineCurve3,
+    range: [f64; 2],
+    tol: f64,
+    across: Option<[f64; 3]>,
+) -> bool {
+    let (w0, w1) = whole.domain();
+    if !(w0 <= range[0] && range[1] <= w1) {
+        return false;
+    }
+    let (Some(pa), Some(wa)) = (
+        arcs_over(piece, range[0], range[1]),
+        arcs_over(whole, range[0], range[1]),
+    ) else {
+        return false;
+    };
+    if pa.len() != wa.len() {
+        return false;
+    }
+    let Some(tol) = r(tol) else { return false };
+    let along = across.and_then(exact);
+    pa.iter().zip(&wa).all(|(x, y)| {
+        x.len() == y.len()
+            && x.iter().zip(y).all(|(p, q)| {
+                let d = minus(p, q);
+                let off2 = match &along {
+                    // |d|^2 |n|^2 - (d.n)^2 <= tol^2 |n|^2.
+                    Some(n) => {
+                        let nn = dot(n, n);
+                        let dn = dot(&d, n);
+                        (dot(&d, &d) * &nn - &dn * &dn, nn)
+                    }
+                    None => (dot(&d, &d), R::from_integer(1.into())),
+                };
+                off2.0 <= &tol * &tol * off2.1
+            })
+    })
+}
+
+/// A spline surface's rows of poles along `u` as curves, when it is an
+/// extrusion (degree 1 over two rows, nonrational): the rows and the
+/// extrusion vector (the mean of the row differences).
+fn extrusion(s: &crate::BSplineSurface3) -> Option<([crate::BSplineCurve3; 2], [f64; 3])> {
+    let v = s.v_knots();
+    if s.is_rational() || v.degree() != 1 || v.pole_count() != 2 {
+        return None;
+    }
+    let u = s.u_knots();
+    let row = |j: usize| {
+        let poles: Vec<Point3> = (0..u.pole_count()).map(|i| s.poles()[i * 2 + j]).collect();
+        crate::BSplineCurve3::new(
+            u.degree(),
+            poles,
+            None,
+            u.knots().to_vec(),
+            u.multiplicities().to_vec(),
+        )
+        .ok()
+    };
+    let n = u.pole_count() as f64;
+    let mut d = [0.0; 3];
+    for i in 0..u.pole_count() {
+        let (a, b) = (s.poles()[i * 2], s.poles()[i * 2 + 1]);
+        d[0] += (b.x - a.x) / n;
+        d[1] += (b.y - a.y) / n;
+        d[2] += (b.z - a.z) / n;
+    }
+    Some(([row(0)?, row(1)?], d))
+}
+
+/// A spline wall piece lies on a whole one: both extrusions along
+/// directions parallel to 1e-12, and each of the piece's rows within `tol`
+/// of the whole's first row across the direction over the piece's range.
+fn on_extrusion(piece: &crate::BSplineSurface3, whole: &crate::BSplineSurface3, tol: f64) -> bool {
+    let (Some((rows, dp)), Some((base, dw))) = (extrusion(piece), extrusion(whole)) else {
+        return false;
+    };
+    let norm = |v: [f64; 3]| (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
+    let cross = [
+        dp[1] * dw[2] - dp[2] * dw[1],
+        dp[2] * dw[0] - dp[0] * dw[2],
+        dp[0] * dw[1] - dp[1] * dw[0],
+    ];
+    if norm(cross) > 1e-12 * norm(dp) * norm(dw) {
+        return false;
+    }
+    let (u0, u1) = piece.domain().0;
+    rows.iter()
+        .all(|row| arcs_within(row, &base[0], [u0, u1], tol, Some(dw)))
 }
 
 /// `piece` lies on the support (infinite curve, surface or region kind) of
@@ -788,6 +923,10 @@ fn same_support(piece: &EntityInfo, whole: &Geometry, tol: f64, edges: &Entities
             Geometry::Curve(Curve3::LineSegment { start, end }),
             Geometry::Curve(Curve3::LineSegment { start: a, end: b }),
         ) => on_line(*start, *a, *b, tol) && on_line(*end, *a, *b, tol),
+        // A spline edge (S8b): a restriction of the whole's curve.
+        (Geometry::Curve(Curve3::BSpline(a)), Geometry::Curve(Curve3::BSpline(b))) => {
+            arcs_within(a.curve(), b.curve(), a.range(), tol, None)
+        }
         (Geometry::Curve(c), Geometry::Curve(d)) => {
             circle_of(c).is_some() && circle_of(c) == circle_of(d)
         }
