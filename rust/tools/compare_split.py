@@ -43,6 +43,8 @@ CAPTURES = {
     's8a': (ROOT/'rust/fixtures/occt-split-preimplementation', ROOT/'rust/kernel/src/solid/split.rs'),
     's8c': (ROOT/'rust/fixtures/occt-split-primitive-preimplementation',
             ROOT/'rust/kernel/src/solid/split/revolved.rs'),
+    's8d': (ROOT/'rust/fixtures/occt-split-torus-preimplementation',
+            ROOT/'rust/kernel/src/solid/split/torus.rs'),
 }
 # OCCT's BRepGProp on the split pieces' elliptic faces (a plane across an arc
 # or a circle's wall) errs by up to 8.8e-9 relative in the pre-implementation
@@ -52,6 +54,13 @@ BOUND = 2e-8
 
 def native_input(key='s8a'):
     blocks = []
+    if key == 's8d':
+        for name, frame, params, plane in fixtures.torus_cases():
+            o, x, _, n = stored_axes(frame)
+            axis = ' '.join(repr(float(v)) for v in list(o)+list(n)+list(x)+list(params)+[2*math.pi])
+            blocks.append(f'case {name}\ntorus {axis}\nsplit '
+                          + ' '.join(repr(float(v)) for v in plane)+'\nend')
+        return '\n'.join(blocks)+'\n'
     if key == 's8c':
         for kind, name, frame, params, plane in fixtures.primitive_cases():
             o, x, _, n = stored_axes(frame)
@@ -83,7 +92,8 @@ def parse_native(stdout):
 def expected_rows():
     out = {}
     text = (ROOT/'rust/fixtures/split-expected.tsv').read_text().splitlines()[1:] + \
-        (ROOT/'rust/fixtures/split-primitive-expected.tsv').read_text().splitlines()[1:]
+        (ROOT/'rust/fixtures/split-primitive-expected.tsv').read_text().splitlines()[1:] + \
+        (ROOT/'rust/fixtures/split-torus-expected.tsv').read_text().splitlines()[1:]
     for line in text:
         name, row = line.split('\t')
         w = row.split()
@@ -138,7 +148,8 @@ def rust_rows():
     subprocess.run(['cargo', '+stable', 'build', '--release', '--locked', '--example', 'split_probe'],
                    cwd=ROOT, check=True)
     text = (ROOT/'rust/fixtures/split-cases.txt').read_text() + \
-        (ROOT/'rust/fixtures/split-primitive-cases.txt').read_text()
+        (ROOT/'rust/fixtures/split-primitive-cases.txt').read_text() + \
+        (ROOT/'rust/fixtures/split-torus-cases.txt').read_text()
     rows = subprocess.run([str(ROOT/'target/release/examples/split_probe')], input=text,
                           text=True, capture_output=True, timeout=600, check=True).stdout
     out = {}
@@ -278,7 +289,8 @@ def main():
               'rust_unsupported': [], 'matches': [], 'reviewed_differences': [], 'failures': []}
     rust = None if args.native_only else rust_rows()
     everything = [(case, plane, case.name) for case, plane in fixtures.cases()] + \
-        [(c, c[4], c[1]) for c in fixtures.primitive_cases()]
+        [(c, c[4], c[1]) for c in fixtures.primitive_cases()] + \
+        [(('torus', c[0], c[1], c[2], c[3]), c[3], c[0]) for c in fixtures.torus_cases()]
     for case, plane, name in everything:
         report['cases'] += 1
         rows = expected[name]

@@ -447,3 +447,33 @@ fn primitive_histories_are_complete_and_deterministic() {
         assert_eq!(pieces.len(), again.len(), "{name}");
     }
 }
+
+/// S8d's fixtures: every whole torus builds, and its certified volume
+/// contains the reference's total of both sides.
+#[test]
+fn torus_fixtures_build_with_the_reference_volume() {
+    let mut totals: BTreeMap<String, f64> = BTreeMap::new();
+    for line in include_str!("../../fixtures/split-torus-expected.tsv")
+        .lines()
+        .filter(|l| !l.starts_with('#'))
+    {
+        let (name, row) = line.split_once('\t').unwrap();
+        let v: f64 = row.split(' ').nth(2).unwrap().parse().unwrap();
+        *totals.entry(name.to_string()).or_default() += v;
+    }
+    let cases = primitive_cases(include_str!("../../fixtures/split-torus-cases.txt"));
+    assert_eq!(cases.len(), totals.len());
+    for case in cases {
+        let solid = build_primitive(&case);
+        let m = solid.topology().mass_enclosure().unwrap();
+        let v = totals[&case.name];
+        assert!(
+            m.volume[0] - 1e-12 * v <= v && v <= m.volume[1] + 1e-12 * v,
+            "{}: {:?} {v}",
+            case.name,
+            m.volume
+        );
+        let rows = protocol::primitive_rows(&case).unwrap_or_else(|e| panic!("{}: {e}", case.name));
+        assert!(!rows.is_empty(), "{}", case.name);
+    }
+}

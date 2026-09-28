@@ -60,7 +60,8 @@ pub fn split(case: &Case) -> Result<Split, Error> {
     Ok((solid, pieces, history))
 }
 
-/// A cone, frustum, sphere or zone of `split-primitive-cases.txt` (S8c).
+/// A cone, frustum, sphere or zone of `split-primitive-cases.txt` (S8c), or
+/// a torus of `split-torus-cases.txt` (S8d).
 pub struct PrimitiveCase {
     pub name: String,
     pub kind: String,
@@ -73,10 +74,10 @@ pub struct PrimitiveCase {
     pub plane: [f64; 6],
 }
 
-/// Every `cone` or `sphere` line.
+/// Every `cone`, `sphere` or (S8d) `torus` line.
 pub fn primitive_cases(text: &str) -> Vec<PrimitiveCase> {
     text.lines()
-        .filter(|l| l.starts_with("cone ") || l.starts_with("sphere "))
+        .filter(|l| l.starts_with("cone ") || l.starts_with("sphere ") || l.starts_with("torus "))
         .map(|line| {
             let w: Vec<&str> = line.split_whitespace().collect();
             let v: Vec<f64> = w[2..15].iter().map(|x| x.parse().unwrap()).collect();
@@ -106,10 +107,20 @@ pub fn build_primitive(case: &PrimitiveCase) -> Solid {
     )
     .unwrap();
     let [a, b, c] = case.params;
-    let made = if case.kind == "cone" {
-        Solid::cone_with(OperationId(1), frame, a, b, c, tolerance)
-    } else {
-        Solid::sphere_with(OperationId(1), frame, a, b, c, tolerance)
+    let made = match case.kind.as_str() {
+        "cone" => Solid::cone_with(OperationId(1), frame, a, b, c, tolerance),
+        "sphere" => Solid::sphere_with(OperationId(1), frame, a, b, c, tolerance),
+        // A whole torus: the tube's full turn from -pi, revolved by c.
+        _ => Solid::torus_with(
+            OperationId(1),
+            frame,
+            a,
+            b,
+            -std::f64::consts::PI,
+            std::f64::consts::PI,
+            c,
+            tolerance,
+        ),
     };
     made.unwrap().0
 }

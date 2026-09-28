@@ -24,7 +24,12 @@ kernel's builders and `BRepPrimAPI_MakeCone`/`MakeSphere` take them) and
 planes normal to the axis (through a frustum, an apex cone, a zone, a whole
 sphere, at an apex, in a cap, missing, touching a sphere), a whole sphere
 by oblique planes, planes containing the axis, and the conic and circle
-sections that wait for procedural edges (S8d).
+sections that wait for procedural edges (S8d). S8d: `split-torus-cases.txt`
+the same with `torus NAME tol ... major minor angle` lines (whole tori, the
+angle a full turn) and `split-torus-expected.tsv` (`split_reference.
+torus_rows`): planes normal to the axis (through the equator, above it,
+touching, missing, in a tilted frame), containing it, parallel to it
+through the tube, and oblique.
 """
 import argparse
 import math
@@ -132,6 +137,24 @@ def primitive_cases():
     ]
 
 
+def torus_cases():
+    """(name, frame, (major, minor), plane): whole tori (S8d)."""
+    return [
+        ('torus_equator', XY, (3.0, 1.0), (0.0, 0.0, 0.0, 0.0, 0.0, 1.0)),
+        ('torus_height', XY, (3.0, 1.0), (0.0, 0.0, 0.5, 0.0, 0.0, 1.0)),
+        ('torus_high', XY, (3.0, 1.0), (0.0, 0.0, 0.875, 0.0, 0.0, -1.0)),
+        ('torus_touch', XY, (3.0, 1.0), (0.0, 0.0, 1.0, 0.0, 0.0, 1.0)),
+        ('torus_miss', XY, (3.0, 1.0), (0.0, 0.0, 2.0, 0.0, 0.0, 1.0)),
+        ('torus_meridian', XY, (3.0, 1.0), (0.0, 0.0, 0.0, 1.0, 0.0, 0.0)),
+        ('torus_meridian_skew', XY, (3.0, 1.0), (0.0, 0.0, 0.5, 1.0, 1.0, 0.0)),
+        ('torus_tilted_height', TILT, (2.5, 0.75), (1.0, -1.82, 0.74, 0.0, 3.0, 4.0)),
+        ('torus_parallel_outer', XY, (3.0, 1.0), (3.5, 0.0, 0.0, 1.0, 0.0, 0.0)),
+        ('torus_parallel_inner', XY, (3.0, 1.0), (2.5, 0.0, 0.0, 1.0, 0.0, 0.0)),
+        ('torus_oblique', XY, (3.0, 1.0), (0.0, 0.0, 0.25, 0.25, 0.0, 1.0)),
+        ('torus_oblique_tube', XY, (3.0, 1.0), (3.0, 0.0, 0.0, 1.0, 0.0, 1.0)),
+    ]
+
+
 def primitive_line(kind, name, frame, params, plane):
     words = [kind, name, '1e-07'] + [repr(float(v)) for v in frame+params] + ['split'] + \
         [repr(float(v)) for v in plane]
@@ -159,10 +182,17 @@ def generate():
         lines.append(primitive_line(kind, name, frame, params, plane))
         for row in ref.revolved_rows(kind, frame, params, plane):
             prim.append(f'{name}\t{ref.text(row)}')
+    tlines, tori = [], ['# case\trow (S8d, split_reference.torus_rows)']
+    for name, frame, params, plane in torus_cases():
+        tlines.append(primitive_line('torus', name, frame, params+(2*math.pi,), plane))
+        for row in ref.torus_rows(frame, params, plane):
+            tori.append(f'{name}\t{ref.text(row)}')
     return {'split-cases.txt': '\n'.join(blocks)+'\n', 'split-expected.tsv': '\n'.join(out)+'\n',
             'split-frames.tsv': '\n'.join(frames)+'\n',
             'split-primitive-cases.txt': '\n'.join(lines)+'\n',
-            'split-primitive-expected.tsv': '\n'.join(prim)+'\n'}
+            'split-primitive-expected.tsv': '\n'.join(prim)+'\n',
+            'split-torus-cases.txt': '\n'.join(tlines)+'\n',
+            'split-torus-expected.tsv': '\n'.join(tori)+'\n'}
 
 
 def main():
@@ -177,7 +207,7 @@ def main():
                 raise SystemExit(f'{path} is stale')
         else:
             path.write_text(contents)
-    print(len(cases()), 'cases,', len(primitive_cases()), 'primitive cases')
+    print(len(cases()), 'cases,', len(primitive_cases()), 'primitive cases,', len(torus_cases()), 'tori')
 
 
 if __name__ == '__main__':

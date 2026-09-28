@@ -1079,6 +1079,46 @@ Decisions for S8c, recorded before its code (2026-09-28):
   extended with `BRepPrimAPI_MakeCone`/`MakeSphere` and a capture before
   the kernel code.
 
+Decisions for S8d, recorded before its code (2026-09-28):
+
+* **S8d.1, exact.** A torus (whole, band or wedge) by a plane normal to
+  its axis cuts the tube in parallels, circles whose pcurves are lines of
+  constant `v`; by a plane containing the axis in the tube's meridian
+  circles, lines of constant `u`. The pieces are general bodies on the
+  input's own torus surface with planar cut faces (annuli, discs); a whole
+  torus by a plane containing its axis gives two half-turn wedges, the S3
+  construction. (A torus v-segment is the revolved region between the
+  tube's arc and the axis, as `BRepPrimAPI_MakeTorus` makes it, so a torus
+  cut normal to its axis does not give one.)
+* **S8d.2, D13's engine, with cones and zones by any plane.** A pcurve may
+  be a `Projection`: the exact inverse of its face's surface map applied to
+  the fin's own edge, lifted continuously on the cover from a stored start.
+  Its deviation is zero by definition when it projects the fin's own edge
+  onto the face's own stored surface; vertex gaps and degeneracy come from
+  certified evaluation. Integrals along it (twice-areas, periodic areas,
+  orientation fluxes, mass moments) come from certified adaptive
+  quadrature: interval Taylor enclosures of the integrand on subintervals
+  from enclosures of the curve's derivatives (the surface inverse
+  differentiated implicitly), subdivided until the width asked for; ray
+  crossings and boundary clearance from certified monotone pieces. A
+  cone's and a sphere's plane sections are conics and stay explicit (D13):
+  `EllipseArc`, new `HyperbolaArc` and `ParabolaArc`, and `CircularArc`,
+  with `Projection` pcurves on the cone or sphere.
+* **S8d.3, spiric sections.** A torus's plane section is `Curve3::Section`:
+  a graph over the torus's angle between its turning points, `v = atan2(B,
+  A) +- acos(C / |(A, B)|)` with `A, B, C` affine in `cos u, sin u`,
+  evaluated with certified enclosures; its pcurves are `Projection`s. Tori
+  by any plane.
+* **Tessellation and interop.** Segment bounds come from second-derivative
+  enclosures (closed forms for conics, interval evaluation otherwise). The
+  `.brep` writer approximates a `Projection` or a `Section` by a B-spline
+  whose certified bound becomes the edge's tolerance (D13's interchange
+  approximation); until it does, those are `Unwritable`.
+* **Evidence first**: `split_reference.py` extended to tori (each slice an
+  annulus cut by the plane's line) and the conic and circle cases of S8c's
+  fixtures, a native `BRepPrimAPI_MakeTorus` capture before the kernel
+  code; the certified quadrature checked against mpmath integrals.
+
 ### S9 — Booleans for the analytic family (Combine job)
 
 Fuse, cut and common: intersect faces (S7), split (S8), classify by

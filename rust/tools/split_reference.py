@@ -595,3 +595,111 @@ def _cut(p):
         return mp.pi*p.rho(ws)**2 if p.w0 < ws < p.w1 else M(0)
     chord = lambda w: 2*mp.sqrt(max(p.rho(w)**2-p.s(w)**2, M(0)))
     return p.norm/p.ab*p.quad(chord)
+
+
+# ------------------------------------------------------------------ S8d
+
+class Torus(Revolved):
+    """A whole ring torus (S8d) about its stored frame's normal: the points
+    with `(sqrt(u^2 + v^2) - R)^2 + w^2 <= r^2`. Each slice `|w| < r` is an
+    annulus between `R -+ sqrt(r^2 - w^2)`: the outer disc less the inner
+    one, both cut by the plane's line. The lateral area integrates the
+    angle below over the tube's angle (the area element `r (R + r cos t)`),
+    and the cut face's chords are the outer disc's less the inner's."""
+
+    def __init__(self, frame, params, plane):
+        R, r = params
+        Revolved.__init__(self, 'cone', frame, (1.0, 2.0, 1.0), plane)
+        self.kind = 'torus'
+        self.R, self.r = M(R), M(r)
+        self.w0, self.w1 = -self.r, self.r
+        half = lambda w: mp.sqrt(max(self.r**2-w**2, M(0)))
+        self.outer = lambda w: self.R+half(w)
+        self.inner = lambda w: self.R-half(w)
+        self.rho = self.outer
+
+    def breaks(self):
+        out = [self.w0, self.w1]
+        if self.ab == 0:
+            if self.c != 0:
+                ws = -M(self.d)/M(self.c)
+                if self.w0 < ws < self.w1:
+                    out.append(ws)
+            return sorted(out)
+        # Where |s| meets either radius: sign changes on a fine grid,
+        # refined.
+        n = 4000
+        grid = [self.w0+(self.w1-self.w0)*k/n for k in range(n+1)]
+        for f in (lambda w: abs(self.s(w))-self.outer(w), lambda w: abs(self.s(w))-self.inner(w)):
+            for a, b in zip(grid, grid[1:]):
+                fa, fb = f(a), f(b)
+                if fa == 0:
+                    out.append(a)
+                elif fa*fb < 0:
+                    out.append(mp.findroot(f, (a, b), solver='anderson'))
+        return sorted(set(out))
+
+    def disc(self, rho, w, below):
+        """(area, moment) of a disc of radius rho's part on a side."""
+        full = mp.pi*rho**2
+        if self.ab == 0:
+            inside = (M(self.c)*w+M(self.d) < 0) == below
+            return (full if inside else M(0)), M(0)
+        s = self.s(w)
+        if s >= rho:
+            part, mom = full, M(0)
+        elif s <= -rho:
+            part, mom = M(0), M(0)
+        else:
+            h2 = rho**2-s**2
+            part = full-(rho**2*mp.acos(s/rho)-s*mp.sqrt(h2))
+            mom = -M(2)/3*h2**M(1.5)
+        return (part, mom) if below else (full-part, -mom)
+
+    def slice(self, w, below):
+        a, ma = self.disc(self.outer(w), w, below)
+        b, mb = self.disc(self.inner(w), w, below)
+        return a-b, ma-mb
+
+    def area(self, below):
+        # The tube's angle t: the circle of radius R + r cos t at height r
+        # sin t, its angle below the plane.
+        def lateral(t):
+            rho, w = self.R+self.r*mp.cos(t), self.r*mp.sin(t)
+            if self.ab == 0:
+                ang = 2*mp.pi if (M(self.c)*w+M(self.d) < 0) == below else M(0)
+            else:
+                s = self.s(w)
+                a = 2*mp.pi if s >= rho else (M(0) if s <= -rho else 2*mp.pi-2*mp.acos(s/rho))
+                ang = a if below else 2*mp.pi-a
+            return self.r*rho*ang
+        ts = sorted(set([M(0), 2*mp.pi]+[t % (2*mp.pi) for w in self.breaks()
+                                          for t in (mp.asin(max(min(w/self.r, M(1)), M(-1))),
+                                                    mp.pi-mp.asin(max(min(w/self.r, M(1)), M(-1))))]))
+        lat = sum(mp.quad(lateral, [t0, t1]) for t0, t1 in zip(ts, ts[1:]))
+        return lat+self.cut_area()
+
+    def cut_area(self):
+        if self.ab == 0:
+            ws = -M(self.d)/M(self.c)
+            return mp.pi*(self.outer(ws)**2-self.inner(ws)**2) if self.w0 < ws < self.w1 else M(0)
+        def chord(w):
+            s = self.s(w)
+            o = 2*mp.sqrt(max(self.outer(w)**2-s**2, M(0)))
+            i = 2*mp.sqrt(max(self.inner(w)**2-s**2, M(0)))
+            return o-i
+        return self.norm/self.ab*self.quad(chord)
+
+
+def torus_rows(frame, params, plane):
+    p = Torus(frame, params, plane)
+    total = p.volume_moments(True)[0]+p.volume_moments(False)[0]
+    sides = []
+    for name, below in (('below', True), ('above', False)):
+        V, mu, mv, mw = p.volume_moments(below)
+        if V > total*M(10)**-25:
+            sides.append((name, V, p.area(below), p.world(mu/V, mv/V, mw/V)))
+    if len(sides) < 2:
+        V, mu, mv, mw = [x+y for x, y in zip(p.volume_moments(True), p.volume_moments(False))]
+        return [('whole', V, p.area(True)+p.area(False)-2*p.cut_area(), p.world(mu/V, mv/V, mw/V))]
+    return sides

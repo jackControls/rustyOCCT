@@ -98,6 +98,58 @@
       "reason": "OCCT keeps the sphere's seam at angle 0 inside the half above the plane (4 faces, 8 edges, 4 vertices); the kernel's halves are each the half zone, a half disc and the cut face bounded by two great-circle arcs meeting at the pole (3 faces, 5 edges counting the pole pass, 3 vertices: OCCT's count of the other half). Volumes, areas and centres agree with the reference.",
       "independent_evidence": "The plane through the axis with normal (1, 1, 0): angle 0, along +x, lies on its positive side; the zone reaches the pole.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "torus_parallel_outer",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "ace8c828a07cb7614f3466ea05c4835be207dc4cf6d5ab77a7669052212810cd",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves, which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 2.8e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "independent_evidence": "For the plane x = 3.5, parallel to the axis through the tube's outer half, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264 to the reference's precision, as the native ones do to about 1e-7.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "torus_parallel_inner",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "038312cc5c68e02e901dae2f660c11fe0109abc8a2f267b1dd62080dbee33a6f",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves, which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 5.5e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "independent_evidence": "For the plane x = 2.5, parallel to the axis through the tube's inner half, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264 to the reference's precision, as the native ones do to about 1e-7.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "torus_oblique",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "0f6221df05650ce9dbeb460c53d5e2f333c64c620a03a761cb46f027cfada567",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves, which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 8.9e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "independent_evidence": "For the plane through (0, 0, 0.25) with normal (0.25, 0, 1), cutting the tube all round, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264 to the reference's precision, as the native ones do to about 1e-7.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "torus_oblique_tube",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "477f099aa7659207f50564110d67380335516aa5c2ac5db9f722a157373a68f3",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves, which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 2.0e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
+      "independent_evidence": "For the plane through (3, 0, 0) with normal (1, 0, 1), cutting the tube on one side of the axis, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264 to the reference's precision, as the native ones do to about 1e-7.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     }
   ]
 }
