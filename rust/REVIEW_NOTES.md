@@ -2746,4 +2746,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     certified bounds to the leading-bits bracket before the binary64
     pattern search and a stack cap's overlaps to its pieces' memberships
     (the input six times faster). Pending: the campaign; S9a.2's spline
-    profiles next (their evidence first).
+    profiles next. Their evidence exists before their code (`3951925a`,
+    `BOOLEAN.md`): 46 spline cases (36 prisms, 5 stacks, 4 empty, 1
+    degenerate; 18 tilted), the reference checked within 3.7e-39 (chords
+    2.1e-4), and `occt-boolean-spline-preimplementation`: all valid with the
+    reference's solids, 37 within 2e-8, 9 reviewed (BRepGProp on B-spline
+    faces, up to 8.0e-4), the kernel `unsupported` on all 46.

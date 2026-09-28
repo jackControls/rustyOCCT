@@ -653,7 +653,22 @@ count, all 45 within 2e-8 of the reference (6.1e-15 at worst), no review.
 With S9a.1 and S9a.2's stacks, `boolean_probe` puts every result inside the
 reference with the reference's solid count (42 cases; 5 empty, 6 stacks)
 and refuses the 3 degenerate ones, every count equal to OCCT's after
-unifying; `booleans.rs` checks the same and every history.
+unifying; `booleans.rs` checks the same and every history. S9a.2's spline
+profiles, before their kernel code: the same generator writes 46 Booleans of
+prisms whose profiles hold S8b's splines (`boolean-spline-cases.txt`; 14
+fuses, 16 cuts, 16 commons, 18 tilted) from `boolean_reference.SplinePair`
+(meetings by exact square-free Bernstein root isolation and by Bezier
+subdivision with Newton, no resultants; atoms by Green's theorem over the
+classified pieces), checked against S9a's slicing, exact Green's theorem and
+Bernstein products, Gauss-Legendre quadrature, `mp.polyroots`, the volume
+identities, straight splines against their polygon and 8 hand results (all
+within 3.7e-39), and chords extrapolated (2.1e-4, within their own error
+estimate); `compare_boolean.py --splines` reproduces the capture
+`occt-boolean-spline-preimplementation`: every result valid with the
+reference's solid count, 37 within 2e-8 and 9 reviewed (BRepGProp's
+integration of faces bounded by B-spline edges, up to 8.0e-4 on the
+three-span wave; Green's theorem over OCCT's own cap edges agrees with the
+reference within 4.5e-8), and the kernel `unsupported` on all 46.
 
 The `GeomInt_IntSS` captures were taken on macOS arm64; IntPatch's walking
 lines differ on Linux near degeneracies (the first Linux run changed
