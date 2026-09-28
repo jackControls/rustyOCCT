@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Source-pinned GeomInt_IntSS (GeomAPI_IntSS's engine) observations beside the S7b.1 reference.
+"""Source-pinned GeomInt_IntSS (GeomAPI_IntSS's engine) observations beside the S7b reference.
 
 The independent reference (procedural_intersection_reference.py) classifies
-every case of procedural-intersection-cases.txt (two cylinders with crossing
-axes, a cylinder and a sphere off its axis) and gives its canonical rows;
+every case of procedural-intersection-cases.txt (the quadric pairs of S7b.1
+and S7b.2, a torus with a plane, a sphere or a coaxial surface in S7b.3a)
+and gives its canonical rows;
 the native probe (occt_procedural_intersection_oracle.cpp) runs
 GeomInt_IntSS on the kernel's stored frames and samples its lines. Every
 native sample must lie within 1e-6 of the case's size from the reference
 curve, and every component of the reference curve (a loop, each ring) must
 carry native samples; an empty or single-point reference must be matched by
-no line or by a point at it. `--capture` records the native observations
+no line or by a point at it, circles (a torus's special and coaxial pairs)
+by samples on them. `--capture` records the native observations
 before any kernel code for these pairs exists; later runs must reproduce
 them. Differences need a fingerprinted review. The kernel's certified curves
 (`procedural_intersection_probe`) must have the reference's class and
@@ -18,6 +20,7 @@ the middle of each loop within 1e-12 of the reference's.
 """
 import argparse
 import json
+import math
 from pathlib import Path
 import subprocess
 import sys
@@ -37,6 +40,7 @@ from identity_reference import frame_axes
 SOURCE_FILE = ROOT/'rust/tools/occt_procedural_intersection_oracle.cpp'
 REVIEWS = ROOT/'rust/fixtures/occt-procedural-intersection-divergences.json'
 KERNEL_FILE = ROOT/'rust/kernel/src/intersection/procedural.rs'
+TORUS_FILE = ROOT/'rust/kernel/src/intersection/toroidal.rs'
 BOUND = 1e-6
 # Each sub-step's native observations were captured before its kernel code:
 # (directory, case-name prefixes, whether its kernel code exists).
@@ -45,6 +49,8 @@ CAPTURES = {
              lambda: KERNEL_FILE.exists()),
     's7b2': (ROOT/'rust/fixtures/occt-procedural-cone-preimplementation', ('ck_', 'ks_'),
              lambda: KERNEL_FILE.exists() and 'Surface::Cone' in KERNEL_FILE.read_text()),
+    's7b3a': (ROOT/'rust/fixtures/occt-procedural-torus-preimplementation', ('tp_', 'ts_', 'tx_'),
+              lambda: TORUS_FILE.exists()),
 }
 
 
@@ -84,10 +90,94 @@ def surfaces_of(name, a, b):
     return surfaces
 
 
+class FloatTorus:
+    """A torus curve of the reference evaluated in binary64 for distances
+    (at the 1e-6 bound, 80 digits only cost time): the same frame, `D` and
+    points as `procedural_intersection_reference.TorusCurve`."""
+    def __init__(self, cv, other):
+        self.o, self.a, self.x, self.y = ([float(v) for v in w] for w in (cv.o, cv.a, cv.x, cv.y))
+        self.R, self.r = float(cv.R), float(cv.r)
+        oo, ao = other.axes()
+        o = [float(v) for v in oo]
+        if other.kind == 'plane':
+            n = [float(v) for v in ao]
+            self.f = lambda q: sum((a-b)*c for a, b, c in zip(q, o, n))
+        else:
+            r2 = float(other.radius)**2
+            self.f = lambda q: sum((a-b)**2 for a, b in zip(q, o))-r2
+
+    def meridian(self, phi, t):
+        c, s = math.cos(phi), math.sin(phi)
+        k = self.R+self.r*math.cos(t)
+        return [o+k*(c*x+s*y)+self.r*math.sin(t)*a for o, x, y, a in zip(self.o, self.x, self.y, self.a)]
+
+    def coefficients(self, phi):
+        g0, g1, g2 = (self.f(self.meridian(phi, t)) for t in (0.0, math.pi/2, math.pi))
+        f0 = (g0+g2)/2
+        return f0, (g0-g2)/2, g1-f0
+
+    def D(self, phi):
+        f0, alpha, beta = self.coefficients(phi)
+        return alpha*alpha+beta*beta-f0*f0
+
+    def point(self, phi, sign):
+        f0, alpha, beta = self.coefficients(phi)
+        k = max(-1.0, min(1.0, -f0/math.hypot(alpha, beta)))
+        return self.meridian(phi, math.atan2(beta, alpha)+sign*math.acos(k))
+
+
+def float_distance(cv, p, branch=None, span=None):
+    """distance_at for a FloatTorus, in binary64."""
+    rel = [a-b for a, b in zip(p, cv.o)]
+    u = math.atan2(sum(a*b for a, b in zip(rel, cv.y)), sum(a*b for a, b in zip(rel, cv.x)))
+    lo, hi = u-0.02, u+0.02
+    if span is not None:
+        u0, u1 = float(span[0]), float(span[1])
+        u -= 2*math.pi*math.floor((u-u0)/(2*math.pi))
+        lo, hi = max(u-0.02, u0), min(u+0.02, u1)
+        if lo > hi:
+            return min(math.dist(p, cv.point(t, 1)) for t in (u0, u1))
+
+    def dist(t, sign):
+        return math.dist(p, cv.point(t, sign)) if cv.D(t) >= 0 else math.inf
+    best = math.inf
+    ts = [lo+(hi-lo)*k/200 for k in range(201)]
+    # A loop's end inside the window, by bisection on the sign of D: the
+    # curve is vertical there, so the grid alone misses its nearest points.
+    for t0, t1 in zip(ts, ts[1:]):
+        if (cv.D(t0) >= 0) != (cv.D(t1) >= 0):
+            a, b = (t0, t1) if cv.D(t0) >= 0 else (t1, t0)
+            for _ in range(60):
+                m = (a+b)/2
+                a, b = (m, b) if cv.D(m) >= 0 else (a, m)
+            best = min(best, dist(a, 1))
+    for sign in ([branch] if branch else [1, -1]):
+        ds = [dist(t, sign) for t in ts]
+        k = min(range(len(ts)), key=lambda j: ds[j])
+        a, b = ts[max(k-1, 0)], ts[min(k+1, 200)]
+        g = (math.sqrt(5)-1)/2
+        for _ in range(60):
+            c1, c2 = b-g*(b-a), a+g*(b-a)
+            if dist(c1, sign) < dist(c2, sign):
+                b = c2
+            else:
+                a = c1
+        best = min(best, ds[k], dist((a+b)/2, sign))
+    return best
+
+
 def distance(cv, p, branch=None, span=None):
     """Distance from a point to the reference curve (or one branch, or one
     loop's parameter range): the point's angle on the ruled surface, then
     the nearer branch there."""
+    if isinstance(cv, FloatTorus):
+        return float_distance(cv, p, branch, span)
+    # 24 digits: distances are compared with 1e-6, and 80 digits cost time.
+    with mp.workdps(24):
+        return mp_distance(cv, p, branch, span)
+
+
+def mp_distance(cv, p, branch, span):
     pm = [mp.mpf(x) for x in p]
     if isinstance(cv, ref.ConeCurve):
         # From the apex a point of the lower nappe (v < 0) lies along
@@ -138,10 +228,32 @@ def distance_at(cv, pm, u, branch, span):
     return float(best)
 
 
-def differences(name, surfaces, native):
-    """What separates the native result from the reference's."""
-    _, cv = ref.curve(*surfaces)
-    rows = ref.rows(*surfaces)
+def circle_distance(row, p):
+    """The distance from a point to a reference circle row."""
+    c, n, r = [mp.mpf(x) for x in row[1]], [mp.mpf(x) for x in row[2]], mp.mpf(row[3])
+    w = [mp.mpf(a)-b for a, b in zip(p, c)]
+    h = sum(a*b for a, b in zip(w, n))
+    radial = mp.sqrt(max(mp.mpf(0), sum(a*a for a in w)-h*h))
+    return float(mp.sqrt((radial-r)**2+h*h))
+
+
+def surface_distance(s, p):
+    """The distance from a point to a plane, sphere or torus of a case."""
+    o, a = s.axes()
+    rel = [mp.mpf(x)-ana.mpf(y) for x, y in zip(p, o)]
+    am = [ana.mpf(x) for x in a]
+    la = mp.sqrt(sum(x*x for x in am))
+    h = sum(x*y for x, y in zip(rel, am))/la
+    if s.kind == 'plane':
+        return float(abs(h))
+    if s.kind == 'sphere':
+        return float(abs(mp.sqrt(sum(x*x for x in rel))-ana.mpf(s.radius)))
+    rho = mp.sqrt(max(mp.mpf(0), sum(x*x for x in rel)-h*h))
+    return float(abs(mp.sqrt((rho-ana.mpf(s.radius))**2+h*h)-ana.mpf(s.minor)))
+
+
+def differences(name, surfaces, native, rows):
+    """What separates the native result from the reference's rows."""
     status, lines, points = native
     if status != 'done':
         return ['not_done']
@@ -149,14 +261,32 @@ def differences(name, surfaces, native):
     scale = max([1.0]+[abs(x) for s in surfaces for x in s.frame[:3]]+[s.radius for s in surfaces])
     tol = BOUND*scale
     kind = rows[0] if isinstance(rows[0], str) else rows[0][0]
-    if kind == 'empty':
+    if kind in ('empty', 'same'):
         return [] if not samples and not points else ['spurious']
+    if kind == 'not_conic':
+        # Not parameterised yet (a sphere containing a meridian circle):
+        # native samples must lie on both surfaces.
+        if not samples:
+            return ['missed_curve']
+        return [] if all(surface_distance(s, p) <= tol for s in surfaces for p in samples+points) \
+            else ['off_surface']
     if kind == 'point':
-        target = [float(x) for x in rows[0][1]]
-        near = [p for p in samples+points if max(abs(a-b) for a, b in zip(p, target)) <= 1e-4*scale]
-        if not near:
+        targets = [[float(x) for x in row[1]] for row in rows]
+        near = lambda t: [p for p in samples+points if max(abs(a-b) for a, b in zip(p, t)) <= 1e-4*scale]
+        if not all(near(t) for t in targets):
             return ['missed_tangent_point']
-        return [] if len(near) == len(samples+points) else ['spurious']
+        return [] if sum(len(near(t)) for t in targets) == len(samples+points) else ['spurious']
+    if kind == 'circle':
+        out = []
+        d = [[circle_distance(row, p) for row in rows] for p in samples+points]
+        if any(min(x) > tol for x in d):
+            out.append('off_curve')
+        if {min(range(len(rows)), key=x.__getitem__) for x in d if min(x) <= tol} != set(range(len(rows))):
+            out.append('missed_component')
+        return out
+    _, cv = ref.curve(*surfaces)
+    if isinstance(cv, ref.TorusCurve):
+        cv = FloatTorus(cv, next(s for s in surfaces if s.kind != 'torus'))
     # Components: each loop by its range, each ring by its branch, a
     # figure-eight whole.
     if kind == 'loop':
@@ -202,12 +332,12 @@ def rust_differences(rust, expected):
     if [k for k, _ in rust] != want:
         return ['rust_class']
     for (kind, got), row in zip(rust, expected):
-        if kind == 'empty':
+        if isinstance(row, str):
             continue
         # The reference's numbers as it prints them (exact zeros as zero).
         numbers = []
         for part in row[1:]:
-            numbers += [float(ref.number(x)) for x in (part if isinstance(part, list) else [part])]
+            numbers += [float(ref.number(x)) for x in (part if isinstance(part, (list, tuple)) else [part])]
         if len(numbers) != len(got):
             return ['rust_values']
         inside = lambda k: got[k][0]-1e-25*abs(numbers[k]) <= numbers[k] <= got[k][1]+1e-25*abs(numbers[k])
@@ -304,14 +434,15 @@ def main():
     rust = rust_rows()
     for name, a, b in fixtures.cases():
         report['cases'] += 1
-        wrong = rust_differences(rust[name], ref.rows(*surfaces_of(name, a, b)))
+        rows = ref.rows(*surfaces_of(name, a, b))
+        wrong = rust_differences(rust[name], rows)
         if wrong:
             report['failures'].append({'case': name, 'reason': ' '.join(wrong), 'rust': rust[name]})
             continue
         report['rust_within_reference'] += 1
         native = observed[name]
         report['native_samples'] += sum(len(l) for l in native[1])+len(native[2])
-        found = differences(name, surfaces_of(name, a, b), native)
+        found = differences(name, surfaces_of(name, a, b), native, rows)
         if not found:
             report['matches'].append(name)
             continue

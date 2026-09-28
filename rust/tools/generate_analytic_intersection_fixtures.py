@@ -43,6 +43,10 @@ def cone(o, n, r, a, x=None):
     return ('cone', (*o, *n, *(x or hint(n)), r, a))
 
 
+def torus(o, n, major, minor, x=None):
+    return ('torus', (*o, *n, *(x or hint(n)), major, minor))
+
+
 def hint(n):
     """An x hint not parallel to the normal."""
     return Y if abs(n[0]) >= max(abs(n[1]), abs(n[2])) else X

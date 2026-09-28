@@ -38,15 +38,16 @@ from identity_reference import frame_axes
 
 mp.mp.dps = 80
 
-KINDS = ('plane', 'cylinder', 'cone', 'sphere')
+KINDS = ('plane', 'cylinder', 'cone', 'sphere', 'torus')
 
 
 @dataclass
 class Surface:
     kind: str
     frame: tuple        # origin, normal, x hint: nine binary64 values
-    radius: float = 0.0
+    radius: float = 0.0  # a torus's major radius
     angle: float = 0.0  # a cone's half-angle
+    minor: float = 0.0  # a torus's minor radius
 
     def axes(self):
         """(origin, normal) as exact rationals of the stored frame."""
@@ -467,7 +468,7 @@ def canonical(items):
 
 def parse(block):
     """A case block: `case NAME`, then two `surface KIND o(3) n(3) x(3)
-    [radius [angle]]` rows."""
+    [radius [angle]]` rows (a torus: `major minor`)."""
     lines = [l.split() for l in block.strip().splitlines()]
     name = lines[0][1]
     surfaces = []
@@ -479,5 +480,7 @@ def parse(block):
             s.radius = v[9]
         if w[1] == 'cone':
             s.angle = v[10]
+        if w[1] == 'torus':
+            s.radius, s.minor = v[9], v[10]
         surfaces.append(s)
     return name, surfaces

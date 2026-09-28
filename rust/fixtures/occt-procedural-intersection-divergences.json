@@ -1,5 +1,5 @@
 {
-  "note": "Reviewed GeomInt_IntSS differences from the exact S7b.1 reference.",
+  "note": "Reviewed GeomInt_IntSS differences from the exact S7b references.",
   "reviews": [
     {
       "case": "cs_tangent_outside",
@@ -47,6 +47,42 @@
       ],
       "reason": "The sphere is 2^-20 beyond tangency to both nappes of the cone, so the surfaces meet at a very small angle and the two tiny loops are ill-conditioned: a point within 2e-9 of both surfaces can lie about 1e-6 from the exact curve. OCCT's approximated samples are that close to both surfaces, and one is 1.55e-6 from the exact curve by closest-point distance, just above the 1.5e-6 bound of this case. The kernel's points are certified on the exact curve.",
       "independent_evidence": "The centre (1.5, 0, 0) is 1.5 cos 0.5 = 1.3163738428355591 from each generatrix of the cone of half-angle 0.5 about z with apex at the origin; the radius exceeds that by 2^-20, so the reference finds two loops of half-width 0.0022 rad around u = 0 and u = pi. OCCT's worst sample is 2.2e-9 from the sphere and 1.1e-9 from the cone, and 1.55e-6 from the nearest point of the exact curve.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "tp_side_tangent",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "514676241ef9d501f283ef54d1aee529e4aec6e8668e0795d818b24e3311f22e",
+      "differences": [
+        "missed_tangent_point"
+      ],
+      "reason": "GeomInt_IntSS returns neither a line nor a point for a plane parallel to a torus's axis touching its outer equator: the isolated tangency is not found. The kernel decides it exactly (P(m) = 0 with the vertex beyond m) and encloses the point.",
+      "independent_evidence": "The torus has major radius 2 and minor 0.5 about the z axis; the plane is x = 2.5 = R + r, so it touches the torus only at (2.5, 0, 0), where the outer equator's tangent plane is x = 2.5.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "ts_point_zero",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "514676241ef9d501f283ef54d1aee529e4aec6e8668e0795d818b24e3311f22e",
+      "differences": [
+        "missed_tangent_point"
+      ],
+      "reason": "GeomInt_IntSS returns nothing for a sphere in a torus's hole touching its inner equator: the isolated tangency is not found. The kernel decides it exactly (P(m) = 0 with the vertex beyond m).",
+      "independent_evidence": "The torus has major radius 2 and minor 1 about the z axis (inner equator radius 1); the sphere has radius 0.75 about (0.25, 0, 0), so its farthest point along x is (1, 0, 0), on the inner equator, and every other point is nearer the axis than the tube.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "ts_point_pi",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "514676241ef9d501f283ef54d1aee529e4aec6e8668e0795d818b24e3311f22e",
+      "differences": [
+        "missed_tangent_point"
+      ],
+      "reason": "GeomInt_IntSS returns nothing for a sphere enclosing a torus and touching its outer equator from outside: the isolated tangency is not found. The kernel decides it exactly (P(-m) = 0 with the vertex below -m).",
+      "independent_evidence": "The torus has major radius 2 and minor 1 about the z axis (outer equator radius 3); the sphere has radius 3.25 about (0.25, 0, 0), so it passes through (-3, 0, 0) on the outer equator, and the torus's points are otherwise inside it.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     }
   ]

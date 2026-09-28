@@ -654,6 +654,52 @@ Decisions for S7b.2, recorded before its code (2026-09-27):
   frames, 80-digit roots by dense sampling) and a `GeomInt_IntSS` capture of
   these pairs before their kernel code.
 
+Decisions for S7b.3, recorded before its code (2026-09-27):
+
+* **Split.** S7b.3a: a torus with a plane or a sphere (every position), and
+  every coaxial torus pair (a plane normal to the axis, a sphere centred on
+  it, a coaxial cylinder, cone or torus). S7b.3b: a torus with a cylinder, a
+  cone or a torus off its axis, where a meridian meets the other surface in
+  a quartic. Unbounded components (two cones, the apex on a sphere) stay a
+  later part of S7b.
+* **Meridians.** A torus (axis `a` normalised exactly, major `R`, minor
+  `r`) is `C(phi) + r (cos t e(phi) + sin t a)`, `C = o + R e`,
+  `e(phi) = cos phi x + sin phi y` in an exactly orthonormal frame, `x`
+  along the component normal to the axis of the plane's stored normal or of
+  the direction from the torus's origin to the sphere's centre. A plane or a
+  sphere restricted to a meridian circle is `f0 + alpha cos t + beta sin t`,
+  so each `phi` gives the points of two branches, `t = atan2(beta, alpha) +-
+  arccos(-f0 / sqrt(alpha^2 + beta^2))`, evaluated algebraically (the unit
+  vector `(cos t, sin t)` is `(-alpha f0 -+ beta sqrt(D), -beta f0 +- alpha
+  sqrt(D)) / (alpha^2 + beta^2)`), joined where `D = alpha^2 + beta^2 - f0^2`
+  vanishes. `D` is a quadratic `P(c)` in `c = m cos phi` with rational
+  coefficients and a negative leading one (`r < R`), `m` the length of that
+  normal component (the square root of a rational).
+* **Classes by exact predicates.** The signs of `P(m)`, `P(-m)` (numbers
+  `u + v sqrt(q)`, decided exactly), of `P`'s discriminant and the vertex's
+  position against `+-m` give every class: empty, one or two tangent points,
+  one loop around `phi = 0` or `pi`, two loops (mirror images), two loops
+  touching at `phi = 0` or `pi` (a node: two components sharing an end), two
+  rings, a figure-eight with its node at `0` or `pi`, and Villarceau's two
+  circles (`P(m) = P(-m) = 0`: two loops `[0, pi]`, `[pi, 2 pi]` sharing both
+  ends). Loop ends are `arccos` of a root over `m` in closed form. A
+  component's arcs between its ends and nodes are what S8 and S9 need; which
+  arc continues which smoothly through a node is not recorded.
+* **Exact special cases.** A plane containing the axis: two meridian
+  circles. A plane normal to the axis or a sphere centred on it: circles
+  about the axis (two, one tangent, none). A sphere containing a meridian
+  circle (the centre in the equatorial plane on the tangent line of a
+  meridian circle's centre, `rho^2 = r^2 + |w|^2 - R^2`) stays `NotConic`.
+  Coaxial pairs meet in circles about the axis where their meridians meet in
+  the half-plane: a cylinder (a vertical line), a cone (two lines through the
+  apex, certified; never exactly tangent), a torus (two circles, exact
+  classes; the same torus is `Same`).
+* **Evidence first**, as before: the reference extended with the meridian
+  parameterisation (80-digit `D` by evaluating the other surface on the
+  meridian circle, roots by dense sampling, classes by its own exact
+  predicates) and a `GeomInt_IntSS` capture of the S7b.3a cases before any
+  kernel torus intersection code.
+
 ### S8 — general planar split and face trimming (SplitBody job)
 
 Split any supported solid by an arbitrary plane: face/plane intersection
@@ -950,6 +996,18 @@ the first fixture, never deferred.
     five frames (AddressSanitizer's stack depot otherwise outgrew the 2 GB
     gate). Two cones and a cone whose rational apex is on a sphere stay
     `NotConic`.
-  * S7b.3 (tori), unbounded components (two cones), S7c and S7d pending.
+  * S7b.3a implemented: the reference extended with the meridian
+    parameterisation and a third native capture of 58 torus cases came
+    before any kernel torus code; `intersection/toroidal.rs` decides every
+    class of a torus and a plane or a sphere exactly (the signs of a
+    quadratic at `+-m`, numbers in `Q(sqrt q)`), gives loop ends in closed
+    form and the special and coaxial pairs as circles; the kernel inside the
+    reference on all 93, the bridge 86 matches and 7 reviewed differences
+    (three more missed tangent points). A near-Villarceau case exposed that
+    the platform's `hypot` can store a non-Pythagorean normal one unit in the
+    last place away from the reference's emulation: the procedural fixture
+    now checks stored normals bit for bit, as S7a's does.
+  * S7b.3b (a torus with a cylinder, cone or torus off its axis),
+    unbounded components (two cones), S7c and S7d pending.
 * S8 — pending
 * S9 — pending

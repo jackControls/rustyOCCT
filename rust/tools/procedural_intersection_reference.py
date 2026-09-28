@@ -32,6 +32,13 @@ the class, and prints canonical rows:
 The kernel uses the same parameterisation and frame, so every row is
 directly comparable; it evaluates in certified intervals and finds roots by
 sign changes, not by sampling.
+
+S7b.2 adds cones (`ConeCurve`, `cone_form`); S7b.3a a torus with a plane or
+a sphere on its meridians (`TorusCurve`: `D` from the other surface
+evaluated on the meridian circle at three angles, classes from its own exact
+predicates on the quadratic `P(m cos phi)` found by exact interpolation) and
+the special and coaxial torus pairs as `circle` rows (centre, unit normal,
+radius), `same`, or `not_conic` for a sphere containing a meridian circle.
 """
 from fractions import Fraction as F
 
@@ -244,6 +251,11 @@ def classify_sphere(c, s):
 def curve(s1, s2):
     """(class, Curve) of a cylinder pair with crossing axes or a cylinder
     and a sphere off its axis; None for other pairs."""
+    if 'torus' in (s1.kind, s2.kind):
+        torus, other = (s1, s2) if s1.kind == 'torus' else (s2, s1)
+        if torus_special(torus, other) == 'general':
+            return 'torus', torus_curve(torus, other)
+        return None
     if ana.KINDS.index(s1.kind) > ana.KINDS.index(s2.kind):
         s1, s2 = s2, s1
     if (s1.kind, s2.kind) == ('cylinder', 'cylinder'):
@@ -308,6 +320,10 @@ def curve(s1, s2):
 
 
 def rows(s1, s2):
+    if 'torus' in (s1.kind, s2.kind):
+        if s1.kind == 'torus' and s2.kind != 'torus':
+            s1, s2 = s2, s1
+        return torus_rows(s2, s1)
     found = curve(s1, s2)
     if found is None:
         return None
@@ -370,5 +386,291 @@ def text(row):
         return row
     words = [row[0]]
     for part in row[1:]:
-        words += [number(v) for v in part] if isinstance(part, list) else [number(part)]
+        words += [number(v) for v in part] if isinstance(part, (list, tuple)) else [number(part)]
     return ' '.join(words)
+
+
+# ------------------------------------------------------------ S7b.3a: tori
+
+def surd_sign(u, v, q):
+    """The sign of u + v sqrt(q) (q >= 0, u, v, q rational), exactly."""
+    su = (u > 0)-(u < 0)
+    sv = ((v > 0)-(v < 0)) if q != 0 else 0
+    if sv == 0 or su == sv:
+        return su or sv
+    if su == 0:
+        return sv
+    lhs, rhs = u*u, v*v*q
+    return su if lhs > rhs else sv if lhs < rhs else 0
+
+
+class TorusCurve:
+    """A torus's meridians: C(phi) + r (cos t e + sin t a), C = o + R e,
+    e(phi) = cos phi x + sin phi y. The other surface restricted to a
+    meridian circle is f0 + alpha cos t + beta sin t (a plane or a sphere),
+    found here by evaluating it at t = 0, pi/2 and pi."""
+    def __init__(self, torus, f, toward):
+        o, a = torus.axes()
+        self.o, self.a, self.x, self.y = frame(o, a, toward)
+        self.R, self.r = mpf(torus.radius), mpf(torus.minor)
+        self.f = f
+
+    def e(self, phi):
+        c, s = mp.cos(phi), mp.sin(phi)
+        return [c*x+s*y for x, y in zip(self.x, self.y)]
+
+    def meridian(self, phi, t):
+        e = self.e(phi)
+        return [o+(self.R+self.r*mp.cos(t))*ei+self.r*mp.sin(t)*ai for o, ei, ai in zip(self.o, e, self.a)]
+
+    def coefficients(self, phi):
+        g0, g1, g2 = (self.f(self.meridian(phi, t)) for t in (mp.mpf(0), mp.pi/2, mp.pi))
+        f0 = (g0+g2)/2
+        return f0, (g0-g2)/2, g1-f0
+
+    def D(self, phi):
+        f0, alpha, beta = self.coefficients(phi)
+        return alpha*alpha+beta*beta-f0*f0
+
+    def point(self, phi, sign):
+        f0, alpha, beta = self.coefficients(phi)
+        rho = mp.sqrt(alpha*alpha+beta*beta)
+        k = max(-1, min(1, -f0/rho))
+        return self.meridian(phi, mp.atan2(beta, alpha)+sign*mp.acos(k))
+
+    def roots(self, samples=2880):
+        return Curve.roots(self, samples)
+
+
+def torus_quadratic(torus, other):
+    """D as an exact quadratic (P2, P1, P0) in c = m cos phi, with m^2 = q:
+    the plane's normal, or the direction to the sphere's centre, has the
+    component of length m normal to the axis; also that rational
+    direction. Found by evaluating the exact D(c) at c = -1, 0, 1."""
+    ot, A = torus.axes()
+    R, r = F(torus.radius), F(torus.minor)
+    AA = dot(A, A)
+    if other.kind == 'plane':
+        op, N = other.axes()
+        d0 = dot(N, sub(ot, op))
+        beta2 = r*r*dot(N, A)**2/AA
+        q = dot(N, N)-dot(N, A)**2/AA
+        toward = sub(N, scale(A, dot(N, A)/AA))
+        D = lambda c: r*r*c*c+beta2-(d0+R*c)**2
+    else:
+        s, _ = other.axes()
+        w = sub(s, ot)
+        wa2 = dot(w, A)**2/AA
+        q = dot(w, w)-wa2
+        toward = sub(w, scale(A, dot(w, A)/AA))
+        rho2 = F(other.radius)**2
+        D = lambda c: (2*r*(R-c))**2+4*r*r*wa2-(R*R-2*R*c+dot(w, w)+r*r-rho2)**2
+    P0 = D(F(0))
+    P2 = (D(F(1))+D(F(-1)))/2-P0
+    P1 = (D(F(1))-D(F(-1)))/2
+    return (P2, P1, P0), q, toward
+
+
+def torus_class(P, q):
+    """The components as parameter ranges of phi, from exact signs:
+    ('empty',), ('points', [phi]), ('loops', [(u0, u1)]), ('rings',),
+    ('figure_eight', node). P's leading coefficient is negative; its
+    discriminant is positive except for a sphere centred in the equatorial
+    plane with K = 2 R^2, where P = P2 (c - R)^2: empty when R > m, the
+    excluded meridian circle otherwise."""
+    P2, P1, P0 = P
+    assert P2 < 0, P
+    if P1*P1-4*P2*P0 == 0:
+        v = -P1/(2*P2)
+        assert v*v > q, P
+        return ('empty',)
+    assert P1*P1-4*P2*P0 > 0, P
+    at_plus = surd_sign(P2*q+P0, P1, q)     # D at phi = 0
+    at_minus = surd_sign(P2*q+P0, -P1, q)   # D at phi = pi
+    v = -P1/(2*P2)                           # the vertex
+    v_plus = surd_sign(v, -1, q)            # sign of v - m
+    v_minus = surd_sign(v, 1, q)            # sign of v + m
+    m = mp.sqrt(mpf(q))
+    sq = mp.sqrt(mpf(P1*P1-4*P2*P0))
+    lo, hi = (-mpf(P1)+sq)/(2*mpf(P2)), (-mpf(P1)-sq)/(2*mpf(P2))
+    t = lambda c: mp.acos(c/m)
+    pi, zero_ = mp.pi, mp.mpf(0)
+    if at_plus > 0 and at_minus > 0:
+        return ('rings',)
+    if at_plus > 0 and at_minus < 0:
+        return ('loops', [(-t(lo), t(lo))])
+    if at_plus < 0 and at_minus > 0:
+        return ('loops', [(t(hi), 2*pi-t(hi))])
+    if at_plus > 0 and at_minus == 0:
+        return ('figure_eight', pi)
+    if at_plus == 0 and at_minus > 0:
+        return ('figure_eight', zero_)
+    if at_plus == 0 and at_minus == 0:
+        return ('loops', [(zero_, pi), (pi, 2*pi)])
+    if at_plus < 0 and at_minus < 0:
+        if v_plus < 0 and v_minus > 0:
+            return ('loops', [(-t(lo), -t(hi)), (t(hi), t(lo))])
+        return ('empty',)
+    if at_plus == 0:
+        # A root at m: the upper one (two loops touching at 0) or the lower
+        # (a tangent point at 0).
+        return ('loops', [(-t(lo), zero_), (zero_, t(lo))]) if v_plus < 0 else ('points', [zero_])
+    return ('loops', [(t(hi), pi), (pi, 2*pi-t(hi))]) if v_minus > 0 else ('points', [pi])
+
+
+def circle_circle(c1, r1, c2, r2, d2):
+    """Two circles in a plane (centres as (rho, z) in mp, radii and the
+    squared distance of the centres exact): their meeting points, by exact
+    classes (tangent: one point)."""
+    s, f = (r1+r2)**2, (r1-r2)**2
+    if d2 > s or d2 < f:
+        return []
+    c1, c2 = [mpf(x) for x in c1], [mpf(x) for x in c2]
+    d = mp.sqrt(mpf(d2))
+    along = (mpf(d2)+mpf(r1)**2-mpf(r2)**2)/(2*d)
+    u = [(b-a)/d for a, b in zip(c1, c2)]
+    foot = [a+along*x for a, x in zip(c1, u)]
+    if d2 == s or d2 == f:
+        return [foot]
+    h = mp.sqrt(mpf(r1)**2-along*along)
+    n = [-u[1], u[0]]
+    return [[a+h*x for a, x in zip(foot, n)], [a-h*x for a, x in zip(foot, n)]]
+
+
+def torus_rows(torus, other):
+    """Canonical rows of a torus and a plane or sphere (any position), or a
+    coaxial cylinder, cone or torus; None for S7b.3b's pairs."""
+    special = torus_special(torus, other)
+    if special != 'general':
+        return special
+    P, q, toward = torus_quadratic(torus, other)
+    return torus_components(torus_curve(torus, other), torus_class(P, q))
+
+
+def torus_special(torus, other):
+    """The rows of the special and coaxial cases, None for S7b.3b's pairs,
+    'general' for a plane or sphere in general position."""
+    ot, A = torus.axes()
+    R, r = F(torus.radius), F(torus.minor)
+    AA = dot(A, A)
+    la = mp.sqrt(mpf(AA))
+    am = [mpf(v)/la for v in A]
+    om = [mpf(v) for v in ot]
+    at_height = lambda z: tuple(o+z*a for o, a in zip(om, am))
+    # (rho, z) meridian points to circles about the axis.
+    circles = lambda pts: ana.canonical([ana.circle(at_height(z), A, rho) for rho, z in pts])
+    meridian = [R, 0]
+    oo, ao = other.axes()
+    rel = sub(oo, ot)
+    on_axis = zero(cross(rel, A))
+    if other.kind == 'plane':
+        N = ao
+        if zero(cross(N, A)):
+            # Normal to the axis: sin t = z / r at the plane's height z.
+            z2 = dot(N, rel)**2*AA/dot(N, A)**2
+            zm = mpf(dot(N, rel)*AA/dot(N, A))/la
+            if z2 > r*r:
+                return ['empty']
+            if z2 == r*r:
+                return circles([(mpf(R), zm)])
+            h = mp.sqrt(mpf(r*r-z2))
+            return circles([(mpf(R)+h, zm), (mpf(R)-h, zm)])
+        if dot(N, A) == 0 and dot(N, rel) == 0:
+            # The plane contains the axis: two meridian circles.
+            u = unit(cross(A, N))
+            return ana.canonical([ana.circle(tuple(o+s*mpf(R)*x for o, x in zip(om, u)), N, r)
+                                  for s in (1, -1)])
+    elif other.kind == 'sphere':
+        if on_axis:
+            za2, za = dot(rel, A)**2/AA, mpf(dot(rel, A))/la
+            pts = circle_circle(meridian, r, [0, za], F(other.radius), R*R+za2)
+            return circles(pts) if pts else ['empty']
+        w2 = dot(rel, rel)
+        if dot(rel, A) == 0 and F(other.radius)**2 == r*r+w2-R*R and w2 >= R*R:
+            return ['not_conic']       # the sphere contains a meridian circle
+    else:
+        if not (zero(cross(ao, A)) and on_axis):
+            return None                # S7b.3b
+        za2, za = dot(rel, A)**2/AA, mpf(dot(rel, A))/la
+        if other.kind == 'cylinder':
+            k = F(other.radius)-R
+            if k*k > r*r:
+                return ['empty']
+            if k*k == r*r:
+                return circles([(mpf(other.radius), mp.mpf(0))])
+            h = mp.sqrt(mpf(r*r-k*k))
+            return circles([(mpf(other.radius), h), (mpf(other.radius), -h)])
+        if other.kind == 'torus':
+            R2, r2 = F(other.radius), F(other.minor)
+            if R2 == R and r2 == r and za2 == 0:
+                return ['same']
+            if R2 == R and za2 == 0:
+                return ['empty']
+            pts = circle_circle(meridian, r, [R2, za], r2, (R2-R)**2+za2)
+            return circles(pts) if pts else ['empty']
+        # A coaxial cone: rho = s (rc + g (z - za) tan h) on each nappe s,
+        # g = +-1 as the cone's axis runs along the torus's or against it.
+        tn = mp.tan(mpf(other.angle))
+        g = 1 if dot(ao, A) > 0 else -1
+        pts = []
+        for s in (1, -1):
+            k0, k1 = s*(mpf(other.radius)-g*za*tn), s*g*tn
+            a2, a1, a0 = k1*k1+1, 2*k1*(k0-mpf(R)), (k0-mpf(R))**2-mpf(r)**2
+            disc = a1*a1-4*a2*a0
+            assert abs(disc) > mp.mpf(10)**-40, 'a cone is never exactly tangent'
+            if disc > 0:
+                for z in ((-a1+mp.sqrt(disc))/(2*a2), (-a1-mp.sqrt(disc))/(2*a2)):
+                    pts.append((k0+k1*z, z))
+        return circles(pts) if pts else ['empty']
+    return 'general'
+
+
+def plane_function(pl):
+    o, n = pl.axes()
+    om, nm = [mpf(v) for v in o], [mpf(v) for v in n]
+    return lambda p: sum((x-y)*z for x, y, z in zip(p, om, nm))
+
+
+def torus_curve(torus, other):
+    """The TorusCurve of a torus and a plane or sphere in general position."""
+    _, q, toward = torus_quadratic(torus, other)
+    oo, _ = other.axes()
+    f = plane_function(other) if other.kind == 'plane' else sphere_form(oo, other.radius)['f']
+    return TorusCurve(torus, f, toward)
+
+
+def torus_components(cv, cls):
+    """Rows of a torus curve's components; the ends of loops that are not
+    nodes are checked against D's sign changes."""
+    kind = cls[0]
+    if kind == 'empty':
+        return ['empty']
+    sampled = cv.roots()
+    if kind == 'points':
+        assert not sampled, sampled
+        return sorted([('point', cv.point(u, 1)) for u in cls[1]], key=lambda row: [float(x) for x in row[1]])
+    if kind == 'rings':
+        assert not sampled, sampled
+        return [('rings', cv.point(mp.mpf(0), 1), cv.point(mp.mpf(0), -1), cv.point(mp.pi, 1),
+                 cv.point(mp.pi, -1))]
+    if kind == 'figure_eight':
+        assert not sampled, sampled
+        node = cls[1]
+        return [('figure_eight', cv.point(node, 1), cv.point(node+mp.pi, 1), cv.point(node+mp.pi, -1))]
+    # An end shared by two loops (modulo a turn) is a node, where D touches
+    # zero without a sign change; the others are simple roots.
+    ends = [u for span in cls[1] for u in span]
+    wrap = lambda u: mp.atan2(mp.sin(u), mp.cos(u))
+    simple = [u for u in ends if sum(abs(wrap(u-w)) < mp.mpf(10)**-60 for w in ends) == 1]
+    # Each simple end is a sign change of the independently evaluated D
+    # (tiny loops escape the sampling), and every sampled root is an end.
+    eps = mp.mpf(10)**-30
+    for u in simple:
+        assert cv.D(u-eps)*cv.D(u+eps) < 0, u
+    for s_ in sampled:
+        assert any(abs(wrap(u-s_)) < mp.mpf(10)**-40 for u in simple), (s_, simple)
+    out = []
+    for u0, u1 in cls[1]:
+        mid = (u0+u1)/2
+        out.append(('loop', u0, u1, cv.point(u0, 1), cv.point(u1, 1), cv.point(mid, 1), cv.point(mid, -1)))
+    return sorted(out, key=lambda row: float(row[1]))
