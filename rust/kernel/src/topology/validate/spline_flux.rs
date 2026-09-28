@@ -230,13 +230,34 @@ struct Patch<T> {
     g: Vec<Tensor<T>>,
 }
 
-/// The patch holding every one of a piece's points, if any.
-fn locate<'a, T: Real>(patches: &'a [Patch<T>], points: &[(R, R)]) -> Option<&'a Patch<T>> {
-    patches.iter().find(|p| {
+/// The patch holding every one of a piece's points, if any; else one
+/// holding its ends whose box the piece's curve certainly stays in (its
+/// homogeneous coordinates against each bound, exactly nonnegative: a
+/// control polygon may leave a box its curve keeps to, as a crease's does
+/// where it nearly touches a cap).
+fn locate<'a, T: Real>(
+    patches: &'a [Patch<T>],
+    points: &[(R, R)],
+    piece: &[Vec<R>; 4],
+) -> Option<&'a Patch<T>> {
+    let holds = |p: &Patch<T>, pts: &[(R, R)]| {
         let [[u0, u1], [v0, v1]] = &p.domain;
-        points
-            .iter()
+        pts.iter()
             .all(|(u, v)| u0 <= u && u <= u1 && v0 <= v && v <= v1)
+    };
+    if let Some(p) = patches.iter().find(|p| holds(p, points)) {
+        return Some(p);
+    }
+    let ends = [points[0].clone(), points[points.len() - 1].clone()];
+    patches.iter().find(|p| {
+        holds(p, &ends)
+            && p.domain.iter().enumerate().all(|(axis, [lo, hi])| {
+                let x = &piece[axis];
+                let w = &piece[3];
+                let above: Vec<R> = x.iter().zip(w).map(|(x, w)| x - lo * w).collect();
+                let below: Vec<R> = x.iter().zip(w).map(|(x, w)| hi * w - x).collect();
+                super::bernstein::nonnegative(&above) && super::bernstein::nonnegative(&below)
+            })
     })
 }
 
@@ -376,7 +397,7 @@ fn exact_green<T: Real>(
                 let points: Vec<(R, R)> = (0..piece[3].len())
                     .map(|i| (&piece[0][i] / &piece[3][i], &piece[1][i] / &piece[3][i]))
                     .collect();
-                let patch = locate(&patches, &points)?;
+                let patch = locate(&patches, &points, &piece)?;
                 let uniform = piece[3].iter().all(|x| *x == piece[3][0]);
                 let uv = [lift(&piece[0]), lift(&piece[1]), lift(&piece[3])];
                 add_all(&mut total, piece_integrals(patch, &uv, uniform, high)?);

@@ -15,16 +15,17 @@ wall) or lying in one of its faces returns the solid itself, every entity
 `Unchanged`. A side may hold several pieces (a U's two prongs). Each piece is
 a validated solid; an error is one of:
 
-* `OutOfDomain`: a solid of a later sub-step (S8b: spline prisms; S8c:
-  primitives; a split piece split again).
+* `OutOfDomain`: a solid of a later sub-step (a split piece split again),
+  or a spline profile segment lying along the plane's trace.
 * `Degenerate`: the split would leave an edge or a piece thinner than the
   resolution (a crossing within the resolution of a vertex, a plane within
   binary64 of a cap, a vertex within the resolution of the plane, a plane
   whose traces on the two caps' planes lie within the resolution of each
   other: parallel to the axis over the prism's height to binary64), or
   pinch a piece (a plane tangent to a hole, or touching the profile at a
-  vertex, inside the solid; an oblique plane touching a cap's arc edge
-  between its ends): a profile cannot hold a hole touching its boundary.
+  vertex, inside the solid; an oblique plane touching a cap's arc or spline
+  edge between its ends; a plane tangent to a spline where it crosses it,
+  or at a knot): a profile cannot hold a hole touching its boundary.
 * `ComputationLimit`: a certified comparison it could not decide (an arc's
   crossing at its end).
 * `PrecisionLoss`: a new point the coordinates cannot resolve (the centre
@@ -95,6 +96,55 @@ coefficients exact rationals of the stored data (the frame's axes as stored).
   bounds its segments); `.brep` writes its planar pieces and its ellipses on
   planes, not a cylinder's section, which OCCT has no analytic pcurve for
   (`Unwritable`).
+
+## Spline prisms (S8b.3)
+
+`solid/split/spline.rs` decides a spline profile segment against a plane's
+trace `a u + b v + d = 0`; the prism builders above then take its pieces.
+
+* **Meetings.** On each exact Bézier arc of the (nonrational) spline the
+  trace's function is a polynomial with rational coefficients in the arc's
+  parameter; its roots in the arc are isolated exactly with their
+  multiplicities (`polynomial::real::isolate`). A simple root is a
+  crossing, at the curve parameter rounded to binary64 from its refined
+  isolator (a root at an interior knot at the knot itself); an even one a
+  touch (a tangency: the segment keeps its side; a touch inside the solid
+  pinches a piece as an arc's does); an odd one of multiplicity three or
+  more, or a tangency at a knot, is `Degenerate`. Each piece's side is the
+  exact sign at a rational parameter between two distinct roots, never at a
+  rounded crossing. Whether the prism lies on one side takes, per spline,
+  whether the function at the caps' heights takes each strict sign: at the
+  arcs' ends and between their roots, exactly.
+* **Pieces.** A piece of a spline segment is its curve restricted to the
+  rounded parameters by Boehm's knot insertion in rationals, its poles
+  rounded: it keeps the curve's parameter, and its ends are the rounded
+  crossing points exactly (the section's new vertices). A traced piece's
+  boundary is then a path of lines, arcs and spline pieces, validated as
+  every profile is (S8b.1's screen), and its prism has exact spline walls
+  (S8b.2).
+* **Oblique.** A wall over a footprint's spline piece is the degree-(p, 1)
+  wall of that piece. Its flat end and a crease part on a cap's side are
+  the piece's lifts; a crease part on the plane is the piece's affine image
+  (each pole at the plane's height over it; the part's ends at their
+  vertices' heights), and its pcurve on the wall is exact: `u` the curve's
+  own parameter (the spline whose poles are the Greville abscissae, rounded)
+  and `v` the height over the wall's low end at each pole. The rounded
+  Greville abscissae leave the pcurve's hull across the wall's knot lines by
+  a rounding step: the exact deviation bound takes the patch holding the
+  piece but for such a sliver, plus a certified bound of the neighbouring
+  patch's departure from it there (both re-expressed exactly over the
+  sliver's box); Green's exact integrals take a patch whose box the piece's
+  curve provably keeps to (each coordinate against each bound, exactly
+  nonnegative), where a crease nearly touching a cap takes its control
+  polygon out of it.
+* **Names and records.** Roles and ids are the arcs': a restricted spline
+  edge or wall is a `Split` child whose support is its parent's (the
+  independent check compares a spline edge's exact Bézier arcs with its
+  parent's over its range, a wall's rows with its parent's extrusion, a
+  planar piece's spline boundary by its poles). An edge whose span runs
+  against its curve (a profile given clockwise, a hole's spline now on an
+  outer boundary) is written to `.brep` along its curve and used the other
+  way.
 
 ## Cones and spheres (S8c.1)
 
@@ -273,14 +323,18 @@ everywhere, `|d| - R |(a, b)| >= r |m|`, decided by squares.
   cap, both frames) and `occt-split-spline-preimplementation` their splits
   with `Geom_BSplineCurve` edges: 10 within 2e-8, seven reviewed BRepGProp
   errors (trimmed spline walls to 2.6e-7; faces bounded by the three-span
-  wave to 1.8e-3, though OCCT's edges enclose the reference's area). Until
-  S8b.1 the kernel reports all 17 unsupported.
+  wave to 1.8e-3, though OCCT's edges enclose the reference's area). The
+  kernel (S8b.3) is inside the reference on all 17; one more reviewed
+  difference: OCCT splits the bulge's cap edges where a plane touches them
+  (`bulge_tangent`), the kernel returns the prism.
 * **Kernel.** `tests/split.rs`: every side's sums of the kernel's enclosures
   contain the reference's volume, area and moments; histories pass the
   independent check, cover every input entity and repeat exactly; oblique
   pieces move rigidly with their ids, classify, tessellate and write where
-  OCCT has records; `compare_split.py`: all 26 cases inside the reference,
-  23 matching the native counts and 3 reviewed.
+  OCCT has records; spline pieces (parallel, knot, oblique and holed) move,
+  tessellate and round-trip through `.brep`; `compare_split.py`: all 103
+  cases inside the reference, 52 matching the native counts and 51
+  reviewed.
 * **Fuzzing.** The `split` target cuts rectangles, regular polygons,
   stadiums, U shapes and holed squares in two frames with planes chosen
   degenerate on purpose (oblique ones through a cap's vertex or touching a
@@ -288,4 +342,6 @@ everywhere, `|d| - R |(a, b)| >= r |m|`, decided by squares.
   rigidly with their ids, and the split's own history check runs in its
   debug build. Cones, spheres, zones, caps and tori (a first byte of 224 on)
   are cut by nine plane modes, S8d.2's among them (touching a rim, parallel
-  to a ruling, through a frustum's virtual apex).
+  to a ruling, through a frustum's virtual apex). Spline prisms (a first
+  byte of 192 to 223: a bulge, a three-span wave, a lens hole given either
+  way round) take the same modes, the tangent ones at a spline's apex.
