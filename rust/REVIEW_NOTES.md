@@ -1703,5 +1703,16 @@ the first fixture, never deferred.
     input's own surfaces (`Construction::Half`); inside the reference on
     the four meridian cases, three reviewed count differences (OCCT's seam
     at angle 0 inside one half). The conic and circle sections (three
-    cases) wait for S8d.
+    cases) wait for S8d. Clean 600-second `split` campaign at `b789009b`
+    (5,148 executions after a 571 s replay slowed by the parallel tracks'
+    builds, 1,009 MB peak, no artifact).
+  * S8d: decisions recorded (2026-09-28); the reference and a
+    `BRepPrimAPI_MakeTorus` capture of 12 whole tori split by planes came
+    before any kernel code (`2815ae12`), OCCT's spiric pieces reviewed
+    (B-spline sections, 3e-7 to 9e-7 from the reference).
+  * S8d.1 implemented (`solid/split/torus.rs`): whole tori by planes normal
+    to their axis (tube bands and annuli as general bodies) or containing it
+    (half-turn wedges); inside the reference on the 8 such cases, six
+    reviewed count differences (OCCT's seams, and its split along the
+    circle where a plane touches the tube's top). S8d.2 (D13's engine) next.
 * S9 — pending

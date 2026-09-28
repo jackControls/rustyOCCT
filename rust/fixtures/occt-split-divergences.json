@@ -150,6 +150,78 @@
       "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves, which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 2.0e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid.",
       "independent_evidence": "For the plane through (3, 0, 0) with normal (1, 0, 1), cutting the tube on one side of the axis, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264 to the reference's precision, as the native ones do to about 1e-7.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "torus_height",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "f7d5508e01cd18f0d2ac2e8b8a2693351fe413b1e1c353f2d460273443bf91cb",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT keeps the torus's seam at the tube's angle v = 0 (its outer equator) inside the piece whose band passes it, which then has 3 faces, 5 edges and 3 vertices; the kernel has no seams (TOPOLOGY_MODEL.md): each piece is its band of the tube, wound once about the axis between two parallels, and the planar annulus between them (2 faces, 3 edges, 2 vertices in OCCT's counting, as OCCT's other piece). Volumes, areas and centres agree with the reference.",
+      "independent_evidence": "The plane is normal to the torus's axis, so it cuts the tube in two parallels; the band on the side holding the outer equator (v = 0) contains OCCT's seam.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "torus_high",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "90fbf5dcbda0e2b9b21e30c1ed541a43305fbd2f7645a7a687eac84d1d0ceb97",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT keeps the torus's seam at the tube's angle v = 0 (its outer equator) inside the piece whose band passes it, which then has 3 faces, 5 edges and 3 vertices; the kernel has no seams (TOPOLOGY_MODEL.md): each piece is its band of the tube, wound once about the axis between two parallels, and the planar annulus between them (2 faces, 3 edges, 2 vertices in OCCT's counting, as OCCT's other piece). Volumes, areas and centres agree with the reference.",
+      "independent_evidence": "The plane is normal to the torus's axis, so it cuts the tube in two parallels; the band on the side holding the outer equator (v = 0) contains OCCT's seam.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "torus_touch",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "10cb54a5c385eb3c916ceaff2d67fbd0ae63526bcd881c989d558ba2b9fade81",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI_Splitter splits the torus along the circle where the plane touches the tube's top (2 faces, 4 edges, 2 vertices); the kernel's split cuts nothing at a tangency (S8 decisions) and returns the torus unchanged (one face without loops: 1 face, 2 edges, 1 vertex in OCCT's counting of its seams). The volume, area and centre agree with the reference.",
+      "independent_evidence": "The plane z = 1 touches the torus (major 3, minor 1) along its top circle only; the torus lies in z <= 1.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "torus_meridian",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "3df77fa245882a292178a0a33dd5669480b4de445fbe1dcc8f2a9a3a96f413f5",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT keeps the torus's seam at the angle u = 0 (the frame's x axis) inside the half above the plane (4 faces, 5 edges, 3 vertices); the kernel's halves are the S3 construction's half-turn wedges, each its wall and the tube's two cross-section discs (3 faces, 3 edges, 2 vertices, OCCT's count of the other half). Volumes, areas and centres agree with the reference.",
+      "independent_evidence": "The plane contains the torus's axis and angle 0, along +x, lies on its positive side.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "torus_meridian_skew",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "2788374cbb118fc5905b03ffe6a385bac6a24056c24e3cd7c81b0f055e63747a",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT keeps the torus's seam at the angle u = 0 (the frame's x axis) inside the half above the plane (4 faces, 5 edges, 3 vertices); the kernel's halves are the S3 construction's half-turn wedges, each its wall and the tube's two cross-section discs (3 faces, 3 edges, 2 vertices, OCCT's count of the other half). Volumes, areas and centres agree with the reference.",
+      "independent_evidence": "The plane contains the torus's axis and angle 0, along +x, lies on its positive side.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "torus_tilted_height",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "101ef765c871daa845d125e64a0e9b46e7284cdeebb48417282cb468bf001522",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT keeps the torus's seam at the tube's angle v = 0 (its outer equator) inside the piece whose band passes it, which then has 3 faces, 5 edges and 3 vertices; the kernel has no seams (TOPOLOGY_MODEL.md): each piece is its band of the tube, wound once about the axis between two parallels, and the planar annulus between them (2 faces, 3 edges, 2 vertices in OCCT's counting, as OCCT's other piece). Volumes, areas and centres agree with the reference.",
+      "independent_evidence": "The plane is normal to the torus's axis, so it cuts the tube in two parallels; the band on the side holding the outer equator (v = 0) contains OCCT's seam.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     }
   ]
 }

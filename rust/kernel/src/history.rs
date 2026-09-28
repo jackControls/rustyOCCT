@@ -743,6 +743,29 @@ fn same_surface(piece: &EntityInfo, whole: &Geometry, tol: f64, edges: &Entities
                     && (ra - radius).abs() <= tol_f,
             )
         }
+        // A torus (S8d): axes parallel to 1e-12, centres, major and minor
+        // radii within the tolerance.
+        (
+            Surface::Torus {
+                frame: fa,
+                major: ma,
+                minor: ra,
+            },
+            Surface::Torus {
+                frame: fb,
+                major: mb,
+                minor: rb,
+            },
+        ) => {
+            let (na, nb) = (fa.normal(), fb.normal());
+            Some(
+                na.cross(nb).length() <= 1e-12
+                    && na.dot(nb) > 0.0
+                    && fa.origin().distance(fb.origin()) <= tol_f
+                    && (ma - mb).abs() <= tol_f
+                    && (ra - rb).abs() <= tol_f,
+            )
+        }
         _ => Some(false),
     }
 }

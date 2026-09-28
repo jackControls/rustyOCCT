@@ -109,9 +109,9 @@ def seed_corpus(target):
                     data[:2] = bytes([kind, mode])
                     data[10] = frame
                     save(bytes(data))
-        # S8c: a cone, a sphere, a zone and a cap (a first byte of 224 on)
-        # in every plane mode, both frames.
-        for kind in range(4):
+        # S8c and S8d: a cone, a sphere, a zone, a cap and a torus (a first
+        # byte of 224 on) in every plane mode, both frames.
+        for kind in range(5):
             for mode in range(6):
                 for frame in range(2):
                     data = bytearray((j*41+kind*13+mode*19+frame*7+5)%256 for j in range(24))

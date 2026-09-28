@@ -41,8 +41,21 @@ type Pieces = (Vec<(Side, Solid)>, History);
 /// A revolved solid's ends and its wall, as the S3 builders make them.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Primitive {
-    Cone { bottom: f64, top: f64, height: f64 },
-    Zone { radius: f64, low: f64, high: f64 },
+    Cone {
+        bottom: f64,
+        top: f64,
+        height: f64,
+    },
+    Zone {
+        radius: f64,
+        low: f64,
+        high: f64,
+    },
+    /// A whole torus (S8d.1's bands).
+    Torus {
+        major: f64,
+        minor: f64,
+    },
 }
 
 /// How a half was made, kept so a rigid motion rebuilds it exactly and it
@@ -116,6 +129,18 @@ fn ends(primitive: &Primitive) -> [EndSpec; 2] {
             };
             [at(low, -FRAC_PI_2), at(high, FRAC_PI_2)]
         }
+        Primitive::Torus { major, minor } => [
+            EndSpec {
+                w: -minor,
+                radius: major,
+                v: 0.0,
+            },
+            EndSpec {
+                w: minor,
+                radius: major,
+                v: 0.0,
+            },
+        ],
     }
 }
 
@@ -200,6 +225,7 @@ fn half(
             let role = match primitive {
                 Primitive::Cone { .. } => Role::Apex,
                 Primitive::Zone { .. } => Role::Pole,
+                Primitive::Torus { .. } => unreachable!("a torus's pieces are bands or wedges"),
             };
             let p = frame.point(Point2::default(), end.w);
             let v = add_vertex(p, Plan::Child(role, e), &mut parts);
@@ -286,6 +312,7 @@ fn half(
             if j == 0 { corners[1].0 } else { corners[1].1 },
         );
         let curve = match primitive {
+            Primitive::Torus { .. } => unreachable!("a torus's pieces are bands or wedges"),
             Primitive::Cone { .. } => Curve3::LineSegment {
                 start: pos(&parts, lo),
                 end: pos(&parts, hi),
@@ -364,6 +391,7 @@ fn half(
             half_angle: (r2 - r1).atan2(height),
         },
         Primitive::Zone { radius, .. } => Surface::Sphere { frame, radius },
+        Primitive::Torus { .. } => unreachable!("a torus's pieces are bands or wedges"),
     };
     let (vb, vt) = (bottom.v, top.v);
     let mut fins = Vec::new();
@@ -542,6 +570,30 @@ fn input_entity(input: &Topology, role: Role, end: usize) -> Option<EntityId> {
 }
 
 impl Half {
+    pub(super) fn new(
+        primitive: Primitive,
+        tolerance: Tolerance,
+        plane: [R; 4],
+        index: usize,
+    ) -> Self {
+        Self {
+            primitive,
+            tolerance,
+            plane,
+            index,
+        }
+    }
+
+    /// This piece's solid on `frame` with its topology.
+    pub(super) fn solid(
+        self,
+        frame: Frame3,
+        topology: Topology,
+        operation: OperationId,
+    ) -> Result<Solid> {
+        piece_solid(self, frame, topology, operation)
+    }
+
     pub(crate) fn tolerance(&self) -> Tolerance {
         self.tolerance
     }
@@ -549,6 +601,18 @@ impl Half {
     /// The same half in another frame, its ids external (the caller
     /// restores them).
     pub(crate) fn rebuilt(&self, operation: OperationId, frame: Frame3) -> Result<Solid> {
+        if let Primitive::Torus { major, minor } = self.primitive {
+            let (topology, _) = super::torus::rebuilt_band(
+                frame,
+                major,
+                minor,
+                &self.plane,
+                self.index,
+                self.tolerance,
+                operation,
+            )?;
+            return piece_solid(self.clone(), frame, topology, operation);
+        }
         let [a, b, c, _] = &self.plane;
         let world = frame.x() * rational_f64(a)
             + frame.y() * rational_f64(b)
@@ -585,6 +649,9 @@ impl Half {
                 let [w0, w1] = [ends(&self.primitive)[0].w, ends(&self.primitive)[1].w];
                 let _ = (low, high);
                 crate::decide::sphere_location(local, radius, w0, w1, tol)
+            }
+            Primitive::Torus { major, minor } => {
+                crate::decide::torus_location(local, major, minor, tol)
             }
         };
         let [a, b, c, d] = &self.plane;

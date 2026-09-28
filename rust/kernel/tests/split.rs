@@ -340,12 +340,9 @@ fn primitive_fixtures_build_with_the_reference_volume() {
 type SideSums = ([f64; 2], [f64; 2], [[f64; 2]; 3]);
 
 /// The primitive cases' expected sides: (side, [volume, area, cx, cy, cz]).
-fn primitive_expected() -> BTreeMap<String, Vec<(String, [f64; 5])>> {
+fn primitive_expected(text: &str) -> BTreeMap<String, Vec<(String, [f64; 5])>> {
     let mut out: BTreeMap<String, Vec<(String, [f64; 5])>> = BTreeMap::new();
-    for line in include_str!("../../fixtures/split-primitive-expected.tsv")
-        .lines()
-        .filter(|l| !l.starts_with('#'))
-    {
+    for line in text.lines().filter(|l| !l.starts_with('#')) {
         let (name, row) = line.split_once('\t').unwrap();
         let w: Vec<&str> = row.split(' ').collect();
         let v: Vec<f64> = w[2..7].iter().map(|x| x.parse().unwrap()).collect();
@@ -362,10 +359,33 @@ fn primitive_expected() -> BTreeMap<String, Vec<(String, [f64; 5])>> {
 /// zone's circle) are the only ones refused.
 #[test]
 fn primitive_splits_match_the_reference() {
-    let want = primitive_expected();
-    let later = ["apex_oblique", "frustum_parallel", "zone_oblique"];
+    check_primitive_sides(
+        include_str!("../../fixtures/split-primitive-cases.txt"),
+        include_str!("../../fixtures/split-primitive-expected.tsv"),
+        &["apex_oblique", "frustum_parallel", "zone_oblique"],
+    );
+}
+
+/// S8d.1: every whole torus the kernel splits (normal to its axis or
+/// containing it) likewise; the spiric sections wait for S8d.3.
+#[test]
+fn torus_splits_match_the_reference() {
+    check_primitive_sides(
+        include_str!("../../fixtures/split-torus-cases.txt"),
+        include_str!("../../fixtures/split-torus-expected.tsv"),
+        &[
+            "torus_parallel_outer",
+            "torus_parallel_inner",
+            "torus_oblique",
+            "torus_oblique_tube",
+        ],
+    );
+}
+
+fn check_primitive_sides(cases: &str, expected: &str, later: &[&str]) {
+    let want = primitive_expected(expected);
     let mut failures = Vec::new();
-    for case in primitive_cases(include_str!("../../fixtures/split-primitive-cases.txt")) {
+    for case in primitive_cases(cases) {
         let name = case.name.clone();
         let pieces = match primitive_split(&case) {
             Ok((_, pieces, _)) => pieces,
@@ -421,11 +441,16 @@ fn primitive_splits_match_the_reference() {
     assert!(failures.is_empty(), "{failures:#?}");
 }
 
-/// S8c: the primitives' split histories pass the independent check, cover
-/// every input entity and repeat exactly.
+/// S8c and S8d: the primitives' and tori's split histories pass the
+/// independent check, cover every input entity and repeat exactly.
 #[test]
 fn primitive_histories_are_complete_and_deterministic() {
-    for case in primitive_cases(include_str!("../../fixtures/split-primitive-cases.txt")) {
+    let text = [
+        include_str!("../../fixtures/split-primitive-cases.txt"),
+        include_str!("../../fixtures/split-torus-cases.txt"),
+    ]
+    .concat();
+    for case in primitive_cases(&text) {
         let Ok((solid, pieces, h)) = primitive_split(&case) else {
             continue;
         };

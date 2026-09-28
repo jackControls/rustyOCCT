@@ -136,7 +136,30 @@ quadratic surd's sign).
   the wall and the discs.
 * Other planes cut a cone in a conic and a zone in a circle whose pcurves
   are transcendental graphs over the angle, which wait for D13's procedural
-  edges (S8d): `OutOfDomain`.
+  edges (S8d.2): `OutOfDomain`.
+
+## Tori (S8d.1)
+
+`solid/split/torus.rs`, whole tori. The plane misses or touches the tube
+when its distance from the core circle is at least the tube's radius
+everywhere, `|d| - R |(a, b)| >= r |m|`, decided by squares.
+
+* **Normal to the axis** (within a quarter of the resolution over the outer
+  equator): the cut at `h = -d / c` meets the tube in two parallels at the
+  tube's angles `asin(h / r)` and `pi - asin(h / r)` (rounded). Each piece is
+  a band of the tube between them, wound once about the axis, and the planar
+  annulus between the parallels: a general body on the input's own torus
+  surface (`Construction::Half` with a torus), its pcurves `v`-constant
+  lines. A torus v-segment of the S3 construction is the revolved region
+  between the tube's arc and the axis, so it is not such a piece.
+* **Containing the axis**: two half-turn wedges of the S3 construction, on
+  frames whose x axes point along the plane's trace and against it.
+* **History**: the wall and the region `Split` (below first), the cut
+  faces and their circles `Generated` from the wall. The history checker's
+  support test knows tori (axes parallel, centres and radii within the
+  tolerance).
+* Other planes cut the tube in spiric curves (S8d.3); tori other than whole
+  ones wait with them: `OutOfDomain`.
 
 ## Evidence
 

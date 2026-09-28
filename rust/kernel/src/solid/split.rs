@@ -24,6 +24,7 @@ use std::collections::{BTreeMap, BTreeSet};
 mod meridian;
 mod oblique;
 mod revolved;
+mod torus;
 pub(super) use meridian::Half;
 pub(super) use oblique::Clipped;
 
@@ -90,9 +91,14 @@ impl Solid {
                     .split_revolved(context, &plane, [a, b, c, d])?
                     .expect("a cone or sphere"))
             }
+            Construction::Torus { .. } => {
+                return Ok(self
+                    .split_torus(context, &plane, [a, b, c, d])?
+                    .expect("a torus"))
+            }
             _ => {
                 return Err(Error::OutOfDomain(
-                    "split_by_plane: prisms (S8a), cones and spheres (S8c); tori come with S8d",
+                    "split_by_plane: a split piece split again (S8b on)",
                 ))
             }
         };

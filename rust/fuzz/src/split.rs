@@ -240,7 +240,8 @@ pub fn check_split(data: &[u8]) {
     }
 }
 
-/// S8c: a cone, frustum, apex cone, sphere or zone on dyadic sizes, in an
+/// S8c and S8d: a cone, frustum, apex cone, sphere, zone or whole torus on
+/// dyadic sizes, in an
 /// axis-aligned or a tilted frame, split by a plane normal to its axis at a
 /// dyadic height, through an apex, a pole or a cap, a whole sphere by any
 /// plane through a dyadic point, a plane containing the axis, or one oblique
@@ -251,7 +252,7 @@ pub fn check_split(data: &[u8]) {
 fn check_revolved(data: &[u8]) {
     use std::f64::consts::FRAC_PI_2;
     let mut b = Bytes(data, 0);
-    let (kind, mode) = (b.next() % 4, b.next() % 6);
+    let (kind, mode) = (b.next() % 5, b.next() % 6);
     let s = 0.5 + f64::from(b.next() % 16) / 4.0;
     let t = f64::from(b.next() % 16) / 4.0;
     let h = 0.5 + f64::from(b.next() % 16) / 4.0;
@@ -292,12 +293,32 @@ fn check_revolved(data: &[u8]) {
                 false,
             )
         }
-        _ => (
+        3 => (
             Solid::sphere_with(OperationId(1), frame, s, 0.25, FRAC_PI_2, tolerance),
             s * 0.25f64.sin(),
             s,
             false,
         ),
+        // S8d.1: a whole torus (its tube's radius from t, the gap to the
+        // axis from s).
+        _ => {
+            let minor = 0.25 + t / 4.0;
+            (
+                Solid::torus_with(
+                    OperationId(1),
+                    frame,
+                    minor + s,
+                    minor,
+                    -std::f64::consts::PI,
+                    std::f64::consts::PI,
+                    std::f64::consts::TAU,
+                    tolerance,
+                ),
+                -minor,
+                minor,
+                false,
+            )
+        }
     };
     let Ok((solid, _)) = made else { return };
     let at = |w: f64| frame.point(rusty_occt::Point2::new(0.0, 0.0), w);
