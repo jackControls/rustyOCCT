@@ -183,3 +183,14 @@ independent history check runs in debug builds and every test.
   sharing the tilted one's origin, heights equal, spanning, overlapping or
   disjoint; fuse, cut and common with the volume identities and rigid
   motions of the results.
+
+## DRAW commands
+
+The DRAW adapter (`examples/draw_worker.rs`, `UPSTREAM_TESTS.md`) runs
+OCCT's Boolean commands of one object and one tool through `Solid::fuse`,
+`cut` and `common`: `bfuse`, `bcut`, `bcommon`, `btuc`, `bop` with
+`bopfuse`, `bopcut`, `boptuc` and `bopcommon`, and `bbop`/`bapibop` 0 to 3
+on the General Fuse arguments, returning OCCT's compound of the result's
+solids and reporting every refusal (`OutOfDomain`, `Degenerate`, ...)
+unsupported; the derived case `boolean_prisms` and 320 cases of upstream's
+`boolean` group evaluate on both backends.
