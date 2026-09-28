@@ -36,6 +36,30 @@
       "reason": "GeomInt_IntSS returns nothing for two cones with one apex and no common generatrix: the apex, their only common point, is not reported.",
       "independent_evidence": "The cones of half-angles 0.5 about z and 0.9 about x share the apex at the origin; a common direction would need cos^2 0.5 + cos^2 0.9 <= 1, but it is 1.157, so the apex is the only common point.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "kk_common_apex",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "7049bed448e410db023a0b151205283dfeab689a80deb1a3f8eb1dfa6f88f949",
+      "differences": [
+        "missed_component"
+      ],
+      "reason": "GeomInt_IntSS returns two of the four common generatrices of two cones with one apex (each twice, as two parameter halves): the two whose directions have x z > 0. The kernel finds all four as the certified roots of A(u), the rulings of the first cone parallel to generatrices of the second.",
+      "independent_evidence": "The cones of half-angles 0.9 about z and 0.8 about x share the apex at the origin; a common generatrix has a unit direction d with d . z = +-cos 0.9 and d . x = +-cos 0.8, so d_y^2 = 1 - cos^2 0.8 - cos^2 0.9 = 0.128... and the four lines (+-cos 0.8, +-0.358, cos 0.9) up to sign all lie on both cones (both nappes).",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the same structure, numbers differing in rounding"
+    },
+    {
+      "case": "ka_sphere",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 GeomInt_IntSS",
+      "native_sha256": "8337191ffe3ede308411bf4d568dbc9d4b85d4dad2b246889fc6f6705794aca2",
+      "differences": [
+        "missed_tangent_point"
+      ],
+      "reason": "GeomInt_IntSS finds the ring where the sphere cuts the cone but not the cone's apex, which lies on the sphere as an isolated point of the intersection. The kernel decides the apex exactly (a rational apex and exact rationals) and its type from B's roots.",
+      "independent_evidence": "The cone of half-angle 0.5 has its apex at the origin; the sphere of radius 1.25 about (0.75, 0, 1) passes through it (0.75^2 + 1^2 = 1.25^2). On the rulings V + v d(u), B(u) = (V - c) . d(u) = -(0.75 sin 0.5 cos u + cos 0.5) stays negative, so no branch of the curve reaches the apex: it is isolated.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the same structure, numbers differing in rounding"
     }
   ]
 }

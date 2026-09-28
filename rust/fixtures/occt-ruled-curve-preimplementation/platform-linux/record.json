@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 36375505765 (commit 95b6fe6d), ubuntu-latest, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "4f3c01738ab75fcc7a5e9dfa4159cb1cc342d542ba0a211d6bf18ed08933b982",
+  "review": "The same statuses and counts as the macOS capture for all 12 cases; kk_unbounded and kk_irrational_apexes differ in rounding (up to 2.5e-6 relative). Against the reference: the same three reviewed differences as on macOS, kk_common_apex and ka_sphere fingerprinted for Linux in occt-ruled-curve-divergences.json."
+}

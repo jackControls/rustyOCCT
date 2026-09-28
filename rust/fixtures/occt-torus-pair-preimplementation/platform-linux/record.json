@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 36375505765 (commit 95b6fe6d), ubuntu-latest, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "bbe879cb6277db33d85ee15ddb4babff2415cb5cc13399413faec6c0f4b7ae64",
+  "review": "The same statuses and counts as the macOS capture for all 14 cases; tt_tilted's walking lines differ in rounding (up to 5e-6 relative). Against the reference: the same four reviewed differences as on macOS (three missed isolated tangencies, one missed touching component); tt_saddle_touch fingerprinted for Linux in occt-torus-curve-divergences.json."
+}

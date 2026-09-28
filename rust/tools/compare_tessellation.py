@@ -24,7 +24,7 @@ import sys
 import tempfile
 
 from build_pinned_occt import SOURCE, digest
-from compare_brep import review_for, run, same_inputs, sha, write
+from compare_brep import NUMBER_DRIFT, review_for, run, sha, write
 from compare_brep_io import build
 from compare_degree_elevation import verify_sdk
 from compare_occt import ROOT
@@ -152,6 +152,25 @@ def capture(executable, env, sdk_manifest, text):
         'observations_sha256': digest(CAPTURE/'native.txt')})
 
 
+def drifted_inputs(captured, current):
+    """The same tokens, numbers within `NUMBER_DRIFT` relative to their size
+    (at least 1): the kernel writes them with the platform's libm, whose
+    rounding moves a value by an ulp or two of its own magnitude (one Linux
+    coordinate -9.999999999999998 for macOS's -10)."""
+    old, new = captured.split(), current.split()
+    if len(old) != len(new):
+        raise ValueError('current native corpus differs structurally from the pre-implementation inputs')
+    for a, b in zip(old, new):
+        if a == b:
+            continue
+        try:
+            x, y = float(a), float(b)
+        except ValueError:
+            raise ValueError(f'current native corpus changed token {a!r} to {b!r}') from None
+        if not abs(x-y) <= NUMBER_DRIFT*max(1.0, abs(x)):
+            raise ValueError(f'current native corpus moved {a} to {b}')
+
+
 def captured(observed, text):
     metadata = json.loads((CAPTURE/'capture.json').read_text())
     if metadata['source_reference'] != SOURCE or metadata['rust_tessellation_exists']:
@@ -167,7 +186,7 @@ def captured(observed, text):
     # NUMBER_DRIFT (VALIDATION.md's allowances).
     if (CAPTURE/'inputs.txt').read_text() != text:
         try:
-            same_inputs((CAPTURE/'inputs.txt').read_text(), text)
+            drifted_inputs((CAPTURE/'inputs.txt').read_text(), text)
         except ValueError as e:
             raise ValueError('the kernel\'s .brep texts or the settings differ from the captured ones: '
                              + str(e)) from None
