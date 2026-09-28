@@ -214,6 +214,11 @@ impl Frame3 {
             normal,
         })
     }
+    /// The same axes, bit for bit, at another origin (a circle's frame on
+    /// its plane: `new` would normalize the axes again, not idempotently).
+    pub(crate) fn at(self, origin: Point3) -> Self {
+        Self { origin, ..self }
+    }
     pub fn origin(self) -> Point3 {
         self.origin
     }

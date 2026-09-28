@@ -34,7 +34,7 @@ pub(crate) use projection::{conic_point_fast, projection_range, section_rates};
 mod spline_deviation;
 mod spline_flux;
 mod spline_taylor;
-pub(crate) use mass::{face_mass, mass, sheet_measure};
+pub(crate) use mass::{edge_length, face_mass, mass, sheet_measure};
 
 /// Issue classes of the validation contract.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

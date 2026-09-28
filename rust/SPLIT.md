@@ -146,6 +146,40 @@ trace `a u + b v + d = 0`; the prism builders above then take its pieces.
   outer boundary) is written to `.brep` along its curve and used the other
   way.
 
+## Sheets and wires (S8e)
+
+`Body::split_by_plane(operation, plane)` (`body/split.rs`) splits S6's
+bodies, planar sheets and closed wires, by the plane's trace
+`a u + b v + d = 0` on the body's plane (exact rationals of the stored
+frame and plane).
+
+* **Parallel.** A plane parallel to the body (`a = b = 0`) returns it, on
+  the side it lies on, `Below` in the plane.
+* **Sheets.** The profile's section by the trace (the prisms' exact
+  `Section`, lines, arcs, circles, holes and splines) gives the pieces;
+  each is a planar sheet of its profile on the body's frame. Whole edges
+  and vertices keep their ids (`Unchanged`, or `Modified` when their
+  geometry or bounding ids changed), parts are `Split` children with
+  canonical ordinals, a stored vertex on the trace reached from both sides
+  is split into a copy per piece, each chord is a cut edge `Generated` from
+  the face and each crossing's vertex from the edge it cuts; the face is
+  `Split` into one child per piece. A trace missing or touching the face
+  returns it; one pinching it (tangent to a hole inside it) is `Degenerate`.
+* **Wires.** The boundary's exact arrangement with the trace (its pieces
+  and sides, without chords or pinch checks) is cut into maximal runs on
+  one side, an edge along the trace joining the run it continues in stored
+  order; each run is an open wire (a path of segments with two free ends,
+  `Body::path`, built by `Topology::open_wire`). Whole edges keep their
+  ids, parts are `Split`, a stored vertex where two runs meet is split into
+  one copy per run, and each crossing gives a cut vertex in each run
+  `Generated` from the edge it cuts. A wire touching the trace without
+  crossing it returns it. An open wire split again is `OutOfDomain`.
+* **Measures.** A spline wire's length and centre are certified by
+  quadrature over each exact Bézier arc (the speed as a Taylor jet's square
+  root, D13's order, relative widths and depth), so a wire's pieces' lengths
+  add up.
+
+## Cones and spheres (S8c.1)
 ## Cones and spheres (S8c.1)
 
 `solid/split/revolved.rs`. In the solid's frame the plane is `a u + b v + c w
@@ -348,16 +382,18 @@ everywhere, `|d| - R |(a, b)| >= r |m|`, decided by squares.
   into runs (OCCT keeps it one wire): every piece valid, sides and runs the
   reference's, 23 within 2e-8 and two reviewed BRepGProp errors (a face
   bounded by two spans of the wave, 1.3e-3 in area; `LinearProperties` on a
-  cubic, 3.5e-6 in perimeter). The probe cannot build a body case yet: all
-  25 `rust_unsupported`.
+  cubic, 3.5e-6 in perimeter). The kernel (S8e) is inside the reference on
+  all 25; five more reviews: OCCT splits edges where the plane touches a
+  sheet's arc and a wire's spline, keeps circles' seam vertices, and splits
+  the sheet whose hole the plane touches, which the kernel refuses.
 * **Kernel.** `tests/split.rs`: every side's sums of the kernel's enclosures
   contain the reference's volume, area and moments; histories pass the
   independent check, cover every input entity and repeat exactly; oblique
   pieces move rigidly with their ids, classify, tessellate and write where
   OCCT has records; spline pieces (parallel, knot, oblique and holed) move,
-  tessellate and round-trip through `.brep`; `compare_split.py`: all 103
-  cases inside the reference, 52 matching the native counts and 51
-  reviewed.
+  tessellate and round-trip through `.brep`; sheets and wires match the
+  reference and their histories check; `compare_split.py`: all 128 cases
+  inside the reference, 70 matching the native counts and 58 reviewed.
 * **Fuzzing.** The `split` target cuts rectangles, regular polygons,
   stadiums, U shapes and holed squares in two frames with planes chosen
   degenerate on purpose (oblique ones through a cap's vertex or touching a

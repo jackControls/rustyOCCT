@@ -1693,6 +1693,11 @@ impl Topology {
             centre: e.centre,
         })
     }
+    /// The total length of every edge, each once, certified: a sheet's
+    /// perimeter, a wire's length (S8e).
+    pub fn edge_length_enclosure(&self) -> Option<[f64; 2]> {
+        validate::edge_length(&self.view())
+    }
     /// A face's area and centre of gravity, from certified enclosures.
     pub fn face_area_and_centre(&self, face: FaceId) -> Option<(f64, Point3)> {
         let (area, centre) = validate::face_mass(&self.view(), face.0, self.reference_point())?;
@@ -2473,6 +2478,121 @@ impl Topology {
         Ok(topology)
     }
 
+    /// An open wire body (S8e): the path's points as vertices on the
+    /// frame's plane joined by its segments in order, the first and last
+    /// vertices free; its edges wire edges of the void. Each vertex derives
+    /// from its point and each edge from its segment (boundary 0), with the
+    /// operation kind `MakeWire`.
+    pub(crate) fn open_wire(
+        points: &[Point2],
+        segments: &[Segment],
+        frame: Frame3,
+        tolerance: Tolerance,
+        operation: OperationId,
+    ) -> Result<Self> {
+        if points.len() != segments.len() + 1 || segments.is_empty() {
+            return Err(Error::InvalidTopology("an open wire's points and segments"));
+        }
+        let derive = |entity, role, parents| Derivation {
+            operation,
+            kind: OperationKind::MakeWire,
+            entity,
+            role,
+            ordinal: 0,
+            parents,
+        };
+        let element = |element| Parent::Profile {
+            boundary: 0,
+            element,
+        };
+        let mut topology = Self {
+            vertices: Vec::new(),
+            edges: Vec::new(),
+            fins: Vec::new(),
+            loops: Vec::new(),
+            faces: Vec::new(),
+            shells: Vec::new(),
+            regions: Vec::new(),
+            identity: Identity::new(
+                derive(EntityKind::Body, Role::Body, Vec::new()),
+                Vec::new(),
+                BTreeMap::new(),
+            )?,
+            layout: Vec::new(),
+            attributes: AttributeMap::new(),
+        };
+        let mut derivations: Vec<(Slot, Derivation)> = Vec::new();
+        let vertices: Vec<VertexId> = points
+            .iter()
+            .map(|p| topology.add_vertex(frame.point(*p, 0.0)))
+            .collect();
+        for (i, v) in vertices.iter().enumerate() {
+            derivations.push((
+                Slot::Vertex(*v),
+                derive(
+                    EntityKind::Vertex,
+                    Role::Vertex,
+                    vec![element(ProfileElement::Vertex(i as u32))],
+                ),
+            ));
+        }
+        let mut wire_edges = Vec::new();
+        for (i, segment) in segments.iter().enumerate() {
+            let (a, b) = (vertices[i], vertices[i + 1]);
+            let edge = match segment {
+                Segment::Line => topology.add_line(a, b),
+                Segment::Spline(span) => {
+                    topology.add_edge(Some(a), Some(b), lifted_spline(span, frame, 0.0)?)
+                }
+                Segment::Arc {
+                    center,
+                    radius,
+                    ccw,
+                } => {
+                    let arc_frame = frame.at(frame.point(*center, 0.0));
+                    let (p, q) = (points[i], points[i + 1]);
+                    topology.add_edge(
+                        Some(a),
+                        Some(b),
+                        Curve3::CircularArc {
+                            frame: arc_frame,
+                            radius: *radius,
+                            start_angle: (p.y - center.y).atan2(p.x - center.x),
+                            sweep_angle: crate::profile::arc_sweep(*center, p, q, *ccw),
+                        },
+                    )
+                }
+            };
+            derivations.push((
+                Slot::Edge(edge),
+                derive(
+                    EntityKind::Edge,
+                    Role::Edge,
+                    vec![element(ProfileElement::Segment(i as u32))],
+                ),
+            ));
+            wire_edges.push(edge);
+        }
+        topology.shells = vec![Shell {
+            region: RegionId(0),
+            sides: Vec::new(),
+            wire_edges,
+            acorn_vertices: Vec::new(),
+        }];
+        topology.regions = vec![Region {
+            kind: RegionKind::Void,
+            shells: vec![ShellId(0)],
+        }];
+        topology.identity = Identity::new(
+            derive(EntityKind::Body, Role::Body, Vec::new()),
+            derivations,
+            BTreeMap::new(),
+        )?;
+        topology.measure_enclosures(tolerance)?;
+        topology.validate(tolerance)?;
+        Ok(topology)
+    }
+
     /// A face body (`face`: one planar face on `frame` bounded by every
     /// boundary, both sides in the infinite void) or a wire body (the first
     /// boundary's edges as wire edges of the void), S6 of REVIEW_NOTES.md.
@@ -2571,12 +2691,7 @@ impl Topology {
                     (points.as_slice(), Some(segments.as_slice()))
                 }
                 BoundaryKind::Circle { center, radius } => {
-                    let circle = Frame3::new(
-                        frame.point(*center, 0.0),
-                        frame.normal(),
-                        frame.x(),
-                        tolerance,
-                    )?;
+                    let circle = frame.at(frame.point(*center, 0.0));
                     let edge = topology.add_ring(Curve3::Circle {
                         frame: circle,
                         radius: *radius,
@@ -2612,12 +2727,7 @@ impl Topology {
                         radius,
                         ccw,
                     }) => {
-                        let arc_frame = Frame3::new(
-                            frame.point(center, 0.0),
-                            frame.normal(),
-                            frame.x(),
-                            tolerance,
-                        )?;
+                        let arc_frame = frame.at(frame.point(center, 0.0));
                         let a = points[i];
                         topology.add_edge(
                             Some(vertices[i]),

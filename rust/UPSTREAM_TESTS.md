@@ -122,21 +122,43 @@ group, and stale success records are removed before each run.
 | Derived `explode_selector` | Pass | Pass | Native selector: a box's faces and edges and a cylinder's faces and rings picked by OCCT index, checked by area, length and centre of gravity; the seam pick is lost |
 | Derived `profile_arcs` | Pass | Pass | Prisms of `profile` sketches with arcs: tangent half circles, fillets and a clockwise notch; counts and volumes (S5) |
 | Derived `faces_and_edges` | Pass | Pass | Free faces and edges on DRAW geometry: `mkface` on a plane and a cylinder (a patch and the whole band), `mkedge` on a line and a circle, `mkplane` of a `profile` wire with arcs; `checkshape`, `checknbshapes`, areas and lengths (S6) |
+| Derived `split_plane` | Pass | Pass | OCCT's splitter (`bclearobjects`, `bcleartools`, `baddobjects`, `baddtools`, `bfillds`, `bsplit`, `bapisplit`) with one plane face as the tool: a prism parallel to its axis, a box cut obliquely, a stadium sheet across an arc, a closed wire, and a prism, a face and a wire at once; `checkshape`, `checknbshapes` with the shared cut entities, volumes, areas and lengths per use (S8e) |
 | `lowalgos/intss/bug23177_1` | Viewer skipped | Viewer skipped | A torus and a plane through its axis: two circles, `dump`, `bounds`, `dval`, `xdistcs` on both surfaces (S7) |
 | `lowalgos/intss/bug23177_2` | Viewer skipped | Viewer skipped | The same with another plane through the axis (S7) |
 | `lowalgos/intss/bug24648` | Viewer skipped | Viewer skipped | A cone and a coaxial torus: every curve a circle (S7) |
 | `lowalgos/intss/bug21750` | Unsupported | Unverified | Cylinders antiparallel up to rounding: OCCT snaps them to two lines, the kernel's exact predicates find crossing axes and one closed curve, and the case then calls the undefined `Error:` (S7, a recorded divergence) |
+| `bugs/heal/bug29502` | Unsupported | Pass | A whole cylinder band split by a vertex (`bsplit`), then `unifysamedom`; the `heal` group loads `XSDRAW` (S8e) |
+| `bugs/heal/bug33171_1` | Unsupported | Viewer skipped | A prism split by four prisms of open polylines, `bopcheck`, `unifysamedom` (S8e) |
+| `bugs/modalg_7/bug21264` | Unsupported | Unverified | Progress reports of the Boolean and splitter commands (`XProgress`); no geometric query (S8e) |
+| `bugs/modalg_7/bug30092` | Unsupported | Pass | A face on an offset surface split by an edge with a grown tolerance; the restore needs offset surfaces; needs the dataset (S8e) |
+| `bugs/modalg_7/bug32578` | Unsupported | Viewer skipped | A face split by many edges with a fuzzy value (`bfuzzyvalue`); needs the dataset (S8e) |
+| `bugs/moddata_3/bug31587_1` to `_6` | Unsupported | Pass | A box split by another box's faces, edges, wires, vertices or open polylines, then `removeinternals` (S8e) |
+| `boolean/splitter/A5`, `B5`; `bugs/modalg_7/bug28113_1`, `bug28113_2`, `bug29789`, `bug29955`, `bug31201_1` to `_3`, `bug31462`, `bug32644` | Private data | Private data | Splits of restored shapes (`bsplit`, and `bapisplit` in `B5`) whose files are not in the public dataset (S8e) |
 
 There are **five original geometry tests passing on both backends** and four
 more evaluated on both with their image commands recorded (`buc60769`, and
 S7's `lowalgos/intss` cases `bug23177_1`, `bug23177_2` and `bug24648`).
+S8e registers the upstream `bsplit` group as capability sentinels: `boolean/splitter/A5`
+and `B5` and the 22 `bugs` cases that call `bsplit` (with `bug29333_1` and
+`bug29333_2`, registered before). They need S9's general builder: tools that
+are edges, vertices, several faces or shapes of their own, and restored
+curved shapes. Of the thirteen that run on public data, native DRAW passes
+ten (the two `bug29333` cases among them), evaluates two more with their
+image commands recorded (`bug33171_1`, `bug32578`) and makes no geometric
+query in `bug21264`; the other eleven need data Open Cascade keeps private.
+The Rust adapter reports each of the thirteen unsupported. The host forwards the group's commands (`bbuild`, `bapibuild`,
+`bop` and its operations, `bbop`, `bapibop`, `bcut`, `btuc`, `bsection`,
+`bopcheck`, `boptions`, `bfuzzyvalue`, `removeinternals`, `unifysamedom`,
+`vertex`, `settolerance`, `XProgress`, `dset`, `protect`) to either backend;
+the Rust worker rejects all but `dset` (DRAW's numeric variables) and
+`protect` (a no-op), which the `boolean` group's `begin` calls.
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4
 and 2), where the kernel returns closed loops (1, 2 and 1) whose `xdistcs`
 samples lie within 1.5e-14 of both cylinders.
-The nine derived cases are counted separately (see below).
-The 23 bridge self-tests are separate infrastructure checks; they do not count
+The ten derived cases are counted separately (see below).
+The 24 bridge self-tests are separate infrastructure checks; they do not count
 as more upstream coverage. The existing 66-solid / 2,292-classification native
 oracle corpus supplies much broader prism geometry checks independently.
 
@@ -198,6 +220,46 @@ counts (a free face has no shell, a free edge no wire), areas and lengths on
 both backends. `mkface` with a wire, unbounded surfaces and 2D curves are
 unsupported.
 
+`split_plane` (S8e) drives OCCT's General Fuse splitter commands with one
+plane face (`plane` then `mkface`) as the tool; the adapter splits each
+object by the face's plane through `Solid::split_by_plane` and
+`Body::split_by_plane`. Its values are computed by hand and hold on both
+backends:
+
+* a 6 x 4 x 3 prism (`profile`, `prism`) by `x + y = 3`: 12 vertices, 20
+  edges, 11 wires and faces, 2 shells and solids, 1 compound; volume 72,
+  area `108 + 18 sqrt 2`, length `128 + 24 sqrt 2`;
+* a 4 x 4 x 2 `box` cut obliquely (S8a.2) at a corner tetrahedron with legs
+  1, 2 and 10/7: 11 vertices, 18 edges, 10 wires and faces; volume 32, area
+  `64 + sqrt 696 / 7`, length `80 + 4 sqrt 5 + 4 (sqrt 149 + sqrt 296) / 7`;
+* a stadium sheet (area `6 + pi`) by `x = 3.5` across its right half
+  circle, which splits in three: 6 vertices, 7 edges, 2 wires and faces;
+  length `6 + 2 pi + 2 sqrt 3`;
+* a closed 5 x 2 rectangle wire by `x - y = 1`: 6 vertices and edges, one
+  wire and no compound (OCCT's splitter keeps a wire one wire of its split
+  edges, and returns a single image itself); length 14;
+* a prism, a plane face and a stadium wire apart from each other, by
+  `x = 1.5` through `bapisplit`: 24 vertices, 33 edges, 14 wires, 13 faces;
+  area 80, length `142 + 2 pi`.
+
+OCCT shares each cut face, chord and crossing vertex between the pieces it
+separates, while the kernel's pieces are separate bodies: for a split's
+result the adapter counts an entity of one object's pieces that coincides
+with an earlier piece's (a vertex at its point, an edge between the same
+vertices through its midpoint, a face bounded by the same edges) once, and
+measures a shared face in each solid, as OCCT's explorer visits it; a split
+wire's open runs count as one wire. The adapter reports unsupported, rather
+than splitting: several tools or a tool other than a convex polygonal plane
+face; a tool face not covering an object's bounding box's shadow on its
+plane (OCCT cuts only where the face reaches); objects whose bounding boxes
+overlap (General Fuse intersects them too); a plane through a vertex or
+tangent to an arc (where OCCT's sharing is not confirmed); ring edges (OCCT's
+seams); solids other than prisms, restored shapes and split results; and
+the kernel's `OutOfDomain`, `Degenerate`, `ComputationLimit`,
+`LimitExceeded` and `PrecisionLoss` refusals. `vprops` of a split sums its
+solids (a face's signed volume is not supported), and `savehistory` after a
+split is unsupported.
+
 The history cases use `prism ... Copy`. Without `Copy`, OCCT builds the prism's end face
 as the start face moved by a location, reusing its `TShape`s. DRAW's
 `nbshapes` counts those shared shapes once (4 vertices, 8 edges and 5 faces
@@ -209,13 +271,14 @@ The two `bug29333` cases are the self-contained history candidates for M3's
 split and fuse (`IDENTITY_AND_HISTORY.md`). They split and fuse faces made by
 `plane`, `mkface`, `line` and `mkedge`, which the Rust adapter cannot build, so
 they are capability sentinels: native DRAW must pass them, and Rust reports
-them unsupported. `bug21264` also uses splits and Booleans but needs test-local
-procedures and general Booleans; it is not registered. The host forwards
-their commands to either backend; the Rust worker rejects them. No derived
-split or fuse case is registered: OCCT shares a split's cut face and section
-edges between the two solids of its compound, while the kernel's pieces are
-separate bodies, so compound counts and `generated` results differ by design.
-`compare_split_merge.py` compares every split and fuse relation instead.
+them unsupported (`bug29333_1` moves a face with `ttranslate`, `bug29333_2`
+needs `mkvolume`). `bug21264` also uses splits and Booleans; since S8e it is
+registered with the `bsplit` group. The host forwards their commands to
+either backend. No derived fuse case is registered, and `split_plane`
+checks counts and properties only: the adapter keeps no split history for
+`savehistory`, since the kernel's history names each piece's own cut face,
+not OCCT's shared one. `compare_split_merge.py` compares every split and
+fuse relation instead.
 
 ## Deliberate limits
 
@@ -235,6 +298,11 @@ separate bodies, so compound counts and `generated` results differ by design.
   a profile vertex gives its vertical edge, an edge its wall, the face the
   solid; the kernel's start/end copies are OCCT's `FirstShape`/`LastShape`. Everything else is unsupported,
   including OBBs, `sprops`, `nbshapes -t`, option-form boxes and visualization.
+  For splits (S8e): `bclearobjects`, `bcleartools`, `baddobjects`,
+  `baddtools`, `bfillds` and `bsplit name` (or `bapisplit name`) with one
+  plane face as the tool, on prisms, planar faces and closed planar wires
+  (see `split_plane` above); `bsplit` before `bfillds` prints OCCT's
+  message, and after the arguments changed it is unsupported.
 - Test geometry remains boxes and rigidly transformed copies. The adapter
   intentionally does not expose every Rust prism capability yet. More command
   adapters must delegate to real kernel functions, never return canned success.

@@ -1,15 +1,17 @@
 //! The case protocol of `split-cases.txt` (S8) and the kernel's rows for it,
-//! shared by `split_probe` and `tests/split.rs`: `limit`, `unsupported`, or
-//! per piece `piece below|above vol_lo vol_hi area_lo area_hi cx_lo cx_hi
-//! cy_lo cy_hi cz_lo cz_hi faces edges vertices` (OCCT's counts of the piece,
-//! `Topology::occt_counts`).
+//! shared by `split_probe` and `tests/split.rs`: `limit`, `unsupported`,
+//! `refused` (a documented `Degenerate`), or per piece `piece below|above
+//! vol_lo vol_hi area_lo area_hi cx_lo cx_hi cy_lo cy_hi cz_lo cz_hi faces
+//! edges vertices` (OCCT's counts of the piece, `Topology::occt_counts`). A
+//! sheet's or wire's piece (S8e) has its area or length in the volume's
+//! place and its perimeter (a wire's `0 0`) in the area's.
 #[path = "identity_protocol.rs"]
 #[allow(dead_code)]
 mod identity_protocol;
-pub use identity_protocol::{build, parse, CaseSpec};
+pub use identity_protocol::{build, build_body, parse, CaseSpec};
 use rusty_occt::history::History;
 use rusty_occt::identity::OperationId;
-use rusty_occt::{Error, Frame3, Point3, Side, Solid, Tolerance, Vec3};
+use rusty_occt::{Body, Error, Frame3, Point3, Side, Solid, Tolerance, Vec3};
 
 pub struct Case {
     pub spec: CaseSpec,
@@ -139,7 +141,57 @@ pub fn primitive_rows(case: &PrimitiveCase) -> Result<Vec<String>, Error> {
 
 /// The kernel's rows for a case; `Err` for an unexpected error.
 pub fn rows(case: &Case) -> Result<Vec<String>, Error> {
+    if case.spec.make.is_some() {
+        return body_rows(case);
+    }
     piece_rows(split(case).map(|(_, pieces, _)| pieces))
+}
+
+/// A body case's body, its pieces with their sides, and the history.
+pub type BodySplit = (Body, Vec<(Side, Body)>, History);
+
+/// A body case's pieces and history (S8e).
+pub fn split_body(case: &Case) -> Result<BodySplit, Error> {
+    let (body, _) = build_body(&case.spec);
+    let (pieces, history) = body.split_by_plane(OperationId(900), plane_frame(case.plane))?;
+    Ok((body, pieces, history))
+}
+
+fn body_rows(case: &Case) -> Result<Vec<String>, Error> {
+    let pieces = match split_body(case) {
+        Ok((_, pieces, _)) => pieces,
+        Err(Error::ComputationLimit(_)) => return Ok(vec!["limit".into()]),
+        Err(Error::OutOfDomain(_)) => return Ok(vec!["unsupported".into()]),
+        Err(Error::Degenerate(_)) => return Ok(vec!["refused".into()]),
+        Err(e) => return Err(e),
+    };
+    let mut out = Vec::new();
+    for (side, piece) in pieces {
+        let t = piece.topology();
+        let m = piece
+            .measure()
+            .ok_or(Error::ComputationLimit("a piece's measure"))?;
+        let perimeter = if piece.profile().is_some() {
+            t.edge_length_enclosure()
+                .ok_or(Error::ComputationLimit("a piece's perimeter"))?
+        } else {
+            [0.0, 0.0]
+        };
+        let c = t.occt_counts();
+        let side = match side {
+            Side::Below => "below",
+            Side::Above => "above",
+        };
+        let mut words = vec![format!("piece {side}")];
+        words.push(format!("{:?} {:?}", m.measure[0], m.measure[1]));
+        words.push(format!("{:?} {:?}", perimeter[0], perimeter[1]));
+        for [lo, hi] in m.centre {
+            words.push(format!("{lo:?} {hi:?}"));
+        }
+        words.push(format!("{} {} {}", c.faces, c.edges, c.vertices));
+        out.push(words.join(" "));
+    }
+    Ok(out)
 }
 
 fn piece_rows(split: Result<Vec<(Side, Solid)>, Error>) -> Result<Vec<String>, Error> {

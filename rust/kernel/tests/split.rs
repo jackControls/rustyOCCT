@@ -90,6 +90,59 @@ fn spline_splits_match_the_reference() {
     );
 }
 
+/// S8e: sheets and wires, their areas or lengths in the volumes' place
+/// (the sheet pinched by a tangent hole refused, as decided).
+#[test]
+fn sheet_and_wire_splits_match_the_reference() {
+    let cases: Vec<Case> = cases(include_str!("../../fixtures/split-sheet-cases.txt"))
+        .into_iter()
+        .filter(|c| {
+            if c.spec.name == "sheet_hole_tangent" {
+                assert_eq!(rows(c).unwrap(), ["refused"]);
+                false
+            } else {
+                true
+            }
+        })
+        .collect();
+    check_sides(
+        cases,
+        &expected_in(include_str!("../../fixtures/split-sheet-expected.tsv")),
+    );
+}
+
+/// S8e: every body split's history passes the independent check, covers
+/// every input entity and repeats exactly.
+#[test]
+fn body_histories_are_complete_and_deterministic() {
+    for case in cases(include_str!("../../fixtures/split-sheet-cases.txt")) {
+        let name = case.spec.name.clone();
+        let Ok((body, pieces, h)) = protocol::split_body(&case) else {
+            continue;
+        };
+        let sets_in = [body.topology().entity_set(body.resolution())];
+        let sets_out: Vec<_> = pieces
+            .iter()
+            .map(|(_, p)| p.topology().entity_set(p.resolution()))
+            .collect();
+        let issues = history::check(&sets_in, &sets_out, &h);
+        assert!(issues.is_empty(), "{name}: {issues:?}");
+        let covered: std::collections::BTreeSet<_> =
+            h.relations.iter().flat_map(Relation::sources).collect();
+        for (id, _) in body.topology().ids() {
+            assert!(covered.contains(&id), "{name}: {id:?} has no relation");
+        }
+        let (_, again, h2) = protocol::split_body(&case).unwrap();
+        assert_eq!(h, h2, "{name}");
+        for ((s1, p1), (s2, p2)) in pieces.iter().zip(&again) {
+            assert_eq!(s1, s2);
+            let ids =
+                |p: &rusty_occt::Body| p.topology().ids().map(|(id, _)| id).collect::<Vec<_>>();
+            assert_eq!(ids(p1), ids(p2), "{name}");
+        }
+    }
+}
+
 fn check_sides(cases: Vec<Case>, want: &BTreeMap<String, Vec<(String, [f64; 5])>>) {
     let mut failures = Vec::new();
     for case in cases {
@@ -133,16 +186,36 @@ fn check_sides(cases: Vec<Case>, want: &BTreeMap<String, Vec<(String, [f64; 5])>
                 failures.push(format!("{name}: no {side}"));
                 continue;
             };
-            let inside =
-                |x: f64, [lo, hi]: [f64; 2]| lo - 1e-20 * x.abs() <= x && x <= hi + 1e-20 * x.abs();
-            let moment = |i: usize| v[0] * v[2 + i];
-            let near = |x: f64, [lo, hi]: [f64; 2]| {
-                lo - 1e-12 * x.abs().max(1.0) <= x && x <= hi + 1e-12 * x.abs().max(1.0)
+            // A wire's enclosure is its stored arcs' `r |sweep|` exactly,
+            // its new vertices the exact split's rounded: a few ulps of the
+            // case's size (compare_split.py's allowance).
+            let rounding = if case.spec.make.as_deref() == Some("wire") {
+                let f = case.spec.frame;
+                let scale = [
+                    f[0],
+                    f[1],
+                    f[2],
+                    case.plane[0],
+                    case.plane[1],
+                    case.plane[2],
+                ]
+                .iter()
+                .fold(1.0f64, |m, x| m.max(x.abs()))
+                .max((case.spec.end - case.spec.start).abs());
+                2f64.powi(-40) * scale
+            } else {
+                0.0
             };
-            if !inside(v[0], s[0])
-                || !inside(v[1], s[1])
-                || (0..3).any(|i| !near(moment(i), s[2 + i]))
-            {
+            let inside = |x: f64, [lo, hi]: [f64; 2]| {
+                lo - 1e-20 * x.abs() - rounding <= x && x <= hi + 1e-20 * x.abs() + rounding
+            };
+            let moment = |i: usize| v[0] * v[2 + i];
+            let near = |i: usize, [lo, hi]: [f64; 2]| {
+                let x = moment(i);
+                let allow = 1e-12 * x.abs().max(1.0) + rounding * v[2 + i].abs().max(1.0);
+                lo - allow <= x && x <= hi + allow
+            };
+            if !inside(v[0], s[0]) || !inside(v[1], s[1]) || (0..3).any(|i| !near(i, s[2 + i])) {
                 failures.push(format!("{name} {side}: {s:?} misses {v:?}"));
             }
         }

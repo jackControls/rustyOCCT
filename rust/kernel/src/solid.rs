@@ -7,7 +7,7 @@ use crate::topology::Topology;
 
 mod attrs;
 mod enclose;
-mod split;
+pub(crate) mod split;
 mod stack;
 use crate::{
     Boundary, Bounds3, Error, Frame3, Location, Point2, Point3, Profile, Result, RigidTransform,
@@ -972,6 +972,14 @@ impl Solid {
             Construction::Half(half) => {
                 half.rebuilt_with(self.operation, frame, Some(self.mass.moved(transform)))?
             }
+            // An oblique piece's too (S8b's spline walls cost the most).
+            Construction::Clipped(clipped) => clipped.rebuilt_with(
+                self.operation,
+                frame,
+                self.start,
+                self.end,
+                Some(self.mass.moved(transform)),
+            )?,
             _ => self.rebuilt(self.operation, frame)?,
         };
         // A rigid copy keeps every id, whatever operation named them.

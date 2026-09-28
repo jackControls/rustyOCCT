@@ -138,6 +138,16 @@ def seed_corpus(target):
                         data[4] = 4 + 16*turn
                         data[11] = frame
                         save(bytes(data))
+        # S8e: sheets and closed wires (a first byte of 160) of every line,
+        # arc and spline profile, in every plane mode, both frames.
+        for kind in range(6):
+            for mode in range(8):
+                for flags in range(8):
+                    if flags & 1 and kind >= 3:
+                        continue
+                    data = bytearray((j*31+kind*7+mode*13+flags*19+3)%256 for j in range(24))
+                    data[:4] = bytes([160, kind, mode, flags])
+                    save(bytes(data))
         # S8c and S8d: a cone, a sphere, a zone, a cap and a torus (a first
         # byte of 224 on) in every plane mode (S8d.2's touching a rim,
         # parallel to a ruling and through a virtual apex among them), both

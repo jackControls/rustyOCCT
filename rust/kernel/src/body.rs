@@ -7,7 +7,9 @@ use crate::history::{self, History, Relation};
 use crate::identity::{EntityId, OperationId, OperationKind};
 use crate::solid::{replayable, Context};
 use crate::topology::{BodyClass, MeasureEnclosure, Topology};
-use crate::{Boundary, Frame3, Profile, Result, RigidTransform, Tolerance};
+use crate::{Boundary, Frame3, Point2, Profile, Result, RigidTransform, Segment, Tolerance};
+
+mod split;
 
 /// How a body was made, kept so rigid motions rebuild it exactly.
 #[derive(Debug, Clone, PartialEq)]
@@ -15,6 +17,12 @@ enum Construction {
     Face(Box<Profile>),
     Wire {
         boundary: Boundary,
+        tolerance: Tolerance,
+    },
+    /// An open wire: a closed wire's run on one side of a plane (S8e).
+    Path {
+        points: Vec<Point2>,
+        segments: Vec<Segment>,
         tolerance: Tolerance,
     },
 }
@@ -133,6 +141,11 @@ impl Body {
                 boundary,
                 tolerance,
             } => Topology::planar_sheet(&[boundary], frame, *tolerance, false, operation)?,
+            Construction::Path {
+                points,
+                segments,
+                tolerance,
+            } => Topology::open_wire(points, segments, frame, *tolerance, operation)?,
         };
         Ok(Self {
             construction,
@@ -202,20 +215,32 @@ impl Body {
     pub fn profile(&self) -> Option<&Profile> {
         match &self.construction {
             Construction::Face(profile) => Some(profile),
-            Construction::Wire { .. } => None,
+            _ => None,
         }
     }
     /// The boundary of a wire body; `None` for a face.
     pub fn boundary(&self) -> Option<&Boundary> {
         match &self.construction {
-            Construction::Face(_) => None,
             Construction::Wire { boundary, .. } => Some(boundary),
+            _ => None,
+        }
+    }
+    /// The points and segments of an open wire body (a split's run, S8e);
+    /// `None` otherwise.
+    pub fn path(&self) -> Option<(&[Point2], &[Segment])> {
+        match &self.construction {
+            Construction::Path {
+                points, segments, ..
+            } => Some((points, segments)),
+            _ => None,
         }
     }
     pub fn resolution(&self) -> Tolerance {
         match &self.construction {
             Construction::Face(profile) => profile.tolerance(),
-            Construction::Wire { tolerance, .. } => *tolerance,
+            Construction::Wire { tolerance, .. } | Construction::Path { tolerance, .. } => {
+                *tolerance
+            }
         }
     }
     pub fn frame(&self) -> Frame3 {

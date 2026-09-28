@@ -1053,6 +1053,66 @@
       "reason": "BRepGProp::LinearProperties measures the lens hole's upper cubic (poles (7, 5), (6, 8), (4, 8), (3, 5), whole in the upper face) 6.3908443697 instead of 6.3909760774, and the lower cubic's middle part (in the lower face) 4.3116150454 instead of 4.3116133826: the perimeters are 37.524632048 and 29.366040029 against the reference's 37.524763756 and 29.366038366 (3.5e-06 and 5.7e-08 relative). Areas and centres agree within 1.3e-15. The pieces are valid, their sides the reference's. The kernel has no Body::split_by_plane yet (S8e): the case is rust_unsupported.",
       "independent_evidence": "The cubic's length by mpmath quadrature of |B'(t)| at 30 digits is 6.39097607738270, and the reference's lens length 12.7819521548 is twice it (the lens is symmetric about v = 5). A scratch variant of occt_split_oracle.cpp (not the captured probe) measuring every edge of the two faces with GCPnts_AbscissaPoint::Length at 1e-13 gives the upper cubic 6.3909760773827013 and the perimeters 37.524763755981105 and 29.366038366375562, the reference's within 1e-15; LinearProperties and the abscissa agree on every line edge.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "sheet_stadium_tangent",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "c621afbb0b4058cc221b9b17e09ff798dee20f7ab4eeefa41948165617221a5a",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI_Splitter splits the stadium's right arc at the point the plane touches (1 face, 5 edges, 5 vertices); the kernel cuts nothing at a tangency (S8 decisions) and returns the sheet unchanged (1 face, 4 edges, 4 vertices). The area, perimeter and centre agree with the reference.",
+      "independent_evidence": "The plane x = 4 touches the right arc (centre (3, 0), radius 1) at (4, 0) only: the sheet lies in x <= 4.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "sheet_disc_chord",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "28d87bd997cdec3553a8dce7d30d0cb04bc5f04f9d40d7a911ce4619131f6775",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT's disc keeps its circle's seam vertex at angle 0 (the frame's x axis), which lies on the upper side of the plane: the upper piece's arc is split there (1 face, 3 edges, 3 vertices). The kernel's circles are seamless (TOPOLOGY_MODEL.md): each piece is a chord and one arc (1 face, 2 edges, 2 vertices). Areas, perimeters and centres agree with the reference.",
+      "independent_evidence": "The plane x + z = 1 meets the disc's plane z = 0 in the line x = 1, which crosses the circle of radius 2 about the origin twice; the seam's point (2, 0) has x > 1.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "sheet_hole_tangent",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "4797c974889402ef89ddb47f197ca966caff28b42a458895d668d786926e127b",
+      "differences": [
+        "rust_refused"
+      ],
+      "reason": "The plane y = 7 touches the square's round hole (centre (5, 5), radius 2) at (5, 7) inside the sheet: OCCT keeps the lower piece valid with its hole touching the chord there (1 face, 7 edges, 6 vertices). The kernel's profiles hold no hole touching their boundary (S8 decisions: such a pinch is Degenerate), so it refuses the split. The native pieces' areas and centres agree with the reference.",
+      "independent_evidence": "The distance from (5, 5) to the line y = 7 is 2, the hole's radius: a tangency, at (5, 7), strictly inside the square [0, 10] x [0, 10].",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "wire_circle_chord_tilted",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "8a1916af1294616324f13a53de8757024518f52d8151278bace0b3c8ce0ce954",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT's circle keeps its seam vertex at angle 0 (the frame's x axis), which lies on the upper side: the upper arc is split there (2 edges, 3 vertices). The kernel's circle is seamless: each run is one arc between the two crossings (1 edge, 2 vertices). Lengths and centres agree with the reference.",
+      "independent_evidence": "The circle of radius 2 in the tilted frame's plane crosses the plane twice; the seam's point, 2 along the frame's x axis from its origin, lies above it (the reference's sides).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "wire_bulge_tangent",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "bdbdc8a9fc179cd80c89f24c9dece63cd530d0aad9b53e70fa20b2e0e056d5d4",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI_Splitter splits the bulge's quadratic edge where the plane touches it (5 edges, 5 vertices); the kernel cuts nothing at a tangency (an even root of the trace's function, S8b.3) and returns the wire unchanged (4 edges, 4 vertices). The length and centre agree with the reference.",
+      "independent_evidence": "The plane x = 11 meets the quadratic (poles (10, 0), (12, 3), (10, 6)), x(t) = 10 + 4 t (1 - t), only at t = 1/2, the point (11, 3), a double root: the wire lies in x <= 11.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     }
   ]
 }
