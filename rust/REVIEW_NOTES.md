@@ -2434,4 +2434,22 @@ the first fixture, never deferred.
     one new review: OCCT splits the bulge's cap edges where a plane touches
     them). Pending: the campaign, and the Linux record of the spline capture
     after CI.
+  * S8e: decisions recorded (2026-09-28); its evidence came before any
+    kernel code (`5fe8d268`): face and wire bodies in the case protocol
+    (`make`, natively a `make` row in place of the prism vector), the
+    reference's `planar_rows` (a sheet's side: area, perimeter and centre
+    from the profile's section; a wire's: length and centre from its
+    boundary cut where the trace crosses or touches it, a piece along the
+    trace on the side of the piece before it; rows `side S area perimeter
+    cx cy cz` and `side S length 0 cx cy cz`), checked within 1e-38 against
+    closed forms, exact clipping, Green's theorem and the sides' sums, 25
+    cases (`split-sheet-cases.txt`) and `occt-split-sheet-preimplementation`:
+    every piece valid, the sides and wires' runs the reference's, 23 within
+    2e-8 and two reviewed BRepGProp errors (a face bounded by two spans of
+    the wave, 1.3e-3; `LinearProperties` on the lens's cubic, 3.5e-6). OCCT
+    keeps a split wire one wire (the probe groups its runs), splits edges
+    at tangencies, keeps circles' seam vertices and splits the sheet whose
+    hole the plane touches (the decisions: `Degenerate`). The probe cannot
+    build a body case yet: all 25 `rust_unsupported` (128 cases: 75
+    matches, 53 reviewed). `Body::split_by_plane` next.
 * S9 — pending

@@ -39,13 +39,28 @@ their sides from the same slicing (`spline_cases`). Before writing,
 `reference_checks` compares the spline slicing with closed forms: straight
 splines give the polygon's rows, and every profile of lines and splines its
 Green's-theorem area and moments in exact Fractions, both within 1e-30.
+
+S8e: `split-sheet-cases.txt` holds face and wire bodies (S6: a `make face`
+or `make wire` row in place of `offsets`) with their `split` rows, and
+`split-sheet-expected.tsv` their sides (`split_reference.planar_rows`) in
+the rows of `split-expected.tsv` with the measures one dimension down: `side
+S area perimeter cx cy cz` for a sheet (its area, the total length of its
+boundary, chords included, and its centroid), `side S length 0 cx cy cz`
+for a wire (its length, 0 for its ends' measure, and its centroid).
+`planar_reference_checks` compares them with closed forms (a square's
+halves, a U's and a holed square's perimeters, circles' arcs and
+segments, a quadratic's length), exact half-plane clipping of polygons in
+Fractions, straight splines, Green's theorem and the sides' sums, within
+1e-30.
 """
 import argparse
+import dataclasses
+from fractions import Fraction as F
 import math
 from pathlib import Path
 import struct
 
-from identity_reference import Boundary, Case, Spline, encode_case, reversed_segment
+from identity_reference import Boundary, Case, Spline, encode_case, reversed_segment, stored_points
 from curve_surface_reference import stored_axes
 import split_reference as ref
 
@@ -329,6 +344,207 @@ def reference_checks():
     return worst
 
 
+def planar(name, boundaries, make, frame=XY):
+    """A face (`Body::face_from_profile`) or wire (`Body::wire_from_boundary`)
+    body of S6 on the frame's plane (S8e)."""
+    return Case(name, 1e-7, 83, frame, 0.0, 0.0, boundaries, make=make)
+
+
+def planar_cases():
+    """(case, plane): S8e's sheets and wires, lines, arcs, circles, holes and
+    S8b's splines, in both frames: planes crossing (at angles to the body's
+    plane, through vertices, through a spline's knot point and joins, four
+    times across a spline), along an edge (a notch's bottom between two
+    prongs; a wire's edge between runs on both sides), tangent to an arc, a
+    hole and a spline, missing, parallel off the body and containing it."""
+    square = Boundary(points=[(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)])
+    ushape = Boundary(points=[(0.0, 0.0), (9.0, 0.0), (9.0, 6.0), (6.0, 6.0), (6.0, 2.0), (3.0, 2.0),
+                              (3.0, 6.0), (0.0, 6.0)])
+    ell = Boundary(points=[(0.0, 0.0), (10.0, 0.0), (10.0, 2.0), (6.0, 2.0), (6.0, 6.0), (0.0, 6.0)])
+    stadium = path([(0.0, -1.0), (3.0, -1.0), (3.0, 1.0), (0.0, 1.0)],
+                   [None, arc(3.0, 0.0, 1.0), None, arc(0.0, 0.0, 1.0)])
+    disc = Boundary(circle=(0.0, 0.0, 2.0))
+    ring_hole = Boundary(circle=(5.0, 5.0, 2.0))
+    slot = path([(-2.0, -1.0), (2.0, -1.0), (2.0, 1.0), (-2.0, 1.0)],
+                [None, arc(2.0, 0.0, 1.0), None, arc(-2.0, 0.0, 1.0)])
+    frame10 = Boundary(points=[(-5.0, -5.0), (5.0, -5.0), (5.0, 5.0), (-5.0, 5.0)])
+    p = spline_profiles()
+    face, wire = 'face', 'wire'
+    return [
+        (planar('sheet_square_skew', [square], face), (4.0, 6.0, 2.0, 1.0, 2.0, 3.0)),
+        (planar('sheet_square_diagonal', [square], face), (5.0, 5.0, 0.0, 1.0, 1.0, 0.0)),
+        (planar('sheet_square_corner', [square], face), (10.0, 10.0, 0.0, 1.0, 1.0, 1.0)),
+        (planar('sheet_u_along_edge', [ushape], face), (0.0, 2.0, 0.0, 0.0, 1.0, 0.0)),
+        (planar('sheet_stadium_tangent', [stadium], face), (4.0, 0.0, 0.0, 1.0, 0.0, 0.0)),
+        (planar('sheet_disc_chord', [disc], face), (1.0, 0.0, 0.0, 1.0, 0.0, 1.0)),
+        (planar('sheet_disc_miss', [disc], face), (3.0, 0.0, 0.0, 1.0, 0.0, 0.5)),
+        (planar('sheet_hole_tangent', [square, ring_hole], face), (0.0, 7.0, 0.0, 0.0, 1.0, 0.0)),
+        (planar('sheet_slot_hole_tilted', [frame10, slot], face, TILT),
+         framed(TILT, (1.0, 0.5, 0.0), (1.0, 0.5, 0.75))),
+        (planar('sheet_parallel_off', [square], face), (0.0, 0.0, 1.0, 0.0, 0.0, 1.0)),
+        (planar('sheet_in_plane', [square], face), (3.0, 4.0, 0.0, 0.0, 0.0, -1.0)),
+        (planar('sheet_bulge_twice', p['bulge'], face), (10.5, 0.0, 0.0, 1.0, 0.0, 0.0)),
+        (planar('sheet_wave_knot', p['wave'], face), (6.5, 0.0, 0.0, 1.0, 0.0, 1.0)),
+        (planar('sheet_lens_tilted', p['lens'], face, TILT), framed(TILT, (5.0, 4.0, 0.0), (0.25, 1.0, 0.5))),
+        (planar('wire_square_skew_tilted', [square], wire, TILT), framed(TILT, (4.0, 6.0, 0.0), (1.0, 2.0, 3.0))),
+        (planar('wire_square_diagonal', [square], wire), (5.0, 5.0, 0.0, 1.0, 1.0, 0.0)),
+        (planar('wire_l_along_edge', [ell], wire), (0.0, 2.0, 0.0, 0.0, 1.0, 0.0)),
+        (planar('wire_circle_chord_tilted', [disc], wire, TILT), framed(TILT, (0.5, 0.0, 0.0), (1.0, 1.0, 1.0))),
+        (planar('wire_stadium_arc', [stadium], wire), (3.5, 0.0, 0.0, 1.0, 0.0, 0.25)),
+        (planar('wire_parallel_off_tilted', [square], wire, TILT), framed(TILT, (0.0, 0.0, 1.0), (0.0, 0.0, 1.0))),
+        (planar('wire_in_plane_tilted', [square], wire, TILT), (1.0, -2.0, 0.5, 0.0, 3.0, 4.0)),
+        (planar('wire_blob_joins', p['blob'], wire), (4.0, 0.0, 0.0, 1.0, 0.0, 0.0)),
+        (planar('wire_wave_four', p['wave'], wire), (0.0, 6.8, 0.0, 0.0, 1.0, 0.0)),
+        (planar('wire_capsule_tilted', p['capsule'], wire, TILT), framed(TILT, (1.5, 0.0, 0.0), (1.0, 0.25, 2.75))),
+        (planar('wire_bulge_tangent', p['bulge'], wire), (11.0, 0.0, 0.0, 1.0, 0.0, 0.0)),
+    ]
+
+
+def _clip_moments(points, a, b, d, below):
+    """Area and first moments (exact Fractions) of a polygon clipped to the
+    half-plane `a u + b v + d <= 0` (or `>= 0`), by Sutherland-Hodgman and
+    the shoelace sums (exact for one half-plane, whatever the polygon's
+    shape)."""
+    pts = [(F(x), F(y)) for x, y in points]
+    g = lambda p: a*p[0]+b*p[1]+d
+    keep = (lambda f: f <= 0) if below else (lambda f: f >= 0)
+    out = []
+    for i, p in enumerate(pts):
+        q = pts[(i+1) % len(pts)]
+        fp, fq = g(p), g(q)
+        if keep(fp):
+            out.append(p)
+        if fp*fq < 0:
+            t = fp/(fp-fq)
+            out.append((p[0]+t*(q[0]-p[0]), p[1]+t*(q[1]-p[1])))
+    area = mx = my = F(0)
+    for i, p in enumerate(out):
+        q = out[(i+1) % len(out)]
+        cross = p[0]*q[1]-q[0]*p[1]
+        area += cross/2
+        mx += (p[0]+q[0])*cross/6
+        my += (p[1]+q[1])*cross/6
+    return area, mx, my
+
+
+def _quadratic_length(p0, p1, p2):
+    """The closed-form length of a quadratic Bezier curve."""
+    A = [ref.M(p1[i])-p0[i] for i in range(2)]
+    C = [ref.M(p2[i])-2*ref.M(p1[i])+p0[i] for i in range(2)]
+    # |B'(t)| = 2 sqrt(al t^2 + be t + ga).
+    al = C[0]**2+C[1]**2
+    be = 2*(A[0]*C[0]+A[1]*C[1])
+    ga = A[0]**2+A[1]**2
+    def antiderivative(t):
+        f = ref.mp.sqrt(al*t*t+be*t+ga)
+        return (2*al*t+be)*f/(4*al)+(4*al*ga-be*be)/(8*al**ref.M(1.5))*ref.mp.log(2*al*t+be+2*ref.mp.sqrt(al)*f)
+    return 2*(antiderivative(ref.M(1))-antiderivative(ref.M(0)))
+
+
+def planar_reference_checks():
+    """S8e's reference against closed forms and exact sums: a square's
+    halves (sheet: area, perimeter, centre; wire: length, centre) by a
+    vertical plane and a diagonal one, a U's perimeters along its notch, a
+    square with a tangent hole; every polygon sheet's sides against exact
+    half-plane clipping in Fractions; every circle's sides against `r
+    theta` arcs and circular segments; a square of straight splines against
+    the polygon; spline sheets' whole area and moments against Green's
+    theorem in Fractions and their sides' sums; every wire's sides' lengths
+    against its whole length; and the bulge's quadratic Bezier against its
+    closed-form length. Returns the largest relative deviation; raises
+    beyond 1e-30."""
+    M, mp = ref.M, ref.mp
+    worst = [M(0)]
+    def near(got, want):
+        worst[0] = max(worst[0], abs(M(got)-M(want))/max(1, abs(M(want))))
+    def same_rows(got, want):
+        assert [r[0] for r in got] == [r[0] for r in want], (got, want)
+        for g, w in zip(got, want):
+            for x, y in zip([g[1], g[2], *g[3]], [w[1], w[2], *w[3]]):
+                near(x, y)
+    square = Boundary(points=[(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)])
+    vertical, diagonal = (4.0, 0.0, 0.0, 1.0, 0.0, 0.0), (5.0, 5.0, 0.0, 1.0, 1.0, 0.0)
+    third, root2 = M(10)/3, mp.sqrt(2)
+    closed = [
+        ('face', vertical, [('below', 40, 28, (2, 5, 0)), ('above', 60, 32, (7, 5, 0))]),
+        ('face', diagonal, [('below', 50, 20+10*root2, (third, third, 0)),
+                            ('above', 50, 20+10*root2, (2*third, 2*third, 0))]),
+        ('wire', vertical, [('below', 18, 0, (M(8)/9, 5, 0)), ('above', 22, 0, (M(184)/22, 5, 0))]),
+        ('wire', diagonal, [('below', 20, 0, (M(5)/2, M(5)/2, 0)), ('above', 20, 0, (M(15)/2, M(15)/2, 0))]),
+    ]
+    for make, plane, want in closed:
+        same_rows(ref.planar_rows(planar('check', [square], make), plane), want)
+    by_name = {case.name: (case, plane) for case, plane in planar_cases()}
+    for name, want in (('sheet_u_along_edge', (22, 28)), ('sheet_hole_tangent', (34+4*mp.pi, 26))):
+        rows = ref.planar_rows(*by_name[name])
+        near(rows[0][2], want[0])
+        near(rows[1][2], want[1])
+    straight = path([(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)], [
+        spline(2, [(0.0, 0.0), (5.0, 0.0), (10.0, 0.0)]),
+        spline(3, [(10.0, 0.0), (10.0, 2.5), (10.0, 5.0), (10.0, 7.5), (10.0, 10.0)], (0.0, 1.0, 2.0)),
+        None, None])
+    for make in ('face', 'wire'):
+        for plane in (vertical, diagonal, (4.0, 6.0, 2.0, 1.0, 2.0, 3.0), (10.0, 10.0, 0.0, 1.0, 1.0, 1.0)):
+            same_rows(ref.planar_rows(planar('straight', [straight], make), plane),
+                      ref.planar_rows(planar('polygon', [square], make), plane))
+    for case, plane in planar_cases():
+        p = ref.Planar(case, plane)
+        rows = p.rows()
+        segments = [s for b in case.boundaries for s in (b.segments or [])]
+        lines_and_splines = all(b.circle is None for b in case.boundaries) and \
+            not any(isinstance(s, tuple) for s in segments)
+        if case.make == 'face':
+            V, mu, mv, _ = p.prism.volume_moments(None)
+            if len(rows) == 2:
+                # The sides add up to the whole.
+                parts = [p.prism.volume_moments(below) for below in (True, False)]
+                for k, total in enumerate((V, mu, mv)):
+                    near(parts[0][k]+parts[1][k], total)
+            polygons = all(b.circle is None and b.segments is None for b in case.boundaries)
+            if polygons and len(rows) == 2:
+                for below, row in zip((True, False), rows):
+                    area, mx, my = F(0), F(0), F(0)
+                    for k, b in enumerate(case.boundaries):
+                        s = 1 if k == 0 else -1
+                        A_, X_, Y_ = _clip_moments(stored_points(b, case.tolerance), p.a, p.b, p.d, below)
+                        area, mx, my = area+s*A_, mx+s*X_, my+s*Y_
+                    got = p.prism.volume_moments(below)
+                    for x, y in zip(got[:3], (area, mx, my)):
+                        near(x, y)
+            if lines_and_splines and any(isinstance(s, Spline) for s in segments):
+                area, mx, my = ref.green_moments(dataclasses.replace(case, make=None))
+                for x, y in zip((V, mu, mv), (area, mx, my)):
+                    near(x, y)
+        else:
+            total = sum(q[1] for q in p.wire_pieces())
+            near(sum(r[1] for r in rows), total)
+        if all(b.circle is not None for b in case.boundaries):
+            cx, cy, r = (M(x) for x in case.boundaries[0].circle)
+            a, b, d = M(p.a), M(p.b), M(p.d)
+            ab = mp.sqrt(a*a+b*b)
+            h = -(a*cx+b*cy+d)/ab
+            if abs(h) < r:
+                al = mp.acos(h/r)
+                n = (a/ab, b/ab)
+                at = lambda s: p.world(cx+n[0]*s, cy+n[1]*s)
+                if case.make == 'wire':
+                    want = [('below', 2*r*(mp.pi-al), 0, at(-r*mp.sin(al)/(mp.pi-al))),
+                            ('above', 2*r*al, 0, at(r*mp.sin(al)/al))]
+                else:
+                    seg = r*r*(al-mp.sin(al)*mp.cos(al))
+                    arm = M(2)/3*r**3*mp.sin(al)**3
+                    rest = mp.pi*r*r-seg
+                    want = [('below', rest, 2*r*(mp.pi-al)+2*r*mp.sin(al), at(-arm/rest)),
+                            ('above', seg, 2*r*al+2*r*mp.sin(al), at(arm/seg))]
+                same_rows(rows, want)
+    bulge = spline_profiles()['bulge']
+    whole = ref.planar_rows(planar('bulge', bulge, 'wire'), (0.0, 0.0, 1.0, 0.0, 0.0, 1.0))
+    near(whole[0][1], 26+_quadratic_length((10, 0), (12, 3), (10, 6)))
+    if worst[0] > M(10)**-30:
+        raise SystemExit(f'sheet and wire reference checks failed: {worst[0]}')
+    return worst[0]
+
+
 def primitive_line(kind, name, frame, params, plane):
     words = [kind, name, '1e-07'] + [repr(float(v)) for v in frame+params] + ['split'] + \
         [repr(float(v)) for v in plane]
@@ -376,7 +592,15 @@ def generate():
         bblocks.append(encode(case, plane))
         for row in ref.rows(case, plane):
             bsplines.append(f'{case.name}\t{ref.text(row)}')
+    pblocks, planars = [], ['# case\trow (S8e, split_reference.planar_rows: side S area perimeter cx cy cz '
+                            'of a sheet, side S length 0 cx cy cz of a wire)']
+    for case, plane in planar_cases():
+        pblocks.append(encode(case, plane))
+        for row in ref.planar_rows(case, plane):
+            planars.append(f'{case.name}\t{ref.text(row)}')
     return {'split-cases.txt': '\n'.join(blocks)+'\n', 'split-expected.tsv': '\n'.join(out)+'\n',
+            'split-sheet-cases.txt': '\n'.join(pblocks)+'\n',
+            'split-sheet-expected.tsv': '\n'.join(planars)+'\n',
             'split-frames.tsv': '\n'.join(frames)+'\n',
             'split-primitive-cases.txt': '\n'.join(lines)+'\n',
             'split-primitive-expected.tsv': '\n'.join(prim)+'\n',
@@ -395,6 +619,7 @@ def main():
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
     straight, green = reference_checks()
+    planar_worst = planar_reference_checks()
     files = generate()
     for name, contents in files.items():
         path = ROOT/'fixtures'/name
@@ -408,6 +633,8 @@ def main():
           len(spline_cases()), 'spline prisms')
     print('spline reference: straight splines within', ref.mp.nstr(straight, 3),
           'of the polygon, slicing within', ref.mp.nstr(green, 3), 'of Green (relative)')
+    print(len(planar_cases()), 'sheets and wires; their reference within', ref.mp.nstr(planar_worst, 3),
+          'of closed forms, exact clipping, Green and their sums (relative)')
 
 
 if __name__ == '__main__':
