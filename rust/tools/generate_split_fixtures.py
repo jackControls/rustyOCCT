@@ -179,6 +179,28 @@ def torus_cases():
     ]
 
 
+def spiric_cases():
+    """(name, frame, (major, minor), plane): whole tori cut in spiric
+    sections (S8d.3), beside S8d's four: two loops winding about the axis
+    (bands), one contractible loop (a cap, the rest the torus less a disc)
+    and two loops winding about the tube (C-shaped pieces), in both frames."""
+    return [
+        ('torus_gentle', XY, (3.0, 1.0), (0.0, 0.0, 0.0, 0.1, 0.0, 1.0)),
+        ('torus_band_offset', XY, (3.0, 1.0), (0.0, 0.0, 0.3, 0.15, 0.05, 1.0)),
+        ('torus_top_band', XY, (3.0, 1.0), (0.0, 0.0, 0.8, 0.05, 0.0, 1.0)),
+        ('torus_top_cap', XY, (3.0, 1.0), (0.0, 0.0, 0.9, 0.3, 0.0, 1.0)),
+        ('torus_cap_outer', XY, (3.0, 1.0), (3.6, 0.0, 0.0, 1.0, 0.0, 0.0)),
+        ('torus_peanut', XY, (3.0, 1.0), (2.2, 0.0, 0.0, 1.0, 0.0, 0.0)),
+        ('torus_hole_slice', XY, (3.0, 1.0), (2.05, 0.0, 0.0, 1.0, 0.0, 0.3)),
+        ('torus_two_ovals', XY, (3.0, 1.0), (1.5, 0.0, 0.0, 1.0, 0.0, 0.0)),
+        ('torus_steep', XY, (3.0, 1.0), (0.0, 0.0, 0.0, 1.0, 0.0, 1.0)),
+        ('torus_skew_ovals', XY, (3.0, 1.0), (0.5, 0.2, 0.0, 1.0, 0.3, 0.4)),
+        ('torus_small_tube', XY, (4.0, 0.5), (0.0, 0.0, 0.1, 0.2, 0.0, 1.0)),
+        ('torus_tilted_spiric', TILT, (2.5, 0.75), (1.0, -1.82, 0.74, 1.0, 3.0, 4.0)),
+        ('torus_tilted_band', TILT, (2.5, 0.75), (1.0, -1.82, 0.74, 0.3, 3.0, 4.0)),
+    ]
+
+
 def primitive_line(kind, name, frame, params, plane):
     words = [kind, name, '1e-07'] + [repr(float(v)) for v in frame+params] + ['split'] + \
         [repr(float(v)) for v in plane]
@@ -216,6 +238,11 @@ def generate():
         tlines.append(primitive_line('torus', name, frame, params+(2*math.pi,), plane))
         for row in ref.torus_rows(frame, params, plane):
             tori.append(f'{name}\t{ref.text(row)}')
+    slines, spirics = [], ['# case\trow (S8d.3, split_reference.torus_rows)']
+    for name, frame, params, plane in spiric_cases():
+        slines.append(primitive_line('torus', name, frame, params+(2*math.pi,), plane))
+        for row in ref.torus_rows(frame, params, plane):
+            spirics.append(f'{name}\t{ref.text(row)}')
     return {'split-cases.txt': '\n'.join(blocks)+'\n', 'split-expected.tsv': '\n'.join(out)+'\n',
             'split-frames.tsv': '\n'.join(frames)+'\n',
             'split-primitive-cases.txt': '\n'.join(lines)+'\n',
@@ -223,7 +250,9 @@ def generate():
             'split-conic-cases.txt': '\n'.join(clines)+'\n',
             'split-conic-expected.tsv': '\n'.join(conics)+'\n',
             'split-torus-cases.txt': '\n'.join(tlines)+'\n',
-            'split-torus-expected.tsv': '\n'.join(tori)+'\n'}
+            'split-torus-expected.tsv': '\n'.join(tori)+'\n',
+            'split-spiric-cases.txt': '\n'.join(slines)+'\n',
+            'split-spiric-expected.tsv': '\n'.join(spirics)+'\n'}
 
 
 def main():
@@ -239,7 +268,7 @@ def main():
         else:
             path.write_text(contents)
     print(len(cases()), 'cases,', len(primitive_cases()), 'primitive cases,', len(conic_cases()),
-          'conic cases,', len(torus_cases()), 'tori')
+          'conic cases,', len(torus_cases()), 'tori,', len(spiric_cases()), 'spiric tori')
 
 
 if __name__ == '__main__':
