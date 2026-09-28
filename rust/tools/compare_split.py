@@ -5,7 +5,8 @@ spheres and zones (S8c: `split-primitive-cases.txt`, built natively by
 BRepPrimAPI_MakeCone and MakeSphere on the kernel's stored frame axes), whole
 tori (S8d) and cones and zones cut in conics (S8d.2:
 `split-conic-cases.txt`, whose capture came after the kernel code and is
-recorded as such).
+recorded as such), and prisms of profiles with spline segments (S8b:
+`split-spline-cases.txt`, each spline an edge of a Geom_BSplineCurve).
 
 The independent reference (split_reference.py) gives every case of
 split-cases.txt the totals of each side (volume, area, centre); the native
@@ -23,6 +24,10 @@ reference's sides, their volumes', areas' and centres' sums inside the
 kernel's enclosures, and the native piece counts per side and face, edge and
 vertex counts (a difference needs a review). A case the kernel reports
 `unsupported` (a plane or solid of a later sub-step of S8) is listed apart.
+The spline cases go to the probe one at a time: until the kernel reads
+spline segments (S8b.1), a probe that fails on a case (it cannot parse the
+`B` segment) or prints a row other than a piece or a limit reports that case
+`unsupported` too, and the report lists it under `rust_probe_failed`.
 """
 import argparse
 import json
@@ -53,6 +58,8 @@ CAPTURES = {
              ROOT/'rust/kernel/src/solid/split/conic.rs'),
     's8d3': (ROOT/'rust/fixtures/occt-split-spiric-preimplementation',
              ROOT/'rust/kernel/src/solid/split/spiric.rs'),
+    's8b': (ROOT/'rust/fixtures/occt-split-spline-preimplementation',
+            ROOT/'rust/kernel/src/solid/split/spline.rs'),
 }
 # Captures taken after their kernel code (S8d.2's conic configurations beyond
 # the three S8c captured before it): recorded as such, never as references
@@ -82,7 +89,7 @@ def native_input(key='s8a'):
             blocks.append(f'case {name}\n{kind} {axis}\nsplit '
                           + ' '.join(repr(float(v)) for v in plane)+'\nend')
         return '\n'.join(blocks)+'\n'
-    for case, plane in fixtures.cases():
+    for case, plane in fixtures.spline_cases() if key == 's8b' else fixtures.cases():
         text = native_case(case)
         body, _ = text.rsplit('\nend', 1)
         blocks.append(body+'\nsplit '+' '.join(repr(float(v)) for v in plane)+'\nend')
@@ -109,7 +116,8 @@ def expected_rows():
         (ROOT/'rust/fixtures/split-primitive-expected.tsv').read_text().splitlines()[1:] + \
         (ROOT/'rust/fixtures/split-conic-expected.tsv').read_text().splitlines()[1:] + \
         (ROOT/'rust/fixtures/split-torus-expected.tsv').read_text().splitlines()[1:] + \
-        (ROOT/'rust/fixtures/split-spiric-expected.tsv').read_text().splitlines()[1:]
+        (ROOT/'rust/fixtures/split-spiric-expected.tsv').read_text().splitlines()[1:] + \
+        (ROOT/'rust/fixtures/split-spline-expected.tsv').read_text().splitlines()[1:]
     for line in text:
         name, row = line.split('\t')
         w = row.split()
@@ -174,7 +182,21 @@ def rust_rows():
     for line in rows.splitlines():
         w = line.split()
         out.setdefault(w[0], []).append(w[1:])
-    return out
+    # S8b: one case at a time; a probe failure or an unknown row is
+    # `unsupported` (the kernel does not read spline segments yet).
+    failed = []
+    for case, plane in fixtures.spline_cases():
+        run_ = subprocess.run([str(ROOT/'target/release/examples/split_probe')],
+                              input=fixtures.encode(case, plane)+'\n', text=True, capture_output=True,
+                              timeout=600)
+        rows = [line.split() for line in run_.stdout.splitlines()]
+        if run_.returncode != 0 or not rows or any(w[0] != case.name or w[1] not in ('piece', 'limit', 'unsupported')
+                                                   for w in rows):
+            failed.append(case.name)
+            out[case.name] = [['unsupported']]
+        else:
+            out[case.name] = [w[1:] for w in rows]
+    return out, failed
 
 
 def rust_differences(rust, rows, native):
@@ -305,13 +327,17 @@ def main():
     reviews = [] if args.strict_native or not REVIEWS.exists() else json.loads(REVIEWS.read_text())['reviews']
     expected = expected_rows()
     report = {'source_reference': SOURCE, 'oracle': oracle, 'cases': 0, 'rust_within_reference': 0,
-              'rust_unsupported': [], 'matches': [], 'reviewed_differences': [], 'failures': []}
-    rust = None if args.native_only else rust_rows()
+              'rust_unsupported': [], 'rust_probe_failed': [], 'matches': [], 'reviewed_differences': [],
+              'failures': []}
+    rust = None
+    if not args.native_only:
+        rust, report['rust_probe_failed'] = rust_rows()
     everything = [(case, plane, case.name) for case, plane in fixtures.cases()] + \
         [(c, c[4], c[1]) for c in fixtures.primitive_cases()] + \
         [(c, c[4], c[1]) for c in fixtures.conic_cases()] + \
         [(('torus', c[0], c[1], c[2], c[3]), c[3], c[0]) for c in fixtures.torus_cases()] + \
-        [(('torus', c[0], c[1], c[2], c[3]), c[3], c[0]) for c in fixtures.spiric_cases()]
+        [(('torus', c[0], c[1], c[2], c[3]), c[3], c[0]) for c in fixtures.spiric_cases()] + \
+        [(case, plane, case.name) for case, plane in fixtures.spline_cases()]
     for case, plane, name in everything:
         report['cases'] += 1
         rows = expected[name]

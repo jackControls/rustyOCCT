@@ -100,9 +100,98 @@ class Boundary:
     points: list = None          # [(x, y)] for a polygon or a path
     circle: tuple = None         # (cx, cy, r)
     labels: tuple = None         # (boundary, [segment...], [vertex...])
-    # For a path, segment j from point j to j+1: None for a line or
-    # (cx, cy, r, ccw) for an arc about the profile normal.
+    # For a path, segment j from point j to j+1: None for a line,
+    # (cx, cy, r, ccw) for an arc about the profile normal, or a Spline
+    # (S8b) whose first and last poles are points j and j+1 exactly.
     segments: list = None
+
+
+@dataclass(frozen=True)
+class Spline:
+    """S8b: a nonrational planar B-spline path segment of `degree` with
+    `poles` ((x, y) binary64 pairs, the first and last the segment's points
+    exactly), distinct increasing `knots` and their `mults` (clamped: the
+    ends degree + 1, interior ones 1 to degree)."""
+    degree: int
+    poles: tuple
+    knots: tuple
+    mults: tuple
+
+    def check(self, p, q):
+        n, d = len(self.poles), self.degree
+        assert 1 <= d <= 7 and n >= d+1, 'spline degree and poles'
+        assert tuple(self.poles[0]) == tuple(p) and tuple(self.poles[-1]) == tuple(q), \
+            'spline poles must start and end at the segment points exactly'
+        assert len(self.knots) == len(self.mults) >= 2
+        assert all(a < b for a, b in zip(self.knots, self.knots[1:])), 'knots increase'
+        assert self.mults[0] == self.mults[-1] == d+1 and all(1 <= m <= d for m in self.mults[1:-1])
+        assert sum(self.mults) == n+d+1, 'knot count'
+
+    def reversed(self):
+        """The same curve backwards on the same domain: poles reversed,
+        knots mirrored `k -> a + b - k` (exact in binary64, asserted),
+        multiplicities reversed."""
+        a, b = F(self.knots[0]), F(self.knots[-1])
+        knots = []
+        for k in reversed(self.knots):
+            m = a+b-F(k)
+            assert F(float(m)) == m, 'mirrored knot not exact in binary64'
+            knots.append(float(m))
+        return Spline(self.degree, tuple(reversed(self.poles)), tuple(knots), tuple(reversed(self.mults)))
+
+    def flat_knots(self):
+        return [F(k) for k, m in zip(self.knots, self.mults) for _ in range(m)]
+
+    def blossom(self, span, args):
+        """The polar form of the span's polynomial at `args` (degree many
+        Fractions): de Boor's recurrence with one argument per level."""
+        U, d = self.flat_knots(), self.degree
+        P = [(F(x), F(y)) for x, y in self.poles]
+        pts = {j: P[j] for j in range(span-d, span+1)}
+        for r in range(1, d+1):
+            t = args[r-1]
+            for j in range(span, span-d+r-1, -1):
+                a = (t-U[j])/(U[j+d+1-r]-U[j])
+                pts[j] = tuple((1-a)*pts[j-1][c]+a*pts[j][c] for c in range(2))
+        return pts[span]
+
+    def pieces(self):
+        """The Bezier control points of each nonempty knot span, exactly, by
+        blossoming: point `i` of span `[s, e]` is the blossom at `s`
+        repeated `degree - i` times and `e` repeated `i` times."""
+        U, d = self.flat_knots(), self.degree
+        out = []
+        for span in range(d, len(U)-d-1):
+            s, e = U[span], U[span+1]
+            if s < e:
+                out.append(tuple(self.blossom(span, [s]*(d-i)+[e]*i) for i in range(d+1)))
+        return out
+
+    def twice_area(self):
+        """The exact integral of `x dy - y dx` along the spline."""
+        total = F(0)
+        for ctrl in self.pieces():
+            total += bezier_cross_integral(ctrl)
+        return total
+
+
+def bernstein_product(n, i, m, j):
+    """The integral over [0, 1] of B(n, i) B(m, j)."""
+    from math import comb
+    return F(comb(n, i)*comb(m, j), comb(n+m, i+j)*(n+m+1))
+
+
+def bezier_cross_integral(ctrl):
+    """The exact integral of `x dy - y dx` along a Bezier curve with
+    Fraction control points."""
+    n = len(ctrl)-1
+    d = [tuple(n*(ctrl[j+1][c]-ctrl[j][c]) for c in range(2)) for j in range(n)]
+    total = F(0)
+    for i in range(n+1):
+        for j in range(n):
+            w = bernstein_product(n, i, n-1, j)
+            total += w*(ctrl[i][0]*d[j][1]-ctrl[i][1]*d[j][0])
+    return total
 
 
 def arc_sweep(p, q, arc):
@@ -119,17 +208,32 @@ def arc_sweep(p, q, arc):
 
 def path_area(pts, segments):
     """Twice the signed area of a path: the polygon of its points plus each
-    arc's circular segment, (r^2)(φ - sin φ) for the signed sweep φ."""
+    arc's circular segment, (r^2)(φ - sin φ) for the signed sweep φ, and
+    each spline's exact `x dy - y dx` integral less its chord's."""
     import mpmath as mp
     n = len(pts)
     twice = mp.mpf(0)
     for i in range(n):
         p, q = pts[i], pts[(i+1) % n]
         twice += mp.mpf(p[0])*q[1]-mp.mpf(q[0])*p[1]
-        if segments[i] is not None:
+        if isinstance(segments[i], Spline):
+            segments[i].check(p, q)
+            extra = segments[i].twice_area()-(F(p[0])*F(q[1])-F(q[0])*F(p[1]))
+            twice += mp.mpf(extra.numerator)/extra.denominator
+        elif segments[i] is not None:
             phi = arc_sweep(p, q, segments[i])
             twice += mp.mpf(segments[i][2])**2*(phi-mp.sin(phi))
     return twice
+
+
+def reversed_segment(seg):
+    """A path segment traversed backwards: a line stays one, an arc turns
+    the other way, a spline is reversed (Spline.reversed)."""
+    if seg is None:
+        return None
+    if isinstance(seg, Spline):
+        return seg.reversed()
+    return (*seg[:3], not seg[3])
 
 
 def stored(boundary, tolerance):
@@ -138,8 +242,9 @@ def stored(boundary, tolerance):
     Boundary::polygon drops a closing point within tolerance of the first,
     then reverses points[1..] when the polygon is clockwise. Segment j of the
     stored polygon runs from stored point j to j+1. A path (S5) keeps every
-    point, is oriented by its area with arcs' bulges, and reversed segments
-    flip their arcs' directions."""
+    point, is oriented by its area with arcs' and splines' bulges, and
+    reversed segments flip their arcs' directions and reverse their splines
+    (S8b)."""
     if boundary.circle is not None:
         return None, boundary.labels
     if boundary.segments is not None:
@@ -151,8 +256,7 @@ def stored(boundary, tolerance):
         labels = boundary.labels
         if twice < 0:
             pts = [pts[0]]+pts[:0:-1]
-            segs = [None if segs[n-1-j] is None else (*segs[n-1-j][:3], not segs[n-1-j][3])
-                    for j in range(n)]
+            segs = [reversed_segment(segs[n-1-j]) for j in range(n)]
             if labels is not None:
                 b, seg, vert = labels
                 labels = (b, [seg[n-1-j] for j in range(n)], [vert[(n-j) % n] for j in range(n)])
@@ -202,6 +306,22 @@ def number(x):
     return repr(float(x))
 
 
+def segment_words(seg, lift, dim):
+    """A path segment's words: L, A cx cy r ccw, or B p n poles k knots
+    mults (S8b) with each pole mapped by `lift` to `dim` coordinates."""
+    if seg is None:
+        return ['L']
+    if isinstance(seg, Spline):
+        words = ['B', str(seg.degree), str(len(seg.poles))]
+        for pole in seg.poles:
+            v = lift(pole)
+            assert len(v) == dim
+            words += [number(x) for x in v]
+        words += [str(len(seg.knots)), *map(number, seg.knots), *map(str, seg.mults)]
+        return words
+    return ['A', *map(number, lift(seg[:2])), number(seg[2]), '1' if seg[3] else '0']
+
+
 def encode_case(c):
     out = [f'case {c.name} {number(c.tolerance)}', f'op {c.operation}']
     if c.box is not None:
@@ -223,11 +343,16 @@ def encode_case(c):
                 row = 'boundary C '+' '.join(number(x) for x in b.circle)
             elif b.segments is not None:
                 # S5: each point, then its segment to the next: L, or
-                # A cx cy r and 1 (counter-clockwise) or 0.
+                # A cx cy r and 1 (counter-clockwise) or 0, or (S8b) a
+                # nonrational spline B p n x0 y0 ... x(n-1) y(n-1) k u0 ...
+                # u(k-1) m0 ... m(k-1): degree p, n poles (the first the
+                # point, the last the next point, exactly), k distinct knots
+                # and their multiplicities (clamped: the ends p + 1, interior
+                # ones 1 to p).
                 words = [f'boundary S {len(b.points)}']
                 for p, seg in zip(b.points, b.segments):
                     words += [number(p[0]), number(p[1])]
-                    words += ['L'] if seg is None else ['A', *map(number, seg[:3]), '1' if seg[3] else '0']
+                    words += segment_words(seg, lambda v: tuple(v), 2)
                 row = ' '.join(words)
             else:
                 row = f'boundary P {len(b.points)} '+' '.join(number(x) for p in b.points for x in p)
@@ -576,15 +701,13 @@ def native_case(c):
         elif b.segments is not None:
             # Stored counter-clockwise: each point, then its segment to the
             # next (L, or A with the 3D centre, radius and 1 if it turns
-            # counter-clockwise about the plane's normal).
+            # counter-clockwise about the plane's normal, or B p n with the
+            # 3D poles, k, the knots and multiplicities: S8b).
             points, segments = pts
             words = [f'wire S {len(points)}']
             for p, seg in zip(points, segments):
                 words += [number(v) for v in at(p)]
-                if seg is None:
-                    words.append('L')
-                else:
-                    words += ['A', *(number(v) for v in at(seg[:2])), number(seg[2]), '1' if seg[3] else '0']
+                words += segment_words(seg, at, 3)
             rows.append(' '.join(words))
         else:
             rows.append(f'wire P {len(pts)} '+' '.join(number(v) for p in pts for v in at(p)))
