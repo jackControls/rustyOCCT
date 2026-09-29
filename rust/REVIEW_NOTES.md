@@ -1779,6 +1779,57 @@ Decisions for S9, recorded before its code (2026-09-28):
     evaluated now (their values are the fixture comparisons'). Pending:
     the DRAW survey, the campaign.
 
+* **S9d, decisions recorded before its code (2026-09-29).** Cones,
+  spheres and tori against the prisms S9a to S9c take, and against each
+  other.
+  * **Sub-steps.** S9d.1: a sphere (S3's `sphere_*`: whole, a cap or a
+    zone between two latitudes) against polyhedral prisms (every face a
+    plane) in any position: every pair of faces meets in a line (planes) or
+    a circle (a plane and the sphere), every vertex a quadratic surd (a
+    line against the sphere; the sphere's circle against a plane meets it
+    on a line through the circle's plane). S9d.2: a sphere against prisms
+    with arcs (a cylinder and a sphere: S7b.1's procedural curve, a graph
+    over the cylinder's angle, `Curve3::Meet`'s kind) and two spheres (a
+    circle). S9d.3: cones (conic sections, S8d.2; procedural against
+    cylinders, spheres and cones, S7b.2). S9d.4: tori (spiric sections,
+    S8d.3; procedural otherwise). A pair of a later sub-step is
+    `OutOfDomain`.
+  * **Models.** Each input on its exact model (S9c.1's rule): a sphere the
+    set `|p - o|^2 <= r^2` of its stored centre and radius, a zone's end
+    planes at its stored heights along the frame's stored normal; a
+    membership test exact (a quadratic and linear signs, pushes as S9c.1's
+    at first order: along the sphere's tangent plane a push keeps to it).
+  * **Faces in their parameters.** The sphere's face is traced in S3's
+    `(u, v)` (longitude, latitude) as S9c.1 traces a cylinder's in `(u,
+    w)`: split at a rational seam meridian (a half-plane through the axis
+    at a rational point of the equator, each input's seam its own, tried
+    again at another when a meeting falls on it); a pole is a vertex only
+    where a whole sphere's piece holds it, a loop round a pole wound in
+    `u`. Plane sections are circles (centre the centre's projection,
+    radius `sqrt(r^2 - d^2)` a surd): a vertex where two meet is a
+    quadratic surd, placed on each by its exact `(cos, sin)` about its own
+    centre.
+  * **Geometry.** A section is `Curve3::Circle` or `CircularArc` on the
+    plane's frame (radius rounded once), its pcurves a circle on the plane
+    and a `Projection` on the sphere; tangencies (a plane tangent to the
+    sphere, a vertex of a prism on the sphere, an edge tangent to it) and
+    results touching themselves `Degenerate`.
+  * **History.** S9a's and S9b.1's rules.
+  * **Evidence first.** A reference independent of the arrangement:
+    slices by parallel planes (each slice a polygon's convex pieces
+    against a disc, its area and moments by Green's theorem over segments
+    and arcs in closed form, breakpoints where a slice passes a vertex or
+    touches the sphere as exact roots, Gauss-Legendre between), areas from
+    each face's own parameters, checked against closed forms (spherical
+    caps and zones, a sphere and a half-space, octants, a box inside, a
+    sphere inside), inclusion and exclusion and Monte Carlo; fixtures of
+    every class in exact and turned frames (a sphere through a box face,
+    a box corner in a sphere, a sphere through a box edge, a zone against
+    a box, a box through a zone's cap, a sphere inside, touching declared
+    `degenerate`); a native `BRepAlgoAPI` capture before
+    `solid/boolean/curved/sphere.rs` exists; then the kernel, the
+    comparison, the DRAW survey and a campaign.
+
 ### Parallel tracks
 
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
