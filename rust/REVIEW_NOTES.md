@@ -1695,6 +1695,30 @@ Decisions for S9, recorded before its code (2026-09-28):
     lies on the edge's arc, not yet where it lies off the other face
     (S9c.2b.2's interval membership). Pending: the DRAW survey, the
     campaign, S9c.2b.2.
+  * **S9c.2b.2, decisions before its code (2026-09-29).** Every vertex
+    S9c.2b.1 refuses lies on a cap's circle at an angle whose half-angle
+    tangent `alpha` is a real algebraic number of degree at most four (a
+    root of the circle's quartic against the other cylinder; against a
+    parallel one, of its section's conic): its coordinates, and its angle
+    on any cylinder of either input, lie in `Q(alpha)`. The surds'
+    coefficients generalize from the rationals to such a field: a number is
+    `a + b sqrt(d)` with `a`, `b` in `Q` or in one `Q(alpha)` (polynomials
+    in `alpha`, `alpha` a square-free defining polynomial and a rational
+    isolating interval: `polynomial/real.rs`) and `d` rational, its sign
+    exact (Sturm-Tarski at `alpha`, and S9c.1's tower rule for the surd).
+    S9c.2a's nested surds are the case `alpha` = the circle's `t`. Two
+    numbers of different fields (two such vertices compared along one
+    curve) are ordered by enclosures refined to `1e-40` of the case's size;
+    unseparated there they count as equal, which the arrangement refuses
+    (`Degenerate`, two meetings within rounding). Parallel cylinders in
+    turned frames meet in generatrices through their cross-sections'
+    crossings (algebraic `t` on the first's circle), their points ordered
+    by height. Evidence first: fixtures where a section crosses a cap's
+    circle (exact and turned frames: a pipe through the rim of a thicker
+    cylinder, a tilted pipe entering through a cap's rim, a box's round
+    hole crossed at its rim) besides the existing parallel ones
+    (`parallel_hole`, S9c.1's `parallel_cylinders`), and a native capture
+    before `solid/boolean/curved/algebraic.rs` exists.
 
 ### Parallel tracks
 
