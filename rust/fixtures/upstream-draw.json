@@ -265,6 +265,15 @@
     "tests/boolean/bopcommon_simple/ZF2": "182885611733e970a96048e329a2421750f7b12f3acddea2a9a66623a7b1a8a7",
     "tests/boolean/bopcommon_simple/ZF3": "f3d5137e26fe0abd3f6ab85b003ebac415ba11186a5af94d615e518a2283d747",
     "tests/boolean/bopcommon_simple/ZF4": "f9f1b609c74b0fba98f68da8cd2095d27e402733fe8498346a462db9acb31069",
+    "tests/boolean/bopcommon_simple/ZF5": "62d991500ee6a9427986dfd3e7087201d212cb9d61b0da9ec2cfb3a7072bf23f",
+    "tests/boolean/bopcommon_simple/ZF6": "3f2dd9df1f390300abc1d1e0c6650649a026f2b39028730677b85c0b8d1e0e85",
+    "tests/boolean/bopcommon_simple/ZF7": "b77b6894e716abfbe1a5d210d2eca906ae47ffb6039cb6ebfa0dbebecb86fd58",
+    "tests/boolean/bopcommon_simple/ZF8": "f554d835b008d2df320f4a696db307890dc3d8d73199761c2475de14ea646b2c",
+    "tests/boolean/bopcommon_simple/ZF9": "48b8d8468f640af22f15325e19410f654ac0df93e146de129c6a210216d9d6f8",
+    "tests/boolean/bopcommon_simple/ZH1": "31fc290cd67b4b8e64b85313bc62fd0102d51febfe612f907356fbefc2ae5503",
+    "tests/boolean/bopcommon_simple/ZH2": "f06c3f5e05dd7da2892cb3f209aaf2dfbf10055b42aeb655a3a28e2254395897",
+    "tests/boolean/bopcommon_simple/ZH3": "b1e67c63223aadbd7771b85571cd09ce313500c6962f6d127dd3e1b4d68366b2",
+    "tests/boolean/bopcommon_simple/ZH4": "5688f2beda1a4ae71d13aaaa66931cceb2e5453fc6f93ce2ed698262232ea9d5",
     "tests/boolean/bopcommon_simple/ZI8": "5a72f61091df6fcfeaf84fb04c689b5d3fcb5517f7d3ec4b5905eb11b15d4d38",
     "tests/boolean/bopcommon_simple/ZI9": "699dd711ee26bf14720c62611ee0cc86de11b74be42d8a1f78dd9f40e24e8eac",
     "tests/boolean/bopcommon_simple/ZJ1": "b80be3cebbe619a428f792347ec85ffeaefc52859d46a24c924794aa63fe915d",
@@ -481,6 +490,15 @@
     "tests/boolean/bopcut_simple/ZF2": "8790cdf59362908afa2bbeba34cfbe575820dda11f599338a9828877074ca47f",
     "tests/boolean/bopcut_simple/ZF3": "8f17a0bec88451a7c804a42c53c5e892560a6756ccfffad821f7267bc525ed53",
     "tests/boolean/bopcut_simple/ZF4": "ca0e61ea9508e8c2fb0867861c88ae891f4cac3b5f4349fb2093e893e1e98346",
+    "tests/boolean/bopcut_simple/ZF5": "8e0a13550702196823f0defb18456abff2d5fc08a1963add91080a665679de23",
+    "tests/boolean/bopcut_simple/ZF6": "3035aca5dbb68a8c6fcaa37458097a20b75299b67783b1ffd7f9ef48cda36d85",
+    "tests/boolean/bopcut_simple/ZF7": "f89a0160ddee5ba389971141efd79f82d2ac5b6001ac2a09884d5ea38723958d",
+    "tests/boolean/bopcut_simple/ZF8": "14f4996825b4f1d36c32e14b88a294a40ffccab6aef25bf2df43696a2685b70d",
+    "tests/boolean/bopcut_simple/ZF9": "4b22487f60cf016c6d4b5dcb2136eaf869baf9faa506cc17839ee03e73f0fd9e",
+    "tests/boolean/bopcut_simple/ZH1": "031a5071e464c9a86ad1f09a662c1922ec853839aff410ca5d100523f13d9dac",
+    "tests/boolean/bopcut_simple/ZH2": "66537f746875b6b276986871f79d95c88802b8a4c50503ee5e140f8b54edd41c",
+    "tests/boolean/bopcut_simple/ZH3": "dfb2737362762f4d78a6a982b8b83f346256b9779d4a963b9454c3ff1edc9518",
+    "tests/boolean/bopcut_simple/ZH4": "53eb7401c04a42b8664a042f6854424d368d7b25cd5c11d28870a5a6d1fae055",
     "tests/boolean/bopcut_simple/ZI8": "5923d70f9e386c106800f7bb5c5922dd6855257bf8ba8c00bea176301c092bda",
     "tests/boolean/bopcut_simple/ZI9": "a77ee51c013712ac86d0b747a13b4b8ed093e4afa4691d8a0c6e6b5376cd28cd",
     "tests/boolean/bopcut_simple/ZJ1": "7aa30f81f042376cc87cfecc0c3e84816215f8a470c4c29d832b0e38a74211fe",
@@ -675,6 +693,18 @@
     "tests/boolean/bopfuse_simple/ZF2": "5a6bda9dcaae592490b73ccd1ea254af19bb435c4e18b9af91bdc57ca0e289a2",
     "tests/boolean/bopfuse_simple/ZF3": "fe5ef9e5350b979d1595a7e075f9e6e5f344ce74ac12f6850b49bd9b8ee492a0",
     "tests/boolean/bopfuse_simple/ZF4": "7355d16e96889c2c318c41dcb7d3197b60069853f6c9d3db9d4c46629e98a4b5",
+    "tests/boolean/bopfuse_simple/ZF5": "7c3698079595ea8718b50d61bbc7252076b6969a840b96ab399c667761ba1660",
+    "tests/boolean/bopfuse_simple/ZF6": "bdbb8a80ee14a34ec5db76edb56a65b0713a3b1bfe9e7f7d53bea0a0579e953a",
+    "tests/boolean/bopfuse_simple/ZF7": "568bbd018dccbbd03f01534aeae78b0f8160388dcb87265e38ff14c15614015d",
+    "tests/boolean/bopfuse_simple/ZF8": "d3ce2cfd1e14f6e1b923b11b07b743a2265e1ba6cfe389ac00e194e27dbeb348",
+    "tests/boolean/bopfuse_simple/ZF9": "b28607adc93fc9a337dbc20234d72e3758e379fac948e550b8eb9e6983e2e001",
+    "tests/boolean/bopfuse_simple/ZG2": "09ba2df431b9acfddf69cb162ffc89b8efa08372fa4cc67c4526e37d99ee9f30",
+    "tests/boolean/bopfuse_simple/ZG4": "f7881925920ab05b645801f620b96abc1230f1e014d5ac703f51811e82bc5ad8",
+    "tests/boolean/bopfuse_simple/ZG8": "191fc838390b6ade61e858582cd56b53f90d3d4189a5f295a3731484ca4d0358",
+    "tests/boolean/bopfuse_simple/ZH1": "26b707ddb0784f80420dc577f3dd5d5cae8bc94ffdf8aefc479ac0f44ebf9d4e",
+    "tests/boolean/bopfuse_simple/ZH2": "84b1ccb0fa81f8318b0315990b952c889063fbb6a8b461e26257ee4d428bea6c",
+    "tests/boolean/bopfuse_simple/ZH3": "100a062c0550c30700ff8cdfe0a0d46ffc7aeaa456cce5b449960d644f6c64c0",
+    "tests/boolean/bopfuse_simple/ZH4": "3eaaf74e1d82f88b08297d673bcb92a5d45a31cf9c7f17cde86c3f1b615b72bf",
     "tests/boolean/bopfuse_simple/ZH5": "0afef9f536f3ddbb53d4eedd6992841f088cd413e67f73e566a0f7d8123cb2e4",
     "tests/boolean/bopfuse_simple/ZI4": "6e6e5f905601d30f5dbed40f4598baa01a8e5177ebcfe3b2505443579393fb7a",
     "tests/boolean/bopfuse_simple/ZI8": "8c1a96a1be4b56cd50303ae8c66b59c8b59f59492bdc7a08902e2d3d93c894ad",
@@ -682,6 +712,8 @@
     "tests/boolean/bopfuse_simple/ZJ1": "f03677c80ad86e4eec2a123ccc61377e1e0262faac745563d55f393046ff0fae",
     "tests/boolean/bopfuse_simple/ZJ2": "11aca17ef76b56f477add168ab64af6785460573411e72f5a59efe82751c3f96",
     "tests/boolean/bopfuse_simple/ZJ3": "316633fdd45dbb5ab93690cdb00f7ba5824209dfffa04bac63ef3f12490d3387",
+    "tests/boolean/bopfuse_simple/ZJ4": "5c612805128cb7cc9b925dfbe3fc3b1a96238dc7a324ce03241087de541a73e9",
+    "tests/boolean/bopfuse_simple/ZL2": "e30a6cd0cdea2804162b53fc3495fe5a2a2a61ac5910283666781d5e1cd8987d",
     "tests/boolean/bopfuse_simple/ZN3": "18e989bcd62509a71b0fc868c5a02e1379c15f160a400cd7170c4135a05f1237",
     "tests/boolean/bopfuse_simple/ZN4": "7b35d664b74c1e74564eaad69414842c673f89ecf9973e372844ee829a8e070f",
     "tests/boolean/bopfuse_simple/ZN5": "7ccb3fabeb4c2518fa5969e27d3ff7479472d99a4c578df45e0bb1a480832091",
@@ -865,6 +897,16 @@
     "tests/boolean/boptuc_simple/ZF2": "8e952ff3aa19214ed4de0820a85d8c1faf30f793196c9a2cf425bd9f30f1c431",
     "tests/boolean/boptuc_simple/ZF3": "81b120a2f218b5df4b7fd62558c3944eba52e38faf6569c26b65b6ad8a042ead",
     "tests/boolean/boptuc_simple/ZF4": "dee82a15736d998a9fcb8aa65f4addef8e1fc6d0c696d27b6d67da03f5d88e51",
+    "tests/boolean/boptuc_simple/ZF5": "cb16878da41c633eec329db612d5d25af33d6350918f81a77d2feab03441ad6b",
+    "tests/boolean/boptuc_simple/ZF6": "a908e3a0122f9fc75f02a8ed3fe851ded6e42ea770aef6c171cffa5071b681b2",
+    "tests/boolean/boptuc_simple/ZF7": "9ea301a1c9058a41e1fe53a3e83ee56a3328f615f56ad55ba61b946d90ea32dc",
+    "tests/boolean/boptuc_simple/ZF8": "667a3eb7d7e1e524498723b47f246d0f54f718fb2ae11bf5c44ffb48810ef29a",
+    "tests/boolean/boptuc_simple/ZF9": "69a888f3d88693ec2c427da1df3b2d55eec25745094d18698e1c658aa3a233ba",
+    "tests/boolean/boptuc_simple/ZG2": "d86756921a89243280d1935fd5957f0c4654f7ffb742fe69b83fbbbf05e71a04",
+    "tests/boolean/boptuc_simple/ZH1": "800322d0d32a905fef5ec2a6b0ce2250f11d33f03fb0894956d5b097be30aa3f",
+    "tests/boolean/boptuc_simple/ZH2": "a71b20012df6ad4edbf2369638bb6182ff9fdf08dfeb72d4492d5315e83287d4",
+    "tests/boolean/boptuc_simple/ZH3": "84e7f9e904de14ee81aced84a15d86bb4d5efade875c7db314ec1c2038889c12",
+    "tests/boolean/boptuc_simple/ZH4": "64d4dc73ba1b407d35c4659b203bb91c53a93b31d3252086f6cab570a029879b",
     "tests/boolean/boptuc_simple/ZI8": "d64868924acd01c2adc439d9848f161846d4e36bde3daea80201817c86d4c5ec",
     "tests/boolean/boptuc_simple/ZI9": "2b6b1aeb037dfd3021377d56afa3d1284bf0132d30d8fae158f46640b1176ea2",
     "tests/boolean/boptuc_simple/ZJ1": "bb67aae1f21a4fbe1a40c54031bd17b9fc116abbed0760a85924debed0847dec",
@@ -6648,6 +6690,258 @@
       "expected_rust": "unsupported",
       "expected_occt": "viewer_skipped",
       "purpose": "S9d.2's Boolean group, a capability sentinel: a pcylinder of radius 4 and height 8 and a sphere of radius 2 centred on its top cap and turned a quarter turn about x, so the cap's plane contains the sphere's axis: the section circle runs through the sphere's poles, the singular points of its parameterization (coordinates cannot resolve the requested tolerance, PrecisionLoss; the same sphere unturned evaluates)."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZF5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopfuse of a box of side 4 and a frustum of radii 1 and 0.5 and height 2 standing on its top face on the vertical through the face's centre (the base disc inside the face) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZF6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopfuse of a box of side 4 and a frustum of radii 1 and 0.5 and height 2 inside it on the vertical through its centre, the top disc on its top face (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZF7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopfuse of a box of side 4 and a frustum of radii 1 and 0.5 and height 4 on the vertical through its centre from its bottom face to its top face (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZF8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopfuse of a box of side 4 and a frustum of radii 1 and 0.5 and height 5 on the vertical through its centre from 1 below its bottom face to its top face (a circle of radius 0.9 on the bottom face) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZF9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopfuse of a box of side 4 and a frustum of radii 1 and 0.5 and height 2 inside it on the vertical through its centre, clear of its faces (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZH1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopfuse of a box of side 4 and a frustum of radii 5 and 4 and height 4 whose axis is 2 outside its wall x = 4 and 2 from the walls y = 0 and y = 4 (hyperbolas on them, circular arcs on the top and bottom faces) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZH2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopfuse of a box of side 4 and a frustum of radii 5 and 4 and height 4 whose axis is 2 outside its wall x = 0 and 2 from the walls y = 0 and y = 4 (hyperbolas on them, circular arcs on the top and bottom faces) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZH3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopfuse of a box of side 4 and a frustum of radii 5 and 4 and height 4 whose axis is 2 outside its wall x = 0 and 2 from the walls y = 0 and y = 4, turned 30 degrees about its axis (a turned frame) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZH4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopfuse of a box of side 4 and a frustum of radii 5 and 3.5 and height 4 whose axis is 2 outside its wall x = 0 and 2 from the walls y = 0 and y = 4, turned 30 degrees about its axis (a turned frame) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZF5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopcut of a box of side 4 and a frustum of radii 1 and 0.5 and height 2 standing on its top face on the vertical through the face's centre (the base disc inside the face) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZF6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopcut of a box of side 4 and a frustum of radii 1 and 0.5 and height 2 inside it on the vertical through its centre, the top disc on its top face (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZF7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopcut of a box of side 4 and a frustum of radii 1 and 0.5 and height 4 on the vertical through its centre from its bottom face to its top face (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZF8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopcut of a box of side 4 and a frustum of radii 1 and 0.5 and height 5 on the vertical through its centre from 1 below its bottom face to its top face (a circle of radius 0.9 on the bottom face) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZF9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopcut of a box of side 4 and a frustum of radii 1 and 0.5 and height 2 inside it on the vertical through its centre, clear of its faces (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZH1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopcut of a box of side 4 and a frustum of radii 5 and 4 and height 4 whose axis is 2 outside its wall x = 4 and 2 from the walls y = 0 and y = 4 (hyperbolas on them, circular arcs on the top and bottom faces) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZH2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopcut of a box of side 4 and a frustum of radii 5 and 4 and height 4 whose axis is 2 outside its wall x = 0 and 2 from the walls y = 0 and y = 4 (hyperbolas on them, circular arcs on the top and bottom faces) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZH3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopcut of a box of side 4 and a frustum of radii 5 and 4 and height 4 whose axis is 2 outside its wall x = 0 and 2 from the walls y = 0 and y = 4, turned 30 degrees about its axis (a turned frame) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZH4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopcut of a box of side 4 and a frustum of radii 5 and 3.5 and height 4 whose axis is 2 outside its wall x = 0 and 2 from the walls y = 0 and y = 4, turned 30 degrees about its axis (a turned frame) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZF5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopcommon of a box of side 4 and a frustum of radii 1 and 0.5 and height 2 standing on its top face on the vertical through the face's centre (the base disc inside the face) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZF6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopcommon of a box of side 4 and a frustum of radii 1 and 0.5 and height 2 inside it on the vertical through its centre, the top disc on its top face (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZF7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopcommon of a box of side 4 and a frustum of radii 1 and 0.5 and height 4 on the vertical through its centre from its bottom face to its top face (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZF8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopcommon of a box of side 4 and a frustum of radii 1 and 0.5 and height 5 on the vertical through its centre from 1 below its bottom face to its top face (a circle of radius 0.9 on the bottom face) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZF9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopcommon of a box of side 4 and a frustum of radii 1 and 0.5 and height 2 inside it on the vertical through its centre, clear of its faces (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZH1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopcommon of a box of side 4 and a frustum of radii 5 and 4 and height 4 whose axis is 2 outside its wall x = 4 and 2 from the walls y = 0 and y = 4 (hyperbolas on them, circular arcs on the top and bottom faces) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZH2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopcommon of a box of side 4 and a frustum of radii 5 and 4 and height 4 whose axis is 2 outside its wall x = 0 and 2 from the walls y = 0 and y = 4 (hyperbolas on them, circular arcs on the top and bottom faces) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZH3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopcommon of a box of side 4 and a frustum of radii 5 and 4 and height 4 whose axis is 2 outside its wall x = 0 and 2 from the walls y = 0 and y = 4, turned 30 degrees about its axis (a turned frame) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZH4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and bopcommon of a box of side 4 and a frustum of radii 5 and 3.5 and height 4 whose axis is 2 outside its wall x = 0 and 2 from the walls y = 0 and y = 4, turned 30 degrees about its axis (a turned frame) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZF5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and boptuc of a box of side 4 and a frustum of radii 1 and 0.5 and height 2 standing on its top face on the vertical through the face's centre (the base disc inside the face) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZF6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and boptuc of a box of side 4 and a frustum of radii 1 and 0.5 and height 2 inside it on the vertical through its centre, the top disc on its top face (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZF7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and boptuc of a box of side 4 and a frustum of radii 1 and 0.5 and height 4 on the vertical through its centre from its bottom face to its top face (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZF8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and boptuc of a box of side 4 and a frustum of radii 1 and 0.5 and height 5 on the vertical through its centre from 1 below its bottom face to its top face (a circle of radius 0.9 on the bottom face) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZF9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and boptuc of a box of side 4 and a frustum of radii 1 and 0.5 and height 2 inside it on the vertical through its centre, clear of its faces (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZH1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and boptuc of a box of side 4 and a frustum of radii 5 and 4 and height 4 whose axis is 2 outside its wall x = 4 and 2 from the walls y = 0 and y = 4 (hyperbolas on them, circular arcs on the top and bottom faces) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZH2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and boptuc of a box of side 4 and a frustum of radii 5 and 4 and height 4 whose axis is 2 outside its wall x = 0 and 2 from the walls y = 0 and y = 4 (hyperbolas on them, circular arcs on the top and bottom faces) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZH3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and boptuc of a box of side 4 and a frustum of radii 5 and 4 and height 4 whose axis is 2 outside its wall x = 0 and 2 from the walls y = 0 and y = 4, turned 30 degrees about its axis (a turned frame) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZH4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a: bop and boptuc of a box of side 4 and a frustum of radii 5 and 3.5 and height 4 whose axis is 2 outside its wall x = 0 and 2 from the walls y = 0 and y = 4, turned 30 degrees about its axis (a turned frame) (S9d.3a's cones and frusta against polyhedral prisms); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZJ4",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a's Boolean group, a capability sentinel: a pcylinder of radius 4 and height 8 and a frustum of radii 2 and 1 standing on its top cap: a cone against a prism with arcs (S9d.3b's OutOfDomain; before S9d.3a a Boolean of a solid with curved faces in any position)."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZG4",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a's Boolean group, a capability sentinel: a box of side 4 and a frustum of radii 3 and 2 and height 4 whose axis lies in the box's wall y = 0, turned 30 degrees about its axis: the wall is a plane through the cone's apex (Degenerate, S9d.3's decisions)."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZG2",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a's Boolean group, a capability sentinel: a box of side 4 and a frustum of radii 3 and 2 and height 4 whose axis lies in the box's wall y = 0: the box's top corners lie on the frustum's top rim, a vertex of one input on the other's face (Degenerate)."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZG2",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a's Boolean group, a capability sentinel: the same box and frustum as bopfuse_simple/ZG2 with the frustum first: the box's vertical edges meet the frustum's top rim at the box's corners, an edge of one input meeting an edge of the other (Degenerate)."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZG8",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a's Boolean group, a capability sentinel: a box of side 4 and a frustum of radii 1 and 0.5 standing on its top face, the base circle tangent to two of the face's edges: a tangency between the inputs (Degenerate)."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZL2",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3a's Boolean group, a capability sentinel: a pcylinder of radius 4 and height 8 and a coaxial torus of radii 4 and 1 centred at half its height: a torus, a Boolean of a solid with curved faces in any position (S9c's OutOfDomain until S9d.4)."
     }
   ],
   "derived_sources": {

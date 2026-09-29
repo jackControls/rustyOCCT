@@ -2155,7 +2155,32 @@ Decisions for S9, recorded before its code (2026-09-28):
     assertions: a frustum on a tilted prism's top, its origin rounded 2.7e-16
     off the top's plane, left a sliver whose loops' binary64 images could not
     be nested, an open result; `fuzz/regressions/README.md`). Pending: the
-    DRAW survey, the campaign.
+    campaign.
+  * **DRAW survey of S9d.3a (2026-09-29, `UPSTREAM_TESTS.md`).** Of the
+    boolean group's 1,802 self-contained cases Rust evaluates 887 (851
+    before), none failing or timing out, all registered. Of the 138 cases
+    of a cone refused before as solids other than prisms, 72 are a box of
+    side 4 and a `pcone` frustum (`ZF5` to `ZH4` of the four `bop*_simple`
+    grids) and 36 of them evaluate: a frustum on the box's central
+    vertical standing on it, inside it or through its bottom face (circles
+    on its faces), and a frustum of the box's height whose axis is 2
+    outside a wall (hyperbolas on the walls across it; two turned 30
+    degrees about the axis); areas and volumes native DRAW's to its printed
+    digits and closed forms' within 8.1e-16 relative. The other 36 are
+    `Degenerate` for what their geometry holds (a wall through the
+    frustum's axis with the box's corners on a rim tangent there to two
+    edges, or a base circle on the top face tangent to two of its edges),
+    reported as the first the arrangement meets: a tangency between the
+    inputs 24, a vertex of one input on the other's face 6, a plane
+    through a cone's apex 4, an edge of one input meeting an edge of the
+    other 2. The 66 cones against cylinders are S9d.3b's `OutOfDomain`.
+    The 32 cylinders' rims on a sphere's equator are a tangency between
+    the inputs, as S9d.2's correction says. The kernel's solids other than
+    prisms are now 16 tori against cylinders (`ZL2` to `ZL5`); the
+    adapter's 61 are unchanged. Sentinels added: `bopfuse_simple/ZJ4`
+    (S9d.3b's `OutOfDomain`), `ZG8`, `ZG2`, `ZG4` and `boptuc_simple/ZG2`
+    (the four `Degenerate` reasons), `bopfuse_simple/ZL2` (a torus); none
+    changes. 692 cases stay refused. The ledger does not change.
 
 ### Parallel tracks
 
