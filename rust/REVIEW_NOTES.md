@@ -2004,7 +2004,7 @@ Decisions for S9, recorded before its code (2026-09-28):
     a band's hole at two more points of its first fin, as other holes; (f) a
     meeting on a hemisphere is a seam's only on the split, so a prism's
     vertex on a sphere is `Degenerate` at once (the DRAW survey's box
-    corners). Pending: the DRAW survey, the campaign, S9d.2b.
+    corners). Pending: the campaign.
   * **S9d.2b implemented** (`solid/boolean/curved/spheres.rs`,
     `Curve3::Rise`): a sphere and a cylinder in an exact frame meeting in
     loops, pieces over the height about the rulings' tangencies and over the
@@ -2015,8 +2015,32 @@ Decisions for S9, recorded before its code (2026-09-28):
     deterministic and moved rigidly; `compare_spheres_boolean.py` 12 matches
     and 21 reviewed. `Curve3::Rise`'s `phi` and `rho` are its binary64
     `atan2` and `hypot` of `(alpha, beta)`, constants of the curve (an
-    interval `atan2` on the branch cut failed its jets). Pending: the DRAW
-    survey, the campaign.
+    interval `atan2` on the branch cut failed its jets). Pending: the
+    campaign.
+  * **DRAW survey of S9d.2 (2026-09-29, `UPSTREAM_TESTS.md`).** Of the
+    boolean group's 1,802 self-contained cases Rust evaluates 851 (831
+    before), none failing or timing out, all registered. Of the 60 spheres
+    against cylinders refused before as S9d.2's `OutOfDomain` (`ZH5` to
+    `ZJ3` of the four `bop*_simple` grids: a `pcylinder` of radius 4 and
+    height 8, a sphere of radius 4, 2 or 6 centred on its top cap) 20
+    evaluate: radius 6, the cap inside the sphere and a coaxial ring on
+    the wall, unturned or turned by quarter turns; areas native DRAW's to
+    its printed digits and the closed forms' within 9.1e-16 relative. The
+    other 40 are refused for reasons the decisions did not name: radius 4
+    (24, and the 8 of `boptuc_simple` refused before as a meeting at every
+    seam tried), the rim on the sphere's equator, a tangency along a
+    circle whose discriminant vanishes identically, as a computation limit
+    (`negative_chart` gives up before the tangency test: `Degenerate` by
+    the decisions); radius 2 turned a quarter turn about x (16), the
+    cap's plane through the sphere's poles, as `PrecisionLoss` (a box's
+    wall through an upright sphere's centre alike: S9d.1's domain too; the
+    same sphere unturned, or tilted 30 degrees, evaluates). The 21 unit
+    boxes with a corner at a unit sphere's centre are refused as a vertex
+    of one input on the other's face now (amendment (f)). Sentinels:
+    `bopfuse_simple/ZH5` re-purposed (the computation limit),
+    `bcommon_simple/A1` updated, `boptuc_simple/ZH5` dropped (its new
+    reason `ZH5`'s), `bopfuse_simple/ZI4` added (`PrecisionLoss`). 728
+    cases stay refused. The ledger does not change.
 
   * **S9d.3 refined, before its code (2026-09-29).** Cones and frusta (S3's
     `cone_*`: radii `bottom` and `top` over heights `0..h` on the stored
