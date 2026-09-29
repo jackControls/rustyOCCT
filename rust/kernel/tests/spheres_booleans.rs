@@ -5,19 +5,9 @@
 mod protocol;
 use rusty_occt::history;
 
-/// The cases S9d.2a leaves to S9d.2b (`OutOfDomain`): a sphere meeting a
-/// cylinder in a loop, whose turning points need graphs over the height.
-const LATER: &[&str] = &[
-    "bite_fuse",
-    "bite_cut",
-    "bite_common",
-    "bite_tilt_cut",
-    "cap_cross_cut",
-    "cap_cross_common",
-    "stadium_cut",
-    "stadium_common",
-    "stadium_ends_cut",
-];
+/// The cases left to a later sub-step (`OutOfDomain`): a loop in a turned
+/// frame (its height graph needs an exact frame).
+const LATER: &[&str] = &["bite_tilt_cut"];
 
 #[test]
 fn every_case_matches_the_reference() {

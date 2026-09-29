@@ -555,6 +555,14 @@ fn segment_count(
             )?;
             Some((&m.frame, second, turn, 1.0))
         }
+        // A cylinder's and a sphere's meeting over the height (S9d.2b).
+        Curve3::Rise(m) => {
+            let (second, turn) =
+                crate::topology::section_rates(&edge.curve, 64).ok_or(Error::ComputationLimit(
+                    "a cylinder's and a sphere's meeting's curvature enclosure",
+                ))?;
+            Some((&m.frame, second, turn, 1.0))
+        }
         Curve3::LineSegment { .. } | Curve3::BSpline(_) => None,
     } {
         let sigma = bounds::frame_norm(frame);

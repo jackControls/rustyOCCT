@@ -529,7 +529,8 @@ fn edge_length(curve: &Curve3) -> f64 {
         Curve3::HyperbolaArc { .. }
         | Curve3::ParabolaArc { .. }
         | Curve3::Section(_)
-        | Curve3::Meet(_) => {
+        | Curve3::Meet(_)
+        | Curve3::Rise(_) => {
             let pieces = 4096;
             (0..pieces)
                 .map(|k| {

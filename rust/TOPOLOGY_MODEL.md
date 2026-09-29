@@ -853,7 +853,15 @@ procedural pcurves with explicit conic edges.
   projection is its own angle and height, lifted. Its segments' bounds are
   a section's (interval jets on 64 pieces); a rigid motion moves both
   frames. The writer refuses it (`Unwritable`) until D13's interchange
-  approximation.
+  approximation. A sphere may be its other quadric (`other_sphere`,
+  S9d.2).
+* **A cylinder's and a sphere's meeting over the height (S9d.2b).**
+  `Curve3::Rise`: at `w = start + sweep f` the cylinder's circle meets the
+  sphere where `alpha cos u + beta sin u = g(w)` (`g` quadratic), `u = phi +
+  sign acos(g(w) / rho)`, `rho` and `phi` the binary64 `hypot` and `atan2` of
+  `(alpha, beta)`; an edge's range keeps `|g / rho| < 1` strictly. Jets,
+  quadrature, tessellation rates, rigid motion and the writer's refusal as
+  `Curve3::Meet`'s.
 * **Interop.** The writer prints `Geom_Hyperbola` and `Geom_Parabola` (3D
   records 5 and 6), and refuses a torus section; a projection pcurve has no record until D13's
   interchange approximation (a B-spline whose certified bound becomes the

@@ -119,6 +119,7 @@ pub(super) fn place(crv: &Crv, x: &QV) -> Pos {
         Crv::Line { d, .. } => Pos::T(line_key(x, d)),
         Crv::Conic { c, a, b } => Pos::Ang(conic_angle(c, a, b, x)),
         Crv::Circle(c) => Pos::Ang(c.place(x)),
+        Crv::Rise(c) => Pos::T(c.height(x)),
         Crv::Meet(m) => Pos::Ang(m.place(x)),
     }
 }
@@ -509,6 +510,7 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
         let points = match pair {
             CylPair::Crossing(cross) => &cross.points,
             CylPair::Quartic(p) => &p.switches,
+            CylPair::Mixed(p) => &p.switches,
             _ => continue,
         };
         for (k, x) in points.iter().enumerate() {
@@ -629,7 +631,9 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                     Crv::Conic { .. } | Crv::Circle(_) => {
                         (true, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())]))
                     }
-                    Crv::Line { .. } => (false, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())])),
+                    Crv::Line { .. } | Crv::Rise(_) => {
+                        (false, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())]))
+                    }
                 };
                 list.sort_by(|x, y| order_on(&x.1, &y.1, &zero_dir, true));
                 for w in list.windows(2) {
@@ -862,6 +866,18 @@ fn midpoint(crv: &Crv, a: &Pos, b: &Pos, ccw: bool) -> Result<(QV, Pos)> {
             let x = qadd(p, &qscale(d, &t));
             Ok((x, Pos::T(Qd::rat(k))))
         }
+        (Crv::Rise(c), Pos::T(ta), Pos::T(tb)) => {
+            let (lo, hi) = if ta.cmp(tb) == Ordering::Less {
+                (ta, tb)
+            } else {
+                (tb, ta)
+            };
+            let k = rational_between_num(lo, hi)?;
+            let x = c
+                .at(&k)?
+                .ok_or(Error::ComputationLimit("a meeting's point off its piece"))?;
+            Ok((x, Pos::T(Qd::rat(k))))
+        }
         (Crv::Circle(c), Pos::Ang(sa), Pos::Ang(sb)) => {
             let cs = rational_between(sa, sb, ccw)?;
             let x = c.at(&cs);
@@ -922,6 +938,7 @@ fn on_curve(crv: &Crv, x: &QV) -> bool {
         }
         Crv::Meet(m) => m.on(x),
         Crv::Circle(c) => c.on(x),
+        Crv::Rise(c) => c.on(x),
         Crv::Conic { c, a, b } => {
             let cs = conic_angle(c, a, b, x);
             let back = conic_point(c, a, b, &cs);
@@ -1054,6 +1071,16 @@ impl Arr {
                 } else {
                     vec![b, a]
                 }
+            }
+            Crv::Rise(c) => {
+                let (Pos::T(w0), Pos::T(w1)) = (&e.pos[0], &e.pos[1]) else {
+                    unreachable!("a rise's places")
+                };
+                let mut pts = c.samples(w0.to_f64(), w1.to_f64(), 48);
+                if !h.1 {
+                    pts.reverse();
+                }
+                pts
             }
             Crv::Circle(c) => {
                 let (Pos::Ang(p0), Pos::Ang(p1)) = (&e.pos[0], &e.pos[1]) else {

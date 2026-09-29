@@ -93,7 +93,7 @@ fn prem(a: &Poly, b: &Poly) -> Poly {
 }
 
 /// The Sturm chain of a square-free polynomial.
-fn sturm(p: &Poly) -> Vec<Poly> {
+pub(super) fn sturm(p: &Poly) -> Vec<Poly> {
     let mut chain = vec![p.clone(), pderiv(p)];
     while !chain.last().expect("a chain").is_empty() {
         let n = chain.len();
@@ -117,7 +117,7 @@ fn eval(p: &Poly, x: &Qd) -> Qd {
 }
 
 /// Sign changes of a Sturm chain at a surd (zeros skipped).
-fn changes(chain: &[Poly], x: &Qd) -> usize {
+pub(super) fn changes(chain: &[Poly], x: &Qd) -> usize {
     let signs: Vec<Ordering> = chain
         .iter()
         .map(|p| eval(p, x).sign())
@@ -178,7 +178,7 @@ pub(super) fn roots(p: &Poly) -> Result<Vec<AlgebraicRoot>> {
 }
 
 /// A root's midpoint, rational.
-fn middle(r: &AlgebraicRoot) -> R {
+pub(super) fn middle(r: &AlgebraicRoot) -> R {
     let (a, b) = r.isolator();
     (a + b) / int(2)
 }
@@ -203,14 +203,14 @@ impl Chart {
         ]
     }
 
-    fn at(&self, t: &R) -> [R; 2] {
+    pub(super) fn at(&self, t: &R) -> [R; 2] {
         let den = int(1) + t * t;
         let (c, s) = ((int(1) - t * t) / &den, int(2) * t / &den);
         [&self.c0 * &c - &self.s0 * &s, &self.s0 * &c + &self.c0 * &s]
     }
 
     /// The chart's `t` of a direction (`None` at the antipode).
-    fn t_of(&self, cs: &[Qd; 2]) -> Option<Qd> {
+    pub(super) fn t_of(&self, cs: &[Qd; 2]) -> Option<Qd> {
         let c = cs[0].scale(&self.c0).add(&cs[1].scale(&self.s0));
         let s = cs[1].scale(&self.c0).sub(&cs[0].scale(&self.s0));
         let den = c.add_r(&int(1));

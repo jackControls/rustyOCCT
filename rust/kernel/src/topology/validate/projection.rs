@@ -10,7 +10,7 @@
 use super::{c, V2, V3};
 use crate::certified::Real;
 use crate::jet::{integrate_many, Jet};
-use crate::topology::{Curve3, Meet, Projection, Spiric, Surface};
+use crate::topology::{Curve3, Meet, Projection, Rise, Spiric, Surface};
 use crate::Frame3;
 
 /// Integration widths and depths for the integrals along projections.
@@ -125,6 +125,7 @@ pub(super) fn curve_jet<T: Real>(curve: &Curve3, fraction: &Jet<T>) -> Option<[J
         Curve3::HyperbolaArc { .. } | Curve3::ParabolaArc { .. } => conic_jet(curve, fraction)?,
         Curve3::Section(s) => section_jet(s, fraction)?,
         Curve3::Meet(m) => meet_jet(m, fraction)?.1,
+        Curve3::Rise(m) => rise_jet(m, fraction)?,
         Curve3::BSpline(_) => return None,
     })
 }
@@ -252,6 +253,31 @@ fn meet_jet<T: Real>(m: &Meet, fraction: &Jet<T>) -> Option<MeetJet<T>> {
         *p = p.add(&v.scale(&c(n[k])));
     }
     Some(([u, v], point))
+}
+
+/// The jets of a cylinder's and a sphere's meeting over the height (S9d.2b)
+/// in the fraction: `u = phi + sign acos(g(w) / rho)`, the world point.
+fn rise_jet<T: Real>(m: &Rise, fraction: &Jet<T>) -> Option<[Jet<T>; 3]> {
+    let w = fraction.scale(&c(m.sweep)).add_constant(&c(m.start));
+    let ([a, b], g) = m.coefficients();
+    let rho = c::<T>(a).square().add(&c::<T>(b).square()).sqrt();
+    let q = w
+        .square()
+        .scale(&c(g[2]))
+        .add(&w.scale(&c(g[1])))
+        .add_constant(&c(g[0]))
+        .scale(&c::<T>(1.0).div(&rho)?);
+    // `phi` is the curve's binary64 constant (its definition's `atan2`).
+    let phi = c::<T>(b.atan2(a));
+    let u = acos_jet(&q)?.scale(&c(m.sign)).add_constant(&phi);
+    let (co, si) = u.cos_sin();
+    let r = c::<T>(m.radius);
+    let mut out = world(&m.frame, &co.scale(&r), &si.scale(&r));
+    let n = m.frame.normal().to_array();
+    for (k, o) in out.iter_mut().enumerate() {
+        *o = o.add(&w.scale(&c(n[k])));
+    }
+    Some(out)
 }
 
 /// `atan2(y, x)` near `reference`: the reference plus the angle of the
@@ -657,6 +683,42 @@ mod tests {
                     let at = [p.x, p.y, p.z][i];
                     let (lo, hi) = j.c[0].bounds_f64();
                     assert!(lo - 1e-15 <= at && at <= hi + 1e-15);
+                    let slope = ([q1.x, q1.y, q1.z][i] - [q0.x, q0.y, q0.z][i]) / (2.0 * h);
+                    let (lo, hi) = j.c[1].bounds_f64();
+                    assert!((slope - 0.5 * (lo + hi)).abs() < 1e-6, "{slope} {lo} {hi}");
+                }
+            }
+        }
+    }
+
+    /// A cylinder of radius 1 about z and a sphere of radius 1.5 centred at
+    /// (1, 0, 0): its loop over the height, on both surfaces, with jets
+    /// enclosing the binary64 points and differences.
+    #[test]
+    fn rises_lie_on_both_surfaces() {
+        let cyl = frame([0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]);
+        for sign in [1.0, -1.0] {
+            let m = Rise {
+                frame: cyl,
+                radius: 1.0,
+                centre: Point3::new(1.0, 0.0, 0.0),
+                sphere_radius: 1.5,
+                sign,
+                start: -0.5,
+                sweep: 1.0,
+            };
+            for k in 0..=8 {
+                let f = k as f64 / 8.0;
+                let p = m.point(f);
+                assert!((p.x.hypot(p.y) - 1.0).abs() < 1e-14);
+                assert!(((p - Point3::new(1.0, 0.0, 0.0)).length() - 1.5).abs() < 1e-14);
+                let jet = rise_jet(&m, &Jet::variable(Fast::exact_f64(f), 1)).unwrap();
+                let h = 1e-6;
+                let (q0, q1) = (m.point(f - h), m.point(f + h));
+                for (i, j) in jet.iter().enumerate() {
+                    let at = [p.x, p.y, p.z][i];
+                    let (lo, hi) = j.c[0].bounds_f64();
+                    assert!(lo - 1e-14 <= at && at <= hi + 1e-14);
                     let slope = ([q1.x, q1.y, q1.z][i] - [q0.x, q0.y, q0.z][i]) / (2.0 * h);
                     let (lo, hi) = j.c[1].bounds_f64();
                     assert!((slope - 0.5 * (lo + hi)).abs() < 1e-6, "{slope} {lo} {hi}");

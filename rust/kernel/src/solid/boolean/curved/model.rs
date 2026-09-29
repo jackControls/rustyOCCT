@@ -271,6 +271,9 @@ pub(super) enum Crv {
     /// A circle of a surd radius (S9d.1: a sphere's sections and rims),
     /// placed by its basis coordinates.
     Circle(Box<super::sphere::Circ>),
+    /// A cylinder's and a sphere's meeting over the cylinder's height
+    /// (S9d.2b), placed by its height.
+    Rise(Box<super::spheres::RiseCrv>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

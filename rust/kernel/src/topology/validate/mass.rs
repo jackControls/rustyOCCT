@@ -1638,7 +1638,8 @@ fn curve_moments<T: Real>(curve: &Curve3, reference: &V3<T>) -> Option<(T, V3<T>
         | Curve3::HyperbolaArc { .. }
         | Curve3::ParabolaArc { .. }
         | Curve3::Section(_)
-        | Curve3::Meet(_) => None,
+        | Curve3::Meet(_)
+        | Curve3::Rise(_) => None,
     }
 }
 

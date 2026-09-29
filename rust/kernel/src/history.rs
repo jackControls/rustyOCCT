@@ -572,7 +572,8 @@ fn circle_of(c: &Curve3) -> Option<(crate::Frame3, f64)> {
         | Curve3::HyperbolaArc { .. }
         | Curve3::ParabolaArc { .. }
         | Curve3::Section(_)
-        | Curve3::Meet(_) => None,
+        | Curve3::Meet(_)
+        | Curve3::Rise(_) => None,
     }
 }
 

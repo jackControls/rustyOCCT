@@ -2005,6 +2005,18 @@ Decisions for S9, recorded before its code (2026-09-28):
     meeting on a hemisphere is a seam's only on the split, so a prism's
     vertex on a sphere is `Degenerate` at once (the DRAW survey's box
     corners). Pending: the DRAW survey, the campaign, S9d.2b.
+  * **S9d.2b implemented** (`solid/boolean/curved/spheres.rs`,
+    `Curve3::Rise`): a sphere and a cylinder in an exact frame meeting in
+    loops, pieces over the height about the rulings' tangencies and over the
+    angle about the circles', switched at rational angles, each verified
+    exactly; 32 of the 33 fixtures as the reference (the bite in `TILT`
+    `OutOfDomain`: a turned cylinder's circle is not round in its model, so
+    its height graph has no closed form), every history checked, results
+    deterministic and moved rigidly; `compare_spheres_boolean.py` 12 matches
+    and 21 reviewed. `Curve3::Rise`'s `phi` and `rho` are its binary64
+    `atan2` and `hypot` of `(alpha, beta)`, constants of the curve (an
+    interval `atan2` on the branch cut failed its jets). Pending: the DRAW
+    survey, the campaign.
 
 ### Parallel tracks
 

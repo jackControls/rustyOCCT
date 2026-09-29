@@ -196,7 +196,7 @@ impl Exact {
             AnalyticCurve::Edge(Curve3::Section(_)) => {
                 return Err(Error::OutOfDomain("a torus section edge"))
             }
-            AnalyticCurve::Edge(Curve3::Meet(_)) => {
+            AnalyticCurve::Edge(Curve3::Meet(_) | Curve3::Rise(_)) => {
                 return Err(Error::OutOfDomain("two cylinders' meeting edge"))
             }
             // An ellipse edge's whole ellipse (S8a.2).

@@ -739,6 +739,7 @@ fn same_curve(a: &Crv, b: &Crv) -> bool {
         }
         (Crv::Meet(x), Crv::Meet(y)) => x == y,
         (Crv::Circle(x), Crv::Circle(y)) => x == y,
+        (Crv::Rise(x), Crv::Rise(y)) => x == y,
         _ => false,
     }
 }
@@ -765,6 +766,44 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
     let first = &arr.edges[g0];
     let last = &arr.edges[gl];
     match &first.crv {
+        Crv::Rise(m) => {
+            // Over the carrier's stored cylinder, heights from its origin.
+            let CurveRef::Section(si, _) = first.curve else {
+                unreachable!("a rise is a section")
+            };
+            let s = &arr.secs[si];
+            let stored = [
+                &arr.models[0].faces[s.fa].stored,
+                &arr.models[1].faces[s.fb].stored,
+            ];
+            let Surface::Cylinder { frame, radius } = stored[m.carrier] else {
+                return Err(Error::InvalidTopology("a rise off a cylinder"));
+            };
+            let (Pos::T(w0), Pos::T(w1)) = (
+                if d0 { &first.pos[0] } else { &first.pos[1] },
+                if dl { &last.pos[1] } else { &last.pos[0] },
+            ) else {
+                unreachable!("a rise's places")
+            };
+            let fl = |x: &V| x.clone().map(|y| rational_f64(&y));
+            let n = arr.models[m.carrier].f.n.clone();
+            // The stored frame's origin's height along the model's axis,
+            // from the model's circle centre at height 0.
+            let origin = frame.origin().to_array();
+            let nf = fl(&n);
+            let cf = fl(&m.o_model());
+            let offset: f64 = (0..3).map(|j| (origin[j] - cf[j]) * nf[j]).sum();
+            let centre = fl(&m.c);
+            Ok(Curve3::Rise(Box::new(crate::topology::Rise {
+                frame: *frame,
+                radius: *radius,
+                centre: Point3::new(centre[0], centre[1], centre[2]),
+                sphere_radius: rational_f64(&m.rr),
+                sign: if m.plus { 1.0 } else { -1.0 },
+                start: w0.to_f64() - offset,
+                sweep: w1.to_f64() - w0.to_f64(),
+            })))
+        }
         Crv::Circle(c) => {
             // A circle of a surd radius (S9d.1) on its basis's frame.
             let (Pos::Ang(p0), Pos::Ang(p1)) = (

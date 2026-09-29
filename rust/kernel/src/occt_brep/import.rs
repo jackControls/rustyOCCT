@@ -759,7 +759,8 @@ fn on_plane(plane: &Frame3, curve: &Curve3) -> Curve2 {
         Curve3::HyperbolaArc { .. }
         | Curve3::ParabolaArc { .. }
         | Curve3::Section(_)
-        | Curve3::Meet(_) => {
+        | Curve3::Meet(_)
+        | Curve3::Rise(_) => {
             crate::topology::plane_pcurve(curve, crate::topology::Orientation::Forward, *plane)
         }
         // An ellipse whose axes are not the plane's (a STEP file's, STEP-b):

@@ -16,8 +16,9 @@ cylinders with crossing axes in turned frames (`curved/turned.rs`) and
 S9c.2b.2's algebraic vertices where sections cross caps' circles, with
 parallel cylinders in turned frames (`curved/algebraic.rs`), and S9d.1's
 spheres against polyhedral prisms (`curved/sphere.rs`), and S9d.2a's
-spheres against prisms with arcs and two spheres (`curved/spheres.rs`);
-S9d.2b to S9d.4
+spheres against prisms with arcs and two spheres (`curved/spheres.rs`,
+S9d.2b's loops in exact frames among them); cones and tori (S9d.3,
+S9d.4)
 are not.
 
 ## Contract
@@ -412,6 +413,22 @@ length, picked by the seam); a zone's in an exact frame has equal axes too;
 a zone's circle of unequal axes against a cylinder is S9d.2b's. A meeting
 on a hemisphere is a seam's only on the split (a prism's vertex on the
 sphere elsewhere is `Degenerate` at once).
+
+A loop of a sphere and a cylinder (S9d.2b) in an exact frame: at height
+`w` the cylinder's circle meets the sphere where `alpha cos u + beta sin u
+= g(w)`, `g` quadratic, so near a ruling's tangency (a root of the
+cylinder's discriminant, the curve vertical) the curve is a graph over the
+height, `u = phi +- acos(g(w) / rho)`, whose points at rational heights
+are quadratic surds (`trig`); near a circle's tangency (a root of `rho^2 -
+g(w)^2`, the curve horizontal) it is S9c.2b.1's graph over the angle. The
+two kinds of turning point are ordered along each loop (binary64 views of
+isolators narrowed 160 bisections) and a rational switch of the cylinder's
+angle placed between adjacent ones of different kinds; each piece over the
+height is verified exactly (no root of `rho^2 - g^2` between its ends'
+heights, Sturm counts at surds), each over the angle as S9c.2b.1's. A
+piece over the height is `Curve3::Rise` (`TOPOLOGY_MODEL.md`), its range in
+the stored cylinder's heights. A loop in a turned frame stays
+`OutOfDomain`.
 
 ### Spline profiles (S9a.2)
 
@@ -998,6 +1015,11 @@ height); its horizontal edges on a spline are its lifted restrictions.
   box's circles off the sphere's parallels) misses by up to 2.4e-6, the
   same results measured adaptively within 3.4e-9; seven solids' counts
   change when unified.
+* **Kernel (S9d.2b).** The loops: `tests/spheres_booleans.rs` now takes 32
+  of the 33 fixtures as the reference (the bites, the cap's circle crossing
+  the sphere, the stadiums), the bite in `TILT` `OutOfDomain`;
+  `compare_spheres_boolean.py` 12 matches and 21 reviewed (seven more
+  results whose counts differ at the loops' switch points), no failure.
 * **Kernel (S9d.2a).** `tests/spheres_booleans.rs`: 24 of the 33 fixtures
   as the reference (two spheres; coaxial pipes and holes, parallels as rings
   of `Curve3::Meet` with the sphere as its other quadric; rods through

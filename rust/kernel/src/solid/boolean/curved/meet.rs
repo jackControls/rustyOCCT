@@ -138,6 +138,9 @@ pub(super) enum CylPair {
     /// Parallel cylinders not circular in a common measure (S9c.2b.2):
     /// generatrices along `d` through algebraic points.
     Lines(Vec<QV>, V),
+    /// A cylinder and a sphere in loops (S9d.2b): pieces over the angle and
+    /// the height, and their switches.
+    Mixed(Box<super::spheres::Mixed>),
     /// One surface.
     Same,
 }
@@ -297,6 +300,7 @@ pub(super) fn section(
                         .map(|m| Crv::Meet(Box::new(m.clone())))
                         .collect(),
                 )),
+                CylPair::Mixed(x) => Ok(Section::Curves(x.pieces.clone())),
                 _ => Ok(Section::Curves(Vec::new())),
             }
         }
@@ -308,6 +312,7 @@ pub(super) fn section(
         )),
         (Surf::Cyl { c, r, .. }, Surf::Cyl { .. }) => {
             match pair.expect("a cylinder pair's relation") {
+                CylPair::Mixed(_) => unreachable!("a cylinder and a sphere's"),
                 CylPair::Apart => Ok(Section::Curves(Vec::new())),
                 CylPair::Same => Ok(Section::Same),
                 CylPair::Parallel { c2, r2 } => {
@@ -446,7 +451,9 @@ pub(super) fn edge_surface(
         (Crv::Conic { c, a, b }, Surf::Sphere { c: cs, r }) => Ok(EdgeMeet::Points(
             super::algebraic::circle_quadric(c, a, b, &super::procedural::other_sphere(cs, r))?,
         )),
-        (Crv::Meet(_), _) => unreachable!("a model edge is a line, an arc or a circle"),
+        (Crv::Meet(_) | Crv::Rise(_), _) => {
+            unreachable!("a model edge is a line, an arc or a circle")
+        }
         (Crv::Line { p, d }, Surf::Plane { p: p0, m }) => {
             let md = dot(m, d);
             let off = qdot(&qsub(&qv(p0), p), m);
@@ -522,6 +529,7 @@ pub(super) fn edge_surface(
                 unreachable!("matched above")
             };
             match pair.expect("a cylinder pair's relation") {
+                CylPair::Mixed(_) => unreachable!("a cylinder and a sphere's"),
                 CylPair::Apart => Ok(EdgeMeet::None),
                 CylPair::Same => Ok(EdgeMeet::Along),
                 CylPair::Parallel { c2, r2 } => {
@@ -566,6 +574,7 @@ pub(super) fn tangent(curve: &Crv, pos: &Pos, x: &QV) -> QV {
     match (curve, pos) {
         (Crv::Line { d, .. }, _) => qv(d),
         (Crv::Circle(c), _) => c.tangent(x),
+        (Crv::Rise(c), _) => c.tangent(x),
         (Crv::Conic { a, b, .. }, Pos::Ang(cs)) => conic_tangent(a, b, cs),
         (Crv::Meet(m), Pos::Ang(cs)) => m.tangent(cs, x),
         (Crv::Conic { .. } | Crv::Meet(_), Pos::T(_)) => {

@@ -323,7 +323,8 @@ fn arc_of(c: &Curve3) -> Option<(&Frame3, [f64; 2], f64, f64)> {
         | Curve3::HyperbolaArc { .. }
         | Curve3::ParabolaArc { .. }
         | Curve3::Section(_)
-        | Curve3::Meet(_) => None,
+        | Curve3::Meet(_)
+        | Curve3::Rise(_) => None,
     }
 }
 
@@ -390,7 +391,8 @@ fn curve_at<T: Real>(curve: &Curve3, t: f64) -> V3<T> {
         Curve3::HyperbolaArc { .. }
         | Curve3::ParabolaArc { .. }
         | Curve3::Section(_)
-        | Curve3::Meet(_) => {
+        | Curve3::Meet(_)
+        | Curve3::Rise(_) => {
             projection::conic_point::<T>(curve, t).expect("a conic or section evaluates")
         }
         _ => {
@@ -805,7 +807,8 @@ fn add_curve<T: Real>(h: &mut Harmonic<T>, curve: &Curve3, forward: bool) -> boo
         | Curve3::HyperbolaArc { .. }
         | Curve3::ParabolaArc { .. }
         | Curve3::Section(_)
-        | Curve3::Meet(_) => return false,
+        | Curve3::Meet(_)
+        | Curve3::Rise(_) => return false,
         Curve3::LineSegment { start, end } => {
             let (a, b) = (v3::<T>(start.to_array()), v3::<T>(end.to_array()));
             if forward {
@@ -1182,6 +1185,19 @@ fn curve_valid(curve: &Curve3, tol: &R, fast_tol2: &Fast, exact_tol2: &I) -> boo
                 && m.sweep != 0.0
                 && m.sweep.abs() <= TAU
                 && (m.other_sphere || n.dot(x2).hypot(n.dot(y2)) > 1e-6)
+        }
+        // A cylinder's and a sphere's meeting over the height (S9d.2b):
+        // positive radii, a sign, a nonempty height range, the sphere's
+        // centre off the axis.
+        Curve3::Rise(m) => {
+            let ([a, b], _) = m.coefficients();
+            finite(&[m.radius, m.sphere_radius, m.start, m.sweep, m.sign])
+                && finite(&m.centre.to_array())
+                && r(m.radius) > *tol
+                && r(m.sphere_radius) > *tol
+                && (m.sign == 1.0 || m.sign == -1.0)
+                && m.sweep != 0.0
+                && a.hypot(b) > 1e-12
         }
         _ => {
             let (_, [rx, ry], start, sweep) = arc_of(curve).unwrap();
@@ -2864,6 +2880,8 @@ fn closed_curve(curve: &Curve3) -> bool {
         Curve3::Section(s) => s.sweep.abs() == TAU,
         // Two cylinders' meeting over a whole turn: a ring (S9c.2).
         Curve3::Meet(m) => m.sweep.abs() == TAU,
+        // A meeting over the height never closes (S9d.2b).
+        Curve3::Rise(_) => false,
         Curve3::LineSegment { .. } => false,
         // A spline ring edge is a full period; its seam is tested for C1.
         Curve3::BSpline(span) => span.is_closed_period(),

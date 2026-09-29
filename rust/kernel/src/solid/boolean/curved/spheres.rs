@@ -15,9 +15,9 @@ use super::model::*;
 use super::num::*;
 use super::procedural::{other_of, other_sphere, MeetCrv, Other, Quartic};
 use super::sphere::{plane_section, Circ};
-use super::turned::{roots, square_sum, trim, Chart, Lin};
+use super::turned::{middle, roots, square_sum, trim, Chart, Lin};
 use crate::polynomial::real::IntPolynomial;
-use crate::solid::split::zero;
+use crate::solid::split::{q, rational_f64, zero};
 use crate::{Error, Result};
 use num_rational::BigRational as R;
 use std::cmp::Ordering;
@@ -25,7 +25,7 @@ use std::sync::Arc;
 
 /// A sphere meeting a cylinder in a loop: S9d.2b's.
 fn loop_later() -> Error {
-    Error::OutOfDomain("a sphere meeting a cylinder in a loop (S9d.2b)")
+    Error::OutOfDomain("a sphere meeting a turned cylinder in a loop (S9d.2b)")
 }
 
 /// A cylinder of an operand: its frame, circle centre and radius.
@@ -53,7 +53,358 @@ pub(super) fn sphere_cyl(k: usize, cyl: Cyl, c: &V, r: &R, res: f64) -> Result<C
     if roots(&d.poly(&chart))?.is_empty() {
         return Ok(CylPair::Apart);
     }
-    Err(loop_later())
+    loops(k, cyl, c, r, &other, &d, &chart)
+}
+
+/// A piece of a cylinder's and a sphere's meeting over the height
+/// (S9d.2b): at height `w` the cylinder's circle meets the sphere where
+/// `alpha cos u + beta sin u = g(w)`, on the branch `plus` (the sign of
+/// `alpha sin u - beta cos u`), over `range` (ascending heights).
+#[derive(Debug, Clone, PartialEq)]
+pub(super) struct RiseCrv {
+    pub(super) carrier: usize,
+    o: V,
+    x: V,
+    y: V,
+    n: V,
+    r: R,
+    pub(super) c: V,
+    pub(super) rr: R,
+    pub(super) plus: bool,
+    pub(super) range: [Qd; 2],
+}
+
+impl RiseCrv {
+    /// `alpha`, `beta` and `g`'s coefficients `[g0, g1, g2]`.
+    fn coefficients(&self) -> (R, R, [R; 3]) {
+        let d = sub(&self.o, &self.c);
+        let r = &self.r;
+        (
+            int(2) * r * dot(&self.x, &d),
+            int(2) * r * dot(&self.y, &d),
+            [
+                &self.rr * &self.rr - dot(&d, &d) - r * r,
+                int(-2) * dot(&self.n, &d),
+                int(-1),
+            ],
+        )
+    }
+
+    /// The point at a rational height (`None` off the piece's branch
+    /// domain).
+    pub(super) fn at(&self, w: &R) -> Result<Option<QV>> {
+        let (a, b, g) = self.coefficients();
+        let gw = &g[0] + &g[1] * w + &g[2] * w * w;
+        let Some(sols) = super::meet::trig(&a, &b, &gw)? else {
+            return Ok(None);
+        };
+        let Some(cs) = sols.get(usize::from(self.plus)) else {
+            return Ok(None);
+        };
+        let p = qadd(
+            &qadd(&qv(&self.o), &qscale(&self.x, &cs[0].scale(&self.r))),
+            &qadd(
+                &qscale(&self.y, &cs[1].scale(&self.r)),
+                &qv(&scale(&self.n, w)),
+            ),
+        );
+        Ok(Some(p))
+    }
+
+    /// The carrier's circle centre at height 0.
+    pub(super) fn o_model(&self) -> V {
+        self.o.clone()
+    }
+
+    /// A point's height.
+    pub(super) fn height(&self, p: &QV) -> Qd {
+        qdot(&qsub(p, &qv(&self.o)), &self.n)
+    }
+
+    fn branch(&self, p: &QV) -> Ordering {
+        let (a, b, _) = self.coefficients();
+        let d = qsub(p, &qv(&self.o));
+        qdot(&d, &self.y)
+            .scale(&a)
+            .sub(&qdot(&d, &self.x).scale(&b))
+            .sign()
+    }
+
+    /// Whether a point lies on the piece (both surfaces, its branch, its
+    /// heights, ends included).
+    pub(super) fn on(&self, p: &QV) -> bool {
+        let d = qsub(p, &qv(&self.o));
+        let (dx, dy) = (qdot(&d, &self.x), qdot(&d, &self.y));
+        let cyl = dx.mul(&dx).add(&dy.mul(&dy)).add_r(&-(&self.r * &self.r));
+        let e = qsub(p, &qv(&self.c));
+        let sph = qqdot(&e, &e).add_r(&-(&self.rr * &self.rr));
+        if cyl.sign() != Ordering::Equal || sph.sign() != Ordering::Equal {
+            return false;
+        }
+        let want = if self.plus {
+            Ordering::Greater
+        } else {
+            Ordering::Less
+        };
+        if self.branch(p) != want {
+            return false;
+        }
+        let h = self.height(p);
+        h.cmp(&self.range[0]) != Ordering::Less && h.cmp(&self.range[1]) != Ordering::Greater
+    }
+
+    /// The unit-free tangent at a point, running up.
+    pub(super) fn tangent(&self, p: &QV) -> QV {
+        let d = qsub(p, &qv(&self.o));
+        let gc = qadd(
+            &qscale(&self.x, &qdot(&d, &self.x)),
+            &qscale(&self.y, &qdot(&d, &self.y)),
+        );
+        let t = qcross(&gc, &qsub(p, &qv(&self.c)));
+        if qdot(&t, &self.n).sign() == Ordering::Less {
+            t.map(|x| x.neg())
+        } else {
+            t
+        }
+    }
+
+    /// Binary64 points from height `w0` to `w1`.
+    pub(super) fn samples(&self, w0: f64, w1: f64, n: usize) -> Vec<[f64; 3]> {
+        let f = |v: &V| v.clone().map(|y| rational_f64(&y));
+        let (o, x, y, nn) = (f(&self.o), f(&self.x), f(&self.y), f(&self.n));
+        let (a, b, g) = self.coefficients();
+        let (a, b) = (rational_f64(&a), rational_f64(&b));
+        let g = g.map(|x| rational_f64(&x));
+        let r = rational_f64(&self.r);
+        let sign = if self.plus { 1.0 } else { -1.0 };
+        (0..=n)
+            .map(|i| {
+                let w = w0 + (w1 - w0) * i as f64 / n as f64;
+                let q = ((g[0] + g[1] * w + g[2] * w * w) / a.hypot(b)).clamp(-1.0, 1.0);
+                let u = b.atan2(a) + sign * q.acos();
+                [0, 1, 2].map(|j| o[j] + r * (u.cos() * x[j] + u.sin() * y[j]) + w * nn[j])
+            })
+            .collect()
+    }
+}
+
+/// A sphere and a cylinder meeting in loops (S9d.2b), the cylinder's frame
+/// exact: each interval of the cylinder's discriminant's positive values
+/// holds a loop, its turning points of both kinds (the ruling tangent, the
+/// circle tangent) ordered along it and rational switches between those of
+/// different kinds: graphs over the height about the first, over the angle
+/// about the second, each verified exactly.
+fn loops(
+    k: usize,
+    cyl: Cyl,
+    c: &V,
+    rr: &R,
+    other: &Other,
+    d: &super::turned::Form,
+    chart: &Chart,
+) -> Result<CylPair> {
+    let (f, cc, r) = cyl;
+    if !f.orthonormal() {
+        return Err(loop_later());
+    }
+    let o = f.point(&cc[0], &cc[1], &zero());
+    let rise = |plus: bool, range: [Qd; 2]| RiseCrv {
+        carrier: k,
+        o: o.clone(),
+        x: f.x.clone(),
+        y: f.y.clone(),
+        n: f.n.clone(),
+        r: r.clone(),
+        c: c.clone(),
+        rr: rr.clone(),
+        plus,
+        range,
+    };
+    let probe = rise(true, [Qd::rat(zero()), Qd::rat(zero())]);
+    let (alpha, beta, g) = probe.coefficients();
+    let rho2 = &alpha * &alpha + &beta * &beta;
+    if rho2 == zero() {
+        return Err(loop_later());
+    }
+    // The height graph's discriminant rho^2 - g(w)^2, a quartic in w.
+    let gp = trim(g.to_vec());
+    let dw = trim(padd(
+        std::slice::from_ref(&rho2),
+        &pscale(&pmul(&gp, &gp), &int(-1)),
+    ));
+    let meet = |plus: bool, range: Option<[[Qd; 2]; 2]>| MeetCrv::new(k, cyl, other, plus, range);
+    let pa = d.poly(chart);
+    let mut ra = roots(&pa)?;
+    let mut rw = roots(&dw)?;
+    for r in ra.iter_mut().chain(rw.iter_mut()) {
+        r.refine_for_signs(160);
+    }
+    if ra.len() % 2 != 0 {
+        return Err(Error::ComputationLimit(
+            "an odd count of a cylinder's turning points",
+        ));
+    }
+    // Turning points of the height graph (g = +-rho: u = phi or phi + pi):
+    // their chart t and the angle graph's branch there, binary64 views.
+    let (af, bf) = (rational_f64(&alpha), rational_f64(&beta));
+    let phi = bf.atan2(af);
+    let fl = |v: &V| v.clone().map(|y| rational_f64(&y));
+    let (of, xf, yf, nf, cf) = (fl(&o), fl(&f.x), fl(&f.y), fl(&f.n), fl(c));
+    let rf = rational_f64(r);
+    let mut w_turns: Vec<(f64, bool)> = Vec::new();
+    for root in &rw {
+        let w = rational_f64(&middle(root));
+        let gw = rational_f64(&g[0]) + rational_f64(&g[1]) * w + rational_f64(&g[2]) * w * w;
+        let u = if gw > 0.0 {
+            phi
+        } else {
+            phi + std::f64::consts::PI
+        };
+        let p: [f64; 3] =
+            [0, 1, 2].map(|j| of[j] + rf * (u.cos() * xf[j] + u.sin() * yf[j]) + w * nf[j]);
+        let up = (0..3).map(|j| (p[j] - cf[j]) * nf[j]).sum::<f64>();
+        if up.abs() < 1e-12 * (1.0 + rf) {
+            return Err(Error::ComputationLimit("a turning point of both graphs"));
+        }
+        // The chart's t of (cos u, sin u): rotated back by the base.
+        let (c0, s0) = (rational_f64(&chart.c0), rational_f64(&chart.s0));
+        let (cu, su) = (u.cos(), u.sin());
+        let (cr, sr) = (c0 * cu + s0 * su, c0 * su - s0 * cu);
+        w_turns.push((sr / (1.0 + cr), up > 0.0));
+    }
+    let mut pieces = Vec::new();
+    let mut switches = Vec::new();
+    for pair in ra.chunks(2) {
+        let (a, b) = (&pair[0], &pair[1]);
+        let (a64, b64) = (rational_f64(&middle(a)), rational_f64(&middle(b)));
+        // Events along the loop: lambda in [0, 2), the + branch (the angle
+        // graph's) from a to b, then the - branch back; true for the
+        // ruling's turning points.
+        let mut events: Vec<(f64, bool)> = vec![(0.0, true), (1.0, true)];
+        for &(t, plus) in &w_turns {
+            if t <= a64 || t >= b64 {
+                continue;
+            }
+            let l = (t - a64) / (b64 - a64);
+            events.push((if plus { l } else { 2.0 - l }, false));
+        }
+        events.sort_by(|x, y| x.0.total_cmp(&y.0));
+        let n = events.len();
+        if n < 3 {
+            return Err(Error::ComputationLimit(
+                "a loop without turning points of the other graph",
+            ));
+        }
+        for i in 0..n {
+            let l1 = events[(i + 1) % n].0 + if i + 1 == n { 2.0 } else { 0.0 };
+            if l1 - events[i].0 < 1e-9 {
+                return Err(Error::Degenerate("two turning points within rounding"));
+            }
+        }
+        let at = |l: f64| -> (R, bool) {
+            let l = l.rem_euclid(2.0);
+            if l < 1.0 {
+                (q(a64 + l * (b64 - a64)), true)
+            } else {
+                (q(b64 - (l - 1.0) * (b64 - a64)), false)
+            }
+        };
+        let point = |l: f64| -> Result<(QV, R, bool)> {
+            let (t, plus) = at(l);
+            if a.compare_rational(&t) != Ordering::Less
+                || b.compare_rational(&t) != Ordering::Greater
+            {
+                return Err(Error::ComputationLimit("a switch point off its loop"));
+            }
+            let p = meet(plus, None)
+                .at(&chart.at(&t))
+                .ok_or(Error::ComputationLimit("a switch point off its piece"))?;
+            Ok((p, t, plus))
+        };
+        let mut sw: Vec<(f64, QV, R, bool)> = Vec::new();
+        for i in 0..n {
+            let (e0, e1) = (events[i], events[(i + 1) % n]);
+            if e0.1 == e1.1 {
+                continue;
+            }
+            let l1 = e1.0 + if i + 1 == n { 2.0 } else { 0.0 };
+            let l = 0.5 * (e0.0 + l1);
+            let (p, t, plus) = point(l)?;
+            sw.push((l.rem_euclid(2.0), p, t, plus));
+        }
+        sw.sort_by(|x, y| x.0.total_cmp(&y.0));
+        let m = sw.len();
+        if m < 2 {
+            return Err(Error::ComputationLimit("a loop with one switch"));
+        }
+        for i in 0..m {
+            let (s0, s1) = (&sw[i], &sw[(i + 1) % m]);
+            let l1 = s1.0 + if i + 1 == m { 2.0 } else { 0.0 };
+            let first = events
+                .iter()
+                .find(|e| {
+                    let l = if e.0 < s0.0 { e.0 + 2.0 } else { e.0 };
+                    l > s0.0 && l < l1
+                })
+                .ok_or(Error::ComputationLimit("a run without turning points"))?;
+            if first.1 {
+                // The ruling's turning points: a graph over the height.
+                let (h0, h1) = (probe.height(&s0.1), probe.height(&s1.1));
+                let (lo, hi) = if h0.cmp(&h1) == Ordering::Less {
+                    (h0, h1)
+                } else {
+                    (h1, h0)
+                };
+                let sign = probe.branch(&s0.1);
+                if sign == Ordering::Equal || probe.branch(&s1.1) != sign {
+                    return Err(Error::ComputationLimit(
+                        "a run over the height changing branch",
+                    ));
+                }
+                let chain = super::turned::sturm(&dw);
+                if super::turned::changes(&chain, &lo) != super::turned::changes(&chain, &hi) {
+                    return Err(Error::ComputationLimit("a turning point inside a piece"));
+                }
+                pieces.push(Crv::Rise(Box::new(rise(
+                    sign == Ordering::Greater,
+                    [lo, hi],
+                ))));
+            } else {
+                // The circle's turning points: a graph over the angle.
+                if s0.3 != s1.3 {
+                    return Err(Error::ComputationLimit(
+                        "a run over the angle changing branch",
+                    ));
+                }
+                let (lo, hi) = if s0.2 < s1.2 {
+                    (&s0.2, &s1.2)
+                } else {
+                    (&s1.2, &s0.2)
+                };
+                if ra.iter().any(|r| {
+                    r.compare_rational(lo) == Ordering::Greater
+                        && r.compare_rational(hi) == Ordering::Less
+                }) {
+                    return Err(Error::ComputationLimit("a turning point inside a piece"));
+                }
+                let rng = [lo, hi].map(|t| {
+                    let cs = chart.at(t);
+                    [Qd::rat(cs[0].clone()), Qd::rat(cs[1].clone())]
+                });
+                pieces.push(Crv::Meet(Box::new(meet(s0.3, Some(rng)))));
+            }
+        }
+        switches.extend(sw.into_iter().map(|s| s.1));
+    }
+    Ok(CylPair::Mixed(Box::new(Mixed { pieces, switches })))
+}
+
+/// A cylinder's and a sphere's loops: pieces over the angle and over the
+/// height, and their switches (S9d.2b).
+#[derive(Debug, Clone)]
+pub(super) struct Mixed {
+    pub(super) pieces: Vec<Crv>,
+    pub(super) switches: Vec<QV>,
 }
 
 /// Two spheres' meeting: their radical plane's section (`None` apart), the
