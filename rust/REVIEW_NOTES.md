@@ -1608,7 +1608,10 @@ Decisions for S9, recorded before its code (2026-09-28):
     way) is `Degenerate`, fixing the survey's `T7` and `Y2` (six cases,
     now refused as a piece thinner than the resolution); (d) the `boolean`
     fuzz target stands the tool on its side (an exact frame) by a byte's
-    top bit, so its arcs reach S9c.2a. Pending: the campaign, S9c.2b.
+    top bit, so its arcs reach S9c.2a. The campaign at `9932a232` was
+    clean: 289 mutation executions after a 2,720 s replay of 1,205 inputs,
+    35,566 edges, 468 MB peak, the slowest input 16 s under
+    AddressSanitizer.
   * **DRAW survey of S9c.2a (2026-09-28, `UPSTREAM_TESTS.md`).** Of the
     boolean group's 1,802 self-contained cases Rust evaluates 822 (804
     before), none failing (8 before), all registered (`bopfuse_simple/ZE3`,
