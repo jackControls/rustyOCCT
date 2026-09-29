@@ -662,18 +662,18 @@ unified faces where OCCT has 8). The derived cases `boolean_prisms`,
 `boolean_stacks` (a step, a pocket, a box cut in two by a slab, a closed
 cavity, a tool through a round wall) and `boolean_polyhedra` (quarter
 turns, a bar turned 45 degrees through a box, a tilted bar cutting a box
-in two, a turned box inside another) and 804 cases of upstream's
+in two, a turned box inside another) and 822 cases of upstream's
 `boolean` group (86 of them stacks, 300 polyhedra of two boxes, one
 turned, 35 pockets cut one after another, a stack or a polyhedron given
-to the next `bcut`, and 63 of S9c.1's prisms with arcs in any position: a
+to the next `bcut`, 65 of S9c.1's prisms with arcs in any position: a
 cylinder and a turned box, a cylinder turned about its axis, equal
-cylinders crossed at right angles) evaluate on both backends. Of the
-upstream cases in frames with different axes the rest are refused: two
-cylinders S9c.2 takes, solids other than prisms, S9b.1's and S9c.1's
-`Degenerate` (a turned box's corner on another's wall, edge or corner, or
-on a cylinder, within rounding; a wall tangent to a cylinder), and an arc
-ending off its circle; of the stacks given to another Boolean, those with
-cylindrical walls (S9c). Eight fail on the kernel (`InvalidTopology`: a
-hole in no piece where a box's corners lie on a cylinder within rounding,
-and a cylinder wall with three holes of ellipse arcs the validator cannot
-place; `UPSTREAM_TESTS.md`).
+cylinders crossed at right angles, and 16 of S9c.2a's: a cylinder of
+radius 0.5 through one of radius 1 at right angles, two quartic rings)
+evaluate on both backends; none fails on the kernel. Of the upstream
+cases in frames with different axes the rest are refused: cylinders in
+turned frames S9c.2b takes, solids other than prisms, S9b.1's, S9c.1's
+and S9c.2a's `Degenerate` (a turned box's corner on another's wall, edge
+or corner, or on a cylinder, within rounding; a wall tangent to a
+cylinder; two cylinders touching at a point), and an arc ending off its
+circle; of the stacks given to another Boolean, those with cylindrical
+walls (S9c; `UPSTREAM_TESTS.md`).

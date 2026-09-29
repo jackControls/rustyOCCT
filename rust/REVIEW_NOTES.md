@@ -1608,8 +1608,22 @@ Decisions for S9, recorded before its code (2026-09-28):
     way) is `Degenerate`, fixing the survey's `T7` and `Y2` (six cases,
     now refused as a piece thinner than the resolution); (d) the `boolean`
     fuzz target stands the tool on its side (an exact frame) by a byte's
-    top bit, so its arcs reach S9c.2a. Pending: the DRAW survey, the
-    campaign, S9c.2b.
+    top bit, so its arcs reach S9c.2a. Pending: the campaign, S9c.2b.
+  * **DRAW survey of S9c.2a (2026-09-28, `UPSTREAM_TESTS.md`).** Of the
+    boolean group's 1,802 self-contained cases Rust evaluates 822 (804
+    before), none failing (8 before), all registered (`bopfuse_simple/ZE3`,
+    a sentinel until now, and 17 new). Of S9c.1's 48 cylinders S9c.2 takes,
+    16 evaluate (`ZE3` to `ZE6` of the four `bop*_simple` grids: radius 0.5
+    through radius 1 at right angles, two quartic rings; areas as native
+    DRAW's to its six digits), 16 are a tangency (`ZE7` to `ZF1`, the thin
+    axis moved 0.5 off: walls touching at a point) and 16 are S9c.2b's
+    turned frames (`ZD9`, `ZE2`, `ZF2`, `ZF3`). S9c.1's failures:
+    `bopfuse_simple` and `bopcut_simple` `ZC5` evaluate (band holes of
+    sinusoid and projection pcurves certified), the six `T7` and `Y2` are
+    refused as a piece thinner than the resolution (a hole no piece holds).
+    Sentinels added: `bopfuse_simple/ZD9` (S9c.2b), `ZE7` (tangency), the
+    six `T7`/`Y2`. The ledger does not change (`checkprops -s`,
+    `checkshape`).
   * **S9c.2b refined, before its code (2026-09-29).** Two sub-steps.
     S9c.2b.1: cylinders in any frames whose axes cross (affine models,
     elliptic in the world), with every vertex still a quadratic surd (an

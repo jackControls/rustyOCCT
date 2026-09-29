@@ -142,7 +142,9 @@ group, and stale success records are removed before each run.
 | `boolean/bcommon_simple/A1`, `bopcommon_simple/ZL6` | Unsupported | Viewer skipped | A sphere and a box, two cones: solids other than prisms (S9d; S9a sentinels) |
 | `boolean/bfuse_complex/J5` | Viewer skipped | Viewer skipped | Two equal cylinders crossed at right angles: their fuse's crossing ellipses (S9c.1) |
 | `boolean/bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`, `boptuc_simple`: `U1`, `V3`, `Y5`, `Z7`, `ZA2`, `ZA4`, `ZA7`, `ZB2`, `ZB4`, `ZB6`, `ZB9`, `ZC4`, `ZO7`, `ZO8` (56 cases); `bopcommon_simple/ZC5`, `ZD8`, `ZE1`, `boptuc_simple/ZC5`, `bopfuse_simple/ZD8`, `ZE1` | Viewer skipped | Viewer skipped | `bop` and its operations on a `pcylinder` and a box in frames with different axes (the box turned by `trotate` about z by 30, 60 or -30 degrees, 40 of them sized by `dset`; in `ZC5` 45 degrees about a horizontal axis through its corner; in `ZO7` and `ZO8` the cylinder turned about its own axis, `ZO8` by a quarter turn), or two equal cylinders whose axes cross at right angles (`ZD8`, `ZE1`): `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9c.1's prisms with arcs in any position) |
-| `boolean/bopfuse_simple/ZE3` | Unsupported | Viewer skipped | Cylinders of radii 1 and 0.5 whose axes cross at right angles: two cylinders meeting in quartics (S9c.2) |
+| `boolean/bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`, `boptuc_simple`: `ZE3`, `ZE4`, `ZE5`, `ZE6` (16 cases); `bopfuse_simple/ZC5`, `bopcut_simple/ZC5` | Viewer skipped | Viewer skipped | `bop` and its operations on a `pcylinder` of radius 0.5 through one of radius 1, their axes crossing at right angles (a quarter turn about x, which the adapter turns exactly; in `ZE4` to `ZE6` then turned about its own axis by one to three quarter turns), meeting in two quartic rings; the fuse and cut of `ZC5` (above), whose cylinder wall has holes bounded by ellipse arcs the validator now places: `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9c.2a's cylinders in exact frames) |
+| `boolean/bopfuse_simple/ZD9` | Unsupported | Viewer skipped | Equal cylinders whose axes cross at right angles, the second turned 60 degrees about its own axis: a frame not exactly orthonormal, cylinders in turned frames meeting in quartics (S9c.2b) |
+| `boolean/bopfuse_simple/ZE7`; `bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`: `T7`, `Y2` | Unsupported | Viewer skipped | A cylinder of radius 0.5 through one of radius 1 at right angles with its axis moved 0.5 off, the walls touching at a point (a figure-eight section); a box turned 135 degrees about z with two corners on a cylinder within rounding: a tangency between the inputs, a piece thinner than the resolution (S9c.2a's `Degenerate`; S9c.1 failed on `T7` and `Y2`) |
 | `boolean/bopfuse_simple/U2`, `S2`, `S3`, `ZD5`, `bopcut_simple/ZD8` | Unsupported | Viewer skipped | A box turned a quarter turn, its wall tangent to a cylinder; a box turned 45 or -45 degrees, its corner on a cylinder within rounding; a cylinder on an equal one turned a quarter turn about their axis; one of two equal crossed cylinders cut from the other: a tangency between the inputs, two meetings within rounding along an arc, a piece thinner than the resolution, a meeting at every seam tried (their rims one circle), solids touching at a vertex (S9c.1's `Degenerate`) |
 | `boolean/bopcommon_simple/C3`, `bopcut_simple/F6`, `G8`, `bopfuse_simple/N6` | Unsupported | Viewer skipped | A box turned by 45, 30 or 115 degrees with a corner on the other box's corner, wall or edge within rounding: a face thinner than the resolution, a face using an edge both ways, a face touching itself at a vertex, two solids touching at a point (S9b.1's `Degenerate`) |
 | `boolean/bcut_simple/H4` to `L2` (35 cases) | Viewer skipped | Viewer skipped | Pockets cut from a prism one after another by prisms of profiles in planes facing z or -z (`J3`'s last tool moved by `ttranslate`): the first cut is a stack (S9a.2; in `J4` and `J7` a polyhedron, S9b.1), which the next `bcut` takes as its object, on its stored geometry (S9b.2; in `J2` to `J7` and `K7` a third `bcut` takes the second's result): `checkprops -s` and the group's `checkshape`; each records a `checkview` |
@@ -153,10 +155,10 @@ group, and stale success records are removed before each run.
 | `boolean/bopcommon_simple/S5`, `bopcut_simple/ZC7`, `S4`, `bopfuse_simple/U7`, `B3`, `boptuc_simple/R1` | Unsupported | Viewer skipped | Box corners on or tangent to a cylinder, boxes touching along an edge: pieces thinner than the resolution, results touching themselves (at a point or along an edge) or each other, a hole touching its boundary (the kernel's `Degenerate`) |
 | `boolean/bcut_simple/G8` | Unsupported | Viewer skipped | A semi-infinite prism of an exploded face (`explode`, `SemiInf`) |
 
-There are **five original geometry tests passing on both backends** and 808
+There are **five original geometry tests passing on both backends** and 826
 more evaluated on both with their image commands recorded (`buc60769`,
 S7's `lowalgos/intss` cases `bug23177_1`, `bug23177_2` and `bug24648`, and
-804 Boolean cases of S9a, S9a.2, S9b.1, S9b.2 and S9c.1).
+822 Boolean cases of S9a, S9a.2, S9b.1, S9b.2, S9c.1 and S9c.2a).
 S8e registers the upstream `bsplit` group as capability sentinels: `boolean/splitter/A5`
 and `B5` and the 22 `bugs` cases that call `bsplit` (with `bug29333_1` and
 `bug29333_2`, registered before). They need S9's general builder: tools that
@@ -419,6 +421,68 @@ S9c.1's refusals: `bopfuse_simple/ZE3` (S9c.2's cylinders), `U2` (a
 tangency), `S2` (two meetings within rounding along an arc), `S3` (a piece
 thinner than the resolution), `ZD5` (a meeting at every seam tried) and
 `bopcut_simple/ZD8` (solids touching at a vertex).
+
+**S9c.2a's cylinders in exact frames in the Boolean group.** The same
+1,802 cases were run again on both backends after S9c.2a (2026-09-28,
+`survey_upstream_tests.py --boolean`, the public dataset read through
+`--data-dir`; no case loads it). Native DRAW's statuses are unchanged
+(1,579 evaluated, 223 not forwarded). Rust evaluates 822, each evaluated by
+native DRAW too and `viewer_skipped` on both; no case fails on Rust. Every
+one is registered: 18 more than S9c.1's survey (`bopfuse_simple/ZE3`, a
+sentinel until now, and 17 new). 16 are `ZE3` to `ZE6` of the four
+`bop*_simple` grids: a `pcylinder` of radius 0.5 through one of radius 1,
+their axes crossing at right angles (a quarter turn about x, which the
+adapter turns exactly, then none to three quarter turns about its own
+axis), meeting in two quartic rings; Rust's areas agree with native DRAW's
+to its six digits (fuse 38.0580, cut 35.6606, common 7.49504, `boptuc`
+9.89251). The other two are `bopfuse_simple/ZC5` and `bopcut_simple/ZC5`
+(19.7221, 27.1316), S9c.1's failures of `uncertified_containment`: the
+validator now certifies holes in a band bounded by sinusoid and projection
+pcurves. Of the previous survey's 48 cylinders S9c.2 takes, 16 evaluate,
+16 (`ZE7` to `ZF1`, the thin cylinder's axis moved 0.5 off, so the walls
+touch at one point where the section crosses itself) are a tangency
+between the inputs, and 16 are in turned frames (`ZD9`, `ZE2`: equal
+cylinders crossing at right angles, the second's frame turned 60 degrees
+about its axis, in `ZE2` then 120 about z; `ZF2`, `ZF3`: equal parallel
+cylinders, the second moved by turns of -120 or 120 and 60 degrees about z;
+S9c.2b).
+The 32 counted as quartics before were `ZE3` to `ZF1`; the second half's
+quartics have a node. S9c.1's other six failures (`T7`, `Y2` of
+`bopfuse_simple`, `bopcut_simple` and `bopcommon_simple`) are now refused
+as a piece thinner than the resolution, as `boptuc_simple`'s twins were:
+S9c.2a refuses a hole that no piece holds as a sliver. The 757 cases native
+DRAW evaluates and Rust does not, by reason:
+
+| Reason | Cases | Since S9c.1's survey |
+| --- | --- | --- |
+| Solids other than prisms (spheres, cones, tori): refused by the kernel 255, by the adapter 61 (a solid other than a prism sharing ids with the other argument) | 316 | 0 |
+| Two cylinders in turned frames meeting in curves other than lines and conics (S9c.2b): equal cylinders with a frame turned off whole quarter turns crossing 8 or parallel 8 | 16 | -32 (16 evaluate, 16 a tangency) |
+| A stack with cylindrical walls as a Boolean argument (S9c) | 4 | 0 |
+| An arc ending off its circle on exact models (`bfuse_simple/E1`, S9c) | 1 | 0 |
+| `Degenerate`, S9c.1's: a piece thinner than the resolution (a box's corner on the cylinder within rounding) | 40 | +6 (`T7`, `Y2`, failures before) |
+| `Degenerate`, S9c.1's: two meetings within rounding along an arc (the same) | 16 | 0 |
+| `Degenerate`, S9c.1's: a meeting at every seam tried (two stacked cylinders turned about their axis, their rims one circle) | 12 | 0 |
+| `Degenerate`, S9c's: a tangency between the inputs (a box's wall tangent to the cylinder after a quarter turn 8; cylinders of radii 1 and 0.5 touching at a point, S9c.2a's, 16) | 24 | +16 (`ZE7` to `ZF1`) |
+| `Degenerate`, S9c.1's: solids touching at a vertex (a cut of crossed cylinders) | 4 | 0 |
+| `Degenerate`, S9b.1's: a face thinner than the resolution | 99 | 0 |
+| `Degenerate`, S9b.1's: a face using an edge both ways | 9 | 0 |
+| `Degenerate`, S9b.1's: two solids touching at a point 1, a face touching itself at a vertex 1 | 2 | 0 |
+| `Degenerate`: a result thinner than the resolution | 103 | 0 |
+| `Degenerate`: a profile piece thinner than the resolution | 24 | 0 |
+| `Degenerate`: a result touching itself at a point | 11 | 0 |
+| `Degenerate`: a result touching itself along an edge | 6 | 0 |
+| `Degenerate`: a result's hole outside its boundary 8, two results touching 4 | 12 | 0 |
+| `atan2` in `dset`, which the adapter does not evaluate | 48 | 0 |
+| `explode` without the native selector (a Boolean's result into solids 4, a `pcylinder` into faces 4, a face of a box 1) | 9 | 0 |
+| A `pcylinder` on a plane `pl1` | 1 | 0 |
+
+The previous survey's eight failures are gone. The sentinels were checked
+again: `bopfuse_simple/ZE3` evaluates and is registered so (its purpose
+says why), the others are refused as before. Eight sentinels are added:
+`bopfuse_simple/ZD9` (cylinders in turned frames, S9c.2b, replacing `ZE3`
+for the reason), `ZE7` (S9c.2a's tangency: the thin cylinder's interval
+across the axes ending on the thick one's) and the six `T7` and `Y2` (a
+piece thinner than the resolution, where S9c.1 failed).
 
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
