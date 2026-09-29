@@ -292,7 +292,8 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
         }
     }
     // A plane and a torus (S9d.4a): its spiric section, rings or loops,
-    // the same for every patch.
+    // the same for every patch (found once for each plane).
+    let mut spiric: BTreeMap<(usize, usize), CylPair> = BTreeMap::new();
     for fa in 0..models[0].faces.len() {
         for fb in 0..models[1].faces.len() {
             let (sa, sb) = (&models[0].faces[fa].surf, &models[1].faces[fb].surf);
@@ -302,15 +303,22 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                 _ => continue,
             };
             let pair = if boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]) {
-                let t = &models[k];
-                super::torus::plane_torus(
-                    k,
-                    &t.f,
-                    t.ring.as_ref().expect("a torus"),
-                    plane.0,
-                    plane.1,
-                    res,
-                )?
+                let key = (k, if k == 0 { fb } else { fa });
+                if let Some(pair) = spiric.get(&key) {
+                    pair.clone()
+                } else {
+                    let t = &models[k];
+                    let pair = super::torus::plane_torus(
+                        k,
+                        &t.f,
+                        t.ring.as_ref().expect("a torus"),
+                        plane.0,
+                        plane.1,
+                        res,
+                    )?;
+                    spiric.insert(key, pair.clone());
+                    pair
+                }
             } else {
                 CylPair::Apart
             };
@@ -1418,12 +1426,11 @@ impl Arr {
         let surf = face.surf.clone();
         let kind = face.kind;
         let ball = m.ball.clone();
-        let ring = m.ring.clone();
-        let mf = m.f.clone();
+        let ring = m.ring.as_ref().map(|r| r.params(&m.f));
         move |p: [f64; 3]| -> [f64; 2] {
             match &surf {
                 // A torus's patch: its angles from its seams (S9d.4a).
-                Surf::Torus => ring.as_ref().expect("a torus's ring").params(&mf, p, kind),
+                Surf::Torus => ring.as_ref().expect("a torus's ring")(p, kind),
                 // A cone's wall: its projection on the plane of `(u, v)`,
                 // one to one (S9d.3a).
                 Surf::Cone { .. } => {

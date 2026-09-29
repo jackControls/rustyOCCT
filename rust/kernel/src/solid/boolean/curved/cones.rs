@@ -246,10 +246,7 @@ fn circle_roots(a: &Form) -> Result<Vec<[Qd; 2]>> {
     let p = super::turned::trim(a.poly(&chart));
     let mut out = Vec::new();
     for root in roots(&p)? {
-        let g = Arc::new(Gen {
-            poly: p.clone(),
-            root,
-        });
+        let g = Arc::new(Gen::new(p.clone(), root));
         let t = K::generator(&g);
         let den = t.mul(&t).add(&K::Rat(int(1)));
         let inv = den

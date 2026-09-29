@@ -3,11 +3,12 @@
 //! enclosures.
 use crate::certified::Interval as I;
 use crate::polynomial::real::{AlgebraicRoot, IntPolynomial};
+use crate::rational::{add as radd, div as rdiv, mul as rmul, sub as rsub};
 use crate::solid::split::{rational_f64, zero};
 use num_bigint::BigInt;
 use num_rational::BigRational as R;
 use std::cmp::Ordering;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 pub(super) type V = [R; 3];
 
@@ -16,26 +17,30 @@ pub(super) fn int(n: i64) -> R {
 }
 
 pub(super) fn add(a: &V, b: &V) -> V {
-    [&a[0] + &b[0], &a[1] + &b[1], &a[2] + &b[2]]
+    [radd(&a[0], &b[0]), radd(&a[1], &b[1]), radd(&a[2], &b[2])]
 }
 
 pub(super) fn sub(a: &V, b: &V) -> V {
-    [&a[0] - &b[0], &a[1] - &b[1], &a[2] - &b[2]]
+    [rsub(&a[0], &b[0]), rsub(&a[1], &b[1]), rsub(&a[2], &b[2])]
 }
 
 pub(super) fn scale(a: &V, k: &R) -> V {
-    [&a[0] * k, &a[1] * k, &a[2] * k]
+    [rmul(&a[0], k), rmul(&a[1], k), rmul(&a[2], k)]
 }
 
 pub(super) fn dot(a: &V, b: &V) -> R {
-    &a[0] * &b[0] + &a[1] * &b[1] + &a[2] * &b[2]
+    radd(
+        &radd(&rmul(&a[0], &b[0]), &rmul(&a[1], &b[1])),
+        &rmul(&a[2], &b[2]),
+    )
 }
 
 pub(super) fn cross(a: &V, b: &V) -> V {
+    let m = |x: &R, y: &R, z: &R, w: &R| rsub(&rmul(x, y), &rmul(z, w));
     [
-        &a[1] * &b[2] - &a[2] * &b[1],
-        &a[2] * &b[0] - &a[0] * &b[2],
-        &a[0] * &b[1] - &a[1] * &b[0],
+        m(&a[1], &b[2], &a[2], &b[1]),
+        m(&a[2], &b[0], &a[0], &b[2]),
+        m(&a[0], &b[1], &a[1], &b[0]),
     ]
 }
 
@@ -71,6 +76,44 @@ pub(super) fn rational_sqrt(x: &R) -> Option<R> {
 pub(super) struct Gen {
     pub(super) poly: Vec<R>,
     pub(super) root: AlgebraicRoot,
+    /// The isolator narrowed by a count of bisections, kept by that count:
+    /// every enclosure of the field's numbers narrows the same root the
+    /// same way, and a sign is exact from any isolator.
+    narrowed: Mutex<Vec<(usize, AlgebraicRoot)>>,
+}
+
+/// The bisections of the isolator a sign query starts from (those of
+/// `Qd::interval`'s enclosure, so the two share it).
+const SIGN_STEPS: usize = 96;
+
+impl Gen {
+    pub(super) fn new(poly: Vec<R>, root: AlgebraicRoot) -> Self {
+        Self {
+            poly,
+            root,
+            narrowed: Mutex::new(Vec::new()),
+        }
+    }
+
+    /// The root refined by `steps` bisections (`refine_for_signs`) from
+    /// its isolation, computed once.
+    fn narrowed(&self, steps: usize) -> AlgebraicRoot {
+        let mut kept = self.narrowed.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some((_, root)) = kept.iter().find(|(n, _)| *n == steps) {
+            return root.clone();
+        }
+        let mut root = self.root.clone();
+        root.refine_for_signs(steps);
+        kept.push((steps, root.clone()));
+        root
+    }
+
+    /// The exact sign of a polynomial at the root (Sturm-Tarski on a
+    /// narrowed isolator: the same root, so the same sign).
+    fn sign_of(&self, p: &[R]) -> Ordering {
+        self.narrowed(SIGN_STEPS)
+            .sign_polynomial(&IntPolynomial::from_rationals(p))
+    }
 }
 
 /// An element of `Q` or of one `Q(alpha)`: a polynomial in `alpha`
@@ -104,9 +147,9 @@ fn pmod(a: &[R], m: &[R]) -> Vec<R> {
     let lead = m.last().expect("a divisor").clone();
     while r.len() >= m.len() {
         let shift = r.len() - m.len();
-        let c = r.last().expect("nonempty") / &lead;
+        let c = rdiv(r.last().expect("nonempty"), &lead);
         for (i, x) in m.iter().enumerate() {
-            r[i + shift] -= &c * x;
+            r[i + shift] = rsub(&r[i + shift], &rmul(&c, x));
         }
         r = ptrim(r);
     }
@@ -120,9 +163,9 @@ fn pdivmod(a: &[R], b: &[R]) -> (Vec<R>, Vec<R>) {
     let mut q = vec![zero(); r.len().saturating_sub(b.len()) + 1];
     while r.len() >= b.len() && !r.is_empty() {
         let shift = r.len() - b.len();
-        let c = r.last().expect("nonempty") / &lead;
+        let c = rdiv(r.last().expect("nonempty"), &lead);
         for (i, x) in b.iter().enumerate() {
-            r[i + shift] -= &c * x;
+            r[i + shift] = rsub(&r[i + shift], &rmul(&c, x));
         }
         q[shift] = c;
         r = ptrim(r);
@@ -137,7 +180,7 @@ fn pmul(a: &[R], b: &[R]) -> Vec<R> {
     let mut out = vec![zero(); a.len() + b.len() - 1];
     for (i, x) in a.iter().enumerate() {
         for (j, y) in b.iter().enumerate() {
-            out[i + j] += x * y;
+            out[i + j] = radd(&out[i + j], &rmul(x, y));
         }
     }
     ptrim(out)
@@ -147,8 +190,11 @@ fn psub(a: &[R], b: &[R]) -> Vec<R> {
     let n = a.len().max(b.len());
     ptrim(
         (0..n)
-            .map(|i| {
-                a.get(i).cloned().unwrap_or_else(zero) - b.get(i).cloned().unwrap_or_else(zero)
+            .map(|i| match (a.get(i), b.get(i)) {
+                (Some(x), Some(y)) => rsub(x, y),
+                (Some(x), None) => x.clone(),
+                (None, Some(y)) => -y,
+                (None, None) => zero(),
             })
             .collect(),
     )
@@ -220,27 +266,30 @@ impl K {
         self.lift(
             o,
             |a, b| psub(a, &b.iter().map(|x| -x).collect::<Vec<_>>()),
-            |a, b| a + b,
+            radd,
         )
     }
 
     pub(super) fn sub(&self, o: &Self) -> Self {
-        self.lift(o, psub, |a, b| a - b)
+        self.lift(o, psub, rsub)
     }
 
     pub(super) fn mul(&self, o: &Self) -> Self {
-        self.lift(o, pmul, |a, b| a * b)
+        self.lift(o, pmul, rmul)
     }
 
     pub(super) fn scale(&self, k: &R) -> Self {
         match self {
-            K::Rat(a) => K::Rat(a * k),
-            K::Alg(g, p) => K::norm(g, p.iter().map(|x| x * k).collect()),
+            K::Rat(a) => K::Rat(rmul(a, k)),
+            K::Alg(g, p) => K::norm(g, p.iter().map(|x| rmul(x, k)).collect()),
         }
     }
 
     pub(super) fn neg(&self) -> Self {
-        self.scale(&int(-1))
+        match self {
+            K::Rat(a) => K::Rat(-a),
+            K::Alg(g, p) => K::Alg(g.clone(), p.iter().map(|x| -x).collect()),
+        }
     }
 
     pub(super) fn is_zero(&self) -> bool {
@@ -251,7 +300,7 @@ impl K {
     pub(super) fn sign(&self) -> Ordering {
         match self {
             K::Rat(a) => sign(a),
-            K::Alg(g, p) => g.root.sign_polynomial(&IntPolynomial::from_rationals(p)),
+            K::Alg(g, p) => g.sign_of(p),
         }
     }
 
@@ -277,9 +326,7 @@ impl K {
                     }
                     // A common factor: zero at alpha, or alpha is a root of
                     // the cofactor.
-                    if g.root.sign_polynomial(&IntPolynomial::from_rationals(&r0))
-                        == Ordering::Equal
-                    {
+                    if g.sign_of(&r0) == Ordering::Equal {
                         return None;
                     }
                     m = pdivmod(&m, &r0).0;
@@ -294,8 +341,7 @@ impl K {
         match self {
             K::Rat(a) => I::exact(a.clone()),
             K::Alg(g, p) => {
-                let mut root = g.root.clone();
-                root.refine_for_signs(steps);
+                let root = g.narrowed(steps);
                 let (lo, hi) = root.isolator();
                 let x = I::new(lo.clone(), hi.clone());
                 p.iter().rev().fold(I::exact(zero()), |acc, c| {
@@ -366,6 +412,16 @@ impl Qd {
         Self { a, b, d }
     }
 
+    /// `parts` for a `d` of an existing number's (zero, or no rational
+    /// square: its surd was folded when made), whose square root need not
+    /// be tried again.
+    fn known(a: K, b: K, d: R) -> Self {
+        if b.is_zero() || d == zero() {
+            return Self::of(a);
+        }
+        Self { a, b, d }
+    }
+
     /// A rational, when it is one.
     pub(super) fn rational(&self) -> Option<&R> {
         match (&self.a, self.b.is_zero()) {
@@ -408,17 +464,17 @@ impl Qd {
 
     pub(super) fn add(&self, o: &Self) -> Self {
         let d = self.common(o).expect("surds of one field");
-        Self::parts(self.a.add(&o.a), self.b.add(&o.b), d)
+        Self::known(self.a.add(&o.a), self.b.add(&o.b), d)
     }
 
     pub(super) fn sub(&self, o: &Self) -> Self {
         let d = self.common(o).expect("surds of one field");
-        Self::parts(self.a.sub(&o.a), self.b.sub(&o.b), d)
+        Self::known(self.a.sub(&o.a), self.b.sub(&o.b), d)
     }
 
     pub(super) fn mul(&self, o: &Self) -> Self {
         let d = self.common(o).expect("surds of one field");
-        Self::parts(
+        Self::known(
             self.a.mul(&o.a).add(&self.b.mul(&o.b).scale(&d)),
             self.a.mul(&o.b).add(&self.b.mul(&o.a)),
             d,
@@ -426,20 +482,20 @@ impl Qd {
     }
 
     pub(super) fn scale(&self, k: &R) -> Self {
-        Self::parts(self.a.scale(k), self.b.scale(k), self.d.clone())
+        Self::known(self.a.scale(k), self.b.scale(k), self.d.clone())
     }
 
     /// Times an element of the base field.
     pub(super) fn scale_k(&self, k: &K) -> Self {
-        Self::parts(self.a.mul(k), self.b.mul(k), self.d.clone())
+        Self::known(self.a.mul(k), self.b.mul(k), self.d.clone())
     }
 
     pub(super) fn neg(&self) -> Self {
-        self.scale(&int(-1))
+        Self::known(self.a.neg(), self.b.neg(), self.d.clone())
     }
 
     pub(super) fn add_r(&self, k: &R) -> Self {
-        Self::parts(
+        Self::known(
             self.a.add(&K::Rat(k.clone())),
             self.b.clone(),
             self.d.clone(),
@@ -450,7 +506,7 @@ impl Qd {
     pub(super) fn recip(&self) -> Option<Self> {
         let norm = self.a.mul(&self.a).sub(&self.b.mul(&self.b).scale(&self.d));
         let inv = norm.recip()?;
-        Some(Self::parts(
+        Some(Self::known(
             self.a.mul(&inv),
             self.b.neg().mul(&inv),
             self.d.clone(),
@@ -487,11 +543,11 @@ impl Qd {
             return approx_sign(|n| self.enclose(n).sub(&o.enclose(n)));
         }
         if let Some(d) = self.common(o) {
-            return Self::parts(self.a.sub(&o.a), self.b.sub(&o.b), d).sign();
+            return Self::known(self.a.sub(&o.a), self.b.sub(&o.b), d).sign();
         }
         // (a - a' + b sqrt d) + (-b') sqrt d'.
         tower_sign(
-            &Self::parts(self.a.sub(&o.a), self.b.clone(), self.d.clone()),
+            &Self::known(self.a.sub(&o.a), self.b.clone(), self.d.clone()),
             &Self::of(o.b.neg()),
             &o.d,
         )

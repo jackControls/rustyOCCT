@@ -2512,6 +2512,22 @@ Decisions for S9, recorded before its code (2026-09-28):
     target's tool is a whole torus when its spline byte lies in
     `144..160`; (h) the DRAW bridge evaluates a torus inside a box and
     guards a torus against a cylinder (S9d.4b). Pending: the campaign.
+    Performance, every result unchanged (the fuzz replay's 1,432
+    boolean inputs hashed alike before and after): the corpus's slow torus
+    inputs replay (debug assertions, no ASan) 1.7 to 3.3 times as fast
+    (`17e131e3` 8.1 s to 3.3 s, `4274e084` 6.8 s to 2.1 s, `1b405929` 11 s
+    to 4-5 s, `ad0dbe59` 8.1 s to 4.6 s) and CI's slow sphere input
+    `fab20f09` 5.0 s to 2.3 s, from a Lehmer gcd for the curved Booleans'
+    and the rational enclosures' arithmetic (`rational.rs`: `num_integer`'s
+    Stein gcd is quadratic even against a small operand), bisection of
+    isolators over one denominator, each algebraic field's narrowed
+    isolators kept, a plane's spiric section found once for the four
+    patches, surds' known fields not tested for squares again, binary64
+    interval products from their two extreme corners where the factors'
+    signs fix them (bit for bit the four corners'), and the mass integrands of a
+    torus or sphere face sharing their `cos^a u sin^b u` jets; the
+    certified mass integrals of the results' torus faces now take most of
+    what remains.
   * **DRAW survey of S9d.4a (2026-09-29, `UPSTREAM_TESTS.md`).** The
     Boolean group holds no torus against a box, so no case evaluates
     newly: its tori are 16 `pcylinder`s with a coaxial torus (`ZL2` to
@@ -2553,8 +2569,10 @@ Decisions for S9, recorded before its code (2026-09-28):
     alone took 31 minutes on a loaded host). (e) Fuzzing: the timeouts
     are slow units, a sphere (`fab20f09`, 13.6 s without AddressSanitizer)
     and a torus (`17e131e3`, 9.8 s) against prisms, and S7b's torus curve
-    graph on an analytic input (`8dce95c9`, 42 s); each is being made
-    faster. (f) `compare_brep_io.py` has failed on every platform since
+    graph on an analytic input (`8dce95c9`, 42 s): the Booleans' number
+    arithmetic 1.7 to 3.3 times faster (S9d.4a's note above; what remains
+    is mostly the results' certified validation), and the torus curve
+    graph's fold boxes stopping at a proved crossing (2.3 s, S7b.3b.1). (f) `compare_brep_io.py` has failed on every platform since
     F8's quadrature (first at `2f60b19f`): seven of the hammer's free
     spline faces now have enclosures narrower than OCCT's default
     BRepGProp error. OCCT's adaptive integration (Eps 1e-12) lies inside

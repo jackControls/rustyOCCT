@@ -579,10 +579,7 @@ pub(super) fn circ_quadric(circ: &Circ, o: &Other) -> Result<EdgeMeet> {
         if !deg_ok(&root) {
             continue;
         }
-        let g = Arc::new(Gen {
-            poly: eq.clone(),
-            root,
-        });
+        let g = Arc::new(Gen::new(eq.clone(), root));
         let t = K::generator(&g);
         let den = t.mul(&t).add(&K::Rat(int(1)));
         let inv = den
