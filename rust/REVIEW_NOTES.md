@@ -2611,7 +2611,11 @@ Decisions for S9, recorded before its code (2026-09-28):
     synthesized counts include a wound loop's seam split, OCCT's 3 faces,
     6 edges and 4 vertices, so only its measures still differ. The spline
     tessellation's Linux rows needed one review (`spline_dome/coarse`, the
-    same understated deflection as on macOS).
+    same understated deflection as on macOS). (i) The unoptimized test
+    step (debug assertions, overflow checks) ran for hours with S9d's
+    exact curved Booleans (`torus_segment_booleans` alone 459 s on this
+    host): it keeps both checks optimized now (`CARGO_PROFILE_DEV_OPT_LEVEL`
+    2, 40 s), and the test jobs have time limits.
   * **S9d.4b refined, before its code (2026-09-29).** Two sub-steps.
     S9d.4b.1: tori other than whole ones (S3's v-segments between two
     latitudes and wedges of a partial turn) against polyhedral prisms: the
