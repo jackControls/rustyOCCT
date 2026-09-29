@@ -2498,7 +2498,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     rigid motion moves `Curve3::Section` edges, and the history checker
     takes them in a plane's pieces by points along them; (g) the fuzz
     target's tool is a whole torus when its spline byte lies in
-    `144..160`. Pending: the DRAW survey, the campaign.
+    `144..160`; (h) the DRAW bridge evaluates a torus inside a box and
+    guards a torus against a cylinder (S9d.4b). Pending: the DRAW survey, the
+    campaign.
 
 ### Parallel tracks
 

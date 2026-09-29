@@ -187,7 +187,7 @@ class BridgeTests(unittest.TestCase):
         # as an argument whose result's top face touches
         # itself at a vertex (Degenerate: a tower's corner on the corner of
         # a notch), prisms touching along an edge (Degenerate), a torus
-        # (curved faces, S9d.4's), a section,
+        # against a cylinder (S9d.4b), a section,
         # several objects, a result of two solids as an argument,
         # unifysamedom of other shapes, counts of an uncopied prism's result
         # and a Boolean's history.
@@ -196,6 +196,10 @@ class BridgeTests(unittest.TestCase):
         # the fixture comparisons' to check).
         self.expect(boxes + "pcylinder k 1 2\ntrotate k 0 0 0 1 0 0 30\npcylinder m 1.5 3\n"
                     "bfuse r m k\n", "unverified")
+        # A torus inside the box (S9d.4a): their common is the torus, 2 pi^2
+        # R r^2.
+        self.expect(boxes + "ptorus t 1.25 0.5\nttranslate t 2 2 1\nbcommon r a t\n"
+                    "checkprops r -v [expr {0.625 * acos(-1) ** 2}] -deps 1e-6\n", "pass")
         # A coaxial pipe cut from a frustum (S9d.3b.1): the frustum less the
         # core, 14 pi / 3 - pi / 2.
         self.expect(boxes + "pcone k 2 1 2\npcylinder c 0.5 4\nttranslate c 0 0 -1\nbcut r k c\n"
@@ -208,8 +212,8 @@ class BridgeTests(unittest.TestCase):
         for gap, why in [
                 (boxes + "box t 1 1 2 1 1 1\nbfuse r a t\ncheckprops r -v 33\ncatch {bcut s r b}", "egenerate"),
                 (boxes + "box t 4 4 0 1 1 2\ncatch {bfuse r a t}", "egenerate"),
-                (boxes + "ptorus t 2 0.5\nttranslate t 2 2 1\ncatch {bcommon r a t}",
-                 "curved faces"),
+                (boxes + "pcylinder c 1 2\nptorus t 2 0.5\nttranslate t 1 0 1\n"
+                 "catch {bcommon r c t}", "S9d.4b"),
                 (boxes + "baddobjects a\nbaddtools b\ncatch {bapibop r 4}", "bapibop r 4"),
                 (boxes + "baddobjects a b\nbaddtools b\ncatch {bapibop r 1}", "one object"),
                 (boxes + "box d 9 9 9 1 1 1\nbfuse r a d\ncatch {bcut s r b}", "several solids"),
