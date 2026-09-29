@@ -546,6 +546,8 @@ pub(super) fn edge_surface(
         (Crv::Conic { c, a, b }, Surf::Sphere { c: cs, r }) => Ok(EdgeMeet::Points(
             super::algebraic::circle_quadric(c, a, b, &super::procedural::other_sphere(cs, r))?,
         )),
+        // S9d.4b.1: a torus segment's or wedge's rim against a plane.
+        (Crv::Torus(c), Surf::Plane { p: p0, m }) => super::torus_segment::rim_plane(c, p0, m),
         (Crv::Meet(_) | Crv::Rise(_) | Crv::Cone(_) | Crv::Torus(_), _) => {
             unreachable!("a model edge is a line, an arc or a circle")
         }

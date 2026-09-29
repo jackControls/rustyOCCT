@@ -358,6 +358,169 @@ pub(crate) fn torus_location(point: [f64; 3], major: f64, minor: f64, tolerance:
     0
 }
 
+/// Where a point (in the torus's frame) lies against a torus v-segment
+/// (latitudes `low < high`, a full turn) or wedge (the whole tube over
+/// `angle`) on S9d.4b.1's exact model (REVIEW_NOTES.md): 0 inside, 1 on the
+/// boundary within `tolerance`, 2 outside. A segment is the region between
+/// the tube's arc and the axis, revolved, its end discs at the stored heights
+/// `r sin(latitude)` from the axis to the arc's ends; a wedge the torus in
+/// the sector from the half-plane of `x` to that of `(cos angle, sin
+/// angle)`, its end discs the tube's there. Membership is exact (rational
+/// signs of the torus's quartic, `t^2 - R^2`, heights and half-planes); a
+/// point's distances from the boundary's pieces (the wall within its range,
+/// the end discs) are rational intervals, one that cannot be told beyond the
+/// tolerance counting as within it.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn torus_part_location(
+    point: [f64; 3],
+    major: f64,
+    minor: f64,
+    low: f64,
+    high: f64,
+    angle: f64,
+    tolerance: f64,
+) -> u8 {
+    let [x, y, z] = point.map(q);
+    let (big, r, tol) = (q(major), q(minor), q(tolerance));
+    let four = R::from_integer(4.into());
+    let t2 = &x * &x + &y * &y;
+    let base = &t2 + &z * &z + &big * &big - &r * &r;
+    // Negative inside the tube (its other factor is positive).
+    let tube = (&base * &base - &four * &big * &big * &t2).cmp(&zero());
+    let iv = |v: R| Interval::exact(v);
+    let tol2 = &tol * &tol;
+    let t = iv(t2.clone()).sqrt();
+    // The distance from the tube's circle in the meridian half-plane.
+    let wall = t
+        .sub(&iv(big.clone()))
+        .square()
+        .add(&iv(&z * &z))
+        .sqrt()
+        .sub(&iv(r.clone()))
+        .square();
+    let beyond = |d2_lo: &R| d2_lo > &tol2;
+    let cross = |a: [&Interval; 2], b: [&Interval; 2]| a[0].mul(b[1]).sub(&a[1].mul(b[0])).sign();
+    let (inside, near) = if angle == std::f64::consts::TAU {
+        let lats = [low, high];
+        let zs = lats.map(|l| q(crate::math::scaled_sin(minor, l)));
+        let outer = lats.map(|l| crate::math::scaled_cos(minor, l) > 0.0);
+        // A tube point's place from the bottom, counter-clockwise: up the
+        // outer side (`h + r`), down the inner (`3 r - h`), modulo `4 r`.
+        let turn = &four * &r;
+        let key = |outer: bool, h: &R| {
+            let k = if outer {
+                h + &r
+            } else {
+                R::from_integer(3.into()) * &r - h
+            };
+            ((k % &turn) + &turn) % &turn
+        };
+        let keys = [key(outer[0], &zs[0]), key(outer[1], &zs[1])];
+        let span = ((&keys[1] - &keys[0]) % &turn + &turn) % &turn;
+        let on_arc = |k: R| ((k - &keys[0]) % &turn + &turn) % &turn <= span;
+        let mut crit = vec![-r.clone(), r.clone(), zs[0].clone(), zs[1].clone()];
+        crit.sort();
+        crit.dedup();
+        let band = crit.iter().filter(|c| z > **c).count();
+        let inside = if band == 0 || band == crit.len() {
+            false
+        } else {
+            let h = (&crit[band - 1] + &crit[band]) / R::from_integer(2.into());
+            let cyl = t2 < &big * &big;
+            match (on_arc(key(true, &h)), on_arc(key(false, &h))) {
+                (true, true) => tube == Ordering::Less,
+                (true, false) => cyl || tube == Ordering::Less,
+                (false, true) => cyl && tube == Ordering::Greater,
+                (false, false) => false,
+            }
+        };
+        // The ends' points `(rho, z)` and directions from the tube's centre.
+        let qs = zs.clone().map(|zk| iv(&r * &r - &zk * &zk).sqrt());
+        let rho = [0, 1].map(|k| {
+            let b = iv(big.clone());
+            if outer[k] {
+                b.add(&qs[k])
+            } else {
+                b.sub(&qs[k])
+            }
+        });
+        let dirs = [0, 1].map(|k| {
+            [
+                if outer[k] { qs[k].clone() } else { qs[k].neg() },
+                iv(zs[k].clone()),
+            ]
+        });
+        let d = [t.sub(&iv(big.clone())), iv(z.clone())];
+        // The wall counts where the point's direction lies within the arc's
+        // (or cannot be told outside it).
+        let (c1, c2) = (
+            cross([&dirs[0][0], &dirs[0][1]], [&d[0], &d[1]]),
+            cross([&d[0], &d[1]], [&dirs[1][0], &dirs[1][1]]),
+        );
+        let small = cross([&dirs[0][0], &dirs[0][1]], [&dirs[1][0], &dirs[1][1]]);
+        let not_less = |c: Option<Ordering>| c != Some(Ordering::Less);
+        let within = match small {
+            Some(Ordering::Greater) => not_less(c1) && not_less(c2),
+            Some(Ordering::Less) => not_less(c1) || not_less(c2),
+            _ => true,
+        };
+        let mut near = within && !beyond(wall.lo());
+        for k in 0..2 {
+            let dz = &z - &zs[k];
+            let mut d2 = &dz * &dz;
+            if t.lo() > rho[k].hi() {
+                let e = t.sub(&rho[k]).lo().clone();
+                d2 += &e * &e;
+            }
+            near |= !beyond(&d2);
+        }
+        (inside, near)
+    } else {
+        let (ce, se) = (q(angle.cos()), q(angle.sin()));
+        let s0 = y.cmp(&zero());
+        let s1 = (&x * &se - &y * &ce).cmp(&zero());
+        let convex = se > zero() || (se == zero() && ce < zero());
+        let within = if convex {
+            s0 != Ordering::Less && s1 != Ordering::Less
+        } else {
+            s0 != Ordering::Less || s1 != Ordering::Less
+        };
+        let inside = within && tube == Ordering::Less;
+        let mut near = within && !beyond(wall.lo());
+        // The end discs: the plane's distance and, past the tube's disc in
+        // the plane, the distance beyond its circle.
+        let norm = iv(&ce * &ce + &se * &se).sqrt();
+        let ends = [
+            (iv(y.clone()), iv(x.clone())),
+            (
+                iv(&ce * &y - &se * &x).div(&norm).expect("a direction"),
+                iv(&ce * &x + &se * &y).div(&norm).expect("a direction"),
+            ),
+        ];
+        for (h, radial) in &ends {
+            let e = radial
+                .sub(&iv(big.clone()))
+                .square()
+                .add(&iv(&z * &z))
+                .sqrt()
+                .sub(&iv(r.clone()));
+            let mut d2 = h.square().lo().clone();
+            if e.lo() > &zero() {
+                d2 += e.lo() * e.lo();
+            }
+            near |= !beyond(&d2);
+        }
+        (inside, near)
+    };
+    if near {
+        1
+    } else if inside {
+        0
+    } else {
+        2
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

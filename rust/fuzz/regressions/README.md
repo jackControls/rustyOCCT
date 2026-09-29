@@ -1009,3 +1009,26 @@ curved Booleans' exact arithmetic was sped up (Lehmer gcd, isolators kept per
 field) and before the torus curve graph's fold boxes stopped at a proved
 crossing. They replay in 0.9 s and 0.6 s after both (release, no
 AddressSanitizer); kept so the per-push runs keep timing them.
+
+## Boolean: a three-quarter wedge's holes, a cavity in a torus part
+
+`boolean/replay-80c01a1abdc7d0548c96f72a9cf9ec4c2d575313.bin` and
+`boolean/replay-0028ade227457ca9ef8fad7b8892eaa955687d3f.bin` are corpus
+inputs whose spline byte and flags were set to S9d.4b.1's torus parts (the
+byte in `148..160`) for a local replay with debug assertions of 6,579 such
+variants before the part tool's first campaign. The first: a wedge of three
+quarters of a turn coaxial with a tilted square frame with a square hole,
+fused. The fused wall is a patch over more than half a turn with no loop
+winding, and its holes' projection pcurves, lifted from the surface's
+principal angles, lay a turn away in `u` from its outer loop
+(`inner_loop_outside`); a torus face none of whose loops winds now shifts
+each hole by whole turns into its outer loop on the cover
+(`tests/torus_segment_booleans.rs`,
+`a_three_quarter_wedge_fused_holds_its_holes`). The second (33 inputs
+alike): a wedge in a turned frame fused with a rectangle, the result cut by
+the turned box lying inside it: a cavity in a solid bounded by a torus face
+with loops, whose containment the validator's rays cannot decide
+(`uncertified_containment`, as for spheres and whole tori with loops). A ray
+missing the whole sphere or torus now counts no hit, and a Boolean whose
+result reports only an undecided containment is `ComputationLimit`
+(`a_cavity_in_a_segment_is_undecided`). Both replay in under 3 s.

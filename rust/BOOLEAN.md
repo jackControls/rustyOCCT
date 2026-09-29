@@ -20,9 +20,10 @@ spheres against prisms with arcs and two spheres (`curved/spheres.rs`,
 S9d.2b's loops in exact frames among them), and S9d.3a's cones and
 frusta against polyhedral prisms (`curved/cone.rs`), and S9d.3b.1's
 cones against cylinders, spheres and cones meeting in rings or on a plane
-(`curved/cones.rs`), S9d.3b.2's cones and spheres in loops, and S9d.4a's
-whole tori against polyhedral prisms (`curved/torus.rs`); tori against
-curved faces, segments and wedges (S9d.4b) are not.
+(`curved/cones.rs`), S9d.3b.2's cones and spheres in loops, S9d.4a's
+whole tori against polyhedral prisms (`curved/torus.rs`), and S9d.4b.1's
+torus v-segments and wedges against them (`curved/torus_segment.rs`); tori
+against curved faces (S9d.4b.2) are not.
 
 ## Contract
 
@@ -46,7 +47,9 @@ prism's exact queries; any other is a general body built through
   a hole tangent to the outer boundary) until the kernel holds non-manifold
   bodies.
 * `ComputationLimit`: two cuts of a segment, or a crossing at a segment's
-  end, whose order its enclosures leave undecided.
+  end, whose order its enclosures leave undecided, or a result's cavity
+  whose containment the validator's rays leave undecided (a ray meeting a
+  sphere or torus face with loops).
 * `InvalidLabel`: inputs sharing an entity id (built by one operation, one
   solid twice, or a result and an input whose entities it keeps), which
   the history could not tell apart.
@@ -522,6 +525,42 @@ kinds and verified exactly (S9d.2b's rule). Edges are S8d.3's
 `Curve3::Section`, their pcurves `Projection`s on the torus; a face's loops
 lie on one sheet of the torus's cover by their material's side. A plane
 tangent to the torus or within the resolution of it is `Degenerate`.
+
+### Torus segments and wedges against polyhedral prisms (S9d.4b.1)
+
+A v-segment or a wedge is S9d.4a's torus with its ends
+(`curved/torus_segment.rs`). A v-segment (latitudes `low < high`, a full
+turn) is the region between the tube's arc and the axis, revolved: its end
+discs lie in the planes `w = z` at the stored heights `r sin(latitude)`,
+from the axis to the arc's ends, where the planes meet the tube on the side
+of the latitude's cosine (`rho = R +- sqrt(r^2 - z^2)`). Between its
+critical heights (the ends and `+-r`) the tube's outer and inner points at a
+height lie on the arc or not all along, decided once, so a point's side is
+exact in `t^2 - R^2`, the torus's quartic and its height (the tube's disc,
+`t < R + q`, `t < R - q` or nothing), pushed at first order as the whole
+torus's. A wedge (the whole tube over `0 < angle < 2 pi`) is the torus in
+the sector from the half-plane of `x` to that of its chart direction `(cos
+angle, sin angle)` rounded: two half-planes' common within a half turn,
+their union beyond. The wall is traced in two patches, cut at the ends
+instead of a seam where an end lies (a segment's at its meridian seam, a
+wedge's at its parallel seam). A segment's rims are its end planes' rings
+over `u` (S9d.4a's spiric sections; where the plane is tangent to the torus
+along the rim, the outer and inner halves' `w = +-r`, a circle of radius
+`R`), a wedge's its end half-planes' rings over `v` (surds of `cos^2 + sin^2`
+of the end direction); a rim meets a plane where the two planes' line meets
+the torus on the rim's branch (a repeated root on the other ring or circle is
+no contact), and a result's rim is the input's circle. An inside-out
+segment's wall (the inner half) has its material outside the tube. A plane
+tangent to the torus, or within the resolution of it, off the part's wall is
+no contact: the part's section is then the two branches of the graph over
+the wall's range (`v` for a segment, `u` for a wedge) where that graph's
+discriminant is positive all over a range holding the wall's exactly (Sturm
+counts, no extremum within the resolution of zero), or nothing where it is
+negative; on the wall it is `Degenerate`. A face on a torus none of whose
+loops winds holds its holes inside its outer loop on the cover (a wedge's
+over more than half a turn). `Solid::classify` decides a segment or a wedge
+(`decide::torus_part_location`: membership exactly, the distances from the
+wall within its range and from the end discs in rational intervals).
 
 ### Spline profiles (S9a.2)
 
@@ -1457,7 +1496,12 @@ height); its horizontal edges on a spline are its lifted restrictions.
   integration on faces bounded by B-spline sections misses by up to 1.7e-5,
   adaptively within 5.7e-9 but for two results whose approximated sections
   bound a region 3.7e-8 and 3.2e-8 off (unchanged at an accuracy of
-  1e-12); nine solids' counts change when unified.
+  1e-12); nine solids' counts change when unified. With the kernel's module
+  every result lies within the reference (its enclosures within 1e-9) and
+  the three degenerate cases are refused: 15 match and 14 are reviewed,
+  seven of them for entity counts too (OCCT's B-spline sections split at
+  its own points, the kernel's in exact pieces over `u` and `v` switched at
+  rational points; `ub_hole_cut`, a native match, by its counts alone).
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

@@ -24,6 +24,7 @@ use super::graph::between_ccw;
 use super::meet::{tangency, trig, CylPair, EdgeMeet, Pos};
 use super::model::*;
 use super::num::*;
+use super::torus_segment::Span;
 use super::turned::{middle, near_node, negative_chart, roots, square_sum, Chart, Form};
 use crate::identity::Role;
 use crate::profile::boolean::Operand;
@@ -36,12 +37,7 @@ use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-/// A torus meeting a plane in a way S9d.4a does not take.
-fn later(what: &'static str) -> Error {
-    Error::OutOfDomain(what)
-}
-
-fn loc_of(sides: &[Ordering]) -> Loc {
+pub(super) fn loc_of(sides: &[Ordering]) -> Loc {
     if sides.contains(&Ordering::Less) {
         Loc::Out
     } else if sides.contains(&Ordering::Equal) {
@@ -65,6 +61,12 @@ pub(super) struct Ring {
     pub(super) e: P2,
     /// The parallel seam's `(cos v0, sin v0)` (unit, rational).
     pub(super) v0: P2,
+    /// The part of the torus the solid is (S9d.4b.1).
+    pub(super) span: Span,
+    /// The wall's material outside the tube (an inside-out v-segment).
+    pub(super) reversed: bool,
+    /// The input's stored rims (a segment's or wedge's ends), per end.
+    pub(super) rims: [Option<crate::topology::Curve3>; 2],
 }
 
 impl Ring {
@@ -114,6 +116,9 @@ impl Ring {
 
     /// Where a point lies in the torus, pushed along directions in turn.
     pub(super) fn member(&self, f: &Affine, p: &QV, dirs: &[QV]) -> Loc {
+        if !matches!(self.span, Span::Whole) {
+            return self.part_member(f, p, dirs);
+        }
         let l = f.local_q(p);
         let mut s = self.value(&l).sign();
         if s == Ordering::Equal {
@@ -135,7 +140,7 @@ impl Ring {
 
     /// The side of the meridian seam (`plus`: counter-clockwise from `e`)
     /// and of the parallel seam (`upper`: from `v0` towards `v0 + pi`).
-    fn sides(&self, l: &QV) -> (Ordering, Ordering) {
+    pub(super) fn sides(&self, l: &QV) -> (Ordering, Ordering) {
         let e = [Qd::rat(self.e[0].clone()), Qd::rat(self.e[1].clone())];
         let v0 = [Qd::rat(self.v0[0].clone()), Qd::rat(self.v0[1].clone())];
         (
@@ -146,6 +151,9 @@ impl Ring {
 
     /// Where a point on the torus lies in a patch.
     pub(super) fn in_face(&self, f: &Affine, kind: FaceKind, p: &QV) -> Loc {
+        if !matches!(self.span, Span::Whole) {
+            return self.part_in_face(f, kind, p);
+        }
         let FaceKind::Patch(upper, plus) = kind else {
             unreachable!("a torus's faces are patches")
         };
@@ -166,7 +174,12 @@ impl Ring {
     /// Whether a meeting may be at a seam (on a meridian or parallel seam).
     pub(super) fn on_seam(&self, f: &Affine, p: &QV) -> bool {
         let (su, sv) = self.sides(&f.local_q(p));
-        su == Ordering::Equal || sv == Ordering::Equal
+        match self.span {
+            Span::Whole => su == Ordering::Equal || sv == Ordering::Equal,
+            // A segment's only seam is its meridian, a wedge's its parallel.
+            Span::Band(_) => su == Ordering::Equal,
+            Span::Wedge(_) => sv == Ordering::Equal,
+        }
     }
 
     /// A point's binary64 parameters on a patch: its angles from the seams
@@ -178,6 +191,17 @@ impl Ring {
         let (big, small) = (rational_f64(&self.big), rational_f64(&self.small));
         let fl2 = |v: &P2| [rational_f64(&v[0]), rational_f64(&v[1])];
         let (e, v0) = (fl2(&self.e), fl2(&self.v0));
+        // A segment's v, or a wedge's u, turned from the middle of its range
+        // (its range within half a turn of it).
+        let (mid_v, mid_u) = match &self.span {
+            Span::Whole => (None, None),
+            Span::Band(b) => (Some(b.mid), None),
+            Span::Wedge(w) => (None, Some(w.mid)),
+        };
+        let about = |a: f64, b: f64, mid: f64| {
+            let (c0, s0) = (mid.cos(), mid.sin());
+            mid + (b * c0 - a * s0).atan2(a * c0 + b * s0)
+        };
         move |p, kind| {
             let FaceKind::Patch(upper, plus) = kind else {
                 unreachable!("a patch")
@@ -201,8 +225,14 @@ impl Ring {
                     rel
                 }
             };
-            let u = angle(l[0], l[1], &e, plus);
-            let v = angle(rho - big, l[2], &v0, upper);
+            let u = match mid_u {
+                Some(m) => about(l[0], l[1], m),
+                None => angle(l[0], l[1], &e, plus),
+            };
+            let v = match mid_v {
+                Some(m) => about(rho - big, l[2], m),
+                None => angle(rho - big, l[2], &v0, upper),
+            };
             [u * big, v * small]
         }
     }
@@ -216,9 +246,9 @@ impl Ring {
 pub(super) struct TorusSec {
     /// The operand whose torus it lies on.
     pub(super) carrier: usize,
-    f: Affine,
-    big: R,
-    small: R,
+    pub(super) f: Affine,
+    pub(super) big: R,
+    pub(super) small: R,
     pub(super) plane: [R; 4],
     pub(super) over_v: bool,
     pub(super) plus: bool,
@@ -226,12 +256,15 @@ pub(super) struct TorusSec {
 }
 
 impl TorusSec {
-    fn ring(&self) -> Ring {
+    pub(super) fn ring(&self) -> Ring {
         Ring {
             big: self.big.clone(),
             small: self.small.clone(),
             e: [int(1), zero()],
             v0: [int(1), zero()],
+            span: Span::Whole,
+            reversed: false,
+            rims: [None, None],
         }
     }
 
@@ -284,7 +317,7 @@ impl TorusSec {
 
     /// The branch a point of the section lies on: the sign of the other
     /// angle's turn from the solution's middle direction.
-    fn branch(&self, l: &QV) -> Ordering {
+    pub(super) fn branch(&self, l: &QV) -> Ordering {
         let [a, b, m, _] = &self.plane;
         let ring = self.ring();
         if self.over_v {
@@ -405,6 +438,20 @@ impl TorusSec {
 /// Where a line meets the torus: the roots of its quartic, algebraic
 /// (`Q(alpha)`); a repeated root is a tangency.
 pub(super) fn line_torus(p: &QV, d: &V, f: &Affine, ring: &Ring) -> Result<EdgeMeet> {
+    let poly = line_quartic(p, d, f, ring)?;
+    let mut out = Vec::new();
+    for root in roots(&poly)? {
+        let g = Arc::new(Gen::new(poly.clone(), root));
+        let t = Qd::of(K::generator(&g));
+        let x = qadd(p, &qscale(d, &t));
+        out.push((Pos::T(t), x));
+    }
+    Ok(EdgeMeet::Points(out))
+}
+
+/// The torus's function along the line `p + t d` (`p` rational): a quartic
+/// in `t`.
+pub(super) fn line_quartic(p: &QV, d: &V, f: &Affine, ring: &Ring) -> Result<super::turned::Poly> {
     let lp = f.local_q(p);
     let (Some(l0), Some(l1), Some(l2)) = (lp[0].rational(), lp[1].rational(), lp[2].rational())
     else {
@@ -429,19 +476,11 @@ pub(super) fn line_torus(p: &QV, d: &V, f: &Affine, ring: &Ring) -> Result<EdgeM
         int(2) * &s1 * &s2,
         &s2 * &s2,
     ];
-    let poly = super::turned::trim(poly);
-    let mut out = Vec::new();
-    for root in roots(&poly)? {
-        let g = Arc::new(Gen::new(poly.clone(), root));
-        let t = Qd::of(K::generator(&g));
-        let x = qadd(p, &qscale(d, &t));
-        out.push((Pos::T(t), x));
-    }
-    Ok(EdgeMeet::Points(out))
+    Ok(super::turned::trim(poly))
 }
 
 /// The plane's coefficients in the torus's coordinates.
-fn plane_in(f: &Affine, p0: &V, m: &V) -> [R; 4] {
+pub(super) fn plane_in(f: &Affine, p0: &V, m: &V) -> [R; 4] {
     [
         dot(m, &f.x),
         dot(m, &f.y),
@@ -451,7 +490,7 @@ fn plane_in(f: &Affine, p0: &V, m: &V) -> [R; 4] {
 }
 
 /// `D_u` and `D_v` as quadratic forms in `(cos, sin)` of `u` and of `v`.
-fn discriminants(ring: &Ring, plane: &[R; 4]) -> (Form, Form) {
+pub(super) fn discriminants(ring: &Ring, plane: &[R; 4]) -> (Form, Form) {
     let [a, b, m, k] = plane;
     let (big, small) = (&ring.big, &ring.small);
     // D_u = r^2 (A^2 + mu^2) - (R A + kappa)^2, A = [0, alpha, beta].
@@ -475,8 +514,30 @@ fn vanishes(a: &Form) -> bool {
 }
 
 /// A plane's section of a torus (the torus operand `k`): rings over `u` or
-/// over `v`, loops of both kinds of graph with their switches, or apart.
+/// over `v`, loops of both kinds of graph with their switches, or apart. A
+/// segment's or wedge's section with a node, or one within the resolution,
+/// off its wall is its two branches over the wall's range where they are
+/// graphs there (`torus_segment::window`, S9d.4b.1).
 pub(super) fn plane_torus(
+    k: usize,
+    f: &Affine,
+    ring: &Ring,
+    p0: &V,
+    m: &V,
+    res: f64,
+) -> Result<CylPair> {
+    match plane_torus_whole(k, f, ring, p0, m, res) {
+        Err(Error::Degenerate(what)) if !matches!(ring.span, Span::Whole) => {
+            match super::torus_segment::window(k, f, ring, &plane_in(f, p0, m), res)? {
+                Some(pair) => Ok(pair),
+                None => Err(Error::Degenerate(what)),
+            }
+        }
+        r => r,
+    }
+}
+
+fn plane_torus_whole(
     k: usize,
     f: &Affine,
     ring: &Ring,
@@ -718,7 +779,7 @@ pub(super) fn plane_torus(
 
 /// No root of a graph's discriminant within a counter-clockwise range
 /// (clear of the chart's antipode): exact Sturm counts at its ends.
-fn verify(p: &super::turned::Poly, chart: &Chart, range: &[[Qd; 2]; 2]) -> Result<()> {
+pub(super) fn verify(p: &super::turned::Poly, chart: &Chart, range: &[[Qd; 2]; 2]) -> Result<()> {
     let (Some(t0), Some(t1)) = (chart.t_of(&range[0]), chart.t_of(&range[1])) else {
         return Err(Error::ComputationLimit(
             "a piece through a chart's antipode",
@@ -751,7 +812,8 @@ pub(super) fn model(solid: &Solid, op: Operand, seam: &R) -> Result<Prism> {
         unreachable!("a torus");
     };
     if high - low != std::f64::consts::TAU || *angle != std::f64::consts::TAU {
-        return Err(later("a Boolean of a torus segment or wedge (S9d.4b)"));
+        // A v-segment or a wedge (S9d.4b.1).
+        return super::torus_segment::model(solid, op, seam);
     }
     let f = Affine::new(&solid.frame)?;
     let t = &solid.topology;
@@ -767,6 +829,9 @@ pub(super) fn model(solid: &Solid, op: Operand, seam: &R) -> Result<Prism> {
         small: small.clone(),
         e: e.clone(),
         v0: v0.clone(),
+        span: Span::Whole,
+        reversed: false,
+        rims: [None, None],
     };
     // The wall's four patches: (upper, plus), (upper, minus), (lower,
     // plus), (lower, minus).

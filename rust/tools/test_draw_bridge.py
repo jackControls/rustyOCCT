@@ -220,6 +220,10 @@ class BridgeTests(unittest.TestCase):
         # R r^2.
         self.expect(boxes + "ptorus t 1.25 0.5\nttranslate t 2 2 1\nbcommon r a t\n"
                     "checkprops r -v [expr {0.625 * acos(-1) ** 2}] -deps 1e-6\n", "pass")
+        # A half turn of it inside the box (S9d.4b.1): their common is the
+        # wedge, pi^2 R r^2.
+        self.expect(boxes + "ptorus t 1.25 0.5 180\nttranslate t 2 2 1\nbcommon r a t\n"
+                    "checkprops r -v [expr {0.3125 * acos(-1) ** 2}] -deps 1e-6\n", "pass")
         # A coaxial pipe cut from a frustum (S9d.3b.1): the frustum less the
         # core, 14 pi / 3 - pi / 2.
         self.expect(boxes + "pcone k 2 1 2\npcylinder c 0.5 4\nttranslate c 0 0 -1\nbcut r k c\n"

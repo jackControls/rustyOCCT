@@ -767,11 +767,17 @@ impl Prism {
             Surf::Torus => {
                 let ring = self.ring.as_ref().expect("a torus");
                 let g = ring.gradient(&self.f.local_q(p));
-                [0, 1, 2].map(|j| {
+                let n = [0, 1, 2].map(|j| {
                     g[0].scale(&self.f.row(0)[j])
                         .add(&g[1].scale(&self.f.row(1)[j]))
                         .add(&g[2].scale(&self.f.row(2)[j]))
-                })
+                });
+                // An inside-out segment's material lies outside the tube.
+                if ring.reversed {
+                    n.map(|x| x.neg())
+                } else {
+                    n
+                }
             }
             Surf::Cone { b, k } => {
                 // The gradient of u^2 + v^2 - (b + k w)^2 (halved).

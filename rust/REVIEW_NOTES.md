@@ -2683,6 +2683,63 @@ Decisions for S9, recorded before its code (2026-09-28):
     B-spline sections, up to 1.7e-5; adaptively within 5.7e-9 but for two
     results whose approximated sections bound a region 3.7e-8 and 3.2e-8
     off), nine solids' counts change when unified. S9d.4b.1's kernel next.
+  * **S9d.4b.1 implemented** (`solid/boolean/curved/torus_segment.rs`):
+    torus v-segments and wedges against polyhedral prisms, all 29 fixtures
+    as the reference (25 solid within the kernel's enclosures, one empty,
+    the 3 degenerate refused), every history checked, results deterministic
+    and moved rigidly; `compare_torus_segment_boolean.py` 15 matches and 14
+    reviewed (the capture's 13 measures, seven with entity counts: OCCT's
+    B-spline sections split at its own points, the kernel's sections in
+    exact pieces over `u` and `v`; and `ub_hole_cut`, a native match, by its
+    counts alone), every other comparison unchanged. Amendments, from the
+    implementation: (a) a segment's membership by the bands between its
+    critical heights (its ends and `+-r`): in each the tube's outer and
+    inner points at a height lie on the arc or not all along (decided once,
+    exactly), so a point's side is exact in `t^2 - R^2`, the torus's quartic
+    and its height (the tube's disc, `t < R + q`, `t < R - q` or nothing),
+    pushed at first order as the whole torus's; a wedge's by the torus and
+    its half-planes (their common within a half turn, their union beyond);
+    (b) the wall in two patches, cut at the ends instead of a seam where an
+    end lies (a segment's at its meridian seam, a wedge's at its parallel
+    seam); a segment's rims its end planes' rings over `u` (S9d.4a's
+    `TorusSec`; the halves' tangent `w = +-r` circles of radius `R`), a
+    wedge's its end half-planes' rings over `v` (surds of `cos^2 + sin^2` of
+    its rounded end direction), model edges now as conics and circles are,
+    meeting a plane where the two planes' line meets the torus on the rim's
+    branch (a repeated root on the other ring or circle no contact), rounded
+    as the input's circles; (c) an inside-out segment's wall (the inner
+    half) has its material outside the tube: its normals and its
+    parameters' orientation turn; (d) the decisions' tangency is
+    `Degenerate` on the part's wall only: a plane tangent to the torus, or
+    within the resolution of it, off the wall is no contact, the part's
+    section then its two branches over the wall's range (`v` for a segment,
+    `u` for a wedge) where that graph's discriminant is positive all over a
+    range holding the wall's exactly (Sturm counts, no extremum within the
+    resolution of zero), or nothing where it is negative (`oh_side_common`:
+    the box's wall `x = 1` touches the inner equator, off the outer half;
+    `qw_box_*`: the wall `y = -1` touches it behind the quarter turn's
+    start; the evidence's margins count only contacts on the wall); (e)
+    `Solid::classify` decides segments and wedges
+    (`decide::torus_part_location`: membership exact, the distances from the
+    wall within its range and from the end discs in rational intervals),
+    which every result of one needs (a result's classification asks its
+    inputs'); (f) a torus face none of whose loops winds holds its holes
+    inside its outer loop on the cover (a three-quarter wedge's fused wall);
+    (g) a ray missing a whole sphere or torus crosses a face on it with
+    loops no times, and a Boolean whose result the validator refuses only
+    for an undecided containment (a cavity in a solid bounded by a sphere or
+    torus face with loops, whose rays are not decided, as before) is
+    `ComputationLimit`, not `InvalidTopology`; (h) the fuzz target's tool is
+    a v-segment or a wedge when its spline byte lies in `148..160` (its bits
+    2 and 3: the outer or inner half, a wedge of a quarter, a half, three
+    quarters or 2 radians of a turn, or a band `0.5..2.25` or `-2.5..-0.25`,
+    which by the flags' bits 3 and 4; `144..148` stay whole tori): 68 of the
+    corpus's 1,419 boolean inputs now decode to parts; (i) the DRAW bridge
+    evaluates a half turn inside a box. The corpus and the regressions
+    replay with debug assertions without a failure, as do 6,579 variants of
+    corpus inputs made parts (their spline byte and flags set), which found
+    (f) and (g) (two kept as regressions, `fuzz/regressions/README.md`).
+    Pending: the DRAW survey, the campaign.
 
 ### Parallel tracks
 

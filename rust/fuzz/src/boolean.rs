@@ -9,8 +9,8 @@
 //! cavity among several solids, S9a.2's, or arcs in frames with different
 //! axes, S9c's; S9b turns, leans or tilts the tool's frame, S9c.2a stands it
 //! on its side (perpendicular cylinders), S9d.1 makes it a sphere, a cap or
-//! a zone, S9d.3a a cone or frustum, S9d.4a a whole torus; a result
-//! thinner than the
+//! a zone, S9d.3a a cone or frustum, S9d.4a a whole torus, S9d.4b.1 a
+//! torus v-segment or wedge; a result thinner than the
 //! resolution or touching itself; an undecided comparison); each result
 //! validates as it is built and its history passes the independent check
 //! (debug builds); when all three succeed their volumes agree,
@@ -137,12 +137,31 @@ pub fn check_boolean(data: &[u8]) {
         tool
     } else if (144..160).contains(&spline_byte) {
         // S9d.4a: a whole torus about the tool's frame, its radii by the
-        // byte's low bits.
+        // byte's low bits; S9d.4b.1: a v-segment or a wedge by its next two
+        // (0 whole, as before), which of them by the flags' fourth and fifth.
         let big = 0.75 * s2;
         let small = big * [0.25, 0.375, 0.5, 0.625][usize::from(spline_byte % 4)];
         let turn = std::f64::consts::TAU;
+        let (half, pi) = (std::f64::consts::FRAC_PI_2, std::f64::consts::PI);
+        let pick = usize::from((flags >> 3) % 4);
+        let (low, high, angle) = match (spline_byte >> 2) % 4 {
+            0 => (0.0, turn, turn),
+            // The outer and inner halves (their end planes tangent to the
+            // torus along their rings, the inner inside out).
+            1 => {
+                let (low, high) = [(-half, half), (half, 3.0 * half)][pick % 2];
+                (low, high, turn)
+            }
+            2 => (0.0, turn, [half, pi, 3.0 * half, 2.0][pick]),
+            // Bands from the axis to the tube's outer side with its cap,
+            // and from its inner side below.
+            _ => {
+                let (low, high) = [(0.5, 2.25), (-2.5, -0.25)][pick % 2];
+                (low, high, turn)
+            }
+        };
         let Ok((tool, _)) =
-            Solid::torus_with(OperationId(2), fb, big, small, 0.0, turn, turn, tolerance)
+            Solid::torus_with(OperationId(2), fb, big, small, low, high, angle, tolerance)
         else {
             return;
         };
