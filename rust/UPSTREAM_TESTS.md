@@ -143,8 +143,8 @@ group, and stale success records are removed before each run.
 | `boolean/bfuse_complex/J5` | Viewer skipped | Viewer skipped | Two equal cylinders crossed at right angles: their fuse's crossing ellipses (S9c.1) |
 | `boolean/bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`, `boptuc_simple`: `U1`, `V3`, `Y5`, `Z7`, `ZA2`, `ZA4`, `ZA7`, `ZB2`, `ZB4`, `ZB6`, `ZB9`, `ZC4`, `ZO7`, `ZO8` (56 cases); `bopcommon_simple/ZC5`, `ZD8`, `ZE1`, `boptuc_simple/ZC5`, `bopfuse_simple/ZD8`, `ZE1` | Viewer skipped | Viewer skipped | `bop` and its operations on a `pcylinder` and a box in frames with different axes (the box turned by `trotate` about z by 30, 60 or -30 degrees, 40 of them sized by `dset`; in `ZC5` 45 degrees about a horizontal axis through its corner; in `ZO7` and `ZO8` the cylinder turned about its own axis, `ZO8` by a quarter turn), or two equal cylinders whose axes cross at right angles (`ZD8`, `ZE1`): `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9c.1's prisms with arcs in any position) |
 | `boolean/bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`, `boptuc_simple`: `ZE3`, `ZE4`, `ZE5`, `ZE6` (16 cases); `bopfuse_simple/ZC5`, `bopcut_simple/ZC5` | Viewer skipped | Viewer skipped | `bop` and its operations on a `pcylinder` of radius 0.5 through one of radius 1, their axes crossing at right angles (a quarter turn about x, which the adapter turns exactly; in `ZE4` to `ZE6` then turned about its own axis by one to three quarter turns), meeting in two quartic rings; the fuse and cut of `ZC5` (above), whose cylinder wall has holes bounded by ellipse arcs the validator now places: `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9c.2a's cylinders in exact frames) |
+| `boolean/bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`, `boptuc_simple`: `ZF2`, `ZF3` (8 cases) | Viewer skipped | Viewer skipped | `bop` and its operations on two equal parallel cylinders, the second moved 1 along x, turned -120 or 120 degrees about its own axis and then 60 about z (a turned frame, the axes 1 apart), their walls meeting in generatrices at an ellipse's and a circle's crossings on the exact models: `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9c.2b.2's parallel cylinders in turned frames; `bopfuse_simple/ZF2` was S9c.2b.1's sentinel for them) |
 | `boolean/bopfuse_simple/ZD9` | Unsupported | Viewer skipped | Equal cylinders whose axes cross at right angles, the second turned 60 degrees about its own axis: a frame not exactly orthonormal, the models touching where their common extent ends, two branches of the section within the resolution of a node (S9c.2b.1's `Degenerate`; S9c.2a refused it as cylinders in turned frames) |
-| `boolean/bopfuse_simple/ZF2` | Unsupported | Viewer skipped | Equal parallel cylinders, the second moved 1 along x, turned -120 degrees about its own axis and 60 about z: parallel cylinders in a turned frame, their walls meeting in generatrices at an ellipse's and a circle's crossings (S9c.2b.2) |
 | `boolean/bopfuse_simple/ZE7`; `bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`: `T7`, `Y2` | Unsupported | Viewer skipped | A cylinder of radius 0.5 through one of radius 1 at right angles with its axis moved 0.5 off, the walls touching at a point (a figure-eight section); a box turned 135 degrees about z with two corners on a cylinder within rounding: a tangency between the inputs, a piece thinner than the resolution (S9c.2a's `Degenerate`; S9c.1 failed on `T7` and `Y2`) |
 | `boolean/bopfuse_simple/U2`, `S2`, `S3`, `ZD5`, `bopcut_simple/ZD8` | Unsupported | Viewer skipped | A box turned a quarter turn, its wall tangent to a cylinder; a box turned 45 or -45 degrees, its corner on a cylinder within rounding; a cylinder on an equal one turned a quarter turn about their axis; one of two equal crossed cylinders cut from the other: a tangency between the inputs, two meetings within rounding along an arc, a piece thinner than the resolution, a meeting at every seam tried (their rims one circle), solids touching at a vertex (S9c.1's `Degenerate`) |
 | `boolean/bopcommon_simple/C3`, `bopcut_simple/F6`, `G8`, `bopfuse_simple/N6` | Unsupported | Viewer skipped | A box turned by 45, 30 or 115 degrees with a corner on the other box's corner, wall or edge within rounding: a face thinner than the resolution, a face using an edge both ways, a face touching itself at a vertex, two solids touching at a point (S9b.1's `Degenerate`) |
@@ -156,11 +156,11 @@ group, and stale success records are removed before each run.
 | `boolean/bopcommon_simple/S5`, `bopcut_simple/ZC7`, `S4`, `bopfuse_simple/U7`, `B3`, `boptuc_simple/R1` | Unsupported | Viewer skipped | Box corners on or tangent to a cylinder, boxes touching along an edge: pieces thinner than the resolution, results touching themselves (at a point or along an edge) or each other, a hole touching its boundary (the kernel's `Degenerate`) |
 | `boolean/bcut_simple/G8` | Unsupported | Viewer skipped | A semi-infinite prism of an exploded face (`explode`, `SemiInf`) |
 
-There are **five original geometry tests passing on both backends** and 826
+There are **five original geometry tests passing on both backends** and 834
 more evaluated on both with their image commands recorded (`buc60769`,
 S7's `lowalgos/intss` cases `bug23177_1`, `bug23177_2` and `bug24648`, and
-822 Boolean cases of S9a, S9a.2, S9b.1, S9b.2, S9c.1 and S9c.2a; S9c.2b.1
-adds none).
+830 Boolean cases of S9a, S9a.2, S9b.1, S9b.2, S9c.1, S9c.2a and S9c.2b.2;
+S9c.2b.1 adds none).
 S8e registers the upstream `bsplit` group as capability sentinels: `boolean/splitter/A5`
 and `B5` and the 22 `bugs` cases that call `bsplit` (with `bug29333_1` and
 `bug29333_2`, registered before). They need S9's general builder: tools that
@@ -534,6 +534,55 @@ The sentinels were checked again: `bopfuse_simple/ZD9` is refused as a
 near node now (its purpose says so), the others as before. One sentinel
 is added: `bopfuse_simple/ZF2` (parallel cylinders in turned frames,
 S9c.2b.2, the reason `ZD9` held until now). The ledger does not change.
+
+**S9c.2b.2's algebraic vertices in the Boolean group.** The same 1,802
+cases were run again on both backends after S9c.2b.2 (2026-09-28,
+`survey_upstream_tests.py --boolean`, the public dataset read through
+`--data-dir`; no case loads it). Native DRAW's statuses are unchanged
+(1,579 evaluated, 223 not forwarded). Rust evaluates 830, each evaluated
+by native DRAW too, `viewer_skipped` on both, and each is registered: 8
+more than S9c.2b.1's survey, `ZF2` and `ZF3` of the four `bop*_simple`
+grids (equal parallel cylinders, the second moved 1 along x and turned by
+-120 or 120 degrees about its own axis and then 60 about z, so the axes
+are 1 apart). On their exact models the turned wall's cross-section is an
+ellipse, and the walls meet in generatrices through its crossings with the
+first cylinder's circle. The areas agree with native DRAW's to its printed
+digits (fuse 43.62, cut and `btuc` 28.9592, common 19.2119) and with the
+closed forms of two unit discs 1 apart (lens `2 pi / 3 - sqrt(3) / 2`,
+arcs of `2 pi / 3` inside the other disc) within 6e-15. No case fails on
+Rust, and no other status or reason changes. S9c.2's general message
+(two cylinders meeting in curves other than lines and conics) no longer
+occurs among the Boolean cases.
+The 749 cases native DRAW evaluates and Rust does not, by reason:
+
+| Reason | Cases | Since S9c.2b.1's survey |
+| --- | --- | --- |
+| Solids other than prisms (spheres, cones, tori): refused by the kernel 255, by the adapter 61 (a solid other than a prism sharing ids with the other argument) | 316 | 0 |
+| `Degenerate`, S9c.2b.1's: two cylinders' section within the resolution of a node (equal cylinders in a turned frame whose axes meet: `ZD9`, `ZE2`) | 8 | 0 |
+| A stack with cylindrical walls as a Boolean argument (S9c) | 4 | 0 |
+| An arc ending off its circle on exact models (`bfuse_simple/E1`, S9c) | 1 | 0 |
+| `Degenerate`, S9c.1's: a piece thinner than the resolution (a box's corner on the cylinder within rounding) | 40 | 0 |
+| `Degenerate`, S9c.1's: two meetings within rounding along an arc (the same) | 16 | 0 |
+| `Degenerate`, S9c.1's: a meeting at every seam tried (two stacked cylinders turned about their axis, their rims one circle) | 12 | 0 |
+| `Degenerate`, S9c's: a tangency between the inputs (a box's wall tangent to the cylinder after a quarter turn 8; cylinders of radii 1 and 0.5 touching at a point, S9c.2a's, 16) | 24 | 0 |
+| `Degenerate`, S9c.1's: solids touching at a vertex (a cut of crossed cylinders) | 4 | 0 |
+| `Degenerate`, S9b.1's: a face thinner than the resolution | 99 | 0 |
+| `Degenerate`, S9b.1's: a face using an edge both ways | 9 | 0 |
+| `Degenerate`, S9b.1's: two solids touching at a point 1, a face touching itself at a vertex 1 | 2 | 0 |
+| `Degenerate`: a result thinner than the resolution | 103 | 0 |
+| `Degenerate`: a profile piece thinner than the resolution | 24 | 0 |
+| `Degenerate`: a result touching itself at a point | 11 | 0 |
+| `Degenerate`: a result touching itself along an edge | 6 | 0 |
+| `Degenerate`: a result's hole outside its boundary 8, two results touching 4 | 12 | 0 |
+| `atan2` in `dset`, which the adapter does not evaluate | 48 | 0 |
+| `explode` without the native selector (a Boolean's result into solids 4, a `pcylinder` into faces 4, a face of a box 1) | 9 | 0 |
+| A `pcylinder` on a plane `pl1` | 1 | 0 |
+
+Parallel cylinders in turned frames (S9c.2b.2), 8 cases before, are gone
+from the reasons. The sentinels were checked again:
+`bopfuse_simple/ZF2` evaluates and is registered so (its purpose says
+why); no sentinel replaces it, since its reason no longer occurs. The
+others are refused as before. The ledger does not change.
 
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and

@@ -835,17 +835,18 @@ unified faces where OCCT has 8). The derived cases `boolean_prisms`,
 `boolean_stacks` (a step, a pocket, a box cut in two by a slab, a closed
 cavity, a tool through a round wall) and `boolean_polyhedra` (quarter
 turns, a bar turned 45 degrees through a box, a tilted bar cutting a box
-in two, a turned box inside another) and 822 cases of upstream's
+in two, a turned box inside another) and 830 cases of upstream's
 `boolean` group (86 of them stacks, 300 polyhedra of two boxes, one
 turned, 35 pockets cut one after another, a stack or a polyhedron given
 to the next `bcut`, 65 of S9c.1's prisms with arcs in any position: a
 cylinder and a turned box, a cylinder turned about its axis, equal
-cylinders crossed at right angles, and 16 of S9c.2a's: a cylinder of
-radius 0.5 through one of radius 1 at right angles, two quartic rings)
-evaluate on both backends; none fails on the kernel, and S9c.2b.1 adds
-none. Of the upstream cases in frames with different axes the rest are
-refused: parallel cylinders in turned frames S9c.2b.2 takes, solids
-other than prisms, S9b.1's, S9c.1's, S9c.2a's and S9c.2b.1's
+cylinders crossed at right angles, 16 of S9c.2a's: a cylinder of radius
+0.5 through one of radius 1 at right angles, two quartic rings, and 8 of
+S9c.2b.2's: equal parallel cylinders, one moved and turned off whole
+quarter turns, meeting in generatrices) evaluate on both backends; none
+fails on the kernel, and S9c.2b.1 adds none. Of the upstream cases in
+frames with different axes the rest are refused: solids other than
+prisms, S9b.1's, S9c.1's, S9c.2a's and S9c.2b.1's
 `Degenerate` (a turned box's corner on another's wall, edge or corner, or
 on a cylinder, within rounding; a wall tangent to a cylinder; two
 cylinders touching at a point; equal cylinders in a turned frame whose

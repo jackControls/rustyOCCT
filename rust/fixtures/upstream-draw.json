@@ -261,6 +261,8 @@
     "tests/boolean/bopcommon_simple/ZE4": "9481895176edeb4d2d7e85d414a68701e09baf0e2b19a7f260d9d74c576397ce",
     "tests/boolean/bopcommon_simple/ZE5": "fed840981097e465da84f27c498ac640d372f580541f6512aa5371ac91ddbece",
     "tests/boolean/bopcommon_simple/ZE6": "08a2468ad630d77b2c4580e29ecf2418a97406f92f9e5123357ed9a2565ddfe6",
+    "tests/boolean/bopcommon_simple/ZF2": "182885611733e970a96048e329a2421750f7b12f3acddea2a9a66623a7b1a8a7",
+    "tests/boolean/bopcommon_simple/ZF3": "f3d5137e26fe0abd3f6ab85b003ebac415ba11186a5af94d615e518a2283d747",
     "tests/boolean/bopcommon_simple/ZF4": "f9f1b609c74b0fba98f68da8cd2095d27e402733fe8498346a462db9acb31069",
     "tests/boolean/bopcommon_simple/ZL6": "3d506ac5cc37c22022f6826f75f4b5158e273106455c438eb3cdbd3a91ac68ad",
     "tests/boolean/bopcommon_simple/ZN3": "453e172b346fa4039b99bef7d60398b07c1d40de5fc9a18b5c6aafed5acc99db",
@@ -469,6 +471,8 @@
     "tests/boolean/bopcut_simple/ZE4": "c8003ead387d8b196655cccc40373a4ceb9c0877c4874e2849d9ea2d87116c2e",
     "tests/boolean/bopcut_simple/ZE5": "414611b463830d1cd69721a127710375e7a5db6d5784f2bf88cf3076c5e838e9",
     "tests/boolean/bopcut_simple/ZE6": "6eb5ef8138c5ce4658f8aa361ef125c13deffbaa352731e44b31d7dde6ef8467",
+    "tests/boolean/bopcut_simple/ZF2": "8790cdf59362908afa2bbeba34cfbe575820dda11f599338a9828877074ca47f",
+    "tests/boolean/bopcut_simple/ZF3": "8f17a0bec88451a7c804a42c53c5e892560a6756ccfffad821f7267bc525ed53",
     "tests/boolean/bopcut_simple/ZF4": "ca0e61ea9508e8c2fb0867861c88ae891f4cac3b5f4349fb2093e893e1e98346",
     "tests/boolean/bopcut_simple/ZN3": "10bf2981a9aec383ae9820dd538c8c385e2a6d7c3ea3a6f4de719c900980c64c",
     "tests/boolean/bopcut_simple/ZN4": "24fcd5ad0f1a2435636bac933394cc2ddc00565893bd2c4845d826e926eedd42",
@@ -657,6 +661,7 @@
     "tests/boolean/bopfuse_simple/ZE6": "dc2c0528df85d65c1ff5dd7c24f2c5b4e800bbbd9e2b7a211309d8bd7fc6d493",
     "tests/boolean/bopfuse_simple/ZE7": "bca4de87def5c4b23e9a752cccbe179c6c59e1fbc0de718b356a0841933123e6",
     "tests/boolean/bopfuse_simple/ZF2": "5a6bda9dcaae592490b73ccd1ea254af19bb435c4e18b9af91bdc57ca0e289a2",
+    "tests/boolean/bopfuse_simple/ZF3": "fe5ef9e5350b979d1595a7e075f9e6e5f344ce74ac12f6850b49bd9b8ee492a0",
     "tests/boolean/bopfuse_simple/ZF4": "7355d16e96889c2c318c41dcb7d3197b60069853f6c9d3db9d4c46629e98a4b5",
     "tests/boolean/bopfuse_simple/ZN3": "18e989bcd62509a71b0fc868c5a02e1379c15f160a400cd7170c4135a05f1237",
     "tests/boolean/bopfuse_simple/ZN4": "7b35d664b74c1e74564eaad69414842c673f89ecf9973e372844ee829a8e070f",
@@ -838,6 +843,8 @@
     "tests/boolean/boptuc_simple/ZE4": "2e01069d6abc648169d5a4196867410ab4b6df4766c3978b69f8e0ef7fae613a",
     "tests/boolean/boptuc_simple/ZE5": "2165cfd3d90248f33c6bb1fc40a9b7a9dec1aaab1357edc3417b151a1d40736e",
     "tests/boolean/boptuc_simple/ZE6": "c86410006779be488d2054863c6278e2776d68510f7cafcff0a038ccc4785753",
+    "tests/boolean/boptuc_simple/ZF2": "8e952ff3aa19214ed4de0820a85d8c1faf30f793196c9a2cf425bd9f30f1c431",
+    "tests/boolean/boptuc_simple/ZF3": "81b120a2f218b5df4b7fd62558c3944eba52e38faf6569c26b65b6ad8a042ead",
     "tests/boolean/boptuc_simple/ZF4": "dee82a15736d998a9fcb8aa65f4addef8e1fc6d0c696d27b6d67da03f5d88e51",
     "tests/boolean/boptuc_simple/ZN3": "ca29039daf7a23240c4ee54078a32265a84c73031993af5c474624e78c1e6082",
     "tests/boolean/boptuc_simple/ZN4": "22187faa639e26763f6fcfa6470960757e86f59ace4e31292969a3d854dad962",
@@ -6428,9 +6435,51 @@
     },
     {
       "path": "tests/boolean/bopfuse_simple/ZF2",
-      "expected_rust": "unsupported",
+      "expected_rust": "viewer_skipped",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9c.2b.1's Boolean group, a capability sentinel: two equal parallel cylinders, the second moved 1 along x, turned -120 degrees about its own axis and then 60 degrees about z: a turned frame, their walls meeting in generatrices at the crossings of an ellipse and a circle on the exact models: parallel cylinders in turned frames (S9c.2b.2)."
+      "purpose": "S9c.2b.2: bop and bopfuse of two equal parallel cylinders, the second moved 1 along x, turned -120 degrees about its own axis and then 60 degrees about z (a turned frame, the axes 1 apart): their walls meet in generatrices at the crossings of an ellipse and a circle on the exact models, their points ordered by height: parallel cylinders in turned frames; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZF3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.2b.2: bop and bopfuse of two equal parallel cylinders, the second moved 1 along x, turned 120 degrees about its own axis and then 60 degrees about z (a turned frame, the axes 1 apart): their walls meet in generatrices at the crossings of an ellipse and a circle on the exact models, their points ordered by height: parallel cylinders in turned frames; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZF2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.2b.2: bop and bopcut of two equal parallel cylinders, the second moved 1 along x, turned -120 degrees about its own axis and then 60 degrees about z (a turned frame, the axes 1 apart): their walls meet in generatrices at the crossings of an ellipse and a circle on the exact models, their points ordered by height: parallel cylinders in turned frames; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZF3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.2b.2: bop and bopcut of two equal parallel cylinders, the second moved 1 along x, turned 120 degrees about its own axis and then 60 degrees about z (a turned frame, the axes 1 apart): their walls meet in generatrices at the crossings of an ellipse and a circle on the exact models, their points ordered by height: parallel cylinders in turned frames; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZF2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.2b.2: bop and bopcommon of two equal parallel cylinders, the second moved 1 along x, turned -120 degrees about its own axis and then 60 degrees about z (a turned frame, the axes 1 apart): their walls meet in generatrices at the crossings of an ellipse and a circle on the exact models, their points ordered by height: parallel cylinders in turned frames; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZF3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.2b.2: bop and bopcommon of two equal parallel cylinders, the second moved 1 along x, turned 120 degrees about its own axis and then 60 degrees about z (a turned frame, the axes 1 apart): their walls meet in generatrices at the crossings of an ellipse and a circle on the exact models, their points ordered by height: parallel cylinders in turned frames; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZF2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.2b.2: bop and boptuc of two equal parallel cylinders, the second moved 1 along x, turned -120 degrees about its own axis and then 60 degrees about z (a turned frame, the axes 1 apart): their walls meet in generatrices at the crossings of an ellipse and a circle on the exact models, their points ordered by height: parallel cylinders in turned frames; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZF3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.2b.2: bop and boptuc of two equal parallel cylinders, the second moved 1 along x, turned 120 degrees about its own axis and then 60 degrees about z (a turned frame, the axes 1 apart): their walls meet in generatrices at the crossings of an ellipse and a circle on the exact models, their points ordered by height: parallel cylinders in turned frames; checkprops -s and checkshape; its checkview is recorded."
     }
   ],
   "derived_sources": {
