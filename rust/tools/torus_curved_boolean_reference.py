@@ -70,7 +70,9 @@ tangent to the section: a turning point of the meeting curve in that
 family), where roots of two surfaces cross (the curve through an edge of the
 other input), and where a root reaches a curve's end (a planar face's chord,
 a meridian's pole, an arc's end). Events are found on a scan of 360 curves
-per family and located by bisection on the structure to 1e-35 of the range;
+per family and located by bisection on the structure to 1e-35 of the range
+(1e-20 where both halves differ at that scale: two surfaces tangent along an
+edge, a stadium's wall and arc, whose roots coincide to second order there);
 the family's own kinks (a profile's vertices across a chord family, an
 arc's ends) are breakpoints too. Every quadrature node's structure is
 checked against its interval's (`missed`): a missing event is an error, not
@@ -84,8 +86,8 @@ identity `area(fuse) + area(common) = area(A) + area(B)`.
 
 **Solids** by a sweep of the torus's normal slices (S9d.4a's: the chart
 planes `w = s`, the torus's section the annulus between `R - q` and `R + q`,
-`q = sqrt(r^2 - s^2)`), the other input's section along 720 rays from the
-axis in each of 240 slices: each ray's intervals of the operation's section
+`q = sqrt(r^2 - s^2)`), the other input's section along 512 rays from the
+axis in each of 200 slices: each ray's intervals of the operation's section
 (the annulus's and the other's, from the roots of its surfaces along the ray
 in binary64, classified at midpoints), intervals joined where they overlap
 on adjacent rays of a slice, at the axis, and on the same ray of adjacent
@@ -95,12 +97,14 @@ Boolean. The fuse is one solid where the inputs overlap, two otherwise; the
 sweep's must agree.
 
 **Margins.** The least sine between the two inputs' surfaces where they
-meet (at the scanned curves' roots on the torus's tube circles), the least
-distance between surfaces that come close without meeting (the other's
-function's critical values along every scanned curve, `|f| / |grad f|`,
-where no root is near), the least sine at which an edge (a prism's or a
-cone's rim) crosses the torus and its least distance from tangency with it,
-and a cone's apex's distance from the other input.
+meet (at the first family's scanned curves' class boundaries), the least
+distance from a face to a surface of the other input it never crosses (the
+surface's function's critical values along the scanned curves, `|f| / |grad
+f|`, where the point's foot on the surface lies on the other's face), the
+least sine at which an edge (a prism's rims and vertical edges, a cone's
+rims) crosses the torus and its least distance from it where stationary,
+and the vertices' (a cone's apex, a prism's corners) distances from the
+other input.
 
 `rows(obj, operation, tool)` gives `result N volume area cx cy cz` (totals
 over the N solids, world coordinates) or `empty`, as the S9a to S9d.4b.1

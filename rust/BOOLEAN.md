@@ -1502,6 +1502,75 @@ height); its horizontal edges on a spline are its lifted restrictions.
   seven of them for entity counts too (OCCT's B-spline sections split at
   its own points, the kernel's in exact pieces over `u` and `v` switched at
   rational points; `ub_hole_cut`, a native match, by its counts alone).
+* **S9d.4b.2 evidence (a whole torus against prisms with arcs, spheres,
+  cones and tori), before its kernel code.**
+  `torus_curved_boolean_reference.py` (mpmath, 40 digits) takes each input's
+  exact model (the torus S9d.4a's, the cone S9d.3a's, the sphere S9d.1's, a
+  convex prism of segments and arcs S9d.2's), each a set of exact surfaces
+  of degree one, two or four with a membership test, and sweeps every face
+  of both inputs by two families of circles and lines: the tori's tube
+  circles and parallels, the sphere's meridians and parallels, a cylinder's
+  or cone's rulings and sections, a flat wall's generatrices and rows, a
+  planar face's chords in two directions. Along a curve each surface of the
+  other input is a trigonometric polynomial of its degree (from `2d + 1`
+  samples; real roots the unit-circle roots of `z^d f`) or a line's
+  polynomial; the curve is cut at the roots (a tangency's double root split
+  by rounding dropped), each piece classified inside it, and the pieces'
+  areas, volumes and first moments integrated by the divergence theorem
+  (closed forms but the area element, by 24-point Gauss-Legendre). The
+  outer parameter is integrated between its events, where the curves'
+  structure (their classes with the surfaces bounding them) changes: a scan
+  of 360 curves, bisection to 1e-35 (1e-20 on a stadium's tangent edges,
+  where two surfaces' roots coincide to second order), every quadrature
+  node's structure checked against its interval's. Results: common the
+  `in` pieces of both, fuse the `out` pieces, cut the object's `out` and the
+  tool's `in` reversed. Solids by sweeping the torus's normal slices (its
+  annuli) along 512 rays from the axis in 200 slices, intervals joined where
+  they overlap. `generate_torus_curved_boolean_fixtures.py --check` writes
+  `boolean-torus-curved-cases.txt`, `-expected.tsv` and `-frames.tsv` with
+  44 cases (10 fuses, 16 cuts, 18 commons; 39 solid, 2 empty, 3
+  degenerate; 41 in exact frames) on the torus of radii 5/2 and 1: coaxial
+  cylinders through the hole (all three; the pipe first) and around the
+  tube, coaxial spheres about the centre and on the axis, a coaxial cone and
+  a coaxial torus, all meeting in circles; a rod across the torus (the
+  common two solids, the rod less the torus three), a vertical cylinder and
+  a frustum through the tube, a stadium prism across it, a sphere on the
+  tube's top (all three) and one swallowing the tube (either first), a cone
+  in `LEAN` whose apex lies in the tube, a torus linked with it apart (the
+  fuse two solids), one ringing the tube, one of a parallel axis (the common
+  two solids) and one linked through the tube; a pin and a ball in the hole
+  apart; a coaxial pipe and a sphere with the torus in `TILT`; `degenerate`
+  a cylinder tangent along the outer equator, a sphere touching the tube at
+  a point and a coaxial torus touching along a circle. Checks: closed forms
+  of 23 of the 27 pairs by one quadrature along the axis of the annulus
+  against the other's sections (lenses of signed discs about a parallel
+  axis with each circle's angle inside the other, walls by their own
+  elements and tori by their latitudes; a rod's strip by rectangle-in-disc
+  antiderivatives; sums apart) within 7.5e-39 in exact frames and 4.6e-17
+  in turned ones; every operation two ways (each face's two families)
+  6.6e-35, both inputs from their faces 1.4e-39 of their closed forms,
+  inclusion and exclusion 1.1e-40, the area identity 1.4e-39, Monte Carlo
+  2.8 standard errors, the degenerate pairs 3.8e-21; no near coincidence
+  outside them, every other pair's surfaces meeting at a sine of at least
+  0.42, 0.066 apart where they do not, its edges crossing the torus at a
+  sine of 0.62 and 0.031 from tangency, the apex 0.13 inside.
+  `test_torus_curved_boolean_reference.py` checks the closed forms against
+  Pappus's theorems (the torus, its part inside a coaxial pipe through the
+  hole) and the reference on that pipe, a ball holding the torus, a ball
+  in the hole and the rod's pieces. No protocol row is new: the kernel's
+  test support and `occt_boolean_oracle.cpp` already built a torus, sphere,
+  cone or prism on either side (every older capture reproduces).
+  `compare_torus_curved_boolean.py` reproduces
+  `occt-boolean-torus-curved-preimplementation`
+  (`rust_torus_curved_boolean_exists` false, keyed on
+  `solid/boolean/curved/torus_curved.rs`; the kernel's probe `unsupported`
+  on all 44, `OutOfDomain("a torus against a curved face (S9d.4b)")`):
+  every result valid with the reference's solid count; 24 match (circles
+  within 1.6e-13, three with B-spline sections within 1.9e-8) and 20 are
+  reviewed (`occt-boolean-torus-curved-divergences.json`): BRepGProp's
+  default integration on faces bounded by B-spline sections misses by up
+  to 9.8e-6, adaptively within 4.8e-9 and unchanged at an accuracy of
+  1e-12; thirteen solids' counts change when unified.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
