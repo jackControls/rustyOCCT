@@ -1841,6 +1841,39 @@ Decisions for S9, recorded before its code (2026-09-28):
     `degenerate`); a native `BRepAlgoAPI` capture before
     `solid/boolean/curved/sphere.rs` exists; then the kernel, the
     comparison, the DRAW survey and a campaign.
+  * **S9d.1 evidence (2026-09-28).** `sphere_boolean_reference.py` slices
+    a sphere, cap or zone (the end planes `w = R sin(latitude)` in the
+    frame's affine coordinates, heights as stored) and a prism ear-clipped
+    into convex pieces by planes normal to the zone's axis: discs cut by
+    the zone's lines against the pieces' sections, the operations apart by
+    classified boundaries (Green's theorem over segments and arcs), the
+    common again by clipping, breakpoints exact quadratics' roots; the
+    sphere's face by Archimedes, planar faces and end discs in closed form
+    in their planes, solids by convexity (exact distances to polyhedra, runs
+    of faces' boundaries outside the sphere).
+    `generate_sphere_boolean_fixtures.py --check`: 30 fixtures (25 solid, 1
+    empty, 4 degenerate; 5 in turned frames), every class the decisions
+    list: a box's face, corner (exact, `TILT`, `LEAN` against a `TILTX`
+    sphere) and edge through a sphere, a post through a zone's flat end, a
+    box through a zone's end and band, a hemisphere crossed through disc
+    and dome, discs coplanar with a box's face of either orientation,
+    cavities both ways, a turned bar and a slab cutting in two, an L prism
+    severed, an octant; a tangent face, vertices on the sphere and a
+    tangent edge declared `degenerate`. Caps and zones only in exact frames
+    at the origin, where the affine end plane and the kernel's cap plane
+    (through `o + h n`, normal to `n`) are one plane exactly; the reference
+    takes the affine reading, as S9c.1's prisms' caps. Closed forms of every pair
+    within 9.3e-40 in exact frames and 2.2e-16 in turned ones, inclusion
+    and exclusion 9.2e-41, the area identity 3.3e-40, every face's classes
+    1.8e-40, a second direction 1.6e-40, Monte Carlo 2.7 standard errors,
+    no near coincidence. The protocol takes a sphere on either side (its
+    identity rows; the native oracle a `sphere` row by
+    `BRepPrimAPI_MakeSphere`). The capture
+    `occt-boolean-sphere-preimplementation` (`compare_sphere_boolean.py`,
+    the kernel `unsupported` on all 30, `OutOfDomain("a Boolean of a solid
+    with curved faces or edges in any position (S9c)")`): every result
+    valid with the reference's solids, all 30 match within 3.3e-9 (no
+    review), three solids' counts change when unified. S9d.1's kernel next.
 
 ### Parallel tracks
 

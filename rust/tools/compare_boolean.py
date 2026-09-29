@@ -144,6 +144,9 @@ def expected_rows():
 def case_scale(case):
     values = [1.0, abs(case.obj.start), abs(case.obj.end), abs(case.tool.start), abs(case.tool.end)]
     values += [abs(x) for x in case.obj.frame[:3]+case.tool.frame[:3]]
+    # S9d.1: a sphere's reach from the origin.
+    values += [max(abs(x) for x in c.frame[:3])+c.sphere[0] for c in (case.obj, case.tool)
+               if c.sphere is not None]
     for b in case.obj.boundaries+case.tool.boundaries:
         if b.circle is not None:
             values += [abs(b.circle[0])+b.circle[2], abs(b.circle[1])+b.circle[2]]
