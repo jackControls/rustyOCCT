@@ -623,6 +623,55 @@ height); its horizontal edges on a spline are its lifted restrictions.
   S9c.1 failures are fixed: a hole no piece holds (a sliver whose binary64
   image turned the wrong way) is `Degenerate`, and a band with holes
   bounded by ellipses' projections now validates.
+* **S9c.2b.1 evidence (cylinders in turned frames), before its kernel
+  code.** `generate_turned_boolean_fixtures.py --check` writes
+  `boolean-turned-cases.txt`, `boolean-turned-expected.tsv` and
+  `boolean-turned-frames.tsv` with 15 cases (5 fuses, 5 cuts, 5 commons; 13
+  solid, 2 degenerate), every pair two cylinders with axes not parallel and
+  at least one frame turned (affine models on the stored axes, elliptic in
+  the world), from S9c.1's reference, frames and per-pair checks and
+  S9c.2's closed-form machinery, imported unchanged: a partial bite, one
+  loop (`bite_tiltx`, `XY` against `TILTX`, all three operations); a thin
+  pipe through a thick cylinder as the object, two rings (`rings_pipe`,
+  `TILT2` against `XY`; its cut two stubs); a pipe ending inside, its cap's
+  disc inside (`blind_tilt`, `TILT` against `SIDE`, perpendicular); a box's
+  round hole crossed by a tilted pipe, two rings on the hole's wall
+  (`hole_tiltx`, its common two pieces); unequal skew cylinders offset, one
+  loop (`skew_lean`, `LEAN` against `TILTX`); and equal radii with meeting
+  axes declared `degenerate` (`node_lean`, `LEAN` against `TILTX`;
+  `node_r125`, `R125` against `SIDE`: the stored models' intervals' ends
+  2.4e-17 and 8.3e-17 apart, two rings about 1e-8 apart at the nodes).
+  Checks before writing, besides S9c.1's per pair: closed forms in the
+  ideal frames (the common of cylinders crossing whole as the perpendicular
+  one over `sin phi`, centred on the axes' common perpendicular; the
+  perpendicular pair by the quadrature with its cap, areas included; the
+  hole as the box less its cylinder and the pipe between the box's walls
+  by Cavalieri; the nodes by Legendre's form at `k = 1`) within 4.2e-16;
+  the curve's class from the ideal and the models' intervals (as declared,
+  ends at least 0.175 apart, the nodes' within 1e-15 but apart); every
+  cap's circle against the other input's cylinders (crossings of the model
+  found by sign changes along the circle and bisection, required outside
+  the face along its axis; none crosses, the least clearance 0.45 of the
+  radius squared), so the quartic meets no cap's circle and every vertex is
+  a quadratic surd. Inclusion and exclusion 1.2e-41, the area identity
+  6.0e-41, every face's classes 6.9e-41, Monte Carlo 2.4 standard errors;
+  the scan finds only the nodes' breakpoints (about 1e-17 apart).
+  `test_turned_boolean_reference.py` checks the closed forms, the node
+  models and the cap-circle test alone. Where one frame's stored `x` or `y`
+  lies along the axes' common perpendicular exactly (`XY` against `TILT`
+  or `LEAN`, `TILT` against `TILTX`: S9c.1's `steinmetz_oblique` and
+  `steinmetz_tilted`) the models' intervals are equal exactly, a double
+  tangency whose section is two conics, not two loops.
+  `compare_turned_boolean.py` (`compare_boolean.make_set`) reproduces
+  `occt-boolean-turned-preimplementation` (`rust_turned_boolean_exists`
+  false; the kernel's probe `unsupported` on all 15, `OutOfDomain(...
+  (S9c.2))`): every result valid with the reference's solid count; the two
+  nodes match within 1.5e-10 (OCCT's section two ellipses within its
+  tolerance) and 13 are reviewed (`occt-boolean-turned-divergences.json`):
+  BRepGProp's default integration on faces bounded by approximated
+  intersection curves misses by up to 3.3e-4 (`skew_lean`), the same
+  results measured adaptively within 9.1e-10; four solids' counts change
+  when unified.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

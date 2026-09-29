@@ -1652,6 +1652,29 @@ Decisions for S9, recorded before its code (2026-09-28):
     and `steinmetz_tilted` fixtures become declared `degenerate` (near
     nodes: the reference integrates the stored models' pair of loops about
     `1e-8` apart, the kernel refuses them within the resolution).
+  * **S9c.2b.1 evidence (2026-09-28).** `generate_turned_boolean_fixtures.py
+    --check`: 15 fixtures of two cylinders in turned frames with crossing
+    axes, every vertex a quadratic surd (13 solid: a bite and skew unequal
+    cylinders as one loop, a pipe through as the object, a pipe ending
+    inside and a tilted pipe across a box's round hole as rings; 2
+    `degenerate` near nodes of equal radii) from S9c.1's reference and
+    S9c.2's closed forms unchanged: the common over `sin phi`, the
+    perpendicular pair with its cap and areas, Cavalieri and Legendre's
+    form within 4.2e-16 (ideal frames), S9c.1's per-pair checks within
+    6.9e-41 and 2.4 standard errors; the classes from the intervals as
+    declared; no cap's circle crosses the other cylinder's model (checked
+    numerically along each circle). The stored models of the declared nodes
+    have their intervals' ends 2.4e-17 and 8.3e-17 apart (two rings about
+    1e-8 apart); where a stored `x` or `y` lies along the common
+    perpendicular exactly (`steinmetz_oblique`, `steinmetz_tilted`) they are
+    equal exactly, a double tangency meeting in two conics, not the loops
+    1e-8 apart stated above: `Degenerate` either way. The capture
+    `occt-boolean-turned-preimplementation` (`compare_turned_boolean.py`,
+    the kernel `unsupported` on all 15): every result valid with the
+    reference's solids; the nodes match within 1.5e-10 (OCCT's section two
+    ellipses), 13 reviewed: BRepGProp's default integration misses by up to
+    3.3e-4, the same results measured adaptively within 9.1e-10; four
+    solids' counts change when unified. S9c.2b.1's kernel next.
 
 ### Parallel tracks
 
