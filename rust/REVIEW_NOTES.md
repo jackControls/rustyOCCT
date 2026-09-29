@@ -1696,8 +1696,19 @@ Decisions for S9, recorded before its code (2026-09-28):
     events; the exact verification of every piece is what certifies the
     result); (c) a cap's circle is refused only where a root of its quartic
     lies on the edge's arc, not yet where it lies off the other face
-    (S9c.2b.2's interval membership). Pending: the DRAW survey, the
-    campaign, S9c.2b.2.
+    (S9c.2b.2's interval membership). Pending: the campaign, S9c.2b.2.
+  * **DRAW survey of S9c.2b.1 (2026-09-28, `UPSTREAM_TESTS.md`).** Of the
+    boolean group's 1,802 self-contained cases Rust evaluates 822, as
+    before, none failing, all registered; no status changes. Of S9c.2a's 16
+    cylinders in turned frames none evaluates: `ZD9` and `ZE2` of the four
+    `bop*_simple` grids (equal, axes meeting at right angles) are
+    `Degenerate` by decision (a near node), `ZF2` and `ZF3` (parallel) stay
+    refused for S9c.2b.2 under S9c.2's general message. `bopfuse_simple/ZD9`
+    re-purposed as the near node's sentinel; `bopfuse_simple/ZF2` added for
+    S9c.2b.2. The ledger does not change. The bridge self-test's S9c.2 gap
+    (a turned cylinder beside another, in fact apart) is decided since
+    S9c.2b.1, as native DRAW decides it; it is now checked by volume, and
+    the gap is ZF2's parallel pair.
   * **S9c.2b.2, decisions before its code (2026-09-29).** Every vertex
     S9c.2b.1 refuses lies on a cap's circle at an angle whose half-angle
     tangent `alpha` is a real algebraic number of degree at most four (a
