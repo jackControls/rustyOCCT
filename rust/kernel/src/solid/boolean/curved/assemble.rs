@@ -80,6 +80,23 @@ pub(super) fn assemble(arr: &Arr, op: Op2) -> Result<Vec<Component>> {
         let p = &arr.pieces[i];
         (p.op, arr.models[p.op].faces[p.face].id, p.behind)
     };
+    // Pieces of A and B on one surface facing one way join too: their
+    // result normals (each input face's, reversed unless `behind`) agree.
+    let same_surface = |i: usize, j: usize| {
+        let (p, q) = (&arr.pieces[i], &arr.pieces[j]);
+        if p.op == q.op {
+            return false;
+        }
+        let (a, b) = if p.op == 0 { (p, q) } else { (q, p) };
+        if !arr.coinc.contains(&(a.face, b.face)) {
+            return false;
+        }
+        let x = &arr.edges[a.loops[0][0].0].mid;
+        let na = arr.models[0].normal_at(a.face, x);
+        let nb = arr.models[1].normal_at(b.face, x);
+        let facing = qqdot(&na, &nb).sign() == Ordering::Greater;
+        facing == (a.behind == b.behind)
+    };
     let mut users: BTreeMap<usize, Vec<usize>> = BTreeMap::new();
     for &i in &kept {
         for lp in &arr.pieces[i].loops {
@@ -92,7 +109,7 @@ pub(super) fn assemble(arr: &Arr, op: Op2) -> Result<Vec<Component>> {
     for us in users.values() {
         for a in 0..us.len() {
             for b in a + 1..us.len() {
-                if us[a] != us[b] && key(us[a]) == key(us[b]) {
+                if us[a] != us[b] && (key(us[a]) == key(us[b]) || same_surface(us[a], us[b])) {
                     union(&mut parent, us[a], us[b]);
                 }
             }
@@ -174,7 +191,7 @@ pub(super) fn assemble(arr: &Arr, op: Op2) -> Result<Vec<Component>> {
         let gs: Vec<usize> = incident[&v].iter().copied().collect();
         match gs.len() {
             2 => {
-                arr.edges[gs[0]].curve == arr.edges[gs[1]].curve
+                same_curve(&arr.edges[gs[0]].crv, &arr.edges[gs[1]].crv)
                     && faces_of(gs[0]) == faces_of(gs[1])
             }
             // A closed curve's piece from and back to this vertex alone.
@@ -427,11 +444,70 @@ fn build_component(
                 Surface::Cylinder { .. } => [turns(&p, &fids, &surface), 0],
                 _ => [0, 0],
             };
-            loop_ids.push(LoopId(p.loops.len()));
+            // The loop's area in the surface's parameters (its pcurves).
+            let mut pts: Vec<Point2> = Vec::new();
+            for f in &fids {
+                let pc = &p.fins[f.0].pcurve;
+                for i in 0..16 {
+                    pts.push(pc.point(i as f64 / 16.0));
+                }
+            }
+            let area = (0..pts.len())
+                .map(|i| {
+                    let (a, b) = (pts[i], pts[(i + 1) % pts.len()]);
+                    a.x * b.y - a.y * b.x
+                })
+                .sum::<f64>()
+                .abs();
+            loop_ids.push((LoopId(p.loops.len()), winding[0] != 0, area));
             p.loops.push(Loop::Edges {
                 fins: fids,
                 winding,
             });
+        }
+        // The outer loop first: loops round the axis, then by area.
+        loop_ids.sort_by(|a, b| b.1.cmp(&a.1).then(b.2.total_cmp(&a.2)));
+        let loop_ids: Vec<LoopId> = loop_ids.into_iter().map(|x| x.0).collect();
+        // On a cylinder, each other loop lifted by whole turns to lie with
+        // the first (each pcurve's lift starts from its point's angle).
+        if matches!(surface, Surface::Cylinder { .. }) && loop_ids.len() > 1 {
+            let mean_u = |p: &TopologyParts, l: LoopId| -> f64 {
+                let Loop::Edges { fins, .. } = &p.loops[l.0] else {
+                    return 0.0;
+                };
+                let us: Vec<f64> = fins
+                    .iter()
+                    .flat_map(|f| (0..8).map(move |i| (f, i as f64 / 8.0)))
+                    .map(|(f, t)| p.fins[f.0].pcurve.point(t).x)
+                    .collect();
+                us.iter().sum::<f64>() / us.len() as f64
+            };
+            let target = mean_u(&p, loop_ids[0]);
+            for &l in &loop_ids[1..] {
+                let turns = ((target - mean_u(&p, l)) / TAU).round();
+                if turns == 0.0 {
+                    continue;
+                }
+                let Loop::Edges { fins, .. } = &p.loops[l.0] else {
+                    continue;
+                };
+                for f in fins.clone() {
+                    let k = TAU * turns;
+                    match &mut p.fins[f.0].pcurve {
+                        Curve2::Projection(pr) => {
+                            for lift in &mut pr.lifts {
+                                lift.x += k;
+                            }
+                        }
+                        Curve2::LineSegment { start, end } => {
+                            start.x += k;
+                            end.x += k;
+                        }
+                        Curve2::Sinusoid { start, .. } => *start += k,
+                        _ => {}
+                    }
+                }
+            }
         }
         let is_inner = inner.contains(&fi);
         p.faces.push(Face {
@@ -496,12 +572,16 @@ fn build_component(
     let mut members: BTreeSet<Operand> = BTreeSet::new();
     for (k, &fi) in all.iter().enumerate() {
         let rf = &faces[fi];
-        let id = arr.models[rf.op].faces[rf.face].id;
-        let (c, t) = if rf.behind && !tool(rf.op) {
-            (vec![id], Vec::new())
-        } else {
-            (Vec::new(), vec![id])
-        };
+        let (mut c, mut t) = (Vec::new(), Vec::new());
+        for &pi in &rf.pieces {
+            let piece = &arr.pieces[pi];
+            let id = arr.models[piece.op].faces[piece.face].id;
+            if piece.behind && !tool(piece.op) {
+                c.push(id);
+            } else {
+                t.push(id);
+            }
+        }
         members.extend(c.iter().filter_map(operand));
         let (c, t) = tidy(c, t);
         let role = role_of(&c, Role::CutFace);
@@ -582,6 +662,25 @@ fn build_component(
         ));
     }
     Ok(Component { parts: p, plans })
+}
+
+/// Whether two curves are one (exactly): a full circle's halves, or a
+/// plane's sections of a cylinder's halves, run on as one edge.
+fn same_curve(a: &Crv, b: &Crv) -> bool {
+    match (a, b) {
+        (
+            Crv::Conic { c, a: x, b: y },
+            Crv::Conic {
+                c: c2,
+                a: x2,
+                b: y2,
+            },
+        ) => c == c2 && x == x2 && y == y2,
+        (Crv::Line { p, d }, Crv::Line { p: p2, d: d2 }) => {
+            is_zero(&cross(d, d2)) && super::graph::on_line(p, d, p2)
+        }
+        _ => false,
+    }
 }
 
 fn flip(o: Orientation) -> Orientation {
@@ -740,10 +839,15 @@ fn loop_fins(
                 if let Some(prev) = lift {
                     uv.x += TAU * ((prev.x - uv.x) / TAU).round();
                 }
-                let proj = Projection::new(curve.clone(), surface.clone(), reversed, uv, 16)
-                    .ok_or(Error::PrecisionLoss)?;
-                lift = Some(proj.point(1.0));
-                Curve2::Projection(Box::new(proj))
+                let pc = match cylinder_pcurve(surface, curve, reversed, uv) {
+                    Some(pc) => pc,
+                    None => Curve2::Projection(Box::new(
+                        Projection::new(curve.clone(), surface.clone(), reversed, uv, 16)
+                            .ok_or(Error::PrecisionLoss)?,
+                    )),
+                };
+                lift = Some(pc.point(1.0));
+                pc
             }
         };
         out.push(Fin {
@@ -754,6 +858,86 @@ fn loop_fins(
         });
     }
     Ok(out)
+}
+
+/// A cylinder face's pcurve of an edge from `uv` (its start's lifted
+/// parameters, along the use): a line for a generatrix or a circle about
+/// the axis, the sinusoid `v = a0 + a1 cos u + a2 sin u` for a plane's
+/// section whose parameter is the cylinder's angle (checked along it);
+/// `None` otherwise (an exact projection instead).
+fn cylinder_pcurve(
+    surface: &Surface,
+    curve: &Curve3,
+    reversed: bool,
+    uv: Point2,
+) -> Option<Curve2> {
+    let Surface::Cylinder { frame, radius } = surface else {
+        return None;
+    };
+    let at = |f: f64| curve.point(if reversed { 1.0 - f } else { f });
+    let end = Projection::inverse(surface, at(1.0))?;
+    let (plane, sweep) = match curve {
+        Curve3::LineSegment { .. } => {
+            // A generatrix: u constant.
+            return ((end.x - uv.x)
+                .rem_euclid(TAU)
+                .min(TAU - (end.x - uv.x).rem_euclid(TAU))
+                < 1e-9)
+                .then_some(Curve2::LineSegment {
+                    start: uv,
+                    end: Point2::new(uv.x, end.y),
+                });
+        }
+        Curve3::Circle { frame: f, .. } => (*f, TAU),
+        Curve3::CircularArc {
+            frame: f,
+            sweep_angle,
+            ..
+        }
+        | Curve3::EllipseArc {
+            frame: f,
+            sweep_angle,
+            ..
+        } => (*f, *sweep_angle),
+        _ => return None,
+    };
+    let sweep = if reversed { -sweep } else { sweep };
+    // The curve's plane m . (P - p) = 0 on the cylinder's points.
+    let (m, p0) = (plane.normal(), plane.origin());
+    let (o, x, y, n) = (frame.origin(), frame.x(), frame.y(), frame.normal());
+    let mn = m.dot(n);
+    if mn.abs() < 1e-9 {
+        return None;
+    }
+    let a = [
+        m.dot(p0 - o) / mn,
+        -radius * m.dot(x) / mn,
+        -radius * m.dot(y) / mn,
+    ];
+    let pc = if a[1].abs() <= 1e-15 * a[0].abs().max(*radius)
+        && a[2].abs() <= 1e-15 * a[0].abs().max(*radius)
+    {
+        Curve2::LineSegment {
+            start: Point2::new(uv.x, a[0]),
+            end: Point2::new(uv.x + sweep, a[0]),
+        }
+    } else {
+        Curve2::Sinusoid {
+            start: uv.x,
+            sweep,
+            a,
+        }
+    };
+    // The same points at the same fractions.
+    let tol = 1e-9 * (1.0 + radius + o.to_array().iter().fold(0.0f64, |m, v| m.max(v.abs())));
+    for f in [0.0, 0.25, 0.5, 0.75, 1.0] {
+        let q = pc.point(f);
+        let s = frame.point(Point2::new(radius * q.x.cos(), radius * q.x.sin()), q.y);
+        if (s - at(f)).length() > tol {
+            return None;
+        }
+    }
+    Some(pc)
 }
 
 /// A cylinder loop's turns about the axis: its pcurves' change of `u`.

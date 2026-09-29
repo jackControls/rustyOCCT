@@ -663,7 +663,9 @@ impl Prism {
             }
             Seg::Arc { c, r, .. } => {
                 for h in heights {
-                    for (dx, dy) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                    // The corners of the circle's square in the frame: its
+                    // image holds the circle's (the frame may be turned).
+                    for (dx, dy) in [(1, 1), (-1, 1), (1, -1), (-1, -1)] {
                         let u = &c[0] + r * int(dx);
                         let v = &c[1] + r * int(dy);
                         pts.push(f64s(&self.f.point(&u, &v, h)));
@@ -883,23 +885,16 @@ impl Prism {
                 None
             }
             Seg::Arc { c, ccw, .. } => {
-                // g = |x - c|^2 - r^2 along x + e d1 + e^2 d2: its orders.
+                // The side of the circle each push takes the point to, in
+                // turn: the first-order change of |x - c|^2. A push along
+                // the circle's tangent is one along the cylinder (a face on
+                // it, or a face tangent to it, which is refused), not off it
+                // by its curvature.
                 let rel = [x[0].add_r(&-&c[0]), x[1].add_r(&-&c[1])];
-                let dd = |a: &[Qd; 2], b2: &[Qd; 2]| a[0].mul(&b2[0]).add(&a[1].mul(&b2[1]));
-                let mut orders: Vec<Qd> = Vec::new();
-                let two = int(2);
-                if let Some(d1) = dirs.first() {
-                    orders.push(dd(&rel, d1).scale(&two));
-                    let mut o2 = dd(d1, d1);
-                    if let Some(d2) = dirs.get(1) {
-                        o2 = o2.add(&dd(&rel, d2).scale(&two));
-                        orders.push(o2);
-                        orders.push(dd(d1, d2).scale(&two));
-                        orders.push(dd(d2, d2));
-                    } else {
-                        orders.push(o2);
-                    }
-                }
+                let orders: Vec<Qd> = dirs
+                    .iter()
+                    .map(|d| rel[0].mul(&d[0]).add(&rel[1].mul(&d[1])))
+                    .collect();
                 let material_inside = *ccw != bound.hole;
                 for o in orders {
                     match o.sign() {
@@ -915,7 +910,8 @@ impl Prism {
     // ------------------------------------------------------------- solid
 
     /// Where a point lies in the solid, pushed along directions in turn
-    /// (symbolically: `p + e d1 + e^2 d2`, `e` infinitesimal).
+    /// (symbolically: `p + e d1 + e^2 d2`, `e` infinitesimal; a push along a
+    /// cylinder's circle keeps to the cylinder).
     pub(super) fn member(&self, p: &QV, dirs: &[QV]) -> Loc {
         let l = self.f.local_q(p);
         let ld: Vec<QV> = dirs.iter().map(|d| self.f.local_dir_q(d)).collect();

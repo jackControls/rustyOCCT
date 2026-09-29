@@ -1876,8 +1876,57 @@ fn crossings<T: Real>(loops: &[&Lp], p: &V2<T>) -> Option<u32> {
                     )?
                 }
                 Curve2::Projection(pr) => projection::crossings::<T>(pr, p)?,
-                Curve2::Sinusoid { .. } => return None,
+                Curve2::Sinusoid { start, sweep, a } => sinusoid_crossings(*start, *sweep, a, p)?,
             };
+        }
+    }
+    Some(count)
+}
+
+/// Crossings of the +u ray from p with `v = a0 + a1 cos u + a2 sin u` over
+/// `u` in the pcurve's range: the roots of `rho cos(u - phi) = v - a0`,
+/// `phi +- acos(w) + 2 pi k`, each certainly inside the range and past p.u
+/// (a root at an end or at p.u is undecided).
+fn sinusoid_crossings<T: Real>(start: f64, sweep: f64, a: &[f64; 3], p: &V2<T>) -> Option<u32> {
+    let end = start + sweep;
+    let (lo, hi) = if sweep < 0.0 {
+        (end, start)
+    } else {
+        (start, end)
+    };
+    let (a0, a1, a2) = (c::<T>(a[0]), c::<T>(a[1]), c::<T>(a[2]));
+    if a[1] == 0.0 && a[2] == 0.0 {
+        // A line at height a0.
+        return segment_crossing([c(lo), a0.clone()], [c(hi), a0], p);
+    }
+    let rho = a1.square().add(&a2.square()).sqrt();
+    let w = p[1].sub(&a0).div(&rho)?;
+    let one = c::<T>(1.0);
+    match (w.cmp(&one)?, w.cmp(&one.neg())?) {
+        (Ordering::Greater, _) | (_, Ordering::Less) => return Some(0),
+        (Ordering::Less, Ordering::Greater) => {}
+        _ => return None,
+    }
+    let phi = T::atan2(&a2, &a1)?;
+    let theta = T::atan2(&one.sub(&w.square()).sqrt(), &w)?;
+    let pi_i = pi();
+    let two_pi = T::from_r(&(pi_i.midpoint() * int(2))).widen(&(pi_i.radius() * int(2)));
+    let (plo, _) = phi.bounds_f64();
+    let kmin = ((lo - plo - 4.0) / TAU).floor() as i64 - 1;
+    let kmax = ((hi - plo + 4.0) / TAU).ceil() as i64 + 1;
+    let (lo_t, hi_t) = (c::<T>(lo), c::<T>(hi));
+    let mut count = 0;
+    for k in kmin..=kmax {
+        let base = phi.add(&two_pi.mul(&c(k as f64)));
+        for root in [base.add(&theta), base.sub(&theta)] {
+            let inside = match (root.cmp(&lo_t)?, root.cmp(&hi_t)?) {
+                (Ordering::Greater, Ordering::Less) => true,
+                (Ordering::Less, _) | (_, Ordering::Greater) => false,
+                _ => return None,
+            };
+            if inside && root.cmp(&p[0])? == Ordering::Greater {
+                count += 1;
+            }
         }
     }
     Some(count)

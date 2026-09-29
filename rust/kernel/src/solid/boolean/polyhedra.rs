@@ -529,7 +529,7 @@ fn prism_model(solid: &Solid, profile: &Profile, op: Operand) -> Result<Model> {
             }
             _ => {
                 return Err(Error::OutOfDomain(
-                    "a Boolean of prisms with arcs in frames with different axes (S9c)",
+                    "a Boolean of a prism with arcs and a solid other than a prism (S9c)",
                 ))
             }
         };

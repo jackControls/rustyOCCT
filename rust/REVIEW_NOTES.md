@@ -3102,3 +3102,44 @@ Decisions for S9, recorded before its code (2026-09-28):
     it (an empty common, a cut leaving the object unchanged), S9a's rule;
     OCCT returns valid results there, recorded as declared refusals. S9c.1's
     kernel next.
+  * S9c.1 implemented (`solid/boolean/curved/`): prisms of line, arc and
+    circle profiles in any position, on exact models, as the decisions
+    describe (vertices where an edge meets a face, section edges between
+    them, each face's pieces traced and kept by exact membership); all 44
+    fixtures as declared (38 as the reference, 6 `OutOfDomain`: S9c.2's
+    cylinders), every history checked, results deterministic and moved
+    rigidly; `compare_curved_boolean.py` 42 matches and 2 reviewed counts
+    (OCCT's seam edges on the Steinmetz fuse's and common's faces); the
+    `boolean` corpus (1,080 inputs), spline variants and regressions replay
+    clean. Amendments, from the implementation: (a) an arc must end on its
+    circle exactly (else `OutOfDomain`); full circles are split at rational
+    points `(1 - s^2, 2 s) / (1 + s^2)`, each input at another `s`, tried
+    again at others when a meeting falls on a seam; (b) evidence amendment
+    (b) is narrowed: two cylinders not circular in a common measure are
+    S9c.2's only when their faces' bounds meet and their sections are not
+    certainly apart; (c) a plane within rounding of a cylinder's axis
+    direction (its section's axis past `10^12` radii: frames built from one
+    normal round it differently) is `Degenerate`, as are a vertex of one
+    input on the other's face, an edge meeting an edge (off one surface),
+    and edges of both overlapping on one surface; (d) faces of both inputs
+    on one surface (coplanar planes, one cylinder) are taken, not refused:
+    each holds the other's edges within it, their pieces facing one way
+    join into one face; (e) a piece is classified at a rational point of an
+    edge pushed into the piece and off the face (first-order signs, a push
+    along a cylinder's circle keeping to it); loops' orientation and
+    nesting from binary64 images of the face's parameters with a `1e-9`
+    margin (refused within it); (f) pcurves on cylinders are lines and
+    sinusoids where they fit the edge at the same fractions, exact
+    projections otherwise (their curve and surface now move with a rigid
+    motion); the validator decides a sinusoid's +u ray crossings, and
+    `occt_counts` adds OCCT's seam vertex splitting a band loop's edge
+    where no vertex lies at `u = 0`; (g) the history checker compares
+    planes as oriented planes, a spline wall with its reversal in u and the
+    other sense, a spline piece with a whole's reversal, and an ellipse
+    edge in a plane by its centre and axes' ends. A result with arcs given
+    to another Boolean remains `OutOfDomain` (S9c). The campaign at
+    `e95fdfbc` (split, brep_validation, tessellation clean; boolean found
+    identical prisms with a spline hole given either way round failing the
+    history check, amendment (g); `fuzz/regressions/README.md`). Pending:
+    the DRAW survey of the upstream cases with turned cylinders, and the
+    campaign.

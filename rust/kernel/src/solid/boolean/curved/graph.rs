@@ -97,14 +97,12 @@ pub(super) struct Arr {
     pub(super) edges: Vec<GEdge>,
     pub(super) secs: Vec<Sec>,
     pub(super) pieces: Vec<Piece>,
+    /// Faces on one surface: (A's, B's).
+    pub(super) coinc: BTreeSet<(usize, usize)>,
 }
 
 fn boxes_meet(a: &([f64; 3], [f64; 3]), b: &([f64; 3], [f64; 3])) -> bool {
     (0..3).all(|k| a.0[k] <= b.1[k] && b.0[k] <= a.1[k])
-}
-
-fn coincident() -> Error {
-    Error::OutOfDomain("coincident surfaces in a Boolean of arcs in any position (S9c)")
 }
 
 /// The line key of a point: `x . d / |d|^2` (its parameter less a constant
@@ -221,8 +219,9 @@ fn rational_between_num(a: &Qd, b: &Qd) -> Result<R> {
 
 /// Builds the arrangement of two models.
 pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
-    // Cylinder pairs.
+    // Cylinder pairs, and faces on one surface (A's, B's).
     let mut pairs: BTreeMap<(usize, usize), CylPair> = BTreeMap::new();
+    let mut coinc: BTreeSet<(usize, usize)> = BTreeSet::new();
     for (fa, a) in models[0].faces.iter().enumerate() {
         let Surf::Cyl { c: ca, r: ra, .. } = &a.surf else {
             continue;
@@ -234,11 +233,39 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
             let bx = [&models[0].boxes[fa], &models[1].boxes[fb]];
             let pair = cyl_pair(&models[0], ca, ra, bx, &models[1], cb, rb)?;
             if matches!(pair, CylPair::Same) && boxes_meet(bx[0], bx[1]) {
-                return Err(coincident());
+                coinc.insert((fa, fb));
             }
             pairs.insert((fa, fb), pair);
         }
     }
+    // Coincident planes.
+    for (fa, a) in models[0].faces.iter().enumerate() {
+        let Surf::Plane { p: pa, m: ma } = &a.surf else {
+            continue;
+        };
+        for (fb, b) in models[1].faces.iter().enumerate() {
+            let Surf::Plane { p: pb, m: mb } = &b.surf else {
+                continue;
+            };
+            if is_zero(&cross(ma, mb))
+                && dot(ma, &sub(pb, pa)) == zero()
+                && boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb])
+            {
+                coinc.insert((fa, fb));
+            }
+        }
+    }
+    let in_coinc: [BTreeSet<usize>; 2] = [
+        coinc.iter().map(|x| x.0).collect(),
+        coinc.iter().map(|x| x.1).collect(),
+    ];
+    let coincident_with = |o: usize, own: usize, other: usize| -> bool {
+        if o == 0 {
+            coinc.contains(&(own, other))
+        } else {
+            coinc.contains(&(other, own))
+        }
+    };
     let pair_of = |o: usize, own: usize, other: usize| -> Option<&CylPair> {
         if o == 0 {
             pairs.get(&(own, other))
@@ -312,9 +339,16 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                 let points = match meet {
                     EdgeMeet::None => continue,
                     EdgeMeet::Along => {
-                        // The edge on the face's surface: coincident when
-                        // the face's region reaches it.
-                        return Err(if virtual_edge { seam() } else { coincident() });
+                        // The edge on the face's surface: taken with the
+                        // faces on one surface when one of its faces is.
+                        if e.faces.iter().any(|&f| coincident_with(o, f, g)) {
+                            continue;
+                        }
+                        return Err(if virtual_edge {
+                            seam()
+                        } else {
+                            Error::Degenerate("an edge of one input on a face of the other")
+                        });
                     }
                     EdgeMeet::Points(p) => p,
                 };
@@ -341,8 +375,76 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                         _ => unreachable!("places of one kind"),
                     };
                     let region = other.in_face(g, &x);
+                    let end_vertex = if same_end(&pos, &ps) {
+                        input_vx[o][e.start]
+                    } else {
+                        input_vx[o][e.end]
+                    };
                     match (inside, region) {
                         (_, Loc::Out) | (Some(false), _) => continue,
+                        (None, Loc::In)
+                            if vx[end_vertex]
+                                .faces
+                                .iter()
+                                .any(|&(o2, f)| o2 == o && coincident_with(o, f, g)) =>
+                        {
+                            // A vertex inside a face on its own face's
+                            // surface: a vertex of that face's pieces too.
+                            vx[end_vertex].faces.insert((1 - o, g));
+                            continue;
+                        }
+                        (Some(true), Loc::On) => {
+                            // On an edge of the face whose other face lies on
+                            // one of this edge's faces' surface: two edges
+                            // crossing on that surface.
+                            let seamy = virtual_edge || on_circle(other, g);
+                            let meeting = || {
+                                if seamy {
+                                    seam()
+                                } else {
+                                    Error::Degenerate(
+                                        "an edge of one input meeting an edge of the other",
+                                    )
+                                }
+                            };
+                            let Some((f, fpos)) = edge_at(other, g, &x).map_err(|_| meeting())?
+                            else {
+                                return Err(meeting());
+                            };
+                            let fe = &other.edges[f];
+                            let on_surface = fe.faces.iter().any(|&h| {
+                                h != g && e.faces.iter().any(|&ef| coincident_with(o, ef, h))
+                            });
+                            if !on_surface {
+                                return Err(meeting());
+                            }
+                            let id = match vx.iter().position(|v| qv_eq(&v.p, &x)) {
+                                Some(id) => id,
+                                None => {
+                                    vx.push(Vx {
+                                        p: x.clone(),
+                                        key: VKey::Pierce(o, ei, g, k),
+                                        faces: BTreeSet::new(),
+                                    });
+                                    vx.len() - 1
+                                }
+                            };
+                            for &ef in &e.faces {
+                                vx[id].faces.insert((o, ef));
+                            }
+                            for &h in &fe.faces {
+                                vx[id].faces.insert((1 - o, h));
+                            }
+                            let list = on_edge.entry((o, ei)).or_default();
+                            if !list.iter().any(|(v, _)| *v == id) {
+                                list.push((id, pos));
+                            }
+                            let list = on_edge.entry((1 - o, f)).or_default();
+                            if !list.iter().any(|(v, _)| *v == id) {
+                                list.push((id, fpos));
+                            }
+                            continue;
+                        }
                         (None, _) => {
                             // An input vertex on the other's face.
                             let seamy = virtual_edge
@@ -354,15 +456,6 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                                 seam()
                             } else {
                                 Error::Degenerate("a vertex of one input on the other's face")
-                            });
-                        }
-                        (Some(true), Loc::On) => {
-                            return Err(if virtual_edge || on_circle(other, g) {
-                                seam()
-                            } else {
-                                Error::Degenerate(
-                                    "an edge of one input meeting an edge of the other",
-                                )
                             });
                         }
                         (Some(true), Loc::In) => {}
@@ -402,6 +495,7 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
     }
     // Model edges split at their vertices.
     let mut edges: Vec<GEdge> = Vec::new();
+    let mut parts_of: BTreeMap<(usize, usize), Vec<usize>> = BTreeMap::new();
     let mut half: BTreeMap<(usize, usize), Vec<(usize, bool)>> = BTreeMap::new();
     for ((o, ei), list) in &on_edge {
         let e = &models[*o].edges[*ei];
@@ -422,6 +516,7 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
         for w in chain.windows(2) {
             let (mid, mid_pos) = midpoint(&e.curve, &w[0].1, &w[1].1, ccw)?;
             let gid = edges.len();
+            parts_of.entry((*o, *ei)).or_default().push(gid);
             edges.push(GEdge {
                 curve: CurveRef::Edge(*o, *ei),
                 crv: e.curve.clone(),
@@ -435,6 +530,34 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
             half.entry((*o, e.faces[1])).or_default().push((gid, false));
         }
     }
+    // Faces on one surface: each holds the other's edges within it.
+    for &(fa, fb) in &coinc {
+        for (o, own, other) in [(0, fa, fb), (1, fb, fa)] {
+            let (me, them) = (&models[o], &models[1 - o]);
+            for (ei, e) in them.edges.iter().enumerate() {
+                if !e.faces.contains(&other) {
+                    continue;
+                }
+                for &gid in parts_of.get(&(1 - o, ei)).map_or(&[][..], |x| x) {
+                    match me.in_face(own, &edges[gid].mid) {
+                        Loc::In => {
+                            // Once, though it bounds several faces on the
+                            // surface (a circle's halves).
+                            let h = half.entry((o, own)).or_default();
+                            if !h.contains(&(gid, true)) {
+                                h.push((gid, true));
+                                h.push((gid, false));
+                            }
+                        }
+                        Loc::On => {
+                            return Err(Error::Degenerate("edges of both inputs overlapping"))
+                        }
+                        Loc::Out => {}
+                    }
+                }
+            }
+        }
+    }
     // Sections.
     let mut secs: Vec<Sec> = Vec::new();
     for fa in 0..models[0].faces.len() {
@@ -442,9 +565,12 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
             if !boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]) {
                 continue;
             }
+            if coinc.contains(&(fa, fb)) {
+                continue;
+            }
             let pair = pairs.get(&(fa, fb));
             let curves = match section(&models[0], fa, &models[1], fb, pair)? {
-                Section::Same => return Err(coincident()),
+                Section::Same => continue,
                 Section::Curves(c) => c,
             };
             if curves.is_empty() {
@@ -497,6 +623,9 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                     match (la, lb) {
                         (Loc::In, Loc::In) => {}
                         (Loc::Out, _) | (_, Loc::Out) => continue,
+                        // Along an edge of a face on the other's surface:
+                        // that face holds it.
+                        _ if in_coinc[0].contains(&fa) || in_coinc[1].contains(&fb) => continue,
                         _ => return Err(seam()),
                     }
                     let gid = edges.len();
@@ -525,6 +654,7 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
         edges,
         secs,
         pieces: Vec::new(),
+        coinc,
     };
     // Pieces.
     for ((o, f), hs) in &half {
@@ -542,6 +672,46 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
         }
     }
     Ok(arr)
+}
+
+/// The edge of face `g` holding `x` strictly inside it, and its place
+/// there (`Degenerate` at an edge's end).
+fn edge_at(m: &Prism, g: usize, x: &QV) -> Result<Option<(usize, Pos)>> {
+    for (fi, f) in m.edges.iter().enumerate() {
+        if !f.faces.contains(&g) || !on_curve(&f.curve, x) {
+            continue;
+        }
+        let pos = place(&f.curve, x);
+        let (ps, pt) = match (&f.curve, &f.arc) {
+            (Crv::Line { d, .. }, _) => (
+                Pos::T(line_key(&qv(&m.verts[f.start].p), d)),
+                Pos::T(line_key(&qv(&m.verts[f.end].p), d)),
+            ),
+            (Crv::Conic { .. }, Some((a, b, _))) => (
+                Pos::Ang([Qd::rat(a[0].clone()), Qd::rat(a[1].clone())]),
+                Pos::Ang([Qd::rat(b[0].clone()), Qd::rat(b[1].clone())]),
+            ),
+            _ => unreachable!("an arc edge has its ends' angles"),
+        };
+        if same_end(&pos, &ps) || same_end(&pos, &pt) {
+            return Err(Error::Degenerate(
+                "a vertex of one input on an edge of the other",
+            ));
+        }
+        let within = match (&pos, &ps, &pt) {
+            (Pos::T(t), Pos::T(a), Pos::T(b)) => {
+                t.cmp(a) == Ordering::Greater && t.cmp(b) == Ordering::Less
+            }
+            (Pos::Ang(t), Pos::Ang(a), Pos::Ang(b)) => {
+                between_run(a, t, b, f.arc.as_ref().expect("an arc").2)
+            }
+            _ => false,
+        };
+        if within {
+            return Ok(Some((fi, pos)));
+        }
+    }
+    Ok(None)
 }
 
 fn intersect(a: &([f64; 3], [f64; 3]), b: &([f64; 3], [f64; 3])) -> ([f64; 3], [f64; 3]) {
@@ -627,6 +797,17 @@ fn midpoint(crv: &Crv, a: &Pos, b: &Pos, ccw: bool) -> Result<(QV, Pos)> {
         }
         _ => unreachable!("places of the curve's kind"),
     }
+}
+
+/// Whether a point lies on the line `p + t d` (exactly).
+pub(super) fn on_line(p: &QV, d: &V, x: &QV) -> bool {
+    on_curve(
+        &Crv::Line {
+            p: p.clone(),
+            d: d.clone(),
+        },
+        x,
+    )
 }
 
 /// Whether a point lies on a curve (exactly).

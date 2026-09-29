@@ -7,7 +7,7 @@ use rusty_occt::history;
 
 /// The cases S9c.1 leaves to S9c.2 or to coincident surfaces (`OutOfDomain`):
 /// cylinders parallel or crossing in frames not exactly orthonormal (their
-/// exact models meet in quartics), and a pin coincident with a hole's wall.
+/// exact models meet in quartics).
 const LATER: &[&str] = &[
     "parallel_cylinders_fuse",
     "parallel_cylinders_cut",
@@ -15,9 +15,6 @@ const LATER: &[&str] = &[
     "steinmetz_oblique_fuse",
     "steinmetz_oblique_common",
     "steinmetz_tilted_common",
-    "pin_fills_hole_fuse",
-    "pin_fills_hole_cut",
-    "pin_fills_hole_common",
 ];
 
 #[test]
@@ -164,31 +161,6 @@ fn results_are_deterministic_and_move_rigidly() {
                     "{}",
                     case.name
                 );
-            }
-        }
-    }
-}
-
-#[test]
-#[ignore]
-fn report() {
-    for case in protocol::cases(include_str!("../../fixtures/boolean-curved-cases.txt")) {
-        match protocol::run(&case) {
-            Ok((_, _, out, _)) => eprintln!("{}: {} solids", case.name, out.len()),
-            Err(e) => eprintln!("{}: {e}", case.name),
-        }
-    }
-}
-
-#[test]
-#[ignore]
-fn one() {
-    let name = std::env::var("CASE").unwrap();
-    for case in protocol::cases(include_str!("../../fixtures/boolean-curved-cases.txt")) {
-        if case.name == name {
-            match protocol::run(&case) {
-                Ok((_, _, out, _)) => eprintln!("{}: {} solids", case.name, out.len()),
-                Err(e) => eprintln!("{}: {e}", case.name),
             }
         }
     }

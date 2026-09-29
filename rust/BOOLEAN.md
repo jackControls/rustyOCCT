@@ -9,7 +9,8 @@ S9a is implemented (`profile/boolean.rs` with its spline meetings in
 `solid/boolean/stack.rs`), and S9b's polyhedral Booleans in any relative
 position (`solid/boolean/polyhedra.rs`: prisms, and any planar solid with
 straight edges as an input, a Boolean's result or a plane's piece among
-them); S9c and S9d are not.
+them), and S9c.1's prisms with arcs in any relative position
+(`solid/boolean/curved/`); S9c.2 and S9d are not.
 
 ## Contract
 
@@ -22,11 +23,12 @@ frames (one profile over one height range) is built as one, keeping the
 prism's exact queries; any other is a general body built through
 `TopologyParts` and validated before it is returned. An error is one of:
 
-* `OutOfDomain`: a pair of a later sub-step (arcs or circles in frames
-  whose axes differ, and inputs with curved faces or edges other than
-  prisms in one frame, S9c), two spline
-  segments along one curve in different forms or a spline span along a
-  line, or a stack's cavity in a result of several solids.
+* `OutOfDomain`: a pair of a later sub-step (two cylinders meeting in
+  curves other than lines and conics, S9c.2; a prism with arcs against a
+  solid other than a prism, a spline profile or an arc whose ends lie off
+  its circle in any position, S9c), two spline segments along one curve in
+  different forms or a spline span along a line, or a cavity in a result
+  of several solids.
 * `Degenerate`: a crossing within the resolution of a vertex, two crossings
   within it of each other, a piece thinner than the resolution, or a result
   touching itself at a point or along an edge (two solids sharing an edge,
@@ -202,6 +204,68 @@ faces meeting there; a vertex at an input vertex continues it, one
 elsewhere lies on the input edges and faces through it; a solid continues
 the regions of the inputs whose faces it continues (a cut's: the object's),
 a cavity's void is generated from the tool's region.
+
+### Prisms with arcs in any position (S9c.1)
+
+Two prisms of line, arc and circle profiles in any frames, at least one
+with an arc, are decided on their exact models (`curved/model.rs`): a
+point of a prism is `o + u x + v y + w n` on its stored axes as rationals
+(a cap's plane holds `x` and `y`, its normal `x * y`), an arc wall is the
+prism's cylinder over its profile circle (elliptic in the world when the
+stored axes are not orthonormal), a full circle is split into two arcs at a
+rational point `(1 - s^2, 2 s) / (1 + s^2)` of it (each input at another
+`s`, tried again at others when a meeting falls on a seam). Arcs must end
+on their circles exactly.
+
+Every vertex is exact (`curved/num.rs`, `curved/meet.rs`): an edge of one
+input meets a face surface of the other in a quadratic surd `a + b sqrt(d)`
+(a line against a plane or a cylinder, an arc against a plane, two
+circles), kept where it lies strictly inside both the edge and the face's
+region (a vertex of one on the other's surface, an edge meeting an edge,
+or a tangency is `Degenerate`); the two ellipses of equal circular
+cylinders whose axes cross add their two crossing points. Two faces'
+surfaces meet in lines, generatrices, plane sections of cylinders (the
+cylinder's `w = a0 + a1 cos t + a2 sin t` as a conic `c + a cos t + b sin t`)
+or those two ellipses; each branch is split at the vertices on it and its
+pieces kept where a rational point strictly between lies inside both faces.
+Two cylinders meet in such curves only when both are circular in a common
+measure (their frames' axes equal, or both exactly orthonormal): parallel
+(two circles in a section), coaxial (one surface, or none), or equal with
+crossing axes; others are S9c.2's unless their faces' bounds or their
+sections' reach are certainly apart. A plane within rounding of a
+cylinder's axis direction (its section's axis past `10^12` radii) is
+`Degenerate`. Orders along a curve and around a vertex are exact signs of
+one surd or of two (`x + y sqrt(e)`, `x` and `y` in `Q(sqrt(d))`).
+
+Each face's pieces (`curved/graph.rs`) are traced from its edges split at
+their vertices and its sections: at a vertex the next edge is the first
+clockwise from the way back (exact angles about the face's normal); loops'
+orientation and nesting come from their binary64 image in the face's
+parameters, a hole touching another loop within `1e-9` of the face's size
+refused. A piece is classified at a rational point of one of its edges
+pushed into it and then off the face either way, against the other
+input's exact membership (the push's first-order sign at each boundary it
+lies on, a push along a cylinder's circle keeping to it), and kept as
+S9b.1 keeps fragments. Faces of both inputs on one surface (coplanar caps
+or walls, one cylinder) hold each other's edges within them, the edges
+crossing on it adding vertices; their pieces facing one way join.
+
+The result (`curved/assemble.rs`): pieces of one input face kept the same
+way join across the edges they share (a circle's halves among them), with
+coincident pieces of the other input facing the same way; edges join where
+they run on along one exact curve between the same faces (a seam's
+vertices dropped, a whole circle or ellipse left as a ring edge); curves
+are rounded once (lines, circular arcs on the cap's arc frame, ellipse arcs
+on principal axes); pcurves lie on the input faces' stored surfaces
+(lines and sinusoids on cylinders where they fit the edge at the same
+fractions, exact projections otherwise, lifted continuously along each
+loop and each hole lifted to its outer loop's turn); solids are the shells
+joined by edges, a cut's shell of the tool alone its cavity (one among
+several solids `OutOfDomain`), shells meeting at a vertex `Degenerate`.
+Names follow S9b.1's rules; a result is a `Polyhedron` (both inputs, the
+operation, its index), classified by the set function and moved by its
+stored geometry. A result with arcs given to another Boolean is still
+`OutOfDomain` (S9c).
 
 ### Spline profiles (S9a.2)
 
@@ -456,6 +520,17 @@ height); its horizontal edges on a spline are its lifted restrictions.
   8.6e-9 (`across_hole_common`, BRepGProp on faces bounded by ellipses), no
   review; four solids' counts change when unified (coplanar caps merged, a
   tangency's imprint); the kernel's probe `unsupported` on all 44.
+* **Kernel (S9c.1).** `tests/curved_booleans.rs`: the 44 fixtures as the
+  reference (31 results and empties inside its measures, the 7 declared
+  degenerate refused, the 6 of cylinders not circular in a common measure
+  `OutOfDomain`, S9c.2's), every history checked, results deterministic and
+  moved rigidly with their ids, volumes and boundaries.
+  `compare_curved_boolean.py`: 42 matches, 2 reviewed (the Steinmetz fuse's
+  and common's counts, OCCT's seam edges on their faces;
+  `occt-boolean-curved-divergences.json`), no failure. The `boolean`
+  target's arcs in turned, leaning and tilted frames now reach S9c.1; its
+  corpus (1,080 inputs), the spline variants and the regressions replay
+  clean with the history check.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

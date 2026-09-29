@@ -885,3 +885,21 @@ now triangulated on their own vertices (ears clipped), and
 took up to 165 s an input under the sanitizer (the stored models' exact
 fragments), so the target chains first results of at most 12 faces (this
 input's 21-face stack is no longer chained).
+
+## Boolean: identical prisms with a spline hole given either way round
+
+`boolean/crash-0072749f9f70085aacd7c92185839596132c5c59.bin` was found by the
+600-second campaign of the boolean target at `e95fdfbc`: two identical
+tilted squares with a lens hole of two cubics, the hole given
+counter-clockwise in one and clockwise in the other, fused. The fused
+profile traces the hole the other way round from one input, so the
+result's spline walls are that input's reversed in u with the other sense
+and its spline edges that input's curves reversed; the history checker
+compared a wall's representation (its sense first) and a curve's
+parameters, and found the merged support different. It now takes a spline
+wall and its reversal in u with the other sense as one oriented surface,
+a plane and its opposite normal with the other sense as one oriented
+plane, and a spline piece on a whole's reversal at the piece's parameters
+(`tests/booleans.rs`, `identical_prisms_with_a_spline_hole_fuse_into_one`);
+the input replays in 0.24 s.
+

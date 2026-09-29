@@ -803,3 +803,66 @@ fn a_box_inscribed_in_a_cylinder_over_part_of_its_height() {
         check(x, y, &f, &h);
     }
 }
+
+#[test]
+fn identical_prisms_with_a_spline_hole_fuse_into_one() {
+    // Found by the `boolean` target: a square with a lens hole of two
+    // cubics, fused with itself. The fused profile may trace the hole the
+    // other way round, so the result's spline walls are the inputs'
+    // reversed in u with the other sense (one oriented surface) and its
+    // spline edges the inputs' curves reversed.
+    use rusty_occt::topology::SplineSpan;
+    use rusty_occt::BSplineCurve2;
+    let cubic = |p: [(f64, f64); 4]| {
+        let poles = p.iter().map(|(x, y)| Point2::new(*x, *y)).collect();
+        let curve = BSplineCurve2::new(3, poles, None, vec![0.0, 1.0], vec![4, 4]).unwrap();
+        Segment::Spline(SplineSpan::whole(curve))
+    };
+    let (a, h) = (2.375, 2.375);
+    let lower = [(-a, 0.0), (-a / 2.0, -h), (a / 2.0, -h), (a, 0.0)];
+    let upper = [(a, 0.0), (a / 2.0, h), (-a / 2.0, h), (-a, 0.0)];
+    let rev = |p: [(f64, f64); 4]| [p[3], p[2], p[1], p[0]];
+    let tilt = Frame3::new(
+        Point3::new(1.0, -2.0, 0.5),
+        Vec3::new(0.0, 3.0, 4.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tol(),
+    )
+    .unwrap();
+    let hole = |k: usize| {
+        let segments = if k == 0 {
+            vec![cubic(lower), cubic(upper)]
+        } else {
+            vec![cubic(rev(upper)), cubic(rev(lower))]
+        };
+        Boundary::path(
+            vec![Point2::new(-a, 0.0), Point2::new(a, 0.0)],
+            segments,
+            tol(),
+        )
+        .unwrap()
+    };
+    // The hole given either way round in each input.
+    for (i, j) in [(0, 0), (0, 1), (1, 0), (1, 1)] {
+        let x = prism(
+            rect(-4.75, -4.75, 4.75, 4.75),
+            vec![hole(i)],
+            tilt,
+            0.0,
+            0.75,
+            1,
+        );
+        let y = prism(
+            rect(-4.75, -4.75, 4.75, 4.75),
+            vec![hole(j)],
+            tilt,
+            0.0,
+            0.75,
+            2,
+        );
+        let (out, hist) = x.fuse(OperationId(3), &y).unwrap();
+        assert_eq!(out.len(), 1);
+        check(&x, &y, &out, &hist);
+        assert!((volume(&out) - x.mass_properties().volume).abs() < 1e-9);
+    }
+}

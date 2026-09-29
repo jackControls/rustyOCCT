@@ -328,6 +328,14 @@ fn plane_cyl(f: &Affine, c: &P2, r: &R, p: &V, m: &V) -> Result<Section> {
                 .collect(),
         ));
     }
+    // A plane within rounding of the axis's direction (its section an
+    // ellipse whose axis along the cylinder is past 10^12 radii, beyond any
+    // binary64 edge): the height's turn rate against the radius.
+    if &alpha * &alpha + &beta * &beta > int(10).pow(24) * &mu * &mu * r * r {
+        return Err(Error::Degenerate(
+            "a plane within rounding of a cylinder's direction",
+        ));
+    }
     // w = -(kappa + alpha cos + beta sin) / mu.
     let inv = int(-1) / &mu;
     let c0 = f.point(&c[0], &c[1], &(&kappa * &inv));

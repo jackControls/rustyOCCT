@@ -10,7 +10,8 @@
 //! the operation's set function; the kept pieces are joined into the
 //! result's faces and solids and named (`assemble.rs`). Full circles are
 //! split at a rational seam, tried again at another when a meeting falls
-//! on it. Coincident surfaces are not yet taken (`OutOfDomain`).
+//! on it. Faces of both inputs on one surface hold each other's edges within
+//! them, and their pieces facing one way join.
 mod assemble;
 mod graph;
 mod meet;
@@ -44,9 +45,12 @@ pub(super) fn applies(poly: &Polyhedron) -> bool {
 /// The result's components, a full circle's seam tried at several
 /// rational points.
 pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
-    for (n, d) in [(2, 7), (3, 11), (5, 13), (7, 19)] {
-        let seam = R::new(BigInt::from(n), BigInt::from(d));
-        match attempt(poly, &seam) {
+    // Each input's seam apart from the other's: one cylinder shared by both
+    // would put both seams on one line.
+    let seams = [(2, 7), (3, 11), (5, 13), (7, 19), (11, 23)];
+    for k in 0..seams.len() - 1 {
+        let r = |(n, d): (i64, i64)| R::new(BigInt::from(n), BigInt::from(d));
+        match attempt(poly, &r(seams[k]), &r(seams[k + 1])) {
             Err(Error::ComputationLimit(m)) if m == graph::SEAM => continue,
             r => return r,
         }
@@ -54,9 +58,9 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
     Err(Error::Degenerate("a meeting at every seam tried"))
 }
 
-fn attempt(poly: &Polyhedron, seam: &R) -> Result<Vec<Component>> {
-    let a = model::Prism::new(&poly.a, Operand::A, seam)?;
-    let b = model::Prism::new(&poly.b, Operand::B, seam)?;
+fn attempt(poly: &Polyhedron, seam_a: &R, seam_b: &R) -> Result<Vec<Component>> {
+    let a = model::Prism::new(&poly.a, Operand::A, seam_a)?;
+    let b = model::Prism::new(&poly.b, Operand::B, seam_b)?;
     let arr = graph::arrange([a, b], poly.op)?;
     assemble::assemble(&arr, poly.op)
 }

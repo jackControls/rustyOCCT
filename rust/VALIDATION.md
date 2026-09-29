@@ -704,7 +704,12 @@ stored axes the kernel gives bit for bit are used (`ROT`'s `x` differs in
 its last bit on macOS arm64). `compare_curved_boolean.py` reproduces the
 capture `occt-boolean-curved-preimplementation`: every result valid with
 the reference's solid count, all 44 within 8.6e-9 (BRepGProp on faces
-bounded by ellipses), no review, and the kernel `unsupported` on all 44.
+bounded by ellipses), no review, and the kernel `unsupported` on all 44
+(before its code). With S9c.1's kernel: 42 matches (31 results inside the
+reference, 7 declared degenerate refused, 6 of S9c.2's cylinders
+`unsupported`) and 2 reviewed differences (`occt-boolean-curved-divergences.json`:
+the Steinmetz fuse's and common's counts, OCCT's seam edges on their
+faces), no failure.
 
 The `GeomInt_IntSS` captures were taken on macOS arm64; IntPatch's walking
 lines differ on Linux near degeneracies (the first Linux run changed
