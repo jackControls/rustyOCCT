@@ -2617,7 +2617,8 @@ Decisions for S9, recorded before its code (2026-09-28):
     host): it keeps both checks optimized now (`CARGO_PROFILE_DEV_OPT_LEVEL`
     2, 40 s), and the test jobs have time limits. At `4d5d3d5b` every job
     and comparison passed, the B-rep job's in 60 minutes 3 seconds against
-    its 60 (90 now); the fuzz workflow was green there too.
+    its 60 (90 now); the fuzz workflow was green there too. Both
+    workflows green at `b96730a7`, the first since `a608a3c2`.
   * **S9d.4b refined, before its code (2026-09-29).** Two sub-steps.
     S9d.4b.1: tori other than whole ones (S3's v-segments between two
     latitudes and wedges of a partial turn) against polyhedral prisms: the
