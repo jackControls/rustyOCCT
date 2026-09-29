@@ -274,6 +274,9 @@
     "tests/boolean/bopcommon_simple/ZH2": "f06c3f5e05dd7da2892cb3f209aaf2dfbf10055b42aeb655a3a28e2254395897",
     "tests/boolean/bopcommon_simple/ZH3": "b1e67c63223aadbd7771b85571cd09ce313500c6962f6d127dd3e1b4d68366b2",
     "tests/boolean/bopcommon_simple/ZH4": "5688f2beda1a4ae71d13aaaa66931cceb2e5453fc6f93ce2ed698262232ea9d5",
+    "tests/boolean/bopcommon_simple/ZI4": "e3136b2f12c31a512e3a577eda3679f1486d6be0838b68bd1da5895c65c94a87",
+    "tests/boolean/bopcommon_simple/ZI6": "4ea32bcdc9abec6061c1d8282efbc9571d8544692e2d6e44930910442758e1de",
+    "tests/boolean/bopcommon_simple/ZI7": "2c3a61a483d4a53e7e4386e21103152bcd18246545bcd18b95028ad0c782f2fd",
     "tests/boolean/bopcommon_simple/ZI8": "5a72f61091df6fcfeaf84fb04c689b5d3fcb5517f7d3ec4b5905eb11b15d4d38",
     "tests/boolean/bopcommon_simple/ZI9": "699dd711ee26bf14720c62611ee0cc86de11b74be42d8a1f78dd9f40e24e8eac",
     "tests/boolean/bopcommon_simple/ZJ1": "b80be3cebbe619a428f792347ec85ffeaefc52859d46a24c924794aa63fe915d",
@@ -499,6 +502,9 @@
     "tests/boolean/bopcut_simple/ZH2": "66537f746875b6b276986871f79d95c88802b8a4c50503ee5e140f8b54edd41c",
     "tests/boolean/bopcut_simple/ZH3": "dfb2737362762f4d78a6a982b8b83f346256b9779d4a963b9454c3ff1edc9518",
     "tests/boolean/bopcut_simple/ZH4": "53eb7401c04a42b8664a042f6854424d368d7b25cd5c11d28870a5a6d1fae055",
+    "tests/boolean/bopcut_simple/ZI4": "fce30825b9ba3a475574e794e69d425aeefe2c54db298b40bf8a3e4bf82ad802",
+    "tests/boolean/bopcut_simple/ZI6": "90fc8c771a3f3e8b1b90a216b86bd87f901d4879f67fffa5e30847ca996dcf78",
+    "tests/boolean/bopcut_simple/ZI7": "9cf006ad78618b07359df290e84bd3aee4d526a92f5c91e680a231dfce2b2510",
     "tests/boolean/bopcut_simple/ZI8": "5923d70f9e386c106800f7bb5c5922dd6855257bf8ba8c00bea176301c092bda",
     "tests/boolean/bopcut_simple/ZI9": "a77ee51c013712ac86d0b747a13b4b8ed093e4afa4691d8a0c6e6b5376cd28cd",
     "tests/boolean/bopcut_simple/ZJ1": "7aa30f81f042376cc87cfecc0c3e84816215f8a470c4c29d832b0e38a74211fe",
@@ -707,6 +713,8 @@
     "tests/boolean/bopfuse_simple/ZH4": "3eaaf74e1d82f88b08297d673bcb92a5d45a31cf9c7f17cde86c3f1b615b72bf",
     "tests/boolean/bopfuse_simple/ZH5": "0afef9f536f3ddbb53d4eedd6992841f088cd413e67f73e566a0f7d8123cb2e4",
     "tests/boolean/bopfuse_simple/ZI4": "6e6e5f905601d30f5dbed40f4598baa01a8e5177ebcfe3b2505443579393fb7a",
+    "tests/boolean/bopfuse_simple/ZI6": "97cc4d66b1f59b3500eaf064e15a3081018815fdb6413acdcdb606d5535c3c8f",
+    "tests/boolean/bopfuse_simple/ZI7": "cc2c732d8d7bf4a52e6401184ec030a5bc73f3c88c787370b698afd75dab685b",
     "tests/boolean/bopfuse_simple/ZI8": "8c1a96a1be4b56cd50303ae8c66b59c8b59f59492bdc7a08902e2d3d93c894ad",
     "tests/boolean/bopfuse_simple/ZI9": "35101b5d7a7c36c7bb61f4513d5fa8d38e0cf7cdf9b12d10450ad38b65c43a93",
     "tests/boolean/bopfuse_simple/ZJ1": "f03677c80ad86e4eec2a123ccc61377e1e0262faac745563d55f393046ff0fae",
@@ -907,6 +915,9 @@
     "tests/boolean/boptuc_simple/ZH2": "a71b20012df6ad4edbf2369638bb6182ff9fdf08dfeb72d4492d5315e83287d4",
     "tests/boolean/boptuc_simple/ZH3": "84e7f9e904de14ee81aced84a15d86bb4d5efade875c7db314ec1c2038889c12",
     "tests/boolean/boptuc_simple/ZH4": "64d4dc73ba1b407d35c4659b203bb91c53a93b31d3252086f6cab570a029879b",
+    "tests/boolean/boptuc_simple/ZI4": "2cb96b40ea7890cf2c6b4368f49d2d5051e4bc339707eb44b3eba76ff95cfe9b",
+    "tests/boolean/boptuc_simple/ZI6": "1b061c89539332102d27036ac21571603b5ee382b0ed19c82fd539a0f533cd8b",
+    "tests/boolean/boptuc_simple/ZI7": "df724ecfb7cf79d9652fea06bc4dcf8257fa35df942ff34664511109d490fdda",
     "tests/boolean/boptuc_simple/ZI8": "d64868924acd01c2adc439d9848f161846d4e36bde3daea80201817c86d4c5ec",
     "tests/boolean/boptuc_simple/ZI9": "2b6b1aeb037dfd3021377d56afa3d1284bf0132d30d8fae158f46640b1176ea2",
     "tests/boolean/boptuc_simple/ZJ1": "bb67aae1f21a4fbe1a40c54031bd17b9fc116abbed0760a85924debed0847dec",
@@ -6687,9 +6698,9 @@
     },
     {
       "path": "tests/boolean/bopfuse_simple/ZI4",
-      "expected_rust": "unsupported",
+      "expected_rust": "viewer_skipped",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9d.2's Boolean group, a capability sentinel: a pcylinder of radius 4 and height 8 and a sphere of radius 2 centred on its top cap and turned a quarter turn about x, so the cap's plane contains the sphere's axis: the section circle runs through the sphere's poles, the singular points of its parameterization (coordinates cannot resolve the requested tolerance, PrecisionLoss; the same sphere unturned evaluates)."
+      "purpose": "S9d.1's pole follow-up: bop and bopfuse of a pcylinder of radius 4 and height 8 and a sphere of radius 2 centred on its top cap (turned a quarter turn about x through its centre), so the cap's plane holds the sphere's axis: the section is a great circle through the sphere's poles, a vertex at each; checkprops -s and checkshape; its checkview is recorded."
     },
     {
       "path": "tests/boolean/bopfuse_simple/ZF5",
@@ -6942,6 +6953,72 @@
       "expected_rust": "unsupported",
       "expected_occt": "viewer_skipped",
       "purpose": "S9d.3a's Boolean group, a capability sentinel: a pcylinder of radius 4 and height 8 and a coaxial torus of radii 4 and 1 centred at half its height: a torus, a Boolean of a solid with curved faces in any position (S9c's OutOfDomain until S9d.4)."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZI6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.1's pole follow-up: bop and bopfuse of a pcylinder of radius 4 and height 8 and a sphere of radius 2 centred on its top cap (turned a quarter turn about x and then a half turn about y through its centre), so the cap's plane holds the sphere's axis: the section is a great circle through the sphere's poles, a vertex at each; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZI7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.1's pole follow-up: bop and bopfuse of a pcylinder of radius 4 and height 8 and a sphere of radius 2 centred on its top cap (turned a quarter turn about x and then three quarter turns about y through its centre), so the cap's plane holds the sphere's axis: the section is a great circle through the sphere's poles, a vertex at each; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZI4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.1's pole follow-up: bop and bopcut of a pcylinder of radius 4 and height 8 and a sphere of radius 2 centred on its top cap (turned a quarter turn about x through its centre), so the cap's plane holds the sphere's axis: the section is a great circle through the sphere's poles, a vertex at each; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZI6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.1's pole follow-up: bop and bopcut of a pcylinder of radius 4 and height 8 and a sphere of radius 2 centred on its top cap (turned a quarter turn about x and then a half turn about y through its centre), so the cap's plane holds the sphere's axis: the section is a great circle through the sphere's poles, a vertex at each; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZI7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.1's pole follow-up: bop and bopcut of a pcylinder of radius 4 and height 8 and a sphere of radius 2 centred on its top cap (turned a quarter turn about x and then three quarter turns about y through its centre), so the cap's plane holds the sphere's axis: the section is a great circle through the sphere's poles, a vertex at each; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZI4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.1's pole follow-up: bop and bopcommon of a pcylinder of radius 4 and height 8 and a sphere of radius 2 centred on its top cap (turned a quarter turn about x through its centre), so the cap's plane holds the sphere's axis: the section is a great circle through the sphere's poles, a vertex at each; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZI6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.1's pole follow-up: bop and bopcommon of a pcylinder of radius 4 and height 8 and a sphere of radius 2 centred on its top cap (turned a quarter turn about x and then a half turn about y through its centre), so the cap's plane holds the sphere's axis: the section is a great circle through the sphere's poles, a vertex at each; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZI7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.1's pole follow-up: bop and bopcommon of a pcylinder of radius 4 and height 8 and a sphere of radius 2 centred on its top cap (turned a quarter turn about x and then three quarter turns about y through its centre), so the cap's plane holds the sphere's axis: the section is a great circle through the sphere's poles, a vertex at each; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZI4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.1's pole follow-up: bop and boptuc of a pcylinder of radius 4 and height 8 and a sphere of radius 2 centred on its top cap (turned a quarter turn about x through its centre), so the cap's plane holds the sphere's axis: the section is a great circle through the sphere's poles, a vertex at each; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZI6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.1's pole follow-up: bop and boptuc of a pcylinder of radius 4 and height 8 and a sphere of radius 2 centred on its top cap (turned a quarter turn about x and then a half turn about y through its centre), so the cap's plane holds the sphere's axis: the section is a great circle through the sphere's poles, a vertex at each; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZI7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.1's pole follow-up: bop and boptuc of a pcylinder of radius 4 and height 8 and a sphere of radius 2 centred on its top cap (turned a quarter turn about x and then three quarter turns about y through its centre), so the cap's plane holds the sphere's axis: the section is a great circle through the sphere's poles, a vertex at each; checkprops -s and checkshape; its checkview is recorded."
     }
   ],
   "derived_sources": {

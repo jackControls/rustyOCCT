@@ -1181,7 +1181,7 @@ unified faces where OCCT has 8). The derived cases `boolean_prisms`,
 `boolean_stacks` (a step, a pocket, a box cut in two by a slab, a closed
 cavity, a tool through a round wall) and `boolean_polyhedra` (quarter
 turns, a bar turned 45 degrees through a box, a tilted bar cutting a box
-in two, a turned box inside another) and 887 cases of upstream's
+in two, a turned box inside another) and 899 cases of upstream's
 `boolean` group (86 of them stacks, 300 polyhedra of two boxes, one
 turned, 35 pockets cut one after another, a stack or a polyhedron given
 to the next `bcut`, 65 of S9c.1's prisms with arcs in any position: a
@@ -1196,10 +1196,16 @@ sphere centred on its top cap holding the cap, meeting the wall in a
 parallel, the sphere turned by quarter turns, and 36 of S9d.3a's: a box
 and a frustum inside it, standing on it or through a face, meeting its
 faces in circles, or with its axis outside a wall, meeting the walls
-across it in hyperbolas, in `ZH3` and `ZH4` turned about its axis)
-evaluate on both backends; none fails on the kernel, and S9c.2b.1 adds
-none. Of the upstream cases in frames with different axes the rest are
-refused: a cone against a cylinder (S9d.3b's `OutOfDomain`), tori and
+across it in hyperbolas, in `ZH3` and `ZH4` turned about its axis, and
+12 of S9d.1's pole follow-up: the cylinder and a sphere of radius 2 on
+its cap turned so the cap's plane holds its axis, the section through
+its poles) evaluate on both backends, and S9c.2b.1 adds none. One of that
+sphere's turns, `ZI5` (its reference direction `-z`), is wrong on the
+kernel: the fuse, cut and common keep native DRAW's areas but not its
+volumes (off by `32 pi / 9`), and the `btuc` fails the kernel's
+validation (an uncertified shell orientation); a box in place of the
+cylinder alike. Of the upstream cases in frames with different axes the
+rest are refused: a cone against a cylinder (S9d.3b's `OutOfDomain`), tori and
 two cones or tori sharing ids, S9b.1's, S9c.1's, S9c.2a's, S9c.2b.1's,
 S9d.1's, S9d.2a's and S9d.3a's `Degenerate` (a turned box's corner on
 another's wall, edge or corner, or on a cylinder, within rounding; a wall
@@ -1210,7 +1216,6 @@ on the other's face since S9d.2a, and its wall tangent to one; a
 cylinder's rim on a sphere's equator, the wall tangent to the sphere
 along it, its discriminant vanishing identically, a tangency since
 S9d.2's survey; a box's wall through a frustum's axis, its corners on the
-rim, and a frustum's base circle tangent to a face's edges), a plane
-through a sphere's poles (`PrecisionLoss`), and an arc ending off its
-circle; of the stacks given to another Boolean,
+rim, and a frustum's base circle tangent to a face's edges), and an arc
+ending off its circle; of the stacks given to another Boolean,
 those with cylindrical walls (S9c; `UPSTREAM_TESTS.md`).

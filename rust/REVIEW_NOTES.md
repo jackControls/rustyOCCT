@@ -2051,9 +2051,11 @@ Decisions for S9, recorded before its code (2026-09-28):
     either side and the loop turns half a turn at the pole (the validator's
     `u` gaps scale by `cos v`); a section through a pole off the axis's
     planes is `OutOfDomain` (its pcurves' `u` undefined at the pole).
-    `ZI4` evaluates, its area native DRAW's; the 16 cases' registration
-    waits for the next survey (`tests/sphere_booleans.rs`,
-    `sections_through_a_spheres_poles`).
+    `ZI4` evaluates, its area native DRAW's (`tests/sphere_booleans.rs`,
+    `sections_through_a_spheres_poles`); the survey after S9d.3a's
+    registered 12 of the 16 (`ZI4`, `ZI6`, `ZI7` of the four grids, the
+    sentinel `bopfuse_simple/ZI4` re-purposed) and found `ZI5` wrong (the
+    DRAW survey of S9d.3a, below).
 
   * **S9d.3 refined, before its code (2026-09-29).** Cones and frusta (S3's
     `cone_*`: radii `bottom` and `top` over heights `0..h` on the stored
@@ -2180,7 +2182,17 @@ Decisions for S9, recorded before its code (2026-09-28):
     adapter's 61 are unchanged. Sentinels added: `bopfuse_simple/ZJ4`
     (S9d.3b's `OutOfDomain`), `ZG8`, `ZG2`, `ZG4` and `boptuc_simple/ZG2`
     (the four `Degenerate` reasons), `bopfuse_simple/ZL2` (a torus); none
-    changes. 692 cases stay refused. The ledger does not change.
+    changes. 692 cases stay refused. The ledger does not change. After
+    the near-coplanar refusal and S9d.1's pole follow-up, a survey again:
+    only the 16 `PrecisionLoss` spheres change (none is refused by either
+    change); 12 evaluate, areas and volumes native DRAW's and the closed
+    forms' within 1.1e-15 relative, and are registered; `ZI5` (the
+    sphere's stored axis `-y`, reference direction `-z`) is wrong: its
+    fuse, cut and common keep the areas but their volumes are off by `32
+    pi / 9` (the common 27.9253 against `16 pi / 3`), and its `btuc`
+    fails validation (`uncertified_shell_orientation`) where native DRAW
+    evaluates; a box in place of the cylinder alike. Not registered;
+    a kernel fix pending. Rust evaluates 902, 899 registered, one fails.
 
 ### Parallel tracks
 

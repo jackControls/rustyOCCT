@@ -144,7 +144,7 @@ group, and stale success records are removed before each run.
 | `boolean/bcommon_simple/A1`, `bfuse_simple/A4` | Unsupported | Viewer skipped | A unit sphere and a unit box whose corner is at the centre, its far corners on the sphere (an S9a sentinel), the box quarter-turned so a wall is tangent to the sphere: a vertex of one input on the other's face (S9d.2a's `Degenerate`; S9d.1 reported it as a meeting at every seam tried), a tangency between the inputs (S9d.1's `Degenerate`) |
 | `boolean/bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`, `boptuc_simple`: `ZI8`, `ZI9`, `ZJ1`, `ZJ2`, `ZJ3` (20 cases) | Viewer skipped | Viewer skipped | `bop` and its operations on a `pcylinder` of radius 4 and height 8 and a sphere of radius 6 centred on its top cap (turned by `trotate` about the cap's centre: whole quarter turns about z in `ZI9` to `ZJ2`, about y in `ZJ3`): the cap inside the sphere, the wall meeting it in a parallel at height `8 - 2 sqrt(5)`: `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9d.2a's coaxial rings) |
 | `boolean/bopfuse_simple/ZH5` | Unsupported | Viewer skipped | A cylinder of radius 4 and a sphere of radius 4 centred on its top cap: the rim is the sphere's equator, the wall tangent to the sphere along it; the coaxial pair's discriminant vanishes identically: a tangency between the inputs (`Degenerate`; the survey below found it refused as a computation limit, S9d.1 as S9d.2's `OutOfDomain`) |
-| `boolean/bopfuse_simple/ZI4` | Unsupported | Viewer skipped | A cylinder of radius 4 and a sphere of radius 2 centred on its top cap, turned a quarter turn about x: the cap's plane holds the sphere's axis, so the section circle runs through its poles, the singular points of its parameterization: coordinates cannot resolve the requested tolerance (`PrecisionLoss`; the same sphere unturned evaluates) |
+| `boolean/bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`, `boptuc_simple`: `ZI4`, `ZI6`, `ZI7` (12 cases) | Viewer skipped | Viewer skipped | `bop` and its operations on a `pcylinder` of radius 4 and height 8 and a sphere of radius 2 centred on its top cap, turned a quarter turn about x (and then a half or three quarter turns about y in `ZI6` and `ZI7`), so the cap's plane holds the sphere's axis: the section a great circle through its poles, a vertex at each: `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9d.1's pole follow-up after S9d.3a; `bopfuse_simple/ZI4` was the sentinel for its `PrecisionLoss`; `ZI5`, a quarter turn about y, is not registered: see the S9d.3a survey) |
 | `boolean/bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`, `boptuc_simple`: `ZF5` to `ZF9`, `ZH1` to `ZH4` (36 cases) | Viewer skipped | Viewer skipped | `bop` and its operations on a box of side 4 and a `pcone` frustum: of radii 1 and 0.5 on the vertical through the box's centre, standing on its top face, inside it (its top disc on the top face or clear of every face) or from the bottom face or below it to the top face, meeting the faces in circles (`ZF5` to `ZF9`); of radii 5 and 4 (5 and 3.5 in `ZH4`) and the box's height, its axis 2 outside a wall and 2 from the walls across it, meeting them in hyperbolas (`ZH1` to `ZH4`; in `ZH3` and `ZH4` turned 30 degrees about its axis): `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9d.3a's cones against polyhedral prisms) |
 | `boolean/bopfuse_simple/ZJ4` | Unsupported | Viewer skipped | A `pcylinder` of radius 4 and height 8 and a frustum of radii 2 and 1 standing on its top cap: a cone against a prism with arcs (S9d.3b's `OutOfDomain`; before S9d.3a solids other than prisms) |
 | `boolean/bopfuse_simple/ZG2`, `ZG4`, `ZG8`, `boptuc_simple/ZG2` | Unsupported | Viewer skipped | A box of side 4 and a frustum of radii 3 and 2 whose axis lies in the box's wall `y = 0`, its top rim through two of the box's corners: a vertex of one input on the other's face; the same turned 30 degrees about its axis: a plane through a cone's apex; with the frustum first: an edge of one input meeting an edge of the other; a frustum of radii 1 and 0.5 standing on the top face, its base circle tangent to two of the face's edges: a tangency between the inputs (S9d.3a's `Degenerate`) |
@@ -165,11 +165,11 @@ group, and stale success records are removed before each run.
 | `boolean/bopcommon_simple/S5`, `bopcut_simple/ZC7`, `S4`, `bopfuse_simple/U7`, `B3`, `boptuc_simple/R1` | Unsupported | Viewer skipped | Box corners on or tangent to a cylinder, boxes touching along an edge: pieces thinner than the resolution, results touching themselves (at a point or along an edge) or each other, a hole touching its boundary (the kernel's `Degenerate`) |
 | `boolean/bcut_simple/G8` | Unsupported | Viewer skipped | A semi-infinite prism of an exploded face (`explode`, `SemiInf`) |
 
-There are **five original geometry tests passing on both backends** and 891
+There are **five original geometry tests passing on both backends** and 903
 more evaluated on both with their image commands recorded (`buc60769`,
 S7's `lowalgos/intss` cases `bug23177_1`, `bug23177_2` and `bug24648`, and
-887 Boolean cases of S9a, S9a.2, S9b.1, S9b.2, S9c.1, S9c.2a, S9c.2b.2,
-S9d.1, S9d.2 and S9d.3a; S9c.2b.1 adds none).
+899 Boolean cases of S9a, S9a.2, S9b.1, S9b.2, S9c.1, S9c.2a, S9c.2b.2,
+S9d.1, S9d.2, S9d.3a and S9d.1's pole follow-up; S9c.2b.1 adds none).
 S8e registers the upstream `bsplit` group as capability sentinels: `boolean/splitter/A5`
 and `B5` and the 22 `bugs` cases that call `bsplit` (with `bug29333_1` and
 `bug29333_2`, registered before). They need S9's general builder: tools that
@@ -834,6 +834,37 @@ says since S9d.2's correction). Six sentinels are added:
 cone's apex), `boptuc_simple/ZG2` (an edge meeting an edge) and
 `bopfuse_simple/ZL2` (a cylinder and a coaxial torus, the kernel's
 remaining solids other than prisms). The ledger does not change.
+
+After S9d.3a's survey two kernel changes landed: two parallel faces
+within the resolution are `Degenerate`, and a section through a stored
+sphere's pole, or within the resolution of it, gets a vertex there
+(S9d.1's follow-up; a section through a pole off the axis's planes is
+`OutOfDomain`). The 1,802 cases were run again (2026-09-29). Native
+DRAW's statuses are unchanged. Only the 16 `PrecisionLoss` cases change
+(`ZI4` to `ZI7` of the four grids, a sphere of radius 2 centred on a
+`pcylinder`'s top cap, turned so the cap's plane holds its axis); no case
+is refused as parallel faces within the resolution or as a section
+through a pole off the axis's planes. 12 evaluate and are registered
+(`ZI4`, `ZI6`, `ZI7`; `bopfuse_simple/ZI4`, the sentinel for the
+`PrecisionLoss`, re-purposed): areas and volumes native DRAW's to its
+printed digits and the closed forms' (fuse and cut area `100 pi`, volume
+`128 pi +- 16 pi / 3`; common and `btuc` area `12 pi`, volume `16 pi /
+3`) within 1.1e-13 (1.1e-15 relative). `ZI5` (a quarter turn about x and
+then one about y, the sphere's stored axis `-y` and reference direction
+`-z`; `ZI7` differs only in the reference direction `+z`) is wrong on
+Rust and is not registered. Its fuse, cut and common evaluate with areas
+native DRAW's (the `checkprops -s` the cases check) and `checkshape`
+valid, but volumes off by `32 pi / 9`: the common 27.9253 against
+`16 pi / 3` (16.7552 natively), its centre of gravity `(0, -1.333, 8)`
+against `(0, 0, 7.25)`; the fuse 407.709 and the cut 374.199 against
+418.879 and 385.369. Its `btuc` fails (`invalid topology:
+uncertified_shell_orientation`: the kernel's validator cannot certify the
+result's shell orientation) where native DRAW evaluates. A box in place
+of the cylinder (`box b1 -4 -4 0 8 8 8`, S9d.1's domain) gives the same:
+`bcommon` of it and the sphere 27.9253, `bcut` of the sphere and it the
+validation failure. Rust evaluates 902 (887 before), 899 registered, and
+fails one; 676 cases native DRAW evaluates are refused (692 before), the
+`PrecisionLoss` row of the table above gone. The ledger does not change.
 
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and

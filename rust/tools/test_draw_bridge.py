@@ -321,7 +321,9 @@ class BridgeTests(unittest.TestCase):
                        "trotate k 0 0 0 0 0 1 60\npcylinder m 1 4\nbcut r m k\n",
                        "pcylinder k 0.5 6\ntrotate k 0 0 0 1 1 1 30\nttranslate k 2.4 2.8 1\n"
                        "pcylinder m 1.5 4\nttranslate m 2 2 0\nbcut r m k\n"]:
-            self.expect(self.POLYHEDRA + script, "unverified")
+            # Each takes 24 to 34 seconds on the debug worker of a loaded
+            # machine, about the default 30 second limit.
+            self.expect(self.POLYHEDRA + script, "unverified", timeout=120)
         # A turned box's corner on a face is degenerate.
         for gap, why in [("box d 0 0 0 2 2 1\ntrotate d 0 0 0 0 0 1 45\nttranslate d 2 0 0\n"
                           "box e 0 0 0 4 4 1\ncatch {bcut r e d}", "egenerate")]:
