@@ -3140,6 +3140,15 @@ Decisions for S9, recorded before its code (2026-09-28):
     to another Boolean remains `OutOfDomain` (S9c). The campaign at
     `e95fdfbc` (split, brep_validation, tessellation clean; boolean found
     identical prisms with a spline hole given either way round failing the
-    history check, amendment (g); `fuzz/regressions/README.md`). Pending:
-    the DRAW survey of the upstream cases with turned cylinders, and the
-    campaign.
+    history check, amendment (g); `fuzz/regressions/README.md`). DRAW
+    survey (2026-09-28, `UPSTREAM_TESTS.md`): of the boolean group's 1,802
+    self-contained cases Rust evaluates 804 (741 before; `bfuse_complex/J5`
+    and 62 new, all registered); of the 234 arcs in frames with different
+    axes 63 evaluate, 48 are S9c.2's cylinders, 114 `Degenerate`,
+    `bfuse_simple/E1` an arc ending off its circle, and 8 fail on the
+    kernel: `bopfuse_simple`, `bopcut_simple` and `bopcommon_simple` `T7`
+    and `Y2` (a box's corners on the cylinder within rounding:
+    `InvalidTopology("a hole outside every piece")` where `boptuc` refuses a
+    piece thinner than the resolution) and `bopfuse_simple`,
+    `bopcut_simple` `ZC5` (a wall with three holes of ellipse arcs: the
+    validator's `uncertified_containment`). Pending: the campaign.

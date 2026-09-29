@@ -188,6 +188,7 @@
     "tests/boolean/bopcommon_simple/T1": "f2156c92b4307599510e88cd0ccb508b2d445dafcd4d91877819b72da5760f49",
     "tests/boolean/bopcommon_simple/T3": "12dc237900ab9a08143e6541f1b3cc38100ee9589829d183c2e85c522744f79a",
     "tests/boolean/bopcommon_simple/T5": "8a4387c046cb1b43899a62f1c7969397f9be9db1083f9d62ccba7aa719090595",
+    "tests/boolean/bopcommon_simple/U1": "526cdeb0daaa5b2924d8547a0dac33aa59556a29a18bc7baf8f6211b348de9d7",
     "tests/boolean/bopcommon_simple/U3": "2126fea094a19a8f28f6dcafff1e3beb8c2e8ffda6a07bb948a93fb0974374eb",
     "tests/boolean/bopcommon_simple/U4": "8ed267bba6f38f7431f675da521b925016ee99323fcfd20bc1af3ee8ac8f34c9",
     "tests/boolean/bopcommon_simple/U5": "8969930b7f9ff841ad3df39b7ebce4ac4bdcd48a37640b26a61678fd25af0487",
@@ -195,6 +196,7 @@
     "tests/boolean/bopcommon_simple/U7": "d50f6767d7fdf610f85a3da9f5316c0832b46aae6efc16f6639aff31bfb5f2aa",
     "tests/boolean/bopcommon_simple/U8": "5961ccf713eb1398648e60b43e2b9be6283b5ab6cbfa71fbfe44ea6fa346bb12",
     "tests/boolean/bopcommon_simple/V1": "4370b2cc22e1e231bebeb7c2287bfe0be0e0fc1c7c8f76a87cc7b885e3d8803b",
+    "tests/boolean/bopcommon_simple/V3": "bd1ad1462bfbbf3d6ca510737e924abb7d6162c3a1569d0cc1654e13e155dec2",
     "tests/boolean/bopcommon_simple/V4": "6db8c51e30e6f4e0e043b4009ac16d36480cf6856e203316835e89b86f1afd1d",
     "tests/boolean/bopcommon_simple/V5": "6f0dcf1a12b0e21d8d30c2c92c180902ca745bc593c1552ec39e9bb0e4911d80",
     "tests/boolean/bopcommon_simple/V7": "ac3d91e3a0fe5986e1fd30a90ca3bdcfc011bb77d1b5c23af46f38b40ae6477a",
@@ -211,6 +213,7 @@
     "tests/boolean/bopcommon_simple/X5": "6050ecd0235b5ad25205004bb883f06f5b5a84379a18c60f018bc5a404d366e0",
     "tests/boolean/bopcommon_simple/X7": "f57dcd41c9ca647972103fd97adf9d2ad2a9e3f3f2bf672dd24e1f3027a753c3",
     "tests/boolean/bopcommon_simple/X9": "cd2906eaeffc5e806e7919c5187dd79d08d21cdbb011116d68240b35c77c2a68",
+    "tests/boolean/bopcommon_simple/Y5": "bee83fe29f7ec13beb06369b031bb43505a44ee61d81cc0b05ce3adcfbbc6324",
     "tests/boolean/bopcommon_simple/Y7": "f2e28b4172e2635445fdd03568b40ede8a41a1a3528aab841fd67154773ea74a",
     "tests/boolean/bopcommon_simple/Y8": "5137319589c14322fdf060635065f5de9036d613dd9054de061416bdb475e286",
     "tests/boolean/bopcommon_simple/Y9": "a03be846905a30ba2fe79f1c15e3681956c2abc80696c51f053fdc00f06d79ca",
@@ -218,20 +221,30 @@
     "tests/boolean/bopcommon_simple/Z2": "3e2df9dbcbee7eb313e55b78b615836896ba2f68231670d7cf32edeab77be3cd",
     "tests/boolean/bopcommon_simple/Z3": "e444a8bc2804093c17a3f62b01b43a0e2f149c507bc894069bc34fbca5717d1f",
     "tests/boolean/bopcommon_simple/Z5": "f78ad048eb1e50f3cc7cafb3e2ceba8a72cad7d351c460141a1aa75bd9c7c478",
+    "tests/boolean/bopcommon_simple/Z7": "e0fb980f94b868adfe17e7cf250487722be55aee32979dfaa0f788e07a38758e",
     "tests/boolean/bopcommon_simple/Z8": "d7300c2a7ef104de7b9690a7f4f77ab2d7f42c986660120a90527cddbbab2572",
     "tests/boolean/bopcommon_simple/Z9": "2633bd14b139b5bc043572030f65ecd7dd6ca2f427824d86d2e822788a72dfef",
     "tests/boolean/bopcommon_simple/ZA1": "08c107e407d3fabd0a1a452bef47a1095404d15343513d5f1b85d1c7b1c73f02",
+    "tests/boolean/bopcommon_simple/ZA2": "5a561a0307e88bb7b0d29d40e2c095ba1dfce4a6ae1ec87733d6e5ffc640d944",
+    "tests/boolean/bopcommon_simple/ZA4": "b614fb65202ebc22f14a1b2a80ae95d28fe2be311df9d848576b962c022a41bb",
     "tests/boolean/bopcommon_simple/ZA5": "e9ea8793e40791815180cdfba2023ada6b408fbe359309856607a3cc0aabe735",
     "tests/boolean/bopcommon_simple/ZA6": "65b72bf605170a2d1a3a47885b22b537e6bb44bf4519d145a3b75631648461ca",
+    "tests/boolean/bopcommon_simple/ZA7": "0b4ceb46c4af27b181fbdde633d6839d1e6a1355fe4d9c9008f0132e77654629",
     "tests/boolean/bopcommon_simple/ZA8": "9c1befaf490c1aca562f8a72a0fbda1e167caafb8f74f3c7d2da08bdb19fdf84",
     "tests/boolean/bopcommon_simple/ZA9": "97987b47c1ea1f13c779cf76fed25b68eba185024997767b6600494ae5f94a2d",
     "tests/boolean/bopcommon_simple/ZB1": "198834bb169040ece3046e300d96808d3229a5f46235998f69f7305dd76d4058",
+    "tests/boolean/bopcommon_simple/ZB2": "282b7d9b98dcfb7d1848066a49d089db5527e773f5170ce6865397ad0bd90145",
     "tests/boolean/bopcommon_simple/ZB3": "2054b46135f05a9e58f140ccd2813c4b6e3150901f3e7de3d0f949cdb5bf7b65",
+    "tests/boolean/bopcommon_simple/ZB4": "9c9f64e0bb123bb9be3a38ce115973da717c4785bb7a1d29f7e61c7de7075ac0",
+    "tests/boolean/bopcommon_simple/ZB6": "21b87a8e1496dab166fb9fcdc32f07be35c98f28614ce2666c1f75471fcd3419",
     "tests/boolean/bopcommon_simple/ZB7": "03b09d24397b5e0eb15dd53afedc467d937a764579bdc56baac55b597366e7d8",
     "tests/boolean/bopcommon_simple/ZB8": "29e33e8b2ec69d40fb3cef5a9ed4cd5f49d2b76811e4c3b7ac61a8cdd59dad52",
+    "tests/boolean/bopcommon_simple/ZB9": "8a5072cfe62576435a349428832b4f2e07a20d848b19421acf7800d20b713e7c",
     "tests/boolean/bopcommon_simple/ZC1": "5a28997e4bb3ce4d27ba2dc9edcd7a994d358fa8649c180fa671445100b5546f",
     "tests/boolean/bopcommon_simple/ZC2": "7db58ff14f82b4566e75c5846e7525bbc0b7b8cbee0788dc084b36dad84707d6",
     "tests/boolean/bopcommon_simple/ZC3": "24078aec62255cfdcd4f2bca3bb6166cfa67f22384014a8882e12cea29e751c0",
+    "tests/boolean/bopcommon_simple/ZC4": "fdda7a74122f5d0effc1cd002ee9035063143ca42c58f7c80200050913fb8a6a",
+    "tests/boolean/bopcommon_simple/ZC5": "ae0c4638a34267aa14051581d06a2ad3bd697c2755b78afc311766f59d1c5389",
     "tests/boolean/bopcommon_simple/ZC6": "e4a375ea61f556a9546a4d62aa929277b101e302bb009a20021a30842362cf58",
     "tests/boolean/bopcommon_simple/ZC7": "b8783b1f6aee0619d792283a17281a1551054e83133118b50bf42e8854c9511b",
     "tests/boolean/bopcommon_simple/ZC8": "71b38530e07011d75c7c9e6b7a2bac038b4e7d710cd2ea31571af83b3a525fde",
@@ -240,6 +253,8 @@
     "tests/boolean/bopcommon_simple/ZD2": "02bf575d0cd4ac3512402672f81498ba5713ae2364e55e5c9091a0fb347a958a",
     "tests/boolean/bopcommon_simple/ZD3": "2e17a95e9d349647fcce85eef3d2aa1721a95ff1867d49e4a21100d7f2309dda",
     "tests/boolean/bopcommon_simple/ZD4": "854a9497503c794b572093cbbec35214c0f8678ebeed740b51b0e77052b679dd",
+    "tests/boolean/bopcommon_simple/ZD8": "a12d47344c42f57424ff0dcf3b143da290c686164846ac0f7a7184a0c18af4c7",
+    "tests/boolean/bopcommon_simple/ZE1": "e2893e133e307111356fd68ab5a20984f8463df76ed54cf2324caa1d81b4c47a",
     "tests/boolean/bopcommon_simple/ZF4": "f9f1b609c74b0fba98f68da8cd2095d27e402733fe8498346a462db9acb31069",
     "tests/boolean/bopcommon_simple/ZL6": "3d506ac5cc37c22022f6826f75f4b5158e273106455c438eb3cdbd3a91ac68ad",
     "tests/boolean/bopcommon_simple/ZN3": "453e172b346fa4039b99bef7d60398b07c1d40de5fc9a18b5c6aafed5acc99db",
@@ -255,6 +270,8 @@
     "tests/boolean/bopcommon_simple/ZO4": "d0bb57d017eeb7820fa39b5d66aa3817833d5f79ffe0bc2290a9edf7c6233364",
     "tests/boolean/bopcommon_simple/ZO5": "c8f3144676425dcac34eaac7a050872bb3be8c68212f1a5d7048a9c145034bbc",
     "tests/boolean/bopcommon_simple/ZO6": "7a5cad401f7a8fead4a261ec84e25b258db67e1d6585e65100557bc62f13a4db",
+    "tests/boolean/bopcommon_simple/ZO7": "45481001bf83d6ba573476e04ed17ed9aaca1aade4910ae733e3d5871a186666",
+    "tests/boolean/bopcommon_simple/ZO8": "2bd989688bb0621dafd21634159708efcdb2b6eb8c0bb91b45c738a670783903",
     "tests/boolean/bopcommon_simple/ZO9": "d87d84f08612f2daa7341d8f824bb37d29c71812018032339b810749d8a3a4c3",
     "tests/boolean/bopcommon_simple/ZP1": "159cb7cbe9f1b43fbc8de098531a6e4aa05e9f496921fc982b7dda728bd2b38c",
     "tests/boolean/bopcommon_simple/ZP2": "2633bd14b139b5bc043572030f65ecd7dd6ca2f427824d86d2e822788a72dfef",
@@ -381,12 +398,14 @@
     "tests/boolean/bopcut_simple/T1": "75b058d5bfcb42ab842ba4c9046451ff36fe126e6b014ee24db059909e7a9433",
     "tests/boolean/bopcut_simple/T3": "77f4274fa4fd8c5168afc4080a9dcc10ebafa7aa16bed1c444a83d107fe31367",
     "tests/boolean/bopcut_simple/T5": "a1a0c8da036dd3b8cac2614ff6ea6d7a639b55a0877bdb3fcb6146360c14f394",
+    "tests/boolean/bopcut_simple/U1": "4fad1d3e98c7658aaf133ea7c612927c19be2fce63aaa2f66f2f9f12998d5449",
     "tests/boolean/bopcut_simple/U3": "cec8fd87dc7f1d90a61f2798282d1f5074e089840ac2911a130cbc2f9e0c0c84",
     "tests/boolean/bopcut_simple/U4": "1712934cc7aa408919a0a46d7694a6ed340fa2a1e687c98bc5de5495eba8c6ee",
     "tests/boolean/bopcut_simple/U5": "c2c145aa0c8a3593179bc90f6bd86ae4a7e71816b1a10548de731c7109a497ea",
     "tests/boolean/bopcut_simple/U6": "8d6dca87f44e7433f25be4a497468b35cfa9d55da56dfe0d0c357be6dc70155e",
     "tests/boolean/bopcut_simple/U7": "e0d717adbf3a504daeff8d6c83f503a185e3a0e45da3ec4777afcf92aebe0af7",
     "tests/boolean/bopcut_simple/U8": "79f7de3981067b04743444b4ce1ff202fe35b7ba49688d6e3790228310b047d9",
+    "tests/boolean/bopcut_simple/V3": "210d961051df1c1b8581cca8562a822a61810b5084d9ac12b712aa5bc0b4b902",
     "tests/boolean/bopcut_simple/V5": "fe4aa5c24dcc3aff6823702e06d21547760cca8f53a48a4a934fda0e9013dd11",
     "tests/boolean/bopcut_simple/V7": "4c01a12b4fab7ad1e045b5f1b39ee111585917ad60fe4fcc93b0f9b1e097a22f",
     "tests/boolean/bopcut_simple/V9": "ffe7f20dc21626f5c05a869f553a5a2189f22559fb71e191c3822e486005922c",
@@ -401,23 +420,33 @@
     "tests/boolean/bopcut_simple/X5": "705ea40d469d1245b1f74979a09291f2df741d83a922c09393f9b61d6f2fb649",
     "tests/boolean/bopcut_simple/X7": "3563da6f2e3a7b3b028fb87ba081115ab384d96cd7e832dc50a500fa6dd27d29",
     "tests/boolean/bopcut_simple/X9": "fa097221624f4a5b023d1a4ffc3fd2db3eccc51be4574bdebacae4ef80da991f",
+    "tests/boolean/bopcut_simple/Y5": "210b78faa4e4d318bee78a3c9fe917ecd120b06816d0e474cacd2bdc1fbfb0e2",
     "tests/boolean/bopcut_simple/Y7": "dd00f921391ce224105b9b8693b2ed0f3b7c90308fe8de1c55077552c6862d53",
     "tests/boolean/bopcut_simple/Y8": "014b238fc73894965ef4ca2ff2f0bc4eab66e49579be3a8ba6f1ae29bb982206",
     "tests/boolean/bopcut_simple/Y9": "70f7f0bdcf28a59b8b07524db9621ae5a94ace32d876765f8e41c3502302204e",
     "tests/boolean/bopcut_simple/Z1": "6e564222f82419beebd71045072f00909a852e658d550b99c5b2dcdbd0d12386",
     "tests/boolean/bopcut_simple/Z2": "fb2fa8756637563713fba110a7b1aee7a8576e6632456d384e4899a0cd4ca4f1",
     "tests/boolean/bopcut_simple/Z3": "ee49b38c4d6c28f5657102753bbf55eaaa4d39c7e2918f9c85e6167ca90ba8e0",
+    "tests/boolean/bopcut_simple/Z7": "9485dcb751ea2ba2bb7f14090be3dcdb25a1745c98e32de3e61ca6e03024aed8",
     "tests/boolean/bopcut_simple/Z9": "63be45fc0ab33120318c57577fdca477b28342cae41541981c2ec373c9f27809",
+    "tests/boolean/bopcut_simple/ZA2": "9bf28db4e433eecbd4bbc13c4525d732ee710dbda8dc2d701eaaf0cf54e60903",
+    "tests/boolean/bopcut_simple/ZA4": "d1cb6beb1caeddabb9ad0f0f65e0437523a31633542c3e56ee91a05d36e27524",
     "tests/boolean/bopcut_simple/ZA5": "f8ed01f557b4157a3fd6cfe91ddc133b238cbee67aa23964cf85ead6f48e376d",
     "tests/boolean/bopcut_simple/ZA6": "75558b07993a10bab212743b63de1e6258b9facd820d5b84a911f4f9586b68f4",
+    "tests/boolean/bopcut_simple/ZA7": "162e78e9fc8c421f551b17e981fa6182144fb119b95888506630376c45fa7891",
     "tests/boolean/bopcut_simple/ZA8": "802ba058bec3f29a5c8e66c0c8457fb289eefa8e173833a6d948dd85a0713485",
     "tests/boolean/bopcut_simple/ZA9": "1332d057c19d208c83d4df2291f3628d7a87c6a79dad4c559ba34ac108e8f3c7",
     "tests/boolean/bopcut_simple/ZB1": "a5886e213d0757d17a0e9b7b755047ff7c64f97731ed21ebe0d8d74c7ecc0de4",
+    "tests/boolean/bopcut_simple/ZB2": "d234810aad00e957032adb83ae1612852c5f7cf7b03734f0762c9c579cf2e448",
+    "tests/boolean/bopcut_simple/ZB4": "6a5b71bacdb6db6b0b4fa39685ad1276d9e47b06746b84f8e1c9c0cb5929672f",
+    "tests/boolean/bopcut_simple/ZB6": "c77725e58832d67c541fd011fb0f6073597c7fdd7fed421e85da8cb4775fad99",
     "tests/boolean/bopcut_simple/ZB7": "b294c9773b01a91af11a484783363bbfb40ef6d52c0dd5bced8f1bab1760ca82",
     "tests/boolean/bopcut_simple/ZB8": "53b2581eb318d929ed71a274fa8251e78f3866e308fd583938203106a2e7acc5",
+    "tests/boolean/bopcut_simple/ZB9": "cc98ba47e0f810a94dbbf4990996fdc90815e05a0e21babb07f84bb920199b99",
     "tests/boolean/bopcut_simple/ZC1": "c13f580ca69b8aa497b6ea59f66ba58f212291be7692ec24c183498b70e9dbd3",
     "tests/boolean/bopcut_simple/ZC2": "928f91d753da81f3b58e93d38d22f840bafe925675919c99efd5106b26b70b37",
     "tests/boolean/bopcut_simple/ZC3": "ccf41aa41de2be306af729914041501e05b358e0cb488c7ccdc97d2d2fab758e",
+    "tests/boolean/bopcut_simple/ZC4": "1710274ae6d62696f148c46daba6c425f8b3706a89854a1b0c465ef3c2b5bb4a",
     "tests/boolean/bopcut_simple/ZC6": "c70f09e3a0f62bcd83f1f52248a973411ce1d1ac6d31684832ae8c7d3a39b668",
     "tests/boolean/bopcut_simple/ZC7": "8f116d5acd981c0ea31b31c0024a470bad1236c0f18107cc75fbfe1f25363cb3",
     "tests/boolean/bopcut_simple/ZC8": "c13678e523fc0dcd7c684e1e2dd173002b4c3dbbe5563e7503380094526ba260",
@@ -426,6 +455,7 @@
     "tests/boolean/bopcut_simple/ZD2": "d871baea2c67fdf833aace196bc0b14cb29afe946d05b1c9dd2d173129970854",
     "tests/boolean/bopcut_simple/ZD3": "da7725a5a344ee104080b50c1f184440d4c2f0791d710d5d4c247e12ecc06efd",
     "tests/boolean/bopcut_simple/ZD4": "e00a8476ed6ba845c4f0929b862b35aca1dca4be1d772bee1ea7b39419e538fc",
+    "tests/boolean/bopcut_simple/ZD8": "c1f5dace98e890d3fafcdd5176fe6aabaa1ea2984f8eb0b36a350ea93958a92f",
     "tests/boolean/bopcut_simple/ZF4": "ca0e61ea9508e8c2fb0867861c88ae891f4cac3b5f4349fb2093e893e1e98346",
     "tests/boolean/bopcut_simple/ZN3": "10bf2981a9aec383ae9820dd538c8c385e2a6d7c3ea3a6f4de719c900980c64c",
     "tests/boolean/bopcut_simple/ZN4": "24fcd5ad0f1a2435636bac933394cc2ddc00565893bd2c4845d826e926eedd42",
@@ -433,6 +463,8 @@
     "tests/boolean/bopcut_simple/ZN9": "77154d2d4e89a61082065baf7f52fde59c54c0abd1166a19ebe41181cd529cf6",
     "tests/boolean/bopcut_simple/ZO1": "7097760a7c6e3b5ceb5a2429c7dd767bedab89e966d190968ae650e70e4d45e1",
     "tests/boolean/bopcut_simple/ZO6": "2cf707f5aab72ca8077f712ce9e516db4a7fa1437a4b9f6cfc19cc7124356df2",
+    "tests/boolean/bopcut_simple/ZO7": "83c9cecd1235a06f938a5fb915355ad078c2dc9543f87b8abdbd767cabc05274",
+    "tests/boolean/bopcut_simple/ZO8": "32a56205c0eddbed5a3adad0d15be3f74eeabbba9fef1b06ab104fa6f6d2c796",
     "tests/boolean/bopcut_simple/ZO9": "2e9ad1a965ee6c3de115c6e7a5e4fec0f93bbf43448892bebc2782500084de8d",
     "tests/boolean/bopcut_simple/ZP1": "9fb21fe11bbd4dad5e06299fade8409ac440fe17e1e42d7f475f4bb8d1b3878a",
     "tests/boolean/bopcut_simple/ZP2": "63be45fc0ab33120318c57577fdca477b28342cae41541981c2ec373c9f27809",
@@ -549,6 +581,8 @@
     "tests/boolean/bopfuse_simple/R8": "cfb213721e84e991323d4433bd0358522a916bef4bd6fc6bf36e2df664c519b8",
     "tests/boolean/bopfuse_simple/R9": "88bfe17f2d9da88db328ddc56e92ef43a28300da972a55c0b49cf6b4a74a8744",
     "tests/boolean/bopfuse_simple/S1": "1ca04b34aeb5e67e1994f22ecbb4c806528aacc28937e75980eec19c0b34c9f7",
+    "tests/boolean/bopfuse_simple/S2": "58434984e3b756389ce34f4c4c50777a69c56448bb7988f303f08213727ec07e",
+    "tests/boolean/bopfuse_simple/S3": "bfd93b4dc252d3743eabef908690e123093d0dec8294b1ec45d74e05497bdb10",
     "tests/boolean/bopfuse_simple/S4": "b3ca24ffbaf0ae6360120bfa8b552553cf6b6a2ab275281a690f33a4a5f868a6",
     "tests/boolean/bopfuse_simple/S6": "b9fc8fec215fa3bc4728aed80e38f0376af79deaed1b665f553af36762bf0f53",
     "tests/boolean/bopfuse_simple/S7": "486cdc21981a4d436c11a89fd8a0b03bfadc880aa5ccbcdc8bffdbadc8310b68",
@@ -556,34 +590,51 @@
     "tests/boolean/bopfuse_simple/T1": "2d4c4fec0314c5f52ed2740756e02611e1f2ace617527e2814e689fd96aa8619",
     "tests/boolean/bopfuse_simple/T3": "317ad8681285451189c424a9614a2707de68ddeeb1dca1f8b94cd732009ededb",
     "tests/boolean/bopfuse_simple/T5": "ce5538c5f6cc19c454809ca9690f0394772b4300459af21a6a063af3c104fa7b",
+    "tests/boolean/bopfuse_simple/U1": "9074d2672967d61de274fc2a86f19dfb10986d293b0a0f4a9c0e3cf16cfa0fa3",
+    "tests/boolean/bopfuse_simple/U2": "a8b8563313e691b8fcad966a6eb0acc9566e14600837ce05c2a070884f6da281",
     "tests/boolean/bopfuse_simple/U3": "af5a6fb0866781bb1faefb028da16bdfcff7c6cc63445417a2e69cb1cb62ec05",
     "tests/boolean/bopfuse_simple/U4": "ff04c28c2ba68f1033b715a0c93780f53daf27b0219e4c05ecb5ac83ffad5df4",
     "tests/boolean/bopfuse_simple/U5": "dcaeaa2c8e3db4c211dd7612aaeb1e9df4f7c56241f69c9e956965728fd5eecf",
     "tests/boolean/bopfuse_simple/U6": "955110bda07e9b2b06da87380b3442069538a0f4043f0c0b6936b689a4634544",
     "tests/boolean/bopfuse_simple/U7": "32ae46fb0edc0f5c6d7ae7a7c66523659018421ef57f9aca8fbadd3b70fa3d51",
     "tests/boolean/bopfuse_simple/V1": "3cf424f1ccf7b9be014eb293254f652bb9e0a6833f6f92bdfe2a0ebdce70ccaf",
+    "tests/boolean/bopfuse_simple/V3": "1756214844c222cae517e4ee729eb10659bd44e74f7d274d40a74bc0d3c8f6c9",
     "tests/boolean/bopfuse_simple/V4": "caf5a4bd5713ef4f92cb508803424f4ac6fde3756ed0f830a890add4f8865bd4",
+    "tests/boolean/bopfuse_simple/Y5": "4695d2e284b8aea151dd46e8daf74cd931be386f8f22e5b50c840621ae819401",
     "tests/boolean/bopfuse_simple/Z5": "8adade02d3b4830ccb8cc64c28b9827bb3b0d039f865ab1371c93cbccc1c7471",
+    "tests/boolean/bopfuse_simple/Z7": "824f2d756a23f205fb7e835cd63059041ec89ef8cd808055014055f474a99035",
     "tests/boolean/bopfuse_simple/Z8": "a71fa52193d4e254f945b089c0b072a33d212a4fe3f503b1808b4e448e351e32",
     "tests/boolean/bopfuse_simple/Z9": "c33835f165ee50fb6e1de8ffd61df8fa3e30db99d122e9cfbe5bfd490258044e",
     "tests/boolean/bopfuse_simple/ZA1": "d279a06297853226563a32d918db35711b74564905789bf310291bdda6830075",
+    "tests/boolean/bopfuse_simple/ZA2": "97ecbc8f5bcf50ea0b7d23da75d1e41288bac60cd99ecca9f197fa4f30f7cfba",
+    "tests/boolean/bopfuse_simple/ZA4": "634a27355da4e7d5386a7e82c8c82d0e706f520aa158da5b71d5401b38712d37",
     "tests/boolean/bopfuse_simple/ZA5": "6bfdfbf5b6820bff2a9952ab496db577cdd496b76134719ecbf4800a5458c46b",
     "tests/boolean/bopfuse_simple/ZA6": "0d2dd1a8d883e64d41e919fe3d0f433ea45217a3d1fbf7a09c9268f09bf2b540",
+    "tests/boolean/bopfuse_simple/ZA7": "7eb5f23e6f0f349f7d54cb40328f5f99ef71342e4327efec098fccce9fae52d8",
     "tests/boolean/bopfuse_simple/ZA8": "936d9b90c56c92f8bce64672f5492dccda258d8ae4aa13d65383924121d31d1e",
     "tests/boolean/bopfuse_simple/ZA9": "b91b3ed1c8515901262816e8b55d226c137f0f50bf3a027110f6c48e5f716417",
     "tests/boolean/bopfuse_simple/ZB1": "b3ede2c44125b80b51a799cd20eaad25d2b7b78344e857c5896f1c69668a151f",
+    "tests/boolean/bopfuse_simple/ZB2": "4fc73117818098687b1b21dd988be20e2ee19befccb31825090322a1c58fd44b",
     "tests/boolean/bopfuse_simple/ZB3": "a1acc4f4f47d6d5a00ca0052876532bcd3324adc475b96c592f6f3a496f7a85e",
+    "tests/boolean/bopfuse_simple/ZB4": "2d96ebfad62e97930c3ab1c19bc6c25d1e5ee7262df36e6e74f3ef0b36466e52",
+    "tests/boolean/bopfuse_simple/ZB6": "dd35432960220b89f845296b342ae59d23a0d94095c03fe2df4acc1e22290f67",
     "tests/boolean/bopfuse_simple/ZB7": "28d391303ddc7a0d0a656d4f11a09089c2d8f8298bf7f5fd341e5da1dbe23291",
     "tests/boolean/bopfuse_simple/ZB8": "70451d5fe54743e251fa82a7c731d20e575d2fef9782ca099bd8cab4b877cf01",
+    "tests/boolean/bopfuse_simple/ZB9": "3c5bdab65ae768f7f93f8391cb9fe70b5b9d7e9064f9051fd03bbe0877f05c17",
     "tests/boolean/bopfuse_simple/ZC1": "a74fc6a98d9053b503568117450a876758eedd953ae6bc067fcc6c10d9587256",
     "tests/boolean/bopfuse_simple/ZC2": "07e812d4c05cb34cc3aad84821c49c336a86d2bb291ebb0d7baebad09c1d6f2d",
     "tests/boolean/bopfuse_simple/ZC3": "ae0418cef8cbac9cac38f17e7b952fd5baf1f010349a3f4da5109994ac961412",
+    "tests/boolean/bopfuse_simple/ZC4": "082d5808c3e0551d8cae69d326c840e85a0edddb9276a85847af69c2c0d47d27",
     "tests/boolean/bopfuse_simple/ZC8": "539dc113209d47a9f60ba07193626e73520ca0d9519c31815870fa5d6616adef",
     "tests/boolean/bopfuse_simple/ZC9": "79151e79d5c52075de107b76268dfafb2a7b8240def97c8827fafca79ec14d5f",
     "tests/boolean/bopfuse_simple/ZD1": "492a6bf70b35516561690e8a6f0f83019256d1e4dcd636bfd6877b7c99213884",
     "tests/boolean/bopfuse_simple/ZD2": "2ec98328d3da30ba4822bb89ffb82006472db50c96cca53b2a34c28e36d550fb",
     "tests/boolean/bopfuse_simple/ZD3": "28e00925bdb677228c502f1a28cecd9722022ead493649a73dd88ae865660ad7",
     "tests/boolean/bopfuse_simple/ZD4": "cdc54b62dde6537d546ddd67b87642ce1819c406fee4e42de689af72878f6f01",
+    "tests/boolean/bopfuse_simple/ZD5": "beefa9f8c42e069e30dc8e468001529486bfeab432edd1275dcb9f5cfed384b2",
+    "tests/boolean/bopfuse_simple/ZD8": "2cf5a402a90f56d80d3670d10e7bfde02f4cf3f01fa62b1de1b7f8ebd9d0d886",
+    "tests/boolean/bopfuse_simple/ZE1": "70dbf9b21b8fbcf15d3406f94faa67870bee293e238eb31d6893f04ddf37f3ab",
+    "tests/boolean/bopfuse_simple/ZE3": "159402b0f2e00d8b9554aea25882a2039b1e59f3c7883d21763a89bd85d8cfc2",
     "tests/boolean/bopfuse_simple/ZF4": "7355d16e96889c2c318c41dcb7d3197b60069853f6c9d3db9d4c46629e98a4b5",
     "tests/boolean/bopfuse_simple/ZN3": "18e989bcd62509a71b0fc868c5a02e1379c15f160a400cd7170c4135a05f1237",
     "tests/boolean/bopfuse_simple/ZN4": "7b35d664b74c1e74564eaad69414842c673f89ecf9973e372844ee829a8e070f",
@@ -598,6 +649,8 @@
     "tests/boolean/bopfuse_simple/ZO4": "fa184a64ca8f3cb0f26c263a53573aba1284141f8e0f3dad9c671fc5d7753557",
     "tests/boolean/bopfuse_simple/ZO5": "4520df3f1987a0785f565c57bf0ca099d51927a20868860104a4913048fac56d",
     "tests/boolean/bopfuse_simple/ZO6": "71c6cf3a872aa4598fb2215c1f2a6e978c97b7860efdc20ebc0a0af5f5c47be5",
+    "tests/boolean/bopfuse_simple/ZO7": "5f72b0f05adf8dcfde11a5308e674e7405bdfac600d42d405db4cdc7c6c51f6b",
+    "tests/boolean/bopfuse_simple/ZO8": "f3af329758216c19b7872ab71148be3a3d881ee64b5d4acc1f0e162f3c0a36e6",
     "tests/boolean/bopfuse_simple/ZP2": "c33835f165ee50fb6e1de8ffd61df8fa3e30db99d122e9cfbe5bfd490258044e",
     "tests/boolean/boptuc_simple/A1": "99a24059b97328ad630ccf4a8578814b03eed0757337160af670beb9a0e1da04",
     "tests/boolean/boptuc_simple/A2": "42a0f6c22708d580e4995c92d712e810dc084c7ffd732ece8203b8aa15b58326",
@@ -718,27 +771,40 @@
     "tests/boolean/boptuc_simple/Q8": "b4107ccd7c58dfbc1ac683f5716d938e2a617bbb4d7deb51691dd5fb6c598962",
     "tests/boolean/boptuc_simple/Q9": "cbca2058b09c47e7a6d0769de4320e0a4bdb0076b1d0f7c5b2b553c3a3f5300c",
     "tests/boolean/boptuc_simple/R1": "5590a29f5bfcce528b843e00fd8dc79fb107a43129caa2fba6a1a71b51ddfdd9",
+    "tests/boolean/boptuc_simple/U1": "171959397a3d3729f0b4971dca01958309d44cac1822a3f04d983f6a8efe9bee",
     "tests/boolean/boptuc_simple/U7": "9883a4259bf34bb15bd322c0bbda24e64431e6e073f75b381b4340a5453d643e",
     "tests/boolean/boptuc_simple/U8": "42cccdd0d613099419af8cffe2797fa530381323d9ebcaa38adbe988096a9eb2",
     "tests/boolean/boptuc_simple/V1": "eb2656cb144e662694d98c7d53f6b266be54b140c36b451171ac4a137e0925b1",
+    "tests/boolean/boptuc_simple/V3": "4423e7b136cd4c436b112434861f3e8aa4e4399d9d2efecf7b1ab822dcf326f5",
     "tests/boolean/boptuc_simple/V4": "43f82dbe520b8c7a2511c1817d24defc878fd08e09c936ae75081d7d1e91245d",
+    "tests/boolean/boptuc_simple/Y5": "d3ff5f334f7836e4809ea5d14d244daab84c96dba59a2dfa0ab0db922bfb130e",
     "tests/boolean/boptuc_simple/Z2": "b38d6e4ea6df769dccddce8e9bd4582fd5aaae6c3fe7939bc846ad3c810ef04a",
     "tests/boolean/boptuc_simple/Z3": "d38638d5fcff09dac2e2f3a3eb090f80ac3b641711c94ddb026d6043233c1c63",
     "tests/boolean/boptuc_simple/Z5": "71560dae3604532844f59de74ace1513b96c1151623eaf4812ae565da53d9079",
+    "tests/boolean/boptuc_simple/Z7": "a21b3dbdede6a6347e6e6e952873a1319778423abb36f699ba2cd6858b33759a",
     "tests/boolean/boptuc_simple/Z8": "204e8df1e11883aedef29823433abd948a9ddbb51c5e92fea8f58cebe1e9f066",
     "tests/boolean/boptuc_simple/Z9": "d83411a13d6fc54d1c294c533b21c6c612f127a6b814f02d5c2636c7687b98e0",
     "tests/boolean/boptuc_simple/ZA1": "788fdf1ffbf8d3ad9044ab87b1cb5e2c7edc5be37124a12c68e757d637d499c2",
+    "tests/boolean/boptuc_simple/ZA2": "16ada5070993231d56551af0fd508553cc7ed313029e044439aa2430e6650fcf",
+    "tests/boolean/boptuc_simple/ZA4": "2f806fda763cfb256852a7a20eac48846a9c532a404a2dd7baef13332b7d3265",
     "tests/boolean/boptuc_simple/ZA5": "18619f702cd99c1fd7a7ab098fdc91498d9bea93cc164bb8fad9bc5ca1121ff6",
     "tests/boolean/boptuc_simple/ZA6": "e6ce6761798098607f45fc3eef8c1a85712ab31a13a592f3730c0a0fbe2527da",
+    "tests/boolean/boptuc_simple/ZA7": "c70e0a69168a4dfea708fd1f76635766b616b5a7170b28c5f69eaea8ebc91f2a",
     "tests/boolean/boptuc_simple/ZA8": "b10d7f8fe45ea8cf0979b295b7d0a5d7e0ecbaff2cffc765a35d8c70932bd6fc",
     "tests/boolean/boptuc_simple/ZA9": "6e3d354ad638f442a19af71aefebf68a712bbed49ae0e78359b2e389f3171e28",
     "tests/boolean/boptuc_simple/ZB1": "4e10c0bfe459a9d1821cbd301cdcafdd207e42fc54786e50b3a5378130ac7ad4",
+    "tests/boolean/boptuc_simple/ZB2": "8a43676678a082b086145701c93a7671e568797b34cee437d34f0d78be24f7bb",
     "tests/boolean/boptuc_simple/ZB3": "2b1e4ad3a89697f7bfdfcf03b09ee0de4970899b5617664f35848661ee272ed9",
+    "tests/boolean/boptuc_simple/ZB4": "83b86c0e74398c5388a5263b299d9c5daa06a1d7872026f763abceba43d282b8",
+    "tests/boolean/boptuc_simple/ZB6": "c3b20782356644ec601b2fda0fb43739530503dab030d21829db491c68bc463c",
     "tests/boolean/boptuc_simple/ZB7": "9d6fa51587f6e88f74540e4d824370292bdd75b74157fdaf9864f49aa6527fad",
     "tests/boolean/boptuc_simple/ZB8": "a5c12da9590a8617c86a5c6322b0711bd8e7ba04618d64fc73dac7196f9df182",
+    "tests/boolean/boptuc_simple/ZB9": "a76c9f7bbe99e6b42a9dab641b4928639c6ee151f7f54008e8449e8873f9ba35",
     "tests/boolean/boptuc_simple/ZC1": "5100ae1b04314aee8c040cc0989413bd6dab4cceb120506ed56f2827d0292510",
     "tests/boolean/boptuc_simple/ZC2": "941d2d4d0151da480345d9271635bc91eed622570b55456fbc139127ff8b1a4e",
     "tests/boolean/boptuc_simple/ZC3": "a738539892453eec9c642d2d557b0125897dcb16dc6bfa849493fff0355360e2",
+    "tests/boolean/boptuc_simple/ZC4": "e6e69625c0ef6d638cd6c83c0613d4fd3b1b15076e0cce6c9860160b35cf554e",
+    "tests/boolean/boptuc_simple/ZC5": "217041efb06dddcd3935cf80007a94f9d31c1f457fede61ac8c67c611a1b44d3",
     "tests/boolean/boptuc_simple/ZC7": "1ce8aebc074bec4d6f616f1890c1143bebbf6bff3b4e8d6a129afed3abd497ae",
     "tests/boolean/boptuc_simple/ZC8": "efb1732fbcc53c42c9e7f1514303560bb057b61f0e33745930111d7ac69c7b58",
     "tests/boolean/boptuc_simple/ZC9": "af6248c673e26226aeae4b77bf8f3a05c9388b74e172c6e0c6fcc2aa8a3d0e4e",
@@ -760,6 +826,8 @@
     "tests/boolean/boptuc_simple/ZO4": "c665ce2d00b4c4fc7cde786511b332517fbdd00d7b28a9a3dff271b424cccdf1",
     "tests/boolean/boptuc_simple/ZO5": "a8285ece3c1e888aa5f4b37fa82d253209024b2d6a4ba1743a197df326959184",
     "tests/boolean/boptuc_simple/ZO6": "22d1cb51bd97dcdd17fa9024bafe64c6d279a5632eec3018b43b0a25267dbe2b",
+    "tests/boolean/boptuc_simple/ZO7": "5814dd497652d3f81dc243f08f0d0c983f09168b1ae57e90a28a5000a0195f92",
+    "tests/boolean/boptuc_simple/ZO8": "d406501200656b69a5b1de6a2813fb7b8f50f5c796451aa837e8d01aab6501ac",
     "tests/boolean/boptuc_simple/ZO9": "713fdcfd35f6ba62bfb96568502395a3353a1b64bd2af8b2a41abb97b8d74763",
     "tests/boolean/boptuc_simple/ZP1": "ff099d7b539f89611cd07829371e264ce6165576e11a913fe75ee5c5dcc73294",
     "tests/boolean/boptuc_simple/ZP2": "d83411a13d6fc54d1c294c533b21c6c612f127a6b814f02d5c2636c7687b98e0",
@@ -3690,7 +3758,7 @@
       "path": "tests/boolean/bfuse_simple/E1",
       "expected_rust": "unsupported",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9a's Boolean group, a capability sentinel: SCALE-sized prisms with arcs, the tool's profile not translating exactly into the object's frame: decided on exact models, which for arcs is S9c's."
+      "purpose": "S9a's Boolean group, a capability sentinel: SCALE-sized prisms with arcs, the tool's profile not translating exactly into the object's frame: decided on exact models, where an arc must end on its circle exactly and these half circles end off it by rounding (S9c)."
     },
     {
       "path": "tests/boolean/bopcommon_simple/C8",
@@ -5773,6 +5841,414 @@
       "expected_rust": "unsupported",
       "expected_occt": "viewer_skipped",
       "purpose": "S9b.2's Boolean group, a capability sentinel: a pocket and then a hole cut from a disc prism; the first cut is a stack with cylindrical walls, which the next bcut takes as its object: a Boolean of a solid with curved faces (S9c)."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/U1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopfuse of a cylinder and a box turned 30 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/V3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopfuse of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/Y5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopfuse of a cylinder and a box turned 30 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/Z7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopfuse of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZA2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopfuse of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZA4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopfuse of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZA7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopfuse of a cylinder and a box turned 30 degrees about z: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZB2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopfuse of a cylinder and a box turned -30 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZB4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopfuse of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZB6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopfuse of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZB9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopfuse of a cylinder and a box turned 30 degrees about z: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZC4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopfuse of a cylinder and a box turned -30 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZD8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopfuse of two equal cylinders whose axes cross at right angles (a quarter turn about x), meeting in two ellipses: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZE1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopfuse of two equal cylinders whose axes cross at right angles (a quarter turn about x, then a half turn about y), meeting in two ellipses: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZO7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopfuse of a box and a cylinder of radius 4 through it, turned 30 degrees about its own axis (its seam turned): arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZO8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopfuse of a box and a cylinder of radius 4 through it, turned 90 degrees about its own axis (its seam turned, a quarter turn the adapter turns exactly): arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/U1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcut of a cylinder and a box turned 30 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/V3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcut of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/Y5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcut of a cylinder and a box turned 30 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/Z7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcut of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZA2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcut of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZA4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcut of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZA7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcut of a cylinder and a box turned 30 degrees about z: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZB2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcut of a cylinder and a box turned -30 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZB4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcut of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZB6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcut of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZB9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcut of a cylinder and a box turned 30 degrees about z: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZC4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcut of a cylinder and a box turned -30 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZO7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcut of a box and a cylinder of radius 4 through it, turned 30 degrees about its own axis (its seam turned): arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZO8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcut of a box and a cylinder of radius 4 through it, turned 90 degrees about its own axis (its seam turned, a quarter turn the adapter turns exactly): arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/U1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcommon of a cylinder and a box turned 30 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/V3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcommon of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/Y5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcommon of a cylinder and a box turned 30 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/Z7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcommon of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZA2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcommon of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZA4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcommon of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZA7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcommon of a cylinder and a box turned 30 degrees about z: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZB2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcommon of a cylinder and a box turned -30 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZB4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcommon of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZB6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcommon of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZB9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcommon of a cylinder and a box turned 30 degrees about z: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZC4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcommon of a cylinder and a box turned -30 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZC5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcommon of a cylinder and a box turned 45 degrees about a horizontal axis through its corner below the cylinder's base (walls meeting the cylinder in ellipses): arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZD8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcommon of two equal cylinders whose axes cross at right angles (a quarter turn about x), meeting in two ellipses: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZE1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcommon of two equal cylinders whose axes cross at right angles (a quarter turn about x, then a half turn about y), meeting in two ellipses: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZO7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcommon of a box and a cylinder of radius 4 through it, turned 30 degrees about its own axis (its seam turned): arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZO8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and bopcommon of a box and a cylinder of radius 4 through it, turned 90 degrees about its own axis (its seam turned, a quarter turn the adapter turns exactly): arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/U1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and boptuc of a cylinder and a box turned 30 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/V3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and boptuc of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/Y5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and boptuc of a cylinder and a box turned 30 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/Z7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and boptuc of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZA2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and boptuc of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZA4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and boptuc of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZA7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and boptuc of a cylinder and a box turned 30 degrees about z: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZB2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and boptuc of a cylinder and a box turned -30 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZB4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and boptuc of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZB6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and boptuc of a cylinder and a box turned 60 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZB9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and boptuc of a cylinder and a box turned 30 degrees about z: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZC4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and boptuc of a cylinder and a box turned -30 degrees about z, sized by dset: arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZC5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and boptuc of a cylinder and a box turned 45 degrees about a horizontal axis through its corner below the cylinder's base (walls meeting the cylinder in ellipses): arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZO7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and boptuc of a box and a cylinder of radius 4 through it, turned 30 degrees about its own axis (its seam turned): arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZO8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1: bop and boptuc of a box and a cylinder of radius 4 through it, turned 90 degrees about its own axis (its seam turned, a quarter turn the adapter turns exactly): arcs in frames with different axes, decided on exact models; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZE3",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1's Boolean group, a capability sentinel: a cylinder of radius 0.5 crossing one of radius 1 at right angles: two cylinders meeting in quartics (S9c.2)."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/U2",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1's Boolean group, a capability sentinel: a box turned a quarter turn about z, its wall tangent to a cylinder: a tangency between the inputs (Degenerate)."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/S2",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1's Boolean group, a capability sentinel: a box turned 45 degrees about z, its corner on a cylinder within rounding: two meetings within rounding along an arc (Degenerate)."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/S3",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1's Boolean group, a capability sentinel: a box turned -45 degrees about z, its corner on a cylinder within rounding: a piece thinner than the resolution (Degenerate)."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZD5",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1's Boolean group, a capability sentinel: a cylinder on top of an equal one, turned a quarter turn about their axis: their rims one circle, a meeting at every seam tried (Degenerate)."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZD8",
+      "expected_rust": "unsupported",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9c.1's Boolean group, a capability sentinel: two equal cylinders whose axes cross at right angles, one cut from the other: the result's solids touching at a vertex where the ellipses cross (Degenerate)."
     }
   ],
   "derived_sources": {
