@@ -277,7 +277,9 @@ jobs:
   pinned-brep-oracle:
     name: B-rep validation and .brep interop / source-pinned OCCT
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    # Every comparison passed at 4d5d3d5b in 60 minutes 3 seconds: the
+    # SDK build (15), the bridges (23) and the tessellations (9) grew.
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4.2.2
       - run: rustup toolchain install stable --profile minimal

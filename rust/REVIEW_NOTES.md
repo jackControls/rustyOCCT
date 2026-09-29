@@ -2615,7 +2615,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     step (debug assertions, overflow checks) ran for hours with S9d's
     exact curved Booleans (`torus_segment_booleans` alone 459 s on this
     host): it keeps both checks optimized now (`CARGO_PROFILE_DEV_OPT_LEVEL`
-    2, 40 s), and the test jobs have time limits.
+    2, 40 s), and the test jobs have time limits. At `4d5d3d5b` every job
+    and comparison passed, the B-rep job's in 60 minutes 3 seconds against
+    its 60 (90 now); the fuzz workflow was green there too.
   * **S9d.4b refined, before its code (2026-09-29).** Two sub-steps.
     S9d.4b.1: tori other than whole ones (S3's v-segments between two
     latitudes and wedges of a partial turn) against polyhedral prisms: the
