@@ -2829,6 +2829,14 @@ Decisions for S9, recorded before its code (2026-09-28):
     fields of degree eight for two tori, the three tangencies refused (along
     circles and at a point), linked solids in a fuse, and pieces across a
     stadium's tangent edges. S9d.4b.2's kernel next.
+  * **S9d.4b.2 split, before its code (2026-09-29).** Two sub-steps by the
+    evidence's corrections: S9d.4b.2a, a whole torus against prisms with
+    arcs, spheres and cones (points algebraic of degree four, coaxial pairs
+    in circles; `boolean-torus-curved` cases but the tori pairs), and
+    S9d.4b.2b, two tori (degree eight about different axes, `tori_*`), its
+    cases `LATER` in 2a's tests. In both, only a tangency of the surfaces
+    (a singular point of the meeting) is `Degenerate`; a graph's turning
+    point is a switch between graphs, not a refusal.
 
 ### Parallel tracks
 
