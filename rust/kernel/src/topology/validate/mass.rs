@@ -179,6 +179,7 @@ fn sph_antiderivative_jets<T: Real>(
     let (mut pc, mut ps) = (Powers::new(&co), Powers::new(&si));
     let mut integrals: BTreeMap<(u8, u8), Jet<T>> = BTreeMap::new();
     let mut waves: BTreeMap<u32, (Jet<T>, Jet<T>)> = BTreeMap::new();
+    let mut uv: BTreeMap<(u8, u8), Jet<T>> = BTreeMap::new();
     let n = u.order();
     let mut out = Vec::with_capacity(fs.len());
     for f in fs {
@@ -201,7 +202,10 @@ fn sph_antiderivative_jets<T: Real>(
         }
         let mut total = Jet::constant(c::<T>(0.0), n);
         for ((a, b), w) in groups {
-            total = total.add(&pc.get(a).mul(&ps.get(b)).mul(&w));
+            let along_u = uv
+                .entry((a, b))
+                .or_insert_with(|| pc.get(a).mul(&ps.get(b)));
+            total = total.add(&along_u.mul(&w));
         }
         out.push(total);
     }

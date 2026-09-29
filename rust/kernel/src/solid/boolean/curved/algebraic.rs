@@ -66,10 +66,7 @@ pub(super) fn circle_quadric(
         out.push((super::meet::Pos::Ang(cs.clone()), point(cs)));
     }
     for root in roots(&p)? {
-        let g = Arc::new(Gen {
-            poly: p.clone(),
-            root,
-        });
+        let g = Arc::new(Gen::new(p.clone(), root));
         let t = K::generator(&g);
         let den = t.mul(&t).add(&K::Rat(int(1)));
         let inv = den

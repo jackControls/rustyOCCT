@@ -44,6 +44,7 @@ pub mod polynomial;
 pub mod predicates;
 mod profile;
 pub mod proximity;
+mod rational;
 mod solid;
 pub mod spline;
 pub mod step;

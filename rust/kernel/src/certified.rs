@@ -6,7 +6,9 @@
 //! alternating-series remainder bounds; `cos_sin` reduces by multiples of pi/2
 //! and sums Taylor series with explicit remainder terms; `atan` halves its
 //! argument before an alternating series. Nothing here uses binary64 libm.
+use crate::rational as q;
 use num_bigint::{BigInt, Sign};
+use num_integer::Integer;
 use num_rational::BigRational as R;
 use std::cmp::Ordering;
 use std::sync::OnceLock;
@@ -41,24 +43,39 @@ pub(crate) struct Interval {
 }
 
 fn floor_grid(x: &R) -> R {
-    if x.denom().bits() as usize <= GRID + 1 {
-        return x.clone();
-    }
-    let scale = BigInt::from(1) << GRID;
-    R::new(
-        (x * R::from_integer(scale.clone())).floor().to_integer(),
-        scale,
-    )
+    grid(x, false)
 }
 fn ceil_grid(x: &R) -> R {
+    grid(x, true)
+}
+
+/// `x` rounded down or up to the grid: `floor(n 2^GRID / d)` (or its
+/// ceiling) over `2^GRID`, in lowest terms, without a rational product.
+fn grid(x: &R, up: bool) -> R {
     if x.denom().bits() as usize <= GRID + 1 {
         return x.clone();
     }
-    let scale = BigInt::from(1) << GRID;
-    R::new(
-        (x * R::from_integer(scale.clone())).ceil().to_integer(),
-        scale,
-    )
+    dyadic(rounded_quotient(&(x.numer() << GRID), x.denom(), up), GRID)
+}
+
+/// `floor(n / d)`, or its ceiling, for `d > 0`.
+fn rounded_quotient(n: &BigInt, d: &BigInt, up: bool) -> BigInt {
+    let (q, r) = n.div_mod_floor(d);
+    if up && r.sign() != Sign::NoSign {
+        q + 1
+    } else {
+        q
+    }
+}
+
+/// `v / 2^k` in lowest terms (`BigRational::new`'s value, its gcd a power
+/// of two).
+fn dyadic(v: BigInt, k: usize) -> R {
+    let Some(t) = v.trailing_zeros() else {
+        return zero();
+    };
+    let t = t.min(k as u64) as usize;
+    R::new_raw(v >> t, BigInt::from(1) << (k - t))
 }
 
 impl Interval {
@@ -88,20 +105,20 @@ impl Interval {
         }
     }
     pub(crate) fn add(&self, o: &Self) -> Self {
-        Self::rounded(&self.lo + &o.lo, &self.hi + &o.hi)
+        Self::rounded(q::add(&self.lo, &o.lo), q::add(&self.hi, &o.hi))
     }
     pub(crate) fn sub(&self, o: &Self) -> Self {
-        Self::rounded(&self.lo - &o.hi, &self.hi - &o.lo)
+        Self::rounded(q::sub(&self.lo, &o.hi), q::sub(&self.hi, &o.lo))
     }
     pub(crate) fn neg(&self) -> Self {
         Self::new(-&self.hi, -&self.lo)
     }
     pub(crate) fn mul(&self, o: &Self) -> Self {
         let p = [
-            &self.lo * &o.lo,
-            &self.lo * &o.hi,
-            &self.hi * &o.lo,
-            &self.hi * &o.hi,
+            q::mul(&self.lo, &o.lo),
+            q::mul(&self.lo, &o.hi),
+            q::mul(&self.hi, &o.lo),
+            q::mul(&self.hi, &o.hi),
         ];
         let lo = p.iter().min().unwrap().clone();
         let hi = p.iter().max().unwrap().clone();
@@ -169,14 +186,12 @@ impl Interval {
 /// sqrt(x) rounded down (up=false) or up on the 2^-SQRT_BITS grid, from integer isqrt.
 fn sqrt_bound(x: &R, up: bool) -> R {
     const BITS: usize = SQRT_BITS;
-    let scale = BigInt::from(1) << (2 * BITS);
-    let scaled = x * R::from_integer(scale);
-    let n = if up { scaled.ceil() } else { scaled.floor() }.to_integer();
+    let n = rounded_quotient(&(x.numer() << (2 * BITS)), x.denom(), up);
     let mut root = n.sqrt();
     if up && &root * &root < n {
         root += 1;
     }
-    R::new(root, BigInt::from(1) << BITS)
+    dyadic(root, BITS)
 }
 
 /// sum_{k<ATAN_TERMS} (-1)^k z^(2k+1)/(2k+1) for |z| <= 1/4, plus the
@@ -388,6 +403,57 @@ fn taylor_cos_sin(r: &Interval) -> (Interval, Interval) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The products from two corners (factors of one strict sign each) are
+    /// the four corners' bit for bit, tiny, huge and overflowing ones too.
+    #[test]
+    fn fast_products_from_two_corners() {
+        let mut state = 0x9e37_79b9_7f4a_7c15u64;
+        let mut next = move || {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            state
+        };
+        let exps = [
+            -1074, -1060, -1000, -970, -961, -480, -60, -1, 0, 1, 60, 480, 900, 1000, 1023,
+        ];
+        let mut value = || {
+            let m = 1.0 + (next() % (1 << 52)) as f64 / (1u64 << 52) as f64;
+            let e = exps[(next() % exps.len() as u64) as usize];
+            let x = m * 2f64.powi(e.max(-1022)) * if e < -1022 { 2f64.powi(e + 1022) } else { 1.0 };
+            if next() % 2 == 0 {
+                x
+            } else {
+                -x
+            }
+        };
+        let mut checked = 0;
+        for _ in 0..200_000 {
+            let (a, b, c, d) = (value(), value(), value(), value());
+            let (x, y) = (
+                Fast {
+                    lo: a.min(b),
+                    hi: a.max(b),
+                },
+                Fast {
+                    lo: c.min(d),
+                    hi: c.max(d),
+                },
+            );
+            let fast = Real::mul(&x, &y);
+            let all = x.mul_corners(&y);
+            if x.corners(&y).is_some() && !(x.lo == x.hi && y.lo == y.hi) {
+                checked += 1;
+            }
+            assert_eq!(
+                (fast.lo.to_bits(), fast.hi.to_bits()),
+                (all.lo.to_bits(), all.hi.to_bits()),
+                "{x:?} * {y:?}"
+            );
+        }
+        assert!(checked > 80_000);
+    }
 
     fn width(i: &Interval) -> f64 {
         num_float(&(i.hi() - i.lo()))
@@ -779,21 +845,13 @@ impl Real for Fast {
             let p = product(self.lo, o.lo);
             return Self::bounds(p, p);
         }
-        let p = [
-            product(self.lo, o.lo),
-            product(self.lo, o.hi),
-            product(self.hi, o.lo),
-            product(self.hi, o.hi),
-        ];
-        if p.iter().any(|x| x.0.is_nan()) {
+        if let Some((low, high)) = self.corners(o) {
             return Self {
-                lo: f64::NEG_INFINITY,
-                hi: f64::INFINITY,
+                lo: down(product(low[0], low[1])),
+                hi: up(product(high[0], high[1])),
             };
         }
-        let lo = p.iter().map(|x| down(*x)).fold(f64::INFINITY, f64::min);
-        let hi = p.iter().map(|x| up(*x)).fold(f64::NEG_INFINITY, f64::max);
-        Self { lo, hi }
+        self.mul_corners(o)
     }
     fn neg(&self) -> Self {
         Self {
@@ -881,6 +939,65 @@ impl Real for Fast {
 }
 
 impl Fast {
+    /// The product from all four corners' rounded products.
+    fn mul_corners(&self, o: &Self) -> Self {
+        let p = [
+            product(self.lo, o.lo),
+            product(self.lo, o.hi),
+            product(self.hi, o.lo),
+            product(self.hi, o.hi),
+        ];
+        if p.iter().any(|x| x.0.is_nan()) {
+            return Self {
+                lo: f64::NEG_INFINITY,
+                hi: f64::INFINITY,
+            };
+        }
+        let lo = p.iter().map(|x| down(*x)).fold(f64::INFINITY, f64::min);
+        let hi = p.iter().map(|x| up(*x)).fold(f64::NEG_INFINITY, f64::max);
+        Self { lo, hi }
+    }
+
+    /// The corners giving a product's bounds when both factors are finite,
+    /// each of one strict sign or (one of them) holding zero strictly
+    /// inside: `([a, b], [c, d])`, the product's lower bound from `a b` and
+    /// its upper from `c d`. No product is then zero or NaN, the extremes
+    /// have strict signs, and the rounded bounds are monotone in the exact
+    /// product (`down` is its floor, or below the floor where it is tiny or
+    /// overflows, `up` likewise): `mul_corners`'s folds pick exactly these,
+    /// bit for bit.
+    fn corners(&self, o: &Self) -> Option<([f64; 2], [f64; 2])> {
+        let finite = |x: &Self| x.lo.is_finite() && x.hi.is_finite() && x.lo <= x.hi;
+        if !finite(self) || !finite(o) {
+            return None;
+        }
+        // Positive, negative, or zero strictly inside.
+        let sign = |x: &Self| {
+            if x.lo > 0.0 {
+                Some(Ordering::Greater)
+            } else if x.hi < 0.0 {
+                Some(Ordering::Less)
+            } else if x.lo < 0.0 && x.hi > 0.0 {
+                Some(Ordering::Equal)
+            } else {
+                None
+            }
+        };
+        let (a, b) = (self, o);
+        use Ordering::{Equal as Z, Greater as P, Less as N};
+        Some(match (sign(a)?, sign(b)?) {
+            (P, P) => ([a.lo, b.lo], [a.hi, b.hi]),
+            (N, N) => ([a.hi, b.hi], [a.lo, b.lo]),
+            (P, N) => ([a.hi, b.lo], [a.lo, b.hi]),
+            (N, P) => ([a.lo, b.hi], [a.hi, b.lo]),
+            (Z, P) => ([a.lo, b.hi], [a.hi, b.hi]),
+            (Z, N) => ([a.hi, b.lo], [a.lo, b.lo]),
+            (P, Z) => ([a.hi, b.lo], [a.hi, b.hi]),
+            (N, Z) => ([a.lo, b.hi], [a.lo, b.lo]),
+            (Z, Z) => return None,
+        })
+    }
+
     /// Rounded values with their exact error signs, as lower and upper bounds.
     fn bounds(lo: (f64, i8), hi: (f64, i8)) -> Self {
         if lo.0.is_nan() || hi.0.is_nan() {

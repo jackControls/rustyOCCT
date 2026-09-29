@@ -171,36 +171,40 @@ impl Ring {
 
     /// A point's binary64 parameters on a patch: its angles from the seams
     /// (the minus and lower patches' shifted by a turn below), `u` scaled
-    /// by `R`.
-    pub(super) fn params(&self, f: &Affine, p: [f64; 3], kind: FaceKind) -> [f64; 2] {
-        let FaceKind::Patch(upper, plus) = kind else {
-            unreachable!("a patch")
-        };
+    /// by `R`. The model's numbers are rounded once, for every point.
+    pub(super) fn params(&self, f: &Affine) -> impl Fn([f64; 3], FaceKind) -> [f64; 2] {
         let fl = |v: &V| v.clone().map(|y| rational_f64(&y));
         let (o, x, y, n) = (fl(&f.o), fl(&f.x), fl(&f.y), fl(&f.n));
-        let d = [p[0] - o[0], p[1] - o[1], p[2] - o[2]];
-        let l = super::graph::solve3(&x, &y, &n, &d);
         let (big, small) = (rational_f64(&self.big), rational_f64(&self.small));
-        let rho = l[0].hypot(l[1]);
-        let angle = |a: f64, b: f64, base: &P2, first: bool| {
-            let (c0, s0) = (rational_f64(&base[0]), rational_f64(&base[1]));
-            let rel = (b * c0 - a * s0).atan2(a * c0 + b * s0);
-            // Within the half's turn: a point on a seam may round across.
-            if first {
-                if rel < -std::f64::consts::FRAC_PI_2 {
-                    rel + std::f64::consts::TAU
+        let fl2 = |v: &P2| [rational_f64(&v[0]), rational_f64(&v[1])];
+        let (e, v0) = (fl2(&self.e), fl2(&self.v0));
+        move |p, kind| {
+            let FaceKind::Patch(upper, plus) = kind else {
+                unreachable!("a patch")
+            };
+            let d = [p[0] - o[0], p[1] - o[1], p[2] - o[2]];
+            let l = super::graph::solve3(&x, &y, &n, &d);
+            let rho = l[0].hypot(l[1]);
+            let angle = |a: f64, b: f64, base: &[f64; 2], first: bool| {
+                let (c0, s0) = (base[0], base[1]);
+                let rel = (b * c0 - a * s0).atan2(a * c0 + b * s0);
+                // Within the half's turn: a point on a seam may round across.
+                if first {
+                    if rel < -std::f64::consts::FRAC_PI_2 {
+                        rel + std::f64::consts::TAU
+                    } else {
+                        rel
+                    }
+                } else if rel > std::f64::consts::FRAC_PI_2 {
+                    rel - std::f64::consts::TAU
                 } else {
                     rel
                 }
-            } else if rel > std::f64::consts::FRAC_PI_2 {
-                rel - std::f64::consts::TAU
-            } else {
-                rel
-            }
-        };
-        let u = angle(l[0], l[1], &self.e, plus);
-        let v = angle(rho - big, l[2], &self.v0, upper);
-        [u * big, v * small]
+            };
+            let u = angle(l[0], l[1], &e, plus);
+            let v = angle(rho - big, l[2], &v0, upper);
+            [u * big, v * small]
+        }
     }
 }
 
@@ -428,10 +432,7 @@ pub(super) fn line_torus(p: &QV, d: &V, f: &Affine, ring: &Ring) -> Result<EdgeM
     let poly = super::turned::trim(poly);
     let mut out = Vec::new();
     for root in roots(&poly)? {
-        let g = Arc::new(Gen {
-            poly: poly.clone(),
-            root,
-        });
+        let g = Arc::new(Gen::new(poly.clone(), root));
         let t = Qd::of(K::generator(&g));
         let x = qadd(p, &qscale(d, &t));
         out.push((Pos::T(t), x));

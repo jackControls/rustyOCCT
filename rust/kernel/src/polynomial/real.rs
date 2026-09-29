@@ -191,20 +191,39 @@ impl AlgebraicRoot {
         let p = &defining.polynomial;
         let left = p.sign_at(&self.lower);
         debug_assert!(left != Ordering::Equal && left != p.sign_at(&self.upper));
-        for i in 0..steps {
-            let middle = (&self.lower + &self.upper) / R::from_integer(BigInt::from(2));
-            let sign = p.sign_at(&middle);
-            if sign == Ordering::Equal {
-                self.lower = middle.clone();
-                self.upper = middle;
-                break;
+        // Bisect the ends' numerators over one positive denominator, which
+        // doubles each step: the midpoints are the same rationals as
+        // `(lower + upper) / 2`, reduced only where they are read (every
+        // 16 steps, for the rational root test, and at the end).
+        let mut done = 0;
+        while done < steps {
+            let stop = steps.min((done / 16 + 1) * 16);
+            let (ld, ud) = (self.lower.denom(), self.upper.denom());
+            let mut den = ld / gcd_integer(ld.clone(), ud.clone()) * ud;
+            let mut lo = self.lower.numer() * (&den / ld);
+            let mut hi = self.upper.numer() * (&den / ud);
+            while done < stop {
+                let middle = &lo + &hi;
+                den <<= 1;
+                let sign = p.sign_at_fraction(&middle, &den);
+                if sign == Ordering::Equal {
+                    let middle = R::new(middle, den);
+                    self.lower = middle.clone();
+                    self.upper = middle;
+                    return;
+                }
+                if sign == left {
+                    lo = middle;
+                    hi <<= 1;
+                } else {
+                    hi = middle;
+                    lo <<= 1;
+                }
+                done += 1;
             }
-            if sign == left {
-                self.lower = middle;
-            } else {
-                self.upper = middle;
-            }
-            if (i + 1) % 16 == 0 && self.recognize_rational() {
+            self.lower = R::new(lo, den.clone());
+            self.upper = R::new(hi, den);
+            if done % 16 == 0 && self.recognize_rational() {
                 break;
             }
         }
@@ -632,14 +651,21 @@ impl IntPolynomial {
         Self::from_rationals(&quotient)
     }
     pub(crate) fn sign_at(&self, x: &R) -> Ordering {
+        self.sign_at_fraction(x.numer(), x.denom())
+    }
+    /// The sign at `numerator / denominator`, `denominator > 0`, in any
+    /// terms: the homogenized value is the polynomial's times a positive
+    /// power of the denominator.
+    fn sign_at_fraction(&self, numerator: &BigInt, denominator: &BigInt) -> Ordering {
+        debug_assert!(denominator.sign() == Sign::Plus);
         let Some(last) = self.0.last() else {
             return Ordering::Equal;
         };
         let mut value = last.clone();
         let mut den = BigInt::from(1);
         for c in self.0.iter().rev().skip(1) {
-            den *= x.denom();
-            value = value * x.numer() + c * &den;
+            den *= denominator;
+            value = value * numerator + c * &den;
         }
         value.cmp(&BigInt::from(0))
     }

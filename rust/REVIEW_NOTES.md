@@ -2512,7 +2512,22 @@ Decisions for S9, recorded before its code (2026-09-28):
     target's tool is a whole torus when its spline byte lies in
     `144..160`; (h) the DRAW bridge evaluates a torus inside a box and
     guards a torus against a cylinder (S9d.4b). Pending: the DRAW survey, the
-    campaign.
+    campaign. Performance, every result unchanged (the fuzz replay's 1,432
+    boolean inputs hashed alike before and after): the corpus's slow torus
+    inputs replay (debug assertions, no ASan) 1.7 to 3.3 times as fast
+    (`17e131e3` 8.1 s to 3.3 s, `4274e084` 6.8 s to 2.1 s, `1b405929` 11 s
+    to 4-5 s, `ad0dbe59` 8.1 s to 4.6 s) and CI's slow sphere input
+    `fab20f09` 5.0 s to 2.3 s, from a Lehmer gcd for the curved Booleans'
+    and the rational enclosures' arithmetic (`rational.rs`: `num_integer`'s
+    Stein gcd is quadratic even against a small operand), bisection of
+    isolators over one denominator, each algebraic field's narrowed
+    isolators kept, a plane's spiric section found once for the four
+    patches, surds' known fields not tested for squares again, binary64
+    interval products from their two extreme corners where the factors'
+    signs fix them (bit for bit the four corners'), and the mass integrands of a
+    torus or sphere face sharing their `cos^a u sin^b u` jets; the
+    certified mass integrals of the results' torus faces now take most of
+    what remains.
   * **S9d.4b refined, before its code (2026-09-29).** Two sub-steps.
     S9d.4b.1: tori other than whole ones (S3's v-segments between two
     latitudes and wedges of a partial turn) against polyhedral prisms: the
