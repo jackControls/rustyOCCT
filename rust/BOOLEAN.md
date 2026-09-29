@@ -715,6 +715,56 @@ height); its horizontal edges on a spline are its lifted restrictions.
   intersection curves misses by up to 3.3e-4 (`skew_lean`), the same
   results measured adaptively within 9.1e-10; four solids' counts change
   when unified.
+* **S9c.2b.2 evidence (sections crossing caps' circles), before its kernel
+  code.** `generate_capped_boolean_fixtures.py --check` writes
+  `boolean-capped-cases.txt`, `boolean-capped-expected.tsv` and
+  `boolean-capped-frames.tsv` with 18 cases (5 fuses, 6 cuts, 7 commons;
+  all solid), every pair two cylinders whose quartic section crosses a
+  cap's circle within both faces (the vertex there a nested surd in exact
+  frames, a root of the circle's quartic in turned ones), from S9c.1's
+  reference, frames and per-pair checks, S9c.2's `Perpendicular` and
+  S9c.2b.1's classes, imported unchanged. Exact frames (`XY` against
+  `SIDE`): a pipe across the top cap's rim, its axis 0.1 below the cap's
+  plane, two rings each crossing the cap's circle twice (`rim_pipe`, all
+  three operations); a bite at the rim, one loop crossing it twice
+  (`rim_bite`); a pipe ending partway through the wall, its end cap's
+  circle crossing it (`blind_wall`); a box's round hole crossed at its top
+  rim by a pipe along the top face (`hole_rim`, its common two pieces).
+  Turned frames, oblique: a `TILTX` pipe across the rim (`rim_tiltx`), a
+  `LEAN` pipe entering through the rim and ending inside (`enter_lean`, a
+  blind hole drilled at the rim), a `TILT` pipe ending partway through the
+  wall (`blind_tilt`), a `TILTX` pipe crossing a round hole's top rim and
+  leaving through the box's bottom (`hole_rim_tiltx`, two pieces). Checks
+  before writing, besides S9c.1's per pair: the exact-frame pairs' closed
+  forms (the common of perpendicular cylinders clipped by both inputs' caps
+  by one quadrature in `eta`, moments and areas included; the hole as the
+  pipe's circular segment below the top face less its common with the
+  hole's cylinder, the top face's strip less the hole's disc between two
+  chords) within 6.4e-41; the classes from the ideal and the models'
+  intervals (ends at least 0.6 apart); every cap's circle against the
+  other input's cylinders, the opposite of S9c.2b.1's check: crossings of
+  the model by sign changes along the circle and bisection, each at least
+  0.1 from the other face's ends (2.0 achieved) at a slope of at least
+  0.05 (0.25), at least one per pair on the other face (20 of 22), a
+  circle without crossings clear by 1e-3 of the radius squared (0.66).
+  Inclusion and exclusion 1.5e-41, the area identity 5.9e-41, every face's
+  classes 3.3e-41, Monte Carlo 2.9 standard errors; no near coincidence
+  (perpendicular pairs in stored turned frames were dropped: a cap plane
+  parallel to the other's generatrices within rounding puts two slicing
+  breakpoints about 1e-17 apart). `test_capped_boolean_reference.py`
+  checks the closed forms and the cap-circle test alone.
+  `compare_capped_boolean.py` (`compare_boolean.make_set`) reproduces
+  `occt-boolean-capped-preimplementation` (`rust_capped_boolean_exists`
+  false; the kernel's probe `unsupported` on all 18, `OutOfDomain(...
+  crossing a cap's circle (S9c.2b))` in exact frames and `(... in turned
+  frames (S9c.2b.2))` in turned ones): every result valid with the
+  reference's solid count; 2 match and 16 are reviewed
+  (`occt-boolean-capped-divergences.json`): BRepGProp's default
+  integration on faces bounded by approximated intersection curves misses
+  by up to 1.4e-5 in exact frames and 1.9e-5 in turned ones, the same
+  results measured adaptively within 1.0e-9 and 1.9e-8 (a small result's
+  approximated section, unchanged at `Eps = 1e-12`); eight solids' counts
+  change when unified.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
