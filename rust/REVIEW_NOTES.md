@@ -2337,7 +2337,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     a coaxial pipe cut from a frustum, and guards a torus's refusal (DRAW
     cannot give a cone and a sphere of their own ids). Campaign: the boolean
     campaign at `29278966` (600 s, a sampled replay) clean, 921 runs, the
-    slowest input 14 s under AddressSanitizer, no new artifact.
+    slowest input 14 s under AddressSanitizer, no new artifact;
+    `brep_validation` there clean too, 4,498 runs, the slowest input 16 s
+    of its 20.
   * **DRAW survey of S9d.3b.1 (2026-09-29, `UPSTREAM_TESTS.md`).** Of the
     66 cases refused as S9d.3b's `OutOfDomain` (a `pcylinder` of radius 4
     and height 8 and a cone or frustum, `ZJ4` to `ZL1` of the four
@@ -2406,7 +2408,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     them: the cone and sphere found apart). The DRAW survey: `13bb636a`
     (`UPSTREAM_TESTS.md`, ZK9 and ZL1 registered). Campaign: the boolean
     campaign at `29278966` (600 s, a sampled replay) clean, 921 runs, the
-    slowest input 14 s under AddressSanitizer, no new artifact.
+    slowest input 14 s under AddressSanitizer, no new artifact;
+    `brep_validation` there clean too, 4,498 runs, the slowest input 16 s
+    of its 20.
   * **S9d.4 refined, before its code (2026-09-29).** Tori (S3's
     `torus_*`) in S9c's arrangement. Sub-steps: S9d.4a, a whole torus
     (the full tube and turn) against polyhedral prisms; S9d.4b, against
@@ -2516,7 +2520,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     `144..160`; (h) the DRAW bridge evaluates a torus inside a box and
     guards a torus against a cylinder (S9d.4b). Campaign: the boolean
     campaign at `29278966` (600 s, a sampled replay) clean, 921 runs, the
-    slowest input 14 s under AddressSanitizer, no new artifact.
+    slowest input 14 s under AddressSanitizer, no new artifact;
+    `brep_validation` there clean too, 4,498 runs, the slowest input 16 s
+    of its 20.
     Performance, every result unchanged (the fuzz replay's 1,432
     boolean inputs hashed alike before and after): the corpus's slow torus
     inputs replay (debug assertions, no ASan) 1.7 to 3.3 times as fast
