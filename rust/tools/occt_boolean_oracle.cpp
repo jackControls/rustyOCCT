@@ -16,7 +16,12 @@
 // BRepPrimAPI_MakeCone(gp_Ax2(origin, normal, x), R1, R2, H) (a cone or a
 // frustum; a zero radius an apex). S9d.4a: likewise one row `torus ox oy oz
 // nx ny nz xx xy xz R r`, built by BRepPrimAPI_MakeTorus(gp_Ax2(origin,
-// normal, x), R, r) (a whole torus).
+// normal, x), R, r) (a whole torus). S9d.4b.1: the row may add `a1 a2
+// angle`, built by BRepPrimAPI_MakeTorus(gp_Ax2, R, r, a1, a2, angle) (a
+// v-segment of latitudes a1..a2 or a wedge of the turn angle); a v-segment
+// whose meridian ends lower than it starts is built inside out by OCCT (its
+// BRepGProp volume negative, S3's capture), so such a solid is reversed
+// before the Boolean.
 //
 // Output: `NAME done N valid warnings` (N solids in the result, the result
 // checked by BRepCheck_Analyzer, 1 if the operation reported warnings), then
@@ -123,7 +128,16 @@ struct Prism {
     } else if (kind == "torus") {
       auto v = numbers(in, 11);
       gp_Ax2 axis(gp_Pnt(v[0], v[1], v[2]), gp_Dir(v[3], v[4], v[5]), gp_Dir(v[6], v[7], v[8]));
-      primitive = BRepPrimAPI_MakeTorus(axis, v[9], v[10]).Shape();
+      double a1, a2, angle;
+      if (in >> a1) {
+        if (!(in >> a2 >> angle)) throw Standard_Failure("short torus row");
+        primitive = BRepPrimAPI_MakeTorus(axis, v[9], v[10], a1, a2, angle).Shape();
+        GProp_GProps props;
+        BRepGProp::VolumeProperties(primitive, props);
+        if (props.Mass() < 0) primitive.Reverse();
+      } else {
+        primitive = BRepPrimAPI_MakeTorus(axis, v[9], v[10]).Shape();
+      }
     } else if (kind == "plane") {
       auto v = numbers(in, 9);
       frame = gp_Ax3(gp_Pnt(v[0], v[1], v[2]), gp_Dir(v[3], v[4], v[5]), gp_Dir(v[6], v[7], v[8]));

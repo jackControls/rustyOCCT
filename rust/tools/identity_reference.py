@@ -410,7 +410,8 @@ def encode_boolean_case(obj, operation, tool, boolean_operation):
     cone or frustum (its `frame` and `cone BOTTOM TOP HEIGHT` rows,
     `Solid::cone_with` on the frame). S9d.4a: likewise a whole torus (its
     `frame` and `torus MAJOR MINOR LOW HIGH ANGLE` rows, `Solid::torus_with`
-    on the frame, the full tube and turn)."""
+    on the frame, the full tube and turn); S9d.4b.1 a v-segment or a wedge
+    in the same rows."""
     assert operation in BOOLEAN_OPERATIONS, operation
     assert obj.make is None and tool.make is None and tool.box is None, \
         'S9a: two prisms (S9d.1: or a sphere; S9d.3a: or a cone; S9d.4a: or a torus)'
@@ -755,14 +756,18 @@ def native_case(c):
     `BRepPrimAPI_MakeCone(gp_Ax2, R1, R2, H)` takes them. A whole torus
     (S9d.4a: the full tube and turn) is one row `torus ox oy oz nx ny nz xx
     xy xz R r`, `Solid::torus_with`'s major and minor radii, as
-    `BRepPrimAPI_MakeTorus(gp_Ax2, R, r)` takes them."""
+    `BRepPrimAPI_MakeTorus(gp_Ax2, R, r)` takes them. A v-segment or a wedge
+    (S9d.4b.1) adds its latitudes and turn, `torus ox oy oz nx ny nz xx xy xz
+    R r LOW HIGH ANGLE`, as `BRepPrimAPI_MakeTorus(gp_Ax2, R, r, angle1,
+    angle2, angle)` takes them (a whole torus keeps the short row)."""
     if c.torus is not None:
         assert not c.transforms and c.make is None, f'{c.name}: a torus in place'
         major, minor, low, high, angle = c.torus
-        assert high-low == TWO_PI and angle == TWO_PI, f'{c.name}: a whole torus'
         o, x, _, n = frame_axes(c.frame)
-        return '\n'.join([f'case {c.name}', 'torus '+' '.join(number(v) for v in (*o, *n, *x, major, minor)),
-                          'end'])
+        values = (*o, *n, *x, major, minor)
+        if not (high-low == TWO_PI and angle == TWO_PI):
+            values += (low, high, angle)
+        return '\n'.join([f'case {c.name}', 'torus '+' '.join(number(v) for v in values), 'end'])
     if c.sphere is not None:
         assert not c.transforms and c.make is None, f'{c.name}: a sphere in place'
         o, x, _, n = frame_axes(c.frame)
