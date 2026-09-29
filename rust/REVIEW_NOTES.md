@@ -2337,6 +2337,36 @@ Decisions for S9, recorded before its code (2026-09-28):
     a coaxial pipe cut from a frustum, and guards a torus's refusal (DRAW
     cannot give a cone and a sphere of their own ids). Pending: the DRAW
     survey, the campaign.
+  * **S9d.4 refined, before its code (2026-09-29).** Tori (S3's
+    `torus_*`) in S9c's arrangement. Sub-steps: S9d.4a, a whole torus
+    (the full tube and turn) against polyhedral prisms; S9d.4b, against
+    prisms with arcs, spheres, cones and tori (S7b.3's certified traced
+    curves); a v-segment or a wedge, or a pair of a later sub-step,
+    `OutOfDomain`. The model: `(|p|^2 + R^2 - r^2)^2 <= 4 R^2 (u^2 + v^2)`
+    in the stored frame's coordinates as rationals (affine where its axes
+    are not orthonormal), membership exact at first order as the others'.
+    Its wall is traced in the torus's own `(u, v)` in four patches, cut at
+    a meridian through a rational point of the equator (each input its
+    own seam, retried) and at the outer and inner equators (`v = 0`, `v =
+    pi`): the seams are circles with rational centres, axes and points,
+    the patches injective in `(u, v)`. A plane meets the wall in a spiric
+    section: on `alpha = a cos u + b sin u` the tube's circle at `u` meets
+    it where `r (alpha cos v + c sin v) = -(R alpha + d)`, a graph over `u`
+    whose point at a rational `u` lies in one quadratic field (the root of
+    `r^2 (alpha^2 + c^2) - (R alpha + d)^2`, a quadratic form in `(cos u,
+    sin u)`), or over `v` symmetrically; S8d.3's classes decide (loops about
+    the axis over `u`, about the tube over `v`, a cap's loop in two graphs
+    of each kind switched at rational parameters between its turning
+    points), each piece verified exactly (no turning point inside it). A
+    plane tangent to the torus (a double root) or within the resolution
+    of it is `Degenerate`. Edges are S8d.3's `Curve3::Section`, their
+    pcurves `Projection`s on the torus. Evidence first: an independent
+    reference (slices normal to the axis are annuli, two circles against
+    the prism's convex pieces; areas from each face's own parameters),
+    fixtures of every class (a box through the hole, bands, a cap cut from
+    the tube's outside and its inside, loops about the tube, a box inside
+    the tube, exact and turned frames, tangencies declared `degenerate`),
+    and a native capture before `solid/boolean/curved/torus.rs` exists.
 
 ### Parallel tracks
 
