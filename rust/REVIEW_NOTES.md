@@ -1567,6 +1567,25 @@ Decisions for S9, recorded before its code (2026-09-28):
     a native `BRepAlgoAPI` capture before `solid/boolean/curved/
     procedural.rs` exists; then the kernel, the comparison, the DRAW survey
     and a campaign.
+  * **Evidence (2026-09-28).** `generate_procedural_boolean_fixtures.py
+    --check`: 28 fixtures (22 S9c.2a in exact frames, 6 S9c.2b in turned
+    ones; 22 solid, 6 degenerate with reasons: internal and external
+    tangency, every operation) from S9c.1's reference unchanged (its slicing
+    takes any radii and offset); the common of perpendicular cylinders by a
+    quadrature in `eta` (volume, moments, both walls' and caps' areas, so all
+    three operations) and Legendre's form (2.2e-41 against the quadrature;
+    `16 r^3 / 3` at equal radii) agree with the reference within 7.9e-41,
+    turned frames' forms (over `sin phi`, lenses) within 5.0e-16, S9c.1's
+    per-pair checks within 1.3e-40 and 3.2 standard errors, no near
+    coincidence; the curved fixtures regenerate byte for byte. The capture
+    `occt-boolean-procedural-preimplementation` (`compare_procedural_boolean.py`,
+    the kernel `unsupported` on all 28): every result valid with the
+    reference's solids, the degenerate ones included; 5 matches without a
+    quartic edge, 23 reviewed: BRepGProp's default integration on faces
+    bounded by OCCT's approximated intersection curves misses by up to
+    7.8e-5 in exact frames and 3.0e-4 in turned ones, the same results
+    measured adaptively within 2.7e-9; six solids' counts change when
+    unified. S9c.2a's kernel next.
 
 ### Parallel tracks
 

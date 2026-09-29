@@ -531,6 +531,53 @@ height); its horizontal edges on a spline are its lifted restrictions.
   target's arcs in turned, leaning and tilted frames now reach S9c.1; its
   corpus (1,080 inputs), the spline variants and the regressions replay
   clean with the history check.
+* **S9c.2 evidence (two cylinders meeting in quartics), before its kernel
+  code.** `generate_procedural_boolean_fixtures.py --check` writes
+  `boolean-procedural-cases.txt`, `boolean-procedural-expected.tsv` and
+  `boolean-procedural-frames.tsv` with 28 cases (10 fuses, 9 cuts, 9
+  commons; 22 solid, 6 degenerate) from S9c.1's reference, frames, checks
+  and near-coincidence scan, imported unchanged (the slicing by planes
+  parallel to both axes takes cylinders of any radii and offset: each
+  section is still a union of parallelograms). S9c.2a, 22 in exact frames
+  (a thick cylinder along `z` in `XY`, `TURN` or `DOWN` against a pipe along
+  `x` in `SIDE`, offset along `y`): a pipe through with offset and with
+  crossing axes (two rings; the pipe the object in the second, its cut two
+  stubs), a partial bite and equal radii offset (one loop), a pipe ending
+  inside (its cap inside), a box's round hole crossed by a pipe (rings on
+  the hole's wall, a common of two pieces), and internal and external
+  tangency declared `degenerate` for every operation (S9c.1's evidence
+  amendment (c)). S9c.2b, 6 in turned frames: oblique crossing axes
+  (`TILT`), skew unequal cylinders (`LEAN`), a pin in `R125` parallel to a
+  box's round hole cutting its wall. Checks before writing, besides S9c.1's
+  per pair: the common of perpendicular cylinders by one tanh-sinh
+  quadrature in `eta` between its kinks (`int len([xA - wA, xA + wA] & [bLo,
+  bHi]) len([zB - wB, zB + wB] & [aLo, aHi]) d eta`, `4 int wA wB d eta` for
+  cylinders crossing whole), its moments, and its area from the walls' own
+  angles and the caps' parts inside the other, so all three operations'
+  volumes, areas and centres (a round hole as the box less its cylinder);
+  Legendre's `8 rA / 3 ((rA^2 + rB^2) E(k) - (rA^2 - rB^2) K(k))`, `k = rB /
+  rA` (mpmath's `ellipe`, `ellipk` of `m = k^2`; at equal radii `16 r^3 /
+  3` exactly, `K(1)`'s zero factor dropped), against the quadrature
+  (2.2e-41) and the reference, the common's centre at the axes' crossing;
+  in turned frames the perpendicular common over `sin phi` and parallel
+  cylinders' lenses. Closed forms 7.9e-41 in exact frames and 5.0e-16 in
+  turned ones, inclusion and exclusion 1.2e-41, the area identity 1.3e-40,
+  every face's classes 9.9e-41, a second slicing direction 6.4e-42, Monte
+  Carlo 3.2 standard errors; no near coincidence, no fixture moved, and the
+  curved fixtures regenerate byte for byte (their `--check` passes).
+  `test_procedural_boolean_reference.py` checks the closed forms alone.
+  `compare_procedural_boolean.py` (`compare_boolean.make_set`) reproduces
+  `occt-boolean-procedural-preimplementation`
+  (`rust_procedural_boolean_exists` false; the kernel's probe `unsupported`
+  on all 28, `OutOfDomain(... (S9c.2))`): every result valid with the
+  reference's solid count, the degenerate ones included (the internal
+  tangency's node unmarked, the external one's fuse two solids touching at
+  a vertex); 5 matches without a quartic edge (parallel cylinders, the
+  external tangency) and 23 reviewed (`occt-boolean-procedural-
+  divergences.json`): BRepGProp's default integration on faces bounded by
+  the intersection's approximated curves misses by up to 3.0e-4 (`skew`,
+  7.8e-5 in exact frames), the same results measured adaptively (`Eps =
+  1e-10`) within 2.7e-9; six solids' counts change when unified.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
