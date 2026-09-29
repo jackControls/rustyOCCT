@@ -325,7 +325,12 @@ impl Meet {
             )
         };
         let d = (b * b - a * cc).max(0.0);
-        (u, (-b + self.sign * d.sqrt()) / a)
+        // The root `(-b + s sqrt(d)) / a`, as `c / (-b - s sqrt(d))` where
+        // that cancels less (a ruling near the other's asymptotic direction,
+        // `a` near zero: S9d.3b.2).
+        let sq = self.sign * d.sqrt();
+        let (p, m) = (-b + sq, -b - sq);
+        (u, if p.abs() >= m.abs() { p / a } else { cc / m })
     }
 
     pub fn point(&self, fraction: f64) -> Point3 {
@@ -336,18 +341,21 @@ impl Meet {
     }
 }
 
-/// A cylinder's and a sphere's meeting as a graph over the cylinder's height
-/// (S9d.2b; D13): at `w = start + sweep f` the cylinder's circle
-/// `frame.point(radius (cos u, sin u), w)` meets the sphere (`centre`,
-/// `sphere_radius`) where `alpha cos u + beta sin u = g(w)`, so `u = phi +
-/// sign acos(g(w) / rho)` (`rho` and `phi` the binary64 `hypot` and `atan2`
-/// of `(alpha, beta)`, constants of the curve). An
-/// edge's range keeps `|g / rho| < 1` strictly (no turning point), so it is
-/// analytic.
+/// A cylinder's or a cone's meeting with a sphere as a graph over its
+/// height (S9d.2b; S9d.3b.2; D13): at `w = start + sweep f` the carrier's
+/// circle `frame.point(rho(w) (cos u, sin u), w)`, `rho(w) = radius + w tan
+/// a` (`a` the `half_angle`, zero for a cylinder), meets the sphere
+/// (`centre`, `sphere_radius`) where `alpha cos u + beta sin u = g(w) /
+/// rho(w)`, so `u = phi + sign acos(g(w) / (rho(w) rho))` (`rho` and `phi`
+/// the binary64 `hypot` and `atan2` of `(alpha, beta)`, constants of the
+/// curve). An edge's range keeps the ratio's size below one strictly (no
+/// turning point), so it is analytic.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Rise {
     pub frame: Frame3,
     pub radius: f64,
+    /// A cone carrier's half angle (S9d.3b.2), zero for a cylinder.
+    pub half_angle: f64,
     pub centre: Point3,
     pub sphere_radius: f64,
     pub sign: f64,
@@ -356,23 +364,29 @@ pub struct Rise {
 }
 
 impl Rise {
-    /// `(alpha, beta)`, and `g`'s coefficients `[g0, g1, g2]` in `w`.
+    /// `(alpha, beta)` per unit radius, and `g`'s coefficients `[g0, g1,
+    /// g2]` in `w` (`rho(w)^2` expanded in them).
     pub fn coefficients(&self) -> ([f64; 2], [f64; 3]) {
         let d = self.frame.origin() - self.centre;
         let (x, y, n) = (self.frame.x(), self.frame.y(), self.frame.normal());
-        let r = self.radius;
+        let (r, t) = (self.radius, self.half_angle.tan());
         let g0 = self.sphere_radius * self.sphere_radius - d.dot(d) - r * r;
         (
-            [2.0 * r * x.dot(d), 2.0 * r * y.dot(d)],
-            [g0, -2.0 * n.dot(d), -1.0],
+            [2.0 * x.dot(d), 2.0 * y.dot(d)],
+            [g0, -2.0 * n.dot(d) - 2.0 * r * t, -1.0 - t * t],
         )
     }
 
-    /// The cylinder's angle and height at a fraction.
+    /// The carrier's radius at a height.
+    pub fn rho(&self, w: f64) -> f64 {
+        self.radius + w * self.half_angle.tan()
+    }
+
+    /// The carrier's angle and height at a fraction.
     pub fn parameters(&self, fraction: f64) -> (f64, f64) {
         let w = self.start + self.sweep * fraction;
         let ([a, b], g) = self.coefficients();
-        let rho = a.hypot(b);
+        let rho = a.hypot(b) * self.rho(w);
         let q = (g[0] + g[1] * w + g[2] * w * w) / rho;
         (b.atan2(a) + self.sign * q.clamp(-1.0, 1.0).acos(), w)
     }
@@ -380,8 +394,8 @@ impl Rise {
     pub fn point(&self, fraction: f64) -> Point3 {
         let (u, w) = self.parameters(fraction);
         let (s, c) = u.sin_cos();
-        self.frame
-            .point(Point2::new(self.radius * c, self.radius * s), w)
+        let rho = self.rho(w);
+        self.frame.point(Point2::new(rho * c, rho * s), w)
     }
 }
 

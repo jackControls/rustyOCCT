@@ -187,6 +187,9 @@ def group(name, obj, tool, ops, form):
 
 RULING = 'a cylinder tangent to the cone along a ruling'
 INSCRIBED = 'a sphere tangent to the cone along a circle'
+# Declared after S9d.3b.2's kernel: the sphere touches the frustum's base
+# plane at a point inside its disc.
+TOUCHING = 'a sphere tangent to the base plane inside its disc'
 APEXES = 'two cones touching at their apexes'
 EQUAL = 'two equal cones'
 ALL = {'fuse': 'solid', 'cut': 'solid', 'common': 'solid'}
@@ -217,7 +220,8 @@ def cases():
                  {'common': 'solid'}, ('axial',))
     out += group('ball_coax', F_, sphere(1.5, at('XY', (0, 0, 2))), ALL, ('axial',))
     out += group('ball_apex', A_, sphere(1, at('XY', (0, 0, 3))), {'common': 'solid'}, ('axial',))
-    out += group('ball_side', F_, sphere(1, at('XY', (1.75, 0.5, 1))), {'cut': 'solid', 'common': 'solid'},
+    out += group('ball_side', F_, sphere(1, at('XY', (1.75, 0.5, 1))),
+                 {'cut': ('degenerate', TOUCHING), 'common': ('degenerate', TOUCHING)},
                  ('axial',))
     out += group('dome_cone', sphere(2, at('XY', O), 0.0, HP), cone(1.25, 0, 3.5, at('XY', (0, 0, -0.5))),
                  {'cut': 'solid', 'common': 'solid'}, ('axial',))

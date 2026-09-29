@@ -13,7 +13,7 @@
 use super::meet::{tangency, CylPair, EdgeMeet, Pos};
 use super::model::*;
 use super::num::*;
-use super::procedural::{other_of, other_sphere, MeetCrv, Other, Quartic};
+use super::procedural::{other_of, other_sphere, MeetCrv, Other, Quartic, Ruled};
 use super::sphere::{plane_section, Circ};
 use super::turned::{middle, roots, square_sum, trim, Chart, Lin};
 use crate::polynomial::real::IntPolynomial;
@@ -62,13 +62,22 @@ pub(super) fn sphere_cyl(k: usize, cyl: Cyl, c: &V, r: &R, res: f64) -> Result<C
     if roots(&d.poly(&chart))?.is_empty() {
         return Ok(CylPair::Apart);
     }
-    loops(k, cyl, c, r, &other, &d, &chart)
+    let slope = zero();
+    let ruled = Ruled {
+        f: cyl.0,
+        c: cyl.1,
+        r: cyl.2,
+        k: &slope,
+    };
+    loops(k, ruled, c, r, &other, &d, &chart)
 }
 
-/// A piece of a cylinder's and a sphere's meeting over the height
-/// (S9d.2b): at height `w` the cylinder's circle meets the sphere where
-/// `alpha cos u + beta sin u = g(w)`, on the branch `plus` (the sign of
-/// `alpha sin u - beta cos u`), over `range` (ascending heights).
+/// A piece of a cylinder's or a cone's meeting with a sphere over the
+/// height (S9d.2b, S9d.3b.2): at height `w` the carrier's circle, of radius
+/// `rho(w) = r + k w`, meets the sphere where `alpha cos u + beta sin u =
+/// g(w) / rho(w)` (`alpha`, `beta` per unit radius), on the branch `plus`
+/// (the sign of `alpha sin u - beta cos u`), over `range` (ascending
+/// heights).
 #[derive(Debug, Clone, PartialEq)]
 pub(super) struct RiseCrv {
     pub(super) carrier: usize,
@@ -77,6 +86,8 @@ pub(super) struct RiseCrv {
     y: V,
     n: V,
     r: R,
+    /// The carrier's slope (zero for a cylinder).
+    k: R,
     pub(super) c: V,
     pub(super) rr: R,
     pub(super) plus: bool,
@@ -84,26 +95,36 @@ pub(super) struct RiseCrv {
 }
 
 impl RiseCrv {
-    /// `alpha`, `beta` and `g`'s coefficients `[g0, g1, g2]`.
+    /// `alpha`, `beta` (per unit radius) and `g`'s coefficients `[g0, g1,
+    /// g2]` (`rho(w)^2` expanded in them).
     fn coefficients(&self) -> (R, R, [R; 3]) {
         let d = sub(&self.o, &self.c);
-        let r = &self.r;
+        let (r, k) = (&self.r, &self.k);
         (
-            int(2) * r * dot(&self.x, &d),
-            int(2) * r * dot(&self.y, &d),
+            int(2) * dot(&self.x, &d),
+            int(2) * dot(&self.y, &d),
             [
                 &self.rr * &self.rr - dot(&d, &d) - r * r,
-                int(-2) * dot(&self.n, &d),
-                int(-1),
+                int(-2) * dot(&self.n, &d) - int(2) * r * k,
+                int(-1) - k * k,
             ],
         )
+    }
+
+    /// The carrier's radius at a height.
+    fn rho(&self, w: &R) -> R {
+        &self.r + &self.k * w
     }
 
     /// The point at a rational height (`None` off the piece's branch
     /// domain).
     pub(super) fn at(&self, w: &R) -> Result<Option<QV>> {
         let (a, b, g) = self.coefficients();
-        let gw = &g[0] + &g[1] * w + &g[2] * w * w;
+        let rho = self.rho(w);
+        if rho <= zero() {
+            return Ok(None);
+        }
+        let gw = (&g[0] + &g[1] * w + &g[2] * w * w) / &rho;
         let Some(sols) = super::meet::trig(&a, &b, &gw)? else {
             return Ok(None);
         };
@@ -111,9 +132,9 @@ impl RiseCrv {
             return Ok(None);
         };
         let p = qadd(
-            &qadd(&qv(&self.o), &qscale(&self.x, &cs[0].scale(&self.r))),
+            &qadd(&qv(&self.o), &qscale(&self.x, &cs[0].scale(&rho))),
             &qadd(
-                &qscale(&self.y, &cs[1].scale(&self.r)),
+                &qscale(&self.y, &cs[1].scale(&rho)),
                 &qv(&scale(&self.n, w)),
             ),
         );
@@ -144,7 +165,8 @@ impl RiseCrv {
     pub(super) fn on(&self, p: &QV) -> bool {
         let d = qsub(p, &qv(&self.o));
         let (dx, dy) = (qdot(&d, &self.x), qdot(&d, &self.y));
-        let cyl = dx.mul(&dx).add(&dy.mul(&dy)).add_r(&-(&self.r * &self.r));
+        let rho = qdot(&d, &self.n).scale(&self.k).add_r(&self.r);
+        let cyl = dx.mul(&dx).add(&dy.mul(&dy)).sub(&rho.mul(&rho));
         let e = qsub(p, &qv(&self.c));
         let sph = qqdot(&e, &e).add_r(&-(&self.rr * &self.rr));
         if cyl.sign() != Ordering::Equal || sph.sign() != Ordering::Equal {
@@ -165,9 +187,14 @@ impl RiseCrv {
     /// The unit-free tangent at a point, running up.
     pub(super) fn tangent(&self, p: &QV) -> QV {
         let d = qsub(p, &qv(&self.o));
+        // The carrier's normal (a cone's leans against its axis).
+        let rho = qdot(&d, &self.n).scale(&self.k).add_r(&self.r);
         let gc = qadd(
-            &qscale(&self.x, &qdot(&d, &self.x)),
-            &qscale(&self.y, &qdot(&d, &self.y)),
+            &qadd(
+                &qscale(&self.x, &qdot(&d, &self.x)),
+                &qscale(&self.y, &qdot(&d, &self.y)),
+            ),
+            &qscale(&self.n, &rho.scale(&-self.k.clone())),
         );
         let t = qcross(&gc, &qsub(p, &qv(&self.c)));
         if qdot(&t, &self.n).sign() == Ordering::Less {
@@ -184,14 +211,15 @@ impl RiseCrv {
         let (a, b, g) = self.coefficients();
         let (a, b) = (rational_f64(&a), rational_f64(&b));
         let g = g.map(|x| rational_f64(&x));
-        let r = rational_f64(&self.r);
+        let (r, k) = (rational_f64(&self.r), rational_f64(&self.k));
         let sign = if self.plus { 1.0 } else { -1.0 };
         (0..=n)
             .map(|i| {
                 let w = w0 + (w1 - w0) * i as f64 / n as f64;
-                let q = ((g[0] + g[1] * w + g[2] * w * w) / a.hypot(b)).clamp(-1.0, 1.0);
+                let rho = r + k * w;
+                let q = ((g[0] + g[1] * w + g[2] * w * w) / (rho * a.hypot(b))).clamp(-1.0, 1.0);
                 let u = b.atan2(a) + sign * q.acos();
-                [0, 1, 2].map(|j| o[j] + r * (u.cos() * x[j] + u.sin() * y[j]) + w * nn[j])
+                [0, 1, 2].map(|j| o[j] + rho * (u.cos() * x[j] + u.sin() * y[j]) + w * nn[j])
             })
             .collect()
     }
@@ -203,16 +231,21 @@ impl RiseCrv {
 /// circle tangent) ordered along it and rational switches between those of
 /// different kinds: graphs over the height about the first, over the angle
 /// about the second, each verified exactly.
-fn loops(
+pub(super) fn loops(
     k: usize,
-    cyl: Cyl,
+    ruled: Ruled,
     c: &V,
     rr: &R,
     other: &Other,
     d: &super::turned::Form,
     chart: &Chart,
 ) -> Result<CylPair> {
-    let (f, cc, r) = cyl;
+    let Ruled {
+        f,
+        c: cc,
+        r,
+        k: slope,
+    } = ruled;
     if !f.orthonormal() {
         return Err(loop_later());
     }
@@ -224,6 +257,7 @@ fn loops(
         y: f.y.clone(),
         n: f.n.clone(),
         r: r.clone(),
+        k: slope.clone(),
         c: c.clone(),
         rr: rr.clone(),
         plus,
@@ -235,17 +269,20 @@ fn loops(
     if rho2 == zero() {
         return Err(loop_later());
     }
-    // The height graph's discriminant rho^2 - g(w)^2, a quartic in w.
+    // The height graph's discriminant rho^2 rho(w)^2 - g(w)^2, a quartic in
+    // w.
     let gp = trim(g.to_vec());
+    let rw = trim(vec![r.clone(), slope.clone()]);
     let dw = trim(padd(
-        std::slice::from_ref(&rho2),
+        &pscale(&pmul(&rw, &rw), &rho2),
         &pscale(&pmul(&gp, &gp), &int(-1)),
     ));
-    let meet = |plus: bool, range: Option<[[Qd; 2]; 2]>| MeetCrv::new(k, cyl, other, plus, range);
+    let meet =
+        |plus: bool, range: Option<[[Qd; 2]; 2]>| MeetCrv::ruled(k, ruled, other, plus, range);
     let pa = d.poly(chart);
     let mut ra = roots(&pa)?;
-    let mut rw = roots(&dw)?;
-    for r in ra.iter_mut().chain(rw.iter_mut()) {
+    let mut rws = roots(&dw)?;
+    for r in ra.iter_mut().chain(rws.iter_mut()) {
         r.refine_for_signs(160);
     }
     if ra.len() % 2 != 0 {
@@ -259,10 +296,11 @@ fn loops(
     let phi = bf.atan2(af);
     let fl = |v: &V| v.clone().map(|y| rational_f64(&y));
     let (of, xf, yf, nf, cf) = (fl(&o), fl(&f.x), fl(&f.y), fl(&f.n), fl(c));
-    let rf = rational_f64(r);
+    let (rf, kf) = (rational_f64(r), rational_f64(slope));
     let mut w_turns: Vec<(f64, bool)> = Vec::new();
-    for root in &rw {
+    for root in &rws {
         let w = rational_f64(&middle(root));
+        let rf = rf + kf * w;
         let gw = rational_f64(&g[0]) + rational_f64(&g[1]) * w + rational_f64(&g[2]) * w * w;
         let u = if gw > 0.0 {
             phi

@@ -339,6 +339,14 @@ impl Form {
         })
     }
 
+    /// The form's value at any `(cos, sin)` of a field.
+    pub(super) fn value_q(&self, cs: &[Qd; 2]) -> Qd {
+        let pow = |x: &Qd, n: u32| (0..n).fold(Qd::rat(int(1)), |acc, _| acc.mul(x));
+        self.terms.iter().fold(Qd::rat(zero()), |acc, ((i, j), x)| {
+            acc.add(&pow(&cs[0], *i).mul(&pow(&cs[1], *j)).scale(x))
+        })
+    }
+
     /// Times `(1 + t^2)^deg` in a chart: a polynomial in `t`.
     pub(super) fn poly(&self, chart: &Chart) -> Poly {
         let [cn, sn] = chart.numerators();
@@ -388,6 +396,14 @@ pub(super) fn discriminant(k: Cyl, o: &Other) -> (R, Form) {
 /// against the other quadric: `A` and `D = B^2 - A C` as forms in its
 /// `(cos, sin)` (quadratic and quartic on a cone, S9d.3b).
 pub(super) fn ruled_discriminant(k: Ruled, o: &Other) -> (Form, Form) {
+    let (a, b, cc) = ruled_quadratic(k, o);
+    let d = b.mul(&b).sub(&a.mul(&cc));
+    (a, d)
+}
+
+/// A ruled carrier's ruling against the other quadric: `A`, `B` and `C` of
+/// `A w^2 + 2 B w + C` as quadratic forms in its `(cos, sin)`.
+pub(super) fn ruled_quadratic(k: Ruled, o: &Other) -> (Form, Form, Form) {
     let Ruled { f, c, r, k: slope } = k;
     let base = f.point(&c[0], &c[1], &zero());
     let at_base = |g: &V, e: &R| -> Lin { [dot(g, &base) - e, r * dot(g, &f.x), r * dot(g, &f.y)] };
@@ -411,8 +427,7 @@ pub(super) fn ruled_discriminant(k: Ruled, o: &Other) -> (Form, Form) {
     a = a.sub(&rd.mul(&rd));
     b = b.sub(&r0.mul(&rd));
     cc = cc.sub(&r0.mul(&r0));
-    let d = b.mul(&b).sub(&a.mul(&cc));
-    (a, d)
+    (a, b, cc)
 }
 
 /// A chart whose antipode has `D < 0` (a loop's piece never reaches it),

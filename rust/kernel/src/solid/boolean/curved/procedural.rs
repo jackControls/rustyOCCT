@@ -248,11 +248,20 @@ impl MeetCrv {
         let b = s.iter().zip(&gn).fold(zero(), |acc, (x, y)| acc + x * y) - &r0 * &rd;
         let c = s.iter().fold(zero(), |acc, x| acc + x * x) - &r0 * &r0;
         let d = &b * &b - &a * &c;
-        if d <= zero() || a == zero() {
+        if d <= zero() {
             return None;
         }
         let k = if self.plus { int(1) } else { int(-1) };
-        let w = Qd::new(-&b / &a, k / &a, d);
+        let w = if a == zero() {
+            // A ruling along the other's asymptotic direction (S9d.3b.2):
+            // its one finite root `-C / 2B`, on the branch of `B`'s sign.
+            if sign(&b) != sign(&k) {
+                return None;
+            }
+            Qd::rat(-&c / (int(2) * &b))
+        } else {
+            Qd::new(-&b / &a, k / &a, d)
+        };
         Some(qadd(&qv(&base), &qscale(&dir, &w)))
     }
 
@@ -358,7 +367,9 @@ impl MeetCrv {
                 let a: f64 = gn.iter().map(|x| x * x).sum::<f64>() - rd * rd;
                 let b: f64 = s.iter().zip(&gn).map(|(x, y)| x * y).sum::<f64>() - r0 * rd;
                 let c: f64 = s.iter().map(|x| x * x).sum::<f64>() - r0 * r0;
-                let w = (-b + sign * (b * b - a * c).max(0.0).sqrt()) / a;
+                let sq = sign * (b * b - a * c).max(0.0).sqrt();
+                let (p, m) = (-b + sq, -b - sq);
+                let w = if p.abs() >= m.abs() { p / a } else { c / m };
                 [0, 1, 2].map(|j| base[j] + w * dir[j])
             })
             .collect()

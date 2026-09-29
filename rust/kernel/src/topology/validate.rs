@@ -1203,9 +1203,16 @@ fn curve_valid(curve: &Curve3, tol: &R, fast_tol2: &Fast, exact_tol2: &I) -> boo
         // centre off the axis.
         Curve3::Rise(m) => {
             let ([a, b], _) = m.coefficients();
-            finite(&[m.radius, m.sphere_radius, m.start, m.sweep, m.sign])
-                && finite(&m.centre.to_array())
-                && r(m.radius) > *tol
+            finite(&[
+                m.radius,
+                m.sphere_radius,
+                m.start,
+                m.sweep,
+                m.sign,
+                m.half_angle,
+            ]) && finite(&m.centre.to_array())
+                && m.half_angle.abs() < std::f64::consts::FRAC_PI_2
+                && (r(m.radius) > *tol || (m.half_angle != 0.0 && m.radius >= 0.0))
                 && r(m.sphere_radius) > *tol
                 && (m.sign == 1.0 || m.sign == -1.0)
                 && m.sweep != 0.0

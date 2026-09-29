@@ -306,8 +306,13 @@ pub(super) fn section(
                         m,
                     )?))
                 }
+                // Loops of a cone and a sphere (S9d.3b.2).
+                CylPair::Mixed(x) => Ok(Section::Curves(x.pieces.clone())),
                 CylPair::Same => Ok(Section::Same),
-                _ => Ok(Section::Curves(Vec::new())),
+                CylPair::Apart => Ok(Section::Curves(Vec::new())),
+                CylPair::Parallel { .. } | CylPair::Crossing(_) | CylPair::Lines(..) => {
+                    unreachable!("two cylinders' relations")
+                }
             }
         }
         (Surf::Plane { p: p1, m: m1 }, Surf::Plane { p: p2, m: m2 }) => {

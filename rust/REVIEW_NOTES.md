@@ -2337,6 +2337,29 @@ Decisions for S9, recorded before its code (2026-09-28):
     a coaxial pipe cut from a frustum, and guards a torus's refusal (DRAW
     cannot give a cone and a sphere of their own ids). Pending: the DRAW
     survey, the campaign.
+  * **S9d.3b.2 implemented** (`solid/boolean/curved/cones.rs`,
+    `spheres.rs`): a cone and a sphere in loops (S9d.2b's graphs over the
+    height, the carrier's circle of radius `b + k w`: `u = phi +- acos(g(w)
+    / (rho(w) rho))`, `Curve3::Rise` with the cone's `half_angle`; the loop
+    builder takes any ruled carrier in an exact frame), and a carrier whose
+    rulings reach the other's asymptotic directions (its `A`'s simple real
+    roots, algebraic directions over `Q(alpha)`): its turn split there into
+    open pieces of both branches, the finite one's switch at `w = -C / 2B`,
+    every root of the ruling's quadratic taken as `C / (-B - s sqrt(D))`
+    where `(-B + s sqrt(D)) / A` cancels (exactly, in binary64 and in the
+    jets). `cones_lean` evaluates as the reference; `ball_side`'s sphere
+    touches the frustum's base plane inside its disc, a tangency
+    (`Degenerate` by S9d.1's rule; the evidence checked edges and vertices
+    against the other's surfaces, not faces against faces), declared so in
+    the generator and the expected rows now (the reference's rows and the
+    native capture unchanged), so the loop is checked on the same pair with
+    the sphere's radius 0.875
+    (`a_sphere_off_a_cones_axis_meets_it_in_a_loop`, against
+    `cones_boolean_reference.py`'s rows for it); `ball_tilt` (a turned
+    frame) stays `OutOfDomain`, as S9d.2b's loops in turned frames. A
+    loop's section pieces reach the arrangement (the first build dropped
+    them: the cone and sphere found apart). Pending: the DRAW survey, the
+    campaign.
   * **S9d.4 refined, before its code (2026-09-29).** Tori (S3's
     `torus_*`) in S9c's arrangement. Sub-steps: S9d.4a, a whole torus
     (the full tube and turn) against polyhedral prisms; S9d.4b, against

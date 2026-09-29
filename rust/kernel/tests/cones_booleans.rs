@@ -5,15 +5,9 @@
 mod protocol;
 use rusty_occt::history;
 
-/// The cases left to a later sub-step (`OutOfDomain`), S9d.3b.2's: loops
-/// (spheres off the axis), and a carrier whose rulings reach the other's
-/// asymptotic directions (a cone in `LEAN`, its branches to infinity).
-const LATER: &[&str] = &[
-    "ball_side_cut",
-    "ball_side_common",
-    "ball_tilt_common",
-    "cones_lean_common",
-];
+/// The cases left to a later sub-step (`OutOfDomain`): a loop in a turned
+/// frame (its height graph needs an exact frame, as S9d.2b's).
+const LATER: &[&str] = &["ball_tilt_common"];
 
 #[test]
 fn every_case_matches_the_reference() {
@@ -239,4 +233,93 @@ fn a_cone_with_its_apex_at_its_base_carries_a_ring() {
     assert!((v[0] - (va + vb - v[2])).abs() <= 1e-9 * v[0]);
     assert!((v[1] - (va - v[2])).abs() <= 1e-9 * va);
     assert!(v[2] > 0.0);
+}
+
+/// A sphere off a frustum's axis crossing its wall (`ball_side` with the
+/// sphere's radius 0.875, clear of the end planes): a loop over the cone's
+/// angle and height (S9d.3b.2); volumes, areas and centres the reference's
+/// (`cones_boolean_reference.py` on that pair: fuse 16.8219782646248678,
+/// cut 14.0158160766527348, common 0.64494964009963367), enclosures narrow,
+/// histories complete.
+#[test]
+#[allow(clippy::excessive_precision)] // the reference's rows as printed
+fn a_sphere_off_a_cones_axis_meets_it_in_a_loop() {
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{history, Frame3, Point3, Solid, Tolerance, Vec3};
+    let tol = Tolerance::default();
+    let up = Frame3::new(
+        Point3::new(0.0, 0.0, 0.0),
+        Vec3::new(0.0, 0.0, 1.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    let (f, _) = Solid::cone_with(OperationId(1), up, 2.0, 1.0, 2.0, tol).unwrap();
+    let at = Frame3::new(
+        Point3::new(1.75, 0.5, 1.0),
+        Vec3::new(0.0, 0.0, 1.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    let half = std::f64::consts::FRAC_PI_2;
+    let (s, _) = Solid::sphere_with(OperationId(2), at, 0.875, -half, half, tol).unwrap();
+    let ins = [
+        f.topology().entity_set(f.resolution()),
+        s.topology().entity_set(s.resolution()),
+    ];
+    // (volume, area, centre) of each operation's one solid.
+    let want = [
+        (
+            16.821_978_264_624_868,
+            41.647_480_310_556_612,
+            [
+                0.241_946_110_141_536_17,
+                0.069_127_460_040_438_906,
+                0.822_327_814_205_085_56,
+            ],
+        ),
+        (
+            14.015_816_076_652_735,
+            37.532_610_200_928_205,
+            [
+                -0.059_987_347_032_922_15,
+                -0.017_139_242_009_406_328,
+                0.786_755_360_421_065_96,
+            ],
+        ),
+        (
+            0.644_949_640_099_633_67,
+            4.756_054_652_133_274_7,
+            [
+                1.303_623_679_532_392_9,
+                0.372_463_908_437_826_55,
+                0.763_090_020_647_585_45,
+            ],
+        ),
+    ];
+    for (r, (v, a, c)) in [
+        f.fuse(OperationId(3), &s),
+        f.cut(OperationId(3), &s),
+        f.common(OperationId(3), &s),
+    ]
+    .into_iter()
+    .zip(want)
+    {
+        let (out, h) = r.unwrap();
+        assert_eq!(out.len(), 1);
+        let e = out[0].topology().mass_enclosure().unwrap();
+        let slack = |x: f64| 1e-12 * x.abs().max(1.0);
+        assert!(
+            e.volume[0] - slack(v) <= v && v <= e.volume[1] + slack(v),
+            "{:?} {v}",
+            e.volume
+        );
+        assert!(e.surface_area[0] - slack(a) <= a && a <= e.surface_area[1] + slack(a));
+        assert!(e.volume[1] - e.volume[0] <= 1e-9 * v);
+        let m = out[0].mass_properties().centroid.to_array();
+        assert!((0..3).all(|i| (m[i] - c[i]).abs() <= 1e-9), "{m:?} {c:?}");
+        let outs = [out[0].topology().entity_set(out[0].resolution())];
+        assert!(history::check(&ins, &outs, &h).is_empty());
+    }
 }

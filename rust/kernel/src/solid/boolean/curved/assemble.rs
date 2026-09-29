@@ -814,8 +814,15 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                 &arr.models[0].faces[s.fa].stored,
                 &arr.models[1].faces[s.fb].stored,
             ];
-            let Surface::Cylinder { frame, radius } = stored[m.carrier] else {
-                return Err(Error::InvalidTopology("a rise off a cylinder"));
+            // Over a cone's stored surface too (S9d.3b.2).
+            let (frame, radius, half_angle) = match stored[m.carrier] {
+                Surface::Cylinder { frame, radius } => (frame, radius, 0.0),
+                Surface::Cone {
+                    frame,
+                    radius,
+                    half_angle,
+                } => (frame, radius, *half_angle),
+                _ => return Err(Error::InvalidTopology("a rise off a ruled surface")),
             };
             let (Pos::T(w0), Pos::T(w1)) = (
                 if d0 { &first.pos[0] } else { &first.pos[1] },
@@ -835,6 +842,7 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
             Ok(Curve3::Rise(Box::new(crate::topology::Rise {
                 frame: *frame,
                 radius: *radius,
+                half_angle,
                 centre: Point3::new(centre[0], centre[1], centre[2]),
                 sphere_radius: rational_f64(&m.rr),
                 sign: if m.plus { 1.0 } else { -1.0 },

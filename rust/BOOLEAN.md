@@ -490,7 +490,14 @@ them with its cone term. `Curve3::Meet` takes the cone carrier and the
 cone as the other quadric (`TOPOLOGY_MODEL.md`). A carrier-less pair (no
 input's rulings meet the other all round: spheres off a cone's axis) or
 one whose only carrier has rulings along the other's asymptotes (their
-branches to infinity) is S9d.3b.2's (`OutOfDomain`).
+branches to infinity) is S9d.3b.2's. A cone and a sphere in loops take
+S9d.2b's graphs over the height with the cone's circle of radius `b + k
+w` (`Curve3::Rise` on a cone), in exact frames; a carrier whose `A` has
+simple real roots is split at those directions (algebraic over
+`Q(alpha)`), each branch an open piece between them, the finite branch
+switched at `w = -C / 2B`; the ruling's roots taken as `C / (-B - s
+sqrt(D))` where `(-B + s sqrt(D)) / A` cancels. A loop in a turned frame is
+`OutOfDomain`.
 
 ### Spline profiles (S9a.2)
 

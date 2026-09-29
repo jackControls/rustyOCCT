@@ -265,7 +265,19 @@ fn meet_jet<T: Real>(m: &Meet, fraction: &Jet<T>) -> Option<MeetJet<T>> {
         cc = cc.sub(&r0.square());
     }
     let d = b.square().sub(&cc.mul(&a));
-    let v = d.sqrt()?.scale(&c(m.sign)).sub(&b).div(&a)?;
+    // `(-b + s sqrt(d)) / a`, or `c / (-b - s sqrt(d))` where that cancels
+    // less (the binary64 curve's own choice, by its midpoints).
+    let sq = d.sqrt()?.scale(&c(m.sign));
+    let (p, q) = (sq.sub(&b), sq.neg().sub(&b));
+    let mid = |j: &Jet<T>| {
+        let (lo, hi) = j.c[0].bounds_f64();
+        (0.5 * lo + 0.5 * hi).abs()
+    };
+    let v = if mid(&p) >= mid(&q) {
+        p.div(&a)?
+    } else {
+        cc.div(&q)?
+    };
     let mut point = foot;
     for (k, p) in point.iter_mut().enumerate() {
         *p = p.add(&v.mul(&dir[k]));
@@ -279,18 +291,20 @@ fn rise_jet<T: Real>(m: &Rise, fraction: &Jet<T>) -> Option<[Jet<T>; 3]> {
     let w = fraction.scale(&c(m.sweep)).add_constant(&c(m.start));
     let ([a, b], g) = m.coefficients();
     let rho = c::<T>(a).square().add(&c::<T>(b).square()).sqrt();
+    // The carrier's radius at the height (a cone's varies, S9d.3b.2).
+    let (ca, sa) = T::cos_sin(&c(m.half_angle));
+    let radius = w.scale(&sa.div(&ca)?).add_constant(&c(m.radius));
     let q = w
         .square()
         .scale(&c(g[2]))
         .add(&w.scale(&c(g[1])))
         .add_constant(&c(g[0]))
-        .scale(&c::<T>(1.0).div(&rho)?);
+        .div(&radius.scale(&rho))?;
     // `phi` is the curve's binary64 constant (its definition's `atan2`).
     let phi = c::<T>(b.atan2(a));
     let u = acos_jet(&q)?.scale(&c(m.sign)).add_constant(&phi);
     let (co, si) = u.cos_sin();
-    let r = c::<T>(m.radius);
-    let mut out = world(&m.frame, &co.scale(&r), &si.scale(&r));
+    let mut out = world(&m.frame, &co.mul(&radius), &si.mul(&radius));
     let n = m.frame.normal().to_array();
     for (k, o) in out.iter_mut().enumerate() {
         *o = o.add(&w.scale(&c(n[k])));
@@ -737,6 +751,7 @@ mod tests {
             let m = Rise {
                 frame: cyl,
                 radius: 1.0,
+                half_angle: 0.0,
                 centre: Point3::new(1.0, 0.0, 0.0),
                 sphere_radius: 1.5,
                 sign,

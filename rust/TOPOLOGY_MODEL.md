@@ -867,6 +867,12 @@ procedural pcurves with explicit conic edges.
   `(alpha, beta)`; an edge's range keeps `|g / rho| < 1` strictly. Jets,
   quadrature, tessellation rates, rigid motion and the writer's refusal as
   `Curve3::Meet`'s.
+* **A cone's meeting with a sphere over the height (S9d.3b.2).**
+  `Curve3::Rise` takes a cone carrier (`half_angle`): its circle at `w` has
+  radius `radius + w tan a` and `u = phi + sign acos(g(w) / (rho(w)
+  rho))`. `Curve3::Meet`'s height is the root `(-b + s sqrt(d)) / a`, or
+  `c / (-b - s sqrt(d))` where that cancels less (a ruling near the
+  other's asymptotic direction), in its points and jets alike.
 * **A cone's sections in Boolean results (S9d.3a).** `HyperbolaArc` and
   `ParabolaArc` edges bound Boolean results too; a rigid motion moves their
   frames, and a body's bounds hold their coordinates' extremes inside their

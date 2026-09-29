@@ -162,13 +162,124 @@ pub(super) fn cone_pair(ms: [&Prism; 2], faces: [usize; 2], res: f64) -> Result<
                     // No ruling meets the other quadric.
                     return Ok(CylPair::Apart);
                 }
+                // A cone and a sphere in loops (S9d.3b.2): graphs over the
+                // cone's height about its rulings' tangencies, over its
+                // angle about its circles', as S9d.2b's.
+                if let Surf::Sphere { c, r } = &ms[1 - k].faces[faces[1 - k]].surf {
+                    return super::spheres::loops(k, ruled, c, r, &other, &d, &chart);
+                }
             }
         }
     }
     if let Some(k) = parallel {
         return plane_of(ms, faces, k);
     }
+    // A carrier whose rulings reach the other's asymptotic directions (its
+    // `A`'s simple real roots) and meet it twice elsewhere (S9d.3b.2): its
+    // turn split at those directions, where one branch runs to infinity
+    // (past the solids' ends) and the other through a finite switch.
+    for k in 0..2 {
+        let Some(ruled) = ruled_of(ms[k], faces[k], &axis, &zero_k) else {
+            continue;
+        };
+        let other = other_face(ms[1 - k], faces[1 - k]);
+        let (a, b, cc) = super::turned::ruled_quadratic(ruled, &other);
+        let d = b.mul(&b).sub(&a.mul(&cc));
+        if vanishes(&a) || vanishes(&d) {
+            continue;
+        }
+        let Ok(dirs) = circle_roots(&a) else {
+            continue;
+        };
+        if dirs.is_empty() || negative_chart(&d)?.is_some() {
+            continue;
+        }
+        near_node(
+            &a_bound(&a),
+            &d,
+            &Chart {
+                c0: int(1),
+                s0: zero(),
+            },
+            res,
+        )?;
+        let mut pieces = Vec::new();
+        let mut switches = Vec::new();
+        let n = dirs.len();
+        for i in 0..n {
+            let range = [dirs[i].clone(), dirs[(i + 1) % n].clone()];
+            for plus in [true, false] {
+                pieces.push(MeetCrv::ruled(k, ruled, &other, plus, Some(range.clone())));
+            }
+            // The finite branch's point there: `w = -C / 2B`.
+            let cs = &dirs[i];
+            let bv = b.value_q(cs);
+            if bv.sign() == Ordering::Equal {
+                return Err(tangency());
+            }
+            let w = b
+                .value_q(cs)
+                .scale(&int(2))
+                .recip()
+                .ok_or(tangency())?
+                .mul(&cc.value_q(cs).neg());
+            switches.push(ruling_point(ruled, cs, &w));
+        }
+        return Ok(CylPair::Quartic(Box::new(Quartic { pieces, switches })));
+    }
     Err(loops_later())
+}
+
+/// A form's zeros on the circle, counter-clockwise from the angle `-pi`:
+/// the directions of its chart's real roots (algebraic, `Q(alpha)`), the
+/// antipode `(-1, 0)` last where it vanishes. A repeated root is refused.
+fn circle_roots(a: &Form) -> Result<Vec<[Qd; 2]>> {
+    use super::num::{Gen, K};
+    use std::sync::Arc;
+    let chart = Chart {
+        c0: int(1),
+        s0: zero(),
+    };
+    let p = super::turned::trim(a.poly(&chart));
+    let mut out = Vec::new();
+    for root in roots(&p)? {
+        let g = Arc::new(Gen {
+            poly: p.clone(),
+            root,
+        });
+        let t = K::generator(&g);
+        let den = t.mul(&t).add(&K::Rat(int(1)));
+        let inv = den
+            .recip()
+            .ok_or(Error::ComputationLimit("a direction at infinity"))?;
+        let cos = K::Rat(int(1)).sub(&t.mul(&t)).mul(&inv);
+        let sin = t.scale(&int(2)).mul(&inv);
+        out.push([Qd::of(cos), Qd::of(sin)]);
+    }
+    if a.value(&[int(-1), zero()]) == zero() {
+        out.push([Qd::rat(int(-1)), Qd::rat(zero())]);
+    }
+    Ok(out)
+}
+
+/// A ruling's point at `w` over a direction of any field.
+fn ruling_point(ruled: Ruled, cs: &[Qd; 2], w: &Qd) -> QV {
+    let f = ruled.f;
+    let base = qadd(
+        &qv(&f.point(&ruled.c[0], &ruled.c[1], &zero())),
+        &qadd(
+            &qscale(&f.x, &cs[0].scale(ruled.r)),
+            &qscale(&f.y, &cs[1].scale(ruled.r)),
+        ),
+    );
+    let dir = qadd(
+        &qv(&f.n),
+        &qadd(
+            &qscale(&f.x, &cs[0].scale(ruled.k)),
+            &qscale(&f.y, &cs[1].scale(ruled.k)),
+        ),
+    );
+    qadd(&base, &dir.map(|x| x.mul(w)))
 }
 
 /// A quadric's quadratic, linear and constant parts, `p^T M p + l . p + c`.
