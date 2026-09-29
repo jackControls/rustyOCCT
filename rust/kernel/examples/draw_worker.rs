@@ -2179,6 +2179,15 @@ fn moved(s: &Solid, transform: RigidTransform, quarter: Option<QuarterTurn>) -> 
             }
         }
     }
+    // Other solids (cones, spheres, tori) by the quarter turn's exact
+    // matrix: their frames keep exact axes, as the prism's (S9d.3b.1's
+    // survey: a cone's rounded axis crossed a cylinder's cap within
+    // rounding of parallel).
+    if let Some(q) = quarter {
+        let origin = Point3::ORIGIN + q.centre;
+        let exact = RigidTransform::quarter_turn(origin, q.axis, u32::from(q.turns))?;
+        return Ok(s.transform_with(OperationId::UNSPECIFIED, exact)?.0);
+    }
     Ok(s.transform_with(OperationId::UNSPECIFIED, transform)?.0)
 }
 

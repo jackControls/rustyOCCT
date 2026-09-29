@@ -294,6 +294,33 @@ impl RigidTransform {
         }
         Ok(result)
     }
+    /// `turns` quarter turns about the axis through `origin` along world
+    /// axis `axis` (0, 1 or 2), counter-clockwise: its matrix a signed
+    /// permutation, exact (a `rotation` by a binary64 multiple of `pi / 2`
+    /// carries `cos` rounded to about 6e-17).
+    pub fn quarter_turn(origin: Point3, axis: usize, turns: u32) -> Result<Self> {
+        for value in origin.to_array() {
+            finite(value, "rotation origin")?;
+        }
+        if axis > 2 {
+            return Err(Error::OutOfDomain("a quarter turn about a world axis"));
+        }
+        let turn = |v: Vec3| match axis {
+            0 => Vec3::new(v.x, -v.z, v.y),
+            1 => Vec3::new(v.z, v.y, -v.x),
+            _ => Vec3::new(-v.y, v.x, v.z),
+        };
+        let mut columns = [Vec3::X, Vec3::Y, Vec3::Z];
+        for _ in 0..turns % 4 {
+            columns = columns.map(turn);
+        }
+        let mut result = Self {
+            columns,
+            ..Self::identity()
+        };
+        result.translation = origin - result.point(origin);
+        Ok(result)
+    }
     pub fn vector(self, vector: Vec3) -> Vec3 {
         self.columns[0] * vector.x + self.columns[1] * vector.y + self.columns[2] * vector.z
     }
@@ -416,4 +443,27 @@ pub(crate) fn scaled_sin(radius: f64, angle: f64) -> f64 {
 #[inline(never)]
 pub(crate) fn scaled_cos(radius: f64, angle: f64) -> f64 {
     radius * angle.cos()
+}
+
+#[cfg(test)]
+mod quarter_turn_tests {
+    use super::*;
+
+    /// A quarter turn's matrix is a signed permutation, exactly, and it
+    /// agrees with `rotation` by `pi / 2` within that one's rounding.
+    #[test]
+    fn quarter_turns_are_exact() {
+        let o = Point3::new(1.0, 2.0, 3.0);
+        let q = RigidTransform::quarter_turn(o, 2, 1).unwrap();
+        assert_eq!(q.vector(Vec3::X), Vec3::Y);
+        assert_eq!(q.vector(Vec3::Y), -Vec3::X);
+        assert_eq!(q.point(o), o);
+        let r = RigidTransform::rotation(o, Vec3::Z, std::f64::consts::FRAC_PI_2).unwrap();
+        let p = Point3::new(-2.5, 0.75, 4.0);
+        assert!((q.point(p) - r.point(p)).length() < 1e-15);
+        for axis in 0..3 {
+            let t = RigidTransform::quarter_turn(o, axis, 4).unwrap();
+            assert_eq!(t.point(p), p);
+        }
+    }
 }
