@@ -14,7 +14,9 @@
 // sphere, a cap or a zone; the latitudes in radians). S9d.3a: likewise one row
 // `cone ox oy oz nx ny nz xx xy xz R1 R2 H`, built by
 // BRepPrimAPI_MakeCone(gp_Ax2(origin, normal, x), R1, R2, H) (a cone or a
-// frustum; a zero radius an apex).
+// frustum; a zero radius an apex). S9d.4a: likewise one row `torus ox oy oz
+// nx ny nz xx xy xz R r`, built by BRepPrimAPI_MakeTorus(gp_Ax2(origin,
+// normal, x), R, r) (a whole torus).
 //
 // Output: `NAME done N valid warnings` (N solids in the result, the result
 // checked by BRepCheck_Analyzer, 1 if the operation reported warnings), then
@@ -36,6 +38,7 @@
 #include <BRepPrimAPI_MakeCone.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
 #include <BRepPrimAPI_MakeSphere.hxx>
+#include <BRepPrimAPI_MakeTorus.hxx>
 #include <GProp_GProps.hxx>
 #include <Geom_BSplineCurve.hxx>
 #include <NCollection_Array1.hxx>
@@ -100,7 +103,7 @@ Handle(Geom_BSplineCurve) spline(std::istringstream& in) {
 }
 
 // One prism's construction rows, as occt_split_oracle.cpp reads them, or
-// (S9d.1) a sphere's row, or (S9d.3a) a cone's.
+// (S9d.1) a sphere's row, or (S9d.3a) a cone's, or (S9d.4a) a torus's.
 struct Prism {
   gp_Ax3 frame;
   std::vector<TopoDS_Wire> wires;
@@ -117,6 +120,10 @@ struct Prism {
       auto v = numbers(in, 12);
       gp_Ax2 axis(gp_Pnt(v[0], v[1], v[2]), gp_Dir(v[3], v[4], v[5]), gp_Dir(v[6], v[7], v[8]));
       primitive = BRepPrimAPI_MakeCone(axis, v[9], v[10], v[11]).Shape();
+    } else if (kind == "torus") {
+      auto v = numbers(in, 11);
+      gp_Ax2 axis(gp_Pnt(v[0], v[1], v[2]), gp_Dir(v[3], v[4], v[5]), gp_Dir(v[6], v[7], v[8]));
+      primitive = BRepPrimAPI_MakeTorus(axis, v[9], v[10]).Shape();
     } else if (kind == "plane") {
       auto v = numbers(in, 9);
       frame = gp_Ax3(gp_Pnt(v[0], v[1], v[2]), gp_Dir(v[3], v[4], v[5]), gp_Dir(v[6], v[7], v[8]));

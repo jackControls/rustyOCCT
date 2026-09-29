@@ -150,6 +150,9 @@ def case_scale(case):
     # S9d.3a: a cone's reach from the origin.
     values += [max(abs(x) for x in c.frame[:3])+max(c.cone[0], c.cone[1])+c.cone[2] for c in (case.obj, case.tool)
                if c.cone is not None]
+    # S9d.4a: a torus's reach from the origin.
+    values += [max(abs(x) for x in c.frame[:3])+c.torus[0]+c.torus[1] for c in (case.obj, case.tool)
+               if c.torus is not None]
     for b in case.obj.boundaries+case.tool.boundaries:
         if b.circle is not None:
             values += [abs(b.circle[0])+b.circle[2], abs(b.circle[1])+b.circle[2]]

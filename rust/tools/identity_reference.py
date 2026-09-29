@@ -408,10 +408,12 @@ def encode_boolean_case(obj, operation, tool, boolean_operation):
     `sphere R LOW HIGH` rows, `Solid::sphere_with` on the frame, the
     latitudes in radians), read as any identity case's. S9d.3a: likewise a
     cone or frustum (its `frame` and `cone BOTTOM TOP HEIGHT` rows,
-    `Solid::cone_with` on the frame)."""
+    `Solid::cone_with` on the frame). S9d.4a: likewise a whole torus (its
+    `frame` and `torus MAJOR MINOR LOW HIGH ANGLE` rows, `Solid::torus_with`
+    on the frame, the full tube and turn)."""
     assert operation in BOOLEAN_OPERATIONS, operation
-    assert obj.make is None and tool.make is None and tool.box is None \
-        and tool.torus is None, 'S9a: two prisms (S9d.1: or a sphere; S9d.3a: or a cone)'
+    assert obj.make is None and tool.make is None and tool.box is None, \
+        'S9a: two prisms (S9d.1: or a sphere; S9d.3a: or a cone; S9d.4a: or a torus)'
     assert not obj.transforms and not tool.transforms, 'S9a: prisms in place'
     first = encode_case(obj).rsplit('\nend', 1)[0]
     second = encode_case(tool).split('\n')[1:-1]
@@ -750,7 +752,17 @@ def native_case(c):
     (radians), as `BRepPrimAPI_MakeSphere(gp_Ax2, R, LOW, HIGH)` takes them.
     A cone or frustum (S9d.3a) is one row `cone ox oy oz nx ny nz xx xy xz
     R1 R2 H`, `Solid::cone_with`'s bottom and top radii and height, as
-    `BRepPrimAPI_MakeCone(gp_Ax2, R1, R2, H)` takes them."""
+    `BRepPrimAPI_MakeCone(gp_Ax2, R1, R2, H)` takes them. A whole torus
+    (S9d.4a: the full tube and turn) is one row `torus ox oy oz nx ny nz xx
+    xy xz R r`, `Solid::torus_with`'s major and minor radii, as
+    `BRepPrimAPI_MakeTorus(gp_Ax2, R, r)` takes them."""
+    if c.torus is not None:
+        assert not c.transforms and c.make is None, f'{c.name}: a torus in place'
+        major, minor, low, high, angle = c.torus
+        assert high-low == TWO_PI and angle == TWO_PI, f'{c.name}: a whole torus'
+        o, x, _, n = frame_axes(c.frame)
+        return '\n'.join([f'case {c.name}', 'torus '+' '.join(number(v) for v in (*o, *n, *x, major, minor)),
+                          'end'])
     if c.sphere is not None:
         assert not c.transforms and c.make is None, f'{c.name}: a sphere in place'
         o, x, _, n = frame_axes(c.frame)
