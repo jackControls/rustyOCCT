@@ -23,6 +23,10 @@ pub(super) enum EdgeMeet {
     /// A cap's circle against a perpendicular cylinder (S9c.2): nested
     /// surds, S9c.2b's where they lie on both faces.
     Nested(Vec<([super::procedural::Nest; 2], [super::procedural::Nest; 3])>),
+    /// A cap's circle against a cylinder in turned frames (S9c.2b.1): the
+    /// quartic's roots in the circle's half-angle tangent, S9c.2b.2's
+    /// where on the edge's arc.
+    Circle(Vec<super::turned::Hit>),
 }
 
 /// A place along a curve: a line's parameter, or a conic's `(cos, sin)`.
@@ -137,7 +141,7 @@ pub(super) enum CylPair {
     Crossing(Box<Crossing>),
     /// Circular cylinders with perpendicular axes meeting in a quartic
     /// (S9c.2a).
-    Perpendicular(Box<super::procedural::Perpendicular>),
+    Quartic(Box<super::procedural::Quartic>),
     /// One surface.
     Same,
 }
@@ -191,7 +195,8 @@ pub(super) fn cyl_pair(
         return Ok(CylPair::Apart);
     }
     if !circular {
-        return Err(quartic());
+        // Turned frames, crossing axes (S9c.2b.1).
+        return super::turned::crossing((fx, cx, rx), (fy, cy, ry), px.tolerance.linear());
     }
     // Circular, equal radii: the axes must meet (coplanar) for two conics;
     // others perpendicular (in exact frames) meet in quartics (S9c.2a).
@@ -301,7 +306,7 @@ pub(super) fn section(
                             .collect(),
                     ))
                 }
-                CylPair::Perpendicular(x) => Ok(Section::Curves(
+                CylPair::Quartic(x) => Ok(Section::Curves(
                     x.pieces
                         .iter()
                         .map(|m| Crv::Meet(Box::new(m.clone())))
@@ -466,9 +471,12 @@ pub(super) fn edge_surface(
                             .collect(),
                     ))
                 }
-                CylPair::Perpendicular(_) => Ok(EdgeMeet::Nested(
+                CylPair::Quartic(x) if x.perpendicular => Ok(EdgeMeet::Nested(
                     super::procedural::nested_points(c, a, b, &py.f, cy, ry)?,
                 )),
+                CylPair::Quartic(_) => Ok(EdgeMeet::Circle(super::turned::circle_hits(
+                    c, a, b, &py.f, cy, ry,
+                )?)),
                 CylPair::Crossing(x) => {
                     let mut out = Vec::new();
                     for (p0, m) in &x.planes {

@@ -133,6 +133,11 @@ SOLID3 = {'fuse': 'solid', 'cut': 'solid', 'common': 'solid'}
 TANGENT_PLANE = 'a plane tangent to a cylinder along a generatrix'
 TANGENT_CYLINDERS = 'two cylinders tangent along a generatrix'
 STEINMETZ_TOUCH = 'the result touches itself at the two points where the equal cylinders are tangent'
+# S9c.2b's decisions (REVIEW_NOTES.md): equal cylinders whose axes meet in
+# stored turned frames have exactly equal extents across the common
+# perpendicular, a double tangency, refused.
+STORED_NODE = ('equal cylinders with meeting axes in turned stored frames: their models touch '
+               'at the two ends of their common extent (S9c.2b)')
 
 
 def cases():
@@ -160,10 +165,10 @@ def cases():
                  {'fuse': 'solid', 'cut': ('degenerate', STEINMETZ_TOUCH), 'common': 'solid'})
     out += group('steinmetz_oblique', ([disc(0.0, 0.0, 2.0)], at('XY', (0, 0, 0)), -7.0, 7.0),
                  ([disc(0.0, 0.0, 2.0)], at('TILT', (0, 0, 0)), -9.0, 9.0),
-                 {'fuse': 'solid', 'common': 'solid'})
+                 {'fuse': ('degenerate', STORED_NODE), 'common': ('degenerate', STORED_NODE)})
     out += group('steinmetz_tilted', ([disc(0.0, 0.0, 1.5)], at('TILT', (0, 0, 0)), -6.0, 6.0),
                  ([disc(0.0, 0.0, 1.5)], at('TILTX', (0, 0, 0)), -6.0, 6.0),
-                 {'common': 'solid'})
+                 {'common': ('degenerate', STORED_NODE)})
     out += group('parallel_cylinders', ([disc(0.0, 0.0, 3.0)], at('XY', (0, 0, 0)), 0.0, 5.0),
                  ([disc(0.0, 0.0, 2.0)], at('R125', (4, 0.5, 0)), 0.0, 5.0), SOLID3)
     out += group('coaxial', ([disc(0.0, 0.0, 3.0)], at('XY', (0, 0, 0)), 0.0, 5.0),

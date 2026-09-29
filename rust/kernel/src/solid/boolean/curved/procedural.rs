@@ -45,20 +45,20 @@ pub(super) struct MeetCrv {
 }
 
 /// The other cylinder of a carrier, as its local rows and offsets.
-struct Other {
-    g: [V; 2],
-    e: [R; 2],
-    r: R,
+pub(super) struct Other {
+    pub(super) g: [V; 2],
+    pub(super) e: [R; 2],
+    pub(super) r: R,
 }
 
-fn other_of(f: &Affine, c: &P2, r: &R) -> Other {
+pub(super) fn other_of(f: &Affine, c: &P2, r: &R) -> Other {
     let g = [f.row(0).clone(), f.row(1).clone()];
     let e = [&dot(&g[0], &f.o) + &c[0], &dot(&g[1], &f.o) + &c[1]];
     Other { g, e, r: r.clone() }
 }
 
 impl MeetCrv {
-    fn new(
+    pub(super) fn new(
         carrier: usize,
         (f, c, r): (&Affine, &P2, &R),
         other: &Other,
@@ -128,6 +128,12 @@ impl MeetCrv {
         let s0 = qdot(x, &self.g[0]).add_r(&-&self.e[0]);
         let s1 = qdot(x, &self.g[1]).add_r(&-&self.e[1]);
         qadd(&qscale(&self.g[0], &s0), &qscale(&self.g[1], &s1))
+    }
+
+    /// The branch a point of both cylinders lies on: the sign of the other
+    /// cylinder's gradient along the carrier's axis.
+    pub(super) fn branch_sign(&self, x: &QV) -> Ordering {
+        qdot(&self.grad_other(x), &self.n).sign()
     }
 
     /// Whether a point lies on the piece (on both cylinders, on its branch
@@ -201,12 +207,14 @@ impl MeetCrv {
     }
 }
 
-/// Two perpendicular cylinders' meeting: its pieces and the points where
-/// a loop switches between them.
+/// Two cylinders' quartic meeting: its pieces and the points where a loop
+/// switches between them; perpendicular in exact frames (S9c.2a) or not
+/// (S9c.2b.1).
 #[derive(Debug, Clone)]
-pub(super) struct Perpendicular {
+pub(super) struct Quartic {
     pub(super) pieces: Vec<MeetCrv>,
     pub(super) switches: Vec<QV>,
+    pub(super) perpendicular: bool,
 }
 
 /// A cylinder of an operand: its frame, circle centre and radius.
@@ -241,9 +249,10 @@ pub(super) fn perpendicular(x: Cyl, y: Cyl) -> Result<CylPair> {
     // Rings about the cylinder whose extent lies inside the other's.
     for k in 0..2 {
         if lo[k] > lo[1 - k] && hi[k] < hi[1 - k] {
-            return Ok(CylPair::Perpendicular(Box::new(Perpendicular {
+            return Ok(CylPair::Quartic(Box::new(Quartic {
                 pieces: vec![piece(k, true, None), piece(k, false, None)],
                 switches: Vec::new(),
+                perpendicular: true,
             })));
         }
     }
@@ -339,9 +348,10 @@ pub(super) fn perpendicular(x: Cyl, y: Cyl) -> Result<CylPair> {
         pieces.push(piece(ww, sw, Some(range)));
     }
     let switches = sw_pts.into_iter().map(|x| x.1).collect();
-    Ok(CylPair::Perpendicular(Box::new(Perpendicular {
+    Ok(CylPair::Quartic(Box::new(Quartic {
         pieces,
         switches,
+        perpendicular: true,
     })))
 }
 

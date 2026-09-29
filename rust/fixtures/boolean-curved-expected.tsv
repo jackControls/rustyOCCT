@@ -24,11 +24,14 @@ steinmetz_cut	reason the result touches itself at the two points where the equal
 steinmetz_cut	result 2 82.99703947692506287183907 150.7964473723100754462069 0.0 0.0 0.0
 steinmetz_common	expect solid S9c.1
 steinmetz_common	result 1 42.66666666666666666666667 64.0 0.0 0.0 0.0
-steinmetz_oblique_fuse	expect solid S9c.1
+steinmetz_oblique_fuse	expect degenerate S9c.1
+steinmetz_oblique_fuse	reason equal cylinders with meeting axes in turned stored frames: their models touch at the two ends of their common extent (S9c.2b)
 steinmetz_oblique_fuse	result 1 331.0127485483824173369207 345.7226754502635553978683 0.0 0.0 0.0
-steinmetz_oblique_common	expect solid S9c.1
+steinmetz_oblique_common	expect degenerate S9c.1
+steinmetz_oblique_common	reason equal cylinders with meeting axes in turned stored frames: their models touch at the two ends of their common extent (S9c.2b)
 steinmetz_oblique_common	result 1 71.11111111111111216376702 106.6666666666666698246344 0.0 0.0 0.0
-steinmetz_tilted_common	expect solid S9c.1
+steinmetz_tilted_common	expect degenerate S9c.1
+steinmetz_tilted_common	reason equal cylinders with meeting axes in turned stored frames: their models touch at the two ends of their common extent (S9c.2b)
 steinmetz_tilted_common	result 1 17.99999999999999840127884 35.99999999999999786837179 0.0 0.0 0.0
 parallel_cylinders_fuse	expect solid S9c.1
 parallel_cylinders_fuse	result 1 194.7036344755263164290004 204.0511636547529698266837 1.168050909105624722681587 0.1460063636382030903351983 2.5

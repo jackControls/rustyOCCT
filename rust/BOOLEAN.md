@@ -10,9 +10,10 @@ S9a is implemented (`profile/boolean.rs` with its spline meetings in
 position (`solid/boolean/polyhedra.rs`: prisms, and any planar solid with
 straight edges as an input, a Boolean's result or a plane's piece among
 them), S9c.1's prisms with arcs in any relative position
-(`solid/boolean/curved/`) and S9c.2a's perpendicular cylinders in exact
-frames meeting in quartics (`curved/procedural.rs`); S9c.2b and S9d are
-not.
+(`solid/boolean/curved/`), S9c.2a's perpendicular cylinders in exact
+frames meeting in quartics (`curved/procedural.rs`) and S9c.2b.1's
+cylinders with crossing axes in turned frames (`curved/turned.rs`);
+S9c.2b.2 and S9d are not.
 
 ## Contract
 
@@ -25,9 +26,9 @@ frames (one profile over one height range) is built as one, keeping the
 prism's exact queries; any other is a general body built through
 `TopologyParts` and validated before it is returned. An error is one of:
 
-* `OutOfDomain`: a pair of a later sub-step (two cylinders meeting in
-  curves other than lines and conics in turned frames, or a quartic
-  section crossing a cap's circle, S9c.2b; a prism with arcs against a
+* `OutOfDomain`: a pair of a later sub-step (parallel cylinders in
+  turned frames, or a quartic section crossing a cap's circle, S9c.2b.2;
+  a prism with arcs against a
   solid other than a prism, a spline profile or an arc whose ends lie off
   its circle in any position, S9c), two spline segments along one curve in
   different forms or a spline span along a line, or a cavity in a result
@@ -300,6 +301,38 @@ the angle's range: `TOPOLOGY_MODEL.md`), their pcurves exact projections
 certifies a band face's holes bounded by projections and sinusoids (the
 signed `+v` ray over every `u` alias, projections by certified pieces:
 `BREP_VALIDATION.md`).
+
+### Cylinders in turned frames (S9c.2b.1)
+
+Two cylinders whose frames' stored axes are not exactly orthonormal (their
+affine models elliptic in the world) and whose axes cross meet in a
+quartic taken the same way (`curved/turned.rs`), its structure decided
+from each cylinder's discriminant: over a carrier's ruling at `(cos, sin)`
+the other cylinder gives `A w^2 + 2 B w + C = 0`, and `D = B^2 - A C` is a
+quadratic form in `(cos, sin)`, a quartic in the half-angle tangent `t` of
+a chart (the base turned by `2 atan t`, its antipode at infinity) whose
+real roots, the carrier's turning points, are isolated exactly
+(`polynomial/real.rs`'s Sturm sequences). A chart is chosen whose antipode
+has `D < 0`; a cylinder with no such point has `D >= 0` all round and
+carries two rings, one with `D < 0` all round meets nothing. Otherwise
+every root pair of the first cylinder's `D` bounds a loop: the second
+cylinder's turning points (where its ruling touches the first: `w = -B /
+A`) are placed on the loops by their angle and branch on the first (binary64
+views of isolators narrowed 160 bisections), the events ordered along each
+loop, and a switch put at a rational angle of the first cylinder midway
+between each adjacent pair of different kinds. Each run between switches
+is a graph over the second cylinder's angle (about the first's turning
+points; its branch and range read at the switches and a point inside) or
+over the first's (about the second's, on one branch), and is verified
+exactly: no root of its carrier's discriminant within its range (the
+roots against rational ends; Sturm counts at surd ends, the range clear
+of the chart's antipode). A repeated root, or a critical point of the
+chart's quartic where `|D| < (A res / 2)^2` (two branches within the
+resolution: equal cylinders with meeting axes in stored turned frames
+among them, whose extents across the common perpendicular are equal
+exactly), is `Degenerate`. A cap's circle against the other cylinder is a
+quartic in its own `t`; a root on the edge's arc (ends included, exact
+comparisons with the arc's rational ends) is S9c.2b.2's, `OutOfDomain`.
 
 ### Spline profiles (S9a.2)
 
@@ -623,6 +656,16 @@ height); its horizontal edges on a spline are its lifted restrictions.
   S9c.1 failures are fixed: a hole no piece holds (a sliver whose binary64
   image turned the wrong way) is `Degenerate`, and a band with holes
   bounded by ellipses' projections now validates.
+* **Kernel (S9c.2b.1).** `tests/turned_booleans.rs`: the 15 fixtures as the
+  reference (13 results inside its measures, the 2 near nodes refused),
+  every history checked, results deterministic and moved rigidly; the
+  procedural set's `oblique` and `skew` now inside the reference too (its
+  `parallel_hole` S9c.2b.2's), and S9c.1's `steinmetz_oblique` and
+  `steinmetz_tilted` declared `degenerate` (their stored models touch at
+  the ends of their common extent). `compare_turned_boolean.py`: 2
+  matches, 13 reviewed (the measures; the loops' counts with their switch
+  vertices added), no failure; `compare_procedural_boolean.py` 5 and 23,
+  `compare_curved_boolean.py` 42 and 2, no failure.
 * **S9c.2b.1 evidence (cylinders in turned frames), before its kernel
   code.** `generate_turned_boolean_fixtures.py --check` writes
   `boolean-turned-cases.txt`, `boolean-turned-expected.tsv` and

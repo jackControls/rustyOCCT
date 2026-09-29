@@ -290,9 +290,10 @@
    "native_sha256": "a7b54c7b82b777d74fd087db4b7e8436308c4b64f5f1f9043ddffec55dc2bcfb",
    "differences": [
     "centre",
-    "measure"
+    "measure",
+    "rust_entity_counts"
    ],
-   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 1.1e-04 and area 8.4e-05 relative and its centre 1.4e-04 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 4.3e-10 in volume, 1.9e-10 in area (relative) and 5.2e-11 in centre; its edges' tolerance is at most 1.1e-07. The geometry agrees with the reference; the default measure does not reach the allowance.",
+   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 1.1e-04 and area 8.4e-05 relative and its centre 1.4e-04 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 4.3e-10 in volume, 1.9e-10 in area (relative) and 5.2e-11 in centre; its edges' tolerance is at most 1.1e-07. The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI gives 3 faces, 3 edges and 2 vertices (2 faces, 2 edges and 2 vertices after ShapeUpgrade_UnifySameDomain); the kernel's result, counted with OCCT's seams, has 2 faces, 4 edges and 4 vertices. The loop's graphs over each cylinder's angle meet at rational switch points (S9c.2b.1: between turning points of the two kinds), vertices OCCT does not have (its intersection curves are B-splines split at its own points); switch vertices stay in the result by decision (REVIEW_NOTES.md, S9c.2).",
    "independent_evidence": "curved_boolean_reference.py's rows (generate_procedural_boolean_fixtures.py --check) agree with the perpendicular common over sin phi = 3/5 by quadrature and Legendre's form (1e-15: turned frames), with inclusion and exclusion and every face's classes within 1e-40, and with Monte Carlo within 3.2 standard errors.",
    "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
   },
@@ -303,9 +304,10 @@
    "native_sha256": "82315a3e74e5f9490fbfda2061dbe1a2b6f762147affe26b183a47666234ec95",
    "differences": [
     "centre",
-    "measure"
+    "measure",
+    "rust_entity_counts"
    ],
-   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 3.7e-05 and area 3.0e-04 relative and its centre 3.9e-05 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.2e-10 in volume, 5.0e-11 in area (relative) and 1.3e-11 in centre; its edges' tolerance is at most 1.1e-07. The geometry agrees with the reference; the default measure does not reach the allowance.",
+   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 3.7e-05 and area 3.0e-04 relative and its centre 3.9e-05 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.2e-10 in volume, 5.0e-11 in area (relative) and 1.3e-11 in centre; its edges' tolerance is at most 1.1e-07. The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI gives 4 faces, 6 edges and 4 vertices; the kernel's result, counted with OCCT's seams, has 4 faces, 7 edges and 6 vertices. The loop's graphs over each cylinder's angle meet at rational switch points (S9c.2b.1: between turning points of the two kinds), vertices OCCT does not have (its intersection curves are B-splines split at its own points); switch vertices stay in the result by decision (REVIEW_NOTES.md, S9c.2).",
    "independent_evidence": "curved_boolean_reference.py's rows (generate_procedural_boolean_fixtures.py --check) agree with the perpendicular common over sin phi = 3/5 by quadrature and Legendre's form (1e-15: turned frames), with inclusion and exclusion and every face's classes within 1e-40, and with Monte Carlo within 3.2 standard errors.",
    "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
   }

@@ -1675,6 +1675,26 @@ Decisions for S9, recorded before its code (2026-09-28):
     ellipses), 13 reviewed: BRepGProp's default integration misses by up to
     3.3e-4, the same results measured adaptively within 9.1e-10; four
     solids' counts change when unified. S9c.2b.1's kernel next.
+  * **S9c.2b.1 implemented** (`solid/boolean/curved/turned.rs`): cylinders
+    with crossing axes in turned frames as the refined decisions describe;
+    all 15 turned fixtures as declared (13 inside the reference, the 2 near
+    nodes refused), the procedural set's `oblique` and `skew` inside the
+    reference, S9c.1's `steinmetz_oblique` and `steinmetz_tilted` refused
+    and now declared `degenerate` (the evidence's finding: their extents
+    are equal exactly, a double tangency), every history checked, results
+    deterministic and moved rigidly; `compare_turned_boolean.py` 2 matches
+    and 13 reviewed (the 5 loops' counts with their switch vertices added),
+    the procedural, curved and earlier comparisons without failure.
+    Amendments, from the implementation: (a) the chart for a loop's first
+    cylinder has its antipode where `D < 0` (an axis point, else a point
+    between two roots), so every loop's `t` range is finite; (b) turning
+    points of the second kind are placed on the loops from isolators
+    narrowed by 160 bisections (their midpoints' binary64 views order the
+    events; the exact verification of every piece is what certifies the
+    result); (c) a cap's circle is refused only where a root of its quartic
+    lies on the edge's arc, not yet where it lies off the other face
+    (S9c.2b.2's interval membership). Pending: the DRAW survey, the
+    campaign, S9c.2b.2.
 
 ### Parallel tracks
 

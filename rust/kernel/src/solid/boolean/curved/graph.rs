@@ -352,6 +352,14 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                         });
                     }
                     EdgeMeet::Points(p) => p,
+                    EdgeMeet::Circle(hits) => {
+                        // S9c.2b.2's where a root lies on the edge's arc.
+                        let (a0, b0, ccw) = e.arc.as_ref().expect("an arc edge");
+                        if hits.iter().any(|h| super::turned::on_arc(h, a0, b0, *ccw)) {
+                            return Err(super::turned::algebraic());
+                        }
+                        continue;
+                    }
                     EdgeMeet::Nested(points) => {
                         // S9c.2b's where on the edge's arc and the face.
                         let (a0, b0, ccw) = e.arc.as_ref().expect("an arc edge");
@@ -496,7 +504,7 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
         // between its graphs (S9c.2a).
         let points = match pair {
             CylPair::Crossing(cross) => &cross.points,
-            CylPair::Perpendicular(p) => &p.switches,
+            CylPair::Quartic(p) => &p.switches,
             _ => continue,
         };
         for (k, x) in points.iter().enumerate() {

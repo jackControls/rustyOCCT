@@ -5,13 +5,19 @@
 mod protocol;
 use rusty_occt::history;
 
-/// The cases S9c.1 leaves to S9c.2 or to coincident surfaces (`OutOfDomain`):
-/// cylinders parallel or crossing in frames not exactly orthonormal (their
-/// exact models meet in quartics).
+/// The cases S9c.1 leaves to S9c.2b.2 (`OutOfDomain`): parallel cylinders
+/// in frames not exactly orthonormal (their exact models meet in
+/// generatrices at quartic points).
 const LATER: &[&str] = &[
     "parallel_cylinders_fuse",
     "parallel_cylinders_cut",
     "parallel_cylinders_common",
+];
+
+/// Equal cylinders with meeting axes in stored turned frames: the models'
+/// extents across the common perpendicular are equal exactly, a double
+/// tangency (S9c.2b's decisions: `Degenerate`).
+const NODES: &[&str] = &[
     "steinmetz_oblique_fuse",
     "steinmetz_oblique_common",
     "steinmetz_tilted_common",
@@ -48,6 +54,12 @@ fn every_case_matches_the_reference() {
                 continue;
             }
         };
+        if NODES.contains(&case.name.as_str()) {
+            if rows != ["refused"] {
+                failures.push(format!("{}: {rows:?} not refused", case.name));
+            }
+            continue;
+        }
         if LATER.contains(&case.name.as_str()) {
             if rows != ["unsupported"] {
                 failures.push(format!("{}: {rows:?} not unsupported", case.name));
