@@ -1905,8 +1905,28 @@ Decisions for S9, recorded before its code (2026-09-28):
     compares circles by centres, normals and radii within tolerance and a
     circle in a plane as an ellipse (the same replay: a rim split at the
     seam, a section's circle rounded from its basis, differ from their
-    wholes' frames within rounding). Pending: the DRAW survey, the
-    campaign.
+    wholes' frames within rounding). Pending: the campaign.
+  * **DRAW survey of S9d.1 (2026-09-29, `UPSTREAM_TESTS.md`).** Of the
+    boolean group's 1,802 self-contained cases Rust evaluates 831 (830
+    before), none failing, all registered. Of the 101 Booleans of a sphere
+    refused before as solids other than prisms none evaluates: 33 are a
+    unit box whose corner is at a unit sphere's centre, its far corners on
+    the sphere (`Degenerate` by decision: 21 reported as a meeting at every
+    seam tried, the arrangement taking a vertex on a sphere's face for a
+    seam conflict and retrying; 12, the box quarter-turned, as a tangency
+    of its wall), 60 a sphere against a cylinder with the cylinder first
+    (S9d.2's `OutOfDomain`), and 8 the same with the sphere first and its
+    equator the cylinder's rim, refused before the pair (a meeting at
+    every seam tried). The one sphere against a box whose vertices stay
+    off it, `bopcommon_simple/ZP9`, was refused by the adapter (a
+    `psphere` on a DRAW `plane`, recorded until now as a `pcylinder` on a
+    plane); the adapter places a sphere on a plane's frame now, and the
+    case evaluates, its area native DRAW's to its printed digits and the
+    closed form's within 9e-16 relative. The `bcommon_simple/A1` sentinel
+    is refused as a vertex on the sphere now; three sentinels are added
+    (`bopfuse_simple/ZH5`, S9d.2; `bfuse_simple/A4`, a tangent wall;
+    `boptuc_simple/ZH5`, the sphere first). 748 cases stay refused. The
+    ledger does not change.
 
 ### Parallel tracks
 

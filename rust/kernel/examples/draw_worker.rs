@@ -2202,11 +2202,24 @@ fn numeric_arguments(command: &str) -> Option<(usize, usize)> {
     })
 }
 
+/// Whether a `psphere` is placed on a DRAW plane: its third word names
+/// one (`psphere name plane R [angle1 angle2]`).
+fn on_plane(session: &Session, args: &[String]) -> bool {
+    args.first().is_some_and(|c| c == "psphere") && plane_named(&session.shapes, args)
+}
+
+/// Whether a command's third word names a DRAW plane.
+fn plane_named(shapes: &BTreeMap<String, Shape>, args: &[String]) -> bool {
+    args.len() > 2 && matches!(shapes.get(&args[2]), Some(Shape::Geometry(Geom::Plane(_))))
+}
+
 fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
     // DRAW evaluates `dset` variables in numeric arguments (S9a).
     let evaluated: Vec<String>;
     let args = match numeric_arguments(args.first().map(String::as_str).unwrap_or("")) {
         Some((first, last)) => {
+            // `psphere name plane R ...`: the plane is a name, not a number.
+            let first = first + usize::from(on_plane(session, args));
             evaluated = args
                 .iter()
                 .enumerate()
@@ -2689,16 +2702,23 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             shapes.insert(args[1].clone(), Shape::Solid(Box::new(solid)));
             Ok(String::new())
         }
-        // `psphere name R [angle1 angle2]`: a sphere or zone about the z
-        // axis, latitudes in degrees (a partial longitude is not supported).
-        "psphere" if args.len() == 3 || args.len() == 5 => {
-            let n = numbers(&args[2..])?;
-            let frame = Frame3::new(
-                Point3::ORIGIN,
-                Vec3::new(0.0, 0.0, 1.0),
-                Vec3::new(1.0, 0.0, 0.0),
-                t,
-            )?;
+        // `psphere name [plane] R [angle1 angle2]`: a sphere or zone about
+        // the z axis or the plane's normal, centred at the origin or the
+        // plane's origin, latitudes in degrees (a partial longitude is not
+        // supported).
+        "psphere" if matches!(args.len() - usize::from(plane_named(shapes, args)), 3 | 5) => {
+            let (frame, n) = match shapes.get(&args[2]) {
+                Some(Shape::Geometry(Geom::Plane(frame))) => (*frame, numbers(&args[3..])?),
+                _ => (
+                    Frame3::new(
+                        Point3::ORIGIN,
+                        Vec3::new(0.0, 0.0, 1.0),
+                        Vec3::new(1.0, 0.0, 0.0),
+                        t,
+                    )?,
+                    numbers(&args[2..])?,
+                ),
+            };
             let (low, high) = if n.len() == 3 {
                 (n[1].to_radians(), n[2].to_radians())
             } else {
