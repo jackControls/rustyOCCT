@@ -2559,8 +2559,13 @@ Decisions for S9, recorded before its code (2026-09-28):
     spline faces now have enclosures narrower than OCCT's default
     BRepGProp error. OCCT's adaptive integration (Eps 1e-12) lies inside
     five of them and within the tool's 1e-9 of a sixth; on face 225 both
-    of OCCT's integrations agree 2e-9 relative outside the enclosure,
-    which is under investigation as a possible unsound enclosure.
+    of OCCT's integrations agree 2e-9 relative outside the enclosure: its
+    pcurves leave a 2.5e-10 gap in the parameters, which the kernel closes
+    by a chord and BRepGProp through the face's `UMin`. An independent
+    40-digit Green integration (`free_face_measure.py`) lies inside the
+    kernel's enclosure on all seven; they are reviewed differences now,
+    each with its independent measure (`occt-brep-io-divergences.json`,
+    OCCT's adaptive probe run only where a default measure falls outside).
   * **S9d.4b refined, before its code (2026-09-29).** Two sub-steps.
     S9d.4b.1: tori other than whole ones (S3's v-segments between two
     latitudes and wedges of a partial turn) against polyhedral prisms: the
