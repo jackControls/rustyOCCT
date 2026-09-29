@@ -2043,10 +2043,17 @@ Decisions for S9, recorded before its code (2026-09-28):
     cases stay refused. The ledger does not change. After the survey: a
     discriminant vanishing identically is tested first (`sphere_cyl`), so
     the 32 of radius 4 are a tangency between the inputs, `Degenerate`, as
-    the decisions say (`ZH5`'s purpose updated); a section through a
-    stored sphere's poles stays `PrecisionLoss` (its pcurve turns half a
-    turn at the pole: a vertex there and a meridian's pcurves on either
-    side, S9d.1's follow-up, before S9d.4).
+    the decisions say (`ZH5`'s purpose updated). S9d.1's follow-up, done
+    after S9d.3a: a section through a stored sphere's pole, or within the
+    resolution of it (a sphere turned by a binary64 quarter turn), gets a
+    vertex there (exactly on the section, at its rational direction nearest
+    the pole) that assembly keeps, so a meridian's pcurves are lines on
+    either side and the loop turns half a turn at the pole (the validator's
+    `u` gaps scale by `cos v`); a section through a pole off the axis's
+    planes is `OutOfDomain` (its pcurves' `u` undefined at the pole).
+    `ZI4` evaluates, its area native DRAW's; the 16 cases' registration
+    waits for the next survey (`tests/sphere_booleans.rs`,
+    `sections_through_a_spheres_poles`).
 
   * **S9d.3 refined, before its code (2026-09-29).** Cones and frusta (S3's
     `cone_*`: radii `bottom` and `top` over heights `0..h` on the stored

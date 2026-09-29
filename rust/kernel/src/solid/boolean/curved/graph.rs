@@ -37,6 +37,9 @@ pub(super) enum VKey {
     Cross(usize, usize, usize),
     /// A ring section's own vertex: section and branch (S9d.1).
     Ring(usize, usize),
+    /// A stored sphere's pole on a section: section and pole (S9d.1's
+    /// follow-up: a section's pcurves turn half a turn there).
+    Pole(usize, usize),
 }
 
 #[derive(Debug, Clone)]
@@ -619,6 +622,60 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                 continue;
             }
             let si = secs.len();
+            // A stored sphere's poles on a section, or within the
+            // resolution of it, inside both faces give it a vertex (the
+            // section's point nearest the pole, exactly on it): a section
+            // through a pole turns half a turn there on the stored sphere's
+            // parameters, its pcurves meridians' lines on either side. A
+            // section through a pole off the axis's planes is refused.
+            for (o, f) in [(0, fa), (1, fb)] {
+                let Some(poles) = stored_poles(&models[o], f) else {
+                    continue;
+                };
+                for (k, pole) in poles.into_iter().enumerate() {
+                    for crv in &curves {
+                        let at = match crv {
+                            _ if on_curve(crv, &pole) => pole.clone(),
+                            Crv::Circle(c) => match near_pole(c, &pole, res) {
+                                Some(x) => x,
+                                None => continue,
+                            },
+                            _ => continue,
+                        };
+                        if models[0].in_face(fa, &at) != Loc::In
+                            || models[1].in_face(fb, &at) != Loc::In
+                        {
+                            continue;
+                        }
+                        // Only a meridian (a circle in a plane holding the
+                        // axis, within rounding) runs through a pole on
+                        // lines of its pcurves.
+                        let Crv::Circle(c) = crv else {
+                            return Err(Error::OutOfDomain(
+                                "a section through a sphere's pole off its meridians (S9d.1)",
+                            ));
+                        };
+                        if !meridian(&c.normal(), &models[o].f.n) {
+                            return Err(Error::OutOfDomain(
+                                "a section through a sphere's pole off its meridians (S9d.1)",
+                            ));
+                        }
+                        let id = match vx.iter().position(|v| qv_eq(&v.p, &at)) {
+                            Some(id) => id,
+                            None => {
+                                vx.push(Vx {
+                                    p: at,
+                                    key: VKey::Pole(si, k),
+                                    faces: BTreeSet::new(),
+                                });
+                                vx.len() - 1
+                            }
+                        };
+                        vx[id].faces.insert((0, fa));
+                        vx[id].faces.insert((1, fb));
+                    }
+                }
+            }
             // Vertices on both faces.
             let on: Vec<usize> = (0..vx.len())
                 .filter(|&v| vx[v].faces.contains(&(0, fa)) && vx[v].faces.contains(&(1, fb)))
@@ -754,6 +811,54 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
         }
     }
     Ok(arr)
+}
+
+/// The poles of a sphere face's stored surface (`c -+ r n / |n|` on the
+/// stored frame's axis), exactly; none for other faces.
+fn stored_poles(m: &Prism, f: usize) -> Option<Vec<QV>> {
+    let (Surf::Sphere { c, r }, Some(_)) = (&m.faces[f].surf, &m.ball) else {
+        return None;
+    };
+    let n = &m.f.n;
+    let nn = dot(n, n);
+    Some(
+        [-1, 1]
+            .map(|k| {
+                let s = Qd::new(zero(), int(k), r * r / &nn);
+                qadd(&qv(c), &qscale(n, &s))
+            })
+            .to_vec(),
+    )
+}
+
+/// A circle's point nearest a pole within the resolution of it, exactly on
+/// the circle (its rational direction nearest the pole's), or none.
+fn near_pole(c: &super::sphere::Circ, pole: &QV, res: f64) -> Option<QV> {
+    let fl = |v: &V| v.clone().map(|x| crate::solid::split::rational_f64(&x));
+    let (cc, n) = (fl(&c.c), fl(&c.normal()));
+    let p = qv_f64(pole);
+    let d = [p[0] - cc[0], p[1] - cc[1], p[2] - cc[2]];
+    let nn = (n[0] * n[0] + n[1] * n[1] + n[2] * n[2]).sqrt();
+    let h = (d[0] * n[0] + d[1] * n[1] + d[2] * n[2]) / nn;
+    let inplane = [0, 1, 2].map(|i| d[i] - h * n[i] / nn);
+    let rad = (inplane[0].powi(2) + inplane[1].powi(2) + inplane[2].powi(2)).sqrt();
+    let r = crate::solid::split::rational_f64(&c.r2).sqrt();
+    if (h * h + (rad - r) * (rad - r)).sqrt() > res {
+        return None;
+    }
+    let place = c.place(pole);
+    Some(c.at(&[q(place[0].to_f64()), q(place[1].to_f64())]))
+}
+
+/// Whether a plane's normal is orthogonal to an axis within rounding (the
+/// plane holds the axis's direction).
+fn meridian(m: &V, n: &V) -> bool {
+    let fl = |v: &V| v.clone().map(|x| crate::solid::split::rational_f64(&x));
+    let (m, n) = (fl(m), fl(n));
+    let d = m[0] * n[0] + m[1] * n[1] + m[2] * n[2];
+    let l = (m[0] * m[0] + m[1] * m[1] + m[2] * m[2]).sqrt()
+        * (n[0] * n[0] + n[1] * n[1] + n[2] * n[2]).sqrt();
+    d.abs() <= 1e-12 * l
 }
 
 /// The edge of face `g` holding `x` strictly inside it, and its place

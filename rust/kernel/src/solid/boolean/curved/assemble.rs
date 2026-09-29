@@ -188,6 +188,10 @@ pub(super) fn assemble(arr: &Arr, op: Op2) -> Result<Vec<Component>> {
     }
     let faces_of = |g: usize| -> BTreeSet<usize> { uses[&g].iter().map(|u| u.0).collect() };
     let removable = |v: usize| -> bool {
+        // A pole stays: its sections' pcurves turn there.
+        if matches!(arr.vx[v].key, VKey::Pole(..)) {
+            return false;
+        }
         let gs: Vec<usize> = incident[&v].iter().copied().collect();
         match gs.len() {
             2 => {
@@ -720,7 +724,7 @@ fn build_component(
                 t.push(arr.models[0].faces[*fa].id);
                 t.push(arr.models[1].faces[*fb].id);
             }
-            VKey::Ring(si, _) => {
+            VKey::Ring(si, _) | VKey::Pole(si, _) => {
                 let s = &arr.secs[*si];
                 t.push(arr.models[0].faces[s.fa].id);
                 t.push(arr.models[1].faces[s.fb].id);

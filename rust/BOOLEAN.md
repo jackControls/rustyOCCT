@@ -388,7 +388,10 @@ rational point and joined back into a ring edge. In the result a circle is
 sphere a line where it is a meridian (its `u` taken inside it, so an end at
 a pole needs none) or a parallel, an exact projection otherwise; a sphere
 face whose loops wind once in all holds its pole as a vertex loop (S3's
-caps). The validator decides a ray against a whole sphere (a cavity in a
+caps). A section through the stored sphere's pole, or within the
+resolution of it, has a vertex there, kept in the result, its meridian
+arcs' pcurves lines on either side; a section through a pole off the
+axis's planes is `OutOfDomain`. The validator decides a ray against a whole sphere (a cavity in a
 sphere); a result's bounds hold its spheres' boxes. A sphere against a
 cylinder or another sphere is S9d.2's.
 

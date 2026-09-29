@@ -202,3 +202,92 @@ fn a_sphere_less_a_patch_clear_of_its_poles() {
         "{vf} {va} {vb} {vc}"
     );
 }
+
+/// A box's wall through an upright whole sphere's centre, its section a
+/// great circle through the stored sphere's poles (the DRAW grids'
+/// `ZI4`-`ZI7` alike): the section has vertices at the poles and meridians'
+/// pcurves; the volumes are the half balls', histories complete, results
+/// moved rigidly. A plane through a pole off the axis is `OutOfDomain`.
+#[test]
+fn sections_through_a_spheres_poles() {
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{
+        history, Boundary, Error, Frame3, Location, Point2, Point3, Profile, RigidTransform, Solid,
+        Tolerance, Vec3,
+    };
+    let tol = Tolerance::default();
+    let prism = |frame: Frame3, pts: &[(f64, f64)], h: f64| {
+        let outer =
+            Boundary::polygon(pts.iter().map(|p| Point2::new(p.0, p.1)).collect(), tol).unwrap();
+        let profile = Profile::new(outer, vec![], tol).unwrap();
+        Solid::extrude_with(OperationId(1), profile, frame, 0.0, h)
+            .unwrap()
+            .0
+    };
+    let up = Frame3::new(
+        Point3::new(0.0, 0.0, 0.0),
+        Vec3::new(0.0, 0.0, 1.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    let a = prism(
+        up,
+        &[(0.0, -4.0), (4.0, -4.0), (4.0, 4.0), (0.0, 4.0)],
+        16.0,
+    );
+    let centre = Frame3::new(
+        Point3::new(0.0, 0.0, 8.0),
+        Vec3::new(0.0, 0.0, 1.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    let half = std::f64::consts::FRAC_PI_2;
+    let (b, _) = Solid::sphere_with(OperationId(2), centre, 2.0, -half, half, tol).unwrap();
+    let ball = 32.0 * std::f64::consts::PI / 3.0;
+    let motion =
+        RigidTransform::rotation(Point3::new(1.0, 0.0, 0.0), Vec3::new(1.0, 2.0, 2.0), 0.5)
+            .unwrap();
+    let ins = [
+        a.topology().entity_set(a.resolution()),
+        b.topology().entity_set(b.resolution()),
+    ];
+    for (r, want) in [
+        (a.fuse(OperationId(3), &b), 512.0 + ball / 2.0),
+        (a.cut(OperationId(3), &b), 512.0 - ball / 2.0),
+        (a.common(OperationId(3), &b), ball / 2.0),
+    ] {
+        let (out, h) = r.unwrap();
+        let v: f64 = out.iter().map(|s| s.mass_properties().volume).sum();
+        assert!((v - want).abs() <= 1e-9 * want, "{v} {want}");
+        let outs: Vec<_> = out
+            .iter()
+            .map(|s| s.topology().entity_set(s.resolution()))
+            .collect();
+        assert!(history::check(&ins, &outs, &h).is_empty());
+        for s in &out {
+            let (moved, _) = s.transform_with(OperationId(900), motion).unwrap();
+            for v in moved.topology().vertices() {
+                assert_eq!(moved.classify(v.position).unwrap(), Location::Boundary);
+            }
+        }
+    }
+    // A wall through the north pole, off the axis.
+    let side = Frame3::new(
+        Point3::new(0.0, -4.0, 10.0),
+        Vec3::new(0.0, 1.0, 0.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    let t = prism(
+        side,
+        &[(2.0, -8.0), (6.0, -8.0), (6.0, 16.0), (-4.0, 16.0)],
+        8.0,
+    );
+    assert!(matches!(
+        t.fuse(OperationId(3), &b),
+        Err(Error::OutOfDomain(_))
+    ));
+}
