@@ -10,7 +10,7 @@
 use super::{c, V2, V3};
 use crate::certified::Real;
 use crate::jet::{integrate_many, Jet};
-use crate::topology::{Curve3, Projection, Spiric, Surface};
+use crate::topology::{Curve3, Meet, Projection, Spiric, Surface};
 use crate::Frame3;
 
 /// Integration widths and depths for the integrals along projections.
@@ -124,6 +124,7 @@ pub(super) fn curve_jet<T: Real>(curve: &Curve3, fraction: &Jet<T>) -> Option<[J
         }
         Curve3::HyperbolaArc { .. } | Curve3::ParabolaArc { .. } => conic_jet(curve, fraction)?,
         Curve3::Section(s) => section_jet(s, fraction)?,
+        Curve3::Meet(m) => meet_jet(m, fraction)?.1,
         Curve3::BSpline(_) => return None,
     })
 }
@@ -192,6 +193,56 @@ fn section_jet<T: Real>(s: &Spiric, fraction: &Jet<T>) -> Option<[Jet<T>; 3]> {
     Some(out)
 }
 
+/// A meeting's `(u, v)` on its carrier and its world point, as jets.
+type MeetJet<T> = ([Jet<T>; 2], [Jet<T>; 3]);
+
+/// The jets of two cylinders' meeting (S9c.2) in the fraction: the
+/// carrier's angle and ruling height, and the world point.
+fn meet_jet<T: Real>(m: &Meet, fraction: &Jet<T>) -> Option<MeetJet<T>> {
+    let u = fraction.scale(&c(m.sweep)).add_constant(&c(m.start));
+    let (co, si) = u.cos_sin();
+    let r = c::<T>(m.radius);
+    let foot = world(&m.frame, &co.scale(&r), &si.scale(&r));
+    let (o2, x2, y2) = (
+        m.other.origin().to_array(),
+        m.other.x().to_array(),
+        m.other.y().to_array(),
+    );
+    let n = m.frame.normal().to_array();
+    let along = |axis: &[f64; 3]| {
+        let mut out = Jet::constant(c::<T>(0.0), u.order());
+        for k in 0..3 {
+            out = out.add(
+                &foot[k]
+                    .add_constant(&c::<T>(o2[k]).neg())
+                    .scale(&c(axis[k])),
+            );
+        }
+        out
+    };
+    let (wx, wy) = (along(&x2), along(&y2));
+    let dot =
+        |a: &[f64; 3]| (0..3).fold(c::<T>(0.0), |acc, k| acc.add(&c::<T>(n[k]).mul(&c(a[k]))));
+    let (nx, ny) = (dot(&x2), dot(&y2));
+    let a = nx.mul(&nx).add(&ny.mul(&ny));
+    let b = wx.scale(&nx).add(&wy.scale(&ny));
+    let cc = wx
+        .square()
+        .add(&wy.square())
+        .add_constant(&c::<T>(m.other_radius).mul(&c(m.other_radius)).neg());
+    let d = b.square().sub(&cc.scale(&a));
+    let v = d
+        .sqrt()?
+        .scale(&c(m.sign))
+        .sub(&b)
+        .scale(&c::<T>(1.0).div(&a)?);
+    let mut point = foot;
+    for (k, p) in point.iter_mut().enumerate() {
+        *p = p.add(&v.scale(&c(n[k])));
+    }
+    Some(([u, v], point))
+}
+
 /// `atan2(y, x)` near `reference`: the reference plus the angle of the
 /// vector turned back by it, so the principal branch's cut stays opposite.
 fn angle_near<T: Real>(y: &Jet<T>, x: &Jet<T>, reference: f64) -> Option<Jet<T>> {
@@ -230,6 +281,17 @@ pub(super) fn projection_jet<T: Real>(p: &Projection, fraction: &Jet<T>) -> Opti
                 j.add_constant(&c(k * std::f64::consts::TAU))
             };
             return Some([near(u, lift.x), near(v, lift.y)]);
+        }
+    }
+    // Two cylinders' meeting on its carrier: its angle, lifted (S9c.2).
+    if let (Curve3::Meet(m), Surface::Cylinder { frame, radius }) = (&p.curve, &p.surface) {
+        if m.frame == *frame && m.radius == *radius {
+            let ([u, v], _) = meet_jet(m, &f)?;
+            let (lo, hi) = fraction.c[0].bounds_f64();
+            let lift = p.lift(0.5 * lo + 0.5 * hi);
+            let (a, b) = u.c[0].bounds_f64();
+            let k = ((lift.x - (0.5 * a + 0.5 * b)) / std::f64::consts::TAU).round();
+            return Some([u.add_constant(&c(k * std::f64::consts::TAU)), v]);
         }
     }
     let point = curve_jet(&p.curve, &f)?;
@@ -466,4 +528,61 @@ pub(crate) fn section_rates(curve: &Curve3, pieces: usize) -> Option<(f64, f64)>
         turn = turn.max(c2 / c1);
     }
     Some((second * (1.0 + 1e-12), turn * (1.0 + 1e-12)))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::certified::Fast;
+    use crate::{Point3, Tolerance, Vec3};
+
+    fn frame(o: [f64; 3], n: [f64; 3], x: [f64; 3]) -> Frame3 {
+        Frame3::new(
+            Point3::new(o[0], o[1], o[2]),
+            Vec3::new(n[0], n[1], n[2]),
+            Vec3::new(x[0], x[1], x[2]),
+            Tolerance::default(),
+        )
+        .unwrap()
+    }
+
+    /// A thin pipe (radius 1 about x, offset 0.5 along y) through a thick
+    /// one (radius 2 about z): a ring over the thin one's angle lies on both
+    /// cylinders, and its jets enclose the binary64 points and differences.
+    #[test]
+    fn meetings_lie_on_both_cylinders() {
+        let thin = frame([0.0, 0.5, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+        let thick = frame([0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]);
+        for sign in [1.0, -1.0] {
+            let m = Meet {
+                frame: thin,
+                radius: 1.0,
+                other: thick,
+                other_radius: 2.0,
+                sign,
+                start: 0.0,
+                sweep: std::f64::consts::TAU,
+            };
+            for k in 0..=16 {
+                let f = k as f64 / 16.0;
+                let p = m.point(f);
+                let [x, y, _] = thick.coordinates(p);
+                assert!((x.hypot(y) - 2.0).abs() < 1e-14, "{p:?}");
+                let [_, b, c] = [p.x, p.y - 0.5, p.z];
+                assert!((b.hypot(c) - 1.0).abs() < 1e-14);
+                assert_eq!(p.x.signum(), sign);
+                let (_, jet) = meet_jet(&m, &Jet::variable(Fast::exact_f64(f), 2)).unwrap();
+                let h = 1e-6;
+                let (q0, q1) = (m.point(f - h), m.point(f + h));
+                for (i, j) in jet.iter().enumerate() {
+                    let at = [p.x, p.y, p.z][i];
+                    let (lo, hi) = j.c[0].bounds_f64();
+                    assert!(lo - 1e-15 <= at && at <= hi + 1e-15);
+                    let slope = ([q1.x, q1.y, q1.z][i] - [q0.x, q0.y, q0.z][i]) / (2.0 * h);
+                    let (lo, hi) = j.c[1].bounds_f64();
+                    assert!((slope - 0.5 * (lo + hi)).abs() < 1e-6, "{slope} {lo} {hi}");
+                }
+            }
+        }
+    }
 }

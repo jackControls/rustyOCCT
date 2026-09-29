@@ -151,9 +151,10 @@ pub(super) fn curve_point(curve: &Curve3, t: f64) -> Option<P> {
             let (ca, sa) = Fast::cos_sin(&a);
             combine(frame, &c(*major).mul(&ca), &c(*minor).mul(&sa), &c(0.0))
         }
-        Curve3::HyperbolaArc { .. } | Curve3::ParabolaArc { .. } | Curve3::Section(_) => {
-            crate::topology::conic_point_fast(curve, t)?
-        }
+        Curve3::HyperbolaArc { .. }
+        | Curve3::ParabolaArc { .. }
+        | Curve3::Section(_)
+        | Curve3::Meet(_) => crate::topology::conic_point_fast(curve, t)?,
         Curve3::BSpline(_) => return None,
     })
 }
@@ -432,8 +433,9 @@ pub(super) fn segment_bound(curve: &Curve3, dt: f64) -> (f64, f64) {
                 .mul(&c(0.125));
             return (upper(&deviation), upper(&step.mul(&c(k))));
         }
-        // A torus section (S8d.3): its rates per unit fraction.
-        Curve3::Section(_) => {
+        // A torus section (S8d.3), two cylinders' meeting (S9c.2): their
+        // rates per unit fraction.
+        Curve3::Section(_) | Curve3::Meet(_) => {
             let Some((second, turn)) = crate::topology::section_rates(curve, 64) else {
                 return (f64::INFINITY, f64::INFINITY);
             };

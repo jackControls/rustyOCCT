@@ -1502,10 +1502,13 @@ Decisions for S9, recorded before its code (2026-09-28):
   cylinders meeting in S7b.1's procedural curves (D13).
   * **Sub-steps.** S9c.2a: cylinders in exact frames (S9c.1's circular
     measure: the world's axes permuted or reversed), so crossing axes are
-    perpendicular, of any radii and offset. Every vertex is still a
-    quadratic surd (a generatrix meets a cylinder in a quadratic; a cap's
-    plane meets the perpendicular cylinder in generatrices), only the
-    section curves between vertices are quartics. S9c.2b: cylinders in
+    perpendicular, of any radii and offset, whose section meets no cap's
+    circle: every vertex is then a quadratic surd (a generatrix meets a
+    cylinder in a quadratic), only the section curves between vertices are
+    quartics. Where the section crosses a cap's circle the vertex is a
+    nested surd (the cap's plane meets the other cylinder in generatrices at
+    a surd offset, the circle meets those in `sqrt(q + q' sqrt k)`): S9c.2b's,
+    `OutOfDomain` in S9c.2a. S9c.2b: cylinders in
     turned frames (affine models not circular in a common measure): a
     circle meeting the other cylinder, parallel cylinders' generatrices at
     an ellipse's and a circle's crossings, and the quartic curves; its

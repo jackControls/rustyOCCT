@@ -548,6 +548,13 @@ fn segment_count(
             )?;
             Some((&s.frame, second, turn, 1.0))
         }
+        // Two cylinders' meeting (S9c.2) likewise.
+        Curve3::Meet(m) => {
+            let (second, turn) = crate::topology::section_rates(&edge.curve, 64).ok_or(
+                Error::ComputationLimit("two cylinders' meeting's curvature enclosure"),
+            )?;
+            Some((&m.frame, second, turn, 1.0))
+        }
         Curve3::LineSegment { .. } | Curve3::BSpline(_) => None,
     } {
         let sigma = bounds::frame_norm(frame);

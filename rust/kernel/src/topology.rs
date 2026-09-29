@@ -209,6 +209,8 @@ pub enum Curve3 {
     },
     /// A plane's section of a torus (S8d.3), a graph over one of its angles.
     Section(Box<Spiric>),
+    /// Two cylinders' meeting (S9c.2), a graph over the first's angle.
+    Meet(Box<Meet>),
 }
 
 /// A plane's section of a torus as a graph over one of its angles (S8d.3).
@@ -259,6 +261,51 @@ impl Spiric {
             Point2::new(rho * u.cos(), rho * u.sin()),
             self.minor * v.sin(),
         )
+    }
+}
+
+/// Two cylinders' meeting as a graph over the first's angle (S9c.2; S7b's
+/// ruled parameterisation, D13). The carrier's ruling at `u = start + sweep
+/// f`, `frame.point(radius (cos u, sin u), v)`, meets the other cylinder
+/// (`|(w . x2, w . y2)| = other_radius` for `w` from its frame's origin) where
+/// `a v^2 + 2 b v + c = 0`; the edge is `v = (-b + sign sqrt(b^2 - a c)) /
+/// a`. An edge's range keeps `b^2 - a c > 0` strictly (no turning point), so
+/// it is analytic.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Meet {
+    pub frame: Frame3,
+    pub radius: f64,
+    pub other: Frame3,
+    pub other_radius: f64,
+    pub sign: f64,
+    pub start: f64,
+    pub sweep: f64,
+}
+
+impl Meet {
+    /// The carrier's angle and the ruling's height at a fraction.
+    pub fn parameters(&self, fraction: f64) -> (f64, f64) {
+        let u = self.start + self.sweep * fraction;
+        let (s, c) = u.sin_cos();
+        let foot = self
+            .frame
+            .point(Point2::new(self.radius * c, self.radius * s), 0.0);
+        let w = foot - self.other.origin();
+        let n = self.frame.normal();
+        let (x2, y2) = (self.other.x(), self.other.y());
+        let (wx, wy, nx, ny) = (w.dot(x2), w.dot(y2), n.dot(x2), n.dot(y2));
+        let a = nx * nx + ny * ny;
+        let b = wx * nx + wy * ny;
+        let cc = wx * wx + wy * wy - self.other_radius * self.other_radius;
+        let d = (b * b - a * cc).max(0.0);
+        (u, (-b + self.sign * d.sqrt()) / a)
+    }
+
+    pub fn point(&self, fraction: f64) -> Point3 {
+        let (u, v) = self.parameters(fraction);
+        let (s, c) = u.sin_cos();
+        self.frame
+            .point(Point2::new(self.radius * c, self.radius * s), v)
     }
 }
 
@@ -595,6 +642,7 @@ impl Curve3 {
                 frame.point(Point2::new(t * t / (4.0 * focal), t), 0.0)
             }
             Self::Section(s) => s.point(fraction),
+            Self::Meet(m) => m.point(fraction),
         }
     }
 }
@@ -1214,6 +1262,11 @@ impl Topology {
                     sweep_angle: *sweep_angle,
                 },
                 Curve3::BSpline(span) => Curve3::BSpline(move_span(span)?),
+                Curve3::Meet(m) => Curve3::Meet(Box::new(Meet {
+                    frame: m.frame.transformed(motion, tolerance)?,
+                    other: m.other.transformed(motion, tolerance)?,
+                    ..(**m).clone()
+                })),
                 _ => {
                     return Err(Error::OutOfDomain(
                         "moving a body's hyperbolic, parabolic or section edge",
@@ -3939,7 +3992,10 @@ pub(crate) fn plane_pcurve(curve: &Curve3, sense: Orientation, frame: Frame3) ->
         }
         // A hyperbola, a parabola or a torus section in the plane: its exact
         // projection (S8d.2, S8d.3), lifted from its start.
-        Curve3::HyperbolaArc { .. } | Curve3::ParabolaArc { .. } | Curve3::Section(_) => {
+        Curve3::HyperbolaArc { .. }
+        | Curve3::ParabolaArc { .. }
+        | Curve3::Section(_)
+        | Curve3::Meet(_) => {
             let reversed = sense == Orientation::Reversed;
             let start = local(curve.point(if reversed { 1.0 } else { 0.0 }));
             Curve2::Projection(Box::new(
