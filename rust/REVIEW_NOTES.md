@@ -2747,7 +2747,10 @@ Decisions for S9, recorded before its code (2026-09-28):
     replay with debug assertions without a failure, as do 6,579 variants of
     corpus inputs made parts (their spline byte and flags set), which found
     (f) and (g) (two kept as regressions, `fuzz/regressions/README.md`).
-    Pending: the DRAW survey, the campaign.
+    Campaign: the boolean campaign at `85104dc3` (600 s, a sampled replay)
+    clean, 1,040 runs, the slowest input 17 s under AddressSanitizer.
+    Pending: the DRAW survey (with S9d.4b.2's: S9d.4a's found no segment
+    or wedge in the Boolean group).
 
 ### Parallel tracks
 
