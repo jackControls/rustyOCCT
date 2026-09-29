@@ -1261,6 +1261,26 @@ impl Topology {
                 }
             };
         }
+        // An exact projection's pcurve holds its edge's curve and its face's
+        // surface: both moved (its parameters move with them).
+        let mut face_of_fin: BTreeMap<usize, usize> = BTreeMap::new();
+        for (fi, f) in parts.faces.iter().enumerate() {
+            for l in &f.loops {
+                if let Loop::Edges { fins, .. } = &parts.loops[l.0] {
+                    for fin in fins {
+                        face_of_fin.insert(fin.0, fi);
+                    }
+                }
+            }
+        }
+        for (k, fin) in parts.fins.iter_mut().enumerate() {
+            if let Curve2::Projection(pr) = &mut fin.pcurve {
+                pr.curve = parts.edges[fin.edge.0].curve.clone();
+                if let Some(&fi) = face_of_fin.get(&k) {
+                    pr.surface = parts.faces[fi].surface.clone();
+                }
+            }
+        }
         Ok(parts)
     }
     /// The same topology with every spline edge traversed along its curve:
@@ -1642,6 +1662,7 @@ impl Topology {
         let mut degenerate = 0;
         let mut wires = 0;
         let mut closed_vertices = 0;
+        let mut seam_splits = 0;
         for face in &self.faces {
             let mut wound = [false, false];
             for l in &face.loops {
@@ -1657,6 +1678,31 @@ impl Topology {
             }
             seams += wound.iter().filter(|w| **w).count();
             wires += usize::from(wound.iter().any(|w| *w));
+            // The seam (u = 0 of the surface) ends on each loop round the
+            // axis: at the closing vertex of a ring, at a vertex the loop
+            // has there, or at a vertex splitting one of its edges.
+            if wound[0] {
+                for l in &face.loops {
+                    let Loop::Edges { fins, winding } = &self.loops[l.0] else {
+                        continue;
+                    };
+                    let ring = fins.len() == 1 && self.edges[self.fins[fins[0].0].edge.0].is_ring();
+                    if winding[0] == 0 || ring {
+                        continue;
+                    }
+                    let at_seam = fins.iter().any(|f| {
+                        let u = self.fins[f.0]
+                            .pcurve
+                            .point(0.0)
+                            .x
+                            .rem_euclid(std::f64::consts::TAU);
+                        u.min(std::f64::consts::TAU - u) <= 1e-9
+                    });
+                    if !at_seam {
+                        seam_splits += 1;
+                    }
+                }
+            }
             // OCCT closes a cone's or sphere's band at the pole with a
             // degenerated edge, and has one wherever a loop passes through
             // a pole.
@@ -1725,8 +1771,9 @@ impl Topology {
             // cone's seam, on a disc, or alone in a wire).
             vertices: self.vertices.len()
                 + self.edges.iter().filter(|e| e.is_ring()).count()
-                + closed_vertices,
-            edges: self.edges.len() + seams + degenerate,
+                + closed_vertices
+                + seam_splits,
+            edges: self.edges.len() + seams + degenerate + seam_splits,
             wires,
             faces: self.faces.len(),
             shells: solid.iter().map(|r| r.shells.len()).sum::<usize>() + sheet_shells,

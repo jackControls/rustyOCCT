@@ -625,7 +625,12 @@ fn same_surface(piece: &EntityInfo, whole: &Geometry, tol: f64, edges: &Entities
     else {
         return Some(false);
     };
-    if oa != ob {
+    // Planes compare as oriented planes (a normal and a sense are one
+    // representation of an oriented plane among two); other surfaces by
+    // their senses.
+    let planes = matches!((a, b), (Surface::Plane(_), Surface::Plane(_)));
+    let splines = matches!((a, b), (Surface::BSpline(_), Surface::BSpline(_)));
+    if oa != ob && !planes && !splines {
         return Some(false);
     }
     let tol_f = tol;
@@ -633,9 +638,16 @@ fn same_surface(piece: &EntityInfo, whole: &Geometry, tol: f64, edges: &Entities
     let zero = R::from_integer(0.into());
     match (a, b) {
         (Surface::Plane(fa), Surface::Plane(fb)) => {
+            let oriented = |f: &crate::Frame3, o: &crate::topology::Orientation| {
+                let n = f.normal();
+                match o {
+                    crate::topology::Orientation::Forward => n,
+                    crate::topology::Orientation::Reversed => -n,
+                }
+            };
             let (na, nb) = (
-                exact(fa.normal().to_array())?,
-                exact(fb.normal().to_array())?,
+                exact(oriented(fa, oa).to_array())?,
+                exact(oriented(fb, ob).to_array())?,
             );
             let (oa, ob) = (
                 exact(fa.origin().to_array())?,
@@ -676,10 +688,32 @@ fn same_surface(piece: &EntityInfo, whole: &Geometry, tol: f64, edges: &Entities
                                 .into_iter()
                                 .all(|x| x)
                     }
+                    // An ellipse (a section's edge, its frame rounded):
+                    // its centre and axes' ends within both planes' reach.
+                    Geometry::Curve(Curve3::EllipseArc {
+                        frame,
+                        major,
+                        minor,
+                        ..
+                    }) => {
+                        let (o, x, y) = (frame.origin(), frame.x(), frame.y());
+                        [
+                            o,
+                            o + x * *major,
+                            o + x * -*major,
+                            o + y * *minor,
+                            o + y * -*minor,
+                        ]
+                        .iter()
+                        .map(|p| Some(within(on_piece(*p)?)))
+                        .collect::<Option<Vec<bool>>>()?
+                        .into_iter()
+                        .all(|x| x)
+                    }
                     Geometry::Curve(c) => {
                         // Only a circle parallel to both planes projects to
                         // a circle whose distance is its centre's.
-                        let (frame, _) = circle_of(c)?;
+                        let frame = circle_of(c)?.0;
                         let m = exact(frame.normal().to_array())?;
                         cross(&m, &na).iter().all(|x| *x == zero)
                             && cross(&m, &nb).iter().all(|x| *x == zero)
@@ -791,9 +825,51 @@ fn same_surface(piece: &EntityInfo, whole: &Geometry, tol: f64, edges: &Entities
         // A spline wall (S8b): both extrusions of a curve (degree 1 across
         // two rows of poles) along parallel directions, the piece's rows on
         // the whole's extruded surface over the piece's `u` range.
-        (Surface::BSpline(sa), Surface::BSpline(sb)) => Some(on_extrusion(sa, sb, tol_f)),
+        // A wall and its reversal in u with the other sense are one
+        // oriented surface (a boundary traced the other way round).
+        (Surface::BSpline(sa), Surface::BSpline(sb)) => Some(if oa == ob {
+            on_extrusion(sa, sb, tol_f)
+        } else {
+            reversed_u(sb).is_some_and(|rb| on_extrusion(sa, &rb, tol_f))
+        }),
         _ => Some(false),
     }
+}
+
+/// A spline curve traced backwards: poles reversed, knots mirrored in their
+/// range (a parameter `t` becomes `a + b - t`).
+fn reversed_curve(c: &crate::BSplineCurve3) -> Option<crate::BSplineCurve3> {
+    let (a, b) = (c.knots()[0], *c.knots().last()?);
+    let knots: Vec<f64> = c.knots().iter().rev().map(|k| a + b - k).collect();
+    let mults: Vec<usize> = c.multiplicities().iter().rev().copied().collect();
+    let poles: Vec<Point3> = c.poles().iter().rev().copied().collect();
+    let weights: Vec<f64> = c.weights().iter().rev().copied().collect();
+    crate::BSplineCurve3::new(c.degree(), poles, Some(weights), knots, mults).ok()
+}
+
+/// A spline surface with its u parameter reversed: rows in the opposite
+/// order, knots mirrored in their range.
+fn reversed_u(s: &crate::BSplineSurface3) -> Option<crate::BSplineSurface3> {
+    let u = s.u_knots();
+    let (n, m) = (u.pole_count(), s.v_knots().pole_count());
+    let (a, b) = (u.knots()[0], *u.knots().last()?);
+    let knots: Vec<f64> = u.knots().iter().rev().map(|k| a + b - k).collect();
+    let mults: Vec<usize> = u.multiplicities().iter().rev().copied().collect();
+    let mut poles = Vec::with_capacity(n * m);
+    let mut weights = Vec::with_capacity(n * m);
+    for i in (0..n).rev() {
+        for j in 0..m {
+            poles.push(s.poles()[i * m + j]);
+            weights.push(s.weights()[i * m + j]);
+        }
+    }
+    crate::BSplineSurface3::new(
+        crate::KnotVector::new(u.degree(), knots, mults).ok()?,
+        s.v_knots().clone(),
+        poles,
+        Some(weights),
+    )
+    .ok()
 }
 
 /// A nonrational spline curve's exact Bézier arcs over `[a, b]` of its
@@ -924,8 +1000,12 @@ fn same_support(piece: &EntityInfo, whole: &Geometry, tol: f64, edges: &Entities
             Geometry::Curve(Curve3::LineSegment { start: a, end: b }),
         ) => on_line(*start, *a, *b, tol) && on_line(*end, *a, *b, tol),
         // A spline edge (S8b): a restriction of the whole's curve.
+        // Or of its reversal: the whole's curve traced the other way round
+        // (poles reversed, knots mirrored), at the piece's parameters.
         (Geometry::Curve(Curve3::BSpline(a)), Geometry::Curve(Curve3::BSpline(b))) => {
             arcs_within(a.curve(), b.curve(), a.range(), tol, None)
+                || reversed_curve(b.curve())
+                    .is_some_and(|rb| arcs_within(a.curve(), &rb, a.range(), tol, None))
         }
         (Geometry::Curve(c), Geometry::Curve(d)) => {
             circle_of(c).is_some() && circle_of(c) == circle_of(d)

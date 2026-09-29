@@ -9,25 +9,23 @@ as `gp_Circ` edges about the profile plane's normal) and the comparison are
 `compare_boolean.py`'s, run through `compare_boolean.make_set` on S9c.1's
 fixtures, capture (`fixtures/occt-boolean-curved-preimplementation`) and
 reviews (`fixtures/occt-boolean-curved-divergences.json`). The capture was
-taken while the kernel refuses arcs in frames with different axes
-(`OutOfDomain("a Boolean of prisms with arcs in frames with different axes
-(S9c)")` in `rust/kernel/src/solid/boolean/polyhedra.rs`: the capture's
-`rust_curved_boolean_exists` is false). While that refusal stands, the probe
-must report `unsupported` on every case (a probe failure or any other row is
-a failure); once it is gone, the kernel's rows are compared as S9a's and
-S9b's.
+taken before the kernel's S9c.1 module
+(`rust/kernel/src/solid/boolean/curved/`) existed, while it refused arcs in
+frames with different axes (the capture's `rust_curved_boolean_exists` is
+false; the probe reported `unsupported` on every case). With the module the
+kernel's rows are compared as S9a's and S9b's; the cases it leaves to S9c.2
+(cylinders meeting in quartics) are `unsupported` rows.
 """
 import compare_boolean as base
 import generate_curved_boolean_fixtures as fixtures
 
 ROOT = base.ROOT
-POLYHEDRA = ROOT/'rust/kernel/src/solid/boolean/polyhedra.rs'
-REFUSAL = 'a Boolean of prisms with arcs in frames with different axes (S9c)'
+KERNEL = ROOT/'rust/kernel/src/solid/boolean/curved/mod.rs'
 
 
 def rust_curved_boolean_exists():
-    """False while the kernel refuses arcs in frames with different axes."""
-    return REFUSAL not in POLYHEDRA.read_text()
+    """Whether the kernel's S9c.1 module exists."""
+    return KERNEL.exists()
 
 
 class CurvedSet(base.Set):

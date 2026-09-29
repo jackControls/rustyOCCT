@@ -358,6 +358,18 @@ fn moments(p: &Curve2) -> [f64; 3] {
 }
 
 fn face_area(t: &Topology, face: usize) -> f64 {
+    // An exact projection's pcurve (an ellipse on a cap, S9c.1): the
+    // kernel's certified area.
+    let projected = t
+        .face_fins(FaceId::new(face))
+        .iter()
+        .flatten()
+        .any(|u| matches!(u.pcurve, Curve2::Projection(_)));
+    if projected {
+        return t
+            .face_area_and_centre(FaceId::new(face))
+            .map_or(f64::NAN, |(area, _)| area);
+    }
     let fins = t.face_fins(FaceId::new(face));
     let fins = fins.iter().flatten();
     match t.faces()[face].surface {
@@ -1068,8 +1080,14 @@ fn pcurve_at(p: &Curve2, t: f64) -> (Point2, Point2) {
 fn face_centre(t: &Topology, face: usize) -> (f64, Point3) {
     let nodes = gauss();
     let surface = &t.faces()[face].surface;
-    // A restored spline face (S4): the kernel's certified area and centre.
-    if matches!(surface, Surface::BSpline(_)) {
+    let projected = t
+        .face_fins(FaceId::new(face))
+        .iter()
+        .flatten()
+        .any(|u| matches!(u.pcurve, Curve2::Projection(_)));
+    // A restored spline face (S4), or one with an exact projection's
+    // pcurve (S9c.1): the kernel's certified area and centre.
+    if matches!(surface, Surface::BSpline(_)) || projected {
         return t
             .face_area_and_centre(FaceId::new(face))
             .unwrap_or((f64::NAN, Point3::ORIGIN));

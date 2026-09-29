@@ -3664,9 +3664,9 @@
     },
     {
       "path": "tests/boolean/bfuse_complex/J5",
-      "expected_rust": "unsupported",
+      "expected_rust": "viewer_skipped",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9a's Boolean group, a capability sentinel: crossed cylinders: frames with different axes (S9c)."
+      "purpose": "S9a's Boolean group: two equal cylinders crossed at right angles (a quarter turn about y), their fuse a Steinmetz union: S9c.1's crossing ellipses."
     },
     {
       "path": "tests/boolean/bcut_simple/H6",

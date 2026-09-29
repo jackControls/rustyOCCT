@@ -183,7 +183,8 @@ class BridgeTests(unittest.TestCase):
             with self.subTest(wrong=wrong):
                 self.expect(boxes + wrong, "failed")
         # Outside S9a, never an answer: arcs in frames with other axes
-        # (S9c), a stack as an argument whose result's top face touches
+        # (S9c.2's: two cylinders, one turned, meeting in quartics), a stack
+        # as an argument whose result's top face touches
         # itself at a vertex (Degenerate: a tower's corner on the corner of
         # a notch), prisms touching along an edge (Degenerate), a cone
         # (curved faces, S9c), a section,
@@ -191,7 +192,8 @@ class BridgeTests(unittest.TestCase):
         # unifysamedom of other shapes, counts of an uncopied prism's result
         # and a Boolean's history.
         for gap, why in [
-                (boxes + "pcylinder k 1 2\ntrotate k 0 0 0 1 0 0 30\ncatch {bfuse r a k}", "S9c"),
+                (boxes + "pcylinder k 1 2\ntrotate k 0 0 0 1 0 0 30\npcylinder m 1.5 3\n"
+                 "catch {bfuse r m k}", "S9c.2"),
                 (boxes + "box t 1 1 2 1 1 1\nbfuse r a t\ncheckprops r -v 33\ncatch {bcut s r b}", "egenerate"),
                 (boxes + "box t 4 4 0 1 1 2\ncatch {bfuse r a t}", "egenerate"),
                 (boxes + "pcone k 1 0 2\ncatch {bcommon r a k}", "curved"),
@@ -295,9 +297,13 @@ class BridgeTests(unittest.TestCase):
         for again in self.POLYHEDRA_AGAIN:
             with self.subTest(again=again):
                 self.expect(self.POLYHEDRA + again, "pass")
-        # Arcs in a turned frame are S9c's, and a turned box's corner on a
-        # face is degenerate.
-        for gap, why in [("pcylinder k 1 1\ntrotate k 2 2 2 1 1 1 30\ncatch {bcut r o k}", "S9c"),
+        # A cylinder turned inside a cube cut from it (S9c.1).
+        self.expect(self.POLYHEDRA + "pcylinder k 1 1\ntrotate k 0 0 0 1 1 1 30\nttranslate k 2 2 2\n"
+                    "bcut r o k\ncheckprops r -v [expr {64 - acos(-1)}] -deps 1e-9\n", "pass")
+        # Two cylinders, one turned, meet in quartics (S9c.2), and a turned
+        # box's corner on a face is degenerate.
+        for gap, why in [("pcylinder k 1 1\ntrotate k 2 2 2 1 1 1 30\npcylinder m 1.5 4\n"
+                          "ttranslate m 2 2 0\ncatch {bcut r m k}", "S9c.2"),
                          ("box d 0 0 0 2 2 1\ntrotate d 0 0 0 0 0 1 45\nttranslate d 2 0 0\n"
                           "box e 0 0 0 4 4 1\ncatch {bcut r e d}", "egenerate")]:
             with self.subTest(why=why):

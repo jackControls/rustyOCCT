@@ -1,0 +1,999 @@
+//! S9c.1's results from the kept pieces: pieces of one input face kept the
+//! same way joined into maximal faces across the edges they share (a full
+//! circle's halves among them), edges joined where they run straight on
+//! along one curve between the same faces (a seam's vertices dropped, a
+//! closed curve left without vertices), each edge's curve rounded once
+//! (lines, circular arcs, ellipse arcs on principal axes), pcurves on the
+//! input faces' stored surfaces (exact projections where the surface's
+//! frame does not hold the curve's axes), solids and their cavities, and
+//! each slot's provenance by S9b.1's rules.
+use super::super::polyhedra::Component;
+use super::super::SlotPlan;
+use super::graph::*;
+use super::meet::Pos;
+use super::model::*;
+use super::num::*;
+use crate::identity::{EntityId, EntityKind, Role};
+use crate::profile::boolean::{Op2, Operand};
+use crate::solid::split::rational_f64;
+use crate::topology::{
+    plane_pcurve, Curve2, Curve3, Edge, EdgeId, Face, FaceId, Fin, FinId, Loop, LoopId,
+    Orientation, Projection, Region, RegionId, RegionKind, Shell, ShellId, Side, Slot, Surface,
+    TopologyParts, Vertex, VertexId,
+};
+use crate::{Error, Frame3, Point2, Point3, Result, Vec3};
+use std::cmp::Ordering;
+use std::collections::{BTreeMap, BTreeSet};
+use std::f64::consts::{FRAC_PI_2, TAU};
+
+/// A face loop's half-edges as result edges' uses.
+type FinsOf<'a> = dyn Fn(&[(usize, bool)]) -> HLoop + 'a;
+
+fn find(p: &mut [usize], x: usize) -> usize {
+    let mut r = x;
+    while p[r] != r {
+        r = p[r];
+    }
+    let mut y = x;
+    while p[y] != r {
+        let n = p[y];
+        p[y] = r;
+        y = n;
+    }
+    r
+}
+
+fn union(p: &mut [usize], a: usize, b: usize) {
+    let (ra, rb) = (find(p, a), find(p, b));
+    if ra != rb {
+        p[ra.max(rb)] = ra.min(rb);
+    }
+}
+
+/// A result face: its pieces, its input face (operand, a model face of
+/// it), whether it keeps the input face's orientation, and its loops of
+/// half-edges run about the result's outward normal.
+struct RFace {
+    pieces: Vec<usize>,
+    op: usize,
+    face: usize,
+    behind: bool,
+    loops: Vec<Vec<(usize, bool)>>,
+}
+
+/// A result edge: arrangement edges joined along one curve, each with its
+/// direction along the chain, and its end vertices (none for a ring).
+struct REdge {
+    parts: Vec<(usize, bool)>,
+    ends: Option<[usize; 2]>,
+}
+
+pub(super) fn assemble(arr: &Arr, op: Op2) -> Result<Vec<Component>> {
+    let kept: Vec<usize> = (0..arr.pieces.len())
+        .filter(|&i| arr.pieces[i].keep)
+        .collect();
+    if kept.is_empty() {
+        return Ok(Vec::new());
+    }
+    // Pieces of one input face kept the same way, sharing an edge, join.
+    let key = |i: usize| {
+        let p = &arr.pieces[i];
+        (p.op, arr.models[p.op].faces[p.face].id, p.behind)
+    };
+    // Pieces of A and B on one surface facing one way join too: their
+    // result normals (each input face's, reversed unless `behind`) agree.
+    let same_surface = |i: usize, j: usize| {
+        let (p, q) = (&arr.pieces[i], &arr.pieces[j]);
+        if p.op == q.op {
+            return false;
+        }
+        let (a, b) = if p.op == 0 { (p, q) } else { (q, p) };
+        if !arr.coinc.contains(&(a.face, b.face)) {
+            return false;
+        }
+        let x = &arr.edges[a.loops[0][0].0].mid;
+        let na = arr.models[0].normal_at(a.face, x);
+        let nb = arr.models[1].normal_at(b.face, x);
+        let facing = qqdot(&na, &nb).sign() == Ordering::Greater;
+        facing == (a.behind == b.behind)
+    };
+    let mut users: BTreeMap<usize, Vec<usize>> = BTreeMap::new();
+    for &i in &kept {
+        for lp in &arr.pieces[i].loops {
+            for &(g, _) in lp {
+                users.entry(g).or_default().push(i);
+            }
+        }
+    }
+    let mut parent: Vec<usize> = (0..arr.pieces.len()).collect();
+    for us in users.values() {
+        for a in 0..us.len() {
+            for b in a + 1..us.len() {
+                if us[a] != us[b] && (key(us[a]) == key(us[b]) || same_surface(us[a], us[b])) {
+                    union(&mut parent, us[a], us[b]);
+                }
+            }
+        }
+    }
+    let mut group_of: BTreeMap<usize, usize> = BTreeMap::new();
+    let mut faces: Vec<RFace> = Vec::new();
+    for &i in &kept {
+        let r = find(&mut parent, i);
+        let gi = *group_of.entry(r).or_insert_with(|| {
+            let p = &arr.pieces[i];
+            faces.push(RFace {
+                pieces: Vec::new(),
+                op: p.op,
+                face: p.face,
+                behind: p.behind,
+                loops: Vec::new(),
+            });
+            faces.len() - 1
+        });
+        faces[gi].pieces.push(i);
+    }
+    // Each face's loops: its pieces' half-edges less those it holds both
+    // ways, linked again at their vertices.
+    for rf in &mut faces {
+        let mut face_of: BTreeMap<(usize, bool), usize> = BTreeMap::new();
+        for &i in &rf.pieces {
+            for lp in &arr.pieces[i].loops {
+                for &h in lp {
+                    face_of.insert(h, arr.pieces[i].face);
+                }
+            }
+        }
+        let hs: Vec<(usize, bool)> = face_of
+            .keys()
+            .copied()
+            .filter(|&(g, d)| !face_of.contains_key(&(g, !d)))
+            .collect();
+        let loops = arr.relink(rf.op, &hs, &face_of)?;
+        rf.loops = if rf.behind {
+            loops
+        } else {
+            loops
+                .into_iter()
+                .map(|l| l.into_iter().rev().map(|(g, d)| (g, !d)).collect())
+                .collect()
+        };
+    }
+    // Every edge used once each way.
+    let mut uses: BTreeMap<usize, Vec<(usize, bool)>> = BTreeMap::new();
+    for (fi, rf) in faces.iter().enumerate() {
+        for lp in &rf.loops {
+            for &(g, d) in lp {
+                uses.entry(g).or_default().push((fi, d));
+            }
+        }
+    }
+    for us in uses.values() {
+        let fwd = us.iter().filter(|u| u.1).count();
+        match (us.len(), fwd) {
+            (2, 1) => {}
+            (4, 2) => return Err(Error::Degenerate("a result touching itself along an edge")),
+            _ => {
+                return Err(Error::InvalidTopology(
+                    "an open Boolean of arcs in any position",
+                ))
+            }
+        }
+    }
+    // Vertices where two edges of one curve meet between the same faces.
+    let mut incident: BTreeMap<usize, BTreeSet<usize>> = BTreeMap::new();
+    for &g in uses.keys() {
+        for v in arr.edges[g].ends {
+            incident.entry(v).or_default().insert(g);
+        }
+    }
+    let faces_of = |g: usize| -> BTreeSet<usize> { uses[&g].iter().map(|u| u.0).collect() };
+    let removable = |v: usize| -> bool {
+        let gs: Vec<usize> = incident[&v].iter().copied().collect();
+        match gs.len() {
+            2 => {
+                same_curve(&arr.edges[gs[0]].crv, &arr.edges[gs[1]].crv)
+                    && faces_of(gs[0]) == faces_of(gs[1])
+            }
+            // A closed curve's piece from and back to this vertex alone.
+            1 => arr.edges[gs[0]].ends[0] == arr.edges[gs[0]].ends[1],
+            _ => false,
+        }
+    };
+    let removed: BTreeSet<usize> = incident.keys().copied().filter(|&v| removable(v)).collect();
+    // Chains through removed vertices.
+    let mut redges: Vec<REdge> = Vec::new();
+    let mut chain_of: BTreeMap<usize, (usize, bool)> = BTreeMap::new();
+    let other_at =
+        |v: usize, g: usize| -> usize { *incident[&v].iter().find(|&&x| x != g).unwrap_or(&g) };
+    for &g0 in uses.keys() {
+        if chain_of.contains_key(&g0) {
+            continue;
+        }
+        // Back to the chain's start.
+        let (mut g, mut d) = (g0, true);
+        let mut steps = 0;
+        loop {
+            let v = if d {
+                arr.edges[g].ends[0]
+            } else {
+                arr.edges[g].ends[1]
+            };
+            if !removed.contains(&v) || steps > uses.len() {
+                break;
+            }
+            let h = other_at(v, g);
+            let hd = arr.edges[h].ends[1] == v;
+            if (h, hd) == (g0, true) {
+                break;
+            }
+            g = h;
+            d = hd;
+            steps += 1;
+        }
+        let first = (g, d);
+        let mut parts = vec![first];
+        let ring;
+        loop {
+            let (g, d) = *parts.last().expect("a part");
+            let v = if d {
+                arr.edges[g].ends[1]
+            } else {
+                arr.edges[g].ends[0]
+            };
+            if !removed.contains(&v) {
+                ring = false;
+                break;
+            }
+            let h = other_at(v, g);
+            let hd = arr.edges[h].ends[0] == v;
+            if (h, hd) == first {
+                ring = true;
+                break;
+            }
+            parts.push((h, hd));
+        }
+        let ends = if ring {
+            None
+        } else {
+            let s = if first.1 {
+                arr.edges[first.0].ends[0]
+            } else {
+                arr.edges[first.0].ends[1]
+            };
+            let (lg, ld) = *parts.last().expect("a part");
+            let e = if ld {
+                arr.edges[lg].ends[1]
+            } else {
+                arr.edges[lg].ends[0]
+            };
+            Some([s, e])
+        };
+        let ri = redges.len();
+        for &(g, d) in &parts {
+            chain_of.insert(g, (ri, d));
+        }
+        redges.push(REdge { parts, ends });
+    }
+    // Faces' loops as result edges' uses.
+    let fins_of = |lp: &[(usize, bool)]| -> Vec<(usize, bool)> {
+        let mut out: Vec<(usize, bool)> = Vec::new();
+        for &(g, d) in lp {
+            let (ri, cd) = chain_of[&g];
+            let use_ = (ri, cd == d);
+            if out.last() != Some(&use_) {
+                out.push(use_);
+            }
+        }
+        while out.len() > 1 && out.first() == out.last() {
+            out.pop();
+        }
+        out
+    };
+    // Shells: faces joined by edges.
+    let mut sp: Vec<usize> = (0..faces.len()).collect();
+    for us in uses.values() {
+        union(&mut sp, us[0].0, us[1].0);
+    }
+    let mut shells: BTreeMap<usize, Vec<usize>> = BTreeMap::new();
+    for fi in 0..faces.len() {
+        let r = find(&mut sp, fi);
+        shells.entry(r).or_default().push(fi);
+    }
+    let shells: Vec<Vec<usize>> = shells.into_values().collect();
+    // Shells meeting at a vertex touch.
+    let mut shell_of_vertex: BTreeMap<usize, usize> = BTreeMap::new();
+    for (si, sh) in shells.iter().enumerate() {
+        for &fi in sh {
+            for lp in &faces[fi].loops {
+                for &(g, _) in lp {
+                    for v in arr.edges[g].ends {
+                        if removed.contains(&v) {
+                            continue;
+                        }
+                        if let Some(&s) = shell_of_vertex.get(&v) {
+                            if s != si {
+                                return Err(Error::Degenerate("solids touching at a vertex"));
+                            }
+                        }
+                        shell_of_vertex.insert(v, si);
+                    }
+                }
+            }
+        }
+    }
+    // A shell of the tool's faces alone in a cut is a cavity.
+    let cavity = |sh: &Vec<usize>| op == Op2::Cut && sh.iter().all(|&fi| faces[fi].op == 1);
+    let outers: Vec<usize> = (0..shells.len()).filter(|&s| !cavity(&shells[s])).collect();
+    let cavities: Vec<usize> = (0..shells.len()).filter(|&s| cavity(&shells[s])).collect();
+    if !cavities.is_empty() && outers.len() != 1 {
+        return Err(Error::OutOfDomain("a cavity among several solids (S9c)"));
+    }
+    // Every result vertex apart from the others by the resolution.
+    let tol = arr.models[0].tolerance.linear();
+    let points: BTreeMap<usize, Point3> = shell_of_vertex
+        .keys()
+        .map(|&v| {
+            let p = qv_f64(&arr.vx[v].p);
+            (v, Point3::new(p[0], p[1], p[2]))
+        })
+        .collect();
+    let pv: Vec<(&usize, &Point3)> = points.iter().collect();
+    for i in 0..pv.len() {
+        for j in i + 1..pv.len() {
+            if (*pv[i].1 - *pv[j].1).length() <= tol {
+                return Err(Error::Degenerate("a result thinner than the resolution"));
+            }
+        }
+    }
+    let info: BTreeMap<EntityId, (Operand, Role)> = arr
+        .models
+        .iter()
+        .flat_map(|m| m.info.iter().map(|(k, v)| (*k, *v)))
+        .collect();
+    let mut out = Vec::new();
+    for &si in &outers {
+        let mut all: Vec<usize> = shells[si].clone();
+        let mut inner: BTreeSet<usize> = BTreeSet::new();
+        for &c in &cavities {
+            all.extend(&shells[c]);
+            inner.extend(&shells[c]);
+        }
+        out.push(build_component(
+            arr, op, &faces, &redges, &fins_of, &points, &all, &inner, &info,
+        )?);
+    }
+    Ok(out)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn build_component(
+    arr: &Arr,
+    op: Op2,
+    faces: &[RFace],
+    redges: &[REdge],
+    fins_of: &FinsOf<'_>,
+    points: &BTreeMap<usize, Point3>,
+    all: &[usize],
+    inner: &BTreeSet<usize>,
+    info: &BTreeMap<EntityId, (Operand, Role)>,
+) -> Result<Component> {
+    let mut p = TopologyParts::default();
+    // Edges and vertices used.
+    let mut used_edges: BTreeSet<usize> = BTreeSet::new();
+    let face_fins: Vec<Vec<Vec<(usize, bool)>>> = all
+        .iter()
+        .map(|&fi| faces[fi].loops.iter().map(|l| fins_of(l)).collect())
+        .collect();
+    for loops in &face_fins {
+        for l in loops {
+            used_edges.extend(l.iter().map(|u| u.0));
+        }
+    }
+    let mut verts: BTreeSet<usize> = BTreeSet::new();
+    for &ri in &used_edges {
+        if let Some(e) = redges[ri].ends {
+            verts.extend(e);
+        }
+    }
+    let vertex_id: BTreeMap<usize, VertexId> = verts
+        .iter()
+        .enumerate()
+        .map(|(i, v)| (*v, VertexId(i)))
+        .collect();
+    for v in &verts {
+        p.vertices.push(Vertex {
+            position: points[v],
+            enclosure: None,
+        });
+    }
+    let edge_id: BTreeMap<usize, EdgeId> = used_edges
+        .iter()
+        .enumerate()
+        .map(|(i, e)| (*e, EdgeId(i)))
+        .collect();
+    for &ri in &used_edges {
+        let e = &redges[ri];
+        p.edges.push(Edge {
+            start: e.ends.map(|x| vertex_id[&x[0]]),
+            end: e.ends.map(|x| vertex_id[&x[1]]),
+            curve: curve3(arr, e, points)?,
+            fins: Vec::new(),
+        });
+    }
+    let has_cavity = !inner.is_empty();
+    for (k, &fi) in all.iter().enumerate() {
+        let rf = &faces[fi];
+        let mface = &arr.models[rf.op].faces[rf.face];
+        let surface = mface.stored.clone();
+        let sense = if rf.behind {
+            mface.sense
+        } else {
+            flip(mface.sense)
+        };
+        let mut loop_ids = Vec::new();
+        for l in &face_fins[k] {
+            let fins = loop_fins(&p, l, &edge_id, &surface)?;
+            let mut fids = Vec::new();
+            for fin in fins {
+                let id = FinId(p.fins.len());
+                p.edges[fin.edge.0].fins.push(id);
+                p.fins.push(fin);
+                fids.push(id);
+            }
+            let winding = match &surface {
+                Surface::Cylinder { .. } => [turns(&p, &fids, &surface), 0],
+                _ => [0, 0],
+            };
+            // The loop's area in the surface's parameters (its pcurves).
+            let mut pts: Vec<Point2> = Vec::new();
+            for f in &fids {
+                let pc = &p.fins[f.0].pcurve;
+                for i in 0..16 {
+                    pts.push(pc.point(i as f64 / 16.0));
+                }
+            }
+            let area = (0..pts.len())
+                .map(|i| {
+                    let (a, b) = (pts[i], pts[(i + 1) % pts.len()]);
+                    a.x * b.y - a.y * b.x
+                })
+                .sum::<f64>()
+                .abs();
+            loop_ids.push((LoopId(p.loops.len()), winding[0] != 0, area));
+            p.loops.push(Loop::Edges {
+                fins: fids,
+                winding,
+            });
+        }
+        // The outer loop first: loops round the axis, then by area.
+        loop_ids.sort_by(|a, b| b.1.cmp(&a.1).then(b.2.total_cmp(&a.2)));
+        let loop_ids: Vec<LoopId> = loop_ids.into_iter().map(|x| x.0).collect();
+        // On a cylinder, each other loop lifted by whole turns to lie with
+        // the first (each pcurve's lift starts from its point's angle).
+        if matches!(surface, Surface::Cylinder { .. }) && loop_ids.len() > 1 {
+            let mean_u = |p: &TopologyParts, l: LoopId| -> f64 {
+                let Loop::Edges { fins, .. } = &p.loops[l.0] else {
+                    return 0.0;
+                };
+                let us: Vec<f64> = fins
+                    .iter()
+                    .flat_map(|f| (0..8).map(move |i| (f, i as f64 / 8.0)))
+                    .map(|(f, t)| p.fins[f.0].pcurve.point(t).x)
+                    .collect();
+                us.iter().sum::<f64>() / us.len() as f64
+            };
+            let target = mean_u(&p, loop_ids[0]);
+            for &l in &loop_ids[1..] {
+                let turns = ((target - mean_u(&p, l)) / TAU).round();
+                if turns == 0.0 {
+                    continue;
+                }
+                let Loop::Edges { fins, .. } = &p.loops[l.0] else {
+                    continue;
+                };
+                for f in fins.clone() {
+                    let k = TAU * turns;
+                    match &mut p.fins[f.0].pcurve {
+                        Curve2::Projection(pr) => {
+                            for lift in &mut pr.lifts {
+                                lift.x += k;
+                            }
+                        }
+                        Curve2::LineSegment { start, end } => {
+                            start.x += k;
+                            end.x += k;
+                        }
+                        Curve2::Sinusoid { start, .. } => *start += k,
+                        _ => {}
+                    }
+                }
+            }
+        }
+        let is_inner = inner.contains(&fi);
+        p.faces.push(Face {
+            surface,
+            sense,
+            loops: loop_ids,
+            front: if is_inner { ShellId(2) } else { ShellId(0) },
+            back: if is_inner { ShellId(3) } else { ShellId(1) },
+            enclosure: None,
+        });
+    }
+    let sides = |want_inner: bool, side: Side| -> Vec<(FaceId, Side)> {
+        all.iter()
+            .enumerate()
+            .filter(|(_, fi)| inner.contains(fi) == want_inner)
+            .map(|(k, _)| (FaceId(k), side))
+            .collect()
+    };
+    let shell = |region: usize, sides: Vec<(FaceId, Side)>| Shell {
+        region: RegionId(region),
+        sides,
+        wire_edges: Vec::new(),
+        acorn_vertices: Vec::new(),
+    };
+    p.shells = vec![
+        shell(1, sides(false, Side::Front)),
+        shell(0, sides(false, Side::Back)),
+    ];
+    p.regions = vec![
+        Region {
+            kind: RegionKind::Void,
+            shells: vec![ShellId(1)],
+        },
+        Region {
+            kind: RegionKind::Solid,
+            shells: vec![ShellId(0)],
+        },
+    ];
+    if has_cavity {
+        p.shells.push(shell(1, sides(true, Side::Front)));
+        p.shells.push(shell(2, sides(true, Side::Back)));
+        p.regions[1].shells.push(ShellId(2));
+        p.regions.push(Region {
+            kind: RegionKind::Void,
+            shells: vec![ShellId(3)],
+        });
+    }
+    // Plans.
+    let tool = |o: usize| op == Op2::Cut && o == 1;
+    let tidy = |mut c: Vec<EntityId>, mut t: Vec<EntityId>| {
+        c.sort();
+        c.dedup();
+        t.sort();
+        t.dedup();
+        t.retain(|x| !c.contains(x));
+        (c, t)
+    };
+    let operand = |id: &EntityId| info.get(id).map(|i| i.0);
+    let role_of =
+        |ids: &[EntityId], new: Role| ids.first().and_then(|id| info.get(id)).map_or(new, |i| i.1);
+    let mut plans: Vec<SlotPlan> = Vec::new();
+    let mut members: BTreeSet<Operand> = BTreeSet::new();
+    for (k, &fi) in all.iter().enumerate() {
+        let rf = &faces[fi];
+        let (mut c, mut t) = (Vec::new(), Vec::new());
+        for &pi in &rf.pieces {
+            let piece = &arr.pieces[pi];
+            let id = arr.models[piece.op].faces[piece.face].id;
+            if piece.behind && !tool(piece.op) {
+                c.push(id);
+            } else {
+                t.push(id);
+            }
+        }
+        members.extend(c.iter().filter_map(operand));
+        let (c, t) = tidy(c, t);
+        let role = role_of(&c, Role::CutFace);
+        plans.push((Slot::Face(FaceId(k)), c, t, EntityKind::Face, role));
+    }
+    for (&ri, &eid) in &edge_id {
+        let (mut c, mut t) = (Vec::new(), Vec::new());
+        for &(g, _) in &redges[ri].parts {
+            match arr.edges[g].curve {
+                CurveRef::Edge(o, ei) => {
+                    let me = &arr.models[o].edges[ei];
+                    match me.id {
+                        Some(id) if tool(o) => t.push(id),
+                        Some(id) => c.push(id),
+                        None => t.extend(me.faces.iter().map(|&f| arr.models[o].faces[f].id)),
+                    }
+                }
+                CurveRef::Section(si, _) => {
+                    let s = &arr.secs[si];
+                    t.push(arr.models[0].faces[s.fa].id);
+                    t.push(arr.models[1].faces[s.fb].id);
+                }
+            }
+        }
+        let (c, t) = tidy(c, t);
+        let role = role_of(&c, Role::CutEdge);
+        plans.push((Slot::Edge(eid), c, t, EntityKind::Edge, role));
+    }
+    for (&v, &vid) in &vertex_id {
+        let (mut c, mut t) = (Vec::new(), Vec::new());
+        match &arr.vx[v].key {
+            VKey::Input(o, i) => match arr.models[*o].verts[*i].id {
+                Some(id) if tool(*o) => t.push(id),
+                Some(id) => c.push(id),
+                None => {
+                    for &(o2, f) in &arr.vx[v].faces {
+                        t.push(arr.models[o2].faces[f].id);
+                    }
+                }
+            },
+            VKey::Pierce(o, ei, g, _) => {
+                let me = &arr.models[*o].edges[*ei];
+                match me.id {
+                    Some(id) => t.push(id),
+                    None => t.extend(me.faces.iter().map(|&f| arr.models[*o].faces[f].id)),
+                }
+                t.push(arr.models[1 - o].faces[*g].id);
+            }
+            VKey::Cross(fa, fb, _) => {
+                t.push(arr.models[0].faces[*fa].id);
+                t.push(arr.models[1].faces[*fb].id);
+            }
+        }
+        let (c, t) = tidy(c, t);
+        let role = role_of(&c, Role::CutVertex);
+        plans.push((Slot::Vertex(vid), c, t, EntityKind::Vertex, role));
+    }
+    if op == Op2::Cut {
+        members = BTreeSet::from([Operand::A]);
+    }
+    plans.push((
+        Slot::Region(RegionId(1)),
+        members
+            .iter()
+            .map(|o| arr.models[usize::from(*o == Operand::B)].region)
+            .collect(),
+        Vec::new(),
+        EntityKind::Region,
+        Role::Region,
+    ));
+    if has_cavity {
+        plans.push((
+            Slot::Region(RegionId(2)),
+            Vec::new(),
+            vec![arr.models[1].region],
+            EntityKind::Region,
+            Role::Region,
+        ));
+    }
+    Ok(Component { parts: p, plans })
+}
+
+/// Whether two curves are one (exactly): a full circle's halves, or a
+/// plane's sections of a cylinder's halves, run on as one edge.
+fn same_curve(a: &Crv, b: &Crv) -> bool {
+    match (a, b) {
+        (
+            Crv::Conic { c, a: x, b: y },
+            Crv::Conic {
+                c: c2,
+                a: x2,
+                b: y2,
+            },
+        ) => c == c2 && x == x2 && y == y2,
+        (Crv::Line { p, d }, Crv::Line { p: p2, d: d2 }) => {
+            is_zero(&cross(d, d2)) && super::graph::on_line(p, d, p2)
+        }
+        _ => false,
+    }
+}
+
+fn flip(o: Orientation) -> Orientation {
+    match o {
+        Orientation::Forward => Orientation::Reversed,
+        Orientation::Reversed => Orientation::Forward,
+    }
+}
+
+/// The binary64 angle of a place on a conic.
+fn angle_of(pos: &Pos) -> f64 {
+    let Pos::Ang(cs) = pos else {
+        unreachable!("a conic's place")
+    };
+    cs[1].to_f64().atan2(cs[0].to_f64())
+}
+
+/// A result edge's curve, rounded once.
+fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curve3> {
+    let (g0, d0) = e.parts[0];
+    let (gl, dl) = *e.parts.last().expect("a part");
+    let first = &arr.edges[g0];
+    let last = &arr.edges[gl];
+    match &first.crv {
+        Crv::Line { .. } => {
+            let [s, t] = e
+                .ends
+                .ok_or(Error::InvalidTopology("a line without ends"))?;
+            Ok(Curve3::LineSegment {
+                start: points[&s],
+                end: points[&t],
+            })
+        }
+        Crv::Conic { c, a, b } => {
+            // Start and end angles, and the turn along the chain.
+            let with = first.with == d0;
+            let t0 = angle_of(if d0 { &first.pos[0] } else { &first.pos[1] });
+            let t1 = angle_of(if dl { &last.pos[1] } else { &last.pos[0] });
+            let sweep = if e.ends.is_none() {
+                TAU
+            } else {
+                let s = if with { t1 - t0 } else { t0 - t1 };
+                let s = s.rem_euclid(TAU);
+                if s == 0.0 {
+                    TAU
+                } else {
+                    s
+                }
+            };
+            let sweep = if with { sweep } else { -sweep };
+            let fl = |x: &V| x.clone().map(|y| rational_f64(&y));
+            // A model arc: on its cap's arc frame.
+            if let CurveRef::Edge(o, ei) = first.curve {
+                let m = &arr.models[o];
+                let EdgeKind::Cap(high, b2, j) = m.edges[ei].kind else {
+                    unreachable!("an arc edge is a cap edge")
+                };
+                let Seg::Arc { c: ac, r, .. } = &m.bounds[b2].segs[j] else {
+                    unreachable!("an arc segment")
+                };
+                let h = rational_f64(if high { &m.hi } else { &m.lo });
+                let frame = Frame3::new(
+                    m.frame
+                        .point(Point2::new(rational_f64(&ac[0]), rational_f64(&ac[1])), h),
+                    m.frame.normal(),
+                    m.frame.x(),
+                    m.tolerance,
+                )?;
+                let radius = rational_f64(r);
+                return Ok(if e.ends.is_none() {
+                    Curve3::Circle { frame, radius }
+                } else {
+                    Curve3::CircularArc {
+                        frame,
+                        radius,
+                        start_angle: t0,
+                        sweep_angle: sweep,
+                    }
+                });
+            }
+            // A section: principal axes of c + a cos t + b sin t.
+            let (cf, af, bf) = (fl(c), fl(a), fl(b));
+            let d = |x: &[f64; 3], y: &[f64; 3]| x[0] * y[0] + x[1] * y[1] + x[2] * y[2];
+            let (aa, ab, bb) = (d(&af, &af), d(&af, &bf), d(&bf, &bf));
+            let phi = 0.5 * (2.0 * ab).atan2(aa - bb);
+            let (cp, sp) = (phi.cos(), phi.sin());
+            let mut major = [0, 1, 2].map(|k| af[k] * cp + bf[k] * sp);
+            let mut minor = [0, 1, 2].map(|k| -af[k] * sp + bf[k] * cp);
+            let mut shift = phi;
+            if d(&minor, &minor) > d(&major, &major) {
+                let m2 = minor;
+                minor = major.map(|x| -x);
+                major = m2;
+                shift += FRAC_PI_2;
+            }
+            let (lm, ln) = (d(&major, &major).sqrt(), d(&minor, &minor).sqrt());
+            let x = Vec3::new(major[0], major[1], major[2]);
+            let y = Vec3::new(minor[0], minor[1], minor[2]);
+            let frame = Frame3::new(
+                Point3::new(cf[0], cf[1], cf[2]),
+                x.cross(y),
+                x,
+                arr.models[0].tolerance,
+            )?;
+            let _ = points;
+            Ok(Curve3::EllipseArc {
+                frame,
+                major: lm,
+                minor: ln,
+                start_angle: if e.ends.is_none() { 0.0 } else { t0 - shift },
+                sweep_angle: sweep,
+            })
+        }
+    }
+}
+
+/// A loop's fins: each use's pcurve on the face's stored surface, lifted
+/// continuously along the loop on a cylinder.
+fn loop_fins(
+    p: &TopologyParts,
+    uses: &[(usize, bool)],
+    edge_id: &BTreeMap<usize, EdgeId>,
+    surface: &Surface,
+) -> Result<Vec<Fin>> {
+    let mut out = Vec::new();
+    let mut lift: Option<Point2> = None;
+    for &(ri, fwd) in uses {
+        let edge = edge_id[&ri];
+        let curve = &p.edges[edge.0].curve;
+        let sense = if fwd {
+            Orientation::Forward
+        } else {
+            Orientation::Reversed
+        };
+        let pcurve = match (surface, curve) {
+            (Surface::Plane(frame), Curve3::EllipseArc { .. }) => {
+                let reversed = !fwd;
+                let start = curve.point(if reversed { 1.0 } else { 0.0 });
+                let [x, y, _] = frame.coordinates(start);
+                Curve2::Projection(Box::new(
+                    Projection::new(
+                        curve.clone(),
+                        surface.clone(),
+                        reversed,
+                        Point2::new(x, y),
+                        16,
+                    )
+                    .ok_or(Error::PrecisionLoss)?,
+                ))
+            }
+            (Surface::Plane(frame), _) => plane_pcurve(curve, sense, *frame),
+            _ => {
+                let reversed = !fwd;
+                let start = curve.point(if reversed { 1.0 } else { 0.0 });
+                let mut uv = Projection::inverse(surface, start).ok_or(Error::PrecisionLoss)?;
+                if let Some(prev) = lift {
+                    uv.x += TAU * ((prev.x - uv.x) / TAU).round();
+                }
+                let pc = match cylinder_pcurve(surface, curve, reversed, uv) {
+                    Some(pc) => pc,
+                    None => Curve2::Projection(Box::new(
+                        Projection::new(curve.clone(), surface.clone(), reversed, uv, 16)
+                            .ok_or(Error::PrecisionLoss)?,
+                    )),
+                };
+                lift = Some(pc.point(1.0));
+                pc
+            }
+        };
+        out.push(Fin {
+            edge,
+            sense,
+            pcurve,
+            enclosure: None,
+        });
+    }
+    Ok(out)
+}
+
+/// A cylinder face's pcurve of an edge from `uv` (its start's lifted
+/// parameters, along the use): a line for a generatrix or a circle about
+/// the axis, the sinusoid `v = a0 + a1 cos u + a2 sin u` for a plane's
+/// section whose parameter is the cylinder's angle (checked along it);
+/// `None` otherwise (an exact projection instead).
+fn cylinder_pcurve(
+    surface: &Surface,
+    curve: &Curve3,
+    reversed: bool,
+    uv: Point2,
+) -> Option<Curve2> {
+    let Surface::Cylinder { frame, radius } = surface else {
+        return None;
+    };
+    let at = |f: f64| curve.point(if reversed { 1.0 - f } else { f });
+    let end = Projection::inverse(surface, at(1.0))?;
+    let (plane, sweep) = match curve {
+        Curve3::LineSegment { .. } => {
+            // A generatrix: u constant.
+            return ((end.x - uv.x)
+                .rem_euclid(TAU)
+                .min(TAU - (end.x - uv.x).rem_euclid(TAU))
+                < 1e-9)
+                .then_some(Curve2::LineSegment {
+                    start: uv,
+                    end: Point2::new(uv.x, end.y),
+                });
+        }
+        Curve3::Circle { frame: f, .. } => (*f, TAU),
+        Curve3::CircularArc {
+            frame: f,
+            sweep_angle,
+            ..
+        }
+        | Curve3::EllipseArc {
+            frame: f,
+            sweep_angle,
+            ..
+        } => (*f, *sweep_angle),
+        _ => return None,
+    };
+    let sweep = if reversed { -sweep } else { sweep };
+    // The curve's plane m . (P - p) = 0 on the cylinder's points.
+    let (m, p0) = (plane.normal(), plane.origin());
+    let (o, x, y, n) = (frame.origin(), frame.x(), frame.y(), frame.normal());
+    let mn = m.dot(n);
+    if mn.abs() < 1e-9 {
+        return None;
+    }
+    let a = [
+        m.dot(p0 - o) / mn,
+        -radius * m.dot(x) / mn,
+        -radius * m.dot(y) / mn,
+    ];
+    let pc = if a[1].abs() <= 1e-15 * a[0].abs().max(*radius)
+        && a[2].abs() <= 1e-15 * a[0].abs().max(*radius)
+    {
+        Curve2::LineSegment {
+            start: Point2::new(uv.x, a[0]),
+            end: Point2::new(uv.x + sweep, a[0]),
+        }
+    } else {
+        Curve2::Sinusoid {
+            start: uv.x,
+            sweep,
+            a,
+        }
+    };
+    // The same points at the same fractions.
+    let tol = 1e-9 * (1.0 + radius + o.to_array().iter().fold(0.0f64, |m, v| m.max(v.abs())));
+    for f in [0.0, 0.25, 0.5, 0.75, 1.0] {
+        let q = pc.point(f);
+        let s = frame.point(Point2::new(radius * q.x.cos(), radius * q.x.sin()), q.y);
+        if (s - at(f)).length() > tol {
+            return None;
+        }
+    }
+    Some(pc)
+}
+
+/// A cylinder loop's turns about the axis: its pcurves' change of `u`.
+fn turns(p: &TopologyParts, fins: &[FinId], _surface: &Surface) -> i32 {
+    let mut total = 0.0;
+    for f in fins {
+        let pc = &p.fins[f.0].pcurve;
+        total += pc.point(1.0).x - pc.point(0.0).x;
+    }
+    (total / TAU).round() as i32
+}
+
+impl Arr {
+    /// A face's loops from half-edges: at a vertex with several ways on,
+    /// the first clockwise from the way back.
+    pub(super) fn relink(
+        &self,
+        o: usize,
+        hs: &[(usize, bool)],
+        face_of: &BTreeMap<(usize, bool), usize>,
+    ) -> Result<Vec<Vec<(usize, bool)>>> {
+        let start = |h: (usize, bool)| self.edges[h.0].ends[if h.1 { 0 } else { 1 }];
+        let end = |h: (usize, bool)| self.edges[h.0].ends[if h.1 { 1 } else { 0 }];
+        let mut out_of: BTreeMap<usize, Vec<(usize, bool)>> = BTreeMap::new();
+        for &h in hs {
+            out_of.entry(start(h)).or_default().push(h);
+        }
+        let mut used: BTreeSet<(usize, bool)> = BTreeSet::new();
+        let mut loops = Vec::new();
+        for &h0 in hs {
+            if used.contains(&h0) {
+                continue;
+            }
+            used.insert(h0);
+            let mut lp = vec![h0];
+            let mut h = h0;
+            loop {
+                let v = end(h);
+                let outs = out_of.get(&v).map_or(&[][..], |x| x);
+                let next = if outs.len() == 1 {
+                    outs[0]
+                } else {
+                    self.next_on(o, face_of[&h], v, h, outs)?
+                };
+                if next == h0 {
+                    break;
+                }
+                if !used.insert(next) {
+                    return Err(Error::InvalidTopology("a joined face's loops do not close"));
+                }
+                lp.push(next);
+                h = next;
+            }
+            loops.push(lp);
+        }
+        let _ = Ordering::Equal;
+        Ok(loops)
+    }
+}

@@ -1,0 +1,29 @@
+{
+ "note": "Reviewed BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut and BRepAlgoAPI_Common differences from the S9c.1 reference and the kernel.",
+ "reviews": [
+  {
+   "case": "steinmetz_fuse",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "f6c2e4fdcb2d39c63baef14b1c51d6b30cb02866d450600d306b555e82c39d6f",
+   "differences": [
+    "rust_entity_counts"
+   ],
+   "reason": "Seam accounting: BRepAlgoAPI_Fuse gives 8 faces, 15 edges and 9 vertices (unchanged by ShapeUpgrade_UnifySameDomain); the kernel's result, counted with OCCT's seams (a seam on each of the four bands round an axis, ending at a vertex splitting an edge where no vertex lies at u = 0), has 8 faces, 14 edges and 8 vertices. The two equal cylinders' ellipses cross at (0, +-2, 0), on the second cylinder's seam angle, where the kernel's band loops already hold a vertex; OCCT's result has one more vertex and edge there. The volume, area and centre agree with the reference.",
+   "independent_evidence": "The reference (curved_boolean_reference.py, its Steinmetz closed forms and inclusion-exclusion checks) and both backends agree on the volume within 5e-12 and on the area and centre; the kernel's history check and validation pass.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  },
+  {
+   "case": "steinmetz_common",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "07b5b2f9640937b9eaf70b42543611519ad2b2ca493e5f7089fee54182d59b69",
+   "differences": [
+    "rust_entity_counts"
+   ],
+   "reason": "Seam accounting: BRepAlgoAPI_Common gives 5 faces, 8 edges and 5 vertices, and 4 faces, 7 edges and 5 vertices after ShapeUpgrade_UnifySameDomain (seam edges left through the lens faces that cross their cylinders' u = 0); the kernel's result is the four lens faces bounded by the two ellipses' four arcs between their two crossing points (4 faces, 4 edges, 2 vertices), no face wound round an axis. The volume 16 r^3 / 3 = 128 / 3, area 16 r^2 = 64 and centre agree with the reference.",
+   "independent_evidence": "The closed forms of the perpendicular Steinmetz solid of radius 2 (volume 128/3, area 64, centre at the origin) hold on both backends within 2e-11.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  }
+ ]
+}

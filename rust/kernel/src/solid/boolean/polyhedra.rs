@@ -529,7 +529,7 @@ fn prism_model(solid: &Solid, profile: &Profile, op: Operand) -> Result<Model> {
             }
             _ => {
                 return Err(Error::OutOfDomain(
-                    "a Boolean of prisms with arcs in frames with different axes (S9c)",
+                    "a Boolean of a prism with arcs and a solid other than a prism (S9c)",
                 ))
             }
         };
@@ -1222,6 +1222,10 @@ struct Frag {
 /// Builds a polyhedral Boolean's components in its inputs' frames.
 #[allow(clippy::too_many_lines)]
 pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
+    // S9c.1: prisms with arcs in any position.
+    if super::curved::applies(poly) {
+        return super::curved::build(poly);
+    }
     let tolerance = poly.tolerance();
     let models = [model(&poly.a, Operand::A)?, model(&poly.b, Operand::B)?];
     // Each input entity's operand and role.
