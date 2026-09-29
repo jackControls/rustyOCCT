@@ -4,22 +4,16 @@
 //! parameterisation, D13), each clear of its turning points: two rings
 //! over the cylinder whose extent across the common perpendicular lies
 //! inside the other's, or one loop in four graphs switched at rational
-//! points of the thinner cylinder's angle. Where such a section would
-//! cross a cap's circle the point is a nested surd (`Nest`): S9c.2b's,
-//! refused when it lies on both faces.
+//! points of the thinner cylinder's angle. Where such a section crosses a
+//! cap's circle the vertex is algebraic (`algebraic.rs`, S9c.2b.2).
 use super::graph::{between_ccw, rational_between, same_dir};
-use super::meet::{quadratic, tangency, CylPair};
+use super::meet::{tangency, CylPair};
 use super::model::*;
 use super::num::*;
 use crate::solid::split::{rational_f64, zero};
 use crate::{Error, Result};
 use num_rational::BigRational as R;
 use std::cmp::Ordering;
-
-/// A section crossing a cap's circle: its vertex is a nested surd.
-pub(super) fn nested() -> Error {
-    Error::OutOfDomain("two cylinders' section crossing a cap's circle (S9c.2b)")
-}
 
 /// A piece of two cylinders' meeting: the carrier's ruling at `(cos, sin)`,
 /// `o + r (cos x + sin y) + w n`, meets the other cylinder
@@ -208,13 +202,12 @@ impl MeetCrv {
 }
 
 /// Two cylinders' quartic meeting: its pieces and the points where a loop
-/// switches between them; perpendicular in exact frames (S9c.2a) or not
-/// (S9c.2b.1).
+/// switches between them (perpendicular in exact frames, S9c.2a, or in
+/// turned frames, S9c.2b.1).
 #[derive(Debug, Clone)]
 pub(super) struct Quartic {
     pub(super) pieces: Vec<MeetCrv>,
     pub(super) switches: Vec<QV>,
-    pub(super) perpendicular: bool,
 }
 
 /// A cylinder of an operand: its frame, circle centre and radius.
@@ -252,7 +245,6 @@ pub(super) fn perpendicular(x: Cyl, y: Cyl) -> Result<CylPair> {
             return Ok(CylPair::Quartic(Box::new(Quartic {
                 pieces: vec![piece(k, true, None), piece(k, false, None)],
                 switches: Vec::new(),
-                perpendicular: true,
             })));
         }
     }
@@ -348,229 +340,5 @@ pub(super) fn perpendicular(x: Cyl, y: Cyl) -> Result<CylPair> {
         pieces.push(piece(ww, sw, Some(range)));
     }
     let switches = sw_pts.into_iter().map(|x| x.1).collect();
-    Ok(CylPair::Quartic(Box::new(Quartic {
-        pieces,
-        switches,
-        perpendicular: true,
-    })))
-}
-
-// ------------------------------------------------------------ nested points
-
-/// `x + y sqrt(e)`, `x`, `y` and `e >= 0` of one quadratic field.
-#[derive(Debug, Clone)]
-pub(super) struct Nest {
-    x: Qd,
-    y: Qd,
-    e: Qd,
-}
-
-impl Nest {
-    fn rat(a: R) -> Self {
-        Self {
-            x: Qd::rat(a),
-            y: Qd::rat(zero()),
-            e: Qd::rat(zero()),
-        }
-    }
-
-    fn add(&self, o: &Self) -> Self {
-        let e = if self.y.sign() == Ordering::Equal {
-            o.e.clone()
-        } else {
-            self.e.clone()
-        };
-        Self {
-            x: self.x.add(&o.x),
-            y: self.y.add(&o.y),
-            e,
-        }
-    }
-
-    fn scale(&self, k: &R) -> Self {
-        Self {
-            x: self.x.scale(k),
-            y: self.y.scale(k),
-            e: self.e.clone(),
-        }
-    }
-
-    fn sub(&self, o: &Self) -> Self {
-        self.add(&o.scale(&int(-1)))
-    }
-
-    /// The exact sign.
-    fn sign(&self) -> Ordering {
-        let sy = if self.e.sign() == Ordering::Equal {
-            Ordering::Equal
-        } else {
-            self.y.sign()
-        };
-        let sx = self.x.sign();
-        if sy == Ordering::Equal {
-            return sx;
-        }
-        if sx == Ordering::Equal || sx == sy {
-            return sy;
-        }
-        match self
-            .x
-            .mul(&self.x)
-            .sub(&self.y.mul(&self.y).mul(&self.e))
-            .sign()
-        {
-            Ordering::Greater => sx,
-            Ordering::Less => sy,
-            Ordering::Equal => Ordering::Equal,
-        }
-    }
-}
-
-/// Where a cap's circle `c + a cos + b sin` meets a perpendicular
-/// cylinder: its `(cos, sin)` and points, nested surds. Across the
-/// perpendicular only `lambda = p cos + q sin` (the offset along the
-/// common perpendicular) enters the cylinder's equation, a quadratic.
-pub(super) fn nested_points(
-    c: &V,
-    a: &V,
-    b: &V,
-    f: &Affine,
-    cy: &P2,
-    ry: &R,
-) -> Result<Vec<([Nest; 2], [Nest; 3])>> {
-    let o = other_of(f, cy, ry);
-    let alpha = [dot(&o.g[0], c) - &o.e[0], dot(&o.g[1], c) - &o.e[1]];
-    let beta = [dot(&o.g[0], a), dot(&o.g[1], a)];
-    let gamma = [dot(&o.g[0], b), dot(&o.g[1], b)];
-    if &beta[0] * &gamma[1] - &beta[1] * &gamma[0] != zero() {
-        return Err(Error::OutOfDomain(
-            "a circle against a cylinder not perpendicular to it (S9c.2b)",
-        ));
-    }
-    let i = if beta[0] != zero() || gamma[0] != zero() {
-        0
-    } else {
-        1
-    };
-    let (p, q) = (beta[i].clone(), gamma[i].clone());
-    let pq = &p * &p + &q * &q;
-    if pq == zero() {
-        return Ok(Vec::new());
-    }
-    // (beta_j, gamma_j) = m_j (p, q).
-    let m = [0, 1].map(|j| (&beta[j] * &p + &gamma[j] * &q) / &pq);
-    let qa = &m[0] * &m[0] + &m[1] * &m[1];
-    let qb = int(2) * (&alpha[0] * &m[0] + &alpha[1] * &m[1]);
-    let qc = &alpha[0] * &alpha[0] + &alpha[1] * &alpha[1] - ry * ry;
-    let mut out = Vec::new();
-    for lambda in quadratic(&qa, &qb, &qc)? {
-        // p cos + q sin = lambda: cos = (p lambda - k q sqrt E) / pq,
-        // sin = (q lambda + k p sqrt E) / pq, E = pq - lambda^2.
-        let big = lambda.mul(&lambda).neg().add_r(&pq);
-        match big.sign() {
-            Ordering::Less => continue,
-            Ordering::Equal => return Err(tangency()),
-            Ordering::Greater => {}
-        }
-        let inv = int(1) / &pq;
-        for k in [-1i64, 1] {
-            let k = int(k);
-            let cs = [
-                Nest {
-                    x: lambda.scale(&(&p * &inv)),
-                    y: Qd::rat(-(&k * &q) * &inv),
-                    e: big.clone(),
-                },
-                Nest {
-                    x: lambda.scale(&(&q * &inv)),
-                    y: Qd::rat(&k * &p * &inv),
-                    e: big.clone(),
-                },
-            ];
-            let pt = [0, 1, 2].map(|j| {
-                Nest::rat(c[j].clone())
-                    .add(&cs[0].scale(&a[j]))
-                    .add(&cs[1].scale(&b[j]))
-            });
-            out.push((cs, pt));
-        }
-    }
-    Ok(out)
-}
-
-/// Whether a nested direction lies strictly within the sweep from `p` to
-/// `q` (directions) turning counter-clockwise or not; `None` on an end.
-pub(super) fn nest_within(p: &P2, qq: &P2, ccw: bool, d: &[Nest; 2]) -> Option<bool> {
-    let rel = |d: &[Nest; 2]| {
-        let x = d[0].scale(&p[0]).add(&d[1].scale(&p[1]));
-        let y = d[1].scale(&p[0]).sub(&d[0].scale(&p[1]));
-        [x, if ccw { y } else { y.scale(&int(-1)) }]
-    };
-    let rd = rel(d);
-    let rq = {
-        let x = &qq[0] * &p[0] + &qq[1] * &p[1];
-        let y = &qq[1] * &p[0] - &qq[0] * &p[1];
-        [x, if ccw { y } else { -y }]
-    };
-    let (s0, s1) = (rd[0].sign(), rd[1].sign());
-    if s1 == Ordering::Equal && s0 == Ordering::Greater {
-        return None;
-    }
-    let full = rq[1] == zero() && rq[0] > zero();
-    if full {
-        return Some(true);
-    }
-    // The pseudo-angles' order: rd before rq.
-    let half_d = s1 == Ordering::Less || (s1 == Ordering::Equal && s0 == Ordering::Less);
-    let half_q = rq[1] < zero() || (rq[1] == zero() && rq[0] < zero());
-    Some(match (half_d, half_q) {
-        (false, true) => true,
-        (true, false) => false,
-        _ => {
-            // rq to the left of rd: rd first.
-            let c = rd[0].scale(&rq[1]).sub(&rd[1].scale(&rq[0])).sign();
-            match c {
-                Ordering::Greater => true,
-                Ordering::Less => false,
-                Ordering::Equal => return None,
-            }
-        }
-    })
-}
-
-/// Where a nested point on a cylinder wall's surface lies in the face.
-pub(super) fn nested_in_face(m: &Prism, fi: usize, x: &[Nest; 3]) -> Loc {
-    let l = [0, 1, 2].map(|k| {
-        let row = m.f.row(k);
-        (0..3).fold(Nest::rat(zero()), |acc, j| {
-            acc.add(&x[j].sub(&Nest::rat(m.f.o[j].clone())).scale(&row[j]))
-        })
-    });
-    let FaceKind::Wall(b, j) = m.faces[fi].kind else {
-        return Loc::On;
-    };
-    let Seg::Arc {
-        c, p, q: qq, ccw, ..
-    } = &m.bounds[b].segs[j]
-    else {
-        return Loc::On;
-    };
-    let h = [
-        l[2].sub(&Nest::rat(m.lo.clone())).sign(),
-        l[2].sub(&Nest::rat(m.hi.clone())).sign(),
-    ];
-    if h[0] == Ordering::Less || h[1] == Ordering::Greater {
-        return Loc::Out;
-    }
-    let d = [
-        l[0].sub(&Nest::rat(c[0].clone())),
-        l[1].sub(&Nest::rat(c[1].clone())),
-    ];
-    let rel = |e: &P2| [&e[0] - &c[0], &e[1] - &c[1]];
-    match nest_within(&rel(p), &rel(qq), *ccw, &d) {
-        Some(false) => Loc::Out,
-        None => Loc::On,
-        Some(true) if h[0] == Ordering::Equal || h[1] == Ordering::Equal => Loc::On,
-        Some(true) => Loc::In,
-    }
+    Ok(CylPair::Quartic(Box::new(Quartic { pieces, switches })))
 }

@@ -23,11 +23,6 @@ use crate::{Error, Result};
 use num_rational::BigRational as R;
 use std::cmp::Ordering;
 
-/// A section crossing a cap's circle in turned frames: an algebraic point.
-pub(super) fn algebraic() -> Error {
-    Error::OutOfDomain("two cylinders' section crossing a cap's circle in turned frames (S9c.2b.2)")
-}
-
 fn limit(what: &'static str) -> Error {
     Error::ComputationLimit(what)
 }
@@ -35,9 +30,9 @@ fn limit(what: &'static str) -> Error {
 // ------------------------------------------------------------ polynomials
 
 /// A polynomial with rational coefficients, ascending powers.
-type Poly = Vec<R>;
+pub(super) type Poly = Vec<R>;
 
-fn trim(mut p: Poly) -> Poly {
+pub(super) fn trim(mut p: Poly) -> Poly {
     while p.last().is_some_and(|c| *c == zero()) {
         p.pop();
     }
@@ -137,7 +132,7 @@ fn int_poly(p: &Poly) -> IntPolynomial {
 
 /// The real roots of a nonzero polynomial, exactly isolated in increasing
 /// order; a repeated root is a tangency.
-fn roots(p: &Poly) -> Result<Vec<AlgebraicRoot>> {
+pub(super) fn roots(p: &Poly) -> Result<Vec<AlgebraicRoot>> {
     let ip = int_poly(p);
     if ip.is_zero() {
         return Err(tangency());
@@ -174,9 +169,9 @@ fn middle(r: &AlgebraicRoot) -> R {
 /// A chart of the circle: `(cos, sin)` the base `(c0, s0)` turned by
 /// `2 atan t`, counter-clockwise with `t`; the base's antipode at infinity.
 #[derive(Debug, Clone)]
-struct Chart {
-    c0: R,
-    s0: R,
+pub(super) struct Chart {
+    pub(super) c0: R,
+    pub(super) s0: R,
 }
 
 impl Chart {
@@ -203,30 +198,26 @@ impl Chart {
         if den.sign() == Ordering::Equal {
             return None;
         }
-        // s / (1 + c) with den = a + b sqrt(d): times the conjugate.
-        let conj = Qd::new(den.a.clone(), -den.b.clone(), den.d.clone());
-        let norm = den.mul(&conj);
-        debug_assert!(norm.is_rational());
-        Some(s.mul(&conj).scale(&(int(1) / norm.a)))
+        Some(s.mul(&den.recip()?))
     }
 }
 
 /// A quadratic form in `(cos, sin, 1)`: `cc c^2 + cs c s + ss s^2 + c1 c +
 /// s1 s + k`.
 #[derive(Debug, Clone, Default)]
-struct Form {
+pub(super) struct Form {
     cc: R,
     cs: R,
     ss: R,
     c1: R,
     s1: R,
-    k: R,
+    pub(super) k: R,
 }
 
 /// A linear form `l0 + l1 c + l2 s`.
-type Lin = [R; 3];
+pub(super) type Lin = [R; 3];
 
-fn square_sum(ls: &[Lin]) -> Form {
+pub(super) fn square_sum(ls: &[Lin]) -> Form {
     let mut f = Form::default();
     for l in ls {
         f.cc += &l[1] * &l[1];
@@ -240,7 +231,7 @@ fn square_sum(ls: &[Lin]) -> Form {
 }
 
 impl Form {
-    fn scaled(&self, a: &R) -> Self {
+    pub(super) fn scaled(&self, a: &R) -> Self {
         Self {
             cc: &self.cc * a,
             cs: &self.cs * a,
@@ -262,7 +253,7 @@ impl Form {
         }
     }
 
-    fn value(&self, cs: &[R; 2]) -> R {
+    pub(super) fn value(&self, cs: &[R; 2]) -> R {
         let (c, s) = (&cs[0], &cs[1]);
         &self.cc * c * c
             + &self.cs * c * s
@@ -273,7 +264,7 @@ impl Form {
     }
 
     /// Times `(1 + t^2)^2` in a chart: a quartic in `t`.
-    fn poly(&self, chart: &Chart) -> Poly {
+    pub(super) fn poly(&self, chart: &Chart) -> Poly {
         let [cn, sn] = chart.numerators();
         let w = vec![int(1), zero(), int(1)];
         let mut p = pscale(&pmul(&cn, &cn), &self.cc);
@@ -416,7 +407,6 @@ pub(super) fn crossing(x: Cyl, y: Cyl, res: f64) -> Result<CylPair> {
             return Ok(CylPair::Quartic(Box::new(Quartic {
                 pieces: vec![piece(k, true, None), piece(k, false, None)],
                 switches: Vec::new(),
-                perpendicular: false,
             })));
         }
     }
@@ -599,11 +589,7 @@ pub(super) fn crossing(x: Cyl, y: Cyl, res: f64) -> Result<CylPair> {
         }
         switches.extend(sw.into_iter().map(|s| s.1));
     }
-    Ok(CylPair::Quartic(Box::new(Quartic {
-        pieces,
-        switches,
-        perpendicular: false,
-    })))
+    Ok(CylPair::Quartic(Box::new(Quartic { pieces, switches })))
 }
 
 /// No root of a carrier's discriminant within a counter-clockwise range
@@ -621,71 +607,4 @@ fn verify(p: &Poly, chart: &Chart, range: &[[Qd; 2]; 2]) -> Result<()> {
         return Err(limit("a turning point inside a piece"));
     }
     Ok(())
-}
-
-// ------------------------------------------------------------ cap circles
-
-/// A root of a cap's circle against the other cylinder, in the circle's
-/// chart about `(1, 0)`, or its antipode.
-#[derive(Debug, Clone)]
-pub(super) enum Hit {
-    Root(AlgebraicRoot),
-    Antipode,
-}
-
-/// Where the circle `c + a cos + b sin` meets a cylinder (in turned
-/// frames): the roots of its quartic.
-pub(super) fn circle_hits(c: &V, a: &V, b: &V, f: &Affine, cy: &P2, ry: &R) -> Result<Vec<Hit>> {
-    let o = other_of(f, cy, ry);
-    let lin: Vec<Lin> = (0..2)
-        .map(|i| [dot(&o.g[i], c) - &o.e[i], dot(&o.g[i], a), dot(&o.g[i], b)])
-        .collect();
-    let mut form = square_sum(&lin);
-    form.k -= &o.r * &o.r;
-    let chart = Chart {
-        c0: int(1),
-        s0: zero(),
-    };
-    let mut p = form.poly(&chart);
-    if p.is_empty() {
-        return Err(tangency());
-    }
-    let mut out = Vec::new();
-    if form.value(&[int(-1), zero()]) == zero() {
-        out.push(Hit::Antipode);
-        p = trim(p);
-    }
-    out.extend(roots(&p)?.into_iter().map(Hit::Root));
-    Ok(out)
-}
-
-/// Whether a hit lies on an arc from `p` to `q` (directions, rational),
-/// counter-clockwise or not, ends included.
-pub(super) fn on_arc(hit: &Hit, p: &[R; 2], q2: &[R; 2], ccw: bool) -> bool {
-    let (p, q2) = if ccw { (p, q2) } else { (q2, p) };
-    let t = |d: &[R; 2]| {
-        let den = int(1) + &d[0];
-        (den != zero()).then(|| &d[1] / den)
-    };
-    let (tp, tq) = (t(p), t(q2));
-    let cmp = |r: &AlgebraicRoot, x: &R| r.compare_rational(x);
-    match hit {
-        Hit::Antipode => match (&tp, &tq) {
-            (None, _) | (_, None) => true,
-            (Some(a), Some(b)) => a > b,
-        },
-        Hit::Root(r) => match (&tp, &tq) {
-            (None, Some(b)) => cmp(r, b) != Ordering::Greater,
-            (Some(a), None) => cmp(r, a) != Ordering::Less,
-            (None, None) => true,
-            (Some(a), Some(b)) => {
-                let (ge, le) = (cmp(r, a) != Ordering::Less, cmp(r, b) != Ordering::Greater);
-                if a <= b {
-                    ge && le
-                } else {
-                    ge || le
-                }
-            }
-        },
-    }
 }

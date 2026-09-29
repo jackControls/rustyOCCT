@@ -11,9 +11,10 @@ position (`solid/boolean/polyhedra.rs`: prisms, and any planar solid with
 straight edges as an input, a Boolean's result or a plane's piece among
 them), S9c.1's prisms with arcs in any relative position
 (`solid/boolean/curved/`), S9c.2a's perpendicular cylinders in exact
-frames meeting in quartics (`curved/procedural.rs`) and S9c.2b.1's
-cylinders with crossing axes in turned frames (`curved/turned.rs`);
-S9c.2b.2 and S9d are not.
+frames meeting in quartics (`curved/procedural.rs`), S9c.2b.1's
+cylinders with crossing axes in turned frames (`curved/turned.rs`) and
+S9c.2b.2's algebraic vertices where sections cross caps' circles, with
+parallel cylinders in turned frames (`curved/algebraic.rs`); S9d is not.
 
 ## Contract
 
@@ -26,9 +27,7 @@ frames (one profile over one height range) is built as one, keeping the
 prism's exact queries; any other is a general body built through
 `TopologyParts` and validated before it is returned. An error is one of:
 
-* `OutOfDomain`: a pair of a later sub-step (parallel cylinders in
-  turned frames, or a quartic section crossing a cap's circle, S9c.2b.2;
-  a prism with arcs against a
+* `OutOfDomain`: a pair of a later sub-step (a prism with arcs against a
   solid other than a prism, a spline profile or an arc whose ends lie off
   its circle in any position, S9c), two spline segments along one curve in
   different forms or a spline span along a line, or a cavity in a result
@@ -292,9 +291,7 @@ to the carrier's run, and a rational point strictly between two places is
 a point of the piece; everything else is S9c.1's arrangement. Vertices on
 a quartic are where an input's generatrix (an edge or a seam) meets the
 other cylinder (quadratic surds); where a cap's circle meets the other
-cylinder the point is a nested surd `x + y sqrt(E)` (`x`, `y`, `E` in
-`Q(sqrt k)`), decided exactly against the edge's arc and the face's region
-and refused (`OutOfDomain`, S9c.2b) when it lies on both. Edges are
+cylinder the vertex is algebraic (S9c.2b.2, below). Edges are
 `Curve3::Meet` (the carrier's and the other's stored cylinders, the branch,
 the angle's range: `TOPOLOGY_MODEL.md`), their pcurves exact projections
 (a meeting on its own carrier evaluated by its angle). The validator
@@ -330,9 +327,30 @@ of the chart's antipode). A repeated root, or a critical point of the
 chart's quartic where `|D| < (A res / 2)^2` (two branches within the
 resolution: equal cylinders with meeting axes in stored turned frames
 among them, whose extents across the common perpendicular are equal
-exactly), is `Degenerate`. A cap's circle against the other cylinder is a
-quartic in its own `t`; a root on the edge's arc (ends included, exact
-comparisons with the arc's rational ends) is S9c.2b.2's, `OutOfDomain`.
+exactly), is `Degenerate`.
+
+### Algebraic vertices (S9c.2b.2)
+
+A cap's circle `c + a cos + b sin` meets the other cylinder where a
+quartic in its half-angle tangent `t` vanishes (`curved/algebraic.rs`):
+each real root `alpha` (isolated exactly) gives a vertex at `(cos, sin) =
+((1 - alpha^2), 2 alpha) / (1 + alpha^2)` with coordinates in `Q(alpha)`
+(the antipode of `(1, 0)`, where the quartic drops a degree, a rational
+vertex), in exact frames (S9c.2a's former nested surds) and turned ones
+alike. The surds `a + b sqrt(d)` of `curved/num.rs` take `a` and `b` in
+`Q` or one `Q(alpha)`: elements are polynomials in `alpha` reduced by its
+polynomial, inverses by the extended Euclidean algorithm (a common factor
+that vanishes at `alpha` is a zero), signs exact by Sturm-Tarski at
+`alpha` (`polynomial/real.rs`), a surd's sign by S9c.1's tower rule.
+Numbers of two different fields (two such vertices compared) are ordered
+by enclosures of their generators' isolators refined up to 480 bisections
+(`2^-192` interval grid); unseparated below `1e-40` of their magnitude
+they count as equal, which the arrangement refuses. Everything else
+(places, orders, membership, tangents, pushes) is the arrangement's own,
+now over these fields. Parallel cylinders not circular in a common measure
+meet in the generatrices through the first cylinder's circle's crossings
+with the other (`CylPair::Lines`): both cylinders hold them, their axes
+being parallel exactly.
 
 ### Spline profiles (S9a.2)
 
@@ -765,6 +783,19 @@ height); its horizontal edges on a spline are its lifted restrictions.
   results measured adaptively within 1.0e-9 and 1.9e-8 (a small result's
   approximated section, unchanged at `Eps = 1e-12`); eight solids' counts
   change when unified.
+* **Kernel (S9c.2b.2).** `tests/capped_booleans.rs`: the 18 fixtures as the
+  reference, every history checked, results deterministic and moved
+  rigidly; the procedural set's `parallel_hole` and S9c.1's
+  `parallel_cylinders` now inside their references too, no case of any
+  cylinder set left `OutOfDomain`. `compare_capped_boolean.py`: 18
+  reviewed (the measures; ten results' counts with the same faces as OCCT's
+  unified result, edges and vertices where each splits its section
+  curves), no failure; `compare_procedural_boolean.py` 4 matches and 24
+  reviewed (`parallel_hole_fuse`'s counts), `compare_turned_boolean.py`,
+  `compare_curved_boolean.py`, `compare_polyhedral.py` and
+  `compare_boolean.py` without failure. The bridge self-test's three
+  cylinder gaps (a turned cylinder's quartic across its cap, parallel
+  turned cylinders, a pipe through a cap's rim) are decided now.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

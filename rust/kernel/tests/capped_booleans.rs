@@ -1,6 +1,6 @@
-//! S9c.2: Booleans of prisms whose cylinders meet in quartics, against the
-//! independent reference (`fixtures/boolean-procedural-*` from
-//! `tools/generate_procedural_boolean_fixtures.py`).
+//! S9c.2b.2: Booleans of prisms whose cylinders' sections cross caps'
+//! circles (algebraic vertices), against the independent reference
+//! (`fixtures/boolean-capped-*` from `tools/generate_capped_boolean_fixtures.py`).
 #[path = "support/boolean_protocol.rs"]
 mod protocol;
 use rusty_occt::history;
@@ -11,7 +11,7 @@ const LATER: &[&str] = &[];
 #[test]
 fn every_case_matches_the_reference() {
     let mut expect = std::collections::BTreeMap::new();
-    for line in include_str!("../../fixtures/boolean-procedural-expected.tsv")
+    for line in include_str!("../../fixtures/boolean-capped-expected.tsv")
         .lines()
         .filter(|l| !l.starts_with('#'))
     {
@@ -30,7 +30,7 @@ fn every_case_matches_the_reference() {
         }
     }
     let mut failures = Vec::new();
-    for case in protocol::cases(include_str!("../../fixtures/boolean-procedural-cases.txt")) {
+    for case in protocol::cases(include_str!("../../fixtures/boolean-capped-cases.txt")) {
         let (kind, want) = &expect[&case.name];
         let rows = match protocol::rows(&case) {
             Ok(r) => r,
@@ -100,7 +100,7 @@ fn every_case_matches_the_reference() {
 
 #[test]
 fn fixture_histories_are_complete() {
-    for case in protocol::cases(include_str!("../../fixtures/boolean-procedural-cases.txt")) {
+    for case in protocol::cases(include_str!("../../fixtures/boolean-capped-cases.txt")) {
         let Ok((a, b, out, h)) = protocol::run(&case) else {
             continue;
         };
@@ -125,7 +125,7 @@ fn results_are_deterministic_and_move_rigidly() {
         RigidTransform::rotation(Point3::new(1.0, 0.0, 0.0), Vec3::new(1.0, 2.0, 2.0), 0.5)
             .unwrap();
     let ids = |s: &rusty_occt::Solid| s.topology().ids().map(|(id, _)| id).collect::<Vec<_>>();
-    for case in protocol::cases(include_str!("../../fixtures/boolean-procedural-cases.txt")) {
+    for case in protocol::cases(include_str!("../../fixtures/boolean-capped-cases.txt")) {
         let Ok((_, _, out, h)) = protocol::run(&case) else {
             continue;
         };

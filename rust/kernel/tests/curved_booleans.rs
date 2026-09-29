@@ -5,14 +5,8 @@
 mod protocol;
 use rusty_occt::history;
 
-/// The cases S9c.1 leaves to S9c.2b.2 (`OutOfDomain`): parallel cylinders
-/// in frames not exactly orthonormal (their exact models meet in
-/// generatrices at quartic points).
-const LATER: &[&str] = &[
-    "parallel_cylinders_fuse",
-    "parallel_cylinders_cut",
-    "parallel_cylinders_common",
-];
+/// None left to a later sub-step.
+const LATER: &[&str] = &[];
 
 /// Equal cylinders with meeting axes in stored turned frames: the models'
 /// extents across the common perpendicular are equal exactly, a double

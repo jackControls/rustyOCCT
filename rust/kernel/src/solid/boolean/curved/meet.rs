@@ -20,13 +20,6 @@ pub(super) enum EdgeMeet {
     Points(Vec<(Pos, QV)>),
     /// The edge's curve lies on the surface.
     Along,
-    /// A cap's circle against a perpendicular cylinder (S9c.2): nested
-    /// surds, S9c.2b's where they lie on both faces.
-    Nested(Vec<([super::procedural::Nest; 2], [super::procedural::Nest; 3])>),
-    /// A cap's circle against a cylinder in turned frames (S9c.2b.1): the
-    /// quartic's roots in the circle's half-angle tangent, S9c.2b.2's
-    /// where on the edge's arc.
-    Circle(Vec<super::turned::Hit>),
 }
 
 /// A place along a curve: a line's parameter, or a conic's `(cos, sin)`.
@@ -142,6 +135,9 @@ pub(super) enum CylPair {
     /// Circular cylinders with perpendicular axes meeting in a quartic
     /// (S9c.2a).
     Quartic(Box<super::procedural::Quartic>),
+    /// Parallel cylinders not circular in a common measure (S9c.2b.2):
+    /// generatrices along `d` through algebraic points.
+    Lines(Vec<QV>, V),
     /// One surface.
     Same,
 }
@@ -189,7 +185,7 @@ pub(super) fn cyl_pair(
         if apart_boxes || parallel_apart(fx, cx, rx, fy, cy, ry) {
             return Ok(CylPair::Apart);
         }
-        return Err(quartic());
+        return super::algebraic::parallel((fx, cx, rx), (fy, cy, ry));
     }
     if apart_boxes {
         return Ok(CylPair::Apart);
@@ -306,6 +302,15 @@ pub(super) fn section(
                             .collect(),
                     ))
                 }
+                CylPair::Lines(points, d) => Ok(Section::Curves(
+                    points
+                        .iter()
+                        .map(|p| Crv::Line {
+                            p: p.clone(),
+                            d: d.clone(),
+                        })
+                        .collect(),
+                )),
                 CylPair::Quartic(x) => Ok(Section::Curves(
                     x.pieces
                         .iter()
@@ -421,7 +426,10 @@ pub(super) fn edge_surface(
                     "an irrational line against a cylinder",
                 ));
             }
-            let roots = quadratic(&a, &b.a, &cc.a)?;
+            let (Some(b), Some(cc)) = (b.rational(), cc.rational()) else {
+                unreachable!("rational above")
+            };
+            let roots = quadratic(&a, b, cc)?;
             Ok(EdgeMeet::Points(
                 roots
                     .into_iter()
@@ -471,12 +479,11 @@ pub(super) fn edge_surface(
                             .collect(),
                     ))
                 }
-                CylPair::Quartic(x) if x.perpendicular => Ok(EdgeMeet::Nested(
-                    super::procedural::nested_points(c, a, b, &py.f, cy, ry)?,
+                // A quartic's or parallel lines' points on the circle:
+                // algebraic (S9c.2b.2).
+                CylPair::Quartic(_) | CylPair::Lines(..) => Ok(EdgeMeet::Points(
+                    super::algebraic::circle_points(c, a, b, &py.f, cy, ry)?,
                 )),
-                CylPair::Quartic(_) => Ok(EdgeMeet::Circle(super::turned::circle_hits(
-                    c, a, b, &py.f, cy, ry,
-                )?)),
                 CylPair::Crossing(x) => {
                     let mut out = Vec::new();
                     for (p0, m) in &x.planes {

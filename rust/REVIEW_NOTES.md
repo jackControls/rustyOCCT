@@ -1759,6 +1759,25 @@ Decisions for S9, recorded before its code (2026-09-28):
     exact frames and 1.9e-8 in turned ones (a small result's approximated
     section, unchanged at `Eps = 1e-12`); eight solids' counts change when
     unified. S9c.2b.2's kernel next.
+  * **S9c.2b.2 implemented** (`solid/boolean/curved/algebraic.rs`, surds
+    over `Q(alpha)` in `curved/num.rs`): every cap circle's crossing is an
+    algebraic vertex, parallel cylinders in turned frames meet in
+    generatrices; all 18 capped fixtures inside the reference, the
+    procedural set's `parallel_hole` and S9c.1's `parallel_cylinders`
+    inside theirs, no cylinder fixture left `OutOfDomain`; every history
+    checked, results deterministic and moved rigidly;
+    `compare_capped_boolean.py` 18 reviewed (ten results' counts: the same
+    faces as OCCT's unified result, edges and vertices where each splits
+    its section curves), every other Boolean comparison without failure.
+    The number type was generalized while the evidence agent took the
+    capture (the fields only; `algebraic.rs` came after the capture).
+    Amendments, from the implementation: (a) S9c.2a's nested surds and
+    their refusals are gone: every cap circle's crossing, in exact or
+    turned frames, is a root of the circle's quartic; (b) the antipode of
+    the circle's chart base, where the quartic drops a degree, is a
+    rational vertex; (c) the bridge self-test's three cylinder gaps are
+    evaluated now (their values are the fixture comparisons'). Pending:
+    the DRAW survey, the campaign.
 
 ### Parallel tracks
 

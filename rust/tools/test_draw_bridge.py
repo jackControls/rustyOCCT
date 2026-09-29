@@ -191,9 +191,12 @@ class BridgeTests(unittest.TestCase):
         # several objects, a result of two solids as an argument,
         # unifysamedom of other shapes, counts of an uncopied prism's result
         # and a Boolean's history.
+        # Two cylinders, one turned, meeting in a quartic that crosses the
+        # turned one's cap circle: decided since S9c.2b.2 (its values are
+        # the fixture comparisons' to check).
+        self.expect(boxes + "pcylinder k 1 2\ntrotate k 0 0 0 1 0 0 30\npcylinder m 1.5 3\n"
+                    "bfuse r m k\n", "unverified")
         for gap, why in [
-                (boxes + "pcylinder k 1 2\ntrotate k 0 0 0 1 0 0 30\npcylinder m 1.5 3\n"
-                 "catch {bfuse r m k}", "S9c.2"),
                 (boxes + "box t 1 1 2 1 1 1\nbfuse r a t\ncheckprops r -v 33\ncatch {bcut s r b}", "egenerate"),
                 (boxes + "box t 4 4 0 1 1 2\ncatch {bfuse r a t}", "egenerate"),
                 (boxes + "pcone k 1 0 2\ncatch {bcommon r a k}", "curved"),
@@ -304,16 +307,17 @@ class BridgeTests(unittest.TestCase):
         # as quartics before), the cut the other cylinder whole.
         self.expect(self.POLYHEDRA + "pcylinder k 1 1\ntrotate k 2 2 2 1 1 1 30\npcylinder m 1.5 4\n"
                     "ttranslate m 2 2 0\nbcut r m k\ncheckprops r -v [expr {9 * acos(-1)}] -deps 1e-9\n", "pass")
-        # Parallel cylinders, one in a turned frame, meet in generatrices at
-        # an ellipse's and a circle's crossings (S9c.2b.2); a turned pipe
-        # leaving a cylinder through its top cap's rim, its quartic section
-        # crossing the cap's circle (S9c.2b.2); and a turned box's corner on
-        # a face is degenerate.
-        for gap, why in [("pcylinder k 1 4\nttranslate k 1 0 0\ntrotate k 1 0 0 0 0 1 -120\n"
-                          "trotate k 0 0 0 0 0 1 60\npcylinder m 1 4\ncatch {bcut r m k}", "S9c.2"),
-                         ("pcylinder k 0.5 6\ntrotate k 0 0 0 1 1 1 30\nttranslate k 2.4 2.8 1\n"
-                          "pcylinder m 1.5 4\nttranslate m 2 2 0\ncatch {bcut r m k}", "S9c.2b.2"),
-                         ("box d 0 0 0 2 2 1\ntrotate d 0 0 0 0 0 1 45\nttranslate d 2 0 0\n"
+        # Parallel cylinders, one in a turned frame, meeting in generatrices
+        # at an ellipse's and a circle's crossings, and a turned pipe leaving
+        # a cylinder through its top cap's rim: decided since S9c.2b.2 (the
+        # fixture comparisons check their values).
+        for script in ["pcylinder k 1 4\nttranslate k 1 0 0\ntrotate k 1 0 0 0 0 1 -120\n"
+                       "trotate k 0 0 0 0 0 1 60\npcylinder m 1 4\nbcut r m k\n",
+                       "pcylinder k 0.5 6\ntrotate k 0 0 0 1 1 1 30\nttranslate k 2.4 2.8 1\n"
+                       "pcylinder m 1.5 4\nttranslate m 2 2 0\nbcut r m k\n"]:
+            self.expect(self.POLYHEDRA + script, "unverified")
+        # A turned box's corner on a face is degenerate.
+        for gap, why in [("box d 0 0 0 2 2 1\ntrotate d 0 0 0 0 0 1 45\nttranslate d 2 0 0\n"
                           "box e 0 0 0 4 4 1\ncatch {bcut r e d}", "egenerate")]:
             with self.subTest(why=why):
                 self.assertIn(why, self.expect(self.POLYHEDRA + gap, "unsupported")["unsupported"])

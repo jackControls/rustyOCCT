@@ -12,6 +12,7 @@
 //! split at a rational seam, tried again at another when a meeting falls
 //! on it. Faces of both inputs on one surface hold each other's edges within
 //! them, and their pieces facing one way join.
+mod algebraic;
 mod assemble;
 mod graph;
 mod meet;
