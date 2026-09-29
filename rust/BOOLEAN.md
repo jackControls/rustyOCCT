@@ -1030,6 +1030,83 @@ height); its horizontal edges on a spline are its lifted restrictions.
   with ten kernel results whose faces are OCCT's unified ones and whose
   edges and vertices differ where each splits its circles and quartics), no
   failure; every other Boolean comparison unchanged.
+* **S9d.3a evidence (cones against polyhedral prisms), before its kernel
+  code.** `cone_boolean_reference.py` (mpmath, 40 digits) takes the cone or
+  frustum on its exact model (the stored frame's axes as rationals, `0 <= w
+  <= h` and `u^2 + v^2 <= r(w)^2`, `r` linear from `bottom` to `top`, a
+  zero radius an apex) and the prism on S9d.1's, and works in the cone's
+  chart `(u, v, w)` (volumes and moments carried back by `det(x, y, n)`,
+  planar areas by Nanson's formula). It slices both by planes normal to the
+  axis (each slice of the cone a disc of radius `r(s)`, the end planes
+  slices) or tilted from it by less than the cone's complement (every
+  section an ellipse cut by the end planes' lines, made a disc by
+  coordinates orthonormal for the quadric's form there, a Cholesky factor):
+  S9d.1's classification of the disc's and the pieces' boundaries, the
+  four operations apart and the common again by clipping each piece, a
+  line within 1e-30 of tangency taken as tangent (a face tangent along a
+  ruling touches every slice's circle); the wall by its area element `r(w)
+  N(theta) dtheta dw` (`N = sqrt(1 + k^2)` in an orthonormal frame, else
+  `|cos theta (y x n) - sin theta (x x n) - k (x x y)|` by Gauss-Legendre
+  along each arc) over the arcs inside; breakpoints the roots of exact
+  quadratics (vertices, edges meeting the quadric and the end planes, a
+  face's line tangent to the section as the discriminant along the face's
+  and the slice's line, the end circles' extreme levels, the apex, a face's
+  and an end plane's line meeting the quadric), Gauss-Legendre between them
+  refined to 1e-33 of the case's size to the fourth. Planar faces by their
+  own parameters: normal to the axis against the level's disc in closed
+  form (or on an end plane, the same or the opposite orientation), any
+  other sliced by lines of constant `w` (the chord inside the disc a
+  quadratic's roots, the spacing `|a| / |a_uv|`); the end discs against
+  the prism's sections in closed form. Solids by convexity: the common's
+  pieces of positive volume joined across internal faces inside the cone,
+  `K - P` as the components of the open sets `int K n H_f` (joined when
+  `int K n H_f n H_g` has volume), `P - K` by runs of the faces' boundaries
+  outside the cone. `generate_cone_boolean_fixtures.py --check` writes
+  `boolean-cone-cases.txt`, `boolean-cone-expected.tsv` and
+  `boolean-cone-frames.tsv` with 30 cases (4 fuses, 14 cuts, 12 commons;
+  25 solid, 1 empty, 4 degenerate; 24 in exact frames): a frustum cut by a
+  face oblique to its axis (an ellipse, all three operations), by a face
+  parallel to a ruling (a parabola clipped by both end planes), by a box's
+  wall parallel to the axis (a hyperbola); a box through a cone's apex
+  region, its bottom a circle and a wall a hyperbola, and a box's corner
+  below the apex; a cone inside a box and a box inside a frustum
+  (cavities); a half-space normal to the axis (a frustum, all three); a
+  slab through the axis and a bar across it (two solids); a box on the top
+  disc (coplanar, opposite; the common empty) and on the base plane (the
+  same orientation); in turned frames a frustum in `TILT` below a box's
+  face (the ellipse crossing the base), a cone in `LEAN` with its apex in a
+  box (an oblique cone on an ellipse), a frustum in `TILTX` inside a box and
+  across a slab (two solids); and `degenerate` a box's wall through the
+  apex (lines), a face tangent along a ruling, a box's vertex on the wall.
+  Checks before writing: closed forms of every pair in the cone's ideal
+  frame (an aligned box by S9d.1's rectangle-in-disc antiderivatives and
+  the walls' hyperbolic chords `|[v0, v1] n [-q, q]|`, `q^2 = r^2 - u^2`; a
+  half-space by circular segments `r^2 acos(d/r) - d sqrt(r^2 - d^2)`, its
+  moment `2/3 (r^2 - d^2)^(3/2)`, the wall's angle `2 acos(d/r)`, the
+  face's chord; a slab as two half-spaces; normal to the axis a frustum)
+  within 1.2e-40 in exact frames and 1.2e-16 in turned ones, both inputs'
+  slicings and inclusion and exclusion 9.2e-41, the common two ways
+  2.2e-42, the area identity 1.8e-40, every face's classes 9.2e-41, a
+  second slicing direction `(1, -2, m)` (every section an ellipse; pairs
+  without coplanar faces) 1.8e-40, Monte Carlo 2.7 standard errors, no near
+  coincidence. `test_cone_boolean_reference.py` checks the closed forms
+  (a cone's and a frustum's measures, the frustum above a normal plane, an
+  oblique cone as a third of its ellipse times the apex's height, its wall
+  as the projected ellipse over `sin(half angle)`, the hyperbolic segment
+  by its antiderivative `r^3 acos(d/r)/3 - 2 d r q / 3 + d^3 ln(r + q)/3`, a
+  half cone's centroid `R / pi`) and the reference on a frustum. The
+  protocol takes a cone on either side (`encode_boolean_case` accepts a
+  tool's `frame` and `cone BOTTOM TOP HEIGHT` rows, which the kernel's test
+  support already reads); `native_case` gives it one `cone` row, built by
+  `BRepPrimAPI_MakeCone` in `occt_boolean_oracle.cpp`.
+  `compare_cone_boolean.py` (`compare_boolean.make_set`) reproduces
+  `occt-boolean-cone-preimplementation` (`rust_cone_boolean_exists` false;
+  the kernel's probe `unsupported` on all 30, `OutOfDomain("a Boolean of a
+  solid with curved faces or edges in any position (S9c)")`): every result
+  valid with the reference's solid count, all 30 within 1.4e-8 (BRepGProp's
+  default integration; adaptively within 5.0e-9, every section an exact
+  conic), no review; thirteen solids' counts change when unified (the
+  wall's faces split at OCCT's seam).
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

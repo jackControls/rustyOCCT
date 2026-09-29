@@ -2045,6 +2045,47 @@ Decisions for S9, recorded before its code (2026-09-28):
     apex and tangent along a ruling declared `degenerate`, exact and turned
     frames), an independent reference and a native capture before
     `solid/boolean/curved/cone.rs` exists.
+  * **S9d.3a evidence (2026-09-29).** `cone_boolean_reference.py` takes a
+    cone or frustum on the decisions' model in its chart (the stored axes
+    as rationals, the radius linear in the height, a zero radius an apex)
+    and slices it and a prism (S9d.1's convex pieces) by planes normal to
+    the axis, each slice a disc of radius `r(s)`, or tilted from it within
+    the cone's complement, each an ellipse made a disc by coordinates
+    orthonormal for the quadric's form: S9d.1's classification of the
+    boundaries (a line within 1e-30 of tangency taken as tangent: a face
+    tangent along a ruling touches every slice's circle), the wall by its
+    element `r(w) N(theta)` over the arcs inside, breakpoints exact
+    quadratics' roots (a face's line tangent to the section the
+    discriminant of the quadric along it), planar faces by lines of
+    constant height across them, end discs in closed form, solids by
+    convexity (`K - P` the components of the sets `int K n H_f` joined
+    where `int K n H_f n H_g` has volume). `generate_cone_boolean_
+    fixtures.py --check`: 30 fixtures (25 solid, 1 empty, 4 degenerate; 6
+    in turned frames), every class the refined decisions list: a frustum
+    cut in an ellipse, a parabola clipped by both end planes and a
+    hyperbola; a box through a cone's apex region and a box's corner below
+    it; a cone inside a box, a box inside a frustum; a half-space normal to
+    the axis; a slab and a bar cutting in two; coplanar discs of either
+    orientation; a frustum in `TILT` below a box's face, a cone in `LEAN`
+    with its apex in a box (an oblique cone), a frustum in `TILTX` inside a
+    box and across a slab; a wall through the apex (lines), a face tangent
+    along a ruling and a box's vertex on the wall declared `degenerate`.
+    Closed forms of every pair (an aligned box by rectangles inside the
+    sections' discs and the walls' hyperbolic chords, a half-space by
+    circular segments, a slab as two, a frustum) within 1.2e-40 in exact
+    frames and 1.2e-16 in turned ones, inclusion and exclusion 9.2e-41, the
+    area identity 1.8e-40, every face's classes 9.2e-41, a second direction
+    (every section an ellipse) 1.8e-40, Monte Carlo 2.7 standard errors, no
+    near coincidence. The protocol takes a cone on either side (its
+    identity rows; the native oracle a `cone` row by
+    `BRepPrimAPI_MakeCone`). The capture
+    `occt-boolean-cone-preimplementation` (`compare_cone_boolean.py`, the
+    kernel `unsupported` on all 30, `OutOfDomain("a Boolean of a solid with
+    curved faces or edges in any position (S9c)")`): every result valid
+    with the reference's solids, all 30 match within 1.4e-8 (BRepGProp's
+    default integration; adaptively within 5.0e-9, every section an exact
+    conic), no review, thirteen solids' counts change when unified.
+    S9d.3a's kernel next.
 
 ### Parallel tracks
 
