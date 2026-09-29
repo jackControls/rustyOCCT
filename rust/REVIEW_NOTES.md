@@ -1777,7 +1777,17 @@ Decisions for S9, recorded before its code (2026-09-28):
     the circle's chart base, where the quartic drops a degree, is a
     rational vertex; (c) the bridge self-test's three cylinder gaps are
     evaluated now (their values are the fixture comparisons'). Pending:
-    the DRAW survey, the campaign.
+    the campaign.
+  * **DRAW survey of S9c.2b.2 (2026-09-28, `UPSTREAM_TESTS.md`).** Of the
+    boolean group's 1,802 self-contained cases Rust evaluates 830 (822
+    before), none failing, all registered: `ZF2` and `ZF3` of the four
+    `bop*_simple` grids (equal parallel cylinders, one moved and turned by
+    -120 or 120 and 60 degrees), their areas native DRAW's to its printed
+    digits and the closed forms' within 6e-15. No other status or reason
+    changes; S9c.2's general message no longer occurs. The
+    `bopfuse_simple/ZF2` sentinel evaluates and is registered so; with its
+    reason gone, none replaces it; the other sentinels are refused as
+    before. 749 cases stay refused. The ledger does not change.
 
 ### Parallel tracks
 
