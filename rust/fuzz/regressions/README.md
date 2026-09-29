@@ -672,6 +672,27 @@ sanitizer. The windows are now predicted to second order (the branch's
 curvature from implicit differentiation) and rational steps are tried only
 below `1e-9`; the input replays in 0.8 s.
 
+## Analytic intersections: a fold box's edge crossed beside a twin fold
+
+`analytic_intersections/timeout-8dce95c9ef5b34d79c816425397a39d342103b2f.bin`
+timed out in Linux CI's scheduled run (42 s locally without a sanitizer): a
+torus of major radius 0.5 and minor 0.25 about `(3, -1, -1)` and a cylinder
+of radius 0.25 through its centre about `(-1, -1, -1)`, 10 degrees off the
+torus's equatorial plane (the family of `timeout-5b31…` above). The curve
+crosses itself at two exact tangencies and has eight folds in four close
+pairs, `3e-4` apart in the meridian angle: S-bends of a branch. The first
+fold box on which `G_phi` keeps a sign is tall enough in `t` to reach the
+twin fold's branch, which crosses its top or bottom. Binary64 intervals
+descended to the edge subdivision's floor at the crossing, then rational
+ones repeated the descent with a rational cosine at every fresh midpoint,
+about 2 s per box. A certain sign change of `G` between exact points of an
+edge now proves the crossing at once, and the rational tier is skipped (no
+tier can free that edge); the next, smaller box succeeds in binary64 as
+before, every certified result unchanged. The input replays in 2.3 s
+(18.5 s before, measured together); the three slow units the run reported
+beside it (1.4 to 1.7 s of CPU each, a torus and a cylinder, two cones, two
+tori) are the traced graph's ordinary work and are unchanged.
+
 ## Curve/surface: a circle nearly tangent to a cone
 
 `curve_surface/timeout-fdb4ae721b33aab65287ff8213216b9633bd2975.bin` and
