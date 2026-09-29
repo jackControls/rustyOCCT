@@ -2761,11 +2761,29 @@ fn face_hits<T: Real>(
         return torus_ray_hits(frame, *major, *minor, p, d);
     }
     // Rays against spheres with loops and tori with loops are not decided
-    // yet: the containment is uncertified.
-    if matches!(
-        face.surface,
-        Surface::Sphere { .. } | Surface::Torus { .. } | Surface::BSpline(_)
-    ) {
+    // yet: the containment is uncertified, unless the ray misses the whole
+    // surface (S9d.4b.1: a cavity in a torus segment's barrel).
+    if let Surface::Torus {
+        frame,
+        major,
+        minor,
+    } = &face.surface
+    {
+        return (torus_ray_hits(frame, *major, *minor, p, d)? == 0).then_some(0);
+    }
+    if let Surface::Sphere { frame, radius } = &face.surface {
+        let c = frame.origin().to_array().map(r);
+        let rr = r(*radius);
+        let w: [R; 3] = std::array::from_fn(|i| &p[i] - &c[i]);
+        let dotr = |a: &[R; 3], b: &[R; 3]| &a[0] * &b[0] + &a[1] * &b[1] + &a[2] * &b[2];
+        let (a2, b2, c2) = (dotr(d, d), int(2) * dotr(&w, d), dotr(&w, &w) - &rr * &rr);
+        let zero = int(0);
+        // No real root, or both behind the start (their product positive,
+        // their sum negative).
+        let miss = &b2 * &b2 < int(4) * &a2 * &c2 || (c2 > zero && b2 > zero);
+        return miss.then_some(0);
+    }
+    if matches!(face.surface, Surface::BSpline(_)) {
         return None;
     }
     let refs: Vec<&Lp> = loops.iter().collect();

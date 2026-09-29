@@ -178,6 +178,54 @@ pub(super) fn roots(p: &Poly) -> Result<Vec<AlgebraicRoot>> {
     )
 }
 
+/// The distinct real roots of a nonzero, nonconstant polynomial, each with
+/// whether it is repeated, and its square-free part (S9d.4b.1: a tangency
+/// off a part's rim is no contact).
+pub(super) fn roots_repeated(p: &Poly) -> Result<(Poly, Vec<(AlgebraicRoot, bool)>)> {
+    let ip = int_poly(p);
+    if ip.is_zero() || ip.is_constant() {
+        return Err(tangency());
+    }
+    let g = ip.gcd(&ip.derivative());
+    let g: Poly = trim(g.0.iter().map(|c| R::from_integer(c.clone())).collect());
+    // p / g, exactly.
+    let mut r = p.clone();
+    let lead = g.last().expect("a nonzero gcd").clone();
+    let mut quot = vec![zero(); r.len().saturating_sub(g.len()) + 1];
+    while r.len() >= g.len() && !r.is_empty() {
+        let shift = r.len() - g.len();
+        let c = r.last().expect("nonempty") / &lead;
+        for (i, x) in g.iter().enumerate() {
+            r[i + shift] -= &c * x;
+        }
+        quot[shift] = c;
+        r = trim(r);
+    }
+    let sf = trim(quot);
+    let ig = int_poly(&g);
+    let abs = |x: &R| if *x < zero() { -x.clone() } else { x.clone() };
+    let lead = abs(sf.last().expect("nonzero"));
+    let bound = sf[..sf.len() - 1]
+        .iter()
+        .map(|c| abs(c) / &lead)
+        .fold(zero(), |m, x| if x > m { x } else { m })
+        + int(1);
+    let rs = isolate(
+        &int_poly(&sf),
+        -bound.clone(),
+        bound,
+        &mut Budget::new(RootIsolationOptions::default()),
+    )?;
+    let out = rs
+        .into_iter()
+        .map(|r| {
+            let repeated = !ig.is_constant() && r.vanishes_polynomial(&ig);
+            (r, repeated)
+        })
+        .collect();
+    Ok((sf, out))
+}
+
 /// A root's midpoint, rational.
 pub(super) fn middle(r: &AlgebraicRoot) -> R {
     let (a, b) = r.isolator();
@@ -501,6 +549,36 @@ pub(super) fn near_node(a: &R, d: &Form, chart: &Chart, res: f64) -> Result<()> 
         }
     }
     Ok(())
+}
+
+/// `near_node`'s test over a chart's closed range `t0..t1` alone (S9d.4b.1:
+/// a node off a segment's or wedge's wall does not matter): whether an
+/// extremum of `D` there lies within the resolution of zero.
+pub(super) fn near_node_within(a: &R, d: &Form, chart: &Chart, res: f64, t0: &R, t1: &R) -> bool {
+    let p = d.poly(chart);
+    let delta = {
+        let h = a * q(res) / int(2);
+        &h * &h
+    };
+    let w2 = (0..d.degree()).fold(vec![int(1)], |acc, _| {
+        pmul(&acc, &vec![int(1), zero(), int(1)])
+    });
+    let lo = int_poly(&padd(&p, &pscale(&w2, &delta)));
+    let hi = int_poly(&padd(&p, &pscale(&w2, &-delta.clone())));
+    let dp = pderiv(&p);
+    if dp.is_empty() {
+        return false;
+    }
+    // A repeated critical point (an inflection) or none decides nothing.
+    let Ok(crit) = roots(&dp) else {
+        return false;
+    };
+    crit.into_iter().any(|r| {
+        r.compare_rational(t0) != Ordering::Less
+            && r.compare_rational(t1) != Ordering::Greater
+            && r.sign_polynomial(&lo) == Ordering::Greater
+            && r.sign_polynomial(&hi) == Ordering::Less
+    })
 }
 
 // ------------------------------------------------------------ the pair

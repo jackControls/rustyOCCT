@@ -409,7 +409,7 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                 (Crv::Line { d, .. }, _) => {
                     (Pos::T(line_key(&vx[s].p, d)), Pos::T(line_key(&vx[t].p, d)))
                 }
-                (Crv::Conic { .. } | Crv::Circle(_), Some((a, b, _))) => {
+                (Crv::Conic { .. } | Crv::Circle(_) | Crv::Torus(_), Some((a, b, _))) => {
                     (Pos::Ang(a.clone()), Pos::Ang(b.clone()))
                 }
                 _ => unreachable!("an arc edge has its ends' angles"),
@@ -960,7 +960,7 @@ fn edge_at(m: &Prism, g: usize, x: &QV) -> Result<Option<(usize, Pos)>> {
                 Pos::T(line_key(&m.verts[f.start].p, d)),
                 Pos::T(line_key(&m.verts[f.end].p, d)),
             ),
-            (Crv::Conic { .. } | Crv::Circle(_), Some((a, b, _))) => {
+            (Crv::Conic { .. } | Crv::Circle(_) | Crv::Torus(_), Some((a, b, _))) => {
                 (Pos::Ang(a.clone()), Pos::Ang(b.clone()))
             }
             _ => unreachable!("an arc edge has its ends' angles"),
@@ -1510,8 +1510,15 @@ impl Arr {
         match &face.surf {
             // `(u, v)` runs counter-clockwise about the axis: the wall's
             // outward normal leans along it where the cone narrows upward.
-            // `(u, v)` runs with the torus's outward normal.
-            Surf::Torus => 1.0,
+            // `(u, v)` runs with the torus's outward normal (against an
+            // inside-out segment's).
+            Surf::Torus => {
+                if m.ring.as_ref().is_some_and(|r| r.reversed) {
+                    -1.0
+                } else {
+                    1.0
+                }
+            }
             Surf::Cone { k, .. } => {
                 if *k < zero() {
                     1.0

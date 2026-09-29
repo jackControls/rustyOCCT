@@ -506,6 +506,7 @@ fn build_component(
             // loop running +v in u, above one running -v), within a turn.
             if matches!(surface, Surface::Torus { .. }) {
                 torus_sheets(&mut p, &loop_ids, sense == Orientation::Reversed);
+                torus_holes_in(&mut p, &loop_ids);
             }
             let target = mean_u(&p, loop_ids[0]);
             let torus = matches!(surface, Surface::Torus { .. });
@@ -817,6 +818,38 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
     let (gl, dl) = *e.parts.last().expect("a part");
     let first = &arr.edges[g0];
     let last = &arr.edges[gl];
+    // A torus segment's or wedge's rim (S9d.4b.1): on the input's stored
+    // circle, running with its angle (the model's `u` or `v`).
+    if let CurveRef::Edge(o, ei) = first.curve {
+        let m = &arr.models[o];
+        if let (EdgeKind::Rim(high, _), Some(ring)) = (m.edges[ei].kind, &m.ring) {
+            let Some(Curve3::Circle { frame, radius }) = &ring.rims[usize::from(high)] else {
+                return Err(Error::InvalidTopology("a torus rim off a circle"));
+            };
+            let Some([s, t]) = e.ends else {
+                return Ok(Curve3::Circle {
+                    frame: *frame,
+                    radius: *radius,
+                });
+            };
+            let angle = |p: Point3| {
+                let [x, y, _] = frame.coordinates(p);
+                y.atan2(x)
+            };
+            let (t0, t1) = (angle(points[&s]), angle(points[&t]));
+            let with = first.with == d0;
+            let mut sweep = if with { t1 - t0 } else { t0 - t1 }.rem_euclid(TAU);
+            if sweep == 0.0 {
+                sweep = TAU;
+            }
+            return Ok(Curve3::CircularArc {
+                frame: *frame,
+                radius: *radius,
+                start_angle: t0,
+                sweep_angle: if with { sweep } else { -sweep },
+            });
+        }
+    }
     match &first.crv {
         Crv::Rise(m) => {
             // Over the carrier's stored cylinder, heights from its origin.
@@ -1564,6 +1597,64 @@ fn torus_sheets(p: &mut TopologyParts, loops: &[LoopId], reversed: bool) {
                 } else {
                     q.y += k;
                 }
+            };
+            match &mut p.fins[f.0].pcurve {
+                Curve2::Projection(pr) => pr.lifts.iter_mut().for_each(shift),
+                Curve2::LineSegment { start, end } => {
+                    shift(start);
+                    shift(end);
+                }
+                _ => {}
+            }
+        }
+    }
+}
+
+/// A torus face's loops none of which winds (S9d.4b.1: a wedge's face over
+/// more than half a turn, its holes' pcurves lifted from the surface's
+/// principal angles): each other loop shifted by whole turns in `u` and `v`
+/// to lie inside the first, its outer loop, on the cover.
+fn torus_holes_in(p: &mut TopologyParts, loops: &[LoopId]) {
+    let samples = |p: &TopologyParts, l: LoopId| -> Option<Vec<[f64; 2]>> {
+        let Loop::Edges { fins, winding } = &p.loops[l.0] else {
+            return None;
+        };
+        (*winding == [0, 0]).then(|| {
+            fins.iter()
+                .flat_map(|f| (0..8).map(move |i| (f, i as f64 / 8.0)))
+                .map(|(f, t)| {
+                    let q = p.fins[f.0].pcurve.point(t);
+                    [q.x, q.y]
+                })
+                .collect()
+        })
+    };
+    let all: Option<Vec<Vec<[f64; 2]>>> = loops.iter().map(|&l| samples(p, l)).collect();
+    let Some(all) = all else {
+        return;
+    };
+    let Some(outer) = all.first() else {
+        return;
+    };
+    for (k, &l) in loops.iter().enumerate().skip(1) {
+        let probe = all[k][0];
+        let shift = (-2..=2i32)
+            .flat_map(|a| (-2..=2i32).map(move |b| (a, b)))
+            .find(|&(a, b)| {
+                let x = [probe[0] + TAU * f64::from(a), probe[1] + TAU * f64::from(b)];
+                super::graph::winding(outer, x).0
+            });
+        let Some((a, b)) = shift.filter(|s| *s != (0, 0)) else {
+            continue;
+        };
+        let (du, dv) = (TAU * f64::from(a), TAU * f64::from(b));
+        let Loop::Edges { fins, .. } = &p.loops[l.0] else {
+            continue;
+        };
+        for f in fins.clone() {
+            let shift = |q: &mut Point2| {
+                q.x += du;
+                q.y += dv;
             };
             match &mut p.fins[f.0].pcurve {
                 Curve2::Projection(pr) => pr.lifts.iter_mut().for_each(shift),

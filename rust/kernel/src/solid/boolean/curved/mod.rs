@@ -24,6 +24,7 @@ mod procedural;
 mod sphere;
 mod spheres;
 mod torus;
+mod torus_segment;
 mod turned;
 
 use super::polyhedra::{Component, Polyhedron};

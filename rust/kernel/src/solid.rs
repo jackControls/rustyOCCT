@@ -903,23 +903,31 @@ impl Solid {
                 angle,
                 ..
             } => {
-                if high - low != std::f64::consts::TAU || *angle != std::f64::consts::TAU {
-                    return Err(Error::OutOfDomain(
-                        "classification of a torus segment or wedge",
-                    ));
-                }
                 let local = [
                     finite(x, "coordinate")?,
                     finite(y, "coordinate")?,
                     finite(z, "axial coordinate")?,
                 ];
-                return Ok(
-                    match decide::torus_location(local, *major, *minor, tolerance.linear()) {
-                        0 => Location::Inside,
-                        1 => Location::Boundary,
-                        _ => Location::Outside,
-                    },
-                );
+                let whole = high - low == std::f64::consts::TAU && *angle == std::f64::consts::TAU;
+                let at = if whole {
+                    decide::torus_location(local, *major, *minor, tolerance.linear())
+                } else {
+                    // A v-segment or wedge (S9d.4b.1).
+                    decide::torus_part_location(
+                        local,
+                        *major,
+                        *minor,
+                        *low,
+                        *high,
+                        *angle,
+                        tolerance.linear(),
+                    )
+                };
+                return Ok(match at {
+                    0 => Location::Inside,
+                    1 => Location::Boundary,
+                    _ => Location::Outside,
+                });
             }
             Construction::Sphere { radius, .. } => {
                 let local = [
