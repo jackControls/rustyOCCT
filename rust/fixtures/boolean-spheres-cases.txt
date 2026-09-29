@@ -1,0 +1,324 @@
+case spheres_cross_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 2.25 0.5 0.25 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.5 -1.5707963267948966 1.5707963267948966
+end
+case spheres_cross_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean cut 93
+op 92
+frame 2.25 0.5 0.25 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.5 -1.5707963267948966 1.5707963267948966
+end
+case spheres_cross_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean common 93
+op 92
+frame 2.25 0.5 0.25 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.5 -1.5707963267948966 1.5707963267948966
+end
+case spheres_nested_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean cut 93
+op 92
+frame 0.5 -0.25 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 0.75 -1.5707963267948966 1.5707963267948966
+end
+case spheres_apart_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 1.5 2.0 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.25 -1.5707963267948966 1.5707963267948966
+end
+case spheres_apart_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+boolean common 93
+op 92
+frame 1.5 2.0 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.25 -1.5707963267948966 1.5707963267948966
+end
+case spheres_turned_common 1e-07
+op 91
+frame 1.0 2.0 -1.0 0.0 -4.0 3.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean common 93
+op 92
+frame 2.5 1.25 0.0 3.0 0.0 4.0 0.0 1.0 0.0
+sphere 1.25 -1.5707963267948966 1.5707963267948966
+end
+case pipe_ring_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.5 -1.5707963267948966 1.5707963267948966
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 0.0 0.0 1.5
+end
+case pipe_ring_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.5 -1.5707963267948966 1.5707963267948966
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 0.0 0.0 1.5
+end
+case pipe_ends_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 0.0 0.0 1.5
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.5 -1.5707963267948966 1.5707963267948966
+end
+case pipe_side_common 1e-07
+op 91
+frame 0.5 0.25 -0.25 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.5 -1.5707963267948966 1.5707963267948966
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -3.0 3.5
+boundary C 0.25 -0.25 2.0
+end
+case hole_box_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.5 -1.5707963267948966 1.5707963267948966
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.5
+boundary P 4 -2.25 -2.25 2.25 -2.25 2.25 2.25 -2.25 2.25
+boundary C 0.0 0.0 1.5
+end
+case hole_box_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.5 -1.5707963267948966 1.5707963267948966
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.5
+boundary P 4 -2.25 -2.25 2.25 -2.25 2.25 2.25 -2.25 2.25
+boundary C 0.0 0.0 1.5
+end
+case holed_box_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.5
+boundary P 4 -2.25 -2.25 2.25 -2.25 2.25 2.25 -2.25 2.25
+boundary C 0.0 0.0 1.5
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.5 -1.5707963267948966 1.5707963267948966
+end
+case dome_pipe_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.5 0.0 1.5707963267948966
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 4.0
+boundary C 0.0 0.0 1.5
+end
+case dome_pipe_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.5 0.0 1.5707963267948966
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 4.0
+boundary C 0.0 0.0 1.5
+end
+case rings_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 0.5 0.25 0.75
+end
+case rings_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 0.5 0.25 0.75
+end
+case rod_ends_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 0.5 0.25 0.75
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+end
+case rings_tilt_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 0.5 0.25 0.75
+end
+case bite_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 2.0 0.5 1.0
+end
+case bite_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 2.0 0.5 1.0
+end
+case bite_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 2.0 0.5 1.0
+end
+case bite_tilt_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 2.0 0.5 1.0
+end
+case cap_cross_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 1.0
+boundary C 1.5 0.0 1.0
+end
+case cap_cross_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 1.0
+boundary C 1.5 0.0 1.0
+end
+case stadium_cut 1e-07
+op 91
+frame 0.25 0.25 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary S 4 -2.0 -1.0 L 2.0 -1.0 A 2.0 0.0 1.0 1 2.0 1.0 L -2.0 1.0 A -2.0 0.0 1.0 1
+end
+case stadium_common 1e-07
+op 91
+frame 0.25 0.25 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary S 4 -2.0 -1.0 L 2.0 -1.0 A 2.0 0.0 1.0 1 2.0 1.0 L -2.0 1.0 A -2.0 0.0 1.0 1
+end
+case stadium_ends_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary S 4 -2.0 -1.0 L 2.0 -1.0 A 2.0 0.0 1.0 1 2.0 1.0 L -2.0 1.0 A -2.0 0.0 1.0 1
+boolean cut 93
+op 92
+frame 0.25 0.25 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+end
+case spheres_tangent_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 3.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+end
+case spheres_tangent_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean common 93
+op 92
+frame 3.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+end
+case rod_tangent_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 3.0 0.0 1.0
+end
+case rod_inside_tangent_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 1.25 0.0 0.75
+end
