@@ -650,37 +650,62 @@ impl TracedCurve {
     }
 }
 
-/// No zero of `G` on `[p0, p1] x {t}`: subdivision with the mean-value
-/// enclosure in `phi`.
+/// Whether `G` vanishes on a box's edge `[p0, p1] x {t}`.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Edge {
+    /// No zero: every piece excluded.
+    Free,
+    /// A zero, certainly: `G` has opposite certain signs at two exact
+    /// points of the edge, so no tier and no budget can free it.
+    Crossed,
+    /// A piece the subdivision could not settle.
+    Unsettled,
+}
+
+/// Whether `G` vanishes on `[p0, p1] x {t}`: subdivision with the mean-value
+/// enclosure in `phi`. A certain sign change between exact points (the ends,
+/// or a piece's end and its midpoint) is a zero, reported at once: the
+/// subdivision would otherwise descend to its floor there, which in rational
+/// intervals costs seconds of transcendental evaluations beside a nearly
+/// singular point.
 fn edge_free<T: Real>(
     f: &dyn Chart<T>,
     p0: f64,
     p1: f64,
     t: f64,
     budget: &mut usize,
-) -> Result<bool> {
+) -> Result<Edge> {
     let tt = T::exact_f64(t);
-    let mut pending = vec![(p0, p1, 40usize)];
-    while let Some((a, b, depth)) = pending.pop() {
+    let at = |x: f64| f.value(&T::exact_f64(x), &tt);
+    let changes = |x: Option<Ordering>, y: Option<Ordering>| x.is_some() && y.is_some() && x != y;
+    let (s0, s1) = (sign(&at(p0)), sign(&at(p1)));
+    if changes(s0, s1) {
+        return Ok(Edge::Crossed);
+    }
+    let mut pending = vec![(p0, p1, s0, s1, 40usize)];
+    while let Some((a, b, sa, sb, depth)) = pending.pop() {
         *budget = budget.checked_sub(1).ok_or(limit("a box's edge"))?;
         let j = f.jet(&span(a, b), &tt);
         if certain(&j.g) {
             continue;
         }
         let m = 0.5 * a + 0.5 * b;
-        let mv = f
-            .value(&T::exact_f64(m), &tt)
-            .add(&j.gp.mul(&offset::<T>([a, b], m)));
+        let gm = at(m);
+        let mv = gm.add(&j.gp.mul(&offset::<T>([a, b], m)));
         if certain(&mv) {
             continue;
         }
         if depth == 0 || !(a < m && m < b) {
-            return Ok(false);
+            return Ok(Edge::Unsettled);
         }
-        pending.push((m, b, depth - 1));
-        pending.push((a, m, depth - 1));
+        let sm = sign(&gm);
+        if changes(sa, sm) || changes(sm, sb) {
+            return Ok(Edge::Crossed);
+        }
+        pending.push((m, b, sm, sb, depth - 1));
+        pending.push((a, m, sa, sm, depth - 1));
     }
-    Ok(true)
+    Ok(Edge::Free)
 }
 
 // ------------------------------------------------------------------ 2D
@@ -914,20 +939,37 @@ enum LocalKind {
 
 type Sides = (Vec<Enclosure>, Vec<Enclosure>);
 
-fn local_edges<T: Real>(f: &dyn Chart<T>, b: &Bx) -> Result<Option<Sides>> {
+/// A box's certified side roots, if its top and bottom are free of the
+/// curve: `Err(true)` when an edge certainly meets it (another tier cannot
+/// help), `Err(false)` when this tier could not settle an edge or a side.
+fn local_edges<T: Real>(f: &dyn Chart<T>, b: &Bx) -> Result<std::result::Result<Sides, bool>> {
     let mut budget = 20_000;
     for t in [b[1][0], b[1][1]] {
-        if !edge_free(f, b[0][0], b[0][1], t, &mut budget)? {
-            return Ok(None);
+        match edge_free(f, b[0][0], b[0][1], t, &mut budget)? {
+            Edge::Free => {}
+            Edge::Crossed => return Ok(Err(true)),
+            Edge::Unsettled => return Ok(Err(false)),
         }
     }
     let left = roots_on(f, b[0][0], b[1][0], b[1][1], &mut budget);
     let right = roots_on(f, b[0][1], b[1][0], b[1][1], &mut budget);
     match (left, right) {
-        (Ok(l), Ok(r)) => Ok(Some((l, r))),
-        (Err(Error::ComputationLimit(_)), _) | (_, Err(Error::ComputationLimit(_))) => Ok(None),
+        (Ok(l), Ok(r)) => Ok(Ok((l, r))),
+        (Err(Error::ComputationLimit(_)), _) | (_, Err(Error::ComputationLimit(_))) => {
+            Ok(Err(false))
+        }
         (Err(e), _) | (_, Err(e)) => Err(e),
     }
+}
+
+/// A box's side roots in binary64 intervals, else in rational ones unless
+/// the binary64 tier proved the curve crosses its top or bottom.
+fn box_edges(fast: &dyn Chart<Fast>, exact: &dyn Chart<I>, b: &Bx) -> Result<Option<Sides>> {
+    Ok(match local_edges(fast, b)? {
+        Ok(e) => Some(e),
+        Err(true) => None,
+        Err(false) => local_edges(exact, b)?.ok(),
+    })
 }
 
 /// The box of a fold at `k`: `G_phi` of one sign on it, no zero on its top
@@ -954,10 +996,7 @@ fn fold_box(fast: &dyn Chart<Fast>, exact: &dyn Chart<I>, k: &Bx) -> Result<Loca
         );
         let gp = gp_fast || over(&|p, t| certain(&exact.jet(p, t).gp));
         if (0..2).all(|r| b[r][0] < k[r][0] && k[r][1] < b[r][1]) && gp {
-            let edges = match local_edges(fast, &b)? {
-                Some(e) => Some(e),
-                None => local_edges(exact, &b)?,
-            };
+            let edges = box_edges(fast, exact, &b)?;
             if let Some((left, right)) = edges {
                 let counts = (left.len(), right.len());
                 if counts == (2, 0) || counts == (0, 2) {
@@ -1009,10 +1048,7 @@ fn node_box(
         let unique = matches!(krawczyk(fast, &b, true), Kraw::Unique(_))
             || matches!(krawczyk(exact, &b, true), Kraw::Unique(_));
         if unique && (0..2).all(|r| b[r][0] < at[r][0] && at[r][1] < b[r][1]) {
-            let edges = match local_edges(fast, &b)? {
-                Some(e) => Some(e),
-                None => local_edges(exact, &b)?,
-            };
+            let edges = box_edges(fast, exact, &b)?;
             if let Some((left, right)) = edges {
                 let want = if crossing { (2, 2) } else { (0, 0) };
                 if (left.len(), right.len()) == want {

@@ -3475,7 +3475,13 @@ Decisions for S9, recorded before its code (2026-09-28):
     reference on all 24, the bridge 18 matches and 6 reviewed differences.
     The fuzz target found a track's end refused after rounding and a point
     evaluation too slow in rational intervals (interval Newton now); both
-    are checked-in regressions.
+    are checked-in regressions. Linux CI's scheduled run later timed out
+    (42 s) where a fold box's top or bottom edge was crossed by a twin
+    fold's branch: the edge subdivision descended to its floor there in
+    binary64 and again in rational intervals; a certain sign change of `G`
+    between exact points of the edge now reports the crossing at once and
+    skips the rational retry, every certified result unchanged (2.3 s,
+    `fuzz/regressions/README.md`).
   * S7b.3b.2 implemented: the reference extended with the other torus's
     quartic and both spines' critical pairs, and a native capture of 14
     pairs of tori, came before the kernel intersected two tori; the field's
