@@ -1696,7 +1696,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     events; the exact verification of every piece is what certifies the
     result); (c) a cap's circle is refused only where a root of its quartic
     lies on the edge's arc, not yet where it lies off the other face
-    (S9c.2b.2's interval membership). Pending: the campaign, S9c.2b.2.
+    (S9c.2b.2's interval membership). The campaign at `c28c633c` was
+    clean: 360 mutation executions after a 3,137 s replay of 1,286 inputs,
+    36,227 edges, 448 MB peak, the slowest input 21 s.
   * **DRAW survey of S9c.2b.1 (2026-09-28, `UPSTREAM_TESTS.md`).** Of the
     boolean group's 1,802 self-contained cases Rust evaluates 822, as
     before, none failing, all registered; no status changes. Of S9c.2a's 16
