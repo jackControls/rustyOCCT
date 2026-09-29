@@ -131,7 +131,7 @@ group, and stale success records are removed before each run.
 | `lowalgos/intss/bug24648` | Viewer skipped | Viewer skipped | A cone and a coaxial torus: every curve a circle (S7) |
 | `lowalgos/intss/bug21750` | Unsupported | Unverified | Cylinders antiparallel up to rounding: OCCT snaps them to two lines, the kernel's exact predicates find crossing axes and one closed curve, and the case then calls the undefined `Error:` (S7, a recorded divergence) |
 | `bugs/heal/bug29502` | Unsupported | Pass | A whole cylinder band split by a vertex (`bsplit`), then `unifysamedom`; the `heal` group loads `XSDRAW` (S8e) |
-| `bugs/heal/bug33171_1` | Unsupported | Viewer skipped | A prism split by four prisms of open polylines, `bopcheck`, `unifysamedom` (S8e) |
+| `bugs/heal/bug33171_1` | Unsupported | Viewer skipped (OCCT 7.6.3, Linux CI's package: a known failure, its unified shape invalid) | A prism split by four prisms of open polylines, `bopcheck`, `unifysamedom` (S8e) |
 | `bugs/modalg_7/bug21264` | Unsupported | Unverified | Progress reports of the Boolean and splitter commands (`XProgress`); no geometric query (S8e) |
 | `bugs/modalg_7/bug30092` | Unsupported | Pass | A face on an offset surface split by an edge with a grown tolerance; the restore needs offset surfaces; needs the dataset (S8e) |
 | `bugs/modalg_7/bug32578` | Unsupported | Viewer skipped | A face split by many edges with a fuzzy value (`bfuzzyvalue`); needs the dataset (S8e) |

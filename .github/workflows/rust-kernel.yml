@@ -20,8 +20,10 @@ jobs:
     name: Original OCCT tests / Rust and native
     runs-on: ubuntu-24.04
     # The fixture generators' checks run in their own job (fixture-generators
-    # below); the bridge tests and the upstream runs remain.
-    timeout-minutes: 40
+    # below); the bridge tests (10 minutes), the upstream runs on both
+    # kernels (28 minutes with S9's registered Booleans) and the native
+    # comparisons remain.
+    timeout-minutes: 60
     env:
       CSF_OCCTResourcePath: /usr/share/opencascade/resources
       DRAWHOME: /usr/share/opencascade/resources/DrawResources

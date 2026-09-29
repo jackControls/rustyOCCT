@@ -998,3 +998,14 @@ plane within it (`Degenerate`); on macOS the caps stay exactly parallel and
 coincident and the Boolean evaluates. `tests/cone_booleans.rs`,
 `a_frustum_turned_by_an_ulp_on_a_top_is_degenerate`, turns the frame's normal
 by an ulp on any host.
+
+## Boolean and analytic intersections: Linux CI timeouts before the speed-ups
+
+`boolean/timeout-f3138f9fc2095c3090ac8ee9b4382b117b163ac2.bin` (a frustum
+tool against a prism, 60 s under AddressSanitizer on Linux CI at `b33fd65b`)
+and `analytic_intersections/timeout-b4449b175f865da524262dc5bc9ed2287e10db1b.bin`
+(over its 20 s limit there) were found by the per-push fuzz run before the
+curved Booleans' exact arithmetic was sped up (Lehmer gcd, isolators kept per
+field) and before the torus curve graph's fold boxes stopped at a proved
+crossing. They replay in 0.9 s and 0.6 s after both (release, no
+AddressSanitizer); kept so the per-push runs keep timing them.

@@ -7,7 +7,7 @@ import unittest
 
 import shutil
 
-from run_upstream_tests import ROOT, build_worker, classify_missing, run_case, source_files
+from run_upstream_tests import ROOT, build_worker, classify_missing, release_expectation, run_case, source_files
 
 
 BOX_CHECKS = """
@@ -86,6 +86,26 @@ class BridgeTests(unittest.TestCase):
 
     def test_constructor_without_observations_is_unverified(self):
         self.expect("box b 1 2 3", "unverified")
+
+    def test_an_older_native_release_fails_only_as_stated(self):
+        case = {"expected_occt": "viewer_skipped", "expected_rust": "unsupported",
+                "expected_occt_by_version": {"7.6.3": "known_failure"}}
+        old = "Open CASCADE Technology 7.6.3\nOS: Linux\n"
+        result = {"status": "failed", "version": old}
+        self.assertEqual(release_expectation(case, "occt", result), "known_failure")
+        self.assertEqual((result["status"], result["release"]), ("known_failure", "7.6.3"))
+        # The pinned release keeps its own expectation, and a failure stays one.
+        result = {"status": "failed", "version": "Open CASCADE Technology 8.1.0\n"}
+        self.assertEqual(release_expectation(case, "occt", result), "viewer_skipped")
+        self.assertEqual(result["status"], "failed")
+        # The old release passing is an outcome compared with its statement.
+        result = {"status": "viewer_skipped", "version": old}
+        self.assertEqual(release_expectation(case, "occt", result), "known_failure")
+        self.assertEqual(result["status"], "viewer_skipped")
+        # The Rust backend is never keyed by a native release.
+        result = {"status": "failed", "version": old}
+        self.assertEqual(release_expectation(case, "rust", result), "unsupported")
+        self.assertEqual(result["status"], "failed")
 
     def test_original_known_failure_is_not_a_pass(self):
         self.expect('puts "TODO All: Error: wrong"\nbox b 1 2 3\ncheckshape b\ncheckreal wrong 2 1 0 0', "known_failure")

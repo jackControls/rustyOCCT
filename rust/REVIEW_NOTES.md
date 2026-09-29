@@ -2589,6 +2589,15 @@ Decisions for S9, recorded before its code (2026-09-28):
     kernel's enclosure on all seven; they are reviewed differences now,
     each with its independent measure (`occt-brep-io-divergences.json`,
     OCCT's adaptive probe run only where a default measure falls outside).
+    (g) With the generators moved out, the upstream job reached its runs
+    for the first time since S8e and failed one: `bugs/heal/bug33171_1`
+    (S8e's sentinel) fails on OCCT 7.6.3, Ubuntu's package and the Linux
+    CI's native DRAW, whose unified shape is invalid (the bug the test was
+    written for); a case may now state a native release's own outcome
+    (`expected_occt_by_version`, a failure there recorded as that release's
+    `known_failure`, the pinned release's expectation unchanged). The job's
+    40 minutes did not cover the upstream runs (28 minutes) with the bridge
+    tests and the native comparisons: 60 now.
   * **S9d.4b refined, before its code (2026-09-29).** Two sub-steps.
     S9d.4b.1: tori other than whole ones (S3's v-segments between two
     latitudes and wedges of a partial turn) against polyhedral prisms: the

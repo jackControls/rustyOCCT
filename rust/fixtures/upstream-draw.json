@@ -1323,7 +1323,10 @@
       "path": "tests/bugs/heal/bug33171_1",
       "expected_rust": "unsupported",
       "expected_occt": "viewer_skipped",
-      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: a box prism split by four open-wire prisms (sheets), bopcheck and unifysamedom; the heal group loads XSDRAW."
+      "purpose": "S8e's bsplit group, a capability sentinel for S9's general builder: a box prism split by four open-wire prisms (sheets), bopcheck and unifysamedom; the heal group loads XSDRAW. OCCT 7.6.3 (Ubuntu 24.04's package, the Linux CI's native DRAW) still has the bug: its unified shape is invalid (31 wires, 30 faces), a known failure of that release.",
+      "expected_occt_by_version": {
+        "7.6.3": "known_failure"
+      }
     },
     {
       "path": "tests/bugs/modalg_7/bug21264",

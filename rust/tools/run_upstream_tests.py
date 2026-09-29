@@ -285,6 +285,25 @@ def junit(results, output):
     ET.ElementTree(suite).write(output, encoding="utf-8", xml_declaration=True)
 
 
+def release_expectation(case, backend, result):
+    """The case's expected status for this run, updating `result` in place.
+
+    A native release older than the pinned one may still carry the bug an
+    upstream test was written for: its outcome there is stated per release
+    (`expected_occt_by_version`, keyed by the version DRAW reports, e.g.
+    Ubuntu's packaged 7.6.3). That release's own failure of the case is its
+    known one; any other outcome there is still compared with it."""
+    expected = case[f"expected_{backend}"]
+    if backend != "occt":
+        return expected
+    native = next((line.split()[-1] for line in str(result.get("version", "")).splitlines()
+                   if line.startswith("Open CASCADE Technology ")), None)
+    expected = case.get("expected_occt_by_version", {}).get(native, expected)
+    if expected == "known_failure" and result["status"] == "failed":
+        result.update(status="known_failure", release=native)
+    return expected
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--backend", choices=["rust", "occt", "both"], default="rust")
@@ -380,7 +399,8 @@ def main():
                 result = run_case(backend, sources, args.output / backend / case["path"],
                                   worker, args.draw_exe, args.tclsh, args.timeout, data_dirs, names, extra_env)
             result = classify_missing(result, inventory)
-            result.update(case=case["path"], expected=case[f"expected_{backend}"], derived=derived)
+            expected = release_expectation(case, backend, result)
+            result.update(case=case["path"], expected=expected, derived=derived)
             # A Rust-only run cannot select natively, and without the dataset a
             # data case cannot run; neither passes nor fails. Expectations are
             # stated with the dataset present.
