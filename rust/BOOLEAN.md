@@ -1266,6 +1266,88 @@ height); its horizontal edges on a spline are its lifted restrictions.
   on faces bounded by approximated quartics misses by up to 4.1e-6, the
   same results measured adaptively within 6.0e-9, and the inscribed
   sphere's count; eleven solids' counts change when unified.
+* **S9d.4a evidence (tori against polyhedral prisms), before its kernel
+  code.** `torus_boolean_reference.py` (mpmath, 40 digits) takes a whole
+  torus on its exact model (the stored frame's axes as rationals, `(|p|^2 +
+  R^2 - r^2)^2 <= 4 R^2 (u^2 + v^2)` in its chart, `R > r`) and the prism on
+  S9d.1's, and works in the torus's chart (volumes and moments carried back
+  by `det(x, y, n)`, planar areas by Nanson's formula, the wall by its
+  element `r (R + r cos phi) |cof(A) N|` in its own `(theta, phi)`). It
+  slices both inputs two ways. Normal to the axis, each slice of the torus
+  is the annulus between the circles of radii `R -+ sqrt(r^2 - s^2)`:
+  S9d.3a's classification run on both discs against the pieces' sections,
+  the operations their combinations, the common again by clipping each piece
+  by both discs, the wall by the circles' angles inside with the element `r
+  rho / q`; breakpoints the pieces' levels, `+-r`, an edge's meetings with
+  the torus and a face's line tangent to either circle (quartics, their real
+  roots through Yun's square-free factorization and `polyroots`). By the
+  meridian half-planes about the axis, each section of the torus is the
+  tube's disc about `(R, 0)`, the prism's a convex polygon clipped at the
+  axis: volumes and moments by Green's integrals of `t`, `t^2` and `t w`
+  (the cylindrical element), the wall over the disc's arcs inside by its own
+  element; breakpoints the vertices' angles, edges' and faces' lines meeting
+  the torus, a face's line tangent to the tube's circle (the decisions'
+  spiric quadratic in `alpha = a_u cos theta + a_v sin theta`) or parallel
+  to the axis. Planar faces by their own parameters as S9d.3a's, the chord's
+  part inside the annulus. Solids (a convex prism) followed through the
+  meridians: the common's convex sections, `D - C` as the union of the
+  discs' parts beyond each face (joined where two meet), `C - D` by runs of
+  the section's boundary outside the disc, each holding a vertex; joined
+  across a breakpoint where a face's part of the disc, the common, or a
+  vertex outside the disc persists there. Fuse: one solid when the inputs
+  overlap. `generate_torus_boolean_fixtures.py --check` writes
+  `boolean-torus-cases.txt`, `boolean-torus-expected.tsv` and
+  `boolean-torus-frames.tsv` with 35 cases (4 fuses, 15 cuts, 16 commons; 30
+  solid, 1 empty, 4 degenerate; 29 in exact frames), the torus of radii 5/2
+  and 3/2: a bar across the whole torus through the hole, its walls cutting
+  loops about the tube (all three; two chunks, two halves), a strip along
+  the equator (less the torus three solids); a slab normal to the axis
+  (loops about the axis; two solids both ways) and a half-space above the
+  equator; a cap cut from the tube's outside by a wall, a box through the
+  hole whose four walls cut such caps (four solids), caps cut from the
+  tube's inside by a box's vertical edges (four) and by a wedge's edge; a
+  half-space through the axis (loops about the tube, all three); a box
+  inside the tube, the torus inside a box (cavities), a box in the hole
+  (fused two solids, the common empty); in turned frames a torus in `TILT`
+  above a plane of a Villarceau plane's inclination 3/4 from the centre (one
+  contractible loop), a torus in `TILTX` across a slab between its saddle
+  levels (two loops about the tube in each plane: two solids both ways), a
+  bar in `LEAN` across the torus; and `degenerate` a face tangent along the
+  top circle, a wall tangent to the inner equator (a figure eight), a face
+  on a Villarceau plane (tangent at two points) and a box's vertex on the
+  torus. Checks before writing: closed forms of 19 of the 20 pairs along the
+  axis in the torus's ideal frame (an aligned box by S9d.1's
+  rectangle-in-disc antiderivatives on both circles, the wall by its
+  latitude, the box's walls by their chords inside the annulus; the torus
+  less half-spaces by circular segments of both circles, normal to the axis
+  `4 pi R q` per slice) within 3.3e-40 in exact frames and 1.5e-16 in turned
+  ones (the degenerate pairs within 2.3e-29), both inputs' slicings 1.4e-40,
+  inclusion and exclusion 1.1e-40, the common two ways 4.6e-41, the area
+  identity and every face's classes 3.0e-35 (1.3e-39 but for the vertex on
+  the torus), the meridians as a second direction 1.6e-40, the wall two ways
+  2.1e-37, Monte Carlo 2.8 standard errors, no near coincidence outside the
+  degenerate pairs, every other pair's vertices at least 0.18, faces' planes
+  0.031 and edges' crossings (a sine) 0.54 from tangency with the torus.
+  `test_torus_boolean_reference.py` checks the closed forms by Pappus's
+  theorems (the torus, the half above the equator and the half beyond a
+  plane through the axis with its centroid `(4 R^2 + r^2) / (2 pi R)`, a
+  band) and the reference on a half-space through the axis, a band, a slab
+  and a box in the hole. The protocol takes a torus on either side
+  (`encode_boolean_case` accepts a tool's `frame` and `torus MAJOR MINOR LOW
+  HIGH ANGLE` rows, which the kernel's test support already reads;
+  `native_case` gives a whole torus one `torus` row, built by
+  `BRepPrimAPI_MakeTorus(gp_Ax2, R, r)` in `occt_boolean_oracle.cpp`; every
+  older capture reproduces). `compare_torus_boolean.py`
+  (`compare_boolean.make_set`) reproduces
+  `occt-boolean-torus-preimplementation` (`rust_torus_boolean_exists` false;
+  the kernel's probe `unsupported` on all 35, `OutOfDomain("a Boolean of a
+  solid with curved faces or edges in any position (S9c)")`): every result
+  valid with the reference's solid count; 16 match (circles within 4.7e-16)
+  and 19 are reviewed (`occt-boolean-torus-divergences.json`): BRepGProp's
+  default integration on faces bounded by approximated spiric sections
+  (B-splines, every section but circles) misses by up to 6.3e-6, the same
+  results measured adaptively within 1.8e-9 but for a small cap (1.2e-8) and
+  the Villarceau plane (2.0e-8); nine solids' counts change when unified.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

@@ -2422,6 +2422,56 @@ Decisions for S9, recorded before its code (2026-09-28):
     the tube's outside and its inside, loops about the tube, a box inside
     the tube, exact and turned frames, tangencies declared `degenerate`),
     and a native capture before `solid/boolean/curved/torus.rs` exists.
+  * **S9d.4a evidence (2026-09-29).** `torus_boolean_reference.py` takes a
+    whole torus on the decisions' model in its chart and a prism (S9d.1's
+    convex pieces) and slices them two ways: normal to the axis, each slice
+    an annulus (S9d.3a's classification on both circles, the operations
+    their combinations, the wall by the circles' angles with the element `r
+    rho / q`), and by the meridian half-planes about the axis, each section
+    the tube's disc against a convex polygon (the volume by the cylindrical
+    element, the wall in its own `(theta, phi)`); breakpoints exact
+    polynomials' roots (quartics through Yun's square-free factorization:
+    edges and faces' lines meeting the torus, a face's line tangent to a
+    slice's circle; in `theta` the decisions' spiric quadratic in `alpha`),
+    planar faces by their own parameters as S9d.3a's, solids followed
+    through the meridians (the common's convex sections, `D - C` by the
+    faces' outer half-planes, `C - D` by runs of the section's boundary
+    outside the disc). `generate_torus_boolean_fixtures.py --check`: 35
+    fixtures (30 solid, 1 empty, 4 degenerate; 6 in turned frames), every
+    class the refined decisions list: a bar through the hole across the
+    whole torus (loops about the tube) and a strip along the equator cut in
+    three; a slab normal to the axis both ways and a half-space above the
+    equator (loops about the axis); a cap cut from the tube's outside, a box
+    through the hole cutting four, caps cut from the tube's inside by a
+    box's vertical edges and a wedge's edge (contractible loops over two
+    faces); a half-space through the axis (loops about the tube); a box
+    inside the tube, the torus inside a box, a box in the hole; a torus in
+    `TILT` above a plane of a Villarceau plane's inclination (one
+    contractible loop), in `TILTX` across a slab between its saddle levels
+    (two loops about the tube in each plane), a bar in `LEAN`; a face
+    tangent along the top circle, a wall tangent to the inner equator, a
+    face on a Villarceau plane and a box's vertex on the torus declared
+    `degenerate`. Closed forms of 19 of the 20 pairs (an aligned box by
+    rectangles inside both circles, half-spaces by circular segments of
+    both) within 3.3e-40 in exact frames and 1.5e-16 in turned ones (the
+    degenerate pairs 2.3e-29), inclusion and exclusion 1.1e-40, the area
+    identity and every face's classes 3.0e-35 (1.3e-39 but for the vertex on
+    the torus), the meridians as a second direction 1.6e-40, the wall two
+    ways 2.1e-37, Monte Carlo 2.8 standard errors, no near coincidence
+    outside the degenerate pairs, every other pair's vertices at least 0.18,
+    faces' planes 0.031 and edges' crossings (a sine) 0.54 from tangency.
+    The protocol takes a torus on either side (`encode_boolean_case`; the
+    kernel's test support already read its rows; the native oracle a `torus`
+    row by `BRepPrimAPI_MakeTorus(gp_Ax2, R, r)`; every older capture
+    reproduces). The capture `occt-boolean-torus-preimplementation`
+    (`compare_torus_boolean.py`, the kernel `unsupported` on all 35,
+    `OutOfDomain("a Boolean of a solid with curved faces or edges in any
+    position (S9c)")`): every result valid with the reference's solids, 16
+    match (circles within 4.7e-16), 19 reviewed (BRepGProp's default
+    integration on the spiric sections, which OCCT builds as B-splines,
+    every section but circles: up to 6.3e-6; adaptively within 1.8e-9 but
+    for a small cap, 1.2e-8, and the Villarceau plane, 2.0e-8), nine solids'
+    counts change when unified. S9d.4a's kernel next.
 
 ### Parallel tracks
 
