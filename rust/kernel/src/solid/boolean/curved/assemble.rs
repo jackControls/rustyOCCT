@@ -825,7 +825,13 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                 _ => Err(Error::InvalidTopology("a meeting off a cylinder")),
             };
             let (frame, radius) = cylinder(stored[m.carrier])?;
-            let (other, other_radius) = cylinder(stored[1 - m.carrier])?;
+            let (other, other_radius, other_sphere) = match stored[1 - m.carrier] {
+                Surface::Sphere { frame, radius } => (*frame, *radius, true),
+                s => {
+                    let (f, r) = cylinder(s)?;
+                    (f, r, false)
+                }
+            };
             let with = first.with == d0;
             let t0 = angle_of(if d0 { &first.pos[0] } else { &first.pos[1] });
             let t1 = angle_of(if dl { &last.pos[1] } else { &last.pos[0] });
@@ -850,6 +856,7 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                 radius,
                 other,
                 other_radius,
+                other_sphere,
                 sign: if m.plus { 1.0 } else { -1.0 },
                 start: if e.ends.is_none() { 0.0 } else { t0 - base },
                 sweep: if with { sweep } else { -sweep },

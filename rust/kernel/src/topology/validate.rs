@@ -1181,7 +1181,7 @@ fn curve_valid(curve: &Curve3, tol: &R, fast_tol2: &Fast, exact_tol2: &I) -> boo
                 && (m.sign == 1.0 || m.sign == -1.0)
                 && m.sweep != 0.0
                 && m.sweep.abs() <= TAU
-                && n.dot(x2).hypot(n.dot(y2)) > 1e-6
+                && (m.other_sphere || n.dot(x2).hypot(n.dot(y2)) > 1e-6)
         }
         _ => {
             let (_, [rx, ry], start, sweep) = arc_of(curve).unwrap();
@@ -3929,12 +3929,18 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                             .collect();
                         let want: i64 = if forward { 1 } else { -1 };
                         let polar = if pole && north { want } else { 0 };
+                        // Its start, else two points along its first fin
+                        // (a start on a ray through another loop's vertex is
+                        // undecided; S9d.2).
                         let start = &lp.fins[0].pcurve;
-                        match tiered(
-                            None,
-                            || signed_cover_crossings::<Fast>(&others, &pcurve_at(start, 0.0)),
-                            || signed_cover_crossings::<I>(&others, &pcurve_at(start, 0.0)),
-                        ) {
+                        let decided = [0.0, 0.376_953_125, 0.678_710_937_5].iter().find_map(|&t| {
+                            tiered(
+                                None,
+                                || signed_cover_crossings::<Fast>(&others, &pcurve_at(start, t)),
+                                || signed_cover_crossings::<I>(&others, &pcurve_at(start, t)),
+                            )
+                        });
+                        match decided {
                             Some(n) if n + polar == want => {}
                             Some(_) => add(&mut issues, K::InnerLoopOutside, En::Loop(fi, *li)),
                             None => {

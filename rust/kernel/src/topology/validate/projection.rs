@@ -203,12 +203,10 @@ fn meet_jet<T: Real>(m: &Meet, fraction: &Jet<T>) -> Option<MeetJet<T>> {
     let (co, si) = u.cos_sin();
     let r = c::<T>(m.radius);
     let foot = world(&m.frame, &co.scale(&r), &si.scale(&r));
-    let (o2, x2, y2) = (
-        m.other.origin().to_array(),
-        m.other.x().to_array(),
-        m.other.y().to_array(),
-    );
+    let o2 = m.other.origin().to_array();
     let n = m.frame.normal().to_array();
+    // w = foot - o2 along the other's axes (a cylinder) or all three (a
+    // sphere).
     let along = |axis: &[f64; 3]| {
         let mut out = Jet::constant(c::<T>(0.0), u.order());
         for k in 0..3 {
@@ -220,15 +218,28 @@ fn meet_jet<T: Real>(m: &Meet, fraction: &Jet<T>) -> Option<MeetJet<T>> {
         }
         out
     };
-    let (wx, wy) = (along(&x2), along(&y2));
-    let dot =
-        |a: &[f64; 3]| (0..3).fold(c::<T>(0.0), |acc, k| acc.add(&c::<T>(n[k]).mul(&c(a[k]))));
-    let (nx, ny) = (dot(&x2), dot(&y2));
-    let a = nx.mul(&nx).add(&ny.mul(&ny));
-    let b = wx.scale(&nx).add(&wy.scale(&ny));
-    let cc = wx
-        .square()
-        .add(&wy.square())
+    let axes: Vec<[f64; 3]> = if m.other_sphere {
+        vec![[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+    } else {
+        vec![m.other.x().to_array(), m.other.y().to_array()]
+    };
+    let ws: Vec<Jet<T>> = axes.iter().map(along).collect();
+    let ns: Vec<T> = axes
+        .iter()
+        .map(|a| (0..3).fold(c::<T>(0.0), |acc, k| acc.add(&c::<T>(n[k]).mul(&c(a[k])))))
+        .collect();
+    let a = ns.iter().fold(c::<T>(0.0), |acc, x| acc.add(&x.mul(x)));
+    let b = ws
+        .iter()
+        .zip(&ns)
+        .fold(Jet::constant(c::<T>(0.0), u.order()), |acc, (w, x)| {
+            acc.add(&w.scale(x))
+        });
+    let cc = ws
+        .iter()
+        .fold(Jet::constant(c::<T>(0.0), u.order()), |acc, w| {
+            acc.add(&w.square())
+        })
         .add_constant(&c::<T>(m.other_radius).mul(&c(m.other_radius)).neg());
     let d = b.square().sub(&cc.scale(&a));
     let v = d
@@ -626,6 +637,7 @@ mod tests {
                 radius: 1.0,
                 other: thick,
                 other_radius: 2.0,
+                other_sphere: false,
                 sign,
                 start: 0.0,
                 sweep: std::f64::consts::TAU,

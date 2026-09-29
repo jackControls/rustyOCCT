@@ -20,6 +20,7 @@ mod model;
 mod num;
 mod procedural;
 mod sphere;
+mod spheres;
 mod turned;
 
 use super::polyhedra::{Component, Polyhedron};
@@ -48,6 +49,8 @@ pub(super) fn applies(poly: &Polyhedron) -> bool {
     (prism(&poly.a) && prism(&poly.b) && (arcs(&poly.a) || arcs(&poly.b)))
         || (sphere(&poly.a) && prism(&poly.b))
         || (prism(&poly.a) && sphere(&poly.b))
+        // S9d.2: two spheres.
+        || (sphere(&poly.a) && sphere(&poly.b))
 }
 
 /// An input's exact model: a prism's, or a sphere's (S9d.1).

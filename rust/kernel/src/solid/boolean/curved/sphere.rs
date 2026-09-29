@@ -205,6 +205,9 @@ pub(super) struct Ball {
     pub(super) ends: [Option<R>; 2],
     /// The split plane's normal (through `c` and the axis).
     pub(super) split: V,
+    /// The split plane's second axis, orthogonal to `n` (of `n`'s length
+    /// where it can be: a whole sphere's, an exact frame's).
+    pub(super) w: V,
 }
 
 impl Ball {
@@ -302,11 +305,10 @@ impl Ball {
     /// The split's great circle, counter-clockwise about the split's normal:
     /// from the top pole through `n x split`'s side.
     pub(super) fn great(&self) -> Circ {
-        let w = cross(&self.split, &self.n);
         Circ {
             c: self.c.clone(),
             x: self.n.clone(),
-            y: w,
+            y: self.w.clone(),
             r2: &self.r * &self.r,
         }
     }
@@ -360,26 +362,38 @@ pub(super) fn model(solid: &Solid, op: Operand, seam: &R) -> Result<Prism> {
         (*high != half).then(|| q(crate::math::scaled_sin(*radius, *high))),
     ];
     // The split plane: the axis and the equator's rational point. A whole
-    // sphere's axis is free: a generic rational direction that moves with
-    // the seam, so its poles leave special points.
-    let e = circle_point(&[zero(), zero()], &int(1), seam);
-    let u = f.vector(&e[0], &e[1], &zero());
+    // sphere's axis is free: two rows of a rational rotation (world axes,
+    // of one rational length, S9d.2), picked by the seam, so its poles
+    // leave special points and its great circle's basis is of equal axes.
     let whole = ends.iter().all(|x| x.is_none());
-    let n = if whole {
-        f.vector(&(int(2) * seam), &(int(3) * seam * seam + int(1)), &int(5))
+    let (n, u) = if whole {
+        const ROTATIONS: [[[i64; 3]; 2]; 4] = [
+            [[2, 3, 6], [3, -6, 2]],
+            [[1, 4, 8], [4, 7, -4]],
+            [[2, 6, 9], [6, 7, -6]],
+            [[1, 2, 2], [2, 1, -2]],
+        ];
+        let k = usize::try_from(seam.numer() % num_bigint::BigInt::from(4))
+            .unwrap_or(0)
+            .min(3);
+        let [a, b] = ROTATIONS[k];
+        (a.map(int), b.map(int))
     } else {
-        f.n.clone()
+        let e = circle_point(&[zero(), zero()], &int(1), seam);
+        (f.n.clone(), f.vector(&e[0], &e[1], &zero()))
     };
     let split = cross(&n, &u);
     if is_zero(&split) {
         return Err(Error::ComputationLimit(super::graph::SEAM));
     }
+    let w = if whole { u.clone() } else { cross(&split, &n) };
     let ball = Ball {
         c: f.o.clone(),
         r: r.clone(),
         n: n.clone(),
         ends: ends.clone(),
         split,
+        w,
     };
     // Faces: the discs of the ends that are not poles (in the input's
     // order), then the two hemispheres (the wall's halves).

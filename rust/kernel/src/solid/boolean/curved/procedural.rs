@@ -31,8 +31,8 @@ pub(super) struct MeetCrv {
     /// The carrier's local rows for `u` and `v`.
     k: [V; 2],
     r: R,
-    g: [V; 2],
-    e: [R; 2],
+    g: Vec<V>,
+    e: Vec<R>,
     r2: R,
     pub(super) plus: bool,
     pub(super) range: Option<[[Qd; 2]; 2]>,
@@ -40,15 +40,26 @@ pub(super) struct MeetCrv {
 
 /// The other cylinder of a carrier, as its local rows and offsets.
 pub(super) struct Other {
-    pub(super) g: [V; 2],
-    pub(super) e: [R; 2],
+    pub(super) g: Vec<V>,
+    pub(super) e: Vec<R>,
     pub(super) r: R,
 }
 
 pub(super) fn other_of(f: &Affine, c: &P2, r: &R) -> Other {
-    let g = [f.row(0).clone(), f.row(1).clone()];
-    let e = [&dot(&g[0], &f.o) + &c[0], &dot(&g[1], &f.o) + &c[1]];
+    let g = vec![f.row(0).clone(), f.row(1).clone()];
+    let e = vec![&dot(&g[0], &f.o) + &c[0], &dot(&g[1], &f.o) + &c[1]];
     Other { g, e, r: r.clone() }
+}
+
+/// A sphere as the other quadric (S9d.2): `|p - c|^2 = r^2` over the world's
+/// rows.
+pub(super) fn other_sphere(c: &V, r: &R) -> Other {
+    let rows = [[1, 0, 0], [0, 1, 0], [0, 0, 1]].map(|e| e.map(int));
+    Other {
+        g: rows.to_vec(),
+        e: c.to_vec(),
+        r: r.clone(),
+    }
 }
 
 impl MeetCrv {
@@ -90,14 +101,16 @@ impl MeetCrv {
     /// misses or touches the other cylinder).
     pub(super) fn at(&self, cs: &[R; 2]) -> Option<QV> {
         let base = self.base(cs);
-        let gn = [dot(&self.g[0], &self.n), dot(&self.g[1], &self.n)];
-        let s = [
-            dot(&self.g[0], &base) - &self.e[0],
-            dot(&self.g[1], &base) - &self.e[1],
-        ];
-        let a = &gn[0] * &gn[0] + &gn[1] * &gn[1];
-        let b = &s[0] * &gn[0] + &s[1] * &gn[1];
-        let c = &s[0] * &s[0] + &s[1] * &s[1] - &self.r2 * &self.r2;
+        let gn: Vec<R> = self.g.iter().map(|g| dot(g, &self.n)).collect();
+        let s: Vec<R> = self
+            .g
+            .iter()
+            .zip(&self.e)
+            .map(|(g, e)| dot(g, &base) - e)
+            .collect();
+        let a = gn.iter().fold(zero(), |acc, x| acc + x * x);
+        let b = s.iter().zip(&gn).fold(zero(), |acc, (x, y)| acc + x * y);
+        let c = s.iter().fold(zero(), |acc, x| acc + x * x) - &self.r2 * &self.r2;
         let d = &b * &b - &a * &c;
         if d <= zero() || a == zero() {
             return None;
@@ -118,10 +131,22 @@ impl MeetCrv {
     }
 
     /// The other cylinder's gradient at a point (halved).
+    fn offsets(&self, x: &QV) -> Vec<Qd> {
+        self.g
+            .iter()
+            .zip(&self.e)
+            .map(|(g, e)| qdot(x, g).add_r(&-e.clone()))
+            .collect()
+    }
+
     fn grad_other(&self, x: &QV) -> QV {
-        let s0 = qdot(x, &self.g[0]).add_r(&-&self.e[0]);
-        let s1 = qdot(x, &self.g[1]).add_r(&-&self.e[1]);
-        qadd(&qscale(&self.g[0], &s0), &qscale(&self.g[1], &s1))
+        let s = self.offsets(x);
+        self.g
+            .iter()
+            .zip(&s)
+            .fold(qv(&[zero(), zero(), zero()]), |acc, (g, si)| {
+                qadd(&acc, &qscale(g, si))
+            })
     }
 
     /// The branch a point of both cylinders lies on: the sign of the other
@@ -138,9 +163,11 @@ impl MeetCrv {
         if unit.sign() != Ordering::Equal {
             return false;
         }
-        let s0 = qdot(x, &self.g[0]).add_r(&-&self.e[0]);
-        let s1 = qdot(x, &self.g[1]).add_r(&-&self.e[1]);
-        let g = s0.mul(&s0).add(&s1.mul(&s1)).add_r(&-(&self.r2 * &self.r2));
+        let g = self
+            .offsets(x)
+            .iter()
+            .fold(Qd::rat(zero()), |acc, si| acc.add(&si.mul(si)))
+            .add_r(&-(&self.r2 * &self.r2));
         if g.sign() != Ordering::Equal {
             return false;
         }
@@ -178,10 +205,8 @@ impl MeetCrv {
     pub(super) fn samples(&self, t0: f64, sweep: f64, n: usize) -> Vec<[f64; 3]> {
         let f = |v: &V| v.clone().map(|y| rational_f64(&y));
         let (o, x, y, nn) = (f(&self.o), f(&self.x), f(&self.y), f(&self.n));
-        let (g, e) = (
-            [f(&self.g[0]), f(&self.g[1])],
-            [rational_f64(&self.e[0]), rational_f64(&self.e[1])],
-        );
+        let g: Vec<[f64; 3]> = self.g.iter().map(f).collect();
+        let e: Vec<f64> = self.e.iter().map(rational_f64).collect();
         let (r, r2) = (rational_f64(&self.r), rational_f64(&self.r2));
         let d3 = |a: &[f64; 3], b: &[f64; 3]| a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
         let sign = if self.plus { 1.0 } else { -1.0 };
@@ -189,11 +214,15 @@ impl MeetCrv {
             .map(|i| {
                 let t = t0 + sweep * i as f64 / n as f64;
                 let base = [0, 1, 2].map(|j| o[j] + r * (t.cos() * x[j] + t.sin() * y[j]));
-                let gn = [d3(&g[0], &nn), d3(&g[1], &nn)];
-                let s = [d3(&g[0], &base) - e[0], d3(&g[1], &base) - e[1]];
-                let a = gn[0] * gn[0] + gn[1] * gn[1];
-                let b = s[0] * gn[0] + s[1] * gn[1];
-                let c = s[0] * s[0] + s[1] * s[1] - r2 * r2;
+                let gn: Vec<f64> = g.iter().map(|gi| d3(gi, &nn)).collect();
+                let s: Vec<f64> = g
+                    .iter()
+                    .zip(&e)
+                    .map(|(gi, ei)| d3(gi, &base) - ei)
+                    .collect();
+                let a: f64 = gn.iter().map(|x| x * x).sum();
+                let b: f64 = s.iter().zip(&gn).map(|(x, y)| x * y).sum();
+                let c: f64 = s.iter().map(|x| x * x).sum::<f64>() - r2 * r2;
                 let w = (-b + sign * (b * b - a * c).max(0.0).sqrt()) / a;
                 [0, 1, 2].map(|j| base[j] + w * nn[j])
             })

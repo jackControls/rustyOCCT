@@ -140,8 +140,27 @@ pub(super) fn roots(p: &Poly) -> Result<Vec<AlgebraicRoot>> {
     if ip.is_constant() {
         return Ok(Vec::new());
     }
-    if !ip.gcd(&ip.derivative()).is_constant() {
-        return Err(tangency());
+    // A repeated real root is a tangency (complex ones do not matter: a
+    // constant discriminant times (1 + t^2)^2, S9d.2).
+    let g = ip.gcd(&ip.derivative());
+    if !g.is_constant() {
+        let lead = g.0.last().expect("nonzero").clone();
+        let bound = g.0[..g.0.len() - 1]
+            .iter()
+            .map(|c| R::new(c.clone(), lead.clone()))
+            .map(|x| if x < zero() { -x } else { x })
+            .fold(zero(), |m, x| if x > m { x } else { m })
+            + int(1);
+        if !isolate(
+            &g,
+            -bound.clone(),
+            bound,
+            &mut Budget::new(RootIsolationOptions::default()),
+        )?
+        .is_empty()
+        {
+            return Err(tangency());
+        }
     }
     let abs = |x: &R| if *x < zero() { -x.clone() } else { x.clone() };
     let lead = abs(p.last().expect("nonzero"));
@@ -176,7 +195,7 @@ pub(super) struct Chart {
 
 impl Chart {
     /// The numerators of `cos` and `sin` over `1 + t^2`.
-    fn numerators(&self) -> [Poly; 2] {
+    pub(super) fn numerators(&self) -> [Poly; 2] {
         let (c0, s0) = (&self.c0, &self.s0);
         [
             trim(vec![c0.clone(), -(int(2) * s0), -c0.clone()]),
@@ -284,10 +303,10 @@ type Cyl<'a> = (&'a Affine, &'a P2, &'a R);
 /// A ruling's quadratic against the other cylinder, `A w^2 + 2 B w + C`:
 /// `A`, and the discriminant `B^2 - A C` as a form in the carrier's
 /// `(cos, sin)`.
-fn discriminant(k: Cyl, o: &Other) -> (R, Form) {
+pub(super) fn discriminant(k: Cyl, o: &Other) -> (R, Form) {
     let (f, c, r) = k;
     let base = f.point(&c[0], &c[1], &zero());
-    let lin: Vec<Lin> = (0..2)
+    let lin: Vec<Lin> = (0..o.g.len())
         .map(|i| {
             [
                 dot(&o.g[i], &base) - &o.e[i],
@@ -296,9 +315,13 @@ fn discriminant(k: Cyl, o: &Other) -> (R, Form) {
             ]
         })
         .collect();
-    let n: Vec<R> = (0..2).map(|i| dot(&o.g[i], &f.n)).collect();
-    let a = &n[0] * &n[0] + &n[1] * &n[1];
-    let b: Lin = [0, 1, 2].map(|j| &n[0] * &lin[0][j] + &n[1] * &lin[1][j]);
+    let n: Vec<R> = (0..o.g.len()).map(|i| dot(&o.g[i], &f.n)).collect();
+    let a = n.iter().fold(zero(), |acc, x| acc + x * x);
+    let b: Lin = [0, 1, 2].map(|j| {
+        n.iter()
+            .zip(&lin)
+            .fold(zero(), |acc, (x, l)| acc + x * &l[j])
+    });
     let mut cform = square_sum(&lin);
     cform.k -= &o.r * &o.r;
     (a.clone(), square_sum(&[b]).sub(&cform.scaled(&a)))
@@ -306,7 +329,7 @@ fn discriminant(k: Cyl, o: &Other) -> (R, Form) {
 
 /// A chart whose antipode has `D < 0` (a loop's piece never reaches it),
 /// or `None` when `D >= 0` on the four axis points and every root gap.
-fn negative_chart(d: &Form) -> Result<Option<Chart>> {
+pub(super) fn negative_chart(d: &Form) -> Result<Option<Chart>> {
     for (c0, s0) in [(1, 0), (0, 1), (-1, 0), (0, -1)] {
         if d.value(&[int(-c0), int(-s0)]) < zero() {
             return Ok(Some(Chart {
@@ -345,7 +368,7 @@ fn negative_chart(d: &Form) -> Result<Option<Chart>> {
 /// Two branches within the resolution: an extremum of `D` (a critical
 /// point of its chart's quartic) where `|D| < (A res / 2)^2`, or a
 /// repeated root (a tangency, `roots`).
-fn near_node(a: &R, d: &Form, chart: &Chart, res: f64) -> Result<()> {
+pub(super) fn near_node(a: &R, d: &Form, chart: &Chart, res: f64) -> Result<()> {
     let p = d.poly(chart);
     let _ = roots(&p)?;
     let delta = {
@@ -438,10 +461,12 @@ pub(super) fn crossing(x: Cyl, y: Cyl, res: f64) -> Result<CylPair> {
         let base = f.point(&(&c[0] + rr * &cs[0]), &(&c[1] + rr * &cs[1]), &zero());
         // The double root's height: w = -B / A.
         let o = &others[1];
-        let n: Vec<R> = (0..2).map(|i| dot(&o.g[i], &f.n)).collect();
-        let s: Vec<R> = (0..2).map(|i| dot(&o.g[i], &base) - &o.e[i]).collect();
-        let a2 = &n[0] * &n[0] + &n[1] * &n[1];
-        let w = -(&n[0] * &s[0] + &n[1] * &s[1]) / a2;
+        let n: Vec<R> = (0..o.g.len()).map(|i| dot(&o.g[i], &f.n)).collect();
+        let s: Vec<R> = (0..o.g.len())
+            .map(|i| dot(&o.g[i], &base) - &o.e[i])
+            .collect();
+        let a2 = n.iter().fold(zero(), |acc, x| acc + x * x);
+        let w = -n.iter().zip(&s).fold(zero(), |acc, (x, y)| acc + x * y) / a2;
         let pt = qv(&add(&base, &scale(&f.n, &w)));
         let place = probe_a.place(&pt);
         let t = chart_a

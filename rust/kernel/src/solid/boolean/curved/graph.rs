@@ -242,6 +242,31 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
             pairs.insert((fa, fb), pair);
         }
     }
+    // A cylinder and a sphere (S9d.2): rings over the cylinder's angle, or
+    // apart.
+    let res = models[0].tolerance.linear();
+    for (fa, a) in models[0].faces.iter().enumerate() {
+        for (fb, b) in models[1].faces.iter().enumerate() {
+            let pair = match (&a.surf, &b.surf) {
+                (Surf::Cyl { c: ca, r: ra, .. }, Surf::Sphere { c, r }) => {
+                    if !boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]) {
+                        CylPair::Apart
+                    } else {
+                        super::spheres::sphere_cyl(0, (&models[0].f, ca, ra), c, r, res)?
+                    }
+                }
+                (Surf::Sphere { c, r }, Surf::Cyl { c: cb, r: rb, .. }) => {
+                    if !boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]) {
+                        CylPair::Apart
+                    } else {
+                        super::spheres::sphere_cyl(1, (&models[1].f, cb, rb), c, r, res)?
+                    }
+                }
+                _ => continue,
+            };
+            pairs.insert((fa, fb), pair);
+        }
+    }
     // Coincident planes.
     for (fa, a) in models[0].faces.iter().enumerate() {
         let Surf::Plane { p: pa, m: ma } = &a.surf else {
@@ -338,7 +363,7 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                     (Surf::Cyl { .. }, Some(w), Crv::Conic { .. }) => pair_of(o, w, g),
                     _ => None,
                 };
-                let meet = edge_surface(&e.curve, own, other, g, pair)?;
+                let meet = edge_surface(&e.curve, own, me.ball.as_ref(), other, g, pair)?;
                 let points = match meet {
                     EdgeMeet::None => continue,
                     EdgeMeet::Along => {
@@ -400,7 +425,7 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                             // On an edge of the face whose other face lies on
                             // one of this edge's faces' surface: two edges
                             // crossing on that surface.
-                            let seamy = virtual_edge || on_circle(other, g);
+                            let seamy = virtual_edge || seam_at(other, g, &x);
                             let meeting = || {
                                 if seamy {
                                     seam()
@@ -451,7 +476,7 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                         (None, _) => {
                             // An input vertex on the other's face.
                             let seamy = virtual_edge
-                                || on_circle(other, g)
+                                || seam_at(other, g, &x)
                                 || me.verts[if same_end(&pos, &ps) { e.start } else { e.end }]
                                     .id
                                     .is_none();
@@ -758,6 +783,17 @@ fn intersect(a: &([f64; 3], [f64; 3]), b: &([f64; 3], [f64; 3])) -> ([f64; 3], [
         out.1[k] = a.1[k].min(b.1[k]);
     }
     out
+}
+
+/// Whether a meeting at `x` on face `g` may be a seam's: on a full circle's
+/// half wall anywhere, on a sphere's hemisphere only on its split (S9d.2).
+fn seam_at(m: &Prism, g: usize, x: &QV) -> bool {
+    match (m.faces[g].kind, &m.ball) {
+        (FaceKind::Half(_), Some(ball)) => {
+            qdot(&qsub(x, &qv(&ball.c)), &ball.split).sign() == Ordering::Equal
+        }
+        _ => on_circle(m, g),
+    }
 }
 
 /// Whether a face is a full circle's half wall (its sides are a seam).

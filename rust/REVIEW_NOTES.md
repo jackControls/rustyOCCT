@@ -1983,6 +1983,28 @@ Decisions for S9, recorded before its code (2026-09-28):
     default integration on approximated quartics, up to 2.4e-6; adaptively
     within 3.4e-9), seven solids' counts change when unified. S9d.2's
     kernel next.
+  * **S9d.2a implemented** (`solid/boolean/curved/spheres.rs`): two
+    spheres, and spheres against prisms with arcs where the cylinder's
+    rulings meet the sphere all round (rings); 24 of the 33 fixtures as the
+    reference, the 9 loops `OutOfDomain`, every history checked, results
+    deterministic and moved rigidly; `compare_spheres_boolean.py` 12
+    matches and 21 reviewed (ten kernel results' counts: OCCT's unified
+    faces, edges and vertices split elsewhere), every other comparison
+    unchanged. Amendments, from the implementation: (a) S9d.2 is split:
+    S9d.2a takes rings (a coaxial sphere's parallels among them, as
+    `Curve3::Meet` rings) and two spheres, S9d.2b the loops (graphs over the
+    height, `u = u0 +- acos(g(w) / rho)`, exact where the cylinder's frame
+    is, rational heights giving surd points) and circles of unequal axes;
+    (b) `Curve3::Meet` and the arrangement's pieces take a sphere as the
+    other quadric; (c) a whole sphere's split axes are two rows of a
+    rational rotation, so its great circle's basis has equal axes and its
+    points against a cylinder are surds over `Q(alpha)`; (d) only a real
+    repeated root of a discriminant is a tangency (a coaxial sphere's is
+    constant, its chart's quartic `D (1 + t^2)^2`); (e) the validator tries
+    a band's hole at two more points of its first fin, as other holes; (f) a
+    meeting on a hemisphere is a seam's only on the split, so a prism's
+    vertex on a sphere is `Degenerate` at once (the DRAW survey's box
+    corners). Pending: the DRAW survey, the campaign, S9d.2b.
 
 ### Parallel tracks
 

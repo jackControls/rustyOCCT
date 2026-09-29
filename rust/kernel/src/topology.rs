@@ -264,19 +264,22 @@ impl Spiric {
     }
 }
 
-/// Two cylinders' meeting as a graph over the first's angle (S9c.2; S7b's
-/// ruled parameterisation, D13). The carrier's ruling at `u = start + sweep
-/// f`, `frame.point(radius (cos u, sin u), v)`, meets the other cylinder
-/// (`|(w . x2, w . y2)| = other_radius` for `w` from its frame's origin) where
-/// `a v^2 + 2 b v + c = 0`; the edge is `v = (-b + sign sqrt(b^2 - a c)) /
-/// a`. An edge's range keeps `b^2 - a c > 0` strictly (no turning point), so
-/// it is analytic.
+/// Two cylinders' meeting (S9c.2), or a cylinder's and a sphere's (S9d.2),
+/// as a graph over the first cylinder's angle (S7b's ruled
+/// parameterisation, D13). The carrier's ruling at `u = start + sweep f`,
+/// `frame.point(radius (cos u, sin u), v)`, meets the other quadric (a
+/// cylinder `|(w . x2, w . y2)| = other_radius`, or a sphere `|w| =
+/// other_radius`, `w` from its frame's origin) where `a v^2 + 2 b v + c =
+/// 0`; the edge is `v = (-b + sign sqrt(b^2 - a c)) / a`. An edge's range
+/// keeps `b^2 - a c > 0` strictly (no turning point), so it is analytic.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Meet {
     pub frame: Frame3,
     pub radius: f64,
     pub other: Frame3,
     pub other_radius: f64,
+    /// The other quadric a sphere (S9d.2): `|w| = other_radius`.
+    pub other_sphere: bool,
     pub sign: f64,
     pub start: f64,
     pub sweep: f64,
@@ -292,11 +295,21 @@ impl Meet {
             .point(Point2::new(self.radius * c, self.radius * s), 0.0);
         let w = foot - self.other.origin();
         let n = self.frame.normal();
-        let (x2, y2) = (self.other.x(), self.other.y());
-        let (wx, wy, nx, ny) = (w.dot(x2), w.dot(y2), n.dot(x2), n.dot(y2));
-        let a = nx * nx + ny * ny;
-        let b = wx * nx + wy * ny;
-        let cc = wx * wx + wy * wy - self.other_radius * self.other_radius;
+        let (a, b, cc) = if self.other_sphere {
+            (
+                n.dot(n),
+                w.dot(n),
+                w.dot(w) - self.other_radius * self.other_radius,
+            )
+        } else {
+            let (x2, y2) = (self.other.x(), self.other.y());
+            let (wx, wy, nx, ny) = (w.dot(x2), w.dot(y2), n.dot(x2), n.dot(y2));
+            (
+                nx * nx + ny * ny,
+                wx * nx + wy * ny,
+                wx * wx + wy * wy - self.other_radius * self.other_radius,
+            )
+        };
         let d = (b * b - a * cc).max(0.0);
         (u, (-b + self.sign * d.sqrt()) / a)
     }

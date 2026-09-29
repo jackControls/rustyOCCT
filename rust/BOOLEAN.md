@@ -15,7 +15,9 @@ frames meeting in quartics (`curved/procedural.rs`), S9c.2b.1's
 cylinders with crossing axes in turned frames (`curved/turned.rs`) and
 S9c.2b.2's algebraic vertices where sections cross caps' circles, with
 parallel cylinders in turned frames (`curved/algebraic.rs`), and S9d.1's
-spheres against polyhedral prisms (`curved/sphere.rs`); S9d.2 to S9d.4
+spheres against polyhedral prisms (`curved/sphere.rs`), and S9d.2a's
+spheres against prisms with arcs and two spheres (`curved/spheres.rs`);
+S9d.2b to S9d.4
 are not.
 
 ## Contract
@@ -387,7 +389,29 @@ a pole needs none) or a parallel, an exact projection otherwise; a sphere
 face whose loops wind once in all holds its pole as a vertex loop (S3's
 caps). The validator decides a ray against a whole sphere (a cavity in a
 sphere); a result's bounds hold its spheres' boxes. A sphere against a
-cylinder or another sphere is S9d.2's (`OutOfDomain`).
+cylinder or another sphere is S9d.2's.
+
+### Spheres against cylinders and spheres (S9d.2a)
+
+Two spheres meet in their radical plane's section, a sphere's own circle
+meets another sphere on that plane (`curved/spheres.rs`). A cylinder and a
+sphere meet where the cylinder's rulings meet the sphere: the ruling's
+quadratic has the discriminant of S9c.2b.1 with the sphere as the other
+quadric (three world rows instead of a cylinder's two), positive all round
+(two rings over the cylinder's angle, `Curve3::Meet` with `other_sphere`:
+a pipe through a ball, centred on the axis or not), negative all round
+(apart), or changing sign (a loop: S9d.2b's, `OutOfDomain`); only a real
+repeated root is a tangency. A prism's cap circle meets a sphere at the
+roots of its quartic (`algebraic.rs`'s circle points against any quadric).
+A sphere's own circle (a rim, the split) meets a cylinder where `F0 + s F1
+= 0`, `s` its radius over its basis's length, a basis of equal axes: a
+quartic when `s` is rational, else `F0^2 - s^2 F1^2` with its roots of the
+right signs kept, the points surds over `Q(alpha)`. A whole sphere's split
+therefore uses two rows of a rational rotation (world axes of one rational
+length, picked by the seam); a zone's in an exact frame has equal axes too;
+a zone's circle of unequal axes against a cylinder is S9d.2b's. A meeting
+on a hemisphere is a seam's only on the split (a prism's vertex on the
+sphere elsewhere is `Degenerate` at once).
 
 ### Spline profiles (S9a.2)
 
@@ -974,6 +998,16 @@ height); its horizontal edges on a spline are its lifted restrictions.
   box's circles off the sphere's parallels) misses by up to 2.4e-6, the
   same results measured adaptively within 3.4e-9; seven solids' counts
   change when unified.
+* **Kernel (S9d.2a).** `tests/spheres_booleans.rs`: 24 of the 33 fixtures
+  as the reference (two spheres; coaxial pipes and holes, parallels as rings
+  of `Curve3::Meet` with the sphere as its other quadric; rods through
+  spheres, two rings; the 4 tangencies refused), the 9 loops (a bite, a
+  cap's circle crossing the sphere, the stadiums) `OutOfDomain` (S9d.2b's),
+  every history checked, results deterministic and moved rigidly.
+  `compare_spheres_boolean.py`: 12 matches, 21 reviewed (the measures, now
+  with ten kernel results whose faces are OCCT's unified ones and whose
+  edges and vertices differ where each splits its circles and quartics), no
+  failure; every other Boolean comparison unchanged.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

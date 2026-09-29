@@ -29,11 +29,6 @@ pub(super) enum Pos {
     Ang([Qd; 2]),
 }
 
-/// A sphere against a cylinder or another sphere: S9d.2's.
-fn sphere_later() -> Error {
-    Error::OutOfDomain("a sphere against a cylinder or a sphere (S9d.2)")
-}
-
 pub(super) fn tangency() -> Error {
     Error::Degenerate("a tangency between the inputs (S9c)")
 }
@@ -292,9 +287,25 @@ pub(super) fn section(
                 .into_iter()
                 .collect(),
         )),
-        (Surf::Cyl { .. }, Surf::Sphere { .. })
-        | (Surf::Sphere { .. }, Surf::Cyl { .. })
-        | (Surf::Sphere { .. }, Surf::Sphere { .. }) => Err(sphere_later()),
+        // S9d.2: a cylinder and a sphere by their relation (rings over the
+        // cylinder's angle, or apart); two spheres on their radical plane.
+        (Surf::Cyl { .. }, Surf::Sphere { .. }) | (Surf::Sphere { .. }, Surf::Cyl { .. }) => {
+            match pair.expect("a cylinder and a sphere's relation") {
+                CylPair::Quartic(x) => Ok(Section::Curves(
+                    x.pieces
+                        .iter()
+                        .map(|m| Crv::Meet(Box::new(m.clone())))
+                        .collect(),
+                )),
+                _ => Ok(Section::Curves(Vec::new())),
+            }
+        }
+        (Surf::Sphere { c: c1, r: r1 }, Surf::Sphere { c: c2, r: r2 }) => Ok(Section::Curves(
+            super::spheres::sphere_sphere(c1, r1, c2, r2)?
+                .map(|circ| Crv::Circle(Box::new(circ)))
+                .into_iter()
+                .collect(),
+        )),
         (Surf::Cyl { c, r, .. }, Surf::Cyl { .. }) => {
             match pair.expect("a cylinder pair's relation") {
                 CylPair::Apart => Ok(Section::Curves(Vec::new())),
@@ -400,6 +411,7 @@ fn circle_circle(c1: &P2, r1: &R, c2: &P2, r2: &R) -> Result<Vec<[Qd; 2]>> {
 pub(super) fn edge_surface(
     curve: &Crv,
     own: Option<(&Prism, &P2, &R)>,
+    own_ball: Option<&super::sphere::Ball>,
     py: &Prism,
     fy: usize,
     pair: Option<&CylPair>,
@@ -422,7 +434,19 @@ pub(super) fn edge_surface(
                     .collect(),
             )),
         },
-        (Crv::Circle(_), _) | (_, Surf::Sphere { .. }) => Err(sphere_later()),
+        // S9d.2: a sphere's circle against a cylinder or another sphere, a
+        // prism's arc against a sphere.
+        (Crv::Circle(circ), Surf::Cyl { c: cy, r: ry, .. }) => {
+            super::spheres::circ_cylinder(circ, &py.f, cy, ry)
+        }
+        (Crv::Circle(circ), Surf::Sphere { c: c2, r: r2 }) => {
+            let ball = own_ball.expect("a sphere's circle's own sphere");
+            super::spheres::circ_sphere(circ, &ball.c, &ball.r, c2, r2)
+        }
+        (Crv::Conic { c, a, b }, Surf::Sphere { c: cs, r }) => Ok(EdgeMeet::Points(
+            super::algebraic::circle_quadric(c, a, b, &super::procedural::other_sphere(cs, r))?,
+        )),
+        (Crv::Meet(_), _) => unreachable!("a model edge is a line, an arc or a circle"),
         (Crv::Line { p, d }, Surf::Plane { p: p0, m }) => {
             let md = dot(m, d);
             let off = qdot(&qsub(&qv(p0), p), m);
@@ -491,7 +515,6 @@ pub(super) fn edge_surface(
                 )),
             }
         }
-        (Crv::Meet(_), _) => unreachable!("a model edge is a line or an arc"),
         (Crv::Conic { .. }, Surf::Cyl { c: cy, r: ry, .. }) => {
             // An arc of the edge's own cylinder (`own`) against the other's.
             let (px, cx, rx) = own.expect("an arc edge's own cylinder");

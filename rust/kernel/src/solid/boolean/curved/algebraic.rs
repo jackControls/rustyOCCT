@@ -27,8 +27,18 @@ pub(super) fn circle_points(
     cy: &P2,
     ry: &R,
 ) -> Result<Vec<(super::meet::Pos, QV)>> {
-    let o = other_of(f, cy, ry);
-    let lin: Vec<Lin> = (0..2)
+    circle_quadric(c, a, b, &other_of(f, cy, ry))
+}
+
+/// Where the circle `c + a cos + b sin` meets a quadric (a cylinder, or a
+/// sphere: S9d.2).
+pub(super) fn circle_quadric(
+    c: &V,
+    a: &V,
+    b: &V,
+    o: &super::procedural::Other,
+) -> Result<Vec<(super::meet::Pos, QV)>> {
+    let lin: Vec<Lin> = (0..o.g.len())
         .map(|i| [dot(&o.g[i], c) - &o.e[i], dot(&o.g[i], a), dot(&o.g[i], b)])
         .collect();
     let mut form = square_sum(&lin);

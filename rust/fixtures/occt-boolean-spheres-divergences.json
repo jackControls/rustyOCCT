@@ -1,195 +1,271 @@
 {
-  "note": "Reviewed BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut and BRepAlgoAPI_Common differences from the S9d.2 reference.",
-  "reviews": [
-    {
-      "case": "hole_box_common",
-      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
-      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
-      "native_sha256": "b2a732a68bca83603e35b21397b1d3d342fbf83ade7507984d42b9cfd1511f60",
-      "differences": [
-        "measure"
-      ],
-      "reason": "BRepGProp's default integration on spherical faces bounded by circles off their parallels: the native result is valid with the reference's solid count, its volume 3.1e-08 and area 1.1e-08 relative and its centre 7.3e-09 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 6.1e-11 in volume, 3.0e-11 in area (relative) and 2.0e-11 in centre; its edges' tolerance is at most 1.3e-07 (none of its 20 edges a B-spline: the box walls cut the sphere in circles off its parallels). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of S9d.1's box against the sphere less the coaxial core (the axial integral of pi min(a^2, R^2 - z^2), the sphere's face inside by Archimedes, the hole's wall inside 2 pi a times its height) within 1e-40, with a second slicing direction within 1e-40, inclusion and exclusion, the area identity and every face's classes within 1.4e-40, and Monte Carlo within 3.0 standard errors.",
-      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
-    },
-    {
-      "case": "rings_cut",
-      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
-      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
-      "native_sha256": "0905bbdc4400b278fe7a3e98fe82221dc08f09d3b1794e86a7ce2f0444661abd",
-      "differences": [
-        "measure"
-      ],
-      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 1.8e-07 and area 1.6e-07 relative and its centre 1.8e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 2.3e-11 in volume, 2.3e-11 in area (relative) and 2.6e-11 in centre; its edges' tolerance is at most 1.0e-07 (8 of its 12 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of a sphere against an off-axis cylinder (the lens of the sphere's section and the cylinder's disc, its first moments by circular segments and each circle's angle inside the other, integrated along the axis) within 1e-40, with a second slicing direction (the cylinder cut obliquely) and inclusion and exclusion within 1e-39, the area identity and every face's classes within 3e-40, and with Monte Carlo within 3.2 standard errors; every cap circle at least 1.2 of the radius squared from tangency with the sphere.",
-      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
-    },
-    {
-      "case": "rings_common",
-      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
-      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
-      "native_sha256": "9ad4da0c9b37e8fd15d0fb182c2caad4555c77ee2bff54f92d5f7b33bb827e13",
-      "differences": [
-        "centre",
-        "measure"
-      ],
-      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 7.5e-07 and area 2.9e-07 relative and its centre 1.2e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.7e-10 in volume, 2.5e-10 in area (relative) and 9.9e-11 in centre; its edges' tolerance is at most 1.0e-07 (8 of its 16 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of a sphere against an off-axis cylinder (the lens of the sphere's section and the cylinder's disc, its first moments by circular segments and each circle's angle inside the other, integrated along the axis) within 1e-40, with a second slicing direction (the cylinder cut obliquely) and inclusion and exclusion within 1e-39, the area identity and every face's classes within 3e-40, and with Monte Carlo within 3.2 standard errors; every cap circle at least 1.2 of the radius squared from tangency with the sphere.",
-      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
-    },
-    {
-      "case": "rod_ends_cut",
-      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
-      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
-      "native_sha256": "3b88256649f47153d70d8dd8ef53143474d3e8651c0c2ec603d723959a8b84d4",
-      "differences": [
-        "measure"
-      ],
-      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 1.3e-07 and area 5.3e-07 relative and its centre 1.1e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 6.4e-11 in volume, 7.5e-11 in area (relative) and 5.8e-12 in centre; its edges' tolerance is at most 1.0e-07 (8 of its 22 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of a sphere against an off-axis cylinder (the lens of the sphere's section and the cylinder's disc, its first moments by circular segments and each circle's angle inside the other, integrated along the axis) within 1e-40, with a second slicing direction (the cylinder cut obliquely) and inclusion and exclusion within 1e-39, the area identity and every face's classes within 3e-40, and with Monte Carlo within 3.2 standard errors; every cap circle at least 1.2 of the radius squared from tangency with the sphere.",
-      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
-    },
-    {
-      "case": "rings_tilt_common",
-      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
-      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
-      "native_sha256": "9c0d639362bcdd31e06c22bd0ef925558c36e22ee785c9805cae48bfa6518034",
-      "differences": [
-        "centre",
-        "measure"
-      ],
-      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 1.0e-06 and area 6.9e-07 relative and its centre 6.0e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 5.2e-10 in volume, 3.5e-10 in area (relative) and 1.9e-10 in centre; its edges' tolerance is at most 1.0e-07 (4 of its 6 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of a sphere against an off-axis cylinder (the lens of the sphere's section and the cylinder's disc, its first moments by circular segments and each circle's angle inside the other, integrated along the axis) within 4.2e-17 (a turned frame: its stored axes not exactly orthonormal), with a second slicing direction (the cylinder cut obliquely) and inclusion and exclusion within 1e-39, the area identity and every face's classes within 3e-40, and with Monte Carlo within 3.2 standard errors; every cap circle at least 1.2 of the radius squared from tangency with the sphere.",
-      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
-    },
-    {
-      "case": "bite_fuse",
-      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
-      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
-      "native_sha256": "0559800553b8d508142747c9cb9049a502547e8a760734c900a891c4aaf94114",
-      "differences": [
-        "centre",
-        "measure"
-      ],
-      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 2.4e-08 and area 3.7e-08 relative and its centre 2.1e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.3e-10 in volume, 2.5e-10 in area (relative) and 4.2e-11 in centre; its edges' tolerance is at most 1.6e-07 (4 of its 16 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of a sphere against an off-axis cylinder (the lens of the sphere's section and the cylinder's disc, its first moments by circular segments and each circle's angle inside the other, integrated along the axis) within 1e-40, with a second slicing direction (the cylinder cut obliquely) and inclusion and exclusion within 1e-39, the area identity and every face's classes within 3e-40, and with Monte Carlo within 3.2 standard errors; every cap circle at least 1.2 of the radius squared from tangency with the sphere.",
-      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
-    },
-    {
-      "case": "bite_cut",
-      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
-      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
-      "native_sha256": "aff0b3c2a5b298920db0d4a7ab1f217ea2e28239066a263de5af98ca1c628532",
-      "differences": [
-        "centre",
-        "measure"
-      ],
-      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 6.7e-07 and area 7.7e-07 relative and its centre 2.0e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 3.8e-10 in volume, 4.8e-10 in area (relative) and 2.0e-10 in centre; its edges' tolerance is at most 1.6e-07 (4 of its 10 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of a sphere against an off-axis cylinder (the lens of the sphere's section and the cylinder's disc, its first moments by circular segments and each circle's angle inside the other, integrated along the axis) within 1e-40, with a second slicing direction (the cylinder cut obliquely) and inclusion and exclusion within 1e-39, the area identity and every face's classes within 3e-40, and with Monte Carlo within 3.2 standard errors; every cap circle at least 1.2 of the radius squared from tangency with the sphere.",
-      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
-    },
-    {
-      "case": "bite_common",
-      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
-      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
-      "native_sha256": "4de6f46decaff0daa61513aa1562b6593d68dc51128835756c389c93530b3095",
-      "differences": [
-        "centre",
-        "measure"
-      ],
-      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 2.4e-06 and area 1.5e-06 relative and its centre 3.1e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 3.4e-09 in volume, 1.6e-09 in area (relative) and 6.8e-10 in centre; its edges' tolerance is at most 1.6e-07 (4 of its 6 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of a sphere against an off-axis cylinder (the lens of the sphere's section and the cylinder's disc, its first moments by circular segments and each circle's angle inside the other, integrated along the axis) within 1e-40, with a second slicing direction (the cylinder cut obliquely) and inclusion and exclusion within 1e-39, the area identity and every face's classes within 3e-40, and with Monte Carlo within 3.2 standard errors; every cap circle at least 1.2 of the radius squared from tangency with the sphere.",
-      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
-    },
-    {
-      "case": "bite_tilt_cut",
-      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
-      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
-      "native_sha256": "af82846d756243bb19167f0a433b32fec459771ec1944d9a061f036c2d9102a1",
-      "differences": [
-        "centre",
-        "measure"
-      ],
-      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 2.9e-07 and area 8.0e-08 relative and its centre 2.5e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.5e-09 in volume, 1.7e-11 in area (relative) and 8.8e-10 in centre; its edges' tolerance is at most 7.5e-07 (4 of its 10 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of a sphere against an off-axis cylinder (the lens of the sphere's section and the cylinder's disc, its first moments by circular segments and each circle's angle inside the other, integrated along the axis) within 4.2e-17 (a turned frame: its stored axes not exactly orthonormal), with a second slicing direction (the cylinder cut obliquely) and inclusion and exclusion within 1e-39, the area identity and every face's classes within 3e-40, and with Monte Carlo within 3.2 standard errors; every cap circle at least 1.2 of the radius squared from tangency with the sphere.",
-      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
-    },
-    {
-      "case": "cap_cross_cut",
-      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
-      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
-      "native_sha256": "9a7cd5f52efa922f820a88e217fb68d2e3f84c352336317e14ebc7d4b571c0eb",
-      "differences": [
-        "centre",
-        "measure"
-      ],
-      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 6.7e-08 and area 8.2e-08 relative and its centre 3.2e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.6e-10 in volume, 5.3e-10 in area (relative) and 9.9e-11 in centre; its edges' tolerance is at most 2.1e-07 (4 of its 16 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of a sphere against an off-axis cylinder (the lens of the sphere's section and the cylinder's disc, its first moments by circular segments and each circle's angle inside the other, integrated along the axis) within 1e-40, with a second slicing direction (the cylinder cut obliquely) and inclusion and exclusion within 1e-39, the area identity and every face's classes within 3e-40, and with Monte Carlo within 3.2 standard errors; every cap circle at least 0.68 of the radius squared from tangency with the sphere.",
-      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
-    },
-    {
-      "case": "cap_cross_common",
-      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
-      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
-      "native_sha256": "3a5a82d3b37be758e3942a4275226b236e30eef7ba6e02a6a22b3c8e15a2dcc2",
-      "differences": [
-        "measure"
-      ],
-      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 6.7e-08 and area 1.7e-08 relative and its centre 8.9e-09 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 6.5e-10 in volume, 5.7e-10 in area (relative) and 2.3e-10 in centre; its edges' tolerance is at most 2.1e-07 (4 of its 12 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of a sphere against an off-axis cylinder (the lens of the sphere's section and the cylinder's disc, its first moments by circular segments and each circle's angle inside the other, integrated along the axis) within 1e-40, with a second slicing direction (the cylinder cut obliquely) and inclusion and exclusion within 1e-39, the area identity and every face's classes within 3e-40, and with Monte Carlo within 3.2 standard errors; every cap circle at least 0.68 of the radius squared from tangency with the sphere.",
-      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
-    },
-    {
-      "case": "stadium_cut",
-      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
-      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
-      "native_sha256": "b9bffed94a7c1d3dfd004a3a0a228516290acddf17ad84a9add17d2e619b9407",
-      "differences": [
-        "centre",
-        "measure"
-      ],
-      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 2.1e-08 and area 4.8e-09 relative and its centre 2.7e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.5e-10 in volume, 1.5e-10 in area (relative) and 7.2e-11 in centre; its edges' tolerance is at most 1.0e-07 (2 of its 8 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with a second slicing direction (the stadium cut obliquely: its arcs ellipses in the slices) within 2e-41, inclusion and exclusion within 1.2e-41, the area identity within 1.2e-40, every face's classes within 3e-41 (its cylindrical walls by mpmath's quadrature of their element), and Monte Carlo within 2.7 standard errors; no closed form is taken for the stadium.",
-      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
-    },
-    {
-      "case": "stadium_common",
-      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
-      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
-      "native_sha256": "b62ab6b985a4f16699e1fa6c49384eadc5d70dd6b143bc0f164a1de311f486d6",
-      "differences": [
-        "centre",
-        "measure"
-      ],
-      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 7.0e-08 and area 4.6e-08 relative and its centre 3.5e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 6.5e-11 in volume, 5.6e-11 in area (relative) and 4.4e-11 in centre; its edges' tolerance is at most 1.0e-07 (2 of its 12 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with a second slicing direction (the stadium cut obliquely: its arcs ellipses in the slices) within 2e-41, inclusion and exclusion within 1.2e-41, the area identity within 1.2e-40, every face's classes within 3e-41 (its cylindrical walls by mpmath's quadrature of their element), and Monte Carlo within 2.7 standard errors; no closed form is taken for the stadium.",
-      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
-    },
-    {
-      "case": "stadium_ends_cut",
-      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
-      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
-      "native_sha256": "cfa1c04ba3d81d1f47ebe8b2a22e658dcf63284a8a3f512b5b0942574ce2f9a7",
-      "differences": [
-        "measure"
-      ],
-      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 2.5e-08 and area 2.2e-08 relative and its centre 1.8e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 7.4e-12 in volume, 5.9e-11 in area (relative) and 2.6e-11 in centre; its edges' tolerance is at most 1.0e-07 (2 of its 36 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with a second slicing direction (the stadium cut obliquely: its arcs ellipses in the slices) within 2e-41, inclusion and exclusion within 1.2e-41, the area identity within 1.2e-40, every face's classes within 3e-41 (its cylindrical walls by mpmath's quadrature of their element), and Monte Carlo within 2.7 standard errors; no closed form is taken for the stadium.",
-      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
-    },
-    {
-      "case": "rod_inside_tangent_cut",
-      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
-      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
-      "native_sha256": "ee045cb9d01c45efb9d0ab58cf2bc7aea43d5626864aba596f63491449c7effb",
-      "differences": [
-        "centre",
-        "measure"
-      ],
-      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 4.1e-07 and area 5.2e-07 relative and its centre 3.7e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 2.0e-10 in volume, 1.7e-10 in area (relative) and 1.2e-10 in centre; its edges' tolerance is at most 1.0e-07 (8 of its 14 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of a sphere against an off-axis cylinder (the lens of the sphere's section and the cylinder's disc, its first moments by circular segments and each circle's angle inside the other, integrated along the axis) within 1e-40, with a second slicing direction (the cylinder cut obliquely) and inclusion and exclusion within 1e-39, the area identity and every face's classes within 3e-40, and with Monte Carlo within 3.2 standard errors; every cap circle at least 1.2 of the radius squared from tangency with the sphere. The case is declared degenerate (the cylinder tangent to the sphere inside); OCCT builds it valid.",
-      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
-    }
-  ]
+ "note": "Reviewed BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut and BRepAlgoAPI_Common differences from the S9d.2 reference and the kernel.",
+ "reviews": [
+  {
+   "case": "hole_box_common",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "b2a732a68bca83603e35b21397b1d3d342fbf83ade7507984d42b9cfd1511f60",
+   "differences": [
+    "measure",
+    "rust_entity_counts"
+   ],
+   "reason": "BRepGProp's default integration on spherical faces bounded by circles off their parallels: the native result is valid with the reference's solid count, its volume 3.1e-08 and area 1.1e-08 relative and its centre 7.3e-09 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 6.1e-11 in volume, 3.0e-11 in area (relative) and 2.0e-11 in centre; its edges' tolerance is at most 1.3e-07 (none of its 20 edges a B-spline: the box walls cut the sphere in circles off its parallels). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI gives 6 faces, 10 edges and 7 vertices; the kernel's result, counted with OCCT's seams, has 6 faces, 8 edges and 6 vertices: the same faces as OCCT's unified result, edges and vertices differing where each splits its circles and quartics (OCCT's sphere seams and its intersection curves' own points; the kernel's rings closed on one vertex or none, its quartics at its seams' vertices). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+   "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of S9d.1's box against the sphere less the coaxial core (the axial integral of pi min(a^2, R^2 - z^2), the sphere's face inside by Archimedes, the hole's wall inside 2 pi a times its height) within 1e-40, with a second slicing direction within 1e-40, inclusion and exclusion, the area identity and every face's classes within 1.4e-40, and Monte Carlo within 3.0 standard errors.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  },
+  {
+   "case": "rings_cut",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "0905bbdc4400b278fe7a3e98fe82221dc08f09d3b1794e86a7ce2f0444661abd",
+   "differences": [
+    "measure",
+    "rust_entity_counts"
+   ],
+   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 1.8e-07 and area 1.6e-07 relative and its centre 1.8e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 2.3e-11 in volume, 2.3e-11 in area (relative) and 2.6e-11 in centre; its edges' tolerance is at most 1.0e-07 (8 of its 12 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI gives 2 faces, 6 edges and 4 vertices; the kernel's result, counted with OCCT's seams, has 2 faces, 4 edges and 2 vertices: the same faces as OCCT's unified result, edges and vertices differing where each splits its circles and quartics (OCCT's sphere seams and its intersection curves' own points; the kernel's rings closed on one vertex or none, its quartics at its seams' vertices). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+   "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of a sphere against an off-axis cylinder (the lens of the sphere's section and the cylinder's disc, its first moments by circular segments and each circle's angle inside the other, integrated along the axis) within 1e-40, with a second slicing direction (the cylinder cut obliquely) and inclusion and exclusion within 1e-39, the area identity and every face's classes within 3e-40, and with Monte Carlo within 3.2 standard errors; every cap circle at least 1.2 of the radius squared from tangency with the sphere.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  },
+  {
+   "case": "rings_common",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "9ad4da0c9b37e8fd15d0fb182c2caad4555c77ee2bff54f92d5f7b33bb827e13",
+   "differences": [
+    "centre",
+    "measure",
+    "rust_entity_counts"
+   ],
+   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 7.5e-07 and area 2.9e-07 relative and its centre 1.2e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.7e-10 in volume, 2.5e-10 in area (relative) and 9.9e-11 in centre; its edges' tolerance is at most 1.0e-07 (8 of its 16 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI gives 3 faces, 9 edges and 6 vertices; the kernel's result, counted with OCCT's seams, has 3 faces, 7 edges and 4 vertices: the same faces as OCCT's unified result, edges and vertices differing where each splits its circles and quartics (OCCT's sphere seams and its intersection curves' own points; the kernel's rings closed on one vertex or none, its quartics at its seams' vertices). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+   "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of a sphere against an off-axis cylinder (the lens of the sphere's section and the cylinder's disc, its first moments by circular segments and each circle's angle inside the other, integrated along the axis) within 1e-40, with a second slicing direction (the cylinder cut obliquely) and inclusion and exclusion within 1e-39, the area identity and every face's classes within 3e-40, and with Monte Carlo within 3.2 standard errors; every cap circle at least 1.2 of the radius squared from tangency with the sphere.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  },
+  {
+   "case": "rod_ends_cut",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "3b88256649f47153d70d8dd8ef53143474d3e8651c0c2ec603d723959a8b84d4",
+   "differences": [
+    "measure",
+    "rust_entity_counts"
+   ],
+   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 1.3e-07 and area 5.3e-07 relative and its centre 1.1e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 6.4e-11 in volume, 7.5e-11 in area (relative) and 5.8e-12 in centre; its edges' tolerance is at most 1.0e-07 (8 of its 22 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI gives 3 faces, 6 edges and 4 vertices; 3 faces, 6 edges and 4 vertices; the kernel's result, counted with OCCT's seams, has 3 faces, 5 edges and 3 vertices; 3 faces, 5 edges and 3 vertices: the same faces as OCCT's unified result, edges and vertices differing where each splits its circles and quartics (OCCT's sphere seams and its intersection curves' own points; the kernel's rings closed on one vertex or none, its quartics at its seams' vertices). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+   "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of a sphere against an off-axis cylinder (the lens of the sphere's section and the cylinder's disc, its first moments by circular segments and each circle's angle inside the other, integrated along the axis) within 1e-40, with a second slicing direction (the cylinder cut obliquely) and inclusion and exclusion within 1e-39, the area identity and every face's classes within 3e-40, and with Monte Carlo within 3.2 standard errors; every cap circle at least 1.2 of the radius squared from tangency with the sphere.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  },
+  {
+   "case": "rings_tilt_common",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "9c0d639362bcdd31e06c22bd0ef925558c36e22ee785c9805cae48bfa6518034",
+   "differences": [
+    "centre",
+    "measure"
+   ],
+   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 1.0e-06 and area 6.9e-07 relative and its centre 6.0e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 5.2e-10 in volume, 3.5e-10 in area (relative) and 1.9e-10 in centre; its edges' tolerance is at most 1.0e-07 (4 of its 6 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
+   "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of a sphere against an off-axis cylinder (the lens of the sphere's section and the cylinder's disc, its first moments by circular segments and each circle's angle inside the other, integrated along the axis) within 4.2e-17 (a turned frame: its stored axes not exactly orthonormal), with a second slicing direction (the cylinder cut obliquely) and inclusion and exclusion within 1e-39, the area identity and every face's classes within 3e-40, and with Monte Carlo within 3.2 standard errors; every cap circle at least 1.2 of the radius squared from tangency with the sphere.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  },
+  {
+   "case": "bite_fuse",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "0559800553b8d508142747c9cb9049a502547e8a760734c900a891c4aaf94114",
+   "differences": [
+    "centre",
+    "measure"
+   ],
+   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 2.4e-08 and area 3.7e-08 relative and its centre 2.1e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.3e-10 in volume, 2.5e-10 in area (relative) and 4.2e-11 in centre; its edges' tolerance is at most 1.6e-07 (4 of its 16 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
+   "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of a sphere against an off-axis cylinder (the lens of the sphere's section and the cylinder's disc, its first moments by circular segments and each circle's angle inside the other, integrated along the axis) within 1e-40, with a second slicing direction (the cylinder cut obliquely) and inclusion and exclusion within 1e-39, the area identity and every face's classes within 3e-40, and with Monte Carlo within 3.2 standard errors; every cap circle at least 1.2 of the radius squared from tangency with the sphere.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  },
+  {
+   "case": "bite_cut",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "aff0b3c2a5b298920db0d4a7ab1f217ea2e28239066a263de5af98ca1c628532",
+   "differences": [
+    "centre",
+    "measure"
+   ],
+   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 6.7e-07 and area 7.7e-07 relative and its centre 2.0e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 3.8e-10 in volume, 4.8e-10 in area (relative) and 2.0e-10 in centre; its edges' tolerance is at most 1.6e-07 (4 of its 10 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
+   "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of a sphere against an off-axis cylinder (the lens of the sphere's section and the cylinder's disc, its first moments by circular segments and each circle's angle inside the other, integrated along the axis) within 1e-40, with a second slicing direction (the cylinder cut obliquely) and inclusion and exclusion within 1e-39, the area identity and every face's classes within 3e-40, and with Monte Carlo within 3.2 standard errors; every cap circle at least 1.2 of the radius squared from tangency with the sphere.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  },
+  {
+   "case": "bite_common",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "4de6f46decaff0daa61513aa1562b6593d68dc51128835756c389c93530b3095",
+   "differences": [
+    "centre",
+    "measure"
+   ],
+   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 2.4e-06 and area 1.5e-06 relative and its centre 3.1e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 3.4e-09 in volume, 1.6e-09 in area (relative) and 6.8e-10 in centre; its edges' tolerance is at most 1.6e-07 (4 of its 6 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
+   "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of a sphere against an off-axis cylinder (the lens of the sphere's section and the cylinder's disc, its first moments by circular segments and each circle's angle inside the other, integrated along the axis) within 1e-40, with a second slicing direction (the cylinder cut obliquely) and inclusion and exclusion within 1e-39, the area identity and every face's classes within 3e-40, and with Monte Carlo within 3.2 standard errors; every cap circle at least 1.2 of the radius squared from tangency with the sphere.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  },
+  {
+   "case": "bite_tilt_cut",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "af82846d756243bb19167f0a433b32fec459771ec1944d9a061f036c2d9102a1",
+   "differences": [
+    "centre",
+    "measure"
+   ],
+   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 2.9e-07 and area 8.0e-08 relative and its centre 2.5e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.5e-09 in volume, 1.7e-11 in area (relative) and 8.8e-10 in centre; its edges' tolerance is at most 7.5e-07 (4 of its 10 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
+   "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of a sphere against an off-axis cylinder (the lens of the sphere's section and the cylinder's disc, its first moments by circular segments and each circle's angle inside the other, integrated along the axis) within 4.2e-17 (a turned frame: its stored axes not exactly orthonormal), with a second slicing direction (the cylinder cut obliquely) and inclusion and exclusion within 1e-39, the area identity and every face's classes within 3e-40, and with Monte Carlo within 3.2 standard errors; every cap circle at least 1.2 of the radius squared from tangency with the sphere.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  },
+  {
+   "case": "cap_cross_cut",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "9a7cd5f52efa922f820a88e217fb68d2e3f84c352336317e14ebc7d4b571c0eb",
+   "differences": [
+    "centre",
+    "measure"
+   ],
+   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 6.7e-08 and area 8.2e-08 relative and its centre 3.2e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.6e-10 in volume, 5.3e-10 in area (relative) and 9.9e-11 in centre; its edges' tolerance is at most 2.1e-07 (4 of its 16 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
+   "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of a sphere against an off-axis cylinder (the lens of the sphere's section and the cylinder's disc, its first moments by circular segments and each circle's angle inside the other, integrated along the axis) within 1e-40, with a second slicing direction (the cylinder cut obliquely) and inclusion and exclusion within 1e-39, the area identity and every face's classes within 3e-40, and with Monte Carlo within 3.2 standard errors; every cap circle at least 0.68 of the radius squared from tangency with the sphere.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  },
+  {
+   "case": "cap_cross_common",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "3a5a82d3b37be758e3942a4275226b236e30eef7ba6e02a6a22b3c8e15a2dcc2",
+   "differences": [
+    "measure"
+   ],
+   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 6.7e-08 and area 1.7e-08 relative and its centre 8.9e-09 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 6.5e-10 in volume, 5.7e-10 in area (relative) and 2.3e-10 in centre; its edges' tolerance is at most 2.1e-07 (4 of its 12 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
+   "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of a sphere against an off-axis cylinder (the lens of the sphere's section and the cylinder's disc, its first moments by circular segments and each circle's angle inside the other, integrated along the axis) within 1e-40, with a second slicing direction (the cylinder cut obliquely) and inclusion and exclusion within 1e-39, the area identity and every face's classes within 3e-40, and with Monte Carlo within 3.2 standard errors; every cap circle at least 0.68 of the radius squared from tangency with the sphere.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  },
+  {
+   "case": "stadium_cut",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "b9bffed94a7c1d3dfd004a3a0a228516290acddf17ad84a9add17d2e619b9407",
+   "differences": [
+    "centre",
+    "measure"
+   ],
+   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 2.1e-08 and area 4.8e-09 relative and its centre 2.7e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.5e-10 in volume, 1.5e-10 in area (relative) and 7.2e-11 in centre; its edges' tolerance is at most 1.0e-07 (2 of its 8 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
+   "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with a second slicing direction (the stadium cut obliquely: its arcs ellipses in the slices) within 2e-41, inclusion and exclusion within 1.2e-41, the area identity within 1.2e-40, every face's classes within 3e-41 (its cylindrical walls by mpmath's quadrature of their element), and Monte Carlo within 2.7 standard errors; no closed form is taken for the stadium.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  },
+  {
+   "case": "stadium_common",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "b62ab6b985a4f16699e1fa6c49384eadc5d70dd6b143bc0f164a1de311f486d6",
+   "differences": [
+    "centre",
+    "measure"
+   ],
+   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 7.0e-08 and area 4.6e-08 relative and its centre 3.5e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 6.5e-11 in volume, 5.6e-11 in area (relative) and 4.4e-11 in centre; its edges' tolerance is at most 1.0e-07 (2 of its 12 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
+   "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with a second slicing direction (the stadium cut obliquely: its arcs ellipses in the slices) within 2e-41, inclusion and exclusion within 1.2e-41, the area identity within 1.2e-40, every face's classes within 3e-41 (its cylindrical walls by mpmath's quadrature of their element), and Monte Carlo within 2.7 standard errors; no closed form is taken for the stadium.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  },
+  {
+   "case": "stadium_ends_cut",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "cfa1c04ba3d81d1f47ebe8b2a22e658dcf63284a8a3f512b5b0942574ce2f9a7",
+   "differences": [
+    "measure"
+   ],
+   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 2.5e-08 and area 2.2e-08 relative and its centre 1.8e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 7.4e-12 in volume, 5.9e-11 in area (relative) and 2.6e-11 in centre; its edges' tolerance is at most 1.0e-07 (2 of its 36 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
+   "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with a second slicing direction (the stadium cut obliquely: its arcs ellipses in the slices) within 2e-41, inclusion and exclusion within 1.2e-41, the area identity within 1.2e-40, every face's classes within 3e-41 (its cylindrical walls by mpmath's quadrature of their element), and Monte Carlo within 2.7 standard errors; no closed form is taken for the stadium.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  },
+  {
+   "case": "rod_inside_tangent_cut",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "ee045cb9d01c45efb9d0ab58cf2bc7aea43d5626864aba596f63491449c7effb",
+   "differences": [
+    "centre",
+    "measure"
+   ],
+   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 4.1e-07 and area 5.2e-07 relative and its centre 3.7e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 2.0e-10 in volume, 1.7e-10 in area (relative) and 1.2e-10 in centre; its edges' tolerance is at most 1.0e-07 (8 of its 14 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
+   "independent_evidence": "spheres_boolean_reference.py's rows (generate_spheres_boolean_fixtures.py --check) agree with the closed form of a sphere against an off-axis cylinder (the lens of the sphere's section and the cylinder's disc, its first moments by circular segments and each circle's angle inside the other, integrated along the axis) within 1e-40, with a second slicing direction (the cylinder cut obliquely) and inclusion and exclusion within 1e-39, the area identity and every face's classes within 3e-40, and with Monte Carlo within 3.2 standard errors; every cap circle at least 1.2 of the radius squared from tangency with the sphere. The case is declared degenerate (the cylinder tangent to the sphere inside); OCCT builds it valid.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  },
+  {
+   "case": "spheres_cross_fuse",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "21f3ea6583ebf29a2c943d92dd6acf9f6ee39e464b0bb5ff23f43df4be327cd2",
+   "differences": [
+    "rust_entity_counts"
+   ],
+   "reason": "Counts only: the native result is valid with the reference's solid count and its measures within the allowance. Entity counts: BRepAlgoAPI gives 2 faces, 9 edges and 6 vertices; the kernel's result, counted with OCCT's seams, has 2 faces, 1 edges and 1 vertices: the same faces as OCCT's unified result, edges and vertices differing where each splits its circles and quartics (OCCT's sphere seams and its intersection curves' own points; the kernel's rings closed on one vertex or none, its quartics at its seams' vertices). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+   "independent_evidence": "The reference's rows (its --check: closed forms, inclusion and exclusion, the area identity, every face's classes and Monte Carlo) hold the kernel's certified volume, area and centre enclosures.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  },
+  {
+   "case": "spheres_cross_cut",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "1511ccd2da40f60864471612a2e294a795f4e1eb5bd38630fb1d3880ddde8770",
+   "differences": [
+    "rust_entity_counts"
+   ],
+   "reason": "Counts only: the native result is valid with the reference's solid count and its measures within the allowance. Entity counts: BRepAlgoAPI gives 2 faces, 6 edges and 4 vertices; the kernel's result, counted with OCCT's seams, has 2 faces, 1 edges and 1 vertices: the same faces as OCCT's unified result, edges and vertices differing where each splits its circles and quartics (OCCT's sphere seams and its intersection curves' own points; the kernel's rings closed on one vertex or none, its quartics at its seams' vertices). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+   "independent_evidence": "The reference's rows (its --check: closed forms, inclusion and exclusion, the area identity, every face's classes and Monte Carlo) hold the kernel's certified volume, area and centre enclosures.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  },
+  {
+   "case": "spheres_cross_common",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "195f596c5c15d1b4db40df061063b7b8932d6d7ec8890ba58a53649c2431b6aa",
+   "differences": [
+    "rust_entity_counts"
+   ],
+   "reason": "Counts only: the native result is valid with the reference's solid count and its measures within the allowance. Entity counts: BRepAlgoAPI gives 3 faces, 3 edges and 2 vertices (2 faces, 4 edges and 2 vertices after ShapeUpgrade_UnifySameDomain); the kernel's result, counted with OCCT's seams, has 2 faces, 1 edges and 1 vertices: the same faces as OCCT's unified result, edges and vertices differing where each splits its circles and quartics (OCCT's sphere seams and its intersection curves' own points; the kernel's rings closed on one vertex or none, its quartics at its seams' vertices). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+   "independent_evidence": "The reference's rows (its --check: closed forms, inclusion and exclusion, the area identity, every face's classes and Monte Carlo) hold the kernel's certified volume, area and centre enclosures.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  },
+  {
+   "case": "pipe_side_common",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "487d97868580d3ee9bc23d0ad54296e7ec3594e0c7ece93904de46d012b060cd",
+   "differences": [
+    "rust_entity_counts"
+   ],
+   "reason": "Counts only: the native result is valid with the reference's solid count and its measures within the allowance. Entity counts: BRepAlgoAPI gives 4 faces, 6 edges and 4 vertices (3 faces, 4 edges and 2 vertices after ShapeUpgrade_UnifySameDomain); the kernel's result, counted with OCCT's seams, has 3 faces, 3 edges and 2 vertices: the same faces as OCCT's unified result, edges and vertices differing where each splits its circles and quartics (OCCT's sphere seams and its intersection curves' own points; the kernel's rings closed on one vertex or none, its quartics at its seams' vertices). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+   "independent_evidence": "The reference's rows (its --check: closed forms, inclusion and exclusion, the area identity, every face's classes and Monte Carlo) hold the kernel's certified volume, area and centre enclosures.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  },
+  {
+   "case": "hole_box_cut",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "5cdbb15b98d2e265e9f2b0d0a5753bd886cda3ad8eae6ca106e7cab13f229d6b",
+   "differences": [
+    "rust_entity_counts"
+   ],
+   "reason": "Counts only: the native result is valid with the reference's solid count and its measures within the allowance. Entity counts: BRepAlgoAPI gives 2 faces, 1 edges and 1 vertices; 3 faces, 3 edges and 2 vertices (2 faces, 2 edges and 1 vertices after ShapeUpgrade_UnifySameDomain); 2 faces, 1 edges and 1 vertices; 2 faces, 1 edges and 1 vertices; 3 faces, 7 edges and 4 vertices; the kernel's result, counted with OCCT's seams, has 3 faces, 7 edges and 4 vertices; 2 faces, 1 edges and 1 vertices; 2 faces, 1 edges and 1 vertices; 2 faces, 1 edges and 1 vertices; 2 faces, 1 edges and 1 vertices: the same faces as OCCT's unified result, edges and vertices differing where each splits its circles and quartics (OCCT's sphere seams and its intersection curves' own points; the kernel's rings closed on one vertex or none, its quartics at its seams' vertices). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+   "independent_evidence": "The reference's rows (its --check: closed forms, inclusion and exclusion, the area identity, every face's classes and Monte Carlo) hold the kernel's certified volume, area and centre enclosures.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  },
+  {
+   "case": "holed_box_cut",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "81f3e2ee1633a66d233d86458a7ea48e2ee4eafad1d471c56fdd79316ae78988",
+   "differences": [
+    "rust_entity_counts"
+   ],
+   "reason": "Counts only: the native result is valid with the reference's solid count and its measures within the allowance. Entity counts: BRepAlgoAPI gives 9 faces, 25 edges and 17 vertices; the kernel's result, counted with OCCT's seams, has 9 faces, 23 edges and 16 vertices: the same faces as OCCT's unified result, edges and vertices differing where each splits its circles and quartics (OCCT's sphere seams and its intersection curves' own points; the kernel's rings closed on one vertex or none, its quartics at its seams' vertices). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+   "independent_evidence": "The reference's rows (its --check: closed forms, inclusion and exclusion, the area identity, every face's classes and Monte Carlo) hold the kernel's certified volume, area and centre enclosures.",
+   "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  }
+ ]
 }
