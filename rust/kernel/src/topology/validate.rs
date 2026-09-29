@@ -2658,11 +2658,11 @@ fn face_hits<T: Real>(
             0
         });
     }
-    // Rays against other cones, spheres and tori are not decided yet: the
+    // Rays against spheres with loops and tori are not decided yet: the
     // containment is uncertified.
     if matches!(
         face.surface,
-        Surface::Cone { .. } | Surface::Sphere { .. } | Surface::Torus { .. } | Surface::BSpline(_)
+        Surface::Sphere { .. } | Surface::Torus { .. } | Surface::BSpline(_)
     ) {
         return None;
     }
@@ -2676,10 +2676,83 @@ fn face_hits<T: Real>(
         )
     };
     match &face.surface {
-        Surface::Cone { .. }
-        | Surface::Sphere { .. }
-        | Surface::Torus { .. }
-        | Surface::BSpline(_) => None,
+        Surface::Sphere { .. } | Surface::Torus { .. } | Surface::BSpline(_) => None,
+        // S9d.3a: `X^2 + Y^2 = (R + Z tan a)^2` in the frame, the hits on
+        // the nappe where `R + Z tan a > 0`; each hit's `(u, v)` against the
+        // loops by the +v ray's crossings, the apex (where the face closes
+        // at it, its loops winding once) one more when it lies up the ray.
+        Surface::Cone {
+            frame: f,
+            radius,
+            half_angle,
+        } => {
+            let (o, x, y, n) = exact(f);
+            let det = det3(&x, &y, &n);
+            let coords = |v: &[R; 3]| {
+                [
+                    det3(v, &y, &n) / &det,
+                    det3(&x, v, &n) / &det,
+                    det3(&x, &y, v) / &det,
+                ]
+            };
+            let q0 = coords(&std::array::from_fn(|i| &p[i] - &o[i]));
+            let q1 = coords(d);
+            let (ca, sa) = T::cos_sin(&c(*half_angle));
+            let tan = sa.div(&ca)?;
+            let rad = c::<T>(*radius);
+            let [x0, y0, z0] = q0.clone().map(|v| q::<T>(&v));
+            let [x1, y1, z1] = q1.clone().map(|v| q::<T>(&v));
+            let rho0 = rad.add(&z0.mul(&tan));
+            let k1 = z1.mul(&tan);
+            let a = x1.square().add(&y1.square()).sub(&k1.square());
+            let b = x0
+                .mul(&x1)
+                .add(&y0.mul(&y1))
+                .sub(&rho0.mul(&k1))
+                .mul(&c(2.0));
+            let cc = x0.square().add(&y0.square()).sub(&rho0.square());
+            let a_sign = a.sign()?;
+            if a_sign == Ordering::Equal {
+                return None;
+            }
+            let disc = b.square().sub(&a.mul(&cc).mul(&c(4.0)));
+            match disc.sign()? {
+                Ordering::Less => return Some(0),
+                Ordering::Equal => return None,
+                Ordering::Greater => {}
+            }
+            let root = disc.sqrt();
+            let apex_up = loops.iter().map(|lp| lp.winding).sum::<i32>().abs() == 1
+                && sa.sign()? == Ordering::Less;
+            let mut count = 0;
+            for sign in [-1.0, 1.0] {
+                let t = b.neg().add(&root.mul(&c(sign))).div(&a.mul(&c(2.0)))?;
+                match t.sign()? {
+                    Ordering::Less => continue,
+                    Ordering::Equal => return None,
+                    Ordering::Greater => {}
+                }
+                let (hx, hy, hz) = (
+                    x0.add(&t.mul(&x1)),
+                    y0.add(&t.mul(&y1)),
+                    z0.add(&t.mul(&z1)),
+                );
+                let rho = rad.add(&hz.mul(&tan));
+                match rho.sign()? {
+                    // The other nappe: not the surface's.
+                    Ordering::Less => continue,
+                    Ordering::Equal => return None,
+                    Ordering::Greater => {}
+                }
+                let hit = [T::atan2(&hy, &hx)?, hz.div(&ca)?];
+                if !clear_of_boundary(&refs, &hit, &rho, true, margin2)? {
+                    return None;
+                }
+                let crossed = cover_crossings::<T>(&refs, &hit)? + u32::from(apex_up);
+                count += crossed % 2;
+            }
+            Some(count)
+        }
         Surface::Plane(f) => {
             let (o, x, y, _) = exact(f);
             let qv: [R; 3] = std::array::from_fn(|i| &p[i] - &o[i]);
@@ -2796,8 +2869,15 @@ fn clear_of_boundary<T: Real>(
         let d = [b[0].sub(&a[0]), b[1].sub(&a[1])];
         let w = [p[0].sub(&a[0]), p[1].sub(&a[1])];
         let len2 = d[0].square().add(&d[1].square());
-        if len2.sign()? != Ordering::Greater {
-            return Some(far(&dist2(&a)));
+        match len2.sign() {
+            Some(Ordering::Greater) => {}
+            // A chord of no length within rounding (a ring's, closing its
+            // one fin): clear when its start is farther than the margin by
+            // more than its length.
+            _ => {
+                let gap = dist2(&a).sqrt().sub(&len2.sqrt());
+                return Some(gap.sign()? == Ordering::Greater && far(&gap.square()));
+            }
         }
         let cross = d[0].mul(&w[1]).sub(&d[1].mul(&w[0]));
         if far(&cross.square().div(&len2)?) {

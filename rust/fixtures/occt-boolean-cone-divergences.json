@@ -1,0 +1,65 @@
+{
+  "note": "Reviewed BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut and BRepAlgoAPI_Common differences from the S9d.3a reference and the kernel.",
+  "reviews": [
+    {
+      "case": "hyperbola_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "69623547835a4acd6d80358732b18e4cb6cd93e6d021b2a85498c6d5324b936d",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "Entity counts only (a box's wall cutting a frustum in a hyperbola): BRepAlgoAPI's solid of 8 faces, 16 edges and 11 vertices against the kernel's of 8 faces, 15 edges and 10 vertices. Each native solid has one edge and one vertex more: OCCT's conical face is periodic and keeps its seam, a ruling from a rim or section to another, as an edge with its own end vertex; the kernel's cone wall is one face traced in the plane normal to the axis (S9d.3a), its rims closed on one vertex and its sections on their own vertices, with no seam. The faces agree; the native result is valid with the reference's solid count and within the capture's allowance of the reference (every section an exact conic). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cone_boolean_reference.py's rows (generate_cone_boolean_fixtures.py --check) agree with closed forms of every pair within 1.2e-40 in exact frames and 1.2e-16 in turned ones, with a second slicing direction, inclusion and exclusion, the area identity and every face's classes within 1.8e-40, and Monte Carlo within 2.7 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "hyperbola_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "713967f41d1623a2bf79f59a98560cde65256b9ff852038bfb656a25f8949a69",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "Entity counts only (a frustum in common with a box beyond a wall that cuts it in a hyperbola): BRepAlgoAPI's solid of 3 faces, 4 edges and 3 vertices against the kernel's of 3 faces, 3 edges and 2 vertices. Each native solid has one edge and one vertex more: OCCT's conical face is periodic and keeps its seam, a ruling from a rim or section to another, as an edge with its own end vertex; the kernel's cone wall is one face traced in the plane normal to the axis (S9d.3a), its rims closed on one vertex and its sections on their own vertices, with no seam. The faces agree; the native result is valid with the reference's solid count and within the capture's allowance of the reference (every section an exact conic). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cone_boolean_reference.py's rows (generate_cone_boolean_fixtures.py --check) agree with closed forms of every pair within 1.2e-40 in exact frames and 1.2e-16 in turned ones, with a second slicing direction, inclusion and exclusion, the area identity and every face's classes within 1.8e-40, and Monte Carlo within 2.7 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "apex_corner_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "a99e98ccb66a9bc3f802993e72a936628491e6a856bb69ba777fec2ac81eda0b",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "Entity counts only (a box's corner below a cone's apex, its walls cutting the cone in conics): BRepAlgoAPI's solid of 4 faces, 7 edges and 5 vertices against the kernel's of 4 faces, 6 edges and 4 vertices. Each native solid has one edge and one vertex more: OCCT's conical face is periodic and keeps its seam, a ruling from a rim or section to another, as an edge with its own end vertex; the kernel's cone wall is one face traced in the plane normal to the axis (S9d.3a), its rims closed on one vertex and its sections on their own vertices, with no seam. The faces agree; the native result is valid with the reference's solid count and within the capture's allowance of the reference (every section an exact conic). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cone_boolean_reference.py's rows (generate_cone_boolean_fixtures.py --check) agree with closed forms of every pair within 1.2e-40 in exact frames and 1.2e-16 in turned ones, with a second slicing direction, inclusion and exclusion, the area identity and every face's classes within 1.8e-40, and Monte Carlo within 2.7 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "tilt_ellipse_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "6672c6be8de65bae81f9cd4ce02b0343762dafb0cc146902fb4544339b931f84",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "Entity counts only (a frustum in a turned frame in common with a box, a face cutting it in an ellipse): BRepAlgoAPI's solid of 3 faces, 4 edges and 3 vertices against the kernel's of 3 faces, 3 edges and 2 vertices. Each native solid has one edge and one vertex more: OCCT's conical face is periodic and keeps its seam, a ruling from a rim or section to another, as an edge with its own end vertex; the kernel's cone wall is one face traced in the plane normal to the axis (S9d.3a), its rims closed on one vertex and its sections on their own vertices, with no seam. The faces agree; the native result is valid with the reference's solid count and within the capture's allowance of the reference (every section an exact conic). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cone_boolean_reference.py's rows (generate_cone_boolean_fixtures.py --check) agree with closed forms of every pair within 1.2e-40 in exact frames and 1.2e-16 in turned ones, with a second slicing direction, inclusion and exclusion, the area identity and every face's classes within 1.8e-40, and Monte Carlo within 2.7 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "tilt_slab_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "27d2617c73b5d3e1da480712d325ef0fc1103b8852cf5c63e2e8a5487ca43d51",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "Entity counts only (a slab cut from a frustum in a turned frame, two solids): BRepAlgoAPI's solid of 3 faces, 4 edges and 3 vertices against the kernel's of 3 faces, 3 edges and 2 vertices; BRepAlgoAPI's solid of 4 faces, 7 edges and 5 vertices against the kernel's of 4 faces, 6 edges and 4 vertices. Each native solid has one edge and one vertex more: OCCT's conical face is periodic and keeps its seam, a ruling from a rim or section to another, as an edge with its own end vertex; the kernel's cone wall is one face traced in the plane normal to the axis (S9d.3a), its rims closed on one vertex and its sections on their own vertices, with no seam. The faces agree; the native result is valid with the reference's solid count and within the capture's allowance of the reference (every section an exact conic). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cone_boolean_reference.py's rows (generate_cone_boolean_fixtures.py --check) agree with closed forms of every pair within 1.2e-40 in exact frames and 1.2e-16 in turned ones, with a second slicing direction, inclusion and exclusion, the area identity and every face's classes within 1.8e-40, and Monte Carlo within 2.7 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}

@@ -21,7 +21,7 @@ use num_rational::BigRational as R;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 
-mod conic;
+pub(crate) mod conic;
 mod meridian;
 mod oblique;
 mod revolved;

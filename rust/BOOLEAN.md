@@ -17,9 +17,9 @@ S9c.2b.2's algebraic vertices where sections cross caps' circles, with
 parallel cylinders in turned frames (`curved/algebraic.rs`), and S9d.1's
 spheres against polyhedral prisms (`curved/sphere.rs`), and S9d.2a's
 spheres against prisms with arcs and two spheres (`curved/spheres.rs`,
-S9d.2b's loops in exact frames among them); cones and tori (S9d.3,
-S9d.4)
-are not.
+S9d.2b's loops in exact frames among them), and S9d.3a's cones and
+frusta against polyhedral prisms (`curved/cone.rs`); cones against curved
+faces (S9d.3b) and tori (S9d.4) are not.
 
 ## Contract
 
@@ -429,6 +429,36 @@ heights, Sturm counts at surds), each over the angle as S9c.2b.1's. A
 piece over the height is `Curve3::Rise` (`TOPOLOGY_MODEL.md`), its range in
 the stored cylinder's heights. A loop in a turned frame stays
 `OutOfDomain`.
+
+### Cones against polyhedral prisms (S9d.3a)
+
+A cone or frustum (S3's radii `b` and `t` over `0..h` on its stored frame)
+is `u^2 + v^2 <= (b + k w)^2`, `0 <= w <= h`, `k = (t - b) / h`, in the
+frame's coordinates as rationals (affine where the stored axes are not
+orthonormal), its membership pushed at first order as a sphere's
+(`curved/cone.rs`). Its wall is a graph over the plane of `(u, v)` (`k` is
+never zero), so it is one face traced in that projection with no seam: a
+rim is one closed edge with a vertex at a rational point (a meeting there
+is tried again at another seam), the apex a point inside the face, and a
+result's wall whose loops wind once round the axis closes at the apex, a
+vertex loop continuing the input's. A line meets the wall at a quadratic's
+roots (a double root is a tangency where the wall is, nothing beyond its
+ends: a line through a frustum's virtual apex outside it). A plane
+`alpha u + beta v + mu w + kappa = 0` meets it in a graph over the cone's
+angle: the ruling at `(cos, sin)` meets the plane at `rho = G / (mu + k
+(alpha cos + beta sin))`, `G = b mu - k kappa`, so a rational angle gives a
+rational point and `rho > 0` picks the solid's nappe; the directions
+where the denominator vanishes (the plane parallel to a ruling) bound a
+hyperbola's branch or a parabola's, whose ends at infinity lie beyond the
+end planes, an ellipse is closed, a plane normal to the axis a circle
+about it; `G = 0` (a plane through the apex, virtual for a frustum, or
+tangent along a ruling) is `Degenerate`. Each section edge is rounded once
+by S8d.2's conic (`solid/split/conic.rs`'s `cone_conic`, the plane in the
+cone's frame): `EllipseArc`, `HyperbolaArc`, `ParabolaArc`, or a
+`CircularArc` about the axis, its parameter running as the chain runs;
+its pcurves on the cone are `Projection`s, a circle about the axis a line
+of constant `v`. A cone against a prism with arcs, a sphere or a cone is
+S9d.3b's (`OutOfDomain`).
 
 ### Spline profiles (S9a.2)
 

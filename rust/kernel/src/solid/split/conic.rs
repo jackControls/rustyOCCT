@@ -57,7 +57,7 @@ enum Rim {
 
 /// The section's curve: a conic (or a circle) by its parameter, or the two
 /// rulings through a frustum's virtual apex.
-enum Section {
+pub(crate) enum Section {
     Ellipse {
         frame: Frame3,
         major: f64,
@@ -80,12 +80,12 @@ enum Section {
 }
 
 impl Section {
-    fn periodic(&self) -> bool {
+    pub(crate) fn periodic(&self) -> bool {
         matches!(self, Self::Ellipse { .. } | Self::Circle { .. })
     }
 
     /// The parameter of a point on the curve.
-    fn param(&self, p: Point3) -> f64 {
+    pub(crate) fn param(&self, p: Point3) -> f64 {
         match self {
             Self::Ellipse {
                 frame,
@@ -109,7 +109,7 @@ impl Section {
     }
 
     /// The arc from `t0` over `sweep`.
-    fn arc(&self, t0: f64, sweep: f64) -> Curve3 {
+    pub(crate) fn arc(&self, t0: f64, sweep: f64) -> Curve3 {
         match *self {
             Self::Ellipse {
                 frame,
@@ -194,6 +194,130 @@ struct Setup {
     disc_side: [Option<Side>; 2],
     wall: Surface,
     cut: Frame3,
+}
+
+/// S9d.3a: the conic the plane `a u + b v + c w + d = 0` (in the frame's
+/// coordinates) cuts from the surface of a cone or frustum of radii
+/// `bottom` and `top` over `0..height` on `frame`, rounded as S8d.2 rounds
+/// it (a hyperbola's branch on the solid's nappe), and the foot of the
+/// apex's normal on the plane (in the frame). The plane is not normal to
+/// the axis; one through the apex (or within the resolution of it) cuts
+/// `Rulings`.
+pub(crate) fn cone_conic(
+    frame: Frame3,
+    tolerance: Tolerance,
+    bottom: f64,
+    top: f64,
+    height: f64,
+    plane: &[R; 4],
+) -> Result<(Section, [f64; 3])> {
+    let tol = tolerance.linear();
+    let [a, b, c, d] = plane;
+    let ab2 = a * a + b * b;
+    let m2 = &ab2 + c * c;
+    // The unit normal and offset in the frame.
+    let m = I::exact(m2.clone()).sqrt();
+    let unit = |x: &R| -> Result<f64> {
+        Ok(mid(&I::exact(x.clone())
+            .div(&m)
+            .ok_or(Error::Degenerate("a plane's normal"))?))
+    };
+    let (na, nb, nc, nd) = (unit(a)?, unit(b)?, unit(c)?, unit(d)?);
+    let world = |p: [f64; 3]| frame.point(Point2::new(p[0], p[1]), p[2]);
+    let wvec = |v: [f64; 3]| frame.x() * v[0] + frame.y() * v[1] + frame.normal() * v[2];
+    let n_world = wvec([na, nb, nc]);
+    let axis_x = {
+        // The axis's direction projected on the plane: the conic's axis.
+        let v = [-nc * na, -nc * nb, 1.0 - nc * nc];
+        let l = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
+        [v[0] / l, v[1] / l, v[2] / l]
+    };
+    // The apex (virtual for a frustum), exactly and rounded.
+    let za = -q(bottom) * q(height) / (q(top) - q(bottom));
+    let at_apex = c * &za + d;
+    let za = super::rational_f64(&za);
+    let h = nc * za + nd;
+    let foot = [-h * na, -h * nb, za - h * nc];
+    // Through the virtual apex, or within the resolution of it (its
+    // height rounded): the rulings between the rims' crossings.
+    Ok(if at_apex == zero() || h.abs() <= tol {
+        (Section::Rulings, foot)
+    } else {
+        // The nappe holding the solid opens along k.
+        let k = if top > bottom { 1.0 } else { -1.0 };
+        let (kn, k1) = (k * nc, (1.0 - nc * nc).sqrt());
+        let e1 = [k * axis_x[0], k * axis_x[1], k * axis_x[2]];
+        let cos2 = height * height / (height * height + (top - bottom).powi(2));
+        // In the plane's coordinates (x along e1 from the apex's
+        // foot, y across): A x^2 + C y^2 + D x + F0 = 0.
+        let (aa, cc) = (cos2 - k1 * k1, cos2);
+        let dd = 2.0 * h * k1 * kn;
+        let f0 = h * h * (cos2 - kn * kn);
+        let qh = q(height);
+        let kind = (&qh * &qh * &m2)
+            .cmp(&(&ab2 * (&qh * &qh + (q(top) - q(bottom)) * (q(top) - q(bottom)))));
+        let at = |x: f64| {
+            [
+                foot[0] + x * e1[0],
+                foot[1] + x * e1[1],
+                foot[2] + x * e1[2],
+            ]
+        };
+        let size = bottom.max(top).max(height);
+        let section = match kind {
+            Ordering::Greater => {
+                let xc = -dd / (2.0 * aa);
+                let g = dd * dd / (4.0 * aa) - f0;
+                let (major, minor) = ((g / aa).sqrt(), (g / cc).sqrt());
+                if !(major.is_finite() && minor > 16.0 * tol) || major > 1e6 * size {
+                    return Err(Error::Degenerate(
+                        "a cone section within binary64 of a parabola or a point",
+                    ));
+                }
+                Section::Ellipse {
+                    frame: Frame3::new(world(at(xc)), n_world, wvec(e1), tolerance)?,
+                    major,
+                    minor,
+                }
+            }
+            Ordering::Less => {
+                let xc = -dd / (2.0 * aa);
+                let g = dd * dd / (4.0 * aa) - f0;
+                let (major, minor) = ((g / aa).sqrt(), (-g / cc).sqrt());
+                if !(major > 16.0 * tol && minor > 16.0 * tol) || major > 1e6 * size {
+                    return Err(Error::Degenerate(
+                        "a cone section within binary64 of a parabola or its asymptotes",
+                    ));
+                }
+                // The branch on the solid's nappe: (p - apex) . k > 0.
+                let sigma = if (xc + major) * k1 - h * kn > 0.0 {
+                    1.0
+                } else {
+                    -1.0
+                };
+                Section::Hyperbola {
+                    frame: Frame3::new(world(at(xc)), n_world, wvec(e1) * sigma, tolerance)?,
+                    major,
+                    minor,
+                }
+            }
+            Ordering::Equal => {
+                // C y^2 + D x + F0 = 0: the vertex at -F0 / D,
+                // opening along -sign(D) e1.
+                let sigma = -dd.signum();
+                if dd.abs() / (4.0 * cc) <= 16.0 * tol {
+                    return Err(Error::Degenerate(
+                        "a plane within the resolution of a frustum's virtual apex",
+                    ));
+                }
+                Section::Parabola {
+                    frame: Frame3::new(world(at(-f0 / dd)), n_world, wvec(e1) * sigma, tolerance)?,
+                    focal: dd.abs() / (4.0 * cc),
+                }
+            }
+        };
+        (section, foot)
+    })
 }
 
 fn mid(x: &I) -> f64 {
@@ -360,107 +484,13 @@ fn setup(
             top,
             height,
         } => {
+            let (section, foot) = cone_conic(frame, tolerance, bottom, top, height, plane)?;
             let wall = Surface::Cone {
                 frame,
                 radius: bottom,
                 half_angle: (top - bottom).atan2(height),
             };
-            // The apex (virtual for a frustum), exactly and rounded.
-            let za = -q(bottom) * q(height) / (q(top) - q(bottom));
-            let at_apex = c * &za + d;
-            let za = super::rational_f64(&za);
-            let h = nc * za + nd;
-            let foot = [-h * na, -h * nb, za - h * nc];
-            // Through the virtual apex, or within the resolution of it (its
-            // height rounded): the rulings between the rims' crossings.
-            if at_apex == zero() || h.abs() <= tol {
-                (Section::Rulings, wall, foot)
-            } else {
-                // The nappe holding the solid opens along k.
-                let k = if top > bottom { 1.0 } else { -1.0 };
-                let (kn, k1) = (k * nc, (1.0 - nc * nc).sqrt());
-                let e1 = [k * axis_x[0], k * axis_x[1], k * axis_x[2]];
-                let cos2 = height * height / (height * height + (top - bottom).powi(2));
-                // In the plane's coordinates (x along e1 from the apex's
-                // foot, y across): A x^2 + C y^2 + D x + F0 = 0.
-                let (aa, cc) = (cos2 - k1 * k1, cos2);
-                let dd = 2.0 * h * k1 * kn;
-                let f0 = h * h * (cos2 - kn * kn);
-                let qh = q(height);
-                let kind = (&qh * &qh * &m2)
-                    .cmp(&(&ab2 * (&qh * &qh + (q(top) - q(bottom)) * (q(top) - q(bottom)))));
-                let at = |x: f64| {
-                    [
-                        foot[0] + x * e1[0],
-                        foot[1] + x * e1[1],
-                        foot[2] + x * e1[2],
-                    ]
-                };
-                let size = bottom.max(top).max(height);
-                let section = match kind {
-                    Ordering::Greater => {
-                        let xc = -dd / (2.0 * aa);
-                        let g = dd * dd / (4.0 * aa) - f0;
-                        let (major, minor) = ((g / aa).sqrt(), (g / cc).sqrt());
-                        if !(major.is_finite() && minor > 16.0 * tol) || major > 1e6 * size {
-                            return Err(Error::Degenerate(
-                                "a cone section within binary64 of a parabola or a point",
-                            ));
-                        }
-                        Section::Ellipse {
-                            frame: Frame3::new(world(at(xc)), n_world, wvec(e1), tolerance)?,
-                            major,
-                            minor,
-                        }
-                    }
-                    Ordering::Less => {
-                        let xc = -dd / (2.0 * aa);
-                        let g = dd * dd / (4.0 * aa) - f0;
-                        let (major, minor) = ((g / aa).sqrt(), (-g / cc).sqrt());
-                        if !(major > 16.0 * tol && minor > 16.0 * tol) || major > 1e6 * size {
-                            return Err(Error::Degenerate(
-                                "a cone section within binary64 of a parabola or its asymptotes",
-                            ));
-                        }
-                        // The branch on the solid's nappe: (p - apex) . k > 0.
-                        let sigma = if (xc + major) * k1 - h * kn > 0.0 {
-                            1.0
-                        } else {
-                            -1.0
-                        };
-                        Section::Hyperbola {
-                            frame: Frame3::new(
-                                world(at(xc)),
-                                n_world,
-                                wvec(e1) * sigma,
-                                tolerance,
-                            )?,
-                            major,
-                            minor,
-                        }
-                    }
-                    Ordering::Equal => {
-                        // C y^2 + D x + F0 = 0: the vertex at -F0 / D,
-                        // opening along -sign(D) e1.
-                        let sigma = -dd.signum();
-                        if dd.abs() / (4.0 * cc) <= 16.0 * tol {
-                            return Err(Error::Degenerate(
-                                "a plane within the resolution of a frustum's virtual apex",
-                            ));
-                        }
-                        Section::Parabola {
-                            frame: Frame3::new(
-                                world(at(-f0 / dd)),
-                                n_world,
-                                wvec(e1) * sigma,
-                                tolerance,
-                            )?,
-                            focal: dd.abs() / (4.0 * cc),
-                        }
-                    }
-                };
-                (section, wall, foot)
-            }
+            (section, wall, foot)
         }
         Primitive::Zone { radius, .. } => {
             let h = nd;

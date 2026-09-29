@@ -9,7 +9,7 @@
 //! cavity among several solids, S9a.2's, or arcs in frames with different
 //! axes, S9c's; S9b turns, leans or tilts the tool's frame, S9c.2a stands it
 //! on its side (perpendicular cylinders), S9d.1 makes it a sphere, a cap or
-//! a zone; a result thinner than the
+//! a zone, S9d.3a a cone or frustum; a result thinner than the
 //! resolution or touching itself; an undecided comparison); each result
 //! validates as it is built and its history passes the independent check
 //! (debug builds); when all three succeed their volumes agree,
@@ -130,6 +130,25 @@ pub fn check_boolean(data: &[u8]) {
         let (low, high) = [(-half, half), (-half, 0.0), (-0.5, 0.75), (0.25, half)]
             [usize::from((spline_byte >> 2) % 4)];
         let Ok((tool, _)) = Solid::sphere_with(OperationId(2), fb, 0.75 * s2, low, high, tolerance)
+        else {
+            return;
+        };
+        tool
+    } else if spline_byte >= 160 {
+        // S9d.3a: a cone or frustum over the tool's heights, its radii by
+        // the byte's next bits.
+        let r = 0.75 * s2;
+        let (bottom, top) =
+            [(r, 0.0), (0.0, r), (r, r / 2.0), (r / 2.0, r)][usize::from((spline_byte >> 2) % 4)];
+        let Ok(base) = Frame3::new(
+            fb.point(rusty_occt::Point2::new(0.0, 0.0), lo),
+            fb.normal(),
+            fb.x(),
+            tolerance,
+        ) else {
+            return;
+        };
+        let Ok((tool, _)) = Solid::cone_with(OperationId(2), base, bottom, top, hi - lo, tolerance)
         else {
             return;
         };

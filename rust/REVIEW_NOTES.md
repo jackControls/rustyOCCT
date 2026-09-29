@@ -2116,6 +2116,34 @@ Decisions for S9, recorded before its code (2026-09-28):
     default integration; adaptively within 5.0e-9, every section an exact
     conic), no review, thirteen solids' counts change when unified.
     S9d.3a's kernel next.
+  * **S9d.3a implemented** (`solid/boolean/curved/cone.rs`): cones and
+    frusta against polyhedral prisms, all 30 fixtures as the reference (26
+    solid results within its enclosures, the 4 degenerate refused), every
+    history checked, results deterministic and moved rigidly;
+    `compare_cone_boolean.py` 25 matches and 5 reviewed (OCCT's conical
+    faces keep their seams: one edge and one vertex more per solid), every
+    other comparison unchanged. Amendments, from the implementation: (a)
+    the wall is not split: it is a graph over the plane of `(u, v)` (`k`
+    never zero), one face traced in that projection, each rim one closed
+    edge with a vertex at a rational seam point (a meeting there tried
+    again at another), the apex a point inside the face; a result's wall
+    whose loops wind once closes at the apex, a vertex loop continuing the
+    input's; (b) a section's rounding is S8d.2's (`cone_conic`, factored
+    out of its setup), a plane normal to the axis a circle about it, and
+    its pcurves on the cone `Projection`s (a circle about the axis a line of
+    constant `v`); (c) a line's double root against the cone beyond the
+    solid's ends is no meeting (a line through a frustum's virtual apex);
+    (d) the validator casts rays against cones (hits on the surface's
+    nappe, the apex one crossing more up the ray when the face closes at
+    it) and clears a closing chord of no length within rounding by its
+    start (a ring's one fin: the frustum's cavity), the history checker
+    takes hyperbolas and parabolas in a plane's pieces, a rigid motion moves
+    them, and a body's bounds hold every vertex and those conics' extremes;
+    (e) the DRAW bridge's cone case (a box's edge along the cone's axis
+    through its apex) is a tangency now: a cone standing in the box
+    evaluates instead, and a cone against a cylinder is S9d.3b's; (f) the
+    fuzz target's tool is a cone or frustum when its spline byte lies in
+    `160..192`. Pending: the corpus replay, the DRAW survey, the campaign.
 
 ### Parallel tracks
 

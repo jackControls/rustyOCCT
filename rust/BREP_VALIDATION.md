@@ -191,7 +191,7 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   there for a ring fin) must lie inside its region's outer shell and outside
   every other cavity. Rays from that exact point in up to eight fixed integer
   directions are intersected with each face by exact Cramer solves (planes)
-  or an exact quadratic (cylinders). A direction counts only when every hit is
+  or an exact quadratic (cylinders, whole spheres; cones certified). A direction counts only when every hit is
   certifiably more than twice the tolerance from its face's boundary, and a
   start point on a face plane is certified outside that face. Adjacent faces
   only meet within tolerance, so without this margin, a ray through a shared
@@ -199,10 +199,17 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   parity is the same for any watertight surface within tolerance of the
   faces. On a cylinder, a hit is inside the face when the `+v` ray from it
   on the universal cover crosses the face's loops an odd number of times,
-  counting every period alias of a wound loop. A ray against a cone,
-  sphere or torus face is not yet solved, so a body with a cavity and such
-  a face reports `uncertified_containment`. A cavity whose first face is a whole
-  sphere takes its point at `(0, 0)`.
+  counting every period alias of a wound loop. On a cone (S9d.3a) the ray
+  meets `X^2 + Y^2 = (R + Z tan a)^2` in the frame at a quadratic's roots
+  with certified coefficients, each hit on the surface's nappe (`R + Z tan
+  a > 0`) tested as a cylinder's, its `u` distances scaled by its radius,
+  the apex counting as one crossing more when the face closes at it (its
+  loops wind once) and it lies up the ray (`sin a < 0`). A closing chord of
+  no length within rounding (a ring's one fin) is clear when its start is
+  farther than the margin by more than its length. A ray against a sphere
+  with loops or a torus face is not yet solved, so a body with a cavity
+  and such a face reports `uncertified_containment`. A cavity whose first
+  face is a whole sphere takes its point at `(0, 0)`.
 * **Continuity (R4).** Every spline edge, pcurve and face must be C1 in its
   own parameter: `edge_not_c1`, `pcurve_not_c1` and `face_not_c1`, decided
   exactly and never uncertified. A binary64 B-spline's interior knots have

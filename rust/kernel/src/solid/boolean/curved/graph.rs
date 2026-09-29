@@ -121,6 +121,7 @@ pub(super) fn place(crv: &Crv, x: &QV) -> Pos {
         Crv::Circle(c) => Pos::Ang(c.place(x)),
         Crv::Rise(c) => Pos::T(c.height(x)),
         Crv::Meet(m) => Pos::Ang(m.place(x)),
+        Crv::Cone(c) => Pos::Ang(c.place(x)),
     }
 }
 
@@ -351,7 +352,7 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
             let own = match (&e.curve, wall) {
                 (Crv::Conic { .. }, Some(w)) => match &me.faces[w].surf {
                     Surf::Cyl { c, r, .. } => Some((me, c, r)),
-                    Surf::Plane { .. } | Surf::Sphere { .. } => None,
+                    Surf::Plane { .. } | Surf::Sphere { .. } | Surf::Cone { .. } => None,
                 },
                 _ => None,
             };
@@ -628,6 +629,10 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                         Some([lo, _]) => (false, Pos::Ang(lo.clone())),
                         None => (true, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())])),
                     },
+                    Crv::Cone(c) => match &c.range {
+                        Some([lo, _]) => (false, Pos::Ang(lo.clone())),
+                        None => (true, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())])),
+                    },
                     Crv::Conic { .. } | Crv::Circle(_) => {
                         (true, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())]))
                     }
@@ -654,13 +659,16 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                                 Error::ComputationLimit("a closed section without vertices"),
                             )?,
                             Crv::Circle(c) => c.at(&[int(1), zero()]),
+                            Crv::Cone(c) => c.at(&[int(1), zero()]).ok_or(
+                                Error::ComputationLimit("a closed section without vertices"),
+                            )?,
                             _ => conic_point_r(crv, &[int(1), zero()]),
                         };
                         let inside = models[0].in_face(fa, &x) == Loc::In
                             && models[1].in_face(fb, &x) == Loc::In;
                         match (inside, crv) {
                             (false, _) => Vec::new(),
-                            (true, Crv::Circle(_)) => {
+                            (true, Crv::Circle(_) | Crv::Cone(_)) => {
                                 let v = vx.len();
                                 vx.push(Vx {
                                     p: x.clone(),
@@ -792,6 +800,10 @@ fn intersect(a: &([f64; 3], [f64; 3]), b: &([f64; 3], [f64; 3])) -> ([f64; 3], [
 /// Whether a meeting at `x` on face `g` may be a seam's: on a full circle's
 /// half wall anywhere, on a sphere's hemisphere only on its split (S9d.2).
 fn seam_at(m: &Prism, g: usize, x: &QV) -> bool {
+    if let Some(fun) = &m.funnel {
+        // A cone's faces: on the rims' seam direction (S9d.3a).
+        return fun.on_seam(&m.f, x);
+    }
     match (m.faces[g].kind, &m.ball) {
         (FaceKind::Half(_), Some(ball)) => {
             qdot(&qsub(x, &qv(&ball.c)), &ball.split).sign() == Ordering::Equal
@@ -804,7 +816,7 @@ fn seam_at(m: &Prism, g: usize, x: &QV) -> bool {
 fn on_circle(m: &Prism, f: usize) -> bool {
     match m.faces[f].kind {
         FaceKind::Wall(b, _) => m.bounds[b].circle,
-        FaceKind::Cap(_) => false,
+        FaceKind::Cap(_) | FaceKind::ConeWall => false,
         // A hemisphere's sides are the split.
         FaceKind::Half(_) => true,
     }
@@ -886,6 +898,16 @@ fn midpoint(crv: &Crv, a: &Pos, b: &Pos, ccw: bool) -> Result<(QV, Pos)> {
                 Pos::Ang([Qd::rat(cs[0].clone()), Qd::rat(cs[1].clone())]),
             ))
         }
+        (Crv::Cone(m), Pos::Ang(sa), Pos::Ang(sb)) => {
+            let cs = rational_between(sa, sb, ccw)?;
+            let x = m
+                .at(&cs)
+                .ok_or(Error::ComputationLimit("a cone section's point off it"))?;
+            Ok((
+                x,
+                Pos::Ang([Qd::rat(cs[0].clone()), Qd::rat(cs[1].clone())]),
+            ))
+        }
         (Crv::Meet(m), Pos::Ang(sa), Pos::Ang(sb)) => {
             let cs = rational_between(sa, sb, ccw)?;
             let x = m
@@ -937,6 +959,7 @@ fn on_curve(crv: &Crv, x: &QV) -> bool {
             xc.iter().zip(&pc).all(|(a, b)| a.cmp(b) == Ordering::Equal)
         }
         Crv::Meet(m) => m.on(x),
+        Crv::Cone(c) => c.on(x),
         Crv::Circle(c) => c.on(x),
         Crv::Rise(c) => c.on(x),
         Crv::Conic { c, a, b } => {
@@ -1099,6 +1122,23 @@ impl Arr {
                 }
                 pts
             }
+            Crv::Cone(m) => {
+                let (Pos::Ang(p0), Pos::Ang(p1)) = (&e.pos[0], &e.pos[1]) else {
+                    unreachable!("a cone section's places")
+                };
+                let (t0, t1) = (angle_f64(p0), angle_f64(p1));
+                let mut sweep = if e.with { t1 - t0 } else { t0 - t1 };
+                sweep = sweep.rem_euclid(TAU);
+                if sweep == 0.0 {
+                    sweep = TAU;
+                }
+                let sweep = if e.with { sweep } else { -sweep };
+                let mut pts = m.samples(t0, sweep, 48);
+                if !h.1 {
+                    pts.reverse();
+                }
+                pts
+            }
             Crv::Meet(m) => {
                 let (Pos::Ang(p0), Pos::Ang(p1)) = (&e.pos[0], &e.pos[1]) else {
                     unreachable!("a meeting's places")
@@ -1157,6 +1197,13 @@ impl Arr {
         let ball = m.ball.clone();
         move |p: [f64; 3]| -> [f64; 2] {
             match &surf {
+                // A cone's wall: its projection on the plane of `(u, v)`,
+                // one to one (S9d.3a).
+                Surf::Cone { .. } => {
+                    let d = [p[0] - of[0], p[1] - of[1], p[2] - of[2]];
+                    let l = solve3(&xf, &yf, &nf, &d);
+                    [l[0], l[1]]
+                }
                 Surf::Sphere { .. } => {
                     let FaceKind::Half(side) = kind else {
                         unreachable!("a hemisphere")
@@ -1227,6 +1274,15 @@ impl Arr {
         let m = &self.models[o];
         let face = &m.faces[f];
         match &face.surf {
+            // `(u, v)` runs counter-clockwise about the axis: the wall's
+            // outward normal leans along it where the cone narrows upward.
+            Surf::Cone { k, .. } => {
+                if *k < zero() {
+                    1.0
+                } else {
+                    -1.0
+                }
+            }
             // The projection's coordinates run counter-clockwise about the
             // split's normal, a hemisphere's outward normal on its side.
             Surf::Sphere { .. } => {

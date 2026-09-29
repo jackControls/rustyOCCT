@@ -444,7 +444,7 @@ fn build_component(
                 fids.push(id);
             }
             let winding = match &surface {
-                Surface::Cylinder { .. } | Surface::Sphere { .. } => {
+                Surface::Cylinder { .. } | Surface::Sphere { .. } | Surface::Cone { .. } => {
                     [turns(&p, &fids, &surface), 0]
                 }
                 _ => [0, 0],
@@ -475,8 +475,10 @@ fn build_component(
         let loop_ids: Vec<LoopId> = loop_ids.into_iter().map(|x| x.0).collect();
         // On a cylinder, each other loop lifted by whole turns to lie with
         // the first (each pcurve's lift starts from its point's angle).
-        if matches!(surface, Surface::Cylinder { .. } | Surface::Sphere { .. })
-            && loop_ids.len() > 1
+        if matches!(
+            surface,
+            Surface::Cylinder { .. } | Surface::Sphere { .. } | Surface::Cone { .. }
+        ) && loop_ids.len() > 1
         {
             let mean_u = |p: &TopologyParts, l: LoopId| -> f64 {
                 let Loop::Edges { fins, .. } = &p.loops[l.0] else {
@@ -534,6 +536,37 @@ fn build_component(
                 let vid = VertexId(p.vertices.len());
                 p.vertices.push(Vertex {
                     position: at,
+                    enclosure: None,
+                });
+                p.loops.push(Loop::Vertex(vid));
+                loop_ids.push(LoopId(p.loops.len() - 1));
+                poles.push((vid, rf.op, rf.face));
+            }
+        }
+        // A cone's wall whose loops wind round its axis closes at its apex,
+        // a vertex loop (S3's cones; S9d.3a).
+        if let Surface::Cone { .. } = &surface {
+            let total: i32 = loop_ids
+                .iter()
+                .map(|l| match &p.loops[l.0] {
+                    Loop::Edges { winding, .. } => winding[0],
+                    Loop::Vertex(_) => 0,
+                })
+                .sum();
+            if total != 0 {
+                let m = &arr.models[rf.op];
+                let apex = m
+                    .funnel
+                    .as_ref()
+                    .and_then(|f| f.apex)
+                    .filter(|_| total.abs() == 1)
+                    .ok_or(Error::InvalidTopology(
+                        "a cone's wall winding without an apex",
+                    ))?;
+                let at = qv_f64(&m.verts[apex].p);
+                let vid = VertexId(p.vertices.len());
+                p.vertices.push(Vertex {
+                    position: Point3::new(at[0], at[1], at[2]),
                     enclosure: None,
                 });
                 p.loops.push(Loop::Vertex(vid));
@@ -740,6 +773,7 @@ fn same_curve(a: &Crv, b: &Crv) -> bool {
         (Crv::Meet(x), Crv::Meet(y)) => x == y,
         (Crv::Circle(x), Crv::Circle(y)) => x == y,
         (Crv::Rise(x), Crv::Rise(y)) => x == y,
+        (Crv::Cone(x), Crv::Cone(y)) => x == y,
         _ => false,
     }
 }
@@ -804,6 +838,7 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                 sweep: w1.to_f64() - w0.to_f64(),
             })))
         }
+        Crv::Cone(c) => cone_curve3(arr, e, c, points),
         Crv::Circle(c) => {
             // A circle of a surd radius (S9d.1) on its basis's frame.
             let (Pos::Ang(p0), Pos::Ang(p1)) = (
@@ -931,6 +966,31 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
             // A model arc: on its cap's arc frame.
             if let CurveRef::Edge(o, ei) = first.curve {
                 let m = &arr.models[o];
+                if let (EdgeKind::Rim(high, _), Some(fun)) = (m.edges[ei].kind, &m.funnel) {
+                    // A cone's rim (S9d.3a): about its axis at its end.
+                    let (r, h) = if high {
+                        (&fun.t, rational_f64(&m.hi))
+                    } else {
+                        (&fun.b, 0.0)
+                    };
+                    let frame = Frame3::new(
+                        m.frame.point(Point2::default(), h),
+                        m.frame.normal(),
+                        m.frame.x(),
+                        m.tolerance,
+                    )?;
+                    let radius = rational_f64(r);
+                    return Ok(if e.ends.is_none() {
+                        Curve3::Circle { frame, radius }
+                    } else {
+                        Curve3::CircularArc {
+                            frame,
+                            radius,
+                            start_angle: t0,
+                            sweep_angle: sweep,
+                        }
+                    });
+                }
                 let EdgeKind::Cap(high, b2, j) = m.edges[ei].kind else {
                     unreachable!("an arc edge is a cap edge")
                 };
@@ -1037,6 +1097,7 @@ fn loop_fins(
                 }
                 let pc = match cylinder_pcurve(surface, curve, reversed, uv)
                     .or_else(|| sphere_pcurve(surface, curve, reversed, lift.map(|l| l.x)))
+                    .or_else(|| cone_pcurve(surface, curve, reversed, uv))
                 {
                     Some(pc) => pc,
                     None => Curve2::Projection(Box::new(
@@ -1214,6 +1275,142 @@ fn sphere_pcurve(
         }
     }
     None
+}
+
+/// A cone face's pcurve of a circle about its axis (S9d.3a): `v`
+/// constant, `u` turning with the curve from `uv` (its start's lifted
+/// parameters), checked at the same fractions; `None` otherwise.
+fn cone_pcurve(surface: &Surface, curve: &Curve3, reversed: bool, uv: Point2) -> Option<Curve2> {
+    let Surface::Cone { frame, .. } = surface else {
+        return None;
+    };
+    if !matches!(curve, Curve3::Circle { .. } | Curve3::CircularArc { .. }) {
+        return None;
+    }
+    let at = |f: f64| curve.point(if reversed { 1.0 - f } else { f });
+    let fr = [0.0, 0.25, 0.5, 0.75, 1.0];
+    let uvs: Vec<Point2> = fr
+        .iter()
+        .map(|&f| Projection::inverse(surface, at(f)))
+        .collect::<Option<_>>()?;
+    let scale = 1.0
+        + frame
+            .origin()
+            .to_array()
+            .iter()
+            .fold(0.0f64, |m, v| m.max(v.abs()));
+    if uvs.iter().any(|p| (p.y - uvs[0].y).abs() > 1e-9 * scale) {
+        return None;
+    }
+    let near = |x: f64, target: f64| x + TAU * ((target - x) / TAU).round();
+    let mut u = uv.x;
+    for w in uvs.windows(2) {
+        u += near(w[1].x, w[0].x) - w[0].x;
+    }
+    let pc = Curve2::LineSegment {
+        start: Point2::new(uv.x, uvs[0].y),
+        end: Point2::new(u, uvs[0].y),
+    };
+    fr.iter()
+        .all(|&f| (surface.point(pc.point(f)) - at(f)).length() <= 1e-9 * scale)
+        .then_some(pc)
+}
+
+/// A plane's section of a cone rounded once (S9d.3a): S8d.2's ellipse,
+/// hyperbola or parabola (a circle about the axis for a plane normal to
+/// it), its parameter running as the chain runs.
+fn cone_curve3(
+    arr: &Arr,
+    e: &REdge,
+    c: &super::cone::ConeSec,
+    points: &BTreeMap<usize, Point3>,
+) -> Result<Curve3> {
+    let m = &arr.models[c.carrier];
+    let fun = m.funnel.as_ref().expect("a cone's section on a cone");
+    let (g0, d0) = e.parts[0];
+    // The chain's direction at its start, from its first part's samples.
+    let pts = arr.samples((g0, d0));
+    let (p0, p1) = (
+        Point3::new(pts[0][0], pts[0][1], pts[0][2]),
+        Point3::new(pts[1][0], pts[1][1], pts[1][2]),
+    );
+    let ends = e.ends.map(|[s, t]| (points[&s], points[&t]));
+    if c.normal_to_axis() {
+        // A circle about the axis.
+        let (rho, w) = c.circle();
+        let frame = Frame3::new(
+            m.frame.point(Point2::default(), rational_f64(&w)),
+            m.frame.normal(),
+            m.frame.x(),
+            m.tolerance,
+        )?;
+        let radius = rational_f64(&rho);
+        let angle = |p: Point3| {
+            let [x, y, _] = frame.coordinates(p);
+            y.atan2(x)
+        };
+        let turn =
+            (angle(p1) - angle(p0) + std::f64::consts::PI).rem_euclid(TAU) - std::f64::consts::PI;
+        let dir = if turn >= 0.0 { 1.0 } else { -1.0 };
+        return Ok(match ends {
+            None => Curve3::Circle { frame, radius },
+            Some((s, t)) => {
+                let (t0, t1) = (angle(s), angle(t));
+                let mut sweep = if dir > 0.0 { t1 - t0 } else { t0 - t1 }.rem_euclid(TAU);
+                if sweep == 0.0 {
+                    sweep = TAU;
+                }
+                Curve3::CircularArc {
+                    frame,
+                    radius,
+                    start_angle: t0,
+                    sweep_angle: dir * sweep,
+                }
+            }
+        });
+    }
+    let (section, _) = crate::solid::split::conic::cone_conic(
+        m.frame,
+        m.tolerance,
+        rational_f64(&fun.b),
+        rational_f64(&fun.t),
+        rational_f64(&m.hi),
+        &c.plane,
+    )?;
+    if matches!(section, crate::solid::split::conic::Section::Rulings) {
+        return Err(Error::Degenerate(
+            "a plane within the resolution of a cone's apex",
+        ));
+    }
+    let periodic = section.periodic();
+    let wrap = |d: f64| {
+        if periodic {
+            (d + std::f64::consts::PI).rem_euclid(TAU) - std::f64::consts::PI
+        } else {
+            d
+        }
+    };
+    let dir = if wrap(section.param(p1) - section.param(p0)) >= 0.0 {
+        1.0
+    } else {
+        -1.0
+    };
+    Ok(match ends {
+        None => section.arc(section.param(p0), dir * TAU),
+        Some((s, t)) => {
+            let (t0, t1) = (section.param(s), section.param(t));
+            let sweep = if periodic {
+                let mut x = if dir > 0.0 { t1 - t0 } else { t0 - t1 }.rem_euclid(TAU);
+                if x == 0.0 {
+                    x = TAU;
+                }
+                dir * x
+            } else {
+                t1 - t0
+            };
+            section.arc(t0, sweep)
+        }
+    })
 }
 
 /// A cylinder loop's turns about the axis: its pcurves' change of `u`.

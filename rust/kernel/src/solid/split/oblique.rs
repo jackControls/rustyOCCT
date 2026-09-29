@@ -1925,9 +1925,50 @@ pub(crate) fn edge_bounds(t: &Topology) -> crate::Bounds3 {
             hi[i] = hi[i].max(x);
         }
     };
+    // Every vertex, an apex's or pole's vertex loop among them.
+    for v in t.vertices() {
+        add(v.position);
+    }
     for edge in t.edges() {
         add(edge.curve.point(0.0));
         add(edge.curve.point(1.0));
+        // A hyperbola's or parabola's extremes inside its arc (S9d.3a):
+        // where `major sinh t x_i + minor cosh t y_i` or `t x_i / (2
+        // focal) + y_i` vanishes.
+        let conic = match &edge.curve {
+            Curve3::HyperbolaArc {
+                frame,
+                major,
+                minor,
+                start,
+                sweep,
+            } => Some((frame, *start, *sweep, Some((*major, *minor)), 0.0)),
+            Curve3::ParabolaArc {
+                frame,
+                focal,
+                start,
+                sweep,
+            } => Some((frame, *start, *sweep, None, *focal)),
+            _ => None,
+        };
+        if let Some((frame, start, sweep, axes, focal)) = conic {
+            let (x, y) = (frame.x().to_array(), frame.y().to_array());
+            for i in 0..3 {
+                let at = match axes {
+                    Some((major, minor)) => {
+                        let r = -minor * y[i] / (major * x[i]);
+                        (r.abs() < 1.0).then(|| r.atanh())
+                    }
+                    None => (x[i] != 0.0).then(|| -2.0 * focal * y[i] / x[i]),
+                };
+                if let Some(t) = at.filter(|t| t.is_finite()) {
+                    let g = (t - start) / sweep;
+                    if (0.0..=1.0).contains(&g) {
+                        add(edge.curve.point(g));
+                    }
+                }
+            }
+        }
         let (frame, rx, ry, start, sweep) = match &edge.curve {
             Curve3::Circle { frame, radius } => (frame, *radius, *radius, 0.0, TAU),
             Curve3::CircularArc {

@@ -14,6 +14,7 @@
 //! them, and their pieces facing one way join.
 mod algebraic;
 mod assemble;
+mod cone;
 mod graph;
 mod meet;
 mod model;
@@ -31,9 +32,9 @@ use crate::{Error, Result};
 use num_bigint::BigInt;
 use num_rational::BigRational as R;
 
-/// Whether S9c.1 takes the pair: two prisms, one of them with an arc.
-pub(super) fn applies(poly: &Polyhedron) -> bool {
-    let arcs = |s: &crate::Solid| match &s.construction {
+/// Whether a prism's profile holds an arc or a circle.
+fn applies_arcs(s: &crate::Solid) -> bool {
+    match &s.construction {
         Construction::Prism(p) => p.boundaries().any(|b| match &b.kind {
             BoundaryKind::Circle { .. } => true,
             BoundaryKind::Path { segments, .. } => {
@@ -42,21 +43,33 @@ pub(super) fn applies(poly: &Polyhedron) -> bool {
             BoundaryKind::Polygon(_) => false,
         }),
         _ => false,
-    };
+    }
+}
+
+/// Whether S9c.1 takes the pair: two prisms, one of them with an arc.
+pub(super) fn applies(poly: &Polyhedron) -> bool {
+    let arcs = applies_arcs;
     let prism = |s: &crate::Solid| matches!(s.construction, Construction::Prism(_));
     let sphere = |s: &crate::Solid| matches!(s.construction, Construction::Sphere { .. });
-    // S9d.1: a sphere against a prism.
-    (prism(&poly.a) && prism(&poly.b) && (arcs(&poly.a) || arcs(&poly.b)))
+    let cone = |s: &crate::Solid| matches!(s.construction, Construction::Cone { .. });
+    let quadric = |s: &crate::Solid| prism(s) || sphere(s) || cone(s);
+    // S9d.3: a cone against a prism, a sphere or a cone (S9d.3b's refused
+    // in `build`).
+    ((cone(&poly.a) && quadric(&poly.b)) || (quadric(&poly.a) && cone(&poly.b)))
+        // S9d.1: a sphere against a prism.
+        || (prism(&poly.a) && prism(&poly.b) && (arcs(&poly.a) || arcs(&poly.b)))
         || (sphere(&poly.a) && prism(&poly.b))
         || (prism(&poly.a) && sphere(&poly.b))
         // S9d.2: two spheres.
         || (sphere(&poly.a) && sphere(&poly.b))
 }
 
-/// An input's exact model: a prism's, or a sphere's (S9d.1).
+/// An input's exact model: a prism's, a sphere's (S9d.1) or a cone's
+/// (S9d.3a).
 fn model_of(s: &crate::Solid, op: Operand, seam: &R) -> Result<model::Prism> {
     match &s.construction {
         Construction::Sphere { .. } => sphere::model(s, op, seam),
+        Construction::Cone { .. } => cone::model(s, op, seam),
         _ => model::Prism::new(s, op, seam),
     }
 }
@@ -64,6 +77,15 @@ fn model_of(s: &crate::Solid, op: Operand, seam: &R) -> Result<model::Prism> {
 /// The result's components, a full circle's seam tried at several
 /// rational points.
 pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
+    // S9d.3a takes a cone against a polyhedral prism alone.
+    let curved = |s: &crate::Solid| match &s.construction {
+        Construction::Prism(_) => applies_arcs(s),
+        _ => true,
+    };
+    let is_cone = |s: &crate::Solid| matches!(s.construction, Construction::Cone { .. });
+    if (is_cone(&poly.a) && curved(&poly.b)) || (curved(&poly.a) && is_cone(&poly.b)) {
+        return Err(meet::cone_later());
+    }
     // Each input's seam apart from the other's: one cylinder shared by both
     // would put both seams on one line.
     let seams = [(2, 7), (3, 11), (5, 13), (7, 19), (11, 23)];

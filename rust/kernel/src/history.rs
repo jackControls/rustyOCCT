@@ -712,6 +712,27 @@ fn same_surface(piece: &EntityInfo, whole: &Geometry, tol: f64, edges: &Entities
                         .into_iter()
                         .all(|x| x)
                     }
+                    // A hyperbola or parabola (a cone's section, S9d.3a):
+                    // its frame's plane, points at its own reach, within
+                    // both planes' reach.
+                    Geometry::Curve(Curve3::HyperbolaArc {
+                        frame,
+                        major: reach,
+                        ..
+                    })
+                    | Geometry::Curve(Curve3::ParabolaArc {
+                        frame,
+                        focal: reach,
+                        ..
+                    }) => {
+                        let (o, x, y) = (frame.origin(), frame.x(), frame.y());
+                        [o, o + x * *reach, o + y * *reach]
+                            .iter()
+                            .map(|p| Some(within(on_piece(*p)?)))
+                            .collect::<Option<Vec<bool>>>()?
+                            .into_iter()
+                            .all(|x| x)
+                    }
                     // A circle: exactly parallel to both planes, its
                     // centre's distance; else (a section's circle, its
                     // frame rounded: S9d.1) its centre and axes' ends

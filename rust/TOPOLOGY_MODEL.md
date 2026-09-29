@@ -862,6 +862,10 @@ procedural pcurves with explicit conic edges.
   `(alpha, beta)`; an edge's range keeps `|g / rho| < 1` strictly. Jets,
   quadrature, tessellation rates, rigid motion and the writer's refusal as
   `Curve3::Meet`'s.
+* **A cone's sections in Boolean results (S9d.3a).** `HyperbolaArc` and
+  `ParabolaArc` edges bound Boolean results too; a rigid motion moves their
+  frames, and a body's bounds hold their coordinates' extremes inside their
+  arcs and every vertex (an apex's vertex loop among them).
 * **Interop.** The writer prints `Geom_Hyperbola` and `Geom_Parabola` (3D
   records 5 and 6), and refuses a torus section; a projection pcurve has no record until D13's
   interchange approximation (a B-spline whose certified bound becomes the

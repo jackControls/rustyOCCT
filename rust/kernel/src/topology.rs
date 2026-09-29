@@ -1338,11 +1338,32 @@ impl Topology {
                     centre: motion.point(m.centre),
                     ..(**m).clone()
                 })),
-                _ => {
-                    return Err(Error::OutOfDomain(
-                        "moving a body's hyperbolic, parabolic or section edge",
-                    ))
-                }
+                // S9d.3a: a cone's sections in Boolean results.
+                Curve3::HyperbolaArc {
+                    frame,
+                    major,
+                    minor,
+                    start,
+                    sweep,
+                } => Curve3::HyperbolaArc {
+                    frame: frame.transformed(motion, tolerance)?,
+                    major: *major,
+                    minor: *minor,
+                    start: *start,
+                    sweep: *sweep,
+                },
+                Curve3::ParabolaArc {
+                    frame,
+                    focal,
+                    start,
+                    sweep,
+                } => Curve3::ParabolaArc {
+                    frame: frame.transformed(motion, tolerance)?,
+                    focal: *focal,
+                    start: *start,
+                    sweep: *sweep,
+                },
+                _ => return Err(Error::OutOfDomain("moving a body's torus section edge")),
             };
         }
         for f in &mut parts.faces {

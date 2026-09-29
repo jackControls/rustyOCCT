@@ -18,7 +18,7 @@ use std::cmp::Ordering;
 use std::collections::BTreeMap;
 
 /// A frame's exact affine map on its stored axes.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub(super) struct Affine {
     pub(super) o: V,
     pub(super) x: V,
@@ -235,6 +235,8 @@ pub(super) enum FaceKind {
     /// A sphere's hemisphere on the split plane's positive side or not
     /// (S9d.1).
     Half(bool),
+    /// A cone's wall (S9d.3a).
+    ConeWall,
 }
 
 /// A face's exact surface, its normal leaving the material.
@@ -256,6 +258,12 @@ pub(super) enum Surf {
         c: V,
         r: R,
     },
+    /// A cone's wall on the model's frame (S9d.3a): `u^2 + v^2 = (b + k
+    /// w)^2`, its material inside.
+    Cone {
+        b: R,
+        k: R,
+    },
 }
 
 /// A 3D curve, exact.
@@ -274,6 +282,8 @@ pub(super) enum Crv {
     /// A cylinder's and a sphere's meeting over the cylinder's height
     /// (S9d.2b), placed by its height.
     Rise(Box<super::spheres::RiseCrv>),
+    /// A plane's section of a cone (S9d.3a), placed by the cone's angle.
+    Cone(Box<super::cone::ConeSec>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -331,6 +341,9 @@ pub(super) struct Prism {
     /// A sphere's own data (S9d.1): its faces are its ends' discs and its
     /// hemispheres.
     pub(super) ball: Option<super::sphere::Ball>,
+    /// A cone's own data (S9d.3a): its faces are its ends' discs and its
+    /// wall, over heights `lo..hi`.
+    pub(super) funnel: Option<super::cone::Funnel>,
 }
 
 fn out_of_domain(what: &'static str) -> Error {
@@ -649,6 +662,7 @@ impl Prism {
             info,
             boxes: Vec::new(),
             ball: None,
+            funnel: None,
         };
         prism.check_slots(solid)?;
         prism.boxes = (0..prism.faces.len()).map(|i| prism.face_box(i)).collect();
@@ -712,7 +726,9 @@ impl Prism {
                 }
             }
             FaceKind::Wall(b, j) => add_seg(&self.bounds[b].segs[j], &mut pts),
-            FaceKind::Half(_) => unreachable!("a sphere's boxes are its own"),
+            FaceKind::Half(_) | FaceKind::ConeWall => {
+                unreachable!("a sphere's and a cone's boxes are their own")
+            }
         }
         let mut lo = [f64::INFINITY; 3];
         let mut hi = [f64::NEG_INFINITY; 3];
@@ -735,6 +751,16 @@ impl Prism {
         match &self.faces[fi].surf {
             Surf::Plane { m, .. } => qv(m),
             Surf::Sphere { c, .. } => qsub(p, &qv(c)),
+            Surf::Cone { b, k } => {
+                // The gradient of u^2 + v^2 - (b + k w)^2 (halved).
+                let l = self.f.local_q(p);
+                let rk = l[2].scale(k).add_r(b).scale(k);
+                [0, 1, 2].map(|j| {
+                    l[0].scale(&self.f.row(0)[j])
+                        .add(&l[1].scale(&self.f.row(1)[j]))
+                        .sub(&rk.scale(&self.f.row(2)[j]))
+                })
+            }
             Surf::Cyl { c, inside, .. } => {
                 let l = self.f.local_q(p);
                 let (du, dv) = (l[0].add_r(&-&c[0]), l[1].add_r(&-&c[1]));
@@ -948,6 +974,9 @@ impl Prism {
         if let Some(ball) = &self.ball {
             return ball.member(p, dirs);
         }
+        if let Some(fun) = &self.funnel {
+            return fun.member(&self.f, &self.hi, p, dirs);
+        }
         let l = self.f.local_q(p);
         let ld: Vec<QV> = dirs.iter().map(|d| self.f.local_dir_q(d)).collect();
         // Heights.
@@ -1003,8 +1032,11 @@ impl Prism {
                         Ordering::Greater => Loc::Out,
                     }
                 }
-                FaceKind::Wall(..) => unreachable!("a sphere has no walls"),
+                FaceKind::Wall(..) | FaceKind::ConeWall => unreachable!("a sphere has no walls"),
             };
+        }
+        if let Some(fun) = &self.funnel {
+            return fun.in_face(&self.f, &self.hi, self.faces[fi].kind, p);
         }
         let l = self.f.local_q(p);
         let x = [l[0].clone(), l[1].clone()];
@@ -1014,7 +1046,9 @@ impl Prism {
                 OnProfile::Out => Loc::Out,
                 _ => Loc::On,
             },
-            FaceKind::Half(_) => unreachable!("a prism has no hemispheres"),
+            FaceKind::Half(_) | FaceKind::ConeWall => {
+                unreachable!("a prism has no hemispheres or cone walls")
+            }
             FaceKind::Wall(b, j) => {
                 let h = [l[2].add_r(&-&self.lo).sign(), l[2].add_r(&-&self.hi).sign()];
                 if h[0] == Ordering::Less || h[1] == Ordering::Greater {
