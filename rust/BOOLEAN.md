@@ -1447,8 +1447,8 @@ cases) nearer the closed forms. Eight more of S9d.3b.1's, a wider
 frustum across the cylinder, evaluate right but take 23 to 120 seconds
 on the debug worker, past the contract's 30, and are not registered. Of
 the upstream cases in frames with different axes the rest are refused:
-tori and
-two cones or tori sharing ids, S9b.1's, S9c.1's, S9c.2a's, S9c.2b.1's,
+tori against a cylinder (S9d.4b's `OutOfDomain` since S9d.4a; the group
+holds no torus against a box), two cones or tori sharing ids, S9b.1's, S9c.1's, S9c.2a's, S9c.2b.1's,
 S9d.1's, S9d.2a's, S9d.3a's and S9d.3b.1's `Degenerate` (a turned box's corner on
 another's wall, edge or corner, or on a cylinder, within rounding; a wall
 tangent to a cylinder; two cylinders touching at a point; equal cylinders

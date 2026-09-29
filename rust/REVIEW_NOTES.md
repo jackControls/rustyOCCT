@@ -2511,8 +2511,19 @@ Decisions for S9, recorded before its code (2026-09-28):
     takes them in a plane's pieces by points along them; (g) the fuzz
     target's tool is a whole torus when its spline byte lies in
     `144..160`; (h) the DRAW bridge evaluates a torus inside a box and
-    guards a torus against a cylinder (S9d.4b). Pending: the DRAW survey, the
-    campaign.
+    guards a torus against a cylinder (S9d.4b). Pending: the campaign.
+  * **DRAW survey of S9d.4a (2026-09-29, `UPSTREAM_TESTS.md`).** The
+    Boolean group holds no torus against a box, so no case evaluates
+    newly: its tori are 16 `pcylinder`s with a coaxial torus (`ZL2` to
+    `ZL5` of the four `bop*_simple` grids), refused as S9d.4b's
+    `OutOfDomain` (a torus against a curved face) instead of S9c's, and
+    three copies of one torus in `bopfuse_simple/ZP6`, the adapter's
+    shared ids. No case reaches a segment or a wedge, none fails, and
+    none times out (`bopcommon_simple/ZK8` evaluating within the survey's
+    120 seconds this time, unregistered as the other `ZK7` and `ZK8`).
+    Rust evaluates 947, 939 registered; 632 refused. The sentinel
+    `bopfuse_simple/ZL2` now guards S9d.4b's `OutOfDomain`. The ledger
+    does not change.
   * **S9d.4b refined, before its code (2026-09-29).** Two sub-steps.
     S9d.4b.1: tori other than whole ones (S3's v-segments between two
     latitudes and wedges of a partial turn) against polyhedral prisms: the

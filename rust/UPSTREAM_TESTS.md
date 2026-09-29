@@ -149,7 +149,7 @@ group, and stale success records are removed before each run.
 | `boolean/bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`, `boptuc_simple`: `ZJ4`, `ZJ6` to `ZJ9`, `ZK5`, `ZK6`, `ZK9`, `ZL1` (36 cases) | Viewer skipped | Viewer skipped | `bop` and its operations on a `pcylinder` of radius 4 and height 8 and a frustum of radii 2 and 1: coaxial, standing on its top cap, inside it with its discs on both caps or clear of them, or through one or both caps (`ZJ4`, `ZJ6` to `ZJ9`: circles), or of height 10 with its axis crossing the cylinder's at right angles at half its height, turned a quarter turn about y or x (`ZK5`, `ZK6`: two quartic rings over the frustum's angle), or a frustum of radii 1 and 6 and height 8 turned a quarter turn about y either way, its wide end through both caps and its end disc across the wall (`ZK9`, `ZL1`): `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9d.3b.1's cones against cylinders; `bopfuse_simple/ZJ4` was the sentinel for S9d.3b's `OutOfDomain`, `bopfuse_simple/ZK9` for a cone turned by the rounded rotation until the adapter turned it exactly) |
 | `boolean/bopfuse_simple/ZK1` | Unsupported | Viewer skipped | A `pcylinder` of radius 4 and height 8 and a frustum of radii 4 and 2 standing on its top cap, its base rim the cap's rim and its base disc the cap: a tangency between the inputs (`ZK2` to `ZK4`, the same turned about its axis, alike since the adapter turns a cone exactly; S9d.3b.1's survey, `Degenerate`) |
 | `boolean/bopfuse_simple/ZG2`, `ZG4`, `ZG8`, `boptuc_simple/ZG2` | Unsupported | Viewer skipped | A box of side 4 and a frustum of radii 3 and 2 whose axis lies in the box's wall `y = 0`, its top rim through two of the box's corners: a vertex of one input on the other's face; the same turned 30 degrees about its axis: a plane through a cone's apex; with the frustum first: an edge of one input meeting an edge of the other; a frustum of radii 1 and 0.5 standing on the top face, its base circle tangent to two of the face's edges: a tangency between the inputs (S9d.3a's `Degenerate`) |
-| `boolean/bopfuse_simple/ZL2` | Unsupported | Viewer skipped | A `pcylinder` of radius 4 and height 8 and a coaxial torus of radii 4 and 1 at half its height: a torus, a solid with curved faces in any position (S9c's `OutOfDomain` until S9d.4) |
+| `boolean/bopfuse_simple/ZL2` | Unsupported | Viewer skipped | A `pcylinder` of radius 4 and height 8 and a coaxial torus of radii 4 and 1 at half its height: a torus against a curved face (S9d.4b's `OutOfDomain` since S9d.4a; S9c's before) |
 | `boolean/bfuse_complex/J5` | Viewer skipped | Viewer skipped | Two equal cylinders crossed at right angles: their fuse's crossing ellipses (S9c.1) |
 | `boolean/bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`, `boptuc_simple`: `U1`, `V3`, `Y5`, `Z7`, `ZA2`, `ZA4`, `ZA7`, `ZB2`, `ZB4`, `ZB6`, `ZB9`, `ZC4`, `ZO7`, `ZO8` (56 cases); `bopcommon_simple/ZC5`, `ZD8`, `ZE1`, `boptuc_simple/ZC5`, `bopfuse_simple/ZD8`, `ZE1` | Viewer skipped | Viewer skipped | `bop` and its operations on a `pcylinder` and a box in frames with different axes (the box turned by `trotate` about z by 30, 60 or -30 degrees, 40 of them sized by `dset`; in `ZC5` 45 degrees about a horizontal axis through its corner; in `ZO7` and `ZO8` the cylinder turned about its own axis, `ZO8` by a quarter turn), or two equal cylinders whose axes cross at right angles (`ZD8`, `ZE1`): `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9c.1's prisms with arcs in any position) |
 | `boolean/bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`, `boptuc_simple`: `ZE3`, `ZE4`, `ZE5`, `ZE6` (16 cases); `bopfuse_simple/ZC5`, `bopcut_simple/ZC5` | Viewer skipped | Viewer skipped | `bop` and its operations on a `pcylinder` of radius 0.5 through one of radius 1, their axes crossing at right angles (a quarter turn about x, which the adapter turns exactly; in `ZE4` to `ZE6` then turned about its own axis by one to three quarter turns), meeting in two quartic rings; the fuse and cut of `ZC5` (above), whose cylinder wall has holes bounded by ellipse arcs the validator now places: `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9c.2a's cylinders in exact frames) |
@@ -1040,6 +1040,30 @@ holds for every case but two, `bopfuse_simple/ZE6` and
 `bopcut_simple/ZF2`, which timed out with the machine's load average
 near 16 and pass run again (7 and 15 seconds at a load of 5, as on the
 workers before S9d.3b.2 and the exact turn). The ledger does not change.
+
+**S9d.4a's whole torus against polyhedral prisms in the Boolean group.**
+The same 1,802 cases were run again on both backends after S9d.4a
+(2026-09-29, `survey_upstream_tests.py --boolean`, the public dataset
+read through `--data-dir`, 120 seconds a case; no case loads it).
+Native DRAW's statuses are unchanged. The grids hold no torus against a
+box: their tori are the 16 `pcylinder`s of radius 4 and height 8 with a
+coaxial torus of radii 4 and 1 at half their height (`ZL2` to `ZL5` of
+the four `bop*_simple` grids, turned about the axis by quarter turns),
+refused until now as a solid with curved faces in any position (S9c) and
+now as S9d.4b's `OutOfDomain`, a torus against a curved face, and
+`bopfuse_simple/ZP6`'s three copies of one torus, which the adapter
+refuses as solids other than prisms sharing ids. No case reaches a torus
+segment or wedge. No case evaluates newly and none fails; the one
+timeout of the survey before, `bopcommon_simple/ZK8`, evaluates within
+the 120 seconds this time (the eight `ZK7` and `ZK8` cases stay
+unregistered, as above). Rust evaluates 947, 939 registered; 632 cases
+native DRAW evaluates are refused. Against the table above: solids
+other than prisms 61 (-16, the adapter's shared ids only); a torus
+against a curved face (S9d.4b, `OutOfDomain`) 16, new; the timeouts 0
+(-1). The sentinel `bopfuse_simple/ZL2` is refused as S9d.4b's now, its
+purpose updated; the others are refused as before. The `gdml_public`
+grid's tori (`A1`, `A2`, `A9`, `B6`, outside the surveyed grids) are
+refused by both backends' hosts. The ledger does not change.
 
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and

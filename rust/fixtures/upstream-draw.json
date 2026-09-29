@@ -6992,7 +6992,7 @@
       "path": "tests/boolean/bopfuse_simple/ZL2",
       "expected_rust": "unsupported",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9d.3a's Boolean group, a capability sentinel: a pcylinder of radius 4 and height 8 and a coaxial torus of radii 4 and 1 centred at half its height: a torus, a Boolean of a solid with curved faces in any position (S9c's OutOfDomain until S9d.4)."
+      "purpose": "S9d.3a's Boolean group, a capability sentinel: a pcylinder of radius 4 and height 8 and a coaxial torus of radii 4 and 1 centred at half its height: a torus against a curved face (S9d.4b's OutOfDomain since S9d.4a; S9c's before)."
     },
     {
       "path": "tests/boolean/bopfuse_simple/ZI6",
