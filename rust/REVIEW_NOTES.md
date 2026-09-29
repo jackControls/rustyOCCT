@@ -1498,6 +1498,72 @@ Decisions for S9, recorded before its code (2026-09-28):
     a native `BRepAlgoAPI` capture before the kernel code; then the kernel,
     the probe and the comparison, the `boolean` target's arcs in turned
     frames, the DRAW survey and a campaign.
+* **S9c.2, decisions recorded before its code (2026-09-28).** Two
+  cylinders meeting in S7b.1's procedural curves (D13).
+  * **Sub-steps.** S9c.2a: cylinders in exact frames (S9c.1's circular
+    measure: the world's axes permuted or reversed), so crossing axes are
+    perpendicular, of any radii and offset. Every vertex is still a
+    quadratic surd (a generatrix meets a cylinder in a quadratic; a cap's
+    plane meets the perpendicular cylinder in generatrices), only the
+    section curves between vertices are quartics. S9c.2b: cylinders in
+    turned frames (affine models not circular in a common measure): a
+    circle meeting the other cylinder, parallel cylinders' generatrices at
+    an ellipse's and a circle's crossings, and the quartic curves; its
+    points are algebraic numbers of degree up to four held as isolating
+    intervals of their exact polynomials, refined on demand, two not
+    separated at `1e-30` of the case's size `Degenerate` (S9a's crossings
+    within the resolution). A pair whose curve comes within the resolution
+    of a node (nearly equal radii, nearly crossing axes: the stored turned
+    frames of `steinmetz_oblique` and `steinmetz_tilted` make the two
+    ellipses of S9c.1 a quartic pair of loops about `1e-8` apart) is
+    `Degenerate`. S9c.2b's decisions are refined by its evidence before its
+    code. A pair of a later sub-step stays `OutOfDomain`.
+  * **Classes, exactly.** In the frame `(a, b, e = a x b)` of the two axes
+    `a` and `b`, a point of both walls has `eta = p.e` with `beta^2 =
+    rA^2 - (eta - eA)^2` and `alpha^2 = rB^2 - (eta - eB)^2` (`beta`, `alpha`
+    its coordinates across `A`'s and `B`'s axes along `b` and `a`), so the
+    curve's class comes from the two intervals `[eA - rA, eA + rA]` and
+    `[eB - rB, eB + rB]`: one strictly inside the other, two rings about
+    the thinner cylinder (each a graph over its angle, whole turns); the
+    two overlapping in part, one loop; an end of one on the other's end or
+    interior end (a tangency: outside, or inside with a node, the
+    figure-eight) `Degenerate`; apart, none; equal intervals with crossing
+    axes are S9c.1's ellipses.
+  * **Curve.** `Curve3::Meet`: the meeting of two cylinders as a graph over
+    the first's angle (S7b's ruled parameterisation): the ruling at `u =
+    start + sweep f` meets the second cylinder at `v = (-B + s sqrt(B^2 -
+    A C)) / A`, `s` the branch. An edge's range keeps `B^2 - A C > 0`
+    strictly (no turning point) so it is analytic: its jets, D13's
+    quadrature and the tessellation's interval second derivatives apply as
+    to S8d.3's sections; its pcurves are `Projection`s (on its own carrier
+    evaluated by its angle); the `.brep` writer refuses it (`Unwritable`)
+    until D13's interchange approximation, as sections. A turning point of
+    one cylinder's graph (its ruling tangent to the curve) is regular on the
+    other's, so a loop is four graphs: over `B`'s angle about the two
+    points where `alpha = 0`, over `A`'s about the two where `beta = 0`,
+    switched at rational points of the thinner cylinder's angle between
+    them (`beta` then a surd of one field). Rings without a vertex are split
+    at a rational point, as S9c.1's circles, tried again elsewhere when a
+    meeting falls there. Switch and split vertices stay in the result
+    (OCCT's intersection splines are split elsewhere: reviewed counts).
+  * **Everything else is S9c.1's:** vertices where an edge meets a face,
+    positions on a graph by its carrier's angle (pairs of surds), pieces
+    traced in each face's parameters and kept by exact membership, joins,
+    rounding, validation, histories; tangencies and results touching
+    themselves `Degenerate`.
+  * **Evidence first.** Fixtures of every class in exact frames (a thin
+    pipe through a thick one with crossing and offset axes: two rings;
+    a partial bite: one loop; equal radii offset: one loop; a pipe ending
+    inside the other; a hole's wall crossed by a pipe; internal and external
+    tangency declared `degenerate`) and S9c.2b's in turned frames (oblique
+    and skew unequal cylinders, a turned pipe through a box's round hole);
+    the reference checked against closed forms (the common of crossing
+    perpendicular cylinders, `4 int sqrt((rA^2 - (eta - eA)^2) (rB^2 -
+    (eta - eB)^2)) d eta`, and Legendre's `8 rA / 3 ((rA^2 + rB^2) E(k) -
+    (rA^2 - rB^2) K(k))`, `k = rB / rA`, for crossing axes) and Monte Carlo;
+    a native `BRepAlgoAPI` capture before `solid/boolean/curved/
+    procedural.rs` exists; then the kernel, the comparison, the DRAW survey
+    and a campaign.
 
 ### Parallel tracks
 
