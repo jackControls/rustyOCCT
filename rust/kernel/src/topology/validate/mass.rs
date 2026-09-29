@@ -840,6 +840,34 @@ fn sph_lines<T: Real>(fs: &[Sph<T>], a: &V2<T>, b: &V2<T>, lower: &T) -> Option<
         return sph_parallel(fs, &a[0], &b[0], &a[1], lower);
     }
     let (uu, vv) = (hull(&a[0], &b[0]), hull(&a[1], &b[1]));
+    // Along a line of nearly constant `v` (a closing chord at a pole, its
+    // ends' `v` apart by rounding): the parallel's exact integral at its
+    // start, widened by `|du| sum |x| |G(vv) - G(v0)|` (each monomial in `u`
+    // at most 1 in size), far tighter than a box over its `u` hull.
+    let (dlo, dhi) = dv.bounds_f64();
+    if dlo.abs().max(dhi.abs()) <= 1e-9 {
+        let base = sph_parallel(fs, &a[0], &b[0], &a[1], lower)?;
+        let mag = |t: &T| {
+            let (lo, hi) = t.bounds_f64();
+            lo.abs().max(hi.abs())
+        };
+        let span = mag(&du);
+        let mut out = Vec::with_capacity(fs.len());
+        for (f, total) in fs.iter().zip(base) {
+            let mut err = 0.0f64;
+            for ((_, _, k, l), x) in f {
+                let spread = trig_integral::<T>(*k, *l, lower, &vv)?
+                    .sub(&trig_integral::<T>(*k, *l, lower, &a[1])?);
+                err += mag(x) * mag(&spread);
+            }
+            let err = err * span * (1.0 + 1e-9) + f64::MIN_POSITIVE;
+            if !err.is_finite() {
+                return None;
+            }
+            out.push(total.widen(&R::from_float(err)?));
+        }
+        return Some(out);
+    }
     let (cu, su) = T::cos_sin(&uu);
     let power = |x: &T, n: u8| (0..n).fold(c::<T>(1.0), |acc, _| acc.mul(x));
     let mut out = Vec::with_capacity(fs.len());

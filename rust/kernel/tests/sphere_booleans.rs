@@ -80,6 +80,19 @@ fn every_case_matches_the_reference() {
             let slack = 1e-9 * x.abs().max(1.0);
             lo - slack <= x && x <= hi + slack
         };
+        // The enclosures narrow: a wide one (its midpoint the reported
+        // value) would hold the reference yet report another.
+        let narrow = |lo: f64, hi: f64| hi - lo <= 1e-9 * lo.abs().max(hi.abs()).max(1.0);
+        if !narrow(sum(0), sum(1)) || !narrow(sum(2), sum(3)) {
+            failures.push(format!(
+                "{}: wide enclosures [{}, {}], [{}, {}]",
+                case.name,
+                sum(0),
+                sum(1),
+                sum(2),
+                sum(3)
+            ));
+        }
         if !near(v[0], sum(0), sum(1)) || !near(v[1], sum(2), sum(3)) {
             failures.push(format!(
                 "{}: volume {v:?} against [{}, {}], area [{}, {}]",
@@ -290,4 +303,80 @@ fn sections_through_a_spheres_poles() {
         t.fuse(OperationId(3), &b),
         Err(Error::OutOfDomain(_))
     ));
+}
+
+/// A box's vertical edge along an upright sphere's axis (through its
+/// stored poles), whatever the sphere's reference direction, and the DRAW
+/// grids' `ZI5` (a sphere turned a quarter turn about x, then about y, its
+/// section through its poles a lune across its seam): the volumes are the
+/// closed forms' and their enclosures narrow (a closing chord at a pole,
+/// its ends' `v` apart by rounding, was enclosed over its `u` hull, the
+/// midpoint far off).
+#[test]
+fn wedges_through_a_spheres_poles() {
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{
+        Boundary, Frame3, Point2, Point3, Profile, RigidTransform, Solid, Tolerance, Vec3,
+    };
+    let tol = Tolerance::default();
+    let pi = std::f64::consts::PI;
+    let half = std::f64::consts::FRAC_PI_2;
+    let ball = 32.0 * pi / 3.0;
+    let prism = |pts: &[(f64, f64)], h: f64| {
+        let outer =
+            Boundary::polygon(pts.iter().map(|p| Point2::new(p.0, p.1)).collect(), tol).unwrap();
+        let profile = Profile::new(outer, vec![], tol).unwrap();
+        let up = Frame3::new(
+            Point3::new(0.0, 0.0, 0.0),
+            Vec3::new(0.0, 0.0, 1.0),
+            Vec3::new(1.0, 0.0, 0.0),
+            tol,
+        )
+        .unwrap();
+        Solid::extrude_with(OperationId(1), profile, up, 0.0, h)
+            .unwrap()
+            .0
+    };
+    let check = |out: Vec<Solid>, want: f64| {
+        let mut v = 0.0;
+        for s in &out {
+            let e = s.topology().mass_enclosure().unwrap();
+            assert!(e.volume[1] - e.volume[0] <= 1e-9 * want, "{:?}", e.volume);
+            v += s.mass_properties().volume;
+        }
+        assert!((v - want).abs() <= 1e-9 * want, "{v} {want}");
+    };
+    let quadrant = prism(&[(0.0, 0.0), (4.0, 0.0), (4.0, 4.0), (0.0, 4.0)], 16.0);
+    for x in [
+        Vec3::new(1.0, 0.0, 0.0),
+        Vec3::new(-1.0, 0.0, 0.0),
+        Vec3::new(0.0, 1.0, 0.0),
+        Vec3::new(1.0, 1.0, 0.0),
+    ] {
+        let c = Frame3::new(Point3::new(0.0, 0.0, 8.0), Vec3::new(0.0, 0.0, 1.0), x, tol).unwrap();
+        let (b, _) = Solid::sphere_with(OperationId(2), c, 2.0, -half, half, tol).unwrap();
+        check(quadrant.common(OperationId(3), &b).unwrap().0, ball / 4.0);
+        check(b.cut(OperationId(3), &quadrant).unwrap().0, 0.75 * ball);
+    }
+    let block = prism(&[(-4.0, -4.0), (4.0, -4.0), (4.0, 4.0), (-4.0, 4.0)], 8.0);
+    let c = Frame3::new(
+        Point3::new(0.0, 0.0, 8.0),
+        Vec3::new(0.0, 0.0, 1.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    let (b, _) = Solid::sphere_with(OperationId(2), c, 2.0, -half, half, tol).unwrap();
+    let centre = Point3::new(0.0, 0.0, 8.0);
+    let rx = RigidTransform::rotation(centre, Vec3::new(1.0, 0.0, 0.0), half).unwrap();
+    let ry = RigidTransform::rotation(centre, Vec3::new(0.0, 1.0, 0.0), half).unwrap();
+    let (b, _) = b.transform_with(OperationId(5), rx).unwrap();
+    let (b, _) = b.transform_with(OperationId(6), ry).unwrap();
+    check(block.common(OperationId(3), &b).unwrap().0, ball / 2.0);
+    check(
+        block.fuse(OperationId(3), &b).unwrap().0,
+        512.0 + ball / 2.0,
+    );
+    check(block.cut(OperationId(3), &b).unwrap().0, 512.0 - ball / 2.0);
+    check(b.cut(OperationId(3), &block).unwrap().0, ball / 2.0);
 }

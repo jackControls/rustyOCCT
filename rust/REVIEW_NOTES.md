@@ -2193,6 +2193,20 @@ Decisions for S9, recorded before its code (2026-09-28):
     fails validation (`uncertified_shell_orientation`) where native DRAW
     evaluates; a box in place of the cylinder alike. Not registered;
     a kernel fix pending. Rust evaluates 902, 899 registered, one fails.
+    The fix, after it: not the pole follow-up's, but S9d.1's own and older
+    (a box's vertical edge along an upright sphere's axis gave a quarter
+    ball 14.58 for `8 pi / 3`, at the commit before the follow-up too): a
+    sphere face's closing chord at a pole between two meridians, its ends'
+    `v` a rounding apart, was enclosed over its `u` hull (`sph_lines`), the
+    volume's enclosure 26 wide and its midpoint (the reported volume) far
+    off, the validator's orientation sign undecided (`ZI5`'s `btuc`). Such a
+    chord now takes the parallel's exact value widened by the `v` spread
+    (`MATHEMATICS.md`); `ZI5`'s four operations and the wedges give the
+    closed forms (`tests/sphere_booleans.rs`,
+    `wedges_through_a_spheres_poles`). The fixture tests held the
+    reference inside each enclosure but not the enclosure narrow: every
+    curved Boolean fixture test now requires volume and area enclosures
+    within `1e-9` relative, all of them passing.
 
 ### Parallel tracks
 

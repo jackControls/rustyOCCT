@@ -1235,7 +1235,14 @@ polynomial in `u` whose coefficients are the exact integrals of
 `cos^c sin^d` over `[lower, v0]`, integrated in `u` by the same Fourier
 expansion; along a meridian `-∮ F du` is zero; along any other segment (a
 chord closing a gap), its value lies in `-du` times `F` over the segment's
-bounding box, since the mean value of `F` on the segment does. A whole
+bounding box, since the mean value of `F` on the segment does. A segment
+whose `v` changes by rounding only (at most `1e-9`: a chord at a pole
+between two meridians, its ends' `v` a rounding apart) takes the
+parallel's exact value at its start instead, widened by `|du| Σ |x| |G(vv)
+- G(v0)|` over its monomials (each `cos^a u sin^b u` at most 1 in size, `G`
+the `v` integral over the segment's `v` hull less that at its start): the
+box over a quarter turn of `u` left a sphere wedge's volume within an
+enclosure 26 wide. A whole
 sphere has no loops: on the universal cover its region is bounded by the
 two pole lines, of which only the north one contributes, `∫ F(u, π/2) du`
 over one turn, with the face's sense. The independent reference integrates

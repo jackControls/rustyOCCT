@@ -81,6 +81,19 @@ fn every_case_matches_the_reference() {
             let slack = 1e-9 * x.abs().max(1.0);
             lo - slack <= x && x <= hi + slack
         };
+        // The enclosures narrow: a wide one (its midpoint the reported
+        // value) would hold the reference yet report another.
+        let narrow = |lo: f64, hi: f64| hi - lo <= 1e-9 * lo.abs().max(hi.abs()).max(1.0);
+        if !narrow(sum(0), sum(1)) || !narrow(sum(2), sum(3)) {
+            failures.push(format!(
+                "{}: wide enclosures [{}, {}], [{}, {}]",
+                case.name,
+                sum(0),
+                sum(1),
+                sum(2),
+                sum(3)
+            ));
+        }
         if !near(v[0], sum(0), sum(1)) || !near(v[1], sum(2), sum(3)) {
             failures.push(format!(
                 "{}: volume {v:?} against [{}, {}], area [{}, {}]",
