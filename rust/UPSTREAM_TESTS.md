@@ -139,7 +139,10 @@ group, and stale success records are removed before each run.
 | `boolean/splitter/A5`, `B5`; `bugs/modalg_7/bug28113_1`, `bug28113_2`, `bug29789`, `bug29955`, `bug31201_1` to `_3`, `bug31462`, `bug32644` | Private data | Private data | Splits of restored shapes (`bsplit`, and `bapisplit` in `B5`) whose files are not in the public dataset (S8e) |
 | `boolean/bopcommon_simple` (122 cases), `bopcut_simple` (106), `bopfuse_simple` (89), `boptuc_simple` (83), `bcommon_simple/I5`, `J1`, `bfuse_simple/L2`, `E2`, `bcut_simple/G7`, `L8` | Viewer skipped | Viewer skipped | `bop` and its operations, `bfuse`, `bcut` and `bcommon` of two boxes, a box and a `pcylinder`, or two cylinders in one frame (some moved by `ttranslate`, some sized by `dset`): `checkprops -s` (or `-s empty`) and the group's `checkshape`; each records a `checkview` (S9a; 86 of them, `bopfuse_simple/B2`, `Z8` and `ZB3` among them, are S9a.2's stacks) |
 | `boolean/bopcommon_simple` (81 more cases), `bopcut_simple` (68), `bopfuse_simple` (69), `boptuc_simple` (80) | Viewer skipped | Viewer skipped | `bop` and its operations on two boxes in frames with different axes (one turned by `trotate` about z, or about x and moved by `ttranslate`, some sized by `dset`; `K3` and `P6` by quarter turns, which the adapter turns exactly): `checkprops -s` (or `-s empty`) and the group's `checkshape`; each records a `checkview` (S9b.1's polyhedra) |
-| `boolean/bcommon_simple/A1`, `bopcommon_simple/ZL6` | Unsupported | Viewer skipped | A sphere and a box, two cones: solids other than prisms (S9d; S9a sentinels) |
+| `boolean/bopcommon_simple/ZL6` | Unsupported | Viewer skipped | Two cones: solids other than prisms (S9d; an S9a sentinel) |
+| `boolean/bopcommon_simple/ZP9` | Viewer skipped | Viewer skipped | `bop` and `bopcommon` of a 100 box and a sphere of radius 7.5 placed on a DRAW `plane` (`psphere name plane R`, its centre 1.053 inside the box's wall `x = 100`), the wall cutting a cap off the sphere: `checkprops -s` and the group's `checkshape`; it records a `checkview` (S9d.1's spheres against polyhedral prisms; the adapter places a sphere on a plane since S9d.1's survey) |
+| `boolean/bcommon_simple/A1`, `bfuse_simple/A4`, `boptuc_simple/ZH5` | Unsupported | Viewer skipped | A unit sphere and a unit box whose corner is at the centre, its far corners on the sphere (an S9a sentinel), the box quarter-turned so a wall is tangent to the sphere, a cylinder's rim on a sphere's equator with the sphere the object: a meeting at every seam tried, a tangency between the inputs (S9d.1's `Degenerate`) |
+| `boolean/bopfuse_simple/ZH5` | Unsupported | Viewer skipped | A cylinder of radius 4 and a sphere of radius 4 centred on its top cap: a sphere against a cylinder (S9d.2's, `OutOfDomain`) |
 | `boolean/bfuse_complex/J5` | Viewer skipped | Viewer skipped | Two equal cylinders crossed at right angles: their fuse's crossing ellipses (S9c.1) |
 | `boolean/bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`, `boptuc_simple`: `U1`, `V3`, `Y5`, `Z7`, `ZA2`, `ZA4`, `ZA7`, `ZB2`, `ZB4`, `ZB6`, `ZB9`, `ZC4`, `ZO7`, `ZO8` (56 cases); `bopcommon_simple/ZC5`, `ZD8`, `ZE1`, `boptuc_simple/ZC5`, `bopfuse_simple/ZD8`, `ZE1` | Viewer skipped | Viewer skipped | `bop` and its operations on a `pcylinder` and a box in frames with different axes (the box turned by `trotate` about z by 30, 60 or -30 degrees, 40 of them sized by `dset`; in `ZC5` 45 degrees about a horizontal axis through its corner; in `ZO7` and `ZO8` the cylinder turned about its own axis, `ZO8` by a quarter turn), or two equal cylinders whose axes cross at right angles (`ZD8`, `ZE1`): `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9c.1's prisms with arcs in any position) |
 | `boolean/bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`, `boptuc_simple`: `ZE3`, `ZE4`, `ZE5`, `ZE6` (16 cases); `bopfuse_simple/ZC5`, `bopcut_simple/ZC5` | Viewer skipped | Viewer skipped | `bop` and its operations on a `pcylinder` of radius 0.5 through one of radius 1, their axes crossing at right angles (a quarter turn about x, which the adapter turns exactly; in `ZE4` to `ZE6` then turned about its own axis by one to three quarter turns), meeting in two quartic rings; the fuse and cut of `ZC5` (above), whose cylinder wall has holes bounded by ellipse arcs the validator now places: `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9c.2a's cylinders in exact frames) |
@@ -156,11 +159,11 @@ group, and stale success records are removed before each run.
 | `boolean/bopcommon_simple/S5`, `bopcut_simple/ZC7`, `S4`, `bopfuse_simple/U7`, `B3`, `boptuc_simple/R1` | Unsupported | Viewer skipped | Box corners on or tangent to a cylinder, boxes touching along an edge: pieces thinner than the resolution, results touching themselves (at a point or along an edge) or each other, a hole touching its boundary (the kernel's `Degenerate`) |
 | `boolean/bcut_simple/G8` | Unsupported | Viewer skipped | A semi-infinite prism of an exploded face (`explode`, `SemiInf`) |
 
-There are **five original geometry tests passing on both backends** and 834
+There are **five original geometry tests passing on both backends** and 835
 more evaluated on both with their image commands recorded (`buc60769`,
 S7's `lowalgos/intss` cases `bug23177_1`, `bug23177_2` and `bug24648`, and
-830 Boolean cases of S9a, S9a.2, S9b.1, S9b.2, S9c.1, S9c.2a and S9c.2b.2;
-S9c.2b.1 adds none).
+831 Boolean cases of S9a, S9a.2, S9b.1, S9b.2, S9c.1, S9c.2a, S9c.2b.2 and
+S9d.1; S9c.2b.1 adds none).
 S8e registers the upstream `bsplit` group as capability sentinels: `boolean/splitter/A5`
 and `B5` and the 22 `bugs` cases that call `bsplit` (with `bug29333_1` and
 `bug29333_2`, registered before). They need S9's general builder: tools that
@@ -584,6 +587,79 @@ from the reasons. The sentinels were checked again:
 why); no sentinel replaces it, since its reason no longer occurs. The
 others are refused as before. The ledger does not change.
 
+**S9d.1's spheres in the Boolean group.** The same 1,802 cases were run
+again on both backends after S9d.1 (2026-09-29, `survey_upstream_tests.py
+--boolean`, the public dataset read through `--data-dir`; no case loads
+it). Native DRAW's statuses are unchanged (1,579 evaluated, 223 not
+forwarded). The kernel now takes a sphere against a polyhedral prism, and
+none of the group's 101 Booleans of a sphere refused until now as solids
+other than prisms evaluates: 33 are a unit box whose corner is at a unit
+sphere's centre (`A1` to `A5`, `D3` to `D8` of `bfuse_simple` and
+`bcommon_simple`, `A1` to `A5`, `F9` to `G5` of `bcut_simple`; the sphere
+or the box turned by `trotate`), whose far corners lie on the sphere where
+its far walls touch it, and 68 a sphere against a cylinder. S9d.1's decisions
+refuse both: an input's vertex on the sphere as `Degenerate` (reported as
+a meeting at every seam tried: the arrangement takes a vertex on a
+sphere's face for a seam conflict, as on a cylinder's, and retries it at
+each seam), a wall tangent to it as a tangency between the inputs (in the
+12 with the box turned a quarter turn about y, its wall `x = -1` tangent
+to the sphere is met before its corners), and a sphere against a cylinder as S9d.2's `OutOfDomain`. With
+the cylinder first the 60 of `ZH5` to `ZJ3` (a cylinder of radius 4 and
+height 8, a sphere of radius 4, 2 or 6 centred on its top cap, turned
+about the cap's centre) are S9d.2's; with the sphere first
+(`boptuc_simple`), the eight of radius 4 (`ZH5` to `ZI3`) are refused
+before the pair is: the cylinder's rim, the sphere's equator, lies on the
+sphere at every seam tried (the wall tangent to the sphere along it).
+The one sphere against a box whose vertices stay off the sphere,
+`bopcommon_simple/ZP9` (a 100 box and a sphere of radius 7.5 placed on a
+DRAW `plane`, its centre 1.053 inside the wall `x = 100`), was refused by
+the adapter, which placed no sphere on a plane (the reason recorded until
+now as a `pcylinder` on a plane `pl1`: it is this `psphere`). The adapter
+now takes `psphere name plane R [angle1 angle2]` on the plane's frame
+(below); the case evaluates, `viewer_skipped` on both, and is registered.
+Its area agrees with native DRAW's to its printed digits (576.293) and
+with the closed form (the sphere less the cap beyond the wall, plus the
+section's disc) within 5.1e-13 (9e-16 relative). Rust evaluates 831, each
+evaluated by native DRAW too, `viewer_skipped` on both, and each
+registered. No case fails on Rust; no other status changes. The 748 cases
+native DRAW evaluates and Rust does not, by reason:
+
+| Reason | Cases | Since S9c.2b.2's survey |
+| --- | --- | --- |
+| Solids other than prisms (cones, tori): refused by the kernel 154, by the adapter 61 (a solid other than a prism sharing ids with the other argument: two cones 60, two tori 1) | 215 | -101 (spheres, below) |
+| A sphere against a cylinder (S9d.2, `OutOfDomain`): `ZH5` to `ZJ3` of the four `bop*_simple` grids, the cylinder first | 60 | new (from solids other than prisms) |
+| `Degenerate`, S9d.1's: a meeting at every seam tried, a vertex or an edge of the other input on the sphere (a unit box's corner at a unit sphere's centre, its far corners on the sphere, 21; a cylinder's rim on a sphere's equator, the sphere first, `boptuc_simple/ZH5` to `ZI3`, 8) | 29 | new (from solids other than prisms) |
+| `Degenerate`, S9d.1's: a tangency between the inputs (the unit box quarter-turned, its wall `x = -1` tangent to the unit sphere) | 12 | new (from solids other than prisms) |
+| `Degenerate`, S9c.2b.1's: two cylinders' section within the resolution of a node (equal cylinders in a turned frame whose axes meet: `ZD9`, `ZE2`) | 8 | 0 |
+| A stack with cylindrical walls as a Boolean argument (S9c) | 4 | 0 |
+| An arc ending off its circle on exact models (`bfuse_simple/E1`, S9c) | 1 | 0 |
+| `Degenerate`, S9c.1's: a piece thinner than the resolution (a box's corner on the cylinder within rounding) | 40 | 0 |
+| `Degenerate`, S9c.1's: two meetings within rounding along an arc (the same) | 16 | 0 |
+| `Degenerate`, S9c.1's: a meeting at every seam tried (two stacked cylinders turned about their axis, their rims one circle) | 12 | 0 |
+| `Degenerate`, S9c's: a tangency between the inputs (a box's wall tangent to the cylinder after a quarter turn 8; cylinders of radii 1 and 0.5 touching at a point, S9c.2a's, 16) | 24 | 0 |
+| `Degenerate`, S9c.1's: solids touching at a vertex (a cut of crossed cylinders) | 4 | 0 |
+| `Degenerate`, S9b.1's: a face thinner than the resolution | 99 | 0 |
+| `Degenerate`, S9b.1's: a face using an edge both ways | 9 | 0 |
+| `Degenerate`, S9b.1's: two solids touching at a point 1, a face touching itself at a vertex 1 | 2 | 0 |
+| `Degenerate`: a result thinner than the resolution | 103 | 0 |
+| `Degenerate`: a profile piece thinner than the resolution | 24 | 0 |
+| `Degenerate`: a result touching itself at a point | 11 | 0 |
+| `Degenerate`: a result touching itself along an edge | 6 | 0 |
+| `Degenerate`: a result's hole outside its boundary 8, two results touching 4 | 12 | 0 |
+| `atan2` in `dset`, which the adapter does not evaluate | 48 | 0 |
+| `explode` without the native selector (a Boolean's result into solids 4, a `pcylinder` into faces 4, a face of a box 1) | 9 | 0 |
+
+The previous table's `pcylinder` on a plane (1) is gone: it was
+`bopcommon_simple/ZP9`'s `psphere`, which evaluates. The sentinels were
+checked again: `bcommon_simple/A1` (a sphere and a box) is refused as a
+meeting at every seam tried now, its purpose updated to say why; the
+others are refused as before. Three sentinels are added:
+`bopfuse_simple/ZH5` (a sphere against a cylinder, S9d.2),
+`bfuse_simple/A4` (a wall tangent to a sphere) and `boptuc_simple/ZH5`
+(the same sphere and cylinder as `bopfuse_simple/ZH5` with the sphere
+first: the rim on the sphere, refused before the pair). The ledger does
+not change.
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4
@@ -813,7 +889,9 @@ No spline profile is among them: the adapter builds no spline edge
 S9a.2's spline profiles are not reachable through DRAW yet.
 
 The adapter reports unsupported, never an answer, whatever the kernel
-refuses: two cylinders meeting in quartics (S9c.2), an arc ending off
+refuses: two cylinders meeting in quartics (S9c.2), a sphere against a
+cylinder or a sphere (S9d.2), cones and tori (still refused as S9c's curved
+solids; S9d.3, S9d.4), an arc ending off
 its circle and a result with arcs as an argument (S9c), results touching
 themselves or each other, faces and pieces thinner than the resolution, a
 face using an edge both ways or touching itself at a vertex, two solids
@@ -898,6 +976,10 @@ instead.
   be expressions of `dset` variables with `+`, `-`, `*`, `/`, `pi` and
   `sqrt` (Tcl expressions are evaluated by Tcl first); other functions are
   unsupported.
+  `psphere name [plane] R [angle1 angle2]` places a sphere, cap or zone
+  on the z axis at the origin or, since S9d.1's survey, on a DRAW `plane`'s
+  frame (its origin the centre, its normal the axis, as OCCT's `gp_Ax2` of
+  the plane); a partial longitude is unsupported.
 - Test geometry remains boxes and rigidly transformed copies. The adapter
   intentionally does not expose every Rust prism capability yet. More command
   adapters must delegate to real kernel functions, never return canned success.
