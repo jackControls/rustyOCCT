@@ -39,9 +39,10 @@ here uses the kernel, a surface/surface intersection or an arrangement.
   vertices' levels; `s = +-r`, where the circles meet; an edge's meetings
   with the torus (the quartic `F(X0 + t e)`); a face's line tangent to a
   circle (`4 R^2 N D^2 = (D^2 + N (R^2 - r^2 + s^2))^2`, `D = b - a_w s`,
-  `N = a_u^2 + a_v^2`, a quartic in `s`). Real roots of the quartics by
-  mpmath's `polyroots` at 40 digits, a near-real pair taken as a root (a
-  breakpoint more is harmless).
+  `N = a_u^2 + a_v^2`, a quartic in `s`). Real roots of the quartics
+  through Yun's square-free factorization in Fractions (a tangency's double
+  root a simple root of a factor), each factor by mpmath's `polyroots` at 40
+  digits, a near-real pair taken as a root (a breakpoint more is harmless).
 * **Meridian half-planes (the wall in its own parameters; volume and
   moments a second way; solids).** Both solids are sliced by the half-planes
   `theta = const` about the axis, in coordinates `(t, w)` (`t >= 0` the
