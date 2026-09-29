@@ -144,7 +144,7 @@ group, and stale success records are removed before each run.
 | `boolean/bcommon_simple/A1`, `bfuse_simple/A4` | Unsupported | Viewer skipped | A unit sphere and a unit box whose corner is at the centre, its far corners on the sphere (an S9a sentinel), the box quarter-turned so a wall is tangent to the sphere: a vertex of one input on the other's face (S9d.2a's `Degenerate`; S9d.1 reported it as a meeting at every seam tried), a tangency between the inputs (S9d.1's `Degenerate`) |
 | `boolean/bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`, `boptuc_simple`: `ZI8`, `ZI9`, `ZJ1`, `ZJ2`, `ZJ3` (20 cases) | Viewer skipped | Viewer skipped | `bop` and its operations on a `pcylinder` of radius 4 and height 8 and a sphere of radius 6 centred on its top cap (turned by `trotate` about the cap's centre: whole quarter turns about z in `ZI9` to `ZJ2`, about y in `ZJ3`): the cap inside the sphere, the wall meeting it in a parallel at height `8 - 2 sqrt(5)`: `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9d.2a's coaxial rings) |
 | `boolean/bopfuse_simple/ZH5` | Unsupported | Viewer skipped | A cylinder of radius 4 and a sphere of radius 4 centred on its top cap: the rim is the sphere's equator, the wall tangent to the sphere along it; the coaxial pair's discriminant vanishes identically: a tangency between the inputs (`Degenerate`; the survey below found it refused as a computation limit, S9d.1 as S9d.2's `OutOfDomain`) |
-| `boolean/bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`, `boptuc_simple`: `ZI4`, `ZI6`, `ZI7` (12 cases) | Viewer skipped | Viewer skipped | `bop` and its operations on a `pcylinder` of radius 4 and height 8 and a sphere of radius 2 centred on its top cap, turned a quarter turn about x (and then a half or three quarter turns about y in `ZI6` and `ZI7`), so the cap's plane holds the sphere's axis: the section a great circle through its poles, a vertex at each: `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9d.1's pole follow-up after S9d.3a; `bopfuse_simple/ZI4` was the sentinel for its `PrecisionLoss`; `ZI5`, a quarter turn about y, is not registered: see the S9d.3a survey) |
+| `boolean/bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`, `boptuc_simple`: `ZI4` to `ZI7` (16 cases) | Viewer skipped | Viewer skipped | `bop` and its operations on a `pcylinder` of radius 4 and height 8 and a sphere of radius 2 centred on its top cap, turned a quarter turn about x (and then one, two or three quarter turns about y in `ZI5`, `ZI6` and `ZI7`), so the cap's plane holds the sphere's axis: the section a great circle through its poles, a vertex at each: `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9d.1's pole follow-up after S9d.3a; `bopfuse_simple/ZI4` was the sentinel for its `PrecisionLoss`; `ZI5`, whose volumes were wrong until a sphere's closing chord at a pole was enclosed narrowly, registered after it: see the S9d.3a survey) |
 | `boolean/bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`, `boptuc_simple`: `ZF5` to `ZF9`, `ZH1` to `ZH4` (36 cases) | Viewer skipped | Viewer skipped | `bop` and its operations on a box of side 4 and a `pcone` frustum: of radii 1 and 0.5 on the vertical through the box's centre, standing on its top face, inside it (its top disc on the top face or clear of every face) or from the bottom face or below it to the top face, meeting the faces in circles (`ZF5` to `ZF9`); of radii 5 and 4 (5 and 3.5 in `ZH4`) and the box's height, its axis 2 outside a wall and 2 from the walls across it, meeting them in hyperbolas (`ZH1` to `ZH4`; in `ZH3` and `ZH4` turned 30 degrees about its axis): `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9d.3a's cones against polyhedral prisms) |
 | `boolean/bopfuse_simple/ZJ4` | Unsupported | Viewer skipped | A `pcylinder` of radius 4 and height 8 and a frustum of radii 2 and 1 standing on its top cap: a cone against a prism with arcs (S9d.3b's `OutOfDomain`; before S9d.3a solids other than prisms) |
 | `boolean/bopfuse_simple/ZG2`, `ZG4`, `ZG8`, `boptuc_simple/ZG2` | Unsupported | Viewer skipped | A box of side 4 and a frustum of radii 3 and 2 whose axis lies in the box's wall `y = 0`, its top rim through two of the box's corners: a vertex of one input on the other's face; the same turned 30 degrees about its axis: a plane through a cone's apex; with the frustum first: an edge of one input meeting an edge of the other; a frustum of radii 1 and 0.5 standing on the top face, its base circle tangent to two of the face's edges: a tangency between the inputs (S9d.3a's `Degenerate`) |
@@ -165,10 +165,10 @@ group, and stale success records are removed before each run.
 | `boolean/bopcommon_simple/S5`, `bopcut_simple/ZC7`, `S4`, `bopfuse_simple/U7`, `B3`, `boptuc_simple/R1` | Unsupported | Viewer skipped | Box corners on or tangent to a cylinder, boxes touching along an edge: pieces thinner than the resolution, results touching themselves (at a point or along an edge) or each other, a hole touching its boundary (the kernel's `Degenerate`) |
 | `boolean/bcut_simple/G8` | Unsupported | Viewer skipped | A semi-infinite prism of an exploded face (`explode`, `SemiInf`) |
 
-There are **five original geometry tests passing on both backends** and 903
+There are **five original geometry tests passing on both backends** and 907
 more evaluated on both with their image commands recorded (`buc60769`,
 S7's `lowalgos/intss` cases `bug23177_1`, `bug23177_2` and `bug24648`, and
-899 Boolean cases of S9a, S9a.2, S9b.1, S9b.2, S9c.1, S9c.2a, S9c.2b.2,
+903 Boolean cases of S9a, S9a.2, S9b.1, S9b.2, S9c.1, S9c.2a, S9c.2b.2,
 S9d.1, S9d.2, S9d.3a and S9d.1's pole follow-up; S9c.2b.1 adds none).
 S8e registers the upstream `bsplit` group as capability sentinels: `boolean/splitter/A5`
 and `B5` and the 22 `bugs` cases that call `bsplit` (with `bug29333_1` and
@@ -865,6 +865,33 @@ of the cylinder (`box b1 -4 -4 0 8 8 8`, S9d.1's domain) gives the same:
 validation failure. Rust evaluates 902 (887 before), 899 registered, and
 fails one; 676 cases native DRAW evaluates are refused (692 before), the
 `PrecisionLoss` row of the table above gone. The ledger does not change.
+
+`ZI5`'s error was S9d.1's, older than the pole follow-up: a sphere face's
+closing chord at a pole between two meridians was enclosed over its `u`
+hull, the volume's enclosure 26 wide and its midpoint, the reported
+volume, off (`REVIEW_NOTES.md`). After its fix the 1,802 cases were run
+again: only the 16 former `PrecisionLoss` cases differ from S9d.3a's
+survey, all 16 evaluating; `ZI5`'s four agree with native DRAW's
+volumes and centres of gravity to its printed digits and with the closed
+forms (volumes within 1.1e-15 relative, centres within 8.9e-16), its
+`btuc` evaluates, and all four are registered. Rust evaluates 903, each
+registered, and fails none; 676 are refused. A volume audit followed,
+since the registrations check areas: every registered case of the group
+(903) was run again on both backends with `vprops` before each
+`checkprops`. Rust's volumes and centres of gravity agree with native
+DRAW's to its printed digits or 1e-6 relative in all but eight, and in
+those eight native DRAW is off, not Rust. In seven of `ZE3` to `ZE6` (a
+cylinder of radius 0.5 through one of radius 1 at right angles, two
+quartic rings) native DRAW's volumes differ from the closed form (the
+common `4 int sqrt(1/4 - x^2) sqrt(1 - x^2) dx` over `[-1/2, 1/2]`,
+1.5200399881729; the others `pi`, `4 pi` and `5 pi` less it) by up to
+7.8e-6 relative, varying with the turn about the axis, and its centres
+lie up to 4.0e-6 off the symmetry axes, while Rust's volumes are within
+2.0e-15 of it. In `bopcut_simple/A9` (a unit box less a slab across its
+middle, two slabs) native DRAW's `vprops` of the result puts its centre
+of gravity at `(0.53125, 0.515625, 0.46875)`, though its two solids' own
+are `(0.5, 0.125, 0.5)` and `(0.5, 0.875, 0.5)`; Rust's is `(0.5, 0.5,
+0.5)`. The ledger does not change.
 
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
