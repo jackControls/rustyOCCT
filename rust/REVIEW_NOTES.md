@@ -2335,8 +2335,40 @@ Decisions for S9, recorded before its code (2026-09-28):
     cone's quadric beyond its ends (a pipe's cap on the frustum's cone
     extended) is no meeting, not a tangency; (h) the DRAW bridge evaluates
     a coaxial pipe cut from a frustum, and guards a torus's refusal (DRAW
-    cannot give a cone and a sphere of their own ids). Pending: the DRAW
-    survey, the campaign.
+    cannot give a cone and a sphere of their own ids). Pending: the
+    campaign.
+  * **DRAW survey of S9d.3b.1 (2026-09-29, `UPSTREAM_TESTS.md`).** Of the
+    66 cases refused as S9d.3b's `OutOfDomain` (a `pcylinder` of radius 4
+    and height 8 and a cone or frustum, `ZJ4` to `ZL1` of the four
+    `bop*_simple` grids; `bcut_simple/G9`, `H3`), 36 evaluate on Rust, none
+    wrong: coaxial frusta on the cap, inside the cylinder or through its
+    caps (circles), and frusta whose axis crosses the cylinder's at right
+    angles (two quartic rings); volumes, areas and centres of gravity the
+    closed forms' and `cones_boolean_reference.py`'s within 6.5e-16
+    relative (centres 2.0e-15), native DRAW's to its printed digits on the
+    coaxial ones and up to 7.8e-6 relative off on the crossing ones
+    (BRepGProp on approximated quartics). 28 are registered
+    (`bopfuse_simple/ZJ4`, the sentinel for S9d.3b's `OutOfDomain`,
+    re-purposed). `ZK7` and `ZK8` (a frustum of radii 6 and 1 across the
+    cylinder, its wide end through both caps) are right but take 63 to
+    118 seconds alone on the debug worker, past the contract's 30 a case;
+    five timed out at the survey's 120 seconds, eight cases at once; none
+    is registered. The other 30 are refused, none as S9d.3b.2's loops: a
+    plane through a cone's apex (`ZJ5`: the bottom cap's plane through a
+    frustum's virtual apex) 4, a tangency between the inputs (`ZK1`: a
+    frustum's base rim the cylinder's top rim) 4, a piece thinner than the
+    resolution (`ZK2` to `ZK4`: that frustum turned about its axis) 12, a
+    plane within rounding of a cylinder's direction (`ZK9`, `ZL1`: a
+    frustum's end disc across the cylinder after a quarter turn about y)
+    8, and a stack with a cone's wall given to another Boolean (`G9`,
+    `H3`, S9c) 2. The rounding ones are the adapter's: it turns a prism by
+    quarter turns exactly but a cone by the kernel's rotation (a quarter
+    turn's cosine 6.1e-17, the frustum's axis `(1, 0, 6.1e-17)`); `ZK1`
+    turned a whole turn is refused alike. Rust evaluates 934 (903 before),
+    931 registered, none failing, five timing out; 640 refused (676).
+    Sentinel added: `bopfuse_simple/ZK9` (a plane within rounding of a
+    cylinder's direction); the others are refused as before. The ledger
+    does not change.
 
 ### Parallel tracks
 
