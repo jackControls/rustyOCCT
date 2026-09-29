@@ -1,0 +1,14 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+  "platform": "darwin",
+  "rust_revision": "0b016c9cde850ef27d80beb0c72d8fa86f29b02b",
+  "rust_sphere_boolean_exists": false,
+  "rust_worktree_uncommitted": [
+    "?? rust/fixtures/occt-boolean-sphere-preimplementation/"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "17ed6186f1acfb877c42401ee346e27d4bcc7d86000568e72388b8986527ee81",
+  "probe_source_sha256": "6ab69bb15a582a32a6eee41484af460ec36f580e620e81e3b87b87247db05df4",
+  "observations_sha256": "5f4997057d59454025ceb9ed965418fd6050ef68bb6a0dc4ca684fae3d6b1ae5"
+}

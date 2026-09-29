@@ -796,6 +796,66 @@ height); its horizontal edges on a spline are its lifted restrictions.
   `compare_boolean.py` without failure. The bridge self-test's three
   cylinder gaps (a turned cylinder's quartic across its cap, parallel
   turned cylinders, a pipe through a cap's rim) are decided now.
+* **S9d.1 evidence (spheres against polyhedral prisms), before its kernel
+  code.** `sphere_boolean_reference.py` (mpmath, 40 digits) takes the
+  sphere, cap or zone on its exact model (`|X - o|^2 <= R^2`, the end
+  planes `w = R sin(latitude)` in the frame's affine coordinates, the
+  heights as stored) and the prism on S9c.1's, a nonconvex profile
+  ear-clipped into convex pieces; it slices both by the planes normal to
+  the zone's axis `m = x * y` (any rational direction accepted): each
+  slice's disc, cut by the zone's lines, against the pieces' convex
+  sections, the four operations apart by the boundaries cut and classified
+  (Green's theorem over segments and arcs of the one circle in closed
+  form), the common again by clipping each piece; breakpoints the roots of
+  exact quadratics (a slice tangent to the sphere, through a vertex, an
+  edge's meeting with the sphere or a zone plane, tangent to a face's or a
+  zone plane's circle, through a zone plane's and a face's meeting with
+  the sphere), Gauss-Legendre between them refined to 1e-33 of the case's
+  size to the fourth. Areas: the sphere's face by Archimedes (`R / |d|`
+  times the integral of its section's angle inside the pieces), every
+  planar face and end disc in closed form in its own plane (inside,
+  outside, or on a coplanar face of the same or the opposite orientation).
+  Solids by convexity: pieces meeting the sphere (an exact squared distance
+  from the centre to a polyhedron against `R^2`), joined across shared
+  faces; `S - K` by the overlaps of the sphere's parts beyond `K`'s faces,
+  `K - S` by the runs of `K`'s faces' boundaries outside the sphere.
+  `generate_sphere_boolean_fixtures.py --check` writes
+  `boolean-sphere-cases.txt`, `boolean-sphere-expected.tsv` and
+  `boolean-sphere-frames.tsv` with 30 cases (4 fuses, 12 cuts, 14 commons;
+  25 solid, 1 empty, 4 degenerate; 25 in exact frames): a sphere through a
+  box's face, a box's corner in a sphere (exact, a `TILT` box, a `LEAN` box
+  against a `TILTX` sphere), a box's edge through a sphere, a square post
+  through a zone's flat end, a box through a zone's flat end and band (the
+  zone along `x`), a hemisphere crossed through its disc and dome, a dome
+  on a box's face (coplanar discs, opposite; the common empty) and in a box
+  on its bottom face (the same orientation), a sphere in a box and a box in
+  a sphere (cavities), a `TILT` bar through a sphere (the bar's cut two
+  solids), a slab cutting a sphere in two, an L prism severed at its
+  corner (two solids), an octant, and `degenerate` a face tangent to the
+  sphere, a box's eight vertices on it, an edge tangent to it. Caps and
+  zones only in exact frames centred at the origin (every reading of their
+  end planes the same plane). Checks before writing: closed forms of every
+  pair (a rectangle's part of each section integrated along the box's
+  axis, both surfaces' parts inside the other) within 9.3e-40 in exact
+  frames and 2.2e-16 in turned ones, both inputs' slicings against their
+  closed forms and inclusion and exclusion 9.2e-41, the common two ways
+  1.4e-42, the area identity 3.3e-40, every face's classes 1.8e-40, a
+  second slicing direction 1.6e-40, Monte Carlo 2.7 standard errors, no
+  near coincidence. `test_sphere_boolean_reference.py` checks the closed
+  forms (a cap `pi h^2 (3R - h)/3` and `2 pi R h`, an octant `pi R^3 / 6`
+  and its centre `3R/8`, a zone, a sphere and a box inside) and the
+  reference on the cap. The Boolean protocol takes a sphere on either side
+  (its identity rows `frame` and `sphere R LOW HIGH`, which the kernel's
+  test support already reads); `native_case` gives it one `sphere` row,
+  built by `BRepPrimAPI_MakeSphere` in `occt_boolean_oracle.cpp`.
+  `compare_sphere_boolean.py` (`compare_boolean.make_set`) reproduces
+  `occt-boolean-sphere-preimplementation` (`rust_sphere_boolean_exists`
+  false; the kernel's probe `unsupported` on all 30, `OutOfDomain("a
+  Boolean of a solid with curved faces or edges in any position (S9c)")`):
+  every result valid with the reference's solid count, all 30 within 3.3e-9
+  (BRepGProp on spherical faces bounded by circles off their parallels;
+  sections along parallels within 4e-15), no review; three solids' counts
+  change when unified.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
