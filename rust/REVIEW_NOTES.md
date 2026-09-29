@@ -2257,6 +2257,29 @@ Decisions for S9, recorded before its code (2026-09-28):
     6.1e-10), 17 reviewed (BRepGProp's default integration on approximated
     quartics, up to 4.1e-6; adaptively within 6.0e-9; and that count),
     eleven solids' counts change when unified. S9d.3b's kernel next.
+  * **S9d.3b refined, before its code (2026-09-29).** S9d.3b is split as
+    the evidence names its cases. S9d.3b.1: a cone against a cylinder, a
+    sphere or another cone where one input's rulings meet the other's
+    surface twice all round: rings over that input's angle (S9c.2a's
+    graphs), the carrier the first input (a cylinder before a cone) whose
+    discriminant `D = B^2 - A C` is positive all round and whose ruling's
+    leading coefficient `A` has no real root (a cylinder's `A` constant, a
+    cone's a quadratic form in its angle, the ruling `b + k w` along `n + k
+    (cos x + sin y)`, `D` then a quartic form); coaxial pairs are such
+    rings too (their `D` constant). The other quadric takes a cone's term:
+    `sum (g_i . p - e_i)^2 - (r + t (h . p - e_h))^2`, `t` the cone's slope
+    (zero for a cylinder or a sphere), in the rings, a cap's or a rim's
+    circle against it (`algebraic.rs`, a quartic's roots) and a sphere's
+    circles against it (`spheres.rs`). Two cones whose quadrics differ by
+    an affine function (parallel axes, equal slopes: `A` zero for every
+    ruling) meet on that plane: S9d.3a's plane section of one, kept where
+    the other holds it. `Curve3::Meet` takes a cone carrier and a cone as
+    the other quadric (`half_angle`, `other_half_angle`, zero for a
+    cylinder), its jets, bounds, projections and the validator's checks
+    with them. A pair where no input's rulings meet the other all round
+    (loops: the spheres off a cone's axis) is S9d.3b.2's, `OutOfDomain`; a
+    repeated real root of `D` or of `A` where the curve runs is a tangency,
+    `Degenerate`. The kernel in `solid/boolean/curved/cones.rs`.
 
 ### Parallel tracks
 
