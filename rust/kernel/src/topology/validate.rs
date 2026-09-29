@@ -1178,13 +1178,25 @@ fn curve_valid(curve: &Curve3, tol: &R, fast_tol2: &Fast, exact_tol2: &I) -> boo
         // a range within a turn.
         Curve3::Meet(m) => {
             let (n, x2, y2) = (m.frame.normal(), m.other.x(), m.other.y());
-            finite(&[m.radius, m.other_radius, m.start, m.sweep, m.sign])
-                && r(m.radius) > *tol
-                && r(m.other_radius) > *tol
+            let cone = m.half_angle != 0.0 || m.other_half_angle != 0.0;
+            finite(&[
+                m.radius,
+                m.other_radius,
+                m.start,
+                m.sweep,
+                m.sign,
+                m.half_angle,
+                m.other_half_angle,
+            ]) && (r(m.radius) > *tol || (m.half_angle != 0.0 && m.radius >= 0.0))
+                // A cone's radius at its frame's origin: zero at an apex.
+                && (r(m.other_radius) > *tol
+                    || (m.other_half_angle != 0.0 && m.other_radius >= 0.0))
+                && m.half_angle.abs() < std::f64::consts::FRAC_PI_2
+                && m.other_half_angle.abs() < std::f64::consts::FRAC_PI_2
                 && (m.sign == 1.0 || m.sign == -1.0)
                 && m.sweep != 0.0
                 && m.sweep.abs() <= TAU
-                && (m.other_sphere || n.dot(x2).hypot(n.dot(y2)) > 1e-6)
+                && (m.other_sphere || cone || n.dot(x2).hypot(n.dot(y2)) > 1e-6)
         }
         // A cylinder's and a sphere's meeting over the height (S9d.2b):
         // positive radii, a sign, a nonempty height range, the sphere's

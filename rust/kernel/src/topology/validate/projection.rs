@@ -205,17 +205,34 @@ fn meet_jet<T: Real>(m: &Meet, fraction: &Jet<T>) -> Option<MeetJet<T>> {
     let r = c::<T>(m.radius);
     let foot = world(&m.frame, &co.scale(&r), &si.scale(&r));
     let o2 = m.other.origin().to_array();
-    let n = m.frame.normal().to_array();
-    // w = foot - o2 along the other's axes (a cylinder) or all three (a
-    // sphere).
-    let along = |axis: &[f64; 3]| {
+    let (x, y, n) = (
+        m.frame.x().to_array(),
+        m.frame.y().to_array(),
+        m.frame.normal().to_array(),
+    );
+    let tan = |a: f64| -> Option<T> {
+        let (ca, sa) = T::cos_sin(&c(a));
+        sa.div(&ca)
+    };
+    // The ruling's direction: along the axis, leaning out on a cone
+    // (S9d.3b).
+    let t = tan(m.half_angle)?;
+    let dir: [Jet<T>; 3] = std::array::from_fn(|k| {
+        co.scale(&c(x[k]))
+            .add(&si.scale(&c(y[k])))
+            .scale(&t)
+            .add_constant(&c(n[k]))
+    });
+    // w = foot - o2 and the direction along an axis.
+    let along = |v: &[Jet<T>; 3], axis: &[f64; 3], shift: bool| {
         let mut out = Jet::constant(c::<T>(0.0), u.order());
         for k in 0..3 {
-            out = out.add(
-                &foot[k]
-                    .add_constant(&c::<T>(o2[k]).neg())
-                    .scale(&c(axis[k])),
-            );
+            let vk = if shift {
+                v[k].add_constant(&c::<T>(o2[k]).neg())
+            } else {
+                v[k].clone()
+            };
+            out = out.add(&vk.scale(&c(axis[k])));
         }
         out
     };
@@ -224,33 +241,34 @@ fn meet_jet<T: Real>(m: &Meet, fraction: &Jet<T>) -> Option<MeetJet<T>> {
     } else {
         vec![m.other.x().to_array(), m.other.y().to_array()]
     };
-    let ws: Vec<Jet<T>> = axes.iter().map(along).collect();
-    let ns: Vec<T> = axes
-        .iter()
-        .map(|a| (0..3).fold(c::<T>(0.0), |acc, k| acc.add(&c::<T>(n[k]).mul(&c(a[k])))))
-        .collect();
-    let a = ns.iter().fold(c::<T>(0.0), |acc, x| acc.add(&x.mul(x)));
-    let b = ws
+    let ws: Vec<Jet<T>> = axes.iter().map(|a| along(&foot, a, true)).collect();
+    let ns: Vec<Jet<T>> = axes.iter().map(|a| along(&dir, a, false)).collect();
+    let zero = || Jet::constant(c::<T>(0.0), u.order());
+    let mut a = ns.iter().fold(zero(), |acc, x| acc.add(&x.square()));
+    let mut b = ws
         .iter()
         .zip(&ns)
-        .fold(Jet::constant(c::<T>(0.0), u.order()), |acc, (w, x)| {
-            acc.add(&w.scale(x))
-        });
-    let cc = ws
-        .iter()
-        .fold(Jet::constant(c::<T>(0.0), u.order()), |acc, w| {
-            acc.add(&w.square())
-        })
-        .add_constant(&c::<T>(m.other_radius).mul(&c(m.other_radius)).neg());
-    let d = b.square().sub(&cc.scale(&a));
-    let v = d
-        .sqrt()?
-        .scale(&c(m.sign))
-        .sub(&b)
-        .scale(&c::<T>(1.0).div(&a)?);
+        .fold(zero(), |acc, (w, x)| acc.add(&w.mul(x)));
+    let mut cc = ws.iter().fold(zero(), |acc, w| acc.add(&w.square()));
+    if m.other_sphere {
+        cc = cc.add_constant(&c::<T>(m.other_radius).mul(&c(m.other_radius)).neg());
+    } else {
+        // The other's radius along its axis: `r2 + t2 (w . n2)` (a cone).
+        let n2 = m.other.normal().to_array();
+        let t2 = tan(m.other_half_angle)?;
+        let r0 = along(&foot, &n2, true)
+            .scale(&t2)
+            .add_constant(&c(m.other_radius));
+        let rd = along(&dir, &n2, false).scale(&t2);
+        a = a.sub(&rd.square());
+        b = b.sub(&r0.mul(&rd));
+        cc = cc.sub(&r0.square());
+    }
+    let d = b.square().sub(&cc.mul(&a));
+    let v = d.sqrt()?.scale(&c(m.sign)).sub(&b).div(&a)?;
     let mut point = foot;
     for (k, p) in point.iter_mut().enumerate() {
-        *p = p.add(&v.scale(&c(n[k])));
+        *p = p.add(&v.mul(&dir[k]));
     }
     Some(([u, v], point))
 }
@@ -320,10 +338,26 @@ pub(super) fn projection_jet<T: Real>(p: &Projection, fraction: &Jet<T>) -> Opti
             return Some([near(u, lift.x), near(v, lift.y)]);
         }
     }
-    // Two cylinders' meeting on its carrier: its angle, lifted (S9c.2).
-    if let (Curve3::Meet(m), Surface::Cylinder { frame, radius }) = (&p.curve, &p.surface) {
-        if m.frame == *frame && m.radius == *radius {
+    // Two cylinders' meeting on its carrier: its angle, lifted (S9c.2); on
+    // a cone carrier the height over the cosine of its half angle
+    // (S9d.3b).
+    let carrier = match &p.surface {
+        Surface::Cylinder { frame, radius } => Some((frame, *radius, 0.0)),
+        Surface::Cone {
+            frame,
+            radius,
+            half_angle,
+        } => Some((frame, *radius, *half_angle)),
+        _ => None,
+    };
+    if let (Curve3::Meet(m), Some((frame, radius, half))) = (&p.curve, carrier) {
+        if m.frame == *frame && m.radius == radius && m.half_angle == half {
             let ([u, v], _) = meet_jet(m, &f)?;
+            let v = if half == 0.0 {
+                v
+            } else {
+                v.scale(&c::<T>(1.0).div(&T::cos_sin(&c(half)).0)?)
+            };
             let (lo, hi) = fraction.c[0].bounds_f64();
             let lift = p.lift(0.5 * lo + 0.5 * hi);
             let (a, b) = u.c[0].bounds_f64();
@@ -662,8 +696,10 @@ mod tests {
                 frame: thin,
                 radius: 1.0,
                 other: thick,
+                half_angle: 0.0,
                 other_radius: 2.0,
                 other_sphere: false,
+                other_half_angle: 0.0,
                 sign,
                 start: 0.0,
                 sweep: std::f64::consts::TAU,

@@ -898,16 +898,23 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                 &arr.models[0].faces[s.fa].stored,
                 &arr.models[1].faces[s.fb].stored,
             ];
-            let cylinder = |x: &Surface| match x {
-                Surface::Cylinder { frame, radius } => Ok((*frame, *radius)),
-                _ => Err(Error::InvalidTopology("a meeting off a cylinder")),
+            // A cylinder or cone (S9d.3b): its frame, radius and half angle.
+            let ruled = |x: &Surface| match x {
+                Surface::Cylinder { frame, radius } => Ok((*frame, *radius, 0.0)),
+                Surface::Cone {
+                    frame,
+                    radius,
+                    half_angle,
+                } => Ok((*frame, *radius, *half_angle)),
+                _ => Err(Error::InvalidTopology("a meeting off a ruled surface")),
             };
-            let (frame, radius) = cylinder(stored[m.carrier])?;
-            let (other, other_radius, other_sphere) = match stored[1 - m.carrier] {
-                Surface::Sphere { frame, radius } => (*frame, *radius, true),
+            let (frame, radius, half_angle) = ruled(stored[m.carrier])?;
+            let (other, other_radius, other_sphere, other_half_angle) = match stored[1 - m.carrier]
+            {
+                Surface::Sphere { frame, radius } => (*frame, *radius, true, 0.0),
                 s => {
-                    let (f, r) = cylinder(s)?;
-                    (f, r, false)
+                    let (f, r, a) = ruled(s)?;
+                    (f, r, false, a)
                 }
             };
             let with = first.with == d0;
@@ -932,9 +939,11 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
             Ok(Curve3::Meet(Box::new(crate::topology::Meet {
                 frame,
                 radius,
+                half_angle,
                 other,
                 other_radius,
                 other_sphere,
+                other_half_angle,
                 sign: if m.plus { 1.0 } else { -1.0 },
                 start: if e.ends.is_none() { 0.0 } else { t0 - base },
                 sweep: if with { sweep } else { -sweep },

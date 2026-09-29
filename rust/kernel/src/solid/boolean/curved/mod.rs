@@ -15,6 +15,7 @@
 mod algebraic;
 mod assemble;
 mod cone;
+mod cones;
 mod graph;
 mod meet;
 mod model;
@@ -77,15 +78,6 @@ fn model_of(s: &crate::Solid, op: Operand, seam: &R) -> Result<model::Prism> {
 /// The result's components, a full circle's seam tried at several
 /// rational points.
 pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
-    // S9d.3a takes a cone against a polyhedral prism alone.
-    let curved = |s: &crate::Solid| match &s.construction {
-        Construction::Prism(_) => applies_arcs(s),
-        _ => true,
-    };
-    let is_cone = |s: &crate::Solid| matches!(s.construction, Construction::Cone { .. });
-    if (is_cone(&poly.a) && curved(&poly.b)) || (curved(&poly.a) && is_cone(&poly.b)) {
-        return Err(meet::cone_later());
-    }
     // Each input's seam apart from the other's: one cylinder shared by both
     // would put both seams on one line.
     let seams = [(2, 7), (3, 11), (5, 13), (7, 19), (11, 23)];

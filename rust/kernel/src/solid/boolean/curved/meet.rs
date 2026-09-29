@@ -33,11 +33,6 @@ pub(super) fn tangency() -> Error {
     Error::Degenerate("a tangency between the inputs (S9c)")
 }
 
-/// A cone against a curved face: S9d.3b's.
-pub(super) fn cone_later() -> Error {
-    Error::OutOfDomain("a cone against a prism with arcs, a sphere or a cone (S9d.3b)")
-}
-
 fn quartic() -> Error {
     Error::OutOfDomain("two cylinders meeting in curves other than lines and conics (S9c.2)")
 }
@@ -146,6 +141,14 @@ pub(super) enum CylPair {
     /// A cylinder and a sphere in loops (S9d.2b): pieces over the angle and
     /// the height, and their switches.
     Mixed(Box<super::spheres::Mixed>),
+    /// Two cones whose quadrics differ by an affine function (S9d.3b):
+    /// their meeting on the plane through `p` normal to `m`, the section of
+    /// operand `k`'s cone.
+    Plane {
+        k: usize,
+        p: V,
+        m: V,
+    },
     /// One surface.
     Same,
 }
@@ -283,7 +286,30 @@ pub(super) fn section(
             p,
             m,
         )?)),
-        (Surf::Cone { .. }, _) | (_, Surf::Cone { .. }) => Err(cone_later()),
+        // S9d.3b: a cone against a cylinder, a sphere or a cone, by their
+        // relation (rings over a carrier, a plane, or apart).
+        (Surf::Cone { .. }, _) | (_, Surf::Cone { .. }) => {
+            match pair.expect("a cone and a curved face's relation") {
+                CylPair::Quartic(x) => Ok(Section::Curves(
+                    x.pieces
+                        .iter()
+                        .map(|m| Crv::Meet(Box::new(m.clone())))
+                        .collect(),
+                )),
+                CylPair::Plane { k, p, m } => {
+                    let cone = if *k == 0 { px } else { py };
+                    Ok(Section::Curves(super::cone::plane_cone(
+                        *k,
+                        &cone.f,
+                        cone.funnel.as_ref().expect("a cone"),
+                        p,
+                        m,
+                    )?))
+                }
+                CylPair::Same => Ok(Section::Same),
+                _ => Ok(Section::Curves(Vec::new())),
+            }
+        }
         (Surf::Plane { p: p1, m: m1 }, Surf::Plane { p: p2, m: m2 }) => {
             let d = cross(m1, m2);
             if is_zero(&d) {
@@ -333,7 +359,9 @@ pub(super) fn section(
         )),
         (Surf::Cyl { c, r, .. }, Surf::Cyl { .. }) => {
             match pair.expect("a cylinder pair's relation") {
-                CylPair::Mixed(_) => unreachable!("a cylinder and a sphere's"),
+                CylPair::Mixed(_) | CylPair::Plane { .. } => {
+                    unreachable!("a cylinder and a sphere's or two cones'")
+                }
                 CylPair::Apart => Ok(Section::Curves(Vec::new())),
                 CylPair::Same => Ok(Section::Same),
                 CylPair::Parallel { c2, r2 } => {
@@ -447,7 +475,26 @@ pub(super) fn edge_surface(
         (Crv::Line { p, d }, Surf::Cone { .. }) => {
             super::cone::line_cone(p, d, &py.f, py.funnel.as_ref().expect("a cone"), &py.hi)
         }
-        (Crv::Conic { .. } | Crv::Circle(_), Surf::Cone { .. }) => Err(cone_later()),
+        // S9d.3b: a cap's or a rim's circle against a cone, a sphere's circle
+        // against a cone.
+        (Crv::Conic { c, a, b }, Surf::Cone { b: rb, k }) => {
+            match super::algebraic::circle_quadric(
+                c,
+                a,
+                b,
+                &super::procedural::other_cone(&py.f, rb, k),
+            ) {
+                Ok(points) => Ok(EdgeMeet::Points(points)),
+                // A circle on the cone's quadric past its ends: no meeting.
+                Err(Error::Degenerate(_)) if beyond_ends(&py.f, &py.hi, c, a, b) => {
+                    Ok(EdgeMeet::None)
+                }
+                Err(e) => Err(e),
+            }
+        }
+        (Crv::Circle(circ), Surf::Cone { b: rb, k }) => {
+            super::spheres::circ_quadric(circ, &super::procedural::other_cone(&py.f, rb, k))
+        }
         // S9d.1: a line against a sphere; a sphere's circle against a
         // plane; anything else against a sphere is S9d.2's.
         (Crv::Line { p, d }, Surf::Sphere { c, r }) => super::sphere::line_sphere(p, d, c, r),
@@ -548,6 +595,12 @@ pub(super) fn edge_surface(
                 )),
             }
         }
+        (Crv::Conic { c, a, b }, Surf::Cyl { c: cy, r: ry, .. }) if own.is_none() => {
+            // A cone's rim against a cylinder (S9d.3b): algebraic points.
+            Ok(EdgeMeet::Points(super::algebraic::circle_points(
+                c, a, b, &py.f, cy, ry,
+            )?))
+        }
         (Crv::Conic { .. }, Surf::Cyl { c: cy, r: ry, .. }) => {
             // An arc of the edge's own cylinder (`own`) against the other's.
             let (px, cx, rx) = own.expect("an arc edge's own cylinder");
@@ -555,7 +608,9 @@ pub(super) fn edge_surface(
                 unreachable!("matched above")
             };
             match pair.expect("a cylinder pair's relation") {
-                CylPair::Mixed(_) => unreachable!("a cylinder and a sphere's"),
+                CylPair::Mixed(_) | CylPair::Plane { .. } => {
+                    unreachable!("a cylinder and a sphere's or two cones'")
+                }
                 CylPair::Apart => Ok(EdgeMeet::None),
                 CylPair::Same => Ok(EdgeMeet::Along),
                 CylPair::Parallel { c2, r2 } => {
@@ -622,4 +677,17 @@ pub(super) fn conic_angle(c: &V, a: &V, b: &V, x: &QV) -> [Qd; 2] {
         da.scale(&bb).sub(&db.scale(&ab)).scale(&inv),
         db.scale(&aa).sub(&da.scale(&ab)).scale(&inv),
     ]
+}
+
+/// Whether the circle `c + a cos + b sin` lies beyond a cone's end planes
+/// (its heights `w0 +- sqrt(alpha^2 + beta^2)` all above `h` or below 0).
+fn beyond_ends(f: &Affine, h: &R, c: &V, a: &V, b: &V) -> bool {
+    let row = f.row(2);
+    let w0 = dot(row, &sub(c, &f.o));
+    let reach = {
+        let (alpha, beta) = (dot(row, a), dot(row, b));
+        &alpha * &alpha + &beta * &beta
+    };
+    let above = &w0 - h;
+    (above > zero() && &above * &above > reach) || (w0 < zero() && &w0 * &w0 > reach)
 }

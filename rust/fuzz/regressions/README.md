@@ -948,3 +948,15 @@ by the loops' binary64 images: the result was open (`InvalidTopology`). Two
 parallel faces apart by no more than the resolution are now one plane
 within it, `Degenerate` (`tests/cone_booleans.rs`,
 `a_frustum_on_a_top_within_rounding_is_degenerate`).
+
+## Boolean: a cone's apex at its base carrying a meeting
+
+`boolean/replay-26c72abf2f24213912aa6c5455e5c8dd9e01c467.bin` is a corpus
+input that S9d.3a's cone tool made a cone with its apex at its base (the
+spline byte's radii `(0, r)`) against a prism with arcs, which S9d.3b.1
+evaluates: its meeting with the prism's cylinder is a ring over the cone's
+angle, `Curve3::Meet` with the cone as its carrier and radius zero at the
+frame's origin. The validator took the radius for a cylinder's and refused
+the curve (`degenerate_curve`); a cone's radius there may be zero (three
+more corpus inputs alike). `tests/cones_booleans.rs`,
+`a_cone_with_its_apex_at_its_base_carries_a_ring`, checks the volumes.

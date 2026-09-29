@@ -854,7 +854,12 @@ procedural pcurves with explicit conic edges.
   a section's (interval jets on 64 pieces); a rigid motion moves both
   frames. The writer refuses it (`Unwritable`) until D13's interchange
   approximation. A sphere may be its other quadric (`other_sphere`,
-  S9d.2).
+  S9d.2). A cone may be its carrier or its other quadric (S9d.3b): the
+  carrier's ruling `frame.point((radius + v tan a) (cos u, sin u), v)`
+  along `n + tan a (cos u x + sin u y)` (`half_angle` `a`), the other's
+  radius `other_radius + (w . n2) tan a2` (`other_half_angle`), both zero
+  for cylinders; on its own cone its projection is its angle and `v / cos
+  a`.
 * **A cylinder's and a sphere's meeting over the height (S9d.2b).**
   `Curve3::Rise`: at `w = start + sweep f` the cylinder's circle meets the
   sphere where `alpha cos u + beta sin u = g(w)` (`g` quadratic), `u = phi +

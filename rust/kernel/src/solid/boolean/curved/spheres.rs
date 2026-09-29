@@ -442,7 +442,7 @@ pub(super) fn circ_cylinder(circ: &Circ, f: &Affine, cy: &P2, ry: &R) -> Result<
     circ_quadric(circ, &other_of(f, cy, ry))
 }
 
-fn circ_quadric(circ: &Circ, o: &Other) -> Result<EdgeMeet> {
+pub(super) fn circ_quadric(circ: &Circ, o: &Other) -> Result<EdgeMeet> {
     let (xx, yy) = (dot(&circ.x, &circ.x), dot(&circ.y, &circ.y));
     if xx != yy || dot(&circ.x, &circ.y) != zero() {
         return Err(Error::OutOfDomain(
@@ -458,12 +458,19 @@ fn circ_quadric(circ: &Circ, o: &Other) -> Result<EdgeMeet> {
     let l: Vec<Lin> = (0..o.g.len())
         .map(|i| [zero(), dot(&o.g[i], &circ.x), dot(&o.g[i], &circ.y)])
         .collect();
-    let mut f0 = square_sum(&l).scaled(&sigma);
-    f0.k += a.iter().fold(zero(), |acc, x| acc + x * x) - &o.r * &o.r;
+    // The other's radius term `ra + s rl` (a cone's, S9d.3b; `r` alone
+    // otherwise) squared and subtracted.
+    let rad = o.radius_lin(&circ.c, &circ.x, &circ.y);
+    let (ra, rl): (R, Lin) = (rad[0].clone(), [zero(), rad[1].clone(), rad[2].clone()]);
+    let mut f0 = square_sum(&l)
+        .sub(&square_sum(std::slice::from_ref(&rl)))
+        .scaled(&sigma);
+    f0.add_const(&(a.iter().fold(zero(), |acc, x| acc + x * x) - &ra * &ra));
     let f1: Lin = [0, 1, 2].map(|j| {
         a.iter()
             .zip(&l)
             .fold(zero(), |acc, (ai, li)| acc + int(2) * ai * &li[j])
+            - int(2) * &ra * &rl[j]
     });
     let chart = Chart {
         c0: int(1),

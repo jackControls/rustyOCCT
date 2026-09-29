@@ -15,13 +15,14 @@ use super::graph::between_ccw;
 use super::meet::{tangency, CylPair};
 use super::model::*;
 use super::num::*;
-use super::procedural::{other_of, MeetCrv, Other, Quartic};
+use super::procedural::{other_of, MeetCrv, Other, Quartic, Ruled};
 use crate::polynomial::real::{isolate, AlgebraicRoot, Budget, IntPolynomial};
 use crate::polynomial::RootIsolationOptions;
 use crate::solid::split::{q, rational_f64, zero};
 use crate::{Error, Result};
 use num_rational::BigRational as R;
 use std::cmp::Ordering;
+use std::collections::BTreeMap;
 
 fn limit(what: &'static str) -> Error {
     Error::ComputationLimit(what)
@@ -221,80 +222,146 @@ impl Chart {
     }
 }
 
-/// A quadratic form in `(cos, sin, 1)`: `cc c^2 + cs c s + ss s^2 + c1 c +
-/// s1 s + k`.
+/// A polynomial form in `(cos, sin)` of degree at most `deg`: its
+/// coefficients by exponents. A chart's polynomial is the form times `(1 +
+/// t^2)^deg` (a quadratic form's a quartic in `t`; S9d.3b's discriminants
+/// over a cone's angle are quartic forms, octics in `t`).
 #[derive(Debug, Clone, Default)]
 pub(super) struct Form {
-    cc: R,
-    cs: R,
-    ss: R,
-    c1: R,
-    s1: R,
-    pub(super) k: R,
+    terms: BTreeMap<(u32, u32), R>,
+    deg: u32,
 }
 
 /// A linear form `l0 + l1 c + l2 s`.
 pub(super) type Lin = [R; 3];
 
-pub(super) fn square_sum(ls: &[Lin]) -> Form {
-    let mut f = Form::default();
-    for l in ls {
-        f.cc += &l[1] * &l[1];
-        f.cs += int(2) * &l[1] * &l[2];
-        f.ss += &l[2] * &l[2];
-        f.c1 += int(2) * &l[0] * &l[1];
-        f.s1 += int(2) * &l[0] * &l[2];
-        f.k += &l[0] * &l[0];
-    }
-    f
-}
-
 impl Form {
+    /// A constant of the given degree.
+    pub(super) fn constant(k: R, deg: u32) -> Self {
+        let mut f = Self {
+            terms: BTreeMap::new(),
+            deg,
+        };
+        f.add_const(&k);
+        f
+    }
+
+    /// A linear form, of degree 1.
+    pub(super) fn lin(l: &Lin) -> Self {
+        let mut terms = BTreeMap::new();
+        for (e, x) in [((0, 0), &l[0]), ((1, 0), &l[1]), ((0, 1), &l[2])] {
+            if *x != zero() {
+                terms.insert(e, x.clone());
+            }
+        }
+        Self { terms, deg: 1 }
+    }
+
+    pub(super) fn add_const(&mut self, k: &R) {
+        let e = self.terms.entry((0, 0)).or_insert_with(zero);
+        *e += k;
+        if *e == zero() {
+            self.terms.remove(&(0, 0));
+        }
+    }
+
     pub(super) fn scaled(&self, a: &R) -> Self {
         Self {
-            cc: &self.cc * a,
-            cs: &self.cs * a,
-            ss: &self.ss * a,
-            c1: &self.c1 * a,
-            s1: &self.s1 * a,
-            k: &self.k * a,
+            terms: self
+                .terms
+                .iter()
+                .filter(|_| *a != zero())
+                .map(|(e, x)| (*e, x * a))
+                .collect(),
+            deg: self.deg,
         }
     }
 
-    fn sub(&self, o: &Self) -> Self {
-        Self {
-            cc: &self.cc - &o.cc,
-            cs: &self.cs - &o.cs,
-            ss: &self.ss - &o.ss,
-            c1: &self.c1 - &o.c1,
-            s1: &self.s1 - &o.s1,
-            k: &self.k - &o.k,
+    pub(super) fn add(&self, o: &Self) -> Self {
+        let mut terms = self.terms.clone();
+        for (e, x) in &o.terms {
+            let t = terms.entry(*e).or_insert_with(zero);
+            *t += x;
+            if *t == zero() {
+                terms.remove(e);
+            }
         }
+        Self {
+            terms,
+            deg: self.deg.max(o.deg),
+        }
+    }
+
+    pub(super) fn sub(&self, o: &Self) -> Self {
+        self.add(&o.scaled(&int(-1)))
+    }
+
+    pub(super) fn mul(&self, o: &Self) -> Self {
+        let mut terms: BTreeMap<(u32, u32), R> = BTreeMap::new();
+        for (ea, x) in &self.terms {
+            for (eb, y) in &o.terms {
+                let t = terms.entry((ea.0 + eb.0, ea.1 + eb.1)).or_insert_with(zero);
+                *t += x * y;
+            }
+        }
+        terms.retain(|_, x| *x != zero());
+        Self {
+            terms,
+            deg: self.deg + o.deg,
+        }
+    }
+
+    /// The largest coefficient's size.
+    pub(super) fn max_coefficient(&self) -> R {
+        self.terms
+            .values()
+            .map(|x| if *x < zero() { -x.clone() } else { x.clone() })
+            .fold(zero(), |m, x| if x > m { x } else { m })
+    }
+
+    /// The form's constant value, when it has no other term.
+    pub(super) fn as_constant(&self) -> Option<R> {
+        match self.terms.len() {
+            0 => Some(zero()),
+            1 => self.terms.get(&(0, 0)).cloned(),
+            _ => None,
+        }
+    }
+
+    pub(super) fn degree(&self) -> u32 {
+        self.deg
     }
 
     pub(super) fn value(&self, cs: &[R; 2]) -> R {
-        let (c, s) = (&cs[0], &cs[1]);
-        &self.cc * c * c
-            + &self.cs * c * s
-            + &self.ss * s * s
-            + &self.c1 * c
-            + &self.s1 * s
-            + &self.k
+        let pow = |x: &R, n: u32| (0..n).fold(int(1), |acc, _| acc * x);
+        self.terms.iter().fold(zero(), |acc, ((i, j), x)| {
+            acc + x * pow(&cs[0], *i) * pow(&cs[1], *j)
+        })
     }
 
-    /// Times `(1 + t^2)^2` in a chart: a quartic in `t`.
+    /// Times `(1 + t^2)^deg` in a chart: a polynomial in `t`.
     pub(super) fn poly(&self, chart: &Chart) -> Poly {
         let [cn, sn] = chart.numerators();
         let w = vec![int(1), zero(), int(1)];
-        let mut p = pscale(&pmul(&cn, &cn), &self.cc);
-        p = padd(&p, &pscale(&pmul(&cn, &sn), &self.cs));
-        p = padd(&p, &pscale(&pmul(&sn, &sn), &self.ss));
-        p = padd(
-            &p,
-            &pmul(&padd(&pscale(&cn, &self.c1), &pscale(&sn, &self.s1)), &w),
-        );
-        padd(&p, &pscale(&pmul(&w, &w), &self.k))
+        let pw = |p: &Poly, n: u32| (0..n).fold(vec![int(1)], |acc, _| pmul(&acc, p));
+        let mut out: Poly = Vec::new();
+        for ((i, j), x) in &self.terms {
+            let rest = self.deg.saturating_sub(i + j);
+            let term = pmul(&pmul(&pw(&cn, *i), &pw(&sn, *j)), &pw(&w, rest));
+            out = padd(&out, &pscale(&term, x));
+        }
+        out
     }
+}
+
+pub(super) fn square_sum(ls: &[Lin]) -> Form {
+    let mut f = Form::constant(zero(), 2);
+    for l in ls {
+        let x = Form::lin(l);
+        f = f.add(&x.mul(&x));
+    }
+    f.deg = 2;
+    f
 }
 
 /// A cylinder of an operand: its frame, circle centre and radius.
@@ -304,27 +371,48 @@ type Cyl<'a> = (&'a Affine, &'a P2, &'a R);
 /// `A`, and the discriminant `B^2 - A C` as a form in the carrier's
 /// `(cos, sin)`.
 pub(super) fn discriminant(k: Cyl, o: &Other) -> (R, Form) {
-    let (f, c, r) = k;
+    let slope = zero();
+    let (a, d) = ruled_discriminant(
+        Ruled {
+            f: k.0,
+            c: k.1,
+            r: k.2,
+            k: &slope,
+        },
+        o,
+    );
+    (a.as_constant().expect("a cylinder's constant A"), d)
+}
+
+/// A ruled carrier's ruling `o + r e + w (n + k e)` (`e = cos x + sin y`)
+/// against the other quadric: `A` and `D = B^2 - A C` as forms in its
+/// `(cos, sin)` (quadratic and quartic on a cone, S9d.3b).
+pub(super) fn ruled_discriminant(k: Ruled, o: &Other) -> (Form, Form) {
+    let Ruled { f, c, r, k: slope } = k;
     let base = f.point(&c[0], &c[1], &zero());
-    let lin: Vec<Lin> = (0..o.g.len())
-        .map(|i| {
-            [
-                dot(&o.g[i], &base) - &o.e[i],
-                r * dot(&o.g[i], &f.x),
-                r * dot(&o.g[i], &f.y),
-            ]
-        })
-        .collect();
-    let n: Vec<R> = (0..o.g.len()).map(|i| dot(&o.g[i], &f.n)).collect();
-    let a = n.iter().fold(zero(), |acc, x| acc + x * x);
-    let b: Lin = [0, 1, 2].map(|j| {
-        n.iter()
-            .zip(&lin)
-            .fold(zero(), |acc, (x, l)| acc + x * &l[j])
-    });
-    let mut cform = square_sum(&lin);
-    cform.k -= &o.r * &o.r;
-    (a.clone(), square_sum(&[b]).sub(&cform.scaled(&a)))
+    let at_base = |g: &V, e: &R| -> Lin { [dot(g, &base) - e, r * dot(g, &f.x), r * dot(g, &f.y)] };
+    let along = |g: &V| -> Lin { [dot(g, &f.n), slope * dot(g, &f.x), slope * dot(g, &f.y)] };
+    let mut a = Form::constant(zero(), 2);
+    let mut b = Form::constant(zero(), 2);
+    let mut cc = Form::constant(zero(), 2);
+    for (g, e) in o.g.iter().zip(&o.e) {
+        let (s, n) = (Form::lin(&at_base(g, e)), Form::lin(&along(g)));
+        a = a.add(&n.mul(&n));
+        b = b.add(&s.mul(&n));
+        cc = cc.add(&s.mul(&s));
+    }
+    // The other's radius term: `r0 + w rd`.
+    let r0 = Form::lin(&[
+        &o.r + &o.t * (dot(&o.h, &base) - &o.eh),
+        &o.t * r * dot(&o.h, &f.x),
+        &o.t * r * dot(&o.h, &f.y),
+    ]);
+    let rd = Form::lin(&along(&o.h).map(|x| &o.t * x));
+    a = a.sub(&rd.mul(&rd));
+    b = b.sub(&r0.mul(&rd));
+    cc = cc.sub(&r0.mul(&r0));
+    let d = b.mul(&b).sub(&a.mul(&cc));
+    (a, d)
 }
 
 /// A chart whose antipode has `D < 0` (a loop's piece never reaches it),
@@ -375,7 +463,9 @@ pub(super) fn near_node(a: &R, d: &Form, chart: &Chart, res: f64) -> Result<()> 
         let h = a * q(res) / int(2);
         &h * &h
     };
-    let w2 = pmul(&vec![int(1), zero(), int(1)], &vec![int(1), zero(), int(1)]);
+    let w2 = (0..d.degree()).fold(vec![int(1)], |acc, _| {
+        pmul(&acc, &vec![int(1), zero(), int(1)])
+    });
     let lo = int_poly(&padd(&p, &pscale(&w2, &delta)));
     let hi = int_poly(&padd(&p, &pscale(&w2, &-delta.clone())));
     let dp = pderiv(&p);

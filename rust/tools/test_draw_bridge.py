@@ -186,8 +186,8 @@ class BridgeTests(unittest.TestCase):
         # (S9c.2's: two cylinders, one turned, meeting in quartics), a stack
         # as an argument whose result's top face touches
         # itself at a vertex (Degenerate: a tower's corner on the corner of
-        # a notch), prisms touching along an edge (Degenerate), a cone
-        # against a cylinder (S9d.3b), a section,
+        # a notch), prisms touching along an edge (Degenerate), a torus
+        # (curved faces, S9d.4's), a section,
         # several objects, a result of two solids as an argument,
         # unifysamedom of other shapes, counts of an uncopied prism's result
         # and a Boolean's history.
@@ -196,6 +196,10 @@ class BridgeTests(unittest.TestCase):
         # the fixture comparisons' to check).
         self.expect(boxes + "pcylinder k 1 2\ntrotate k 0 0 0 1 0 0 30\npcylinder m 1.5 3\n"
                     "bfuse r m k\n", "unverified")
+        # A coaxial pipe cut from a frustum (S9d.3b.1): the frustum less the
+        # core, 14 pi / 3 - pi / 2.
+        self.expect(boxes + "pcone k 2 1 2\npcylinder c 0.5 4\nttranslate c 0 0 -1\nbcut r k c\n"
+                    "checkprops r -v [expr {25 * acos(-1) / 6}] -deps 1e-6\n", "pass")
         # A cone standing on the box's floor inside it (S9d.3a): its common
         # is the cone, its cut the box less it.
         self.expect(boxes + "pcone k 1 0 1.5\nttranslate k 2 2 0\nbcommon r a k\n"
@@ -204,8 +208,8 @@ class BridgeTests(unittest.TestCase):
         for gap, why in [
                 (boxes + "box t 1 1 2 1 1 1\nbfuse r a t\ncheckprops r -v 33\ncatch {bcut s r b}", "egenerate"),
                 (boxes + "box t 4 4 0 1 1 2\ncatch {bfuse r a t}", "egenerate"),
-                (boxes + "pcone k 1 0 2\npcylinder c 1 2\nttranslate c 0.5 0 0\n"
-                 "catch {bcommon r k c}", "S9d.3b"),
+                (boxes + "ptorus t 2 0.5\nttranslate t 2 2 1\ncatch {bcommon r a t}",
+                 "curved faces"),
                 (boxes + "baddobjects a\nbaddtools b\ncatch {bapibop r 4}", "bapibop r 4"),
                 (boxes + "baddobjects a b\nbaddtools b\ncatch {bapibop r 1}", "one object"),
                 (boxes + "box d 9 9 9 1 1 1\nbfuse r a d\ncatch {bcut s r b}", "several solids"),

@@ -272,6 +272,24 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
             pairs.insert((fa, fb), pair);
         }
     }
+    // A cone and a curved face (S9d.3b): rings over a carrier, a plane, or
+    // apart.
+    for fa in 0..models[0].faces.len() {
+        for fb in 0..models[1].faces.len() {
+            let (sa, sb) = (&models[0].faces[fa].surf, &models[1].faces[fb].surf);
+            let cone = matches!(sa, Surf::Cone { .. }) || matches!(sb, Surf::Cone { .. });
+            let curved = |s: &Surf| !matches!(s, Surf::Plane { .. });
+            if !cone || !curved(sa) || !curved(sb) {
+                continue;
+            }
+            let pair = if boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]) {
+                super::cones::cone_pair([&models[0], &models[1]], [fa, fb], res)?
+            } else {
+                CylPair::Apart
+            };
+            pairs.insert((fa, fb), pair);
+        }
+    }
     // Coincident planes; parallel planes apart by no more than the
     // resolution are one plane within it (a sliver between them).
     let tol = q(res);
@@ -732,7 +750,9 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                             && models[1].in_face(fb, &x) == Loc::In;
                         match (inside, crv) {
                             (false, _) => Vec::new(),
-                            (true, Crv::Circle(_) | Crv::Cone(_)) => {
+                            // A ring on a cone's wall (no seam crosses it,
+                            // S9d.3b) likewise.
+                            (true, Crv::Circle(_) | Crv::Cone(_) | Crv::Meet(_)) => {
                                 let v = vx.len();
                                 vx.push(Vx {
                                     p: x.clone(),

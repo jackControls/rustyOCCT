@@ -18,8 +18,9 @@ parallel cylinders in turned frames (`curved/algebraic.rs`), and S9d.1's
 spheres against polyhedral prisms (`curved/sphere.rs`), and S9d.2a's
 spheres against prisms with arcs and two spheres (`curved/spheres.rs`,
 S9d.2b's loops in exact frames among them), and S9d.3a's cones and
-frusta against polyhedral prisms (`curved/cone.rs`); cones against curved
-faces (S9d.3b) and tori (S9d.4) are not.
+frusta against polyhedral prisms (`curved/cone.rs`), and S9d.3b.1's
+cones against cylinders, spheres and cones meeting in rings or on a plane
+(`curved/cones.rs`); their loops (S9d.3b.2) and tori (S9d.4) are not.
 
 ## Contract
 
@@ -464,6 +465,32 @@ of constant `v`. A cone against a prism with arcs, a sphere or a cone is
 S9d.3b's (`OutOfDomain`). Two parallel faces of the inputs apart by no
 more than the resolution (not on one plane exactly) are `Degenerate`: the
 sliver between them is thinner than any loop's binary64 image can nest.
+
+### Cones against cylinders, spheres and cones (S9d.3b.1)
+
+A cone's ruling is a line: `o + b e + w (n + k e)`, `e = cos x + sin y` in
+its frame, so a cone carries S9c.2a's graphs as a cylinder does
+(`curved/cones.rs`). Against the other quadric `sum (g_i . p - e_i)^2 = (r
++ t (h . p - e_h))^2` (a cone's slope `t`, zero for a cylinder or a
+sphere) the ruling's quadratic `A w^2 + 2 B w + C` has coefficients that
+are quadratic forms in `(cos, sin)`, and `D = B^2 - A C` a quartic form
+(`turned.rs`'s forms of any degree, their chart polynomials times `(1 +
+t^2)^deg`). The carrier is the first input, a cylinder before a cone,
+whose `A` has no real root: `D` positive all round gives two rings over
+its angle (coaxial pairs among them, `D` constant), negative all round
+the surfaces apart; `A` within rounding of zero (a cylinder along a
+cone's ruling) is `Degenerate`, as is `D` vanishing identically (a sphere
+inscribed in a cone) or a carrier's apex on the other. Two cones whose
+quadrics differ by an affine function (every ruling asymptotic to the
+other: parallel axes, or one axis, with equal slopes) meet on that plane:
+S9d.3a's plane section of one. Rings on a cone's wall have no seam to
+cross, so one gets a vertex at a rational angle. Circles against a cone
+(a cap's arc, a rim, a sphere's circle) solve the other quadric along
+them with its cone term. `Curve3::Meet` takes the cone carrier and the
+cone as the other quadric (`TOPOLOGY_MODEL.md`). A carrier-less pair (no
+input's rulings meet the other all round: spheres off a cone's axis) or
+one whose only carrier has rulings along the other's asymptotes (their
+branches to infinity) is S9d.3b.2's (`OutOfDomain`).
 
 ### Spline profiles (S9a.2)
 

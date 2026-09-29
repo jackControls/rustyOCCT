@@ -1905,7 +1905,11 @@ Decisions for S9, recorded before its code (2026-09-28):
     compares circles by centres, normals and radii within tolerance and a
     circle in a plane as an ellipse (the same replay: a rim split at the
     seam, a section's circle rounded from its basis, differ from their
-    wholes' frames within rounding). Pending: the campaign.
+    wholes' frames within rounding). The campaigns at S9d.1 and at
+    S9d.2 (`0f2cec1c`) replayed their corpora (1,418 inputs) under
+    AddressSanitizer without a failure but passed their startup hour before
+    mutating (exit 124); the corpus replayed with debug assertions at each
+    step instead, and S9d.3a's campaign (below) is the clean one.
   * **DRAW survey of S9d.1 (2026-09-29, `UPSTREAM_TESTS.md`).** Of the
     boolean group's 1,802 self-contained cases Rust evaluates 831 (830
     before), none failing, all registered. Of the 101 Booleans of a sphere
@@ -2004,7 +2008,8 @@ Decisions for S9, recorded before its code (2026-09-28):
     a band's hole at two more points of its first fin, as other holes; (f) a
     meeting on a hemisphere is a seam's only on the split, so a prism's
     vertex on a sphere is `Degenerate` at once (the DRAW survey's box
-    corners). Pending: the campaign.
+    corners). The campaign: see S9d.1's (its replay passed the startup
+    hour) and S9d.3a's.
   * **S9d.2b implemented** (`solid/boolean/curved/spheres.rs`,
     `Curve3::Rise`): a sphere and a cylinder in an exact frame meeting in
     loops, pieces over the height about the rulings' tangencies and over the
@@ -2015,8 +2020,8 @@ Decisions for S9, recorded before its code (2026-09-28):
     deterministic and moved rigidly; `compare_spheres_boolean.py` 12 matches
     and 21 reviewed. `Curve3::Rise`'s `phi` and `rho` are its binary64
     `atan2` and `hypot` of `(alpha, beta)`, constants of the curve (an
-    interval `atan2` on the branch cut failed its jets). Pending: the
-    campaign.
+    interval `atan2` on the branch cut failed its jets). The campaign: see
+    S9d.3a's.
   * **DRAW survey of S9d.2 (2026-09-29, `UPSTREAM_TESTS.md`).** Of the
     boolean group's 1,802 self-contained cases Rust evaluates 851 (831
     before), none failing or timing out, all registered. Of the 60 spheres
@@ -2156,8 +2161,16 @@ Decisions for S9, recorded before its code (2026-09-28):
     are one plane within it, `Degenerate` (the corpus replay with debug
     assertions: a frustum on a tilted prism's top, its origin rounded 2.7e-16
     off the top's plane, left a sliver whose loops' binary64 images could not
-    be nested, an open result; `fuzz/regressions/README.md`). Pending: the
-    campaign.
+    be nested, an open result; `fuzz/regressions/README.md`). The
+    campaigns at `6f51406c` (S9d.3a merged), all clean to the end of their
+    600 seconds of mutation: `boolean` on U6's sampled replay (418 of 1,419
+    inputs, 1,426 s; the full replay passes the startup hour under
+    AddressSanitizer, and minimising the corpus did too, exit 124, the
+    corpus unchanged), 217 mutation executions, 40,143 edges, the slowest
+    input 56 s, 565 MB; `brep_validation` (the validator's rays against
+    cones and chords of no length), 2,508 mutation executions, 20,344
+    edges; `split` 1,373, 30,723 edges; `tessellation` 1,980, 19,809
+    edges. No new artifact.
   * **DRAW survey of S9d.3a (2026-09-29, `UPSTREAM_TESTS.md`).** Of the
     boolean group's 1,802 self-contained cases Rust evaluates 887 (851
     before), none failing or timing out, all registered. Of the 138 cases
@@ -2294,6 +2307,36 @@ Decisions for S9, recorded before its code (2026-09-28):
     (loops: the spheres off a cone's axis) is S9d.3b.2's, `OutOfDomain`; a
     repeated real root of `D` or of `A` where the curve runs is a tangency,
     `Degenerate`. The kernel in `solid/boolean/curved/cones.rs`.
+  * **S9d.3b.1 implemented** (`solid/boolean/curved/cones.rs`): cones
+    against cylinders, spheres and cones meeting in rings over a carrier or
+    on a plane; of the 40 fixtures 32 are the reference's (its solids
+    within the kernel's enclosures, one empty), 4 are refused as declared
+    (`Degenerate`) and 4 left to S9d.3b.2 (`OutOfDomain`), every history
+    checked, results deterministic and moved rigidly;
+    `compare_cones_boolean.py` 21 matches and 19 reviewed (the capture's
+    measures, and entity counts: OCCT's seams and curve splits), every
+    other comparison unchanged. Amendments, from the implementation: (a)
+    `turned.rs`'s forms take any degree (a cone carrier's `D` a quartic
+    form, its chart polynomial an octic), and a form is decided to vanish,
+    or not to, by its chart polynomial (`cos^2 + sin^2 = 1` unreduced in
+    its terms); (b) a carrier whose `A` has real roots (its rulings along
+    the other's asymptotic directions, branches to infinity: a cone in
+    `LEAN` against a frustum, `cones_lean`) is S9d.3b.2's, as the decisions
+    said, though the evidence counted it S9d.3b.1's; (c) `A` within rounding
+    of zero (`rod_ruling`: a cylinder 1e-16 off a cone's ruling) and `D`
+    vanishing identically (`ball_inscribed`: a sphere inscribed in a cone)
+    are `Degenerate` (the latter declared so, taken from S9d.3b.2); (d) a
+    carrier's apex, or a frustum's virtual apex, on the other quadric is
+    `Degenerate`; (e) a ring on a cone's wall gets a vertex at a rational
+    angle (no seam crosses it); (f) the validator takes `Curve3::Meet`'s
+    radius zero at a cone's frame's origin (its apex there: the corpus
+    replay's cone with its apex at its base, four inputs; a regression and
+    `a_cone_with_its_apex_at_its_base_carries_a_ring`); (g) a circle on a
+    cone's quadric beyond its ends (a pipe's cap on the frustum's cone
+    extended) is no meeting, not a tangency; (h) the DRAW bridge evaluates
+    a coaxial pipe cut from a frustum, and guards a torus's refusal (DRAW
+    cannot give a cone and a sphere of their own ids). Pending: the DRAW
+    survey, the campaign.
 
 ### Parallel tracks
 

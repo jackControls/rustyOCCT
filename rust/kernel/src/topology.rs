@@ -267,22 +267,29 @@ impl Spiric {
     }
 }
 
-/// Two cylinders' meeting (S9c.2), or a cylinder's and a sphere's (S9d.2),
-/// as a graph over the first cylinder's angle (S7b's ruled
-/// parameterisation, D13). The carrier's ruling at `u = start + sweep f`,
-/// `frame.point(radius (cos u, sin u), v)`, meets the other quadric (a
-/// cylinder `|(w . x2, w . y2)| = other_radius`, or a sphere `|w| =
+/// Two cylinders' meeting (S9c.2), a cylinder's and a sphere's (S9d.2), or
+/// a cone's with a cylinder, a sphere or a cone (S9d.3b), as a graph over
+/// the carrier's angle (S7b's ruled parameterisation, D13). The carrier's
+/// ruling at `u = start + sweep f`, `frame.point((radius + v tan a) (cos u,
+/// sin u), v)` (`a` its `half_angle`, zero for a cylinder), meets the other
+/// quadric (a cylinder or cone `|(w . x2, w . y2)| = other_radius + (w .
+/// n2) tan a2`, `a2` the `other_half_angle`, or a sphere `|w| =
 /// other_radius`, `w` from its frame's origin) where `a v^2 + 2 b v + c =
 /// 0`; the edge is `v = (-b + sign sqrt(b^2 - a c)) / a`. An edge's range
-/// keeps `b^2 - a c > 0` strictly (no turning point), so it is analytic.
+/// keeps `b^2 - a c > 0` and `a > 0` strictly (no turning point, no ruling
+/// parallel to the other's asymptotes), so it is analytic.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Meet {
     pub frame: Frame3,
     pub radius: f64,
+    /// A cone carrier's half angle (S9d.3b), zero for a cylinder.
+    pub half_angle: f64,
     pub other: Frame3,
     pub other_radius: f64,
     /// The other quadric a sphere (S9d.2): `|w| = other_radius`.
     pub other_sphere: bool,
+    /// The other quadric a cone's half angle (S9d.3b), zero otherwise.
+    pub other_half_angle: f64,
     pub sign: f64,
     pub start: f64,
     pub sweep: f64,
@@ -297,7 +304,9 @@ impl Meet {
             .frame
             .point(Point2::new(self.radius * c, self.radius * s), 0.0);
         let w = foot - self.other.origin();
-        let n = self.frame.normal();
+        // The ruling's direction: along the axis, leaning out on a cone.
+        let t = self.half_angle.tan();
+        let n = self.frame.normal() + (self.frame.x() * c + self.frame.y() * s) * t;
         let (a, b, cc) = if self.other_sphere {
             (
                 n.dot(n),
@@ -305,12 +314,14 @@ impl Meet {
                 w.dot(w) - self.other_radius * self.other_radius,
             )
         } else {
-            let (x2, y2) = (self.other.x(), self.other.y());
+            let (x2, y2, n2) = (self.other.x(), self.other.y(), self.other.normal());
+            let t2 = self.other_half_angle.tan();
             let (wx, wy, nx, ny) = (w.dot(x2), w.dot(y2), n.dot(x2), n.dot(y2));
+            let (r0, rd) = (self.other_radius + t2 * w.dot(n2), t2 * n.dot(n2));
             (
-                nx * nx + ny * ny,
-                wx * nx + wy * ny,
-                wx * wx + wy * wy - self.other_radius * self.other_radius,
+                nx * nx + ny * ny - rd * rd,
+                wx * nx + wy * ny - r0 * rd,
+                wx * wx + wy * wy - r0 * r0,
             )
         };
         let d = (b * b - a * cc).max(0.0);
@@ -320,8 +331,8 @@ impl Meet {
     pub fn point(&self, fraction: f64) -> Point3 {
         let (u, v) = self.parameters(fraction);
         let (s, c) = u.sin_cos();
-        self.frame
-            .point(Point2::new(self.radius * c, self.radius * s), v)
+        let rho = self.radius + v * self.half_angle.tan();
+        self.frame.point(Point2::new(rho * c, rho * s), v)
     }
 }
 

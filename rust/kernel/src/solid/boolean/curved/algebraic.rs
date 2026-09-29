@@ -41,8 +41,8 @@ pub(super) fn circle_quadric(
     let lin: Vec<Lin> = (0..o.g.len())
         .map(|i| [dot(&o.g[i], c) - &o.e[i], dot(&o.g[i], a), dot(&o.g[i], b)])
         .collect();
-    let mut form = square_sum(&lin);
-    form.k -= &o.r * &o.r;
+    // Less the other's radius term squared (a cone's varies, S9d.3b).
+    let form = square_sum(&lin).sub(&square_sum(&[o.radius_lin(c, a, b)]));
     let chart = Chart {
         c0: int(1),
         s0: zero(),
