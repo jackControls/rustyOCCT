@@ -1146,7 +1146,7 @@ unified faces where OCCT has 8). The derived cases `boolean_prisms`,
 `boolean_stacks` (a step, a pocket, a box cut in two by a slab, a closed
 cavity, a tool through a round wall) and `boolean_polyhedra` (quarter
 turns, a bar turned 45 degrees through a box, a tilted bar cutting a box
-in two, a turned box inside another) and 831 cases of upstream's
+in two, a turned box inside another) and 851 cases of upstream's
 `boolean` group (86 of them stacks, 300 polyhedra of two boxes, one
 turned, 35 pockets cut one after another, a stack or a polyhedron given
 to the next `bcut`, 65 of S9c.1's prisms with arcs in any position: a
@@ -1156,15 +1156,20 @@ cylinders crossed at right angles, 16 of S9c.2a's: a cylinder of radius
 S9c.2b.2's: equal parallel cylinders, one moved and turned off whole
 quarter turns, meeting in generatrices, and 1 of S9d.1's: a sphere placed
 on a DRAW `plane`, which the adapter takes since S9d.1's survey, and a
-box whose wall cuts a cap off it) evaluate on both backends; none fails
-on the kernel, and S9c.2b.1 adds none. Of the upstream cases in
+box whose wall cuts a cap off it, and 20 of S9d.2's: a cylinder and a
+sphere centred on its top cap holding the cap, meeting the wall in a
+parallel, the sphere turned by quarter turns) evaluate on both backends;
+none fails on the kernel, and S9c.2b.1 adds none. Of the upstream cases in
 frames with different axes the rest are refused: cones and tori, S9b.1's,
-S9c.1's, S9c.2a's, S9c.2b.1's and S9d.1's
+S9c.1's, S9c.2a's, S9c.2b.1's, S9d.1's and S9d.2a's
 `Degenerate` (a turned box's corner on another's wall, edge or corner, or
 on a cylinder, within rounding; a wall tangent to a cylinder; two
 cylinders touching at a point; equal cylinders in a turned frame whose
 axes meet, their section within the resolution of a node; a box's corners
-on a sphere, reported as a meeting at every seam tried, and its wall
-tangent to one), spheres against cylinders (S9d.2's `OutOfDomain`), and
-an arc ending off its circle; of the stacks given to another Boolean,
+on a sphere, reported as a vertex of one input on the other's face
+since S9d.2a, and its wall tangent to one), a cylinder's rim on a
+sphere's equator (the wall tangent to the sphere along it: its
+discriminant vanishes identically, refused as a computation limit), a
+plane through a sphere's poles (`PrecisionLoss`), and an arc ending off
+its circle; of the stacks given to another Boolean,
 those with cylindrical walls (S9c; `UPSTREAM_TESTS.md`).
