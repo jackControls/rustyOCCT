@@ -20,6 +20,9 @@ pub(super) enum EdgeMeet {
     Points(Vec<(Pos, QV)>),
     /// The edge's curve lies on the surface.
     Along,
+    /// A cap's circle against a perpendicular cylinder (S9c.2): nested
+    /// surds, S9c.2b's where they lie on both faces.
+    Nested(Vec<([super::procedural::Nest; 2], [super::procedural::Nest; 3])>),
 }
 
 /// A place along a curve: a line's parameter, or a conic's `(cos, sin)`.
@@ -29,7 +32,7 @@ pub(super) enum Pos {
     Ang([Qd; 2]),
 }
 
-fn tangency() -> Error {
+pub(super) fn tangency() -> Error {
     Error::Degenerate("a tangency between the inputs (S9c)")
 }
 
@@ -39,7 +42,7 @@ fn quartic() -> Error {
 
 /// Solves `a t^2 + b t + c = 0` (`a != 0`): no root, or two (a double
 /// root is a tangency).
-fn quadratic(a: &R, b: &R, c: &R) -> Result<Vec<Qd>> {
+pub(super) fn quadratic(a: &R, b: &R, c: &R) -> Result<Vec<Qd>> {
     let disc = b * b - int(4) * a * c;
     match sign(&disc) {
         Ordering::Less => Ok(Vec::new()),
@@ -132,6 +135,9 @@ pub(super) enum CylPair {
     /// Equal circular cylinders with crossing axes: the two planes their
     /// ellipses lie in, and the points where those cross.
     Crossing(Box<Crossing>),
+    /// Circular cylinders with perpendicular axes meeting in a quartic
+    /// (S9c.2a).
+    Perpendicular(Box<super::procedural::Perpendicular>),
     /// One surface.
     Same,
 }
@@ -184,15 +190,19 @@ pub(super) fn cyl_pair(
     if apart_boxes {
         return Ok(CylPair::Apart);
     }
-    if !circular || rx != ry {
+    if !circular {
         return Err(quartic());
     }
-    // Circular, equal radii: the axes must meet (coplanar) for two conics.
+    // Circular, equal radii: the axes must meet (coplanar) for two conics;
+    // others perpendicular (in exact frames) meet in quartics (S9c.2a).
     let ox = fx.point(&cx[0], &cx[1], &zero());
     let oy = fy.point(&cy[0], &cy[1], &zero());
     let w = cross(&fx.n, &fy.n);
-    if dot(&sub(&oy, &ox), &w) != zero() {
-        return Err(quartic());
+    if rx != ry || dot(&sub(&oy, &ox), &w) != zero() {
+        if dot(&fx.n, &fy.n) != zero() {
+            return Err(quartic());
+        }
+        return super::procedural::perpendicular((fx, cx, rx), (fy, cy, ry));
     }
     // The axes' meeting point: ox + s nx = oy + t ny.
     let d = sub(&oy, &ox);
@@ -291,6 +301,12 @@ pub(super) fn section(
                             .collect(),
                     ))
                 }
+                CylPair::Perpendicular(x) => Ok(Section::Curves(
+                    x.pieces
+                        .iter()
+                        .map(|m| Crv::Meet(Box::new(m.clone())))
+                        .collect(),
+                )),
                 CylPair::Crossing(x) => {
                     let mut out = Vec::new();
                     for (p, m) in &x.planes {
@@ -428,6 +444,7 @@ pub(super) fn edge_surface(
                 )),
             }
         }
+        (Crv::Meet(_), _) => unreachable!("a model edge is a line or an arc"),
         (Crv::Conic { .. }, Surf::Cyl { c: cy, r: ry, .. }) => {
             // An arc of the edge's own cylinder (`own`) against the other's.
             let (px, cx, rx) = own.expect("an arc edge's own cylinder");
@@ -438,7 +455,6 @@ pub(super) fn edge_surface(
                 CylPair::Apart => Ok(EdgeMeet::None),
                 CylPair::Same => Ok(EdgeMeet::Along),
                 CylPair::Parallel { c2, r2 } => {
-                    let _ = (cy, ry);
                     let cs = circle_circle(cx, rx, c2, r2)?;
                     let _ = px;
                     Ok(EdgeMeet::Points(
@@ -450,6 +466,9 @@ pub(super) fn edge_surface(
                             .collect(),
                     ))
                 }
+                CylPair::Perpendicular(_) => Ok(EdgeMeet::Nested(
+                    super::procedural::nested_points(c, a, b, &py.f, cy, ry)?,
+                )),
                 CylPair::Crossing(x) => {
                     let mut out = Vec::new();
                     for (p0, m) in &x.planes {
@@ -470,12 +489,15 @@ pub(super) fn edge_surface(
     }
 }
 
-/// The unit-free tangent of a curve at a place.
-pub(super) fn tangent(curve: &Crv, pos: &Pos) -> QV {
+/// The unit-free tangent of a curve at a place (the point `x`).
+pub(super) fn tangent(curve: &Crv, pos: &Pos, x: &QV) -> QV {
     match (curve, pos) {
         (Crv::Line { d, .. }, _) => qv(d),
         (Crv::Conic { a, b, .. }, Pos::Ang(cs)) => conic_tangent(a, b, cs),
-        (Crv::Conic { .. }, Pos::T(_)) => unreachable!("a conic's place is an angle"),
+        (Crv::Meet(m), Pos::Ang(cs)) => m.tangent(cs, x),
+        (Crv::Conic { .. } | Crv::Meet(_), Pos::T(_)) => {
+            unreachable!("a conic's place is an angle")
+        }
     }
 }
 

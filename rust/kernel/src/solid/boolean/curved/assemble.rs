@@ -679,6 +679,7 @@ fn same_curve(a: &Crv, b: &Crv) -> bool {
         (Crv::Line { p, d }, Crv::Line { p: p2, d: d2 }) => {
             is_zero(&cross(d, d2)) && super::graph::on_line(p, d, p2)
         }
+        (Crv::Meet(x), Crv::Meet(y)) => x == y,
         _ => false,
     }
 }
@@ -705,6 +706,51 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
     let first = &arr.edges[g0];
     let last = &arr.edges[gl];
     match &first.crv {
+        Crv::Meet(m) => {
+            // On the carrier's and the other's stored cylinders (S9c.2).
+            let CurveRef::Section(si, _) = first.curve else {
+                unreachable!("a meeting is a section")
+            };
+            let s = &arr.secs[si];
+            let stored = [
+                &arr.models[0].faces[s.fa].stored,
+                &arr.models[1].faces[s.fb].stored,
+            ];
+            let cylinder = |x: &Surface| match x {
+                Surface::Cylinder { frame, radius } => Ok((*frame, *radius)),
+                _ => Err(Error::InvalidTopology("a meeting off a cylinder")),
+            };
+            let (frame, radius) = cylinder(stored[m.carrier])?;
+            let (other, other_radius) = cylinder(stored[1 - m.carrier])?;
+            let with = first.with == d0;
+            let t0 = angle_of(if d0 { &first.pos[0] } else { &first.pos[1] });
+            let t1 = angle_of(if dl { &last.pos[1] } else { &last.pos[0] });
+            let sweep = if e.ends.is_none() {
+                TAU
+            } else {
+                let s = if with { t1 - t0 } else { t0 - t1 };
+                let s = s.rem_euclid(TAU);
+                if s == 0.0 {
+                    TAU
+                } else {
+                    s
+                }
+            };
+            // The stored frame's angle of the model's: its x axis turned.
+            let base = frame
+                .x()
+                .dot(arr.models[m.carrier].frame.y())
+                .atan2(frame.x().dot(arr.models[m.carrier].frame.x()));
+            Ok(Curve3::Meet(Box::new(crate::topology::Meet {
+                frame,
+                radius,
+                other,
+                other_radius,
+                sign: if m.plus { 1.0 } else { -1.0 },
+                start: if e.ends.is_none() { 0.0 } else { t0 - base },
+                sweep: if with { sweep } else { -sweep },
+            })))
+        }
         Crv::Line { .. } => {
             let [s, t] = e
                 .ends

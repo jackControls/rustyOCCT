@@ -257,6 +257,9 @@ pub(super) enum Crv {
     Line { p: QV, d: V },
     /// `c + a cos t + b sin t`.
     Conic { c: V, a: V, b: V },
+    /// A piece of two cylinders' meeting (S9c.2), placed by its carrier's
+    /// angle.
+    Meet(Box<super::procedural::MeetCrv>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

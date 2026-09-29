@@ -116,6 +116,7 @@ pub(super) fn place(crv: &Crv, x: &QV) -> Pos {
     match crv {
         Crv::Line { d, .. } => Pos::T(line_key(x, d)),
         Crv::Conic { c, a, b } => Pos::Ang(conic_angle(c, a, b, x)),
+        Crv::Meet(m) => Pos::Ang(m.place(x)),
     }
 }
 
@@ -128,7 +129,7 @@ fn dot2(u: &[Qd; 2], v: &[Qd; 2]) -> Ordering {
     mixed_dot_sign(&[u[0].clone(), u[1].clone()], &[v[0].clone(), v[1].clone()])
 }
 
-fn same_dir(u: &[Qd; 2], v: &[Qd; 2]) -> bool {
+pub(super) fn same_dir(u: &[Qd; 2], v: &[Qd; 2]) -> bool {
     cross2(u, v) == Ordering::Equal && dot2(u, v) == Ordering::Greater
 }
 
@@ -168,7 +169,7 @@ fn angle_f64(cs: &[Qd; 2]) -> f64 {
 
 /// A rational `(cos, sin)` strictly between `a` and `b` running with the
 /// angle or against it (`b = a`: a full turn).
-fn rational_between(a: &[Qd; 2], b: &[Qd; 2], ccw: bool) -> Result<[R; 2]> {
+pub(super) fn rational_between(a: &[Qd; 2], b: &[Qd; 2], ccw: bool) -> Result<[R; 2]> {
     let (t0, t1) = (angle_f64(a), angle_f64(b));
     let mut sweep = if ccw { t1 - t0 } else { t0 - t1 };
     sweep = sweep.rem_euclid(TAU);
@@ -351,6 +352,21 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                         });
                     }
                     EdgeMeet::Points(p) => p,
+                    EdgeMeet::Nested(points) => {
+                        // S9c.2b's where on the edge's arc and the face.
+                        let (a0, b0, ccw) = e.arc.as_ref().expect("an arc edge");
+                        for (cs, x) in &points {
+                            match super::procedural::nest_within(a0, b0, *ccw, cs) {
+                                Some(false) => continue,
+                                None => return Err(super::procedural::nested()),
+                                Some(true) => {}
+                            }
+                            if super::procedural::nested_in_face(other, g, x) != Loc::Out {
+                                return Err(super::procedural::nested());
+                            }
+                        }
+                        continue;
+                    }
                 };
                 for (k, (_, x)) in points.into_iter().enumerate() {
                     let pos = place(&e.curve, &x);
@@ -476,10 +492,14 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
     }
     // The crossings of equal cylinders' ellipses.
     for ((fa, fb), pair) in &pairs {
-        let CylPair::Crossing(cross) = pair else {
-            continue;
+        // Crossings of equal cylinders' ellipses, or a loop's switches
+        // between its graphs (S9c.2a).
+        let points = match pair {
+            CylPair::Crossing(cross) => &cross.points,
+            CylPair::Perpendicular(p) => &p.switches,
+            _ => continue,
         };
-        for (k, x) in cross.points.iter().enumerate() {
+        for (k, x) in points.iter().enumerate() {
             match (models[0].in_face(*fa, x), models[1].in_face(*fb, x)) {
                 (Loc::In, Loc::In) => {
                     vx.push(Vx {
@@ -587,8 +607,16 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                     .filter(|&&v| on_curve(crv, &vx[v].p))
                     .map(|&v| (v, place(crv, &vx[v].p)))
                     .collect();
-                let closed = matches!(crv, Crv::Conic { .. });
-                let zero_dir = Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())]);
+                // Conics and rings are closed; an open piece of a meeting
+                // runs from its range's start.
+                let (closed, zero_dir) = match crv {
+                    Crv::Meet(m) => match &m.range {
+                        Some([lo, _]) => (false, Pos::Ang(lo.clone())),
+                        None => (true, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())])),
+                    },
+                    Crv::Conic { .. } => (true, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())])),
+                    Crv::Line { .. } => (false, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())])),
+                };
                 list.sort_by(|x, y| order_on(&x.1, &y.1, &zero_dir, true));
                 for w in list.windows(2) {
                     if order_on(&w[0].1, &w[1].1, &zero_dir, true) == Ordering::Equal {
@@ -600,7 +628,12 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                     if n == 0 {
                         // A closed section with no vertex: never inside both
                         // faces (every cylinder's seams cross its sections).
-                        let x = conic_point_r(crv, &[int(1), zero()]);
+                        let x = match crv {
+                            Crv::Meet(m) => m.at(&[int(1), zero()]).ok_or(
+                                Error::ComputationLimit("a closed section without vertices"),
+                            )?,
+                            _ => conic_point_r(crv, &[int(1), zero()]),
+                        };
                         if models[0].in_face(fa, &x) == Loc::In
                             && models[1].in_face(fb, &x) == Loc::In
                         {
@@ -787,6 +820,16 @@ fn midpoint(crv: &Crv, a: &Pos, b: &Pos, ccw: bool) -> Result<(QV, Pos)> {
             let x = qadd(p, &qscale(d, &t));
             Ok((x, Pos::T(Qd::rat(k))))
         }
+        (Crv::Meet(m), Pos::Ang(sa), Pos::Ang(sb)) => {
+            let cs = rational_between(sa, sb, ccw)?;
+            let x = m
+                .at(&cs)
+                .ok_or(Error::ComputationLimit("a meeting's point off its piece"))?;
+            Ok((
+                x,
+                Pos::Ang([Qd::rat(cs[0].clone()), Qd::rat(cs[1].clone())]),
+            ))
+        }
         (Crv::Conic { .. }, Pos::Ang(sa), Pos::Ang(sb)) => {
             let cs = rational_between(sa, sb, ccw)?;
             let x = conic_point_r(crv, &cs);
@@ -827,6 +870,7 @@ fn on_curve(crv: &Crv, x: &QV) -> bool {
             ];
             xc.iter().zip(&pc).all(|(a, b)| a.cmp(b) == Ordering::Equal)
         }
+        Crv::Meet(m) => m.on(x),
         Crv::Conic { c, a, b } => {
             let cs = conic_angle(c, a, b, x);
             let back = conic_point(c, a, b, &cs);
@@ -838,9 +882,9 @@ fn on_curve(crv: &Crv, x: &QV) -> bool {
 
 impl Arr {
     /// A half-edge's direction of travel at a place (unit-free).
-    fn travel(&self, gid: usize, fwd: bool, pos: &Pos) -> QV {
+    fn travel(&self, gid: usize, fwd: bool, pos: &Pos, x: &QV) -> QV {
         let e = &self.edges[gid];
-        let t = tangent(&e.crv, pos);
+        let t = tangent(&e.crv, pos, x);
         if e.with == fwd {
             t
         } else {
@@ -921,10 +965,10 @@ impl Arr {
         }
         let p = &self.vx[v].p;
         let n = self.models[o].normal_at(f, p);
-        let r = self.travel(back.0, back.1, self.pos_at_start(back));
+        let r = self.travel(back.0, back.1, self.pos_at_start(back), p);
         let nr = qcross(&n, &r);
         let coords = |c: (usize, bool)| -> [Qd; 2] {
-            let t = self.travel(c.0, c.1, self.pos_at_start(c));
+            let t = self.travel(c.0, c.1, self.pos_at_start(c), p);
             [qqdot(&r, &t), qqdot(&nr, &t)]
         };
         let zero_dir = [Qd::rat(int(1)), Qd::rat(zero())];
@@ -959,6 +1003,23 @@ impl Arr {
                 } else {
                     vec![b, a]
                 }
+            }
+            Crv::Meet(m) => {
+                let (Pos::Ang(p0), Pos::Ang(p1)) = (&e.pos[0], &e.pos[1]) else {
+                    unreachable!("a meeting's places")
+                };
+                let (t0, t1) = (angle_f64(p0), angle_f64(p1));
+                let mut sweep = if e.with { t1 - t0 } else { t0 - t1 };
+                sweep = sweep.rem_euclid(TAU);
+                if sweep == 0.0 {
+                    sweep = TAU;
+                }
+                let sweep = if e.with { sweep } else { -sweep };
+                let mut pts = m.samples(t0, sweep, 24);
+                if !h.1 {
+                    pts.reverse();
+                }
+                pts
             }
             Crv::Conic { c, a, b } => {
                 let (Pos::Ang(p0), Pos::Ang(p1)) = (&e.pos[0], &e.pos[1]) else {
@@ -1151,7 +1212,9 @@ impl Arr {
                     best = Some((k, areas[i]));
                 }
             }
-            let (k, _) = best.ok_or(Error::InvalidTopology("a hole outside every piece"))?;
+            // A hole no piece holds: a loop whose binary64 image turned
+            // the wrong way (a sliver within the resolution).
+            let (k, _) = best.ok_or(Error::Degenerate("a piece thinner than the resolution"))?;
             pieces[k].push(loops[h].clone());
         }
         Ok(pieces)
@@ -1170,7 +1233,7 @@ impl Arr {
         let h = outer[0];
         let e = &self.edges[h.0];
         let x = &e.mid;
-        let t = self.travel(h.0, h.1, &e.mid_pos);
+        let t = self.travel(h.0, h.1, &e.mid_pos, x);
         let n = self.models[o].normal_at(f, x);
         let inward = qcross(&n, &t);
         let neg_n = n.clone().map(|y| y.neg());

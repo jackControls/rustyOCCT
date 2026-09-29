@@ -17,6 +17,7 @@ mod graph;
 mod meet;
 mod model;
 mod num;
+mod procedural;
 
 use super::polyhedra::{Component, Polyhedron};
 use crate::profile::boolean::Operand;

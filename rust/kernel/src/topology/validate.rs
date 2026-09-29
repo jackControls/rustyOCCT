@@ -1949,53 +1949,41 @@ fn sinusoid_crossings<T: Real>(start: f64, sweep: f64, a: &[f64; 3], p: &V2<T>) 
     Some(count)
 }
 
-/// Crossings of the +v ray from p with the face's line pcurves and chords,
-/// over every u alias k*TAU (a cylinder's universal cover); None when a
-/// decision is not certified or a pcurve is not a line.
+/// Crossings of the +v ray from p with the face's pcurves and chords, over
+/// every u alias k*TAU (a cylinder's universal cover); None when a decision
+/// is not certified or a pcurve is not a line, a sinusoid or a projection.
 fn cover_crossings<T: Real>(loops: &[&Lp], p: &V2<T>) -> Option<u32> {
-    let mut count = 0;
-    for lp in loops {
-        let mut segments = chords::<T>(lp);
-        for u in &lp.fins {
-            let Curve2::LineSegment { start, end } = &u.pcurve else {
-                return None;
-            };
-            segments.push(([c(start.x), c(start.y)], [c(end.x), c(end.y)]));
-        }
-        for (a, b) in segments {
-            for k in alias_range(&a[0], &b[0], &p[0])? {
-                let u = p[0].sub(&c(TAU * k as f64));
-                // Half-open in u: exactly one end strictly right of u.
-                let (ra, rb) = (above(&a[0], &u)?, above(&b[0], &u)?);
-                if ra == rb {
-                    continue;
-                }
-                let slope = b[1].sub(&a[1]).div(&b[0].sub(&a[0]))?;
-                let v = a[1].add(&u.sub(&a[0]).mul(&slope));
-                match v.sub(&p[1]).sign()? {
-                    Ordering::Greater => count += 1,
-                    Ordering::Less => {}
-                    Ordering::Equal => return None,
-                }
-            }
-        }
-    }
-    Some(count)
+    Some(cover_hits(loops, p)?.len() as u32)
 }
 
-/// Signed crossings of the +v ray from p with the loops' line pcurves and
+/// Signed crossings of the +v ray from p with the loops' pcurves and
 /// chords, over every u alias: +1 where a piece runs in -u, -1 in +u (the
 /// region on the left lies below a piece running in -u). None when a
-/// decision is not certified or a pcurve is not a line.
+/// decision is not certified or a pcurve is not a line, a sinusoid or a
+/// projection.
 fn signed_cover_crossings<T: Real>(loops: &[&Lp], p: &V2<T>) -> Option<i64> {
-    let mut count = 0;
+    Some(cover_hits(loops, p)?.iter().sum())
+}
+
+/// The +v ray's crossings from p (each +1 running in -u, -1 in +u) with
+/// the loops' chords and pcurves over every u alias: lines exactly as
+/// segments, sinusoids at the alias (S9c.1), projections by certified
+/// pieces (S9c.2).
+fn cover_hits<T: Real>(loops: &[&Lp], p: &V2<T>) -> Option<Vec<i64>> {
+    let mut out = Vec::new();
     for lp in loops {
         let mut segments = chords::<T>(lp);
         for u in &lp.fins {
-            let Curve2::LineSegment { start, end } = &u.pcurve else {
-                return None;
-            };
-            segments.push(([c(start.x), c(start.y)], [c(end.x), c(end.y)]));
+            match &u.pcurve {
+                Curve2::LineSegment { start, end } => {
+                    segments.push(([c(start.x), c(start.y)], [c(end.x), c(end.y)]))
+                }
+                Curve2::Sinusoid { start, sweep, a } => {
+                    out.extend(sinusoid_cover(*start, *sweep, a, p)?)
+                }
+                Curve2::Projection(pr) => out.extend(projection::cover_crossings::<T>(pr, p)?),
+                _ => return None,
+            }
         }
         for (a, b) in segments {
             for k in alias_range(&a[0], &b[0], &p[0])? {
@@ -2008,14 +1996,38 @@ fn signed_cover_crossings<T: Real>(loops: &[&Lp], p: &V2<T>) -> Option<i64> {
                 let slope = b[1].sub(&a[1]).div(&b[0].sub(&a[0]))?;
                 let v = a[1].add(&u.sub(&a[0]).mul(&slope));
                 match v.sub(&p[1]).sign()? {
-                    Ordering::Greater => count += if rb { -1 } else { 1 },
+                    Ordering::Greater => out.push(if rb { -1 } else { 1 }),
                     Ordering::Less => {}
                     Ordering::Equal => return None,
                 }
             }
         }
     }
-    Some(count)
+    Some(out)
+}
+
+/// The +v ray's crossings from p with `v = a0 + a1 cos u + a2 sin u` over
+/// its range, at every u alias (half-open in u, as a segment's).
+fn sinusoid_cover<T: Real>(start: f64, sweep: f64, a: &[f64; 3], p: &V2<T>) -> Option<Vec<i64>> {
+    let (s, e) = (c::<T>(start), c::<T>(start + sweep));
+    let mut out = Vec::new();
+    for k in alias_range(&s, &e, &p[0])? {
+        let u = p[0].sub(&c(TAU * k as f64));
+        let (ra, rb) = (above(&s, &u)?, above(&e, &u)?);
+        if ra == rb {
+            continue;
+        }
+        let (co, si) = T::cos_sin(&u);
+        let v = c::<T>(a[0])
+            .add(&c::<T>(a[1]).mul(&co))
+            .add(&c::<T>(a[2]).mul(&si));
+        match v.sub(&p[1]).sign()? {
+            Ordering::Greater => out.push(if rb { -1 } else { 1 }),
+            Ordering::Less => {}
+            Ordering::Equal => return None,
+        }
+    }
+    Some(out)
 }
 
 /// Every k with p.u - k TAU possibly within the u span of a..b, plus one each

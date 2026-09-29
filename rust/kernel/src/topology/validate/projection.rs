@@ -458,6 +458,73 @@ pub(super) fn crossings<T: Real>(pr: &Projection, p: &V2<T>) -> Option<u32> {
     Some(count)
 }
 
+/// Crossings of the `+v` ray from `p` with a projection pcurve over every
+/// `u` alias `k TAU` (a cylinder's cover; S9c.2), each `+1` where it runs
+/// in `-u` and `-1` in `+u` (half-open in `u`, as a segment's), from
+/// certified pieces: a piece counts at an alias when `v` lies above `p`
+/// all along it, `u` is monotone and its ends lie on either side; one
+/// clear of every alias in `u`, or below `p` in `v`, counts nothing;
+/// others are bisected, at most 40 times. `None` when undecided.
+pub(super) fn cover_crossings<T: Real>(pr: &Projection, p: &V2<T>) -> Option<Vec<i64>> {
+    use std::cmp::Ordering;
+    use std::f64::consts::TAU;
+    if T::EXACT {
+        return None;
+    }
+    let mut out = Vec::new();
+    let mut stack = vec![(0.0f64, 1.0f64, 0usize)];
+    while let Some((lo, hi, depth)) = stack.pop() {
+        let mid = 0.5 * lo + 0.5 * hi;
+        let base = T::exact_f64(lo).union(&T::exact_f64(hi));
+        let decided = (|| -> Option<Vec<i64>> {
+            let [u, v] = projection_jet(pr, &Jet::variable(base, 1))?;
+            let ((ul, uh), (pl, ph)) = (u.c[0].bounds_f64(), p[0].bounds_f64());
+            let kmin = ((pl - uh) / TAU).floor() as i64 - 1;
+            let kmax = ((ph - ul) / TAU).ceil() as i64 + 1;
+            if kmax - kmin > 64 {
+                return None;
+            }
+            let dv = v.c[0].sub(&p[1]).sign();
+            let monotone = matches!(
+                u.c[1].sign(),
+                Some(Ordering::Less) | Some(Ordering::Greater)
+            );
+            let mut hits = Vec::new();
+            for k in kmin..=kmax {
+                let uk = p[0].sub(&T::exact_f64(TAU * k as f64));
+                if matches!(
+                    u.c[0].sub(&uk).sign(),
+                    Some(Ordering::Less) | Some(Ordering::Greater)
+                ) || dv == Some(Ordering::Less)
+                {
+                    continue;
+                }
+                if dv != Some(Ordering::Greater) || !monotone {
+                    return None;
+                }
+                let (a, b) = (projection_at::<T>(pr, lo)?, projection_at::<T>(pr, hi)?);
+                let above = |x: &T| Some(x.sub(&uk).sign()? == Ordering::Greater);
+                let (ra, rb) = (above(&a[0])?, above(&b[0])?);
+                if ra != rb {
+                    hits.push(if rb { -1 } else { 1 });
+                }
+            }
+            Some(hits)
+        })();
+        match decided {
+            Some(hits) => out.extend(hits),
+            None => {
+                if depth >= 40 || !(lo < mid && mid < hi) {
+                    return None;
+                }
+                stack.push((lo, mid, depth + 1));
+                stack.push((mid, hi, depth + 1));
+            }
+        }
+    }
+    Some(out)
+}
+
 /// The certified ranges `[u_lo, u_hi, v_lo, v_hi]` a projection reaches:
 /// its enclosures over `pieces` equal parts of the fraction.
 pub(crate) fn projection_range(p: &Projection, pieces: usize) -> Option<[f64; 4]> {
