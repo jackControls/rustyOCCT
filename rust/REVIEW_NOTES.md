@@ -1929,6 +1929,40 @@ Decisions for S9, recorded before its code (2026-09-28):
     it, rings and a loop; a stadium or a round hole against a sphere; a
     pipe through a sphere; tangencies declared `degenerate`) and a native
     capture before `solid/boolean/curved/spheres.rs` exists.
+  * **S9d.2 evidence (2026-09-29).** `spheres_boolean_reference.py` slices
+    a sphere or cap and a prism of lines, arcs and circles (or two
+    spheres) in a rational affine chart of the slices (the prism's `(u,
+    v)`): a sphere's section an ellipse (a circle in an exact frame), the
+    prism's its profile's preimage, every boundary a segment or an arc `C
+    + A (cos t, sin t)`; the operations apart by classified boundaries
+    (two arcs meet at the unit roots of a quartic), Green's theorem over
+    them exactly, the sphere's face by Archimedes; breakpoints exact roots
+    (two sections tangent where `det(lambda Q1(s) + Q2(s))` has a double
+    root in `lambda`, or concentric sections coincide); flat walls, caps
+    and discs in closed form in their planes, cylindrical walls by their
+    angle; solids by components followed through the slices.
+    `generate_spheres_boolean_fixtures.py --check`: 33 fixtures (28 solid,
+    1 empty, 4 degenerate; prisms in `TILT` twice, whole spheres in
+    `TILTX` and `LEAN`), every class the refined decisions list: two
+    spheres crossing, nested, apart; a pipe through a sphere (the ring, the
+    ends), in `SIDE`, a box with a coaxial hole (five solids), a hemisphere
+    and a pipe; a rod through the sphere (two rings), a bite (one loop), a
+    cylinder ending inside it; a stadium; tangent spheres and cylinders
+    declared `degenerate`. Closed forms (the lens as two caps, the ring `pi
+    h^3 / 6`, a coaxial cap, the holed box, an off-axis cylinder by the
+    lens of two discs along its axis) within 9.2e-41 in exact frames and
+    4.2e-17 in turned ones, inclusion and exclusion 9.2e-41, the area
+    identity 2.3e-40, every face's classes 1.8e-40, a second direction
+    (the prism cut obliquely) 1.8e-40, Monte Carlo 3.1 standard errors, no
+    near coincidence, cap circles at least 0.48 from tangency. No protocol
+    or oracle change. The capture `occt-boolean-spheres-preimplementation`
+    (`compare_spheres_boolean.py`; the kernel `unsupported` on all 33:
+    `OutOfDomain("a sphere against a cylinder or a sphere (S9d.2)")`
+    against a prism, S9b.2's `(S9c)` refusal for two spheres): every result
+    valid with the reference's solids, 18 match, 15 reviewed (BRepGProp's
+    default integration on approximated quartics, up to 2.4e-6; adaptively
+    within 3.4e-9), seven solids' counts change when unified. S9d.2's
+    kernel next.
 
 ### Parallel tracks
 

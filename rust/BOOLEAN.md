@@ -899,6 +899,81 @@ height); its horizontal edges on a spline are its lifted restrictions.
   deterministic and moved rigidly with every vertex on their boundary.
   `compare_sphere_boolean.py`: 30 matches, counts included (OCCT's seams
   counted), no review; every other Boolean comparison unchanged.
+* **S9d.2 evidence (spheres against cylinders and spheres), before its
+  kernel code.** `spheres_boolean_reference.py` (mpmath, 40 digits) takes a
+  sphere or cap on S9d.1's model, a prism of lines, arcs and circles
+  (holes reversed) on S9c.1's, and two spheres. It slices both inputs by
+  the planes normal to the prism's axis (two spheres: the first one's) in
+  an affine rational chart of the slices (the prism's own `(u, v)`), where
+  a sphere's section is an ellipse `q^T G q + 2 q^T g(s) + k(s) <= 0` (a
+  circle in an exact frame) and a prism's the preimage of its profile, an
+  arc `C + A (cos t, sin t)` of the same parameter, cut by the caps' strip
+  when they are not slices: every boundary a segment or such an arc, a
+  sphere's taken with `A = sqrt(rho^2) L^-1` (`G = L^T L`) so that `t` is
+  its true angle. The operations apart as S9d.1's (boundaries cut where
+  they cross, a segment against an arc a quadratic, two arcs the quartic
+  `z^2 f(z)`, `z = e^(it)`, its unit roots refined by Newton; pieces
+  classified at their midpoints), areas and moments by Green's theorem
+  over segments and arcs exactly (trigonometric polynomials of degree
+  three), the sphere's face by Archimedes. Breakpoints, roots of exact
+  polynomials: planes tangent to a sphere, prism vertices, a zone's
+  planes, edges meeting a sphere, faces' planes tangent to its sections, a
+  cap circle's meetings with it (a quartic in `tan(theta / 2)`), a cap's
+  trace tangent to its circle, and two sections tangent: the discriminant
+  in `lambda` of `det(lambda Q1(s) + Q2(s))`, or where concentric sections
+  of proportional Gram matrices coincide (a sphere centred on a cylinder's
+  axis, its parallels). Other faces in closed form in their planes (caps,
+  a zone's discs, a flat wall's parallelogram against the sphere's
+  ellipse), a cylindrical wall by its angle (each generatrix inside the
+  sphere between a quadratic's roots, breakpoints quartics in `tan(theta
+  / 2)`). Solids: the result's section in each interval chained into
+  loops and components keyed by their faces, followed through an interval
+  by key and joined across a breakpoint when most of 64 points of the
+  smaller section lie in the other. `generate_spheres_boolean_fixtures.py
+  --check` writes `boolean-spheres-cases.txt`, `boolean-spheres-
+  expected.tsv` and `boolean-spheres-frames.tsv` with 33 cases (4 fuses,
+  15 cuts, 14 commons; 28 solid, 1 empty, 4 degenerate; 31 in exact frames,
+  whole spheres in any): two spheres crossing, nested (a cavity), apart
+  (fused two solids, the common empty), crossing in `TILTX` and `LEAN`; a
+  sphere and a coaxial cylinder (parallels at rational heights): a pipe
+  through a sphere (the spherical ring; the pipe's two ends), in `SIDE`, a
+  box with a coaxial hole whose walls cut the sphere (the sphere less it
+  five solids), a hemisphere against a pipe through its disc; an off-axis
+  cylinder (the quartic): a rod through the sphere, two rings (in exact
+  and `TILT` frames; the rod less the sphere two solids), a bite, one loop
+  (exact and `TILT`), a cylinder ending inside the sphere, its cap circle
+  crossing it; a stadium through a sphere (the sphere less it two solids);
+  and `degenerate` two spheres tangent, a cylinder tangent outside and
+  inside. Checks before writing: closed forms (two spheres' lens as two
+  caps; a coaxial cylinder's axial integrals of `pi min(a^2, R^2 - z^2)`,
+  the ring `pi h^3 / 6` whatever `R`; the holed box as S9d.1's box less
+  the core; an off-axis cylinder by the lens of two discs, its moments by
+  circular segments and each circle's angle inside the other, along the
+  axis) within 9.2e-41 in exact frames and 4.2e-17 in turned ones, both
+  inputs' slicings and inclusion and exclusion 9.2e-41, the area identity
+  2.3e-40, every face's classes 1.8e-40 (a cylindrical wall's area by
+  mpmath's quadrature of its element), a second slicing direction `(2, -3,
+  5)` (the prism cut obliquely, its circles ellipses) 1.8e-40, Monte Carlo
+  3.1 standard errors, no near coincidence, every cap circle at least
+  0.48 of the radius squared from tangency with the sphere.
+  `test_spheres_boolean_reference.py` checks the closed forms (the ring,
+  a cap inside a coaxial cylinder, the lens of two spheres and of two
+  discs), an ellipse's Green integrals, the tangency polynomial and the
+  reference on the ring. No protocol or oracle change: either input or both
+  may already be a `sphere` row. `compare_spheres_boolean.py`
+  (`compare_boolean.make_set`) reproduces
+  `occt-boolean-spheres-preimplementation` (`rust_spheres_boolean_exists`
+  false; the kernel's probe `unsupported` on all 33, `OutOfDomain("a
+  sphere against a cylinder or a sphere (S9d.2)")` against a prism,
+  `OutOfDomain("a Boolean of a solid with curved faces or edges in any
+  position (S9c)")` for two spheres): every result valid with the
+  reference's solid count; 18 match (parallels of the sphere's own frame
+  within 2.3e-14, other circles within 1.7e-8) and 15 are reviewed
+  (`occt-boolean-spheres-divergences.json`): BRepGProp's default
+  integration on faces bounded by approximated quartics (and on the holed
+  box's circles off the sphere's parallels) misses by up to 2.4e-6, the
+  same results measured adaptively within 3.4e-9; seven solids' counts
+  change when unified.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
