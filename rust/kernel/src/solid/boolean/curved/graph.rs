@@ -269,7 +269,9 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
             pairs.insert((fa, fb), pair);
         }
     }
-    // Coincident planes.
+    // Coincident planes; parallel planes apart by no more than the
+    // resolution are one plane within it (a sliver between them).
+    let tol = q(res);
     for (fa, a) in models[0].faces.iter().enumerate() {
         let Surf::Plane { p: pa, m: ma } = &a.surf else {
             continue;
@@ -278,11 +280,16 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
             let Surf::Plane { p: pb, m: mb } = &b.surf else {
                 continue;
             };
-            if is_zero(&cross(ma, mb))
-                && dot(ma, &sub(pb, pa)) == zero()
-                && boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb])
-            {
+            if !is_zero(&cross(ma, mb)) || !boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]) {
+                continue;
+            }
+            let off = dot(ma, &sub(pb, pa));
+            if off == zero() {
                 coinc.insert((fa, fb));
+            } else if &off * &off <= &tol * &tol * dot(ma, ma) {
+                return Err(Error::Degenerate(
+                    "two faces within the resolution of one plane",
+                ));
             }
         }
     }

@@ -156,3 +156,49 @@ fn results_are_deterministic_and_move_rigidly() {
         }
     }
 }
+
+/// A frustum standing on a tilted prism's top, its frame's origin the
+/// prism's frame's point at the top's height rounded: its base parallel to
+/// the top and apart from it by far less than the resolution, one plane
+/// within it, `Degenerate` (the fuzz target's replay).
+#[test]
+fn a_frustum_on_a_top_within_rounding_is_degenerate() {
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{Boundary, Error, Frame3, Point2, Point3, Profile, Solid, Tolerance, Vec3};
+    let tol = Tolerance::default();
+    let r = 1.75;
+    let outer = Boundary::polygon(
+        vec![
+            Point2::new(r, 0.0),
+            Point2::new(0.0, r),
+            Point2::new(-r, 0.0),
+            Point2::new(0.0, -r),
+        ],
+        tol,
+    )
+    .unwrap();
+    let profile = Profile::new(outer, vec![], tol).unwrap();
+    let fa = Frame3::new(
+        Point3::new(1.0, -2.0, 0.5),
+        Vec3::new(0.0, 3.0, 4.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    let (a, _) = Solid::extrude_with(OperationId(1), profile, fa, 0.0, 2.25).unwrap();
+    let base = Frame3::new(
+        fa.point(Point2::new(0.0, 0.0), 2.25),
+        fa.normal(),
+        fa.x(),
+        tol,
+    )
+    .unwrap();
+    let (b, _) = Solid::cone_with(OperationId(2), base, 1.03125, 2.0625, 1.0, tol).unwrap();
+    for r in [
+        a.fuse(OperationId(3), &b).map(|_| ()),
+        a.cut(OperationId(3), &b).map(|_| ()),
+        a.common(OperationId(3), &b).map(|_| ()),
+    ] {
+        assert!(matches!(r, Err(Error::Degenerate(_))), "{r:?}");
+    }
+}

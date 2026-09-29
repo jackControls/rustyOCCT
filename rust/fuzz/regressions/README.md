@@ -934,3 +934,17 @@ section's circle rounded from its rational basis, or a rim split at the
 sphere's seam, differs from its whole's frame within rounding. Circles now
 compare by their centres, normals and radii within tolerance, and a circle
 in a plane by its centre's and axes' ends' distances, as an ellipse.
+
+## Boolean: a frustum on a tilted prism's top within rounding
+
+`boolean/replay-5b0afacf4f57b4067337eb44e6c433fc4be8ca0b.bin` is a corpus
+input that S9d.3a's cone tool (the spline byte in `160..192`) turned into a
+frustum standing on a tilted diamond prism's top: its frame's origin, the
+prism's frame's point at the top's height rounded to binary64, lies 2.7e-16
+off the top's exact plane, so the frustum's base disc is parallel to the
+top and apart from it by far less than the resolution. The top cut the wall
+in a ring beside its rim, and the sliver between them could not be nested
+by the loops' binary64 images: the result was open (`InvalidTopology`). Two
+parallel faces apart by no more than the resolution are now one plane
+within it, `Degenerate` (`tests/cone_booleans.rs`,
+`a_frustum_on_a_top_within_rounding_is_degenerate`).

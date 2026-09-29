@@ -458,7 +458,9 @@ cone's frame): `EllipseArc`, `HyperbolaArc`, `ParabolaArc`, or a
 `CircularArc` about the axis, its parameter running as the chain runs;
 its pcurves on the cone are `Projection`s, a circle about the axis a line
 of constant `v`. A cone against a prism with arcs, a sphere or a cone is
-S9d.3b's (`OutOfDomain`).
+S9d.3b's (`OutOfDomain`). Two parallel faces of the inputs apart by no
+more than the resolution (not on one plane exactly) are `Degenerate`: the
+sliver between them is thinner than any loop's binary64 image can nest.
 
 ### Spline profiles (S9a.2)
 

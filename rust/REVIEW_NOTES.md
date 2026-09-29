@@ -2143,7 +2143,12 @@ Decisions for S9, recorded before its code (2026-09-28):
     through its apex) is a tangency now: a cone standing in the box
     evaluates instead, and a cone against a cylinder is S9d.3b's; (f) the
     fuzz target's tool is a cone or frustum when its spline byte lies in
-    `160..192`. Pending: the corpus replay, the DRAW survey, the campaign.
+    `160..192`; (g) two parallel faces apart by no more than the resolution
+    are one plane within it, `Degenerate` (the corpus replay with debug
+    assertions: a frustum on a tilted prism's top, its origin rounded 2.7e-16
+    off the top's plane, left a sliver whose loops' binary64 images could not
+    be nested, an open result; `fuzz/regressions/README.md`). Pending: the
+    DRAW survey, the campaign.
 
 ### Parallel tracks
 
