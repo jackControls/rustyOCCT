@@ -146,7 +146,8 @@ group, and stale success records are removed before each run.
 | `boolean/bopfuse_simple/ZH5` | Unsupported | Viewer skipped | A cylinder of radius 4 and a sphere of radius 4 centred on its top cap: the rim is the sphere's equator, the wall tangent to the sphere along it; the coaxial pair's discriminant vanishes identically: a tangency between the inputs (`Degenerate`; the survey below found it refused as a computation limit, S9d.1 as S9d.2's `OutOfDomain`) |
 | `boolean/bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`, `boptuc_simple`: `ZI4` to `ZI7` (16 cases) | Viewer skipped | Viewer skipped | `bop` and its operations on a `pcylinder` of radius 4 and height 8 and a sphere of radius 2 centred on its top cap, turned a quarter turn about x (and then one, two or three quarter turns about y in `ZI5`, `ZI6` and `ZI7`), so the cap's plane holds the sphere's axis: the section a great circle through its poles, a vertex at each: `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9d.1's pole follow-up after S9d.3a; `bopfuse_simple/ZI4` was the sentinel for its `PrecisionLoss`; `ZI5`, whose volumes were wrong until a sphere's closing chord at a pole was enclosed narrowly, registered after it: see the S9d.3a survey) |
 | `boolean/bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`, `boptuc_simple`: `ZF5` to `ZF9`, `ZH1` to `ZH4` (36 cases) | Viewer skipped | Viewer skipped | `bop` and its operations on a box of side 4 and a `pcone` frustum: of radii 1 and 0.5 on the vertical through the box's centre, standing on its top face, inside it (its top disc on the top face or clear of every face) or from the bottom face or below it to the top face, meeting the faces in circles (`ZF5` to `ZF9`); of radii 5 and 4 (5 and 3.5 in `ZH4`) and the box's height, its axis 2 outside a wall and 2 from the walls across it, meeting them in hyperbolas (`ZH1` to `ZH4`; in `ZH3` and `ZH4` turned 30 degrees about its axis): `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9d.3a's cones against polyhedral prisms) |
-| `boolean/bopfuse_simple/ZJ4` | Unsupported | Viewer skipped | A `pcylinder` of radius 4 and height 8 and a frustum of radii 2 and 1 standing on its top cap: a cone against a prism with arcs (S9d.3b's `OutOfDomain`; before S9d.3a solids other than prisms) |
+| `boolean/bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`, `boptuc_simple`: `ZJ4`, `ZJ6` to `ZJ9`, `ZK5`, `ZK6` (28 cases) | Viewer skipped | Viewer skipped | `bop` and its operations on a `pcylinder` of radius 4 and height 8 and a frustum of radii 2 and 1: coaxial, standing on its top cap, inside it with its discs on both caps or clear of them, or through one or both caps (`ZJ4`, `ZJ6` to `ZJ9`: circles), or of height 10 with its axis crossing the cylinder's at right angles at half its height, turned a quarter turn about y or x (`ZK5`, `ZK6`: two quartic rings over the frustum's angle): `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9d.3b.1's cones against cylinders; `bopfuse_simple/ZJ4` was the sentinel for S9d.3b's `OutOfDomain`) |
+| `boolean/bopfuse_simple/ZK9` | Unsupported | Viewer skipped | A `pcylinder` of radius 4 and height 8 and a frustum of radii 1 and 6 and height 8 turned a quarter turn about y, its axis crossing the cylinder's: the adapter turns a cone by the kernel's rotation (a quarter turn's cosine rounds to 6.1e-17), so the frustum's end disc across the cylinder is a plane within rounding of the cylinder's direction (S9d.3b.1's survey, `Degenerate`) |
 | `boolean/bopfuse_simple/ZG2`, `ZG4`, `ZG8`, `boptuc_simple/ZG2` | Unsupported | Viewer skipped | A box of side 4 and a frustum of radii 3 and 2 whose axis lies in the box's wall `y = 0`, its top rim through two of the box's corners: a vertex of one input on the other's face; the same turned 30 degrees about its axis: a plane through a cone's apex; with the frustum first: an edge of one input meeting an edge of the other; a frustum of radii 1 and 0.5 standing on the top face, its base circle tangent to two of the face's edges: a tangency between the inputs (S9d.3a's `Degenerate`) |
 | `boolean/bopfuse_simple/ZL2` | Unsupported | Viewer skipped | A `pcylinder` of radius 4 and height 8 and a coaxial torus of radii 4 and 1 at half its height: a torus, a solid with curved faces in any position (S9c's `OutOfDomain` until S9d.4) |
 | `boolean/bfuse_complex/J5` | Viewer skipped | Viewer skipped | Two equal cylinders crossed at right angles: their fuse's crossing ellipses (S9c.1) |
@@ -165,11 +166,12 @@ group, and stale success records are removed before each run.
 | `boolean/bopcommon_simple/S5`, `bopcut_simple/ZC7`, `S4`, `bopfuse_simple/U7`, `B3`, `boptuc_simple/R1` | Unsupported | Viewer skipped | Box corners on or tangent to a cylinder, boxes touching along an edge: pieces thinner than the resolution, results touching themselves (at a point or along an edge) or each other, a hole touching its boundary (the kernel's `Degenerate`) |
 | `boolean/bcut_simple/G8` | Unsupported | Viewer skipped | A semi-infinite prism of an exploded face (`explode`, `SemiInf`) |
 
-There are **five original geometry tests passing on both backends** and 907
+There are **five original geometry tests passing on both backends** and 935
 more evaluated on both with their image commands recorded (`buc60769`,
 S7's `lowalgos/intss` cases `bug23177_1`, `bug23177_2` and `bug24648`, and
-903 Boolean cases of S9a, S9a.2, S9b.1, S9b.2, S9c.1, S9c.2a, S9c.2b.2,
-S9d.1, S9d.2, S9d.3a and S9d.1's pole follow-up; S9c.2b.1 adds none).
+931 Boolean cases of S9a, S9a.2, S9b.1, S9b.2, S9c.1, S9c.2a, S9c.2b.2,
+S9d.1, S9d.2, S9d.3a, S9d.1's pole follow-up and S9d.3b.1; S9c.2b.1 adds
+none).
 S8e registers the upstream `bsplit` group as capability sentinels: `boolean/splitter/A5`
 and `B5` and the 22 `bugs` cases that call `bsplit` (with `bug29333_1` and
 `bug29333_2`, registered before). They need S9's general builder: tools that
@@ -892,6 +894,104 @@ middle, two slabs) native DRAW's `vprops` of the result puts its centre
 of gravity at `(0.53125, 0.515625, 0.46875)`, though its two solids' own
 are `(0.5, 0.125, 0.5)` and `(0.5, 0.875, 0.5)`; Rust's is `(0.5, 0.5,
 0.5)`. The ledger does not change.
+
+**S9d.3b.1's cones against cylinders in the Boolean group.** The same
+1,802 cases were run again on both backends after S9d.3b.1 (2026-09-29,
+`survey_upstream_tests.py --boolean`, the public dataset read through
+`--data-dir`, 120 seconds a case; no case loads it). Native DRAW's
+statuses are unchanged (1,579 evaluated, 223 not forwarded). Only the 66
+cases refused until now as S9d.3b's `OutOfDomain` change (`ZJ4` to `ZL1`
+of the four `bop*_simple` grids: a `pcylinder` of radius 4 and height 8
+and a cone or frustum; `bcut_simple/G9`, `H3`); none is refused as
+S9d.3b.2's loops. 36 evaluate on Rust: a coaxial frustum of radii 2 and 1
+standing on the top cap, inside the cylinder with its discs on both caps
+or clear of them, or through one cap or both (`ZJ4`, `ZJ6` to `ZJ9`:
+circles), and a frustum of height 10 and radii 2 and 1 (`ZK5`, `ZK6`) or
+6 and 1 (`ZK7`, `ZK8`, its wide end through both caps too) whose axis
+crosses the cylinder's at right angles at half its height, turned a
+quarter turn about y or x (two quartic rings over the frustum's angle).
+The cases were run again with `vprops` and `sprops` before each
+`checkprops`. Rust's volumes, areas and centres of gravity agree with
+closed forms for the coaxial ones (the solids of revolution integrated
+piecewise) and with `cones_boolean_reference.py` for the crossing ones
+(the cylinder a prism of a circle, the frustum in the turned frame)
+within 6.5e-16 relative in volume and area and 2.0e-15 in the centres.
+Native DRAW's agree with them to its printed digits on the coaxial ones
+and are off by up to 7.8e-6 relative in volume, 7.2e-6 in area and
+4.3e-6 in the centres on the crossing ones (BRepGProp on approximated
+quartics, as S9d.3b's capture found: `ZK7`'s common 256.47 and 216.599
+natively, 256.4710 and 216.6006 exactly); the cases' own expected areas
+differ too (`ZK5` 324.106 and `ZK6` 324.207 for congruent fuses,
+324.2033 exactly), within `checkprops`' tolerance. 28 are registered
+(`ZJ4`, `ZJ6` to `ZJ9`, `ZK5`, `ZK6` of the four grids), each
+`viewer_skipped` on both; `bopfuse_simple/ZJ4`, the sentinel for S9d.3b's
+`OutOfDomain`, is re-purposed. `ZK7` and `ZK8` are right but slow: run
+alone on the debug worker the contract uses, they take 63 to 118 seconds
+(`ZK5` and `ZK6` 15 to 25, the coaxial ones under a second), past the
+contract's 30 seconds a case; five of the eight timed out in the survey,
+eight cases running at once, and none is registered. The other 30 are
+refused as `Degenerate` or at a second Boolean. `ZJ5` (a frustum of
+radii 1 and 2 inside the cylinder, its top disc on the top cap) has its
+virtual apex on the bottom cap's plane: a plane through a cone's apex.
+`ZK1` (a frustum of radii 4 and 2 standing on the top cap, its base rim
+the cap's rim) is a tangency between the inputs. `ZK2` to `ZK4` (the same
+turned about its axis by quarter turns) are a piece thinner than the
+resolution, and so is `ZK1` turned a whole turn: the adapter turns a
+prism by quarter turns exactly (`BOOLEAN.md`) but a cone by the kernel's
+rotation, whose sine and cosine of a quarter turn round, so the rim lies
+within rounding of the cap's rim. `ZK9` and `ZL1` (a frustum of radii 1
+and 6 and height 8 across the cylinder, turned a quarter turn about y)
+are a plane within rounding of a cylinder's direction for the same
+reason: the frustum's axis is `(1, 0, 6.1e-17)`, and its disc of radius
+6, 3 from the cylinder's axis, cuts the wall. Native DRAW's tolerances
+absorb both. `bcut_simple/G9` and `H3` fuse a coaxial frustum onto a
+cylinder, which evaluates (volume 881.282 and area 708.632 on both), and
+then cut a rod from the fuse: a stack with curved walls given to another
+Boolean (S9c). Rust evaluates 934 (903 before), 931 registered, and fails
+none; five time out; 640 cases native DRAW evaluates are refused (676
+before). The 645 cases native DRAW evaluates and Rust does not, by
+reason:
+
+| Reason | Cases | Since S9d.3a's survey |
+| --- | --- | --- |
+| Solids other than prisms (tori; two cones or two tori sharing ids): refused by the kernel 16 (a `pcylinder` and a coaxial torus, `ZL2` to `ZL5` of the four grids), by the adapter 61 (a solid other than a prism sharing ids with the other argument: two cones 60, two tori 1) | 77 | 0 |
+| Timed out at the survey's 120 seconds, eight cases at once (`ZK7`'s cut and common, `ZK8`'s fuse, cut and common: a frustum of radii 6 and 1 across the cylinder, evaluating alone in 63 to 118 seconds, their measures the reference's) | 5 | new (from S9d.3b's) |
+| `Degenerate`, S9d.3a's: a tangency between the inputs (a box and a frustum whose rim is tangent to two of the box's edges at its corners, its axis in a wall: `ZG1`, `ZG3`, `ZG5`, `ZG7`; a base circle on the box's top face tangent to two of the face's edges: `ZG8`, `ZG9`) | 24 | 0 |
+| `Degenerate`, S9d.3a's: a vertex of one input on the other's face (the box's corners on the frustum's rim, its axis in the wall `y = 0`: `ZG2`, `ZG6` of the three grids with the box first) | 6 | 0 |
+| `Degenerate`, S9d.3a's: a plane through a cone's apex (`ZG4`: `ZG2`'s frustum turned 30 degrees about its axis, 4; a frustum of radii 1 and 2 inside the cylinder whose virtual apex lies on the bottom cap's plane, `ZJ5`, 4) | 8 | +4 (from S9d.3b's) |
+| `Degenerate`, S9d.3a's: an edge of one input meeting an edge of the other (`boptuc_simple/ZG2`, `ZG6`: the frustum first, the box's edges through its rim) | 2 | 0 |
+| `Degenerate`, S9d.3b.1's survey: a tangency between the inputs (`ZK1`: a frustum of radii 4 and 2 standing on the cylinder's top cap, its base rim the cap's rim) | 4 | new (from S9d.3b's) |
+| `Degenerate`, S9d.3b.1's survey: a piece thinner than the resolution (`ZK2` to `ZK4`: `ZK1`'s frustum turned about its axis by the kernel's rotation, its rim within rounding of the cap's) | 12 | new (from S9d.3b's) |
+| `Degenerate`, S9d.3b.1's survey: a plane within rounding of a cylinder's direction (`ZK9`, `ZL1`: a frustum of radii 1 and 6 across the cylinder, turned a quarter turn about y by the kernel's rotation, its disc of radius 6 cutting the wall) | 8 | new (from S9d.3b's) |
+| `Degenerate`, S9d.2's: a tangency between the inputs, a coaxial cylinder and sphere whose discriminant vanishes identically (a cylinder's rim on a sphere's equator, the wall tangent to it along the circle: `ZH5` to `ZI3` of the four `bop*_simple` grids) | 32 | 0 |
+| `Degenerate`, S9d.2a's: a vertex of one input on the other's face (a unit box's corner at a unit sphere's centre, its far corners on the sphere) | 21 | 0 |
+| `Degenerate`, S9d.1's: a tangency between the inputs (the unit box quarter-turned, its wall `x = -1` tangent to the unit sphere) | 12 | 0 |
+| `Degenerate`, S9c.2b.1's: two cylinders' section within the resolution of a node (equal cylinders in a turned frame whose axes meet: `ZD9`, `ZE2`) | 8 | 0 |
+| A stack with cylindrical or conical walls as a Boolean argument (S9c; `bcut_simple/G9`, `H3`: a coaxial frustum fused onto a cylinder, then a rod cut from the fuse, 2) | 6 | +2 (from S9d.3b's) |
+| An arc ending off its circle on exact models (`bfuse_simple/E1`, S9c) | 1 | 0 |
+| `Degenerate`, S9c.1's: a piece thinner than the resolution (a box's corner on the cylinder within rounding) | 40 | 0 |
+| `Degenerate`, S9c.1's: two meetings within rounding along an arc (the same) | 16 | 0 |
+| `Degenerate`, S9c.1's: a meeting at every seam tried (two stacked cylinders turned about their axis, their rims one circle) | 12 | 0 |
+| `Degenerate`, S9c's: a tangency between the inputs (a box's wall tangent to the cylinder after a quarter turn 8; cylinders of radii 1 and 0.5 touching at a point, S9c.2a's, 16) | 24 | 0 |
+| `Degenerate`, S9c.1's: solids touching at a vertex (a cut of crossed cylinders) | 4 | 0 |
+| `Degenerate`, S9b.1's: a face thinner than the resolution | 99 | 0 |
+| `Degenerate`, S9b.1's: a face using an edge both ways | 9 | 0 |
+| `Degenerate`, S9b.1's: two solids touching at a point 1, a face touching itself at a vertex 1 | 2 | 0 |
+| `Degenerate`: a result thinner than the resolution | 103 | 0 |
+| `Degenerate`: a profile piece thinner than the resolution | 24 | 0 |
+| `Degenerate`: a result touching itself at a point | 11 | 0 |
+| `Degenerate`: a result touching itself along an edge | 6 | 0 |
+| `Degenerate`: a result's hole outside its boundary 8, two results touching 4 | 12 | 0 |
+| `atan2` in `dset`, which the adapter does not evaluate | 48 | 0 |
+| `explode` without the native selector (a Boolean's result into solids 4, a `pcone` into faces 4, a face of a box 1) | 9 | 0 |
+
+The previous table's cone against a prism with arcs (S9d.3b, 66) is gone.
+The sentinels were checked again: each is refused as before but
+`bopfuse_simple/ZJ4`, which evaluates and is re-purposed. One sentinel is
+added: `bopfuse_simple/ZK9` (a plane within rounding of a cylinder's
+direction); the plane through a frustum's virtual apex, the rims within
+rounding and the stack with a cone's wall keep `bopfuse_simple/ZG4`'s,
+`S3`'s and `bcut_simple/L3`'s reasons. The ledger does not change.
 
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
