@@ -2207,6 +2207,56 @@ Decisions for S9, recorded before its code (2026-09-28):
     reference inside each enclosure but not the enclosure narrow: every
     curved Boolean fixture test now requires volume and area enclosures
     within `1e-9` relative, all of them passing.
+  * **S9d.3b evidence (2026-09-29).** `cones_boolean_reference.py` takes a
+    cone or frustum against a prism with arcs, a sphere, cap or zone, or
+    another cone, each input its exact surfaces in world coordinates, and
+    slices both in S9d.2's chart along a direction in which every quadric's
+    section is an ellipse (a cone's axis where the other allows, else a
+    prism's or a rational combination, checked exactly): a cone's section an
+    ellipse cut by its end planes' lines, the operations apart as S9d.2's,
+    breakpoints from every edge of one input against every surface of the
+    other (a line's quadratic, a circle's resultant in its plane), planes
+    tangent to sections, sections tangent and shrinking to points. Every
+    face but the sphere's is swept by lines on it (a cone's rulings, a
+    cylinder's and a flat wall's generatrices, parallel lines on a planar
+    face), cut at every surface's roots and classified, breakpoints the
+    roots of each surface's leading coefficient and discriminant along the
+    lines and of every two surfaces' resultant; solids as S9d.2's, same-key
+    components followed by their centroids, sections vanishing on both
+    sides of a breakpoint not joined. `generate_cones_boolean_fixtures.py
+    --check`: 40 fixtures (35 solid, 1 empty, 4 degenerate; 4 in turned
+    frames), every class the refined decisions list: a coaxial pipe
+    (circles), a cylinder through the wall off the axis, rods across a
+    frustum and a cone's tip and around its apex, a box with a coaxial hole,
+    a stadium; coaxial spheres (the apex region among them), a sphere off
+    the axis (a loop), a dome; two cones tip in tip, frusta of opposite
+    slopes, a frustum on another's disc, crossing cones, a cone in `LEAN`,
+    parallel axes; a cylinder tangent along a ruling, an inscribed sphere,
+    apexes touching and equal cones declared `degenerate`. Each expected row
+    names its sub-step if S9d.3b is split as S9d.2 was: `S9d.3b.1` (36)
+    where some input's rulings meet the other's quadrics transversally
+    wherever their curve runs (circles, graphs over a cylinder's or a cone's
+    angle), `S9d.3b.2` (4: spheres off the axis, the inscribed sphere) where
+    both inputs' rulings are tangent to the other on their faces, by the
+    rulings' exact discriminants. Closed forms of 22 of the 27 pairs (the
+    lens of two discs along the axis for parallel cylinders, spheres and
+    cones, coaxial or not; the strip of a rod across the axis; the holed box
+    as S9d.3a's box less the core; equal cones) within 1.7e-40 in exact
+    frames and 4.4e-17 in turned ones, inclusion and exclusion 1.2e-41, the
+    area identity 1.1e-40, every face's classes 5.0e-41, the cone's wall two
+    ways 3.6e-41, a second direction 4.6e-41 (19 pairs), Monte Carlo 2.9
+    standard errors, no near coincidence, every edge and vertex at least
+    0.0126 from tangency with or incidence on the other's surfaces. No
+    protocol or oracle change. The capture
+    `occt-boolean-cones-preimplementation` (`compare_cones_boolean.py`, the
+    kernel `unsupported` on all 40, `OutOfDomain("a cone against a prism
+    with arcs, a sphere or a cone (S9d.3b)")`): every result valid, the
+    reference's solids in 39 (the inscribed sphere's cut one solid
+    natively), 23 match (circles within 4.1e-14; two cones of equal
+    half-angle with parallel axes meet in a plane, OCCT's hyperbolas within
+    6.1e-10), 17 reviewed (BRepGProp's default integration on approximated
+    quartics, up to 4.1e-6; adaptively within 6.0e-9; and that count),
+    eleven solids' counts change when unified. S9d.3b's kernel next.
 
 ### Parallel tracks
 

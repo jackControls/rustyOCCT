@@ -1142,6 +1142,96 @@ height); its horizontal edges on a spline are its lifted restrictions.
   default integration; adaptively within 5.0e-9, every section an exact
   conic), no review; thirteen solids' counts change when unified (the
   wall's faces split at OCCT's seam).
+* **S9d.3b evidence (cones against curved faces), before its kernel
+  code.** `cones_boolean_reference.py` (mpmath, 40 digits) takes a cone or
+  frustum on S9d.3a's model, a prism of lines, arcs and circles on S9d.2's,
+  a sphere, cap or zone on S9d.1's, or two cones, each input a set of exact
+  surfaces `X^T M X + 2 m . X + c` in world coordinates (the cone's quadric
+  from the rows of its frame's inverse, its end planes; the sphere and its
+  zone planes; the prism's walls, its arcs' cylinders and its caps). It
+  slices both inputs in S9d.2's affine rational chart along a direction in
+  which every quadric's section is an ellipse (a cone's own axis where the
+  other allows it, else a prism's, else a rational combination of the
+  axes, checked exactly: the cone's form positive definite on the slices,
+  no slice parallel to a prism's axis, a cap's planes slices): a cone's
+  section `C + sqrt(rho) L^-1 (cos t, sin t)` (`G = L^T L`) cut by its end
+  planes' lines, the others S9d.2's. The operations apart and Green's
+  integrals as S9d.2's; the sphere's face by Archimedes; the cone's wall a
+  second way where the slices are normal to its axis (its element over its
+  circle's arcs inside). Breakpoints: vertices, every edge of one input (a
+  line; a circle as a conic in its plane) meeting every surface of the
+  other (a quadratic; the resultant of the two traces in one coordinate, a
+  quartic), every plane tangent to every quadric's section, two sections
+  tangent (S9d.2's pencil, square-free), a section shrinking to a point, the
+  planes that are slices. Every face but the sphere's is swept by lines on
+  it (a cone's rulings, with their element `r(w) |U' x (n + k U)|`, a
+  cylinder's and a flat wall's generatrices, parallel lines of a skew
+  direction on a planar face), each cut where every surface's quadratic in
+  the line's parameter has a root and its pieces classified (a coplanar face
+  of the other apart as the same or the opposite orientation); breakpoints
+  in the sweep's parameter the roots, at 100 digits, of exact polynomials:
+  each surface's leading coefficient and discriminant along the lines and
+  every two surfaces' resultant (trigonometric along rulings, through
+  `tan(theta / 2)`). Solids as S9d.2's, components of one key (both ends of
+  a rod in one tilted slice) followed by their centroids, sections vanishing
+  on both sides of a breakpoint (two apexes, a pinch along a circle) not
+  joined; equal cones as the cone. `generate_cones_boolean_fixtures.py
+  --check` writes `boolean-cones-cases.txt`, `boolean-cones-expected.tsv`
+  and `boolean-cones-frames.tsv` with 40 cases (7 fuses, 14 cuts, 19
+  commons; 35 solid, 1 empty, 4 degenerate; 36 in exact frames): a coaxial
+  pipe through a frustum (circles, all three; the pipe less it two
+  solids), a cylinder through its wall and base off the axis, a rod across
+  it (two rings; the rod less it two), a rod across a cone's tip (the cone
+  less it two) and around its apex, a box with a coaxial hole, a stadium
+  (hyperbolas and quartics), a pipe in `TILT`; coaxial spheres through a
+  frustum's top disc (all three) and on a cone's apex, a sphere off the
+  axis (a loop), a dome through which a cone passes, a sphere against a
+  frustum in `TILT`; coaxial cones tip in tip, frusta of opposite slopes, a
+  frustum standing on another (coplanar discs, the common empty), a cone
+  across a frustum (two rings; its ends two solids), a cone in `LEAN`, two
+  cones of parallel axes; and `degenerate` a cylinder tangent along a
+  ruling, a sphere inscribed along a circle, two cones apex to apex, equal
+  cones. Each expected row names the sub-step that would take it if
+  S9d.3b were split as S9d.2 was: `S9d.3b.1` (36) where some input's
+  rulings meet the other's quadrics transversally wherever their curve runs
+  (circles, and graphs over a cylinder's or a cone's angle), `S9d.3b.2` (4:
+  the spheres off the axis, the inscribed sphere) where both inputs'
+  rulings, or the cone's against a sphere, are tangent to the other on
+  their faces, decided by the rulings' exact discriminants. Checks before
+  writing: closed forms of 22 of the 27 pairs along the cone's axis in its
+  ideal frame (a cylinder, a sphere or cap, or a cone of parallel axis,
+  coaxial or not, by the lens of two discs: areas, first moments by
+  circular segments, each circle's angle inside the other with each wall's
+  element, a sphere's by Archimedes, end discs by the lens, coplanar ones
+  apart; a rod across the axis by the strip `|y - y0| <= sqrt(a^2 - (z -
+  z0)^2)` against the disc and the rod's generatrices' chords; the holed
+  box as S9d.3a's box less the coaxial core; equal cones) within 1.7e-40 in
+  exact frames and 4.4e-17 in turned ones, both inputs' slicings 8.6e-42,
+  inclusion and exclusion 1.2e-41, the area identity 1.1e-40, every face's
+  classes 5.0e-41, both sides' shared areas 5.7e-42, the cone's wall two
+  ways 3.6e-41, a second slicing direction (19 pairs: none with a cap,
+  coplanar faces or a declared degeneracy) 4.6e-41, Monte Carlo 2.9
+  standard errors, no near coincidence, every edge and vertex of one input
+  at least 0.0126 (relative) from tangency with or incidence on a surface
+  of the other. `test_cones_boolean_reference.py` checks the closed forms
+  (a coaxial cylinder and an inscribed sphere by hand, two cones of
+  parallel axes by the lens of equal discs, the strip by a double
+  quadrature), the resultant and the roots of trigonometric polynomials,
+  the rulings' quadratics and the reference on the coaxial pipe. No protocol
+  or oracle change: either input or both may already be a `cone` or
+  `sphere` row. `compare_cones_boolean.py` (`compare_boolean.make_set`)
+  reproduces `occt-boolean-cones-preimplementation`
+  (`rust_cones_boolean_exists` false; the kernel's probe `unsupported` on
+  all 40, `OutOfDomain("a cone against a prism with arcs, a sphere or a
+  cone (S9d.3b)")`): every result valid, the reference's solid count in 39
+  (`ball_inscribed_cut`, declared degenerate, one solid touching itself
+  along the circle natively); 23 match (sections circles about the axis
+  within 4.1e-14; two cones of equal half-angle and parallel axes meet in
+  a plane, OCCT's hyperbolas within 6.1e-10) and 17 are reviewed
+  (`occt-boolean-cones-divergences.json`): BRepGProp's default integration
+  on faces bounded by approximated quartics misses by up to 4.1e-6, the
+  same results measured adaptively within 6.0e-9, and the inscribed
+  sphere's count; eleven solids' counts change when unified.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

@@ -1,0 +1,379 @@
+case pipe_coax_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 3.0
+boundary C 0.0 0.0 1.5
+end
+case pipe_coax_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 3.0
+boundary C 0.0 0.0 1.5
+end
+case pipe_coax_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 3.0
+boundary C 0.0 0.0 1.5
+end
+case pipe_ends_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 3.0
+boundary C 0.0 0.0 1.5
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+end
+case bite_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 3.0
+boundary C 2.0 0.5 0.75
+end
+case bite_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 3.0
+boundary C 2.0 0.5 0.75
+end
+case rod_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -4.0 4.0
+boundary C 0.25 1.0 0.5
+end
+case rod_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -4.0 4.0
+boundary C 0.25 1.0 0.5
+end
+case rod_ends_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -4.0 4.0
+boundary C 0.25 1.0 0.5
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+end
+case tip_rod_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 1.5 0.0 3.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -3.0 3.0
+boundary C 0.0 2.25 0.5
+end
+case apex_rod_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 1.5 0.0 3.0
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -3.0 3.0
+boundary C 0.125 2.75 0.5
+end
+case hole_box_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.5 1.5
+boundary P 4 -2.5 -2.5 2.5 -2.5 2.5 2.5 -2.5 2.5
+boundary C 0.0 0.0 1.5
+end
+case hole_box_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.5 1.5
+boundary P 4 -2.5 -2.5 2.5 -2.5 2.5 2.5 -2.5 2.5
+boundary C 0.0 0.0 1.5
+end
+case stadium_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean cut 93
+op 92
+frame 0.25 0.5 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 3.0
+boundary S 4 -1.0 -0.75 L 1.0 -0.75 A 1.0 0.0 0.75 1 1.0 0.75 L -1.0 0.75 A -1.0 0.0 0.75 1
+end
+case stadium_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean common 93
+op 92
+frame 0.25 0.5 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 3.0
+boundary S 4 -1.0 -0.75 L 1.0 -0.75 A 1.0 0.0 0.75 1 1.0 0.75 L -1.0 0.75 A -1.0 0.0 0.75 1
+end
+case pipe_tilt_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -1.0 3.0
+boundary C 0.0 0.0 1.5
+end
+case ball_coax_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 2.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.5 -1.5707963267948966 1.5707963267948966
+end
+case ball_coax_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean cut 93
+op 92
+frame 0.0 0.0 2.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.5 -1.5707963267948966 1.5707963267948966
+end
+case ball_coax_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean common 93
+op 92
+frame 0.0 0.0 2.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.5 -1.5707963267948966 1.5707963267948966
+end
+case ball_apex_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 1.5 0.0 3.0
+boolean common 93
+op 92
+frame 0.0 0.0 3.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+end
+case ball_side_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean cut 93
+op 92
+frame 1.75 0.5 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+end
+case ball_side_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean common 93
+op 92
+frame 1.75 0.5 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+end
+case dome_cone_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 0.0 1.5707963267948966
+boolean cut 93
+op 92
+frame 0.0 0.0 -0.5 0.0 0.0 1.0 1.0 0.0 0.0
+cone 1.25 0.0 3.5
+end
+case dome_cone_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 0.0 1.5707963267948966
+boolean common 93
+op 92
+frame 0.0 0.0 -0.5 0.0 0.0 1.0 1.0 0.0 0.0
+cone 1.25 0.0 3.5
+end
+case ball_tilt_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean common 93
+op 92
+frame 1.5 -0.25 1.25 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+end
+case cones_apex_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 1.5 0.0 3.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 4.0 0.0 0.0 -1.0 1.0 0.0 0.0
+cone 1.5 0.0 3.0
+end
+case cones_apex_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 1.5 0.0 3.0
+boolean common 93
+op 92
+frame 0.0 0.0 4.0 0.0 0.0 -1.0 1.0 0.0 0.0
+cone 1.5 0.0 3.0
+end
+case frusta_cross_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 1.0 2.0 2.0
+end
+case frusta_stack_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 2.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 1.5 0.5 1.5
+end
+case frusta_stack_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean common 93
+op 92
+frame 0.0 0.0 2.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 1.5 0.5 1.5
+end
+case cones_cross_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean fuse 93
+op 92
+frame -2.25 0.25 1.0 1.0 0.0 0.0 0.0 1.0 0.0
+cone 0.75 0.25 4.0
+end
+case cones_cross_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean cut 93
+op 92
+frame -2.25 0.25 1.0 1.0 0.0 0.0 0.0 1.0 0.0
+cone 0.75 0.25 4.0
+end
+case cones_cross_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean common 93
+op 92
+frame -2.25 0.25 1.0 1.0 0.0 0.0 0.0 1.0 0.0
+cone 0.75 0.25 4.0
+end
+case cones_ends_cut 1e-07
+op 91
+frame -2.25 0.25 1.0 1.0 0.0 0.0 0.0 1.0 0.0
+cone 0.75 0.25 4.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+end
+case cones_lean_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean common 93
+op 92
+frame 0.5 0.25 -0.5 3.0 0.0 4.0 0.0 1.0 0.0
+cone 1.5 0.0 3.0
+end
+case cones_parallel_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean common 93
+op 92
+frame 1.75 0.5 -0.5 0.0 0.0 1.0 1.0 0.0 0.0
+cone 1.5 0.0 3.0
+end
+case rod_ruling_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 3.0 0.0 4.0
+boolean common 93
+op 92
+frame -3.0 0.0 0.0 3.0 0.0 4.0 0.0 1.0 0.0
+offsets -1.0 6.0
+boundary C 0.0 1.25 1.25
+end
+case ball_inscribed_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 3.0 0.0 4.0
+boolean cut 93
+op 92
+frame 0.0 0.0 2.75 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 0.75 -1.5707963267948966 1.5707963267948966
+end
+case apex_to_apex_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 1.5 0.0 3.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 6.0 0.0 0.0 -1.0 1.0 0.0 0.0
+cone 1.5 0.0 3.0
+end
+case cones_equal_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+end
