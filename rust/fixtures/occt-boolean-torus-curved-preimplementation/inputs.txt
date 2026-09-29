@@ -1,0 +1,252 @@
+case pipe_hole_fuse
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean fuse
+plane 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 0.0 0.0 -2.0 1.75
+prism 0.0 0.0 4.0
+end
+case pipe_hole_cut
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean cut
+plane 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 0.0 0.0 -2.0 1.75
+prism 0.0 0.0 4.0
+end
+case pipe_hole_common
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean common
+plane 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 0.0 0.0 -2.0 1.75
+prism 0.0 0.0 4.0
+end
+case hole_pipe_cut
+plane 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 0.0 0.0 -2.0 1.75
+prism 0.0 0.0 4.0
+boolean cut
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+end
+case sleeve_common
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean common
+plane 0.0 0.0 -0.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 0.0 0.0 -0.5 3.25
+prism 0.0 0.0 2.5
+end
+case ball_coax_cut
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean cut
+sphere 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.75 -1.5707963267948966 1.5707963267948966
+end
+case ball_coax_common
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean common
+sphere 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.75 -1.5707963267948966 1.5707963267948966
+end
+case ball_axis_common
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean common
+sphere 0.0 0.0 1.5 0.0 0.0 1.0 1.0 0.0 0.0 2.25 -1.5707963267948966 1.5707963267948966
+end
+case cone_coax_cut
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean cut
+cone 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0 4.0 0.0 4.0
+end
+case cone_coax_common
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean common
+cone 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0 4.0 0.0 4.0
+end
+case tori_coax_fuse
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean fuse
+torus 0.0 0.0 0.5 0.0 0.0 1.0 1.0 0.0 0.0 3.25 0.75
+end
+case tori_coax_common
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean common
+torus 0.0 0.0 0.5 0.0 0.0 1.0 1.0 0.0 0.0 3.25 0.75
+end
+case rod_cut
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean cut
+plane -4.5 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+wire C -4.5 0.0 0.0 0.5
+prism 9.0 0.0 0.0
+end
+case rod_common
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean common
+plane -4.5 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+wire C -4.5 0.0 0.0 0.5
+prism 9.0 0.0 0.0
+end
+case rod_ends_cut
+plane -4.5 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+wire C -4.5 0.0 0.0 0.5
+prism 9.0 0.0 0.0
+boolean cut
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+end
+case bore_cut
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean cut
+plane 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 2.75 0.25 -2.0 0.5
+prism 0.0 0.0 4.0
+end
+case bore_common
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean common
+plane 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 2.75 0.25 -2.0 0.5
+prism 0.0 0.0 4.0
+end
+case stadium_cut
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean cut
+plane 2.5 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire S 4 1.75 -0.5 -2.0 L 3.25 -0.5 -2.0 A 3.25 0.0 -2.0 0.5 1 3.25 0.5 -2.0 L 1.75 0.5 -2.0 A 1.75 0.0 -2.0 0.5 1
+prism 0.0 0.0 4.0
+end
+case stadium_common
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean common
+plane 2.5 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire S 4 1.75 -0.5 -2.0 L 3.25 -0.5 -2.0 A 3.25 0.0 -2.0 0.5 1 3.25 0.5 -2.0 L 1.75 0.5 -2.0 A 1.75 0.0 -2.0 0.5 1
+prism 0.0 0.0 4.0
+end
+case ball_top_fuse
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean fuse
+sphere 2.5 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0 0.75 -1.5707963267948966 1.5707963267948966
+end
+case ball_top_cut
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean cut
+sphere 2.5 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0 0.75 -1.5707963267948966 1.5707963267948966
+end
+case ball_top_common
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean common
+sphere 2.5 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0 0.75 -1.5707963267948966 1.5707963267948966
+end
+case ball_core_cut
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean cut
+sphere 0.0 2.5 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.25 -1.5707963267948966 1.5707963267948966
+end
+case core_ball_cut
+sphere 0.0 2.5 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.25 -1.5707963267948966 1.5707963267948966
+boolean cut
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+end
+case spike_cut
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean cut
+cone 2.75 0.25 -1.5 0.0 0.0 1.0 1.0 0.0 0.0 0.75 0.25 3.0
+end
+case spike_common
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean common
+cone 2.75 0.25 -1.5 0.0 0.0 1.0 1.0 0.0 0.0 0.75 0.25 3.0
+end
+case cone_lean_common
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean common
+cone 0.75 0.25 -1.75 0.6 0.0 0.8 0.0 1.0 -0.0 1.0 0.0 3.0
+end
+case tori_link_fuse
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean fuse
+torus 0.0 2.5 0.0 1.0 0.0 0.0 0.0 1.0 0.0 2.5 0.75
+end
+case tori_link_common
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean common
+torus 0.0 2.5 0.0 1.0 0.0 0.0 0.0 1.0 0.0 2.5 0.75
+end
+case tori_ring_fuse
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean fuse
+torus 0.0 2.5 0.0 1.0 0.0 0.0 0.0 1.0 0.0 1.25 0.5
+end
+case tori_ring_cut
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean cut
+torus 0.0 2.5 0.0 1.0 0.0 0.0 0.0 1.0 0.0 1.25 0.5
+end
+case tori_ring_common
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean common
+torus 0.0 2.5 0.0 1.0 0.0 0.0 0.0 1.0 0.0 1.25 0.5
+end
+case tori_side_cut
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean cut
+torus 2.5 0.0 0.125 0.0 0.0 1.0 1.0 0.0 0.0 2.5 0.75
+end
+case tori_side_common
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean common
+torus 2.5 0.0 0.125 0.0 0.0 1.0 1.0 0.0 0.0 2.5 0.75
+end
+case tori_cross_cut
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean cut
+torus 0.0 4.25 0.0 1.0 0.0 0.0 0.0 1.0 0.0 2.5 0.75
+end
+case tori_cross_common
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean common
+torus 0.0 4.25 0.0 1.0 0.0 0.0 0.0 1.0 0.0 2.5 0.75
+end
+case pin_hole_fuse
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean fuse
+plane 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 0.0 0.0 -2.0 1.25
+prism 0.0 0.0 4.0
+end
+case pin_hole_common
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean common
+plane 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 0.0 0.0 -2.0 1.25
+prism 0.0 0.0 4.0
+end
+case ball_hole_fuse
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean fuse
+sphere 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 1.25 -1.5707963267948966 1.5707963267948966
+end
+case pipe_equator_fuse
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean fuse
+plane 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 0.0 0.0 -2.0 3.5
+prism 0.0 0.0 4.0
+end
+case ball_touch_fuse
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean fuse
+sphere 4.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 0.5 -1.5707963267948966 1.5707963267948966
+end
+case tori_kiss_fuse
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 2.5 1.0
+boolean fuse
+torus 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0 4.25 0.75
+end
+case pipe_tilt_common
+torus 0.0 0.0 0.0 0.0 0.6 0.8 1.0 -0.0 0.0 2.5 1.0
+boolean common
+plane 0.0 -1.2 -1.6 0.0 0.6 0.8 1.0 -0.0 0.0
+wire C 0.0 -1.2 -1.6 1.75
+prism 0.0 2.4 3.2
+end
+case ball_tilt_cut
+torus 0.0 0.0 0.0 0.0 0.6 0.8 1.0 -0.0 0.0 2.5 1.0
+boolean cut
+sphere 2.5 0.6 0.8 0.0 0.0 1.0 1.0 0.0 0.0 0.75 -1.5707963267948966 1.5707963267948966
+end

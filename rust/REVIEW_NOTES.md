@@ -2755,6 +2755,80 @@ Decisions for S9, recorded before its code (2026-09-28):
     clean, 1,040 runs, the slowest input 17 s under AddressSanitizer.
     Pending: the DRAW survey (with S9d.4b.2's: S9d.4a's found no segment
     or wedge in the Boolean group).
+  * **S9d.4b.2 evidence (2026-09-29).** Corrections to the decisions first:
+    (a) their degree four holds for a quadric and for a torus about a
+    parallel axis (its function along a tube's circle is of degree two in
+    the tube's angle), but a torus about another axis meets a tube's circle
+    in a trigonometric polynomial of degree four, a polynomial of degree
+    eight in the half-angle tangent: two such tori's points at a rational
+    parameter are algebraic of degree eight (`tori_ring`, `tori_cross`); (b)
+    "a double root is `Degenerate`" means a singular point of the meeting
+    (the surfaces tangent), not a graph's double root at a turning point:
+    every pair but the coaxial ones and those apart has turning points (up
+    to 12 in one face's family of curves; the stadium's events 34 over its
+    faces), which the graphs' switches take; (c) two tori of parallel
+    axes whose top, bottom or equator circles lie at one height and cross
+    are tangent there (the first placement of `tori_side`, found by its
+    quadrature's failure to converge): the kernel's tangency test must see
+    it; (d) a prism whose flat wall meets its arc tangentially (a stadium)
+    gives the torus's curves a surface switch on that edge, where the wall's
+    and the cylinder's roots coincide to second order.
+    `torus_curved_boolean_reference.py` takes each input's exact model (the
+    torus S9d.4a's, the cone S9d.3a's, the sphere S9d.1's, a convex prism of
+    segments and arcs S9d.2's) and sweeps every face of both by two families
+    of circles and lines (the tori's tube circles and parallels, the
+    sphere's meridians and parallels, a cylinder's and a cone's rulings and
+    sections, a flat wall's generatrices and rows, a planar face's chords in
+    two directions), the other input's surfaces along each curve a
+    trigonometric polynomial of their degree (from `2d + 1` samples, their
+    real roots the unit-circle roots of `z^d f`) or a line's polynomial,
+    pieces classified inside and measured by the divergence theorem (area,
+    volume and first moments in closed form but the area element's square
+    root, 24-point Gauss-Legendre), the outer parameter integrated between
+    events (where the curves' structure, their classes with the bounding
+    surfaces, changes: a scan of 360 curves and bisection to 1e-35, 1e-20
+    where two surfaces tangent along an edge make it rounding's to call); a
+    tangency's double root split by rounding dropped; every quadrature
+    node's structure its interval's. Solids by a sweep of the torus's normal
+    slices (S9d.4a's annuli), rays from the axis joined where they overlap.
+    44 fixtures (`generate_torus_curved_boolean_fixtures.py --check`: 10
+    fuses, 16 cuts, 18 commons; 39 solid, 2 empty, 3 degenerate; the torus
+    of radii 5/2 and 1): coaxial cylinders through the hole and around the
+    tube, coaxial spheres about the centre and on the axis, a coaxial cone
+    and a coaxial torus (circles); a rod across the torus (the common two
+    solids, the rod less the torus three), a vertical cylinder and a frustum
+    through the tube (graphs over their angle), a stadium across the tube, a
+    sphere on the tube's top and one swallowing the tube, a cone in `LEAN`
+    with its apex in the tube, tori linked apart, ringing the tube, of a
+    parallel axis (the common two solids) and linked crossing the tube; a pin
+    and a ball in the hole apart; the pipe and a sphere with the torus in
+    `TILT`; `degenerate` a cylinder tangent along the outer equator, a
+    sphere touching at a point and a coaxial torus touching along a circle.
+    Checks: closed forms of 23 of the 27 pairs (one quadrature along the
+    axis of the annulus against lenses of signed discs about a parallel
+    axis, a rod's strip by rectangle-in-disc antiderivatives, sums apart)
+    within 7.5e-39 in exact frames, 4.6e-17 turned; every operation two ways
+    (the two families) 6.6e-35, both inputs from their faces 1.4e-39,
+    inclusion and exclusion 1.1e-40, the area identity 1.4e-39, Monte Carlo
+    2.8 standard errors, the degenerate pairs 3.8e-21 (closed forms
+    3.1e-24); no near coincidence outside them, least margins 0.42 (the sine
+    between surfaces where they meet), 0.066 (surfaces apart), 0.62 and
+    0.031 (edges crossing the torus, and from tangency), 0.13 (the apex). No
+    protocol row is new: the kernel's test support and the native oracle
+    already build every input on either side (every older capture
+    reproducing). `occt-boolean-torus-curved-preimplementation`
+    (`compare_torus_curved_boolean.py`, keyed on
+    `solid/boolean/curved/torus_curved.rs`, the kernel `unsupported` on all
+    44 with `OutOfDomain("a torus against a curved face (S9d.4b)")`): every
+    result valid with the reference's solids, 24 match (circles within
+    1.6e-13), 20 reviewed (BRepGProp's default integration on B-spline
+    sections, up to 9.8e-6; adaptively within 4.8e-9, unchanged at 1e-12),
+    thirteen solids' counts change when unified. The kernel will need the
+    torus's classification against cylinders, spheres, cones and tori, the
+    graphs over `u` and over a ruled surface's angle with their switches,
+    fields of degree eight for two tori, the three tangencies refused (along
+    circles and at a point), linked solids in a fuse, and pieces across a
+    stadium's tangent edges. S9d.4b.2's kernel next.
 
 ### Parallel tracks
 

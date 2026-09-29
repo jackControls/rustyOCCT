@@ -1,0 +1,256 @@
+{
+  "note": "Reviewed BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut and BRepAlgoAPI_Common differences from the S9d.4b.2 reference and the kernel.",
+  "reviews": [
+    {
+      "case": "rod_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "1ace6db75cf11e7f719a118ea1e891b3eef5fd96de10a7e03e032d470807eeb9",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections of the torus: the native result is valid with the reference's solid count, its volume 3.4e-07 and area 8.7e-09 relative and its centre 3.2e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 4.3e-10 in volume, 2.2e-10 in area (relative) and 6.4e-11 in centre, unchanged at 1e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance); its edges' tolerance is at most 1.0e-07 (11 of its 17 edges B-splines). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "torus_curved_boolean_reference.py's rows (generate_torus_curved_boolean_fixtures.py --check) agree with closed forms of 23 of the 27 pairs (one quadrature along the torus's axis of its annulus against the other input's sections: lenses of signed discs about a parallel axis, a rod's strip by rectangle-in-disc antiderivatives, inputs apart by their sums) within 7.5e-39 in exact frames and 4.6e-17 in turned ones, with every operation two ways (each face swept by two independent families of curves) within 6.6e-35, both inputs' measures from their faces within 1.4e-39 of their closed forms, inclusion and exclusion within 1.1e-40, the area identity within 1.4e-39, and Monte Carlo within 2.8 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "rod_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "5386379470a267d6d1cc0d03cb679ee6a49fcacc93dccb999883ffc558717265",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections of the torus: the native result is valid with the reference's solid count, its volume 5.1e-08 and area 3.5e-08 relative and its centre 2.0e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 2.1e-09 in volume, 1.8e-09 in area (relative) and 2.5e-10 in centre, unchanged at 1e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance); its edges' tolerance is at most 1.0e-07 (11 of its 19 edges B-splines). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "torus_curved_boolean_reference.py's rows (generate_torus_curved_boolean_fixtures.py --check) agree with closed forms of 23 of the 27 pairs (one quadrature along the torus's axis of its annulus against the other input's sections: lenses of signed discs about a parallel axis, a rod's strip by rectangle-in-disc antiderivatives, inputs apart by their sums) within 7.5e-39 in exact frames and 4.6e-17 in turned ones, with every operation two ways (each face swept by two independent families of curves) within 6.6e-35, both inputs' measures from their faces within 1.4e-39 of their closed forms, inclusion and exclusion within 1.1e-40, the area identity within 1.4e-39, and Monte Carlo within 2.8 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "rod_ends_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "469e8f6f861658d0ee9d47939a9f5502e824a43c16eaf4e1a68057d613e1a0e0",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections of the torus: the native result is valid with the reference's solid count, its volume 6.5e-08 and area 1.3e-08 relative and its centre 1.4e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.1e-09 in volume, 1.1e-09 in area (relative) and 1.6e-10 in centre, unchanged at 1e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance); its edges' tolerance is at most 1.0e-07 (11 of its 22 edges B-splines). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "torus_curved_boolean_reference.py's rows (generate_torus_curved_boolean_fixtures.py --check) agree with closed forms of 23 of the 27 pairs (one quadrature along the torus's axis of its annulus against the other input's sections: lenses of signed discs about a parallel axis, a rod's strip by rectangle-in-disc antiderivatives, inputs apart by their sums) within 7.5e-39 in exact frames and 4.6e-17 in turned ones, with every operation two ways (each face swept by two independent families of curves) within 6.6e-35, both inputs' measures from their faces within 1.4e-39 of their closed forms, inclusion and exclusion within 1.1e-40, the area identity within 1.4e-39, and Monte Carlo within 2.8 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "bore_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "02bd74d6e5c289e70cf775e6e1036eda71f86b92f68d1087d8f87bec5c05d575",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections of the torus: the native result is valid with the reference's solid count, its volume 1.5e-07 and area 1.0e-07 relative and its centre 1.2e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 6.4e-10 in volume, 5.1e-10 in area (relative) and 1.0e-10 in centre, unchanged at 1e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance); its edges' tolerance is at most 1.0e-07 (6 of its 9 edges B-splines). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "torus_curved_boolean_reference.py's rows (generate_torus_curved_boolean_fixtures.py --check) agree with closed forms of 23 of the 27 pairs (one quadrature along the torus's axis of its annulus against the other input's sections: lenses of signed discs about a parallel axis, a rod's strip by rectangle-in-disc antiderivatives, inputs apart by their sums) within 7.5e-39 in exact frames and 4.6e-17 in turned ones, with every operation two ways (each face swept by two independent families of curves) within 6.6e-35, both inputs' measures from their faces within 1.4e-39 of their closed forms, inclusion and exclusion within 1.1e-40, the area identity within 1.4e-39, and Monte Carlo within 2.8 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "stadium_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "76d5eaa0185d06d165d5d450fae4cb0831fc2ac7d798f0336320a73d9aa0411a",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections of the torus: the native result is valid with the reference's solid count, its volume 5.1e-07 and area 4.6e-08 relative and its centre 3.2e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 3.2e-09 in volume, 1.4e-09 in area (relative) and 2.1e-11 in centre, unchanged at 1e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance); its edges' tolerance is at most 1.0e-06 (10 of its 15 edges B-splines). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "torus_curved_boolean_reference.py's rows (generate_torus_curved_boolean_fixtures.py --check) agree with closed forms of 23 of the 27 pairs (one quadrature along the torus's axis of its annulus against the other input's sections: lenses of signed discs about a parallel axis, a rod's strip by rectangle-in-disc antiderivatives, inputs apart by their sums) within 7.5e-39 in exact frames and 4.6e-17 in turned ones, with every operation two ways (each face swept by two independent families of curves) within 6.6e-35, both inputs' measures from their faces within 1.4e-39 of their closed forms, inclusion and exclusion within 1.1e-40, the area identity within 1.4e-39, and Monte Carlo within 2.8 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "stadium_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "d25b065a8c80fa07ce3f1f32d3d1dd5fddeba8f59cd9e965f95e9b066edc8c6a",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections of the torus: the native result is valid with the reference's solid count, its volume 4.6e-08 and area 3.3e-08 relative and its centre 6.7e-09 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.3e-09 in volume, 8.8e-10 in area (relative) and 2.6e-11 in centre, unchanged at 1e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance); its edges' tolerance is at most 1.0e-06 (10 of its 17 edges B-splines). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "torus_curved_boolean_reference.py's rows (generate_torus_curved_boolean_fixtures.py --check) agree with closed forms of 23 of the 27 pairs (one quadrature along the torus's axis of its annulus against the other input's sections: lenses of signed discs about a parallel axis, a rod's strip by rectangle-in-disc antiderivatives, inputs apart by their sums) within 7.5e-39 in exact frames and 4.6e-17 in turned ones, with every operation two ways (each face swept by two independent families of curves) within 6.6e-35, both inputs' measures from their faces within 1.4e-39 of their closed forms, inclusion and exclusion within 1.1e-40, the area identity within 1.4e-39, and Monte Carlo within 2.8 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "ball_top_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "cabd0cf03d38062ef88a7db4ff8f6537d70a91c9948ffeff2c7b21b85b000f29",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections of the torus: the native result is valid with the reference's solid count, its volume 4.4e-09 and area 2.2e-07 relative and its centre 5.9e-09 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 3.8e-11 in volume, 1.3e-10 in area (relative) and 2.8e-11 in centre, unchanged at 1e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance); its edges' tolerance is at most 1.0e-07 (2 of its 7 edges B-splines). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "torus_curved_boolean_reference.py's rows (generate_torus_curved_boolean_fixtures.py --check) agree with closed forms of 23 of the 27 pairs (one quadrature along the torus's axis of its annulus against the other input's sections: lenses of signed discs about a parallel axis, a rod's strip by rectangle-in-disc antiderivatives, inputs apart by their sums) within 7.5e-39 in exact frames and 4.6e-17 in turned ones, with every operation two ways (each face swept by two independent families of curves) within 6.6e-35, both inputs' measures from their faces within 1.4e-39 of their closed forms, inclusion and exclusion within 1.1e-40, the area identity within 1.4e-39, and Monte Carlo within 2.8 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "ball_top_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "b864d5054f1682db1b06aa49a3ff8efd4968011a9dba9c4dae4f59497a574946",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections of the torus: the native result is valid with the reference's solid count, its volume 3.7e-08 and area 2.3e-07 relative and its centre 1.5e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 5.6e-11 in volume, 8.3e-11 in area (relative) and 4.1e-11 in centre, unchanged at 1e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance); its edges' tolerance is at most 1.0e-07 (2 of its 7 edges B-splines). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "torus_curved_boolean_reference.py's rows (generate_torus_curved_boolean_fixtures.py --check) agree with closed forms of 23 of the 27 pairs (one quadrature along the torus's axis of its annulus against the other input's sections: lenses of signed discs about a parallel axis, a rod's strip by rectangle-in-disc antiderivatives, inputs apart by their sums) within 7.5e-39 in exact frames and 4.6e-17 in turned ones, with every operation two ways (each face swept by two independent families of curves) within 6.6e-35, both inputs' measures from their faces within 1.4e-39 of their closed forms, inclusion and exclusion within 1.1e-40, the area identity within 1.4e-39, and Monte Carlo within 2.8 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "ball_top_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "0b00a6b9a580da097aafe2559d491c2f58f4d696ec6a88a13c10494cc5119bb9",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections of the torus: the native result is valid with the reference's solid count, its volume 2.0e-07 and area 2.2e-07 relative and its centre 2.9e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 2.5e-09 in volume, 2.7e-09 in area (relative) and 1.8e-10 in centre, unchanged at 1e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance); its edges' tolerance is at most 1.0e-07 (2 of its 5 edges B-splines). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "torus_curved_boolean_reference.py's rows (generate_torus_curved_boolean_fixtures.py --check) agree with closed forms of 23 of the 27 pairs (one quadrature along the torus's axis of its annulus against the other input's sections: lenses of signed discs about a parallel axis, a rod's strip by rectangle-in-disc antiderivatives, inputs apart by their sums) within 7.5e-39 in exact frames and 4.6e-17 in turned ones, with every operation two ways (each face swept by two independent families of curves) within 6.6e-35, both inputs' measures from their faces within 1.4e-39 of their closed forms, inclusion and exclusion within 1.1e-40, the area identity within 1.4e-39, and Monte Carlo within 2.8 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "ball_core_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "183770001dc28c788561ca4747c3982a463f57731219ee6b836ea3ae2fb7c3f5",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections of the torus: the native result is valid with the reference's solid count, its volume 1.7e-07 and area 4.0e-08 relative and its centre 1.2e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 7.3e-11 in volume, 4.5e-10 in area (relative) and 1.5e-10 in centre, unchanged at 1e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance); its edges' tolerance is at most 1.0e-07 (4 of its 8 edges B-splines). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "torus_curved_boolean_reference.py's rows (generate_torus_curved_boolean_fixtures.py --check) agree with closed forms of 23 of the 27 pairs (one quadrature along the torus's axis of its annulus against the other input's sections: lenses of signed discs about a parallel axis, a rod's strip by rectangle-in-disc antiderivatives, inputs apart by their sums) within 7.5e-39 in exact frames and 4.6e-17 in turned ones, with every operation two ways (each face swept by two independent families of curves) within 6.6e-35, both inputs' measures from their faces within 1.4e-39 of their closed forms, inclusion and exclusion within 1.1e-40, the area identity within 1.4e-39, and Monte Carlo within 2.8 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "core_ball_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "b2b444f4272ff8e7d9a0c99d66f28f174ee5ebe9af0bdfd561d43e7edb6848b4",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections of the torus: the native result is valid with the reference's solid count, its volume 9.8e-06 and area 1.8e-06 relative and its centre 1.3e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 4.8e-09 in volume, 2.1e-09 in area (relative) and 3.1e-09 in centre, unchanged at 1e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance); its edges' tolerance is at most 1.0e-07 (4 of its 9 edges B-splines). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "torus_curved_boolean_reference.py's rows (generate_torus_curved_boolean_fixtures.py --check) agree with closed forms of 23 of the 27 pairs (one quadrature along the torus's axis of its annulus against the other input's sections: lenses of signed discs about a parallel axis, a rod's strip by rectangle-in-disc antiderivatives, inputs apart by their sums) within 7.5e-39 in exact frames and 4.6e-17 in turned ones, with every operation two ways (each face swept by two independent families of curves) within 6.6e-35, both inputs' measures from their faces within 1.4e-39 of their closed forms, inclusion and exclusion within 1.1e-40, the area identity within 1.4e-39, and Monte Carlo within 2.8 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "spike_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "b25433e40f84af5dfa0a8a900a7c66fafa078955a4b975d44fe1706041e02766",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections of the torus: the native result is valid with the reference's solid count, its volume 9.8e-08 and area 6.6e-08 relative and its centre 1.0e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 6.0e-11 in volume, 5.4e-11 in area (relative) and 2.6e-11 in centre, unchanged at 1e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance); its edges' tolerance is at most 1.0e-07 (6 of its 11 edges B-splines). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "torus_curved_boolean_reference.py's rows (generate_torus_curved_boolean_fixtures.py --check) agree with closed forms of 23 of the 27 pairs (one quadrature along the torus's axis of its annulus against the other input's sections: lenses of signed discs about a parallel axis, a rod's strip by rectangle-in-disc antiderivatives, inputs apart by their sums) within 7.5e-39 in exact frames and 4.6e-17 in turned ones, with every operation two ways (each face swept by two independent families of curves) within 6.6e-35, both inputs' measures from their faces within 1.4e-39 of their closed forms, inclusion and exclusion within 1.1e-40, the area identity within 1.4e-39, and Monte Carlo within 2.8 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "spike_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "146621deddb75ae0e88f47a56f5c3c919c3387486230cb40b08dcb26214eb477",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections of the torus: the native result is valid with the reference's solid count, its volume 4.5e-08 and area 7.0e-09 relative and its centre 9.3e-09 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.9e-09 in volume, 1.2e-09 in area (relative) and 1.7e-10 in centre, unchanged at 1e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance); its edges' tolerance is at most 1.0e-07 (6 of its 9 edges B-splines). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "torus_curved_boolean_reference.py's rows (generate_torus_curved_boolean_fixtures.py --check) agree with closed forms of 23 of the 27 pairs (one quadrature along the torus's axis of its annulus against the other input's sections: lenses of signed discs about a parallel axis, a rod's strip by rectangle-in-disc antiderivatives, inputs apart by their sums) within 7.5e-39 in exact frames and 4.6e-17 in turned ones, with every operation two ways (each face swept by two independent families of curves) within 6.6e-35, both inputs' measures from their faces within 1.4e-39 of their closed forms, inclusion and exclusion within 1.1e-40, the area identity within 1.4e-39, and Monte Carlo within 2.8 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "cone_lean_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "fe67ed5457541676b0461df7dbbd4fad738d18856a04bb4720b41a555429dbe7",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections of the torus: the native result is valid with the reference's solid count, its volume 3.4e-07 and area 3.9e-07 relative and its centre 1.8e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.2e-09 in volume, 1.6e-09 in area (relative) and 9.1e-11 in centre, unchanged at 1e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance); its edges' tolerance is at most 1.0e-07 (3 of its 6 edges B-splines). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "torus_curved_boolean_reference.py's rows (generate_torus_curved_boolean_fixtures.py --check) agree with closed forms of 23 of the 27 pairs (one quadrature along the torus's axis of its annulus against the other input's sections: lenses of signed discs about a parallel axis, a rod's strip by rectangle-in-disc antiderivatives, inputs apart by their sums) within 7.5e-39 in exact frames and 4.6e-17 in turned ones, with every operation two ways (each face swept by two independent families of curves) within 6.6e-35, both inputs' measures from their faces within 1.4e-39 of their closed forms, inclusion and exclusion within 1.1e-40, the area identity within 1.4e-39, and Monte Carlo within 2.8 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "tori_ring_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "b0e8ec01b899d17c02dd03d01b7ba0346f744acf3f26fe5988e464317a2189d0",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections of the torus: the native result is valid with the reference's solid count, its volume 9.2e-07 and area 4.5e-08 relative and its centre 1.6e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 9.6e-10 in volume, 9.7e-10 in area (relative) and 2.8e-10 in centre, unchanged at 1e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance); its edges' tolerance is at most 1.0e-07 (2 of its 4 edges B-splines). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "torus_curved_boolean_reference.py's rows (generate_torus_curved_boolean_fixtures.py --check) agree with closed forms of 23 of the 27 pairs (one quadrature along the torus's axis of its annulus against the other input's sections: lenses of signed discs about a parallel axis, a rod's strip by rectangle-in-disc antiderivatives, inputs apart by their sums) within 7.5e-39 in exact frames and 4.6e-17 in turned ones, with every operation two ways (each face swept by two independent families of curves) within 6.6e-35, both inputs' measures from their faces within 1.4e-39 of their closed forms, inclusion and exclusion within 1.1e-40, the area identity within 1.4e-39, and Monte Carlo within 2.8 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "tori_side_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "d6d57fa308ee343a24c5d6f64d27f302647c2a7a1e81bcc8f53abba29b4cce4c",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections of the torus: the native result is valid with the reference's solid count, its volume 3.4e-06 and area 2.2e-06 relative and its centre 1.2e-06 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 4.9e-11 in volume, 2.2e-10 in area (relative) and 2.5e-11 in centre, unchanged at 1e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance); its edges' tolerance is at most 1.0e-07 (8 of its 14 edges B-splines). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "torus_curved_boolean_reference.py's rows (generate_torus_curved_boolean_fixtures.py --check) agree with closed forms of 23 of the 27 pairs (one quadrature along the torus's axis of its annulus against the other input's sections: lenses of signed discs about a parallel axis, a rod's strip by rectangle-in-disc antiderivatives, inputs apart by their sums) within 7.5e-39 in exact frames and 4.6e-17 in turned ones, with every operation two ways (each face swept by two independent families of curves) within 6.6e-35, both inputs' measures from their faces within 1.4e-39 of their closed forms, inclusion and exclusion within 1.1e-40, the area identity within 1.4e-39, and Monte Carlo within 2.8 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "tori_side_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "f4efa759754287fe6dc41aad74f311d2f08fbf974f6ddf595ef1ebcfc7ca1d0d",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections of the torus: the native result is valid with the reference's solid count, its volume 4.2e-06 and area 3.9e-06 relative and its centre 4.5e-06 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 2.5e-10 in volume, 3.2e-10 in area (relative) and 2.2e-11 in centre, unchanged at 1e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance); its edges' tolerance is at most 1.0e-07 (8 of its 12 edges B-splines). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "torus_curved_boolean_reference.py's rows (generate_torus_curved_boolean_fixtures.py --check) agree with closed forms of 23 of the 27 pairs (one quadrature along the torus's axis of its annulus against the other input's sections: lenses of signed discs about a parallel axis, a rod's strip by rectangle-in-disc antiderivatives, inputs apart by their sums) within 7.5e-39 in exact frames and 4.6e-17 in turned ones, with every operation two ways (each face swept by two independent families of curves) within 6.6e-35, both inputs' measures from their faces within 1.4e-39 of their closed forms, inclusion and exclusion within 1.1e-40, the area identity within 1.4e-39, and Monte Carlo within 2.8 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "tori_cross_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "c358f74e3fe41b5a3b06336a8680ebb5b15f380ee15d032ae884d1b757ba64ee",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections of the torus: the native result is valid with the reference's solid count, its volume 1.4e-07 and area 9.9e-08 relative and its centre 4.1e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 5.0e-11 in volume, 5.3e-11 in area (relative) and 1.4e-11 in centre, unchanged at 1e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance); its edges' tolerance is at most 1.0e-07 (1 of its 3 edges B-splines). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "torus_curved_boolean_reference.py's rows (generate_torus_curved_boolean_fixtures.py --check) agree with closed forms of 23 of the 27 pairs (one quadrature along the torus's axis of its annulus against the other input's sections: lenses of signed discs about a parallel axis, a rod's strip by rectangle-in-disc antiderivatives, inputs apart by their sums) within 7.5e-39 in exact frames and 4.6e-17 in turned ones, with every operation two ways (each face swept by two independent families of curves) within 6.6e-35, both inputs' measures from their faces within 1.4e-39 of their closed forms, inclusion and exclusion within 1.1e-40, the area identity within 1.4e-39, and Monte Carlo within 2.8 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "tori_cross_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "4b5d4da2117c0e54f7b5170d6edbde7662f4a3f163717e4718577a2eb91ba121",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections of the torus: the native result is valid with the reference's solid count, its volume 1.0e-06 and area 1.1e-06 relative and its centre 7.2e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.8e-09 in volume, 1.1e-09 in area (relative) and 7.3e-11 in centre, unchanged at 1e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance); its edges' tolerance is at most 1.0e-07 (1 of its 1 edges B-splines). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "torus_curved_boolean_reference.py's rows (generate_torus_curved_boolean_fixtures.py --check) agree with closed forms of 23 of the 27 pairs (one quadrature along the torus's axis of its annulus against the other input's sections: lenses of signed discs about a parallel axis, a rod's strip by rectangle-in-disc antiderivatives, inputs apart by their sums) within 7.5e-39 in exact frames and 4.6e-17 in turned ones, with every operation two ways (each face swept by two independent families of curves) within 6.6e-35, both inputs' measures from their faces within 1.4e-39 of their closed forms, inclusion and exclusion within 1.1e-40, the area identity within 1.4e-39, and Monte Carlo within 2.8 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "ball_tilt_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "e0bfbf14ce009de445cb2d79a56b0db8bf26c37379318056ca48029eb5a40021",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections of the torus: the native result is valid with the reference's solid count, its volume 4.0e-08 and area 3.3e-08 relative and its centre 1.5e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.1e-11 in volume, 2.8e-11 in area (relative) and 8.3e-12 in centre, unchanged at 1e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance); its edges' tolerance is at most 1.0e-07 (3 of its 8 edges B-splines). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "torus_curved_boolean_reference.py's rows (generate_torus_curved_boolean_fixtures.py --check) agree with closed forms of 23 of the 27 pairs (one quadrature along the torus's axis of its annulus against the other input's sections: lenses of signed discs about a parallel axis, a rod's strip by rectangle-in-disc antiderivatives, inputs apart by their sums) within 7.5e-39 in exact frames and 4.6e-17 in turned ones, with every operation two ways (each face swept by two independent families of curves) within 6.6e-35, both inputs' measures from their faces within 1.4e-39 of their closed forms, inclusion and exclusion within 1.1e-40, the area identity within 1.4e-39, and Monte Carlo within 2.8 standard errors.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}

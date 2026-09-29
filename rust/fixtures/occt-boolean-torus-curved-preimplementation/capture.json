@@ -1,0 +1,14 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+  "platform": "darwin",
+  "rust_revision": "9451df46c202ae61b5219666f317bd967c6d8f0f",
+  "rust_torus_curved_boolean_exists": false,
+  "rust_worktree_uncommitted": [
+    "?? rust/fixtures/occt-boolean-torus-curved-preimplementation/"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "fc8b1219bb2c81bab2d5f650e9cc5f026bcdf851de470d1f16683856e0317b37",
+  "probe_source_sha256": "c4e7978d8b38afc7e73ce027f612be4ab025c0b2ea99abfe66ccdd53b3928809",
+  "observations_sha256": "4d872150646d528264d50c7dec713f0ad6ffded3f933878bb22272a4effdc782"
+}
