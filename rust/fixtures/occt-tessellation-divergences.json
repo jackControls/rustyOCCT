@@ -313,6 +313,18 @@
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
+      "case": "spline_dome/coarse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepMesh_IncrementalMesh",
+      "native_sha256": "4374908b28ebacd95b16af4eb1d5ea9f9fe9de48e51bb9d19a4496fcbb17d50c",
+      "differences": [
+        "occt_deflection_understated"
+      ],
+      "reason": "BRepMesh_IncrementalMesh stays within the requested absolute deflection 0.03 (its largest distance from the dome's spline surface is 0.02986), but its own Poly_Triangulation::Deflection records 0.02829, less than that distance: the recorded value comes from its control's samples (each triangle's centre and its links' middles), not from the whole triangle, so it understates the mesh's deflection on the spline surface. On Linux BRepMesh places two more nodes (28 welded, 52 triangles): it reports a face deflection of 0.0282922 where its mesh lies 0.0298587 from the dome, the same understatement.",
+      "independent_evidence": "The independent reference samples every triangle at 12 barycentric points and measures the distance from the face's whole surface by projection onto the exact Bezier patches of the spline graph (from the case alone): 0.02986, beside a recorded 0.02829; the probe's own GeomAPI_ProjectPointOnSurf gives 0.02986. The kernel's mesh of the same body and setting (248 triangles against OCCT's 48) passes every check of the reference with a certified bound of 0.02939.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
+    },
+    {
       "case": "spline_dome/fine",
       "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
       "oracle": "OCCT 8.1.0 BRepMesh_IncrementalMesh",

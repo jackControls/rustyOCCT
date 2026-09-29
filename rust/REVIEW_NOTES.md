@@ -2603,7 +2603,15 @@ Decisions for S9, recorded before its code (2026-09-28):
     (`expected_occt_by_version`, a failure there recorded as that release's
     `known_failure`, the pinned release's expectation unchanged). The job's
     40 minutes did not cover the upstream runs (28 minutes) with the bridge
-    tests and the native comparisons: 60 now.
+    tests and the native comparisons: 60 now. (h) With its records in
+    place the split comparison ran on Linux for the first time since
+    S8d.3: 26 of its reviews carried only macOS fingerprints (Linux ones
+    added, the same differences), and `cap_oblique`'s review was stale on
+    both hosts: since S9c.1 (`1c2f8afd`, found by bisection) the kernel's
+    synthesized counts include a wound loop's seam split, OCCT's 3 faces,
+    6 edges and 4 vertices, so only its measures still differ. The spline
+    tessellation's Linux rows needed one review (`spline_dome/coarse`, the
+    same understated deflection as on macOS).
   * **S9d.4b refined, before its code (2026-09-29).** Two sub-steps.
     S9d.4b.1: tori other than whole ones (S3's v-segments between two
     latitudes and wedges of a partial turn) against polyhedral prisms: the

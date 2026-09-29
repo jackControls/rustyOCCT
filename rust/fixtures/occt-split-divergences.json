@@ -440,10 +440,9 @@
       "native_sha256": "649091ce478d23a421c908fb02c4e907a3ad96bebb12e7afc0eda9e390f7aef3",
       "differences": [
         "centre",
-        "measure",
-        "rust_entity_counts"
+        "measure"
       ],
-      "reason": "OCCT keeps the sphere's seam (the ruling or meridian at u = 0, the frame's x axis) inside the upper piece, whose wall winds round the axis: the seam splits the short bottom arc between the circle's ends it crosses at u = 0 and adds a vertex there (3 faces, 6 edges, 4 vertices). The kernel has no seams (TOPOLOGY_MODEL.md) and synthesizes one seam edge for the wound wall, a vertex only on a ring and a degenerated edge at a pole, so it cannot place the vertex on the short bottom arc between the circle's ends (3 faces, 5 edges, 3 vertices). Volumes, areas and centres agree with the reference (the kernel's).",
+      "reason": "OCCT's measures of the pieces differ from the reference (the kernel's, within its enclosures) beyond the allowance. OCCT keeps the sphere's seam (the meridian at u = 0, the frame's x axis) inside the upper piece, whose wall winds round the axis: the seam splits the short bottom arc between the circle's ends and adds a vertex there (3 faces, 6 edges, 4 vertices). Since S9c.1 (1c2f8afd) the kernel's synthesized counts include a wound loop's seam split, so the counts now agree; until then they were 3 faces, 5 edges, 3 vertices, reviewed here as rust_entity_counts.",
       "independent_evidence": "The plane x + z = 1.2 crosses the bottom rim of the cap (radius 2, from latitude 0.25 to the pole) at x = 0.705 and misses the pole; the short bottom arc on the upper side contains u = 0. BRepGProp also measures the spherical faces to 6.4e-8 relative of the reference (4.948247097 against 4.948246780), beyond the 2e-8 allowance, as in sphere_oblique.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
@@ -638,6 +637,20 @@
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
+      "case": "torus_gentle",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "da58c8a3fc6489702611d8a49a8f920f424db397c505654ae25085e0f3a24e73",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (two loops winding about the axis), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 1.9e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's pieces (S8d.3) are tube bands wound about the axis between two torus-section rings (graphs over u), each closed by the planar annulus between them (2 faces, 3 edges, 2 vertices on each side, one synthesized seam); OCCT's section edges are B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "For the plane through (0, 0, 0) with normal (0.1, 0, 1) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
+    },
+    {
       "case": "torus_band_offset",
       "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
       "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
@@ -650,6 +663,20 @@
       "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (two loops winding about the axis), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 1.6e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's pieces (S8d.3) are tube bands wound about the axis between two torus-section rings (graphs over u), each closed by the planar annulus between them (2 faces, 3 edges, 2 vertices on each side, one synthesized seam); OCCT's section edges are B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (0, 0, 0.3) with normal (0.15, 0.05, 1) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "torus_band_offset",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "a1f2760533af214ff6e0c4c2bc9b61f6423f97f1ab4ca8305a58989dbbc548b8",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (two loops winding about the axis), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 1.6e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's pieces (S8d.3) are tube bands wound about the axis between two torus-section rings (graphs over u), each closed by the planar annulus between them (2 faces, 3 edges, 2 vertices on each side, one synthesized seam); OCCT's section edges are B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "For the plane through (0, 0, 0.3) with normal (0.15, 0.05, 1) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
     },
     {
       "case": "torus_top_band",
@@ -666,6 +693,20 @@
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
+      "case": "torus_top_band",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "7c39c194166b251a7ba6b594415b5e85cb0052c49fe29412faeefed1dfcb6092",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (two loops winding about the axis), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 1.8e-06 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's pieces (S8d.3) are tube bands wound about the axis between two torus-section rings (graphs over u), each closed by the planar annulus between them (2 faces, 3 edges, 2 vertices on each side, one synthesized seam); OCCT's section edges are B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "For the plane through (0, 0, 0.8) with normal (0.05, 0, 1) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
+    },
+    {
       "case": "torus_top_cap",
       "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
       "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
@@ -678,6 +719,20 @@
       "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (one contractible loop), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 1.8e-06 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's cap (S8d.3) is bounded by four analytic torus-section edges (graphs over u on its two branches, over v round its turning points, a vertex at each switch), the other piece is the torus less that disc (2 faces, 4 edges, 4 vertices on each side, no seam synthesized for a face whose loops do not wind); OCCT's section is B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (0, 0, 0.9) with normal (0.3, 0, 1) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "torus_top_cap",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "848c0b8bcecb6e699cfc8bc62293b233cd0884edb648a9fef4f125834dc692af",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (one contractible loop), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 1.8e-06 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's cap (S8d.3) is bounded by four analytic torus-section edges (graphs over u on its two branches, over v round its turning points, a vertex at each switch), the other piece is the torus less that disc (2 faces, 4 edges, 4 vertices on each side, no seam synthesized for a face whose loops do not wind); OCCT's section is B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "For the plane through (0, 0, 0.9) with normal (0.3, 0, 1) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
     },
     {
       "case": "torus_cap_outer",
@@ -694,6 +749,20 @@
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
+      "case": "torus_cap_outer",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "598e309621bed418640f8e2205b44dfa89fcd53419900748ca09506365c8088b",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (one contractible loop), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 5.3e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's cap (S8d.3) is bounded by four analytic torus-section edges (graphs over u on its two branches, over v round its turning points, a vertex at each switch), the other piece is the torus less that disc (2 faces, 4 edges, 4 vertices on each side, no seam synthesized for a face whose loops do not wind); OCCT's section is B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "For the plane through (3.6, 0, 0) with normal (1, 0, 0) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
+    },
+    {
       "case": "torus_peanut",
       "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
       "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
@@ -706,6 +775,20 @@
       "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (one contractible loop), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 1.0e-06 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's cap (S8d.3) is bounded by four analytic torus-section edges (graphs over u on its two branches, over v round its turning points, a vertex at each switch), the other piece is the torus less that disc (2 faces, 4 edges, 4 vertices on each side, no seam synthesized for a face whose loops do not wind); OCCT's section is B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (2.2, 0, 0) with normal (1, 0, 0) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "torus_peanut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "f0ad05c61218c54ff2f499296697dd770b24f07420d27c2b101e2a7cd24b464c",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (one contractible loop), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 1.0e-06 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's cap (S8d.3) is bounded by four analytic torus-section edges (graphs over u on its two branches, over v round its turning points, a vertex at each switch), the other piece is the torus less that disc (2 faces, 4 edges, 4 vertices on each side, no seam synthesized for a face whose loops do not wind); OCCT's section is B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "For the plane through (2.2, 0, 0) with normal (1, 0, 0) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
     },
     {
       "case": "torus_hole_slice",
@@ -722,6 +805,20 @@
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
+      "case": "torus_hole_slice",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "21f8c47cf4f6bed0bc56a34182ed0e155261f250d333e260818e19dc6e4d3d49",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (one contractible loop), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 2.0e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's cap (S8d.3) is bounded by four analytic torus-section edges (graphs over u on its two branches, over v round its turning points, a vertex at each switch), the other piece is the torus less that disc (2 faces, 4 edges, 4 vertices on each side, no seam synthesized for a face whose loops do not wind); OCCT's section is B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "For the plane through (2.05, 0, 0) with normal (1, 0, 0.3) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
+    },
+    {
       "case": "torus_two_ovals",
       "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
       "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
@@ -734,6 +831,20 @@
       "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (two loops winding about the tube), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 4.5e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's pieces (S8d.3) are C-shaped: each wall lies between two torus-section rings wound about the tube (graphs over v), closed by two planar discs (3 faces, 3 edges, 2 vertices on each side, one synthesized seam); OCCT's section edges are B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (1.5, 0, 0) with normal (1, 0, 0) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "torus_two_ovals",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "837927b41a495e76fbcb39ce688aeeccef5de4740d569debdfa1d2796be4ad3d",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (two loops winding about the tube), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 4.5e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's pieces (S8d.3) are C-shaped: each wall lies between two torus-section rings wound about the tube (graphs over v), closed by two planar discs (3 faces, 3 edges, 2 vertices on each side, one synthesized seam); OCCT's section edges are B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "For the plane through (1.5, 0, 0) with normal (1, 0, 0) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
     },
     {
       "case": "torus_steep",
@@ -750,6 +861,20 @@
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
+      "case": "torus_steep",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "69d1e228a657650974221304658d814eb0bf70455428cf37fc75808a14451cb1",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (two loops winding about the tube), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 9.2e-06 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's pieces (S8d.3) are C-shaped: each wall lies between two torus-section rings wound about the tube (graphs over v), closed by two planar discs (3 faces, 3 edges, 2 vertices on each side, one synthesized seam); OCCT's section edges are B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "For the plane through (0, 0, 0) with normal (1, 0, 1) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
+    },
+    {
       "case": "torus_skew_ovals",
       "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
       "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
@@ -762,6 +887,20 @@
       "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (two loops winding about the tube), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 5.7e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's pieces (S8d.3) are C-shaped: each wall lies between two torus-section rings wound about the tube (graphs over v), closed by two planar discs (3 faces, 3 edges, 2 vertices on each side, one synthesized seam); OCCT's section edges are B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (0.5, 0.2, 0) with normal (1, 0.3, 0.4) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "torus_skew_ovals",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "d82adb017f3194398c07591afc6efed6a88286e4bb363d81e25270b1d5bb40ec",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "The plane cuts the torus (major 3, minor 1) in spiric curves (two loops winding about the tube), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 5.7e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's pieces (S8d.3) are C-shaped: each wall lies between two torus-section rings wound about the tube (graphs over v), closed by two planar discs (3 faces, 3 edges, 2 vertices on each side, one synthesized seam); OCCT's section edges are B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "For the plane through (0.5, 0.2, 0) with normal (1, 0.3, 0.4) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 59.2176264.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
     },
     {
       "case": "torus_small_tube",
@@ -778,6 +917,20 @@
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
+      "case": "torus_small_tube",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "7f5864200fd2ae9486c9152521a40f0d3fd9583294fb2e60aad539e75e83ec2a",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "The plane cuts the torus (major 4, minor 0.5) in spiric curves (two loops winding about the tube), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 7.6e-04 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's pieces (S8d.3) are C-shaped: each wall lies between two torus-section rings wound about the tube (graphs over v), closed by two planar discs (3 faces, 3 edges, 2 vertices on each side, one synthesized seam); OCCT's section edges are B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "For the plane through (0, 0, 0.1) with normal (0.2, 0, 1) on the frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 19.7392088.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
+    },
+    {
       "case": "torus_tilted_spiric",
       "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
       "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
@@ -792,6 +945,20 @@
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
+      "case": "torus_tilted_spiric",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "887dc04c5c2d0a9cda71897fb16d2a72ce17154226f5989e44f9b81aa3c076cb",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "The plane cuts the torus (major 2.5, minor 0.75) in spiric curves (one contractible loop), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 6.9e-04 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's cap (S8d.3) is bounded by four analytic torus-section edges (graphs over u on its two branches, over v round its turning points, a vertex at each switch), the other piece is the torus less that disc (2 faces, 4 edges, 4 vertices on each side, no seam synthesized for a face whose loops do not wind); OCCT's section is B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "For the plane through (1, -1.82, 0.74) with normal (1, 3, 4) on the tilted frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 27.7582624.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
+    },
+    {
       "case": "torus_tilted_band",
       "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
       "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
@@ -804,6 +971,20 @@
       "reason": "The plane cuts the torus (major 2.5, minor 0.75) in spiric curves (two loops winding about the axis), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 3.6e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's pieces (S8d.3) are tube bands wound about the axis between two torus-section rings (graphs over u), each closed by the planar annulus between them (2 faces, 3 edges, 2 vertices on each side, one synthesized seam); OCCT's section edges are B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference.",
       "independent_evidence": "For the plane through (1, -1.82, 0.74) with normal (0.3, 3, 4) on the tilted frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 27.7582624.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "torus_tilted_band",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "e27da264475ae646c8c60b069eb45870adddb916e2c9b7dfb05aae6d8df8aa86",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "The plane cuts the torus (major 2.5, minor 0.75) in spiric curves (two loops winding about the axis), which OCCT represents by B-spline approximations of the section and its pcurves; BRepGProp's volumes and areas of the pieces then differ from the reference by up to 3.6e-07 relative (beyond the 2e-8 allowance) and their centres likewise. The pieces are valid. The kernel's pieces (S8d.3) are tube bands wound about the axis between two torus-section rings (graphs over u), each closed by the planar annulus between them (2 faces, 3 edges, 2 vertices on each side, one synthesized seam); OCCT's section edges are B-spline approximations and it keeps the torus's seams at u = 0 and v = 0, splitting the faces and edges they cross. Volumes, areas and centres of the kernel's pieces lie inside the reference. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "For the plane through (1, -1.82, 0.74) with normal (0.3, 3, 4) on the tilted frame, the reference integrates each slice of the torus (an annulus cut by the plane's line) in 40-digit arithmetic; the pieces' volumes sum to the torus's 2 pi^2 R r^2 = 27.7582624.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
     },
     {
       "case": "apex_parabola",
@@ -896,10 +1077,9 @@
       "native_sha256": "90e7873e77cc20b5bb792e46ae58125d6acd708e94e17a5d0d384a2b5a67438d",
       "differences": [
         "centre",
-        "measure",
-        "rust_entity_counts"
+        "measure"
       ],
-      "reason": "OCCT keeps the sphere's seam (the ruling or meridian at u = 0, the frame's x axis) inside the upper piece, whose wall winds round the axis: the seam splits the short bottom arc between the circle's ends it crosses at u = 0 and adds a vertex there (3 faces, 6 edges, 4 vertices). The kernel has no seams (TOPOLOGY_MODEL.md) and synthesizes one seam edge for the wound wall, a vertex only on a ring and a degenerated edge at a pole, so it cannot place the vertex on the short bottom arc between the circle's ends (3 faces, 5 edges, 3 vertices). Volumes, areas and centres agree with the reference (the kernel's).",
+      "reason": "OCCT's measures of the pieces differ from the reference (the kernel's, within its enclosures) beyond the allowance. OCCT keeps the sphere's seam (the meridian at u = 0, the frame's x axis) inside the upper piece, whose wall winds round the axis: the seam splits the short bottom arc between the circle's ends and adds a vertex there (3 faces, 6 edges, 4 vertices). Since S9c.1 (1c2f8afd) the kernel's synthesized counts include a wound loop's seam split, so the counts now agree; until then they were 3 faces, 5 edges, 3 vertices, reviewed here as rust_entity_counts.",
       "independent_evidence": "The plane x + z = 1.2 crosses the bottom rim of the cap (radius 2, from latitude 0.25 to the pole) at x = 0.705 and misses the pole; the short bottom arc on the upper side contains u = 0. BRepGProp also measures the spherical faces to 6.4e-8 relative of the reference (4.948247097 against 4.948246780), beyond the 2e-8 allowance, as in sphere_oblique.",
       "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-latest); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 7.7e-13 relative of the macOS capture's"
     },
@@ -941,6 +1121,19 @@
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
+      "case": "bulge_height",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "2d770d209e031fd97af0875ef767634a2f5d35ecdccaa296d0a68af7f129b896",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "The plane cuts the prism's single-span B-spline wall across its rulings, and BRepGProp's default Gauss integration of the trimmed extrusion faces errs by 1.3e-07 in volume and up to 2.6e-07 in area relative (beyond the 2e-8 allowance), and moves the centres by up to 3e-08 of the case's size. The pieces are valid, their sides the reference's. The kernel does not read spline segments yet (S8b.1): the case is rust_unsupported. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "The profile (the rectangle [0, 10] x [0, 6] with the quadratic Bezier from (10, 0) through the control point (12, 3) to (10, 6)) has area 64 exactly by Green's theorem in exact Fractions, so the plane z = 2 across the prism of height 5 leaves 128 below and 192 above (the reference's slicing agrees within 1e-40). With a scratch variant of occt_split_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating x dy - y dx over OCCT's own profile edges (BRepAdaptor_Curve, 2,000 subintervals of 10-point Gauss-Legendre per edge): Green over OCCT's edges gives 64.0000000000032, and the adaptive volumes of the same pieces are 127.99999999745 and 191.99999999617, their areas 192.837408600 and 225.256112904 (the reference 192.837408606 and 225.256112909).",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
+    },
+    {
       "case": "bulge_oblique",
       "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
       "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
@@ -951,6 +1144,18 @@
       "reason": "The plane cuts the prism's single-span B-spline wall across its rulings, and BRepGProp's default Gauss integration of the trimmed extrusion faces errs by up to 4.3e-08 in volume and 9.5e-08 in area relative (beyond the 2e-8 allowance). The pieces are valid, their sides the reference's. The kernel does not read spline segments yet (S8b.1): the case is rust_unsupported.",
       "independent_evidence": "The reference slices the prism of the bulge (area 64 exactly by Green's theorem in exact Fractions) in 40-digit arithmetic: 280.4333333333 below and 39.5666666667 above. With a scratch variant of occt_split_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating x dy - y dx over OCCT's own profile edges (BRepAdaptor_Curve, 2,000 subintervals of 10-point Gauss-Legendre per edge): the adaptive volumes of the same pieces are 280.43333333395 and 39.56666666223, the above piece's area 87.2307158591 (the reference 87.2307158693).",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "bulge_oblique",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "6acae2ec2baaba10472ac3032fd28d1dcd70eeed272586a6b9a6ca4537630e85",
+      "differences": [
+        "measure"
+      ],
+      "reason": "The plane cuts the prism's single-span B-spline wall across its rulings, and BRepGProp's default Gauss integration of the trimmed extrusion faces errs by up to 4.3e-08 in volume and 9.5e-08 in area relative (beyond the 2e-8 allowance). The pieces are valid, their sides the reference's. The kernel does not read spline segments yet (S8b.1): the case is rust_unsupported. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "The reference slices the prism of the bulge (area 64 exactly by Green's theorem in exact Fractions) in 40-digit arithmetic: 280.4333333333 below and 39.5666666667 above. With a scratch variant of occt_split_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating x dy - y dx over OCCT's own profile edges (BRepAdaptor_Curve, 2,000 subintervals of 10-point Gauss-Legendre per edge): the adaptive volumes of the same pieces are 280.43333333395 and 39.56666666223, the above piece's area 87.2307158591 (the reference 87.2307158693).",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
     },
     {
       "case": "blob_walls_only",
@@ -966,6 +1171,19 @@
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
+      "case": "blob_walls_only",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "2aa7448a9c476463040552380a1874a091968042edd8fd437a3cf3e67de95a13",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "The plane cuts the prism's single-span B-spline wall across its rulings, and BRepGProp's default Gauss integration of the trimmed extrusion faces errs by 7.5e-08 in volume and 1.4e-07 in area relative (beyond the 2e-8 allowance), and moves the centres by up to 2.5e-08 of the case's size. The pieces are valid, their sides the reference's. The kernel does not read spline segments yet (S8b.1): the case is rust_unsupported. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "The blob of four cubic Beziers has area 52.25 exactly by Green's theorem in exact Fractions; the plane through its centre (4, 4, 2.5) halves the prism of height 5 by symmetry: 130.625 on each side. With a scratch variant of occt_split_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating x dy - y dx over OCCT's own profile edges (BRepAdaptor_Curve, 2,000 subintervals of 10-point Gauss-Legendre per edge): Green over OCCT's edges gives 52.25000000000025, and the adaptive volumes of the same pieces are 130.62499999222, their areas 169.152937699 (the reference 169.152937648).",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
+    },
+    {
       "case": "wave_knot",
       "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
       "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
@@ -977,6 +1195,19 @@
       "reason": "BRepGProp integrates the faces bounded by the wave, a quadratic B-spline of three spans (interior knots 1 and 2), badly: the piece below x = 6.5, holding two spans, has volume 209.28386 (adaptive 209.37620) and area 215.97300 against the reference's 209.375 and 216.13397, 4.4e-04 and 7.4e-04 relative; the piece above, within one span, agrees to 1e-15. The pieces are valid, their sides the reference's. The kernel does not read spline segments yet (S8b.1): the case is rust_unsupported.",
       "independent_evidence": "The profile (the rectangle [0, 10] x [0, 6] under the wave through the poles (10, 6), (8, 8), (5, 5), (2, 8), (0, 6)) has area 65.75 exactly by Green's theorem in exact Fractions over its Bernstein pieces from blossoms (a 200,001-point de Boor polygon gives 65.7499999994), and the reference's slicing agrees within 1e-40. With a scratch variant of occt_split_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating x dy - y dx over OCCT's own profile edges (BRepAdaptor_Curve, 2,000 subintervals of 10-point Gauss-Legendre per edge): Green over OCCT's edges gives 65.7500000397, so OCCT's solid is the reference's, but BRepGProp gives the uncut prism 329.093 by default and 329.623 adaptively, not 328.75; the same curve given as three Bezier spans (knots of multiplicity 2) gives the same numbers.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "wave_knot",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "db4c9cc90baac5d5aef35fb93fab12595d3c9369787dae98f764cb522a527797",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp integrates the faces bounded by the wave, a quadratic B-spline of three spans (interior knots 1 and 2), badly: the piece below x = 6.5, holding two spans, has volume 209.28386 (adaptive 209.37620) and area 215.97300 against the reference's 209.375 and 216.13397, 4.4e-04 and 7.4e-04 relative; the piece above, within one span, agrees to 1e-15. The pieces are valid, their sides the reference's. The kernel does not read spline segments yet (S8b.1): the case is rust_unsupported. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "The profile (the rectangle [0, 10] x [0, 6] under the wave through the poles (10, 6), (8, 8), (5, 5), (2, 8), (0, 6)) has area 65.75 exactly by Green's theorem in exact Fractions over its Bernstein pieces from blossoms (a 200,001-point de Boor polygon gives 65.7499999994), and the reference's slicing agrees within 1e-40. With a scratch variant of occt_split_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating x dy - y dx over OCCT's own profile edges (BRepAdaptor_Curve, 2,000 subintervals of 10-point Gauss-Legendre per edge): Green over OCCT's edges gives 65.7500000397, so OCCT's solid is the reference's, but BRepGProp gives the uncut prism 329.093 by default and 329.623 adaptively, not 328.75; the same curve given as three Bezier spans (knots of multiplicity 2) gives the same numbers.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
     },
     {
       "case": "wave_parallel_four",
@@ -992,6 +1223,19 @@
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
+      "case": "wave_parallel_four",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "fc72f6e799643d1678b147af52e8917588e59d2b223449e3cf967f4c350f27c8",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp integrates the faces bounded by the wave, a quadratic B-spline of three spans (interior knots 1 and 2), badly: the piece below y = 6.8, holding all three spans, has volume 323.82063 (adaptive 323.77427) against the reference's 323.84445, 7.4e-05 relative; the two pieces above, each within one span, agree to 1e-15. The pieces are valid, their sides the reference's. The kernel does not read spline segments yet (S8b.1): the case is rust_unsupported. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "The profile (the rectangle [0, 10] x [0, 6] under the wave through the poles (10, 6), (8, 8), (5, 5), (2, 8), (0, 6)) has area 65.75 exactly by Green's theorem in exact Fractions over its Bernstein pieces from blossoms (a 200,001-point de Boor polygon gives 65.7499999994), and the reference's slicing agrees within 1e-40. With a scratch variant of occt_split_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating x dy - y dx over OCCT's own profile edges (BRepAdaptor_Curve, 2,000 subintervals of 10-point Gauss-Legendre per edge): Green over OCCT's edges gives 65.7500000397, so OCCT's solid is the reference's, but BRepGProp gives the uncut prism 329.093 by default and 329.623 adaptively, not 328.75; the same curve given as three Bezier spans (knots of multiplicity 2) gives the same numbers.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
+    },
+    {
       "case": "wave_tilted",
       "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
       "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
@@ -1003,6 +1247,19 @@
       "reason": "BRepGProp integrates the faces bounded by the wave, a quadratic B-spline of three spans (interior knots 1 and 2), badly: in the tilted frame both pieces hold several spans: volumes 218.94522 and 44.14542 (adaptive 218.96428 and 44.13368) against the reference's 218.93509 and 44.06491, up to 1.8e-03 relative. The pieces are valid, their sides the reference's. The kernel does not read spline segments yet (S8b.1): the case is rust_unsupported.",
       "independent_evidence": "The profile (the rectangle [0, 10] x [0, 6] under the wave through the poles (10, 6), (8, 8), (5, 5), (2, 8), (0, 6)) has area 65.75 exactly by Green's theorem in exact Fractions over its Bernstein pieces from blossoms (a 200,001-point de Boor polygon gives 65.7499999994), and the reference's slicing agrees within 1e-40. With a scratch variant of occt_split_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating x dy - y dx over OCCT's own profile edges (BRepAdaptor_Curve, 2,000 subintervals of 10-point Gauss-Legendre per edge): Green over OCCT's edges gives 65.7500000397, so OCCT's solid is the reference's, but BRepGProp gives the uncut prism (height 4) 263.274 by default and 263.698 adaptively, not 263; the same curve given as three Bezier spans (knots of multiplicity 2) gives the same numbers.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "wave_tilted",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "4c0e83ffa0079d4cf744a8e0508ca63fd37b4b17dacb5b5ea808d8dbd88b12ec",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp integrates the faces bounded by the wave, a quadratic B-spline of three spans (interior knots 1 and 2), badly: in the tilted frame both pieces hold several spans: volumes 218.94522 and 44.14542 (adaptive 218.96428 and 44.13368) against the reference's 218.93509 and 44.06491, up to 1.8e-03 relative. The pieces are valid, their sides the reference's. The kernel does not read spline segments yet (S8b.1): the case is rust_unsupported. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "The profile (the rectangle [0, 10] x [0, 6] under the wave through the poles (10, 6), (8, 8), (5, 5), (2, 8), (0, 6)) has area 65.75 exactly by Green's theorem in exact Fractions over its Bernstein pieces from blossoms (a 200,001-point de Boor polygon gives 65.7499999994), and the reference's slicing agrees within 1e-40. With a scratch variant of occt_split_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating x dy - y dx over OCCT's own profile edges (BRepAdaptor_Curve, 2,000 subintervals of 10-point Gauss-Legendre per edge): Green over OCCT's edges gives 65.7500000397, so OCCT's solid is the reference's, but BRepGProp gives the uncut prism (height 4) 263.274 by default and 263.698 adaptively, not 263; the same curve given as three Bezier spans (knots of multiplicity 2) gives the same numbers.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
     },
     {
       "case": "capsule_steep",
@@ -1018,6 +1275,19 @@
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
+      "case": "capsule_steep",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "30b0965f94b25676eb9220ae668375388c9e19ebf30ea7abc52a98fd8c78129b",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "The plane cuts the prism's single-span B-spline wall across its rulings, and BRepGProp's default Gauss integration of the trimmed extrusion faces errs by up to 3.6e-08 in volume relative (beyond the 2e-8 allowance), and moves the centres by up to 3.6e-08 of the case's size. The pieces are valid, their sides the reference's. The kernel does not read spline segments yet (S8b.1): the case is rust_unsupported. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "The reference slices the prism (the stadium of an arc and a two-span cubic end, area 9.9707963268 by the reference's slicing) in 40-digit arithmetic: 10.7329363999 below and 9.2086562537 above. With a scratch variant of occt_split_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating x dy - y dx over OCCT's own profile edges (BRepAdaptor_Curve, 2,000 subintervals of 10-point Gauss-Legendre per edge): Green over OCCT's edges gives 9.97079632679440, and the adaptive volumes of the same pieces are 10.7329364006 and 9.2086562531.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
+    },
+    {
       "case": "bulge_tangent",
       "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
       "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
@@ -1028,6 +1298,18 @@
       "reason": "BRepAlgoAPI_Splitter splits the spline wall's two cap edges where the plane touches them (6 faces, 14 edges, 10 vertices); the kernel's split cuts nothing at a tangency (S8 decisions: an even root of the line's function on the spline is a touch) and returns the prism unchanged (6 faces, 12 edges, 8 vertices). The volume, area and centre agree with the reference.",
       "independent_evidence": "The plane x = 11 meets the bulge's quadratic (poles (10, 0), (12, 3), (10, 6)), x(t) = 10 + 4 t (1 - t), only at t = 1/2, the point (11, 3), a double root: the prism lies in x <= 11.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "bulge_tangent",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "158851b96c8eed7d15d75233cfe7fadc49fc1cbc5f9c10e856ea19707dfbf5a5",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI_Splitter splits the spline wall's two cap edges where the plane touches them (6 faces, 14 edges, 10 vertices); the kernel's split cuts nothing at a tangency (S8 decisions: an even root of the line's function on the spline is a touch) and returns the prism unchanged (6 faces, 12 edges, 8 vertices). The volume, area and centre agree with the reference. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "The plane x = 11 meets the bulge's quadratic (poles (10, 0), (12, 3), (10, 6)), x(t) = 10 + 4 t (1 - t), only at t = 1/2, the point (11, 3), a double root: the prism lies in x <= 11.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
     },
     {
       "case": "sheet_wave_knot",
@@ -1055,6 +1337,18 @@
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
+      "case": "sheet_lens_tilted",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "201e2c8be7b51e9b3357c27a3327afd80d19c0ed376d7e5db1ee2820dacac051",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp::LinearProperties measures the lens hole's upper cubic (poles (7, 5), (6, 8), (4, 8), (3, 5), whole in the upper face) 6.3908443697 instead of 6.3909760774, and the lower cubic's middle part (in the lower face) 4.3116150454 instead of 4.3116133826: the perimeters are 37.524632048 and 29.366040029 against the reference's 37.524763756 and 29.366038366 (3.5e-06 and 5.7e-08 relative). Areas and centres agree within 1.3e-15. The pieces are valid, their sides the reference's. The kernel has no Body::split_by_plane yet (S8e): the case is rust_unsupported. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "The cubic's length by mpmath quadrature of |B'(t)| at 30 digits is 6.39097607738270, and the reference's lens length 12.7819521548 is twice it (the lens is symmetric about v = 5). A scratch variant of occt_split_oracle.cpp (not the captured probe) measuring every edge of the two faces with GCPnts_AbscissaPoint::Length at 1e-13 gives the upper cubic 6.3909760773827013 and the perimeters 37.524763755981105 and 29.366038366375562, the reference's within 1e-15; LinearProperties and the abscissa agree on every line edge.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
+    },
+    {
       "case": "sheet_stadium_tangent",
       "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
       "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
@@ -1065,6 +1359,18 @@
       "reason": "BRepAlgoAPI_Splitter splits the stadium's right arc at the point the plane touches (1 face, 5 edges, 5 vertices); the kernel cuts nothing at a tangency (S8 decisions) and returns the sheet unchanged (1 face, 4 edges, 4 vertices). The area, perimeter and centre agree with the reference.",
       "independent_evidence": "The plane x = 4 touches the right arc (centre (3, 0), radius 1) at (4, 0) only: the sheet lies in x <= 4.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "sheet_stadium_tangent",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "6fe413a125134110be9faca7ab58324b03c739d0882bac716ee92a8c6db2fdef",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI_Splitter splits the stadium's right arc at the point the plane touches (1 face, 5 edges, 5 vertices); the kernel cuts nothing at a tangency (S8 decisions) and returns the sheet unchanged (1 face, 4 edges, 4 vertices). The area, perimeter and centre agree with the reference. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "The plane x = 4 touches the right arc (centre (3, 0), radius 1) at (4, 0) only: the sheet lies in x <= 4.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
     },
     {
       "case": "sheet_disc_chord",
@@ -1079,6 +1385,18 @@
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
+      "case": "sheet_disc_chord",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "87bba72bf5df05d86f6fe0f2a4d850097981549b0e6a71897d24264e39f68ea6",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT's disc keeps its circle's seam vertex at angle 0 (the frame's x axis), which lies on the upper side of the plane: the upper piece's arc is split there (1 face, 3 edges, 3 vertices). The kernel's circles are seamless (TOPOLOGY_MODEL.md): each piece is a chord and one arc (1 face, 2 edges, 2 vertices). Areas, perimeters and centres agree with the reference. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "The plane x + z = 1 meets the disc's plane z = 0 in the line x = 1, which crosses the circle of radius 2 about the origin twice; the seam's point (2, 0) has x > 1.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
+    },
+    {
       "case": "sheet_hole_tangent",
       "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
       "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
@@ -1091,6 +1409,18 @@
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
+      "case": "sheet_hole_tangent",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "63194b618cca02b46d3bdad971f0c5ed51c2f2c6dca5b466373018bdb8c81c03",
+      "differences": [
+        "rust_refused"
+      ],
+      "reason": "The plane y = 7 touches the square's round hole (centre (5, 5), radius 2) at (5, 7) inside the sheet: OCCT keeps the lower piece valid with its hole touching the chord there (1 face, 7 edges, 6 vertices). The kernel's profiles hold no hole touching their boundary (S8 decisions: such a pinch is Degenerate), so it refuses the split. The native pieces' areas and centres agree with the reference. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "The distance from (5, 5) to the line y = 7 is 2, the hole's radius: a tangency, at (5, 7), strictly inside the square [0, 10] x [0, 10].",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
+    },
+    {
       "case": "wire_circle_chord_tilted",
       "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
       "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
@@ -1101,6 +1431,18 @@
       "reason": "OCCT's circle keeps its seam vertex at angle 0 (the frame's x axis), which lies on the upper side: the upper arc is split there (2 edges, 3 vertices). The kernel's circle is seamless: each run is one arc between the two crossings (1 edge, 2 vertices). Lengths and centres agree with the reference.",
       "independent_evidence": "The circle of radius 2 in the tilted frame's plane crosses the plane twice; the seam's point, 2 along the frame's x axis from its origin, lies above it (the reference's sides).",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "wire_circle_chord_tilted",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Splitter",
+      "native_sha256": "16af3eb13aca7a9407f5a4db488f25a231c102e7ecb26484884b8eb391dee707",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT's circle keeps its seam vertex at angle 0 (the frame's x axis), which lies on the upper side: the upper arc is split there (2 edges, 3 vertices). The kernel's circle is seamless: each run is one arc between the two crossings (1 edge, 2 vertices). Lengths and centres agree with the reference. On Linux the same differences, its native row within the last bits of the macOS one.",
+      "independent_evidence": "The circle of radius 2 in the tilted frame's plane crosses the plane twice; the seam's point, 2 along the frame's x axis from its origin, lies above it (the reference's sides).",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36600594563 at ff61eab1); source-pinned OCCT 8.1.0"
     },
     {
       "case": "wire_bulge_tangent",
