@@ -903,3 +903,13 @@ plane, and a spline piece on a whole's reversal at the piece's parameters
 (`tests/booleans.rs`, `identical_prisms_with_a_spline_hole_fuse_into_one`);
 the input replays in 0.24 s.
 
+
+## Boolean: the campaign's slow unit at S9c.1
+
+`boolean/slow-unit-7f11d0a5e88411231c5b1054a237eb1f79c8cccb.bin` was saved by
+the 600-second campaign of the boolean target at `80ba3d9c` (S9c.1 merged),
+which was otherwise clean: 363 mutation executions after a 2,607 s replay of
+1,081 inputs, 35,013 edges, 486 MB peak. The input (16 bytes) takes 40 s
+under AddressSanitizer and 2.8 s in a release build with debug assertions,
+within the target's 60 s limit; it passes every check and is kept so the
+replay covers it.

@@ -161,9 +161,12 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   `v` extrema `π/2 + kπ`, using a certified `π`, so each piece is monotone.
   An unwound loop on a wound face (S8d.2: a hole in a band) lies inside
   when the signed crossings of the `+v` ray from its first point with the
-  other loops' lines and chords over every `u` alias, plus one for a north
-  pole, equal the face's sign; other pcurves on those loops are
-  `uncertified_containment`. On a torus a face whose first loop runs as a
+  other loops' lines, sinusoids, projections and chords over every `u`
+  alias, plus one for a north pole, equal the face's sign (a sinusoid's
+  height at the alias; a projection's from certified pieces, each counted
+  where `v` lies above the point all along it, `u` is monotone and its ends
+  straddle the alias, others bisected at most 40 times: S9c.2); other
+  pcurves on those loops are `uncertified_containment`. On a torus a face whose first loop runs as a
   hole is the torus less its loops (S8d.3): every loop then has the inner
   sign and no outer loop holds them. An inner loop's containment is tried
   at its start and at two points along its first fin (two rings may start

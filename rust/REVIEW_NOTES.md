@@ -1586,6 +1586,58 @@ Decisions for S9, recorded before its code (2026-09-28):
     7.8e-5 in exact frames and 3.0e-4 in turned ones, the same results
     measured adaptively within 2.7e-9; six solids' counts change when
     unified. S9c.2a's kernel next.
+  * **S9c.2a implemented** (`solid/boolean/curved/procedural.rs`,
+    `Curve3::Meet`): perpendicular cylinders in exact frames as the
+    decisions describe; all 22 exact-frame fixtures as declared (16 inside
+    the reference, the 6 tangencies refused), the 6 turned-frame ones
+    `OutOfDomain`, every history checked, results deterministic and moved
+    rigidly; `compare_procedural_boolean.py` 5 matches and 23 reviewed (the
+    11 kernel results whose counts differ added to their measure reviews:
+    the loops' switch vertices, OCCT's own splits of its rings), S9a's,
+    S9b's and S9c.1's comparisons unchanged. `Curve3::Meet` was written
+    while the evidence agent took the capture (the edge type only; the
+    Boolean module came after the capture). Amendments, from the
+    implementation: (a) a cap's circle meeting the other cylinder is a
+    nested surd `x + y sqrt(E)` (`x`, `y`, `E` in one quadratic field),
+    decided exactly against the edge's arc and the face and refused only
+    where it lies on both; (b) the validator certifies a band's holes
+    bounded by sinusoids and projections (the signed `+v` ray at every `u`
+    alias; projections by certified pieces), which also fixes the DRAW
+    survey's `ZC5` fuse and cut of S9c.1 (area 19.7221 as native); (c) a
+    hole no piece holds (a sliver whose binary64 image turned the wrong
+    way) is `Degenerate`, fixing the survey's `T7` and `Y2` (six cases,
+    now refused as a piece thinner than the resolution); (d) the `boolean`
+    fuzz target stands the tool on its side (an exact frame) by a byte's
+    top bit, so its arcs reach S9c.2a. Pending: the DRAW survey, the
+    campaign, S9c.2b.
+  * **S9c.2b refined, before its code (2026-09-29).** Two sub-steps.
+    S9c.2b.1: cylinders in any frames whose axes cross (affine models,
+    elliptic in the world), with every vertex still a quadratic surd (an
+    input's generatrix against the other cylinder). Each cylinder's
+    discriminant `D_K` over its angle is a quartic in `t = tan(theta / 2)`
+    with rational coefficients; its real roots (the turning points of `K`'s
+    graph) are isolated exactly (Sturm sequences, rational intervals).
+    `D_K > 0` all round: two rings over `K`; otherwise each interval of
+    `D_A >= 0` holds one loop, whose turning points of either kind are
+    ordered along it by certified enclosures, and a rational point of `A`'s
+    angle is placed between each adjacent pair of different kinds, the
+    loop's pieces graphs over `B`'s angle about `A`'s turning points and
+    over `A`'s about `B`'s. Every piece is then verified exactly: no root of
+    its carrier's discriminant within its range (Sturm counts at the
+    switch points' angles, surds of one field). A double root, or a local
+    extremum of `D_K` whose value lies within `(A_K res / 2)^2` of zero (two
+    branches within the resolution: a near node, the stored turned frames'
+    Steinmetz pairs, or a loop thinner than the resolution) is `Degenerate`.
+    A cap's circle against the other cylinder is a quartic in its `t`: no
+    root within the arc's range (exact counts), or every root's point
+    certainly outside the face (isolating intervals refined to `1e-30`,
+    interval membership), else `OutOfDomain` (S9c.2b.2). S9c.2b.2: those
+    points and parallel cylinders in turned frames (generatrices at an
+    ellipse's and a circle's crossings) as certified algebraic numbers,
+    refined by its evidence before its code. S9c.1's `steinmetz_oblique`
+    and `steinmetz_tilted` fixtures become declared `degenerate` (near
+    nodes: the reference integrates the stored models' pair of loops about
+    `1e-8` apart, the kernel refuses them within the resolution).
 
 ### Parallel tracks
 
@@ -3239,4 +3291,7 @@ Decisions for S9, recorded before its code (2026-09-28):
     `InvalidTopology("a hole outside every piece")` where `boptuc` refuses a
     piece thinner than the resolution) and `bopfuse_simple`,
     `bopcut_simple` `ZC5` (a wall with three holes of ellipse arcs: the
-    validator's `uncertified_containment`). Pending: the campaign.
+    validator's `uncertified_containment`), both fixed with S9c.2a. The
+    campaign at `80ba3d9c` was clean: 363 mutation executions after a
+    2,607 s replay of 1,081 inputs, 35,013 edges, 486 MB peak, one new slow
+    unit (40 s under AddressSanitizer) kept as a regression.

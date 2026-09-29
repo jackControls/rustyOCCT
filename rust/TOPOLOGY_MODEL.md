@@ -843,6 +843,17 @@ procedural pcurves with explicit conic edges.
   Its segments' bounds come from interval jets of order 2 on 64 pieces
   (the largest `|C''|` and `|C''| / |C'|`). A face on a torus whose loops
   all run as holes is the torus less them.
+* **Cylinders' meetings (S9c.2).** `Curve3::Meet` is two cylinders'
+  meeting as a graph over the first's angle (S7b's ruled parameterisation):
+  the ruling `frame.point(radius (cos u, sin u), v)` at `u = start + sweep
+  f` meets the other cylinder (`|(w . x2, w . y2)| = other_radius`) where
+  `a v^2 + 2 b v + c = 0`, and `v = (-b + sign sqrt(b^2 - a c)) / a`; an
+  edge's range keeps the discriminant positive (no turning point), a whole
+  turn is a ring. Its jets come from the formula; on its own cylinder its
+  projection is its own angle and height, lifted. Its segments' bounds are
+  a section's (interval jets on 64 pieces); a rigid motion moves both
+  frames. The writer refuses it (`Unwritable`) until D13's interchange
+  approximation.
 * **Interop.** The writer prints `Geom_Hyperbola` and `Geom_Parabola` (3D
   records 5 and 6), and refuses a torus section; a projection pcurve has no record until D13's
   interchange approximation (a B-spline whose certified bound becomes the

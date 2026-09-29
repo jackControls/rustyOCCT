@@ -9,8 +9,10 @@ S9a is implemented (`profile/boolean.rs` with its spline meetings in
 `solid/boolean/stack.rs`), and S9b's polyhedral Booleans in any relative
 position (`solid/boolean/polyhedra.rs`: prisms, and any planar solid with
 straight edges as an input, a Boolean's result or a plane's piece among
-them), and S9c.1's prisms with arcs in any relative position
-(`solid/boolean/curved/`); S9c.2 and S9d are not.
+them), S9c.1's prisms with arcs in any relative position
+(`solid/boolean/curved/`) and S9c.2a's perpendicular cylinders in exact
+frames meeting in quartics (`curved/procedural.rs`); S9c.2b and S9d are
+not.
 
 ## Contract
 
@@ -24,7 +26,8 @@ prism's exact queries; any other is a general body built through
 `TopologyParts` and validated before it is returned. An error is one of:
 
 * `OutOfDomain`: a pair of a later sub-step (two cylinders meeting in
-  curves other than lines and conics, S9c.2; a prism with arcs against a
+  curves other than lines and conics in turned frames, or a quartic
+  section crossing a cap's circle, S9c.2b; a prism with arcs against a
   solid other than a prism, a spline profile or an arc whose ends lie off
   its circle in any position, S9c), two spline segments along one curve in
   different forms or a spline span along a line, or a cavity in a result
@@ -266,6 +269,37 @@ Names follow S9b.1's rules; a result is a `Polyhedron` (both inputs, the
 operation, its index), classified by the set function and moved by its
 stored geometry. A result with arcs given to another Boolean is still
 `OutOfDomain` (S9c).
+
+### Cylinders meeting in quartics (S9c.2a)
+
+Two circular cylinders in exact frames (the world's axes permuted or
+reversed) whose axes cross are perpendicular; unless they are S9c.1's equal
+cylinders with meeting axes, they meet in a quartic (`curved/procedural.rs`).
+Across the common perpendicular `e = nA x nB` each cylinder reaches
+`[e_k - r_k, e_k + r_k]`; exactly: apart, touching (outside, or inside
+with a node) `Degenerate`, one extent strictly inside the other's (two
+rings about the inner cylinder), or overlapping in part (one loop). Each
+piece is a graph over one cylinder's angle, the ruling at `(cos, sin)`
+meeting the other where `A w^2 + 2 B w + C = 0` and the branch the sign of
+`A w + B`: a ring over its cylinder's whole turn, a loop in four graphs,
+over each cylinder's angle about that cylinder's extreme (where the other's
+rulings are tangent to the curve), switched at rational points of the
+thinner cylinder's angle between the two kinds of turning point, which
+become vertices (`w` a surd of one field). A piece's points are placed by
+its carrier's angle, its tangent is the two gradients' cross product turned
+to the carrier's run, and a rational point strictly between two places is
+a point of the piece; everything else is S9c.1's arrangement. Vertices on
+a quartic are where an input's generatrix (an edge or a seam) meets the
+other cylinder (quadratic surds); where a cap's circle meets the other
+cylinder the point is a nested surd `x + y sqrt(E)` (`x`, `y`, `E` in
+`Q(sqrt k)`), decided exactly against the edge's arc and the face's region
+and refused (`OutOfDomain`, S9c.2b) when it lies on both. Edges are
+`Curve3::Meet` (the carrier's and the other's stored cylinders, the branch,
+the angle's range: `TOPOLOGY_MODEL.md`), their pcurves exact projections
+(a meeting on its own carrier evaluated by its angle). The validator
+certifies a band face's holes bounded by projections and sinusoids (the
+signed `+v` ray over every `u` alias, projections by certified pieces:
+`BREP_VALIDATION.md`).
 
 ### Spline profiles (S9a.2)
 
@@ -578,6 +612,17 @@ height); its horizontal edges on a spline are its lifted restrictions.
   the intersection's approximated curves misses by up to 3.0e-4 (`skew`,
   7.8e-5 in exact frames), the same results measured adaptively (`Eps =
   1e-10`) within 2.7e-9; six solids' counts change when unified.
+* **Kernel (S9c.2a).** `tests/procedural_booleans.rs`: the 22 exact-frame
+  fixtures as the reference (16 results inside its measures, the 6
+  declared tangencies refused), the 6 turned-frame ones `OutOfDomain`
+  (S9c.2b's), every history checked, results deterministic and moved
+  rigidly. `compare_procedural_boolean.py`: 5 matches, 23 reviewed (the 23
+  measures, now with the 11 kernel results whose counts differ: the loops'
+  switch vertices, OCCT's own splits of its approximated rings), no failure;
+  S9a's, S9b's and S9c.1's comparisons unchanged. The DRAW survey's two
+  S9c.1 failures are fixed: a hole no piece holds (a sliver whose binary64
+  image turned the wrong way) is `Degenerate`, and a band with holes
+  bounded by ellipses' projections now validates.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

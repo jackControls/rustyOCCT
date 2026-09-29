@@ -7,7 +7,8 @@
 //! them, their profiles lines and arcs or the split target's splines
 //! (S9a.2). Fuse, cut and common never panic and fail only as documented (a
 //! cavity among several solids, S9a.2's, or arcs in frames with different
-//! axes, S9c's; S9b turns, leans or tilts the tool's frame; a result thinner than the
+//! axes, S9c's; S9b turns, leans or tilts the tool's frame, S9c.2a stands it
+//! on its side (perpendicular cylinders); a result thinner than the
 //! resolution or touching itself; an undecided comparison); each result
 //! validates as it is built and its history passes the independent check
 //! (debug builds); when all three succeed their volumes agree,
@@ -74,7 +75,21 @@ pub fn check_boolean(data: &[u8]) {
     };
     // S9b: the tool's frame turned about the axis, leaning or tilted
     // (frames with different axes), chosen by a byte after the others.
-    let fb = match (tilted, b.next() % 4) {
+    // S9c.2a: or stood on its side (its axis along x, an exact frame),
+    // by the byte's top bit.
+    let pick = b.next();
+    let fb = match (tilted, pick % 4) {
+        (false, 0) if pick >= 128 => {
+            let Ok(f) = Frame3::new(
+                Point3::new(dx - h / 2.0, dy, h / 2.0),
+                Vec3::new(1.0, 0.0, 0.0),
+                Vec3::new(0.0, 1.0, 0.0),
+                tolerance,
+            ) else {
+                return;
+            };
+            f
+        }
         (false, turn @ 1..=3) => {
             let (normal, x) = match turn {
                 1 => (Vec3::new(0.0, 0.0, 1.0), Vec3::new(3.0, 4.0, 0.0)),
