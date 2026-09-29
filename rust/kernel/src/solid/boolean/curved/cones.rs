@@ -47,7 +47,7 @@ fn other_face(m: &Prism, f: usize) -> Other {
         Surf::Cyl { c, r, .. } => other_of(&m.f, c, r),
         Surf::Sphere { c, r } => other_sphere(c, r),
         Surf::Cone { b, k } => other_cone(&m.f, b, k),
-        Surf::Plane { .. } => unreachable!("a curved face"),
+        Surf::Plane { .. } | Surf::Torus => unreachable!("a quadric face"),
     }
 }
 
@@ -96,6 +96,9 @@ fn a_bound(a: &Form) -> R {
 /// How a cone's face and a curved face of the other input meet (`fa` of
 /// operand 0, `fb` of operand 1).
 pub(super) fn cone_pair(ms: [&Prism; 2], faces: [usize; 2], res: f64) -> Result<CylPair> {
+    if (0..2).any(|k| matches!(ms[k].faces[faces[k]].surf, Surf::Torus)) {
+        return Err(Error::OutOfDomain("a torus against a curved face (S9d.4b)"));
+    }
     let axis: P2 = [zero(), zero()];
     let zero_k = zero();
     // Carriers: cylinders first, then cones.

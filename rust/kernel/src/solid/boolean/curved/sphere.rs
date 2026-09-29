@@ -567,6 +567,7 @@ pub(super) fn model(solid: &Solid, op: Operand, seam: &R) -> Result<Prism> {
         boxes: Vec::new(),
         ball: Some(ball),
         funnel: None,
+        ring: None,
     };
     let reach = rational_f64(&r) * (1.0 + 1e-9) + 1e-9;
     let c = out.f.o.clone().map(|x| rational_f64(&x));

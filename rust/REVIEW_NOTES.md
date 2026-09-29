@@ -2472,6 +2472,33 @@ Decisions for S9, recorded before its code (2026-09-28):
     every section but circles: up to 6.3e-6; adaptively within 1.8e-9 but
     for a small cap, 1.2e-8, and the Villarceau plane, 2.0e-8), nine solids'
     counts change when unified. S9d.4a's kernel next.
+  * **S9d.4a implemented** (`solid/boolean/curved/torus.rs`): a whole
+    torus against polyhedral prisms, all 35 fixtures as the reference (30
+    solid within the kernel's enclosures, one empty, the 4 degenerate
+    refused), every history checked, results deterministic and moved
+    rigidly; `compare_torus_boolean.py` 11 matches and 24 reviewed (the
+    capture's measures, and entity counts: OCCT's seams and B-spline splits,
+    the kernel's caps in four exact pieces), every other comparison
+    unchanged. Amendments, from the implementation: (a) the tube's seams are
+    the parallels at a rational angle `v0` and `v0 + pi` (moving with the
+    retried seam), not the equators: a prism's face on the equatorial plane
+    would lie along a seam at every retry; (b) a point's angles are placed
+    exactly as unit directions, `u` along `(l_u, l_v) / rho` and `v` along
+    `(rho - R, l_w) / r` with `rho = (|l|^2 + R^2 - r^2) / 2R`, rational in
+    the point's field (a line's pierces are a quartic's roots, over
+    `Q(alpha)`); (c) rings over `u` or `v` are decided from each
+    discriminant's sign before any root is isolated (a plane normal to the
+    axis has `D_v` a square's negative, one through it `D_u`, their double
+    roots no tangency); (d) a torus face's loops lie on one sheet of the
+    cover by their material's side (a reference loop winding in `u`, the
+    others in the turn above it on a forward face, below it on a reversed
+    one; in `u` likewise for loops about the tube); (e) the validator
+    counts a ray's crossings of a whole torus (no loops) exactly, the
+    positive roots of its quartic (a cavity in a torus's tube); (f) a
+    rigid motion moves `Curve3::Section` edges, and the history checker
+    takes them in a plane's pieces by points along them; (g) the fuzz
+    target's tool is a whole torus when its spline byte lies in
+    `144..160`. Pending: the DRAW survey, the campaign.
 
 ### Parallel tracks
 

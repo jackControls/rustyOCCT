@@ -23,6 +23,7 @@ mod num;
 mod procedural;
 mod sphere;
 mod spheres;
+mod torus;
 mod turned;
 
 use super::polyhedra::{Component, Polyhedron};
@@ -53,7 +54,14 @@ pub(super) fn applies(poly: &Polyhedron) -> bool {
     let prism = |s: &crate::Solid| matches!(s.construction, Construction::Prism(_));
     let sphere = |s: &crate::Solid| matches!(s.construction, Construction::Sphere { .. });
     let cone = |s: &crate::Solid| matches!(s.construction, Construction::Cone { .. });
+    let torus = |s: &crate::Solid| matches!(s.construction, Construction::Torus { .. });
     let quadric = |s: &crate::Solid| prism(s) || sphere(s) || cone(s);
+    // S9d.4: a torus against a prism, a sphere, a cone or a torus (S9d.4b's
+    // refused in `build`).
+    let any = |s: &crate::Solid| quadric(s) || torus(s);
+    if (torus(&poly.a) && any(&poly.b)) || (any(&poly.a) && torus(&poly.b)) {
+        return true;
+    }
     // S9d.3: a cone against a prism, a sphere or a cone (S9d.3b's refused
     // in `build`).
     ((cone(&poly.a) && quadric(&poly.b)) || (quadric(&poly.a) && cone(&poly.b)))
@@ -71,6 +79,7 @@ fn model_of(s: &crate::Solid, op: Operand, seam: &R) -> Result<model::Prism> {
     match &s.construction {
         Construction::Sphere { .. } => sphere::model(s, op, seam),
         Construction::Cone { .. } => cone::model(s, op, seam),
+        Construction::Torus { .. } => torus::model(s, op, seam),
         _ => model::Prism::new(s, op, seam),
     }
 }
@@ -92,6 +101,13 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
 }
 
 fn attempt(poly: &Polyhedron, seam_a: &R, seam_b: &R) -> Result<Vec<Component>> {
+    // S9d.4a takes a torus against a polyhedral prism alone.
+    let torus = |s: &crate::Solid| matches!(s.construction, Construction::Torus { .. });
+    let polyhedral =
+        |s: &crate::Solid| matches!(s.construction, Construction::Prism(_)) && !applies_arcs(s);
+    if (torus(&poly.a) && !polyhedral(&poly.b)) || (torus(&poly.b) && !polyhedral(&poly.a)) {
+        return Err(Error::OutOfDomain("a torus against a curved face (S9d.4b)"));
+    }
     let a = model_of(&poly.a, Operand::A, seam_a)?;
     let b = model_of(&poly.b, Operand::B, seam_b)?;
     let arr = graph::arrange([a, b], poly.op)?;

@@ -20,7 +20,9 @@ spheres against prisms with arcs and two spheres (`curved/spheres.rs`,
 S9d.2b's loops in exact frames among them), and S9d.3a's cones and
 frusta against polyhedral prisms (`curved/cone.rs`), and S9d.3b.1's
 cones against cylinders, spheres and cones meeting in rings or on a plane
-(`curved/cones.rs`); their loops (S9d.3b.2) and tori (S9d.4) are not.
+(`curved/cones.rs`), S9d.3b.2's cones and spheres in loops, and S9d.4a's
+whole tori against polyhedral prisms (`curved/torus.rs`); tori against
+curved faces, segments and wedges (S9d.4b) are not.
 
 ## Contract
 
@@ -498,6 +500,28 @@ simple real roots is split at those directions (algebraic over
 switched at `w = -C / 2B`; the ruling's roots taken as `C / (-B - s
 sqrt(D))` where `(-B + s sqrt(D)) / A` cancels. A loop in a turned frame is
 `OutOfDomain`.
+
+### Tori against polyhedral prisms (S9d.4a)
+
+A whole torus is `(|l|^2 + R^2 - r^2)^2 <= 4 R^2 (l_u^2 + l_v^2)` in its
+frame's coordinates as rationals (`curved/torus.rs`). On it the distance
+from the axis is `rho = (|l|^2 + R^2 - r^2) / 2R`, rational in a point's
+coordinates, so both angles have exact places, `u` along `(l_u, l_v) /
+rho` and `v` along `(rho - R, l_w) / r`. Its wall is traced in four
+patches of `(u, v)`, cut at the meridians through a rational direction and
+its opposite and at the parallels of a rational angle `v0` and `v0 + pi`,
+every seam a circle with rational centre and axes. A line meets the torus
+at its quartic's roots (`Q(alpha)`); a plane in a spiric section, a graph
+over `u` (the tube's circle at `u` meeting the plane where `r A cos v + r
+mu sin v = -(R A + kappa)`, one quadratic surd at a rational `u`) or over
+`v` symmetrically: rings over `u` where `D_u` is positive all round (loops
+about the axis), over `v` where `D_v` is (loops about the tube), else loops
+of graphs over `v` about their `u` turning points and over `u` about their
+`v` ones, switched at rational `u` between turning points of different
+kinds and verified exactly (S9d.2b's rule). Edges are S8d.3's
+`Curve3::Section`, their pcurves `Projection`s on the torus; a face's loops
+lie on one sheet of the torus's cover by their material's side. A plane
+tangent to the torus or within the resolution of it is `Degenerate`.
 
 ### Spline profiles (S9a.2)
 

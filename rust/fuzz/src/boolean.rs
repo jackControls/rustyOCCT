@@ -9,7 +9,8 @@
 //! cavity among several solids, S9a.2's, or arcs in frames with different
 //! axes, S9c's; S9b turns, leans or tilts the tool's frame, S9c.2a stands it
 //! on its side (perpendicular cylinders), S9d.1 makes it a sphere, a cap or
-//! a zone, S9d.3a a cone or frustum; a result thinner than the
+//! a zone, S9d.3a a cone or frustum, S9d.4a a whole torus; a result
+//! thinner than the
 //! resolution or touching itself; an undecided comparison); each result
 //! validates as it is built and its history passes the independent check
 //! (debug builds); when all three succeed their volumes agree,
@@ -130,6 +131,18 @@ pub fn check_boolean(data: &[u8]) {
         let (low, high) = [(-half, half), (-half, 0.0), (-0.5, 0.75), (0.25, half)]
             [usize::from((spline_byte >> 2) % 4)];
         let Ok((tool, _)) = Solid::sphere_with(OperationId(2), fb, 0.75 * s2, low, high, tolerance)
+        else {
+            return;
+        };
+        tool
+    } else if (144..160).contains(&spline_byte) {
+        // S9d.4a: a whole torus about the tool's frame, its radii by the
+        // byte's low bits.
+        let big = 0.75 * s2;
+        let small = big * [0.25, 0.375, 0.5, 0.625][usize::from(spline_byte % 4)];
+        let turn = std::f64::consts::TAU;
+        let Ok((tool, _)) =
+            Solid::torus_with(OperationId(2), fb, big, small, 0.0, turn, turn, tolerance)
         else {
             return;
         };

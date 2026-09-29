@@ -2639,6 +2639,76 @@ fn inside<T: Real>(
     None
 }
 
+/// A ray's crossings of a whole torus: the positive real roots of
+/// `(|w|^2 + R^2 - r^2)^2 - 4 R^2 (w_x^2 + w_y^2)`, `w = q0 + t q1` in the
+/// frame's coordinates (Cramer on its stored axes), counted exactly; `None`
+/// for a root at the start or a repeated root (a tangent ray).
+fn torus_ray_hits(frame: &Frame3, major: f64, minor: f64, p: &[R; 3], d: &[R; 3]) -> Option<u32> {
+    use crate::polynomial::real::{isolate, Budget, IntPolynomial};
+    let exact = |v: [f64; 3]| v.map(r);
+    let (o, x, y, n) = (
+        exact(frame.origin().to_array()),
+        exact(frame.x().to_array()),
+        exact(frame.y().to_array()),
+        exact(frame.normal().to_array()),
+    );
+    let det = det3(&x, &y, &n);
+    let coords = |v: &[R; 3]| {
+        [
+            det3(v, &y, &n) / &det,
+            det3(&x, v, &n) / &det,
+            det3(&x, &y, v) / &det,
+        ]
+    };
+    let q0 = coords(&std::array::from_fn(|i| &p[i] - &o[i]));
+    let q1 = coords(d);
+    let (big, small) = (r(major), r(minor));
+    let k = &big * &big - &small * &small;
+    let dotr = |a: &[R; 3], b: &[R; 3]| &a[0] * &b[0] + &a[1] * &b[1] + &a[2] * &b[2];
+    let (s2, s1, s0) = (dotr(&q1, &q1), int(2) * dotr(&q0, &q1), dotr(&q0, &q0) + &k);
+    let (p2, p1, p0) = (
+        &q1[0] * &q1[0] + &q1[1] * &q1[1],
+        int(2) * (&q0[0] * &q1[0] + &q0[1] * &q1[1]),
+        &q0[0] * &q0[0] + &q0[1] * &q0[1],
+    );
+    let b4 = int(4) * &big * &big;
+    let poly = [
+        &s0 * &s0 - &b4 * &p0,
+        int(2) * &s0 * &s1 - &b4 * &p1,
+        &s1 * &s1 + int(2) * &s0 * &s2 - &b4 * &p2,
+        int(2) * &s1 * &s2,
+        &s2 * &s2,
+    ];
+    if poly[0].numer().sign() == Sign::NoSign {
+        return None;
+    }
+    let ip = IntPolynomial::from_rationals(&poly);
+    if !ip.gcd(&ip.derivative()).is_constant() {
+        return None;
+    }
+    let abs = |c: &R| {
+        if c.numer().sign() == Sign::Minus {
+            -c.clone()
+        } else {
+            c.clone()
+        }
+    };
+    let lead = abs(&poly[4]);
+    let bound = poly[..4]
+        .iter()
+        .map(|c| abs(c) / &lead)
+        .fold(int(0), |m, c| if c > m { c } else { m })
+        + int(1);
+    let roots = isolate(
+        &ip,
+        int(0),
+        bound,
+        &mut Budget::new(crate::polynomial::RootIsolationOptions::default()),
+    )
+    .ok()?;
+    Some(roots.len() as u32)
+}
+
 fn det3(a: &[R; 3], b: &[R; 3], cc: &[R; 3]) -> R {
     &a[0] * (&b[1] * &cc[2] - &b[2] * &cc[1]) - &a[1] * (&b[0] * &cc[2] - &b[2] * &cc[0])
         + &a[2] * (&b[0] * &cc[1] - &b[1] * &cc[0])
@@ -2677,8 +2747,21 @@ fn face_hits<T: Real>(
             0
         });
     }
-    // Rays against spheres with loops and tori are not decided yet: the
-    // containment is uncertified.
+    // A whole torus (no loops, S9d.4a): the positive roots of the ray's
+    // quartic, exactly (a root at the start or a repeated one undecided).
+    if let (
+        Surface::Torus {
+            frame,
+            major,
+            minor,
+        },
+        true,
+    ) = (&face.surface, loops.is_empty())
+    {
+        return torus_ray_hits(frame, *major, *minor, p, d);
+    }
+    // Rays against spheres with loops and tori with loops are not decided
+    // yet: the containment is uncertified.
     if matches!(
         face.surface,
         Surface::Sphere { .. } | Surface::Torus { .. } | Surface::BSpline(_)

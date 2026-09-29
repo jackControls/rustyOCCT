@@ -1363,6 +1363,12 @@ impl Topology {
                     centre: motion.point(m.centre),
                     ..(**m).clone()
                 })),
+                // S9d.4a: a torus's spiric sections in Boolean results (the
+                // plane is in the torus's frame, so it moves with it).
+                Curve3::Section(sec) => Curve3::Section(Box::new(Spiric {
+                    frame: sec.frame.transformed(motion, tolerance)?,
+                    ..(**sec).clone()
+                })),
                 // S9d.3a: a cone's sections in Boolean results.
                 Curve3::HyperbolaArc {
                     frame,
@@ -1388,7 +1394,6 @@ impl Topology {
                     start: *start,
                     sweep: *sweep,
                 },
-                _ => return Err(Error::OutOfDomain("moving a body's torus section edge")),
             };
         }
         for f in &mut parts.faces {

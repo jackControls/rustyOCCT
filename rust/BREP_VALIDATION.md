@@ -207,8 +207,10 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   loops wind once) and it lies up the ray (`sin a < 0`). A closing chord of
   no length within rounding (a ring's one fin) is clear when its start is
   farther than the margin by more than its length. A ray against a sphere
-  with loops or a torus face is not yet solved, so a body with a cavity
-  and such a face reports `uncertified_containment`. A cavity whose first
+  with loops or a torus face with loops is not yet solved, so a body with a
+  cavity and such a face reports `uncertified_containment`; a whole torus
+  (no loops, S9d.4a) is crossed at its quartic's positive roots, counted
+  exactly (a root at the start or a repeated one undecided). A cavity whose first
   face is a whole sphere takes its point at `(0, 0)`.
 * **Continuity (R4).** Every spline edge, pcurve and face must be C1 in its
   own parameter: `edge_not_c1`, `pcurve_not_c1` and `face_not_c1`, decided

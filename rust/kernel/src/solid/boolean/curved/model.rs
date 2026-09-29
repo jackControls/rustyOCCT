@@ -237,6 +237,10 @@ pub(super) enum FaceKind {
     Half(bool),
     /// A cone's wall (S9d.3a).
     ConeWall,
+    /// A torus's patch: the upper half of the tube (from its parallel
+    /// seam) or not, the plus half of the turn (from its meridian seam) or
+    /// not (S9d.4a).
+    Patch(bool, bool),
 }
 
 /// A face's exact surface, its normal leaving the material.
@@ -264,6 +268,9 @@ pub(super) enum Surf {
         b: R,
         k: R,
     },
+    /// A torus on the model's frame (S9d.4a), its material inside (its
+    /// radii in the model's `ring`).
+    Torus,
 }
 
 /// A 3D curve, exact.
@@ -284,6 +291,9 @@ pub(super) enum Crv {
     Rise(Box<super::spheres::RiseCrv>),
     /// A plane's section of a cone (S9d.3a), placed by the cone's angle.
     Cone(Box<super::cone::ConeSec>),
+    /// A plane's section of a torus (S9d.4a), a graph over one of its
+    /// angles, placed by that angle's direction.
+    Torus(Box<super::torus::TorusSec>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -344,6 +354,8 @@ pub(super) struct Prism {
     /// A cone's own data (S9d.3a): its faces are its ends' discs and its
     /// wall, over heights `lo..hi`.
     pub(super) funnel: Option<super::cone::Funnel>,
+    /// A torus's own data (S9d.4a): its faces are its wall's four patches.
+    pub(super) ring: Option<super::torus::Ring>,
 }
 
 fn out_of_domain(what: &'static str) -> Error {
@@ -663,6 +675,7 @@ impl Prism {
             boxes: Vec::new(),
             ball: None,
             funnel: None,
+            ring: None,
         };
         prism.check_slots(solid)?;
         prism.boxes = (0..prism.faces.len()).map(|i| prism.face_box(i)).collect();
@@ -726,8 +739,8 @@ impl Prism {
                 }
             }
             FaceKind::Wall(b, j) => add_seg(&self.bounds[b].segs[j], &mut pts),
-            FaceKind::Half(_) | FaceKind::ConeWall => {
-                unreachable!("a sphere's and a cone's boxes are their own")
+            FaceKind::Half(_) | FaceKind::ConeWall | FaceKind::Patch(..) => {
+                unreachable!("a sphere's, a cone's and a torus's boxes are their own")
             }
         }
         let mut lo = [f64::INFINITY; 3];
@@ -751,6 +764,15 @@ impl Prism {
         match &self.faces[fi].surf {
             Surf::Plane { m, .. } => qv(m),
             Surf::Sphere { c, .. } => qsub(p, &qv(c)),
+            Surf::Torus => {
+                let ring = self.ring.as_ref().expect("a torus");
+                let g = ring.gradient(&self.f.local_q(p));
+                [0, 1, 2].map(|j| {
+                    g[0].scale(&self.f.row(0)[j])
+                        .add(&g[1].scale(&self.f.row(1)[j]))
+                        .add(&g[2].scale(&self.f.row(2)[j]))
+                })
+            }
             Surf::Cone { b, k } => {
                 // The gradient of u^2 + v^2 - (b + k w)^2 (halved).
                 let l = self.f.local_q(p);
@@ -977,6 +999,9 @@ impl Prism {
         if let Some(fun) = &self.funnel {
             return fun.member(&self.f, &self.hi, p, dirs);
         }
+        if let Some(ring) = &self.ring {
+            return ring.member(&self.f, p, dirs);
+        }
         let l = self.f.local_q(p);
         let ld: Vec<QV> = dirs.iter().map(|d| self.f.local_dir_q(d)).collect();
         // Heights.
@@ -1032,11 +1057,16 @@ impl Prism {
                         Ordering::Greater => Loc::Out,
                     }
                 }
-                FaceKind::Wall(..) | FaceKind::ConeWall => unreachable!("a sphere has no walls"),
+                FaceKind::Wall(..) | FaceKind::ConeWall | FaceKind::Patch(..) => {
+                    unreachable!("a sphere has no walls")
+                }
             };
         }
         if let Some(fun) = &self.funnel {
             return fun.in_face(&self.f, &self.hi, self.faces[fi].kind, p);
+        }
+        if let Some(ring) = &self.ring {
+            return ring.in_face(&self.f, self.faces[fi].kind, p);
         }
         let l = self.f.local_q(p);
         let x = [l[0].clone(), l[1].clone()];
@@ -1046,8 +1076,8 @@ impl Prism {
                 OnProfile::Out => Loc::Out,
                 _ => Loc::On,
             },
-            FaceKind::Half(_) | FaceKind::ConeWall => {
-                unreachable!("a prism has no hemispheres or cone walls")
+            FaceKind::Half(_) | FaceKind::ConeWall | FaceKind::Patch(..) => {
+                unreachable!("a prism has no hemispheres, cone walls or torus patches")
             }
             FaceKind::Wall(b, j) => {
                 let h = [l[2].add_r(&-&self.lo).sign(), l[2].add_r(&-&self.hi).sign()];

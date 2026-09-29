@@ -451,6 +451,8 @@ fn build_component(
                 Surface::Cylinder { .. } | Surface::Sphere { .. } | Surface::Cone { .. } => {
                     [turns(&p, &fids, &surface), 0]
                 }
+                // A torus's loops wind in either angle (S9d.4a).
+                Surface::Torus { .. } => [turns(&p, &fids, &surface), turns_v(&p, &fids)],
                 _ => [0, 0],
             };
             // The loop's area in the surface's parameters (its pcurves).
@@ -481,7 +483,10 @@ fn build_component(
         // the first (each pcurve's lift starts from its point's angle).
         if matches!(
             surface,
-            Surface::Cylinder { .. } | Surface::Sphere { .. } | Surface::Cone { .. }
+            Surface::Cylinder { .. }
+                | Surface::Sphere { .. }
+                | Surface::Cone { .. }
+                | Surface::Torus { .. }
         ) && loop_ids.len() > 1
         {
             let mean_u = |p: &TopologyParts, l: LoopId| -> f64 {
@@ -495,8 +500,16 @@ fn build_component(
                     .collect();
                 us.iter().sum::<f64>() / us.len() as f64
             };
+            // A torus's loops (S9d.4a): a reference winding loop fixes the
+            // sheet, every other loop placed on the side its material lies
+            // (above a loop running +u in v, below one running -u; below a
+            // loop running +v in u, above one running -v), within a turn.
+            if matches!(surface, Surface::Torus { .. }) {
+                torus_sheets(&mut p, &loop_ids, sense == Orientation::Reversed);
+            }
             let target = mean_u(&p, loop_ids[0]);
-            for &l in &loop_ids[1..] {
+            let torus = matches!(surface, Surface::Torus { .. });
+            for &l in loop_ids[1..].iter().filter(|_| !torus) {
                 let turns = ((target - mean_u(&p, l)) / TAU).round();
                 if turns == 0.0 {
                     continue;
@@ -778,6 +791,7 @@ fn same_curve(a: &Crv, b: &Crv) -> bool {
         (Crv::Circle(x), Crv::Circle(y)) => x == y,
         (Crv::Rise(x), Crv::Rise(y)) => x == y,
         (Crv::Cone(x), Crv::Cone(y)) => x == y,
+        (Crv::Torus(x), Crv::Torus(y)) => x == y,
         _ => false,
     }
 }
@@ -851,6 +865,51 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
             })))
         }
         Crv::Cone(c) => cone_curve3(arr, e, c, points),
+        Crv::Torus(c) => {
+            // S8d.3's spiric section on the stored torus (S9d.4a): the
+            // plane in its frame, a unit normal; over its parameter's angle.
+            let m = &arr.models[c.carrier];
+            let stored = &m
+                .faces
+                .iter()
+                .find(|f| matches!(f.surf, Surf::Torus))
+                .expect("a torus's patch")
+                .stored;
+            let Surface::Torus {
+                frame,
+                major,
+                minor,
+            } = stored
+            else {
+                return Err(Error::InvalidTopology("a torus section off a torus"));
+            };
+            let pl = c.plane.clone().map(|x| rational_f64(&x));
+            let norm = (pl[0] * pl[0] + pl[1] * pl[1] + pl[2] * pl[2]).sqrt();
+            let with = first.with == d0;
+            let t0 = angle_of(if d0 { &first.pos[0] } else { &first.pos[1] });
+            let t1 = angle_of(if dl { &last.pos[1] } else { &last.pos[0] });
+            let sweep = if e.ends.is_none() {
+                TAU
+            } else {
+                let s = if with { t1 - t0 } else { t0 - t1 };
+                let s = s.rem_euclid(TAU);
+                if s == 0.0 {
+                    TAU
+                } else {
+                    s
+                }
+            };
+            Ok(Curve3::Section(Box::new(crate::topology::Spiric {
+                frame: *frame,
+                major: *major,
+                minor: *minor,
+                plane: pl.map(|x| x / norm),
+                over_v: c.over_v,
+                sign: if c.plus { 1.0 } else { -1.0 },
+                start: if e.ends.is_none() { 0.0 } else { t0 },
+                sweep: if with { sweep } else { -sweep },
+            })))
+        }
         Crv::Circle(c) => {
             // A circle of a surd radius (S9d.1) on its basis's frame.
             let (Pos::Ang(p0), Pos::Ang(p1)) = (
@@ -1115,6 +1174,10 @@ fn loop_fins(
                 let mut uv = Projection::inverse(surface, start).ok_or(Error::PrecisionLoss)?;
                 if let Some(prev) = lift {
                     uv.x += TAU * ((prev.x - uv.x) / TAU).round();
+                    // A torus's v is periodic too (S9d.4a).
+                    if matches!(surface, Surface::Torus { .. }) {
+                        uv.y += TAU * ((prev.y - uv.y) / TAU).round();
+                    }
                 }
                 let pc = match cylinder_pcurve(surface, curve, reversed, uv)
                     .or_else(|| sphere_pcurve(surface, curve, reversed, lift.map(|l| l.x)))
@@ -1432,6 +1495,96 @@ fn cone_curve3(
             section.arc(t0, sweep)
         }
     })
+}
+
+/// A torus face's loops on one sheet of the cover (S9d.4a): with a loop
+/// winding in `u` as reference, each other loop's `v` shifted by whole
+/// turns into the turn above it (a `+u` reference on a forward face: its
+/// material above) or below it; with only loops winding in `v`, likewise
+/// in `u` (a `-v` reference: material towards `+u`).
+fn torus_sheets(p: &mut TopologyParts, loops: &[LoopId], reversed: bool) {
+    let info = |p: &TopologyParts, l: LoopId| -> Option<([i32; 2], [f64; 2])> {
+        let Loop::Edges { fins, winding } = &p.loops[l.0] else {
+            return None;
+        };
+        let pts: Vec<Point2> = fins
+            .iter()
+            .flat_map(|f| (0..8).map(move |i| (f, i as f64 / 8.0)))
+            .map(|(f, t)| p.fins[f.0].pcurve.point(t))
+            .collect();
+        let n = pts.len() as f64;
+        Some((
+            *winding,
+            [
+                pts.iter().map(|q| q.x).sum::<f64>() / n,
+                pts.iter().map(|q| q.y).sum::<f64>() / n,
+            ],
+        ))
+    };
+    let all: Vec<(LoopId, [i32; 2], [f64; 2])> = loops
+        .iter()
+        .filter_map(|&l| info(p, l).map(|(w, m)| (l, w, m)))
+        .collect();
+    // (coordinate, reference loop, material above it)
+    let reference = all
+        .iter()
+        .find(|x| x.1[0] != 0)
+        .map(|x| (1usize, x.0, x.1[0] > 0, x.2[1]))
+        .or_else(|| {
+            all.iter()
+                .find(|x| x.1[1] != 0)
+                .map(|x| (0usize, x.0, x.1[1] < 0, x.2[0]))
+        });
+    let Some((axis, rid, above, rmean)) = reference else {
+        return;
+    };
+    for (l, _, mean) in &all {
+        if *l == rid {
+            continue;
+        }
+        let m = mean[axis];
+        // A reversed face's material lies on the loops' other side.
+        let target = if above != reversed {
+            rmean + std::f64::consts::PI
+        } else {
+            rmean - std::f64::consts::PI
+        };
+        let turns = ((target - m) / TAU).round();
+        if turns == 0.0 {
+            continue;
+        }
+        let Loop::Edges { fins, .. } = &p.loops[l.0] else {
+            continue;
+        };
+        let k = TAU * turns;
+        for f in fins.clone() {
+            let shift = |q: &mut Point2| {
+                if axis == 0 {
+                    q.x += k;
+                } else {
+                    q.y += k;
+                }
+            };
+            match &mut p.fins[f.0].pcurve {
+                Curve2::Projection(pr) => pr.lifts.iter_mut().for_each(shift),
+                Curve2::LineSegment { start, end } => {
+                    shift(start);
+                    shift(end);
+                }
+                _ => {}
+            }
+        }
+    }
+}
+
+/// A torus loop's turns about the tube: its pcurves' change of `v`.
+fn turns_v(p: &TopologyParts, fins: &[FinId]) -> i32 {
+    let mut total = 0.0;
+    for f in fins {
+        let pc = &p.fins[f.0].pcurve;
+        total += pc.point(1.0).y - pc.point(0.0).y;
+    }
+    (total / TAU).round() as i32
 }
 
 /// A cylinder loop's turns about the axis: its pcurves' change of `u`.

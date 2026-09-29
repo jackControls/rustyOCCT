@@ -125,6 +125,7 @@ pub(super) fn place(crv: &Crv, x: &QV) -> Pos {
         Crv::Rise(c) => Pos::T(c.height(x)),
         Crv::Meet(m) => Pos::Ang(m.place(x)),
         Crv::Cone(c) => Pos::Ang(c.place(x)),
+        Crv::Torus(c) => Pos::Ang(c.place(x)),
     }
 }
 
@@ -290,6 +291,32 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
             pairs.insert((fa, fb), pair);
         }
     }
+    // A plane and a torus (S9d.4a): its spiric section, rings or loops,
+    // the same for every patch.
+    for fa in 0..models[0].faces.len() {
+        for fb in 0..models[1].faces.len() {
+            let (sa, sb) = (&models[0].faces[fa].surf, &models[1].faces[fb].surf);
+            let (k, plane) = match (sa, sb) {
+                (Surf::Torus, Surf::Plane { p, m }) => (0, (p, m)),
+                (Surf::Plane { p, m }, Surf::Torus) => (1, (p, m)),
+                _ => continue,
+            };
+            let pair = if boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]) {
+                let t = &models[k];
+                super::torus::plane_torus(
+                    k,
+                    &t.f,
+                    t.ring.as_ref().expect("a torus"),
+                    plane.0,
+                    plane.1,
+                    res,
+                )?
+            } else {
+                CylPair::Apart
+            };
+            pairs.insert((fa, fb), pair);
+        }
+    }
     // Coincident planes; parallel planes apart by no more than the
     // resolution are one plane within it (a sliver between them).
     let tol = q(res);
@@ -380,7 +407,9 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
             let own = match (&e.curve, wall) {
                 (Crv::Conic { .. }, Some(w)) => match &me.faces[w].surf {
                     Surf::Cyl { c, r, .. } => Some((me, c, r)),
-                    Surf::Plane { .. } | Surf::Sphere { .. } | Surf::Cone { .. } => None,
+                    Surf::Plane { .. } | Surf::Sphere { .. } | Surf::Cone { .. } | Surf::Torus => {
+                        None
+                    }
                 },
                 _ => None,
             };
@@ -715,6 +744,10 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                         Some([lo, _]) => (false, Pos::Ang(lo.clone())),
                         None => (true, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())])),
                     },
+                    Crv::Torus(c) => match &c.range {
+                        Some([lo, _]) => (false, Pos::Ang(lo.clone())),
+                        None => (true, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())])),
+                    },
                     Crv::Conic { .. } | Crv::Circle(_) => {
                         (true, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())]))
                     }
@@ -744,6 +777,9 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                             Crv::Cone(c) => c.at(&[int(1), zero()]).ok_or(
                                 Error::ComputationLimit("a closed section without vertices"),
                             )?,
+                            Crv::Torus(c) => c.at(&[int(1), zero()]).ok_or(
+                                Error::ComputationLimit("a closed section without vertices"),
+                            )?,
                             _ => conic_point_r(crv, &[int(1), zero()]),
                         };
                         let inside = models[0].in_face(fa, &x) == Loc::In
@@ -752,7 +788,10 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                             (false, _) => Vec::new(),
                             // A ring on a cone's wall (no seam crosses it,
                             // S9d.3b) likewise.
-                            (true, Crv::Circle(_) | Crv::Cone(_) | Crv::Meet(_)) => {
+                            (
+                                true,
+                                Crv::Circle(_) | Crv::Cone(_) | Crv::Meet(_) | Crv::Torus(_),
+                            ) => {
                                 let v = vx.len();
                                 vx.push(Vx {
                                     p: x.clone(),
@@ -936,6 +975,10 @@ fn seam_at(m: &Prism, g: usize, x: &QV) -> bool {
         // A cone's faces: on the rims' seam direction (S9d.3a).
         return fun.on_seam(&m.f, x);
     }
+    if let Some(ring) = &m.ring {
+        // A torus's patches: on a meridian or parallel seam (S9d.4a).
+        return ring.on_seam(&m.f, x);
+    }
     match (m.faces[g].kind, &m.ball) {
         (FaceKind::Half(_), Some(ball)) => {
             qdot(&qsub(x, &qv(&ball.c)), &ball.split).sign() == Ordering::Equal
@@ -949,7 +992,8 @@ fn on_circle(m: &Prism, f: usize) -> bool {
     match m.faces[f].kind {
         FaceKind::Wall(b, _) => m.bounds[b].circle,
         FaceKind::Cap(_) | FaceKind::ConeWall => false,
-        // A hemisphere's sides are the split.
+        // A hemisphere's sides are the split, a torus patch's its seams.
+        FaceKind::Patch(..) => true,
         FaceKind::Half(_) => true,
     }
 }
@@ -1030,6 +1074,16 @@ fn midpoint(crv: &Crv, a: &Pos, b: &Pos, ccw: bool) -> Result<(QV, Pos)> {
                 Pos::Ang([Qd::rat(cs[0].clone()), Qd::rat(cs[1].clone())]),
             ))
         }
+        (Crv::Torus(m), Pos::Ang(sa), Pos::Ang(sb)) => {
+            let cs = rational_between(sa, sb, ccw)?;
+            let x = m
+                .at(&cs)
+                .ok_or(Error::ComputationLimit("a torus section's point off it"))?;
+            Ok((
+                x,
+                Pos::Ang([Qd::rat(cs[0].clone()), Qd::rat(cs[1].clone())]),
+            ))
+        }
         (Crv::Cone(m), Pos::Ang(sa), Pos::Ang(sb)) => {
             let cs = rational_between(sa, sb, ccw)?;
             let x = m
@@ -1092,6 +1146,7 @@ fn on_curve(crv: &Crv, x: &QV) -> bool {
         }
         Crv::Meet(m) => m.on(x),
         Crv::Cone(c) => c.on(x),
+        Crv::Torus(c) => c.on(x),
         Crv::Circle(c) => c.on(x),
         Crv::Rise(c) => c.on(x),
         Crv::Conic { c, a, b } => {
@@ -1254,6 +1309,23 @@ impl Arr {
                 }
                 pts
             }
+            Crv::Torus(m) => {
+                let (Pos::Ang(p0), Pos::Ang(p1)) = (&e.pos[0], &e.pos[1]) else {
+                    unreachable!("a torus section's places")
+                };
+                let (t0, t1) = (angle_f64(p0), angle_f64(p1));
+                let mut sweep = if e.with { t1 - t0 } else { t0 - t1 };
+                sweep = sweep.rem_euclid(TAU);
+                if sweep == 0.0 {
+                    sweep = TAU;
+                }
+                let sweep = if e.with { sweep } else { -sweep };
+                let mut pts = m.samples(t0, sweep, 64);
+                if !h.1 {
+                    pts.reverse();
+                }
+                pts
+            }
             Crv::Cone(m) => {
                 let (Pos::Ang(p0), Pos::Ang(p1)) = (&e.pos[0], &e.pos[1]) else {
                     unreachable!("a cone section's places")
@@ -1327,8 +1399,12 @@ impl Arr {
         let surf = face.surf.clone();
         let kind = face.kind;
         let ball = m.ball.clone();
+        let ring = m.ring.clone();
+        let mf = m.f.clone();
         move |p: [f64; 3]| -> [f64; 2] {
             match &surf {
+                // A torus's patch: its angles from its seams (S9d.4a).
+                Surf::Torus => ring.as_ref().expect("a torus's ring").params(&mf, p, kind),
                 // A cone's wall: its projection on the plane of `(u, v)`,
                 // one to one (S9d.3a).
                 Surf::Cone { .. } => {
@@ -1408,6 +1484,8 @@ impl Arr {
         match &face.surf {
             // `(u, v)` runs counter-clockwise about the axis: the wall's
             // outward normal leans along it where the cone narrows upward.
+            // `(u, v)` runs with the torus's outward normal.
+            Surf::Torus => 1.0,
             Surf::Cone { k, .. } => {
                 if *k < zero() {
                     1.0

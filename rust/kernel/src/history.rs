@@ -712,6 +712,14 @@ fn same_surface(piece: &EntityInfo, whole: &Geometry, tol: f64, edges: &Entities
                         .into_iter()
                         .all(|x| x)
                     }
+                    // A torus's spiric section (S9d.4a): points along it
+                    // within both planes' reach.
+                    Geometry::Curve(c @ Curve3::Section(_)) => [0.0, 0.25, 0.5, 0.75, 1.0]
+                        .iter()
+                        .map(|&t| Some(within(on_piece(c.point(t))?)))
+                        .collect::<Option<Vec<bool>>>()?
+                        .into_iter()
+                        .all(|x| x),
                     // A hyperbola or parabola (a cone's section, S9d.3a):
                     // its frame's plane, points at its own reach, within
                     // both planes' reach.
