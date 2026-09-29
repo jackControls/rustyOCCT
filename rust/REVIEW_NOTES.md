@@ -1733,6 +1733,32 @@ Decisions for S9, recorded before its code (2026-09-28):
     hole crossed at its rim) besides the existing parallel ones
     (`parallel_hole`, S9c.1's `parallel_cylinders`), and a native capture
     before `solid/boolean/curved/algebraic.rs` exists.
+  * **S9c.2b.2 evidence (2026-09-28).** `generate_capped_boolean_fixtures.py
+    --check`: 18 fixtures of two cylinders whose quartic section crosses a
+    cap's circle within both faces, all solid: 9 in exact frames (`XY`
+    against `SIDE`: a pipe across a cap's rim, two rings; a bite at the
+    rim, one loop; a pipe ending partway through the wall; a round hole
+    crossed at its top rim) and 9 oblique in turned ones (`TILTX`, `LEAN`
+    and `TILT` pipes across the rim, entering through it into a blind hole,
+    ending in the wall, crossing a hole's rim), from S9c.1's reference and
+    S9c.2's `Perpendicular` unchanged: the exact pairs' closed forms (the
+    common clipped by both inputs' caps, areas included; the hole by a
+    circular segment less the hole's cylinder) within 6.4e-41, S9c.1's
+    per-pair checks within 5.9e-41 and 2.9 standard errors; the classes
+    as declared; every pair has a cap's circle crossing the other cylinder
+    on its face (checked numerically along each circle, 20 crossings at
+    least 2.0 inside the other face, slopes at least 0.25). Perpendicular
+    pairs in stored turned frames were dropped: a cap plane parallel to the
+    other's generatrices within rounding is a near coincidence of the
+    slicing (breakpoints 1e-17 apart). The capture
+    `occt-boolean-capped-preimplementation` (`compare_capped_boolean.py`,
+    the kernel `unsupported` on all 18: `(S9c.2b)` in exact frames,
+    `(S9c.2b.2)` in turned ones): every result valid with the reference's
+    solids; 2 match, 16 reviewed: BRepGProp's default integration misses by
+    up to 1.9e-5, the same results measured adaptively within 1.0e-9 in
+    exact frames and 1.9e-8 in turned ones (a small result's approximated
+    section, unchanged at `Eps = 1e-12`); eight solids' counts change when
+    unified. S9c.2b.2's kernel next.
 
 ### Parallel tracks
 
