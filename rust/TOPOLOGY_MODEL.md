@@ -616,6 +616,15 @@ sphere, torus, one per accepted revision (R6).
   wound face's seam in each wound direction (a latitude circle for `u`, a
   meridian circle for `v`) and the whole torus's two seams through one
   vertex.
+* **Booleans (S9d.4b.1).** A segment's or wedge's rims in a Boolean's
+  result are the input's circles (arcs of them between the result's
+  vertices), their pcurves on the torus `Projection`s; the outer and inner
+  halves' end discs are tangent to the wall along their rings, so a plane
+  crossing such a ring meets the disc in a line and the wall in a spiric
+  section tangent to it there, both ending at the ring's vertex. A face on a
+  torus none of whose loops winds holds its holes inside its outer loop on
+  the cover, shifted by whole turns in `u` and `v`. `Solid::classify`
+  decides segments and wedges (`decide::torus_part_location`).
 * **DRAW.** `ptorus name R r [angle1 angle2] [angle]` (degrees) and the
   derived case `ptorus_counts`.
 * **Evidence.** Both native captures, `MakeTorus` and `MakeRevol`, came
