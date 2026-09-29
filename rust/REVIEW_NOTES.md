@@ -2368,7 +2368,19 @@ Decisions for S9, recorded before its code (2026-09-28):
     931 registered, none failing, five timing out; 640 refused (676).
     Sentinel added: `bopfuse_simple/ZK9` (a plane within rounding of a
     cylinder's direction); the others are refused as before. The ledger
-    does not change.
+    does not change. After the adapter's exact quarter turns for every
+    solid and S9d.3b.2, a survey again: `ZK9` and `ZL1` (8) evaluate,
+    `cones_boolean_reference.py`'s within 1.4e-15 relative, and are
+    registered (the `ZK9` sentinel re-purposed; `bopfuse_simple/ZK1`, the
+    coincident rims, the new one); `ZK2` to `ZK4` are a tangency between
+    the inputs as `ZK1` is; no case reaches S9d.3b.2's code; `ZK7` and
+    `ZK8` take 23 to 34 seconds on the debug worker (60 to 92 before the
+    exact turn; 1.7 to 4.9 on a release build) and stay unregistered.
+    Rust evaluates 946, 939 registered, one timing out; 632 refused. The
+    volume audit of every registered case again: Rust's values unchanged,
+    the turned spheres the closed forms' within 7.8e-16; a full contract
+    run holds but for two timeouts under a load average of 16, which pass
+    run again.
   * **S9d.3b.2 implemented** (`solid/boolean/curved/cones.rs`,
     `spheres.rs`): a cone and a sphere in loops (S9d.2b's graphs over the
     height, the carrier's circle of radius `b + k w`: `u = phi +- acos(g(w)

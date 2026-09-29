@@ -290,6 +290,8 @@
     "tests/boolean/bopcommon_simple/ZJ9": "2dea2d2b4580f769debd0d9a2a56978fd1ccec497d53e5491fb93f62f1f0d925",
     "tests/boolean/bopcommon_simple/ZK5": "b8d488669b29c742d09f10d811aed7079aff1d29941a7ce78d81b78dd733dac7",
     "tests/boolean/bopcommon_simple/ZK6": "d618103d91fc15bf9547489c6854057ce5fcb489982549e35e4448a19a785e65",
+    "tests/boolean/bopcommon_simple/ZK9": "3153499b627c43074845296c0f426acc1e25dee59ba820b6421484800a669b10",
+    "tests/boolean/bopcommon_simple/ZL1": "37347cf86d14e44a06ceb56cf9a3ae0a75fd4cd5dd7f2fb5b4c092bac737ea36",
     "tests/boolean/bopcommon_simple/ZL6": "3d506ac5cc37c22022f6826f75f4b5158e273106455c438eb3cdbd3a91ac68ad",
     "tests/boolean/bopcommon_simple/ZN3": "453e172b346fa4039b99bef7d60398b07c1d40de5fc9a18b5c6aafed5acc99db",
     "tests/boolean/bopcommon_simple/ZN4": "29fa65292f9d0236c23d357f3f80fbde824d9a328c59c6149395191aef19dc26",
@@ -526,6 +528,8 @@
     "tests/boolean/bopcut_simple/ZJ9": "cf7b0763c91686abd8ad1183dad380d811d13293b5b14d4ccacc3d2250a0e626",
     "tests/boolean/bopcut_simple/ZK5": "a0295db9e3d3f277ccefbf2bcd29ba59dbfacb90360d0f6e0c627f8c3eac6717",
     "tests/boolean/bopcut_simple/ZK6": "74c9e99a6cc05317faa65049fb330ad1eaa6ddb29cb531f04810285a7b2c0b6b",
+    "tests/boolean/bopcut_simple/ZK9": "70d0188bdc06c3e786d58cb5ea2b38b80bb48e0cafe99ee0bb27e34178a868e4",
+    "tests/boolean/bopcut_simple/ZL1": "1513762de3f2ef97e6d205cad7963c6f795a69088f84e8bbdc9059b551437e42",
     "tests/boolean/bopcut_simple/ZN3": "10bf2981a9aec383ae9820dd538c8c385e2a6d7c3ea3a6f4de719c900980c64c",
     "tests/boolean/bopcut_simple/ZN4": "24fcd5ad0f1a2435636bac933394cc2ddc00565893bd2c4845d826e926eedd42",
     "tests/boolean/bopcut_simple/ZN8": "8133911b8490f01480bbc3cbd9f82444ec9bb6b7ab36d16ab8d598b959daf569",
@@ -742,9 +746,11 @@
     "tests/boolean/bopfuse_simple/ZJ7": "0fe605d61db9d5a181cc6f6b78975c4b6230cba17dd445a889c3bbef05d9f36e",
     "tests/boolean/bopfuse_simple/ZJ8": "4604f36efc5a18ff49d124fc39bf8d50ab44883109793d3b7c59e6f6f4822b9c",
     "tests/boolean/bopfuse_simple/ZJ9": "42d6f57bc196068e7defe711dc19e1dcc1766befe4ba1189cd0f2814a928e550",
+    "tests/boolean/bopfuse_simple/ZK1": "6a23d4ef63857eeaa5e1927275bb191f5af0c9e2d3319ef559c49c61f8b75951",
     "tests/boolean/bopfuse_simple/ZK5": "0ca1290f87bef2eb53f5ffc0ee8f55d75dfea25a600c0b46ecfede46aa3072fd",
     "tests/boolean/bopfuse_simple/ZK6": "f8dcaf0095f679ebf82ad32db5915ec5dcfa0a52228a9e4b300a216b9ac809dd",
     "tests/boolean/bopfuse_simple/ZK9": "37caeaa1c02090aa7147ee4344e7c46233aabe45bec12108624f79c82274ea24",
+    "tests/boolean/bopfuse_simple/ZL1": "68e17c2493dd424c0852a7e5da53b286baeda66d7d113006307b7ff01ee13268",
     "tests/boolean/bopfuse_simple/ZL2": "e30a6cd0cdea2804162b53fc3495fe5a2a2a61ac5910283666781d5e1cd8987d",
     "tests/boolean/bopfuse_simple/ZN3": "18e989bcd62509a71b0fc868c5a02e1379c15f160a400cd7170c4135a05f1237",
     "tests/boolean/bopfuse_simple/ZN4": "7b35d664b74c1e74564eaad69414842c673f89ecf9973e372844ee829a8e070f",
@@ -955,6 +961,8 @@
     "tests/boolean/boptuc_simple/ZJ9": "cafc1eeefdf25cfb839cd943478861e4b347ffe468e783d95f655f09bd5543a4",
     "tests/boolean/boptuc_simple/ZK5": "564405bf205800b45c7cdb87b0f5b0ed8e548e6a2b37c9b1114096376b3d2968",
     "tests/boolean/boptuc_simple/ZK6": "e997a4ab3978f973f88079b21296d0a5bd154bca16be432fd77bfe67046e5e68",
+    "tests/boolean/boptuc_simple/ZK9": "e6a48268d053e7a1d2bf62991ceeadafe3cef8cb4b3d6eefaf8573676ee3e042",
+    "tests/boolean/boptuc_simple/ZL1": "b161c6afb4e65d3fbae5b1902287009033681569ff58890fbce67a85f20a67b1",
     "tests/boolean/boptuc_simple/ZN3": "ca29039daf7a23240c4ee54078a32265a84c73031993af5c474624e78c1e6082",
     "tests/boolean/boptuc_simple/ZN4": "22187faa639e26763f6fcfa6470960757e86f59ace4e31292969a3d854dad962",
     "tests/boolean/boptuc_simple/ZN5": "0bd8fb5fafa714ef2daa8d9b0ea0ef058c4e3eeca561955b47885fdbdb094958",
@@ -7240,9 +7248,57 @@
     },
     {
       "path": "tests/boolean/bopfuse_simple/ZK9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopfuse of a pcylinder of radius 4 and height 8 and a frustum of radii 1 and 6 and height 8 turned a quarter turn about y, its axis crossing the cylinder's at right angles at half its height: its narrow end through the wall, its wide end through both caps, and its disc of radius 6, 3 from the cylinder's axis, across the wall in two generatrices (the adapter turns a cone by quarter turns exactly since S9d.3b.1's survey; S9d.3b.1's cones against cylinders); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZL1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopfuse of a pcylinder of radius 4 and height 8 and a frustum of radii 1 and 6 and height 8 turned a quarter turn about y the other way, its axis crossing the cylinder's at right angles at half its height: its narrow end through the wall, its wide end through both caps, and its disc of radius 6, 3 from the cylinder's axis, across the wall in two generatrices (the adapter turns a cone by quarter turns exactly since S9d.3b.1's survey; S9d.3b.1's cones against cylinders); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZK9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopcut of a pcylinder of radius 4 and height 8 and a frustum of radii 1 and 6 and height 8 turned a quarter turn about y, its axis crossing the cylinder's at right angles at half its height: its narrow end through the wall, its wide end through both caps, and its disc of radius 6, 3 from the cylinder's axis, across the wall in two generatrices (the adapter turns a cone by quarter turns exactly since S9d.3b.1's survey; S9d.3b.1's cones against cylinders); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZL1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopcut of a pcylinder of radius 4 and height 8 and a frustum of radii 1 and 6 and height 8 turned a quarter turn about y the other way, its axis crossing the cylinder's at right angles at half its height: its narrow end through the wall, its wide end through both caps, and its disc of radius 6, 3 from the cylinder's axis, across the wall in two generatrices (the adapter turns a cone by quarter turns exactly since S9d.3b.1's survey; S9d.3b.1's cones against cylinders); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZK9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopcommon of a pcylinder of radius 4 and height 8 and a frustum of radii 1 and 6 and height 8 turned a quarter turn about y, its axis crossing the cylinder's at right angles at half its height: its narrow end through the wall, its wide end through both caps, and its disc of radius 6, 3 from the cylinder's axis, across the wall in two generatrices (the adapter turns a cone by quarter turns exactly since S9d.3b.1's survey; S9d.3b.1's cones against cylinders); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZL1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopcommon of a pcylinder of radius 4 and height 8 and a frustum of radii 1 and 6 and height 8 turned a quarter turn about y the other way, its axis crossing the cylinder's at right angles at half its height: its narrow end through the wall, its wide end through both caps, and its disc of radius 6, 3 from the cylinder's axis, across the wall in two generatrices (the adapter turns a cone by quarter turns exactly since S9d.3b.1's survey; S9d.3b.1's cones against cylinders); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZK9",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and boptuc of a pcylinder of radius 4 and height 8 and a frustum of radii 1 and 6 and height 8 turned a quarter turn about y, its axis crossing the cylinder's at right angles at half its height: its narrow end through the wall, its wide end through both caps, and its disc of radius 6, 3 from the cylinder's axis, across the wall in two generatrices (the adapter turns a cone by quarter turns exactly since S9d.3b.1's survey; S9d.3b.1's cones against cylinders); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZL1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and boptuc of a pcylinder of radius 4 and height 8 and a frustum of radii 1 and 6 and height 8 turned a quarter turn about y the other way, its axis crossing the cylinder's at right angles at half its height: its narrow end through the wall, its wide end through both caps, and its disc of radius 6, 3 from the cylinder's axis, across the wall in two generatrices (the adapter turns a cone by quarter turns exactly since S9d.3b.1's survey; S9d.3b.1's cones against cylinders); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZK1",
       "expected_rust": "unsupported",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9d.3b.1's Boolean group, a capability sentinel: a pcylinder of radius 4 and height 8 and a frustum of radii 1 and 6 and height 8 turned a quarter turn about y, its axis crossing the cylinder's at right angles: the adapter turns a cone by the kernel's rotation (a quarter turn's cosine rounds to 6.1e-17), so the frustum's end disc across the cylinder is a plane within rounding of the cylinder's direction (Degenerate)."
+      "purpose": "S9d.3b.1's Boolean group, a capability sentinel: a pcylinder of radius 4 and height 8 and a frustum of radii 4 and 2 standing on its top cap, the frustum's base rim the cap's rim and its base disc the cap: a tangency between the inputs (Degenerate; ZK2 to ZK4, the same turned about its axis, alike since the adapter turns a cone exactly)."
     }
   ],
   "derived_sources": {
