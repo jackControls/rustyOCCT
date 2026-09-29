@@ -35,6 +35,8 @@ pub(super) enum VKey {
     Pierce(usize, usize, usize, usize),
     /// Where two equal cylinders' ellipses cross: faces `fa` (A), `fb` (B).
     Cross(usize, usize, usize),
+    /// A ring section's own vertex: section and branch (S9d.1).
+    Ring(usize, usize),
 }
 
 #[derive(Debug, Clone)]
@@ -116,6 +118,7 @@ pub(super) fn place(crv: &Crv, x: &QV) -> Pos {
     match crv {
         Crv::Line { d, .. } => Pos::T(line_key(x, d)),
         Crv::Conic { c, a, b } => Pos::Ang(conic_angle(c, a, b, x)),
+        Crv::Circle(c) => Pos::Ang(c.place(x)),
         Crv::Meet(m) => Pos::Ang(m.place(x)),
     }
 }
@@ -282,7 +285,7 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
         for (i, v) in m.verts.iter().enumerate() {
             input_vx[o].push(vx.len());
             vx.push(Vx {
-                p: qv(&v.p),
+                p: v.p.clone(),
                 key: VKey::Input(o, i),
                 faces: BTreeSet::new(),
             });
@@ -297,10 +300,9 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                 (Crv::Line { d, .. }, _) => {
                     (Pos::T(line_key(&vx[s].p, d)), Pos::T(line_key(&vx[t].p, d)))
                 }
-                (Crv::Conic { .. }, Some((a, b, _))) => (
-                    Pos::Ang([Qd::rat(a[0].clone()), Qd::rat(a[1].clone())]),
-                    Pos::Ang([Qd::rat(b[0].clone()), Qd::rat(b[1].clone())]),
-                ),
+                (Crv::Conic { .. } | Crv::Circle(_), Some((a, b, _))) => {
+                    (Pos::Ang(a.clone()), Pos::Ang(b.clone()))
+                }
                 _ => unreachable!("an arc edge has its ends' angles"),
             };
             on_edge
@@ -323,7 +325,7 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
             let own = match (&e.curve, wall) {
                 (Crv::Conic { .. }, Some(w)) => match &me.faces[w].surf {
                     Surf::Cyl { c, r, .. } => Some((me, c, r)),
-                    Surf::Plane { .. } => None,
+                    Surf::Plane { .. } | Surf::Sphere { .. } => None,
                 },
                 _ => None,
             };
@@ -599,7 +601,9 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                         Some([lo, _]) => (false, Pos::Ang(lo.clone())),
                         None => (true, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())])),
                     },
-                    Crv::Conic { .. } => (true, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())])),
+                    Crv::Conic { .. } | Crv::Circle(_) => {
+                        (true, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())]))
+                    }
                     Crv::Line { .. } => (false, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())])),
                 };
                 list.sort_by(|x, y| order_on(&x.1, &y.1, &zero_dir, true));
@@ -612,21 +616,37 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                 let segments: Vec<(usize, usize)> = if closed {
                     if n == 0 {
                         // A closed section with no vertex: never inside both
-                        // faces (every cylinder's seams cross its sections).
+                        // faces for cylinders (their seams cross their
+                        // sections); a sphere's circle inside both faces is
+                        // a ring, given one vertex at a rational point
+                        // (S9d.1).
                         let x = match crv {
                             Crv::Meet(m) => m.at(&[int(1), zero()]).ok_or(
                                 Error::ComputationLimit("a closed section without vertices"),
                             )?,
+                            Crv::Circle(c) => c.at(&[int(1), zero()]),
                             _ => conic_point_r(crv, &[int(1), zero()]),
                         };
-                        if models[0].in_face(fa, &x) == Loc::In
-                            && models[1].in_face(fb, &x) == Loc::In
-                        {
-                            return Err(Error::ComputationLimit(
-                                "a closed section without vertices",
-                            ));
+                        let inside = models[0].in_face(fa, &x) == Loc::In
+                            && models[1].in_face(fb, &x) == Loc::In;
+                        match (inside, crv) {
+                            (false, _) => Vec::new(),
+                            (true, Crv::Circle(_)) => {
+                                let v = vx.len();
+                                vx.push(Vx {
+                                    p: x.clone(),
+                                    key: VKey::Ring(si, bi),
+                                    faces: BTreeSet::from([(0, fa), (1, fb)]),
+                                });
+                                list.push((v, place(crv, &x)));
+                                vec![(0, 0)]
+                            }
+                            (true, _) => {
+                                return Err(Error::ComputationLimit(
+                                    "a closed section without vertices",
+                                ))
+                            }
                         }
-                        Vec::new()
                     } else {
                         (0..n).map(|i| (i, (i + 1) % n)).collect()
                     }
@@ -702,13 +722,12 @@ fn edge_at(m: &Prism, g: usize, x: &QV) -> Result<Option<(usize, Pos)>> {
         let pos = place(&f.curve, x);
         let (ps, pt) = match (&f.curve, &f.arc) {
             (Crv::Line { d, .. }, _) => (
-                Pos::T(line_key(&qv(&m.verts[f.start].p), d)),
-                Pos::T(line_key(&qv(&m.verts[f.end].p), d)),
+                Pos::T(line_key(&m.verts[f.start].p, d)),
+                Pos::T(line_key(&m.verts[f.end].p, d)),
             ),
-            (Crv::Conic { .. }, Some((a, b, _))) => (
-                Pos::Ang([Qd::rat(a[0].clone()), Qd::rat(a[1].clone())]),
-                Pos::Ang([Qd::rat(b[0].clone()), Qd::rat(b[1].clone())]),
-            ),
+            (Crv::Conic { .. } | Crv::Circle(_), Some((a, b, _))) => {
+                (Pos::Ang(a.clone()), Pos::Ang(b.clone()))
+            }
             _ => unreachable!("an arc edge has its ends' angles"),
         };
         if same_end(&pos, &ps) || same_end(&pos, &pt) {
@@ -746,6 +765,8 @@ fn on_circle(m: &Prism, f: usize) -> bool {
     match m.faces[f].kind {
         FaceKind::Wall(b, _) => m.bounds[b].circle,
         FaceKind::Cap(_) => false,
+        // A hemisphere's sides are the split.
+        FaceKind::Half(_) => true,
     }
 }
 
@@ -805,6 +826,14 @@ fn midpoint(crv: &Crv, a: &Pos, b: &Pos, ccw: bool) -> Result<(QV, Pos)> {
             let x = qadd(p, &qscale(d, &t));
             Ok((x, Pos::T(Qd::rat(k))))
         }
+        (Crv::Circle(c), Pos::Ang(sa), Pos::Ang(sb)) => {
+            let cs = rational_between(sa, sb, ccw)?;
+            let x = c.at(&cs);
+            Ok((
+                x,
+                Pos::Ang([Qd::rat(cs[0].clone()), Qd::rat(cs[1].clone())]),
+            ))
+        }
         (Crv::Meet(m), Pos::Ang(sa), Pos::Ang(sb)) => {
             let cs = rational_between(sa, sb, ccw)?;
             let x = m
@@ -856,6 +885,7 @@ fn on_curve(crv: &Crv, x: &QV) -> bool {
             xc.iter().zip(&pc).all(|(a, b)| a.cmp(b) == Ordering::Equal)
         }
         Crv::Meet(m) => m.on(x),
+        Crv::Circle(c) => c.on(x),
         Crv::Conic { c, a, b } => {
             let cs = conic_angle(c, a, b, x);
             let back = conic_point(c, a, b, &cs);
@@ -989,6 +1019,23 @@ impl Arr {
                     vec![b, a]
                 }
             }
+            Crv::Circle(c) => {
+                let (Pos::Ang(p0), Pos::Ang(p1)) = (&e.pos[0], &e.pos[1]) else {
+                    unreachable!("a circle's places")
+                };
+                let (t0, t1) = (c.angle(p0), c.angle(p1));
+                let mut sweep = if e.with { t1 - t0 } else { t0 - t1 };
+                sweep = sweep.rem_euclid(TAU);
+                if sweep == 0.0 {
+                    sweep = TAU;
+                }
+                let sweep = if e.with { sweep } else { -sweep };
+                let mut pts = c.samples(t0, sweep, 96);
+                if !h.1 {
+                    pts.reverse();
+                }
+                pts
+            }
             Crv::Meet(m) => {
                 let (Pos::Ang(p0), Pos::Ang(p1)) = (&e.pos[0], &e.pos[1]) else {
                     unreachable!("a meeting's places")
@@ -1044,8 +1091,15 @@ impl Arr {
         let (of, xf, yf, nf) = (fl(&m.f.o), fl(&m.f.x), fl(&m.f.y), fl(&m.f.n));
         let surf = face.surf.clone();
         let kind = face.kind;
+        let ball = m.ball.clone();
         move |p: [f64; 3]| -> [f64; 2] {
             match &surf {
+                Surf::Sphere { .. } => {
+                    let FaceKind::Half(side) = kind else {
+                        unreachable!("a hemisphere")
+                    };
+                    ball.as_ref().expect("a sphere's ball").params(p, side)
+                }
                 Surf::Plane { .. } => {
                     let crate::topology::Surface::Plane(frame) = &face.stored else {
                         unreachable!("a plane face")
@@ -1110,6 +1164,15 @@ impl Arr {
         let m = &self.models[o];
         let face = &m.faces[f];
         match &face.surf {
+            // The projection's coordinates run counter-clockwise about the
+            // split's normal, a hemisphere's outward normal on its side.
+            Surf::Sphere { .. } => {
+                if face.kind == FaceKind::Half(true) {
+                    1.0
+                } else {
+                    -1.0
+                }
+            }
             Surf::Plane { m: out, .. } => {
                 let crate::topology::Surface::Plane(frame) = &face.stored else {
                     unreachable!("a plane face")

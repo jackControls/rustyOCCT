@@ -8,7 +8,8 @@
 //! (S9a.2). Fuse, cut and common never panic and fail only as documented (a
 //! cavity among several solids, S9a.2's, or arcs in frames with different
 //! axes, S9c's; S9b turns, leans or tilts the tool's frame, S9c.2a stands it
-//! on its side (perpendicular cylinders); a result thinner than the
+//! on its side (perpendicular cylinders), S9d.1 makes it a sphere, a cap or
+//! a zone; a result thinner than the
 //! resolution or touching itself; an undecided comparison); each result
 //! validates as it is built and its history passes the independent check
 //! (debug builds); when all three succeed their volumes agree,
@@ -105,7 +106,8 @@ pub fn check_boolean(data: &[u8]) {
     };
     // S9a.2: the split target's spline profiles for the object, the tool
     // or both, chosen by a byte after the others.
-    let splines = b.next() % 4;
+    let spline_byte = b.next();
+    let splines = spline_byte % 4;
     if splines & 1 == 1 {
         let Some(p) = spline_profile(ka, s1, t1) else {
             return;
@@ -121,8 +123,22 @@ pub fn check_boolean(data: &[u8]) {
     let Ok((a, _)) = Solid::extrude_with(OperationId(1), pa, fa, 0.0, h) else {
         return;
     };
-    let Ok((tool, _)) = Solid::extrude_with(OperationId(2), pb, fb, lo, hi) else {
-        return;
+    // S9d.1: a sphere, a cap or a zone for the tool in its frame, by the
+    // spline byte's two top bits.
+    let tool = if spline_byte >= 192 {
+        let half = std::f64::consts::FRAC_PI_2;
+        let (low, high) = [(-half, half), (-half, 0.0), (-0.5, 0.75), (0.25, half)]
+            [usize::from((spline_byte >> 2) % 4)];
+        let Ok((tool, _)) = Solid::sphere_with(OperationId(2), fb, 0.75 * s2, low, high, tolerance)
+        else {
+            return;
+        };
+        tool
+    } else {
+        let Ok((tool, _)) = Solid::extrude_with(OperationId(2), pb, fb, lo, hi) else {
+            return;
+        };
+        tool
     };
     let run = |r: Result<(Vec<Solid>, rusty_occt::history::History), Error>| -> Option<Vec<Solid>> {
         match r {
@@ -135,6 +151,7 @@ pub fn check_boolean(data: &[u8]) {
             Err(Error::OutOfDomain(m))
                 if m.contains("cavity")
                     || m.contains("S9c")
+                    || m.contains("S9d")
                     || m.contains("different forms")
                     || m.contains("along the plane") =>
             {

@@ -216,7 +216,22 @@ impl Polyhedron {
                 ))?
                 .midpoints(),
         };
-        let bounds = crate::solid::split::edge_bounds(&topology);
+        let mut bounds = crate::solid::split::edge_bounds(&topology);
+        // A sphere's face bulges past its edges (S9d.1): its whole sphere's
+        // box, and every vertex (a pole's vertex loop among them).
+        for f in topology.faces() {
+            if let crate::topology::Surface::Sphere { frame, radius } = &f.surface {
+                let c = frame.origin().to_array();
+                let r = radius * (1.0 + 4.0 * f64::EPSILON);
+                let (mut lo, mut hi) = (bounds.min.to_array(), bounds.max.to_array());
+                for i in 0..3 {
+                    lo[i] = lo[i].min(c[i] - r);
+                    hi[i] = hi[i].max(c[i] + r);
+                }
+                bounds.min = crate::Point3::new(lo[0], lo[1], lo[2]);
+                bounds.max = crate::Point3::new(hi[0], hi[1], hi[2]);
+            }
+        }
         let (lo, hi) = (self.a.start.min(self.a.end), self.a.start.max(self.a.end));
         Ok(Solid {
             construction: Construction::Polyhedron(Box::new(self.clone())),

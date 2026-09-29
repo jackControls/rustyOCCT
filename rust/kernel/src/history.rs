@@ -711,14 +711,32 @@ fn same_surface(piece: &EntityInfo, whole: &Geometry, tol: f64, edges: &Entities
                         .into_iter()
                         .all(|x| x)
                     }
+                    // A circle: exactly parallel to both planes, its
+                    // centre's distance; else (a section's circle, its
+                    // frame rounded: S9d.1) its centre and axes' ends
+                    // within both planes' reach, as an ellipse's.
                     Geometry::Curve(c) => {
-                        // Only a circle parallel to both planes projects to
-                        // a circle whose distance is its centre's.
-                        let frame = circle_of(c)?.0;
+                        let (frame, radius) = circle_of(c)?;
                         let m = exact(frame.normal().to_array())?;
-                        cross(&m, &na).iter().all(|x| *x == zero)
+                        if cross(&m, &na).iter().all(|x| *x == zero)
                             && cross(&m, &nb).iter().all(|x| *x == zero)
-                            && within(on_piece(frame.origin())?)
+                        {
+                            within(on_piece(frame.origin())?)
+                        } else {
+                            let (o, x, y) = (frame.origin(), frame.x(), frame.y());
+                            [
+                                o,
+                                o + x * radius,
+                                o + x * -radius,
+                                o + y * radius,
+                                o + y * -radius,
+                            ]
+                            .iter()
+                            .map(|p| Some(within(on_piece(*p)?)))
+                            .collect::<Option<Vec<bool>>>()?
+                            .into_iter()
+                            .all(|x| x)
+                        }
                     }
                     _ => false,
                 };
@@ -1008,9 +1026,18 @@ fn same_support(piece: &EntityInfo, whole: &Geometry, tol: f64, edges: &Entities
                 || reversed_curve(b.curve())
                     .is_some_and(|rb| arcs_within(a.curve(), &rb, a.range(), tol, None))
         }
-        (Geometry::Curve(c), Geometry::Curve(d)) => {
-            circle_of(c).is_some() && circle_of(c) == circle_of(d)
-        }
+        // One circle: centres, normals (either way round) and radii within
+        // tolerance, whatever the frames' x axes (a sphere's rim split at its
+        // seam, S9d.1).
+        (Geometry::Curve(c), Geometry::Curve(d)) => match (circle_of(c), circle_of(d)) {
+            (Some((f, r)), Some((g, s))) => {
+                let (m, n) = (f.normal(), g.normal());
+                near(f.origin(), g.origin(), tol)
+                    && (r - s).abs() <= tol
+                    && m.cross(n).length() * r.max(s) <= tol
+            }
+            _ => false,
+        },
         (Geometry::Surface { .. }, Geometry::Surface { .. }) => {
             same_surface(piece, whole, tol, edges).unwrap_or(false)
         }

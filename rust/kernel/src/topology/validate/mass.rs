@@ -1021,16 +1021,20 @@ fn trig_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>], mass: bool) -> O
         }
         return Some(totals);
     }
-    // A torus face whose loops run as holes is the torus less them (S8d.3):
-    // the whole torus, then the loops' integrals.
-    if torus && !wound_u {
+    // A torus or sphere face whose loops run as holes is the surface less
+    // them (S8d.3, S9d.1): the whole surface, then the loops' integrals.
+    if !wound_u {
         let want_inner = if face.sense == Orientation::Forward {
             Ordering::Less
         } else {
             Ordering::Greater
         };
         if super::loop_area::<T>(&loops[0]).sign()? == want_inner {
-            let whole = sph_parallel(fs, &two_pi, &c(0.0), &two_pi, &c(0.0))?;
+            let whole = if torus {
+                sph_parallel(fs, &two_pi, &c(0.0), &two_pi, &c(0.0))?
+            } else {
+                sph_parallel(fs, &two_pi, &c(0.0), &half_pi(), &half_pi::<T>().neg())?
+            };
             accumulate(whole.iter().map(|x| x.mul(&c(sign))).collect());
         }
     }

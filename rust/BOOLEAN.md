@@ -14,7 +14,9 @@ them), S9c.1's prisms with arcs in any relative position
 frames meeting in quartics (`curved/procedural.rs`), S9c.2b.1's
 cylinders with crossing axes in turned frames (`curved/turned.rs`) and
 S9c.2b.2's algebraic vertices where sections cross caps' circles, with
-parallel cylinders in turned frames (`curved/algebraic.rs`); S9d is not.
+parallel cylinders in turned frames (`curved/algebraic.rs`), and S9d.1's
+spheres against polyhedral prisms (`curved/sphere.rs`); S9d.2 to S9d.4
+are not.
 
 ## Contract
 
@@ -351,6 +353,41 @@ now over these fields. Parallel cylinders not circular in a common measure
 meet in the generatrices through the first cylinder's circle's crossings
 with the other (`CylPair::Lines`): both cylinders hold them, their axes
 being parallel exactly.
+
+### Spheres against polyhedral prisms (S9d.1)
+
+A sphere, a cap or a zone (S3's `sphere_*`) against a prism takes S9c's
+arrangement with a second kind of model (`curved/sphere.rs`): the set
+`|p - c|^2 <= r^2` of its stored centre and radius, a zone's end planes
+through `c + h n` normal to its stored axis at the stored heights, their
+discs as faces, and its wall split into two hemispheres by a plane through
+an axis and a rational point of the equator (a cap's or zone's axis is its
+frame's; a whole sphere's a generic rational direction that moves with the
+seam, so its poles leave special points; each input its own seam, tried
+again at another when a meeting falls on it). The split's great circle and
+the rims are the model's edges, cut at the rims' points on the split (quadratic
+surds) and at the poles (virtual vertices). Circles of a surd radius
+(sections, rims, the split) are `Crv::Circle`: points `c + dx x + dy y`
+over a rational orthogonal basis of their plane, placed by `(dx, dy)` (the
+arrangement's angle orders are sign tests, unchanged), a rational direction
+scaled onto the circle giving a point of one quadratic field. A plane's
+section of the sphere is such a circle (centre the centre's projection,
+radius squared `r^2 - d^2`); a line meets the sphere in a quadratic, a
+circle meets a plane on its line of the circle's plane. Membership is exact
+at first order (a push along the sphere's tangent plane keeps to it), a
+hemisphere's region the split plane's side and the ends' heights, a disc's
+its rim's inside. Each hemisphere is traced in its stereographic projection
+from the opposite pole onto the split plane (conformal: the rim is not
+compressed as an orthographic projection compresses it). A circle meeting
+no seam and lying inside both faces is a ring, given one vertex at a
+rational point and joined back into a ring edge. In the result a circle is
+`Curve3::Circle` or `CircularArc` on its basis's frame, its pcurve on a
+sphere a line where it is a meridian (its `u` taken inside it, so an end at
+a pole needs none) or a parallel, an exact projection otherwise; a sphere
+face whose loops wind once in all holds its pole as a vertex loop (S3's
+caps). The validator decides a ray against a whole sphere (a cavity in a
+sphere); a result's bounds hold its spheres' boxes. A sphere against a
+cylinder or another sphere is S9d.2's (`OutOfDomain`).
 
 ### Spline profiles (S9a.2)
 
@@ -856,6 +893,12 @@ height); its horizontal edges on a spline are its lifted restrictions.
   (BRepGProp on spherical faces bounded by circles off their parallels;
   sections along parallels within 4e-15), no review; three solids' counts
   change when unified.
+* **Kernel (S9d.1).** `tests/sphere_booleans.rs`: the 30 fixtures as the
+  reference (25 results and an empty common inside its measures, the 4
+  declared degenerate refused), every history checked, results
+  deterministic and moved rigidly with every vertex on their boundary.
+  `compare_sphere_boolean.py`: 30 matches, counts included (OCCT's seams
+  counted), no review; every other Boolean comparison unchanged.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

@@ -19,6 +19,7 @@ mod meet;
 mod model;
 mod num;
 mod procedural;
+mod sphere;
 mod turned;
 
 use super::polyhedra::{Component, Polyhedron};
@@ -42,7 +43,19 @@ pub(super) fn applies(poly: &Polyhedron) -> bool {
         _ => false,
     };
     let prism = |s: &crate::Solid| matches!(s.construction, Construction::Prism(_));
-    prism(&poly.a) && prism(&poly.b) && (arcs(&poly.a) || arcs(&poly.b))
+    let sphere = |s: &crate::Solid| matches!(s.construction, Construction::Sphere { .. });
+    // S9d.1: a sphere against a prism.
+    (prism(&poly.a) && prism(&poly.b) && (arcs(&poly.a) || arcs(&poly.b)))
+        || (sphere(&poly.a) && prism(&poly.b))
+        || (prism(&poly.a) && sphere(&poly.b))
+}
+
+/// An input's exact model: a prism's, or a sphere's (S9d.1).
+fn model_of(s: &crate::Solid, op: Operand, seam: &R) -> Result<model::Prism> {
+    match &s.construction {
+        Construction::Sphere { .. } => sphere::model(s, op, seam),
+        _ => model::Prism::new(s, op, seam),
+    }
 }
 
 /// The result's components, a full circle's seam tried at several
@@ -62,8 +75,8 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
 }
 
 fn attempt(poly: &Polyhedron, seam_a: &R, seam_b: &R) -> Result<Vec<Component>> {
-    let a = model::Prism::new(&poly.a, Operand::A, seam_a)?;
-    let b = model::Prism::new(&poly.b, Operand::B, seam_b)?;
+    let a = model_of(&poly.a, Operand::A, seam_a)?;
+    let b = model_of(&poly.b, Operand::B, seam_b)?;
     let arr = graph::arrange([a, b], poly.op)?;
     assemble::assemble(&arr, poly.op)
 }

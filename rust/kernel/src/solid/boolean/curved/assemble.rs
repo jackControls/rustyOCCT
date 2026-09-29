@@ -421,6 +421,9 @@ fn build_component(
         });
     }
     let has_cavity = !inner.is_empty();
+    // Poles added to sphere faces whose loops wind once: (vertex, operand,
+    // model face).
+    let mut poles: Vec<(VertexId, usize, usize)> = Vec::new();
     for (k, &fi) in all.iter().enumerate() {
         let rf = &faces[fi];
         let mface = &arr.models[rf.op].faces[rf.face];
@@ -441,7 +444,9 @@ fn build_component(
                 fids.push(id);
             }
             let winding = match &surface {
-                Surface::Cylinder { .. } => [turns(&p, &fids, &surface), 0],
+                Surface::Cylinder { .. } | Surface::Sphere { .. } => {
+                    [turns(&p, &fids, &surface), 0]
+                }
                 _ => [0, 0],
             };
             // The loop's area in the surface's parameters (its pcurves).
@@ -470,7 +475,9 @@ fn build_component(
         let loop_ids: Vec<LoopId> = loop_ids.into_iter().map(|x| x.0).collect();
         // On a cylinder, each other loop lifted by whole turns to lie with
         // the first (each pcurve's lift starts from its point's angle).
-        if matches!(surface, Surface::Cylinder { .. }) && loop_ids.len() > 1 {
+        if matches!(surface, Surface::Cylinder { .. } | Surface::Sphere { .. })
+            && loop_ids.len() > 1
+        {
             let mean_u = |p: &TopologyParts, l: LoopId| -> f64 {
                 let Loop::Edges { fins, .. } = &p.loops[l.0] else {
                     return 0.0;
@@ -507,6 +514,31 @@ fn build_component(
                         _ => {}
                     }
                 }
+            }
+        }
+        // A sphere's face whose loops wind once in all closes at a pole, a
+        // vertex loop (S3's caps): a band winding `+u` on a forward face
+        // closes at the north pole.
+        let mut loop_ids = loop_ids;
+        if let Surface::Sphere { frame, radius } = &surface {
+            let total: i32 = loop_ids
+                .iter()
+                .map(|l| match &p.loops[l.0] {
+                    Loop::Edges { winding, .. } => winding[0],
+                    Loop::Vertex(_) => 0,
+                })
+                .sum();
+            if total.abs() == 1 {
+                let north = (total == 1) == (sense == Orientation::Forward);
+                let at = frame.point(Point2::default(), if north { *radius } else { -*radius });
+                let vid = VertexId(p.vertices.len());
+                p.vertices.push(Vertex {
+                    position: at,
+                    enclosure: None,
+                });
+                p.loops.push(Loop::Vertex(vid));
+                loop_ids.push(LoopId(p.loops.len() - 1));
+                poles.push((vid, rf.op, rf.face));
             }
         }
         let is_inner = inner.contains(&fi);
@@ -610,6 +642,27 @@ fn build_component(
         let role = role_of(&c, Role::CutEdge);
         plans.push((Slot::Edge(eid), c, t, EntityKind::Edge, role));
     }
+    // A pole continues the input's pole vertex where it had one, else it is
+    // generated from the sphere's face.
+    for &(vid, o, f) in &poles {
+        let m = &arr.models[o];
+        let at = p.vertices[vid.0].position.to_array();
+        let tol = m.tolerance.linear();
+        let input = m.verts.iter().find_map(|v| {
+            let q = qv_f64(&v.p);
+            ((0..3).all(|k| (q[k] - at[k]).abs() <= tol))
+                .then_some(v.id)
+                .flatten()
+        });
+        let (c, t) = match input {
+            Some(id) if tool(o) => (Vec::new(), vec![id]),
+            Some(id) => (vec![id], Vec::new()),
+            None => (Vec::new(), vec![m.faces[f].id]),
+        };
+        let (c, t) = tidy(c, t);
+        let role = role_of(&c, Role::CutVertex);
+        plans.push((Slot::Vertex(vid), c, t, EntityKind::Vertex, role));
+    }
     for (&v, &vid) in &vertex_id {
         let (mut c, mut t) = (Vec::new(), Vec::new());
         match &arr.vx[v].key {
@@ -633,6 +686,11 @@ fn build_component(
             VKey::Cross(fa, fb, _) => {
                 t.push(arr.models[0].faces[*fa].id);
                 t.push(arr.models[1].faces[*fb].id);
+            }
+            VKey::Ring(si, _) => {
+                let s = &arr.secs[*si];
+                t.push(arr.models[0].faces[s.fa].id);
+                t.push(arr.models[1].faces[s.fb].id);
             }
         }
         let (c, t) = tidy(c, t);
@@ -680,6 +738,7 @@ fn same_curve(a: &Crv, b: &Crv) -> bool {
             is_zero(&cross(d, d2)) && super::graph::on_line(p, d, p2)
         }
         (Crv::Meet(x), Crv::Meet(y)) => x == y,
+        (Crv::Circle(x), Crv::Circle(y)) => x == y,
         _ => false,
     }
 }
@@ -706,6 +765,51 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
     let first = &arr.edges[g0];
     let last = &arr.edges[gl];
     match &first.crv {
+        Crv::Circle(c) => {
+            // A circle of a surd radius (S9d.1) on its basis's frame.
+            let (Pos::Ang(p0), Pos::Ang(p1)) = (
+                if d0 { &first.pos[0] } else { &first.pos[1] },
+                if dl { &last.pos[1] } else { &last.pos[0] },
+            ) else {
+                unreachable!("a circle's places")
+            };
+            let with = first.with == d0;
+            let (t0, t1) = (c.angle(p0), c.angle(p1));
+            let sweep = if e.ends.is_none() {
+                TAU
+            } else {
+                let s = if with { t1 - t0 } else { t0 - t1 };
+                let s = s.rem_euclid(TAU);
+                if s == 0.0 {
+                    TAU
+                } else {
+                    s
+                }
+            };
+            let fl = |x: &V| {
+                let a = x.clone().map(|y| rational_f64(&y));
+                Vec3::new(a[0], a[1], a[2])
+            };
+            let (x, y) = (fl(&c.x), fl(&c.y));
+            let o = fl(&c.c);
+            let frame = Frame3::new(
+                Point3::new(o.x, o.y, o.z),
+                x.cross(y),
+                x,
+                arr.models[0].tolerance,
+            )?;
+            let radius = rational_f64(&c.r2).sqrt();
+            Ok(if e.ends.is_none() {
+                Curve3::Circle { frame, radius }
+            } else {
+                Curve3::CircularArc {
+                    frame,
+                    radius,
+                    start_angle: t0,
+                    sweep_angle: if with { sweep } else { -sweep },
+                }
+            })
+        }
         Crv::Meet(m) => {
             // On the carrier's and the other's stored cylinders (S9c.2).
             let CurveRef::Section(si, _) = first.curve else {
@@ -885,7 +989,9 @@ fn loop_fins(
                 if let Some(prev) = lift {
                     uv.x += TAU * ((prev.x - uv.x) / TAU).round();
                 }
-                let pc = match cylinder_pcurve(surface, curve, reversed, uv) {
+                let pc = match cylinder_pcurve(surface, curve, reversed, uv)
+                    .or_else(|| sphere_pcurve(surface, curve, reversed, lift.map(|l| l.x)))
+                {
                     Some(pc) => pc,
                     None => Curve2::Projection(Box::new(
                         Projection::new(curve.clone(), surface.clone(), reversed, uv, 16)
@@ -984,6 +1090,84 @@ fn cylinder_pcurve(
         }
     }
     Some(pc)
+}
+
+/// A sphere face's pcurve of an edge (S9d.1): a meridian's `u` constant
+/// (taken inside it, so an end at a pole needs none), a parallel's `v`
+/// constant, lines checked against the edge at the same fractions; `None`
+/// otherwise (an exact projection instead). `u` is lifted near `prev`.
+fn sphere_pcurve(
+    surface: &Surface,
+    curve: &Curve3,
+    reversed: bool,
+    prev: Option<f64>,
+) -> Option<Curve2> {
+    let Surface::Sphere { frame, radius } = surface else {
+        return None;
+    };
+    if !matches!(curve, Curve3::Circle { .. } | Curve3::CircularArc { .. }) {
+        return None;
+    }
+    let at = |f: f64| curve.point(if reversed { 1.0 - f } else { f });
+    let fr = [0.0, 0.25, 0.5, 0.75, 1.0];
+    let uv: Vec<Point2> = fr
+        .iter()
+        .map(|&f| Projection::inverse(surface, at(f)))
+        .collect::<Option<_>>()?;
+    let near = |x: f64, target: f64| x + TAU * ((target - x) / TAU).round();
+    let tol = 1e-9
+        * (1.0
+            + radius
+            + frame
+                .origin()
+                .to_array()
+                .iter()
+                .fold(0.0f64, |m, v| m.max(v.abs())));
+    let check = |pc: &Curve2| {
+        fr.iter().all(|&f| {
+            let q = pc.point(f);
+            let s = frame.point(
+                Point2::new(
+                    radius * q.y.cos() * q.x.cos(),
+                    radius * q.y.cos() * q.x.sin(),
+                ),
+                radius * q.y.sin(),
+            );
+            (s - at(f)).length() <= tol
+        })
+    };
+    // A meridian: u equal at the interior samples.
+    let u_in = [uv[1].x, uv[2].x, uv[3].x];
+    let same_u = u_in
+        .iter()
+        .all(|u| (near(*u, u_in[0]) - u_in[0]).abs() < 1e-9);
+    if same_u {
+        let u = prev.map_or(u_in[0], |p| near(u_in[0], p));
+        let pc = Curve2::LineSegment {
+            start: Point2::new(u, uv[0].y),
+            end: Point2::new(u, uv[4].y),
+        };
+        if check(&pc) {
+            return Some(pc);
+        }
+    }
+    // A parallel: v equal throughout, u turning with the curve.
+    if uv.iter().all(|p| (p.y - uv[0].y).abs() < 1e-9) && uv[0].y.cos() > 1e-6 {
+        let mut u = prev.map_or(uv[0].x, |p| near(uv[0].x, p));
+        let u0 = u;
+        for w in uv.windows(2) {
+            let d = near(w[1].x, w[0].x) - w[0].x;
+            u += d;
+        }
+        let pc = Curve2::LineSegment {
+            start: Point2::new(u0, uv[0].y),
+            end: Point2::new(u, uv[0].y),
+        };
+        if check(&pc) {
+            return Some(pc);
+        }
+    }
+    None
 }
 
 /// A cylinder loop's turns about the axis: its pcurves' change of `u`.

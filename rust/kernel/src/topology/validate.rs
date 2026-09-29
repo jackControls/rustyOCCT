@@ -2616,8 +2616,34 @@ fn face_hits<T: Real>(
     d: &[R; 3],
     margin2: &T,
 ) -> Option<u32> {
-    // Rays against cones and spheres are not decided yet: the containment
-    // is uncertified.
+    // A whole sphere (no loops, S9d.1): the ray's hits are the positive
+    // roots of `|p + t d - c|^2 = R^2`, exactly (a tangency or a root at
+    // the start undecided).
+    if let (Surface::Sphere { frame, radius }, true) = (&face.surface, loops.is_empty()) {
+        let c = frame.origin().to_array().map(r);
+        let rr = r(*radius);
+        let w: [R; 3] = std::array::from_fn(|i| &p[i] - &c[i]);
+        let dotr = |a: &[R; 3], b: &[R; 3]| &a[0] * &b[0] + &a[1] * &b[1] + &a[2] * &b[2];
+        let (a2, b2, c2) = (dotr(d, d), int(2) * dotr(&w, d), dotr(&w, &w) - &rr * &rr);
+        let disc = &b2 * &b2 - int(4) * &a2 * &c2;
+        let zero = int(0);
+        if disc < zero {
+            return Some(0);
+        }
+        if disc == zero || c2 == zero {
+            return None;
+        }
+        // Roots' product c2 / a2 and sum -b2 / a2 (a2 > 0).
+        return Some(if c2 < zero {
+            1
+        } else if b2 < zero {
+            2
+        } else {
+            0
+        });
+    }
+    // Rays against other cones, spheres and tori are not decided yet: the
+    // containment is uncertified.
     if matches!(
         face.surface,
         Surface::Cone { .. } | Surface::Sphere { .. } | Surface::Torus { .. } | Surface::BSpline(_)
@@ -3928,10 +3954,10 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
             }
             continue;
         }
-        // A torus face whose first loop runs as a hole is the torus less its
-        // loops (S8d.3): every loop then has the inner sign, and no outer
-        // loop holds them.
-        let complement = matches!(face.surface, Surface::Torus { .. })
+        // A torus or sphere face whose first loop runs as a hole is the
+        // surface less its loops (S8d.3, S9d.1): every loop then has the inner
+        // sign, and no outer loop holds them.
+        let complement = matches!(face.surface, Surface::Torus { .. } | Surface::Sphere { .. })
             && edge_loops.first().is_some_and(|(_, lp)| {
                 tiered(
                     None,

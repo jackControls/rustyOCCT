@@ -1778,8 +1778,10 @@ Decisions for S9, recorded before its code (2026-09-28):
     turned frames, is a root of the circle's quartic; (b) the antipode of
     the circle's chart base, where the quartic drops a degree, is a
     rational vertex; (c) the bridge self-test's three cylinder gaps are
-    evaluated now (their values are the fixture comparisons'). Pending:
-    the campaign.
+    evaluated now (their values are the fixture comparisons'). The campaign
+    at `7e1281ad` was clean: 314 mutation executions after a 2,925 s
+    replay of 1,379 inputs, 37,038 edges, 510 MB peak, the slowest input
+    30 s.
   * **DRAW survey of S9c.2b.2 (2026-09-28, `UPSTREAM_TESTS.md`).** Of the
     boolean group's 1,802 self-contained cases Rust evaluates 830 (822
     before), none failing, all registered: `ZF2` and `ZF3` of the four
@@ -1874,6 +1876,37 @@ Decisions for S9, recorded before its code (2026-09-28):
     with curved faces or edges in any position (S9c)")`): every result
     valid with the reference's solids, all 30 match within 3.3e-9 (no
     review), three solids' counts change when unified. S9d.1's kernel next.
+  * **S9d.1 implemented** (`solid/boolean/curved/sphere.rs`): spheres, caps
+    and zones against polyhedral prisms in S9c's arrangement, as the
+    decisions describe; all 30 fixtures as declared, every history checked,
+    results deterministic and moved rigidly; `compare_sphere_boolean.py` 30
+    matches, counts included, no review. Amendments, from the
+    implementation: (a) a whole sphere's split axis is a generic rational
+    direction moving with the seam (a cap's or zone's is its frame's): with
+    the frame's axis a box's face through the centre put a pole on the box
+    at every seam (the octant); (b) hemispheres are traced in their
+    stereographic projection (the orthographic one compressed the rim below
+    the sampled boundary's chord error, and a hole near it fell outside);
+    (c) a section circle meeting no seam inside both faces is a ring, given
+    one vertex at a rational point; (d) a result's sphere face whose loops
+    wind once holds its pole as a vertex loop, as S3's caps do, and a
+    meridian's or parallel's pcurve is a line (a loop through a pole needs
+    no `u` there); (e) the validator decides a ray against a whole sphere
+    (a box's cavity in a sphere), rays against sphere pieces staying
+    undecided; (f) a Boolean result's bounds hold its spheres' boxes (edges
+    do not bound a sphere's face; the classifier's prefilter refused a
+    fused sphere's south pole); (g) the `boolean` fuzz target makes its tool
+    a sphere, a cap or a zone by the spline byte's two top bits, and
+    accepts S9d's refusals; (h) a sphere's face whose first loop runs as a
+    hole (none winding) is the sphere less its loops, as a torus's (S8d.3),
+    its integrals the whole sphere's less the loops': the first replay with
+    sphere tools found a tilted U's corner at a sphere's centre fused into
+    such a face (`fuzz/regressions/README.md`); (i) the history checker
+    compares circles by centres, normals and radii within tolerance and a
+    circle in a plane as an ellipse (the same replay: a rim split at the
+    seam, a section's circle rounded from its basis, differ from their
+    wholes' frames within rounding). Pending: the DRAW survey, the
+    campaign.
 
 ### Parallel tracks
 

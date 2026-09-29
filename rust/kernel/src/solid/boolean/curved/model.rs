@@ -232,6 +232,9 @@ pub(super) enum FaceKind {
     Cap(bool),
     /// The wall on segment `j` of boundary `b`.
     Wall(usize, usize),
+    /// A sphere's hemisphere on the split plane's positive side or not
+    /// (S9d.1).
+    Half(bool),
 }
 
 /// A face's exact surface, its normal leaving the material.
@@ -248,6 +251,11 @@ pub(super) enum Surf {
         r: R,
         inside: bool,
     },
+    /// A sphere (S9d.1), its material inside.
+    Sphere {
+        c: V,
+        r: R,
+    },
 }
 
 /// A 3D curve, exact.
@@ -260,6 +268,9 @@ pub(super) enum Crv {
     /// A piece of two cylinders' meeting (S9c.2), placed by its carrier's
     /// angle.
     Meet(Box<super::procedural::MeetCrv>),
+    /// A circle of a surd radius (S9d.1: a sphere's sections and rims),
+    /// placed by its basis coordinates.
+    Circle(Box<super::sphere::Circ>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -268,14 +279,19 @@ pub(super) enum EdgeKind {
     Cap(bool, usize, usize),
     /// The vertical edge through the start of segment `j` of boundary `b`.
     Vertical(usize, usize),
+    /// A sphere's rim (the high end or not), half `j` (S9d.1).
+    Rim(bool, usize),
+    /// A sphere's split great circle, arc `j` (S9d.1).
+    Split(usize),
 }
 
 #[derive(Debug, Clone)]
 pub(super) struct MEdge {
     pub(super) kind: EdgeKind,
     pub(super) curve: Crv,
-    /// On a conic, the start's and end's `(cos, sin)` and the direction.
-    pub(super) arc: Option<([R; 2], [R; 2], bool)>,
+    /// On a conic (or a circle), the start's and end's places and the
+    /// direction.
+    pub(super) arc: Option<([Qd; 2], [Qd; 2], bool)>,
     pub(super) start: usize,
     pub(super) end: usize,
     /// The faces on its left and right as it runs (model indices).
@@ -286,7 +302,7 @@ pub(super) struct MEdge {
 
 #[derive(Debug, Clone)]
 pub(super) struct MVert {
-    pub(super) p: V,
+    pub(super) p: QV,
     pub(super) id: Option<EntityId>,
 }
 
@@ -309,6 +325,9 @@ pub(super) struct Prism {
     pub(super) info: BTreeMap<EntityId, (Operand, Role)>,
     /// Float bounds of each face, widened (for filtering only).
     pub(super) boxes: Vec<([f64; 3], [f64; 3])>,
+    /// A sphere's own data (S9d.1): its faces are its ends' discs and its
+    /// hemispheres.
+    pub(super) ball: Option<super::sphere::Ball>,
 }
 
 fn out_of_domain(what: &'static str) -> Error {
@@ -499,7 +518,7 @@ impl Prism {
                         Some(id(Slot::Vertex(VertexId(k)))?)
                     };
                     verts.push(MVert {
-                        p: f.point(&p[0], &p[1], h),
+                        p: qv(&f.point(&p[0], &p[1], h)),
                         id: vid,
                     });
                 }
@@ -543,7 +562,7 @@ impl Prism {
                                     a: scale(&f.x, r),
                                     b: scale(&f.y, r),
                                 },
-                                Some((rel(p), rel(qq), *ccw)),
+                                Some((rel(p).map(Qd::rat), rel(qq).map(Qd::rat), *ccw)),
                             )
                         }
                     };
@@ -576,8 +595,12 @@ impl Prism {
                 };
                 let prev = wall_of[&(b, (j + count - 1) % count)];
                 let this = wall_of[&(b, j)];
-                let a = verts[vat(false, j)].p.clone();
-                let b2 = verts[vat(true, j)].p.clone();
+                let rational = |v: &MVert| {
+                    v.p.clone()
+                        .map(|x| x.rational().expect("a rational vertex").clone())
+                };
+                let a = rational(&verts[vat(false, j)]);
+                let b2 = rational(&verts[vat(true, j)]);
                 // Upward, the previous wall on the left (outside, facing
                 // the wall's normal) on an outer boundary.
                 edges.push(MEdge {
@@ -622,6 +645,7 @@ impl Prism {
             verts,
             info,
             boxes: Vec::new(),
+            ball: None,
         };
         prism.check_slots(solid)?;
         prism.boxes = (0..prism.faces.len()).map(|i| prism.face_box(i)).collect();
@@ -644,7 +668,7 @@ impl Prism {
                 return Err(Error::InvalidTopology("a prism's vertex slot"));
             };
             let stored = t.vertices()[k.0].position.to_array();
-            let exact = v.p.clone().map(|x| crate::solid::split::rational_f64(&x));
+            let exact = qv_f64(&v.p);
             if (0..3).any(|i| (stored[i] - exact[i]).abs() > tol) {
                 return Err(Error::InvalidTopology("a prism's vertices out of order"));
             }
@@ -685,6 +709,7 @@ impl Prism {
                 }
             }
             FaceKind::Wall(b, j) => add_seg(&self.bounds[b].segs[j], &mut pts),
+            FaceKind::Half(_) => unreachable!("a sphere's boxes are its own"),
         }
         let mut lo = [f64::INFINITY; 3];
         let mut hi = [f64::NEG_INFINITY; 3];
@@ -706,6 +731,7 @@ impl Prism {
     pub(super) fn normal_at(&self, fi: usize, p: &QV) -> QV {
         match &self.faces[fi].surf {
             Surf::Plane { m, .. } => qv(m),
+            Surf::Sphere { c, .. } => qsub(p, &qv(c)),
             Surf::Cyl { c, inside, .. } => {
                 let l = self.f.local_q(p);
                 let (du, dv) = (l[0].add_r(&-&c[0]), l[1].add_r(&-&c[1]));
@@ -916,6 +942,9 @@ impl Prism {
     /// (symbolically: `p + e d1 + e^2 d2`, `e` infinitesimal; a push along a
     /// cylinder's circle keeps to the cylinder).
     pub(super) fn member(&self, p: &QV, dirs: &[QV]) -> Loc {
+        if let Some(ball) = &self.ball {
+            return ball.member(p, dirs);
+        }
         let l = self.f.local_q(p);
         let ld: Vec<QV> = dirs.iter().map(|d| self.f.local_dir_q(d)).collect();
         // Heights.
@@ -959,6 +988,21 @@ impl Prism {
     /// Where a point on a face's surface lies in the face's region: inside,
     /// outside or on its boundary (exactly).
     pub(super) fn in_face(&self, fi: usize, p: &QV) -> Loc {
+        if let Some(ball) = &self.ball {
+            return match self.faces[fi].kind {
+                FaceKind::Half(side) => ball.in_half(side, p),
+                FaceKind::Cap(high) => {
+                    let rim = ball.rim(usize::from(high)).expect("a disc's rim");
+                    let d = qsub(p, &qv(&rim.c));
+                    match qqdot(&d, &d).add_r(&-rim.r2.clone()).sign() {
+                        Ordering::Less => Loc::In,
+                        Ordering::Equal => Loc::On,
+                        Ordering::Greater => Loc::Out,
+                    }
+                }
+                FaceKind::Wall(..) => unreachable!("a sphere has no walls"),
+            };
+        }
         let l = self.f.local_q(p);
         let x = [l[0].clone(), l[1].clone()];
         match self.faces[fi].kind {
@@ -967,6 +1011,7 @@ impl Prism {
                 OnProfile::Out => Loc::Out,
                 _ => Loc::On,
             },
+            FaceKind::Half(_) => unreachable!("a prism has no hemispheres"),
             FaceKind::Wall(b, j) => {
                 let h = [l[2].add_r(&-&self.lo).sign(), l[2].add_r(&-&self.hi).sign()];
                 if h[0] == Ordering::Less || h[1] == Ordering::Greater {

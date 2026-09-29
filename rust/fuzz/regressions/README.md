@@ -913,3 +913,24 @@ which was otherwise clean: 363 mutation executions after a 2,607 s replay of
 under AddressSanitizer and 2.8 s in a release build with debug assertions,
 within the target's 60 s limit; it passes every check and is kept so the
 replay covers it.
+
+## Boolean: a sphere less a patch clear of its poles
+
+`boolean/replay-1608293dab85fd14619a26a3b966e3fff7eb24e5.bin` is a corpus
+input that S9d.1's sphere tool (the spline byte's top bits) turned into a
+tilted U whose corner and bottom cap pass through a whole sphere's centre.
+The fused sphere face was the sphere less a four-sided patch below its
+stored pole, one contractible loop running as a hole, which the validator
+refused (`loop_winding`: only a torus's face could be its surface less its
+loops). A sphere's face may now be too, its mass the whole sphere less the
+loops' integrals (`tests/sphere_booleans.rs`,
+`a_sphere_less_a_patch_clear_of_its_poles`, checks the volumes).
+
+`boolean/replay-709962d223ef329daa4670824ca32c3bce44136d.bin`, from the same
+replay, fused a tilted prism with a sphere whose sections lie in its faces:
+the history checker compared a split circle with its whole by their frames
+(equal only when the circle's normal is the planes' exactly), and a
+section's circle rounded from its rational basis, or a rim split at the
+sphere's seam, differs from its whole's frame within rounding. Circles now
+compare by their centres, normals and radii within tolerance, and a circle
+in a plane by its centre's and axes' ends' distances, as an ellipse.

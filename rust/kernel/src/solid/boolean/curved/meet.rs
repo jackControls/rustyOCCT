@@ -29,6 +29,11 @@ pub(super) enum Pos {
     Ang([Qd; 2]),
 }
 
+/// A sphere against a cylinder or another sphere: S9d.2's.
+fn sphere_later() -> Error {
+    Error::OutOfDomain("a sphere against a cylinder or a sphere (S9d.2)")
+}
+
 pub(super) fn tangency() -> Error {
     Error::Degenerate("a tangency between the inputs (S9c)")
 }
@@ -279,6 +284,17 @@ pub(super) fn section(
         }
         (Surf::Plane { p, m }, Surf::Cyl { c, r, .. }) => plane_cyl(&py.f, c, r, p, m),
         (Surf::Cyl { c, r, .. }, Surf::Plane { p, m }) => plane_cyl(&px.f, c, r, p, m),
+        // A plane's section of a sphere: a circle (S9d.1).
+        (Surf::Plane { p, m }, Surf::Sphere { c, r })
+        | (Surf::Sphere { c, r }, Surf::Plane { p, m }) => Ok(Section::Curves(
+            super::sphere::plane_section(c, r, p, m)?
+                .map(|circ| Crv::Circle(Box::new(circ)))
+                .into_iter()
+                .collect(),
+        )),
+        (Surf::Cyl { .. }, Surf::Sphere { .. })
+        | (Surf::Sphere { .. }, Surf::Cyl { .. })
+        | (Surf::Sphere { .. }, Surf::Sphere { .. }) => Err(sphere_later()),
         (Surf::Cyl { c, r, .. }, Surf::Cyl { .. }) => {
             match pair.expect("a cylinder pair's relation") {
                 CylPair::Apart => Ok(Section::Curves(Vec::new())),
@@ -389,6 +405,24 @@ pub(super) fn edge_surface(
     pair: Option<&CylPair>,
 ) -> Result<EdgeMeet> {
     match (curve, &py.faces[fy].surf) {
+        // S9d.1: a line against a sphere; a sphere's circle against a
+        // plane; anything else against a sphere is S9d.2's.
+        (Crv::Line { p, d }, Surf::Sphere { c, r }) => super::sphere::line_sphere(p, d, c, r),
+        (Crv::Circle(circ), Surf::Plane { p: p0, m }) => match circ.meet_plane(p0, m)? {
+            None => Ok(EdgeMeet::Along),
+            Some(cs) => Ok(EdgeMeet::Points(
+                cs.into_iter()
+                    .map(|e| {
+                        let x = qadd(
+                            &qv(&circ.c),
+                            &qadd(&qscale(&circ.x, &e[0]), &qscale(&circ.y, &e[1])),
+                        );
+                        (Pos::Ang(e), x)
+                    })
+                    .collect(),
+            )),
+        },
+        (Crv::Circle(_), _) | (_, Surf::Sphere { .. }) => Err(sphere_later()),
         (Crv::Line { p, d }, Surf::Plane { p: p0, m }) => {
             let md = dot(m, d);
             let off = qdot(&qsub(&qv(p0), p), m);
@@ -508,6 +542,7 @@ pub(super) fn edge_surface(
 pub(super) fn tangent(curve: &Crv, pos: &Pos, x: &QV) -> QV {
     match (curve, pos) {
         (Crv::Line { d, .. }, _) => qv(d),
+        (Crv::Circle(c), _) => c.tangent(x),
         (Crv::Conic { a, b, .. }, Pos::Ang(cs)) => conic_tangent(a, b, cs),
         (Crv::Meet(m), Pos::Ang(cs)) => m.tangent(cs, x),
         (Crv::Conic { .. } | Crv::Meet(_), Pos::T(_)) => {

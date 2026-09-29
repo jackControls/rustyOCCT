@@ -166,9 +166,11 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   height at the alias; a projection's from certified pieces, each counted
   where `v` lies above the point all along it, `u` is monotone and its ends
   straddle the alias, others bisected at most 40 times: S9c.2); other
-  pcurves on those loops are `uncertified_containment`. On a torus a face whose first loop runs as a
-  hole is the torus less its loops (S8d.3): every loop then has the inner
-  sign and no outer loop holds them. An inner loop's containment is tried
+  pcurves on those loops are `uncertified_containment`. On a torus or a
+  sphere a face whose first loop runs as a hole (and none winds in `u`) is
+  the surface less its loops (S8d.3, S9d.1): every loop then has the inner
+  sign, no outer loop holds them, and its integrals are the whole
+  surface's less the loops'. An inner loop's containment is tried
   at its start and at two points along its first fin (two rings may start
   on one ray).
 * **Region orientation.** The flux of `x/3` through a face is
