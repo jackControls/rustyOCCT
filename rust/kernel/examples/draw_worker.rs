@@ -1965,8 +1965,8 @@ fn rebuilt(s: &Solid, operation: OperationId) -> Result<Solid> {
 /// So is a Boolean result that is a prism, which the kernel's Boolean
 /// indexes by its profile (its entities descend from the inputs); a stack
 /// or a polyhedron is taken as it is (S9b.2, on its stored geometry), the
-/// other argument built again when they share ids (two general bodies
-/// sharing ids are unsupported).
+/// other argument built again when they share ids (two general bodies, or
+/// a cone, a sphere or a torus, sharing ids are unsupported).
 fn boolean(
     object: &Shape,
     tool: &Shape,
@@ -1989,8 +1989,17 @@ fn boolean(
             b = rebuilt(&b, operations[2])?;
         } else if !general(&a) {
             a = rebuilt(&a, operations[1])?;
-        } else {
+        } else if matches!(
+            (object, tool),
+            (Shape::Boolean { .. }, Shape::Boolean { .. })
+        ) {
             return Err(boolean_unsupported("two stacks or polyhedra sharing ids"));
+        } else {
+            // A cone, a sphere or a torus sharing ids with the other
+            // argument: nothing to extrude again.
+            return Err(boolean_unsupported(
+                "a solid other than a prism sharing ids",
+            ));
         }
     }
     let (a, b, operation) = (&a, &b, operations[0]);

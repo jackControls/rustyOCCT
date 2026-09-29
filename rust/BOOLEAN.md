@@ -495,9 +495,11 @@ unified faces where OCCT has 8). The derived cases `boolean_prisms`,
 `boolean_stacks` (a step, a pocket, a box cut in two by a slab, a closed
 cavity, a tool through a round wall) and `boolean_polyhedra` (quarter
 turns, a bar turned 45 degrees through a box, a tilted bar cutting a box
-in two, a turned box inside another) and 704 cases of upstream's
-`boolean` group (86 of them stacks, 298 polyhedra of two boxes, one
-turned) evaluate on both backends. Of the upstream cases in frames with
-different axes the rest are refused: arcs in turned frames (S9c), solids
-other than prisms, and S9b.1's `Degenerate` (a turned box's corner on
-another's wall, edge or corner within rounding).
+in two, a turned box inside another) and 741 cases of upstream's
+`boolean` group (86 of them stacks, 300 polyhedra of two boxes, one
+turned, and 35 pockets cut one after another, a stack or a polyhedron
+given to the next `bcut`) evaluate on both backends. Of the upstream cases
+in frames with different axes the rest are refused: arcs in turned frames
+(S9c), solids other than prisms, and S9b.1's `Degenerate` (a turned box's
+corner on another's wall, edge or corner within rounding); of the stacks
+given to another Boolean, those with cylindrical walls (S9c).

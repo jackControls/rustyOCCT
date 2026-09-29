@@ -3069,7 +3069,13 @@ Decisions for S9, recorded before its code (2026-09-28):
     after the replay of 999 inputs, 324 MB peak) and `split` clean (2,356,
     3,293 inputs, 1,396 MB); at `cfc641c9` `split` (1,898, 3,396 inputs,
     1,900 MB) and `step` (13,991, 743 inputs) clean, `boolean` a timeout in
-    its replay (`fuzz/regressions/README.md`).
+    its replay (`fuzz/regressions/README.md`). DRAW survey (2026-09-28,
+    `UPSTREAM_TESTS.md`): of the boolean group's 1,802 self-contained cases
+    Rust evaluates 741 (704 before), none failing; of S9b.1's 39 stacks and
+    polyhedra given to another Boolean 35 evaluate (pockets cut one after
+    another) and 4 are stacks with cylindrical walls (S9c);
+    `bopfuse_simple/H3` and `H4`, S9b.1's directions of zero length,
+    evaluate.
   * S9c: decisions recorded (2026-09-28); S9c.1's evidence came before any
     kernel code (`BOOLEAN.md`): `curved_boolean_reference.py` (slices
     parallel to both axes, breakpoints as exact polynomial roots, faces
