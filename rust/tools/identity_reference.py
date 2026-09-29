@@ -406,10 +406,12 @@ def encode_boolean_case(obj, operation, tool, boolean_operation):
 
     S9d.1: either input may be a sphere, a cap or a zone (its `frame` and
     `sphere R LOW HIGH` rows, `Solid::sphere_with` on the frame, the
-    latitudes in radians), read as any identity case's."""
+    latitudes in radians), read as any identity case's. S9d.3a: likewise a
+    cone or frustum (its `frame` and `cone BOTTOM TOP HEIGHT` rows,
+    `Solid::cone_with` on the frame)."""
     assert operation in BOOLEAN_OPERATIONS, operation
-    assert obj.make is None and tool.make is None and tool.box is None and tool.cone is None \
-        and tool.torus is None, 'S9a: two prisms (S9d.1: or a sphere)'
+    assert obj.make is None and tool.make is None and tool.box is None \
+        and tool.torus is None, 'S9a: two prisms (S9d.1: or a sphere; S9d.3a: or a cone)'
     assert not obj.transforms and not tool.transforms, 'S9a: prisms in place'
     first = encode_case(obj).rsplit('\nend', 1)[0]
     second = encode_case(tool).split('\n')[1:-1]
@@ -745,12 +747,19 @@ def native_case(c):
     of the `prism` vector (S8e). A sphere, cap or zone (S9d.1) is one row
     `sphere ox oy oz nx ny nz xx xy xz R LOW HIGH`, its frame's origin,
     normal and x axis and `Solid::sphere_with`'s radius and latitudes
-    (radians), as `BRepPrimAPI_MakeSphere(gp_Ax2, R, LOW, HIGH)` takes them."""
+    (radians), as `BRepPrimAPI_MakeSphere(gp_Ax2, R, LOW, HIGH)` takes them.
+    A cone or frustum (S9d.3a) is one row `cone ox oy oz nx ny nz xx xy xz
+    R1 R2 H`, `Solid::cone_with`'s bottom and top radii and height, as
+    `BRepPrimAPI_MakeCone(gp_Ax2, R1, R2, H)` takes them."""
     if c.sphere is not None:
         assert not c.transforms and c.make is None, f'{c.name}: a sphere in place'
         o, x, _, n = frame_axes(c.frame)
         return '\n'.join([f'case {c.name}', 'sphere '+' '.join(number(v) for v in (*o, *n, *x, *c.sphere)),
                           'end'])
+    if c.cone is not None:
+        assert not c.transforms and c.make is None, f'{c.name}: a cone in place'
+        o, x, _, n = frame_axes(c.frame)
+        return '\n'.join([f'case {c.name}', 'cone '+' '.join(number(v) for v in (*o, *n, *x, *c.cone)), 'end'])
     if c.box is not None:
         (ox, oy, oz), size = c.box
         frame = (0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0)

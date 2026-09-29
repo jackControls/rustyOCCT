@@ -11,7 +11,10 @@
 // the Boolean is the object (argument) with the tool. S9d.1: either input
 // may instead be one row `sphere ox oy oz nx ny nz xx xy xz R a1 a2`, built
 // by BRepPrimAPI_MakeSphere(gp_Ax2(origin, normal, x), R, a1, a2) (a whole
-// sphere, a cap or a zone; the latitudes in radians).
+// sphere, a cap or a zone; the latitudes in radians). S9d.3a: likewise one row
+// `cone ox oy oz nx ny nz xx xy xz R1 R2 H`, built by
+// BRepPrimAPI_MakeCone(gp_Ax2(origin, normal, x), R1, R2, H) (a cone or a
+// frustum; a zero radius an apex).
 //
 // Output: `NAME done N valid warnings` (N solids in the result, the result
 // checked by BRepCheck_Analyzer, 1 if the operation reported warnings), then
@@ -30,6 +33,7 @@
 #include <BRepBuilderAPI_MakeWire.hxx>
 #include <BRepCheck_Analyzer.hxx>
 #include <BRepGProp.hxx>
+#include <BRepPrimAPI_MakeCone.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
 #include <BRepPrimAPI_MakeSphere.hxx>
 #include <GProp_GProps.hxx>
@@ -96,19 +100,23 @@ Handle(Geom_BSplineCurve) spline(std::istringstream& in) {
 }
 
 // One prism's construction rows, as occt_split_oracle.cpp reads them, or
-// (S9d.1) a sphere's row.
+// (S9d.1) a sphere's row, or (S9d.3a) a cone's.
 struct Prism {
   gp_Ax3 frame;
   std::vector<TopoDS_Wire> wires;
   gp_Vec vector;
   bool has_vector = false;
-  TopoDS_Shape sphere;
+  TopoDS_Shape primitive;
 
   void row(const std::string& kind, std::istringstream& in) {
     if (kind == "sphere") {
       auto v = numbers(in, 12);
       gp_Ax2 axis(gp_Pnt(v[0], v[1], v[2]), gp_Dir(v[3], v[4], v[5]), gp_Dir(v[6], v[7], v[8]));
-      sphere = BRepPrimAPI_MakeSphere(axis, v[9], v[10], v[11]).Shape();
+      primitive = BRepPrimAPI_MakeSphere(axis, v[9], v[10], v[11]).Shape();
+    } else if (kind == "cone") {
+      auto v = numbers(in, 12);
+      gp_Ax2 axis(gp_Pnt(v[0], v[1], v[2]), gp_Dir(v[3], v[4], v[5]), gp_Dir(v[6], v[7], v[8]));
+      primitive = BRepPrimAPI_MakeCone(axis, v[9], v[10], v[11]).Shape();
     } else if (kind == "plane") {
       auto v = numbers(in, 9);
       frame = gp_Ax3(gp_Pnt(v[0], v[1], v[2]), gp_Dir(v[3], v[4], v[5]), gp_Dir(v[6], v[7], v[8]));
@@ -174,9 +182,9 @@ struct Prism {
   }
 
   TopoDS_Shape shape() const {
-    if (!sphere.IsNull()) {
-      if (!wires.empty() || has_vector) throw Standard_Failure("a sphere and a prism");
-      return sphere;
+    if (!primitive.IsNull()) {
+      if (!wires.empty() || has_vector) throw Standard_Failure("a primitive and a prism");
+      return primitive;
     }
     if (wires.empty() || !has_vector) throw Standard_Failure("incomplete prism");
     BRepBuilderAPI_MakeFace mf(gp_Pln(frame), wires.at(0), true);

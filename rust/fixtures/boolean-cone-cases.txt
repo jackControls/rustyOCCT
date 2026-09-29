@@ -1,0 +1,300 @@
+case ellipse_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -4.0 4.0
+boundary P 3 -8.0 -1.0 4.0 -1.0 4.0 2.0
+end
+case ellipse_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -4.0 4.0
+boundary P 3 -8.0 -1.0 4.0 -1.0 4.0 2.0
+end
+case ellipse_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -4.0 4.0
+boundary P 3 -8.0 -1.0 4.0 -1.0 4.0 2.0
+end
+case parabola_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -4.0 4.0
+boundary P 4 2.75 -3.0 4.0 -3.0 4.0 3.5 -0.5 3.5
+end
+case parabola_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -4.0 4.0
+boundary P 4 2.75 -3.0 4.0 -3.0 4.0 3.5 -0.5 3.5
+end
+case hyperbola_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 3.0
+boundary P 4 1.25 -4.0 4.0 -4.0 4.0 4.0 1.25 4.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+end
+case hyperbola_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 3.0
+boundary P 4 1.25 -4.0 4.0 -4.0 4.0 4.0 1.25 4.0
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+end
+case apex_box_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 1.5 0.0 3.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 1.5 4.0
+boundary P 4 -0.25 -1.0 1.0 -1.0 1.0 1.0 -0.25 1.0
+end
+case apex_box_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 1.5 0.0 3.0
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 1.5 4.0
+boundary P 4 -0.25 -1.0 1.0 -1.0 1.0 1.0 -0.25 1.0
+end
+case apex_corner_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 1.5 0.0 3.0
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 2.0 4.0
+boundary P 4 0.125 -0.25 2.0 -0.25 2.0 2.0 0.125 2.0
+end
+case cone_in_box_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -2.0 2.0
+boundary P 4 -2.0 -2.0 3.0 -2.0 3.0 3.0 -2.0 3.0
+boolean cut 93
+op 92
+frame 0.5 0.25 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 1.0 0.0 2.0
+end
+case box_in_frustum_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 3.0 2.0 3.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.5 2.0
+boundary P 4 -1.0 -1.0 1.0 -1.0 1.0 1.0 -1.0 1.0
+end
+case normal_cut_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 1.0 5.0
+boundary P 4 -3.0 -3.0 3.0 -3.0 3.0 3.0 -3.0 3.0
+end
+case normal_cut_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 1.0 5.0
+boundary P 4 -3.0 -3.0 3.0 -3.0 3.0 3.0 -3.0 3.0
+end
+case normal_cut_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 1.0 5.0
+boundary P 4 -3.0 -3.0 3.0 -3.0 3.0 3.0 -3.0 3.0
+end
+case slab_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 3.0
+boundary P 4 -0.25 -3.0 0.25 -3.0 0.25 3.0 -0.25 3.0
+end
+case bar_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -4.0 4.0
+boundary P 4 -0.25 0.75 0.25 0.75 0.25 1.25 -0.25 1.25
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+end
+case on_top_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 2.0 3.0
+boundary P 4 -3.0 -3.0 3.0 -3.0 3.0 3.0 -3.0 3.0
+end
+case on_top_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 2.0 3.0
+boundary P 4 -3.0 -3.0 3.0 -3.0 3.0 3.0 -3.0 3.0
+end
+case base_wall_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.0
+boundary P 4 0.5 -3.0 3.0 -3.0 3.0 3.0 0.5 3.0
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+end
+case tilt_ellipse_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -4.0 0.5
+boundary P 4 -5.0 -5.0 5.0 -5.0 5.0 5.0 -5.0 5.0
+end
+case tilt_ellipse_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -4.0 0.5
+boundary P 4 -5.0 -5.0 5.0 -5.0 5.0 5.0 -5.0 5.0
+end
+case lean_apex_cut 1e-07
+op 91
+frame 1.0 2.0 -1.0 3.0 0.0 4.0 0.0 1.0 0.0
+cone 1.5 0.0 3.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.5 4.0
+boundary P 4 0.0 -1.0 5.0 -1.0 5.0 5.0 0.0 5.0
+end
+case lean_apex_common 1e-07
+op 91
+frame 1.0 2.0 -1.0 3.0 0.0 4.0 0.0 1.0 0.0
+cone 1.5 0.0 3.0
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.5 4.0
+boundary P 4 0.0 -1.0 5.0 -1.0 5.0 5.0 0.0 5.0
+end
+case inside_tilt_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary P 4 -3.0 -3.0 3.0 -3.0 3.0 3.0 -3.0 3.0
+boolean cut 93
+op 92
+frame 0.25 0.5 -0.5 0.0 -4.0 3.0 1.0 0.0 0.0
+cone 1.5 0.5 2.0
+end
+case tilt_slab_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 -4.0 3.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.25 0.75
+boundary P 4 -5.0 -5.0 5.0 -5.0 5.0 5.0 -5.0 5.0
+end
+case apex_plane_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 1.5 0.0 3.0
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 4.0
+boundary P 4 0.0 -3.0 3.0 -3.0 3.0 3.0 0.0 3.0
+end
+case ruling_tangent_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -4.0 3.0
+boundary P 4 3.5 -3.0 5.0 -3.0 5.0 5.0 -0.5 5.0
+end
+case ruling_tangent_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -4.0 3.0
+boundary P 4 3.5 -3.0 5.0 -3.0 5.0 5.0 -0.5 5.0
+end
+case vertex_on_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 1.5
+boundary P 4 0.75 1.0 4.0 1.0 4.0 4.0 0.75 4.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 1.0 2.0
+end
