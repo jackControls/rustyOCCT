@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 36556520655 (commit 6f51406c), ubuntu-24.04, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "781eef84349c2489af88dc00775a7d78e1c9138e149de938c08f38ac2c962cd8",
+  "review": "The same statuses, sides, piece counts and face, edge and vertex counts as the macOS capture; areas, lengths and centres within 1e-15 of their size, except that wire_wave_four's two mirror-image pieces above (lengths 2.2848889323038 within 2e-16 relative of each other) come in the other order."
+}

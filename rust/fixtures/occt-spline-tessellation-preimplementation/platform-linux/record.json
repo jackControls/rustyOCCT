@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 36556520655 (commit 6f51406c), ubuntu-24.04, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "7ea843c29c82665c09271ebcda138e56235535d513258c79f52d8cff3f8e013f",
+  "review": "The same statuses as the macOS capture; 16 of 24 rows with the same node and triangle counts, their deflections within 1e-12 relative; on 8 rows (spline_sharp_rational, spline_dome, sheet_spline_hole and sheet_rational at both settings) BRepMesh on Linux places a few nodes differently: nodes within 5.4%, welded nodes within 8.9% and triangles within 9.3% (the coarse spline_sharp_rational: 75, 45 and 86 against 79, 49 and 94), deflections and areas accordingly. Each Linux row is compared with the reference on its own; reviewed differences are fingerprinted with the Linux row."
+}

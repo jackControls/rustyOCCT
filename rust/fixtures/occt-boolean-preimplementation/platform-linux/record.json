@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 36556520655 (commit 6f51406c), ubuntu-24.04, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "17993d28b25000dc30b1f36b90168619231c2a37d9faf957a8746abc8954b14c",
+  "review": "The same statuses and face, edge and vertex counts as the macOS capture for every Boolean; volumes, areas and centres within 1.1e-15 relative."
+}

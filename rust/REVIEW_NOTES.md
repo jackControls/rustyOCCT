@@ -2524,6 +2524,43 @@ Decisions for S9, recorded before its code (2026-09-28):
     Rust evaluates 947, 939 registered; 632 refused. The sentinel
     `bopfuse_simple/ZL2` now guards S9d.4b's `OutOfDomain`. The ledger
     does not change.
+  * **CI on `rust-kernel` (2026-09-29).** The "Rust kernel" workflow had
+    failed since S7 (last green `a608a3c2`), unnoticed; each cause:
+    (a) `a_frustum_on_a_top_within_rounding_is_degenerate` failed on Linux,
+    Windows and the 1.85 job: a frame normalized again divides by the
+    platform's `hypot`, which rounds the tilted normal's length to 1 on
+    macOS but not on every Linux or Windows runner, so the frustum's base
+    was an ulp off parallel to the top and escaped 6f51406c's refusal of
+    parallel planes within the resolution. Planar faces within the
+    resolution of each other across their boxes' overlap, parallel or not,
+    are now `Degenerate` (`a_frustum_turned_by_an_ulp_on_a_top_is_degenerate`
+    turns the normal by an ulp on any host). The fuzz workflow's Linux-only
+    crash `6d1fd061` (a frustum's caps an ulp off the prism's bottom and
+    top, `loop_winding`) is the same and is kept as a regression. The
+    `properties_baseline` assertion in those logs is the pre-T1
+    regeneration step's expected one, not a failure. (b) The B-rep job
+    stopped at captures without a Linux record: the boolean, split
+    spiric, spline and sheet, and spline tessellation captures now have
+    theirs (CI run 36556520655, each reviewed against the macOS capture in
+    its `record.json`); the spline tessellation's Linux rows differ in
+    nodes on 8 of 24 rows, so their reviewed differences need the next
+    run's Linux fingerprints. (c) STEP-b's six reviews carried only macOS
+    fingerprints: four Linux rows differ in their last bits, and have
+    their own reviews now. (d) The upstream job's 40 minutes no longer
+    covered the fixture generators' checks (31 minutes): they run in their
+    own job in four groups, and the eight S9c-S9d Boolean generators,
+    never checked in CI before, are the last two (the cones' reference
+    alone took 31 minutes on a loaded host). (e) Fuzzing: the timeouts
+    are slow units, a sphere (`fab20f09`, 13.6 s without AddressSanitizer)
+    and a torus (`17e131e3`, 9.8 s) against prisms, and S7b's torus curve
+    graph on an analytic input (`8dce95c9`, 42 s); each is being made
+    faster. (f) `compare_brep_io.py` has failed on every platform since
+    F8's quadrature (first at `2f60b19f`): seven of the hammer's free
+    spline faces now have enclosures narrower than OCCT's default
+    BRepGProp error. OCCT's adaptive integration (Eps 1e-12) lies inside
+    five of them and within the tool's 1e-9 of a sixth; on face 225 both
+    of OCCT's integrations agree 2e-9 relative outside the enclosure,
+    which is under investigation as a possible unsound enclosure.
   * **S9d.4b refined, before its code (2026-09-29).** Two sub-steps.
     S9d.4b.1: tori other than whole ones (S3's v-segments between two
     latitudes and wedges of a partial turn) against polyhedral prisms: the
@@ -3831,8 +3868,8 @@ Decisions for S9, recorded before its code (2026-09-28):
     at `a4e1c9df`, was clean: 2,051 mutation executions after a 995 s
     replay, 20,798 edges, 1,903 MB peak (the target now purges the
     allocator as the other heavy ones do), one slow unit (10 s under
-    AddressSanitizer, kept as a regression). Pending: the Linux record of
-    the conic capture after CI.
+    AddressSanitizer, kept as a regression). The conic capture's Linux
+    record: CI run 36416172849 (`platform-linux/`).
   * S8d.3 implemented (`solid/split/spiric.rs`): whole tori by any plane in
     spiric sections, `Curve3::Section` graphs over either angle (bands,
     caps with four analytic edges, C-shaped pieces), the torus less discs in
@@ -3845,7 +3882,8 @@ Decisions for S9, recorded before its code (2026-09-28):
     `atan2`'s branch cut (fixed at `9c21cd2a` with its regression); the
     second, at `9c21cd2a`, was clean: 1,787 mutation executions after a
     948 s replay, 21,482 edges, 1,255 MB peak, two slow units kept as
-    regressions. Pending: the Linux record of the spiric capture after CI.
+    regressions. The spiric capture's Linux record: CI run 36556520655
+    (volumes within 2.1e-12 relative, `platform-linux/`).
   * S8b: decisions recorded (2026-09-28); its evidence came before any
     kernel code (`cb701edc`): the case protocol's spline segment (`B` in an
     `S` row, reversed with its path), the reference slicing spline profiles
@@ -3867,8 +3905,8 @@ Decisions for S9, recorded before its code (2026-09-28):
     on the plane as affine images with exact wall pcurves. Inside the
     reference on all 17 spline cases (103 in all: 52 matches, 51 reviewed,
     one new review: OCCT splits the bulge's cap edges where a plane touches
-    them). Pending: the campaign, and the Linux record of the spline capture
-    after CI.
+    them). Pending: the campaign. The spline capture's Linux record: CI run
+    36556520655 (`platform-linux/`).
   * S8e: decisions recorded (2026-09-28); its evidence came before any
     kernel code (`5fe8d268`): face and wire bodies in the case protocol
     (`make`, natively a `make` row in place of the prism vector), the
@@ -3910,8 +3948,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     (spline prisms, sheets and wires in the target) was clean: 1,787
     mutation executions after a 1,073 s replay, 30,505 edges, 2,020 MB peak
     (the target's RSS cap is 2,048 MB), three slow units kept as
-    regressions, the slowest 18 s under AddressSanitizer. Pending: the
-    Linux records of the spline and sheet captures after CI.
+    regressions, the slowest 18 s under AddressSanitizer. The spline and
+    sheet captures' Linux records: CI run 36556520655 (`platform-linux/`;
+    the sheet's two mirror pieces of `wire_wave_four` in the other order).
 * S9 — in progress:
   * S9a: decisions recorded (2026-09-28); its evidence came before any
     kernel code (`71eb169a`, `BOOLEAN.md`): Boolean cases in the case
@@ -3981,8 +4020,8 @@ Decisions for S9, recorded before its code (2026-09-28):
     earlier `split` campaign found a zone's split rim one ulp off its
     circle (the latitude's sine fused with its cosine into one `sincos`):
     ring heights and radii now come from out-of-line `scaled_sin` and
-    `scaled_cos` (`fuzz/regressions/README.md`). Pending: the Linux record
-    of the capture after CI.
+    `scaled_cos` (`fuzz/regressions/README.md`). The capture's Linux
+    record: CI run 36556520655 (within 1.1e-15 relative, `platform-linux/`).
   * S9a.2's stacks implemented (`solid/boolean/stack.rs`,
     `Construction::Stack`): all 45 fixtures as the reference and OCCT's
     unified counts (42 results, 6 of them stacks, 3 refused; 45 matches,

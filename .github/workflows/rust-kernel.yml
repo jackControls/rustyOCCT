@@ -19,8 +19,8 @@ jobs:
   upstream-draw:
     name: Original OCCT tests / Rust and native
     runs-on: ubuntu-24.04
-    # The fixture generators' checks grew with S7b (the torus curves' alone
-    # take about three minutes): 25 minutes no longer covered them.
+    # The fixture generators' checks run in their own job (fixture-generators
+    # below); the bridge tests and the upstream runs remain.
     timeout-minutes: 40
     env:
       CSF_OCCTResourcePath: /usr/share/opencascade/resources
@@ -43,49 +43,6 @@ jobs:
         env:
           RUSTY_TEST_DRAW_EXE: /usr/bin/occt-draw
         run: target/math-oracle-venv/bin/python -m unittest discover -s rust/tools -p 'test_*.py' -v
-      - name: Verify the independent exact arithmetic oracle
-        run: |
-          python3 rust/tools/generate_predicate_fixtures.py --check
-          python3 rust/tools/generate_spatial_fixtures.py --check
-          python3 rust/tools/generate_proximity_fixtures.py --check
-          python3 rust/tools/generate_linear_sets_fixtures.py --check
-          python3 rust/tools/generate_curved_fixtures.py --check
-          python3 rust/tools/generate_spline_fixtures.py --check
-          python3 rust/tools/generate_bezier_editing_fixtures.py --check
-          python3 rust/tools/generate_knot_editing_fixtures.py --check
-          python3 rust/tools/generate_surface_knot_fixtures.py --check
-          python3 rust/tools/generate_degree_elevation_fixtures.py --check
-          python3 rust/tools/generate_exact_spline_intersection_fixtures.py --check
-          python3 rust/tools/generate_surface_editing_fixtures.py --check
-          python3 rust/tools/generate_surface_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_real_root_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_root_comparison_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_algebraic_image_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_spline_proximity_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_spline_plane_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_spline_quadric_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_closed_clip_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_affine_parameter_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_spline_linear_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_brep_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_identity_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_history_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_split_merge_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_attribute_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_brep_io_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_primitive_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_analytic_intersection_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_procedural_intersection_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_torus_curve_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_ruled_curve_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_curve_surface_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_curve_curve_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_split_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_boolean_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_polyhedral_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_curved_boolean_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_tessellation_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_step_fixtures.py --check
       - name: Run unchanged upstream tests on both kernels
         run: python3 rust/tools/run_upstream_tests.py --backend both --draw-exe /usr/bin/occt-draw
       - name: Compare line and plane intersections with native OCCT
@@ -141,6 +98,85 @@ jobs:
             target/spline-plane-oracle/
             target/spline-quadric-oracle/
           if-no-files-found: warn
+
+  fixture-generators:
+    name: Fixture generators / ${{ matrix.group }}
+    runs-on: ubuntu-24.04
+    # Split from the upstream job (S9d): its 40 minutes no longer covered
+    # the generators' checks (31 minutes) beside the bridge tests. The cones'
+    # reference alone took 31 minutes on a loaded host.
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [algebra, brep, booleans, cones]
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - run: rustup toolchain install stable --profile minimal
+      - name: Install independent polynomial oracle
+        run: |
+          python3 -m venv target/math-oracle-venv
+          target/math-oracle-venv/bin/python -m pip install --disable-pip-version-check --no-cache-dir --require-hashes -r rust/tools/math-oracle-requirements.txt
+      - name: Verify the independent exact arithmetic oracle - predicates, curves and splines
+        if: matrix.group == 'algebra'
+        run: |
+          python3 rust/tools/generate_predicate_fixtures.py --check
+          python3 rust/tools/generate_spatial_fixtures.py --check
+          python3 rust/tools/generate_proximity_fixtures.py --check
+          python3 rust/tools/generate_linear_sets_fixtures.py --check
+          python3 rust/tools/generate_curved_fixtures.py --check
+          python3 rust/tools/generate_spline_fixtures.py --check
+          python3 rust/tools/generate_bezier_editing_fixtures.py --check
+          python3 rust/tools/generate_knot_editing_fixtures.py --check
+          python3 rust/tools/generate_surface_knot_fixtures.py --check
+          python3 rust/tools/generate_degree_elevation_fixtures.py --check
+          python3 rust/tools/generate_exact_spline_intersection_fixtures.py --check
+          python3 rust/tools/generate_surface_editing_fixtures.py --check
+          python3 rust/tools/generate_surface_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_real_root_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_root_comparison_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_algebraic_image_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_spline_proximity_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_spline_plane_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_spline_quadric_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_closed_clip_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_affine_parameter_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_spline_linear_fixtures.py --check
+      - name: Verify the independent exact arithmetic oracle - B-rep, history, intersections, splits and Booleans
+        if: matrix.group == 'brep'
+        run: |
+          target/math-oracle-venv/bin/python rust/tools/generate_brep_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_identity_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_history_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_split_merge_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_attribute_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_brep_io_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_primitive_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_analytic_intersection_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_procedural_intersection_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_torus_curve_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_ruled_curve_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_curve_surface_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_curve_curve_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_split_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_boolean_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_polyhedral_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_curved_boolean_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_tessellation_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_step_fixtures.py --check
+      - name: Verify the curved Booleans independent references (S9c-S9d)
+        if: matrix.group == 'booleans'
+        run: |
+          target/math-oracle-venv/bin/python rust/tools/generate_procedural_boolean_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_turned_boolean_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_capped_boolean_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_sphere_boolean_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_spheres_boolean_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_cone_boolean_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_torus_boolean_fixtures.py --check
+      - name: Verify the cones' Boolean independent reference (S9d.3b)
+        if: matrix.group == 'cones'
+        run: target/math-oracle-venv/bin/python rust/tools/generate_cones_boolean_fixtures.py --check
 
   pinned-degree-oracle:
     name: Degree elevation / source-pinned OCCT

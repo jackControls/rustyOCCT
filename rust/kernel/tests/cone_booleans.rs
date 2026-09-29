@@ -176,6 +176,22 @@ fn results_are_deterministic_and_move_rigidly() {
 /// within it, `Degenerate` (the fuzz target's replay).
 #[test]
 fn a_frustum_on_a_top_within_rounding_is_degenerate() {
+    frustum_on_a_top(|n| n);
+}
+
+/// The same frustum with its normal turned by an ulp: a frame normalized
+/// again by another platform's `hypot` (Linux's and Windows's CI) turns it
+/// so, and the planes are no longer parallel, yet one plane within the
+/// resolution over the base (`Degenerate`).
+#[test]
+fn a_frustum_turned_by_an_ulp_on_a_top_is_degenerate() {
+    use rusty_occt::Vec3;
+    let up = |x: f64| f64::from_bits(x.to_bits() + 1);
+    frustum_on_a_top(|n| Vec3::new(n.x, up(n.y), n.z));
+    frustum_on_a_top(|n| Vec3::new(n.x, n.y, up(n.z)));
+}
+
+fn frustum_on_a_top(turn: impl Fn(rusty_occt::Vec3) -> rusty_occt::Vec3) {
     use rusty_occt::identity::OperationId;
     use rusty_occt::{Boundary, Error, Frame3, Point2, Point3, Profile, Solid, Tolerance, Vec3};
     let tol = Tolerance::default();
@@ -201,7 +217,7 @@ fn a_frustum_on_a_top_within_rounding_is_degenerate() {
     let (a, _) = Solid::extrude_with(OperationId(1), profile, fa, 0.0, 2.25).unwrap();
     let base = Frame3::new(
         fa.point(Point2::new(0.0, 0.0), 2.25),
-        fa.normal(),
+        turn(fa.normal()),
         fa.x(),
         tol,
     )

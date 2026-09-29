@@ -14,6 +14,18 @@
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
+      "case": "ellipse_sheet",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 STEPControl_Reader",
+      "native_sha256": "9ee93febec65a1c58d554a6b6ec2f1c042ce949ffd944f1dfcb35ec9f8094b5d",
+      "differences": [
+        "rust_counts"
+      ],
+      "reason": "The kernel synthesizes OCCT's counts of a sheet of one face as a free face (S6: no shell), where OCCT's reader keeps the surface model's shell: 2 2 1 1 0 0 against 2 2 1 1 1 0. Vertices, edges, wires and faces agree, and the kernel's enclosures contain the reference's area and centre. On Linux the same native row within 1.1e-15 relative (its last bits), the same differences.",
+      "independent_evidence": "step-expected.tsv: the file's SHELL_BASED_SURFACE_MODEL lists one OPEN_SHELL of one ADVANCED_FACE (2 2 1 1 1 0); the kernel's body is a sheet of that one face.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36556520655 at 6f51406c); source-pinned OCCT 8.1.0"
+    },
+    {
       "case": "bspline_plate",
       "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
       "oracle": "OCCT 8.1.0 STEPControl_Reader",
@@ -24,6 +36,18 @@
       "reason": "A sheet of one face: the kernel synthesizes it as a free face (S6), OCCT keeps the surface model's shell (2 2 1 1 0 0 against 2 2 1 1 1 0). Everything else agrees with the reference and OCCT.",
       "independent_evidence": "step-expected.tsv: one OPEN_SHELL of one ADVANCED_FACE (2 2 1 1 1 0); area 66 and centroid (5, 255/77) exactly (Green's theorem on the Bezier pieces in Fractions).",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "bspline_plate",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 STEPControl_Reader",
+      "native_sha256": "acd334260a2d762c4bd649e3ab07e0f8ae281a384e86172aff2d06d4f5e03aed",
+      "differences": [
+        "rust_counts"
+      ],
+      "reason": "A sheet of one face: the kernel synthesizes it as a free face (S6), OCCT keeps the surface model's shell (2 2 1 1 0 0 against 2 2 1 1 1 0). Everything else agrees with the reference and OCCT. On Linux the same native row within 1.1e-15 relative (its last bits), the same differences.",
+      "independent_evidence": "step-expected.tsv: one OPEN_SHELL of one ADVANCED_FACE (2 2 1 1 1 0); area 66 and centroid (5, 255/77) exactly (Green's theorem on the Bezier pieces in Fractions).",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36556520655 at 6f51406c); source-pinned OCCT 8.1.0"
     },
     {
       "case": "bspline_trimmed",
@@ -67,6 +91,20 @@
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
+      "case": "cylinder_oblique",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 STEPControl_Reader",
+      "native_sha256": "bd63c23fdcc2f73deb652bf9ad4e37df2f9a49fa3d6285efd083dfc574a63211",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_outside_native"
+      ],
+      "reason": "BRepGProp's default integration gives a volume 3.5e-6 and an area 3.3e-6 relative above the closed forms and a centre 1.5e-7 of the size away; its adaptive integration (Eps 1e-12) gives the volume within 4e-16 of 250 pi. The kernel's enclosures contain the closed forms, so they miss OCCT's default measures. Counts agree (2 3 3 3 1 1). On Linux the same native row within 1.1e-15 relative (its last bits), the same differences.",
+      "independent_evidence": "Closed forms of the cylinder of radius 5 cut by z = 10 + 3y/4: volume 250 pi, area 25 pi + 31.25 pi + 100 pi, centroid (0, 15/32, 5.17578125) (step_reference.oblique_cylinder).",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36556520655 at 6f51406c); source-pinned OCCT 8.1.0"
+    },
+    {
       "case": "rational_cylinder",
       "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
       "oracle": "OCCT 8.1.0 STEPControl_Reader",
@@ -78,6 +116,19 @@
       "reason": "OCCT reads a valid solid whose default BRepGProp volume is 2.0e-3 and area 8.2e-4 relative above 200 pi and 130 pi (its adaptive integration: within 6.5e-12). The kernel translates every entity but its validator refuses the body: the circles are rational quarter arcs with knots of multiplicity 2 (the degree) at the quarter points, and R4 certifies C1 of the homogeneous curve, which fails there (the rational curve is C1: its weights alone jump). The issues are exactly the four arc edges, the two caps' pcurves derived from them and the two wall surfaces (tests/step.rs, quarter_arc_rational_circles_are_not_c1). Importing such bodies needs a rational C1 test or edges and faces split at those knots; both are open.",
       "independent_evidence": "The homogeneous control points around the knot u = 1 are (5w, 5w, w), (0, 5, 1), (-5w, 5w, w) with w = sqrt(2)/2 rounded: removing one copy of the knot needs the middle point to be the mean of its neighbours, (0, 5w, w), which it is not; the rational end derivatives 2w (P2 - P1) and 2w (P3 - P2) are both (-10w, 0).",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "rational_cylinder",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 STEPControl_Reader",
+      "native_sha256": "90e15de7b156dfbc31eb27e385d727787978491645bf624abb4bd0d997ecca67",
+      "differences": [
+        "measure",
+        "rust_invalid:edge_not_c1,face_not_c1,pcurve_not_c1"
+      ],
+      "reason": "OCCT reads a valid solid whose default BRepGProp volume is 2.0e-3 and area 8.2e-4 relative above 200 pi and 130 pi (its adaptive integration: within 6.5e-12). The kernel translates every entity but its validator refuses the body: the circles are rational quarter arcs with knots of multiplicity 2 (the degree) at the quarter points, and R4 certifies C1 of the homogeneous curve, which fails there (the rational curve is C1: its weights alone jump). The issues are exactly the four arc edges, the two caps' pcurves derived from them and the two wall surfaces (tests/step.rs, quarter_arc_rational_circles_are_not_c1). Importing such bodies needs a rational C1 test or edges and faces split at those knots; both are open. On Linux the same native row within 1.1e-15 relative (its last bits), the same differences.",
+      "independent_evidence": "The homogeneous control points around the knot u = 1 are (5w, 5w, w), (0, 5, 1), (-5w, 5w, w) with w = sqrt(2)/2 rounded: removing one copy of the knot needs the middle point to be the mean of its neighbours, (0, 5w, w), which it is not; the rational end derivatives 2w (P2 - P1) and 2w (P3 - P2) are both (-10w, 0).",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36556520655 at 6f51406c); source-pinned OCCT 8.1.0"
     }
   ]
 }

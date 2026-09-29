@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 36556520655 (commit 6f51406c), ubuntu-24.04, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "c5be88e196b885fa03637fd435aecd8926c6335589b71343ae21ad873bf3dd44",
+  "review": "The same statuses, sides, piece counts and face, edge and vertex counts as the macOS capture for all 13 tori; volumes, areas and centres within 2.1e-12 relative (BRepGProp's integration on the spiric pieces' B-spline sections)."
+}

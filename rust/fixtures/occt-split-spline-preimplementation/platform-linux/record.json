@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 36556520655 (commit 6f51406c), ubuntu-24.04, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "24d26e96d57f809a6e9eb81d7ffbbe86d7b90e529ba18c779832675aa2f39232",
+  "review": "The same statuses, sides, piece counts and face, edge and vertex counts as the macOS capture for every spline prism; volumes, areas and centres within 4.6e-14 relative."
+}

@@ -70,6 +70,6 @@ and bulge (tangent).
   a whole wire along the plane below, by the probe's rule.
 
 `compare_split.py` requires every later run to reproduce these rows (on
-another platform, its reviewed record; the Linux record is pending CI). Until
+another platform, its reviewed record: `platform-linux/`, from CI run 36556520655). Until
 `Body::split_by_plane` exists the probe cannot build a body case: the
 comparison lists every case under `rust_unsupported` and `rust_probe_failed`.

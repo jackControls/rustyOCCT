@@ -60,6 +60,6 @@ and its validity.
   compared with the unified ones and reviewed.
 
 `compare_boolean.py` requires every later run to reproduce these rows (on
-another platform, its reviewed record; the Linux record is pending CI).
+another platform, its reviewed record: `platform-linux/`, from CI run 36556520655).
 Until `rust/kernel/examples/boolean_probe.rs` exists the comparison lists
 every case under `rust_unsupported`.

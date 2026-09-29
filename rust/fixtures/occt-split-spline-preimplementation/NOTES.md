@@ -51,6 +51,6 @@ beside an arc, touching a join only) and in a cap, in both frames.
   came from a scratch variant of the oracle, not from the capture.
 
 `compare_split.py` requires every later run to reproduce these rows (on
-another platform, its reviewed record; the Linux record is pending CI). Until
+another platform, its reviewed record: `platform-linux/`, from CI run 36556520655). Until
 the kernel reads spline segments the probe cannot parse the `B` rows and the
 comparison lists every case under `rust_unsupported` and `rust_probe_failed`.

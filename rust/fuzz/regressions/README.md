@@ -960,3 +960,20 @@ frame's origin. The validator took the radius for a cylinder's and refused
 the curve (`degenerate_curve`); a cone's radius there may be zero (three
 more corpus inputs alike). `tests/cones_booleans.rs`,
 `a_cone_with_its_apex_at_its_base_carries_a_ring`, checks the volumes.
+
+## Boolean: a frustum's caps an ulp off parallel on Linux
+
+`boolean/replay-6d1fd0617f7790963cdb479676b89690a3868d96.bin` is a corpus
+input that failed only on Linux CI (the scheduled and pushed runs at
+`fc695afd`): a frustum over a tilted diamond prism's heights, its base frame
+built from the prism's normal and so normalized again. `Vec3::normalized`
+divides by the platform's `hypot`, which rounds the tilted normal's length to
+1 on macOS and not on every Linux or Windows runner, so there the frustum's
+caps are an ulp off parallel to the prism's bottom and top: not coincident,
+and not refused as a sliver either, and the result's loops wound wrongly
+(`InvalidTopology`, `loop_winding`). Two planar faces within the resolution
+of each other across their boxes' overlap, parallel or not, are now one
+plane within it (`Degenerate`); on macOS the caps stay exactly parallel and
+coincident and the Boolean evaluates. `tests/cone_booleans.rs`,
+`a_frustum_turned_by_an_ulp_on_a_top_is_degenerate`, turns the frame's normal
+by an ulp on any host.

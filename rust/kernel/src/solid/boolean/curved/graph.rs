@@ -317,8 +317,11 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
             pairs.insert((fa, fb), pair);
         }
     }
-    // Coincident planes; parallel planes apart by no more than the
-    // resolution are one plane within it (a sliver between them).
+    // Coincident planes; planes within the resolution of each other over
+    // their faces' boxes' overlap are one plane within it (a sliver between
+    // them), parallel or not: a frame normalized again turns its normal by
+    // the platform's `hypot`, so a plane rounded parallel to another on one
+    // host is off parallel by an ulp on another.
     let tol = q(res);
     for (fa, a) in models[0].faces.iter().enumerate() {
         let Surf::Plane { p: pa, m: ma } = &a.surf else {
@@ -328,13 +331,29 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
             let Surf::Plane { p: pb, m: mb } = &b.surf else {
                 continue;
             };
-            if !is_zero(&cross(ma, mb)) || !boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]) {
+            if !boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]) {
                 continue;
             }
-            let off = dot(ma, &sub(pb, pa));
-            if off == zero() {
+            let turn = cross(ma, mb);
+            let parallel = is_zero(&turn);
+            let (lo, hi) = intersect(&models[0].boxes[fa], &models[1].boxes[fb]);
+            let (lo, hi) = (lo.map(q), hi.map(q));
+            let span = sub(&hi, &lo);
+            let (aa, bb) = (dot(ma, ma), dot(mb, mb));
+            // Turned apart by more than the resolution across the overlap.
+            if !parallel && dot(&turn, &turn) * dot(&span, &span) > &tol * &tol * &aa * &bb {
+                continue;
+            }
+            if parallel && dot(ma, &sub(pb, pa)) == zero() {
                 coinc.insert((fa, fb));
-            } else if &off * &off <= &tol * &tol * dot(ma, ma) {
+                continue;
+            }
+            // Plane a's offset from the point of plane b nearest the overlap's
+            // centre (plane b's own offset when they are parallel).
+            let centre = scale(&add(&lo, &hi), &(int(1) / int(2)));
+            let foot = sub(&centre, &scale(mb, &(dot(mb, &sub(&centre, pb)) / &bb)));
+            let off = dot(ma, &sub(&foot, pa));
+            if &off * &off <= &tol * &tol * &aa {
                 return Err(Error::Degenerate(
                     "two faces within the resolution of one plane",
                 ));
