@@ -1372,6 +1372,92 @@ height); its horizontal edges on a spline are its lifted restrictions.
   (B-splines, every section but circles) misses by up to 6.3e-6, the same
   results measured adaptively within 1.8e-9 but for a small cap (1.2e-8) and
   the Villarceau plane (2.0e-8); nine solids' counts change when unified.
+* **S9d.4b.1 evidence (torus segments and wedges against polyhedral
+  prisms), before its kernel code.** `torus_segment_boolean_reference.py`
+  (mpmath, 40 digits) takes a torus other than a whole one on the model S3
+  builds (`Topology::torus`, as `BRepPrimAPI_MakeTorus(gp_Ax2, R, r, low,
+  high, angle)`): a v-segment is the region between the tube's arc from
+  `low` to `high` and the axis, revolved, its end faces planar discs normal
+  to the axis at the stored heights `r sin(latitude)`, from the axis to the
+  arc's end (not a cone, cylinder or plane swept by the tube's point); in
+  the meridian half-plane its section `M` has an odd number of the arc's
+  points at its height to its right (the disc `[0, c]` between the end
+  heights, the tube's cap `[R - q, R + q]` beyond); a wedge is the whole
+  tube between the half-plane of `x` and that of the rounded `(cos angle,
+  sin angle)` of its chart. Both slicings of S9d.4a with `M`: normal to the
+  axis, each slice a disc or an annulus (a wedge's cut to its sector, two
+  convex sectors beyond a half turn), the common by clipping each polygon
+  to the sector and the signed discs, the rest by inclusion and exclusion;
+  by the meridian half-planes, `M` against the polygon with its boundaries
+  cut and classified (the arc by the polygon's lines, the polygon's edges
+  by the tube's circle and the end heights, `M`'s arc signed by its
+  orientation carrying all of Green's integrals: the axis has `t = 0`, the
+  end segments `dw = 0`), a wedge's section empty outside its turn.
+  Breakpoints S9d.4a's with the end heights, the rings and the end
+  half-planes and circles against the prism's edges and faces. Every face
+  in its own parameters: the wall two ways, a segment's end discs exactly
+  at their planes (`same` or `opp` where a prism face lies there) and by the
+  meridians' radii, a wedge's exactly in their half-planes and by the
+  normal slices' chords, the prism's faces by `K`'s regions just above and
+  below a level (normal to the axis) or by chords (a face on a wedge's end
+  half-plane coplanar on the end's ray). Solids by sweeping the meridian
+  half-planes: each section's components in bands of height, sections
+  sampled between breakpoints joined one to one (refined otherwise), across
+  a breakpoint only through its own section, around the turn and through
+  the axis; the fuse by overlap or a shared face, the sweep agreeing.
+  `generate_torus_segment_boolean_fixtures.py --check` writes
+  `boolean-torus-segment-cases.txt`, `-expected.tsv` and `-frames.tsv` with
+  29 cases (9 fuses, 9 cuts, 11 commons; 25 solid, 1 empty, 3 degenerate;
+  26 in exact frames) on radii 5/2 and 3/2: the outer half (a barrel, its
+  end discs tangent to the wall along their rings) with a bar through the
+  axis (all three) and a box across its upper end disc; the inner half (a
+  spool) with a slab through its waist (two solids) and a column through it
+  (the column less the spool six solids); an upper band (latitudes
+  0.5..2.25) with a box across its lower end disc (all three), a box
+  standing on its upper end disc (coplanar, opposite) and a box through its
+  axis; a half turn with a bar along both end discs (the common two chunks)
+  and a slab across it; a quarter turn with a box across its start disc, a
+  box in the hole cutting a cap over both ends, a box beyond its turn and a
+  box against its start disc (coplanar, opposite: fused one solid, the
+  common empty); in turned frames the outer half in `TILT` above a plane
+  and the half turn in `TILT2` across a slab; `degenerate` a face on the
+  outer half's end plane (tangent to the wall along the ring), a face
+  tangent to the band along its top circle and a face tangent to the
+  quarter turn at its start circle's outermost point. Checks: closed forms
+  of 17 of the 19 pairs along the axis in the part's ideal frame, its
+  sections given by hand (an aligned box by S9d.1's rectangle-in-disc
+  antiderivatives, a wedge's box clipped to its sector, a half-space by
+  circular segments, inputs meeting on a face or at a point by their sums)
+  within 8.2e-41 in exact frames, 1.3e-16 in turned ones and 4.3e-16 where a
+  wedge's rounded end (1.2e-16 or 6.1e-17 off its ideal plane) cuts the box;
+  every operation two ways 6.4e-41, inclusion and exclusion 5.8e-41, the
+  wall two ways 7.0e-37, the end discs two ways 2.9e-41, the area identity
+  (`+ 2 opp`) and every face's classes 2.8e-40, Monte Carlo 3.3 standard
+  errors, no near coincidence outside the degenerate pairs, every other
+  pair's vertices 0.072, faces' planes 0.063 and edges' crossings (a sine)
+  0.28 from tangency and incidence, rims crossing faces at a sine of 0.17.
+  `test_torus_segment_boolean_reference.py` checks the closed forms by
+  Pappus's theorems (both halves, a band, a wedge's centroid) and the
+  reference on a half-space through the axis, a slab through the spool and
+  a box beyond a wedge. The protocol already carried a part's latitudes and
+  turn (`torus MAJOR MINOR LOW HIGH ANGLE`, which the kernel's test support
+  reads and `Solid::torus_with` builds for every fixture); `native_case`
+  gives a segment or wedge the long row `torus ... R r LOW HIGH ANGLE`, built
+  by `BRepPrimAPI_MakeTorus(gp_Ax2, R, r, a1, a2, angle)` and reversed when
+  its volume is negative (OCCT's inside-out inner half), a whole torus
+  keeping the short row (every older capture reproduces).
+  `compare_torus_segment_boolean.py` reproduces
+  `occt-boolean-torus-segment-preimplementation`
+  (`rust_torus_segment_boolean_exists` false, keyed on
+  `solid/boolean/curved/torus_segment.rs`; the kernel's probe `unsupported`
+  on all 29, `OutOfDomain("a Boolean of a torus segment or wedge
+  (S9d.4b)")`): every result valid with the reference's solid count; 16
+  match (lines and circles within 2.6e-16) and 13 are reviewed
+  (`occt-boolean-torus-segment-divergences.json`): BRepGProp's default
+  integration on faces bounded by B-spline sections misses by up to 1.7e-5,
+  adaptively within 5.7e-9 but for two results whose approximated sections
+  bound a region 3.7e-8 and 3.2e-8 off (unchanged at an accuracy of
+  1e-12); nine solids' counts change when unified.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

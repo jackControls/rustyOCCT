@@ -2584,6 +2584,62 @@ Decisions for S9, recorded before its code (2026-09-28):
     `Degenerate`. Evidence first per sub-step: an independent reference
     (S9d.4a's slices with the other solid's sections), fixtures of every
     class, a native capture before the kernel code.
+  * **S9d.4b.1 evidence (2026-09-29).** One correction to the decisions
+    first: S3 (`Topology::torus`, as `BRepPrimAPI_MakeTorus(gp_Ax2, R, r,
+    low, high, angle)`) builds a v-segment as the region between the tube's
+    arc and the axis, revolved, its end faces planar discs normal to the
+    axis at the heights `r sin(latitude)` (`scaled_sin`, stored), each from
+    the axis to the arc's end: not a cone, cylinder or plane swept by the
+    tube's point, and not a band of the tube. So the model is S9d.4a's torus
+    with the end planes `w = z` at the stored heights, the arc's ends where
+    they meet the tube on the side of the latitude's cosine; in the meridian
+    half-plane the section `M` holds a point with an odd number of the arc's
+    points at its height to its right (the disc `[0, R +- q]` between the
+    end heights, the tube's cap `[R - q, R + q]` beyond), its boundary
+    counter-clockwise exactly when S3's wall is forward. The outer and inner
+    halves' end planes `w = +-r` are tangent to the torus along their rings
+    (the wall meets its discs tangentially along the rings, and a plane
+    crossing such a ring meets the disc in a line and the wall in a spiric
+    curve tangent to it at the ring); OCCT builds
+    the inner half inside out (S3's capture), so the oracle reverses a part
+    of negative volume. A wedge is the whole tube in the sector from the
+    half-plane of `x` to that of the chart direction `(cos angle, sin
+    angle)` rounded (the kernel's end disc): the half turn's end 1.2e-16 off
+    the plane of `x`, the quarter's 6.1e-17 off that of `y`, so a prism face
+    on those ideal planes is within rounding of an end (the fixtures keep
+    coplanar faces to the exact start half-plane and the segments' end
+    planes). `torus_segment_boolean_reference.py` slices both ways with `M`
+    (normal slices: signed discs, a wedge's sector clipped, the common by
+    clipping; meridian half-planes: `M`'s arc carrying all of Green's
+    integrals, a wedge's section empty outside its turn), measures every
+    face in its own parameters (the end discs exactly and a second way,
+    `same`/`opp` for prism faces on their planes) and counts solids by
+    sweeping the meridian half-planes (bands of height per section, samples
+    between breakpoints joined one to one or refined, across a breakpoint
+    through its own section, through the axis). 29 fixtures
+    (`generate_torus_segment_boolean_fixtures.py --check`: 25 solid, 1
+    empty, 3 degenerate; the outer half, the inner half, an upper band
+    `0.5..2.25`, a half and a quarter turn; boxes and slabs across the tube,
+    across an end disc, through the axis and the hole, a box standing on an
+    end disc and one against a wedge's start disc, coplanar and opposite;
+    `TILT` and `TILT2`): closed forms of 17 of 19 pairs within 8.2e-41 in
+    exact frames (1.3e-16 turned, 4.3e-16 where a rounded end cuts the box),
+    every operation two ways 6.4e-41, the wall two ways 7.0e-37, the end
+    discs two ways 2.9e-41, the area identity (`+ 2 opp`) and face classes
+    2.8e-40, Monte Carlo 3.3 standard errors, least margins 0.063 (faces),
+    0.072 (vertices), sines 0.28 (edges) and 0.17 (rims). The native row
+    `torus ... R r LOW HIGH ANGLE` for a segment or wedge
+    (`BRepPrimAPI_MakeTorus` with latitudes and turn; a whole torus keeps
+    its row, every older capture reproducing).
+    `occt-boolean-torus-segment-preimplementation`
+    (`compare_torus_segment_boolean.py`, keyed on
+    `solid/boolean/curved/torus_segment.rs`, the kernel `unsupported` on all
+    29 with `OutOfDomain("a Boolean of a torus segment or wedge (S9d.4b)")`):
+    every result valid with the reference's solids, 16 match (lines and
+    circles within 2.6e-16), 13 reviewed (BRepGProp's default integration on
+    B-spline sections, up to 1.7e-5; adaptively within 5.7e-9 but for two
+    results whose approximated sections bound a region 3.7e-8 and 3.2e-8
+    off), nine solids' counts change when unified. S9d.4b.1's kernel next.
 
 ### Parallel tracks
 
