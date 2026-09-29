@@ -2018,6 +2018,34 @@ Decisions for S9, recorded before its code (2026-09-28):
     interval `atan2` on the branch cut failed its jets). Pending: the DRAW
     survey, the campaign.
 
+  * **S9d.3 refined, before its code (2026-09-29).** Cones and frusta (S3's
+    `cone_*`: radii `bottom` and `top` over heights `0..h` on the stored
+    frame) in S9c's arrangement. Sub-steps: S9d.3a against polyhedral
+    prisms; S9d.3b against prisms with arcs, spheres and other cones (S7b.2's
+    procedural curves, graphs over a cone's angle about its ruling's
+    tangencies, `Curve3::Meet` with a cone carrier); a pair of a later
+    sub-step `OutOfDomain`. The model: the set between the end planes where
+    the point's distance to the axis is at most the radius interpolated
+    linearly in height, exact on the stored axes (affine where they are
+    not orthonormal); its wall split into two halves by a plane through the
+    axis at a rational point (each input its own seam, retried), its apex a
+    vertex (virtual unless the cone's own). A plane meets the wall in a
+    conic that is a graph over the cone's angle: the ruling at `(cos u, sin
+    u)` meets the plane at `v(u)`, a rational function of `(cos, sin)`, so a
+    rational angle gives a rational point, a line meets the cone in a
+    quadratic surd, and a conic is split where the plane is parallel to a
+    ruling (a parabola's or hyperbola's ends at infinity lie beyond the
+    frustum's end planes, which bound the pieces). A plane through the apex
+    (lines) or tangent to the cone along a ruling is `Degenerate`, as S8d.2
+    refuses them. Edges: the sections as S8d.2's `EllipseArc`,
+    `HyperbolaArc`, `ParabolaArc` or `CircularArc`, their pcurves
+    `Projection`s on the cone. Evidence first: fixtures of every conic class
+    (a frustum cut by a box's faces in ellipses, parabolas and hyperbolas, a
+    box through a cone's apex region, a cone inside a box, planes through the
+    apex and tangent along a ruling declared `degenerate`, exact and turned
+    frames), an independent reference and a native capture before
+    `solid/boolean/curved/cone.rs` exists.
+
 ### Parallel tracks
 
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
