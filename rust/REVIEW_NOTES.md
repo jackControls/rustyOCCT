@@ -2054,8 +2054,8 @@ Decisions for S9, recorded before its code (2026-09-28):
     `ZI4` evaluates, its area native DRAW's (`tests/sphere_booleans.rs`,
     `sections_through_a_spheres_poles`); the survey after S9d.3a's
     registered 12 of the 16 (`ZI4`, `ZI6`, `ZI7` of the four grids, the
-    sentinel `bopfuse_simple/ZI4` re-purposed) and found `ZI5` wrong (the
-    DRAW survey of S9d.3a, below).
+    sentinel `bopfuse_simple/ZI4` re-purposed) and found `ZI5` wrong,
+    registered after its fix (the DRAW survey of S9d.3a, below).
 
   * **S9d.3 refined, before its code (2026-09-29).** Cones and frusta (S3's
     `cone_*`: radii `bottom` and `top` over heights `0..h` on the stored
@@ -2191,8 +2191,8 @@ Decisions for S9, recorded before its code (2026-09-28):
     fuse, cut and common keep the areas but their volumes are off by `32
     pi / 9` (the common 27.9253 against `16 pi / 3`), and its `btuc`
     fails validation (`uncertified_shell_orientation`) where native DRAW
-    evaluates; a box in place of the cylinder alike. Not registered;
-    a kernel fix pending. Rust evaluates 902, 899 registered, one fails.
+    evaluates; a box in place of the cylinder alike. Not registered
+    then; Rust evaluated 902, 899 registered, one failing.
     The fix, after it: not the pole follow-up's, but S9d.1's own and older
     (a box's vertical edge along an upright sphere's axis gave a quarter
     ball 14.58 for `8 pi / 3`, at the commit before the follow-up too): a
@@ -2206,7 +2206,21 @@ Decisions for S9, recorded before its code (2026-09-28):
     `wedges_through_a_spheres_poles`). The fixture tests held the
     reference inside each enclosure but not the enclosure narrow: every
     curved Boolean fixture test now requires volume and area enclosures
-    within `1e-9` relative, all of them passing.
+    within `1e-9` relative, all of them passing. After it (59455fd7) a
+    survey again: only the 16 former `PrecisionLoss` cases differ from
+    S9d.3a's, all evaluating; `ZI5`'s four agree with native DRAW's
+    volumes and centres of gravity and with the closed forms (1.1e-15
+    relative), and are registered: Rust evaluates 903, each registered,
+    none failing, 676 refused. A volume audit, since the registrations
+    check areas: all 903 registered cases of the group run again with
+    `vprops` on both backends; Rust's volumes and centres agree with
+    native DRAW's to its printed digits or 1e-6 relative except in eight,
+    where native DRAW is off: seven of the crossed cylinders `ZE3` to
+    `ZE6` (native volumes up to 7.8e-6 relative from the closed form,
+    Rust's within 2.0e-15, native centres up to 4.0e-6 off the axes) and
+    `bopcut_simple/A9` (native `vprops` of two slabs puts their centre at
+    `(0.53125, 0.515625, 0.46875)`, its solids' own centres averaging to
+    Rust's `(0.5, 0.5, 0.5)`).
 
 ### Parallel tracks
 

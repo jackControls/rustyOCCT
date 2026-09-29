@@ -1181,7 +1181,7 @@ unified faces where OCCT has 8). The derived cases `boolean_prisms`,
 `boolean_stacks` (a step, a pocket, a box cut in two by a slab, a closed
 cavity, a tool through a round wall) and `boolean_polyhedra` (quarter
 turns, a bar turned 45 degrees through a box, a tilted bar cutting a box
-in two, a turned box inside another) and 899 cases of upstream's
+in two, a turned box inside another) and 903 cases of upstream's
 `boolean` group (86 of them stacks, 300 polyhedra of two boxes, one
 turned, 35 pockets cut one after another, a stack or a polyhedron given
 to the next `bcut`, 65 of S9c.1's prisms with arcs in any position: a
@@ -1197,14 +1197,15 @@ parallel, the sphere turned by quarter turns, and 36 of S9d.3a's: a box
 and a frustum inside it, standing on it or through a face, meeting its
 faces in circles, or with its axis outside a wall, meeting the walls
 across it in hyperbolas, in `ZH3` and `ZH4` turned about its axis, and
-12 of S9d.1's pole follow-up: the cylinder and a sphere of radius 2 on
+16 of S9d.1's pole follow-up: the cylinder and a sphere of radius 2 on
 its cap turned so the cap's plane holds its axis, the section through
 its poles) evaluate on both backends, and S9c.2b.1 adds none. One of that
-sphere's turns, `ZI5` (its reference direction `-z`), is wrong on the
-kernel: the fuse, cut and common keep native DRAW's areas but not its
-volumes (off by `32 pi / 9`), and the `btuc` fails the kernel's
-validation (an uncertified shell orientation); a box in place of the
-cylinder alike. Of the upstream cases in frames with different axes the
+sphere's turns, `ZI5`, was wrong until a sphere face's closing chord at
+a pole was enclosed narrowly (its volumes off by `32 pi / 9`, its `btuc`
+refused by the kernel's validation), and is registered since. A volume
+audit of the registered cases found Rust's volumes and centres of
+gravity native DRAW's to its printed digits, or where they differ (eight
+cases) nearer the closed forms. Of the upstream cases in frames with different axes the
 rest are refused: a cone against a cylinder (S9d.3b's `OutOfDomain`), tori and
 two cones or tori sharing ids, S9b.1's, S9c.1's, S9c.2a's, S9c.2b.1's,
 S9d.1's, S9d.2a's and S9d.3a's `Degenerate` (a turned box's corner on
