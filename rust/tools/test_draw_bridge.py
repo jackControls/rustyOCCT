@@ -300,10 +300,15 @@ class BridgeTests(unittest.TestCase):
         # A cylinder turned inside a cube cut from it (S9c.1).
         self.expect(self.POLYHEDRA + "pcylinder k 1 1\ntrotate k 0 0 0 1 1 1 30\nttranslate k 2 2 2\n"
                     "bcut r o k\ncheckprops r -v [expr {64 - acos(-1)}] -deps 1e-9\n", "pass")
-        # Two cylinders, one turned, meet in quartics (S9c.2), and a turned
+        # Two cylinders apart, one turned: decided since S9c.2b.1 (refused
+        # as quartics before), the cut the other cylinder whole.
+        self.expect(self.POLYHEDRA + "pcylinder k 1 1\ntrotate k 2 2 2 1 1 1 30\npcylinder m 1.5 4\n"
+                    "ttranslate m 2 2 0\nbcut r m k\ncheckprops r -v [expr {9 * acos(-1)}] -deps 1e-9\n", "pass")
+        # Parallel cylinders, one in a turned frame, meet in generatrices at
+        # an ellipse's and a circle's crossings (S9c.2b.2), and a turned
         # box's corner on a face is degenerate.
-        for gap, why in [("pcylinder k 1 1\ntrotate k 2 2 2 1 1 1 30\npcylinder m 1.5 4\n"
-                          "ttranslate m 2 2 0\ncatch {bcut r m k}", "S9c.2"),
+        for gap, why in [("pcylinder k 1 4\nttranslate k 1 0 0\ntrotate k 1 0 0 0 0 1 -120\n"
+                          "trotate k 0 0 0 0 0 1 60\npcylinder m 1 4\ncatch {bcut r m k}", "S9c.2"),
                          ("box d 0 0 0 2 2 1\ntrotate d 0 0 0 0 0 1 45\nttranslate d 2 0 0\n"
                           "box e 0 0 0 4 4 1\ncatch {bcut r e d}", "egenerate")]:
             with self.subTest(why=why):

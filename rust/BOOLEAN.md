@@ -761,11 +761,13 @@ to the next `bcut`, 65 of S9c.1's prisms with arcs in any position: a
 cylinder and a turned box, a cylinder turned about its axis, equal
 cylinders crossed at right angles, and 16 of S9c.2a's: a cylinder of
 radius 0.5 through one of radius 1 at right angles, two quartic rings)
-evaluate on both backends; none fails on the kernel. Of the upstream
-cases in frames with different axes the rest are refused: cylinders in
-turned frames S9c.2b takes, solids other than prisms, S9b.1's, S9c.1's
-and S9c.2a's `Degenerate` (a turned box's corner on another's wall, edge
-or corner, or on a cylinder, within rounding; a wall tangent to a
-cylinder; two cylinders touching at a point), and an arc ending off its
-circle; of the stacks given to another Boolean, those with cylindrical
-walls (S9c; `UPSTREAM_TESTS.md`).
+evaluate on both backends; none fails on the kernel, and S9c.2b.1 adds
+none. Of the upstream cases in frames with different axes the rest are
+refused: parallel cylinders in turned frames S9c.2b.2 takes, solids
+other than prisms, S9b.1's, S9c.1's, S9c.2a's and S9c.2b.1's
+`Degenerate` (a turned box's corner on another's wall, edge or corner, or
+on a cylinder, within rounding; a wall tangent to a cylinder; two
+cylinders touching at a point; equal cylinders in a turned frame whose
+axes meet, their section within the resolution of a node), and an arc
+ending off its circle; of the stacks given to another Boolean, those
+with cylindrical walls (S9c; `UPSTREAM_TESTS.md`).
