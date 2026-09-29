@@ -111,7 +111,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: [algebra, brep, booleans, cones]
+        group: [algebra, brep, booleans, cones, tori]
     steps:
       - uses: actions/checkout@v4.2.2
       - run: rustup toolchain install stable --profile minimal
@@ -180,6 +180,9 @@ jobs:
       - name: Verify the cones' Boolean independent reference (S9d.3b)
         if: matrix.group == 'cones'
         run: target/math-oracle-venv/bin/python rust/tools/generate_cones_boolean_fixtures.py --check
+      - name: Verify the tori's curved Boolean independent reference (S9d.4b.2)
+        if: matrix.group == 'tori'
+        run: target/math-oracle-venv/bin/python rust/tools/generate_torus_curved_boolean_fixtures.py --check
 
   pinned-degree-oracle:
     name: Degree elevation / source-pinned OCCT
