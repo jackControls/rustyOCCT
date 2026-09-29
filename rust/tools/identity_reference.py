@@ -402,10 +402,14 @@ def encode_boolean_case(obj, operation, tool, boolean_operation):
     A reader splits the block at the `boolean` row and parses each side as
     an identity case, the tool's with the object's `case` row (its name and
     tolerance). Blocks without a `boolean` row are unchanged: every existing
-    reader of a case still reads them."""
+    reader of a case still reads them.
+
+    S9d.1: either input may be a sphere, a cap or a zone (its `frame` and
+    `sphere R LOW HIGH` rows, `Solid::sphere_with` on the frame, the
+    latitudes in radians), read as any identity case's."""
     assert operation in BOOLEAN_OPERATIONS, operation
     assert obj.make is None and tool.make is None and tool.box is None and tool.cone is None \
-        and tool.sphere is None and tool.torus is None, 'S9a: two prisms'
+        and tool.torus is None, 'S9a: two prisms (S9d.1: or a sphere)'
     assert not obj.transforms and not tool.transforms, 'S9a: prisms in place'
     first = encode_case(obj).rsplit('\nend', 1)[0]
     second = encode_case(tool).split('\n')[1:-1]
@@ -738,7 +742,15 @@ def native_case(c):
     occt_split_oracle.cpp). A face or wire body (S6, `make`) has its frame's
     plane (the start offset is 0), its boundaries' `wire` rows (a wire body
     its first boundary's only) and a `make face` or `make wire` row in place
-    of the `prism` vector (S8e)."""
+    of the `prism` vector (S8e). A sphere, cap or zone (S9d.1) is one row
+    `sphere ox oy oz nx ny nz xx xy xz R LOW HIGH`, its frame's origin,
+    normal and x axis and `Solid::sphere_with`'s radius and latitudes
+    (radians), as `BRepPrimAPI_MakeSphere(gp_Ax2, R, LOW, HIGH)` takes them."""
+    if c.sphere is not None:
+        assert not c.transforms and c.make is None, f'{c.name}: a sphere in place'
+        o, x, _, n = frame_axes(c.frame)
+        return '\n'.join([f'case {c.name}', 'sphere '+' '.join(number(v) for v in (*o, *n, *x, *c.sphere)),
+                          'end'])
     if c.box is not None:
         (ox, oy, oz), size = c.box
         frame = (0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0)
