@@ -2501,6 +2501,29 @@ Decisions for S9, recorded before its code (2026-09-28):
     `144..160`; (h) the DRAW bridge evaluates a torus inside a box and
     guards a torus against a cylinder (S9d.4b). Pending: the DRAW survey, the
     campaign.
+  * **S9d.4b refined, before its code (2026-09-29).** Two sub-steps.
+    S9d.4b.1: tori other than whole ones (S3's v-segments between two
+    latitudes and wedges of a partial turn) against polyhedral prisms: the
+    model S9d.4a's with the segment's end faces (at a latitude `v1`, the
+    cone, cylinder or plane swept by the tube's point there; a wedge's
+    meridian discs), its patches cut at the ends instead of a seam where an
+    end lies. S9d.4b.2: a whole torus against prisms with arcs, spheres,
+    cones and tori: the meeting of a torus with a quadric of revolution
+    about another axis is a graph over the torus's `u` (the tube's circle
+    at `u` against the quadric: a quartic in the half-angle tangent of
+    `v`), or over the other surface's angle where it is ruled (its ruling
+    against the torus: a quartic in the height), a point at a rational
+    parameter algebraic of degree four (`Q(alpha)`, one generator per
+    point, compared across fields by enclosures as S9c.2b.2's); pieces cut
+    at their turning points' neighbourhoods by switches between the two
+    kinds of graph, each verified exactly (the discriminant of the quartic
+    in its parameter, Sturm counts); coaxial pairs meet in circles. The
+    curve is D13's procedural cell, `Curve3::Toric` (the torus, the other
+    surface, the parameter and the branch), its jets from the implicit
+    function theorem on the two surfaces; a tangency or a double root is
+    `Degenerate`. Evidence first per sub-step: an independent reference
+    (S9d.4a's slices with the other solid's sections), fixtures of every
+    class, a native capture before the kernel code.
 
 ### Parallel tracks
 
