@@ -36,6 +36,15 @@ type Cyl<'a> = (&'a Affine, &'a P2, &'a R);
 pub(super) fn sphere_cyl(k: usize, cyl: Cyl, c: &V, r: &R, res: f64) -> Result<CylPair> {
     let other = other_sphere(c, r);
     let (a, d) = super::turned::discriminant(cyl, &other);
+    // A discriminant vanishing identically: the cylinder tangent to the
+    // sphere all round a circle (a coaxial pair of equal radii).
+    let unit = Chart {
+        c0: int(1),
+        s0: zero(),
+    };
+    if trim(d.poly(&unit)).is_empty() && d.value(&[int(-1), zero()]) == zero() {
+        return Err(tangency());
+    }
     let chart = super::turned::negative_chart(&d)?;
     let test = chart.clone().unwrap_or(Chart {
         c0: int(1),

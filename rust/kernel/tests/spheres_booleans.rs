@@ -157,3 +157,39 @@ fn results_are_deterministic_and_move_rigidly() {
         }
     }
 }
+
+/// A sphere centred on a cylinder's cap with the cylinder's radius touches
+/// its wall all round the equator (the DRAW grids' `ZH5`): a tangency,
+/// `Degenerate`, whatever the operation.
+#[test]
+fn a_sphere_tangent_to_a_cylinder_all_round_is_degenerate() {
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{Boundary, Error, Frame3, Point2, Point3, Profile, Solid, Tolerance, Vec3};
+    let tol = Tolerance::default();
+    let outer = Boundary::circle(Point2::new(0.0, 0.0), 4.0, tol).unwrap();
+    let profile = Profile::new(outer, vec![], tol).unwrap();
+    let frame = Frame3::new(
+        Point3::new(0.0, 0.0, 0.0),
+        Vec3::new(0.0, 0.0, 1.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    let (a, _) = Solid::extrude_with(OperationId(1), profile, frame, 0.0, 8.0).unwrap();
+    let centre = Frame3::new(
+        Point3::new(0.0, 0.0, 8.0),
+        Vec3::new(0.0, 0.0, 1.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    let half = std::f64::consts::FRAC_PI_2;
+    let (b, _) = Solid::sphere_with(OperationId(2), centre, 4.0, -half, half, tol).unwrap();
+    for r in [
+        a.fuse(OperationId(3), &b).map(|_| ()),
+        a.cut(OperationId(3), &b).map(|_| ()),
+        a.common(OperationId(3), &b).map(|_| ()),
+    ] {
+        assert!(matches!(r, Err(Error::Degenerate(_))), "{r:?}");
+    }
+}

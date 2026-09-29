@@ -2040,7 +2040,13 @@ Decisions for S9, recorded before its code (2026-09-28):
     `bopfuse_simple/ZH5` re-purposed (the computation limit),
     `bcommon_simple/A1` updated, `boptuc_simple/ZH5` dropped (its new
     reason `ZH5`'s), `bopfuse_simple/ZI4` added (`PrecisionLoss`). 728
-    cases stay refused. The ledger does not change.
+    cases stay refused. The ledger does not change. After the survey: a
+    discriminant vanishing identically is tested first (`sphere_cyl`), so
+    the 32 of radius 4 are a tangency between the inputs, `Degenerate`, as
+    the decisions say (`ZH5`'s purpose updated); a section through a
+    stored sphere's poles stays `PrecisionLoss` (its pcurve turns half a
+    turn at the pole: a vertex there and a meridian's pcurves on either
+    side, S9d.1's follow-up, before S9d.4).
 
   * **S9d.3 refined, before its code (2026-09-29).** Cones and frusta (S3's
     `cone_*`: radii `bottom` and `top` over heights `0..h` on the stored

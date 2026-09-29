@@ -6515,7 +6515,7 @@
       "path": "tests/boolean/bopfuse_simple/ZH5",
       "expected_rust": "unsupported",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9d.2's Boolean group, a capability sentinel: a pcylinder of radius 4 and height 8 and a sphere of radius 4 centred on its top cap: the cylinder's rim is the sphere's equator, the wall tangent to the sphere along it, so the discriminant of the coaxial pair vanishes identically and no chart is found (a computation limit; S9d.1 refused it as a sphere against a cylinder, S9d.2 OutOfDomain)."
+      "purpose": "S9d.2's Boolean group, a capability sentinel: a pcylinder of radius 4 and height 8 and a sphere of radius 4 centred on its top cap: the cylinder's rim is the sphere's equator, the wall tangent to the sphere along it, so the discriminant of the coaxial pair vanishes identically: a tangency between the inputs (Degenerate since S9d.2's DRAW survey found it refused as a computation limit; S9d.1 refused it as a sphere against a cylinder, S9d.2 OutOfDomain)."
     },
     {
       "path": "tests/boolean/bfuse_simple/A4",
