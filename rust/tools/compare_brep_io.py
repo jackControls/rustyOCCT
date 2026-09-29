@@ -18,6 +18,14 @@ exactly the reader's. The kernel then writes
   face and wire body of identity-sheet-cases.txt: OCCT must read each written
   file as one valid free shape with those counts and properties.
 
+A free face whose certified enclosure excludes OCCT's default measure (its
+fixed Gauss rule errs by up to 7e-6 relative on the corpus's spline faces)
+is a reviewed difference, never a match: a second probe
+(occt_free_shape_adaptive_oracle.cpp, the same SDK) integrates the file's
+faces adaptively, and the review, fingerprinted by the original file and
+both native rows, must record an independent high-precision measure that
+the enclosure contains (to binary64 rounding).
+
 The native observations of the unmodified upstream files were captured
 after the kernel's reader existed (rust/fixtures/occt-brep-io-capture/NOTES.md);
 they depend on no Rust output and must stay unchanged. Differences need a
@@ -25,6 +33,7 @@ fingerprinted review; timeouts, crashes and malformed output cannot be
 reviewed.
 """
 import argparse
+from fractions import Fraction
 import json
 import os
 from pathlib import Path
@@ -48,6 +57,9 @@ TOOLKITS = ['TKTopAlgo', 'TKBRep', 'TKGeomAlgo', 'TKGeomBase', 'TKG3d', 'TKG2d',
 # them (a separate probe: the T2 capture pins SOURCE_FILE's text).
 FREE_SOURCE = ROOT/'rust/tools/occt_free_shape_oracle.cpp'
 FREE_CAPTURE = ROOT/'rust/fixtures/occt-free-shape-capture'
+# The same probe with adaptive surface integration (BRepGProp Eps 1e-12), run
+# only on files holding a face whose enclosure excludes the default measure.
+ADAPTIVE_SOURCE = ROOT/'rust/tools/occt_free_shape_adaptive_oracle.cpp'
 # Both native runs together took under a second; the deadline only bounds hangs.
 TIMEOUT = 600
 # The worst observed difference was 2.5e-14: volume and area relative to
@@ -205,6 +217,47 @@ def measure_outside(enclosure, native):
             if not lo-allowance <= x <= hi+allowance]
 
 
+def measure_differences(enclosure, default, adaptive):
+    """The labels of a free face whose enclosure excludes OCCT's default
+    measure: `default_integration` when the adaptive measure lies within it
+    (up to MEASURE_BOUND), else what the adaptive measure leaves outside."""
+    outside = measure_outside(enclosure, adaptive)
+    return ['default_integration'] if not outside else ['adaptive_outside:'+','.join(outside)]
+
+
+def independent_outside(enclosure, values):
+    """The labels of a certified [lo, hi] row that do not contain a review's
+    independent measure (decimal strings, exactly), up to binary64 rounding
+    of the row's largest magnitude: the decimals round a high-precision
+    value, and a plane's centre coordinate is enclosed with zero width."""
+    slack = Fraction(2.0**-52)*max([1]+[abs(Fraction(x)) for x in values])
+    return [label for label, (lo, hi), x in zip(['measure', 'cx', 'cy', 'cz'], enclosure, values)
+            if not Fraction(lo)-slack <= Fraction(x) <= Fraction(hi)+slack]
+
+
+def measure_fingerprint(default, adaptive):
+    """Both native rows to ten significant digits: the reviewed
+    discrepancies are 1e-9 or more, and a platform's last-bit drift (the
+    S6 capture allows MEASURE_BOUND) keeps the fingerprint."""
+    return sha(json.dumps([[f'{x:.10g}' for x in row] for row in (default, adaptive)]))
+
+
+def review_measure(case, text, oracle, enclosure, default, adaptive, reviews):
+    """(review, None) for a reviewed free face whose recorded independent
+    measure the enclosure contains, else (None, failure)."""
+    evidence = {'case': case, 'source_reference': SOURCE, 'oracle': oracle, 'input_sha256': sha(text),
+                'native_sha256': measure_fingerprint(default, adaptive),
+                'differences': measure_differences(enclosure, default, adaptive)}
+    review = review_for(evidence, reviews)
+    independent = review.get('independent_measure') if review else None
+    if review and independent and len(independent) == 4 and not independent_outside(enclosure, independent):
+        return review, None
+    reason = ('unreviewed measure difference' if not review else
+              'the review records no independent measure' if not independent or len(independent) != 4 else
+              'independent measure outside the enclosure: '+','.join(independent_outside(enclosure, independent)))
+    return None, dict(evidence, reason=reason, rust=enclosure, native=default, adaptive=adaptive)
+
+
 def close(a, b):
     """Relative agreement of [volume, area, cx, cy, cz]."""
     scale = max(1.0, abs(b[0]))**(1/3)
@@ -354,8 +407,9 @@ def main():
     report = {'source_reference': SOURCE, 'oracle': oracle, 'corpus_files': len(corpus),
               'reader_solids_certified': 0, 'prisms_verified': 0, 'written_solids_verified': 0,
               'reader_free_certified': 0, 'free_imported': 0, 'free_rejected_by_validator': [],
-              'free_measures_contained': 0, 'written_free_verified': 0, 'bodies_verified': 0,
-              'worst_property_difference': 0.0, 'matches': [], 'reviewed_differences': [], 'failures': []}
+              'free_measures_contained': 0, 'free_measures_reviewed': 0, 'written_free_verified': 0,
+              'bodies_verified': 0, 'worst_property_difference': 0.0, 'matches': [],
+              'reviewed_differences': [], 'failures': []}
 
     # The independent reader against native OCCT, file by file.
     for name, solids in reference.items():
@@ -394,18 +448,45 @@ def main():
     # Representable but rejected by the validator: pinned with their issue
     # kinds in occt_brep.rs (the hammer's faces).
     report['free_rejected_by_validator'] = sorted(f'{n}-{r}' for n, r in set(representable_free)-set(free))
+    measure_cases = []
     for key, (kind, counts, enclosure) in sorted(free.items()):
         if key not in representable_free:
             continue
         k, c, props = representable_free[key]
         found = [] if (kind, counts) == (k, c) else ['kind_or_counts']
-        found += ['not measured'] if enclosure is None else measure_outside(enclosure, props)
+        found += ['not measured'] if enclosure is None else []
         report['free_imported'] += 1
         if found:
             report['failures'].append({'case': f'{key[0]}-free-{key[1]}', 'reason': ' '.join(found),
                                        'rust': [kind, counts, enclosure], 'native': [k, c, props]})
+        elif measure_outside(enclosure, props):
+            measure_cases.append((key, enclosure, props))
         else:
             report['free_measures_contained'] += 1
+    # Enclosures that exclude OCCT's default measure: the adaptive probe on
+    # those files, and a review with an independent measure for each.
+    adaptive_oracle = None
+    if measure_cases:
+        adaptive_executable, adaptive_env, _, _ = build(prefix, output, ADAPTIVE_SOURCE, 'adaptive-oracle')
+        files = sorted({n for (n, _), _, _ in measure_cases})
+        record = run(adaptive_executable, '\n'.join(str(CORPUS/n) for n in files), adaptive_env)
+        write(output/'native-adaptive.json', record)
+        if record['exit_code'] != 0:
+            raise SystemExit('native adaptive run failed: '+json.dumps(record)[:2000])
+        adaptive_oracle = next(iter(record['stderr'].splitlines()), None)
+        rows = parse_free(record['stdout'], [CORPUS/n for n in files])
+        adaptive = {}
+        for n in files:
+            shapes = reference_free[n]
+            native = rows[str(CORPUS/n)]
+            if [(k, c) for _, k, _, c in shapes] != [(k, c) for k, _, c, _ in native]:
+                raise SystemExit('the adaptive probe disagrees with the reader on the free shapes of '+n)
+            adaptive.update({(n, r): props for (r, _, _, _), (_, _, _, props) in zip(shapes, native)})
+        for key, enclosure, props in measure_cases:
+            review, failure = review_measure(f'{key[0]}-free-{key[1]}', (CORPUS/key[0]).read_text(),
+                                             adaptive_oracle, enclosure, props, adaptive[key], reviews)
+            report['reviewed_differences' if review else 'failures'].append(review or failure)
+            report['free_measures_reviewed'] += review is not None
     free_targets = [(f'written {n}-free-{r}', written/f'{n}-free-{r}.brep', representable_free[(n, r)][1],
                      representable_free[(n, r)][2], None)
                     for (n, r) in free if (n, r) in representable_free]
@@ -483,6 +564,7 @@ def main():
             review or dict(evidence, native=solids, expected=[counts, props]))
     metadata = {'source_reference': SOURCE, 'oracle': oracle, 'sdk_manifest_sha256': digest(args.sdk_manifest),
                 'source_sha256': digest(SOURCE_FILE), 'probe_sha256': digest(executable),
+                'adaptive_oracle': adaptive_oracle, 'adaptive_source_sha256': digest(ADAPTIVE_SOURCE),
                 'loaded_libraries': loaded, 'build_command': command}
     write(output/'capture.json', metadata)
     write(output/'report.json', report)

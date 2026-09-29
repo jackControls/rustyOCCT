@@ -4,7 +4,8 @@ import json
 import unittest
 
 from brep_io_reference import IDENTITY, read, summary
-from compare_brep_io import CAPTURE, PROPERTY_BOUND, close, original_capture, parse
+from compare_brep_io import (ADAPTIVE_SOURCE, CAPTURE, FREE_SOURCE, PROPERTY_BOUND, REVIEWS, close,
+                             measure_differences, original_capture, parse, review_measure)
 
 
 def captured():
@@ -46,6 +47,51 @@ class BrepIoOracle(unittest.TestCase):
         self.assertLessEqual(close([1000.0*(1+1e-13)]+base[1:], base), PROPERTY_BOUND)
         self.assertGreater(close(base[:2]+[1.0+1e-9]+base[3:], base), PROPERTY_BOUND)
         self.assertFalse(close([float('nan')]+base[1:], base) <= PROPERTY_BOUND)
+
+    def test_adaptive_probe_changes_only_the_integration(self):
+        # The S6 probe stays pinned; the adaptive one differs in its header,
+        # its banner and SurfaceProperties' Eps alone.
+        body = lambda text: text[text.index('#include'):]
+        adaptive = body(ADAPTIVE_SOURCE.read_text())
+        self.assertIn('BRepGProp::SurfaceProperties(s, g, 1e-12);', adaptive)
+        restored = adaptive.replace('SurfaceProperties(s, g, 1e-12)', 'SurfaceProperties(s, g)').replace(
+            ' BRepGProp adaptive 1e-12"', ' BRepGProp"')
+        self.assertEqual(restored, body(FREE_SOURCE.read_text()))
+
+    def test_measure_reviews_need_an_independent_measure_inside(self):
+        enclosure = [(100.0, 100.0+1e-10), (1.0, 1.0+1e-12), (2.0, 2.0), (-3.0-1e-12, -3.0)]
+        default, adaptive = [100.001, 1.0, 2.0, -3.0], [100.0, 1.0, 2.0, -3.0]
+        self.assertEqual(measure_differences(enclosure, default, adaptive), ['default_integration'])
+        self.assertEqual(measure_differences(enclosure, default, default), ['adaptive_outside:measure'])
+        base = dict(case='a.brep-free-1', source_reference=None, oracle='o', input_sha256=None,
+                    native_sha256=None, differences=None, reason='r', independent_evidence='e',
+                    independent_measure=['100.00000000005', '1.0000000000005', '2', '-3.0000000000005'])
+        args = ('a.brep-free-1', 'text', 'o', enclosure, default, adaptive)
+        # The fingerprint comes from the run; a review matches only it.
+        _, failure = review_measure(*args, [])
+        self.assertEqual(failure['reason'], 'unreviewed measure difference')
+        review = dict(base, **{k: failure[k] for k in ['source_reference', 'input_sha256', 'native_sha256',
+                                                        'differences']})
+        self.assertEqual(review_measure(*args, [review]), (review, None))
+        for changed, reason in [({'independent_measure': None}, 'the review records no independent measure'),
+                                ({'independent_measure': ['100.0000000002', '1', '2', '-3']},
+                                 'independent measure outside the enclosure: measure'),
+                                ({'independent_measure': ['100', '1', '2.0000000000001', '-3']},
+                                 'independent measure outside the enclosure: cy')]:
+            _, failure = review_measure(*args, [dict(review, **changed)])
+            self.assertEqual(failure['reason'], reason)
+        # Another default row, file or adaptive verdict is unreviewed.
+        for other in [('a.brep-free-1', 'text', 'o', enclosure, [100.002]+default[1:], adaptive),
+                      ('a.brep-free-1', 'other', 'o', enclosure, default, adaptive),
+                      ('a.brep-free-1', 'text', 'o', enclosure, default, default)]:
+            self.assertEqual(review_measure(*other, [review])[1]['reason'], 'unreviewed measure difference')
+
+    def test_committed_measure_reviews_are_complete(self):
+        for review in json.loads(REVIEWS.read_text())['reviews']:
+            self.assertTrue(review['reason'] and review['independent_evidence'])
+            if review.get('native_sha256'):
+                self.assertEqual(len(review['independent_measure']), 4)
+                self.assertTrue(all(isinstance(x, str) for x in review['independent_measure']))
 
     def test_reader_follows_the_format(self):
         # A matrix record is always numbered; composite 2 reuses it squared.

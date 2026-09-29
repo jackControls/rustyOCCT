@@ -1,0 +1,138 @@
+{
+  "note": "Reviewed differences of compare_brep_io.py: free faces whose certified enclosures exclude OCCT's default BRepGProp measure. Each is fingerprinted by the original file and both native rows (default and adaptive, to ten significant digits) and records an independent measure the enclosure must contain.",
+  "reviews": [
+    {
+      "case": "hammer.brep-free-158",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepTools::Read BRepCheck_Analyzer BRepGProp adaptive 1e-12",
+      "input_sha256": "55915272003f8b635549736af03d0a863c2cc9d0986424a598782a700401bd61",
+      "native_sha256": "64311a6640550d35bc386867ccb71dd3c3f884dc6fdffc729a530fc7ca8d5bab",
+      "differences": [
+        "default_integration"
+      ],
+      "reason": "BRepGProp's default integration (a fixed Gauss rule) of this bilinear (planar) spline face with 5 B-spline pcurves errs by 2.1e-6 relative in area and 1.4e-3 in the centre; the kernel's certified enclosure (F8) excludes it. OCCT's adaptive integration (SurfaceProperties Eps 1e-12) lies within the enclosure up to MEASURE_BOUND.",
+      "independent_evidence": "rust/tools/free_face_measure.py data/occ/hammer.brep 158: Green's theorem over the face's own surface and pcurves (the binary64 values OCCT and the kernel read) at 40 digits in mpmath, the loops closed by UV chords; 12 and 24 Gauss-Legendre nodes per piece agree to the 20 digits recorded. Area 3230118.7463309261132, centre (-1316.8050777127536094, 18817.679883816371463, 23830.677766327842194), inside the kernel's enclosure; OCCT's adaptive row is 1.4e-16 relative off in area and 4.7e-11 in the centre.",
+      "independent_measure": [
+        "3230118.7463309261132",
+        "-1316.8050777127536094",
+        "18817.679883816371463",
+        "23830.677766327842194"
+      ],
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "hammer.brep-free-167",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepTools::Read BRepCheck_Analyzer BRepGProp adaptive 1e-12",
+      "input_sha256": "55915272003f8b635549736af03d0a863c2cc9d0986424a598782a700401bd61",
+      "native_sha256": "612cb66fe6c7f967e68aad0f4e744b8cb7080fb525e94b52ddacb82886b74b4b",
+      "differences": [
+        "default_integration"
+      ],
+      "reason": "BRepGProp's default integration (a fixed Gauss rule) of this bilinear (planar) spline face with 5 B-spline pcurves errs by 7.2e-6 relative in area and 1.8e-2 in the centre; the kernel's certified enclosure (F8) excludes it. OCCT's adaptive integration (SurfaceProperties Eps 1e-12) lies within the enclosure up to MEASURE_BOUND.",
+      "independent_evidence": "rust/tools/free_face_measure.py data/occ/hammer.brep 167: Green's theorem over the face's own surface and pcurves (the binary64 values OCCT and the kernel read) at 40 digits in mpmath, the loops closed by UV chords; 12 and 24 Gauss-Legendre nodes per piece agree to the 20 digits recorded. Area 3247069.6874393712386, centre (-1316.7939561103526114, 19374.766438835687488, 23830.667557388755316), inside the kernel's enclosure; OCCT's adaptive row is 2.9e-16 relative off in area and 5.4e-10 in the centre.",
+      "independent_measure": [
+        "3247069.6874393712386",
+        "-1316.7939561103526114",
+        "19374.766438835687488",
+        "23830.667557388755316"
+      ],
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "hammer.brep-free-200",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepTools::Read BRepCheck_Analyzer BRepGProp adaptive 1e-12",
+      "input_sha256": "55915272003f8b635549736af03d0a863c2cc9d0986424a598782a700401bd61",
+      "native_sha256": "2d8d8c897d130484f9a17b260e2841b875a0e85bc4829d1056bf6446421f20b2",
+      "differences": [
+        "default_integration"
+      ],
+      "reason": "BRepGProp's default integration (a fixed Gauss rule) of this bilinear (planar) spline face with 9 B-spline pcurves errs by 1.0e-6 relative in area and 5.6e-3 in the centre; the kernel's certified enclosure (F8) excludes it. OCCT's adaptive integration (SurfaceProperties Eps 1e-12) lies within the enclosure up to MEASURE_BOUND.",
+      "independent_evidence": "rust/tools/free_face_measure.py data/occ/hammer.brep 200: Green's theorem over the face's own surface and pcurves (the binary64 values OCCT and the kernel read) at 40 digits in mpmath, the loops closed by UV chords; 12 and 24 Gauss-Legendre nodes per piece agree to the 20 digits recorded. Area 16049373.491722509762, centre (-4908.0592315481895632, 20502.048155832194, 23090.737748233081489), inside the kernel's enclosure; OCCT's adaptive row is 1.2e-16 relative off in area and 9.9e-10 in the centre.",
+      "independent_measure": [
+        "16049373.491722509762",
+        "-4908.0592315481895632",
+        "20502.048155832194",
+        "23090.737748233081489"
+      ],
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "hammer.brep-free-212",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepTools::Read BRepCheck_Analyzer BRepGProp adaptive 1e-12",
+      "input_sha256": "55915272003f8b635549736af03d0a863c2cc9d0986424a598782a700401bd61",
+      "native_sha256": "68129bb4eb2a3662e090b648c0e048af8f33ea9747d8c44b335871982458b2b4",
+      "differences": [
+        "default_integration"
+      ],
+      "reason": "BRepGProp's default integration (a fixed Gauss rule) of this bilinear (planar) spline face with 9 B-spline pcurves errs by 2.4e-6 relative in area and 2.3e-2 in the centre; the kernel's certified enclosure (F8) excludes it. OCCT's adaptive integration (SurfaceProperties Eps 1e-12) lies within the enclosure up to MEASURE_BOUND.",
+      "independent_evidence": "rust/tools/free_face_measure.py data/occ/hammer.brep 212: Green's theorem over the face's own surface and pcurves (the binary64 values OCCT and the kernel read) at 40 digits in mpmath, the loops closed by UV chords; 12 and 24 Gauss-Legendre nodes per piece agree to the 20 digits recorded. Area 16089636.321047789176, centre (-4911.309909399250739, 17825.545660570111214, 23090.434740932807996), inside the kernel's enclosure; OCCT's adaptive row is 1.6e-15 relative off in area and 1.3e-10 in the centre.",
+      "independent_measure": [
+        "16089636.321047789176",
+        "-4911.309909399250739",
+        "17825.545660570111214",
+        "23090.434740932807996"
+      ],
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "hammer.brep-free-225",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepTools::Read BRepCheck_Analyzer BRepGProp adaptive 1e-12",
+      "input_sha256": "55915272003f8b635549736af03d0a863c2cc9d0986424a598782a700401bd61",
+      "native_sha256": "c88aee7fbf21c46d83c21c5a0a738d699d2b44658be19cbad8c0206705ead6d3",
+      "differences": [
+        "adaptive_outside:measure"
+      ],
+      "reason": "Not an integration error: the face's wire does not close in UV. Pcurve 122 (edge 144) ends at (1.2559760966219999, 0.27960641085799998) and pcurve 193 (edge 223, reversed) starts at (1.2559760966719999, 0.27960641060899999), a gap of (5.0e-11, -2.49e-10) on a bilinear plane patch (|S_u x S_v| = 1e6), 2.5e-7 in space. The kernel closes its loops with the UV chord; BRepGProp sums Green's integrals over the open pcurves from the face's UMin (0.008725493121618), which closes the gap through u = UMin and drops a sliver 1.25 long and 2.49e-10 wide: 3.1e-4 of area, 2.0e-9 relative. Default and adaptive integration agree with that open sum, so only the area leaves the MEASURE_BOUND allowance.",
+      "independent_evidence": "rust/tools/free_face_measure.py data/occ/hammer.brep 225: Green's theorem over the face's own surface and pcurves (the binary64 values OCCT and the kernel read) at 40 digits in mpmath, the loops closed by UV chords; 12 and 24 Gauss-Legendre nodes per piece agree to the 20 digits recorded. Chord-closed: area 156204.6977100102748, centre (-9154.2565836067101266, 18631.799900069413003, 22246.32738281126835), inside the kernel's enclosure. The open sum from UMin (--open --baseline 0.0087254931216179995): area 156204.69739944489037, centre (-9154.2565835802417472, 18631.799900361075215, 22246.327382416993773), OCCT's default and adaptive rows to 5e-14 relative.",
+      "independent_measure": [
+        "156204.6977100102748",
+        "-9154.2565836067101266",
+        "18631.799900069413003",
+        "22246.32738281126835"
+      ],
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "hammer.brep-free-241",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepTools::Read BRepCheck_Analyzer BRepGProp adaptive 1e-12",
+      "input_sha256": "55915272003f8b635549736af03d0a863c2cc9d0986424a598782a700401bd61",
+      "native_sha256": "7e756027d929067396eef87e76c66f3c9b85f284a09e08398364666d957c71da",
+      "differences": [
+        "default_integration"
+      ],
+      "reason": "BRepGProp's default integration (a fixed Gauss rule) of this bilinear (planar) spline face with a hole, 6 B-spline pcurves errs by 6.4e-7 relative in area and 1.3e-3 in the centre; the kernel's certified enclosure (F8) excludes it. OCCT's adaptive integration (SurfaceProperties Eps 1e-12) lies within the enclosure up to MEASURE_BOUND.",
+      "independent_evidence": "rust/tools/free_face_measure.py data/occ/hammer.brep 241: Green's theorem over the face's own surface and pcurves (the binary64 values OCCT and the kernel read) at 40 digits in mpmath, the loops closed by UV chords; 12 and 24 Gauss-Legendre nodes per piece agree to the 20 digits recorded. Area 2203468.2866472249011, centre (-5871.8449957485095549, 19268.351432325298584, 20519.384207050999976), inside the kernel's enclosure; OCCT's adaptive row is 0 relative off in area and 1.4e-11 in the centre.",
+      "independent_measure": [
+        "2203468.2866472249011",
+        "-5871.8449957485095549",
+        "19268.351432325298584",
+        "20519.384207050999976"
+      ],
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "hammer.brep-free-243",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepTools::Read BRepCheck_Analyzer BRepGProp adaptive 1e-12",
+      "input_sha256": "55915272003f8b635549736af03d0a863c2cc9d0986424a598782a700401bd61",
+      "native_sha256": "fbdc0204ab525143b37dc8fc0110b5fa70114bf7a359ea2eb92fa6c9529d1d5e",
+      "differences": [
+        "default_integration"
+      ],
+      "reason": "BRepGProp's default integration (a fixed Gauss rule) of this cubic-by-linear (extruded) spline face with 9 B-spline pcurves errs by 1.3e-7 relative in area and 1.6e-4 in the centre; the kernel's certified enclosure (F8) excludes it. OCCT's adaptive integration (SurfaceProperties Eps 1e-12) lies within the enclosure up to MEASURE_BOUND.",
+      "independent_evidence": "rust/tools/free_face_measure.py data/occ/hammer.brep 243: Green's theorem over the face's own surface and pcurves (the binary64 values OCCT and the kernel read) at 40 digits in mpmath, the loops closed by UV chords; 12 and 24 Gauss-Legendre nodes per piece agree to the 20 digits recorded. Area 6033300.3666389308977, centre (-7530.3245224809323156, 19261.34565490210688, 21535.866917708977171), inside the kernel's enclosure; OCCT's adaptive row is 2.7e-11 relative off in area and 3.7e-6 in the centre.",
+      "independent_measure": [
+        "6033300.3666389308977",
+        "-7530.3245224809323156",
+        "19261.34565490210688",
+        "21535.866917708977171"
+      ],
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}

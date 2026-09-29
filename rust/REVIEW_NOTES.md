@@ -2727,6 +2727,27 @@ Decisions for S9, recorded before its code (2026-09-28):
   refine towards the resolution; route (a) along rational pcurves on
   nonrational patches has no fixture; periodic spline surfaces stay
   unsupported (S4).
+
+  S6's interop bridge after F8 (2026-09-29): from `dc5fd1a3` the tight
+  enclosures excluded OCCT's default measures of seven free spline faces of
+  `hammer.brep` (records 158, 167, 200, 212, 225, 241, 243) and
+  `compare_brep_io.py` failed. None is a kernel error: an independent
+  measure (`free_face_measure.py`, Green's theorem over the face's surface
+  and pcurves at 40 digits, 12 and 24 nodes agreeing to 20 digits) lies
+  inside every enclosure. On six, BRepGProp's default integration errs by
+  `1.3e-7` to `7.2e-6` relative in area, and its adaptive integration (Eps
+  `1e-12`, the second probe `occt_free_shape_adaptive_oracle.cpp`) lies
+  within `MEASURE_BOUND` (243's by `2.7e-11`, OCCT's own error). On 225, a
+  plane bilinear patch, the wire does not close in UV: pcurves 122 and 193
+  miss by `(5e-11, -2.5e-10)` at their shared vertex (`2.5e-7` in space).
+  The kernel closes its loops with the UV chord; BRepGProp sums Green's
+  integrals of the open pcurves from the face's UMin, which closes the gap
+  through `u = UMin` and drops a sliver `1.25` long, `3.1e-4` of area
+  (`2.0e-9` relative). That open sum reproduces OCCT's default and adaptive
+  values to `4e-14`; the chord-closed one is the kernel's. The seven are
+  reviewed differences (`occt-brep-io-divergences.json`), fingerprinted by
+  the file and both native rows, each with an independent measure the
+  enclosure must contain.
 * **Tessellation**, deflection-controlled and watertight, once S5 lands;
   the application needs it for display and it needs nothing from S7–S9.
 
