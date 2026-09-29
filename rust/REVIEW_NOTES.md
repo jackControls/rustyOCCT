@@ -1908,6 +1908,28 @@ Decisions for S9, recorded before its code (2026-09-28):
     wholes' frames within rounding). Pending: the DRAW survey, the
     campaign.
 
+  * **S9d.2 refined, before its code (2026-09-29).** A sphere against a
+    prism with arcs, and two spheres. Two spheres meet in a circle (their
+    radical plane's section; tangent spheres `Degenerate`); a cap's circle
+    meets a sphere where it meets the sphere's circle in its plane (two
+    circles in a plane: a quadratic surd). A cylinder and a sphere whose
+    centre lies on the cylinder's axis meet in circles of latitude
+    (parallels of the sphere, rational heights); otherwise in S7b.1's quartic:
+    on the cylinder's `(u, w)`, `cos(u - u0) = q(w)` with `q` quadratic in
+    the height, so the curve is a graph over `u` away from its turning
+    points (the ruling tangent to the curve, `D(u) = 0`) and over `w` away
+    from its others (`q(w) = +-1`), each piece analytic: `Curve3::Meet`
+    with the sphere as its other quadric over `u`, and a new graph over the
+    height, `u = u0 +- acos(q(w))`, switched at rational heights between the
+    two kinds of turning point, verified exactly as S9c.2b.1's pieces (Sturm
+    counts of each carrier's discriminant). A sphere tangent to a cylinder
+    (a double root) or within the resolution of it is `Degenerate`.
+    Evidence first: fixtures of every class (two spheres crossing, nested and
+    apart; a sphere through a cylinder with its centre on the axis and off
+    it, rings and a loop; a stadium or a round hole against a sphere; a
+    pipe through a sphere; tangencies declared `degenerate`) and a native
+    capture before `solid/boolean/curved/spheres.rs` exists.
+
 ### Parallel tracks
 
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
