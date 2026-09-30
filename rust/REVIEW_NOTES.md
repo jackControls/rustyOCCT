@@ -2981,7 +2981,10 @@ Decisions for S9, recorded before its code (2026-09-28):
     target's 60, all in the validator's and mass's certified integrals
     along the meetings (a parallel track below); the kernel's tests and
     the 2,950 replayed variants cover them meanwhile. DRAW survey:
-    S9d.4b's, below. Pending: the campaign.
+    S9d.4b's, below. Campaign at `2efa1ec7` (600 s, a sampled replay): 910 runs to the
+    end of both budgets, but one slow unit over the limit, 63 s under
+    AddressSanitizer (`fd9294c7`, a whole torus in a turned frame against
+    a prism with arcs, 9.8 s without; the certified integrals' track). Pending: the campaign.
   * **DRAW survey of S9d.4b (2026-09-30, `UPSTREAM_TESTS.md`).** With
     S9d.4b.1, S9d.4b.2a and S9d.4b.2b, and the adapter's curved primitives
     fixed first (the parallel track below): each `pcone`, `psphere` and
