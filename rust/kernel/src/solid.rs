@@ -1024,6 +1024,7 @@ impl Solid {
             Construction::Stack(stack) => match stack.moved(
                 &self.topology,
                 frame,
+                [self.start, self.end],
                 self.operation,
                 transform,
                 self.mass.moved(transform),

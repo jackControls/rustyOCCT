@@ -17,8 +17,17 @@
 //! result's slots in the stored order, checked against the stored
 //! vertices, and each face, edge and vertex of the model carries the ids of
 //! the result's entities it lies in.
+//!
+//! S9e.2: a stack (its two profiles' prisms on its frame) and an S9b.1
+//! result of line prisms are decided the same way on the curved
+//! arrangement of their construction, their stored slots (another
+//! assembly's) matched geometrically to the re-run's (`matched.rs`); a
+//! result of several solids is given as its whole construction, every
+//! solid's faces and edges in the model, and the second arrangement keeps
+//! the given solid's (`matched::keep_solid`).
 use super::assemble::{assemble_made, Made};
 use super::graph::{classify, holds, Arr, CurveRef};
+use super::matched::{matched, Match};
 use super::model::*;
 use super::num::*;
 use crate::identity::{EntityId, Role};
@@ -43,7 +52,8 @@ pub(super) struct Given {
     /// Each model face keeps its input face's orientation.
     behind: Vec<bool>,
     /// Each model face's result faces' ids, the first its own (several
-    /// where the result left its input face in parts).
+    /// where the result left its input face in parts; none for a face of
+    /// another solid of the result, S9e.2).
     pub(super) ids: Vec<Vec<EntityId>>,
     /// The result face's id on a model face's side of each of its edges.
     pub(super) sides: BTreeMap<(usize, usize), EntityId>,
@@ -53,13 +63,35 @@ pub(super) struct Given {
     /// Each model edge's result edge's stored curve (none inside a result
     /// face).
     pub(super) curves: Vec<Option<Curve3>>,
+    /// Each model edge's stored curve turning against its conic's
+    /// parameter (a matched stored frame's normal against the conic's, S9e.2).
+    pub(super) flip: Vec<bool>,
+    /// Each model edge's solid among the construction's (S9e.2), and the
+    /// given solid's, where the construction has several.
+    solids: Vec<usize>,
+    solid: Option<usize>,
 }
 
-/// Whether S9e.1's model applies to an input: a Boolean's result from the
-/// curved arrangement.
-pub(super) fn applies(s: &Solid) -> bool {
-    match &s.construction {
-        Construction::Polyhedron(p) => super::applies(p),
+/// Whether a solid has an arc (a prism) or a face other than a plane, or is
+/// a result of the curved arrangement (S9e.2's condition on a stack or an
+/// S9b.1 result and its partner).
+fn curved(s: &Solid) -> bool {
+    super::applies_arcs(s)
+        || matches!(&s.construction, Construction::Polyhedron(p) if super::applies(p))
+        || s.topology
+            .faces()
+            .iter()
+            .any(|f| !matches!(f.surface, crate::topology::Surface::Plane(_)))
+}
+
+/// Whether a given model applies to an input `x` with the partner `y`: a
+/// Boolean's result from the curved arrangement (S9e.1, of several solids
+/// S9e.2), or a stack or polyhedral result where either has an arc or a
+/// curved face (S9e.2; else S9b.2's stored model decides it).
+pub(super) fn applies(x: &Solid, y: &Solid) -> bool {
+    match &x.construction {
+        Construction::Polyhedron(p) if super::applies(p) => true,
+        Construction::Polyhedron(_) | Construction::Stack(_) => curved(x) || curved(y),
         _ => false,
     }
 }
@@ -88,140 +120,223 @@ fn rerun(poly: &Polyhedron) -> Result<(Arr, Vec<(Component, Made)>)> {
     Err(Error::Degenerate("a meeting at every seam tried"))
 }
 
+/// The construction a given solid's model re-runs: the first Boolean's two
+/// prisms and operation (a stack's profiles as prisms on its frame over
+/// their heights, S9e.2), and whether its stored slots are the re-run's
+/// (S9e.1: the curved arrangement built it) rather than matched.
+fn construction(s: &Solid) -> Result<(Polyhedron, bool)> {
+    match &s.construction {
+        Construction::Polyhedron(poly) => {
+            // S9e.1 and S9e.2: a result of prisms (planes and cylinders).
+            if [&poly.a, &poly.b]
+                .iter()
+                .any(|x| !matches!(x.construction, Construction::Prism(_)))
+            {
+                return Err(out_of_domain(
+                    "a Boolean's result of solids other than prisms given to another Boolean (S9e.3)",
+                ));
+            }
+            Ok((poly.as_ref().clone(), super::applies(poly)))
+        }
+        Construction::Stack(st) => {
+            // The stack's two prisms, entity ids of their own (the model's
+            // names are the stored result's).
+            let prism = |op: u64, profile: &crate::Profile, h: [f64; 2]| {
+                Solid::build(
+                    crate::identity::OperationId(u64::MAX - op),
+                    profile.clone(),
+                    s.frame,
+                    h[0],
+                    h[1],
+                )
+                .map(Box::new)
+            };
+            Ok((
+                Polyhedron {
+                    a: prism(2, &st.a, st.ha)?,
+                    b: prism(1, &st.b, st.hb)?,
+                    op: st.op,
+                    index: st.index,
+                },
+                false,
+            ))
+        }
+        _ => Err(out_of_domain(
+            "a solid other than a Boolean's result given to a Boolean of curved faces (S9e.4)",
+        )),
+    }
+}
+
 /// The given model of a Boolean's result.
+#[allow(clippy::too_many_lines)]
 pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
-    let Construction::Polyhedron(poly) = &s.construction else {
-        return Err(out_of_domain(
-            "a solid other than a Boolean's result given to a Boolean of curved faces (S9e.2)",
-        ));
-    };
-    // S9e.1: a result of prisms (planes and cylinders).
-    if [&poly.a, &poly.b]
-        .iter()
-        .any(|x| !matches!(x.construction, Construction::Prism(_)))
-    {
-        return Err(out_of_domain(
-            "a Boolean's result of solids other than prisms given to another Boolean (S9e.3)",
-        ));
-    }
-    let (arr, mut out) = rerun(poly)?;
-    if out.len() != 1 || poly.index != 0 {
-        return Err(out_of_domain(
-            "a Boolean's result of several solids given to another Boolean (S9e.2)",
-        ));
-    }
-    let (component, made) = out.swap_remove(0);
+    let (poly, direct) = construction(s)?;
+    let (arr, out) = rerun(&poly)?;
     let t = &s.topology;
-    // The re-run's slots are the stored ones.
     let tol = s.resolution().linear();
     let differ = || Error::ComputationLimit("a given result rebuilt differently");
-    let p = &component.parts;
-    if p.vertices.len() != t.vertices().len()
-        || p.edges.len() != t.edges().len()
-        || p.faces.len() != t.faces().len()
-    {
-        return Err(differ());
-    }
-    for (a, b) in p.vertices.iter().zip(t.vertices()) {
-        let (a, b) = (a.position.to_array(), b.position.to_array());
-        if (0..3).any(|k| (a[k] - b[k]).abs() > tol) {
+    // The given solid among the re-run's and its slots' stored ones.
+    let (k, slots) = if direct {
+        // S9e.1: the re-run's slots are the stored ones.
+        let k = poly.index;
+        let p = &out.get(k).ok_or_else(differ)?.0.parts;
+        if p.vertices.len() != t.vertices().len()
+            || p.edges.len() != t.edges().len()
+            || p.faces.len() != t.faces().len()
+        {
             return Err(differ());
         }
-    }
+        for (a, b) in p.vertices.iter().zip(t.vertices()) {
+            let (a, b) = (a.position.to_array(), b.position.to_array());
+            if (0..3).any(|k| (a[k] - b[k]).abs() > tol) {
+                return Err(differ());
+            }
+        }
+        let identity = |n: usize| (0..n).collect::<Vec<_>>();
+        (
+            k,
+            Match {
+                faces: identity(p.faces.len()),
+                edges: identity(p.edges.len()),
+                vertices: identity(p.vertices.len()),
+            },
+        )
+    } else {
+        // S9e.2: another assembly's slots, matched geometrically; the one
+        // re-run solid that matches.
+        let mut found = None;
+        for (c, (component, _)) in out.iter().enumerate() {
+            if let Some(m) = matched(&component.parts, t, tol) {
+                if found.is_some() {
+                    return Err(differ());
+                }
+                found = Some((c, m));
+            }
+        }
+        found.ok_or_else(differ)?
+    };
     let id = |slot: Slot| {
         t.id_of(slot)
             .ok_or(Error::InvalidTopology("an unnamed slot"))
     };
     // Every edge on a kept piece a line or a conic (S9c.1's).
-    for parts in &made.edges {
-        for &(g, _) in parts {
-            if !matches!(arr.edges[g].crv, Crv::Line { .. } | Crv::Conic { .. }) {
-                return Err(out_of_domain(
-                    "a Boolean's result with procedural edges given to another Boolean (S9e.3)",
-                ));
+    for (_, made) in &out {
+        for parts in &made.edges {
+            for &(g, _) in parts {
+                if !matches!(arr.edges[g].crv, Crv::Line { .. } | Crv::Conic { .. }) {
+                    return Err(out_of_domain(
+                        "a Boolean's result with procedural edges given to another Boolean (S9e.3)",
+                    ));
+                }
             }
         }
     }
     let leaves = arr.models.clone();
-    // Faces: the input faces holding kept pieces.
+    // The given solid's region names the model's faces of other solids
+    // (their pieces are dropped from the second arrangement: `keep_solid`).
+    let region = id(Slot::Region(RegionId(1)))?;
+    // Faces: the input faces holding kept pieces, the given solid's first.
+    let order: Vec<usize> = std::iter::once(k)
+        .chain((0..out.len()).filter(|&c| c != k))
+        .collect();
     let mut face_of: BTreeMap<(usize, usize), usize> = BTreeMap::new();
     let mut faces: Vec<MFace> = Vec::new();
     let mut leaf: Vec<(usize, usize)> = Vec::new();
     let mut behind: Vec<bool> = Vec::new();
     let mut ids: Vec<Vec<EntityId>> = Vec::new();
-    let mut piece_face: BTreeMap<usize, (usize, EntityId)> = BTreeMap::new();
-    for (k, pieces) in made.faces.iter().enumerate() {
-        let rid = id(Slot::Face(FaceId(k)))?;
-        let stored = &t.faces()[k];
-        for &pi in pieces {
-            let piece = &arr.pieces[pi];
-            let key = (piece.op, piece.face);
-            let mf = match face_of.get(&key) {
-                Some(&mf) => mf,
-                None => {
-                    let lf = &leaves[piece.op].faces[piece.face];
-                    let surf = match (&lf.surf, piece.behind) {
-                        (s, true) => s.clone(),
-                        (Surf::Plane { p, m }, false) => Surf::Plane {
-                            p: p.clone(),
-                            m: neg(m),
-                        },
-                        (Surf::Cyl { c, r, inside }, false) => Surf::Cyl {
-                            c: c.clone(),
-                            r: r.clone(),
-                            inside: !inside,
-                        },
-                        _ => {
-                            return Err(out_of_domain(
-                                "a Boolean's result of solids other than prisms given to another Boolean (S9e.3)",
-                            ))
-                        }
-                    };
-                    faces.push(MFace {
-                        kind: lf.kind,
-                        surf,
-                        id: rid,
-                        stored: stored.surface.clone(),
-                        sense: stored.sense,
-                    });
-                    leaf.push(key);
-                    behind.push(piece.behind);
-                    ids.push(Vec::new());
-                    face_of.insert(key, faces.len() - 1);
-                    faces.len() - 1
-                }
+    // Each kept piece's model face, result face (the given solid's) and
+    // solid.
+    let mut piece_face: BTreeMap<usize, (usize, Option<EntityId>, usize)> = BTreeMap::new();
+    for &c in &order {
+        let (component, made) = &out[c];
+        for (fk, pieces) in made.faces.iter().enumerate() {
+            let (rid, stored) = if c == k {
+                let j = slots.faces[fk];
+                (Some(id(Slot::Face(FaceId(j)))?), &t.faces()[j])
+            } else {
+                (None, &component.parts.faces[fk])
             };
-            if !ids[mf].contains(&rid) {
-                ids[mf].push(rid);
+            for &pi in pieces {
+                let piece = &arr.pieces[pi];
+                let key = (piece.op, piece.face);
+                let mf = match face_of.get(&key) {
+                    Some(&mf) => mf,
+                    None => {
+                        let lf = &leaves[piece.op].faces[piece.face];
+                        let surf = match (&lf.surf, piece.behind) {
+                            (s, true) => s.clone(),
+                            (Surf::Plane { p, m }, false) => Surf::Plane {
+                                p: p.clone(),
+                                m: neg(m),
+                            },
+                            (Surf::Cyl { c, r, inside }, false) => Surf::Cyl {
+                                c: c.clone(),
+                                r: r.clone(),
+                                inside: !inside,
+                            },
+                            _ => {
+                                return Err(out_of_domain(
+                                    "a Boolean's result of solids other than prisms given to another Boolean (S9e.3)",
+                                ))
+                            }
+                        };
+                        faces.push(MFace {
+                            kind: lf.kind,
+                            surf,
+                            id: rid.unwrap_or(region),
+                            stored: stored.surface.clone(),
+                            sense: stored.sense,
+                        });
+                        leaf.push(key);
+                        behind.push(piece.behind);
+                        ids.push(Vec::new());
+                        face_of.insert(key, faces.len() - 1);
+                        faces.len() - 1
+                    }
+                };
+                if let Some(rid) = rid {
+                    if !ids[mf].contains(&rid) {
+                        ids[mf].push(rid);
+                    }
+                }
+                piece_face.insert(pi, (mf, rid, c));
             }
-            piece_face.insert(pi, (mf, rid));
         }
     }
     // Edges: the arrangement's edges on the kept pieces' boundaries, each
     // run the way its faces' loops about their own (the model's) normals
     // leave its left face.
+    let (_, made) = &out[k];
     let mut edge_rid: BTreeMap<usize, (EntityId, usize)> = BTreeMap::new();
     for (i, parts) in made.edges.iter().enumerate() {
-        let rid = id(Slot::Edge(EdgeId(i)))?;
+        let j = slots.edges[i];
+        let rid = id(Slot::Edge(EdgeId(j)))?;
         for &(g, _) in parts {
-            edge_rid.insert(g, (rid, i));
+            edge_rid.insert(g, (rid, j));
         }
     }
     let mut vertex_rid: BTreeMap<usize, EntityId> = BTreeMap::new();
     for (j, v) in made.vertices.iter().enumerate() {
         if let Some(v) = v {
-            vertex_rid.insert(*v, id(Slot::Vertex(VertexId(j)))?);
+            vertex_rid.insert(*v, id(Slot::Vertex(VertexId(slots.vertices[j])))?);
         }
     }
-    // (left, right) model faces of each arrangement edge, and the result
-    // face on each side.
-    let mut sides_of: BTreeMap<usize, [Option<(usize, EntityId)>; 2]> = BTreeMap::new();
-    for (&pi, &(mf, rid)) in &piece_face {
+    // (left, right) model faces of each arrangement edge, the result face
+    // on each side and the edge's solid.
+    type Side = (usize, Option<EntityId>);
+    let mut sides_of: BTreeMap<usize, ([Option<Side>; 2], usize)> = BTreeMap::new();
+    for (&pi, &(mf, rid, c)) in &piece_face {
         let piece = &arr.pieces[pi];
         for lp in &piece.loops {
             for &(g, d) in lp {
                 let forward = d == piece.behind;
-                let slot = &mut sides_of.entry(g).or_insert([None, None])[usize::from(!forward)];
+                let entry = sides_of.entry(g).or_insert(([None, None], c));
+                if entry.1 != c {
+                    return Err(Error::InvalidTopology(
+                        "a given result's edge on two of its solids",
+                    ));
+                }
+                let slot = &mut entry.0[usize::from(!forward)];
                 if slot.is_some() {
                     return Err(Error::InvalidTopology(
                         "a given result's edge used twice one way",
@@ -236,9 +351,11 @@ pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
     let mut edges: Vec<MEdge> = Vec::new();
     let mut own: Vec<Option<usize>> = Vec::new();
     let mut curves: Vec<Option<Curve3>> = Vec::new();
+    let mut flip: Vec<bool> = Vec::new();
+    let mut solids: Vec<usize> = Vec::new();
     let mut sides: BTreeMap<(usize, usize), EntityId> = BTreeMap::new();
-    for (&g, fs) in &sides_of {
-        let [Some((left, lrid)), Some((right, rrid))] = *fs else {
+    for (&g, &(fs, c)) in &sides_of {
+        let [Some((left, lrid)), Some((right, rrid))] = fs else {
             return Err(Error::InvalidTopology("a given result's open edge"));
         };
         let ge = &arr.edges[g];
@@ -291,7 +408,26 @@ pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
         };
         own.push(carrier.and_then(|k| face_of.get(&k).copied()));
         let rid = edge_rid.get(&g);
-        curves.push(rid.map(|&(_, i)| t.edges()[i].curve.clone()));
+        let stored = rid.map(|&(_, j)| t.edges()[j].curve.clone());
+        // A stored circle or ellipse turning against the conic's
+        // parameter (its frame's normal against the conic's `a x b`).
+        flip.push(match (&ge.crv, &stored) {
+            (
+                Crv::Conic { a, b, .. },
+                Some(
+                    Curve3::Circle { frame, .. }
+                    | Curve3::CircularArc { frame, .. }
+                    | Curve3::EllipseArc { frame, .. },
+                ),
+            ) => {
+                let n = cross(a, b).map(|x| crate::solid::split::rational_f64(&x));
+                let m = frame.normal();
+                n[0] * m.x + n[1] * m.y + n[2] * m.z < 0.0
+            }
+            _ => false,
+        });
+        curves.push(stored);
+        solids.push(c);
         edges.push(MEdge {
             kind: EdgeKind::Given(ei),
             curve,
@@ -301,8 +437,12 @@ pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
             faces: [left, right],
             id: rid.map(|x| x.0),
         });
-        sides.insert((ei, left), lrid);
-        sides.insert((ei, right), rrid);
+        if let Some(lrid) = lrid {
+            sides.insert((ei, left), lrid);
+        }
+        if let Some(rrid) = rrid {
+            sides.insert((ei, right), rrid);
+        }
     }
     let mut info = BTreeMap::new();
     for (eid, _) in t.ids() {
@@ -314,7 +454,7 @@ pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
     Ok(Prism {
         frame: s.frame,
         tolerance: s.resolution(),
-        region: id(Slot::Region(RegionId(1)))?,
+        region,
         f,
         lo: zero(),
         hi: zero(),
@@ -337,11 +477,20 @@ pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
             sides,
             own,
             curves,
+            flip,
+            solids,
+            solid: (out.len() > 1).then_some(k),
         })),
     })
 }
 
 impl Given {
+    /// Each model edge's solid and the given solid's, where the given
+    /// result is one solid of several (S9e.2).
+    pub(super) fn several(&self) -> Option<(&[usize], usize)> {
+        self.solid.map(|k| (self.solids.as_slice(), k))
+    }
+
     /// A model face's input model and input face.
     pub(super) fn view(&self, fi: usize) -> (&Prism, usize) {
         let (o, f) = self.leaf[fi];

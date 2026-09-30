@@ -72,9 +72,10 @@ pub fn cases(text: &str) -> Vec<Case> {
                     operation: OperationId(t[2].parse().expect("an operation id")),
                     third: parse(&rows.join("\n")),
                     swapped: t.get(3) == Some(&"swapped"),
-                    pick: t.iter().position(|w| *w == "solid").map(|k| {
-                        [1, 2, 3].map(|i| t[k + i].parse::<f64>().expect("a pick point"))
-                    }),
+                    pick: t
+                        .iter()
+                        .position(|w| *w == "solid")
+                        .map(|k| [1, 2, 3].map(|i| t[k + i].parse::<f64>().expect("a pick point"))),
                 }
             });
             Case {
