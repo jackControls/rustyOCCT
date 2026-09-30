@@ -26,7 +26,10 @@
 // first Boolean's result must hold exactly one solid (else `failure`), which
 // is the second's argument with the third solid its tool (swapped: the third
 // solid the argument, the first result's solid the tool); the output is the
-// second Boolean's.
+// second Boolean's. S9e.2: the `then` row may end `solid X Y Z`: the first
+// result may then hold several solids, and the one BRepClass3d_SolidClassifier
+// finds the point inside (TopAbs_IN, exactly one of them, else `failure`) is
+// the second's argument.
 //
 // Output: `NAME done N valid warnings` (N solids in the result, the result
 // checked by BRepCheck_Analyzer, 1 if the operation reported warnings), then
@@ -44,6 +47,7 @@
 #include <BRepBuilderAPI_MakeVertex.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
 #include <BRepCheck_Analyzer.hxx>
+#include <BRepClass3d_SolidClassifier.hxx>
 #include <BRepGProp.hxx>
 #include <BRepPrimAPI_MakeCone.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
@@ -242,7 +246,8 @@ int main() {
       Prism prisms[3];
       int current = 0;
       std::string operation, then;
-      bool swapped = false;
+      bool swapped = false, picked = false;
+      gp_Pnt pick;
       while (std::getline(std::cin, line) && line != "end") {
         std::istringstream in(line);
         std::string kind;
@@ -253,9 +258,17 @@ int main() {
         } else if (kind == "then") {
           if (current != 1 || !(in >> then)) throw Standard_Failure("then row");
           std::string word;
-          if (in >> word) {
-            if (word != "swapped") throw Standard_Failure("then row");
-            swapped = true;
+          while (in >> word) {
+            if (word == "swapped" && !swapped && !picked) {
+              swapped = true;
+            } else if (word == "solid" && !picked) {
+              double x, y, z;
+              if (!(in >> x >> y >> z)) throw Standard_Failure("then row");
+              pick = gp_Pnt(x, y, z);
+              picked = true;
+            } else {
+              throw Standard_Failure("then row");
+            }
           }
           current = 2;
         } else {
@@ -282,10 +295,18 @@ int main() {
         continue;
       }
       if (current == 2) {
-        // The first result's one solid, given to the second Boolean.
+        // The first result's one solid (S9e.2: the one holding the pick
+        // point), given to the second Boolean.
         TopoDS_Shape first;
         int count = 0;
-        for (TopExp_Explorer e(op->Shape(), TopAbs_SOLID); e.More(); e.Next(), ++count) first = e.Current();
+        for (TopExp_Explorer e(op->Shape(), TopAbs_SOLID); e.More(); e.Next()) {
+          if (picked) {
+            BRepClass3d_SolidClassifier classifier(e.Current(), pick, 1e-7);
+            if (classifier.State() != TopAbs_IN) continue;
+          }
+          first = e.Current();
+          ++count;
+        }
         if (count != 1) throw Standard_Failure("the first result is not one solid");
         const TopoDS_Shape third = prisms[2].shape();
         op = swapped ? boolean(then, third, first) : boolean(then, first, third);
