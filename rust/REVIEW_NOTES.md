@@ -3014,7 +3014,44 @@ Decisions for S9, recorded before its code (2026-09-28):
     a DRAW `plane`). A full contract run holds; the ledger does not
     change.
 
+  * **S9's remaining scope (2026-09-30), recorded before its code.** An
+    inventory of the kernel's refusals tagged with S9's sub-steps against
+    these notes: every named sub-step has its implemented bullet, but these
+    remain, each evidence first, in this order. S9d.2c: a sphere's circles
+    of unequal axes against a cylinder (S9d.2a's amendment (a) gave them to
+    S9d.2b, which built its loops only) and sphere-cylinder loops in turned
+    frames (the bite in `TILT`). S9d.3c: cone-cylinder and cone-cone loops,
+    and a cone's loops in turned frames (`ball_tilt`), the rest of
+    S9d.3b.2's "every pair where no input's rulings meet the other all
+    round". S9d.4c: a sphere's cap or zone circle (a surd radius) against a
+    torus, and torus v-segments and wedges against prisms with arcs,
+    spheres, cones and tori (S9d's scope, in neither S9d.4b sub-step).
+    S9e: curved inputs in any position, the general faces S9b's decisions
+    deferred to S9c (a Boolean's result with curved faces, a stack with arc
+    walls, an imported curved body as an input: the curved analogue of
+    S9b.2). S9f: splines joining S9b to S9d where their pairwise
+    intersections are exact (the Order decision), assessed first. By design
+    and staying refused: a tangency between the inputs, a cavity beside
+    several solids, spline segments along one curve of different forms, an
+    arc ending off its circle, a section through a sphere's pole off its
+    meridians, a torus's tube circle on the other surface, a result
+    touching itself (until non-manifold bodies). Two refusals are dead code
+    (`meet.rs`'s cylinders meeting in other curves, needing an exactly
+    orthonormal oblique frame; `cones.rs`'s torus guard, which `graph.rs`
+    never reaches). Acceptance (U6) needs the full boolean replay on a
+    schedule run, which exceeds the startup hour under AddressSanitizer: a
+    parallel track below. The S9a.2 and S9b.1 "Pending: the campaign"
+    lines were closed by the later clean boolean campaigns (`326ad26c`,
+    `29278966`, `85104dc3`, `f4ea7a2a`).
+
 ### Parallel tracks
+
+* **The boolean target's full replay under AddressSanitizer (S9
+  acceptance).** The corpus's full replay exceeds the 3,600 s startup
+  hour under the sanitizer (S9d.3a's note), so a schedule run cannot
+  replay it all as U6's acceptance asks: a minimised corpus, a faster
+  certified validation of curved results (the parallel track above), or
+  the replay split across schedule jobs.
 
 * **Certified integrals along procedural meetings (S9d.4b.2b).** The
   validator's and mass's certified integrals along `Curve3::Toric` meetings
