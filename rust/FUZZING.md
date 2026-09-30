@@ -191,7 +191,7 @@ replay. `boolean` is heading there: CI's 356 inputs took 1,242 s of startup
 at `85104dc3` and 2,108 s at `2efa1ec7` (a 275 s build, the slowest input
 42 s), the same inputs growing slower with each curved family, and the
 local corpus of 1,421 inputs exceeds the hour under AddressSanitizer. For
-the targets in `run_fuzz.py`'s `REPLAY_SHARDS` (`boolean`, four shards) the
+the targets in `run_fuzz.py`'s `REPLAY_SHARDS` (`boolean` and `degree_elevation`, four shards each; the latter's full replay reached 256 of its 485 inputs in the hour on the first scheduled run after the split) the
 schedule and manual campaigns split the full replay across jobs of the run:
 
 1. `Replay snapshot` restores the corpus, seeds it and publishes it as an

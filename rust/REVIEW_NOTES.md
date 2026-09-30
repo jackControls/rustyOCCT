@@ -3468,6 +3468,10 @@ Decisions for S9, recorded before its code (2026-09-28):
   the hour once on the schedule (471 inputs, `7bf4e3a1`; 2,666 s the next
   day), a candidate for `REPLAY_SHARDS` if it recurs.
 
+  The first scheduled run after the split (`36716623883`, at `428349e8`)
+  replayed the boolean corpus completely in its four shards, and the check
+  job wrote its manifest; `degree_elevation`'s full replay reached 256 of
+  its 485 inputs in the hour there, so it is sharded the same way now.
 * **Certified integrals along procedural meetings (S9d.4b.2b), done.** The
   validator's and mass's certified integrals along `Curve3::Toric` meetings
   on two tori took tens of seconds per Boolean under AddressSanitizer, and
