@@ -21,7 +21,9 @@ Pairs. Turned caps against cylinders in an exact frame: a hemisphere in
 split crossing the pipe's wall between its rings (`dome_tilt_pipe`), the
 lower hemisphere in `LEAN` against S9d.2's bite (`dome_lean_bite`, all three
 operations: the equator crossing the loop), a hemisphere in `TILTX` against
-S9d.2's rod (`dome_tiltx_rings`: both rings cut by the equator). Loops in a
+S9d.2's rod (`dome_tiltx_rings`: its rings lie on either side of the
+equator, the split's great circle crosses the rod; corrected with the
+kernel, the evidence said the equator cut both rings). Loops in a
 turned frame: S9d.2's bite in `LEAN` (`bite_lean`, all three operations)
 and its fuse and common in `TILT` (`bite_tilt`; the cut is S9d.2's
 fixture), a long loop round most of a thick cylinder in `TILTX` about an

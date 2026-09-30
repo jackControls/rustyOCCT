@@ -882,6 +882,16 @@ procedural pcurves with explicit conic edges.
   rho))`. `Curve3::Meet`'s height is the root `(-b + s sqrt(d)) / a`, or
   `c / (-b - s sqrt(d))` where that cancels less (a ruling near the
   other's asymptotic direction), in its points and jets alike.
+* **A turned cylinder's meeting with a sphere over the height (S9d.2c).**
+  No new curve: on a cylinder whose stored axes are not exactly
+  orthonormal the exact meeting at height `w` is the one root, on the
+  edge's branch, of the sphere's function on the stored circle (an ellipse
+  in the world, of degree two in `(cos u, sin u)`), and `Curve3::Rise`'s
+  closed form on the stored frame is its binary64 reading: its points lie on
+  the stored cylinder and within rounding of the sphere (the frame's Gram
+  matrix differs from the identity by its axes' rounding; an edge's range,
+  between switches, keeps `|g / rho|` below one), `1e-12` in
+  `tests/spheres_turned_booleans.rs`.
 * **A torus's meeting with a quadric (S9d.4b.2).** `Curve3::Toric`: the
   torus (`frame`, `major`, `minor`), the other quadric (`other`,
   `other_radius`, `other_sphere`, `other_half_angle`, as `Curve3::Meet`'s)

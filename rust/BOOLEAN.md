@@ -17,8 +17,9 @@ S9c.2b.2's algebraic vertices where sections cross caps' circles, with
 parallel cylinders in turned frames (`curved/algebraic.rs`), and S9d.1's
 spheres against polyhedral prisms (`curved/sphere.rs`), and S9d.2a's
 spheres against prisms with arcs and two spheres (`curved/spheres.rs`,
-S9d.2b's loops in exact frames among them), and S9d.3a's cones and
-frusta against polyhedral prisms (`curved/cone.rs`), and S9d.3b.1's
+S9d.2b's loops in exact frames among them, S9d.2c's turned caps' circles
+and loops in turned frames in `curved/spheres_turned.rs`), and S9d.3a's
+cones and frusta against polyhedral prisms (`curved/cone.rs`), and S9d.3b.1's
 cones against cylinders, spheres and cones meeting in rings or on a plane
 (`curved/cones.rs`), S9d.3b.2's cones and spheres in loops, S9d.4a's
 whole tori against polyhedral prisms (`curved/torus.rs`), S9d.4b.1's
@@ -421,7 +422,8 @@ quartic when `s` is rational, else `F0^2 - s^2 F1^2` with its roots of the
 right signs kept, the points surds over `Q(alpha)`. A whole sphere's split
 therefore uses two rows of a rational rotation (world axes of one rational
 length, picked by the seam); a zone's in an exact frame has equal axes too;
-a zone's circle of unequal axes against a cylinder is S9d.2b's. A meeting
+a zone's circle of unequal axes (a turned cap's) against a cylinder is
+S9d.2c's (below), against a cone S9d.3c's (`OutOfDomain`). A meeting
 on a hemisphere is a seam's only on the split (a prism's vertex on the
 sphere elsewhere is `Degenerate` at once).
 
@@ -438,8 +440,38 @@ angle placed between adjacent ones of different kinds; each piece over the
 height is verified exactly (no root of `rho^2 - g^2` between its ends'
 heights, Sturm counts at surds), each over the angle as S9c.2b.1's. A
 piece over the height is `Curve3::Rise` (`TOPOLOGY_MODEL.md`), its range in
-the stored cylinder's heights. A loop in a turned frame stays
-`OutOfDomain`.
+the stored cylinder's heights.
+
+### Turned caps' circles and loops in turned frames (S9d.2c)
+
+Where a frame is turned (`curved/spheres_turned.rs`). A cap's or zone's
+own circles on a turned frame's stored axis lie on bases of unequal
+lengths, `c + X x + Y y` with `xx X^2 + 2 xy X Y + yy Y^2 = r2`: against a
+cylinder, in coordinates turned by a rational rotation (the identity, then
+`(3, 4, 5)`, `(5, 12, 13)`, `(8, 15, 17)`), the circle's and the
+cylinder's functions are quadratics in `t` whose resultant is a quartic in
+`s`; each simple real root's `t` is the two quadratics' common root, so the
+meeting is a point of `Q(alpha)` (degree four), placed on the circle by
+its `(X, Y)`. A repeated root or a vanishing denominator tries the next
+rotation, a tangency failing all four; a crossing within the resolution of
+a tangency (the meetings with the cylinder's function offset by `+-2 rho
+res` counted differently) is `Degenerate`, since a turned frame's rounding
+leaves no exact one. On a turned cylinder the model's circle at height `w`
+is an ellipse in the world and the sphere's function on it, `F(u, w)`, is
+of degree two in `(cos u, sin u)`: a loop's pieces over the angle stay
+S9d.2b's, and a piece over the height is the one root of `F(., w)` on its
+branch's half-turn (the side of `(alpha, beta)` in the cylinder's local
+coordinates), its point at a rational height a root of a quartic. Each is
+verified exactly: no root on the half-turn's boundary over its heights (a
+quartic `E(w)` in the height), no double root (the discriminant of `F`'s
+quartic in the half-angle tangent, degree twelve in `w`, whose real roots
+are the height graph's turning points and order the loop's events), one
+root on the branch at a rational height inside. Heights, branches and the
+cylinder's membership are read in its local coordinates (the inverse
+frame's rows, its axes in an exact frame, where every result is
+unchanged). `Curve3::Rise` keeps its closed form, the binary64 reading on
+the stored frame. A cone's loops in a turned frame and a turned cap's
+circle against a cone are S9d.3c's (`OutOfDomain`).
 
 ### Cones against polyhedral prisms (S9d.3a)
 
@@ -1284,6 +1316,18 @@ height); its horizontal edges on a spline are its lifted restrictions.
   default integration on approximated quartics, up to 1.4e-5; adaptively
   converged within 1.5e-8, or 1.0e-8 absolute on a small result within its
   edges' tolerance), five solids' counts change when unified.
+* **Kernel (S9d.2c).** `tests/spheres_turned_booleans.rs`: all 18 fixtures
+  as the reference (17 within the kernel's enclosures, the rim tangent
+  within rounding refused), every history checked, results deterministic
+  and moved rigidly, the turned loops' `Curve3::Rise` pieces within `1e-12`
+  of both surfaces, the turned caps' rim vertices on the rim's plane, a
+  turned cone's loop and a turned cap's circle against a cone `OutOfDomain`
+  (S9d.3c). `compare_spheres_turned_boolean.py`: 0 matches, 18 reviewed
+  (the measures, and fifteen kernel results whose faces are OCCT's unified
+  ones and whose edges and vertices differ where each splits its loops),
+  no failure; `compare_spheres_boolean.py` unchanged in its counts with
+  `bite_tilt_cut` now within the reference; every other Boolean comparison
+  unchanged. `tests/spheres_booleans.rs` takes all 33 of S9d.2's fixtures.
 * **S9d.3a evidence (cones against polyhedral prisms), before its kernel
   code.** `cone_boolean_reference.py` (mpmath, 40 digits) takes the cone or
   frustum on its exact model (the stored frame's axes as rationals, `0 <= w

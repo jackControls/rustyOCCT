@@ -3152,6 +3152,53 @@ Decisions for S9, recorded before its code (2026-09-28):
     converged within 1.5e-8, `dome_lean_bite_common` 4.0e-8 of a small
     result, 1.0e-8 absolute against its area times its edges' tolerance),
     five solids' counts change when unified. S9d.2c's kernel next.
+  * **S9d.2c implemented** (`solid/boolean/curved/spheres_turned.rs`,
+    `spheres.rs`): a turned cap's circles of unequal axes against a
+    cylinder (`circ_ellipse`: the resultant in rotated coordinates, points
+    of degree four, a crossing within the resolution of tangency
+    `Degenerate`) and a sphere's loops with a turned cylinder (`Height`:
+    `F`'s terms, its discriminant's real roots the height graph's turning
+    points, the boundary quartic `E`, each piece over the height verified
+    and its points at rational heights the quartic's roots on its branch),
+    as the refined decisions describe; `RiseCrv` reads heights, branches and
+    the cylinder's membership in the carrier's local coordinates (every
+    exact-frame result unchanged). All 18 fixtures as the reference (17
+    within the kernel's enclosures, `rim_tangent` refused as a crossing
+    within the resolution of tangency), every history checked, results
+    deterministic and moved rigidly; `Curve3::Rise`'s closed form on the
+    turned frames' stored axes lies within `1e-12` of both surfaces
+    (`tests/spheres_turned_booleans.rs`, 39 s in the dev profile at
+    `opt-level` 2 as CI runs it; the module's own tests check the
+    resultant against S9d.2a's surds on a round circle and the
+    discriminant's real roots against `dw`'s in an exact frame).
+    `compare_spheres_turned_boolean.py` 0 matches and 18 reviewed (the
+    measures, and fifteen results' edges and
+    vertices where the kernel splits its loops at its switches and OCCT its
+    intersection curves at their own points; the faces OCCT's unified
+    ones); `compare_spheres_boolean.py` 12 matches and 21 reviewed as
+    before, `bite_tilt_cut` now within the reference (its review adds its
+    counts); every other comparison unchanged (`ball_tilt_common` still
+    `OutOfDomain`, now `(S9d.3c)`). Amendments and corrections: (a) a turned
+    cap's circle against a cone stays refused as S9d.3c's (the decisions
+    said cones would be met the same way, but no evidence covers them); (b)
+    the evidence's `dome_tiltx_rings` does not cut its rings: the rod's
+    rings lie on either side of `TILTX`'s equator and the split's great
+    circle crosses the rod (the generator's description corrected; the case
+    is still of the class); (c) the loop builder's guard for a sphere
+    centred on the carrier's axis is a `ComputationLimit` (unreachable: such
+    a pair meets in rings), not S9d.2b's refusal. The `boolean` fuzz target
+    decodes both configurations already (a turned cap tool against the
+    object's arcs, a sphere tool in the tilted frame shared with the
+    object's arcs): no decode change. The corpus (1,421 inputs) and the 14
+    regressions replay with debug assertions without a failure (the slowest
+    7.9 s), and 2,842 variants rewritten into the two configurations (the
+    object a stadium or a square with a round hole, the tool a cap or zone
+    in a turned frame or a sphere, cap or zone in the tilted frame shared
+    with the object) likewise (the slowest 22.8 s): 2,475 of them evaluate
+    at least one operation (7,417 of their operations), the others refused
+    as documented (a turned cap's plane within the resolution of the
+    object's cap, tangencies, a vertex on the other's face), none as
+    S9d.2b's `OutOfDomain`. Pending: the DRAW survey, the campaign.
 
 ### Parallel tracks
 
