@@ -585,17 +585,70 @@ fn newton<T: Real>(f: &dyn Chart<T>, phi: f64, w: [f64; 2]) -> Result<Enclosure>
     Ok(b)
 }
 
+/// The simple root of `G(., t)` in a certified bracket (`G_u` of one sign)
+/// narrowed by the interval Newton operator `m - G(m) / G_u(bracket)`,
+/// which keeps the root.
+fn newton_along<T: Real>(f: &dyn Chart<T>, t: &T, w: [f64; 2]) -> [f64; 2] {
+    let mut b = w;
+    for _ in 0..4 {
+        let m = mid(b);
+        if !(b[0] < m && m < b[1]) {
+            break;
+        }
+        let gm = f.value(&T::exact_f64(m), t);
+        let Some(q) = gm.div(&f.jet(&span(b[0], b[1]), t).gp) else {
+            break;
+        };
+        let (lo, hi) = T::exact_f64(m).sub(&q).bounds_f64();
+        let next = [lo.max(b[0]), hi.min(b[1])];
+        if next[0] > next[1] {
+            break;
+        }
+        let stalled = next[1] - next[0] >= 0.5 * (b[1] - b[0]);
+        b = next;
+        if stalled {
+            break;
+        }
+    }
+    b
+}
+
+/// Whether a piece's jet shows `G` free of zeros on it: `G`, or its
+/// mean-value form `G(m) + G_u(piece) (piece - m)`, of one certain sign.
+fn excluded<T: Real>(j: &Jet<T>, gm: &T, piece: [f64; 2], m: f64) -> bool {
+    certain(&j.g) || certain(&gm.add(&j.gp.mul(&offset::<T>(piece, m))))
+}
+
 /// The certified simple roots of `G(., t)` over `u` in `[-pi, pi]` (`t`
 /// exact): where the curve crosses the line `t` (a cone's points at
-/// infinity).
+/// infinity). A piece on which `G_u` keeps a sign holds one root if `G`'s
+/// certain signs at its ends differ and none if they agree. Binary64
+/// intervals fail where a subdivision point lies within their rounding of a
+/// root (a symmetric pair's crossing an ulp or two off `+-pi/2`); the
+/// rational tier then takes what binary64 settles (a piece free of zeros,
+/// a point's sign, a root's bracket down to binary64's rounding) and
+/// decides the pieces holding roots itself, as before, so it evaluates
+/// rational cosines only on those and within binary64's rounding of a
+/// root. Its roots are bisected to adjacent binary64 values, as before.
 pub(super) fn roots_along(
     fast: &dyn Chart<Fast>,
     exact: &dyn Chart<I>,
     t: f64,
 ) -> Result<Vec<Enclosure>> {
-    fn run<T: Real>(f: &dyn Chart<T>, t: f64, budget: &mut usize) -> Result<Vec<Enclosure>> {
+    fn run<T: Real>(
+        f: &dyn Chart<T>,
+        quick: Option<&dyn Chart<Fast>>,
+        t: f64,
+        budget: &mut usize,
+    ) -> Result<Vec<Enclosure>> {
         let tt = T::exact_f64(t);
+        let ft = Fast::exact_f64(t);
         let at = |u: f64| f.value(&T::exact_f64(u), &tt);
+        let s = |u: f64| {
+            quick
+                .and_then(|q| sign(&q.value(&Fast::exact_f64(u), &ft)))
+                .or_else(|| sign(&at(u)))
+        };
         let mut out = Vec::new();
         let mut pending = vec![(-PI_HI, PI_HI, 60usize)];
         while let Some((a, b, depth)) = pending.pop() {
@@ -603,17 +656,43 @@ pub(super) fn roots_along(
                 .checked_sub(1)
                 .ok_or(limit("a curve's crossings of infinity"))?;
             let m = 0.5 * a + 0.5 * b;
+            let mut ends = None;
+            if let Some(q) = quick {
+                let j = q.jet(&span(a, b), &ft);
+                if excluded(&j, &q.value(&Fast::exact_f64(m), &ft), [a, b], m) {
+                    continue;
+                }
+                if certain(&j.gp) {
+                    let (sa, sb) = (s(a), s(b));
+                    if sa.is_some() && sa == sb {
+                        continue;
+                    }
+                    ends = Some((sa, sb));
+                }
+            }
             let j = f.jet(&span(a, b), &tt);
-            if certain(&j.g) {
+            if excluded(&j, &at(m), [a, b], m) {
                 continue;
             }
-            let mv = at(m).add(&j.gp.mul(&offset::<T>([a, b], m)));
-            if certain(&mv) {
-                continue;
-            }
-            let (sa, sb) = (sign(&at(a)), sign(&at(b)));
-            if sa.is_some() && sb.is_some() && sa != sb && certain(&j.gp) {
-                out.push(narrow(|u| sign(&at(u)), a, b, sa));
+            let (sa, sb) = ends.unwrap_or_else(|| (s(a), s(b)));
+            if sa.is_some() && sb.is_some() && certain(&j.gp) {
+                // Monotone: a root between the ends if their signs differ,
+                // else none (halving such a piece beside a root at its end
+                // would descend to the floor).
+                if sa != sb {
+                    out.push(match quick {
+                        // Binary64 bisection to within its rounding of the
+                        // root, then interval Newton steps: few rational
+                        // cosines before the last bisections, whose bracket
+                        // is the one bisection alone would reach.
+                        Some(q) => {
+                            let w = narrow(|u| sign(&q.value(&Fast::exact_f64(u), &ft)), a, b, sa);
+                            let w = newton_along(f, &tt, w);
+                            narrow(s, w[0], w[1], sa)
+                        }
+                        None => narrow(s, a, b, sa),
+                    });
+                }
                 continue;
             }
             if depth == 0 || !(a < m && m < b) {
@@ -626,8 +705,8 @@ pub(super) fn roots_along(
         Ok(dedupe_seam(out, TAU))
     }
     let mut budget = 20_000;
-    match run(fast, t, &mut budget) {
-        Err(Error::ComputationLimit(_)) => run(exact, t, &mut budget),
+    match run(fast, None, t, &mut budget) {
+        Err(Error::ComputationLimit(_)) => run(exact, Some(fast), t, &mut budget),
         other => other,
     }
 }

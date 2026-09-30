@@ -712,6 +712,33 @@ both branches defined between them, or the intersection is
 and turn either normal by an ulp or two on any host. On macOS the input
 still gives the two circles.
 
+## Analytic intersections: twin cones' points at infinity beside `pi/2`
+
+`analytic_intersections/timeout-949542bf24afc86a8dae30e2bf314dc51483511c.bin`
+timed out in Linux CI's scheduled run 36716623883 at `428349e8` (over the
+target's 20 s under AddressSanitizer; 11 to 16 s locally without one):
+two congruent cones (reference radius 0.125, half-angle `0.0708`) on
+parallel axes `(1, 1, 1)`, the first at `(4.0625, 4.0625, 4.0625)` and the
+second `0.75` along its frame's `x` (the harness's tangent mode). They meet
+in the conic of their radical plane (S7b.4's twin factor), whose branches
+run to infinity where `B` vanishes, on the rulings normal to the offset:
+the rounded offset puts those crossings about three ulps inside `pi/2`'s
+binary64 upper bound, a subdivision point of `roots_along`. Binary64
+intervals cannot sign `G` there and descended to their floor; rational
+intervals signed it at once, but then halved the rootless piece beyond it
+(`G` monotone, of one sign at both ends, nearly zero at one) down to their
+floor as well, four rational cosines per piece, and bisected each root with
+a rational cosine per step: about 6 s per call, and the check makes two. A
+piece on which `G_u` keeps a sign and whose ends' certain signs agree is
+now excluded at once, and the rational tier takes what binary64 intervals
+settle (a piece's exclusion, a point's sign, a root's bracket down to their
+rounding) before its own evaluations, ending each root with interval Newton
+steps and bisection. Every root is the same adjacent pair of binary64
+values as before: 896 `roots_along` calls over the corpus, these
+regressions and 600 random pairs of cones (two thirds of them on parallel
+axes with equal half-angles) agree bit for bit. The input replays in
+0.8 s (10.9 s before, measured together).
+
 ## Curve/surface: a circle nearly tangent to a cone
 
 `curve_surface/timeout-fdb4ae721b33aab65287ff8213216b9633bd2975.bin` and

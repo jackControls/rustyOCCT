@@ -2627,6 +2627,16 @@ Decisions for S9, recorded before its code (2026-09-28):
     disjoint end enclosures or the intersection is `ComputationLimit` (a
     limit of binary64 enclosures, not a degeneracy, which S7 decides only
     exactly; `toroidal.rs`'s tests take glibc's frames bit for bit).
+    (k) The scheduled fuzz run 36716623883 (at `428349e8`) timed out on
+    `analytic_intersections` `949542bf`, two congruent cones on parallel
+    axes whose crossings of infinity (S7b.4's twin factor) lie three ulps
+    from the subdivision point `pi/2`, where binary64 cannot sign `G` and
+    the rational tier halved the rootless piece beside it to the floor:
+    `roots_along` now excludes a piece on which `G_u` keeps a sign and
+    the ends' certain signs agree, and its rational tier takes binary64's
+    exclusions, signs and root brackets first and ends each root with
+    interval Newton steps and bisection, every root the same adjacent
+    binary64 pair as before (10.9 s to 0.8 s, `fuzz/regressions/README.md`).
   * **S9d.4b refined, before its code (2026-09-29).** Two sub-steps.
     S9d.4b.1: tori other than whole ones (S3's v-segments between two
     latitudes and wedges of a partial turn) against polyhedral prisms: the
