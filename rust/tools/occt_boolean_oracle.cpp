@@ -21,7 +21,12 @@
 // v-segment of latitudes a1..a2 or a wedge of the turn angle); a v-segment
 // whose meridian ends lower than it starts is built inside out by OCCT (its
 // BRepGProp volume negative, S3's capture), so such a solid is reversed
-// before the Boolean.
+// before the Boolean. S9e.1: after the tool's rows a row `then fuse|cut|common`
+// (`then OP swapped`) and a third solid's rows chain a second Boolean: the
+// first Boolean's result must hold exactly one solid (else `failure`), which
+// is the second's argument with the third solid its tool (swapped: the third
+// solid the argument, the first result's solid the tool); the output is the
+// second Boolean's.
 //
 // Output: `NAME done N valid warnings` (N solids in the result, the result
 // checked by BRepCheck_Analyzer, 1 if the operation reported warnings), then
@@ -234,9 +239,10 @@ int main() {
     std::ostringstream out;
     out << std::setprecision(17);
     try {
-      Prism prisms[2];
+      Prism prisms[3];
       int current = 0;
-      std::string operation;
+      std::string operation, then;
+      bool swapped = false;
       while (std::getline(std::cin, line) && line != "end") {
         std::istringstream in(line);
         std::string kind;
@@ -244,24 +250,49 @@ int main() {
         if (kind == "boolean") {
           if (current != 0 || !(in >> operation)) throw Standard_Failure("boolean row");
           current = 1;
+        } else if (kind == "then") {
+          if (current != 1 || !(in >> then)) throw Standard_Failure("then row");
+          std::string word;
+          if (in >> word) {
+            if (word != "swapped") throw Standard_Failure("then row");
+            swapped = true;
+          }
+          current = 2;
         } else {
           prisms[current].row(kind, in);
         }
       }
-      if (current != 1) throw Standard_Failure("no tool");
+      if (current < 1) throw Standard_Failure("no tool");
+      auto boolean = [](const std::string& kind, const TopoDS_Shape& object, const TopoDS_Shape& tool) {
+        std::unique_ptr<BRepAlgoAPI_BooleanOperation> op;
+        if (kind == "fuse")
+          op.reset(new BRepAlgoAPI_Fuse(object, tool));
+        else if (kind == "cut")
+          op.reset(new BRepAlgoAPI_Cut(object, tool));
+        else if (kind == "common")
+          op.reset(new BRepAlgoAPI_Common(object, tool));
+        else
+          throw Standard_Failure("unknown operation");
+        return op;
+      };
       const TopoDS_Shape object = prisms[0].shape(), tool = prisms[1].shape();
-      std::unique_ptr<BRepAlgoAPI_BooleanOperation> op;
-      if (operation == "fuse")
-        op.reset(new BRepAlgoAPI_Fuse(object, tool));
-      else if (operation == "cut")
-        op.reset(new BRepAlgoAPI_Cut(object, tool));
-      else if (operation == "common")
-        op.reset(new BRepAlgoAPI_Common(object, tool));
-      else
-        throw Standard_Failure("unknown operation");
+      std::unique_ptr<BRepAlgoAPI_BooleanOperation> op = boolean(operation, object, tool);
       if (!op->IsDone() || op->HasErrors()) {
         std::cout << name << " not_done 0 0 0\n" << std::flush;
         continue;
+      }
+      if (current == 2) {
+        // The first result's one solid, given to the second Boolean.
+        TopoDS_Shape first;
+        int count = 0;
+        for (TopExp_Explorer e(op->Shape(), TopAbs_SOLID); e.More(); e.Next(), ++count) first = e.Current();
+        if (count != 1) throw Standard_Failure("the first result is not one solid");
+        const TopoDS_Shape third = prisms[2].shape();
+        op = swapped ? boolean(then, third, first) : boolean(then, first, third);
+        if (!op->IsDone() || op->HasErrors()) {
+          std::cout << name << " not_done 0 0 0\n" << std::flush;
+          continue;
+        }
       }
       const TopoDS_Shape result = op->Shape();
       std::vector<Solid> solids;
