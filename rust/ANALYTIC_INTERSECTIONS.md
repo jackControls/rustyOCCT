@@ -88,7 +88,10 @@ points of two branches, `v = (-B +- sqrt(D)) / A`.
   two `Ring`s (one branch each over a whole turn) or a `FigureEight` (both
   branches touching at the node, `u = pi`). In the canonical frame the
   discriminant has a closed form (`MATHEMATICS.md`), so `t = arccos c` is one
-  certified arctangent.
+  certified arctangent. A loop's ends' enclosures are disjoint, so both
+  branches are defined at every binary64 parameter between them; a loop
+  narrower than that (within an ulp of one parameter, as a plane an ulp off
+  a torus's axis meets it, S7b.3a) is `ComputationLimit`, for every pair.
 * **Points.** `ProceduralCurve::point_at(u, branch)` encloses the points for
   every parameter in an enclosure of `u`: binary64 intervals, rational ones
   when those cannot decide or are wider than `1e-12` relative (near a loop's

@@ -486,7 +486,7 @@ fn general(ts: &Surface, os: &Surface, t: &Data, o: &Data) -> Result<SurfaceInte
         }
     };
     Ok(SurfaceIntersection::Procedural(Box::new(
-        ProceduralCurve::new(ts.clone(), os.clone(), components),
+        ProceduralCurve::new(ts.clone(), os.clone(), components)?,
     )))
 }
 
@@ -609,4 +609,111 @@ pub(super) fn point_at(
     }
     let s = Meridians::<I>::of(torus, other)?;
     Ok(bounds3(&s.point(&span(lo, hi), branch)?))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::intersection::surface_surface;
+    use crate::{Frame3, Point3, Vec3};
+
+    fn v(bits: [u64; 3]) -> Vec3 {
+        let [x, y, z] = bits.map(f64::from_bits);
+        Vec3::new(x, y, z)
+    }
+
+    /// The fuzz input `crash-6aaf4957` (`fuzz/regressions/README.md`): a
+    /// plane through a torus's centre with normal `(-3, -1, 2)`, the torus's
+    /// axis `(-1, -1, -2)`, perpendicular. macOS's `hypot` keeps the stored
+    /// normals exactly perpendicular (two meridian circles); glibc's, which
+    /// rounds correctly, turns each an ulp (their dot product 2.3e-17), so
+    /// the plane meets the torus in two loops within 2.5e-18 of
+    /// `phi = +-pi/2`, whose nearest binary64 value is 6.1e-17 away. The
+    /// frames below are glibc's, bit for bit; the loops are
+    /// `ComputationLimit`.
+    fn glibc_frames() -> (Frame3, Frame3) {
+        let o = Point3::new(6.875, 6.9375, 6.875);
+        let plane = Frame3::from_axes(
+            o,
+            v([0xbfcc76c6fbfc7bf6, 0x3feed6023ba6dba0, 0x3fc2f9d9fd52fd4d]),
+            v([0xbfe1c01aa03be895, 0x0, 0xbfeaa027f059dce1]),
+            v([0xbfe9a8365810363e, 0xbfd11acee5602429, 0x3fe11acee5602429]),
+        );
+        let torus = Frame3::from_axes(
+            o,
+            v([0x3fed363d1848dcbe, 0xbfc75e9746a0b097, 0xbfd75e9746a0b097]),
+            v([0x0, 0xbfec9f25c5bfedd9, 0x3fdc9f25c5bfedd9]),
+            v([0xbfda20bd700c2c3d, 0xbfda20bd700c2c3d, 0xbfea20bd700c2c3d]),
+        );
+        (plane, torus)
+    }
+
+    fn torus(frame: Frame3) -> Surface {
+        Surface::Torus {
+            frame,
+            major: 1.375,
+            minor: 0.125 + 0.05 / 2.0,
+        }
+    }
+
+    #[test]
+    fn a_plane_an_ulp_off_a_torus_axis_refuses_loops_narrower_than_an_ulp() {
+        let (p, t) = glibc_frames();
+        for (a, b) in [(Surface::Plane(p), torus(t)), (torus(t), Surface::Plane(p))] {
+            assert!(matches!(
+                surface_surface(&a, &b),
+                Err(Error::ComputationLimit(_))
+            ));
+        }
+    }
+
+    /// Every turn of either normal by one or two ulps in one coordinate:
+    /// meridian circles where the normals stay perpendicular, loops whose
+    /// ends' enclosures are disjoint with both branches defined between
+    /// them, or `ComputationLimit`.
+    #[test]
+    fn loops_near_a_torus_axis_have_parameters_inside() {
+        let (p, t) = glibc_frames();
+        let turn = |f: Frame3, c: usize, k: i64| {
+            let mut n = f.normal().to_array();
+            n[c] = f64::from_bits(n[c].to_bits().wrapping_add_signed(k));
+            Frame3::from_axes(f.origin(), f.x(), f.y(), Vec3::new(n[0], n[1], n[2]))
+        };
+        let (mut refused, mut circles) = (0, 0);
+        for which in 0..2 {
+            for c in 0..3 {
+                for k in [-2, -1, 0, 1, 2] {
+                    let (p, t) = if which == 0 {
+                        (turn(p, c, k), t)
+                    } else {
+                        (p, turn(t, c, k))
+                    };
+                    match surface_surface(&Surface::Plane(p), &torus(t)) {
+                        Err(Error::ComputationLimit(_)) => refused += 1,
+                        Ok(SurfaceIntersection::Items(items)) => {
+                            assert_eq!(items.len(), 2);
+                            circles += 1;
+                        }
+                        Ok(SurfaceIntersection::Procedural(curve)) => {
+                            for comp in curve.components() {
+                                let Component::Loop { u } = comp else {
+                                    panic!("loops only: {comp:?}");
+                                };
+                                let (lo, hi) = (u[0][1], u[1][0]);
+                                assert!(lo < hi, "{u:?}");
+                                for j in 0..=8 {
+                                    let x = lo + (hi - lo) * f64::from(j) / 8.0;
+                                    for branch in [Branch::Plus, Branch::Minus] {
+                                        curve.point_at([x, x], branch).unwrap();
+                                    }
+                                }
+                            }
+                        }
+                        other => panic!("{other:?}"),
+                    }
+                }
+            }
+        }
+        assert!(refused > 0 && circles > 0, "{refused} {circles}");
+    }
 }

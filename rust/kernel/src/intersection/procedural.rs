@@ -48,7 +48,10 @@ pub enum Branch {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Component {
     /// Both branches over `[u0, u1]`, joined at its ends: one closed loop.
-    /// `u1 > u0`; either may lie beyond `pi`.
+    /// `u1 > u0`; either may lie beyond `pi`. The ends' enclosures are
+    /// disjoint, `u[0][1] < u[1][0]`, so both branches are defined at every
+    /// parameter between them (a loop narrower than that is
+    /// `ComputationLimit`).
     Loop { u: [Enclosure; 2] },
     /// One branch over a whole turn: a closed ring.
     Ring { branch: Branch },
@@ -67,12 +70,27 @@ pub struct ProceduralCurve {
 }
 
 impl ProceduralCurve {
-    pub(super) fn new(carrier: Surface, other: Surface, components: Vec<Component>) -> Self {
-        Self {
+    /// The curve, or `ComputationLimit` for a loop whose ends' enclosures
+    /// meet or cross: a loop within an ulp of its parameter (a plane within
+    /// rounding of a torus's axis, turned by an ulp on another host's
+    /// `hypot`) contains no binary64 parameter to evaluate it at.
+    pub(super) fn new(
+        carrier: Surface,
+        other: Surface,
+        components: Vec<Component>,
+    ) -> Result<Self> {
+        for c in &components {
+            if let Component::Loop { u } = c {
+                if u[0][1].partial_cmp(&u[1][0]) != Some(Ordering::Less) {
+                    return Err(limit("a loop narrower than its ends' enclosures"));
+                }
+            }
+        }
+        Ok(Self {
             carrier,
             other,
             components,
-        }
+        })
     }
     /// The surface the curve is parameterised on: a cylinder or cone by the
     /// angle of its ruling, a torus by the angle of its meridian.
@@ -807,15 +825,15 @@ pub(crate) fn intersect(a: &Surface, b: &Surface) -> Result<Option<Found>> {
         return Ok(None);
     };
     let curve = |ruled: &Surface, other: &Surface, components: Vec<Component>| {
-        if components.is_empty() {
+        Ok(if components.is_empty() {
             Found::Empty
         } else {
             Found::Curve(Box::new(ProceduralCurve::new(
                 ruled.clone(),
                 other.clone(),
                 components,
-            )))
-        }
+            )?))
+        })
     };
     let off_axis = |axis: &Quad, p: &X| !perpendicular(&sub(p, &axis.o), &axis.a).iter().all(zero);
     let parallel = |p: &Quad, o: &Quad| cross(&p.a, &o.a).iter().all(zero);
@@ -857,7 +875,9 @@ pub(crate) fn intersect(a: &Surface, b: &Surface) -> Result<Option<Found>> {
             if !off_axis(k, &s.o) {
                 return Ok(None);
             }
-            Ok(cone_sphere(k, s)?.map(|components| curve(ks, ss, components)))
+            cone_sphere(k, s)?
+                .map(|components| curve(ks, ss, components))
+                .transpose()
         }
         (Kind::Cylinder, Kind::Cone) | (Kind::Cone, Kind::Cylinder) => {
             let (c, k, cs, ks) = if qa.kind == Kind::Cylinder {
@@ -868,7 +888,7 @@ pub(crate) fn intersect(a: &Surface, b: &Surface) -> Result<Option<Found>> {
             if parallel(c, k) && !off_axis(c, &k.o) {
                 return Ok(None);
             }
-            Ok(Some(curve(cs, ks, by_roots(cs, ks)?)))
+            curve(cs, ks, by_roots(cs, ks)?).map(Some)
         }
         _ => Ok(None),
     }
@@ -877,12 +897,12 @@ pub(crate) fn intersect(a: &Surface, b: &Surface) -> Result<Option<Found>> {
 /// Two cylinders or a cylinder and a sphere: their exact class and, for a
 /// loop, its closed-form range.
 fn closed(ruled: &Surface, other: &Surface, class: Class, p: &Quad, o: &Quad) -> Result<Found> {
-    let curve = |components| {
-        Found::Curve(Box::new(ProceduralCurve::new(
+    let curve = |components| -> Result<Found> {
+        Ok(Found::Curve(Box::new(ProceduralCurve::new(
             ruled.clone(),
             other.clone(),
             components,
-        )))
+        )?)))
     };
     Ok(match class {
         Class::Empty => Found::Empty,
@@ -903,18 +923,18 @@ fn closed(ruled: &Surface, other: &Surface, class: Class, p: &Quad, o: &Quad) ->
             Component::Ring {
                 branch: Branch::Minus,
             },
-        ]),
+        ])?,
         // The node is on the far side, u = pi: the thinner cylinder touches
         // the thicker from inside away from its axis, Viviani's sphere away
         // from its centre.
         Class::FigureEight => curve(vec![Component::FigureEight {
             node: bounds(&pi::<I>()),
-        }]),
+        }])?,
         Class::Loop => {
             let t = half_range(p, o)?;
             curve(vec![Component::Loop {
                 u: [[-t[1], -t[0]], t],
-            }])
+            }])?
         }
     })
 }
