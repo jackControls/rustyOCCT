@@ -11,7 +11,9 @@ binary64 data (`stored_axes`, the kernel's `Frame3::new`, not exactly
 orthonormal): the cone S9d.3a's (`cone_boolean_reference.Cone`: the points
 `o + u x + v y + w n` of its stored frame with `0 <= w <= h` and `u^2 + v^2
 <= (bottom + k w)^2`), the sphere S9d.1's (`sphere_boolean_reference.Sphere`,
-a cap's or zone's end planes at its stored heights), the prism S9d.2's
+a cap's or zone's end planes at its stored heights; S9d.3c: a turned cap's
+end planes as the kernel reads them, S9d.2c's `AxisSphere`, its circles and
+discs spanned by vectors exactly in them), the prism S9d.2's
 (`spheres_boolean_reference.ArcPrism`: its profile's exact circles and
 segments, holes reversed). Every input is a set of exact surfaces, each
 `Q(X) = X^T M X + 2 m . X + c` in world coordinates (a plane with `M = 0`):
@@ -611,8 +613,20 @@ class BallIn(Input):
                 idx += 1
         return out
 
+    def zone_basis(self, idx):
+        """Two vectors spanning a zone's plane: the frame's `x` and `y` in
+        an exact frame, else (S9d.3c, a turned cap: its stored axes not
+        exactly normal to its plane, whose normal is the stored axis) `y x a`
+        and `a x (y x a)` for the plane's normal `a`, exactly in it."""
+        a = self.surfaces[idx].a()
+        if dot(a, self.x) == 0 and dot(a, self.y) == 0:
+            return self.x, self.y
+        e1 = cross(self.y, a)
+        return e1, cross(a, e1)
+
     def edges(self):
-        return [ConicEdge(self.zone_point(h), self.x, self.y, self.surfaces[0], self) for _, h in self.zone_heights()]
+        return [ConicEdge(self.zone_point(h), *self.zone_basis(idx), self.surfaces[0], self)
+                for idx, h in self.zone_heights()]
 
     def vertices(self):
         return []
@@ -648,7 +662,8 @@ class BallIn(Input):
             dist = w.value(Mv(self.c))/mp.sqrt(M(dot(w.a(), w.a())))
             area = mp.pi*(R*R-dist*dist)
             rr = F(math.ceil(float(R)))+1
-            out.append(PlanarFace(self, ('zone', idx), idx, P0, self.x, add(scale(self.x, SKEW), self.y),
+            e1, e2 = self.zone_basis(idx)
+            out.append(PlanarFace(self, ('zone', idx), idx, P0, e1, add(scale(e1, SKEW), e2),
                                   (-rr*(1+SKEW), rr*(1+SKEW)), area))
         return out
 

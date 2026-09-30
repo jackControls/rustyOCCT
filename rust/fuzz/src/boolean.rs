@@ -13,7 +13,9 @@
 //! against the object's arcs and a sphere in the shared tilted frame in
 //! loops, S9d.2b's refusals), S9d.3a a cone or frustum, S9d.4a a whole
 //! torus, S9d.4b.1 a torus v-segment or wedge, S9d.4b.2a makes the object a
-//! sphere or a cone against a whole torus, S9d.4b.2b a whole torus; a
+//! sphere or a cone against a whole torus, S9d.4b.2b a whole torus, S9d.3c
+//! a sphere against a cone or sphere tool and a cone against a sphere, cap
+//! or zone tool (against a cone tool off, `CONE_PAIRS`); a
 //! result thinner than the resolution or touching itself; an undecided
 //! comparison); each result
 //! validates as it is built and its history passes the independent check
@@ -37,6 +39,15 @@ use rusty_occt::{Error, Frame3, Point3, Solid, Tolerance, Vec3};
 /// replayed variants cover them until the degree-eight arrangement's
 /// arithmetic is faster too.
 const TORUS_PAIRS: bool = false;
+
+/// Whether a cone object against a cone tool is decoded (S9d.3c). Off
+/// until two cones' certified integrals are fast enough for the target's 60
+/// seconds under the sanitizer (up to 80 s with debug assertions alone, 14
+/// of 711 variants above 20 s, the time in the result's mass and
+/// validation): the kernel's tests and the replays of 711 cone-pair
+/// variants cover them meanwhile. A sphere object against a cone tool and a
+/// cone object against a sphere, cap or zone tool stay on (26 s at most).
+const CONE_PAIRS: bool = false;
 
 pub fn check_boolean(data: &[u8]) {
     let mut b = Bytes(data, 0);
@@ -165,7 +176,11 @@ pub fn check_boolean(data: &[u8]) {
             };
             a
         }
-        (true, 1) => {
+        // S9d.3c: against a cone or a sphere tool (the spline byte from
+        // 160) the same bits make the object a sphere or a cone: a turned
+        // cone's loops with a sphere, a turned cap against a cone, two
+        // cones' loops (`CONE_PAIRS`).
+        (curved, 1) if curved || spline_byte >= 160 => {
             let half = std::f64::consts::FRAC_PI_2;
             let Ok((a, _)) =
                 Solid::sphere_with(OperationId(1), fa, 0.75 * s1, -half, half, tolerance)
@@ -174,7 +189,7 @@ pub fn check_boolean(data: &[u8]) {
             };
             a
         }
-        (true, 2) => {
+        (curved, 2) if curved || spline_byte >= 192 || (CONE_PAIRS && spline_byte >= 160) => {
             let r = 0.75 * s1;
             let Ok((a, _)) = Solid::cone_with(OperationId(1), fa, r, r / 2.0, h, tolerance) else {
                 return;

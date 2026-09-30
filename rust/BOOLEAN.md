@@ -21,7 +21,10 @@ S9d.2b's loops in exact frames among them, S9d.2c's turned caps' circles
 and loops in turned frames in `curved/spheres_turned.rs`), and S9d.3a's
 cones and frusta against polyhedral prisms (`curved/cone.rs`), and S9d.3b.1's
 cones against cylinders, spheres and cones meeting in rings or on a plane
-(`curved/cones.rs`), S9d.3b.2's cones and spheres in loops, S9d.4a's
+(`curved/cones.rs`), S9d.3b.2's cones and spheres in loops, S9d.3c's
+cones' loops against cylinders and cones in any frames
+(`curved/cones_loops.rs`) with turned cones' loops against spheres and
+turned caps against cones, S9d.4a's
 whole tori against polyhedral prisms (`curved/torus.rs`), S9d.4b.1's
 torus v-segments and wedges against them (`curved/torus_segment.rs`), and
 S9d.4b.2a's whole tori against prisms with arcs, spheres and cones and
@@ -427,7 +430,7 @@ right signs kept, the points surds over `Q(alpha)`. A whole sphere's split
 therefore uses two rows of a rational rotation (world axes of one rational
 length, picked by the seam); a zone's in an exact frame has equal axes too;
 a zone's circle of unequal axes (a turned cap's) against a cylinder is
-S9d.2c's (below), against a cone S9d.3c's (`OutOfDomain`). A meeting
+S9d.2c's (below), against a cone likewise (S9d.3c). A meeting
 on a hemisphere is a seam's only on the split (a prism's vertex on the
 sphere elsewhere is `Degenerate` at once).
 
@@ -475,7 +478,7 @@ cylinder's membership are read in its local coordinates (the inverse
 frame's rows, its axes in an exact frame, where every result is
 unchanged). `Curve3::Rise` keeps its closed form, the binary64 reading on
 the stored frame. A cone's loops in a turned frame and a turned cap's
-circle against a cone are S9d.3c's (`OutOfDomain`).
+circle against a cone are S9d.3c's (below).
 
 ### Cones against polyhedral prisms (S9d.3a)
 
@@ -540,7 +543,45 @@ simple real roots is split at those directions (algebraic over
 `Q(alpha)`), each branch an open piece between them, the finite branch
 switched at `w = -C / 2B`; the ruling's roots taken as `C / (-B - s
 sqrt(D))` where `(-B + s sqrt(D)) / A` cancels. A loop in a turned frame is
-`OutOfDomain`.
+S9d.3c's (below).
+
+### Cones' loops against cylinders and cones, turned cones (S9d.3c)
+
+Two ruled faces (a cone and a cylinder, two cones) whose `D` changes sign
+over both carriers' angles meet in loops, met as S9c.2b.1 meets two turned
+cylinders, generalised to ruled carriers on any affine frames
+(`curved/cones_loops.rs`): carrier 0 the cylinder (its `A` constant), else
+the object's cone; each interval of `D_0 > 0` in a chart based at a
+negative point is one component, its plus branch up and minus branch back;
+carrier 1's turning points (`D_1`'s real roots, its ruling touching the
+first quadric at `w = -B_1 / A_1`) are placed along it by binary64 views,
+and a switch at a rational angle of carrier 0 between adjacent turning
+points of different kinds (a point with one surd). The runs between
+consecutive switches are graphs over carrier 0's angle about carrier 1's
+turning points and over carrier 1's about carrier 0's, `Curve3::Meet` with
+either carrier; each is verified exactly: no root of its carrier's `D` or
+`A` strictly inside its range (Sturm counts at surd or algebraic ends, a
+root at an end left out), its ends and, for carrier 1's, an exact interior
+point of the run on its branch, the switches' order along the component
+exact (the plus branch by ascending chart `t`, the minus by descending).
+Where two cones' direction cones cross (`A`'s simple real roots) a
+component runs through infinity: at a root of `A_0` the branch `-sign B_0`
+runs off (a cut, no vertex) and the finite branch's point `-C / 2B` (in
+`Q(alpha)`) is a switch, carrier 1's roots alike; a graph over carrier 1
+reaching a cut ends at one of carrier 1's roots on its running-off branch.
+A cylinder exactly along a cone's ruling (its `A` zero; S9d.3b.1's rounding
+case in the limit) and a repeated real root of `A` are `Degenerate`, with
+S9d.3b's tangencies, near nodes, a carrier's apex on the other quadric and
+two turning points (or a turning point and a cut) within rounding along a
+component. A turned cone's loops with a sphere take S9d.2c's height graph
+with the cone's radius `rho(w) = r + k w` (`F`'s coefficients of degree two
+in `w`; the apex's height, where the circle is a point and the
+discriminant vanishes without a turning point, left out), `Curve3::Rise`
+with the cone's half angle keeping its closed form; a turned cap's circle
+against a cone S9d.2c's resultant with the cone's radius term, its
+tangency band from that term's bound over the circle. A point at a cone
+carrier's apex height is on none of its `Meet` pieces (the apex itself is
+refused before).
 
 ### Tori against polyhedral prisms (S9d.4a)
 
@@ -1499,6 +1540,65 @@ height); its horizontal edges on a spline are its lifted restrictions.
   on faces bounded by approximated quartics misses by up to 4.1e-6, the
   same results measured adaptively within 6.0e-9, and the inscribed
   sphere's count; eleven solids' counts change when unified.
+* **S9d.3c evidence (cones' loops against cylinders, cones and spheres,
+  turned caps against cones), before its kernel code.**
+  `cones_boolean_reference.py` takes a turned cap as the kernel's `Ball`
+  reads it (S9d.2c's `AxisSphere`: its end plane through `o + h n` normal
+  to the stored axis), its circle's edge and its disc swept on vectors
+  exactly in that plane (`y x a`, `a x (y x a)`; the frame's `x` and `y` in
+  an exact frame, S9d.3b's rows unchanged). `generate_cones_loops_boolean_
+  fixtures.py --check` writes `boolean-cones-loops-cases.txt`,
+  `-expected.tsv` and `-frames.tsv` with 31 cases (3 fuses, 14 cuts, 14
+  commons; 29 solid, 2 degenerate; 9 in exact frames): cone-cylinder loops
+  (a rod across a frustum's axis grazing its wall, all three; the rod less
+  it; a rod beside a cone's apex; a rod in `LEAN`; a vertical rod against a
+  frustum in `TILT`), cone-cone loops (a thin frustum across the axis
+  grazing the wall, all three; a frustum in `TILT` against one in `LEAN`; a
+  cone in `LEAN` whose direction cone crosses the frustum's, its curve
+  through infinity), turned cones' loops against spheres (in `TILT`, all
+  three; `LEAN`; `R125`), turned hemispheres against cones (a coaxial cone,
+  a frustum off the axis under the lower hemisphere in `LEAN`, a frustum in
+  `LEAN`), and `degenerate` a cylinder exactly along a cone's ruling (the
+  cone's slope `fl(0.6) / fl(0.8)`, `LEAN`'s stored axis: the cylinder's
+  `A` zero) and a turned rim tangent to a cone within rounding. Checks
+  before writing: closed forms (a rod across the axis by S9d.3b's strip, a
+  whole sphere against a turned cone by the lens along its ideal axis, a
+  hemisphere against a coaxial cone by circular segments along the axis,
+  its sphere face and the wall by their arcs above the chord, its disc by
+  its chords in its plane) within 2.2e-40 in exact frames and 1.3e-16 in
+  turned ones, an input cut in two along its axis (a prism in its frame, a
+  frustum in an exact frame at a dyadic height) against the whole within
+  5.3e-42, a hemisphere and its complement against the whole sphere within
+  1.4e-41, inclusion and exclusion 1.2e-41, the area identity and every
+  face's classes 6.9e-41, the cone's wall two ways 2.7e-41, a second
+  direction 1.7e-41, Monte Carlo 2.5 standard errors, no near coincidence
+  but the declared pairs', every other edge and vertex at least 0.0156
+  from tangency with or incidence on the other's surfaces, every plane at
+  least 0.05 of the radius from tangency to the other's spheres and
+  parallel cylinders; Python 3.9 and
+  3.12 write the same files. `test_cones_loops_boolean_reference.py` checks
+  a circular segment by polar quadrature, a cone wider than the ball giving
+  the hemisphere, the split parts on the input's exact model, a split on a
+  coaxial pipe and the tangent cone's construction.
+  `compare_cones_loops_boolean.py` reproduces
+  `occt-boolean-cones-loops-preimplementation`
+  (`rust_cones_loops_boolean_exists` false; the kernel `unsupported` on all
+  31): every result valid with the reference's solid count, 7 match (the
+  turned hemispheres within 1.8e-8), 24 reviewed
+  (`occt-boolean-cones-loops-divergences.json`: BRepGProp's default
+  integration on approximated loops, up to 5.8e-6; adaptively converged
+  within 1.7e-8), five solids' counts change when unified.
+* **Kernel (S9d.3c).** `tests/cones_loops_booleans.rs`: all 31 fixtures as
+  the reference (29 within the kernel's enclosures, the cylinder along a
+  cone's ruling and the turned rim tangent within rounding refused), every
+  history checked, results deterministic and moved rigidly, the loops'
+  `Curve3::Meet` pieces over both carriers within `1e-9` of both surfaces,
+  the turned cones' `Curve3::Rise` pieces within `1e-12`, the turned rims'
+  crossings on the rim's plane. `compare_cones_loops_boolean.py`: 5 matches,
+  26 reviewed (the measures, and the kernel's edges and vertices where it
+  splits its loops at its switches), no failure; `compare_cones_boolean.py`
+  unchanged in its counts with `ball_tilt_common` now within the reference;
+  every other Boolean comparison unchanged.
 * **S9d.4a evidence (tori against polyhedral prisms), before its kernel
   code.** `torus_boolean_reference.py` (mpmath, 40 digits) takes a whole
   torus on its exact model (the stored frame's axes as rationals, `(|p|^2 +

@@ -25,11 +25,6 @@ use num_rational::BigRational as R;
 use std::cmp::Ordering;
 use std::sync::Arc;
 
-/// A sphere meeting a cone in a turned frame in a loop: S9d.3c's.
-fn loop_later() -> Error {
-    Error::OutOfDomain("a sphere meeting a turned cone in a loop (S9d.3c)")
-}
-
 /// A cylinder of an operand: its frame, circle centre and radius.
 type Cyl<'a> = (&'a Affine, &'a P2, &'a R);
 
@@ -97,7 +92,7 @@ pub(super) struct RiseCrv {
     exact: bool,
     pub(super) r: R,
     /// The carrier's slope (zero for a cylinder).
-    k: R,
+    pub(super) k: R,
     pub(super) c: V,
     pub(super) rr: R,
     pub(super) plus: bool,
@@ -245,9 +240,9 @@ impl RiseCrv {
 /// circle tangent) ordered along it and rational switches between those of
 /// different kinds: graphs over the height about the first, over the angle
 /// about the second, each verified exactly. On a turned cylinder (S9d.2c)
-/// the height graph's turning points are the discriminant's real roots
-/// (`spheres_turned::Height`) and its pieces are verified by its checks; a
-/// turned cone's loops are S9d.3c's.
+/// or cone (S9d.3c) the height graph's turning points are the
+/// discriminant's real roots (`spheres_turned::Height`) and its pieces are
+/// verified by its checks.
 pub(super) fn loops(
     k: usize,
     ruled: Ruled,
@@ -264,9 +259,6 @@ pub(super) fn loops(
         k: slope,
     } = ruled;
     let exact = f.orthonormal();
-    if !exact && *slope != zero() {
-        return Err(loop_later());
-    }
     let o = f.point(&cc[0], &cc[1], &zero());
     let rise = |plus: bool, range: [Qd; 2]| RiseCrv {
         carrier: k,
@@ -291,13 +283,15 @@ pub(super) fn loops(
             "a loop about a sphere centred on the carrier's axis",
         ));
     }
-    // S9d.2c: on a turned cylinder the exact height graph and its checks.
+    // S9d.2c: on a turned cylinder (S9d.3c: or cone) the exact height graph
+    // and its checks.
     let height = if exact {
         None
     } else {
         Some(super::spheres_turned::Height::new(
             (&o, &f.x, &f.y, &f.n),
             r,
+            slope,
             c,
             rr,
             [alpha.clone(), beta.clone()],
@@ -339,15 +333,20 @@ pub(super) fn loops(
         let w = rational_f64(&middle(root));
         let rf = rf + kf * w;
         let gw = rational_f64(&g[0]) + rational_f64(&g[1]) * w + rational_f64(&g[2]) * w * w;
-        let u = if gw > 0.0 {
+        // The carrier's angle where `alpha cos + beta sin = g / rho`: on a
+        // cone's far nappe (`rho < 0`, S9d.3c) the other side of `phi`.
+        let u = if gw * rf > 0.0 {
             phi
         } else {
             phi + std::f64::consts::PI
         };
         let p: [f64; 3] =
             [0, 1, 2].map(|j| of[j] + rf * (u.cos() * xf[j] + u.sin() * yf[j]) + w * nf[j]);
-        let up = (0..3).map(|j| (p[j] - cf[j]) * nf[j]).sum::<f64>();
-        if up.abs() < 1e-12 * (1.0 + rf) {
+        // The branch: the sphere's gradient along the ruling there (a cone's
+        // leaning out, S9d.3c; the axis for a cylinder).
+        let dir: [f64; 3] = [0, 1, 2].map(|j| nf[j] + kf * (u.cos() * xf[j] + u.sin() * yf[j]));
+        let up = (0..3).map(|j| (p[j] - cf[j]) * dir[j]).sum::<f64>();
+        if up.abs() < 1e-12 * (1.0 + rf.abs()) {
             return Err(Error::ComputationLimit("a turning point of both graphs"));
         }
         // The chart's t of (cos u, sin u): rotated back by the base.

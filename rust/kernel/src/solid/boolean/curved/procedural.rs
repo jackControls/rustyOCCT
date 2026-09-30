@@ -293,6 +293,16 @@ impl MeetCrv {
     /// Whether a point lies on the piece (on both cylinders, on its branch
     /// and within its run, ends included).
     pub(super) fn on(&self, x: &QV) -> bool {
+        // A cone carrier's apex height, where its circle is the apex alone
+        // (never a meeting's point: an apex on the other is refused before;
+        // S9d.3c's replays: a sphere's pole there).
+        if self.slope != zero() {
+            let d = qsub(x, &qv(&self.o));
+            let rho = qdot(&d, &self.k[2]).scale(&self.slope).add_r(&self.r);
+            if rho.sign() == Ordering::Equal {
+                return false;
+            }
+        }
         let cs = self.place(x);
         let unit = cs[0].mul(&cs[0]).add(&cs[1].mul(&cs[1])).add_r(&int(-1));
         if unit.sign() != Ordering::Equal {

@@ -10,7 +10,11 @@
 //! u)`: a loop's piece over the height is the one root of `F(., w)` in its
 //! branch's half-turn, verified exactly by the half-turn's boundary quartic
 //! `E(w)`, the discriminant in `w` of `F`'s quartic in the half-angle
-//! tangent, and a root count.
+//! tangent, and a root count. A turned cone (S9d.3c) likewise, its circle's
+//! radius `rho(w) = r + k w` (`F`'s coefficients of degree two in `w`, the
+//! apex's height, where the circle is a point, no turning point); a turned
+//! cap's circle against a cone as against a cylinder, the cone's radius
+//! term in the quadric's function.
 use super::meet::{tangency, EdgeMeet, Pos};
 use super::num::*;
 use super::procedural::Other;
@@ -92,7 +96,14 @@ pub(super) fn circ_ellipse(circ: &Circ, o: &Other, res: f64) -> Result<EdgeMeet>
         dot(&circ.x, &circ.y),
     );
     // The circle: xx X^2 + 2 xy X Y + yy Y^2 - r2.
-    let ellipse: Quad2 = [-circ.r2.clone(), zero(), zero(), xx, int(2) * xy, yy];
+    let ellipse: Quad2 = [
+        -circ.r2.clone(),
+        zero(),
+        zero(),
+        xx.clone(),
+        int(2) * &xy,
+        yy.clone(),
+    ];
     // The quadric along the circle's plane: sum (a_i + X lx_i + Y ly_i)^2 -
     // (ra + X rx + Y ry)^2.
     let mut quad: Quad2 = std::array::from_fn(|_| zero());
@@ -112,11 +123,24 @@ pub(super) fn circ_ellipse(circ: &Circ, o: &Other, res: f64) -> Result<EdgeMeet>
         );
     }
     let rad = o.radius_lin(&circ.c, &circ.x, &circ.y);
-    let rho = if rad[0] < zero() {
+    let mut rho = if rad[0] < zero() {
         -rad[0].clone()
     } else {
         rad[0].clone()
     };
+    if rad[1] != zero() || rad[2] != zero() {
+        // A cone's radius term varies over the circle (S9d.3c): its bound,
+        // `|ra| + |(rx, ry)| max |(dx, dy)|`, the latter from the basis's
+        // least eigenvalue (binary64: a band, not a decision).
+        let f = |x: &R| crate::solid::split::rational_f64(x);
+        let (a, b, c) = (f(&xx), f(&xy), f(&yy));
+        let least = 0.5 * (a + c) - (0.25 * (a - c) * (a - c) + b * b).sqrt();
+        if least <= 0.0 {
+            return Err(limit("a sphere's circle on a degenerate basis"));
+        }
+        let reach = (f(&circ.r2) / least).sqrt();
+        rho += q(f(&rad[1]).hypot(f(&rad[2])) * reach);
+    }
     add_sq(rad, &int(-1));
     // The band of the quadric's function about zero a displacement of the
     // resolution spans: 2 rho res (its rows about unit).
@@ -185,27 +209,30 @@ pub(super) fn circ_ellipse(circ: &Circ, o: &Other, res: f64) -> Result<EdgeMeet>
 
 // ------------------------------------------------------------ loops
 
-/// `F(cos, sin; w)` of a sphere (`c`, `rr`) on a cylinder's circle `o + r
-/// (cos x + sin y) + w n` at height `w`: its terms by exponents of `(cos,
-/// sin)`, coefficients polynomials in `w`.
-fn f_terms(o: &V, x: &V, y: &V, n: &V, r: &R, c: &V, rr: &R) -> Vec<((u32, u32), Poly)> {
+/// `F(cos, sin; w)` of a sphere (`c`, `rr`) on a cylinder's or cone's
+/// circle `o + rho(w) (cos x + sin y) + w n` at height `w`, `rho(w) = r + k
+/// w` (S9d.3c: `k` a cone's slope, zero for a cylinder): its terms by
+/// exponents of `(cos, sin)`, coefficients polynomials in `w`.
+fn f_terms(
+    (o, x, y, n): (&V, &V, &V, &V),
+    (r, k): (&R, &R),
+    c: &V,
+    rr: &R,
+) -> Vec<((u32, u32), Poly)> {
     let d = sub(o, c);
+    let rho = trim(vec![r.clone(), k.clone()]);
+    let rho2 = pmul(&rho, &rho);
+    let lin = |v: &V| pscale(&pmul(&rho, &trim(vec![dot(v, &d), dot(v, n)])), &int(2));
     vec![
         (
             (0, 0),
             trim(vec![dot(&d, &d) - rr * rr, int(2) * dot(&d, n), dot(n, n)]),
         ),
-        ((2, 0), trim(vec![r * r * dot(x, x)])),
-        ((1, 1), trim(vec![int(2) * r * r * dot(x, y)])),
-        ((0, 2), trim(vec![r * r * dot(y, y)])),
-        (
-            (1, 0),
-            trim(vec![int(2) * r * dot(x, &d), int(2) * r * dot(x, n)]),
-        ),
-        (
-            (0, 1),
-            trim(vec![int(2) * r * dot(y, &d), int(2) * r * dot(y, n)]),
-        ),
+        ((2, 0), pscale(&rho2, &dot(x, x))),
+        ((1, 1), pscale(&rho2, &(int(2) * dot(x, y)))),
+        ((0, 2), pscale(&rho2, &dot(y, y))),
+        ((1, 0), lin(x)),
+        ((0, 1), lin(y)),
     ]
 }
 
@@ -266,7 +293,12 @@ fn half_turn(terms: &[((u32, u32), Poly)], w: &R, ab: &[R; 2], plus: bool) -> Re
 /// A turned piece's point at a rational height: the one root of `F(., w)`
 /// on its side (`None` where there is none or more than one).
 pub(super) fn rise_at(c: &RiseCrv, w: &R) -> Result<Option<QV>> {
-    let terms = f_terms(&c.o, &c.x, &c.y, &c.n, &c.r, &c.c, &c.rr);
+    // A cone's circle: a point at its apex, the other nappe's beyond.
+    let rho = &c.r + &c.k * w;
+    if rho <= zero() {
+        return Ok(None);
+    }
+    let terms = f_terms((&c.o, &c.x, &c.y, &c.n), (&c.r, &c.k), &c.c, &c.rr);
     let (alpha, beta, _) = c.coefficients();
     let mut found = half_turn(&terms, w, &[alpha, beta], c.plus)?;
     if found.len() != 1 {
@@ -276,16 +308,18 @@ pub(super) fn rise_at(c: &RiseCrv, w: &R) -> Result<Option<QV>> {
     Ok(Some([0, 1, 2].map(|j| {
         Qd::of(
             K::Rat(&c.o[j] + w * &c.n[j])
-                .add(&co.scale(&(&c.r * &c.x[j])))
-                .add(&si.scale(&(&c.r * &c.y[j]))),
+                .add(&co.scale(&(&rho * &c.x[j])))
+                .add(&si.scale(&(&rho * &c.y[j]))),
         )
     })))
 }
 
-/// A sphere's meeting with a turned cylinder over its height (S9d.2c): `F`'s
-/// terms, the half-turns' axis `(alpha, beta)`, and the heights where a
-/// root reaches a half-turn's boundary (`E`'s real roots) or two roots meet
-/// (the discriminant's: the height graph's turning points).
+/// A sphere's meeting with a turned cylinder (S9d.2c) or cone (S9d.3c) over
+/// its height: `F`'s terms, the half-turns' axis `(alpha, beta)`, and the
+/// heights where a root reaches a half-turn's boundary (`E`'s real roots)
+/// or two roots meet (the discriminant's: the height graph's turning
+/// points; a cone's apex height, where its circle is a point and `F`
+/// constant, left out).
 #[derive(Debug)]
 pub(super) struct Height {
     terms: Vec<((u32, u32), Poly)>,
@@ -295,16 +329,18 @@ pub(super) struct Height {
 }
 
 impl Height {
-    /// The meeting of the sphere (`c`, `rr`) with the cylinder `o + r (cos x
-    /// + sin y) + w n`, `(alpha, beta)` the half-turns' axis.
+    /// The meeting of the sphere (`c`, `rr`) with the cylinder or cone `o +
+    /// (r + k w) (cos x + sin y) + w n`, `(alpha, beta)` the half-turns'
+    /// axis.
     pub(super) fn new(
         (o, x, y, n): (&V, &V, &V, &V),
         r: &R,
+        k: &R,
         c: &V,
         rr: &R,
         ab: [R; 2],
     ) -> Result<Self> {
-        let terms = f_terms(o, x, y, n, r, c, rr);
+        let terms = f_terms((o, x, y, n), (r, k), c, rr);
         // F (1 + t^2)^2 = sum_j h_j(w) t^j in the chart based at (1, 0).
         let chart = Chart {
             c0: int(1),
@@ -324,7 +360,7 @@ impl Height {
         if disc.is_empty() {
             return Err(tangency());
         }
-        let turns = if disc.len() == 1 {
+        let mut turns: Vec<AlgebraicRoot> = if disc.len() == 1 {
             Vec::new()
         } else {
             roots_repeated(&disc)?
@@ -333,25 +369,34 @@ impl Height {
                 .map(|(r, _)| r)
                 .collect()
         };
+        if *k != zero() {
+            let apex = -(r / k);
+            turns.retain(|t| t.compare_rational(&apex) != Ordering::Equal);
+        }
         // On the boundary directions +-(alpha, beta) / sqrt(rho2): F = P(w) +-
         // l(w) / sqrt(rho2).
         let [alpha, beta] = &ab;
         let rho2 = alpha * alpha + beta * beta;
-        let quad = r
-            * r
-            * (dot(x, x) * alpha * alpha
-                + int(2) * dot(x, y) * alpha * beta
-                + dot(y, y) * beta * beta)
+        let quad = (dot(x, x) * alpha * alpha
+            + int(2) * dot(x, y) * alpha * beta
+            + dot(y, y) * beta * beta)
             / &rho2;
+        let rw = trim(vec![r.clone(), k.clone()]);
         let d = sub(o, c);
         let p = padd(
-            &trim(vec![quad]),
+            &pscale(&pmul(&rw, &rw), &quad),
             &trim(vec![dot(&d, &d) - rr * rr, int(2) * dot(&d, n), dot(n, n)]),
         );
-        let l = trim(vec![
-            int(2) * r * (alpha * dot(x, &d) + beta * dot(y, &d)),
-            int(2) * r * (alpha * dot(x, n) + beta * dot(y, n)),
-        ]);
+        let l = pscale(
+            &pmul(
+                &rw,
+                &trim(vec![
+                    alpha * dot(x, &d) + beta * dot(y, &d),
+                    alpha * dot(x, n) + beta * dot(y, n),
+                ]),
+            ),
+            &int(2),
+        );
         let e = trim(padd(
             &pscale(&pmul(&p, &p), &rho2),
             &pscale(&pmul(&l, &l), &int(-1)),
@@ -497,7 +542,7 @@ mod tests {
         let (r, c, rr) = (int(1), [int(-2), q(-0.5), zero()], int(2));
         let d = sub(&o, &c);
         let ab = [int(2) * dot(&x, &d), int(2) * dot(&y, &d)];
-        let h = Height::new((&o, &x, &y, &n), &r, &c, &rr, ab.clone()).unwrap();
+        let h = Height::new((&o, &x, &y, &n), &r, &zero(), &c, &rr, ab.clone()).unwrap();
         // dw = rho2 r^2 - g(w)^2, g = rr^2 - |d|^2 - r^2 - w^2 (n . d = 0).
         let rho2 = &ab[0] * &ab[0] + &ab[1] * &ab[1];
         let g = vec![&rr * &rr - dot(&d, &d) - &r * &r, zero(), int(-1)];
@@ -517,5 +562,51 @@ mod tests {
         for (a, b) in got.iter().zip(&want) {
             assert!((a - b).abs() < 1e-6, "{got:?} {want:?}");
         }
+    }
+
+    /// A cone's height graph (S9d.3c) in an exact frame: its turning points
+    /// are S9d.3b.2's `dw`'s, `rho2 rho(w)^2 - g(w)^2`, and the apex's
+    /// height (the discriminant's root where the circle is a point) is left
+    /// out.
+    #[test]
+    fn an_exact_cones_turning_points_are_the_quartics() {
+        let (o, x, y, n) = (
+            [zero(), zero(), zero()],
+            [int(1), zero(), zero()],
+            [zero(), int(1), zero()],
+            [zero(), zero(), int(1)],
+        );
+        // The frustum of radius 2 at w = 0, slope -1/2 (apex at w = 4),
+        // against a sphere of radius 1 about (1.75, 0.5, 1).
+        let (r, k, c, rr) = (int(2), q(-0.5), [q(1.75), q(0.5), int(1)], int(1));
+        let d = sub(&o, &c);
+        let ab = [int(2) * dot(&x, &d), int(2) * dot(&y, &d)];
+        let h = Height::new((&o, &x, &y, &n), &r, &k, &c, &rr, ab.clone()).unwrap();
+        let rho2 = &ab[0] * &ab[0] + &ab[1] * &ab[1];
+        let g = vec![
+            &rr * &rr - dot(&d, &d) - &r * &r,
+            int(-2) * dot(&n, &d) - int(2) * &r * &k,
+            int(-1) - &k * &k,
+        ];
+        let rw = vec![r.clone(), k.clone()];
+        let dw = padd(
+            &pscale(&pmul(&rw, &rw), &rho2),
+            &pscale(&pmul(&g, &g), &int(-1)),
+        );
+        let f = |x: &AlgebraicRoot| {
+            crate::solid::split::rational_f64(&super::super::turned::middle(&{
+                let mut y = x.clone();
+                y.refine_for_signs(120);
+                y
+            }))
+        };
+        let want: Vec<f64> = roots(&dw).unwrap().iter().map(f).collect();
+        let got: Vec<f64> = h.turns().iter().map(f).collect();
+        assert!(!want.is_empty());
+        assert_eq!(got.len(), want.len(), "{got:?} {want:?}");
+        for (a, b) in got.iter().zip(&want) {
+            assert!((a - b).abs() < 1e-9, "{got:?} {want:?}");
+        }
+        assert!(got.iter().all(|w| (w - 4.0).abs() > 1e-6));
     }
 }

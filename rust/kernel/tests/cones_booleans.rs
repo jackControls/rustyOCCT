@@ -5,9 +5,10 @@
 mod protocol;
 use rusty_occt::history;
 
-/// The cases left to a later sub-step (`OutOfDomain`): a loop in a turned
-/// frame (its height graph needs an exact frame, as S9d.2b's).
-const LATER: &[&str] = &["ball_tilt_common"];
+/// The cases left to a later sub-step (`OutOfDomain`): none since S9d.3c
+/// (`ball_tilt_common`, a loop in a turned frame, its height graph S9d.2c's
+/// with the cone's radius).
+const LATER: &[&str] = &[];
 
 #[test]
 fn every_case_matches_the_reference() {
