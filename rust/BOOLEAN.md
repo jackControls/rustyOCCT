@@ -1854,6 +1854,59 @@ height); its horizontal edges on a spline are its lifted restrictions.
   ringing pairs whose bands cross OCCT's seams, the others' B-spline
   sections split at OCCT's points; four of them native matches, reviewed by
   their counts alone).
+* **S9d.4c evidence (a sphere's cap or zone against a torus, torus
+  v-segments and wedges against curved solids), before its kernel code.**
+  `torus_parts_boolean_reference.py` (mpmath, 40 digits) is S9d.4b.2's
+  reference (every face of both inputs swept by two families of curves, the
+  divergence theorem on the classified pieces) with S9d.4b.1's part model
+  (a segment's end planes at the stored heights and its wall over its arc,
+  oriented by its `sigma`: the inner half inside out; a wedge's half-planes
+  on the rounded end direction, its wall over the turn and its meridian
+  discs) and a cap or zone as S9d.2c's `AxisSphere` reads it (its wall
+  about the unit axis between its ends' latitudes, its discs by chords);
+  solids by the part's normal slices, a region sheared between two slices
+  joined through intervals at levels between them. `generate_torus_parts_
+  boolean_fixtures.py --check` writes `boolean-torus-parts-cases.txt`,
+  `-expected.tsv` and `-frames.tsv` with 53 cases (7 fuses, 23 cuts, 23
+  commons; 51 solid, 2 degenerate; 45 in exact frames) on the torus of
+  radii 5/2 and 1: caps and zones against it (coaxial ones in circles, a cap
+  on the tube's top with a rim of surd radius across it, a zone about `x`
+  across the outer side, a hemisphere in `LEAN`, a zone against the torus
+  in `TILT`), the outer and inner halves against coaxial pipes, a cone, a
+  sphere and a lower hemisphere, a sphere about a point of the outer half's
+  rim and a torus ringing its outer side, the band `0.5..2.25` against a
+  sphere, a frustum and a ringing torus across its rims and in `TILT`
+  against a coaxial pipe, wedges of a quarter, a half and three quarters
+  against a pipe, a small torus, a sphere and a frustum across their end
+  discs and rims (the quarter in `LEAN` too); `degenerate` a cap's rim
+  within the resolution of tangency to the outer equator and a quarter
+  wedge's start rim touching a sphere. Checks: closed forms of the 9
+  coaxial pairs (both inputs' radial intervals along the axis, the walls by
+  their own elements) within 6.9e-40 in exact frames and 3.8e-17 in turned
+  ones; a half and the other half against the tool as the whole torus, a
+  cap or zone and the rest of its sphere against the torus as the whole
+  sphere, within 4.3e-42; every operation two ways 1.5e-31, both inputs
+  from their faces 8.3e-35, inclusion and exclusion 1.8e-35, the area
+  identity 8.3e-35, Monte Carlo 2.5 standard errors; no near coincidence
+  outside the declared pairs, surfaces meeting at a sine of at least 0.38,
+  edges crossing at 0.29, every plane at least 0.0059 of the case's size
+  from tangency to the other's spheres and tori.
+  `test_torus_parts_boolean_reference.py` checks the halves' and a
+  wedge's closed forms against their volumes of revolution, a half's
+  complement, and the reference on the outer half about a pipe, a
+  hemisphere in the tube and a quarter wedge in a ball. No protocol row is
+  new. `compare_torus_parts_boolean.py` reproduces
+  `occt-boolean-torus-parts-preimplementation`
+  (`rust_torus_parts_boolean_exists` false, keyed on
+  `solid/boolean/curved/torus_parts.rs`; the kernel's probe `unsupported`
+  on all 53): every solid count the reference's; 26 match (the coaxial
+  pairs within 2.4e-14) and 27 are reviewed
+  (`occt-boolean-torus-parts-divergences.json`): BRepGProp's default
+  integration on faces bounded by B-spline sections misses by up to 7.4e-6,
+  adaptively within 2.3e-8 and unchanged at 1e-12, and the quarter wedge in
+  `LEAN` against a sphere is wrong natively (its common 1.6e-4 off and
+  invalid under `BRepCheck_Analyzer`); fourteen solids' counts change when
+  unified.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

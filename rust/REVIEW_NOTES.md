@@ -3525,6 +3525,82 @@ Decisions for S9, recorded before its code (2026-09-28):
     torus, a cap and its complement against the whole sphere, both families
     of every face), and a native capture before
     `solid/boolean/curved/torus_parts.rs` exists.
+  * **S9d.4c evidence (2026-09-30).** `torus_parts_boolean_reference.py`
+    takes S9d.4b.2's reference (every face of both inputs swept by two
+    families of curves against the other's surfaces and membership, the
+    divergence theorem on the classified pieces) with two more inputs:
+    S9d.4b.1's part model (a segment's end planes at the stored heights,
+    its wall's tube circles over the arc `[v_lo, v_hi]` and parallels over
+    that range, oriented by its `sigma`, its end discs from the axis to the
+    arc's ends; a wedge's half-planes on the rounded end direction, its wall
+    over the turn and the tube's discs in its half-planes) and a cap or zone
+    as S9d.2c's `AxisSphere` reads it (end planes through `o + h n` normal
+    to the stored axis, its wall's meridians and parallels about the unit
+    axis between the ends' latitudes, its discs by chords); solids by the
+    part's (else the torus's) normal slices, a thin region sheared between
+    two slices joined through a chain of intervals at levels between them
+    (bisected: overlaps alone, as S9d.4b.2's sweep joins, counted the tip of
+    a half's ring outside a coaxial dome apart). Heights are `r
+    sin(latitude)` rounded once (`sin_rn`, asserted equal to the host's
+    `sin` for every latitude used). `generate_torus_parts_boolean_fixtures.py
+    --check`: 53 cases (25 pairs; 7 fuses, 23 cuts, 23 commons; 51 solid, 2
+    degenerate; 45 in exact frames) on the torus of radii 5/2 and 1: a zone
+    and a cap of a coaxial sphere (circles), a cap on the tube's top with a
+    rim of surd radius across the tube (all three), a zone about `x` across
+    the outer side, a hemisphere in `LEAN` (its rim on unequal axes) and a
+    zone against the torus in `TILT`; the outer and inner halves against
+    coaxial pipes, a coaxial cone, sphere and lower hemisphere, a sphere
+    about a point of the outer half's top rim and a small torus ringing the
+    tube's outer side; the band `0.5..2.25` against a sphere, a frustum and
+    a ringing torus across its rims of surd radius, and in `TILT` against a
+    coaxial pipe; a quarter wedge against a pipe (all three) and a small
+    torus of a parallel axis across its end disc, a half wedge against a
+    sphere across its start disc and rim, a three-quarter wedge against a
+    frustum across its end disc, a quarter wedge in `LEAN` against a sphere
+    across its start rim; `degenerate` a cap's rim within the resolution of
+    tangency to the outer equator and a quarter wedge's start rim touching
+    a sphere. Checks: closed forms of the 9 coaxial pairs (one quadrature
+    along the axis of both inputs' radial intervals, the walls by their own
+    elements, a wedge by its turn and its meridian discs) within 6.9e-40 in
+    exact frames and 3.8e-17 turned; two-way checks, a half and the other
+    half (weighted by their orientation) against the tool as the whole torus
+    against it (S9d.4b.2's reference) and a cap or zone and the rest of its
+    sphere against the torus as the whole sphere, within 4.3e-42 (five
+    pairs; a band's rest of the tube bounds its region with a boundary
+    crossing itself, whose parity set is no signed complement); every
+    operation two ways 1.5e-31, both inputs from their faces 8.3e-35,
+    inclusion and exclusion 1.8e-35, the area identity 8.3e-35, Monte Carlo
+    2.5 standard errors; no near coincidence outside the declared pairs,
+    every other pair's surfaces meeting at a sine of at least 0.38, edges
+    (the rims too) crossing the other's surfaces at 0.29, and every plane at
+    least 0.0059 of the case's size from tangency to the other's spheres and
+    tori (a check the kernel's rules need: a plane tangent to a sphere or a
+    torus is refused wherever it touches). Python 3.9 and 3.12 write the
+    same files; the generator's check a CI group of its own (`torus-parts`,
+    50 CPU minutes locally). Fixture corrections before the capture, from
+    the reference's and a first kernel's runs: a cylinder tangent to the
+    outer half's rim also touched the outer equator (a surface tangency),
+    a small torus about `x` across the quarter wedge's end disc lay within
+    rounding of its equatorial plane (the end's rounded direction: a near
+    node), a frustum across the three-quarter wedge's end disc had its axis
+    in the end plane (a plane through its apex), a zone's sphere passed
+    through the torus's top circle with a parallel in its tangent plane
+    (the reference's quadrature did not converge), a small torus crossing
+    the outer half's rims, where its end planes are tangent to the torus,
+    left the reference's quadrature nodes off their intervals' structure,
+    and events of two crossings symmetric about a wedge's rim's centre fell
+    within rounding of each other: all moved clear. The capture
+    `occt-boolean-torus-parts-preimplementation`
+    (`compare_torus_parts_boolean.py`, keyed on
+    `solid/boolean/curved/torus_parts.rs`; the kernel `unsupported` on all
+    53, 16 as a sphere's circle of a surd radius against a torus and 37 as
+    a torus segment or wedge against a curved face): every solid count the
+    reference's, 26 match (the coaxial pairs within 2.4e-14), 27 reviewed:
+    25 BRepGProp's default integration on B-spline sections (up to 7.4e-6;
+    adaptively converged within 2.3e-8), and `qw_lean_ball`'s two results
+    wrong natively (the cut 4.7e-5 off in area, the common 1.6e-4 in volume
+    and invalid under `BRepCheck_Analyzer`); fourteen solids' counts change
+    when unified. S9d.4c's kernel next.
 
 ### Parallel tracks
 
