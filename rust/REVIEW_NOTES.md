@@ -3305,6 +3305,45 @@ Decisions for S9, recorded before its code (2026-09-28):
     two-way checks (an input split in two along its axis against the whole,
     a cap and its complement against the whole sphere, a second slicing
     direction), and a native capture before `cones_loops.rs` exists.
+  * **S9d.3c evidence (2026-09-30).** `cones_boolean_reference.py` now
+    takes a turned cap (S9d.2c's `AxisSphere` reading of its end planes, its
+    circle's edge and its disc spanned by vectors exactly in its plane; the
+    frame's axes in an exact frame, so S9d.3b's rows are unchanged, its
+    `--check` passing). `generate_cones_loops_boolean_fixtures.py --check`:
+    31 fixtures (29 solid, 2 degenerate; 9 in exact frames): cone-cylinder
+    loops (`rod_graze`, all three, and `rod_bitten`: a rod across a
+    frustum's axis grazing its wall; `tip_graze` beside a cone's apex;
+    `rod_lean`; `tilt_rod`, the frustum in `TILT`), cone-cone loops
+    (`cones_graze`, all three; `cones_turned`, `TILT` against `LEAN`;
+    `cones_asymptotic`, a cone in `LEAN` whose direction cone crosses the
+    frustum's, the curve through infinity), turned cones' loops with spheres
+    (`ball_tilt`, all three, S9d.3b's pair; `ball_lean`; `ball_r125`),
+    turned hemispheres against cones (`dome_tilt_cone`, coaxial;
+    `dome_lean_frustum`; `dome_cone_turned`, both turned), and declared
+    `degenerate` a cylinder exactly along a cone's ruling (`rod_ruling_exact`,
+    the cone's slope `fl(0.6) / fl(0.8)` of `LEAN`'s stored axis, bit
+    checked in the frames' file) and a turned rim tangent to a cone within
+    rounding (`rim_tangent_cone`). Closed forms (a rod across the axis by
+    S9d.3b's strip, a whole sphere against a turned cone by the lens, a
+    hemisphere against a coaxial cone by circular segments along the axis)
+    within 2.2e-40 in exact frames and 1.2e-16 in turned ones; two-way
+    checks: an input cut in two along its axis against the whole within
+    5.3e-42 (six pairs), a hemisphere and its complement against the whole
+    sphere within 1.4e-41; inclusion and exclusion 1.2e-41, the area
+    identity and every face's classes 6.9e-41, the cone's wall two ways
+    2.7e-41, a second direction 4.0e-41 (twelve pairs), Monte Carlo 2.5
+    standard errors, no near coincidence but the declared pairs', every
+    other edge and vertex at least 0.0156 from tangency with or incidence on
+    the other's surfaces; Python 3.9 and 3.12 write the same files; the
+    generator's check a CI group of its own (`cones-loops`, 25 CPU minutes
+    locally). The capture `occt-boolean-cones-loops-preimplementation`
+    (`compare_cones_loops_boolean.py`; the kernel `unsupported` on all 31:
+    17 as S9d.3b.2's loops, 8 as a turned cone's loop, 6 as a turned cap's
+    circle against a cone): every result valid with the reference's solids,
+    7 match (the turned hemispheres), 24 reviewed (BRepGProp's default
+    integration on approximated loops, up to 5.8e-6, 4.5e-4 on the declared
+    ruling; adaptively converged within 1.7e-8), five solids' counts change
+    when unified. S9d.3c's kernel next.
 
 ### Parallel tracks
 

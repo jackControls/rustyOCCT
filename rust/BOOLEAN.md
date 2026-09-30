@@ -1495,6 +1495,52 @@ height); its horizontal edges on a spline are its lifted restrictions.
   on faces bounded by approximated quartics misses by up to 4.1e-6, the
   same results measured adaptively within 6.0e-9, and the inscribed
   sphere's count; eleven solids' counts change when unified.
+* **S9d.3c evidence (cones' loops against cylinders, cones and spheres,
+  turned caps against cones), before its kernel code.**
+  `cones_boolean_reference.py` takes a turned cap as the kernel's `Ball`
+  reads it (S9d.2c's `AxisSphere`: its end plane through `o + h n` normal
+  to the stored axis), its circle's edge and its disc swept on vectors
+  exactly in that plane (`y x a`, `a x (y x a)`; the frame's `x` and `y` in
+  an exact frame, S9d.3b's rows unchanged). `generate_cones_loops_boolean_
+  fixtures.py --check` writes `boolean-cones-loops-cases.txt`,
+  `-expected.tsv` and `-frames.tsv` with 31 cases (3 fuses, 14 cuts, 14
+  commons; 29 solid, 2 degenerate; 9 in exact frames): cone-cylinder loops
+  (a rod across a frustum's axis grazing its wall, all three; the rod less
+  it; a rod beside a cone's apex; a rod in `LEAN`; a vertical rod against a
+  frustum in `TILT`), cone-cone loops (a thin frustum across the axis
+  grazing the wall, all three; a frustum in `TILT` against one in `LEAN`; a
+  cone in `LEAN` whose direction cone crosses the frustum's, its curve
+  through infinity), turned cones' loops against spheres (in `TILT`, all
+  three; `LEAN`; `R125`), turned hemispheres against cones (a coaxial cone,
+  a frustum off the axis under the lower hemisphere in `LEAN`, a frustum in
+  `LEAN`), and `degenerate` a cylinder exactly along a cone's ruling (the
+  cone's slope `fl(0.6) / fl(0.8)`, `LEAN`'s stored axis: the cylinder's
+  `A` zero) and a turned rim tangent to a cone within rounding. Checks
+  before writing: closed forms (a rod across the axis by S9d.3b's strip, a
+  whole sphere against a turned cone by the lens along its ideal axis, a
+  hemisphere against a coaxial cone by circular segments along the axis,
+  its sphere face and the wall by their arcs above the chord, its disc by
+  its chords in its plane) within 2.2e-40 in exact frames and 1.2e-16 in
+  turned ones, an input cut in two along its axis (a prism in its frame, a
+  frustum in an exact frame at a dyadic height) against the whole within
+  5.3e-42, a hemisphere and its complement against the whole sphere within
+  1.4e-41, inclusion and exclusion 1.2e-41, the area identity and every
+  face's classes 6.9e-41, the cone's wall two ways 2.7e-41, a second
+  direction 4.0e-41, Monte Carlo 2.5 standard errors, no near coincidence
+  but the declared pairs', every other edge and vertex at least 0.0156
+  from tangency with or incidence on the other's surfaces; Python 3.9 and
+  3.12 write the same files. `test_cones_loops_boolean_reference.py` checks
+  a circular segment by polar quadrature, a cone wider than the ball giving
+  the hemisphere, the split parts on the input's exact model, a split on a
+  coaxial pipe and the tangent cone's construction.
+  `compare_cones_loops_boolean.py` reproduces
+  `occt-boolean-cones-loops-preimplementation`
+  (`rust_cones_loops_boolean_exists` false; the kernel `unsupported` on all
+  31): every result valid with the reference's solid count, 7 match (the
+  turned hemispheres within 1.8e-8), 24 reviewed
+  (`occt-boolean-cones-loops-divergences.json`: BRepGProp's default
+  integration on approximated loops, up to 5.8e-6; adaptively converged
+  within 1.7e-8), five solids' counts change when unified.
 * **S9d.4a evidence (tori against polyhedral prisms), before its kernel
   code.** `torus_boolean_reference.py` (mpmath, 40 digits) takes a whole
   torus on its exact model (the stored frame's axes as rationals, `(|p|^2 +

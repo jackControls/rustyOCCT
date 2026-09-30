@@ -1,0 +1,14 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+  "platform": "darwin",
+  "rust_revision": "89ad1449c6071f5330778b15457510aaf74ad9fc",
+  "rust_cones_loops_boolean_exists": false,
+  "rust_worktree_uncommitted": [
+    "?? rust/fixtures/occt-boolean-cones-loops-preimplementation/"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "31196b68aeafe30ea0508168c5c35fc8b903d0b4668858dbf0dc83b5f2d19cd7",
+  "probe_source_sha256": "c4e7978d8b38afc7e73ce027f612be4ab025c0b2ea99abfe66ccdd53b3928809",
+  "observations_sha256": "9af01b611340ca0081ad7ae98349842c9032c745efa743123ceca9a8eeb43b60"
+}
