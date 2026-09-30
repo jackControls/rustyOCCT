@@ -1210,7 +1210,7 @@ fn h_coefficients(g: &Bi, cu: &Chart, cv: &Chart) -> [Poly; 5] {
 
 /// The discriminant of the binary quartic `sum h_j s^j` (coefficients
 /// polynomials in `t`).
-fn quartic_discriminant(h: &[Poly; 5]) -> Poly {
+pub(super) fn quartic_discriminant(h: &[Poly; 5]) -> Poly {
     let (a, b, c, d, e) = (&h[4], &h[3], &h[2], &h[1], &h[0]);
     let term = |k: i64, fs: &[&Poly]| {
         pscale(

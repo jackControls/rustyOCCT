@@ -9,10 +9,13 @@
 //! cavity among several solids, S9a.2's, or arcs in frames with different
 //! axes, S9c's; S9b turns, leans or tilts the tool's frame, S9c.2a stands it
 //! on its side (perpendicular cylinders), S9d.1 makes it a sphere, a cap or
-//! a zone, S9d.3a a cone or frustum, S9d.4a a whole torus, S9d.4b.1 a
-//! torus v-segment or wedge, S9d.4b.2a makes the object a sphere or a cone
-//! against a whole torus, S9d.4b.2b a whole torus; a result thinner than the
-//! resolution or touching itself; an undecided comparison); each result
+//! a zone (S9d.2c, with no decode change, meets a turned cap's circles
+//! against the object's arcs and a sphere in the shared tilted frame in
+//! loops, S9d.2b's refusals), S9d.3a a cone or frustum, S9d.4a a whole
+//! torus, S9d.4b.1 a torus v-segment or wedge, S9d.4b.2a makes the object a
+//! sphere or a cone against a whole torus, S9d.4b.2b a whole torus; a
+//! result thinner than the resolution or touching itself; an undecided
+//! comparison); each result
 //! validates as it is built and its history passes the independent check
 //! (debug builds); when all three succeed their volumes agree,
 //! `V(A ∪ B) = V(A) + V(B) - V(A ∩ B)` and `V(A - B) = V(A) - V(A ∩ B)`

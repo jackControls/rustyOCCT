@@ -521,7 +521,18 @@ pub(super) fn edge_surface(
             }
         }
         (Crv::Circle(circ), Surf::Cone { b: rb, k }) => {
-            super::spheres::circ_quadric(circ, &super::procedural::other_cone(&py.f, rb, k))
+            // A turned cap's circle (of unequal axes) against a cone has no
+            // evidence yet: S9d.3c's.
+            if !super::spheres::equal_axes(circ) {
+                return Err(Error::OutOfDomain(
+                    "a turned cap's circle against a cone (S9d.3c)",
+                ));
+            }
+            super::spheres::circ_quadric(
+                circ,
+                &super::procedural::other_cone(&py.f, rb, k),
+                py.tolerance.linear(),
+            )
         }
         // S9d.1: a line against a sphere; a sphere's circle against a
         // plane; anything else against a sphere is S9d.2's.
@@ -543,7 +554,7 @@ pub(super) fn edge_surface(
         // S9d.2: a sphere's circle against a cylinder or another sphere, a
         // prism's arc against a sphere.
         (Crv::Circle(circ), Surf::Cyl { c: cy, r: ry, .. }) => {
-            super::spheres::circ_cylinder(circ, &py.f, cy, ry)
+            super::spheres::circ_cylinder(circ, &py.f, cy, ry, py.tolerance.linear())
         }
         (Crv::Circle(circ), Surf::Sphere { c: c2, r: r2 }) => {
             let ball = own_ball.expect("a sphere's circle's own sphere");

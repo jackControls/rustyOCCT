@@ -5,9 +5,9 @@
 mod protocol;
 use rusty_occt::history;
 
-/// The cases left to a later sub-step (`OutOfDomain`): a loop in a turned
-/// frame (its height graph needs an exact frame).
-const LATER: &[&str] = &["bite_tilt_cut"];
+/// The cases left to a later sub-step (`OutOfDomain`): none since S9d.2c
+/// took the loop in a turned frame (`bite_tilt_cut`).
+const LATER: &[&str] = &[];
 
 #[test]
 fn every_case_matches_the_reference() {
