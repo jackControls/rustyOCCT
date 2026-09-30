@@ -2087,6 +2087,41 @@ height); its horizontal edges on a spline are its lifted restrictions.
   imprints kept after unifying, found by a diagnostic build printing the
   unified vertices), no failure; every other Boolean comparison unchanged
   in its counts.
+* **S9e.2 evidence (a stack, an S9b.1 result or one solid of several given
+  to another Boolean), before its kernel code.** The protocol's `then` row
+  may end `solid X Y Z`: the first result's solid holding the point
+  strictly inside is the second's argument (natively
+  `BRepClass3d_SolidClassifier`, in the kernel `Solid::classify`).
+  `chained_boolean_reference.py` takes a fourth prism, a selector box `D`
+  holding that solid and no part of another: the chain `op2(op1(a, b) and
+  d, c)` (swapped `op2(c, op1(a, b) and d)`), each slice's first pieces
+  clipped to `D`, every face swept against the three others, and the area
+  of `D`'s faces with the first result on either side (`separation`, zero
+  when `D` picks whole solids). `generate_given_boolean_fixtures.py
+  --check` writes `boolean-given-cases.txt`, `-expected.tsv` (its `expect`
+  rows naming the class: `stack`, `polyhedral`, `several`) and
+  `-frames.tsv`: 36 cases (12 chains, each operation; 30 solid, 6
+  degenerate) in `XY`, `SIDE`, `DOWN`, `TILT` and `R125`: DRAW's rollex of
+  `bcut_simple/L3` to `L6` (a disc less a pocket across its rim, a stack,
+  then a cylinder on the pocket's floor, turned and in the stack's frame);
+  a box with a boss bored coaxially, sliced by a tilted slab and as a
+  tilted box's tool; a box fused with a turned box and a box with a
+  slanted top (S9b.1), each bored; a box severed by a cylinder, its lower
+  solid drilled and as a box's tool; a box severed by a tilted slab, its
+  lower piece bored; `degenerate` a cylinder tangent to the rollex's rim
+  and a box tangent to the severed box's other solid. Checks: closed forms
+  within 3.3e-41; the pair identities for the given solid (a picked one's
+  measures from the three-prism chain `op1(A, B) and D`) within 7.7e-42 and
+  the area identity 8.2e-41; separation exactly zero; face classes
+  2.2e-41; Monte Carlo 3.1 standard errors; no near coincidence.
+  `test_given_boolean_reference.py` checks four boxes by their grid cells
+  exactly, a selector across the first result and one around all of it.
+  `compare_given_boolean.py` reproduces
+  `occt-boolean-given-preimplementation` (`rust_given_boolean_exists`
+  false, keyed on `solid/boolean/curved/matched.rs`; the kernel's probe
+  `unsupported` on all 36): every result valid with the reference's solid
+  count, all 36 match (within 5.7e-9; exact frames 3.3e-15), no review; the
+  rollex's cut has DRAW's area, 30152.95.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

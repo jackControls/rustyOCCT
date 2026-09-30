@@ -4104,6 +4104,60 @@ Decisions for S9, recorded before its code (2026-09-28):
     sorting by solid) exists, the comparison `compare_given_boolean.py`
     keyed on it, `test_given_boolean_reference.py`, the generator's check a
     CI group (`given`); then the kernel.
+  * **S9e.2 evidence (2026-09-30).** The case protocol picks one solid of
+    several: `then OP ID [swapped] solid X Y Z`
+    (`identity_reference.encode_chained_case` and `native_chained_case`
+    with a pick point; `occt_boolean_oracle.cpp` takes the solid
+    `BRepClass3d_SolidClassifier` finds the point inside, exactly one,
+    `tests/support/boolean_protocol.rs` the one `Solid::classify` does).
+    `chained_boolean_reference.py` takes a fourth prism, the selector `D`:
+    each slice's first pieces clipped to `D`'s parallelograms before the
+    second operation, every face swept against the three others (their
+    crossings merged pairwise), a piece on several prisms' faces counted by
+    the first in the order object, tool, third, selector, and
+    `separation`, the area of `D`'s faces with the first result on either
+    side. `generate_given_boolean_fixtures.py --check`: 36 cases (12
+    chains; 12 fuses, 12 cuts, 12 commons; 30 solid, 6 degenerate; 18
+    stacks, 6 S9b.1 results, 12 picked solids) in `XY`, `SIDE`, `DOWN`,
+    `TILT` and `R125`: DRAW's rollex (a disc of radius 60 less a pocket of
+    radius 40 across its rim over the top 6 of its height 20, then a
+    cylinder of radius 30 whose bottom lies on the pocket's floor, crossing
+    the pocket's wall and the rim) in `DOWN` (`L3`, `L4`) and in the stack's
+    frame (`L5`, `L6`); a box with a boss bored coaxially (closed forms),
+    sliced by a tilted slab (its common two solids) and as a tilted box's
+    tool; a box fused with a box turned about its axis, bored through both;
+    a box less a tilted box (a slanted top) bored through the slanted face;
+    a box severed by a cylinder across it (two solids of S9e.1's class), the
+    lower drilled and as a box's tool; a box severed by a tilted slab (two
+    S9b.1 solids), the lower bored through its slanted face; `degenerate` a
+    third cylinder internally tangent to the rollex's rim along a
+    generatrix and a third box whose wall touches the severed box's other
+    solid along a generatrix (the conservative refusal). Checks: closed
+    forms within 3.3e-41; the pair identities for the given solid `X`
+    (S9c.1's pair reference, or for a picked solid the three-prism chain
+    `op1(A, B) and D`, one solid while the pair counts two) within 7.7e-42
+    and the area identity within 8.2e-41; the selectors' separation exactly
+    zero and each pick point inside its solid; face classes 2.2e-41; Monte
+    Carlo 3.1 standard errors; no near coincidence outside the declared
+    chains (the lower piece's bore first had its top `z = 5` and the slab's
+    far plane meeting its wall where the selector's plane met the box's
+    top, two triples concurrent at one slice: the bore raised to 5.5). The
+    rollex's cut has area 30152.95448 (DRAW's `checkprops -s 30153`).
+    `test_given_boolean_reference.py` checks four boxes (a box severed by a
+    slab of the `SIDE` frame, the selector holding one part) by their grid
+    cells exactly as object and tool, the separation of a selector across
+    the first result (its face's area there), and a selector around the
+    whole first result giving S9e.1's chain; S9e.1's fixtures are written
+    unchanged by the generalized reference. The generator's check is a CI
+    group of its own (`given`, 50 s locally on six workers). The capture
+    `occt-boolean-given-preimplementation` (`compare_given_boolean.py`,
+    keyed on `solid/boolean/curved/matched.rs`; the kernel `unsupported` on
+    all 36, its first Boolean evaluating and the second refused as S9e.2's):
+    every result valid with the reference's solid count, all 36 matching
+    (volumes within 5.5e-9, areas 5.7e-9, centres 3.9e-10 of the size, a
+    cylinder's piece under the tilted planes; exact frames 3.3e-15), no
+    review; the rollex's results lose faces, edges or vertices when
+    unified. S9e.2's kernel next.
   * **S9f refined, before its code (2026-09-30).** Why splines stop today:
     a spline prism in another frame, or whose offset or heights round,
     reaches `polyhedra::stored_model` ("a solid with curved faces or edges
