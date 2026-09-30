@@ -3203,6 +3203,108 @@ Decisions for S9, recorded before its code (2026-09-28):
     as documented (a turned cap's plane within the resolution of the
     object's cap, tangencies, a vertex on the other's face), none as
     S9d.2b's `OutOfDomain`. Pending: the DRAW survey, the campaign.
+  * **S9d.3c refined, before its code (2026-09-30).** Why each is refused.
+    (1) `cones.rs`'s `cone_pair` takes a ruled carrier (a cylinder before a
+    cone) whose ruling's leading coefficient `A` has no real root and whose
+    discriminant `D = B^2 - A C` is positive all round (two rings over its
+    angle) or negative all round (apart), a sphere as the other quadric
+    (S9d.2b's loops), or a carrier whose `A` has simple real roots and whose
+    `D` is nowhere negative (S9d.3b.2's open pieces, split where a branch
+    runs off to infinity); every other pair of two ruled faces, a cone
+    against a cylinder or a cone whose `D` changes sign over both carriers'
+    angles, is `OutOfDomain("a cone meeting a curved face in a loop
+    (S9d.3b.2)")`: its curve turns over both angles, so no graph over one
+    angle covers it. S9c.2b.1's `turned::crossing` covers such loops for two
+    cylinders (graphs over both angles, switched between turning points of
+    different kinds), but reads `A` as a cylinder's constant and the other
+    quadric as a cylinder. (2) `plane_of`'s refusal: a carrier whose `A`
+    vanishes identically is taken for two cones whose quadrics differ by an
+    affine function (their asymptotic cones one cone, their quadratic parts
+    proportional); a cylinder exactly along a cone's ruling makes the
+    cylinder's `A` zero as well (and the cone's `A`, nonnegative, a double
+    root), its parts not proportional, and falls through as a loop. The
+    curve is then a graph over the cylinder's angle with one finite root per
+    ruling, running to infinity where `B` vanishes. (3) `spheres::loops`
+    refuses a turned cone (`ball_tilt`, since S9d.2c with an S9d.3c
+    message): S9d.2c's height graph `F(u, w)` and its checks were written
+    for a cylinder's constant radius. (4) `meet.rs` refuses a turned cap's
+    circle (of unequal axes) against a cone for want of evidence (S9d.2c's
+    amendment (a)). Decisions. (1) Two ruled faces whose `D` changes sign
+    over both carriers meet in loops met as S9c.2b.1 meets two turned
+    cylinders', generalised to ruled carriers (any affine frames, exact or
+    turned: the ruling's quadratic is exact on the stored axes): carrier 0
+    the cylinder (its `A` constant), else operand 0's cone; each interval of
+    `D_0 > 0` (in a chart based at a negative point) one component, its
+    plus branch from one end to the other and its minus branch back; the
+    other carrier's turning points (`D_1`'s real roots, where its ruling
+    touches the first quadric, `w = -B_1 / A_1`) placed along it by binary64
+    views (the chart's `t` and the branch); switches at rational angles of
+    carrier 0 between adjacent turning points of different kinds (points
+    with one surd, `sqrt(D_0)`); the pieces between switches graphs over
+    carrier 0's angle about carrier 1's turning points and over carrier 1's
+    angle about carrier 0's, each `Curve3::Meet` with that carrier (a
+    cone's `half_angle`, the other's `other_half_angle`): no new curve type,
+    validator, mass or exchange change. Each piece is verified exactly: no
+    root of its carrier's `D` strictly inside its range (Sturm counts at its
+    ends, surds for carrier 1's ranges), both switches and an exact interior
+    point (on carrier 0's branch at a rational angle) on its branch; the
+    switches are ordered exactly along the component (rational angles on
+    known branches), so the verified pieces are its arcs between
+    consecutive switches and cover it once. Degrees: `D` a quadratic form
+    over a cylinder's angle (a quartic in the chart's `t`), a quartic form
+    over a cone's (an octic); the curve a quartic. A carrier with `D`
+    positive all round keeps S9d.3b.1's rings. (2) Where the rulings reach
+    the other's asymptotic directions (`A`'s simple real roots: two cones
+    whose direction cones cross; a cone and a cylinder never, but along a
+    ruling) and `D` changes sign over both, a component runs through
+    infinity: the directions where `A_0` vanishes are cuts on the branch
+    that runs off there (`-sign B_0`; `D_0 = B_0^2 > 0` at them), the
+    finite branch's point there (`w = -C_0 / 2 B_0`, in `Q(alpha)` of degree
+    four) a switch, as S9d.3b.2's open pieces, and carrier 1's `A_1` roots
+    alike; a piece may end at a cut (its range ending at the algebraic
+    direction, its branch the one running off there), verified as in (1)
+    with no root of `A` inside either. The pieces are then the arcs between
+    consecutive switches and cuts, the first point at infinity along each
+    the one its verified piece reaches. (3) A cylinder exactly along a
+    cone's ruling (the cylinder's `A` zero, the cone's a double root), and
+    any repeated real root of `A`, is `Degenerate`: the limit of S9d.3b.1's
+    "a ruling within rounding of the other's direction", whose branch at
+    infinity a turned frame's rounding puts on either side. (4) A turned
+    cone's loops with a sphere: S9d.2c's height graph with the cone's radius
+    `rho(w) = r + k w`: `F(u, w) = |d + w n + rho(w) (cos x + sin y)|^2 -
+    R^2` has coefficients of degree two in `w` (the circle's terms
+    `rho(w)^2 x . x` and `2 rho(w) x . (d + w n)`), the half-turns' boundary
+    quartic `E(w) = rho2 P(w)^2 - l(w)^2` (`P` and `l` quadratics now), the
+    discriminant in `w` of degree at most twelve (its real roots the height
+    graph's turning points), and a piece's point at a rational height the one
+    root on its branch's half-turn (`Q(alpha)`, degree four) where `rho(w) >
+    0`; `Curve3::Rise` with the cone's `half_angle` keeps its closed form as
+    the binary64 reading. (5) A turned cap's circle against a cone: S9d.2c's
+    resultant with the cone's radius term (as its decisions said), the band
+    of its tangency test `2 rho res` with `rho` a bound of the radius term
+    over the circle (for a cylinder or a sphere its constant, as before).
+    (6) `Degenerate`: a repeated real root of `D` (a tangency), an extremum
+    of `D` within the resolution of zero (S9c.2b.1's `near_node`, `A`'s
+    sampled least size its scale), two turning points, or a turning point
+    and a cut, within rounding along a component, a cone's apex on the other
+    quadric (S9d.3b.1), and a turned cap's circle within the resolution of
+    tangency to a cone (S9d.2c's rule). The kernel in
+    `solid/boolean/curved/cones_loops.rs` (the ruled loops) with
+    `spheres_turned.rs`'s height graph taking a slope. Evidence first: the
+    cones' reference (`cones_boolean_reference.py`, S9d.2c's reading of a
+    turned cap's end planes) on fixtures of cone-cylinder and cone-cone
+    loops in exact and turned frames (a rod grazing a frustum's wall, a rod
+    across a cone's tip region, a rod in `LEAN`, a thin cone across a
+    frustum's wall, a wide cone whose direction cone crosses the frustum's),
+    turned cones' loops against spheres, and turned caps against cones, with
+    a cylinder along a cone's ruling exactly and a turned rim tangent to a
+    cone within rounding declared `degenerate`; closed forms where they
+    exist (a rod across a cone's axis by S9d.3b's strip, a whole sphere
+    against a turned cone by its lens along the cone's ideal axis, a
+    hemisphere against a coaxial cone by circular segments along the axis),
+    two-way checks (an input split in two along its axis against the whole,
+    a cap and its complement against the whole sphere, a second slicing
+    direction), and a native capture before `cones_loops.rs` exists.
 
 ### Parallel tracks
 
