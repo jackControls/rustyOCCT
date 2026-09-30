@@ -17,6 +17,7 @@ mod assemble;
 mod cone;
 mod cones;
 mod cones_loops;
+mod given;
 mod graph;
 mod meet;
 mod model;
@@ -67,6 +68,13 @@ pub(super) fn applies(poly: &Polyhedron) -> bool {
     if (torus(&poly.a) && any(&poly.b)) || (any(&poly.a) && torus(&poly.b)) {
         return true;
     }
+    // S9e.1: a Boolean's result from this arrangement given to another
+    // Boolean, with a prism or another such result (with a sphere, cone or
+    // torus refused in `build`: S9e.3's).
+    let given = given::applies;
+    if given(&poly.a) || given(&poly.b) {
+        return true;
+    }
     // S9d.3: a cone against a prism, a sphere or a cone (S9d.3b's refused
     // in `build`).
     ((cone(&poly.a) && quadric(&poly.b)) || (quadric(&poly.a) && cone(&poly.b)))
@@ -82,6 +90,8 @@ pub(super) fn applies(poly: &Polyhedron) -> bool {
 /// (S9d.3a).
 fn model_of(s: &crate::Solid, op: Operand, seam: &R) -> Result<model::Prism> {
     match &s.construction {
+        // S9e.1: a Boolean's result, on its construction's exact model.
+        Construction::Polyhedron(_) => given::model(s, op),
         Construction::Sphere { .. } => sphere::model(s, op, seam),
         Construction::Cone { .. } => cone::model(s, op, seam),
         Construction::Torus { .. } => torus::model(s, op, seam),
@@ -91,10 +101,25 @@ fn model_of(s: &crate::Solid, op: Operand, seam: &R) -> Result<model::Prism> {
 
 /// The result's components, a full circle's seam tried at several
 /// rational points.
+/// Each input's seam apart from the other's: one cylinder shared by both
+/// would put both seams on one line.
+const SEAMS: [(i64, i64); 5] = [(2, 7), (3, 11), (5, 13), (7, 19), (11, 23)];
+
 pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
-    // Each input's seam apart from the other's: one cylinder shared by both
-    // would put both seams on one line.
-    let seams = [(2, 7), (3, 11), (5, 13), (7, 19), (11, 23)];
+    // S9e.1 takes a given result with a prism or another given result.
+    let given = |s: &crate::Solid| given::applies(s);
+    let prism = |s: &crate::Solid| matches!(s.construction, Construction::Prism(_));
+    for (x, y) in [(&poly.a, &poly.b), (&poly.b, &poly.a)] {
+        if given(x) && !given(y) && !prism(y) {
+            return Err(Error::OutOfDomain(match y.construction {
+                Construction::Sphere { .. } | Construction::Cone { .. } | Construction::Torus { .. } => {
+                    "a Boolean's result given to another Boolean with a sphere, cone or torus (S9e.3)"
+                }
+                _ => "a Boolean's result given to another Boolean with a stack, a plane's piece or a polyhedral result (S9e.2)",
+            }));
+        }
+    }
+    let seams = SEAMS;
     for k in 0..seams.len() - 1 {
         let r = |(n, d): (i64, i64)| R::new(BigInt::from(n), BigInt::from(d));
         match attempt(poly, &r(seams[k]), &r(seams[k + 1])) {

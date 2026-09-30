@@ -5,6 +5,11 @@
 //! before S9a.2), `refused` (a documented `Degenerate`), `empty`, or per
 //! result solid `solid vol_lo vol_hi area_lo area_hi cx_lo cx_hi cy_lo cy_hi
 //! cz_lo cz_hi faces edges vertices` (`Topology::occt_counts`).
+//!
+//! S9e.1: a case may chain a second Boolean on the first's result: after
+//! the tool's rows a row `then fuse|cut|common ID` (`swapped` after it when
+//! the first result is the tool) and a third solid's rows. The first
+//! Boolean's result must be one solid; the rows are the second's.
 #[path = "identity_protocol.rs"]
 #[allow(dead_code)]
 mod identity_protocol;
@@ -19,6 +24,17 @@ pub struct Case {
     pub tool: CaseSpec,
     pub op: String,
     pub operation: OperationId,
+    /// A second Boolean on the first's result (S9e.1).
+    pub then: Option<Then>,
+}
+
+/// The second Boolean of a chained case: its operation, id, third solid
+/// and whether the first result is its tool.
+pub struct Then {
+    pub op: String,
+    pub operation: OperationId,
+    pub third: CaseSpec,
+    pub swapped: bool,
 }
 
 pub fn cases(text: &str) -> Vec<Case> {
@@ -32,16 +48,33 @@ pub fn cases(text: &str) -> Vec<Case> {
                 .expect("a boolean row");
             let w: Vec<&str> = lines[at].split_whitespace().collect();
             let object = parse(&lines[..at].join("\n"));
+            let then_at = lines
+                .iter()
+                .position(|l| l.starts_with("then "))
+                .unwrap_or(lines.len());
             let tool_rows: Vec<&str> = std::iter::once(lines[0])
-                .chain(lines[at + 1..].iter().copied())
+                .chain(lines[at + 1..then_at].iter().copied())
                 .collect();
             let tool = parse(&tool_rows.join("\n"));
+            let then = (then_at < lines.len()).then(|| {
+                let t: Vec<&str> = lines[then_at].split_whitespace().collect();
+                let rows: Vec<&str> = std::iter::once(lines[0])
+                    .chain(lines[then_at + 1..].iter().copied())
+                    .collect();
+                Then {
+                    op: t[1].to_string(),
+                    operation: OperationId(t[2].parse().expect("an operation id")),
+                    third: parse(&rows.join("\n")),
+                    swapped: t.get(3) == Some(&"swapped"),
+                }
+            });
             Case {
                 name: object.name.clone(),
                 object,
                 tool,
                 op: w[1].to_string(),
                 operation: OperationId(w[2].parse().expect("an operation id")),
+                then,
             }
         })
         .collect()
@@ -51,14 +84,44 @@ pub fn cases(text: &str) -> Vec<Case> {
 pub type Run = (Solid, Solid, Vec<Solid>, History);
 
 pub fn run(case: &Case) -> Result<Run, Error> {
-    let (a, b) = (build(&case.object), build(&case.tool));
-    let (out, history) = match case.op.as_str() {
-        "fuse" => a.fuse(case.operation, &b)?,
-        "cut" => a.cut(case.operation, &b)?,
-        "common" => a.common(case.operation, &b)?,
-        other => panic!("unknown operation {other}"),
+    let (a, b, out, history) = run_first(case)?;
+    let Some(then) = &case.then else {
+        return Ok((a, b, out, history));
     };
+    // S9e.1: the second Boolean on the first's one solid.
+    let [first] = <[Solid; 1]>::try_from(out)
+        .unwrap_or_else(|_| panic!("{}: the first Boolean's result is not one solid", case.name));
+    let third = build(&then.third);
+    let (a, b) = if then.swapped {
+        (third, first)
+    } else {
+        (first, third)
+    };
+    let (out, history) = boolean(&a, &then.op, then.operation, &b)?;
     Ok((a, b, out, history))
+}
+
+/// The first Boolean of a case (of a chained case, its first): its inputs,
+/// result and history.
+#[allow(dead_code)]
+pub fn run_first(case: &Case) -> Result<Run, Error> {
+    let (a, b) = (build(&case.object), build(&case.tool));
+    let (out, history) = boolean(&a, &case.op, case.operation, &b)?;
+    Ok((a, b, out, history))
+}
+
+fn boolean(
+    a: &Solid,
+    op: &str,
+    operation: OperationId,
+    b: &Solid,
+) -> Result<(Vec<Solid>, History), Error> {
+    match op {
+        "fuse" => a.fuse(operation, b),
+        "cut" => a.cut(operation, b),
+        "common" => a.common(operation, b),
+        other => panic!("unknown operation {other}"),
+    }
 }
 
 /// The kernel's rows for a case; `Err` for an unexpected error.

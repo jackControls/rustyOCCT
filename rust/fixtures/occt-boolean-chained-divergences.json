@@ -1,0 +1,77 @@
+{
+  "note": "Reviewed BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut and BRepAlgoAPI_Common differences from the S9e.1 reference and the kernel: chained Booleans, the second on the first's one solid.",
+  "reviews": [
+    {
+      "case": "hole_halved_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "5565cbfdb914f97620691671d4bb09989ad64f889a0abd07d6e4380cd536ac0d",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "Seam and imprint accounting: after ShapeUpgrade_UnifySameDomain OCCT's result has 9 21 14 / 8 20 14 (faces, edges, vertices before / after unifying); the kernel's result, counted with OCCT's seams (Topology::occt_counts), has 8 faces, 18 edges and 12 vertices. OCCT's unified result holds every vertex of the kernel's and two vertices, (6.5, 3, 0) and (6.5, 6.75, 5): where the hole's bottom and top ellipse arcs cross the stored cylinder's seam generatrix (its frame's x direction from the axis, x = 5 + 1.5), each arc split there. The volume, area and centre agree with the reference.",
+      "independent_evidence": "The reference (chained_boolean_reference.py, S9c.1's pair reference in the chain identities, Monte Carlo) holds the kernel's enclosures and the native measures within 8.0e-10; a diagnostic build of the oracle printing the unified solids' vertices (not committed) places each native-only vertex as stated, on the stored cylinder at its seam angle within 1e-6 or at the stated crossings, and finds no kernel vertex missing natively; the kernel's history check and validation pass.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "hole_tool_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "acbf33fbd233d2f52ba9b24640ba69601b0da4a664840721dbaac64821b68dbc",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "Seam and imprint accounting: after ShapeUpgrade_UnifySameDomain OCCT's result has 18 48 32 / 18 48 32 (faces, edges, vertices before / after unifying); the kernel's result, counted with OCCT's seams (Topology::occt_counts), has 18 faces, 45 edges and 30 vertices. OCCT's unified result holds every vertex of the kernel's and four vertices, (6.5, 3, 0), (6.5, 6.75, 5), (6.5, 3.75, 1) and (6.5, 6, 4): where the hole's ellipse arcs on the box's bottom and top and on the slab's caps cross the stored cylinder's seam generatrix (x = 5 + 1.5). The volume, area and centre agree with the reference.",
+      "independent_evidence": "The reference (chained_boolean_reference.py, S9c.1's pair reference in the chain identities, Monte Carlo) holds the kernel's enclosures and the native measures within 8.0e-10; a diagnostic build of the oracle printing the unified solids' vertices (not committed) places each native-only vertex as stated, on the stored cylinder at its seam angle within 1e-6 or at the stated crossings, and finds no kernel vertex missing natively; the kernel's history check and validation pass.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "hole_tool_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "d2c29e8d280a1fa86083f8a7d973692d804a8f213f4ac708e52d9de6f214635e",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "Seam and imprint accounting: after ShapeUpgrade_UnifySameDomain OCCT's result has 5 9 6 / 4 8 6 and 10 24 16 / 10 24 16 (faces, edges, vertices before / after unifying); the kernel's result, counted with OCCT's seams (Topology::occt_counts), has 10 faces, 24 edges and 16 vertices, and 4 faces, 6 edges and 4 vertices. OCCT's unified result holds every vertex of the kernel's and two vertices, (6.5, 3.75, 1) and (6.5, 6, 4), on the hole's piece inside the slab: where its ellipse arcs on the slab's caps cross the stored cylinder's seam generatrix (x = 5 + 1.5). The volume, area and centre agree with the reference.",
+      "independent_evidence": "The reference (chained_boolean_reference.py, S9c.1's pair reference in the chain identities, Monte Carlo) holds the kernel's enclosures and the native measures within 8.0e-10; a diagnostic build of the oracle printing the unified solids' vertices (not committed) places each native-only vertex as stated, on the stored cylinder at its seam angle within 1e-6 or at the stated crossings, and finds no kernel vertex missing natively; the kernel's history check and validation pass.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "hole_tool_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "ef448de04e79072ed565e2be7601371377884099cd212651a159c8e0db391be3",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "Seam and imprint accounting: after ShapeUpgrade_UnifySameDomain OCCT's result has 9 21 14 / 8 20 14 (faces, edges, vertices before / after unifying); the kernel's result, counted with OCCT's seams (Topology::occt_counts), has 8 faces, 18 edges and 12 vertices. OCCT's unified result holds every vertex of the kernel's and two vertices, (6.5, 3.75, 1) and (6.5, 6, 4): where the hole's ellipse arcs on the slab's caps cross the stored cylinder's seam generatrix (x = 5 + 1.5). The volume, area and centre agree with the reference.",
+      "independent_evidence": "The reference (chained_boolean_reference.py, S9c.1's pair reference in the chain identities, Monte Carlo) holds the kernel's enclosures and the native measures within 8.0e-10; a diagnostic build of the oracle printing the unified solids' vertices (not committed) places each native-only vertex as stated, on the stored cylinder at its seam angle within 1e-6 or at the stated crossings, and finds no kernel vertex missing natively; the kernel's history check and validation pass.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "pin_step_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "77068d46c1ef16b3d76c9e3c4bff99fafdbe09796728cff1b9f262d096dfe1ce",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "Seam and imprint accounting: after ShapeUpgrade_UnifySameDomain OCCT's result has 9 21 14 / 8 19 13 (faces, edges, vertices before / after unifying); the kernel's result, counted with OCCT's seams (Topology::occt_counts), has 8 faces, 18 edges and 12 vertices. OCCT's unified result holds every vertex of the kernel's and one vertex, (5.8, 8.75, 5): where the pin's ellipse arc on the box's top crosses the stored pin cylinder's seam generatrix (x = 5 + 0.8). The volume, area and centre agree with the reference.",
+      "independent_evidence": "The reference (chained_boolean_reference.py, S9c.1's pair reference in the chain identities, Monte Carlo) holds the kernel's enclosures and the native measures within 8.0e-10; a diagnostic build of the oracle printing the unified solids' vertices (not committed) places each native-only vertex as stated, on the stored cylinder at its seam angle within 1e-6 or at the stated crossings, and finds no kernel vertex missing natively; the kernel's history check and validation pass.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "hole_capped_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "dfe008b41651c5413fba7a7ab51bc4c741bf0666ff92d6f674bc652c20ebb3a5",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "Seam and imprint accounting: after ShapeUpgrade_UnifySameDomain OCCT's result has 8 22 16 / 7 17 12 (faces, edges, vertices before / after unifying); the kernel's result, counted with OCCT's seams (Topology::occt_counts), has 7 faces, 15 edges and 10 vertices. OCCT's unified result holds every vertex of the kernel's and four vertices: (6.5, 3, 0) and (6.5, 6.75, 5) on the hole's ellipses at the stored cylinder's seam generatrix (x = 5 + 1.5), and (5 -+ 1.1180, 8, 5), where the third box's bottom edge y = 8 crossed the hole's top ellipse on the shared plane: OCCT keeps those imprints after ShapeUpgrade_UnifySameDomain, the kernel joins the ellipse's arcs back into one edge (the third box only touches the result, whose cut is the first result again). The volume, area and centre agree with the reference.",
+      "independent_evidence": "The reference (chained_boolean_reference.py, S9c.1's pair reference in the chain identities, Monte Carlo) holds the kernel's enclosures and the native measures within 8.0e-10; a diagnostic build of the oracle printing the unified solids' vertices (not committed) places each native-only vertex as stated, on the stored cylinder at its seam angle within 1e-6 or at the stated crossings, and finds no kernel vertex missing natively; the kernel's history check and validation pass.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}

@@ -990,5 +990,6 @@ pub(super) fn model(solid: &Solid, op: Operand, seam: &R) -> Result<Prism> {
         ball: None,
         funnel: None,
         ring: Some(ring),
+        given: None,
     })
 }

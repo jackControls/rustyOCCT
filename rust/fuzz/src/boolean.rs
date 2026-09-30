@@ -26,7 +26,9 @@
 //! (two tori: one operation, its volume within its bounds);
 //! every result moves rigidly with its ids, and each of its vertices
 //! classifies on its boundary; each operation's first result is an input
-//! again (S9b.2) against a turned box, with the same identities.
+//! again (S9b.2) against a turned box, with the same identities; one with
+//! curved faces (S9e.1: a result of prisms with arcs in frames with
+//! different axes) too, on its construction's exact model (`GIVEN_CURVED`).
 use crate::analytic_intersections::Bytes;
 use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
@@ -62,6 +64,12 @@ const CONE_PAIRS: bool = false;
 /// frames, which stay on; parts against prisms with arcs are on in every
 /// frame (4.5 s at the slowest of 750).
 const TURNED_PARTS: bool = false;
+
+/// Whether an operation's first result with curved faces is given to the
+/// chained cut and common with the turned box (S9e.1: its model the first
+/// arrangement run again, cached). On: the stage keeps its limit of 12
+/// faces.
+const GIVEN_CURVED: bool = true;
 
 pub fn check_boolean(data: &[u8]) {
     let mut b = Bytes(data, 0);
@@ -319,6 +327,7 @@ pub fn check_boolean(data: &[u8]) {
                 if m.contains("cavity")
                     || m.contains("S9c")
                     || m.contains("S9d")
+                    || m.contains("S9e")
                     || m.contains("different forms")
                     || m.contains("along the plane") =>
             {
@@ -423,7 +432,14 @@ pub fn check_boolean(data: &[u8]) {
         // fragments of larger stored models took up to 165 s an input under
         // ASan (fuzz/regressions/README.md); the kernel's tests take them.
         let chosen = [&fused, &cut, &common][usize::from(b.next() % 3)];
-        let small = |s: &&Solid| s.topology().faces().len() <= 12;
+        let small = |s: &&Solid| {
+            s.topology().faces().len() <= 12
+                && (GIVEN_CURVED
+                    || s.topology()
+                        .faces()
+                        .iter()
+                        .all(|f| matches!(f.surface, rusty_occt::topology::Surface::Plane(_))))
+        };
         if let Some(first) = chosen.as_ref().and_then(|out| out.first()).filter(small) {
             let (c, m) = (
                 run(first.cut(OperationId(9), &box_)),

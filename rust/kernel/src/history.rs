@@ -578,6 +578,40 @@ fn circle_of(c: &Curve3) -> Option<(crate::Frame3, f64)> {
     }
 }
 
+/// An ellipse arc's frame and semi-axes.
+fn ellipse_of(c: &Curve3) -> Option<(crate::Frame3, f64, f64)> {
+    match c {
+        Curve3::EllipseArc {
+            frame,
+            major,
+            minor,
+            ..
+        } => Some((*frame, *major, *minor)),
+        _ => None,
+    }
+}
+
+/// Whether the centre and axes' ends of ellipse `a` lie on ellipse `b`
+/// within `tol` (the centre at `b`'s, the ends at most `tol` off `b`'s
+/// plane and off its curve, measured along its radius from the centre).
+fn on_ellipse(a: &(crate::Frame3, f64, f64), b: &(crate::Frame3, f64, f64), tol: f64) -> bool {
+    let (fa, ma, na) = *a;
+    let (fb, mb, nb) = *b;
+    if !near(fa.origin(), fb.origin(), tol) || mb <= 0.0 || nb <= 0.0 {
+        return false;
+    }
+    let (o, x, y) = (fa.origin(), fa.x(), fa.y());
+    [o + x * ma, o + x * -ma, o + y * na, o + y * -na]
+        .iter()
+        .all(|p| {
+            let [u, v, w] = fb.coordinates(*p);
+            let rho = (u * u + v * v).sqrt();
+            // The ellipse's radius in the point's direction.
+            let k = ((u / mb).powi(2) + (v / nb).powi(2)).sqrt();
+            w.abs() <= tol && k > 0.0 && (rho - rho / k).abs() <= tol
+        })
+}
+
 fn exact(v: [f64; 3]) -> Option<[R; 3]> {
     let [x, y, z] = v.map(r);
     Some([x?, y?, z?])
@@ -1067,7 +1101,13 @@ fn same_support(piece: &EntityInfo, whole: &Geometry, tol: f64, edges: &Entities
                     && (r - s).abs() <= tol
                     && m.cross(n).length() * r.max(s) <= tol
             }
-            _ => false,
+            // One ellipse (S9e.1: a given result's section edge split by
+            // another Boolean): each one's centre and axes' ends on the
+            // other within tolerance, whatever the frames' axes' signs.
+            _ => match (ellipse_of(c), ellipse_of(d)) {
+                (Some(a), Some(b)) => on_ellipse(&a, &b, tol) && on_ellipse(&b, &a, tol),
+                _ => false,
+            },
         },
         (Geometry::Surface { .. }, Geometry::Surface { .. }) => {
             same_surface(piece, whole, tol, edges).unwrap_or(false)

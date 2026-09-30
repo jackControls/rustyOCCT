@@ -431,6 +431,32 @@ def native_boolean_case(obj, operation, tool):
     return '\n'.join([first, f'boolean {operation}', *second, 'end'])
 
 
+def encode_chained_case(obj, operation, tool, boolean_operation, then, third, then_operation, swapped):
+    """S9e.1: a Boolean's result given to another Boolean. The first
+    Boolean's block (`encode_boolean_case`) without its `end`, then a row
+    `then OP ID` (`OP` the second operation, `ID` its operation id; `then OP
+    ID swapped` when the first result is the second's tool, the third solid
+    its object), then the third solid's rows (`encode_case(third)` without
+    its `case` row and its `end`), then `end`. The first Boolean's result
+    must be one solid, the second's argument. Blocks without a `then` row
+    are unchanged."""
+    assert then in BOOLEAN_OPERATIONS, then
+    first = encode_boolean_case(obj, operation, tool, boolean_operation).rsplit('\nend', 1)[0]
+    rest = encode_case(third).split('\n')[1:-1]
+    row = f'then {then} {then_operation}'+(' swapped' if swapped else '')
+    return '\n'.join([first, row, *rest, 'end'])
+
+
+def native_chained_case(obj, operation, tool, then, third, swapped):
+    """The explicit OCCT rows of a chained Boolean (occt_boolean_oracle.cpp):
+    `native_boolean_case` without its `end`, a `then OP` row (`then OP
+    swapped`), the third solid's rows without their `case` row, and `end`."""
+    assert then in BOOLEAN_OPERATIONS, then
+    first = native_boolean_case(obj, operation, tool).rsplit('\nend', 1)[0]
+    rest = native_case(third).split('\n')[1:-1]
+    return '\n'.join([first, f'then {then}'+(' swapped' if swapped else ''), *rest, 'end'])
+
+
 def box_boundaries(size):
     """Solid::box_at builds a cuboid from a rectangle at the origin."""
     w, d = abs(size[0]), abs(size[1])
