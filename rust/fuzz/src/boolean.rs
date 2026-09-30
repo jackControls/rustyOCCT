@@ -15,7 +15,9 @@
 //! torus, S9d.4b.1 a torus v-segment or wedge, S9d.4b.2a makes the object a
 //! sphere or a cone against a whole torus, S9d.4b.2b a whole torus, S9d.3c
 //! a sphere against a cone or sphere tool and a cone against a sphere, cap
-//! or zone tool (against a cone tool off, `CONE_PAIRS`); a
+//! or zone tool (against a cone tool off, `CONE_PAIRS`), S9d.4c a sphere,
+//! cap, zone or cone against a torus v-segment or wedge tool and a cap or
+//! zone against a whole torus; a
 //! result thinner than the resolution or touching itself; an undecided
 //! comparison); each result
 //! validates as it is built and its history passes the independent check
@@ -48,6 +50,18 @@ const TORUS_PAIRS: bool = false;
 /// variants cover them meanwhile. A sphere object against a cone tool and a
 /// cone object against a sphere, cap or zone tool stay on (26 s at most).
 const CONE_PAIRS: bool = false;
+
+/// Whether a torus v-segment or wedge tool meets a sphere or cone object,
+/// and a cap or zone object a torus or a part, in the tilted or a turned
+/// frame too (S9d.4c). Off: their rims' and circles' crossings lie in
+/// fields over the rounded frames' inverses, and of 3,000 replayed variants
+/// (debug assertions, no sanitizer) the 1,201 caps and 592 parts in turned
+/// frames took 2.1 s and 0.6 s at the median, 7.5 s and 4.6 s at the ninth
+/// decile and 26 s and 50 s at the slowest (about twelve times that under
+/// the sanitizer), against 2.3 s at the slowest of 457 in the axis-aligned
+/// frames, which stay on; parts against prisms with arcs are on in every
+/// frame (4.5 s at the slowest of 750).
+const TURNED_PARTS: bool = false;
 
 pub fn check_boolean(data: &[u8]) {
     let mut b = Bytes(data, 0);
@@ -161,6 +175,15 @@ pub fn check_boolean(data: &[u8]) {
     // one operation (the chained one's byte) is checked by its volume's
     // bounds, its history and its rigid motion.
     let whole_torus = (144..148).contains(&spline_byte);
+    // S9d.4c: a torus v-segment or wedge tool (148..160) takes the same
+    // curved objects as a whole torus, and a sphere object against either
+    // is a cap or zone by the heights byte's top bit, in the axis-aligned
+    // frames (the tool offset or on its side; in the tilted or a turned
+    // frame only with `TURNED_PARTS`).
+    let torus_tool = (144..160).contains(&spline_byte);
+    let exact = !tilted && pick % 4 == 0;
+    let part_curved = (148..160).contains(&spline_byte) && (exact || TURNED_PARTS);
+    let caps = torus_tool && heights >= 128 && (exact || TURNED_PARTS);
     let tori =
         TORUS_PAIRS && whole_torus && (flags >> 5) % 4 == 0 && flags >= 128 && heights >= 128;
     let fb = if tori && !tilted { offset_fb } else { fb };
@@ -180,16 +203,30 @@ pub fn check_boolean(data: &[u8]) {
         // 160) the same bits make the object a sphere or a cone: a turned
         // cone's loops with a sphere, a turned cap against a cone, two
         // cones' loops (`CONE_PAIRS`).
-        (curved, 1) if curved || spline_byte >= 160 => {
+        (_, 1) if whole_torus || part_curved || spline_byte >= 160 => {
+            // S9d.4c: against a torus or a part, the heights byte's top bit
+            // makes it a cap or zone (its next two which), its circles of
+            // surd radii.
             let half = std::f64::consts::FRAC_PI_2;
+            let (low, high) = if caps {
+                [(-half, 0.0), (-0.5, 0.75), (0.25, half), (-half, 0.5)]
+                    [usize::from((heights >> 5) % 4)]
+            } else {
+                (-half, half)
+            };
             let Ok((a, _)) =
-                Solid::sphere_with(OperationId(1), fa, 0.75 * s1, -half, half, tolerance)
+                Solid::sphere_with(OperationId(1), fa, 0.75 * s1, low, high, tolerance)
             else {
                 return;
             };
             a
         }
-        (curved, 2) if curved || spline_byte >= 192 || (CONE_PAIRS && spline_byte >= 160) => {
+        (_, 2)
+            if whole_torus
+                || part_curved
+                || spline_byte >= 192
+                || (CONE_PAIRS && spline_byte >= 160) =>
+        {
             let r = 0.75 * s1;
             let Ok((a, _)) = Solid::cone_with(OperationId(1), fa, r, r / 2.0, h, tolerance) else {
                 return;

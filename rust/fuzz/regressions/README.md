@@ -1063,3 +1063,25 @@ negative there) were placed on the wrong side of the angle `phi`, four
 events at one place (`two turning points within rounding`); the side is
 now `g / rho`'s sign, and the branch the sphere's gradient along the
 ruling. Both replay in under 2 s.
+
+## Boolean: a void under a band's hole, a loop through a sphere's pole
+
+`boolean/replay-a8c53a2351252e92a262cbd7ca85b060ac023caf.bin` and
+`boolean/replay-0ca818deb641a61baf12a95a7802f376d308a30e.bin` are corpus
+inputs rewritten into S9d.4c's decode (a cap above latitude 1/4 against a
+torus band `0.5..2.25`, and a whole sphere against a quarter wedge stood on
+its side) for a local replay with debug assertions of 3,000 variants before
+S9d.4c's first campaign. The first (seven variants alike, and a box or a
+pipe over the band's hole the same way): the cap's plane lies just above
+the band's upper end disc and covers its hole, so their fuse holds a thin
+void bounded by the disc, the band's inner wall and the cap's plane, a
+shell of both inputs' faces that the assembly made a solid of its own
+(`shell_orientation`); a shell of both inputs' faces whose certified flux,
+built alone, is turned inward is now a cavity of the result, whose
+containment the validator's rays leave undecided (`ComputationLimit`, as
+S9d.4b.1's). The second: the wedge's end half-plane, on the rounded
+direction of its quarter turn, passes within rounding of the sphere's
+poles, and the sphere face's loop through the pole had its winding from its
+pcurves' changes alone, half a turn at the pole left out (`uv_gap`); a
+loop's winding is now its last pcurve's end against its first's start.
+Both replay in under 2 s.

@@ -325,13 +325,6 @@ pub(super) fn assemble(arr: &Arr, op: Op2) -> Result<Vec<Component>> {
             }
         }
     }
-    // A shell of the tool's faces alone in a cut is a cavity.
-    let cavity = |sh: &Vec<usize>| op == Op2::Cut && sh.iter().all(|&fi| faces[fi].op == 1);
-    let outers: Vec<usize> = (0..shells.len()).filter(|&s| !cavity(&shells[s])).collect();
-    let cavities: Vec<usize> = (0..shells.len()).filter(|&s| cavity(&shells[s])).collect();
-    if !cavities.is_empty() && outers.len() != 1 {
-        return Err(Error::OutOfDomain("a cavity among several solids (S9c)"));
-    }
     // Every result vertex apart from the others by the resolution.
     let tol = arr.models[0].tolerance.linear();
     let points: BTreeMap<usize, Point3> = shell_of_vertex
@@ -354,6 +347,53 @@ pub(super) fn assemble(arr: &Arr, op: Op2) -> Result<Vec<Component>> {
         .iter()
         .flat_map(|m| m.info.iter().map(|(k, v)| (*k, *v)))
         .collect();
+    // A shell of the tool's faces alone in a cut is a cavity; so is any
+    // other shell bounding a void (S9d.4c: a band's end disc and inner wall
+    // under another input's face over its hole, in a fuse), which the
+    // validator's certified flux finds turned inward when the shell is
+    // built alone. A void bounded by one input's faces alone would be a
+    // cavity of that input: only shells of both inputs' faces are tried,
+    // and only beside another shell.
+    let mut is_cavity: Vec<bool> = shells
+        .iter()
+        .map(|sh| op == Op2::Cut && sh.iter().all(|&fi| faces[fi].op == 1))
+        .collect();
+    if shells.len() > 1 {
+        for si in 0..shells.len() {
+            let both = shells[si].iter().any(|&fi| faces[fi].op == 0)
+                && shells[si].iter().any(|&fi| faces[fi].op == 1);
+            if is_cavity[si] || !both {
+                continue;
+            }
+            let alone = build_component(
+                arr,
+                op,
+                &faces,
+                &redges,
+                &fins_of,
+                &points,
+                &shells[si],
+                &BTreeSet::new(),
+                &info,
+            )?;
+            if let Err(issues) = crate::topology::Topology::from_parts(
+                alone.parts.with_measured_enclosures(),
+                arr.models[0].tolerance,
+            ) {
+                if issues
+                    .iter()
+                    .any(|i| i.kind == crate::topology::IssueKind::ShellOrientation)
+                {
+                    is_cavity[si] = true;
+                }
+            }
+        }
+    }
+    let outers: Vec<usize> = (0..shells.len()).filter(|&s| !is_cavity[s]).collect();
+    let cavities: Vec<usize> = (0..shells.len()).filter(|&s| is_cavity[s]).collect();
+    if !cavities.is_empty() && outers.len() != 1 {
+        return Err(Error::OutOfDomain("a cavity among several solids (S9c)"));
+    }
     let mut out = Vec::new();
     for &si in &outers {
         let mut all: Vec<usize> = shells[si].clone();
@@ -1779,13 +1819,15 @@ fn turns_v(p: &TopologyParts, fins: &[FinId]) -> i32 {
     (total / TAU).round() as i32
 }
 
-/// A cylinder loop's turns about the axis: its pcurves' change of `u`.
+/// A cylinder loop's turns about the axis: its pcurves' change of `u`,
+/// with the jumps between them (a sphere's or cone's pole, where `u` turns
+/// freely: S9d.4c, a loop through a pole whose pcurves alone turn half a
+/// turn), the last pcurve's end against the first's start.
 fn turns(p: &TopologyParts, fins: &[FinId], _surface: &Surface) -> i32 {
-    let mut total = 0.0;
-    for f in fins {
-        let pc = &p.fins[f.0].pcurve;
-        total += pc.point(1.0).x - pc.point(0.0).x;
-    }
+    let (Some(first), Some(last)) = (fins.first(), fins.last()) else {
+        return 0;
+    };
+    let total = p.fins[last.0].pcurve.point(1.0).x - p.fins[first.0].pcurve.point(0.0).x;
     (total / TAU).round() as i32
 }
 

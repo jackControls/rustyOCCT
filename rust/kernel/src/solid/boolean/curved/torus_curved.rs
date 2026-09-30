@@ -193,6 +193,37 @@ impl Bi {
         Form::from_terms(terms, self.degree(!of_v).max(2))
     }
 
+    /// The form in the other angle at a `(cos, sin)` of `u` (`of_v` false)
+    /// or of `v` in one quadratic field `Q(sqrt(d))` (S9d.4c: a rim's fixed
+    /// angle): `A + sqrt(d) B` with `A`, `B` rational forms, and `d` (zero
+    /// where the direction is rational).
+    pub(super) fn at_dir(&self, of_v: bool, cs: &[Qd; 2]) -> (Form, Form, R) {
+        let d = cs
+            .iter()
+            .find_map(|c| c.field().cloned())
+            .unwrap_or_else(zero);
+        let pow = |x: &Qd, n: u32| (0..n).fold(Qd::rat(int(1)), |acc, _| acc.mul(x));
+        let (i, j, k, l) = if of_v { (2, 3, 0, 1) } else { (0, 1, 2, 3) };
+        let mut ta: BTreeMap<(u32, u32), R> = BTreeMap::new();
+        let mut tb: BTreeMap<(u32, u32), R> = BTreeMap::new();
+        for (e, x) in &self.terms {
+            let c = pow(&cs[0], e[i]).mul(&pow(&cs[1], e[j]));
+            let part = |v: &K| match v {
+                K::Rat(r) => r.clone(),
+                _ => unreachable!("a direction of Q(sqrt(d))"),
+            };
+            let (a, b) = if c.field().is_some() {
+                (part(&c.a), part(&c.b))
+            } else {
+                (part(&c.a), zero())
+            };
+            *ta.entry((e[k], e[l])).or_insert_with(zero) += x * a;
+            *tb.entry((e[k], e[l])).or_insert_with(zero) += x * b;
+        }
+        let deg = self.degree(!of_v).max(2);
+        (Form::from_terms(ta, deg), Form::from_terms(tb, deg), d)
+    }
+
     fn to_f64(&self) -> F64Bi {
         F64Bi {
             terms: self
@@ -359,6 +390,51 @@ impl Far {
     }
 }
 
+/// The other surface's function on a torus's angles, `G(u, v)`: its
+/// quadric's (S9d.4b.2a) or its torus's (S9d.4b.2b) at the torus's point
+/// `o + (R + r cv)(cu x + su y) + r sv n`, reduced.
+pub(super) fn meeting_form(f: &Affine, big: &R, small: &R, other: &Far) -> Bi {
+    // The torus's point: o + (R + r cv)(cu x + su y) + r sv n.
+    let lin = |g: &V, e: &R| -> Bi {
+        let mut b = Bi::default();
+        b.add_term([0, 0, 0, 0], &(dot(g, &f.o) - e));
+        b.add_term([1, 0, 0, 0], &(big * dot(g, &f.x)));
+        b.add_term([0, 1, 0, 0], &(big * dot(g, &f.y)));
+        b.add_term([1, 0, 1, 0], &(small * dot(g, &f.x)));
+        b.add_term([0, 1, 1, 0], &(small * dot(g, &f.y)));
+        b.add_term([0, 0, 0, 1], &(small * dot(g, &f.n)));
+        b
+    };
+    match other {
+        Far::Quadric(other) => {
+            let mut g = Bi::default();
+            for (gi, ei) in other.g.iter().zip(&other.e) {
+                let l = lin(gi, ei);
+                g = g.add(&l.mul(&l));
+            }
+            // The radius term r + t (h . p - e_h).
+            let mut rad = lin(&other.h, &other.eh).scale(&other.t);
+            rad.add_term([0, 0, 0, 0], &other.r);
+            g.sub(&rad.mul(&rad)).reduce()
+        }
+        Far::Torus {
+            f: f2,
+            big: b2,
+            small: s2,
+        } => {
+            // Its local coordinates `l_k = row_k . (p - o2)`: `S^2 - 4
+            // R2^2 P`, `S = |l|^2 + R2^2 - r2^2`, `P = l_u^2 + l_v^2`.
+            let l: Vec<Bi> = (0..3)
+                .map(|k| lin(f2.row(k), &dot(f2.row(k), &f2.o)))
+                .collect();
+            let p = l[0].mul(&l[0]).add(&l[1].mul(&l[1]));
+            let mut sum = p.add(&l[2].mul(&l[2]));
+            sum.add_term([0, 0, 0, 0], &(b2 * b2 - s2 * s2));
+            sum.mul(&sum).sub(&p.scale(&(int(4) * b2 * b2))).reduce()
+        }
+    }
+}
+
 /// A torus and a quadric or another torus (the other input's face): `G`
 /// on the torus's angles, exact and in binary64, and its certified views.
 #[derive(Debug)]
@@ -383,45 +459,7 @@ pub(super) struct Meeting {
 
 impl Meeting {
     pub(super) fn new(f: &Affine, big: &R, small: &R, other: &Far) -> Self {
-        // The torus's point: o + (R + r cv)(cu x + su y) + r sv n.
-        let lin = |g: &V, e: &R| -> Bi {
-            let mut b = Bi::default();
-            b.add_term([0, 0, 0, 0], &(dot(g, &f.o) - e));
-            b.add_term([1, 0, 0, 0], &(big * dot(g, &f.x)));
-            b.add_term([0, 1, 0, 0], &(big * dot(g, &f.y)));
-            b.add_term([1, 0, 1, 0], &(small * dot(g, &f.x)));
-            b.add_term([0, 1, 1, 0], &(small * dot(g, &f.y)));
-            b.add_term([0, 0, 0, 1], &(small * dot(g, &f.n)));
-            b
-        };
-        let g = match other {
-            Far::Quadric(other) => {
-                let mut g = Bi::default();
-                for (gi, ei) in other.g.iter().zip(&other.e) {
-                    let l = lin(gi, ei);
-                    g = g.add(&l.mul(&l));
-                }
-                // The radius term r + t (h . p - e_h).
-                let mut rad = lin(&other.h, &other.eh).scale(&other.t);
-                rad.add_term([0, 0, 0, 0], &other.r);
-                g.sub(&rad.mul(&rad)).reduce()
-            }
-            Far::Torus {
-                f: f2,
-                big: b2,
-                small: s2,
-            } => {
-                // Its local coordinates `l_k = row_k . (p - o2)`: `S^2 - 4
-                // R2^2 P`, `S = |l|^2 + R2^2 - r2^2`, `P = l_u^2 + l_v^2`.
-                let l: Vec<Bi> = (0..3)
-                    .map(|k| lin(f2.row(k), &dot(f2.row(k), &f2.o)))
-                    .collect();
-                let p = l[0].mul(&l[0]).add(&l[1].mul(&l[1]));
-                let mut sum = p.add(&l[2].mul(&l[2]));
-                sum.add_term([0, 0, 0, 0], &(b2 * b2 - s2 * s2));
-                sum.mul(&sum).sub(&p.scale(&(int(4) * b2 * b2))).reduce()
-            }
-        };
+        let g = meeting_form(f, big, small, other);
         let (gu, gv) = (g.d(false), g.d(true));
         let fl = |v: &V| v.clone().map(|x| rational_f64(&x));
         let num = [g.to_f64(), gu.to_f64(), gv.to_f64()];
@@ -2103,15 +2141,17 @@ pub(super) fn conic_torus(c: &V, a: &V, b: &V, t: &Prism) -> Result<EdgeMeet> {
 
 /// Where a sphere's own circle meets a whole torus: on a basis of equal
 /// lengths whose scale to the radius is rational (a whole sphere's great
-/// circle, S9d.2), as a conic; others S9d.4b's later.
-pub(super) fn circ_torus(circ: &super::sphere::Circ, t: &Prism) -> Result<EdgeMeet> {
+/// circle, S9d.2) as a conic; any other (a surd radius, unequal axes) by
+/// S9d.4c's resultant, a crossing within the resolution `res` of a tangency
+/// `Degenerate`.
+pub(super) fn circ_torus(circ: &super::sphere::Circ, t: &Prism, res: f64) -> Result<EdgeMeet> {
     let (xx, yy) = (dot(&circ.x, &circ.x), dot(&circ.y, &circ.y));
-    let s = (xx == yy && dot(&circ.x, &circ.y) == zero())
+    let Some(s) = (xx == yy && dot(&circ.x, &circ.y) == zero())
         .then(|| rational_sqrt(&(&circ.r2 / &xx)))
         .flatten()
-        .ok_or(Error::OutOfDomain(
-            "a sphere's circle of a surd radius against a torus (S9d.4b)",
-        ))?;
+    else {
+        return super::torus_parts::circ_torus(circ, t, res);
+    };
     let (a, b) = (scale(&circ.x, &s), scale(&circ.y, &s));
     match conic_torus(&circ.c, &a, &b, t)? {
         EdgeMeet::Points(p) => Ok(EdgeMeet::Points(
