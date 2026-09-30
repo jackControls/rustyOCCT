@@ -3111,6 +3111,47 @@ Decisions for S9, recorded before its code (2026-09-28):
     fixtures of both classes with a declared degenerate (a turned rim
     tangent to a cylinder within rounding), and a native capture before
     `solid/boolean/curved/spheres_turned.rs` exists.
+  * **S9d.2c evidence (2026-09-30).** `spheres_boolean_reference.py` now
+    reads a cap's end planes as the kernel does (`AxisSphere`: through `o +
+    h n` normal to the stored axis; the same tuples in an exact frame, so
+    S9d.2's and S9d.3b's references write their fixtures unchanged) and,
+    where they are not normal to the prism's axis, slices along the cap's
+    axis with the prism cut obliquely: the prism's caps classified in their
+    own `(u, v)` against the ball's ellipse and zone half-planes (a flat
+    wall's `ball_region`), a cylindrical wall's zone bound varying along
+    its generatrices (events where it meets the sphere, the rim crossing
+    the wall, a quartic, or the prism's ends, a quadratic), and components
+    of one key (two crescents of a circle less an oblique ellipse)
+    numbered by their centres along a fixed direction.
+    `generate_spheres_turned_boolean_fixtures.py --check`: 18 fixtures (17
+    solid, 1 degenerate): hemispheres in `TILT`, `LEAN` and `TILTX` against
+    a coaxial pipe (the rim and the split crossing its wall between its
+    rings), the bite (the equator across its loop, all three operations)
+    and the rod (across its rings); loops in `LEAN` (the bite, all three),
+    `TILT` (its fuse and common; S9d.2's fixture is the cut), `TILTX` (a
+    long loop round a thick cylinder) and `R125` (turned about the axis); a
+    hemisphere in `TILT` against the bite in `LEAN`; and a hemisphere's rim
+    tangent to a cylinder within rounding declared `degenerate`. Caps are
+    hemispheres only (a height of exactly 0, whatever the platform's
+    `sin`). Closed forms (a whole sphere against a turned cylinder by
+    S9d.2's lens along the axis; the hemisphere against the coaxial pipe by
+    circular segments along the pipe's axis, its faces by central symmetry
+    and its disc inside the pipe a circle and an ellipse) within 8.1e-17, a
+    cap and its complement against the whole sphere sliced along the
+    prism's axis within 1.7e-41, inclusion and exclusion 1.7e-41, the area
+    identity 1.4e-40, every face's classes 9.2e-41, a second direction
+    (whole spheres) 1.4e-40, Monte Carlo 2.2 standard errors, no near
+    coincidence but the declared pair's (its rim's crossings 4.4e-22 of
+    the radius squared from tangency), every other cap circle at least 0.16
+    from tangency; Python 3.9 and 3.12 write the same files. The capture
+    `occt-boolean-spheres-turned-preimplementation`
+    (`compare_spheres_turned_boolean.py`; the kernel `unsupported` on all
+    18: 8 turned circles of unequal axes, 10 turned loops): every result
+    valid with the reference's solids, 1 match, 17 reviewed (BRepGProp's
+    default integration on approximated quartics, up to 1.4e-5; adaptively
+    converged within 1.5e-8, `dome_lean_bite_common` 4.0e-8 of a small
+    result, 1.0e-8 absolute against its area times its edges' tolerance),
+    five solids' counts change when unified. S9d.2c's kernel next.
 
 ### Parallel tracks
 

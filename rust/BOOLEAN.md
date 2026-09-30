@@ -1249,6 +1249,41 @@ height); its horizontal edges on a spline are its lifted restrictions.
   with ten kernel results whose faces are OCCT's unified ones and whose
   edges and vertices differ where each splits its circles and quartics), no
   failure; every other Boolean comparison unchanged.
+* **S9d.2c evidence (turned caps' circles against cylinders, loops in
+  turned frames), before its kernel code.** `spheres_boolean_reference.py`
+  reads a cap's end planes as the kernel's `Ball` does (`AxisSphere`:
+  through `o + h n` normal to the stored axis, S9d.1's affine plane in an
+  exact frame) and slices a turned cap along its own axis, the prism cut
+  obliquely: its caps classified in their own `(u, v)` against the ball's
+  ellipse and zone half-planes, a cylindrical wall's zone bound varying
+  along its generatrices (events where the rim crosses the wall, a quartic
+  in `tan(theta / 2)`, or the bound meets the prism's ends), components of
+  one key numbered by their centres. `generate_spheres_turned_boolean_
+  fixtures.py --check` writes `boolean-spheres-turned-cases.txt`,
+  `-expected.tsv` and `-frames.tsv` with 18 cases (3 fuses, 7 cuts, 8
+  commons; 17 solid, 1 degenerate): hemispheres in `TILT`, `LEAN` and
+  `TILTX` against a coaxial pipe, S9d.2's bite and S9d.2's rod in `XY`;
+  loops of the bite in `LEAN` and `TILT`, of a thick cylinder in `TILTX`
+  and a thin one in `R125`; a hemisphere in `TILT` against the bite in
+  `LEAN`; a hemisphere's rim tangent to a cylinder within rounding,
+  `degenerate`. Checks before writing: closed forms (S9d.2's lens along a
+  turned cylinder's axis; the hemisphere against the coaxial pipe by
+  circular segments along the axis, its faces by central symmetry and a
+  circle and an ellipse) within 8.1e-17, a hemisphere and its complement
+  against the whole sphere sliced along the prism's axis within 1.7e-41,
+  inclusion and exclusion, the area identity and every face's classes
+  within 1.4e-40, a second direction for whole spheres, Monte Carlo 2.2
+  standard errors, no near coincidence but the declared pair's.
+  `test_spheres_turned_boolean_reference.py` checks the closed forms by
+  quadrature, the kernel's cap reading, the oblique wall against the axial
+  one and the halves. `compare_spheres_turned_boolean.py` reproduces
+  `occt-boolean-spheres-turned-preimplementation`
+  (`rust_spheres_turned_boolean_exists` false; the kernel `unsupported` on
+  all 18): every result valid with the reference's solid count, 1 match,
+  17 reviewed (`occt-boolean-spheres-turned-divergences.json`: BRepGProp's
+  default integration on approximated quartics, up to 1.4e-5; adaptively
+  converged within 1.5e-8, or 1.0e-8 absolute on a small result within its
+  edges' tolerance), five solids' counts change when unified.
 * **S9d.3a evidence (cones against polyhedral prisms), before its kernel
   code.** `cone_boolean_reference.py` (mpmath, 40 digits) takes the cone or
   frustum on its exact model (the stored frame's axes as rationals, `0 <= w
