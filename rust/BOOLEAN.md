@@ -2014,7 +2014,7 @@ within rounding of parallel. The derived cases `boolean_prisms`,
 `boolean_stacks` (a step, a pocket, a box cut in two by a slab, a closed
 cavity, a tool through a round wall) and `boolean_polyhedra` (quarter
 turns, a bar turned 45 degrees through a box, a tilted bar cutting a box
-in two, a turned box inside another) and 975 cases of upstream's
+in two, a turned box inside another) and 983 cases of upstream's
 `boolean` group (86 of them stacks, 300 polyhedra of two boxes, one
 turned, 35 pockets cut one after another, a stack or a polyhedron given
 to the next `bcut`, 65 of S9c.1's prisms with arcs in any position: a
@@ -2032,11 +2032,11 @@ faces in circles, or with its axis outside a wall, meeting the walls
 across it in hyperbolas, in `ZH3` and `ZH4` turned about its axis, and
 16 of S9d.1's pole follow-up: the cylinder and a sphere of radius 2 on
 its cap turned so the cap's plane holds its axis, the section through
-its poles, and 36 of S9d.3b.1's: the cylinder and a coaxial frustum on
+its poles, and 44 of S9d.3b.1's: the cylinder and a coaxial frustum on
 its cap, inside it or through its caps, meeting it in circles, or a
 frustum across it, its axis crossing the cylinder's at right angles,
-meeting the wall in quartics, its wide end through the caps in `ZK9`
-and `ZL1`, and 20 more of S9d.3b.1's, two `pcone`s: a frustum and a
+meeting the wall in quartics, its wide end through the caps in `ZK7` to
+`ZK9` and `ZL1`, and 20 more of S9d.3b.1's, two `pcone`s: a frustum and a
 narrower coaxial one on its top disc, inside it or through its discs, and 16 of
 S9d.4b.2a's: the cylinder and a coaxial torus whose tube its wall cuts in
 two circles) evaluate on both backends, and
@@ -2048,9 +2048,17 @@ audit of the registered cases found Rust's volumes and centres of
 gravity native DRAW's to its printed digits, or where they differ (eight
 cases) nearer the closed forms; run again in S9d.4b's survey, Rust's
 values were unchanged bit for bit, the new cases' the closed forms'
-within 2.6e-15 relative. Eight more of S9d.3b.1's, a wider
-frustum across the cylinder, evaluate right but take 23 to 120 seconds
-on the debug worker, past the contract's 30, and are not registered. Of
+within 2.6e-15 relative; in the survey of S9d.2c, S9d.3c and S9d.4c 129
+differ from it within rounding (2.2e-15 relative at most: the certified
+integrals' speed-up 118, S9d.4c 11 centres), the closed forms' and the
+references' within 2.8e-15. Eight more of S9d.3b.1's, a wider
+frustum across the cylinder (`ZK7`, `ZK8`), evaluated right but took 23
+to 120 seconds on the debug worker, past the contract's 30, until the
+certified integrals' speed-up (9 to 13 since), and are registered since
+that survey, in which no upstream case's status changed with S9d.2c,
+S9d.3c or S9d.4c (the group's spheres and tori are whole, no cap, zone
+or torus part, and its cones meet the cylinder in circles or rings, not
+loops). Of
 the upstream cases in frames with different axes the rest are refused:
 S9b.1's, S9c.1's, S9c.2a's, S9c.2b.1's,
 S9d.1's, S9d.2a's, S9d.3a's, S9d.3b.1's and S9d.4b.2's `Degenerate` (a turned box's corner on

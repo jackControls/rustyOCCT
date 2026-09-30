@@ -3229,7 +3229,8 @@ Decisions for S9, recorded before its code (2026-09-28):
     object's cap, tangencies, a vertex on the other's face), none as
     S9d.2b's `OutOfDomain`. Campaign: the boolean campaign at `afa36c7f` (600 s, a sampled
     replay) clean, 1,173 runs, the slowest input 52 s under
-    AddressSanitizer (S9a.2's spline stack `d0a3de29`, the host loaded). Pending: the DRAW survey.
+    AddressSanitizer (S9a.2's spline stack `d0a3de29`, the host loaded). DRAW survey: that of
+    S9d.2c, S9d.3c and S9d.4c, below (no upstream case's status changes).
   * **S9d.3c refined, before its code (2026-09-30).** Why each is refused.
     (1) `cones.rs`'s `cone_pair` takes a ruled carrier (a cylinder before a
     cone) whose ruling's leading coefficient `A` has no real root and whose
@@ -3444,7 +3445,8 @@ Decisions for S9, recorded before its code (2026-09-28):
     a near node), none as S9d.3b.2's or S9d.3c's `OutOfDomain`. Campaign: the
     boolean campaign at `428349e8` (600 s, a sampled replay) clean, 928
     runs, the slowest input 17 s under AddressSanitizer (cone pairs off,
-    `CONE_PAIRS`). Pending: the DRAW survey.
+    `CONE_PAIRS`). DRAW survey: that of S9d.2c, S9d.3c and S9d.4c, below
+    (no upstream case's status changes).
   * **S9d.4c refined, before its code (2026-09-30).** Why each is refused.
     (1) `torus_curved::circ_torus` meets a sphere's own circle with a torus
     only on a basis of equal lengths whose scale to the radius is rational
@@ -3692,7 +3694,42 @@ Decisions for S9, recorded before its code (2026-09-28):
     `TURNED_PARTS` on (the slowest 50 s), which found (b) and (c) (two kept
     as regressions, `fuzz/regressions/README.md`). No DRAW upstream case's
     status changes before the survey (none reaches a part or a cap against
-    a torus). Pending: the DRAW survey, the campaign.
+    a torus). DRAW survey: that of S9d.2c, S9d.3c and S9d.4c, below (no
+    upstream case's status changes). Pending: the campaign.
+  * **DRAW survey of S9d.2c, S9d.3c and S9d.4c (2026-09-30,
+    `UPSTREAM_TESTS.md`).** The 1,802 cases of the Boolean group run again
+    on both backends after S9d.2c, S9d.3c, S9d.4c and the certified
+    integrals' speed-up (a parallel track below): no case evaluates newly,
+    none changes its refusal, none fails or times out, and the sentinels
+    are refused as before. The group's `psphere`s and `ptorus`es are whole
+    solids (no cap, zone or torus part) and its cones meet the `pcylinder`
+    in circles or rings, not loops, so none of the three sub-steps shows.
+    The speed-up does: `ZK7` and `ZK8` of the four grids (8, S9d.3b.1's
+    frustum of radii 6 and 1 across the cylinder, its wide end through
+    both caps), right since S9d.3b.1's survey but 23 to 34 seconds alone on
+    the debug worker at a load of 5 and up to 120 loaded, too near or past
+    the contract's 30, take 8.7 to 12.9 now (the
+    worker before the speed-up 18.9 against 8.9, side by side at a load of
+    1.7); their measures are `cones_boolean_reference.py`'s within 1.3e-15
+    relative (native DRAW's within 7.8e-6), and they are registered.
+    Rust evaluates 983, 983 registered (975), 596 refused, none failing
+    and none timing out (the other counts as before). The volume audit of
+    the 983 cases: native DRAW's values unchanged, Rust's bit for bit on
+    854 and within rounding on 129 (at most 2.2e-15 relative in volume,
+    7.2e-16 in area, 1.4e-15 in the centres): 118 by the speed-up's
+    binary64 series products (the worker built at its parent reproduces
+    the last audit bit for bit, at it these values) and 11 centres of
+    `ZI4` to `ZI7` (the section through a sphere's poles) by up to
+    2.6e-16 with S9d.4c's kernel (the worker at its predecessor gives the
+    last audit's); no bug. Against the closed forms and references the
+    turned spheres are within 1.4e-15 (7.8e-16 before), the crossed
+    cylinders' areas 1.0e-15 (6.7e-16), the crossing frusta 2.8e-15, the
+    torus and coaxial frusta 2.2e-15; Rust and native DRAW disagree on the
+    same 35 as before, native off in each. `bopfuse_simple/ZP6` stays a
+    torus tangent to the other input's surface; the `gdml_public` tori stay
+    refused by both hosts (Rust at `compound result`, then a `ptorus` on a
+    DRAW `plane`; native at `add` or `wire`). A full contract run holds
+    (the slowest Boolean case 9.4 seconds); the ledger does not change.
 
 ### Parallel tracks
 

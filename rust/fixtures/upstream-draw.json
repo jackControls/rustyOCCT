@@ -290,6 +290,8 @@
     "tests/boolean/bopcommon_simple/ZJ9": "2dea2d2b4580f769debd0d9a2a56978fd1ccec497d53e5491fb93f62f1f0d925",
     "tests/boolean/bopcommon_simple/ZK5": "b8d488669b29c742d09f10d811aed7079aff1d29941a7ce78d81b78dd733dac7",
     "tests/boolean/bopcommon_simple/ZK6": "d618103d91fc15bf9547489c6854057ce5fcb489982549e35e4448a19a785e65",
+    "tests/boolean/bopcommon_simple/ZK7": "2e75c8c47f5e7f1329b4e94d18d640c04756fa88addacb4292bcde4a3c667407",
+    "tests/boolean/bopcommon_simple/ZK8": "d0aa0f4fe64de3da51c67f726130654629e0783e79c794af90d277d1b39c9ec6",
     "tests/boolean/bopcommon_simple/ZK9": "3153499b627c43074845296c0f426acc1e25dee59ba820b6421484800a669b10",
     "tests/boolean/bopcommon_simple/ZL1": "37347cf86d14e44a06ceb56cf9a3ae0a75fd4cd5dd7f2fb5b4c092bac737ea36",
     "tests/boolean/bopcommon_simple/ZL2": "cccb472f0883e86eefd9ca816641a546c369f1c26b85c28c784e2d81006f9352",
@@ -537,6 +539,8 @@
     "tests/boolean/bopcut_simple/ZJ9": "cf7b0763c91686abd8ad1183dad380d811d13293b5b14d4ccacc3d2250a0e626",
     "tests/boolean/bopcut_simple/ZK5": "a0295db9e3d3f277ccefbf2bcd29ba59dbfacb90360d0f6e0c627f8c3eac6717",
     "tests/boolean/bopcut_simple/ZK6": "74c9e99a6cc05317faa65049fb330ad1eaa6ddb29cb531f04810285a7b2c0b6b",
+    "tests/boolean/bopcut_simple/ZK7": "6cd6ffb9fcfcab9068b6e5ead435adc5012cc3c34c3686b8ba521316e4fed1d1",
+    "tests/boolean/bopcut_simple/ZK8": "a02390f0f0caa06637a5a48a2bcc22d5b56d9bc17f80bfbbfa610071a4fb25b8",
     "tests/boolean/bopcut_simple/ZK9": "70d0188bdc06c3e786d58cb5ea2b38b80bb48e0cafe99ee0bb27e34178a868e4",
     "tests/boolean/bopcut_simple/ZL1": "1513762de3f2ef97e6d205cad7963c6f795a69088f84e8bbdc9059b551437e42",
     "tests/boolean/bopcut_simple/ZL2": "8eab6ab971b38014381d5f1a1b175cd25e9f69dc8d1c0ba46adc9a84b71fc2d5",
@@ -767,6 +771,8 @@
     "tests/boolean/bopfuse_simple/ZK1": "6a23d4ef63857eeaa5e1927275bb191f5af0c9e2d3319ef559c49c61f8b75951",
     "tests/boolean/bopfuse_simple/ZK5": "0ca1290f87bef2eb53f5ffc0ee8f55d75dfea25a600c0b46ecfede46aa3072fd",
     "tests/boolean/bopfuse_simple/ZK6": "f8dcaf0095f679ebf82ad32db5915ec5dcfa0a52228a9e4b300a216b9ac809dd",
+    "tests/boolean/bopfuse_simple/ZK7": "699b0f999dbad4a76c4767d0f40d65239fbbf560715840684ac29125ead3bbc0",
+    "tests/boolean/bopfuse_simple/ZK8": "d8b4649499ca5b60a5dd12e48c9213cac7a5963ba6e1f9de746eb034150876a0",
     "tests/boolean/bopfuse_simple/ZK9": "37caeaa1c02090aa7147ee4344e7c46233aabe45bec12108624f79c82274ea24",
     "tests/boolean/bopfuse_simple/ZL1": "68e17c2493dd424c0852a7e5da53b286baeda66d7d113006307b7ff01ee13268",
     "tests/boolean/bopfuse_simple/ZL2": "e30a6cd0cdea2804162b53fc3495fe5a2a2a61ac5910283666781d5e1cd8987d",
@@ -987,6 +993,8 @@
     "tests/boolean/boptuc_simple/ZJ9": "cafc1eeefdf25cfb839cd943478861e4b347ffe468e783d95f655f09bd5543a4",
     "tests/boolean/boptuc_simple/ZK5": "564405bf205800b45c7cdb87b0f5b0ed8e548e6a2b37c9b1114096376b3d2968",
     "tests/boolean/boptuc_simple/ZK6": "e997a4ab3978f973f88079b21296d0a5bd154bca16be432fd77bfe67046e5e68",
+    "tests/boolean/boptuc_simple/ZK7": "a5ee6d63e8b5cb3585e83be869623a49cd5b7247c217568b2883b258912fa7be",
+    "tests/boolean/boptuc_simple/ZK8": "9fc8a49d4cd8076e99d92adc7c1d45cb1bbc3557ae879eddc2e62baa1f88dc56",
     "tests/boolean/boptuc_simple/ZK9": "e6a48268d053e7a1d2bf62991ceeadafe3cef8cb4b3d6eefaf8573676ee3e042",
     "tests/boolean/boptuc_simple/ZL1": "b161c6afb4e65d3fbae5b1902287009033681569ff58890fbce67a85f20a67b1",
     "tests/boolean/boptuc_simple/ZL2": "b253cf2c69b27a471b2d4d7b1c0871a5b59696b984963641a73bbd5c46e91818",
@@ -7547,6 +7555,54 @@
       "expected_rust": "viewer_skipped",
       "expected_occt": "viewer_skipped",
       "purpose": "S9d.3b.1: bop and boptuc of a frustum of radii 8 and 4 and height 8 and a coaxial frustum of radii 2 and 1 of height 10 through both its discs: two pcones, which the adapter builds with ids of their own since S9d.4b's survey (S9d.3b.1's two cones, meeting in circles or on a disc); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZK7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopfuse of a pcylinder of radius 4 and height 8 and a frustum of radii 6 and 1 and height 10 whose axis crosses the cylinder's at right angles at half its height (turned a quarter turn about y), crossing the cylinder's wall and, near its wide end, both its caps (S9d.3b.1's cones against cylinders, within the contract's 30 seconds since the survey of S9d.2c, S9d.3c and S9d.4c); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZK8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopfuse of a pcylinder of radius 4 and height 8 and a frustum of radii 6 and 1 and height 10 whose axis crosses the cylinder's at right angles at half its height (turned a quarter turn about x), crossing the cylinder's wall and, near its wide end, both its caps (S9d.3b.1's cones against cylinders, within the contract's 30 seconds since the survey of S9d.2c, S9d.3c and S9d.4c); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZK7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopcut of a pcylinder of radius 4 and height 8 and a frustum of radii 6 and 1 and height 10 whose axis crosses the cylinder's at right angles at half its height (turned a quarter turn about y), crossing the cylinder's wall and, near its wide end, both its caps (S9d.3b.1's cones against cylinders, within the contract's 30 seconds since the survey of S9d.2c, S9d.3c and S9d.4c); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZK8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopcut of a pcylinder of radius 4 and height 8 and a frustum of radii 6 and 1 and height 10 whose axis crosses the cylinder's at right angles at half its height (turned a quarter turn about x), crossing the cylinder's wall and, near its wide end, both its caps (S9d.3b.1's cones against cylinders, within the contract's 30 seconds since the survey of S9d.2c, S9d.3c and S9d.4c); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZK7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopcommon of a pcylinder of radius 4 and height 8 and a frustum of radii 6 and 1 and height 10 whose axis crosses the cylinder's at right angles at half its height (turned a quarter turn about y), crossing the cylinder's wall and, near its wide end, both its caps (S9d.3b.1's cones against cylinders, within the contract's 30 seconds since the survey of S9d.2c, S9d.3c and S9d.4c); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZK8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopcommon of a pcylinder of radius 4 and height 8 and a frustum of radii 6 and 1 and height 10 whose axis crosses the cylinder's at right angles at half its height (turned a quarter turn about x), crossing the cylinder's wall and, near its wide end, both its caps (S9d.3b.1's cones against cylinders, within the contract's 30 seconds since the survey of S9d.2c, S9d.3c and S9d.4c); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZK7",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and boptuc of a pcylinder of radius 4 and height 8 and a frustum of radii 6 and 1 and height 10 whose axis crosses the cylinder's at right angles at half its height (turned a quarter turn about y), crossing the cylinder's wall and, near its wide end, both its caps (S9d.3b.1's cones against cylinders, within the contract's 30 seconds since the survey of S9d.2c, S9d.3c and S9d.4c); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZK8",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and boptuc of a pcylinder of radius 4 and height 8 and a frustum of radii 6 and 1 and height 10 whose axis crosses the cylinder's at right angles at half its height (turned a quarter turn about x), crossing the cylinder's wall and, near its wide end, both its caps (S9d.3b.1's cones against cylinders, within the contract's 30 seconds since the survey of S9d.2c, S9d.3c and S9d.4c); checkprops -s and checkshape; its checkview is recorded."
     }
   ],
   "derived_sources": {
