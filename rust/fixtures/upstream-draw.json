@@ -292,7 +292,16 @@
     "tests/boolean/bopcommon_simple/ZK6": "d618103d91fc15bf9547489c6854057ce5fcb489982549e35e4448a19a785e65",
     "tests/boolean/bopcommon_simple/ZK9": "3153499b627c43074845296c0f426acc1e25dee59ba820b6421484800a669b10",
     "tests/boolean/bopcommon_simple/ZL1": "37347cf86d14e44a06ceb56cf9a3ae0a75fd4cd5dd7f2fb5b4c092bac737ea36",
+    "tests/boolean/bopcommon_simple/ZL2": "cccb472f0883e86eefd9ca816641a546c369f1c26b85c28c784e2d81006f9352",
+    "tests/boolean/bopcommon_simple/ZL3": "b06b56d0ef2d3c6140fdf824d5f1460d2d50c63171a6f58eb2f34867a7c0db30",
+    "tests/boolean/bopcommon_simple/ZL4": "411a309ffe35899d0826e71e2d8ccbff56b6af6de2b3f8a38b6eb2147e563606",
+    "tests/boolean/bopcommon_simple/ZL5": "629c06c51f5603d463d27046aba3497404997be11675dd2fc568a5f960760477",
     "tests/boolean/bopcommon_simple/ZL6": "3d506ac5cc37c22022f6826f75f4b5158e273106455c438eb3cdbd3a91ac68ad",
+    "tests/boolean/bopcommon_simple/ZM1": "1eb72e95fb6f60a9d4c026ba75510fdff6a819bd5944729bccb1a8bbd3381fa3",
+    "tests/boolean/bopcommon_simple/ZM2": "318857d565bcab3fce07fde3b537a4edc4c731d88566648ed8bdf20051bc4524",
+    "tests/boolean/bopcommon_simple/ZM4": "0ad88530258677bccb8b31a0f9078b289a09af671b62402a9c2e9d0758678665",
+    "tests/boolean/bopcommon_simple/ZM5": "fb460cd9706a819abe646b29f983c9be9d54284fccce3c649afd2b5e9f994ee3",
+    "tests/boolean/bopcommon_simple/ZM6": "91288a05b54fc351bb4c3eb1032ec1921afc98e3bede5eee7c26abe37589696b",
     "tests/boolean/bopcommon_simple/ZN3": "453e172b346fa4039b99bef7d60398b07c1d40de5fc9a18b5c6aafed5acc99db",
     "tests/boolean/bopcommon_simple/ZN4": "29fa65292f9d0236c23d357f3f80fbde824d9a328c59c6149395191aef19dc26",
     "tests/boolean/bopcommon_simple/ZN5": "8edf1e438d2948598b4eff5ef4f1ba0f1d5f336093f37eb02023f4e414060bf9",
@@ -530,6 +539,15 @@
     "tests/boolean/bopcut_simple/ZK6": "74c9e99a6cc05317faa65049fb330ad1eaa6ddb29cb531f04810285a7b2c0b6b",
     "tests/boolean/bopcut_simple/ZK9": "70d0188bdc06c3e786d58cb5ea2b38b80bb48e0cafe99ee0bb27e34178a868e4",
     "tests/boolean/bopcut_simple/ZL1": "1513762de3f2ef97e6d205cad7963c6f795a69088f84e8bbdc9059b551437e42",
+    "tests/boolean/bopcut_simple/ZL2": "8eab6ab971b38014381d5f1a1b175cd25e9f69dc8d1c0ba46adc9a84b71fc2d5",
+    "tests/boolean/bopcut_simple/ZL3": "30fb6474c1321809e5f302466ca0b2c6724f00a768da7402b0751f6ed53cd377",
+    "tests/boolean/bopcut_simple/ZL4": "d5528da4421c54aece0ee87a3f419ddac948405f0fe3a2e4d9a99e93acab87bd",
+    "tests/boolean/bopcut_simple/ZL5": "b19682651eca3f8567dd5a43982c7377f83c49b53d2c9b9aad83b07683618b0e",
+    "tests/boolean/bopcut_simple/ZM1": "5008721f413b3f76f2d53824664361fecce622422ce8f503b79d2030cbe6e375",
+    "tests/boolean/bopcut_simple/ZM2": "49ff9748a1e417147d9527b4275e47913de5759ab3fd5fed7b69853782bfcfa3",
+    "tests/boolean/bopcut_simple/ZM4": "be11a1ba25adc67a2894ba6efb169ea0d0040049e53f62739ceda479093d26d5",
+    "tests/boolean/bopcut_simple/ZM5": "cdfa1d03075e53d3cb8d4ba8b993515b72c1463708225989c68e132218a512eb",
+    "tests/boolean/bopcut_simple/ZM6": "1a4c42b4d1588a391e0b905c95a6fea6cb5875c95fcd07f5d4572e585ab87e24",
     "tests/boolean/bopcut_simple/ZN3": "10bf2981a9aec383ae9820dd538c8c385e2a6d7c3ea3a6f4de719c900980c64c",
     "tests/boolean/bopcut_simple/ZN4": "24fcd5ad0f1a2435636bac933394cc2ddc00565893bd2c4845d826e926eedd42",
     "tests/boolean/bopcut_simple/ZN8": "8133911b8490f01480bbc3cbd9f82444ec9bb6b7ab36d16ab8d598b959daf569",
@@ -752,6 +770,14 @@
     "tests/boolean/bopfuse_simple/ZK9": "37caeaa1c02090aa7147ee4344e7c46233aabe45bec12108624f79c82274ea24",
     "tests/boolean/bopfuse_simple/ZL1": "68e17c2493dd424c0852a7e5da53b286baeda66d7d113006307b7ff01ee13268",
     "tests/boolean/bopfuse_simple/ZL2": "e30a6cd0cdea2804162b53fc3495fe5a2a2a61ac5910283666781d5e1cd8987d",
+    "tests/boolean/bopfuse_simple/ZL3": "aad05a09126c7391a0d432060e418ecae9cb03f05b0fd3b23f060deb663a074f",
+    "tests/boolean/bopfuse_simple/ZL4": "c33e6ca9510f52b4fd3223665ea609b90a16c82a09c1b882e52160538666d83e",
+    "tests/boolean/bopfuse_simple/ZL5": "26b134bfdd16cc20a9caf2fefdb10e8b8be5ab0ae4d0af538ad0cf2d71a96688",
+    "tests/boolean/bopfuse_simple/ZM1": "0dd9467029387cf8421652f524c80342c8d0ff0c07f20a8c5fc3fa94de2b114c",
+    "tests/boolean/bopfuse_simple/ZM2": "521f41c448f5aa1ba88c57cca7458378972a108aaf2529d9e2cd57c31c057cc8",
+    "tests/boolean/bopfuse_simple/ZM4": "7d02871b3235da861ee42ed420f3e4839bba89e8e46dc17be9229e74c7999fea",
+    "tests/boolean/bopfuse_simple/ZM5": "883939704423fd3cb2f969a9296804d1c4023c15cfd4a1e12ebc1d5aa464bc28",
+    "tests/boolean/bopfuse_simple/ZM6": "8cc75f5ab6716de129c8729f36af32ce74f95b5edc22a23bb31a82a4349d3929",
     "tests/boolean/bopfuse_simple/ZN3": "18e989bcd62509a71b0fc868c5a02e1379c15f160a400cd7170c4135a05f1237",
     "tests/boolean/bopfuse_simple/ZN4": "7b35d664b74c1e74564eaad69414842c673f89ecf9973e372844ee829a8e070f",
     "tests/boolean/bopfuse_simple/ZN5": "7ccb3fabeb4c2518fa5969e27d3ff7479472d99a4c578df45e0bb1a480832091",
@@ -963,6 +989,15 @@
     "tests/boolean/boptuc_simple/ZK6": "e997a4ab3978f973f88079b21296d0a5bd154bca16be432fd77bfe67046e5e68",
     "tests/boolean/boptuc_simple/ZK9": "e6a48268d053e7a1d2bf62991ceeadafe3cef8cb4b3d6eefaf8573676ee3e042",
     "tests/boolean/boptuc_simple/ZL1": "b161c6afb4e65d3fbae5b1902287009033681569ff58890fbce67a85f20a67b1",
+    "tests/boolean/boptuc_simple/ZL2": "b253cf2c69b27a471b2d4d7b1c0871a5b59696b984963641a73bbd5c46e91818",
+    "tests/boolean/boptuc_simple/ZL3": "be8182d02a5f1e43fe856e0d2d07a56dcc45fac0645e5dc481b982ed22bf21d4",
+    "tests/boolean/boptuc_simple/ZL4": "0cd3bec4716e37c50c5ec72f878eedc163980f7bab62893231a8416d29859f07",
+    "tests/boolean/boptuc_simple/ZL5": "f9776b69e8a8909abc464952b7d4457f64f2aba2ee299a9a61688e8a797ca951",
+    "tests/boolean/boptuc_simple/ZM1": "ea660643092648cd590045d23da45c3f129ba4582afe2271578744d3168df5c1",
+    "tests/boolean/boptuc_simple/ZM2": "0eb948060f22a5f35631c00bb849c41488d0906929c92e87d73e0c9eb3519fa8",
+    "tests/boolean/boptuc_simple/ZM4": "0b291a20918913be6357968bd193db2fdd65dae50f0e5bd07c4f644c275733dd",
+    "tests/boolean/boptuc_simple/ZM5": "4043cde170b33d7f5cf92929003e6efd742b42798bebccc7b422c51bc0d04295",
+    "tests/boolean/boptuc_simple/ZM6": "519da288496eb5cb9d208cd2b831df819ef06936b61452e729b3088d068037c9",
     "tests/boolean/boptuc_simple/ZN3": "ca29039daf7a23240c4ee54078a32265a84c73031993af5c474624e78c1e6082",
     "tests/boolean/boptuc_simple/ZN4": "22187faa639e26763f6fcfa6470960757e86f59ace4e31292969a3d854dad962",
     "tests/boolean/boptuc_simple/ZN5": "0bd8fb5fafa714ef2daa8d9b0ea0ef058c4e3eeca561955b47885fdbdb094958",
@@ -3875,7 +3910,7 @@
       "path": "tests/boolean/bopcommon_simple/ZL6",
       "expected_rust": "unsupported",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9a's Boolean group, a capability sentinel: two cones: solids other than prisms (S9d)."
+      "purpose": "S9a's Boolean group, a capability sentinel: a frustum of radii 8 and 4 and height 8 and one of radii 4 and 2 and height 4 standing on its top disc, the second on the first's cone, their virtual apexes one point: a cone's apex on the other input's surface (Degenerate, since the adapter builds two pcones with ids of their own in S9d.4b's survey; solids other than prisms sharing ids before)."
     },
     {
       "path": "tests/boolean/bopcommon_simple/C3",
@@ -6995,7 +7030,7 @@
       "path": "tests/boolean/bopfuse_simple/ZL2",
       "expected_rust": "viewer_skipped",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9d.3a's Boolean group, a capability sentinel: a pcylinder of radius 4 and height 8 and a coaxial torus of radii 4 and 1 centred at half its height: a torus against a curved face, evaluated since S9d.4b.2a (the pipe cuts the tube in two circles; S9d.4b's OutOfDomain from S9d.4a, S9c's before)."
+      "purpose": "S9d.4b.2a: bop and bopfuse of a pcylinder of radius 4 and height 8 and a coaxial torus of radii 4 and 1 centred at half its height: the wall through the tube's centre circle, meeting the tube in two circles (S9d.4b.2a's whole torus against curved faces; bopfuse_simple/ZL2 was the sentinel for S9d.4b's OutOfDomain); checkprops -s and checkshape; its checkview is recorded."
     },
     {
       "path": "tests/boolean/bopfuse_simple/ZI6",
@@ -7302,6 +7337,216 @@
       "expected_rust": "unsupported",
       "expected_occt": "viewer_skipped",
       "purpose": "S9d.3b.1's Boolean group, a capability sentinel: a pcylinder of radius 4 and height 8 and a frustum of radii 4 and 2 standing on its top cap, the frustum's base rim the cap's rim and its base disc the cap: a tangency between the inputs (Degenerate; ZK2 to ZK4, the same turned about its axis, alike since the adapter turns a cone exactly)."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZL3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.4b.2a: bop and bopfuse of a pcylinder of radius 4 and height 8 and a coaxial torus of radii 4 and 1 centred at half its height, turned a quarter turn about the axis: the wall through the tube's centre circle, meeting the tube in two circles (S9d.4b.2a's whole torus against curved faces; bopfuse_simple/ZL2 was the sentinel for S9d.4b's OutOfDomain); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZL4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.4b.2a: bop and bopfuse of a pcylinder of radius 4 and height 8 and a coaxial torus of radii 4 and 1 centred at half its height, turned a half turn about the axis: the wall through the tube's centre circle, meeting the tube in two circles (S9d.4b.2a's whole torus against curved faces; bopfuse_simple/ZL2 was the sentinel for S9d.4b's OutOfDomain); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZL5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.4b.2a: bop and bopfuse of a pcylinder of radius 4 and height 8 and a coaxial torus of radii 4 and 1 centred at half its height, turned three quarter turns about the axis: the wall through the tube's centre circle, meeting the tube in two circles (S9d.4b.2a's whole torus against curved faces; bopfuse_simple/ZL2 was the sentinel for S9d.4b's OutOfDomain); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZM1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopfuse of a frustum of radii 8 and 4 and height 8 and a coaxial frustum of radii 2 and 1 of height 2 standing on its top disc: two pcones, which the adapter builds with ids of their own since S9d.4b's survey (S9d.3b.1's two cones, meeting in circles or on a disc); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZM2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopfuse of a frustum of radii 8 and 4 and height 8 and a coaxial frustum of radii 2 and 1 of height 2 inside it, its top disc on the top disc: two pcones, which the adapter builds with ids of their own since S9d.4b's survey (S9d.3b.1's two cones, meeting in circles or on a disc); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZM4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopfuse of a frustum of radii 8 and 4 and height 8 and a coaxial frustum of radii 2 and 1 of height 9 from 1 below its bottom disc to its top disc: two pcones, which the adapter builds with ids of their own since S9d.4b's survey (S9d.3b.1's two cones, meeting in circles or on a disc); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZM5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopfuse of a frustum of radii 8 and 4 and height 8 and a coaxial frustum of radii 2 and 1 of height 4 inside it, clear of its discs: two pcones, which the adapter builds with ids of their own since S9d.4b's survey (S9d.3b.1's two cones, meeting in circles or on a disc); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_simple/ZM6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopfuse of a frustum of radii 8 and 4 and height 8 and a coaxial frustum of radii 2 and 1 of height 10 through both its discs: two pcones, which the adapter builds with ids of their own since S9d.4b's survey (S9d.3b.1's two cones, meeting in circles or on a disc); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZL2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.4b.2a: bop and bopcut of a pcylinder of radius 4 and height 8 and a coaxial torus of radii 4 and 1 centred at half its height: the wall through the tube's centre circle, meeting the tube in two circles (S9d.4b.2a's whole torus against curved faces; bopfuse_simple/ZL2 was the sentinel for S9d.4b's OutOfDomain); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZL3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.4b.2a: bop and bopcut of a pcylinder of radius 4 and height 8 and a coaxial torus of radii 4 and 1 centred at half its height, turned a quarter turn about the axis: the wall through the tube's centre circle, meeting the tube in two circles (S9d.4b.2a's whole torus against curved faces; bopfuse_simple/ZL2 was the sentinel for S9d.4b's OutOfDomain); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZL4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.4b.2a: bop and bopcut of a pcylinder of radius 4 and height 8 and a coaxial torus of radii 4 and 1 centred at half its height, turned a half turn about the axis: the wall through the tube's centre circle, meeting the tube in two circles (S9d.4b.2a's whole torus against curved faces; bopfuse_simple/ZL2 was the sentinel for S9d.4b's OutOfDomain); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZL5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.4b.2a: bop and bopcut of a pcylinder of radius 4 and height 8 and a coaxial torus of radii 4 and 1 centred at half its height, turned three quarter turns about the axis: the wall through the tube's centre circle, meeting the tube in two circles (S9d.4b.2a's whole torus against curved faces; bopfuse_simple/ZL2 was the sentinel for S9d.4b's OutOfDomain); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZM1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopcut of a frustum of radii 8 and 4 and height 8 and a coaxial frustum of radii 2 and 1 of height 2 standing on its top disc: two pcones, which the adapter builds with ids of their own since S9d.4b's survey (S9d.3b.1's two cones, meeting in circles or on a disc); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZM2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopcut of a frustum of radii 8 and 4 and height 8 and a coaxial frustum of radii 2 and 1 of height 2 inside it, its top disc on the top disc: two pcones, which the adapter builds with ids of their own since S9d.4b's survey (S9d.3b.1's two cones, meeting in circles or on a disc); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZM4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopcut of a frustum of radii 8 and 4 and height 8 and a coaxial frustum of radii 2 and 1 of height 9 from 1 below its bottom disc to its top disc: two pcones, which the adapter builds with ids of their own since S9d.4b's survey (S9d.3b.1's two cones, meeting in circles or on a disc); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZM5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopcut of a frustum of radii 8 and 4 and height 8 and a coaxial frustum of radii 2 and 1 of height 4 inside it, clear of its discs: two pcones, which the adapter builds with ids of their own since S9d.4b's survey (S9d.3b.1's two cones, meeting in circles or on a disc); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcut_simple/ZM6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopcut of a frustum of radii 8 and 4 and height 8 and a coaxial frustum of radii 2 and 1 of height 10 through both its discs: two pcones, which the adapter builds with ids of their own since S9d.4b's survey (S9d.3b.1's two cones, meeting in circles or on a disc); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZL2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.4b.2a: bop and bopcommon of a pcylinder of radius 4 and height 8 and a coaxial torus of radii 4 and 1 centred at half its height: the wall through the tube's centre circle, meeting the tube in two circles (S9d.4b.2a's whole torus against curved faces; bopfuse_simple/ZL2 was the sentinel for S9d.4b's OutOfDomain); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZL3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.4b.2a: bop and bopcommon of a pcylinder of radius 4 and height 8 and a coaxial torus of radii 4 and 1 centred at half its height, turned a quarter turn about the axis: the wall through the tube's centre circle, meeting the tube in two circles (S9d.4b.2a's whole torus against curved faces; bopfuse_simple/ZL2 was the sentinel for S9d.4b's OutOfDomain); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZL4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.4b.2a: bop and bopcommon of a pcylinder of radius 4 and height 8 and a coaxial torus of radii 4 and 1 centred at half its height, turned a half turn about the axis: the wall through the tube's centre circle, meeting the tube in two circles (S9d.4b.2a's whole torus against curved faces; bopfuse_simple/ZL2 was the sentinel for S9d.4b's OutOfDomain); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZL5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.4b.2a: bop and bopcommon of a pcylinder of radius 4 and height 8 and a coaxial torus of radii 4 and 1 centred at half its height, turned three quarter turns about the axis: the wall through the tube's centre circle, meeting the tube in two circles (S9d.4b.2a's whole torus against curved faces; bopfuse_simple/ZL2 was the sentinel for S9d.4b's OutOfDomain); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZM1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopcommon of a frustum of radii 8 and 4 and height 8 and a coaxial frustum of radii 2 and 1 of height 2 standing on its top disc: two pcones, which the adapter builds with ids of their own since S9d.4b's survey (S9d.3b.1's two cones, meeting in circles or on a disc); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZM2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopcommon of a frustum of radii 8 and 4 and height 8 and a coaxial frustum of radii 2 and 1 of height 2 inside it, its top disc on the top disc: two pcones, which the adapter builds with ids of their own since S9d.4b's survey (S9d.3b.1's two cones, meeting in circles or on a disc); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZM4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopcommon of a frustum of radii 8 and 4 and height 8 and a coaxial frustum of radii 2 and 1 of height 9 from 1 below its bottom disc to its top disc: two pcones, which the adapter builds with ids of their own since S9d.4b's survey (S9d.3b.1's two cones, meeting in circles or on a disc); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZM5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopcommon of a frustum of radii 8 and 4 and height 8 and a coaxial frustum of radii 2 and 1 of height 4 inside it, clear of its discs: two pcones, which the adapter builds with ids of their own since S9d.4b's survey (S9d.3b.1's two cones, meeting in circles or on a disc); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_simple/ZM6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and bopcommon of a frustum of radii 8 and 4 and height 8 and a coaxial frustum of radii 2 and 1 of height 10 through both its discs: two pcones, which the adapter builds with ids of their own since S9d.4b's survey (S9d.3b.1's two cones, meeting in circles or on a disc); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZL2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.4b.2a: bop and boptuc of a pcylinder of radius 4 and height 8 and a coaxial torus of radii 4 and 1 centred at half its height: the wall through the tube's centre circle, meeting the tube in two circles (S9d.4b.2a's whole torus against curved faces; bopfuse_simple/ZL2 was the sentinel for S9d.4b's OutOfDomain); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZL3",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.4b.2a: bop and boptuc of a pcylinder of radius 4 and height 8 and a coaxial torus of radii 4 and 1 centred at half its height, turned a quarter turn about the axis: the wall through the tube's centre circle, meeting the tube in two circles (S9d.4b.2a's whole torus against curved faces; bopfuse_simple/ZL2 was the sentinel for S9d.4b's OutOfDomain); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZL4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.4b.2a: bop and boptuc of a pcylinder of radius 4 and height 8 and a coaxial torus of radii 4 and 1 centred at half its height, turned a half turn about the axis: the wall through the tube's centre circle, meeting the tube in two circles (S9d.4b.2a's whole torus against curved faces; bopfuse_simple/ZL2 was the sentinel for S9d.4b's OutOfDomain); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZL5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.4b.2a: bop and boptuc of a pcylinder of radius 4 and height 8 and a coaxial torus of radii 4 and 1 centred at half its height, turned three quarter turns about the axis: the wall through the tube's centre circle, meeting the tube in two circles (S9d.4b.2a's whole torus against curved faces; bopfuse_simple/ZL2 was the sentinel for S9d.4b's OutOfDomain); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZM1",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and boptuc of a frustum of radii 8 and 4 and height 8 and a coaxial frustum of radii 2 and 1 of height 2 standing on its top disc: two pcones, which the adapter builds with ids of their own since S9d.4b's survey (S9d.3b.1's two cones, meeting in circles or on a disc); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZM2",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and boptuc of a frustum of radii 8 and 4 and height 8 and a coaxial frustum of radii 2 and 1 of height 2 inside it, its top disc on the top disc: two pcones, which the adapter builds with ids of their own since S9d.4b's survey (S9d.3b.1's two cones, meeting in circles or on a disc); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZM4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and boptuc of a frustum of radii 8 and 4 and height 8 and a coaxial frustum of radii 2 and 1 of height 9 from 1 below its bottom disc to its top disc: two pcones, which the adapter builds with ids of their own since S9d.4b's survey (S9d.3b.1's two cones, meeting in circles or on a disc); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZM5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and boptuc of a frustum of radii 8 and 4 and height 8 and a coaxial frustum of radii 2 and 1 of height 4 inside it, clear of its discs: two pcones, which the adapter builds with ids of their own since S9d.4b's survey (S9d.3b.1's two cones, meeting in circles or on a disc); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/boptuc_simple/ZM6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9d.3b.1: bop and boptuc of a frustum of radii 8 and 4 and height 8 and a coaxial frustum of radii 2 and 1 of height 10 through both its discs: two pcones, which the adapter builds with ids of their own since S9d.4b's survey (S9d.3b.1's two cones, meeting in circles or on a disc); checkprops -s and checkshape; its checkview is recorded."
     }
   ],
   "derived_sources": {

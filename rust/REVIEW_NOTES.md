@@ -2756,8 +2756,7 @@ Decisions for S9, recorded before its code (2026-09-28):
     (f) and (g) (two kept as regressions, `fuzz/regressions/README.md`).
     Campaign: the boolean campaign at `85104dc3` (600 s, a sampled replay)
     clean, 1,040 runs, the slowest input 17 s under AddressSanitizer.
-    Pending: the DRAW survey (with S9d.4b.2's: S9d.4a's found no segment
-    or wedge in the Boolean group).
+    DRAW survey: S9d.4b's, below (no case reaches a segment or a wedge).
   * **S9d.4b.2 evidence (2026-09-29).** Corrections to the decisions first:
     (a) their degree four holds for a quadric and for a torus about a
     parallel axis (its function along a tube's circle is of degree two in
@@ -2918,7 +2917,7 @@ Decisions for S9, recorded before its code (2026-09-28):
     a sampled replay) clean, 787 runs; its slowest input 41 s of the 60
     under AddressSanitizer (a frustum against a tilted prism, 3.2 s
     without: the exact arithmetic's allocations cost about twelvefold
-    there). Pending: the DRAW survey.
+    there). DRAW survey: S9d.4b's, below.
   * **S9d.4b.2b implemented** (`solid/boolean/curved/torus_curved.rs`): two
     whole tori, all 12 `tori_*` fixtures as the reference (10 solid within
     the kernel's enclosures, `tori_link_common` empty, `tori_kiss` refused),
@@ -2981,8 +2980,39 @@ Decisions for S9, recorded before its code (2026-09-28):
     and 111 s at the ninth decile of intersecting variants, over the
     target's 60, all in the validator's and mass's certified integrals
     along the meetings (a parallel track below); the kernel's tests and
-    the 2,950 replayed variants cover them meanwhile. Pending:
-    the DRAW survey, the campaign.
+    the 2,950 replayed variants cover them meanwhile. DRAW survey:
+    S9d.4b's, below. Pending: the campaign.
+  * **DRAW survey of S9d.4b (2026-09-30, `UPSTREAM_TESTS.md`).** With
+    S9d.4b.1, S9d.4b.2a and S9d.4b.2b, and the adapter's curved primitives
+    fixed first (the parallel track below): each `pcone`, `psphere` and
+    `ptorus` is built under an operation of its own, and a copy of one
+    sharing ids with the other argument is built again from its
+    constructor's numbers in its frame, as a prism is extruded again. 36
+    cases evaluate newly, none wrong: `ZL2` to `ZL5` of the four
+    `bop*_simple` grids (16, S9d.4b.2a's: a `pcylinder` of radius 4 and a
+    coaxial torus of radii 4 and 1, the wall cutting the tube in two
+    circles) and `ZM1`, `ZM2`, `ZM4` to `ZM6` (20, the adapter's: two
+    coaxial `pcone`s, the narrow one on, inside or through the wide one);
+    volumes, areas and centres of gravity closed forms' within 2.6e-15
+    relative, native DRAW's to its printed digits; the 35 not yet in the
+    manifest registered, `bopfuse_simple/ZL2` among them (the tori 8.9 s
+    at most on the debug worker, the frusta 0.3). The other 41
+    refused for shared ids reach the kernel and are `Degenerate`: a cone's
+    apex on the other input's surface 21 (frusta on one cone or of one
+    virtual apex, `ZL6` to `ZL9`, `ZM3`, `boptuc_simple/ZN2`), a tangency
+    between the inputs 19 (coincident rims, `ZM7` to `ZN1`; bases on one
+    plane, `ZN2`), a torus tangent to the other input's surface 1
+    (`bopfuse_simple/ZP6`'s three copies of a torus about perpendicular
+    axes, their tubes touching). No case reaches S9d.4b.1's segments and
+    wedges; none fails or times out. Rust evaluates 983 (947), 975
+    registered (940); 596 refused (632). The sentinel
+    `bopcommon_simple/ZL6` (two cones sharing ids) is re-purposed as the
+    frusta's common apex; no sentinel is added (`ZP6`'s native area is a
+    known failure on Linux). The volume audit of the last survey's 947
+    cases is unchanged bit for bit. The `gdml_public` tori stay refused by
+    both hosts (Rust's first refusal `compound result`, then a `ptorus` on
+    a DRAW `plane`). A full contract run holds; the ledger does not
+    change.
 
 ### Parallel tracks
 
@@ -2992,10 +3022,14 @@ Decisions for S9, recorded before its code (2026-09-28):
   enclosures there (fewer jet evaluations, shared lifts) would let the fuzz
   target decode torus pairs again (`TORUS_PAIRS`). Their enclosures may
   change, so S9d.4b.2a's fixture widths must be re-checked.
-* **The DRAW adapter's curved primitives (S9d.4b.2b).** It builds every
-  `ptorus`, `psphere` and `pcone` with the same ids, so two tori (and two
-  spheres or cones) are refused as solids sharing ids: the upstream cases
-  with two of them do not evaluate until it rebuilds them with fresh ids.
+* **The DRAW adapter's curved primitives (S9d.4b.2b), done in S9d.4b's
+  survey.** It built every `ptorus`, `psphere` and `pcone` with the same
+  ids, so two tori (and two spheres or cones) were refused as solids
+  sharing ids. Each is built under an operation of its own now, and a copy
+  of one sharing ids with the other argument is built again from its
+  constructor's numbers in its frame: 20 upstream cases of two cones
+  evaluate, the other 41 are the kernel's `Degenerate`, and the bridge
+  tests two spheres and a torus with its moved copy.
 
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy

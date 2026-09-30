@@ -1699,7 +1699,12 @@ polyhedron given to another Boolean is taken as it is (S9b.2, on its
 stored geometry; the prism argument built again when they share ids).
 `ttranslate` and `trotate` move a prism by
 the kernel's rigid motion, a prism in the moved frame; `tcopy`, like
-`copy`, gives the same shape. A `trotate` by whole quarter turns about a
+`copy`, gives the same shape. Since S9d.4b's survey each `pcone`,
+`psphere` and `ptorus` is built under an operation of its own, so two of
+them share no ids, and a copy of one sharing ids with the other argument
+is built again from its constructor's numbers in its own frame (before,
+every one was built under the unspecified operation, and two in one
+Boolean were refused as solids other than prisms sharing ids). A `trotate` by whole quarter turns about a
 coordinate axis turns a prism's frame exactly (a signed permutation of
 coordinates, the origin by DRAW's location arithmetic): the kernel's
 rotation rounds the cosine of a quarter turn to 6.1e-17, as OCCT's
@@ -1713,7 +1718,7 @@ within rounding of parallel. The derived cases `boolean_prisms`,
 `boolean_stacks` (a step, a pocket, a box cut in two by a slab, a closed
 cavity, a tool through a round wall) and `boolean_polyhedra` (quarter
 turns, a bar turned 45 degrees through a box, a tilted bar cutting a box
-in two, a turned box inside another) and 939 cases of upstream's
+in two, a turned box inside another) and 975 cases of upstream's
 `boolean` group (86 of them stacks, 300 polyhedra of two boxes, one
 turned, 35 pockets cut one after another, a stack or a polyhedron given
 to the next `bcut`, 65 of S9c.1's prisms with arcs in any position: a
@@ -1735,20 +1740,24 @@ its poles, and 36 of S9d.3b.1's: the cylinder and a coaxial frustum on
 its cap, inside it or through its caps, meeting it in circles, or a
 frustum across it, its axis crossing the cylinder's at right angles,
 meeting the wall in quartics, its wide end through the caps in `ZK9`
-and `ZL1`) evaluate on both backends, and
+and `ZL1`, and 20 more of S9d.3b.1's, two `pcone`s: a frustum and a
+narrower coaxial one on its top disc, inside it or through its discs, and 16 of
+S9d.4b.2a's: the cylinder and a coaxial torus whose tube its wall cuts in
+two circles) evaluate on both backends, and
 S9c.2b.1 adds none. One of that
 sphere's turns, `ZI5`, was wrong until a sphere face's closing chord at
 a pole was enclosed narrowly (its volumes off by `32 pi / 9`, its `btuc`
 refused by the kernel's validation), and is registered since. A volume
 audit of the registered cases found Rust's volumes and centres of
 gravity native DRAW's to its printed digits, or where they differ (eight
-cases) nearer the closed forms. Eight more of S9d.3b.1's, a wider
+cases) nearer the closed forms; run again in S9d.4b's survey, Rust's
+values were unchanged bit for bit, the new cases' the closed forms'
+within 2.6e-15 relative. Eight more of S9d.3b.1's, a wider
 frustum across the cylinder, evaluate right but take 23 to 120 seconds
 on the debug worker, past the contract's 30, and are not registered. Of
 the upstream cases in frames with different axes the rest are refused:
-tori against a cylinder (S9d.4b's `OutOfDomain` since S9d.4a; the group
-holds no torus against a box), two cones or tori sharing ids, S9b.1's, S9c.1's, S9c.2a's, S9c.2b.1's,
-S9d.1's, S9d.2a's, S9d.3a's and S9d.3b.1's `Degenerate` (a turned box's corner on
+S9b.1's, S9c.1's, S9c.2a's, S9c.2b.1's,
+S9d.1's, S9d.2a's, S9d.3a's, S9d.3b.1's and S9d.4b.2's `Degenerate` (a turned box's corner on
 another's wall, edge or corner, or on a cylinder, within rounding; a wall
 tangent to a cylinder; two cylinders touching at a point; equal cylinders
 in a turned frame whose axes meet, their section within the resolution
@@ -1759,6 +1768,9 @@ along it, its discriminant vanishing identically, a tangency since
 S9d.2's survey; a box's wall through a frustum's axis, its corners on the
 rim, and a frustum's base circle tangent to a face's edges; a cylinder's
 cap through a frustum's virtual apex, a frustum's base rim on a
-cylinder's rim, turned about the axis or not), and an arc ending off its circle; of the stacks
+cylinder's rim, turned about the axis or not; two frusta on one cone or
+with one virtual apex, coincident rims or bases on one plane; three
+copies of a torus about perpendicular axes, their tubes touching), and an
+arc ending off its circle; of the stacks
 given to another Boolean, those with cylindrical or conical walls (S9c;
 `UPSTREAM_TESTS.md`).
