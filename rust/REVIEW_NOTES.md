@@ -3423,8 +3423,10 @@ Decisions for S9, recorded before its code (2026-09-28):
     position, S9c; two parallel faces within the resolution of one plane, a
     plane through a cone's apex, tangencies, thin pieces, a cone's apex on
     the other's surface, a ruling within rounding of the other's direction,
-    a near node), none as S9d.3b.2's or S9d.3c's `OutOfDomain`. Pending: the
-    DRAW survey, the campaign.
+    a near node), none as S9d.3b.2's or S9d.3c's `OutOfDomain`. Campaign: the
+    boolean campaign at `428349e8` (600 s, a sampled replay) clean, 928
+    runs, the slowest input 17 s under AddressSanitizer (cone pairs off,
+    `CONE_PAIRS`). Pending: the DRAW survey.
 
 ### Parallel tracks
 
