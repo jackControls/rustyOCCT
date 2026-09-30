@@ -4326,6 +4326,21 @@ Decisions for S9, recorded before its code (2026-09-28):
       fixtures serve as closed forms (half-space boxes) rather than as
       Boolean fixtures. S9f.1's kernel next.
 
+  * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
+    (every sub-step with its DRAW survey and a clean campaign), S9e.1
+    (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions
+    and S9f.1's evidence (38 cases captured before its kernel code). Open,
+    in order: S9e.2's campaign and the DRAW survey of S9e.1 and S9e.2;
+    S9e.3 (results with spheres, cones or tori, procedural edges, deeper
+    chains, `G9` and `H3`): its evidence first, a local WIP branch
+    `s9e3-wip` began kernel code before any evidence and is to be restarted
+    evidence first; S9f.1's kernel (spline walls in the curved engine and
+    the R4 lifting fix found by its evidence: a C1 knot of multiplicity
+    `p` in a turned frame fails at the extrusion, `edge_not_c1`), a local
+    WIP branch `s9f1-kernel` unfinished and unverified; then S9e.4, S9f.2a,
+    S9f.2b, S9f.3; then S9's acceptance (U6: CI green at the revision, the
+    schedule run's sharded full replays, a clean campaign).
+
 ### Parallel tracks
 
 * **The boolean target's full replay under AddressSanitizer (S9
