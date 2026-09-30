@@ -3695,7 +3695,10 @@ Decisions for S9, recorded before its code (2026-09-28):
     as regressions, `fuzz/regressions/README.md`). No DRAW upstream case's
     status changes before the survey (none reaches a part or a cap against
     a torus). DRAW survey: that of S9d.2c, S9d.3c and S9d.4c, below (no
-    upstream case's status changes). Pending: the campaign.
+    upstream case's status changes). Campaign: the boolean
+    campaign at `07ea3b3e` (600 s, a sampled replay) clean, 975 runs, the
+    slowest input 23 s under AddressSanitizer (turned parts off,
+    `TURNED_PARTS`).
   * **DRAW survey of S9d.2c, S9d.3c and S9d.4c (2026-09-30,
     `UPSTREAM_TESTS.md`).** The 1,802 cases of the Boolean group run again
     on both backends after S9d.2c, S9d.3c, S9d.4c and the certified
