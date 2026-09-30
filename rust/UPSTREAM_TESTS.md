@@ -161,18 +161,18 @@ group, and stale success records are removed before each run.
 | `boolean/bopcommon_simple/C3`, `bopcut_simple/F6`, `G8`, `bopfuse_simple/N6` | Unsupported | Viewer skipped | A box turned by 45, 30 or 115 degrees with a corner on the other box's corner, wall or edge within rounding: a face thinner than the resolution, a face using an edge both ways, a face touching itself at a vertex, two solids touching at a point (S9b.1's `Degenerate`) |
 | `boolean/bcut_simple/H4` to `L2` (35 cases) | Viewer skipped | Viewer skipped | Pockets cut from a prism one after another by prisms of profiles in planes facing z or -z (`J3`'s last tool moved by `ttranslate`): the first cut is a stack (S9a.2; in `J4` and `J7` a polyhedron, S9b.1), which the next `bcut` takes as its object, on its stored geometry (S9b.2; in `J2` to `J7` and `K7` a third `bcut` takes the second's result): `checkprops -s` and the group's `checkshape`; each records a `checkview` |
 | `boolean/bopfuse_simple/H3`, `H4` | Viewer skipped | Viewer skipped | A box turned 45 degrees with its corner on the other's wall within rounding (`H3`'s inside it exactly): refused as a direction of zero length until S9b.2's face frames took each face's whole vector area |
-| `boolean/bcut_simple/L3` | Unsupported | Viewer skipped | A pocket and then a hole cut from a disc prism: the first cut is a stack with cylindrical walls, which the next `bcut` takes as its object; S9b.2 takes stored geometry of planar faces and straight edges only (a curved input is S9c's) |
+| `boolean/bcut_simple/L3` to `L6` | Viewer skipped | Viewer skipped | DRAW's rollex: a pocket and then a hole cut from a disc prism; the first cut is a stack with cylindrical walls, which the next `bcut` takes as its object with a cylinder standing on the pocket's floor (on a plane facing down in `L3` and `L4`): `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9e.2's stack given to another Boolean on its construction's curved arrangement; `L3` was the sentinel for its `OutOfDomain` since S9b.2, `L4` to `L6` registered in S9e.2's survey) |
 | `boolean/bfuse_simple/E1` | Unsupported | Viewer skipped | Prisms with arcs sized by `SCALE`: the tool's profile does not translate exactly into the object's frame, so the kernel decides them on exact models, where an arc must end on its circle exactly; the `profile`'s half circles end off theirs by rounding (S9c) |
 | `boolean/bopcommon_simple/C8` | Unsupported | Viewer skipped | An angle `atan2(1,2)*180/pi` in `dset`, which the adapter does not evaluate |
 | `boolean/bopcommon_simple/S5`, `bopcut_simple/ZC7`, `S4`, `bopfuse_simple/U7`, `B3`, `boptuc_simple/R1` | Unsupported | Viewer skipped | Box corners on or tangent to a cylinder, boxes touching along an edge: pieces thinner than the resolution, results touching themselves (at a point or along an edge) or each other, a hole touching its boundary (the kernel's `Degenerate`) |
 | `boolean/bcut_simple/G8` | Unsupported | Viewer skipped | A semi-infinite prism of an exploded face (`explode`, `SemiInf`) |
 
-There are **five original geometry tests passing on both backends** and 987
+There are **five original geometry tests passing on both backends** and 991
 more evaluated on both with their image commands recorded (`buc60769`,
 S7's `lowalgos/intss` cases `bug23177_1`, `bug23177_2` and `bug24648`, and
-983 Boolean cases of S9a, S9a.2, S9b.1, S9b.2, S9c.1, S9c.2a, S9c.2b.2,
-S9d.1, S9d.2, S9d.3a, S9d.1's pole follow-up, S9d.3b.1 and S9d.4b.2a;
-S9c.2b.1 adds none).
+987 Boolean cases of S9a, S9a.2, S9b.1, S9b.2, S9c.1, S9c.2a, S9c.2b.2,
+S9d.1, S9d.2, S9d.3a, S9d.1's pole follow-up, S9d.3b.1, S9d.4b.2a and
+S9e.2; S9c.2b.1 adds none).
 S8e registers the upstream `bsplit` group as capability sentinels: `boolean/splitter/A5`
 and `B5` and the 22 `bugs` cases that call `bsplit` (with `bug29333_1` and
 `bug29333_2`, registered before). They need S9's general builder: tools that
@@ -1221,6 +1221,36 @@ manifest (both backends, 30 seconds a case) holds for every case, the
 slowest Boolean case 9.4 seconds (`boptuc_simple/ZK8`; the tori `ZL2` to
 `ZL5` 2.4 to 2.5, 8.7 to 8.9 before the speed-up). The ledger does not
 change.
+
+**S9e.2's given results in the Boolean group.** The boolean group's 25
+cases in which a Boolean's result is an argument of another Boolean
+command and which were not registered as evaluating (the scan of S9e.1's
+survey: `L3` the sentinel among them) were run on both backends after S9e.2
+(2026-09-30, `survey_upstream_tests.py --case`, the public dataset read
+through `--data-dir`, 120 seconds a case). `bcut_simple/L3` to `L6`, DRAW's
+rollex (a disc of radius 60 less a pocket of radius 40 across its rim over
+the top 6 of its height 20, a stack, then cut by a cylinder of radius 30
+standing on the pocket's floor, its profile on a plane facing down in `L3`
+and `L4`), now evaluate on both, each `viewer_skipped`: Rust's `checkprops
+-s 30153` reads 30152.9544786437837, `generate_given_boolean_fixtures.py`'s
+`rollex_turned_cut` and `rollex_flat_cut` 30152.95447864378141 (the
+reference's within 7.6e-17 relative; native DRAW's 30153 to its printed digits).
+A volume audit (`vprops` and `sprops` before the `checkprops`, both
+backends): Rust's volume 199635.184534622938 in all four, the reference's
+199635.1845346228743 (3.2e-16 relative), its centre within 1.5e-16 of the
+reference's (scaled by the cube root of the volume); native DRAW's
+199635 and 30153 to its printed digits, the capture's
+`BRepGProp` values 199635.18453462288 and 30152.954478643784. They are
+registered (`L3` no longer a sentinel): 987 registered. The others do not
+change: `G9` and `H3` (a cone fused on a cylinder, then cut) are refused
+as S9e.3's (a result of solids other than prisms); 6 of the public dataset
+give a Boolean a restored shape (not a solid the adapter made), 6 stop at
+constructs the adapter does not read (`mkplane`, a `prism` of a restored
+face, a restored 2D ellipse and trimmed curve), 5 load private data on
+both; `bopcut_simple/ZQ1` (`wire`, unsupported on both) and
+`bopfuse_simple/ZP6` (a torus tangent to the other input) as before. None
+fails or times out. A contract run of the four (both backends) holds; the
+ledger does not change.
 
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and

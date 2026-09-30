@@ -4158,6 +4158,73 @@ Decisions for S9, recorded before its code (2026-09-28):
     cylinder's piece under the tilted planes; exact frames 3.3e-15), no
     review; the rollex's results lose faces, edges or vertices when
     unified. S9e.2's kernel next.
+  * **S9e.2 implemented** (`solid/boolean/curved/matched.rs`, `given.rs`'s
+    construction and whole-construction model, `mod.rs`'s routing): a
+    stack with a cylindrical wall (or of planes against arcs), an S9b.1
+    result of line prisms given with arcs and one solid of a result of
+    several, given to another Boolean as object or tool with a prism of
+    lines, arcs and circles or another given result, on their
+    construction's curved arrangement as the refined decisions describe.
+    All 36 fixtures as the reference (30 within the kernel's enclosures,
+    each at most `1e-9` wide; the 6 declared degenerate refused, each "a
+    tangency between the inputs"), every second history complete over the
+    given solid's ids (the other solid's ids neither in the result nor in
+    its history), results deterministic and moved rigidly, given solids
+    translated with their third prisms keeping the reference's volumes, a
+    partner strictly inside one solid of several `ComputationLimit`, the
+    stored frames the reference's bit for bit (`tests/given_booleans.rs`,
+    1.6 s at `opt-level` 2). `compare_given_boolean.py` 36 matches, OCCT's
+    unified entity counts on every evaluated case, no review; every other
+    Boolean comparison unchanged in its counts (boolean 45/0, its splines
+    33/13, polyhedral 43/2, curved 42/2, procedural 4/24, turned 2/13,
+    capped 0/18, sphere 30/0, spheres 12/21, cone 25/5, cones 21/19, torus
+    11/24, torus segment 15/14, torus curved 15/29, spheres turned 0/18,
+    cones' loops 5/26, torus parts 16/37, chained 24/6). The stored
+    slots of every stack and S9b.1 fixture match the re-run's assembly one
+    to one (S9a.2's and S9b.1's unified results keep the curved
+    assembly's vertices, edges and faces). Amendments and corrections,
+    from the implementation: (a) pieces of both inputs on one surface
+    joined into one result face, where the other input's piece is reversed
+    beside a kept one (the rollex's cut: the cylinder standing on the
+    pocket's floor, its bottom disc reversed over the material beside the
+    pocket, joined with the floor), ran their loops about their own faces'
+    opposite normals, and the face's loops did not close
+    (`InvalidTopology("a joined face's loops do not close")`, latent since
+    S9c.1, no pair of prisms having reached it): each piece's loops now
+    run about the joined face's normal and every vertex's way on is chosen
+    about it (`assemble.rs`); (b) a stack moved rigidly was given the
+    height range `[0, 0]` (S9b.2's `Stack::moved`), so it classified every
+    point off that height outside, and a result with a moved stack among
+    its inputs classified its own vertices off its boundary (the moved
+    results' check here; latent since S9b.2): the moved stack keeps its
+    range; (c) a matched stored circle or ellipse whose frame turns against
+    the conic's parameter is read the other way (`Given::flip`), since
+    another assembly's frame need not follow the conic's (no fixture's
+    does: S9a.2's and S9b.1's frames follow it as the curved assembly's
+    do, so the reading is unexercised); (d) the
+    remaining refusals of a plane's piece name S9e.4 (`polyhedra.rs`'s
+    `prism_model` and `stored_model`, `model::Prism::new`), a given result
+    with a sphere, cone or torus S9e.3 as before. The `boolean` fuzz
+    target's chained stage now gives stacks with arc walls and a result's
+    first solid of several too, and by the chained byte's upper bits its
+    partner is a cylinder of radius 1.25 on the turned box's frame
+    (`GIVEN_ROUND`, on): replaying the corpus (1,425 inputs) and the 19
+    regressions with debug assertions, no failure, the slowest 4.4 s on a
+    loaded machine; of the corpus's chained stages with a curved first
+    result or the cylinder partner, 45 evaluate (28 curved first results
+    against the box, 13 of them a result's first solid of several; 17
+    against the cylinder), the others refused as documented (a result of
+    spheres, cones or tori or a deeper chain, S9e.3; spline stacks, S9f;
+    S9c.1's degeneracies). DRAW (`UPSTREAM_TESTS.md`): of the 25 cases
+    giving a result to another Boolean that S9e.1's scan found unregistered
+    (`L3` the sentinel), `bcut_simple/L3` to `L6` (the rollex) evaluate on
+    both backends, Rust's `checkprops -s 30153` reading 30152.9544786437837
+    (the reference's within 7.6e-17 relative) and the volume audit's
+    volume within 3.2e-16 of the reference's: registered (987 registered,
+    `L3` no longer a sentinel); the others as before (`G9` and `H3` S9e.3's,
+    the dataset's restored arguments and constructs, private data, `ZQ1`,
+    `ZP6`), none failing or timing out; the ledger does not change.
+    Pending: the DRAW survey, the campaign.
   * **S9f refined, before its code (2026-09-30).** Why splines stop today:
     a spline prism in another frame, or whose offset or heights round,
     reaches `polyhedra::stored_model` ("a solid with curved faces or edges

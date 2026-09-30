@@ -821,9 +821,9 @@ boundary and the result face on its side); an edge along a given edge keeps
 that edge's stored circle or ellipse frame, its new ends' angles on it. In
 scope: a result of prisms of lines, arcs and circles in any frames (S9c.1's
 pairs) that is the only solid of its Boolean, as object or tool, with a
-prism of lines, arcs and circles or another such result. Refused: a result
-of several solids, a stack, a plane's piece or a polyhedral result given
-with arcs (S9e.2); a result of spheres, cones, tori or with procedural
+prism of lines, arcs and circles or another such result (S9e.2 adds
+stacks, S9b.1 results and one solid of several, below). Refused: a plane's
+piece (S9e.4); a result of spheres, cones, tori or with procedural
 edges, a result against a sphere, cone or torus, and deeper chains (S9e.3);
 a given edge through an irrational point against a cylinder
 (`ComputationLimit`, as a section's line in S9c.1); every S9c.1
@@ -838,6 +838,57 @@ result left open: a cylinder's cap circle across a parallel one's wall, in
 exact frames), and the independent history check takes an ellipse split
 into arcs (a given result's section edge cut by the second Boolean) as one
 curve, as it takes a circle.
+
+### Stacks, S9b.1 results and one solid of several given (S9e.2)
+
+A stack (S9a.2) with a cylindrical wall, or of planes against a partner
+with an arc or a cylindrical face, and an S9b.1 result of two line prisms
+under the same condition, are decided on the same given model
+(`curved/given.rs`): their construction is `A op B` of two prisms (a
+stack's two profiles as prisms on its frame over their heights), whose
+point set is the inputs' exact set function whichever arrangement built
+it, so S9c.1's arrangement of the two prisms' exact models is run again
+(same-frame prisms included: walls parallel, caps coplanar) and its kept
+pieces are the body. Their stored slots come from another assembly
+(stack.rs's slabs, polyhedra.rs's fragments), so the re-run's assembly is
+matched to the stored topology geometrically (`curved/matched.rs`): each
+stored vertex the one re-run vertex within the resolution of it, one to
+one; each stored edge the re-run edge between the matched ends through
+the stored edge's points at a quarter, a half and three quarters of its
+range (a ring through the stored ring's curve); each stored face the
+re-run face bounded by the matched edges on a surface of the same kind;
+the given solid the one re-run solid so matched. Anything unmatched is
+`ComputationLimit("a given result rebuilt differently")`. The model's
+faces, edges and vertices carry the matched ids, its edges the matched
+stored curves (a stored circle or ellipse turning against the conic's
+parameter read the other way). With a polyhedral partner a stack of planes
+or an S9b.1 result stays S9b.2's stored model.
+
+One solid of a result of several (of S9e.1's class, a stack or an S9b.1
+result) holds part of its construction's region only. Its given model is
+the whole construction (every solid's faces and edges, the construction's
+regions and membership), and once the second arrangement is built its
+pieces are sorted by solid, exactly and by adjacency alone
+(`matched::keep_solid`): a given face's pieces joined across the edges
+they share take the solid of a given edge on the group; a piece of the
+other input with a side inside the construction takes the solid of the
+given pieces sharing an edge with it, else of its neighbours across the
+other input's own edges inside the construction. Pieces of the other
+solids' faces are dropped, and the other input's pieces inside another
+solid are outside the given one on both sides. The other input strictly
+inside one solid meets no face to go by: `ComputationLimit("a solid
+inside one of a given result's several solids")`. The arrangement holding
+every solid, a degeneracy between the other input and a solid not given
+is S9c.1's `Degenerate` too (a conservative refusal).
+
+Two corrections found here: pieces of both inputs on one surface joined
+into one face (the other input's piece reversed beside a kept one, the
+rollex's pocket floor cut by a cylinder standing on it) ran their loops
+about their own faces' opposite normals and did not close; each piece's
+loops now run about the face's normal, every vertex's way on chosen about
+it. And a stack moved rigidly kept no height range (every point off its
+heights), so a result with a moved stack among its inputs classified its
+own vertices outside; the moved stack keeps its range.
 
 ### Spline profiles (S9a.2)
 
@@ -2122,6 +2173,18 @@ height); its horizontal edges on a spline are its lifted restrictions.
   `unsupported` on all 36): every result valid with the reference's solid
   count, all 36 match (within 5.7e-9; exact frames 3.3e-15), no review; the
   rollex's cut has DRAW's area, 30152.95.
+* **Kernel (S9e.2).** `tests/given_booleans.rs`: all 36 fixtures as the
+  reference (30 within the kernel's enclosures, each at most `1e-9` wide;
+  the 6 declared degenerate refused as tangencies), every second history
+  complete over the given solid's ids and none of the other solid's, the
+  first result's solids and the pick as the protocol's, results
+  deterministic and moved rigidly, given solids translated with their third
+  prisms keeping the reference's volumes, a partner strictly inside one
+  solid of several `ComputationLimit`, the stored frames the reference's
+  bit for bit. `compare_given_boolean.py`: 36 matches, every evaluated
+  case with OCCT's unified entity counts, no review; every other Boolean
+  comparison unchanged in its counts. DRAW's `bcut_simple/L3` to `L6`
+  evaluate and are registered (`UPSTREAM_TESTS.md`).
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

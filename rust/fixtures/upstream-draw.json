@@ -45,6 +45,9 @@
     "tests/boolean/bcut_simple/L1": "55adf1152d6898abe9af8216812dedece1734da5e9fa777d2f75dc0cd747ab51",
     "tests/boolean/bcut_simple/L2": "7047581cf64b1f4c5f030773bea7f4d14aea041d1bf51e889aec01287a0fba38",
     "tests/boolean/bcut_simple/L3": "127512131950cac96cc7343692101c7041cc6dcf006289d976df48cd2f63b632",
+    "tests/boolean/bcut_simple/L4": "c6de215feff790ddf4898b0cb2b9a735faf69bbaace535dac075ad952d1a98b0",
+    "tests/boolean/bcut_simple/L5": "515a6de36cb14d8b88426af0a4d26b78e43d407d214a7dc4c93294cf3fab43c0",
+    "tests/boolean/bcut_simple/L6": "6d985364644b3f25f78f47a47e68f7ee508a0d885fdcad2d540bfce78a790e9f",
     "tests/boolean/bcut_simple/L8": "f4eaa30c6004c82263238dabf6c6d77395449e900e5c899cdb9c37e1f14f74c3",
     "tests/boolean/begin": "d69546786e4458613f453d5083979bd5e2e67ae1f0f01b93f1bd93825e3a66bd",
     "tests/boolean/bfuse_complex/J5": "cda6d3fe80781b6537b23d7fb33728a0ff0eddfeff7025ea8f359cfbe64c632c",
@@ -6034,9 +6037,9 @@
     },
     {
       "path": "tests/boolean/bcut_simple/L3",
-      "expected_rust": "unsupported",
+      "expected_rust": "viewer_skipped",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9b.2's Boolean group, a capability sentinel: a pocket and then a hole cut from a disc prism; the first cut is a stack with cylindrical walls, which the next bcut takes as its object: a Boolean of a solid with curved faces (S9c), a stack with arc walls given to another Boolean since S9e (S9e.2's)."
+      "purpose": "S9e.2: a pocket and then a hole cut from a disc prism (DRAW's rollex): the first bcut is a stack with cylindrical walls (a disc of radius 60 less a pocket of radius 40 across its rim over the top 6 of its height), which the next bcut takes as its object with a cylinder of radius 30 standing on the pocket's floor (its profile on a plane facing down): decided on the stack's construction's curved arrangement matched to its stored topology; checkprops -s and checkshape; its checkview is recorded."
     },
     {
       "path": "tests/boolean/bopfuse_simple/U1",
@@ -7603,6 +7606,24 @@
       "expected_rust": "viewer_skipped",
       "expected_occt": "viewer_skipped",
       "purpose": "S9d.3b.1: bop and boptuc of a pcylinder of radius 4 and height 8 and a frustum of radii 6 and 1 and height 10 whose axis crosses the cylinder's at right angles at half its height (turned a quarter turn about x), crossing the cylinder's wall and, near its wide end, both its caps (S9d.3b.1's cones against cylinders, within the contract's 30 seconds since the survey of S9d.2c, S9d.3c and S9d.4c); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/L4",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.2: a pocket and then a hole cut from a disc prism (DRAW's rollex): the first bcut is a stack with cylindrical walls (a disc of radius 60 less a pocket of radius 40 across its rim over the top 6 of its height), which the next bcut takes as its object with a cylinder of radius 30 standing on the pocket's floor (its profile on a plane facing down, extruded up): decided on the stack's construction's curved arrangement matched to its stored topology; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/L5",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.2: a pocket and then a hole cut from a disc prism (DRAW's rollex): the first bcut is a stack with cylindrical walls (a disc of radius 60 less a pocket of radius 40 across its rim over the top 6 of its height), which the next bcut takes as its object with a cylinder of radius 30 standing on the pocket's floor: decided on the stack's construction's curved arrangement matched to its stored topology; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_simple/L6",
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.2: a pocket and then a hole cut from a disc prism (DRAW's rollex): the first bcut is a stack with cylindrical walls (a disc of radius 60 less a pocket of radius 40 across its rim over the top 6 of its height), which the next bcut takes as its object with a cylinder of radius 30 standing on the pocket's floor (extruded up from the floor): decided on the stack's construction's curved arrangement matched to its stored topology; checkprops -s and checkshape; its checkview is recorded."
     }
   ],
   "derived_sources": {
