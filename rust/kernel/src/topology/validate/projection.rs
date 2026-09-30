@@ -8,7 +8,7 @@
 //! `atan2(z, rho)`, `atan2(z, rho - R)`). Integrals along it use `jet::
 //! integrate` over the fraction.
 use super::{c, V2, V3};
-use crate::certified::Real;
+use crate::certified::{Fast, Real};
 use crate::jet::{integrate_many, Jet};
 use crate::topology::{Curve3, Meet, Projection, Rise, Spiric, Surface, Toric};
 use crate::Frame3;
@@ -17,6 +17,29 @@ use crate::Frame3;
 pub(super) const ORDER: usize = 12;
 pub(super) const WIDTH: f64 = 1e-12;
 pub(super) const DEPTH: usize = 40;
+/// The width of a sign decision's integrals when tried loosely first
+/// (`tiered_integral`): the validator's areas and fluxes are signs, not
+/// measures, and a projection's pieces near a turning point of its meeting
+/// halve many more times for `WIDTH` than for this.
+pub(super) const LOOSE: f64 = 1e-6;
+
+thread_local! {
+    /// The absolute width of the sign integrals along projections: `WIDTH`,
+    /// or `LOOSE` within `with_sign_width`.
+    static SIGN_WIDTH: std::cell::Cell<f64> = const { std::cell::Cell::new(WIDTH) };
+}
+
+/// `f` with the sign integrals' width `width`, restored after it.
+pub(super) fn with_sign_width<X>(width: f64, f: impl FnOnce() -> X) -> X {
+    struct Restore(f64);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            SIGN_WIDTH.with(|w| w.set(self.0));
+        }
+    }
+    let _restore = Restore(SIGN_WIDTH.with(|w| w.replace(width)));
+    f()
+}
 
 /// Whether the pcurve projects the fin's own edge onto its face's surface,
 /// in the fin's direction: its deviation is zero by definition.
@@ -266,6 +289,140 @@ fn toric_g<T: Real>(fs: &[([Jet<T>; 3], bool)], torus: Option<&(T, T)>, cs: &(T,
     (g, d)
 }
 
+/// `G_ss` and `G_sf` over a box: the functionals' values and first
+/// derivatives in `f` (`fs`, jets of order one or more over the base) at
+/// the other angle's enclosed cosine and sine, each functional `v = L0 + C
+/// L1 + S L2` with `v_s = C L2 - S L1`, `v_ss = -(C L1 + S L2)`, `v_f` and
+/// `v_sf` from the jets' first coefficients.
+fn toric_second<T: Real>(
+    fs: &[([Jet<T>; 3], bool)],
+    torus: Option<&(T, T)>,
+    cs: &(T, T),
+) -> (T, T) {
+    let (co, si) = cs;
+    let two = T::exact_f64(2.0);
+    let parts: Vec<[T; 5]> = fs
+        .iter()
+        .map(|(l, _)| {
+            let v = l[0].c[0].add(&l[1].c[0].mul(co)).add(&l[2].c[0].mul(si));
+            let vs = l[2].c[0].mul(co).sub(&l[1].c[0].mul(si));
+            let vss = l[1].c[0].mul(co).add(&l[2].c[0].mul(si)).neg();
+            let vf = l[0].c[1].add(&l[1].c[1].mul(co)).add(&l[2].c[1].mul(si));
+            let vsf = l[2].c[1].mul(co).sub(&l[1].c[1].mul(si));
+            [v, vs, vss, vf, vsf]
+        })
+        .collect();
+    // Per functional: (v^2)_s, (v^2)_ss, (v^2)_f, (v^2)_sf, halved.
+    let square = |[v, vs, vss, vf, vsf]: &[T; 5]| {
+        [
+            v.mul(vs),
+            vs.square().add(&v.mul(vss)),
+            v.mul(vf),
+            vf.mul(vs).add(&v.mul(vsf)),
+        ]
+    };
+    if let Some((k, four)) = torus {
+        let [a, b, e] = [square(&parts[0]), square(&parts[1]), square(&parts[2])];
+        let sum = |i: usize, with_normal: bool| {
+            let p = a[i].add(&b[i]).mul(&two);
+            if with_normal {
+                p.add(&e[i].mul(&two))
+            } else {
+                p
+            }
+        };
+        let (pss, psf) = (sum(1, false), sum(3, false));
+        let (qs, qss, qf, qsf) = (sum(0, true), sum(1, true), sum(2, true), sum(3, true));
+        let q = parts[0][0]
+            .square()
+            .add(&parts[1][0].square())
+            .add(&parts[2][0].square())
+            .add(k);
+        let gss = qs.square().add(&q.mul(&qss)).mul(&two).sub(&four.mul(&pss));
+        let gsf = qf.mul(&qs).add(&q.mul(&qsf)).mul(&two).sub(&four.mul(&psf));
+        return (gss, gsf);
+    }
+    let (mut gss, mut gsf) = (T::exact_f64(0.0), T::exact_f64(0.0));
+    for (part, (_, plus)) in parts.iter().zip(fs) {
+        let [_, ss, _, sf] = square(part);
+        let (ss, sf) = (ss.mul(&two), sf.mul(&two));
+        if *plus {
+            gss = gss.add(&ss);
+            gsf = gsf.add(&sf);
+        } else {
+            gss = gss.sub(&ss);
+            gsf = gsf.sub(&sf);
+        }
+    }
+    (gss, gsf)
+}
+
+/// `G_f` and `G_ff` at the functionals' jets (`G_ff` from their second
+/// coefficients when they have them, else zero is not claimed: `None`).
+fn toric_ff<T: Real>(
+    fs: &[([Jet<T>; 3], bool)],
+    torus: Option<&(T, T)>,
+    cs: &(T, T),
+) -> (T, Option<T>) {
+    let (co, si) = cs;
+    let two = T::exact_f64(2.0);
+    let second = fs.iter().all(|(l, _)| l.iter().all(|j| j.order() >= 2));
+    let at = |l: &[Jet<T>; 3], k: usize| l[0].c[k].add(&l[1].c[k].mul(co)).add(&l[2].c[k].mul(si));
+    // Per functional: v, v_f, v_ff (twice the second coefficient).
+    let parts: Vec<[T; 3]> = fs
+        .iter()
+        .map(|(l, _)| {
+            let vff = if second {
+                at(l, 2).mul(&two)
+            } else {
+                T::exact_f64(0.0)
+            };
+            [at(l, 0), at(l, 1), vff]
+        })
+        .collect();
+    // (v^2)_f and (v^2)_ff, halved.
+    let square = |[v, vf, vff]: &[T; 3]| [v.mul(vf), vf.square().add(&v.mul(vff))];
+    if let Some((k, four)) = torus {
+        let [a, b, e] = [square(&parts[0]), square(&parts[1]), square(&parts[2])];
+        let (pf, pff) = (a[0].add(&b[0]).mul(&two), a[1].add(&b[1]).mul(&two));
+        let (qf, qff) = (pf.add(&e[0].mul(&two)), pff.add(&e[1].mul(&two)));
+        let q = parts[0][0]
+            .square()
+            .add(&parts[1][0].square())
+            .add(&parts[2][0].square())
+            .add(k);
+        let gf = q.mul(&qf).mul(&two).sub(&four.mul(&pf));
+        let gff = qf.square().add(&q.mul(&qff)).mul(&two).sub(&four.mul(&pff));
+        return (gf, second.then_some(gff));
+    }
+    let (mut gf, mut gff) = (T::exact_f64(0.0), T::exact_f64(0.0));
+    for (part, (_, plus)) in parts.iter().zip(fs) {
+        let [f, ff] = square(part);
+        let (f, ff) = (f.mul(&two), ff.mul(&two));
+        if *plus {
+            gf = gf.add(&f);
+            gff = gff.add(&ff);
+        } else {
+            gf = gf.sub(&f);
+            gff = gff.sub(&ff);
+        }
+    }
+    (gf, second.then_some(gff))
+}
+
+/// The narrower of two enclosures of one value.
+fn narrower<T: Real>(a: T, b: T) -> T {
+    let width = |x: &T| {
+        let (lo, hi) = x.bounds_f64();
+        hi - lo
+    };
+    if width(&b) < width(&a) {
+        b
+    } else {
+        a
+    }
+}
+
 /// A torus's meeting's angles and world point, as jets.
 type ToricJet<T> = ([Jet<T>; 2], [Jet<T>; 3]);
 
@@ -301,12 +458,14 @@ fn toric_jet<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
             .add_constant(&c(m.start))
     };
     let (_, fs_mid, _) = toric_parts(m, &at_mid(fmid))?;
+    // The functionals over the base to order two (their first and second
+    // derivatives for the mean-value forms), and to order one at its middle.
     let (_, fs_one, _) = if point {
         (p.clone(), fs.clone(), None)
     } else {
         toric_parts(
             m,
-            &Jet::variable(fraction.c[0].clone(), 1)
+            &Jet::variable(fraction.c[0].clone(), 2)
                 .scale(&c(m.sweep))
                 .add_constant(&c(m.start)),
         )?
@@ -373,6 +532,15 @@ fn toric_jet<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
         let v = c::<T>(star - delta).union(&c(star + delta));
         let cs = T::cos_sin(&v);
         let (_, d) = toric_g(&fs_one, torus, &cs);
+        // G_s over the box also in its mean-value form about `(fmid, s*)`
+        // (the natural extension cancels badly); the narrower holds it.
+        let d = if point {
+            d
+        } else {
+            let (gss, gsf) = toric_second(&fs_one, torus, &cs);
+            let spread_s = v.sub(&s0);
+            narrower(d, d0.add(&gss.mul(&spread_s)).add(&gsf.mul(&spread)))
+        };
         if let Some(q) = g0.add(&drift(&cs)).div(&d) {
             let next = s0.sub(&q);
             let (nlo, nhi) = next.bounds_f64();
@@ -391,9 +559,33 @@ fn toric_jet<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
     }
     let (c0, si0) = T::cos_sin(&s_base);
     let (_, slope) = toric_g(&fs, torus, &(c0.clone(), si0.clone()));
+    // Over a wide base, `G_s` and `G_f` along the meeting (the slope and
+    // the first coefficient's rest) also in their mean-value forms about
+    // `(fmid, s*)`, over the box from there to every point of the meeting
+    // over the base (`s*` is binary64's root, not quite the meeting's);
+    // the narrower of each holds it.
+    let (slope, first) = if point {
+        (slope, None)
+    } else {
+        let hull = s_base.union(&s0);
+        let cs_hull = T::cos_sin(&hull);
+        let (gss, gsf) = toric_second(&fs_one, torus, &cs_hull);
+        let spread_s = s_base.sub(&s0);
+        let slope = narrower(slope, d0.add(&gss.mul(&spread_s)).add(&gsf.mul(&spread)));
+        let (_, fs_mid1, _) = toric_parts(
+            m,
+            &Jet::variable(c::<T>(fmid), 1)
+                .scale(&c(m.sweep))
+                .add_constant(&c(m.start)),
+        )?;
+        let (gf0, _) = toric_ff(&fs_mid1, torus, &T::cos_sin(&s0));
+        let first = toric_ff(&fs_one, torus, &cs_hull)
+            .1
+            .map(|gff| gf0.add(&gff.mul(&spread)).add(&gsf.mul(&spread_s)));
+        (slope, first)
+    };
     let zero = || T::exact_f64(0.0);
-    let cauchy =
-        |x: &[T], y: &[T], k: usize| (0..=k).fold(zero(), |acc, i| acc.add(&x[i].mul(&y[k - i])));
+    let cauchy = |x: &[T], y: &[T], k: usize| T::convolve(x, y, k);
     let mut s = vec![s_base];
     let (mut co, mut sn) = (vec![c0.clone()], vec![si0.clone()]);
     // Each functional's series along the meeting: `L0 + C L1 + S L2`.
@@ -439,6 +631,12 @@ fn toric_jet<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
             ss.push(sk);
             g = cauchy(&ss, &ss, k).sub(&four.mul(&pk));
         }
+        // The first coefficient's rest is `G_f` along the meeting times
+        // the base variable's own first coefficient (`-1` reversed).
+        let g = match (&first, k) {
+            (Some(mv), 1) => narrower(g, mv.mul(&fraction.c[1])),
+            _ => g,
+        };
         let sk = g.div(&slope)?.neg();
         co[k] = co[k].sub(&si0.mul(&sk));
         sn[k] = sn[k].add(&c0.mul(&sk));
@@ -812,6 +1010,96 @@ pub(super) fn integrate_along_many<T: Real>(
     along(p, n, g, relative)
 }
 
+/// A memo of projections' jets in the binary64 tier (the integrals along
+/// one pcurve, for the validator's signs and the mass's moments, visit the
+/// same dyadic pieces of its fraction): keyed by the projection's content
+/// (its `Debug` text, which tells every binary64 number apart, `-0.0` from
+/// `0.0` among them), a piece's bounds and the order. A hit returns the
+/// value the evaluation would, bit for bit.
+struct JetMemo {
+    ids: std::collections::HashMap<String, u64>,
+    next: u64,
+    jets: std::collections::HashMap<PieceKey, Option<[Jet<Fast>; 2]>>,
+}
+
+/// A memo entry's key: the projection's id, a piece's bounds' bits and
+/// the jets' order.
+type PieceKey = (u64, u64, u64, usize);
+
+/// Projections (their texts, up to some kilobytes each) and pieces kept
+/// before the memo starts again (ids are never reused).
+const MEMO_PROJECTIONS: usize = 1 << 10;
+const MEMO_LIMIT: usize = 1 << 14;
+
+thread_local! {
+    static MEMO: std::cell::RefCell<JetMemo> = std::cell::RefCell::new(JetMemo {
+        ids: std::collections::HashMap::new(),
+        next: 0,
+        jets: std::collections::HashMap::new(),
+    });
+}
+
+/// The memo's id of a projection's content, `None` for content the text
+/// cannot tell apart (a NaN).
+pub(super) fn memo_id(p: &Projection) -> Option<u64> {
+    let key = format!("{p:?}");
+    if key.contains("NaN") {
+        return None;
+    }
+    MEMO.with(|m| {
+        let mut m = m.borrow_mut();
+        if let Some(id) = m.ids.get(&key) {
+            return Some(*id);
+        }
+        if m.ids.len() >= MEMO_PROJECTIONS {
+            m.ids.clear();
+            m.jets.clear();
+        }
+        let id = m.next;
+        m.next += 1;
+        m.ids.insert(key, id);
+        Some(id)
+    })
+}
+
+/// `projection_jet` of the variable about `base` to `order`, through the
+/// memo in the binary64 tier (`id` from `memo_id`).
+pub(super) fn projection_jet_about<T: Real>(
+    p: &Projection,
+    id: Option<u64>,
+    base: &T,
+    order: usize,
+) -> Option<[Jet<T>; 2]> {
+    let fresh = || projection_jet(p, &Jet::variable(base.clone(), order));
+    let (Some(id), Some(fast)) = (id, base.as_fast()) else {
+        return fresh();
+    };
+    let (lo, hi) = fast.bounds_f64();
+    let key = (id, lo.to_bits(), hi.to_bits(), order);
+    let to_t = |j: &Jet<Fast>| -> Option<Jet<T>> {
+        Some(Jet {
+            c: j.c.iter().map(|x| T::of_fast(*x)).collect::<Option<_>>()?,
+        })
+    };
+    let hit = MEMO.with(|m| m.borrow().jets.get(&key).cloned());
+    let value = match hit {
+        Some(value) => value,
+        None => {
+            let value = projection_jet(p, &Jet::variable(fast, order));
+            MEMO.with(|m| {
+                let mut m = m.borrow_mut();
+                if m.jets.len() >= MEMO_LIMIT {
+                    m.jets.clear();
+                }
+                m.jets.insert(key, value.clone());
+            });
+            value
+        }
+    };
+    let [u, v] = value?;
+    Some([to_t(&u)?, to_t(&v)?])
+}
+
 fn along<T: Real>(
     p: &Projection,
     n: usize,
@@ -823,17 +1111,22 @@ fn along<T: Real>(
     if T::EXACT {
         return None;
     }
+    let id = memo_id(p);
     let integrand = |f: &Jet<T>| {
         // One order more, so the derivatives keep the order asked for.
-        let longer = Jet::variable(f.c[0].clone(), f.order() + 1);
-        let [u, v] = projection_jet(p, &longer)?;
+        let [u, v] = projection_jet_about(p, id, &f.c[0], f.order() + 1)?;
         let (du, dv) = (u.derivative(), v.derivative());
         let cut = |j: &Jet<T>| Jet {
             c: j.c[..=f.order()].to_vec(),
         };
         g(&cut(&u), &cut(&v), &cut(&du), &cut(&dv))
     };
-    integrate_many(&integrand, n, 0.0, 1.0, ORDER, WIDTH, DEPTH, relative)
+    let width = if relative {
+        WIDTH
+    } else {
+        SIGN_WIDTH.with(|w| w.get())
+    };
+    integrate_many(&integrand, n, 0.0, 1.0, ORDER, width, DEPTH, relative)
 }
 
 /// Crossings of the `+u` ray from `p` with a projection pcurve (half-open

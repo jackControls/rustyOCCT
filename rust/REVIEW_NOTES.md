@@ -2975,16 +2975,21 @@ Decisions for S9, recorded before its code (2026-09-28):
     corpus inputs made two tori (their spline byte, flags and heights byte
     set; the median 2.2 s, the slowest 124 s on a loaded host) and, before
     (iii), 324 made two tori with all three operations, 150 of them chosen
-    in turned frames (points of degree eight; the slowest 409 s). The fuzz target's torus pairs are off
-    (`TORUS_PAIRS`): under AddressSanitizer they take 46 s at the median
-    and 111 s at the ninth decile of intersecting variants, over the
-    target's 60, all in the validator's and mass's certified integrals
-    along the meetings (a parallel track below); the kernel's tests and
-    the 2,950 replayed variants cover them meanwhile. DRAW survey:
-    S9d.4b's, below. Campaign at `2efa1ec7` (600 s, a sampled replay): 910 runs to the
-    end of both budgets, but one slow unit over the limit, 63 s under
+    in turned frames (points of degree eight; the slowest 409 s). The fuzz
+    target's torus pairs (`TORUS_PAIRS`) are off: under AddressSanitizer
+    they took 46 s at the median and 111 s at the ninth decile of
+    intersecting variants, over the target's 60, most in the validator's
+    and mass's certified integrals along the meetings; since that parallel
+    track (below) about 3 s, 22 s and 51 s at the slowest of 44 on this
+    host, still too close to the limit at the Linux runners' 2.6 times
+    (the ninth decile about 57 s), so they stay off until the degree-eight
+    arrangement arithmetic is faster too; the kernel's tests and the 2,950
+    replayed variants cover them meanwhile. DRAW survey: S9d.4b's, below.
+    Campaign at `2efa1ec7` (600 s, a sampled replay): 910 runs to the end
+    of both budgets, but one slow unit over the limit, 63 s under
     AddressSanitizer (`fd9294c7`, a whole torus in a turned frame against
-    a prism with arcs, 9.8 s without; the certified integrals' track). Pending: the campaign.
+    a prism with arcs, 9.8 s without; 30 s since the certified integrals'
+    track). Pending: the campaign.
   * **DRAW survey of S9d.4b (2026-09-30, `UPSTREAM_TESTS.md`).** With
     S9d.4b.1, S9d.4b.2a and S9d.4b.2b, and the adapter's curved primitives
     fixed first (the parallel track below): each `pcone`, `psphere` and
@@ -3236,12 +3241,67 @@ Decisions for S9, recorded before its code (2026-09-28):
   the hour once on the schedule (471 inputs, `7bf4e3a1`; 2,666 s the next
   day), a candidate for `REPLAY_SHARDS` if it recurs.
 
-* **Certified integrals along procedural meetings (S9d.4b.2b).** The
+* **Certified integrals along procedural meetings (S9d.4b.2b), done.** The
   validator's and mass's certified integrals along `Curve3::Toric` meetings
-  on two tori take tens of seconds per Boolean under AddressSanitizer; faster
-  enclosures there (fewer jet evaluations, shared lifts) would let the fuzz
-  target decode torus pairs again (`TORUS_PAIRS`). Their enclosures may
-  change, so S9d.4b.2a's fixture widths must be re-checked.
+  on two tori took tens of seconds per Boolean under AddressSanitizer, and
+  the fuzz target's torus pairs were off (`TORUS_PAIRS`). Profiles (macOS
+  `sample` of the release replay): a torus band in the tilted frame against
+  a prism spent 64% in the integrals (the torus face's fourteen moments
+  along its projections 41%, each evaluation a hundred and more series
+  products; the validator's two runs, the result's and its moved copy's,
+  24%, two thirds of it the projections' own jets) and 25% in the exact
+  arrangement; a whole torus in a turned frame against a prism with arcs
+  67% in the arrangement (fields of degree eight: rational gcds, signs and
+  binary64 views of `Q(alpha)`) and 30% in the integrals; two tori 79% in
+  the integrals, on pieces of `1/64` to `1/2048` of an edge: over a piece
+  the interval jets of a meeting's angles blew up (the thirteenth
+  coefficient `1e13` to `1e44` over a piece against `1e-8` to `1e24` at its
+  middle), the interval Newton for its other angle failed over `1/32` of an
+  edge (the natural extension of `G_s`, `-14.6` at the middle, `[-40,
+  10.8]` over it), and the edges' ends lie near their meetings' turning
+  points. Changes (`MATHEMATICS.md`, certified quadrature and the torus
+  meetings' jets; `BOOLEAN.md`, S9c.1): (a) a binary64 series product's
+  coefficients summed with one error bound rather than an exactly signed
+  rounding per operation; (b) the projections' jets kept per piece by the
+  projection's content, shared by the areas, the fluxes and the moments; (c)
+  sign decisions' integrals at the width `1e-6` first, `1e-12` only when
+  that leaves them undecided; (d) a sphere's or torus's fourteen moments as
+  scalar combinations of the integrals of a trigonometric basis, one set of
+  jets for all; (e) `G_s` (Newton's divisor and the recurrence's) and the
+  first coefficient's `G_f` also in mean-value forms about the base's
+  middle, the narrower kept; (f) the arrangement shared by fuse, cut and
+  common of one pair (kept by the inputs' content; the operation only keeps
+  pieces), each vertex's binary64 view computed once for the meeting's
+  pieces, signs across two fields and at a generator's isolator tried by
+  binary64 enclosures from the rationals' leading bits first, and a field
+  number's binary64 view (`K::value_near`) by an integer Horner reduced once.
+  Tried and dropped: other orders (6 to 24) and each piece's Taylor degree
+  chosen by its least remainder (no fewer evaluations). Results (release
+  with debug assertions, instructions retired as the load-free measure, a
+  host at load 10 to 20; AddressSanitizer's targets run side by side):
+  the band against the prism (two corpus inputs) 59.1 to 18.2 G, 5.3 to
+  1.6 s, 63 to 17 s under AddressSanitizer; the turned torus 179 to 50 G,
+  14.4 to 5.6 s, 213 (63 on a quieter host) to 30 s, still 66% the
+  arrangement; 44 intersecting two-tori variants of 60 corpus inputs 30.7
+  to 12.0 G at the median, 242 to 53 G at the ninth decile and 593 to 71 G
+  at the slowest (0.6, 2.75 and 3.7 s), ten of them under AddressSanitizer
+  3 to 51 s (26 to 306 s before on the same host). The torus pairs are on,
+  within the target's 60 s here; at the Linux runners' 2.6-fold the
+  slowest tenth would not be, so a CI campaign may still time out on one
+  (then the arrangement's arithmetic, below, is next). Enclosures: every
+  curved Boolean fixture's volume and area within `6.1e-11` relative
+  (`1.7e-11` before), medians 1.0 to 4.2 times as wide per set, at most 24
+  times, none apart from its former one; all fixture tests, every
+  comparison (counts unchanged, 0 failures), `compare_brep.py` (and its
+  spline and sheet families) and `compare_brep_io.py` unchanged. The
+  corpus and the regressions (1,435 inputs) replay with debug assertions
+  without a failure, 1,080 s to 732 s in all and the slowest 21.4 s to 7.1
+  s (three processes each, side by side). The band's input is kept as a
+  regression (`fuzz/regressions/README.md`); the turned torus's is not (30
+  s under AddressSanitizer, over the Linux runners' 60 s at their
+  2.6-fold). Open: the arrangement's exact arithmetic for fields of degree
+  eight (a rational interval Horner per binary64 view, `Qd::to_f64`), and
+  the moved result's second validation.
 * **The DRAW adapter's curved primitives (S9d.4b.2b), done in S9d.4b's
   survey.** It built every `ptorus`, `psphere` and `pcone` with the same
   ids, so two tori (and two spheres or cones) were refused as solids

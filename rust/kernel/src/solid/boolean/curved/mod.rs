@@ -123,8 +123,46 @@ fn attempt(poly: &Polyhedron, seam_a: &R, seam_b: &R) -> Result<Vec<Component>> 
             "a torus segment or wedge against a curved face (S9d.4b)",
         ));
     }
-    let a = model_of(&poly.a, Operand::A, seam_a)?;
-    let b = model_of(&poly.b, Operand::B, seam_b)?;
-    let arr = graph::arrange([a, b], poly.op)?;
+    let mut arr = shared(poly, seam_a, seam_b)?;
+    arr.for_op(poly.op);
     assemble::assemble(&arr, poly.op)
+}
+
+/// The arrangements kept for the next operations on the same inputs.
+const KEPT: usize = 2;
+
+thread_local! {
+    /// The last arrangements of two inputs, by their content: the inputs'
+    /// and the seams' `Debug` text (which tells every binary64 number
+    /// apart). Fuse, cut and common of one pair share one (its pieces'
+    /// sides decided, the operation's keeping not), bit for bit what each
+    /// would build.
+    static ARRANGED: std::cell::RefCell<Vec<(String, Result<graph::Arr>)>> =
+        const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// The models' arrangement every operation on the pair shares, kept.
+fn shared(poly: &Polyhedron, seam_a: &R, seam_b: &R) -> Result<graph::Arr> {
+    let key = format!("{:?}\n{:?}\n{seam_a}\n{seam_b}", poly.a, poly.b);
+    if let Some(hit) = ARRANGED.with(|k| {
+        k.borrow()
+            .iter()
+            .find(|(known, _)| *known == key)
+            .map(|(_, arr)| arr.clone())
+    }) {
+        return hit;
+    }
+    let arr = (|| {
+        let a = model_of(&poly.a, Operand::A, seam_a)?;
+        let b = model_of(&poly.b, Operand::B, seam_b)?;
+        graph::arrange_shared([a, b])
+    })();
+    ARRANGED.with(|k| {
+        let mut k = k.borrow_mut();
+        if k.len() >= KEPT {
+            k.drain(..1);
+        }
+        k.push((key, arr.clone()));
+    });
+    arr
 }

@@ -212,6 +212,164 @@ fn sph_antiderivative_jets<T: Real>(
     Some(out)
 }
 
+/// A sphere's or torus's integrands' antiderivatives in the trigonometric
+/// basis of two angles `(x, y)`: every `F = sum c cos^a x sin^b x integral
+/// from lower to y of cos^c sin^d` is `sum C_ij A_i(x) B_j(y)`, `A` the
+/// harmonics `1, cos k x, sin k x` (`k <= kx`) and `B` the antiderivatives'
+/// `1, y, cos k y, sin k y` (`k <= ky`), from the exact Fourier expansions.
+/// The integral of `F dx` along a projection is then `sum C_ij` times the
+/// integrals of `A_i B_j dx`, which one set of jets gives for every
+/// integrand at once (their combinations are scalars, not series).
+struct TrigBasis {
+    kx: usize,
+    ky: usize,
+}
+
+impl TrigBasis {
+    /// The degrees `fs` reach.
+    fn of<T: Real>(fs: &[Sph<T>]) -> Self {
+        let (mut kx, mut ky) = (0, 0);
+        for f in fs {
+            for (a, b, cc, d) in f.keys() {
+                kx = kx.max(usize::from(a + b));
+                ky = ky.max(usize::from(cc + d));
+            }
+        }
+        Self { kx, ky }
+    }
+
+    fn width(&self) -> usize {
+        2 * self.ky + 2
+    }
+
+    fn len(&self) -> usize {
+        (2 * self.kx + 1) * self.width()
+    }
+
+    /// `A_i`'s index of `cos f x` or `sin f x`.
+    fn x_index(f: usize, sin: bool) -> usize {
+        if f == 0 {
+            0
+        } else {
+            2 * f - 1 + usize::from(sin)
+        }
+    }
+
+    /// `integral from lower to y of cos^c sin^d` in the `B` basis, `(j,
+    /// coefficient)` terms: `alpha (y - lower)` for frequency zero, else
+    /// `alpha (sin g y - sin g lower) / g + beta (cos g lower - cos g y) /
+    /// g` for `alpha cos g y + beta sin g y`.
+    fn antiderivative<T: Real>(cc: u8, d: u8, lower: &T) -> Option<Vec<(usize, T)>> {
+        let mut terms = Vec::new();
+        for &(g, alpha, beta) in fourier(cc, d).iter() {
+            if g == 0 {
+                terms.push((1, c::<T>(alpha)));
+                terms.push((0, c::<T>(alpha).mul(lower).neg()));
+                continue;
+            }
+            let k = usize::try_from(g).ok()?;
+            let inv = c::<T>(1.0).div(&c(g as f64))?;
+            let (c0, s0) = T::cos_sin(&lower.mul(&c(g as f64)));
+            terms.push((2 * k + 1, c::<T>(alpha).mul(&inv)));
+            terms.push((2 * k, c::<T>(beta).mul(&inv).neg()));
+            let constant = c::<T>(beta).mul(&c0).sub(&c::<T>(alpha).mul(&s0));
+            terms.push((0, constant.mul(&inv)));
+        }
+        Some(terms)
+    }
+
+    /// `C_ij` of every `F` of `fs` (row-major in `(i, j)`).
+    fn coefficients<T: Real>(&self, fs: &[Sph<T>], lower: &T) -> Option<Vec<Vec<T>>> {
+        let width = self.width();
+        // Each (c, d)'s antiderivative in the `B` basis, once.
+        let mut along_y: BTreeMap<(u8, u8), Vec<(usize, T)>> = BTreeMap::new();
+        let mut out = Vec::with_capacity(fs.len());
+        for f in fs {
+            let mut row = vec![c::<T>(0.0); self.len()];
+            for ((a, b, cc, d), x) in f {
+                let terms = match along_y.entry((*cc, *d)) {
+                    std::collections::btree_map::Entry::Occupied(e) => e.into_mut(),
+                    std::collections::btree_map::Entry::Vacant(e) => {
+                        e.insert(Self::antiderivative(*cc, *d, lower)?)
+                    }
+                };
+                for &(g, alpha, beta) in fourier(*a, *b).iter() {
+                    let g = usize::try_from(g).ok()?;
+                    for (sin, weight) in [(false, alpha), (true, beta)] {
+                        if weight == 0.0 || (g == 0 && sin) {
+                            continue;
+                        }
+                        let i = Self::x_index(g, sin);
+                        let factor = x.mul(&c(weight));
+                        for (j, t) in terms.iter() {
+                            let cell = &mut row[i * width + *j];
+                            *cell = cell.add(&factor.mul(t));
+                        }
+                    }
+                }
+            }
+            out.push(row);
+        }
+        Some(out)
+    }
+
+    /// The jets of every `A_i(x) B_j(y) dx`, row-major in `(i, j)`.
+    fn jets<T: Real>(&self, x: &Jet<T>, y: &Jet<T>, dx: &Jet<T>) -> Vec<Jet<T>> {
+        let harmonics = |z: &Jet<T>, k: usize| -> Vec<(Jet<T>, Jet<T>)> {
+            (1..=k).map(|f| z.scale(&c(f as f64)).cos_sin()).collect()
+        };
+        let (hx, hy) = (harmonics(x, self.kx), harmonics(y, self.ky));
+        let mut a = vec![dx.clone()];
+        for (co, si) in &hx {
+            a.push(co.mul(dx));
+            a.push(si.mul(dx));
+        }
+        let mut b = vec![y.clone()];
+        for (co, si) in &hy {
+            b.push(co.clone());
+            b.push(si.clone());
+        }
+        let mut out = Vec::with_capacity(self.len());
+        for ai in &a {
+            out.push(ai.clone());
+            for bj in &b {
+                out.push(ai.mul(bj));
+            }
+        }
+        out
+    }
+}
+
+/// `integral of F dx` of every `F` of `fs` along a projection, `(x, y)` its
+/// `(u, v)` or, `swapped`, its `(v, u)`: the basis's integrals combined.
+fn trig_along<T: Real>(
+    pr: &crate::topology::Projection,
+    fs: &[Sph<T>],
+    lower: &T,
+    swapped: bool,
+) -> Option<Vec<T>> {
+    let basis = TrigBasis::of(fs);
+    let coefficients = basis.coefficients(fs, lower)?;
+    let integrals =
+        super::projection::integrate_along_many::<T>(pr, basis.len(), true, &|u, v, du, dv| {
+            Some(if swapped {
+                basis.jets(v, u, dv)
+            } else {
+                basis.jets(u, v, du)
+            })
+        })?;
+    Some(
+        coefficients
+            .iter()
+            .map(|row| {
+                row.iter()
+                    .zip(&integrals)
+                    .fold(c::<T>(0.0), |acc, (x, m)| acc.add(&x.mul(m)))
+            })
+            .collect(),
+    )
+}
+
 /// `rev_eval_jet` of several integrands at once, sharing the powers.
 fn rev_eval_jets<T: Real>(fs: &[Rev<T>], u: &Jet<T>, v: &Jet<T>) -> Vec<Jet<T>> {
     let (co, si) = u.cos_sin();
@@ -1007,6 +1165,10 @@ fn trig_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>], mass: bool) -> O
                 // +∫ G(v, u) dv along a projection (S8d.3), `G` the swapped
                 // integrands' antiderivative in `u` from 0.
                 if let Curve2::Projection(pr) = &u.pcurve {
+                    if mass {
+                        accumulate(trig_along(pr, &swapped, &c(0.0), true)?);
+                        continue;
+                    }
                     let values = super::projection::integrate_along_many::<T>(
                         pr,
                         swapped.len(),
@@ -1083,6 +1245,11 @@ fn trig_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>], mass: bool) -> O
                 Curve2::LineSegment { start, end } => (start, end),
                 // -∫ F(u, v) du along a projection (S8d.2), with jets.
                 Curve2::Projection(pr) => {
+                    if mass {
+                        let values = trig_along(pr, fs, &lower, false)?;
+                        accumulate(values.iter().map(|x| x.neg()).collect());
+                        continue;
+                    }
                     let values = super::projection::integrate_along_many::<T>(
                         pr,
                         fs.len(),

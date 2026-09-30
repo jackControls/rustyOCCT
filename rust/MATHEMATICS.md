@@ -1888,6 +1888,16 @@ where `A v^2 + 2 B v + C = 0` and the curve is `v = (-B +- sqrt(D)) / A`,
   recurrences), so `[G]_k = [G]_k|_{s_k = 0} + G_s s_k` and `s_k = -[G]_k|
   _{s_k = 0} / G_s`, `G_s` at the base; every product encloses its exact
   value at each point of the base, so the series is an enclosure there.
+  Over a wide base the natural extensions of `G_s` (Newton's divisor and
+  the recurrence's) and of the first coefficient's rest `G_f` cancel their
+  large terms too (a base of `1/32` of a pair of tori's meeting put `G_s`,
+  `-14.6` at its middle, in `[-40, 10.8]`, and Newton failed): each is also
+  taken in its mean-value form about `(f_m, s*)`, `G_s(f_m, s*) + G_ss(B)
+  (S - s*) + G_sf(B) (F - f_m)` and `G_f(f_m, s*) + G_ff(B) (F - f_m) +
+  G_fs(B) (S - s*)`, `B` the box from `(f_m, s*)` to every point of the
+  meeting over the base (the functionals' jets to order two over it), the
+  narrower enclosure kept; the first coefficient's is scaled by the base
+  variable's own first coefficient (`-1` for a reversed use).
 * **Circles against the torus.** Along `c + a cos + b sin` the torus's
   `(|l|^2 + R^2 - r^2)^2 - 4 R^2 (l_u^2 + l_v^2)` is a form of degree four
   in `(cos, sin)`: times `(1 + t^2)^4` of degree eight.
@@ -2391,6 +2401,30 @@ quotient in `atan2`), so order 14 is used: the remainder's power of the
 piece's width outruns the overestimation. The pieces gather where the
 section's angle about the axis turns fast (near an apex or pole),
 logarithmically in its distance.
+
+Its costs (the certified-integrals track of REVIEW_NOTES.md): (a) in the
+binary64 tier a series product's coefficient `sum_(i <= k) a_i b_(k-i)`
+(products, quotients, square roots, `exp`, `cos` and `sin`) is the rounded
+sum of each term's rounded extreme corners with one error bound for all of
+it, `4 (k + 3) u A + (k + 1) 2^-1074` (`A` the rounded sum of the terms'
+magnitudes, `u = 2^-53`: each corner within `u |p|`, plus `2^-1075`
+underflowing, and `k + 1` rounded additions of partial sums at most `A`),
+each end one ulp further out, rather than an exactly signed rounding per
+operation; (b) a projection's jets on a piece are kept by the
+projection's content (its `Debug` text), the piece's bounds and the order,
+so the validator's areas and fluxes and the mass's moments along one
+pcurve evaluate each piece once, a hit the value the evaluation gives; (c)
+a sign decision's integrals (areas, fluxes) are tried at the width `1e-6`
+first and at `1e-12` only when that leaves the sign undecided (every
+enclosure holds the value, so a sign any of them decides is the value's);
+(d) on a sphere or torus face every integrand's antiderivative `F = sum c
+cos^a u sin^b u integral from lower to v of cos^c sin^d` is `sum C_ij
+A_i(u) B_j(v)` in the harmonics `A = 1, cos k u, sin k u` and `B = 1, v,
+cos k v, sin k v` (the exact Fourier expansions, `C` scalar enclosures), so
+the fourteen moments along a projection are the scalars `C` times the
+integrals of `A_i B_j du`, one set of jets for all of them (each to
+`1e-12` of its own scale); their enclosures widen by the combination's
+magnitudes, within the fixtures' `1e-9`.
 
 **A torus's plane section (S8d.3).** With `alpha = a cos u + b sin u`, the
 plane on the torus is `F = C + W cos(v - psi)`, `C = R alpha + d`, `(W cos
