@@ -23,8 +23,8 @@ cones against cylinders, spheres and cones meeting in rings or on a plane
 (`curved/cones.rs`), S9d.3b.2's cones and spheres in loops, S9d.4a's
 whole tori against polyhedral prisms (`curved/torus.rs`), S9d.4b.1's
 torus v-segments and wedges against them (`curved/torus_segment.rs`), and
-S9d.4b.2a's whole tori against prisms with arcs, spheres and cones
-(`curved/torus_curved.rs`); two tori (S9d.4b.2b) and parts of a torus
+S9d.4b.2a's whole tori against prisms with arcs, spheres and cones and
+S9d.4b.2b's two whole tori (`curved/torus_curved.rs`); parts of a torus
 against curved faces are not.
 
 ## Contract
@@ -604,9 +604,50 @@ a rim's or a whole sphere's great circle meets the torus where the torus's
 quartic along it vanishes, a polynomial of degree eight in its half-angle
 tangent (a sphere's circle of a surd radius against a torus is
 `OutOfDomain`); a seam's tangency with a torus is retried at another seam.
-Two tori are S9d.4b.2b's `OutOfDomain("a torus against a torus
-(S9d.4b.2b)")`, a v-segment or wedge against a curved face
-`OutOfDomain("a torus segment or wedge against a curved face (S9d.4b)")`.
+A v-segment or wedge against a curved face is `OutOfDomain("a torus
+segment or wedge against a curved face (S9d.4b)")`.
+
+### Two whole tori (S9d.4b.2b)
+
+The other surface may be a whole torus (`torus_curved::Far::Torus`: its
+model's affine frame and radii), the carrier the object's torus. On the
+carrier's angles its function `(|l|^2 + R2^2 - r2^2)^2 - 4 R2^2 (l_u^2 +
+l_v^2)`, `l` its local coordinates, is of degree two in each angle where
+both stored frames are exactly orthonormal (along a round circle `|l|^2` is
+affine in its angle's cosine and sine), a quadric's degree: S9d.4b.2a's
+discriminant, lines, traces, pieces and checks apply unchanged (every
+fixture). In frames not exactly orthonormal (axes rounded to binary64 by a
+turn: a circle of one is an ellipse in the other's coordinates) it is of
+degree four in each, a point at a rational parameter algebraic of degree
+eight, and the discriminant (degree 112 in a chart of `u`) out of reach.
+The turning points in `u` (`G = G_v = 0`) are enclosed instead by
+subdividing `[-pi, pi]^2` into boxes clear of `G` or of `G_v` (mean-value
+forms in binary64 intervals) and boxes under `1e-6` radians clear of `G_u`
+(the meeting regular there: a turning point), merged where they touch;
+a box clear of none at `1e-10` radians is a tangency, `Degenerate`. Lines
+of `u` in the gaps between the boxes seed the traces, and besides every
+line's roots every turning point's box must lie inside a verified piece
+over `v` (its window of `u` and its range of `v`, by a margin of `1e-9`):
+the piece's one root there is the turning point, so every component (one
+that does not turn in `u` winds about the axis and crosses every line) is
+on the pieces. Pieces, their verification and `Curve3::Toric` (its
+`other_minor` the other torus's minor radius, `TOPOLOGY_MODEL.md`) are
+S9d.4b.2a's with forms of either degree; the tori's seams are circles
+(`conic_torus`). Coaxial tori meet in circles, tori tangent along one
+refused (`tori_kiss`). Parallel tori whose top or bottom circles lie at
+one height and cross are tangent there (both normals along the axes), a
+singular point of the meeting, `Degenerate`; with their equators at one
+height they cross transversally (the normals along the two radii) and the
+meeting only turns in `u` there. Linked tori apart fuse as two solids,
+their common empty. Fields of degree eight with coefficients of a few
+thousand bits (the rounded frames' inverses) make a turned pair's Boolean
+take 15 to 50 s: products in `Q(alpha)` reduce by `x^j mod p` kept over
+one denominator (`num::Gen::mul_mod`, an integer product and one
+reduction per coefficient), a sign is tried by a binary64 enclosure over
+the generator's isolator before Sturm-Tarski, and a meeting keeps its
+tangents by point; results are unchanged. The parallel fixtures' Booleans
+take about 20 s, most of it the certified integrals (the validator's and
+the mass's) along their meetings.
 
 ### Spline profiles (S9a.2)
 
@@ -1624,7 +1665,12 @@ height); its horizontal edges on a spline are its lifted restrictions.
   points and faces split at the torus's seams, the kernel's sections in
   exact pieces switched at rational points; five, native matches, by their
   counts alone: four coaxial pairs, whose bands cross OCCT's seam parallel,
-  and `bore_cut`).
+  and `bore_cut`). With S9d.4b.2b every case lies within the reference, the
+  three degenerate ones refused: 15 match and 29 are reviewed, the eight
+  tori with unified counts other than the kernel's by them (coaxial and
+  ringing pairs whose bands cross OCCT's seams, the others' B-spline
+  sections split at OCCT's points; four of them native matches, reviewed by
+  their counts alone).
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

@@ -402,15 +402,19 @@ impl Rise {
     }
 }
 
-/// A torus's meeting with a cylinder, a cone or a sphere as a graph over one
-/// of the torus's angles (S9d.4b.2; D13). At `t = start + sweep f` (the
-/// torus's `u`, or its `v` when `over_v`) the torus's circle of the other
-/// angle `s`, `frame.point((major + minor cos v) (cos u, sin u), minor sin
-/// v)`, meets the other quadric where `G(u, v) = 0`, `G` the quadric's
+/// A torus's meeting with a cylinder, a cone, a sphere or another torus as a
+/// graph over one of the torus's angles (S9d.4b.2; D13). At `t = start +
+/// sweep f` (the torus's `u`, or its `v` when `over_v`) the torus's circle
+/// of the other angle `s`, `frame.point((major + minor cos v) (cos u, sin
+/// u), minor sin v)`, meets the other surface where `G(u, v) = 0`, `G` its
 /// function (a cylinder or cone `(w . x2)^2 + (w . y2)^2 - (other_radius +
 /// (w . n2) tan a2)^2`, `w` from `other`'s origin and `a2` the
 /// `other_half_angle`, zero for a cylinder; a sphere `|w|^2 -
-/// other_radius^2`): a trigonometric polynomial of degree two in `s`. The
+/// other_radius^2`; S9d.4b.2b, a torus of major radius `other_radius` and
+/// minor radius `other_minor` about `other`'s normal, `(|w|^2 +
+/// other_radius^2 - other_minor^2)^2 - 4 other_radius^2 ((w . x2)^2 + (w .
+/// y2)^2)`): a trigonometric polynomial of degree two in `s` (four for a
+/// torus in frames not exactly orthonormal). The
 /// edge's point is the one root of `G` with `s` in `window` (ascending,
 /// under a turn), which no other root enters and no turning point reaches
 /// over the edge's range, so it is analytic (the implicit function
@@ -426,6 +430,9 @@ pub struct Toric {
     pub other_sphere: bool,
     /// The other quadric a cone's half angle, zero for a cylinder.
     pub other_half_angle: f64,
+    /// The other surface a torus of this minor radius (S9d.4b.2b), zero
+    /// for a quadric.
+    pub other_minor: f64,
     pub over_v: bool,
     pub window: [f64; 2],
     pub start: f64,
@@ -442,7 +449,7 @@ impl Toric {
             .point(Point2::new(rho * cu, rho * su), self.minor * sv)
     }
 
-    /// The other quadric's function at a point.
+    /// The other surface's function at a point.
     pub fn other_value(&self, p: Point3) -> f64 {
         let w = p - self.other.origin();
         if self.other_sphere {
@@ -453,6 +460,11 @@ impl Toric {
             w.dot(self.other.y()),
             w.dot(self.other.normal()),
         );
+        if self.other_minor > 0.0 {
+            let (big, small) = (self.other_radius, self.other_minor);
+            let s = x * x + y * y + n * n + (big * big - small * small);
+            return s * s - 4.0 * big * big * (x * x + y * y);
+        }
         let r = self.other_radius + n * self.other_half_angle.tan();
         x * x + y * y - r * r
     }

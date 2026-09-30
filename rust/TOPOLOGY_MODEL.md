@@ -884,22 +884,24 @@ procedural pcurves with explicit conic edges.
   other's asymptotic direction), in its points and jets alike.
 * **A torus's meeting with a quadric (S9d.4b.2).** `Curve3::Toric`: the
   torus (`frame`, `major`, `minor`), the other quadric (`other`,
-  `other_radius`, `other_sphere`, `other_half_angle`, as `Curve3::Meet`'s),
-  the parameter (`u`, or `v` when `over_v`) at `t = start + sweep f`, and the
-  branch as a `window` of the other angle: the edge's point is the torus's
-  at the one root of `G` (the quadric's function along the tube's circle
-  at `u`, or the parallel at `v`) inside the window, which no other root
-  enters and no turning point reaches over the range. Its binary64 point is
-  that root by bisection on `G`'s change of sign across the window. Its jets
-  come from the implicit function theorem: the other angle enclosed over
-  the base by interval Newton inside the window, then each coefficient `s_k`
-  from the `k`-th coefficient of `G` along the series with `s_k` zero (the
-  quadric's functionals and `cos s`, `sin s` continued by their
-  recurrences), over `G`'s derivative in `s` at the base; on its own torus
-  its projection is its angles, lifted. A coaxial meeting is a
-  `Circle` or `CircularArc` about the torus's axis instead. Quadrature,
-  tessellation rates, rigid motion (both frames move) and the writer's
-  refusal as `Curve3::Meet`'s.
+  `other_radius`, `other_sphere`, `other_half_angle`, as `Curve3::Meet`'s)
+  or another torus (S9d.4b.2b: `other_radius` its major radius,
+  `other_minor` its minor, zero for a quadric), the parameter (`u`, or `v`
+  when `over_v`) at `t = start + sweep f`, and the branch as a `window` of
+  the other angle: the edge's point is the torus's at the one root of `G`
+  (the quadric's function along the tube's circle at `u`, or the parallel at
+  `v`) inside the window, which no other root enters and no turning point
+  reaches over the range. Its binary64 point is that root by bisection on
+  `G`'s change of sign across the window. Its jets come from the implicit
+  function theorem: the other angle enclosed over the base by interval
+  Newton inside the window, then each coefficient `s_k` from the `k`-th
+  coefficient of `G` along the series with `s_k` zero (the quadric's
+  functionals and `cos s`, `sin s` continued by their recurrences; another
+  torus's `S^2 - 4 R2^2 P` from its local coordinates' series), over `G`'s
+  derivative in `s` at the base; on its own torus its projection is its
+  angles, lifted. A coaxial meeting is a `Circle` or `CircularArc` about the
+  torus's axis instead. Quadrature, tessellation rates, rigid motion (both
+  frames move) and the writer's refusal as `Curve3::Meet`'s.
 * **A cone's sections in Boolean results (S9d.3a).** `HyperbolaArc` and
   `ParabolaArc` edges bound Boolean results too; a rigid motion moves their
   frames, and a body's bounds hold their coordinates' extremes inside their

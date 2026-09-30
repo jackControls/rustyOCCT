@@ -11,11 +11,12 @@
 //! on its side (perpendicular cylinders), S9d.1 makes it a sphere, a cap or
 //! a zone, S9d.3a a cone or frustum, S9d.4a a whole torus, S9d.4b.1 a
 //! torus v-segment or wedge, S9d.4b.2a makes the object a sphere or a cone
-//! against a whole torus; a result thinner than the
+//! against a whole torus, S9d.4b.2b a whole torus; a result thinner than the
 //! resolution or touching itself; an undecided comparison); each result
 //! validates as it is built and its history passes the independent check
 //! (debug builds); when all three succeed their volumes agree,
-//! `V(A ∪ B) = V(A) + V(B) - V(A ∩ B)` and `V(A - B) = V(A) - V(A ∩ B)`;
+//! `V(A ∪ B) = V(A) + V(B) - V(A ∩ B)` and `V(A - B) = V(A) - V(A ∩ B)`
+//! (two tori: one operation, its volume within its bounds);
 //! every result moves rigidly with its ids, and each of its vertices
 //! classifies on its boundary; each operation's first result is an input
 //! again (S9b.2) against a turned box, with the same identities.
@@ -68,7 +69,8 @@ pub fn check_boolean(data: &[u8]) {
     };
     // S9a.2 added heights inside the object's (pockets, cavities) and on
     // its top (touching stacks), chosen by a byte after the others.
-    let (lo, hi) = match (b.next() % 3, (flags >> 1) % 4) {
+    let heights = b.next();
+    let (lo, hi) = match (heights % 3, (flags >> 1) % 4) {
         (1, _) => (h / 4.0, h * 0.75),
         (2, _) => (h, h + 1.0),
         (_, 0) => (0.0, h),
@@ -81,6 +83,7 @@ pub fn check_boolean(data: &[u8]) {
     // S9c.2a: or stood on its side (its axis along x, an exact frame),
     // by the byte's top bit.
     let pick = b.next();
+    let offset_fb = fb;
     let fb = match (tilted, pick % 4) {
         (false, 0) if pick >= 128 => {
             let Ok(f) = Frame3::new(
@@ -124,9 +127,30 @@ pub fn check_boolean(data: &[u8]) {
     }
     // S9d.4b.2a: against a whole torus tool (the spline byte in 144..148),
     // the flags' bits 5 and 6 make the object a sphere (1) or a
-    // cone (2) in its frame instead of its prism (0 and 3 keep it).
+    // cone (2) in its frame instead of its prism (0 and 3 keep it);
+    // S9d.4b.2b: with both clear, the flags' and the heights byte's top
+    // bits a whole torus, its radii by the object's scale and its kind
+    // byte (no corpus input of 1,435 decodes to one). Two tori's Booleans
+    // are slow under the sanitizer (their faces' certified integrals along
+    // long meetings; in a turned frame, of degree eight, minutes): the tool
+    // then keeps its offset frame, and one operation (the chained one's
+    // byte) is checked by its volume's bounds, its history and its rigid
+    // motion.
     let whole_torus = (144..148).contains(&spline_byte);
+    let tori = whole_torus && (flags >> 5) % 4 == 0 && flags >= 128 && heights >= 128;
+    let fb = if tori && !tilted { offset_fb } else { fb };
     let a = match (whole_torus, (flags >> 5) % 4) {
+        (true, 0) if tori => {
+            let big = 0.75 * s1;
+            let small = big * [0.25, 0.375, 0.5, 0.625][usize::from(ka % 4)];
+            let turn = std::f64::consts::TAU;
+            let Ok((a, _)) =
+                Solid::torus_with(OperationId(1), fa, big, small, 0.0, turn, turn, tolerance)
+            else {
+                return;
+            };
+            a
+        }
         (true, 1) => {
             let half = std::f64::consts::FRAC_PI_2;
             let Ok((a, _)) =
@@ -237,12 +261,57 @@ pub fn check_boolean(data: &[u8]) {
             Err(e) => panic!("unexpected error {e}"),
         }
     };
-    let fused = run(a.fuse(OperationId(3), &tool));
-    let cut = run(a.cut(OperationId(4), &tool));
-    let common = run(a.common(OperationId(5), &tool));
     let volume = |out: &[Solid]| -> f64 { out.iter().map(|s| s.mass_properties().volume).sum() };
     let (va, vb) = (a.mass_properties().volume, tool.mass_properties().volume);
     let near = |x: f64, y: f64| (x - y).abs() <= 1e-9 * x.abs().max(y.abs()).max(1.0);
+    let motion = rusty_occt::RigidTransform::rotation(
+        Point3::new(0.5, -1.0, 2.0),
+        Vec3::new(1.0, 2.0, 2.0),
+        0.5,
+    )
+    .expect("a rotation");
+    let moves = |out: &[Solid]| {
+        for piece in out {
+            let (moved, _) = piece
+                .transform_with(OperationId(6), motion)
+                .expect("a result moves rigidly");
+            let ids = |s: &Solid| s.topology().ids().map(|(id, _)| id).collect::<Vec<_>>();
+            assert_eq!(ids(piece), ids(&moved), "a moved result keeps its ids");
+            for v in piece.topology().vertices() {
+                assert_eq!(
+                    piece.classify(v.position).expect("a vertex classifies"),
+                    rusty_occt::Location::Boundary,
+                    "a result's vertex on its boundary"
+                );
+            }
+        }
+    };
+    if tori {
+        // One operation: fuse between the larger input and their sum,
+        // cut between the object less the tool and the object, common at
+        // most the smaller (within 1e-9).
+        let slack = 1e-9 * (va + vb);
+        let op = b.next() % 3;
+        let r = match op {
+            0 => a.fuse(OperationId(3), &tool),
+            1 => a.cut(OperationId(4), &tool),
+            _ => a.common(OperationId(5), &tool),
+        };
+        if let Some(out) = run(r) {
+            let v = volume(&out);
+            let (lo, hi) = match op {
+                0 => (va.max(vb), va + vb),
+                1 => (va - vb, va),
+                _ => (0.0, va.min(vb)),
+            };
+            assert!(v >= lo - slack && v <= hi + slack, "{v} outside {lo}..{hi}");
+            moves(&out);
+        }
+        return;
+    }
+    let fused = run(a.fuse(OperationId(3), &tool));
+    let cut = run(a.cut(OperationId(4), &tool));
+    let common = run(a.common(OperationId(5), &tool));
     if let (Some(f), Some(m)) = (&fused, &common) {
         assert!(
             near(volume(f), va + vb - volume(m)),
@@ -300,26 +369,7 @@ pub fn check_boolean(data: &[u8]) {
             }
         }
     }
-    let motion = rusty_occt::RigidTransform::rotation(
-        Point3::new(0.5, -1.0, 2.0),
-        Vec3::new(1.0, 2.0, 2.0),
-        0.5,
-    )
-    .expect("a rotation");
     for out in [&fused, &cut, &common].into_iter().flatten() {
-        for piece in out {
-            let (moved, _) = piece
-                .transform_with(OperationId(6), motion)
-                .expect("a result moves rigidly");
-            let ids = |s: &Solid| s.topology().ids().map(|(id, _)| id).collect::<Vec<_>>();
-            assert_eq!(ids(piece), ids(&moved), "a moved result keeps its ids");
-            for v in piece.topology().vertices() {
-                assert_eq!(
-                    piece.classify(v.position).expect("a vertex classifies"),
-                    rusty_occt::Location::Boundary,
-                    "a result's vertex on its boundary"
-                );
-            }
-        }
+        moves(out);
     }
 }

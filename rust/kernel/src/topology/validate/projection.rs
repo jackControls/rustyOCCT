@@ -141,8 +141,10 @@ fn dot_axis<T: Real>(v: &[Jet<T>; 3], axis: [f64; 3]) -> Jet<T> {
 /// A torus meeting's point along its parameter's jet `t` as `P0 + C P1 + S
 /// P2` (`C` and `S` the other angle's cosine and sine), and the quadric's
 /// affine functionals there, each `L0 + C L1 + S L2` with its sign in `G =
-/// sum sign L^2`.
-type ToricParts<T> = ([[Jet<T>; 3]; 3], Vec<([Jet<T>; 3], bool)>);
+/// sum sign L^2`; for another torus (S9d.4b.2b) its local coordinates' and
+/// its constants `R2^2 - r2^2` and `4 R2^2`: `G = (L1^2 + L2^2 + L3^2 + k)^2
+/// - 4 R2^2 (L1^2 + L2^2)`.
+type ToricParts<T> = ([[Jet<T>; 3]; 3], Vec<([Jet<T>; 3], bool)>, Option<(T, T)>);
 
 fn toric_parts<T: Real>(m: &Toric, t: &Jet<T>) -> Option<ToricParts<T>> {
     let n = t.order();
@@ -182,6 +184,15 @@ fn toric_parts<T: Real>(m: &Toric, t: &Jet<T>) -> Option<ToricParts<T>> {
     };
     let zero = || Jet::constant(c::<T>(0.0), n);
     let mut out = Vec::new();
+    if m.other_minor > 0.0 {
+        for f in [m.other.x(), m.other.y(), m.other.normal()] {
+            out.push((lin(f.to_array()), true));
+        }
+        let (big, small) = (c::<T>(m.other_radius), c::<T>(m.other_minor));
+        let big2 = big.square();
+        let torus = (big2.sub(&small.square()), big2.mul(&T::exact_f64(4.0)));
+        return Some((p, out, Some(torus)));
+    }
     if m.other_sphere {
         for f in [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]] {
             out.push((lin(f), true));
@@ -205,13 +216,39 @@ fn toric_parts<T: Real>(m: &Toric, t: &Jet<T>) -> Option<ToricParts<T>> {
         };
         out.push((rad, false));
     }
-    Some((p, out))
+    Some((p, out, None))
+}
+
+/// Another torus's `G = S^2 - 4 R2^2 P` and its derivative from the
+/// functionals' values `v` and derivatives `d` (`S = |v|^2 + k`, `P = v1^2
+/// + v2^2`).
+fn torus_g<T: Real>(v: &[T], d: &[T], (k, four): &(T, T)) -> (T, T) {
+    let two = T::exact_f64(2.0);
+    let p = v[0].square().add(&v[1].square());
+    let dp = v[0].mul(&d[0]).add(&v[1].mul(&d[1])).mul(&two);
+    let s = p.add(&v[2].square()).add(k);
+    let ds = dp.add(&v[2].mul(&d[2]).mul(&two));
+    (
+        s.square().sub(&four.mul(&p)),
+        s.mul(&ds).mul(&two).sub(&four.mul(&dp)),
+    )
 }
 
 /// `G` and its derivative in `s` at scalars: the functionals' constant
 /// terms and the other angle's enclosed cosine and sine.
-fn toric_g<T: Real>(fs: &[([Jet<T>; 3], bool)], cs: &(T, T)) -> (T, T) {
+fn toric_g<T: Real>(fs: &[([Jet<T>; 3], bool)], torus: Option<&(T, T)>, cs: &(T, T)) -> (T, T) {
     let (co, si) = cs;
+    if let Some(t) = torus {
+        let v: Vec<T> = fs
+            .iter()
+            .map(|(l, _)| l[0].c[0].add(&l[1].c[0].mul(co)).add(&l[2].c[0].mul(si)))
+            .collect();
+        let d: Vec<T> = fs
+            .iter()
+            .map(|(l, _)| l[2].c[0].mul(co).sub(&l[1].c[0].mul(si)))
+            .collect();
+        return torus_g(&v, &d, t);
+    }
     let mut g = T::exact_f64(0.0);
     let mut d = T::exact_f64(0.0);
     for (l, plus) in fs {
@@ -243,7 +280,8 @@ type ToricJet<T> = ([Jet<T>; 2], [Jet<T>; 3]);
 fn toric_jet<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
     let n = fraction.order();
     let t = fraction.scale(&c(m.sweep)).add_constant(&c(m.start));
-    let (p, fs) = toric_parts(m, &t)?;
+    let (p, fs, torus) = toric_parts(m, &t)?;
+    let torus = torus.as_ref();
     let (lo, hi) = t.c[0].bounds_f64();
     let star = m.root_at(0.5 * lo + 0.5 * hi);
     if !star.is_finite() {
@@ -262,9 +300,9 @@ fn toric_jet<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
             .scale(&c(m.sweep))
             .add_constant(&c(m.start))
     };
-    let (_, fs_mid) = toric_parts(m, &at_mid(fmid))?;
-    let (_, fs_one) = if point {
-        (p.clone(), fs.clone())
+    let (_, fs_mid, _) = toric_parts(m, &at_mid(fmid))?;
+    let (_, fs_one, _) = if point {
+        (p.clone(), fs.clone(), None)
     } else {
         toric_parts(
             m,
@@ -274,7 +312,7 @@ fn toric_jet<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
         )?
     };
     let spread = fraction.c[0].sub(&c(fmid));
-    let (g0, d0) = toric_g(&fs_mid, &T::cos_sin(&s0));
+    let (g0, d0) = toric_g(&fs_mid, torus, &T::cos_sin(&s0));
     let size = |x: &T| {
         let (a, b) = x.bounds_f64();
         a.abs().max(b.abs())
@@ -296,6 +334,22 @@ fn toric_jet<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
     // G's change over the base at s*: G_f times the spread.
     let drift = |cs: &(T, T)| -> T {
         let (co, si) = cs;
+        if let Some(t) = torus {
+            // G_f of another torus: its values and their derivatives in f.
+            let (v, vf): (Vec<T>, Vec<T>) = fs_one
+                .iter()
+                .map(|(l, _)| {
+                    let v = l[0].c[0].add(&l[1].c[0].mul(co)).add(&l[2].c[0].mul(si));
+                    let vf = if point {
+                        T::exact_f64(0.0)
+                    } else {
+                        l[0].c[1].add(&l[1].c[1].mul(co)).add(&l[2].c[1].mul(si))
+                    };
+                    (v, vf)
+                })
+                .unzip();
+            return torus_g(&v, &vf, t).1.mul(&spread);
+        }
         let mut out = T::exact_f64(0.0);
         for (l, plus) in &fs_one {
             let v = l[0].c[0].add(&l[1].c[0].mul(co)).add(&l[2].c[0].mul(si));
@@ -318,7 +372,7 @@ fn toric_jet<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
         }
         let v = c::<T>(star - delta).union(&c(star + delta));
         let cs = T::cos_sin(&v);
-        let (_, d) = toric_g(&fs_one, &cs);
+        let (_, d) = toric_g(&fs_one, torus, &cs);
         if let Some(q) = g0.add(&drift(&cs)).div(&d) {
             let next = s0.sub(&q);
             let (nlo, nhi) = next.bounds_f64();
@@ -336,7 +390,7 @@ fn toric_jet<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
         return None;
     }
     let (c0, si0) = T::cos_sin(&s_base);
-    let (_, slope) = toric_g(&fs, &(c0.clone(), si0.clone()));
+    let (_, slope) = toric_g(&fs, torus, &(c0.clone(), si0.clone()));
     let zero = || T::exact_f64(0.0);
     let cauchy =
         |x: &[T], y: &[T], k: usize| (0..=k).fold(zero(), |acc, i| acc.add(&x[i].mul(&y[k - i])));
@@ -347,6 +401,15 @@ fn toric_jet<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
         .iter()
         .map(|(l, _)| vec![l[0].c[0].add(&l[1].c[0].mul(&c0)).add(&l[2].c[0].mul(&si0))])
         .collect();
+    // Another torus's `S = |L|^2 + k` (and `P = L1^2 + L2^2`) along it.
+    let sums = |ls: &[Vec<T>], k: usize| -> (T, T) {
+        let p = cauchy(&ls[0], &ls[0], k).add(&cauchy(&ls[1], &ls[1], k));
+        (p.add(&cauchy(&ls[2], &ls[2], k)), p)
+    };
+    let mut ss = Vec::new();
+    if let Some((kc, _)) = torus {
+        ss.push(sums(&ls, 0).0.add(kc));
+    }
     for k in 1..=n {
         let kk = T::exact_f64(k as f64);
         // cos and sin continued with s_k = 0: k S_k = sum C_i d_{k-1-i},
@@ -366,8 +429,15 @@ fn toric_jet<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
                 .add(&cauchy(&l[1].c, &co, k))
                 .add(&cauchy(&l[2].c, &sn, k));
             series.push(x);
-            let sq = cauchy(series, series, k);
-            g = if *plus { g.add(&sq) } else { g.sub(&sq) };
+            if torus.is_none() {
+                let sq = cauchy(series, series, k);
+                g = if *plus { g.add(&sq) } else { g.sub(&sq) };
+            }
+        }
+        if let Some((_, four)) = torus {
+            let (sk, pk) = sums(&ls, k);
+            ss.push(sk);
+            g = cauchy(&ss, &ss, k).sub(&four.mul(&pk));
         }
         let sk = g.div(&slope)?.neg();
         co[k] = co[k].sub(&si0.mul(&sk));
@@ -375,6 +445,9 @@ fn toric_jet<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
         for ((l, _), series) in fs.iter().zip(ls.iter_mut()) {
             let fix = l[2].c[0].mul(&c0).sub(&l[1].c[0].mul(&si0)).mul(&sk);
             series[k] = series[k].add(&fix);
+        }
+        if torus.is_some() {
+            ss[k] = sums(&ls, k).0;
         }
         s.push(sk);
     }
@@ -1072,6 +1145,7 @@ mod tests {
             other_radius: 0.5,
             other_sphere: false,
             other_half_angle: 0.0,
+            other_minor: 0.0,
             over_v: false,
             window: [0.2, 0.9],
             start: -0.05,
@@ -1083,6 +1157,60 @@ mod tests {
             assert!((p.y.hypot(p.z) - 0.5).abs() < 1e-14, "{p:?}");
             let rho = p.x.hypot(p.y);
             assert!(((rho - 2.5).hypot(p.z) - 1.0).abs() < 1e-14, "{p:?}");
+            let (_, jet) = toric_jet(&m, &Jet::variable(Fast::exact_f64(f), 2)).unwrap();
+            let h = 1e-6;
+            let (q0, q1) = (m.point(f - h), m.point(f + h));
+            for (i, j) in jet.iter().enumerate() {
+                let at = [p.x, p.y, p.z][i];
+                let (lo, hi) = j.c[0].bounds_f64();
+                assert!(lo - 1e-14 <= at && at <= hi + 1e-14);
+                let slope = ([q1.x, q1.y, q1.z][i] - [q0.x, q0.y, q0.z][i]) / (2.0 * h);
+                let (lo, hi) = j.c[1].bounds_f64();
+                assert!((slope - 0.5 * (lo + hi)).abs() < 1e-6, "{slope} {lo} {hi}");
+            }
+        }
+        let base = Fast::exact_f64(0.25).union(&Fast::exact_f64(0.5));
+        let (_, jet) = toric_jet(&m, &Jet::variable(base, 3)).unwrap();
+        for f in [0.25, 0.3, 0.4, 0.5] {
+            let p = m.point(f).to_array();
+            for (i, j) in jet.iter().enumerate() {
+                let (lo, hi) = j.c[0].bounds_f64();
+                assert!(lo - 1e-14 <= p[i] && p[i] <= hi + 1e-14, "{f} {i}");
+            }
+        }
+    }
+
+    /// A torus of radii 1.25 and 0.5 about x ringing the tube of one of
+    /// radii 2.5 and 1 about z at `u = pi / 2` (S9d.4b.2b): over `v` near 0
+    /// the ring's side at `u` near `pi / 2 + 0.124` lies on both tori; its
+    /// jets enclose the binary64 points and differences, and over an
+    /// interval base every point in it.
+    #[test]
+    fn toric_meetings_with_a_torus_lie_on_both() {
+        let torus = frame([0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]);
+        let ring = frame([0.0, 2.5, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+        let half = std::f64::consts::FRAC_PI_2;
+        let m = Toric {
+            frame: torus,
+            major: 2.5,
+            minor: 1.0,
+            other: ring,
+            other_radius: 1.25,
+            other_sphere: false,
+            other_half_angle: 0.0,
+            other_minor: 0.5,
+            over_v: true,
+            window: [half + 0.05, half + 0.2],
+            start: -0.05,
+            sweep: 0.1,
+        };
+        for k in 0..=8 {
+            let f = k as f64 / 8.0;
+            let p = m.point(f);
+            let rho = p.x.hypot(p.y);
+            assert!(((rho - 2.5).hypot(p.z) - 1.0).abs() < 1e-14, "{p:?}");
+            let core = (p.y - 2.5).hypot(p.z);
+            assert!(((core - 1.25).hypot(p.x) - 0.5).abs() < 1e-14, "{p:?}");
             let (_, jet) = toric_jet(&m, &Jet::variable(Fast::exact_f64(f), 2)).unwrap();
             let h = 1e-6;
             let (q0, q1) = (m.point(f - h), m.point(f + h));

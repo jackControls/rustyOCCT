@@ -58,8 +58,8 @@ pub(super) fn applies(poly: &Polyhedron) -> bool {
     let cone = |s: &crate::Solid| matches!(s.construction, Construction::Cone { .. });
     let torus = |s: &crate::Solid| matches!(s.construction, Construction::Torus { .. });
     let quadric = |s: &crate::Solid| prism(s) || sphere(s) || cone(s);
-    // S9d.4: a torus against a prism, a sphere, a cone or a torus (S9d.4b's
-    // refused in `build`).
+    // S9d.4: a torus against a prism, a sphere, a cone or a torus (parts
+    // against curved faces refused in `build`).
     let any = |s: &crate::Solid| quadric(s) || torus(s);
     if (torus(&poly.a) && any(&poly.b)) || (any(&poly.a) && torus(&poly.b)) {
         return true;
@@ -105,7 +105,7 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
 fn attempt(poly: &Polyhedron, seam_a: &R, seam_b: &R) -> Result<Vec<Component>> {
     // S9d.4a and S9d.4b.1 take a torus (a part too) against a polyhedral
     // prism; S9d.4b.2a a whole torus against a prism with arcs, a sphere or
-    // a cone; two tori are S9d.4b.2b's.
+    // a cone, S9d.4b.2b against another whole torus.
     let torus = |s: &crate::Solid| matches!(s.construction, Construction::Torus { .. });
     let whole = |s: &crate::Solid| match &s.construction {
         Construction::Torus {
@@ -115,9 +115,6 @@ fn attempt(poly: &Polyhedron, seam_a: &R, seam_b: &R) -> Result<Vec<Component>> 
     };
     let polyhedral =
         |s: &crate::Solid| matches!(s.construction, Construction::Prism(_)) && !applies_arcs(s);
-    if torus(&poly.a) && torus(&poly.b) {
-        return Err(Error::OutOfDomain("a torus against a torus (S9d.4b.2b)"));
-    }
     if (torus(&poly.a) && !polyhedral(&poly.b) && !whole(&poly.a))
         || (torus(&poly.b) && !polyhedral(&poly.a) && !whole(&poly.b))
     {

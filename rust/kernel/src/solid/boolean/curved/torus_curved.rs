@@ -24,6 +24,20 @@
 //! rings over `u` at the roots in `v`. A cap's or rim's circle meets the
 //! torus where the torus's quartic along it vanishes: a polynomial of degree
 //! eight in its half-angle tangent.
+//!
+//! S9d.4b.2b: the other surface another whole torus. Its function `(|l|^2 +
+//! R2^2 - r2^2)^2 - 4 R2^2 (l_u^2 + l_v^2)` in its own local coordinates `l`
+//! is of degree two in each angle where both frames are exactly orthonormal
+//! (a round circle keeps `|l|^2` affine in its angle's cosine and sine), as
+//! a quadric's, and the meeting is traced the same way; in stored frames
+//! not exactly orthonormal (rounded axes) it is of degree four in each, a
+//! point at a rational parameter algebraic of degree eight, whose
+//! discriminant is out of reach: its critical values are enclosed instead by
+//! a certified subdivision of the angles (boxes clear of `G` or `G_v`, the
+//! rest small and clear of `G_u`: turning points, a box clear of none at
+//! `1e-10` a tangency), lines between them seed the traces, and every
+//! turning point's box must lie in a verified piece over `v` (so no
+//! component is missed).
 use super::graph::{between_ccw, same_dir};
 use super::meet::{CylPair, EdgeMeet, Pos};
 use super::model::*;
@@ -43,7 +57,7 @@ use num_rational::BigRational as R;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::f64::consts::{PI, TAU};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 fn limit(what: &'static str) -> Error {
     Error::ComputationLimit(what)
@@ -159,8 +173,15 @@ impl Bi {
         out.reduce()
     }
 
+    /// Its degree in `u` (`of_v` false) or in `v`.
+    fn degree(&self, of_v: bool) -> u32 {
+        let (i, j) = if of_v { (2, 3) } else { (0, 1) };
+        self.terms.keys().map(|e| e[i] + e[j]).max().unwrap_or(0)
+    }
+
     /// The form in the other angle at a rational `(cos, sin)` of `u`
-    /// (`of_v` false) or of `v`: of degree two.
+    /// (`of_v` false) or of `v`: of degree two (four for two tori in frames
+    /// not exactly orthonormal).
     fn at(&self, of_v: bool, cs: &[R; 2]) -> Form {
         let pow = |x: &R, n: u32| (0..n).fold(int(1), |acc, _| acc * x);
         let (i, j, k, l) = if of_v { (2, 3, 0, 1) } else { (0, 1, 2, 3) };
@@ -169,7 +190,7 @@ impl Bi {
             let c = x * pow(&cs[0], e[i]) * pow(&cs[1], e[j]);
             *terms.entry((e[k], e[l])).or_insert_with(zero) += c;
         }
-        Form::from_terms(terms, 2)
+        Form::from_terms(terms, self.degree(!of_v).max(2))
     }
 
     fn to_f64(&self) -> F64Bi {
@@ -229,7 +250,8 @@ impl FastBi {
             1 => *x,
             2 => x.square(),
             3 => x.square().mul(x),
-            _ => x.square().square(),
+            4 => x.square().square(),
+            _ => (0..n).fold(Fast::exact_f64(1.0), |acc, _| acc.mul(x)),
         };
         self.terms.iter().fold(Fast::exact_f64(0.0), |acc, (e, k)| {
             acc.add(
@@ -293,15 +315,59 @@ impl Graded {
 
 // ------------------------------------------------------------ the meeting
 
-/// A torus and a quadric (the other input's face): `G` on the torus's
-/// angles, exact and in binary64, and its certified views.
+/// The other input's surface: a quadric (S9d.4b.2a) or a whole torus
+/// (S9d.4b.2b, its model's frame and radii).
+#[derive(Debug, Clone)]
+pub(super) enum Far {
+    Quadric(Box<Other>),
+    Torus { f: Box<Affine>, big: R, small: R },
+}
+
+impl Far {
+    fn ring(big: &R, small: &R) -> Ring {
+        Ring {
+            big: big.clone(),
+            small: small.clone(),
+            e: [int(1), zero()],
+            v0: [int(1), zero()],
+            span: Span::Whole,
+            reversed: false,
+            rims: [None, None],
+        }
+    }
+
+    /// Its function's exact value at a point (zero on it).
+    fn value(&self, x: &QV) -> Qd {
+        match self {
+            Far::Quadric(o) => o.value(x),
+            Far::Torus { f, big, small } => Self::ring(big, small).value(&f.local_q(x)),
+        }
+    }
+
+    /// A positive multiple of its function's gradient at a point.
+    fn gradient(&self, x: &QV) -> QV {
+        match self {
+            Far::Quadric(o) => o.gradient(x),
+            Far::Torus { f, big, small } => {
+                let g = Self::ring(big, small).gradient(&f.local_q(x));
+                qadd(
+                    &qadd(&qscale(f.row(0), &g[0]), &qscale(f.row(1), &g[1])),
+                    &qscale(f.row(2), &g[2]),
+                )
+            }
+        }
+    }
+}
+
+/// A torus and a quadric or another torus (the other input's face): `G`
+/// on the torus's angles, exact and in binary64, and its certified views.
 #[derive(Debug)]
 pub(super) struct Meeting {
     /// The torus's frame and radii (its model's).
     pub(super) f: Affine,
     pub(super) big: R,
     pub(super) small: R,
-    pub(super) other: Other,
+    pub(super) other: Far,
     g: Bi,
     num: [F64Bi; 3],
     /// `G` and its derivative in `u` and in `v`, certified with their own
@@ -311,10 +377,12 @@ pub(super) struct Meeting {
     frame: [[f64; 3]; 4],
     /// The sum of `G`'s coefficients' sizes (its binary64 values' scale).
     scale: f64,
+    /// Tangents asked for, by point, with their runs' signs in `u` and `v`.
+    tangents: Mutex<Vec<(QV, QV, [Ordering; 2])>>,
 }
 
 impl Meeting {
-    pub(super) fn new(f: &Affine, big: &R, small: &R, other: &Other) -> Self {
+    pub(super) fn new(f: &Affine, big: &R, small: &R, other: &Far) -> Self {
         // The torus's point: o + (R + r cv)(cu x + su y) + r sv n.
         let lin = |g: &V, e: &R| -> Bi {
             let mut b = Bi::default();
@@ -326,15 +394,34 @@ impl Meeting {
             b.add_term([0, 0, 0, 1], &(small * dot(g, &f.n)));
             b
         };
-        let mut g = Bi::default();
-        for (gi, ei) in other.g.iter().zip(&other.e) {
-            let l = lin(gi, ei);
-            g = g.add(&l.mul(&l));
-        }
-        // The radius term r + t (h . p - e_h).
-        let mut rad = lin(&other.h, &other.eh).scale(&other.t);
-        rad.add_term([0, 0, 0, 0], &other.r);
-        g = g.sub(&rad.mul(&rad)).reduce();
+        let g = match other {
+            Far::Quadric(other) => {
+                let mut g = Bi::default();
+                for (gi, ei) in other.g.iter().zip(&other.e) {
+                    let l = lin(gi, ei);
+                    g = g.add(&l.mul(&l));
+                }
+                // The radius term r + t (h . p - e_h).
+                let mut rad = lin(&other.h, &other.eh).scale(&other.t);
+                rad.add_term([0, 0, 0, 0], &other.r);
+                g.sub(&rad.mul(&rad)).reduce()
+            }
+            Far::Torus {
+                f: f2,
+                big: b2,
+                small: s2,
+            } => {
+                // Its local coordinates `l_k = row_k . (p - o2)`: `S^2 - 4
+                // R2^2 P`, `S = |l|^2 + R2^2 - r2^2`, `P = l_u^2 + l_v^2`.
+                let l: Vec<Bi> = (0..3)
+                    .map(|k| lin(f2.row(k), &dot(f2.row(k), &f2.o)))
+                    .collect();
+                let p = l[0].mul(&l[0]).add(&l[1].mul(&l[1]));
+                let mut sum = p.add(&l[2].mul(&l[2]));
+                sum.add_term([0, 0, 0, 0], &(b2 * b2 - s2 * s2));
+                sum.mul(&sum).sub(&p.scale(&(int(4) * b2 * b2))).reduce()
+            }
+        };
         let (gu, gv) = (g.d(false), g.d(true));
         let fl = |v: &V| v.clone().map(|x| rational_f64(&x));
         let num = [g.to_f64(), gu.to_f64(), gv.to_f64()];
@@ -354,19 +441,38 @@ impl Meeting {
             g,
             frame: [fl(&f.o), fl(&f.x), fl(&f.y), fl(&f.n)],
             scale,
+            tangents: Mutex::new(Vec::new()),
         }
     }
 
     fn ring(&self) -> Ring {
-        Ring {
-            big: self.big.clone(),
-            small: self.small.clone(),
-            e: [int(1), zero()],
-            v0: [int(1), zero()],
-            span: Span::Whole,
-            reversed: false,
-            rims: [None, None],
-        }
+        Far::ring(&self.big, &self.small)
+    }
+
+    /// The torus's and the other surface's gradients crossed at a point,
+    /// and the signs of its runs in `u` and in `v`.
+    fn tangent_runs(&self, x: &QV) -> (QV, [Ordering; 2]) {
+        let f = &self.f;
+        let l = f.local_q(x);
+        let ring = self.ring();
+        let g = ring.gradient(&l);
+        let row = |k: usize| f.row(k).clone();
+        let gt = qadd(
+            &qadd(&qscale(&row(0), &g[0]), &qscale(&row(1), &g[1])),
+            &qscale(&row(2), &g[2]),
+        );
+        let t = qcross(&gt, &self.other.gradient(x));
+        let lt = f.local_dir_q(&t);
+        let run_u = l[0].mul(&lt[1]).sub(&l[1].mul(&lt[0])).sign();
+        let rho = ring.rho(&l);
+        let drho = l[0].mul(&lt[0]).add(&l[1].mul(&lt[1]));
+        let run_v = rho
+            .add_r(&-self.big.clone())
+            .mul(&rho)
+            .mul(&lt[2])
+            .sub(&l[2].mul(&drho))
+            .sign();
+        (t, [run_u, run_v])
     }
 
     /// `G`, `G_u` and `G_v` in binary64.
@@ -842,29 +948,27 @@ impl ToricCrv {
     }
 
     /// The unit-free tangent at a point, running with the parameter: the
-    /// torus's and the quadric's gradients crossed.
+    /// torus's and the other surface's gradients crossed (kept by the
+    /// meeting for each point asked, its pieces' and its edges' ends asked
+    /// again and again).
     pub(super) fn tangent(&self, x: &QV) -> QV {
-        let f = &self.m.f;
-        let l = f.local_q(x);
-        let ring = self.m.ring();
-        let g = ring.gradient(&l);
-        let row = |k: usize| f.row(k).clone();
-        let gt = qadd(
-            &qadd(&qscale(&row(0), &g[0]), &qscale(&row(1), &g[1])),
-            &qscale(&row(2), &g[2]),
-        );
-        let t = qcross(&gt, &self.m.other.gradient(x));
-        let lt = f.local_dir_q(&t);
-        let run = if self.over_v {
-            let rho = ring.rho(&l);
-            let drho = l[0].mul(&lt[0]).add(&l[1].mul(&lt[1]));
-            rho.add_r(&-self.m.big.clone())
-                .mul(&rho)
-                .mul(&lt[2])
-                .sub(&l[2].mul(&drho))
-                .sign()
-        } else {
-            l[0].mul(&lt[1]).sub(&l[1].mul(&lt[0])).sign()
+        let known = {
+            let kept = self.m.tangents.lock().unwrap_or_else(|e| e.into_inner());
+            kept.iter()
+                .find(|(p, _, _)| p == x)
+                .map(|(_, t, runs)| (t.clone(), runs[usize::from(self.over_v)]))
+        };
+        let (t, run) = match known {
+            Some(k) => k,
+            None => {
+                let (t, runs) = self.m.tangent_runs(x);
+                self.m
+                    .tangents
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .push((x.clone(), t.clone(), runs));
+                (t, runs[usize::from(self.over_v)])
+            }
         };
         if run == Ordering::Less {
             t.map(|c| c.neg())
@@ -1257,6 +1361,11 @@ fn lines(m: &Meeting, chart: &Chart, crit: &mut [AlgebraicRoot]) -> Result<Vec<L
     }
     // The wrap gap: the chart's antipode (never critical).
     dirs.push([-chart.c0.clone(), -chart.s0.clone()]);
+    lines_at(m, dirs)
+}
+
+/// The lines of `u` at rational directions.
+fn lines_at(m: &Meeting, dirs: Vec<[R; 2]>) -> Result<Vec<Line>> {
     let mut out = Vec::new();
     for p in dirs {
         let (c, poly, rs) = m.roots_at(false, &p)?;
@@ -1271,6 +1380,152 @@ fn lines(m: &Meeting, chart: &Chart, crit: &mut [AlgebraicRoot]) -> Result<Vec<L
         });
     }
     Ok(out)
+}
+
+// ------------------------------------------------------------ folds
+
+/// The binary64 value just above pi.
+const PI_HI: f64 = 3.1415926535897936;
+
+/// A box of the angles, `[u] x [v]`.
+type Bx = [[f64; 2]; 2];
+
+/// The largest side of a turning point's box.
+const FOLD: f64 = 1e-6;
+
+/// Where the meeting may turn in `u` (`G = G_v = 0`), S9d.4b.2b's
+/// critical values without a discriminant: a subdivision of `[-pi, pi]^2`
+/// into boxes clear of `G` or of `G_v` (none there) and boxes under `FOLD`
+/// clear of `G_u` (the meeting regular there: a turning point, not a
+/// singular point), merged where they touch (across the period too); a box
+/// clear of none at `1e-10` a tangency of the surfaces.
+fn folds(m: &Meeting) -> Result<Vec<Bx>> {
+    let [g, gu, gv] = &m.cert;
+    let mut found: Vec<Bx> = Vec::new();
+    let mut stack: Vec<Bx> = vec![[[-PI_HI, PI_HI], [-PI_HI, PI_HI]]];
+    let mut budget = 200_000usize;
+    while let Some(b) = stack.pop() {
+        budget = budget
+            .checked_sub(1)
+            .ok_or(limit("a torus meeting's turning points"))?;
+        let (u, v) = (b[0], b[1]);
+        if g.clear(u, v) || gv.clear(u, v) {
+            continue;
+        }
+        let (wu, wv) = (u[1] - u[0], v[1] - v[0]);
+        if wu.max(wv) <= FOLD && gu.clear(u, v) {
+            found.push(b);
+            continue;
+        }
+        if wu.max(wv) < 1e-10 {
+            return Err(tangent());
+        }
+        let r = usize::from(wv > wu);
+        let mid = 0.5 * b[r][0] + 0.5 * b[r][1];
+        let (mut lo, mut hi) = (b, b);
+        lo[r][1] = mid;
+        hi[r][0] = mid;
+        stack.push(hi);
+        stack.push(lo);
+    }
+    // Clusters of touching boxes, modulo whole turns.
+    let mut clusters: Vec<Bx> = Vec::new();
+    for b in found {
+        let mut cur = b;
+        loop {
+            let hit = clusters
+                .iter()
+                .enumerate()
+                .find_map(|(i, c)| touching(c, &cur).map(|shift| (i, shift)));
+            let Some((i, [su, sv])) = hit else {
+                break;
+            };
+            let c = clusters.swap_remove(i);
+            cur = [
+                [c[0][0].min(cur[0][0] + su), c[0][1].max(cur[0][1] + su)],
+                [c[1][0].min(cur[1][0] + sv), c[1][1].max(cur[1][1] + sv)],
+            ];
+        }
+        clusters.push(cur);
+    }
+    Ok(clusters)
+}
+
+/// The whole turns `[su, sv]` moving `b` to touch `c`, if any.
+fn touching(c: &Bx, b: &Bx) -> Option<[f64; 2]> {
+    let meets = |x: [f64; 2], y: [f64; 2], s: f64| x[0] <= y[1] + s && y[0] + s <= x[1];
+    for su in [0.0, -TAU, TAU] {
+        for sv in [0.0, -TAU, TAU] {
+            if meets(c[0], b[0], su) && meets(c[1], b[1], sv) {
+                return Some([su, sv]);
+            }
+        }
+    }
+    None
+}
+
+/// Lines of `u` in the gaps between the turning points' boxes (all of
+/// them, at their middles), or at `u = 0` without any.
+fn fold_lines(m: &Meeting, clusters: &[Bx]) -> Result<Vec<Line>> {
+    let margin = 1e-9;
+    // The boxes' ranges of u on the circle, from their starts in [-pi, pi).
+    let mut spans: Vec<[f64; 2]> = clusters
+        .iter()
+        .map(|c| {
+            let a = (c[0][0] - margin + PI).rem_euclid(TAU) - PI;
+            [a, a + (c[0][1] - c[0][0]) + 2.0 * margin]
+        })
+        .collect();
+    if spans.is_empty() {
+        return lines_at(m, vec![[int(1), zero()]]);
+    }
+    spans.sort_by(|a, b| a[0].total_cmp(&b[0]));
+    // Merged runs, the last one carried a turn on when it overlaps the
+    // first.
+    let mut runs: Vec<[f64; 2]> = Vec::new();
+    for s in spans {
+        match runs.last_mut() {
+            Some(r) if s[0] <= r[1] => r[1] = r[1].max(s[1]),
+            _ => runs.push(s),
+        }
+    }
+    while runs.len() > 1 {
+        let (first, last) = (runs[0], runs[runs.len() - 1]);
+        if last[1] >= first[0] + TAU {
+            runs.pop();
+            runs[0] = [last[0] - TAU, first[1].max(last[1] - TAU)];
+        } else {
+            break;
+        }
+    }
+    let n = runs.len();
+    let mut dirs = Vec::new();
+    for i in 0..n {
+        let a = runs[i][1];
+        let b = runs[(i + 1) % n][0] + if i + 1 == n { TAU } else { 0.0 };
+        if b - a > 1e-7 {
+            dirs.push(dir_near(0.5 * a + 0.5 * b));
+        }
+    }
+    if dirs.is_empty() {
+        return Err(limit("a torus meeting's turning points all round"));
+    }
+    lines_at(m, dirs)
+}
+
+/// Whether a turning point's box lies on a verified piece over `v`: within
+/// its window of `u` and its range of `v` by a margin far above their
+/// binary64 views' error (the piece's one root there is then the box's).
+fn fold_covered(c: &Bx, pieces: &[ToricCrv]) -> bool {
+    let margin = 1e-9;
+    let inside = |x: [f64; 2], w: [f64; 2]| {
+        let (mid, half) = (0.5 * x[0] + 0.5 * x[1], 0.5 * (x[1] - x[0]));
+        let mid = near(mid, 0.5 * w[0] + 0.5 * w[1]);
+        w[0] < mid - half - margin && mid + half + margin < w[1]
+    };
+    pieces
+        .iter()
+        .any(|p| p.over_v && inside(c[0], p.window_f) && p.range_f.is_none_or(|r| inside(c[1], r)))
 }
 
 // ------------------------------------------------------------ tracing
@@ -1678,6 +1933,22 @@ fn pieces_of(k: usize, m: &Arc<Meeting>, comp: &Comp) -> Result<(Vec<ToricCrv>, 
 /// How a whole torus (operand `k`'s model `t`) meets a quadric face of the
 /// other input: rings or pieces with their switches, or apart.
 pub(super) fn torus_quadric(k: usize, t: &Prism, other: &Other) -> Result<CylPair> {
+    torus_far(k, t, &Far::Quadric(Box::new(other.clone())))
+}
+
+/// How two whole tori meet (S9d.4b.2b): operand `k`'s model `t` the
+/// carrier, `o` the other's.
+pub(super) fn torus_torus(k: usize, t: &Prism, o: &Prism) -> Result<CylPair> {
+    let ring = o.ring.as_ref().expect("a torus");
+    let far = Far::Torus {
+        f: Box::new(o.f.clone()),
+        big: ring.big.clone(),
+        small: ring.small.clone(),
+    };
+    torus_far(k, t, &far)
+}
+
+fn torus_far(k: usize, t: &Prism, other: &Far) -> Result<CylPair> {
     let ring = t.ring.as_ref().expect("a torus");
     let m = Arc::new(Meeting::new(&t.f, &ring.big, &ring.small, other));
     if m.g.is_zero() {
@@ -1698,9 +1969,17 @@ pub(super) fn torus_quadric(k: usize, t: &Prism, other: &Other) -> Result<CylPai
     if !m.g.depends_on_u() {
         return Ok(mixed(coaxial(k, &m)?, Vec::new()));
     }
-    let (chart, mut crit) = critical(&m)?;
-    check_regular(&m, &chart, &mut crit)?;
-    let lines = lines(&m, &chart, &mut crit)?;
+    // Of degree two in each angle, the critical values exactly (the
+    // discriminant); two tori's in frames not exactly orthonormal, of
+    // degree four, by subdivision (their turning points' boxes).
+    let (lines, turns) = if m.g.degree(false) <= 2 && m.g.degree(true) <= 2 {
+        let (chart, mut crit) = critical(&m)?;
+        check_regular(&m, &chart, &mut crit)?;
+        (lines(&m, &chart, &mut crit)?, Vec::new())
+    } else {
+        let turns = folds(&m)?;
+        (fold_lines(&m, &turns)?, turns)
+    };
     let mut seen: Vec<Vec<bool>> = lines.iter().map(|l| vec![false; l.v.len()]).collect();
     let mut pieces = Vec::new();
     let mut switches = Vec::new();
@@ -1723,6 +2002,11 @@ pub(super) fn torus_quadric(k: usize, t: &Prism, other: &Other) -> Result<CylPai
                 return Err(limit("a torus meeting not covered by its pieces"));
             }
         }
+    }
+    // Every turning point on a verified piece: a component no line crosses
+    // turns in u, so none is missed.
+    if !turns.iter().all(|c| fold_covered(c, &pieces)) {
+        return Err(limit("a torus meeting's turning point not covered"));
     }
     Ok(mixed(pieces, switches))
 }

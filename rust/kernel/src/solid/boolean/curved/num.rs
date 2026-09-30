@@ -1,14 +1,14 @@
 //! S9c.1's numbers: rational vectors, quadratic surds `a + b sqrt(d)` over
 //! the rationals and their exact signs, one surd or two apart, and their
 //! enclosures.
-use crate::certified::Interval as I;
+use crate::certified::{Fast, Interval as I, Real};
 use crate::polynomial::real::{AlgebraicRoot, IntPolynomial};
 use crate::rational::{add as radd, div as rdiv, mul as rmul, sub as rsub};
 use crate::solid::split::{rational_f64, zero};
 use num_bigint::BigInt;
 use num_rational::BigRational as R;
 use std::cmp::Ordering;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 
 pub(super) type V = [R; 3];
 
@@ -80,6 +80,10 @@ pub(super) struct Gen {
     /// every enclosure of the field's numbers narrows the same root the
     /// same way, and a sign is exact from any isolator.
     narrowed: Mutex<Vec<(usize, AlgebraicRoot)>>,
+    /// `x^j mod poly` for `j` from its degree `n` to `2 n - 2`, numerators
+    /// over one common denominator (S9d.4b.2b: a product reduced without a
+    /// rational operation per coefficient), computed once.
+    powers: OnceLock<(Vec<Vec<BigInt>>, BigInt)>,
 }
 
 /// The bisections of the isolator a sign query starts from (those of
@@ -92,9 +96,107 @@ impl Gen {
             poly,
             root,
             narrowed: Mutex::new(Vec::new()),
+            powers: OnceLock::new(),
         }
     }
 
+    /// `x^j mod poly`, `j` in `n..=2 n - 2`, over a common denominator.
+    fn powers(&self) -> &(Vec<Vec<BigInt>>, BigInt) {
+        self.powers.get_or_init(|| {
+            let m = &self.poly;
+            let n = m.len() - 1;
+            let lead = m[n].clone();
+            // x^n = -(m_0 + ... + m_(n-1) x^(n-1)) / m_n.
+            let first: Vec<R> = m[..n].iter().map(|c| -rdiv(c, &lead)).collect();
+            let mut rows = vec![first.clone()];
+            for _ in n + 1..=2 * n - 2 {
+                let cur = rows.last().expect("a row");
+                let top = cur[n - 1].clone();
+                let next: Vec<R> = (0..n)
+                    .map(|i| {
+                        let shifted = if i == 0 { zero() } else { cur[i - 1].clone() };
+                        radd(&shifted, &rmul(&top, &first[i]))
+                    })
+                    .collect();
+                rows.push(next);
+            }
+            let den = rows
+                .iter()
+                .flatten()
+                .fold(BigInt::from(1), |l, c| lcm(&l, c.denom()));
+            let table = rows
+                .iter()
+                .map(|row| row.iter().map(|c| c.numer() * (&den / c.denom())).collect())
+                .collect();
+            (table, den)
+        })
+    }
+
+    /// `p q mod poly` (both reduced), exactly: integer products over the
+    /// operands' common denominators, the high terms by `powers`, one
+    /// reduction per coefficient (the same value as `pmod(pmul(p, q))`).
+    fn mul_mod(&self, p: &[R], q: &[R]) -> Vec<R> {
+        if p.is_empty() || q.is_empty() {
+            return Vec::new();
+        }
+        let n = self.poly.len() - 1;
+        debug_assert!(p.len() <= n && q.len() <= n, "reduced operands");
+        let (pi, dp) = integral(p);
+        let (qi, dq) = integral(q);
+        let mut prod = vec![BigInt::from(0); pi.len() + qi.len() - 1];
+        for (i, x) in pi.iter().enumerate() {
+            if x.sign() == num_bigint::Sign::NoSign {
+                continue;
+            }
+            for (j, y) in qi.iter().enumerate() {
+                prod[i + j] += x * y;
+            }
+        }
+        let mut den = dp * dq;
+        let out = if prod.len() <= n {
+            prod
+        } else {
+            let (table, d) = self.powers();
+            let mut out: Vec<BigInt> = prod[..n].iter().map(|c| c * d).collect();
+            for (j, c) in prod.iter().enumerate().skip(n) {
+                if c.sign() == num_bigint::Sign::NoSign {
+                    continue;
+                }
+                for (o, t) in out.iter_mut().zip(&table[j - n]) {
+                    *o += c * t;
+                }
+            }
+            den *= d;
+            out
+        };
+        ptrim(out.into_iter().map(|c| ratio(c, &den)).collect())
+    }
+}
+
+fn lcm(a: &BigInt, b: &BigInt) -> BigInt {
+    let g = crate::rational::gcd(a, b);
+    a / g * b
+}
+
+/// Integer numerators over the least common denominator.
+fn integral(p: &[R]) -> (Vec<BigInt>, BigInt) {
+    let den = p.iter().fold(BigInt::from(1), |l, c| lcm(&l, c.denom()));
+    (
+        p.iter().map(|c| c.numer() * (&den / c.denom())).collect(),
+        den,
+    )
+}
+
+/// `n / d` reduced (`d` positive).
+fn ratio(n: BigInt, d: &BigInt) -> R {
+    if n.sign() == num_bigint::Sign::NoSign {
+        return zero();
+    }
+    let g = crate::rational::gcd(&n, d);
+    R::new_raw(n / &g, d / &g)
+}
+
+impl Gen {
     /// The root refined by `steps` bisections (`refine_for_signs`) from
     /// its isolation, computed once.
     fn narrowed(&self, steps: usize) -> AlgebraicRoot {
@@ -109,10 +211,20 @@ impl Gen {
     }
 
     /// The exact sign of a polynomial at the root (Sturm-Tarski on a
-    /// narrowed isolator: the same root, so the same sign).
+    /// narrowed isolator: the same root, so the same sign), a binary64
+    /// enclosure over the isolator first (S9d.4b.2b: certain where it
+    /// excludes zero).
     fn sign_of(&self, p: &[R]) -> Ordering {
-        self.narrowed(SIGN_STEPS)
-            .sign_polynomial(&IntPolynomial::from_rationals(p))
+        let root = self.narrowed(SIGN_STEPS);
+        let (lo, hi) = root.isolator();
+        let x = Fast::from_r(lo).union(&Fast::from_r(hi));
+        let v = p.iter().rev().fold(Fast::exact_f64(0.0), |acc, c| {
+            acc.mul(&x).add(&Fast::from_r(c))
+        });
+        match v.sign() {
+            Some(s @ (Ordering::Less | Ordering::Greater)) => s,
+            _ => root.sign_polynomial(&IntPolynomial::from_rationals(p)),
+        }
     }
 }
 
@@ -275,6 +387,11 @@ impl K {
     }
 
     pub(super) fn mul(&self, o: &Self) -> Self {
+        if let (K::Alg(g, p), K::Alg(h, q)) = (self, o) {
+            if Arc::ptr_eq(g, h) {
+                return K::norm(g, g.mul_mod(p, q));
+            }
+        }
         self.lift(o, pmul, rmul)
     }
 
@@ -723,6 +840,40 @@ mod tests {
 
     fn r(a: i64, b: i64) -> R {
         R::new(BigInt::from(a), BigInt::from(b))
+    }
+
+    /// Products reduced through the powers of the generator (S9d.4b.2b)
+    /// are the rational reduction's, and signs from the binary64
+    /// enclosure are the exact ones.
+    #[test]
+    fn products_in_a_field_reduce_as_rationals() {
+        // A root of 3 x^5 - 7/2 x^3 + x - 5/9 near 1.
+        let poly = vec![r(-5, 9), int(1), zero(), r(-7, 2), zero(), int(3)];
+        let ip = IntPolynomial::from_rationals(&poly);
+        let roots = crate::polynomial::real::isolate(
+            &ip,
+            int(0),
+            int(2),
+            &mut crate::polynomial::real::Budget::new(
+                crate::polynomial::RootIsolationOptions::default(),
+            ),
+        )
+        .unwrap();
+        let g = Arc::new(Gen::new(poly.clone(), roots.last().unwrap().clone()));
+        let a = vec![r(1, 3), r(-2, 5), r(7, 11), r(3, 2), r(-1, 7)];
+        let b = vec![r(-4, 9), int(2), r(1, 13), zero(), r(5, 3)];
+        assert_eq!(g.mul_mod(&a, &b), pmod(&pmul(&a, &b), &poly));
+        assert_eq!(
+            g.mul_mod(&a[..2], &b[..3]),
+            pmod(&pmul(&a[..2], &b[..3]), &poly)
+        );
+        let (x, y) = (K::norm(&g, a.clone()), K::norm(&g, b.clone()));
+        let xy = x.mul(&y);
+        assert_eq!(xy, K::norm(&g, pmod(&pmul(&a, &b), &poly)));
+        let exact = g
+            .narrowed(SIGN_STEPS)
+            .sign_polynomial(&IntPolynomial::from_rationals(&xy.poly()));
+        assert_eq!(xy.sign(), exact);
     }
 
     #[test]
