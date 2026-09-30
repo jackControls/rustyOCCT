@@ -1,0 +1,180 @@
+case dome_tilt_pipe_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+sphere 2.0 0.0 1.5707963267948966
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.5 3.0
+boundary C 0.0 0.0 1.75
+end
+case dome_tilt_pipe_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+sphere 2.0 0.0 1.5707963267948966
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.5 3.0
+boundary C 0.0 0.0 1.75
+end
+case dome_lean_bite_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 3.0 0.0 4.0 0.0 1.0 0.0
+sphere 2.0 -1.5707963267948966 0.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 2.0 0.5 1.0
+end
+case dome_lean_bite_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 3.0 0.0 4.0 0.0 1.0 0.0
+sphere 2.0 -1.5707963267948966 0.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 2.0 0.5 1.0
+end
+case dome_lean_bite_common 1e-07
+op 91
+frame 0.0 0.0 0.0 3.0 0.0 4.0 0.0 1.0 0.0
+sphere 2.0 -1.5707963267948966 0.0
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 2.0 0.5 1.0
+end
+case dome_tiltx_rings_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 -4.0 3.0 1.0 0.0 0.0
+sphere 2.0 0.0 1.5707963267948966
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 0.5 0.25 0.75
+end
+case dome_tiltx_rings_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 -4.0 3.0 1.0 0.0 0.0
+sphere 2.0 0.0 1.5707963267948966
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 0.5 0.25 0.75
+end
+case bite_lean_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 3.0 0.0 4.0 0.0 1.0 0.0
+offsets -3.0 3.0
+boundary C 2.0 0.5 1.0
+end
+case bite_lean_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 3.0 0.0 4.0 0.0 1.0 0.0
+offsets -3.0 3.0
+boundary C 2.0 0.5 1.0
+end
+case bite_lean_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 3.0 0.0 4.0 0.0 1.0 0.0
+offsets -3.0 3.0
+boundary C 2.0 0.5 1.0
+end
+case bite_tilt_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 2.0 0.5 1.0
+end
+case bite_tilt_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 2.0 0.5 1.0
+end
+case graze_tiltx_cut 1e-07
+op 91
+frame 0.25 -0.25 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 -4.0 3.0 1.0 0.0 0.0
+offsets -3.5 3.5
+boundary C 1.5 0.0 1.75
+end
+case graze_tiltx_common 1e-07
+op 91
+frame 0.25 -0.25 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 -4.0 3.0 1.0 0.0 0.0
+offsets -3.5 3.5
+boundary C 1.5 0.0 1.75
+end
+case bite_r125_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 12.0 5.0 0.0
+offsets -2.5 2.5
+boundary C 1.75 -0.5 0.75
+end
+case dome_bite_turned_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+sphere 2.0 0.0 1.5707963267948966
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 3.0 0.0 4.0 0.0 1.0 0.0
+offsets -3.0 3.0
+boundary C 2.0 0.5 1.0
+end
+case dome_bite_turned_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+sphere 2.0 0.0 1.5707963267948966
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 3.0 0.0 4.0 0.0 1.0 0.0
+offsets -3.0 3.0
+boundary C 2.0 0.5 1.0
+end
+case rim_tangent_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+sphere 2.0 0.0 1.5707963267948966
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 1.4572478777137632 1.708746462856272 0.5
+end

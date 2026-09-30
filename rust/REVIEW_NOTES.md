@@ -3047,6 +3047,162 @@ Decisions for S9, recorded before its code (2026-09-28):
     track below). The S9a.2 and S9b.1 "Pending: the campaign"
     lines were closed by the later clean boolean campaigns (`326ad26c`,
     `29278966`, `85104dc3`, `f4ea7a2a`).
+  * **S9d.2c refined, before its code (2026-09-30).** Why each is refused.
+    (1) A cap's or zone's own circles (its rims, its split's great circle)
+    lie on bases of unequal lengths wherever its stored axis is not of unit
+    length exactly (every turned frame: a rim's `y = n * x` has `|y|^2 =
+    |n|^2 |x|^2`), so `c + s (cos x + sin y)` with one surd `s` is no longer
+    the circle and `circ_quadric` refuses; a whole sphere's circles keep
+    equal axes (two rows of a rational rotation, S9d.2a (c)), and so do an
+    exact frame's. (2) On a turned cylinder's stored axes the model's circle
+    at height `w`, `o + r (cos x + sin y) + w n`, is an ellipse in the world,
+    and the sphere's function on it, `F(u, w) = |d + w n + r (cos x + sin
+    y)|^2 - R^2` (`d = o - c`), is of degree two in `(cos u, sin u)`, not
+    linear as in an exact frame: `u(w)` has no closed form (a quartic in the
+    half-angle tangent at each height), which `RiseCrv::at`, its branch and
+    `loops`' exact check (the quartic `dw` in `w`) assume. Decisions. (1)
+    Such a circle is `c + dx x + dy y` with `xx dx^2 + yy dy^2 = r2`
+    (`Circ`'s places are already `(dx, dy)`, and its order and angles take
+    unequal axes: plane sections always had them): in coordinates `(s, t)`
+    turned from `(dx, dy)` by a rational rotation (the identity, then
+    `(3, 4, 5)`, `(5, 12, 13)`, `(8, 15, 17)`), both it and the other
+    quadric's function are quadratics in `t`; their resultant is a quartic
+    in `s` whose simple real roots give each meeting's `t` as the common
+    root `(a2 b0 - a0 b2) / (a1 b2 - a2 b1)`, a point of `Q(alpha)`. A
+    repeated root or a vanishing denominator (two meetings of one `s`, or a
+    tangency) tries the next rotation; failing all four is a tangency
+    (`Degenerate`), a resultant vanishing identically the circle on the
+    surface (as `circle_quadric`). A turned frame's rounding never leaves an
+    exact tangency, so a crossing within the resolution of one (a rim
+    tangent to a cylinder but for the axes' rounding) is `Degenerate` too:
+    the meetings with the quadric offset by `+-2 rho res` (`rho` its radius
+    at the circle's centre) are counted, and a count that differs from the
+    quadric's own means an extremum of its function along the circle within
+    that band. Cones take the same function (their other quadric's radius
+    term), so a turned cap's circle against a cone is met the same way. (2)
+    In a turned frame a loop's pieces over the angle stay `Curve3::Meet`'s
+    (the ruling's quadratic is exact in any affine frame), and a piece over
+    the height is the one root of `F(., w)` in its branch's half-turn (the
+    side `plus` of the rational direction `(alpha, beta) = 2 (x . d, y .
+    d)` in the cylinder's local coordinates, S9d.2b's branch test), for `w`
+    over its range: its point at a rational height the quartic's root there
+    (`Q(alpha)`, degree four). Each such piece is verified exactly: (a) no
+    root of `F` on the half-turn's boundary directions over the range, `E(w)
+    = rho2 P(w)^2 - l(w)^2` (`F = P + l / sqrt(rho2)` there, a quartic in
+    `w`; in an exact frame `-rho2 dw`); (b) no double root of `F(., w)`
+    over the range, the discriminant of its quartic in `t` (degree twelve in
+    `w`); (c) one root in the half-turn at a rational height inside; then
+    the root is analytic in `w` (the implicit function theorem). The height
+    graph's turning points (the ellipse tangent to the sphere) are that
+    discriminant's real roots: in an exact frame it is `-4 disc(Q_w)
+    |Q_w(i)|^4` (`F (1 + t^2)^2 = (1 + t^2) Q_w(t)`, `Q_w(i) = 2 r (alpha +
+    i beta)` constant and nonzero), so a turned frame's perturbation keeps
+    the pair near `+-i` apart and every real root a real tangency. A point's
+    height is its local `w` (the inverse frame's third row, the axis in an
+    exact frame), its branch and the cylinder's membership by its local
+    `(u, v)`: every exact-frame result unchanged. The topology's
+    `Curve3::Rise` keeps its closed form: on the stored axes its binary64
+    reading lies on the model's cylinder and within rounding of the sphere
+    (as `Meet`'s other frame's axes are read), an edge's range clear of
+    turning points by its switches, so no curve type, validator, mass or
+    exchange change. A cone's loops in a turned frame stay refused as
+    S9d.3c's (`OutOfDomain`). Evidence first: an extension of S9d.2's
+    reference taking a cap's end planes as the kernel reads them (through
+    `o + h n` normal to the stored axis, the same plane in an exact frame)
+    and slicing along a turned cap's axis (the prism cut obliquely), a
+    closed form where one exists and a two-way check (a cap and its
+    complement against the whole sphere sliced along the prism's axis),
+    fixtures of both classes with a declared degenerate (a turned rim
+    tangent to a cylinder within rounding), and a native capture before
+    `solid/boolean/curved/spheres_turned.rs` exists.
+  * **S9d.2c evidence (2026-09-30).** `spheres_boolean_reference.py` now
+    reads a cap's end planes as the kernel does (`AxisSphere`: through `o +
+    h n` normal to the stored axis; the same tuples in an exact frame, so
+    S9d.2's and S9d.3b's references write their fixtures unchanged) and,
+    where they are not normal to the prism's axis, slices along the cap's
+    axis with the prism cut obliquely: the prism's caps classified in their
+    own `(u, v)` against the ball's ellipse and zone half-planes (a flat
+    wall's `ball_region`), a cylindrical wall's zone bound varying along
+    its generatrices (events where it meets the sphere, the rim crossing
+    the wall, a quartic, or the prism's ends, a quadratic), and components
+    of one key (two crescents of a circle less an oblique ellipse)
+    numbered by their centres along a fixed direction.
+    `generate_spheres_turned_boolean_fixtures.py --check`: 18 fixtures (17
+    solid, 1 degenerate): hemispheres in `TILT`, `LEAN` and `TILTX` against
+    a coaxial pipe (the rim and the split crossing its wall between its
+    rings), the bite (the equator across its loop, all three operations)
+    and the rod (across its rings); loops in `LEAN` (the bite, all three),
+    `TILT` (its fuse and common; S9d.2's fixture is the cut), `TILTX` (a
+    long loop round a thick cylinder) and `R125` (turned about the axis); a
+    hemisphere in `TILT` against the bite in `LEAN`; and a hemisphere's rim
+    tangent to a cylinder within rounding declared `degenerate`. Caps are
+    hemispheres only (a height of exactly 0, whatever the platform's
+    `sin`). Closed forms (a whole sphere against a turned cylinder by
+    S9d.2's lens along the axis; the hemisphere against the coaxial pipe by
+    circular segments along the pipe's axis, its faces by central symmetry
+    and its disc inside the pipe a circle and an ellipse) within 8.1e-17, a
+    cap and its complement against the whole sphere sliced along the
+    prism's axis within 1.7e-41, inclusion and exclusion 1.7e-41, the area
+    identity 1.4e-40, every face's classes 9.2e-41, a second direction
+    (whole spheres) 1.4e-40, Monte Carlo 2.2 standard errors, no near
+    coincidence but the declared pair's (its rim's crossings 4.4e-22 of
+    the radius squared from tangency), every other cap circle at least 0.16
+    from tangency; Python 3.9 and 3.12 write the same files. The capture
+    `occt-boolean-spheres-turned-preimplementation`
+    (`compare_spheres_turned_boolean.py`; the kernel `unsupported` on all
+    18: 8 turned circles of unequal axes, 10 turned loops): every result
+    valid with the reference's solids, 1 match, 17 reviewed (BRepGProp's
+    default integration on approximated quartics, up to 1.4e-5; adaptively
+    converged within 1.5e-8, `dome_lean_bite_common` 4.0e-8 of a small
+    result, 1.0e-8 absolute against its area times its edges' tolerance),
+    five solids' counts change when unified. S9d.2c's kernel next.
+  * **S9d.2c implemented** (`solid/boolean/curved/spheres_turned.rs`,
+    `spheres.rs`): a turned cap's circles of unequal axes against a
+    cylinder (`circ_ellipse`: the resultant in rotated coordinates, points
+    of degree four, a crossing within the resolution of tangency
+    `Degenerate`) and a sphere's loops with a turned cylinder (`Height`:
+    `F`'s terms, its discriminant's real roots the height graph's turning
+    points, the boundary quartic `E`, each piece over the height verified
+    and its points at rational heights the quartic's roots on its branch),
+    as the refined decisions describe; `RiseCrv` reads heights, branches and
+    the cylinder's membership in the carrier's local coordinates (every
+    exact-frame result unchanged). All 18 fixtures as the reference (17
+    within the kernel's enclosures, `rim_tangent` refused as a crossing
+    within the resolution of tangency), every history checked, results
+    deterministic and moved rigidly; `Curve3::Rise`'s closed form on the
+    turned frames' stored axes lies within `1e-12` of both surfaces
+    (`tests/spheres_turned_booleans.rs`, 39 s in the dev profile at
+    `opt-level` 2 as CI runs it; the module's own tests check the
+    resultant against S9d.2a's surds on a round circle and the
+    discriminant's real roots against `dw`'s in an exact frame).
+    `compare_spheres_turned_boolean.py` 0 matches and 18 reviewed (the
+    measures, and fifteen results' edges and
+    vertices where the kernel splits its loops at its switches and OCCT its
+    intersection curves at their own points; the faces OCCT's unified
+    ones); `compare_spheres_boolean.py` 12 matches and 21 reviewed as
+    before, `bite_tilt_cut` now within the reference (its review adds its
+    counts); every other comparison unchanged (`ball_tilt_common` still
+    `OutOfDomain`, now `(S9d.3c)`). Amendments and corrections: (a) a turned
+    cap's circle against a cone stays refused as S9d.3c's (the decisions
+    said cones would be met the same way, but no evidence covers them); (b)
+    the evidence's `dome_tiltx_rings` does not cut its rings: the rod's
+    rings lie on either side of `TILTX`'s equator and the split's great
+    circle crosses the rod (the generator's description corrected; the case
+    is still of the class); (c) the loop builder's guard for a sphere
+    centred on the carrier's axis is a `ComputationLimit` (unreachable: such
+    a pair meets in rings), not S9d.2b's refusal. The `boolean` fuzz target
+    decodes both configurations already (a turned cap tool against the
+    object's arcs, a sphere tool in the tilted frame shared with the
+    object's arcs): no decode change. The corpus (1,421 inputs) and the 14
+    regressions replay with debug assertions without a failure (the slowest
+    7.9 s), and 2,842 variants rewritten into the two configurations (the
+    object a stadium or a square with a round hole, the tool a cap or zone
+    in a turned frame or a sphere, cap or zone in the tilted frame shared
+    with the object) likewise (the slowest 22.8 s): 2,475 of them evaluate
+    at least one operation (7,417 of their operations), the others refused
+    as documented (a turned cap's plane within the resolution of the
+    object's cap, tangencies, a vertex on the other's face), none as
+    S9d.2b's `OutOfDomain`. Pending: the DRAW survey, the campaign.
 
 ### Parallel tracks
 

@@ -1778,6 +1778,67 @@ where `A v^2 + 2 B v + C = 0` and the curve is `v = (-B +- sqrt(D)) / A`,
   contains every root of `G(phi, .)` in `T`; intersected with `T` it
   converges quadratically.
 
+## A sphere against a cylinder in a turned frame (S9d.2c)
+
+* **A circle of unequal axes.** A cap's or zone's own circles on a turned
+  frame's stored axis `n` are `c + X x + Y y` with `E = xx X^2 + 2 xy X Y +
+  yy Y^2 - r2 = 0` and `xx != yy` (a rim's `y = n * x` has `yy = |n|^2
+  xx`). The other quadric's function restricted to the plane is a quadratic
+  `Q(X, Y)`. In coordinates turned by a rational rotation `(cr, sr)`, `X =
+  cr s - sr t`, `Y = sr s + cr t`, both are quadratics in `t`, `E`'s with
+  the constant leading coefficient `xx sr^2 - 2 xy sr cr + yy cr^2 > 0`,
+  so their resultant `(a2 b0 - a0 b2)^2 - (a2 b1 - a1 b2)(a1 b0 - a0 b1)` is
+  a polynomial of degree four in `s` whose roots are the meetings' `s`
+  (with `b2 = 0` it is `a2` times the resultant of a quadratic and a
+  linear, so the formula holds throughout). At a simple real root `s0` the
+  two quadratics share one root, `b2 A - a2 B = (b2 a1 - a2 b1) t + (b2 a0 -
+  a2 b0)` giving `t0 = (a2 b0 - a0 b2) / (a1 b2 - a2 b1)` in `Q(s0)`: the
+  point is of `Q(alpha)`, degree four. A double root is a tangency or two
+  meetings over one `s`, a vanishing denominator two meetings of one `s` or
+  none; another rotation separates the latter, so a double root in every
+  rotation tried is a tangency. (S7c.1's circle against a surface shears
+  instead of turning.) `E` irreducible, a resultant vanishing identically
+  means the circle lies on the quadric.
+* **Tangency within the resolution.** A turned frame's rounding leaves no
+  exact tangency: a rim ideally tangent to a cylinder meets it twice
+  within rounding or not at all. Near the quadric `Q` is about twice its
+  radius `rho` times the distance (its rows about unit), so the meetings
+  with `Q - delta` and `Q + delta`, `delta = 2 (rho + res) res`, are
+  counted: a count unlike `Q`'s own means an extremum of `Q` along the
+  circle with its value in `(-delta, delta)` (crossing such a critical
+  level changes the count by two), `Degenerate`.
+* **The height graph on a turned cylinder.** The model's circle at height
+  `w` is `o + r (cos u x + sin u y) + w n` on the stored axes, and with `d =
+  o - c` the sphere's function is `F(u, w) = |d + w n|^2 - R^2 + r^2 (xx
+  cos^2 + 2 xy cos sin + yy sin^2) + 2 r ((x . d + w x . n) cos + (y . d +
+  w y . n) sin)`: of degree two in `(cos, sin)` unless `xx = yy`, `xy = 0`
+  (and `x . n = y . n = 0`), when it is `r (alpha cos + beta sin) - g(w)`
+  and `F (1 + t^2)^2 = (1 + t^2) Q_w(t)`. The branch `plus` is the side of
+  `(alpha, beta) = 2 (x . d, y . d)`. On its boundary directions `+-(alpha,
+  beta) / sqrt(rho2)` `F = P(w) +- l(w) / sqrt(rho2)` (`P = r^2 q(alpha,
+  beta) / rho2 + |d + w n|^2 - R^2`, `l = 2 r (alpha (x . d + w x . n) +
+  beta (y . d + w y . n))`), so a root reaches the boundary only where `E(w)
+  = rho2 P^2 - l^2` vanishes (in an exact frame `E = -rho2 dw`, `dw` S9d.2b's
+  quartic). Two roots meet only where the discriminant of the quartic
+  `F (1 + t^2)^2` in `t` vanishes, a polynomial of degree twelve in `w`
+  (the binary quartic's, so a root at `t = infinity` counts too). Over a
+  closed range of `w` where neither vanishes, and with one root on the
+  branch at one height, that root is the only one on the branch at every
+  height and depends analytically on `w` (the implicit function theorem,
+  `F_u != 0`). In an exact frame the discriminant is `-4 disc(Q_w)
+  |Q_w(i)|^4` with `Q_w(i) = 2 r (alpha + i beta)`, independent of `w` and
+  nonzero; a turned frame's rounding perturbs the pair of roots near `+-i`
+  without making them meet, so every real root of the discriminant is a
+  real tangency of the ellipse with the sphere, the height graph's turning
+  points.
+* **The closed form as a reading.** `Curve3::Rise` computes `u =
+  atan2(beta, alpha) + sign acos(g / (rho |(alpha, beta)|))` on the stored
+  frame as if it were orthonormal: its point lies on the stored cylinder
+  for any `u`, and `F` there is of the size of the Gram matrix's departure
+  from the identity (`2^-52`) times `R^2`, a distance `2^-52 R` amplified by
+  `1 / sqrt(1 - (g / rho)^2)`, which an edge's range between switches keeps
+  bounded.
+
 ## A torus's meetings with quadrics in Booleans (S9d.4b.2a)
 
 * **The function.** On the torus's angles the quadric `sum (g_i . p -

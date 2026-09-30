@@ -174,6 +174,7 @@ jobs:
           target/math-oracle-venv/bin/python rust/tools/generate_capped_boolean_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_sphere_boolean_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_spheres_boolean_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_spheres_turned_boolean_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_cone_boolean_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_torus_boolean_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_torus_segment_boolean_fixtures.py --check

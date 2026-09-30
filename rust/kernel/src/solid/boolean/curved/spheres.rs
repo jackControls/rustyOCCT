@@ -5,11 +5,13 @@
 //! positive all round (two rings over the angle, graphs of `Curve3::Meet`
 //! with the sphere as the other quadric), negative all round (apart), or
 //! changing sign (a loop, whose turning points need graphs over the height:
-//! S9d.2b's, `OutOfDomain`). A prism's cap circle meets a sphere at the
-//! roots of a quartic in its half-angle tangent (`algebraic.rs`); a
-//! sphere's own circle (a rim, the split) meets a cylinder where `F0 + s F1
-//! = 0`, `s` its radius over its basis's length, at algebraic points with
-//! one surd, and another sphere on the spheres' radical plane.
+//! S9d.2b's, and in a turned frame S9d.2c's, `spheres_turned.rs`). A
+//! prism's cap circle meets a sphere at the roots of a quartic in its
+//! half-angle tangent (`algebraic.rs`); a sphere's own circle (a rim, the
+//! split) meets a cylinder where `F0 + s F1 = 0`, `s` its radius over its
+//! basis's length, at algebraic points with one surd (on a basis of
+//! unequal axes, a turned cap's, S9d.2c's resultant), and another sphere on
+//! the spheres' radical plane.
 use super::meet::{tangency, CylPair, EdgeMeet, Pos};
 use super::model::*;
 use super::num::*;
@@ -23,9 +25,9 @@ use num_rational::BigRational as R;
 use std::cmp::Ordering;
 use std::sync::Arc;
 
-/// A sphere meeting a cylinder in a loop: S9d.2b's.
+/// A sphere meeting a cone in a turned frame in a loop: S9d.3c's.
 fn loop_later() -> Error {
-    Error::OutOfDomain("a sphere meeting a turned cylinder in a loop (S9d.2b)")
+    Error::OutOfDomain("a sphere meeting a turned cone in a loop (S9d.3c)")
 }
 
 /// A cylinder of an operand: its frame, circle centre and radius.
@@ -77,15 +79,23 @@ pub(super) fn sphere_cyl(k: usize, cyl: Cyl, c: &V, r: &R, res: f64) -> Result<C
 /// `rho(w) = r + k w`, meets the sphere where `alpha cos u + beta sin u =
 /// g(w) / rho(w)` (`alpha`, `beta` per unit radius), on the branch `plus`
 /// (the sign of `alpha sin u - beta cos u`), over `range` (ascending
-/// heights).
+/// heights). On a turned cylinder (S9d.2c, `exact` false) the circle is an
+/// ellipse in the world and the piece is the one root of the sphere's
+/// function on it on that branch (`spheres_turned.rs`). Heights, branches
+/// and the carrier's membership are read in the carrier's local coordinates
+/// (`rows`, the inverse frame's: its axes in an exact frame).
 #[derive(Debug, Clone, PartialEq)]
 pub(super) struct RiseCrv {
     pub(super) carrier: usize,
-    o: V,
-    x: V,
-    y: V,
-    n: V,
-    r: R,
+    pub(super) o: V,
+    pub(super) x: V,
+    pub(super) y: V,
+    pub(super) n: V,
+    /// The carrier frame's inverse rows (local `u`, `v`, `w`).
+    rows: [V; 3],
+    /// Whether the carrier's stored axes are exactly orthonormal.
+    exact: bool,
+    pub(super) r: R,
     /// The carrier's slope (zero for a cylinder).
     k: R,
     pub(super) c: V,
@@ -96,8 +106,9 @@ pub(super) struct RiseCrv {
 
 impl RiseCrv {
     /// `alpha`, `beta` (per unit radius) and `g`'s coefficients `[g0, g1,
-    /// g2]` (`rho(w)^2` expanded in them).
-    fn coefficients(&self) -> (R, R, [R; 3]) {
+    /// g2]` (`rho(w)^2` expanded in them; exact in an exact frame, the
+    /// half-turns' axis and a binary64 guide in a turned one).
+    pub(super) fn coefficients(&self) -> (R, R, [R; 3]) {
         let d = sub(&self.o, &self.c);
         let (r, k) = (&self.r, &self.k);
         (
@@ -119,6 +130,9 @@ impl RiseCrv {
     /// The point at a rational height (`None` off the piece's branch
     /// domain).
     pub(super) fn at(&self, w: &R) -> Result<Option<QV>> {
+        if !self.exact {
+            return super::spheres_turned::rise_at(self, w);
+        }
         let (a, b, g) = self.coefficients();
         let rho = self.rho(w);
         if rho <= zero() {
@@ -146,26 +160,28 @@ impl RiseCrv {
         self.o.clone()
     }
 
+    /// A point's local coordinates from the circle's centre at height 0.
+    fn local(&self, p: &QV) -> QV {
+        let d = qsub(p, &qv(&self.o));
+        [0, 1, 2].map(|k| qdot(&d, &self.rows[k]))
+    }
+
     /// A point's height.
     pub(super) fn height(&self, p: &QV) -> Qd {
-        qdot(&qsub(p, &qv(&self.o)), &self.n)
+        qdot(&qsub(p, &qv(&self.o)), &self.rows[2])
     }
 
     fn branch(&self, p: &QV) -> Ordering {
         let (a, b, _) = self.coefficients();
-        let d = qsub(p, &qv(&self.o));
-        qdot(&d, &self.y)
-            .scale(&a)
-            .sub(&qdot(&d, &self.x).scale(&b))
-            .sign()
+        let [lu, lv, _] = self.local(p);
+        lv.scale(&a).sub(&lu.scale(&b)).sign()
     }
 
     /// Whether a point lies on the piece (both surfaces, its branch, its
     /// heights, ends included).
     pub(super) fn on(&self, p: &QV) -> bool {
-        let d = qsub(p, &qv(&self.o));
-        let (dx, dy) = (qdot(&d, &self.x), qdot(&d, &self.y));
-        let rho = qdot(&d, &self.n).scale(&self.k).add_r(&self.r);
+        let [dx, dy, dw] = self.local(p);
+        let rho = dw.scale(&self.k).add_r(&self.r);
         let cyl = dx.mul(&dx).add(&dy.mul(&dy)).sub(&rho.mul(&rho));
         let e = qsub(p, &qv(&self.c));
         let sph = qqdot(&e, &e).add_r(&-(&self.rr * &self.rr));
@@ -186,18 +202,16 @@ impl RiseCrv {
 
     /// The unit-free tangent at a point, running up.
     pub(super) fn tangent(&self, p: &QV) -> QV {
-        let d = qsub(p, &qv(&self.o));
-        // The carrier's normal (a cone's leans against its axis).
-        let rho = qdot(&d, &self.n).scale(&self.k).add_r(&self.r);
+        let [du, dv, dw] = self.local(p);
+        // The carrier's normal (a cone's leans against its axis): the
+        // gradient of `u^2 + v^2 - rho(w)^2` in the world, halved.
+        let rho = dw.scale(&self.k).add_r(&self.r);
         let gc = qadd(
-            &qadd(
-                &qscale(&self.x, &qdot(&d, &self.x)),
-                &qscale(&self.y, &qdot(&d, &self.y)),
-            ),
-            &qscale(&self.n, &rho.scale(&-self.k.clone())),
+            &qadd(&qscale(&self.rows[0], &du), &qscale(&self.rows[1], &dv)),
+            &qscale(&self.rows[2], &rho.scale(&-self.k.clone())),
         );
         let t = qcross(&gc, &qsub(p, &qv(&self.c)));
-        if qdot(&t, &self.n).sign() == Ordering::Less {
+        if qdot(&t, &self.rows[2]).sign() == Ordering::Less {
             t.map(|x| x.neg())
         } else {
             t
@@ -230,7 +244,10 @@ impl RiseCrv {
 /// holds a loop, its turning points of both kinds (the ruling tangent, the
 /// circle tangent) ordered along it and rational switches between those of
 /// different kinds: graphs over the height about the first, over the angle
-/// about the second, each verified exactly.
+/// about the second, each verified exactly. On a turned cylinder (S9d.2c)
+/// the height graph's turning points are the discriminant's real roots
+/// (`spheres_turned::Height`) and its pieces are verified by its checks; a
+/// turned cone's loops are S9d.3c's.
 pub(super) fn loops(
     k: usize,
     ruled: Ruled,
@@ -246,7 +263,8 @@ pub(super) fn loops(
         r,
         k: slope,
     } = ruled;
-    if !f.orthonormal() {
+    let exact = f.orthonormal();
+    if !exact && *slope != zero() {
         return Err(loop_later());
     }
     let o = f.point(&cc[0], &cc[1], &zero());
@@ -256,6 +274,8 @@ pub(super) fn loops(
         x: f.x.clone(),
         y: f.y.clone(),
         n: f.n.clone(),
+        rows: [f.row(0).clone(), f.row(1).clone(), f.row(2).clone()],
+        exact,
         r: r.clone(),
         k: slope.clone(),
         c: c.clone(),
@@ -267,8 +287,22 @@ pub(super) fn loops(
     let (alpha, beta, g) = probe.coefficients();
     let rho2 = &alpha * &alpha + &beta * &beta;
     if rho2 == zero() {
-        return Err(loop_later());
+        return Err(Error::ComputationLimit(
+            "a loop about a sphere centred on the carrier's axis",
+        ));
     }
+    // S9d.2c: on a turned cylinder the exact height graph and its checks.
+    let height = if exact {
+        None
+    } else {
+        Some(super::spheres_turned::Height::new(
+            (&o, &f.x, &f.y, &f.n),
+            r,
+            c,
+            rr,
+            [alpha.clone(), beta.clone()],
+        )?)
+    };
     // The height graph's discriminant rho^2 rho(w)^2 - g(w)^2, a quartic in
     // w.
     let gp = trim(g.to_vec());
@@ -281,7 +315,10 @@ pub(super) fn loops(
         |plus: bool, range: Option<[[Qd; 2]; 2]>| MeetCrv::ruled(k, ruled, other, plus, range);
     let pa = d.poly(chart);
     let mut ra = roots(&pa)?;
-    let mut rws = roots(&dw)?;
+    let mut rws = match &height {
+        Some(h) => h.turns(),
+        None => roots(&dw)?,
+    };
     for r in ra.iter_mut().chain(rws.iter_mut()) {
         r.refine_for_signs(160);
     }
@@ -408,8 +445,14 @@ pub(super) fn loops(
                         "a run over the height changing branch",
                     ));
                 }
-                let chain = super::turned::sturm(&dw);
-                if super::turned::changes(&chain, &lo) != super::turned::changes(&chain, &hi) {
+                let clear = match &height {
+                    Some(h) => h.verified(&lo, &hi, sign == Ordering::Greater)?,
+                    None => {
+                        let chain = super::turned::sturm(&dw);
+                        super::turned::changes(&chain, &lo) == super::turned::changes(&chain, &hi)
+                    }
+                };
+                if !clear {
                     return Err(Error::ComputationLimit("a turning point inside a piece"));
                 }
                 pieces.push(Crv::Rise(Box::new(rise(
@@ -475,18 +518,29 @@ pub(super) fn radical(c1: &V, r1: &R, c2: &V, r2: &R) -> (V, V) {
 
 /// Where a sphere's own circle meets a cylinder (`f`, `cy`, `ry`): points
 /// `c + s (cos x + sin y)`, `s^2 = r2 / |x|^2` (a basis of equal lengths),
-/// where `F0 + s F1 = 0`; S9d.2b's for another basis.
-pub(super) fn circ_cylinder(circ: &Circ, f: &Affine, cy: &P2, ry: &R) -> Result<EdgeMeet> {
-    circ_quadric(circ, &other_of(f, cy, ry))
+/// where `F0 + s F1 = 0`; S9d.2c's resultant for another basis (`res` the
+/// resolution its tangencies are refused within).
+pub(super) fn circ_cylinder(
+    circ: &Circ,
+    f: &Affine,
+    cy: &P2,
+    ry: &R,
+    res: f64,
+) -> Result<EdgeMeet> {
+    circ_quadric(circ, &other_of(f, cy, ry), res)
 }
 
-pub(super) fn circ_quadric(circ: &Circ, o: &Other) -> Result<EdgeMeet> {
-    let (xx, yy) = (dot(&circ.x, &circ.x), dot(&circ.y, &circ.y));
-    if xx != yy || dot(&circ.x, &circ.y) != zero() {
-        return Err(Error::OutOfDomain(
-            "a sphere's circle of unequal axes against a cylinder (S9d.2b)",
-        ));
+/// Whether a sphere's circle lies on a basis of equal axes (an exact frame's
+/// or a whole sphere's; a turned cap's are unequal, S9d.2c).
+pub(super) fn equal_axes(circ: &Circ) -> bool {
+    dot(&circ.x, &circ.x) == dot(&circ.y, &circ.y) && dot(&circ.x, &circ.y) == zero()
+}
+
+pub(super) fn circ_quadric(circ: &Circ, o: &Other, res: f64) -> Result<EdgeMeet> {
+    if !equal_axes(circ) {
+        return super::spheres_turned::circ_ellipse(circ, o, res);
     }
+    let xx = dot(&circ.x, &circ.x);
     let sigma = &circ.r2 / &xx;
     // a_i + s L_i(cos, sin): F0 = sum a_i^2 + sigma sum L_i^2 - R^2, F1 = 2
     // sum a_i L_i.
