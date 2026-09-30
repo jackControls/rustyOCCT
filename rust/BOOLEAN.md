@@ -289,8 +289,8 @@ joined by edges, a cut's shell of the tool alone its cavity (one among
 several solids `OutOfDomain`), shells meeting at a vertex `Degenerate`.
 Names follow S9b.1's rules; a result is a `Polyhedron` (both inputs, the
 operation, its index), classified by the set function and moved by its
-stored geometry. A result with arcs given to another Boolean is still
-`OutOfDomain` (S9c).
+stored geometry. A result with arcs given to another Boolean is decided on
+its construction's exact model (S9e.1, below).
 
 ### Cylinders meeting in quartics (S9c.2a)
 
@@ -771,6 +771,73 @@ as S9d.4b.1's cavities), and a loop through a sphere's pole (a wedge's
 rounded end half-plane within rounding of a sphere's axis, a meridian's
 section through the pole) winds by its pcurves' lifted ends, the half turn
 at the pole included.
+
+### A Boolean's result given to another Boolean (S9e.1)
+
+What a result stores is rounded: its faces keep their inputs' stored
+surfaces (a wall's cylinder on a frame at its circle's rounded centre, not
+the prism's affine cylinder), its vertices and edges' curves are rounded
+once, and what the inputs' exact models decide (a profile's line tangent to
+its arc, a shared cap, a section through a vertex) does not survive the
+rounding. A result of the curved arrangement given to another Boolean is
+therefore decided on its construction's exact model, its *given model*
+(`curved/given.rs`): the arrangement of its inputs' exact models that built
+it, run again (the seams tried in `build`'s order, the thread's cache of
+arrangements), its kept pieces the body. The model's faces are the input
+faces holding kept pieces, each on its input's exact surface in its input's
+frame, reached through the input's model (`Prism::view`: the second
+arrangement's cylinder pairs, sections, parameters and seams take a face's
+input model and face; the faces of one given model lie in two frames); a
+face's region is where its input's `in_face` holds and the other input's
+sides at the point (pushed off the face both ways where it lies on a face
+of the other on its surface) are those the first Boolean keeps, `On` on
+the other's boundary elsewhere (the first arrangement's sections); its
+orientation is the kept pieces' (a cut's tool's faces reversed). The
+model's edges are the arrangement's edges on the kept pieces' boundaries
+(exact lines and conics, each conic with the model face whose cylinder's
+angle is its parameter), its vertices the arrangement's exact vertices;
+its membership is the first Boolean's set function over both inputs'
+exact membership, pushed alike (a boundary point `On` unless the other
+input decides it). The stored topology only names the model: the re-run's
+assembly gives the result's slots in the stored order (its provenance: each
+face slot's pieces, each edge slot's arrangement edges, each vertex slot's
+arrangement vertex), checked against the stored vertices (bit for bit, or
+within the resolution after a rigid motion, whose moved inputs' models are
+exact in the moved frames), and every model face, edge and vertex carries
+the ids of the result's entities it lies in (none for an edge inside a
+result face, a full circle's seam, or a vertex inside a result edge).
+
+The second Boolean then arranges the given model as either input: its
+edges are pierced by the other input's faces and the other's edges by its
+faces (lines and conics against planes and cylinders, S9c.1's meetings: a
+new vertex on a given section is three surfaces' point without a new
+computation), its faces meet the other's in S9c.1's sections restricted to
+both regions. Names follow S9a's rules over the given result's ids, so the
+second history is over the first result's entities: a model face holding
+several result faces (a slot through an input face left it in parts) names
+each second-arrangement piece by the result face it lies in (its pieces
+joined across the edges they share, each group by a model edge on its
+boundary and the result face on its side); an edge along a given edge keeps
+that edge's stored circle or ellipse frame, its new ends' angles on it. In
+scope: a result of prisms of lines, arcs and circles in any frames (S9c.1's
+pairs) that is the only solid of its Boolean, as object or tool, with a
+prism of lines, arcs and circles or another such result. Refused: a result
+of several solids, a stack, a plane's piece or a polyhedral result given
+with arcs (S9e.2); a result of spheres, cones, tori or with procedural
+edges, a result against a sphere, cone or torus, and deeper chains (S9e.3);
+a given edge through an irrational point against a cylinder
+(`ComputationLimit`, as a section's line in S9c.1); every S9c.1
+degeneracy, including where the other input meets a given model's section
+at a point where the first result has no face.
+
+Two corrections found here: parallel circular cylinders' relation holds the
+second cylinder's circle in the first's frame, so an arc of the second
+input's cylinder is met against the first's with the relation taken from
+its own side (read in the first's frame its crossings were missed and the
+result left open: a cylinder's cap circle across a parallel one's wall, in
+exact frames), and the independent history check takes an ellipse split
+into arcs (a given result's section edge cut by the second Boolean) as one
+curve, as it takes a circle.
 
 ### Spline profiles (S9a.2)
 
@@ -2006,12 +2073,28 @@ height); its horizontal edges on a spline are its lifted restrictions.
   30): every result valid with the reference's solid count, all 30 match
   (within 8.0e-10; exact frames 2.9e-16), no review; seven solids' counts
   change when unified.
+* **Kernel (S9e.1).** `tests/chained_booleans.rs`: all 30 fixtures as the
+  reference (24 within the kernel's enclosures, each at most `1e-9` wide;
+  the 6 declared degenerate refused), every second history complete over
+  the first result's ids, results deterministic and moved rigidly, first
+  results translated with their third prisms keeping the reference's
+  volumes, the grooved top's two result faces each named by its own part,
+  the stored frames the reference's bit for bit; `tests/curved_booleans.rs`
+  a cylinder's cap circle across a parallel cylinder's wall, either input
+  first, by its lens's closed form. `compare_chained_boolean.py`: 24
+  matches, 6 reviewed for their entity counts (OCCT's vertices at the
+  hole's and pin's stored cylinders' seam angles and a touching box's
+  imprints kept after unifying, found by a diagnostic build printing the
+  unified vertices), no failure; every other Boolean comparison unchanged
+  in its counts.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
   disjoint, inside (pockets, cavities) or on top (touching stacks); fuse,
   cut and common with the volume identities, rigid motions of the results
-  and every result vertex classified on its boundary.
+  and every result vertex classified on its boundary; one operation's first
+  result (of at most 12 faces; curved ones too since S9e.1, `GIVEN_CURVED`)
+  cut by a turned box and in common with it.
 
 ## DRAW commands
 

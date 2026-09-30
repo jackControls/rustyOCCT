@@ -3896,6 +3896,69 @@ Decisions for S9, recorded before its code (2026-09-28):
     (volumes within 5.7e-10, areas 8.0e-10, centres 5.9e-10 of the size;
     exact frames 2.9e-16), no review; seven solids' counts change when
     unified. S9e.1's kernel next.
+  * **S9e.1 implemented** (`solid/boolean/curved/given.rs`, `model.rs`'s
+    `Prism::view` and `given`, `graph.rs`, `assemble.rs`'s provenance
+    `Made` and names, `mod.rs`): a Boolean's result of prisms with lines,
+    arcs and circles, the only solid of its Boolean, given to another
+    Boolean as object or tool with such a prism or another such result, on
+    its given model as the refined decisions describe. All 30 fixtures as
+    the reference (24 within the kernel's enclosures, each at most `1e-9`
+    wide; the 6 declared degenerate refused: the tangent third cylinder as
+    a tangency between the inputs, the third box's edge as an edge of one
+    input on the other's face), every second history complete over the
+    first result's ids (each of them resolved), results deterministic and
+    moved rigidly, the first results translated with their third prisms
+    keeping the reference's volumes, the grooved top's two result faces
+    each named by its own part, the stored frames the reference's bit for
+    bit (`tests/chained_booleans.rs`, 0.7 s at `opt-level` 2).
+    `compare_chained_boolean.py` 24 matches and 6 reviewed for their
+    entity counts (a diagnostic build of the oracle printing the unified
+    solids' vertices, not committed, finds every native-only vertex on the
+    hole's or pin's stored cylinder at its seam angle, or at the third
+    box's imprint on the holed top, OCCT keeping those after unifying, and
+    no kernel vertex missing natively); every other Boolean comparison
+    unchanged in its counts (boolean 45/0, its splines 33/13, polyhedral
+    43/2, curved 42/2, procedural 4/24, turned 2/13, capped 0/18, sphere
+    30/0, spheres 12/21, cone 25/5, cones 21/19, torus 11/24, torus segment
+    15/14, torus curved 15/29, spheres turned 0/18, cones' loops 5/26,
+    torus parts 16/37). The refusals name their sub-steps now: a stack, a
+    plane's piece or a polyhedral result with curved faces or against arcs
+    (S9e.2), a result of several solids (S9e.2), a result of spheres,
+    cones, tori or with procedural edges, deeper chains and a result
+    against a sphere, cone or torus (S9e.3). Amendments and corrections,
+    from the implementation: (a) parallel circular cylinders' relation
+    (`CylPair::Parallel`) holds the second cylinder's circle in the
+    first's frame, and an arc of the second input's cylinder was met
+    against the first's with it as its own: its crossings were missed and
+    the result left open (`InvalidTopology("an open Boolean of arcs in any
+    position")` for a cylinder's cap circle across a parallel one's wall in
+    exact frames, either input first; latent since S9c.1, no fixture
+    reaching it): the relation is taken from the arc's side now
+    (`tests/curved_booleans.rs`, the lens's closed form); (b) the
+    independent history check takes an ellipse split into arcs as one curve
+    (each arc's centre and axes' ends on the whole's), as it takes a
+    circle: a given result's section edge cut by the second Boolean was
+    reported `split_support_differs`; (c) a model face holding several
+    result faces names each second-arrangement piece through its pieces
+    joined across the edges they share and a model edge on the group's
+    boundary (no point-in-face test needed); (d) a rigid motion by a
+    rotation rounds the frames apart, and a box's wall parallel to the
+    tilted hole's axis then lies within rounding of its direction (S9c.1's
+    refusal, the first Boolean's too), so the moved inputs are checked
+    under a translation by binary64 steps. The `boolean` fuzz target's
+    chained stage gives first results with curved faces to the turned box
+    too (`GIVEN_CURVED`, on): replaying the corpus (1,425 inputs) and the 19
+    regressions with debug assertions, no failure, the slowest 3.6 s; of
+    390 curved first results the stage reached, 26 evaluate on their given
+    models, the rest refused as documented (199 results of spheres, cones
+    or tori, S9e.3; 104 stacks, S9e.2; 34 a plane within rounding of a
+    cylinder's direction; others S9c's). DRAW: of the boolean group's 25
+    cases giving a result to another Boolean that the scan finds outside
+    S9b.2's registered pockets, 17 need the public dataset, `bcut_simple/
+    L3` to `L6` (stacks) are S9e.2's, `G9` and `H3` (a cone fused on a
+    cylinder) S9e.3's, `bopcut_simple/ZQ1` and `bopfuse_simple/ZP6` refused
+    as before: no status changes, the ledger does not (`L3`'s sentinel
+    purpose now names S9e.2). Pending: the DRAW survey, the campaign.
 
 ### Parallel tracks
 
