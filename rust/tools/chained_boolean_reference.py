@@ -47,6 +47,17 @@ point set, decided at every point by the three prisms' memberships.
 `Chain(obj, tool, third, op1, swapped)` gives `result(op2)`: the solid
 count, volume, area and centre, or no solid; `rows(...)` gives `result N
 volume area cx cy cz` or `empty`, as the other references.
+
+S9e.2 (one solid of a first result of several): `Chain(..., selector=D)`
+adds a fourth prism `D`, a box picking that solid, and the chain `op2(op1(a,
+b) and d, c)` (swapped `op2(c, op1(a, b) and d)`): each slice's first
+pieces are clipped to `D`'s parallelograms before the second operation,
+every face is swept against the three other prisms (their crossings merged
+pairwise), and a piece on faces of several prisms is counted by the first
+in the order object, tool, third, selector. `separation(chain)` gives the
+area of `D`'s faces with `op1(a, b)` on either side: zero when `D` meets no
+part of the first result but whole solids of it (the fixtures' check that
+`D` picks solids, not parts of them).
 """
 import itertools
 
@@ -66,8 +77,13 @@ EPS = mp.mpf(10)**-32
 SET = cref.SET
 
 
-def chained(op1, op2, swapped):
-    """The chain's set function of the three memberships."""
+def chained(op1, op2, swapped, selected=False):
+    """The chain's set function of the three memberships (four with a
+    selector, S9e.2: the first result's part inside it)."""
+    if selected:
+        if swapped:
+            return lambda a, b, c, d: SET[op2](c, SET[op1](a, b) and d)
+        return lambda a, b, c, d: SET[op2](SET[op1](a, b) and d, c)
     if swapped:
         return lambda a, b, c: SET[op2](c, SET[op1](a, b))
     return lambda a, b, c: SET[op2](SET[op1](a, b), c)
@@ -145,7 +161,8 @@ def piece_op(op, P_, Q_):
 # ------------------------------------------------------------------ slicing
 
 class Slicing3:
-    """The three prisms sliced by planes holding their axes."""
+    """The three prisms (four with a selector, S9e.2) sliced by planes
+    holding their axes."""
 
     def __init__(self, prisms, axis=None):
         self.prisms = prisms
@@ -168,7 +185,7 @@ class Slicing3:
         self.dp = scale(d, 1/dot(d, d))
         self.P0 = prisms[0].o
         self.J = abs(det3(self.dp, g, h))
-        self.secs = [Section(p, self.P0, self.dp, g, h, tag) for p, tag in zip(prisms, 'ABC')]
+        self.secs = [Section(p, self.P0, self.dp, g, h, tag) for p, tag in zip(prisms, 'ABCD')]
         self.ranges = [self.s_range(p) for p in prisms]
         self.size = max(max(abs(x) for x in bnd) for p in prisms for bnd in p.bounds())+1
         corners = []
@@ -200,8 +217,11 @@ class Slicing3:
 
     def pieces(self, s, op1, swapped):
         """Each second operation's convex pieces of the slice."""
-        pa, pb, pc = (sec.parallelograms(s) for sec in self.secs)
+        pa, pb, pc, *pd = (sec.parallelograms(s) for sec in self.secs)
         first = piece_op(op1, pa, pb)
+        if pd:
+            # S9e.2: the first result's solids inside the selector.
+            first = piece_common(first, pd[0])
         out = {}
         for op2 in OPS:
             pieces = piece_op(op2, pc, first) if swapped else piece_op(op2, first, pc)
@@ -489,9 +509,9 @@ class Slicing3:
 # ------------------------------------------------------------------ face areas
 
 class MultiSweep:
-    """One face of a prism against the two other prisms at once: the areas
-    of its pieces by their classes against each (`in`, `out`, `same`,
-    `opp`)."""
+    """One face of a prism against the two other prisms at once (three with
+    a selector, S9e.2): the areas of its pieces by their classes against
+    each (`in`, `out`, `same`, `opp`)."""
 
     def __init__(self, face, others, size):
         self.face = face
@@ -506,26 +526,27 @@ class MultiSweep:
         for sw in self.sweeps:
             cand += sw.breakpoints()
         found = []
-        s1, s2 = self.sweeps
-        for g1 in ('Oh', 'Oe', 'Ov'):
-            for g2 in ('Oh', 'Oe', 'Ov'):
-                for d1 in s1.groups[g1]:
-                    for d2 in s2.groups[g2]:
-                        poly = sq_poly(psub(d1.L, d2.L), [(d1.k, d1.Q), (-d2.k, d2.Q)])
-                        if pzero(poly):
-                            continue
-                        for x in s1.params(poly):
-                            for xx in s1.in_domain(x):
-                                if self.relevant(xx, d1.key, d2.key):
-                                    found.append(xx)
+        for i, j in itertools.combinations(range(len(self.sweeps)), 2):
+            s1, s2 = self.sweeps[i], self.sweeps[j]
+            for g1 in ('Oh', 'Oe', 'Ov'):
+                for g2 in ('Oh', 'Oe', 'Ov'):
+                    for d1 in s1.groups[g1]:
+                        for d2 in s2.groups[g2]:
+                            poly = sq_poly(psub(d1.L, d2.L), [(d1.k, d1.Q), (-d2.k, d2.Q)])
+                            if pzero(poly):
+                                continue
+                            for x in s1.params(poly):
+                                for xx in s1.in_domain(x):
+                                    if self.relevant(xx, d1.key, d2.key, (i, j)):
+                                        found.append(xx)
         self.events = len(found)
         return merge_breaks(cand+found, lo, hi, mp.mpf(10)**-30*max(1, hi-lo))
 
-    def relevant(self, x, k1, k2):
-        """A crossing of the first other and one of the second at one point
-        of the line, within the face."""
+    def relevant(self, x, k1, k2, pair=(0, 1)):
+        """A crossing of one other (the pair's first) and one of another
+        (its second) at one point of the line, within the face."""
         tol = self.tol
-        s1, s2 = self.sweeps
+        s1, s2 = self.sweeps[pair[0]], self.sweeps[pair[1]]
 
         def match(key, tag):
             return tag[:len(key)] == key
@@ -610,7 +631,7 @@ def bounds_chain(fn, own, others, classes):
     """Whether a piece of a face of prism `own` with the given classes
     against the prisms `others` bounds the chain: the chained function
     differs in front of the face (its prism left) and behind it (held)."""
-    front, back = [None]*3, [None]*3
+    front, back = [None]*(len(others)+1), [None]*(len(others)+1)
     front[own], back[own] = False, True
     for o, c in zip(others, classes):
         front[o], back[o] = SIDES[c]
@@ -620,8 +641,12 @@ def bounds_chain(fn, own, others, classes):
 # ------------------------------------------------------------------ the chain
 
 class Chain:
-    def __init__(self, obj, tool, third, op1, swapped, axis=None):
+    def __init__(self, obj, tool, third, op1, swapped, axis=None, selector=None):
         self.prisms = [Prism(obj), Prism(tool), Prism(third)]
+        # S9e.2: the selector box picking one solid of the first result.
+        self.selected = selector is not None
+        if self.selected:
+            self.prisms.append(Prism(selector))
         self.op1, self.swapped = op1, swapped
         self.slicing = Slicing3(self.prisms, axis)
         self.size = self.slicing.size
@@ -630,7 +655,7 @@ class Chain:
         self._solids = {}
 
     def fn(self, op2):
-        return chained(self.op1, op2, self.swapped)
+        return chained(self.op1, op2, self.swapped, self.selected)
 
     def volumes(self):
         if self._volumes is None:
@@ -642,7 +667,7 @@ class Chain:
         if self._areas is None:
             out = []
             for i, p in enumerate(self.prisms):
-                others = [j for j in range(3) if j != i]
+                others = [j for j in range(len(self.prisms)) if j != i]
                 for f in p.faces:
                     sweep = MultiSweep(f, [self.prisms[j] for j in others], self.size)
                     out.append((i, f, sweep.areas(), sweep))
@@ -653,7 +678,7 @@ class Chain:
         fn = self.fn(op2)
         total = mp.mpf(0)
         for i, f, cls, _ in self.face_areas():
-            others = [j for j in range(3) if j != i]
+            others = [j for j in range(len(self.prisms)) if j != i]
             for classes, a in cls.items():
                 # On a face of an earlier prism: counted there.
                 if any(c in ('same', 'opp') and o < i for o, c in zip(others, classes)):
@@ -673,6 +698,23 @@ class Chain:
         if vol <= mp.mpf(10)**-25*self.size**3:
             return 0, mp.mpf(0), mp.mpf(0), None
         return self.solids(op2), vol, self.area(op2), tuple(m/vol for m in mom)
+
+
+def separation(chain):
+    """S9e.2: the area of the selector's faces where the first result
+    `op1(a, b)` holds on either side (zero when the selector holds whole
+    solids of it, and meets no other)."""
+    assert chain.selected
+    first = SET[chain.op1]
+    total = mp.mpf(0)
+    for i, f, cls, _ in chain.face_areas():
+        if i != 3:
+            continue
+        for classes, a in cls.items():
+            (fa, ba), (fb, bb) = SIDES[classes[0]], SIDES[classes[1]]
+            if first(fa, fb) or first(ba, bb):
+                total += a
+    return total
 
 
 def rows(chain, op2):

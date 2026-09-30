@@ -262,13 +262,18 @@ pub(super) fn assemble_made(arr: &Arr, op: Op2) -> Result<Vec<(Component, Made)>
         faces[gi].pieces.push(i);
     }
     // Each face's loops: its pieces' half-edges less those it holds both
-    // ways, linked again at their vertices.
+    // ways, linked again at their vertices. A piece of the other input on
+    // the face's surface turned the other way (its input face's normal
+    // against this one's: a reversed piece joining a kept one, S9e.2's
+    // stack floors) runs its loops the other way, about the face's own
+    // normal, and every vertex's way on is chosen about that normal.
     for rf in &mut faces {
         let mut face_of: BTreeMap<(usize, bool), usize> = BTreeMap::new();
         for &i in &rf.pieces {
+            let same = arr.pieces[i].behind == rf.behind;
             for lp in &arr.pieces[i].loops {
-                for &h in lp {
-                    face_of.insert(h, arr.pieces[i].face);
+                for &(g, d) in lp {
+                    face_of.insert((g, if same { d } else { !d }), rf.face);
                 }
             }
         }
@@ -1370,10 +1375,12 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
             };
             let sweep = if with { sweep } else { -sweep };
             let fl = |x: &V| x.clone().map(|y| rational_f64(&y));
-            // A given result's edge (S9e.1): on its stored circle or ellipse.
+            // A given result's edge (S9e.1): on its stored circle or ellipse
+            // (turning its frame's way, S9e.2).
             if let CurveRef::Edge(o, ei) = first.curve {
                 if let Some(g) = &arr.models[o].given {
-                    if let Some(c) = given_arc(g.curves[ei].as_ref(), e, points, with) {
+                    if let Some(c) = given_arc(g.curves[ei].as_ref(), e, points, with != g.flip[ei])
+                    {
                         return Ok(c);
                     }
                 }

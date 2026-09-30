@@ -28,7 +28,10 @@
 //! classifies on its boundary; each operation's first result is an input
 //! again (S9b.2) against a turned box, with the same identities; one with
 //! curved faces (S9e.1: a result of prisms with arcs in frames with
-//! different axes) too, on its construction's exact model (`GIVEN_CURVED`).
+//! different axes) too, on its construction's exact model (`GIVEN_CURVED`);
+//! S9e.2: a stack with arc walls and one solid of several are given too,
+//! and the chained byte's upper bits may turn the box into a turned
+//! cylinder (`GIVEN_ROUND`: a stack or an S9b.1 result given with arcs).
 use crate::analytic_intersections::Bytes;
 use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
@@ -70,6 +73,12 @@ const TURNED_PARTS: bool = false;
 /// arrangement run again, cached). On: the stage keeps its limit of 12
 /// faces.
 const GIVEN_CURVED: bool = true;
+
+/// Whether the chained stage's partner may be a turned cylinder instead of
+/// the turned box (S9e.2: a stack or an S9b.1 result of line prisms given
+/// with arcs, decided on its construction's curved arrangement matched to
+/// its stored topology), by the chained byte's upper bits.
+const GIVEN_ROUND: bool = true;
 
 pub fn check_boolean(data: &[u8]) {
     let mut b = Bytes(data, 0);
@@ -411,27 +420,35 @@ pub fn check_boolean(data: &[u8]) {
         fa.x() * 3.0 + fa.y() * 4.0,
         tolerance,
     )
-    .ok()
-    .and_then(|f| {
-        let square = rusty_occt::Boundary::polygon(
-            vec![
-                rusty_occt::Point2::new(-1.0, -1.0),
-                rusty_occt::Point2::new(1.0, -1.0),
-                rusty_occt::Point2::new(1.0, 1.0),
-                rusty_occt::Point2::new(-1.0, 1.0),
-            ],
-            tolerance,
-        )
+    .ok();
+    // One operation's first result, chosen by a byte after the others, of
+    // at most 12 faces, cut by the box and in common with it: exact
+    // fragments of larger stored models took up to 165 s an input under
+    // ASan (fuzz/regressions/README.md); the kernel's tests take them.
+    // S9e.2: the byte's upper bits may make the partner a cylinder of radius
+    // 1.25 on the box's frame.
+    let chained = b.next();
+    let round = GIVEN_ROUND && (chained / 3) % 2 == 1;
+    let turned = turned.and_then(|f| {
+        let outline = if round {
+            rusty_occt::Boundary::circle(rusty_occt::Point2::new(0.0, 0.0), 1.25, tolerance)
+        } else {
+            rusty_occt::Boundary::polygon(
+                vec![
+                    rusty_occt::Point2::new(-1.0, -1.0),
+                    rusty_occt::Point2::new(1.0, -1.0),
+                    rusty_occt::Point2::new(1.0, 1.0),
+                    rusty_occt::Point2::new(-1.0, 1.0),
+                ],
+                tolerance,
+            )
+        }
         .ok()?;
-        let profile = rusty_occt::Profile::new(square, vec![], tolerance).ok()?;
+        let profile = rusty_occt::Profile::new(outline, vec![], tolerance).ok()?;
         Solid::extrude_with(OperationId(7), profile, f, 0.0, h).ok()
     });
     if let Some((box_, _)) = turned {
-        // One operation's first result, chosen by a byte after the others,
-        // of at most 12 faces, cut by the box and in common with it: exact
-        // fragments of larger stored models took up to 165 s an input under
-        // ASan (fuzz/regressions/README.md); the kernel's tests take them.
-        let chosen = [&fused, &cut, &common][usize::from(b.next() % 3)];
+        let chosen = [&fused, &cut, &common][usize::from(chained % 3)];
         let small = |s: &&Solid| {
             s.topology().faces().len() <= 12
                 && (GIVEN_CURVED

@@ -89,11 +89,14 @@ impl Stack {
     }
 
     /// The solid moved rigidly: its stored geometry moved (the decisions'
-    /// rule for general bodies), its enclosures measured again.
+    /// rule for general bodies), its enclosures measured again, its height
+    /// range in its (moved) frame kept (the classification's: S9e.2 found
+    /// a moved stack classifying every point off its heights).
     pub(crate) fn moved(
         &self,
         topology: &Topology,
         frame: Frame3,
+        heights: [f64; 2],
         operation: OperationId,
         motion: crate::RigidTransform,
         mass: MassProperties,
@@ -103,7 +106,7 @@ impl Stack {
             Component {
                 parts,
                 plans: Vec::new(),
-                heights: [0.0, 0.0],
+                heights,
             },
             frame,
             operation,

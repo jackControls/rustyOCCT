@@ -4000,6 +4000,231 @@ Decisions for S9, recorded before its code (2026-09-28):
     cylinder) S9e.3's, `bopcut_simple/ZQ1` and `bopfuse_simple/ZP6` refused
     as before: no status changes, the ledger does not (`L3`'s sentinel
     purpose now names S9e.2). Pending: the DRAW survey, the campaign.
+  * **S9e.2 refined, before its code (2026-09-30).** Why each is refused
+    today: a stack given with an arc (or with curved walls of its own) goes
+    to `polyhedra.rs`, whose `stored_model` refuses its cylinders and whose
+    `prism_model` refuses the partner's arcs ("a Boolean of a prism with
+    arcs and a solid other than a prism (S9e.2)"); an S9b.1 result
+    (`Construction::Polyhedron` of two line prisms, built by
+    `polyhedra::build`) likewise; one solid of several of an S9e.1-class
+    result reaches `given::model`, which refuses it ("a Boolean's result of
+    several solids given to another Boolean (S9e.2)"). Decisions. (1)
+    *Which inputs.* Given to another Boolean as object or tool with S9e.1's
+    partners (a prism of lines, arcs and circles in any position, or another
+    given result): (a) a stack (`Construction::Stack`, S9a.2) with a
+    cylindrical wall, or of planar faces only when its partner has an arc or
+    a cylindrical face; (b) an S9b.1 result (both its inputs line prisms)
+    under the same condition; (c) one solid of a result of several solids
+    of S9e.1's class, of (a) or of (b). A stack or S9b.1 result with a
+    polyhedral partner stays S9b.2's stored model (exact on planar faces,
+    as now). A result whose inputs are not both prisms (a result of a
+    stack, a stored model or a result: deeper chains) stays S9e.3's; a
+    plane's piece (`Clipped`, `Half`) is a general body's, decided on its
+    stored surfaces with S9e.4's imported bodies (its refusal names S9e.4).
+    (2) *The construction's model is the curved arrangement's.* A stack is
+    `A op B` of its two profiles' prisms (both on its frame: the object's,
+    the tool's profile translated into it, over its heights `ha` and `hb`),
+    an S9b.1 result `A op B` of its two kept prisms: the point set is the
+    inputs' exact set function whichever arrangement built it. The given
+    model re-runs S9c.1's arrangement of the two prisms' exact models
+    (same-frame prisms included: walls parallel, caps coplanar, both seams
+    apart on a shared circle) with S9e.1's seams and cache, its kept pieces
+    the body, its faces, edges, vertices, regions and membership exactly
+    S9e.1's; stack.rs's slabs and polyhedra.rs's fragments are not used
+    (their exact data is 2D or triangulated, not S9c.1's faces, edges and
+    pieces). (3) *A geometric match names it.* A stack's or S9b.1 result's
+    stored slots come from another assembly, so the re-run's assembly (its
+    solids, faces joined across shared edges, edges joined where they run
+    straight on, closed curves as rings: S9c.1's rules, which S9a.2's and
+    S9b.1's unified results follow too) is matched to the stored topology:
+    each stored vertex the one re-run vertex within the resolution of it,
+    one to one and onto; each stored edge the re-run edge between the
+    matched ends whose points at a quarter, a half and three quarters of its
+    range lie within the resolution of the stored edge's at those fractions
+    (either direction; a ring's points within the resolution of the stored
+    ring's curve); each stored face the re-run face bounded by the matched
+    edges (the same set) on a surface of the same kind; the given solid the
+    one re-run solid so matched (a stack's `index` numbers its own
+    assembly's solids, not the re-run's). A stored entity unmatched or
+    matched twice, or a re-run entity unmatched, is
+    `ComputationLimit("a given result rebuilt differently")`: the
+    assemblies differ (a seam, a join), which a fixture shows first. An
+    S9e.1-class result keeps its slot check (one assembly; the solid its
+    `index`). The model's faces, edges and vertices carry the matched stored
+    ids as S9e.1's do, and its edges the matched stored curves. (4) *One
+    solid of several.* Such a solid holds only part of its construction's
+    region, and deciding a point's solid by parity along a ray would leave
+    the quadratic surds (a ray's crossing of a cylinder) or need a ray
+    parallel to every axis. The given model is instead the whole
+    construction (every re-run solid's faces, edges and vertices; the
+    construction's regions and membership), and the second arrangement's
+    pieces are sorted by solid once it is built, by adjacency, exactly:
+    each piece of a given face by a given edge on its group (the pieces of
+    that model face joined across the edges they share; every group is
+    bounded by given edges of one solid), each piece of the other input
+    with a side inside the construction by a section or given edge on it
+    (the given face's pieces along that edge), else by its neighbours
+    across the other input's own edges inside the construction. Pieces of
+    the other solids' given faces are dropped; a piece of the other input
+    inside another solid is outside the given one (both sides). A shell of
+    the other input inside the construction meeting none of its faces (the
+    partner strictly inside one solid of several) has no adjacency:
+    `ComputationLimit("a solid inside one of a given result's several
+    solids")`. The arrangement holding every solid, a degeneracy between the
+    partner and another solid of the given result (a tangency, an edge on a
+    face) is S9c.1's `Degenerate` too, though the Boolean with the given
+    solid alone is not degenerate: a conservative refusal, declared by a
+    fixture. (5) *Routing.* `curved::applies` takes a stack or an S9b.1
+    result when it has a cylindrical face or its partner an arc or a
+    cylindrical face (a given result), with S9e.1's partners only (a
+    sphere, cone or torus partner is S9e.3's). (6) *Evidence first.* The
+    case protocol picks one solid of several: `then OP ID [swapped] [solid
+    X Y Z]` takes the first result's solid holding the point strictly inside
+    (`Solid::classify`; natively `BRepClass3d_SolidClassifier`), exactly one
+    of them; without `solid` the first result must be one solid, as in
+    S9e.1. The independent reference (`chained_boolean_reference.py`,
+    generalized to a fourth prism): a selector `D`, a box sharing an axis
+    direction with the others, the chain `op2(op1(A, B) and D, C)`
+    (swapped `op2(C, op1(A, B) and D)`), with checks that `D` separates the
+    first result (no area of `D`'s faces bounds `op1(A, B) and D`, the pick
+    point inside it, the pair identities with `V(X_k)` from the three-prism
+    chain `op1(A, B) and D`). Fixtures (`generate_given_boolean_fixtures.py`)
+    of every class: DRAW's `bcut_simple/L3` to `L6` in the rollex's
+    geometry (a disc less a pocket cut across its rim over the top part of
+    its height, a stack; then a cylinder whose bottom lies on the pocket's
+    floor, turned as `L3` and `L4` and in the stack's frame as `L5` and
+    `L6`); a box with a boss (a stack) drilled across; S9b.1 results (a box
+    and a turned box; a box cut by a tilted box, bored through the slanted
+    face); a box severed by a cylinder (two solids of S9e.1's class), one of
+    them drilled, as object and as tool; a box severed by a tilted slab (two
+    S9b.1 solids), one of them against a cylinder; declared `degenerate`: a
+    third cylinder tangent to a stack's arc wall along a generatrix, a third
+    prism tangent to the solid of a severed box not picked. A native
+    capture before `solid/boolean/curved/matched.rs` (the match and the
+    sorting by solid) exists, the comparison `compare_given_boolean.py`
+    keyed on it, `test_given_boolean_reference.py`, the generator's check a
+    CI group (`given`); then the kernel.
+  * **S9e.2 evidence (2026-09-30).** The case protocol picks one solid of
+    several: `then OP ID [swapped] solid X Y Z`
+    (`identity_reference.encode_chained_case` and `native_chained_case`
+    with a pick point; `occt_boolean_oracle.cpp` takes the solid
+    `BRepClass3d_SolidClassifier` finds the point inside, exactly one,
+    `tests/support/boolean_protocol.rs` the one `Solid::classify` does).
+    `chained_boolean_reference.py` takes a fourth prism, the selector `D`:
+    each slice's first pieces clipped to `D`'s parallelograms before the
+    second operation, every face swept against the three others (their
+    crossings merged pairwise), a piece on several prisms' faces counted by
+    the first in the order object, tool, third, selector, and
+    `separation`, the area of `D`'s faces with the first result on either
+    side. `generate_given_boolean_fixtures.py --check`: 36 cases (12
+    chains; 12 fuses, 12 cuts, 12 commons; 30 solid, 6 degenerate; 18
+    stacks, 6 S9b.1 results, 12 picked solids) in `XY`, `SIDE`, `DOWN`,
+    `TILT` and `R125`: DRAW's rollex (a disc of radius 60 less a pocket of
+    radius 40 across its rim over the top 6 of its height 20, then a
+    cylinder of radius 30 whose bottom lies on the pocket's floor, crossing
+    the pocket's wall and the rim) in `DOWN` (`L3`, `L4`) and in the stack's
+    frame (`L5`, `L6`); a box with a boss bored coaxially (closed forms),
+    sliced by a tilted slab (its common two solids) and as a tilted box's
+    tool; a box fused with a box turned about its axis, bored through both;
+    a box less a tilted box (a slanted top) bored through the slanted face;
+    a box severed by a cylinder across it (two solids of S9e.1's class), the
+    lower drilled and as a box's tool; a box severed by a tilted slab (two
+    S9b.1 solids), the lower bored through its slanted face; `degenerate` a
+    third cylinder internally tangent to the rollex's rim along a
+    generatrix and a third box whose wall touches the severed box's other
+    solid along a generatrix (the conservative refusal). Checks: closed
+    forms within 3.3e-41; the pair identities for the given solid `X`
+    (S9c.1's pair reference, or for a picked solid the three-prism chain
+    `op1(A, B) and D`, one solid while the pair counts two) within 7.7e-42
+    and the area identity within 8.2e-41; the selectors' separation exactly
+    zero and each pick point inside its solid; face classes 2.2e-41; Monte
+    Carlo 3.1 standard errors; no near coincidence outside the declared
+    chains (the lower piece's bore first had its top `z = 5` and the slab's
+    far plane meeting its wall where the selector's plane met the box's
+    top, two triples concurrent at one slice: the bore raised to 5.5). The
+    rollex's cut has area 30152.95448 (DRAW's `checkprops -s 30153`).
+    `test_given_boolean_reference.py` checks four boxes (a box severed by a
+    slab of the `SIDE` frame, the selector holding one part) by their grid
+    cells exactly as object and tool, the separation of a selector across
+    the first result (its face's area there), and a selector around the
+    whole first result giving S9e.1's chain; S9e.1's fixtures are written
+    unchanged by the generalized reference. The generator's check is a CI
+    group of its own (`given`, 50 s locally on six workers). The capture
+    `occt-boolean-given-preimplementation` (`compare_given_boolean.py`,
+    keyed on `solid/boolean/curved/matched.rs`; the kernel `unsupported` on
+    all 36, its first Boolean evaluating and the second refused as S9e.2's):
+    every result valid with the reference's solid count, all 36 matching
+    (volumes within 5.5e-9, areas 5.7e-9, centres 3.9e-10 of the size, a
+    cylinder's piece under the tilted planes; exact frames 3.3e-15), no
+    review; the rollex's results lose faces, edges or vertices when
+    unified. S9e.2's kernel next.
+  * **S9e.2 implemented** (`solid/boolean/curved/matched.rs`, `given.rs`'s
+    construction and whole-construction model, `mod.rs`'s routing): a
+    stack with a cylindrical wall (or of planes against arcs), an S9b.1
+    result of line prisms given with arcs and one solid of a result of
+    several, given to another Boolean as object or tool with a prism of
+    lines, arcs and circles or another given result, on their
+    construction's curved arrangement as the refined decisions describe.
+    All 36 fixtures as the reference (30 within the kernel's enclosures,
+    each at most `1e-9` wide; the 6 declared degenerate refused, each "a
+    tangency between the inputs"), every second history complete over the
+    given solid's ids (the other solid's ids neither in the result nor in
+    its history), results deterministic and moved rigidly, given solids
+    translated with their third prisms keeping the reference's volumes, a
+    partner strictly inside one solid of several `ComputationLimit`, the
+    stored frames the reference's bit for bit (`tests/given_booleans.rs`,
+    1.6 s at `opt-level` 2). `compare_given_boolean.py` 36 matches, OCCT's
+    unified entity counts on every evaluated case, no review; every other
+    Boolean comparison unchanged in its counts (boolean 45/0, its splines
+    33/13, polyhedral 43/2, curved 42/2, procedural 4/24, turned 2/13,
+    capped 0/18, sphere 30/0, spheres 12/21, cone 25/5, cones 21/19, torus
+    11/24, torus segment 15/14, torus curved 15/29, spheres turned 0/18,
+    cones' loops 5/26, torus parts 16/37, chained 24/6). The stored
+    slots of every stack and S9b.1 fixture match the re-run's assembly one
+    to one (S9a.2's and S9b.1's unified results keep the curved
+    assembly's vertices, edges and faces). Amendments and corrections,
+    from the implementation: (a) pieces of both inputs on one surface
+    joined into one result face, where the other input's piece is reversed
+    beside a kept one (the rollex's cut: the cylinder standing on the
+    pocket's floor, its bottom disc reversed over the material beside the
+    pocket, joined with the floor), ran their loops about their own faces'
+    opposite normals, and the face's loops did not close
+    (`InvalidTopology("a joined face's loops do not close")`, latent since
+    S9c.1, no pair of prisms having reached it): each piece's loops now
+    run about the joined face's normal and every vertex's way on is chosen
+    about it (`assemble.rs`); (b) a stack moved rigidly was given the
+    height range `[0, 0]` (S9b.2's `Stack::moved`), so it classified every
+    point off that height outside, and a result with a moved stack among
+    its inputs classified its own vertices off its boundary (the moved
+    results' check here; latent since S9b.2): the moved stack keeps its
+    range; (c) a matched stored circle or ellipse whose frame turns against
+    the conic's parameter is read the other way (`Given::flip`), since
+    another assembly's frame need not follow the conic's (no fixture's
+    does: S9a.2's and S9b.1's frames follow it as the curved assembly's
+    do, so the reading is unexercised); (d) the
+    remaining refusals of a plane's piece name S9e.4 (`polyhedra.rs`'s
+    `prism_model` and `stored_model`, `model::Prism::new`), a given result
+    with a sphere, cone or torus S9e.3 as before. The `boolean` fuzz
+    target's chained stage now gives stacks with arc walls and a result's
+    first solid of several too, and by the chained byte's upper bits its
+    partner is a cylinder of radius 1.25 on the turned box's frame
+    (`GIVEN_ROUND`, on): replaying the corpus (1,425 inputs) and the 19
+    regressions with debug assertions, no failure, the slowest 4.4 s on a
+    loaded machine; of the corpus's chained stages with a curved first
+    result or the cylinder partner, 45 evaluate (28 curved first results
+    against the box, 13 of them a result's first solid of several; 17
+    against the cylinder), the others refused as documented (a result of
+    spheres, cones or tori or a deeper chain, S9e.3; spline stacks, S9f;
+    S9c.1's degeneracies). DRAW (`UPSTREAM_TESTS.md`): of the 25 cases
+    giving a result to another Boolean that S9e.1's scan found unregistered
+    (`L3` the sentinel), `bcut_simple/L3` to `L6` (the rollex) evaluate on
+    both backends, Rust's `checkprops -s 30153` reading 30152.9544786437837
+    (the reference's within 7.6e-17 relative) and the volume audit's
+    volume within 3.2e-16 of the reference's: registered (987 registered,
+    `L3` no longer a sentinel); the others as before (`G9` and `H3` S9e.3's,
+    the dataset's restored arguments and constructs, private data, `ZQ1`,
+    `ZP6`), none failing or timing out; the ledger does not change.
+    Pending: the DRAW survey, the campaign.
   * **S9f refined, before its code (2026-09-30).** Why splines stop today:
     a spline prism in another frame, or whose offset or heights round,
     reaches `polyhedra::stored_model` ("a solid with curved faces or edges

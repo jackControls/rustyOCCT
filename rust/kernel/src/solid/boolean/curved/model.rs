@@ -378,7 +378,7 @@ impl Prism {
     pub(super) fn new(solid: &Solid, op: Operand, seam: &R) -> Result<Self> {
         let Construction::Prism(profile) = &solid.construction else {
             return Err(out_of_domain(
-                "a Boolean of a solid other than a prism with arcs in any position (S9e.2)",
+                "a Boolean of a solid other than a prism with arcs in any position (S9e.4)",
             ));
         };
         let f = Affine::new(&solid.frame)?;

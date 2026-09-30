@@ -19,6 +19,7 @@ mod cones;
 mod cones_loops;
 mod given;
 mod graph;
+mod matched;
 mod meet;
 mod model;
 mod num;
@@ -70,9 +71,10 @@ pub(super) fn applies(poly: &Polyhedron) -> bool {
     }
     // S9e.1: a Boolean's result from this arrangement given to another
     // Boolean, with a prism or another such result (with a sphere, cone or
-    // torus refused in `build`: S9e.3's).
-    let given = given::applies;
-    if given(&poly.a) || given(&poly.b) {
+    // torus refused in `build`: S9e.3's); S9e.2: a stack or an S9b.1 result
+    // where either input has an arc or a curved face, and one solid of
+    // several of these.
+    if given::applies(&poly.a, &poly.b) || given::applies(&poly.b, &poly.a) {
         return true;
     }
     // S9d.3: a cone against a prism, a sphere or a cone (S9d.3b's refused
@@ -90,8 +92,9 @@ pub(super) fn applies(poly: &Polyhedron) -> bool {
 /// (S9d.3a).
 fn model_of(s: &crate::Solid, op: Operand, seam: &R) -> Result<model::Prism> {
     match &s.construction {
-        // S9e.1: a Boolean's result, on its construction's exact model.
-        Construction::Polyhedron(_) => given::model(s, op),
+        // S9e.1: a Boolean's result, on its construction's exact model
+        // (S9e.2: a stack too).
+        Construction::Polyhedron(_) | Construction::Stack(_) => given::model(s, op),
         Construction::Sphere { .. } => sphere::model(s, op, seam),
         Construction::Cone { .. } => cone::model(s, op, seam),
         Construction::Torus { .. } => torus::model(s, op, seam),
@@ -106,16 +109,16 @@ fn model_of(s: &crate::Solid, op: Operand, seam: &R) -> Result<model::Prism> {
 const SEAMS: [(i64, i64); 5] = [(2, 7), (3, 11), (5, 13), (7, 19), (11, 23)];
 
 pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
-    // S9e.1 takes a given result with a prism or another given result.
-    let given = |s: &crate::Solid| given::applies(s);
+    // S9e.1 and S9e.2 take a given result with a prism or another given
+    // result.
     let prism = |s: &crate::Solid| matches!(s.construction, Construction::Prism(_));
     for (x, y) in [(&poly.a, &poly.b), (&poly.b, &poly.a)] {
-        if given(x) && !given(y) && !prism(y) {
+        if given::applies(x, y) && !given::applies(y, x) && !prism(y) {
             return Err(Error::OutOfDomain(match y.construction {
                 Construction::Sphere { .. } | Construction::Cone { .. } | Construction::Torus { .. } => {
                     "a Boolean's result given to another Boolean with a sphere, cone or torus (S9e.3)"
                 }
-                _ => "a Boolean's result given to another Boolean with a stack, a plane's piece or a polyhedral result (S9e.2)",
+                _ => "a Boolean's result given to another Boolean with a plane's piece (S9e.4)",
             }));
         }
     }
@@ -167,7 +170,10 @@ fn shared(poly: &Polyhedron, seam_a: &R, seam_b: &R) -> Result<graph::Arr> {
     let arr = (|| {
         let a = model_of(&poly.a, Operand::A, seam_a)?;
         let b = model_of(&poly.b, Operand::B, seam_b)?;
-        graph::arrange_shared([a, b])
+        let mut arr = graph::arrange_shared([a, b])?;
+        // S9e.2: a given solid of several kept alone.
+        matched::keep_solid(&mut arr)?;
+        Ok(arr)
     })();
     ARRANGED.with(|k| {
         let mut k = k.borrow_mut();

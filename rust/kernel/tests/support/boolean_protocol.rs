@@ -9,7 +9,10 @@
 //! S9e.1: a case may chain a second Boolean on the first's result: after
 //! the tool's rows a row `then fuse|cut|common ID` (`swapped` after it when
 //! the first result is the tool) and a third solid's rows. The first
-//! Boolean's result must be one solid; the rows are the second's.
+//! Boolean's result must be one solid; the rows are the second's. S9e.2: the
+//! `then` row may end `solid X Y Z`: the first result may hold several
+//! solids, and the one holding the point strictly inside (`Solid::classify`,
+//! exactly one) is the second's argument.
 #[path = "identity_protocol.rs"]
 #[allow(dead_code)]
 mod identity_protocol;
@@ -35,6 +38,9 @@ pub struct Then {
     pub operation: OperationId,
     pub third: CaseSpec,
     pub swapped: bool,
+    /// The first result's solid holding this point (S9e.2), none for its
+    /// one solid.
+    pub pick: Option<[f64; 3]>,
 }
 
 pub fn cases(text: &str) -> Vec<Case> {
@@ -66,6 +72,10 @@ pub fn cases(text: &str) -> Vec<Case> {
                     operation: OperationId(t[2].parse().expect("an operation id")),
                     third: parse(&rows.join("\n")),
                     swapped: t.get(3) == Some(&"swapped"),
+                    pick: t
+                        .iter()
+                        .position(|w| *w == "solid")
+                        .map(|k| [1, 2, 3].map(|i| t[k + i].parse::<f64>().expect("a pick point"))),
                 }
             });
             Case {
@@ -88,9 +98,9 @@ pub fn run(case: &Case) -> Result<Run, Error> {
     let Some(then) = &case.then else {
         return Ok((a, b, out, history));
     };
-    // S9e.1: the second Boolean on the first's one solid.
-    let [first] = <[Solid; 1]>::try_from(out)
-        .unwrap_or_else(|_| panic!("{}: the first Boolean's result is not one solid", case.name));
+    // S9e.1: the second Boolean on the first's one solid (S9e.2: the one
+    // holding the pick point).
+    let first = given(case, out);
     let third = build(&then.third);
     let (a, b) = if then.swapped {
         (third, first)
@@ -99,6 +109,34 @@ pub fn run(case: &Case) -> Result<Run, Error> {
     };
     let (out, history) = boolean(&a, &then.op, then.operation, &b)?;
     Ok((a, b, out, history))
+}
+
+/// The first result's solid the second Boolean takes: its one solid, or
+/// the one holding the pick point strictly inside (S9e.2).
+pub fn given(case: &Case, out: Vec<Solid>) -> Solid {
+    let then = case.then.as_ref().expect("a chained case");
+    let Some([x, y, z]) = then.pick else {
+        let [first] = <[Solid; 1]>::try_from(out).unwrap_or_else(|_| {
+            panic!("{}: the first Boolean's result is not one solid", case.name)
+        });
+        return first;
+    };
+    let point = rusty_occt::Point3::new(x, y, z);
+    let mut inside: Vec<Solid> = out
+        .into_iter()
+        .filter(|s| {
+            s.classify(point)
+                .unwrap_or_else(|e| panic!("{}: the pick point: {e}", case.name))
+                == rusty_occt::Location::Inside
+        })
+        .collect();
+    assert_eq!(
+        inside.len(),
+        1,
+        "{}: the pick point is not inside exactly one solid",
+        case.name
+    );
+    inside.remove(0)
 }
 
 /// The first Boolean of a case (of a chained case, its first): its inputs,
