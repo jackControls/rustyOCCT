@@ -1,0 +1,14 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+  "platform": "darwin",
+  "rust_revision": "9ef7a8b80fc58c737e795c2f9b1f122ecbd4bfb3",
+  "rust_spline_any_boolean_exists": false,
+  "rust_worktree_uncommitted": [
+    "?? rust/fixtures/occt-boolean-spline-any-preimplementation/"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "7486f4b2af6fa10f11b17453ecd04ec30d5393118c94ca6897ebdd44be5204e2",
+  "probe_source_sha256": "c4e7978d8b38afc7e73ce027f612be4ab025c0b2ea99abfe66ccdd53b3928809",
+  "observations_sha256": "749527241beb791fe36edbed107ce60bf9db21efd59ee5ea330f56b72781ccc6"
+}
