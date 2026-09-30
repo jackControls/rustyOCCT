@@ -844,7 +844,8 @@ fn edge_kind(curve: &Curve3) -> Option<CurveKind<3>> {
         | Curve3::ParabolaArc { .. }
         | Curve3::Section(_)
         | Curve3::Meet(_)
-        | Curve3::Rise(_) => return None,
+        | Curve3::Rise(_)
+        | Curve3::Toric(_) => return None,
         // The unit circle's arc on the semi-axes as axes.
         Curve3::EllipseArc {
             frame,

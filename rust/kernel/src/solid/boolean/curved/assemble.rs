@@ -793,6 +793,7 @@ fn same_curve(a: &Crv, b: &Crv) -> bool {
         (Crv::Rise(x), Crv::Rise(y)) => x == y,
         (Crv::Cone(x), Crv::Cone(y)) => x == y,
         (Crv::Torus(x), Crv::Torus(y)) => x == y,
+        (Crv::Toric(x), Crv::Toric(y)) => x == y,
         _ => false,
     }
 }
@@ -898,6 +899,93 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
             })))
         }
         Crv::Cone(c) => cone_curve3(arr, e, c, points),
+        Crv::Toric(c) => {
+            // S9d.4b.2: on the torus's and the quadric's stored surfaces.
+            let CurveRef::Section(si, _) = first.curve else {
+                unreachable!("a torus meeting is a section")
+            };
+            let s = &arr.secs[si];
+            let stored = [
+                &arr.models[0].faces[s.fa].stored,
+                &arr.models[1].faces[s.fb].stored,
+            ];
+            let Surface::Torus {
+                frame,
+                major,
+                minor,
+            } = stored[c.carrier]
+            else {
+                return Err(Error::InvalidTopology("a torus meeting off a torus"));
+            };
+            let (other, other_radius, other_sphere, other_half_angle) = match stored[1 - c.carrier]
+            {
+                Surface::Cylinder { frame, radius } => (*frame, *radius, false, 0.0),
+                Surface::Sphere { frame, radius } => (*frame, *radius, true, 0.0),
+                Surface::Cone {
+                    frame,
+                    radius,
+                    half_angle,
+                } => (*frame, *radius, false, *half_angle),
+                _ => return Err(Error::InvalidTopology("a torus meeting off a quadric")),
+            };
+            let with = first.with == d0;
+            let t0 = angle_of(if d0 { &first.pos[0] } else { &first.pos[1] });
+            let t1 = angle_of(if dl { &last.pos[1] } else { &last.pos[0] });
+            let sweep = if e.ends.is_none() {
+                TAU
+            } else {
+                let s = if with { t1 - t0 } else { t0 - t1 };
+                let s = s.rem_euclid(TAU);
+                if s == 0.0 {
+                    TAU
+                } else {
+                    s
+                }
+            };
+            let sweep = if with { sweep } else { -sweep };
+            let start = if e.ends.is_none() { 0.0 } else { t0 };
+            if c.coaxial && !c.over_v {
+                // A circle about the torus's axis at its root's height.
+                let x = c
+                    .at(&[int(1), crate::solid::split::zero()])
+                    .ok_or(Error::ComputationLimit("a torus meeting's circle"))?;
+                let l = arr.models[c.carrier].f.local_q(&x);
+                let (lu, lv, lw) = (l[0].to_f64(), l[1].to_f64(), l[2].to_f64());
+                let circle = Frame3::new(
+                    frame.point(Point2::default(), lw),
+                    frame.normal(),
+                    frame.x(),
+                    arr.models[c.carrier].tolerance,
+                )?;
+                let radius = lu.hypot(lv);
+                return Ok(if e.ends.is_none() {
+                    Curve3::Circle {
+                        frame: circle,
+                        radius,
+                    }
+                } else {
+                    Curve3::CircularArc {
+                        frame: circle,
+                        radius,
+                        start_angle: start,
+                        sweep_angle: sweep,
+                    }
+                });
+            }
+            Ok(Curve3::Toric(Box::new(crate::topology::Toric {
+                frame: *frame,
+                major: *major,
+                minor: *minor,
+                other,
+                other_radius,
+                other_sphere,
+                other_half_angle,
+                over_v: c.over_v,
+                window: c.window_angles(),
+                start,
+                sweep,
+            })))
+        }
         Crv::Torus(c) => {
             // S8d.3's spiric section on the stored torus (S9d.4a): the
             // plane in its frame, a unit normal; over its parameter's angle.
@@ -1217,8 +1305,14 @@ fn loop_fins(
                     .or_else(|| cone_pcurve(surface, curve, reversed, uv))
                 {
                     Some(pc) => pc,
+                    // More anchors where 16 do not pin the lift (a curve
+                    // passing near a sphere's pole, S9d.4b.2).
                     None => Curve2::Projection(Box::new(
-                        Projection::new(curve.clone(), surface.clone(), reversed, uv, 16)
+                        [16, 64, 256]
+                            .into_iter()
+                            .find_map(|n| {
+                                Projection::new(curve.clone(), surface.clone(), reversed, uv, n)
+                            })
                             .ok_or(Error::PrecisionLoss)?,
                     )),
                 };

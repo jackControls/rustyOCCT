@@ -206,8 +206,8 @@ class BridgeTests(unittest.TestCase):
         # (S9c.2's: two cylinders, one turned, meeting in quartics), a stack
         # as an argument whose result's top face touches
         # itself at a vertex (Degenerate: a tower's corner on the corner of
-        # a notch), prisms touching along an edge (Degenerate), a torus
-        # against a cylinder (S9d.4b), a section,
+        # a notch), prisms touching along an edge (Degenerate), a torus's
+        # half turn against a cylinder (S9d.4b), a section,
         # several objects, a result of two solids as an argument,
         # unifysamedom of other shapes, counts of an uncopied prism's result
         # and a Boolean's history.
@@ -224,6 +224,11 @@ class BridgeTests(unittest.TestCase):
         # wedge, pi^2 R r^2.
         self.expect(boxes + "ptorus t 1.25 0.5 180\nttranslate t 2 2 1\nbcommon r a t\n"
                     "checkprops r -v [expr {0.3125 * acos(-1) ** 2}] -deps 1e-6\n", "pass")
+        # A coaxial pipe through a torus's tube (S9d.4b.2a): their common is
+        # the tube's inner part, pi^2 / 3 - 5 sqrt(3) pi / 16.
+        self.expect(boxes + "pcylinder c 1.75 2\nptorus t 2 0.5\nttranslate t 0 0 1\nbcommon r c t\n"
+                    "checkprops r -v [expr {acos(-1) ** 2 / 3 - 5 * sqrt(3) * acos(-1) / 16}] "
+                    "-deps 1e-6\n", "pass")
         # A coaxial pipe cut from a frustum (S9d.3b.1): the frustum less the
         # core, 14 pi / 3 - pi / 2.
         self.expect(boxes + "pcone k 2 1 2\npcylinder c 0.5 4\nttranslate c 0 0 -1\nbcut r k c\n"
@@ -236,8 +241,8 @@ class BridgeTests(unittest.TestCase):
         for gap, why in [
                 (boxes + "box t 1 1 2 1 1 1\nbfuse r a t\ncheckprops r -v 33\ncatch {bcut s r b}", "egenerate"),
                 (boxes + "box t 4 4 0 1 1 2\ncatch {bfuse r a t}", "egenerate"),
-                (boxes + "pcylinder c 1 2\nptorus t 2 0.5\nttranslate t 1 0 1\n"
-                 "catch {bcommon r c t}", "S9d.4b"),
+                (boxes + "pcylinder c 1 2\nptorus t 2 0.5 180\nttranslate t 1 0 1\n"
+                 "catch {bcommon r c t}", "segment or wedge"),
                 (boxes + "baddobjects a\nbaddtools b\ncatch {bapibop r 4}", "bapibop r 4"),
                 (boxes + "baddobjects a b\nbaddtools b\ncatch {bapibop r 1}", "one object"),
                 (boxes + "box d 9 9 9 1 1 1\nbfuse r a d\ncatch {bcut s r b}", "several solids"),

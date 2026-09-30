@@ -24,6 +24,7 @@ mod procedural;
 mod sphere;
 mod spheres;
 mod torus;
+mod torus_curved;
 mod torus_segment;
 mod turned;
 
@@ -102,12 +103,27 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
 }
 
 fn attempt(poly: &Polyhedron, seam_a: &R, seam_b: &R) -> Result<Vec<Component>> {
-    // S9d.4a takes a torus against a polyhedral prism alone.
+    // S9d.4a and S9d.4b.1 take a torus (a part too) against a polyhedral
+    // prism; S9d.4b.2a a whole torus against a prism with arcs, a sphere or
+    // a cone; two tori are S9d.4b.2b's.
     let torus = |s: &crate::Solid| matches!(s.construction, Construction::Torus { .. });
+    let whole = |s: &crate::Solid| match &s.construction {
+        Construction::Torus {
+            low, high, angle, ..
+        } => high - low == std::f64::consts::TAU && *angle == std::f64::consts::TAU,
+        _ => false,
+    };
     let polyhedral =
         |s: &crate::Solid| matches!(s.construction, Construction::Prism(_)) && !applies_arcs(s);
-    if (torus(&poly.a) && !polyhedral(&poly.b)) || (torus(&poly.b) && !polyhedral(&poly.a)) {
-        return Err(Error::OutOfDomain("a torus against a curved face (S9d.4b)"));
+    if torus(&poly.a) && torus(&poly.b) {
+        return Err(Error::OutOfDomain("a torus against a torus (S9d.4b.2b)"));
+    }
+    if (torus(&poly.a) && !polyhedral(&poly.b) && !whole(&poly.a))
+        || (torus(&poly.b) && !polyhedral(&poly.a) && !whole(&poly.b))
+    {
+        return Err(Error::OutOfDomain(
+            "a torus segment or wedge against a curved face (S9d.4b)",
+        ));
     }
     let a = model_of(&poly.a, Operand::A, seam_a)?;
     let b = model_of(&poly.b, Operand::B, seam_b)?;

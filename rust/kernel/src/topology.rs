@@ -214,6 +214,9 @@ pub enum Curve3 {
     /// A cylinder's and a sphere's meeting (S9d.2b), a graph over the
     /// cylinder's height.
     Rise(Box<Rise>),
+    /// A torus's meeting with a cylinder, a cone or a sphere (S9d.4b.2), a
+    /// graph over one of the torus's angles.
+    Toric(Box<Toric>),
 }
 
 /// A plane's section of a torus as a graph over one of its angles (S8d.3).
@@ -396,6 +399,134 @@ impl Rise {
         let (s, c) = u.sin_cos();
         let rho = self.rho(w);
         self.frame.point(Point2::new(rho * c, rho * s), w)
+    }
+}
+
+/// A torus's meeting with a cylinder, a cone or a sphere as a graph over one
+/// of the torus's angles (S9d.4b.2; D13). At `t = start + sweep f` (the
+/// torus's `u`, or its `v` when `over_v`) the torus's circle of the other
+/// angle `s`, `frame.point((major + minor cos v) (cos u, sin u), minor sin
+/// v)`, meets the other quadric where `G(u, v) = 0`, `G` the quadric's
+/// function (a cylinder or cone `(w . x2)^2 + (w . y2)^2 - (other_radius +
+/// (w . n2) tan a2)^2`, `w` from `other`'s origin and `a2` the
+/// `other_half_angle`, zero for a cylinder; a sphere `|w|^2 -
+/// other_radius^2`): a trigonometric polynomial of degree two in `s`. The
+/// edge's point is the one root of `G` with `s` in `window` (ascending,
+/// under a turn), which no other root enters and no turning point reaches
+/// over the edge's range, so it is analytic (the implicit function
+/// theorem: `G`'s derivative in `s` is nonzero there).
+#[derive(Debug, Clone, PartialEq)]
+pub struct Toric {
+    pub frame: Frame3,
+    pub major: f64,
+    pub minor: f64,
+    pub other: Frame3,
+    pub other_radius: f64,
+    /// The other quadric a sphere: `|w| = other_radius`.
+    pub other_sphere: bool,
+    /// The other quadric a cone's half angle, zero for a cylinder.
+    pub other_half_angle: f64,
+    pub over_v: bool,
+    pub window: [f64; 2],
+    pub start: f64,
+    pub sweep: f64,
+}
+
+impl Toric {
+    /// The torus's point at its angles.
+    pub fn torus_point(&self, u: f64, v: f64) -> Point3 {
+        let (su, cu) = u.sin_cos();
+        let (sv, cv) = v.sin_cos();
+        let rho = self.major + self.minor * cv;
+        self.frame
+            .point(Point2::new(rho * cu, rho * su), self.minor * sv)
+    }
+
+    /// The other quadric's function at a point.
+    pub fn other_value(&self, p: Point3) -> f64 {
+        let w = p - self.other.origin();
+        if self.other_sphere {
+            return w.dot(w) - self.other_radius * self.other_radius;
+        }
+        let (x, y, n) = (
+            w.dot(self.other.x()),
+            w.dot(self.other.y()),
+            w.dot(self.other.normal()),
+        );
+        let r = self.other_radius + n * self.other_half_angle.tan();
+        x * x + y * y - r * r
+    }
+
+    /// `G` at the curve's parameter `t` and the other angle `s`.
+    pub fn value(&self, t: f64, s: f64) -> f64 {
+        let (u, v) = if self.over_v { (s, t) } else { (t, s) };
+        self.other_value(self.torus_point(u, v))
+    }
+
+    /// The torus's angles `(u, v)` at a fraction.
+    pub fn angles(&self, fraction: f64) -> (f64, f64) {
+        let t = self.start + self.sweep * fraction;
+        let s = self.root_at(t);
+        if self.over_v {
+            (s, t)
+        } else {
+            (t, s)
+        }
+    }
+
+    /// The other angle at the parameter `t`: the root in the window, by
+    /// bisection on `G`'s change of sign there (secant steps where they
+    /// stay well inside).
+    pub fn root_at(&self, t: f64) -> f64 {
+        let [mut a, mut b] = self.window;
+        let (mut fa, mut fb) = (self.value(t, a), self.value(t, b));
+        if fa.signum() == fb.signum() && fa != 0.0 && fb != 0.0 {
+            // A change of sign sampled across the window.
+            let n = 64;
+            let mut prev = (a, fa);
+            for k in 1..=n {
+                let x = a + (b - a) * k as f64 / n as f64;
+                let fx = self.value(t, x);
+                if fx.signum() != prev.1.signum() {
+                    (a, fa, b, fb) = (prev.0, prev.1, x, fx);
+                    break;
+                }
+                prev = (x, fx);
+            }
+        }
+        if fa == 0.0 {
+            b = a;
+        } else if fb == 0.0 {
+            a = b;
+        }
+        for _ in 0..200 {
+            if b - a <= 4.0 * f64::EPSILON * a.abs().max(b.abs()).max(1.0) {
+                break;
+            }
+            let mid = 0.5 * a + 0.5 * b;
+            let secant = a - fa * (b - a) / (fb - fa);
+            let x = if secant > a && secant < b && (secant - mid).abs() < 0.25 * (b - a) {
+                secant
+            } else {
+                mid
+            };
+            let fx = self.value(t, x);
+            if fx == 0.0 {
+                (a, b) = (x, x);
+                break;
+            }
+            if fx.signum() == fa.signum() {
+                (a, fa) = (x, fx);
+            } else {
+                (b, fb) = (x, fx);
+            }
+        }
+        0.5 * a + 0.5 * b
+    }
+
+    pub fn point(&self, fraction: f64) -> Point3 {
+        let (u, v) = self.angles(fraction);
+        self.torus_point(u, v)
     }
 }
 
@@ -734,6 +865,7 @@ impl Curve3 {
             Self::Section(s) => s.point(fraction),
             Self::Meet(m) => m.point(fraction),
             Self::Rise(m) => m.point(fraction),
+            Self::Toric(m) => m.point(fraction),
         }
     }
 }
@@ -1361,6 +1493,13 @@ impl Topology {
                 Curve3::Rise(m) => Curve3::Rise(Box::new(Rise {
                     frame: m.frame.transformed(motion, tolerance)?,
                     centre: motion.point(m.centre),
+                    ..(**m).clone()
+                })),
+                // S9d.4b.2: a torus's meeting with a quadric (both frames
+                // move; its angles and window are the torus's own).
+                Curve3::Toric(m) => Curve3::Toric(Box::new(Toric {
+                    frame: m.frame.transformed(motion, tolerance)?,
+                    other: m.other.transformed(motion, tolerance)?,
                     ..(**m).clone()
                 })),
                 // S9d.4a: a torus's spiric sections in Boolean results (the
@@ -4118,7 +4257,8 @@ pub(crate) fn plane_pcurve(curve: &Curve3, sense: Orientation, frame: Frame3) ->
         | Curve3::ParabolaArc { .. }
         | Curve3::Section(_)
         | Curve3::Meet(_)
-        | Curve3::Rise(_) => {
+        | Curve3::Rise(_)
+        | Curve3::Toric(_) => {
             let reversed = sense == Orientation::Reversed;
             let start = local(curve.point(if reversed { 1.0 } else { 0.0 }));
             Curve2::Projection(Box::new(

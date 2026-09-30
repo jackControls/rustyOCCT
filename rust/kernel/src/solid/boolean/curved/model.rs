@@ -294,6 +294,9 @@ pub(super) enum Crv {
     /// A plane's section of a torus (S9d.4a), a graph over one of its
     /// angles, placed by that angle's direction.
     Torus(Box<super::torus::TorusSec>),
+    /// A torus's meeting with a quadric (S9d.4b.2), a graph over one of its
+    /// angles, placed by that angle's direction.
+    Toric(Box<super::torus_curved::ToricCrv>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

@@ -563,6 +563,13 @@ fn segment_count(
                 ))?;
             Some((&m.frame, second, turn, 1.0))
         }
+        // A torus's meeting with a quadric (S9d.4b.2) likewise.
+        Curve3::Toric(m) => {
+            let (second, turn) = crate::topology::section_rates(&edge.curve, 64).ok_or(
+                Error::ComputationLimit("a torus's meeting's curvature enclosure"),
+            )?;
+            Some((&m.frame, second, turn, 1.0))
+        }
         Curve3::LineSegment { .. } | Curve3::BSpline(_) => None,
     } {
         let sigma = bounds::frame_norm(frame);

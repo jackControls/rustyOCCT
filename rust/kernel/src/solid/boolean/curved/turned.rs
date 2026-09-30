@@ -40,7 +40,7 @@ pub(super) fn trim(mut p: Poly) -> Poly {
     p
 }
 
-fn padd(a: &Poly, b: &Poly) -> Poly {
+pub(super) fn padd(a: &Poly, b: &Poly) -> Poly {
     let n = a.len().max(b.len());
     trim(
         (0..n)
@@ -51,7 +51,7 @@ fn padd(a: &Poly, b: &Poly) -> Poly {
     )
 }
 
-fn pmul(a: &Poly, b: &Poly) -> Poly {
+pub(super) fn pmul(a: &Poly, b: &Poly) -> Poly {
     if a.is_empty() || b.is_empty() {
         return Vec::new();
     }
@@ -64,11 +64,11 @@ fn pmul(a: &Poly, b: &Poly) -> Poly {
     trim(out)
 }
 
-fn pscale(a: &Poly, k: &R) -> Poly {
+pub(super) fn pscale(a: &Poly, k: &R) -> Poly {
     trim(a.iter().map(|x| x * k).collect())
 }
 
-fn pderiv(a: &Poly) -> Poly {
+pub(super) fn pderiv(a: &Poly) -> Poly {
     trim(
         a.iter()
             .enumerate()
@@ -292,6 +292,15 @@ impl Form {
         };
         f.add_const(&k);
         f
+    }
+
+    /// A form from its coefficients by exponents `(cos, sin)`, of the given
+    /// degree (S9d.4b.2).
+    pub(super) fn from_terms(terms: BTreeMap<(u32, u32), R>, deg: u32) -> Self {
+        Self {
+            terms: terms.into_iter().filter(|(_, x)| *x != zero()).collect(),
+            deg,
+        }
     }
 
     /// A linear form, of degree 1.

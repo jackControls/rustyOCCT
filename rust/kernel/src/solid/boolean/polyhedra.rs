@@ -213,6 +213,22 @@ impl Polyhedron {
                             "a cavity's containment the validator's rays leave undecided",
                         );
                     }
+                    // A face's loops whose winding the validator leaves
+                    // undecided (a torus face wound in both directions, a
+                    // torus knot: S9d.4b.2a) likewise.
+                    use crate::topology::IssueKind as K;
+                    if issues.iter().any(|i| i.kind == K::UncertifiedLoopWinding)
+                        && issues.iter().all(|i| {
+                            matches!(
+                                i.kind,
+                                K::UncertifiedLoopWinding | K::UncertifiedContainment
+                            )
+                        })
+                    {
+                        return Error::ComputationLimit(
+                            "a face's loop winding the validator leaves undecided",
+                        );
+                    }
                     Error::InvalidTopology(
                         issues
                             .first()
