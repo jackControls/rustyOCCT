@@ -67,7 +67,12 @@ results (limits relative to the case's size):
   without a cap or a declared degeneracy), Monte-Carlo estimates within 5
   standard errors, and a scan for near coincidences and edges or vertices
   within 1e-3 of tangency with or incidence on the other's surfaces (none
-  but in the declared degenerate pairs).
+  but in the declared degenerate pairs);
+* planes of one input within 1e-3 (relative to the radius) of tangency to
+  the other's sphere, or to a cylinder of the other whose axis they are
+  parallel to (S9d.1's rule makes either `Degenerate` wherever it
+  touches; the scan above takes edges and vertices only, as S9d.3b's
+  `ball_side` showed): none.
 
 Pairs run in worker processes (`--workers`).
 """
@@ -143,11 +148,11 @@ def cases():
                  ('axial',))
     out += group('ball_lean', cone(1.5, 0, 3, at('LEAN', O)), sphere(0.5, at('XY', (0.9, 0.75, 1.2))), BOTH,
                  ('axial',))
-    out += group('ball_r125', cone(2, 1, 2, at('R125', O)), sphere(1, at('XY', (1.25, 0.75, 1))), {'cut': 'solid'},
+    out += group('ball_r125', cone(2, 1, 2, at('R125', O)), sphere(1, at('XY', (1.25, 0.75, 1.125))), {'cut': 'solid'},
                  ('axial',))
     out += group('dome_tilt_cone', sphere(2, at('TILT', O), 0.0, HP), cone(1.25, 0, 4.5, at('XY', (0, 0, -2.25))),
                  BOTH, ('dome',))
-    out += group('dome_lean_frustum', sphere(2, at('LEAN', O), -HP, 0.0), cone(1.25, 0.75, 3, at('XY', (1.5, 0.5, -1))),
+    out += group('dome_lean_frustum', sphere(2, at('LEAN', O), -HP, 0.0), cone(1.25, 0.75, 3, at('XY', (1.5, 0.5, -1.25))),
                  BOTH, None)
     out += group('dome_cone_turned', sphere(2, at('TILT', O), 0.0, HP),
                  cone(1.25, 0.5, 3, at('LEAN', (0.5, 0.25, -1.5))), BOTH, None)
@@ -340,6 +345,37 @@ def halves(first):
     return dev
 
 
+# ------------------------------------------------------------------ plane tangencies
+
+def plane_clearance(first):
+    """The least `|d - r| / r` over every plane of one input and every sphere
+    of the other (`d` its centre's distance), or cylinder of the other whose
+    axis the plane is parallel to (`d` the axis's distance): a plane
+    tangent to a round surface of the other, `None` where there is no such
+    pair."""
+    pair = ref.Pair(first.obj, first.tool)
+    best = None
+    for x, y in ((pair.A, pair.B), (pair.B, pair.A)):
+        rounds = []
+        if y.kind == 'sphere':
+            rounds.append((ref.Mv(y.c), mp.sqrt(ref.M(y.r2)), None))
+        if y.kind == 'prism':
+            for e in y.P.elements:
+                if e[0] == 'arc':
+                    rounds.append((ref.Mv(y.P.world(e[1], ref.F(0))), ref.M(e[2]), y.n))
+        for s in x.surfaces:
+            if not s.plane:
+                continue
+            a = s.a()
+            la = mp.sqrt(ref.M(ref.dot(a, a)))
+            for c, r, n in rounds:
+                if n is not None and ref.dot(a, n) != 0:
+                    continue
+                v = abs(abs(s.value(c))/la-r)/r
+                best = v if best is None else min(best, v)
+    return best
+
+
 # ------------------------------------------------------------------ the pairs' work
 
 def evaluate(job):
@@ -347,6 +383,10 @@ def evaluate(job):
     name, first, ops, mc_n = job
     try:
         out = g3.evaluate(job)
+        clear = plane_clearance(first)
+        out[5]['plane_clearance'] = clear
+        if clear is not None and clear < mp.mpf(10)**-3:
+            out[4].append(f'a plane within {mp.nstr(clear, 3)} of tangency to a round surface')
         if name in SPLITS:
             out[3]['splits'] = splits(first)
         obj, tool = first.specs
@@ -502,6 +542,7 @@ def main():
               'halves', mp.nstr(checks['halves'], 3) if 'halves' in checks else None,
               'chart', stats['chart'], 'breaks', stats['breaks'], 'sweep', stats['sweep_breaks'],
               'clearance', None if stats['clearance'] is None else mp.nstr(stats['clearance'], 3),
+              'planes', None if stats['plane_clearance'] is None else mp.nstr(stats['plane_clearance'], 3),
               '; '.join(f'{op} {r[0]}' for op, r in rows.items()))
         if n:
             print('  near coincidences:', '; '.join(n[:4]))
