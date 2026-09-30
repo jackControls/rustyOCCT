@@ -8,8 +8,11 @@ centre on the axis) or a quartic; two spheres in a circle.
 Each input is its construction's exact model, in rationals from the stored
 binary64 data (`stored_axes`, the kernel's `Frame3::new`, not exactly
 orthonormal): the sphere `|X - o|^2 <= R^2` about its stored origin with a
-cap's or zone's end planes as `sphere_boolean_reference.Sphere` reads them;
-the prism the points `o + u x + v y + w n` with `(u, v)` in the profile (its
+cap's or zone's end planes as the kernel's `Ball` reads them, through `o +
+h n` normal to the stored axis `n` (`AxisSphere`: in an exact frame
+`sphere_boolean_reference.Sphere`'s affine plane, `x * y = n` exactly; in a
+turned frame, S9d.2c, a plane turned from it by the axes' rounding); the
+prism the points `o + u x + v y + w n` with `(u, v)` in the profile (its
 stored points, arcs' centres and radii, `identity_reference.stored`; an arc
 the exact circle between its end points, holes reversed so the material is
 on the left of every element) and `w` between the offsets. Nothing here uses
@@ -19,9 +22,11 @@ and vector helpers, its sphere model and quadrature, and the exact
 polynomial helpers of `boolean_reference.py`.
 
 * **Slices.** Both solids are sliced by the planes `d . X = s` (`d` the
-  prism's cap normal `x * y`, or the first sphere's axis for two spheres;
-  a cap's or zone's end planes must be slices; any rational `d` is accepted
-  and a second direction checks the first). A slice is charted affinely by
+  prism's cap normal `x * y`, or the first sphere's axis for two spheres,
+  or a cap's or zone's stored axis where its end planes are not normal to
+  the prism's axis, S9d.2c's turned caps; a cap's or zone's end planes must
+  be slices; any rational `d` is accepted and a second direction checks
+  the first). A slice is charted affinely by
   rationals, `X = O0 + s tau + a e1 + b e2` (for the prism's own direction
   `e1 = x`, `e2 = y`, `tau = n / (d . n)`: the chart is the profile's own
   `(u, v)`), so in `q = (a, b)` every section is exact: a sphere's an
@@ -65,7 +70,13 @@ polynomial helpers of `boolean_reference.py`.
   quadratic in `w`, clipped to the caps and the zone, integrated with the
   wall's element `r |(-sin x + cos y) * n|` between the breakpoints where
   the generatrix touches the sphere or a cap circle or a zone plane's
-  circle meets it (quartics in `tan(theta / 2)`).
+  circle meets it (quartics in `tan(theta / 2)`). A prism cut obliquely by
+  the slices (S9d.2c: a turned cap's end planes the slices) has its caps
+  classified in their own `(u, v)` against the sphere's ellipse and the
+  zone's half-planes there, as a flat wall is, and a cylindrical wall's
+  zone bound along each generatrix varies with its angle: it adds the
+  angles where the bound meets the sphere's roots (the zone's rim crossing
+  the wall, a quartic) or the prism's ends (a quadratic).
 * **Solids** (the regularized Boolean's maximal connected regions). In each
   interval between breakpoints the result's section has fixed topology: its
   boundary pieces chained into loops, loops into components (an outer loop
@@ -849,6 +860,23 @@ def components(pieces, tol):
         allp = list(loop)+[p for h in hs for p in h]
         region = Pieces(allp, (lambda L, H: lambda X: parity(L, X) and not any(parity(h, X) for h in H))(loop, hs))
         out.append((key, region))
+    # Components of one key (S9d.2c: a sphere's circle less an oblique
+    # cylinder's ellipse crossing it, two crescents of the same faces):
+    # numbered by their centres along the ray's direction, which keeps
+    # their order while they deform without meeting.
+    r = ray()
+    by_key = {}
+    for i, (key, region) in enumerate(out):
+        by_key.setdefault(key, []).append(i)
+    for key, idx in by_key.items():
+        if len(idx) < 2:
+            continue
+        where = []
+        for i in idx:
+            a, mx, my = gsum(out[i][1].pieces)
+            where.append(((mx*r[0]+my*r[1])/a, i))
+        for k, (_, i) in enumerate(sorted(where)):
+            out[i] = (key+(f'#{k}',), out[i][1])
     keys = [k for k, _ in out]
     assert len(keys) == len(set(keys)), 'two components with one key'
     return out
@@ -953,11 +981,32 @@ def prism_chart(P):
 
 # ------------------------------------------------------------------ inputs
 
+class AxisSphere(s1.Sphere):
+    """S9d.1's sphere, cap or zone with its end planes as the kernel's `Ball`
+    reads them: `(X - o) . n = h |n|^2`, through `o + h n` normal to the
+    stored axis `n` (`m = n`). In an exact frame this is S9d.1's affine plane
+    (`x * y = n` exactly, the same tuples); in a turned frame the two
+    differ by the stored axes' rounding (S9d.2c), and the kernel's
+    enclosures hold its own."""
+
+    def __init__(self, case):
+        super().__init__(case)
+        o, _, _, n = (tuple(F(v) for v in w) for w in stored_axes(case.frame))
+        self.m = n
+        self.mn = dot(n, n)
+        mo = dot(n, o)
+        self.planes = []
+        if self.heights[0] is not None:
+            self.planes.append((n, mo+self.heights[0]*self.mn, 'low'))
+        if self.heights[1] is not None:
+            self.planes.append((scale(n, -1), -(mo+self.heights[1]*self.mn), 'high'))
+
+
 class Ball:
-    """A sphere, cap or zone (`sphere_boolean_reference.Sphere`'s model)."""
+    """A sphere, cap or zone (`AxisSphere`'s model)."""
 
     def __init__(self, case, role):
-        self.S = s1.Sphere(case)
+        self.S = AxisSphere(case)
         self.role = role
         self.c, self.r, self.r2 = self.S.c, self.S.r, self.S.r2
         self.planes = self.S.planes
@@ -1293,7 +1342,13 @@ class Pair:
         self.quad_error = mp.mpf(0)
 
     def make_chart(self, d):
-        if d is None and not self.two_balls:
+        oblique = [] if self.two_balls else \
+            [a for a, _, _ in self.D.planes if not is_zero(cross(a, cross(self.P.x, self.P.y)))]
+        if d is None and oblique:
+            # A turned cap's end planes (S9d.2c): the slices along its
+            # stored axis, the prism cut obliquely.
+            chart = Chart(oblique[0])
+        elif d is None and not self.two_balls:
             chart = prism_chart(self.P)
         else:
             if d is None:
@@ -1481,8 +1536,9 @@ class Pair:
         return mp.sqrt(M(dot(c, c)))
 
     def prism_faces(self, P, ball):
+        if P.strip:
+            return self.oblique_prism_faces(P, ball)
         out = []
-        assert not P.strip, 'S9d.2 reference: prism faces with the prism sliced along its axis'
         # Caps.
         for lv, cap in ((P.slo, 0), (P.shi, 1)):
             region = ArcPrismCap(P, M(lv))
@@ -1514,11 +1570,6 @@ class Pair:
         p, q, k = e[1], e[2], e[3]
         ew = add(scale(P.x, q[0]-p[0]), scale(P.y, q[1]-p[1]))
         X0 = P.world(p, F(0))
-        E = (ew, P.n)
-        G = [[dot(ew, ew), dot(ew, P.n)], [dot(P.n, ew), dot(P.n, P.n)]]
-        w = sub(X0, ball.c)
-        g = [dot(ew, w), dot(P.n, w)]
-        kk = dot(w, w)-ball.r2
         cn = mp.sqrt(M(dot(cross(ew, P.n), cross(ew, P.n))))
         lo, hi = M(P.lo), M(P.hi)
         rect = [Seg((mp.mpf(0), lo), (mp.mpf(1), lo), 'r0'), Seg((mp.mpf(1), lo), (mp.mpf(1), hi), 'r1'),
@@ -1526,25 +1577,117 @@ class Pair:
         R = Region(rect, lambda X: 0 < X[0] < 1 and lo < X[1] < hi)
         area = cn*(hi-lo)
         cls = {'in': mp.mpf(0), 'out': area, 'same': mp.mpf(0), 'opp': mp.mpf(0)}
-        Gm = [[M(v) for v in r] for r in G]
-        det = Gm[0][0]*Gm[1][1]-Gm[0][1]**2
-        gm = [M(v) for v in g]
-        gi = ((Gm[1][1]*gm[0]-Gm[0][1]*gm[1])/det, (-Gm[1][0]*gm[0]+Gm[0][0]*gm[1])/det)
-        rho = gm[0]*gi[0]+gm[1]*gi[1]-M(kk)
-        if rho > 0:
-            l11 = mp.sqrt(Gm[0][0])
-            l12 = Gm[0][1]/l11
-            l22 = mp.sqrt(Gm[1][1]-l12*l12)
-            sq = mp.sqrt(rho)
-            A = (sq/l11, -sq*l12/(l11*l22), mp.mpf(0), sq/l22)
-            arc = Arc((-gi[0], -gi[1]), A, mp.mpf(0), 2*mp.pi, 'sphere')
-            halfplanes = []
-            for a, b, end in ball.planes:
-                # a . (X0 + lam ew + w n) > b
-                halfplanes.append((M(dot(a, ew)), M(dot(a, P.n)), M(b-dot(a, X0)), end))
-            disc = Region([arc], arc.inside, halfplanes)
+        disc = ball_region(ball, X0, ew, P.n)
+        if disc is not None:
             inside, outside = region_classes(R, disc)
             cls['in'], cls['out'] = inside*cn, outside*cn
+        return (P.role, ('wall', k), cls, area)
+
+    def oblique_prism_faces(self, P, ball):
+        """A prism's faces when the slices cut it obliquely (S9d.2c): each cap
+        in its own `(u, v)` against the ball's ellipse and zone half-planes
+        in its plane, flat walls as `flat_wall`, cylindrical walls by
+        `oblique_round_wall`."""
+        out = []
+        cn = cross(P.x, P.y)
+        k_uv = mp.sqrt(M(dot(cn, cn)))
+        profile = Region(P.uv_pieces, P.in_profile)
+        parea = area_of(profile)
+        for w, cap in ((P.lo, 0), (P.hi, 1)):
+            X0 = P.world((F(0), F(0)), w)
+            for a, b, _ in ball.planes:
+                assert not (is_zero(cross(a, cn)) and dot(a, X0) == b), 'S9d.2c reference: a prism cap on a zone plane'
+            area = parea*k_uv
+            cls = {'in': mp.mpf(0), 'out': area, 'same': mp.mpf(0), 'opp': mp.mpf(0)}
+            region = ball_region(ball, X0, P.x, P.y)
+            if region is not None:
+                inside, outside = region_classes(profile, region)
+                cls['in'], cls['out'] = inside*k_uv, outside*k_uv
+            out.append((P.role, ('cap', cap), cls, area))
+        for e in P.elements:
+            if e[0] == 'seg':
+                out.append(self.flat_wall(P, ball, e))
+            else:
+                out.append(self.oblique_round_wall(P, ball, e))
+        return out
+
+    def oblique_round_wall(self, P, ball, e):
+        """`round_wall` with zone planes of any direction (S9d.2c): along the
+        generatrix `P(theta) + w n` the plane `a . X > b` bounds `w` by
+        `(b - a . P(theta)) / (a . n)`, from below where `a . n > 0`."""
+        _, C, r, t0, t1, full, k, _ = e
+        x, y, n = P.x, P.y, P.n
+        base = P.world(C, F(0))
+        V0 = sub(base, ball.c)
+        Pt = trig_vec(V0, scale(x, r), scale(y, r))
+        nn = dot(n, n)
+        l = trig_dot(tuple(Trig({(0, 0): c}) for c in n), Pt)
+        disc = l*l+(trig_dot(Pt, Pt)+Trig({(0, 0): -ball.r2})).scale(-nn)
+        events = disc.angles()
+        for w in (P.lo, P.hi):
+            events += cap_circle_trig(P, C, r, w, ball).angles()
+        bounds = []
+        for a, b, _ in ball.planes:
+            an = dot(a, n)
+            assert an != 0, 'S9d.2c reference: a zone plane along a generatrix'
+            # a . n times the bound: b - a . base - r (a . x cos + a . y sin).
+            lin = Trig.linear(b-dot(a, base), -r*dot(a, x), -r*dot(a, y))
+            bounds.append((M(an), M(b-dot(a, base)), M(-r*dot(a, x)), M(-r*dot(a, y))))
+            for w in (P.lo, P.hi):
+                events += (lin+Trig({(0, 0): -an*w})).angles()
+            # The bound on the sphere: the zone's rim crossing the wall.
+            rim = trig_dot(Pt, Pt).scale(an*an)+(l*lin).scale(2*an)+(lin*lin).scale(nn) \
+                + Trig({(0, 0): -ball.r2*an*an})
+            events += rim.angles()
+        a0, a1 = min(t0, t1), max(t0, t1)
+        pts = [a0, a1]
+        T = 2*mp.pi
+        for th in events+[mp.pi]:
+            b0 = th+T*mp.floor((a0-th)/T)
+            for j in range(0, 4):
+                v = b0+j*T
+                if a0 < v < a1:
+                    pts.append(v)
+        pts = sorted(pts)
+        xm, ym, nm = Mv(x), Mv(y), Mv(n)
+        V0m = Mv(V0)
+        rm = M(r)
+        nnm = M(nn)
+        wlo0, whi0 = M(P.lo), M(P.hi)
+
+        def f(th):
+            c, s_ = mp.cos(th), mp.sin(th)
+            t = tuple(-s_*xm[i]+c*ym[i] for i in range(3))
+            tn = cross(t, nm)
+            el = rm*mp.sqrt(dot(tn, tn))
+            Pv = tuple(V0m[i]+rm*(c*xm[i]+s_*ym[i]) for i in range(3))
+            b = dot(nm, Pv)
+            dd = b*b-nnm*(dot(Pv, Pv)-M(ball.r2))
+            wlo, whi = wlo0, whi0
+            for an, k0, kc, ks in bounds:
+                w = (k0+kc*c+ks*s_)/an
+                if an > 0:
+                    wlo = max(wlo, w)
+                else:
+                    whi = min(whi, w)
+            inside = mp.mpf(0)
+            if dd > 0:
+                sq = mp.sqrt(dd)
+                w1, w2 = (-b-sq)/nnm, (-b+sq)/nnm
+                lo_, hi_ = max(w1, wlo), min(w2, whi)
+                if hi_ > lo_:
+                    inside = hi_-lo_
+            return [el*inside, el]
+        tol = mp.mpf(10)**-33*self.size**2
+        tot = [mp.mpf(0), mp.mpf(0)]
+        for a, b in zip(pts, pts[1:]):
+            if b-a <= mp.mpf(10)**-35:
+                continue
+            est, _ = integrate(f, a, b, tol)
+            tot = [u+v for u, v in zip(tot, est)]
+        h = M(P.hi-P.lo)
+        area = tot[1]*h
+        cls = {'in': tot[0], 'out': area-tot[0], 'same': mp.mpf(0), 'opp': mp.mpf(0)}
         return (P.role, ('wall', k), cls, area)
 
     def round_wall(self, P, ball, e):
@@ -1694,6 +1837,34 @@ class Pair:
         n = self.solids(op)
         assert n > 0, 'a result of positive volume without solids'
         return n, vol, self.area(op), tuple(m/vol for m in mom)
+
+
+def ball_region(ball, X0, e1, e2):
+    """The ball in the plane `X0 + a e1 + b e2` as a Region in `(a, b)`: the
+    sphere's ellipse cut by the zone's half-planes, or None where the plane
+    misses the sphere."""
+    G = [[dot(e1, e1), dot(e1, e2)], [dot(e2, e1), dot(e2, e2)]]
+    w = sub(X0, ball.c)
+    g = [dot(e1, w), dot(e2, w)]
+    kk = dot(w, w)-ball.r2
+    Gm = [[M(v) for v in r] for r in G]
+    det = Gm[0][0]*Gm[1][1]-Gm[0][1]**2
+    gm = [M(v) for v in g]
+    gi = ((Gm[1][1]*gm[0]-Gm[0][1]*gm[1])/det, (-Gm[1][0]*gm[0]+Gm[0][0]*gm[1])/det)
+    rho = gm[0]*gi[0]+gm[1]*gi[1]-M(kk)
+    if rho <= 0:
+        return None
+    l11 = mp.sqrt(Gm[0][0])
+    l12 = Gm[0][1]/l11
+    l22 = mp.sqrt(Gm[1][1]-l12*l12)
+    sq = mp.sqrt(rho)
+    A = (sq/l11, -sq*l12/(l11*l22), mp.mpf(0), sq/l22)
+    arc = Arc((-gi[0], -gi[1]), A, mp.mpf(0), 2*mp.pi, 'sphere')
+    halfplanes = []
+    for a, b, end in ball.planes:
+        # a . (X0 + lam e1 + mu e2) > b
+        halfplanes.append((M(dot(a, e1)), M(dot(a, e2)), M(b-dot(a, X0)), end))
+    return Region([arc], arc.inside, halfplanes)
 
 
 def ArcPrismCap(P, s):
