@@ -3999,7 +3999,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     L3` to `L6` (stacks) are S9e.2's, `G9` and `H3` (a cone fused on a
     cylinder) S9e.3's, `bopcut_simple/ZQ1` and `bopfuse_simple/ZP6` refused
     as before: no status changes, the ledger does not (`L3`'s sentinel
-    purpose now names S9e.2). Pending: the DRAW survey, the campaign.
+    purpose now names S9e.2). Campaign: the boolean
+    campaign at `51c08edf` (600 s, a sampled replay) clean, 1,101 runs, the
+    slowest input 22 s under AddressSanitizer. Pending: the DRAW survey.
   * **S9e.2 refined, before its code (2026-09-30).** Why each is refused
     today: a stack given with an arc (or with curved walls of its own) goes
     to `polyhedra.rs`, whose `stored_model` refuses its cylinders and whose
