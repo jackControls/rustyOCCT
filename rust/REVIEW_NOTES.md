@@ -3601,6 +3601,74 @@ Decisions for S9, recorded before its code (2026-09-28):
     wrong natively (the cut 4.7e-5 off in area, the common 1.6e-4 in volume
     and invalid under `BRepCheck_Analyzer`); fourteen solids' counts change
     when unified. S9d.4c's kernel next.
+  * **S9d.4c implemented** (`solid/boolean/curved/torus_parts.rs`,
+    `torus_curved.rs`, `meet.rs`, `mod.rs`, `assemble.rs`, `num.rs`): a
+    sphere's circle of a surd radius or on unequal axes against a torus by
+    the resultant of its quadratic and the torus's quartic in rationally
+    rotated coordinates (eight rotations, the band test with `8 R r (R + r)
+    res`), and torus v-segments and wedges against prisms with arcs,
+    spheres, cones and tori, their rims against a curved surface by the
+    norm of the other surface's function at the rim's fixed surd angle (the
+    points in `Q(alpha)(sqrt(d))`), `mod.rs`'s refusal gone, as the refined
+    decisions describe. All 53 fixtures as the reference (51 within the
+    kernel's enclosures, each at most `1e-9` wide; `rim_touch` refused as "a
+    sphere's circle within the resolution of tangency to a torus",
+    `qw_rim_touch` as "a torus part's rim tangent to the other input's
+    surface"), every history checked, results deterministic and moved
+    rigidly, the coaxial pairs in circles and the others in `Curve3::Toric`
+    pieces, a band, a quarter wedge and a cap turned with their tools
+    keeping the reference's volumes (`tests/torus_parts_booleans.rs`, 48 s
+    in the dev profile at `opt-level` 2). `compare_torus_parts_boolean.py`
+    16 matches and 37 reviewed (the capture's 27, 23 of them with the
+    kernel's entity counts, and ten native matches by their counts alone:
+    coaxial bands crossing OCCT's seams, sections split at OCCT's points
+    against the kernel's exact pieces); every other Boolean comparison
+    unchanged in its counts (boolean 45/0, its splines 33/13, polyhedral
+    43/2, curved 42/2, procedural 4/24, turned 2/13, capped 0/18, sphere
+    30/0, spheres 12/21, cone 25/5, cones 21/19, torus 11/24, torus segment
+    15/14, torus curved 15/29, spheres turned 0/18, cones' loops 5/26).
+    Amendments and corrections: (a) a rim's fixed angle is read from the
+    rim's own point at the free angle's `(1, 0)` (`TorusSec::at`: a
+    segment's `v` direction over `r`, a wedge's `u` direction over the
+    point's distance from the axis), whichever branch the rim is; (b) a
+    fuse's void between both inputs' faces (a band's end disc and inner
+    wall under another input's face over its hole) was assembled as a solid
+    of its own and failed validation (`shell_orientation`; S9d.4b.1's box
+    over a band's hole the same, found by the replays here): a shell of
+    both inputs' faces whose certified flux, the shell built alone, is
+    turned inward is now a cavity of the result, whose containment the
+    validator's rays leave undecided (`ComputationLimit`, as S9d.4b.1 (g));
+    (c) a loop through a sphere's pole (a quarter wedge's end half-plane,
+    on the rounded direction of its turn, within rounding of a sphere's
+    axis) wound by the sum of its pcurves' changes, a tie of half a turn at
+    the pole rounded away (`uv_gap`): a loop's winding is now its last
+    pcurve's end against its first's start; refusing a section within the
+    resolution of a pole but off it was tried first and dropped, as it
+    refused S9d.1's `wedges_through_a_spheres_poles` (the DRAW grids'
+    `ZI5`), which the winding by ends keeps; (d) surds over algebraic
+    fields (`Qd::sign`, `tower_sign`, `mixed_dot_sign`) try a binary64
+    enclosure before their exact products (a turned zone against a turned
+    quarter wedge about 16 to 12 s; every other comparison's rows unchanged); (e)
+    the DRAW bridge's guard of a half turn against a cylinder (S9d.4b)
+    evaluates now, moved to its common's volume, `torus_parts_boolean_
+    reference.py`'s 0.53575919723822447; (f) the `boolean` fuzz target
+    decodes a sphere or cone object against a v-segment or wedge tool and a
+    cap or zone object (the heights byte's top bit) against a whole torus or
+    a part, in the axis-aligned frames; in the tilted or a turned frame only
+    with `TURNED_PARTS`, off: of 3,000 replayed variants the 1,201 caps and
+    592 parts in turned frames took 2.1 s and 0.6 s at the median, 7.5 s
+    and 4.6 s at the ninth decile and 26 s and 50 s at the slowest (debug
+    assertions, no sanitizer), against 2.3 s at the slowest of 457 in the
+    axis-aligned frames; parts against prisms with arcs, refused before,
+    evaluate in every frame (4.5 s at the slowest of 750). The corpus (1,423
+    inputs) and the 17 regressions replay with debug assertions without a
+    failure (the slowest 2.9 s), as do the 3,000 variants with the committed
+    decode (the slowest 4.6 s; 24 to 36 s under AddressSanitizer for the
+    five slowest, a host running the test suite beside it) and with
+    `TURNED_PARTS` on (the slowest 50 s), which found (b) and (c) (two kept
+    as regressions, `fuzz/regressions/README.md`). No DRAW upstream case's
+    status changes before the survey (none reaches a part or a cap against
+    a torus). Pending: the DRAW survey, the campaign.
 
 ### Parallel tracks
 

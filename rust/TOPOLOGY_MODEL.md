@@ -923,6 +923,15 @@ procedural pcurves with explicit conic edges.
   angles, lifted. A coaxial meeting is a `Circle` or `CircularArc` about the
   torus's axis instead. Quadrature, tessellation rates, rigid motion (both
   frames move) and the writer's refusal as `Curve3::Meet`'s.
+* **Caps against tori, torus parts against curved faces (S9d.4c).** No new
+  curve: a part's meeting with a quadric or a torus is `Curve3::Toric` on
+  the whole torus, its pieces kept where the part's wall holds them; its end
+  discs' sections are S9d.2's to S9d.3's conics and S9d.4a's `Section`s; a
+  part's rims stay the input's circles and sections, a cap's circles its
+  circles, split at their crossings (points in `Q(alpha)` of degree eight,
+  or in a tower `Q(alpha)(sqrt(d))` over a rim's fixed angle; no stored
+  number but their binary64 views). A loop through a sphere's pole winds by
+  its pcurves' lifted ends, not their changes' sum.
 * **A cone's sections in Boolean results (S9d.3a).** `HyperbolaArc` and
   `ParabolaArc` edges bound Boolean results too; a rigid motion moves their
   frames, and a body's bounds hold their coordinates' extremes inside their

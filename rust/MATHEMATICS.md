@@ -2018,6 +2018,64 @@ where `A v^2 + 2 B v + C = 0` and the curve is `v = (-B +- sqrt(D)) / A`,
   its integer numerators over `d_a d_b D` reduced once per coefficient: the
   value of the rational reduction, without a gcd per operation.
 
+## Caps' circles and parts' rims against tori (S9d.4c)
+
+* **A sphere's circle against a torus.** The circle `c + dx x + dy y`,
+  `E = xx dx^2 + 2 xy dx dy + yy dy^2 - r2`, and the torus's function `T =
+  (|l|^2 + R^2 - r^2)^2 - 4 R^2 (l_u^2 + l_v^2)` with `l = l0 + dx lx + dy
+  ly` its local coordinates on the circle's plane (affine in `(dx, dy)`): in
+  coordinates `(s, t)` turned by a rational rotation `(cr, sr)` both are
+  polynomials in `t` with coefficients in `Q[s]`, `E` quadratic with the
+  constant leading coefficient `xx sr^2 - 2 xy cr sr + yy cr^2 > 0` (the
+  Gram form, positive definite). S7c.1's reduction applies: `T mod E = r1(s)
+  t + r0(s)` and the resultant `a2 r0^2 - a1 r0 r1 + a0 r1^2`, of degree at
+  most eight (`T` of total degree four, `r1` of degree three, `r0` four);
+  each simple real root is one crossing, `t = -r0 / r1` where `r1` does not
+  vanish, so a point of `Q(alpha)`; a repeated root or `r1(s0) = 0` (two
+  crossings above one `s`, or a tangency) is moved by the next rotation, and
+  a repeated root that every rotation keeps is a tangency. The resultant
+  vanishing identically is the circle on the torus (`E` irreducible). The
+  band test: on the torus `|grad T| = 8 R r rho <= 8 R r (R + r)` in local
+  coordinates, so an extremum of `T` along the circle within `delta = 8 R r
+  (R + r + res) res` of zero is a crossing within the resolution of a
+  tangency, found as a change of the real roots' count with `T` offset by
+  `+-delta`.
+* **A part's rim.** A segment's rim is its end plane's ring at the latitude
+  of its side: on the torus `v` is fixed at `(cos v, sin v) = (s sqrt(q2),
+  z) / r`, `q2 = r^2 - z^2`; a wedge's end rim is the tube's circle in the
+  half-plane of its rounded direction `(c, s)`: `u` fixed at `(c, s) /
+  sqrt(n2)`. The other surface's function on the angles, `G(u, v)` (reduced
+  by `sin^2 = 1 - cos^2`), at the fixed angle is `A + sqrt(d) B` with `A`,
+  `B` rational forms in the free angle (even powers of the surd rational,
+  odd ones `sqrt(d)` times a rational), a chart's polynomials `pa + sqrt(d)
+  pb` of degree `2 deg`. Every root of `p = pa + sqrt(d) pb` is a root of
+  the norm `pa^2 - d pb^2` in `Q[t]`; the conjugate `pa - sqrt(d) pb` is `G`
+  at the conjugate direction (the other ring `R - s sqrt(q2)`, or the
+  opposite half-plane's circle), so of the norm's real roots the rim's are
+  those where `p` vanishes, decided exactly in `Q(alpha)(sqrt(d))`
+  (`tower_sign`); a root where both conjugates vanish is kept, and it is a
+  tangency only when `p'` vanishes there too. The chart's base is chosen so
+  that `p` does not vanish at its antipode. With `G` of degree two in each
+  angle (a quadric, or a torus in exactly orthonormal frames) the norm is of
+  degree eight; with S9d.4b.2b's degree four, sixteen. The point is the
+  torus's at the fixed angle's surd direction and the free angle's
+  `(1 - t^2, 2 t) / (1 + t^2)` turned by the chart's base, in the tower.
+* **Signs in towers.** A number `a + b sqrt(d)` with `a`, `b` in `Q(alpha)`,
+  and `x + y sqrt(e)` of such numbers (`tower_sign`), and a mixed dot
+  product's sum, are tried by a binary64 enclosure first (the generator's
+  isolator narrowed as for `Q(alpha)`'s own signs, `sqrt(d)` enclosed):
+  certain where it excludes zero; the exact products and Sturm-Tarski only
+  where it does not.
+* **A void between both inputs' faces.** A shell of a Boolean's result
+  whose faces come from both inputs and whose certified flux (the
+  validator's, the shell built alone as a solid) is negative encloses no
+  material: a cavity of the result's other shell, not a solid.
+* **A loop through a pole.** A loop's winding about a sphere's (or cone's)
+  axis is its last pcurve's end against its first's start in `u`, not the
+  sum of its pcurves' changes: at a pole `u` turns freely between two
+  pcurves (half a turn along a meridian through it), which the sum leaves
+  out.
+
 ## Lines and circles against surfaces (S7c.1)
 
 Along a line `p0 + s d` with rational `p0`, `d`, a plane's, cylinder's,
