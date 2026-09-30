@@ -207,7 +207,8 @@ class BridgeTests(unittest.TestCase):
         # as an argument whose result's top face touches
         # itself at a vertex (Degenerate: a tower's corner on the corner of
         # a notch), prisms touching along an edge (Degenerate), a torus's
-        # half turn against a cylinder (S9d.4b), a section,
+        # half turn against a cylinder (S9d.4b), two frusta on one cone
+        # (Degenerate), a section,
         # several objects, a result of two solids as an argument,
         # unifysamedom of other shapes, counts of an uncopied prism's result
         # and a Boolean's history.
@@ -229,6 +230,17 @@ class BridgeTests(unittest.TestCase):
         self.expect(boxes + "pcylinder c 1.75 2\nptorus t 2 0.5\nttranslate t 0 0 1\nbcommon r c t\n"
                     "checkprops r -v [expr {acos(-1) ** 2 / 3 - 5 * sqrt(3) * acos(-1) / 16}] "
                     "-deps 1e-6\n", "pass")
+        # Two curved primitives in one Boolean (S9d.4b's survey): each is
+        # built with ids of its own, a copy built again from its numbers.
+        # Two unit spheres a unit apart: their common is the lens, 5 pi / 12.
+        self.expect(boxes + "psphere s 1\npsphere q 1\nttranslate q 1 0 0\nbcommon r s q\n"
+                    "checkprops r -v [expr {5 * acos(-1) / 12}] -deps 1e-6\n", "pass")
+        # A torus and its copy moved half a tube's diameter along the axis
+        # (S9d.4b.2b's coaxial tori): their common is the lens of two discs of
+        # radius 1/2 revolved at radius 2, 2 pi^2 / 3 - sqrt(3) pi / 2.
+        self.expect(boxes + "ptorus t 2 0.5\ntcopy t u\nttranslate u 0 0 0.5\nbcommon r t u\n"
+                    "checkprops r -v [expr {2 * acos(-1) ** 2 / 3 - sqrt(3) * acos(-1) / 2}] "
+                    "-deps 1e-6\n", "pass")
         # A coaxial pipe cut from a frustum (S9d.3b.1): the frustum less the
         # core, 14 pi / 3 - pi / 2.
         self.expect(boxes + "pcone k 2 1 2\npcylinder c 0.5 4\nttranslate c 0 0 -1\nbcut r k c\n"
@@ -243,6 +255,10 @@ class BridgeTests(unittest.TestCase):
                 (boxes + "box t 4 4 0 1 1 2\ncatch {bfuse r a t}", "egenerate"),
                 (boxes + "pcylinder c 1 2\nptorus t 2 0.5 180\nttranslate t 1 0 1\n"
                  "catch {bcommon r c t}", "segment or wedge"),
+                # Two frusta on one cone (upstream's ZL6), built with ids of
+                # their own: the kernel's, not the adapter's, refusal.
+                (boxes + "pcone k 2 1 2\npcone m 1 0.5 1\nttranslate m 0 0 2\ncatch {bfuse r k m}",
+                 "apex on the other input"),
                 (boxes + "baddobjects a\nbaddtools b\ncatch {bapibop r 4}", "bapibop r 4"),
                 (boxes + "baddobjects a b\nbaddtools b\ncatch {bapibop r 1}", "one object"),
                 (boxes + "box d 9 9 9 1 1 1\nbfuse r a d\ncatch {bcut s r b}", "several solids"),

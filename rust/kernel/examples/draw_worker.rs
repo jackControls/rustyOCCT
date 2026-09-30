@@ -7,7 +7,7 @@
 //! face the solid. Start and end copies are OCCT's First/Last shapes, which
 //! DRAW does not query; the kernel reports them as generated with their roles.
 use rusty_occt::history::{History, Relation};
-use rusty_occt::identity::{InputLabel, OperationId, Parent, Role};
+use rusty_occt::identity::{EntityId, InputLabel, OperationId, Parent, Role};
 use rusty_occt::topology::{
     Curve2, Curve3, EdgeId, FaceId, Loop, Orientation, Slot, Surface, Topology,
 };
@@ -212,6 +212,76 @@ struct Session {
     unkept_history: bool,
     /// The arguments `bop` last prepared (S9a): the object and the tool.
     bop: Option<(Shape, Shape)>,
+    /// Every cone, sphere and torus built, by body id: each is built under
+    /// an operation of its own (fresh ids), and a copy of one is built
+    /// again from this when a Boolean's arguments share ids.
+    primitives: BTreeMap<EntityId, Primitive>,
+}
+
+/// A cone, sphere or torus as its constructor made it (S9d.4b's survey):
+/// the numbers `Solid::cone_with`, `sphere_with` or `torus_with` took, so
+/// it can be built again in its current frame under another operation, as
+/// a prism is extruded again. A copy or a motion keeps the body id, and
+/// the frame is the solid's own (the rigid motion rebuilds it so).
+#[derive(Clone, Copy)]
+enum Primitive {
+    Cone {
+        bottom: f64,
+        top: f64,
+        height: f64,
+    },
+    Sphere {
+        radius: f64,
+        low: f64,
+        high: f64,
+    },
+    Torus {
+        major: f64,
+        minor: f64,
+        low: f64,
+        high: f64,
+        angle: f64,
+    },
+}
+
+impl Primitive {
+    /// The primitive in `frame` under `operation`: the same geometry, new
+    /// ids.
+    fn build(self, operation: OperationId, frame: Frame3, t: Tolerance) -> Result<Solid> {
+        Ok(match self {
+            Self::Cone {
+                bottom,
+                top,
+                height,
+            } => Solid::cone_with(operation, frame, bottom, top, height, t)?.0,
+            Self::Sphere { radius, low, high } => {
+                Solid::sphere_with(operation, frame, radius, low, high, t)?.0
+            }
+            Self::Torus {
+                major,
+                minor,
+                low,
+                high,
+                angle,
+            } => Solid::torus_with(operation, frame, major, minor, low, high, angle, t)?.0,
+        })
+    }
+}
+
+/// A new cone, sphere or torus under an operation of its own (fresh ids:
+/// two of them in one Boolean share none), recorded for building again.
+fn primitive(
+    session: &mut Session,
+    primitive: Primitive,
+    frame: Frame3,
+    t: Tolerance,
+) -> Result<Shape> {
+    session.next_operation += 1;
+    let solid = primitive.build(OperationId(session.next_operation), frame, t)?;
+    session
+        .primitives
+        .insert(solid.topology().body_id(), primitive);
+    Ok(Shape::Solid(Box::new(solid)))
 }
 
 fn unsupported(args: &[String]) -> Failure {
@@ -1989,13 +2059,17 @@ fn rebuilt(s: &Solid, operation: OperationId) -> Result<Solid> {
 /// So is a Boolean result that is a prism, which the kernel's Boolean
 /// indexes by its profile (its entities descend from the inputs); a stack
 /// or a polyhedron is taken as it is (S9b.2, on its stored geometry), the
-/// other argument built again when they share ids (two general bodies, or
-/// a cone, a sphere or a torus, sharing ids are unsupported).
+/// other argument built again when they share ids; a cone, a sphere or a
+/// torus (each built with ids of its own) shares them only with a copy of
+/// itself or a Boolean result of it, and is built again from its
+/// constructor's numbers in its frame (two general bodies sharing ids are
+/// unsupported).
 fn boolean(
     object: &Shape,
     tool: &Shape,
     op: BooleanOp,
     operations: [OperationId; 3],
+    primitives: &BTreeMap<EntityId, Primitive>,
 ) -> Result<Shape> {
     let (a, ua) = boolean_argument(object)?;
     let (b, ub) = boolean_argument(tool)?;
@@ -2013,14 +2087,19 @@ fn boolean(
             b = rebuilt(&b, operations[2])?;
         } else if !general(&a) {
             a = rebuilt(&a, operations[1])?;
+        } else if let (Shape::Solid(_), Some(p)) = (tool, primitives.get(&b.topology().body_id())) {
+            b = p.build(operations[2], b.frame(), b.resolution())?;
+        } else if let (Shape::Solid(_), Some(p)) = (object, primitives.get(&a.topology().body_id()))
+        {
+            a = p.build(operations[1], a.frame(), a.resolution())?;
         } else if matches!(
             (object, tool),
             (Shape::Boolean { .. }, Shape::Boolean { .. })
         ) {
             return Err(boolean_unsupported("two stacks or polyhedra sharing ids"));
         } else {
-            // A cone, a sphere or a torus sharing ids with the other
-            // argument: nothing to extrude again.
+            // A general solid the adapter did not construct sharing ids
+            // with the other argument: nothing to build again.
             return Err(boolean_unsupported(
                 "a solid other than a prism sharing ids",
             ));
@@ -2590,7 +2669,7 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             let n = session.next_operation;
             session.next_operation += 3;
             let operations = [1, 2, 3].map(|k| OperationId(n + k));
-            let result = boolean(&object, &tool, op, operations)?;
+            let result = boolean(&object, &tool, op, operations, &session.primitives)?;
             session.last = None;
             session.unkept_history = true;
             session.shapes.insert(args[1].clone(), result);
@@ -2709,9 +2788,13 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
                 Vec3::new(1.0, 0.0, 0.0),
                 t,
             )?;
-            let (solid, _) =
-                Solid::cone_with(OperationId::UNSPECIFIED, frame, n[0], n[1], n[2], t)?;
-            shapes.insert(args[1].clone(), Shape::Solid(Box::new(solid)));
+            let cone = Primitive::Cone {
+                bottom: n[0],
+                top: n[1],
+                height: n[2],
+            };
+            let shape = primitive(session, cone, frame, t)?;
+            session.shapes.insert(args[1].clone(), shape);
             Ok(String::new())
         }
         // `psphere name [plane] R [angle1 angle2]`: a sphere or zone about
@@ -2736,9 +2819,13 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
             } else {
                 (-std::f64::consts::FRAC_PI_2, std::f64::consts::FRAC_PI_2)
             };
-            let (solid, _) =
-                Solid::sphere_with(OperationId::UNSPECIFIED, frame, n[0], low, high, t)?;
-            shapes.insert(args[1].clone(), Shape::Solid(Box::new(solid)));
+            let sphere = Primitive::Sphere {
+                radius: n[0],
+                low,
+                high,
+            };
+            let shape = primitive(session, sphere, frame, t)?;
+            session.shapes.insert(args[1].clone(), shape);
             Ok(String::new())
         }
         // `ptorus name R1 R2 [angle1 angle2] [angle]`: a torus about the z
@@ -2758,17 +2845,15 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
                 4 => (n[2].to_radians(), n[3].to_radians(), TAU),
                 _ => (n[2].to_radians(), n[3].to_radians(), n[4].to_radians()),
             };
-            let (solid, _) = Solid::torus_with(
-                OperationId::UNSPECIFIED,
-                frame,
-                n[0],
-                n[1],
+            let torus = Primitive::Torus {
+                major: n[0],
+                minor: n[1],
                 low,
                 high,
                 angle,
-                t,
-            )?;
-            shapes.insert(args[1].clone(), Shape::Solid(Box::new(solid)));
+            };
+            let shape = primitive(session, torus, frame, t)?;
+            session.shapes.insert(args[1].clone(), shape);
             Ok(String::new())
         }
         // `tcopy` copies the geometry too, keeping what the shape shares
