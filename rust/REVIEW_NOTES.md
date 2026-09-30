@@ -3734,6 +3734,49 @@ Decisions for S9, recorded before its code (2026-09-28):
     DRAW `plane`; native at `add` or `wire`). A full contract run holds
     (the slowest Boolean case 9.4 seconds); the ledger does not change.
 
+  * **S9f refined, before its code (2026-09-30).** Why splines stop today:
+    a spline prism in another frame, or whose offset or heights round,
+    reaches `polyhedra::stored_model` ("a solid with curved faces or edges
+    in any position (S9c)") or the curved engine's model refusal ("a spline
+    profile in a Boolean of prisms in any position (S9c)", both to be
+    relabelled S9f); no spline-surface intersection exists, every spline
+    capability being a curve against a surface or 2D and rounded (S8b.3,
+    S9a.2). Sub-steps, each evidence first, after S9e: S9f.1, spline prisms
+    against polyhedral prisms in any position (a profile of lines, arcs and
+    splines against line profiles, same-axis pairs whose offset rounds
+    included): spline walls enter the curved engine (`Seg::Spline`,
+    `Surf::SplineWall`, `Crv::Spline`); a plane meets a wall `o + S_x(t) x
+    + S_y(t) y + w n` in `a(t) + b w = 0`, a crease `w = -a(t)/b` (an
+    affine image of the profile, an exact B-spline, S8b.3's `plane_image`)
+    or, parallel to the axis, generatrices at the roots of a degree-`p`
+    polynomial; every vertex in `Q(alpha)` of degree at most `p`; exact
+    membership at rational points or on a wall at a known parameter
+    (S8b.3's and S9a.2's polynomials reused, their roundings not). S9f.2a,
+    exactly parallel axes: spline walls against line, arc and spline walls
+    in generatrices at exact 2D crossings (degrees `p`, `2p`, `pq`, the
+    last up to 49). S9f.2b, cylinders with crossing axes: `A w^2 + 2B(t) w
+    + C(t)` of degrees 0, `p`, `2p` along a ruling, branches as
+    `MeetCrv` over the spline parameter, turning points and vertices of
+    degree `2p`, loops by verified window graphs (as `torus_curved`), a new
+    D13 curve kind. S9f.3, spheres and cones the same way. Refused, with
+    these reasons: tori (a quartic in `w`, its turning points' discriminant
+    of degree `12p`, traced curves only), spline walls against spline
+    walls with crossing axes (degree `q` in `w`, no closed-form section, a
+    discriminant of degree up to `q(q-1)p` and the implicit curve's
+    extraneous branches; a wall of degree at most 2 on every span is a
+    quadric and joins S9f.2b), spline results and imported spline bodies
+    as inputs (S9e's general faces), rational and periodic profile splines
+    (refused already). Risks: R4 under rounding (an interior knot of
+    multiplicity `p` in a turned frame, its poles rounded: a fixture first,
+    then exact knot removal before lifting or `PrecisionLoss`), U10 not
+    reached (profiles and creases stay nonrational), a plane within rounding
+    of a wall's axis (`Degenerate`, S9c.1's (c)), tangencies along a
+    generatrix or at a knot (`Degenerate`), fields of degree 7 to 49 in
+    `K` where S9a.2 rounded. Evidence to reuse: the 46 `boolean-spline-*`
+    profiles in new frames, `boolean_reference.SplinePair`'s slicing and
+    40-digit meetings, the spline capture's oracle and its reviewed
+    BRepGProp errors, S8b's oblique-split fixtures for creases.
+
 ### Parallel tracks
 
 * **The boolean target's full replay under AddressSanitizer (S9
