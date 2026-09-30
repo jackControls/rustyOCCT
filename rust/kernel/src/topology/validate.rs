@@ -324,7 +324,8 @@ fn arc_of(c: &Curve3) -> Option<(&Frame3, [f64; 2], f64, f64)> {
         | Curve3::ParabolaArc { .. }
         | Curve3::Section(_)
         | Curve3::Meet(_)
-        | Curve3::Rise(_) => None,
+        | Curve3::Rise(_)
+        | Curve3::Toric(_) => None,
     }
 }
 
@@ -392,7 +393,8 @@ fn curve_at<T: Real>(curve: &Curve3, t: f64) -> V3<T> {
         | Curve3::ParabolaArc { .. }
         | Curve3::Section(_)
         | Curve3::Meet(_)
-        | Curve3::Rise(_) => {
+        | Curve3::Rise(_)
+        | Curve3::Toric(_) => {
             projection::conic_point::<T>(curve, t).expect("a conic or section evaluates")
         }
         _ => {
@@ -808,7 +810,8 @@ fn add_curve<T: Real>(h: &mut Harmonic<T>, curve: &Curve3, forward: bool) -> boo
         | Curve3::ParabolaArc { .. }
         | Curve3::Section(_)
         | Curve3::Meet(_)
-        | Curve3::Rise(_) => return false,
+        | Curve3::Rise(_)
+        | Curve3::Toric(_) => return false,
         Curve3::LineSegment { start, end } => {
             let (a, b) = (v3::<T>(start.to_array()), v3::<T>(end.to_array()));
             if forward {
@@ -1217,6 +1220,30 @@ fn curve_valid(curve: &Curve3, tol: &R, fast_tol2: &Fast, exact_tol2: &I) -> boo
                 && (m.sign == 1.0 || m.sign == -1.0)
                 && m.sweep != 0.0
                 && a.hypot(b) > 1e-12
+        }
+        // A torus's meeting with a quadric (S9d.4b.2): a ring torus, a
+        // positive radius (a cone's may be zero at its frame's origin), a
+        // window of the other angle under a turn, a range within a turn.
+        Curve3::Toric(m) => {
+            finite(&[
+                m.major,
+                m.minor,
+                m.other_radius,
+                m.other_half_angle,
+                m.window[0],
+                m.window[1],
+                m.start,
+                m.sweep,
+            ]) && r(m.minor) > *tol
+                && m.major > m.minor
+                && (r(m.other_radius) > *tol
+                    || (m.other_half_angle != 0.0 && m.other_radius >= 0.0))
+                && m.other_half_angle.abs() < std::f64::consts::FRAC_PI_2
+                && (!m.other_sphere || m.other_half_angle == 0.0)
+                && m.window[0] < m.window[1]
+                && m.window[1] - m.window[0] < TAU
+                && m.sweep != 0.0
+                && m.sweep.abs() <= TAU
         }
         _ => {
             let (_, [rx, ry], start, sweep) = arc_of(curve).unwrap();
@@ -3082,6 +3109,8 @@ fn closed_curve(curve: &Curve3) -> bool {
         Curve3::Meet(m) => m.sweep.abs() == TAU,
         // A meeting over the height never closes (S9d.2b).
         Curve3::Rise(_) => false,
+        // A torus's meeting over a whole turn of its angle (S9d.4b.2).
+        Curve3::Toric(m) => m.sweep.abs() == TAU,
         Curve3::LineSegment { .. } => false,
         // A spline ring edge is a full period; its seam is tested for C1.
         Curve3::BSpline(span) => span.is_closed_period(),

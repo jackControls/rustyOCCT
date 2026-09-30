@@ -110,6 +110,17 @@ fn boxes_meet(a: &([f64; 3], [f64; 3]), b: &([f64; 3], [f64; 3])) -> bool {
     (0..3).all(|k| a.0[k] <= b.1[k] && b.0[k] <= a.1[k])
 }
 
+/// Whether two faces of one model lie on one quadric (a circle's halves, a
+/// sphere's hemispheres).
+fn same_quadric(a: &Surf, b: &Surf) -> bool {
+    match (a, b) {
+        (Surf::Cyl { c, r, .. }, Surf::Cyl { c: c2, r: r2, .. }) => c == c2 && r == r2,
+        (Surf::Sphere { c, r }, Surf::Sphere { c: c2, r: r2 }) => c == c2 && r == r2,
+        (Surf::Cone { b, k }, Surf::Cone { b: b2, k: k2 }) => b == b2 && k == k2,
+        _ => false,
+    }
+}
+
 /// The line key of a point: `x . d / |d|^2` (its parameter less a constant
 /// of the line).
 fn line_key(x: &QV, d: &V) -> Qd {
@@ -126,6 +137,7 @@ pub(super) fn place(crv: &Crv, x: &QV) -> Pos {
         Crv::Meet(m) => Pos::Ang(m.place(x)),
         Crv::Cone(c) => Pos::Ang(c.place(x)),
         Crv::Torus(c) => Pos::Ang(c.place(x)),
+        Crv::Toric(c) => Pos::Ang(c.place(x)),
     }
 }
 
@@ -279,7 +291,7 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
         for fb in 0..models[1].faces.len() {
             let (sa, sb) = (&models[0].faces[fa].surf, &models[1].faces[fb].surf);
             let cone = matches!(sa, Surf::Cone { .. }) || matches!(sb, Surf::Cone { .. });
-            let curved = |s: &Surf| !matches!(s, Surf::Plane { .. });
+            let curved = |s: &Surf| !matches!(s, Surf::Plane { .. } | Surf::Torus);
             if !cone || !curved(sa) || !curved(sb) {
                 continue;
             }
@@ -317,6 +329,46 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                         res,
                     )?;
                     spiric.insert(key, pair.clone());
+                    pair
+                }
+            } else {
+                CylPair::Apart
+            };
+            pairs.insert((fa, fb), pair);
+        }
+    }
+    // A torus and a quadric face (S9d.4b.2): its meeting's pieces, the same
+    // for every patch and for every face on one quadric (found once).
+    let mut toric: Vec<((usize, usize), CylPair)> = Vec::new();
+    for fa in 0..models[0].faces.len() {
+        for fb in 0..models[1].faces.len() {
+            let (sa, sb) = (&models[0].faces[fa].surf, &models[1].faces[fb].surf);
+            let quadric = |s: &Surf| {
+                matches!(
+                    s,
+                    Surf::Cyl { .. } | Surf::Sphere { .. } | Surf::Cone { .. }
+                )
+            };
+            let (k, g) = match (sa, sb) {
+                (Surf::Torus, s) if quadric(s) => (0, fb),
+                (s, Surf::Torus) if quadric(s) => (1, fa),
+                _ => continue,
+            };
+            let pair = if boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]) {
+                let other = &models[1 - k];
+                // The first face on the same quadric.
+                let first = (0..=g)
+                    .find(|&h| same_quadric(&other.faces[h].surf, &other.faces[g].surf))
+                    .unwrap_or(g);
+                if let Some((_, pair)) = toric.iter().find(|(key, _)| *key == (k, first)) {
+                    pair.clone()
+                } else {
+                    let pair = super::torus_curved::torus_quadric(
+                        k,
+                        &models[k],
+                        &super::cones::other_face(other, g),
+                    )?;
+                    toric.push(((k, first), pair.clone()));
                     pair
                 }
             } else {
@@ -449,7 +501,16 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                     (Surf::Cyl { .. }, Some(w), Crv::Conic { .. }) => pair_of(o, w, g),
                     _ => None,
                 };
-                let meet = edge_surface(&e.curve, own, me.ball.as_ref(), other, g, pair)?;
+                let meet = match edge_surface(&e.curve, own, me.ball.as_ref(), other, g, pair) {
+                    // A seam's tangency with a torus, or a torus seam's
+                    // (S9d.4b.2): another seam is tried.
+                    Err(Error::Degenerate(_))
+                        if virtual_edge && (me.ring.is_some() || other.ring.is_some()) =>
+                    {
+                        return Err(seam())
+                    }
+                    r => r?,
+                };
                 let points = match meet {
                     EdgeMeet::None => continue,
                     EdgeMeet::Along => {
@@ -757,7 +818,12 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
             for (bi, crv) in curves.iter().enumerate() {
                 let mut list: Vec<(usize, Pos)> = on
                     .iter()
-                    .filter(|&&v| on_curve(crv, &vx[v].p))
+                    .filter(|&&v| match crv {
+                        // On both faces, so on both surfaces: the piece's
+                        // window and range decide (S9d.4b.2).
+                        Crv::Toric(c) => c.holds(&vx[v].p),
+                        _ => on_curve(crv, &vx[v].p),
+                    })
                     .map(|&v| (v, place(crv, &vx[v].p)))
                     .collect();
                 // Conics and rings are closed; an open piece of a meeting
@@ -772,6 +838,10 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                         None => (true, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())])),
                     },
                     Crv::Torus(c) => match &c.range {
+                        Some([lo, _]) => (false, Pos::Ang(lo.clone())),
+                        None => (true, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())])),
+                    },
+                    Crv::Toric(c) => match &c.range {
                         Some([lo, _]) => (false, Pos::Ang(lo.clone())),
                         None => (true, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())])),
                     },
@@ -807,6 +877,9 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                             Crv::Torus(c) => c.at(&[int(1), zero()]).ok_or(
                                 Error::ComputationLimit("a closed section without vertices"),
                             )?,
+                            Crv::Toric(c) => c.at(&[int(1), zero()]).ok_or(
+                                Error::ComputationLimit("a closed section without vertices"),
+                            )?,
                             _ => conic_point_r(crv, &[int(1), zero()]),
                         };
                         let inside = models[0].in_face(fa, &x) == Loc::In
@@ -817,7 +890,11 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                             // S9d.3b) likewise.
                             (
                                 true,
-                                Crv::Circle(_) | Crv::Cone(_) | Crv::Meet(_) | Crv::Torus(_),
+                                Crv::Circle(_)
+                                | Crv::Cone(_)
+                                | Crv::Meet(_)
+                                | Crv::Torus(_)
+                                | Crv::Toric(_),
                             ) => {
                                 let v = vx.len();
                                 vx.push(Vx {
@@ -1111,6 +1188,16 @@ fn midpoint(crv: &Crv, a: &Pos, b: &Pos, ccw: bool) -> Result<(QV, Pos)> {
                 Pos::Ang([Qd::rat(cs[0].clone()), Qd::rat(cs[1].clone())]),
             ))
         }
+        (Crv::Toric(m), Pos::Ang(sa), Pos::Ang(sb)) => {
+            let cs = rational_between(sa, sb, ccw)?;
+            let x = m
+                .at(&cs)
+                .ok_or(Error::ComputationLimit("a torus meeting's point off it"))?;
+            Ok((
+                x,
+                Pos::Ang([Qd::rat(cs[0].clone()), Qd::rat(cs[1].clone())]),
+            ))
+        }
         (Crv::Cone(m), Pos::Ang(sa), Pos::Ang(sb)) => {
             let cs = rational_between(sa, sb, ccw)?;
             let x = m
@@ -1174,6 +1261,7 @@ fn on_curve(crv: &Crv, x: &QV) -> bool {
         Crv::Meet(m) => m.on(x),
         Crv::Cone(c) => c.on(x),
         Crv::Torus(c) => c.on(x),
+        Crv::Toric(c) => c.on(x),
         Crv::Circle(c) => c.on(x),
         Crv::Rise(c) => c.on(x),
         Crv::Conic { c, a, b } => {
@@ -1339,6 +1427,23 @@ impl Arr {
             Crv::Torus(m) => {
                 let (Pos::Ang(p0), Pos::Ang(p1)) = (&e.pos[0], &e.pos[1]) else {
                     unreachable!("a torus section's places")
+                };
+                let (t0, t1) = (angle_f64(p0), angle_f64(p1));
+                let mut sweep = if e.with { t1 - t0 } else { t0 - t1 };
+                sweep = sweep.rem_euclid(TAU);
+                if sweep == 0.0 {
+                    sweep = TAU;
+                }
+                let sweep = if e.with { sweep } else { -sweep };
+                let mut pts = m.samples(t0, sweep, 64);
+                if !h.1 {
+                    pts.reverse();
+                }
+                pts
+            }
+            Crv::Toric(m) => {
+                let (Pos::Ang(p0), Pos::Ang(p1)) = (&e.pos[0], &e.pos[1]) else {
+                    unreachable!("a torus meeting's places")
                 };
                 let (t0, t1) = (angle_f64(p0), angle_f64(p1));
                 let mut sweep = if e.with { t1 - t0 } else { t0 - t1 };

@@ -335,6 +335,21 @@ impl K {
         }
     }
 
+    /// Its binary64 value at the middle of the generator's isolator narrowed
+    /// by `steps` bisections, evaluated exactly (a view, not an enclosure).
+    fn value_near(&self, steps: usize) -> f64 {
+        match self {
+            K::Rat(a) => rational_f64(a),
+            K::Alg(g, p) => {
+                let root = g.narrowed(steps);
+                let (lo, hi) = root.isolator();
+                let m = (lo + hi) / int(2);
+                let v = p.iter().rev().fold(zero(), |acc, c| rmul(&acc, &m) + c);
+                rational_f64(&v)
+            }
+        }
+    }
+
     /// An enclosure, the generator's isolator narrowed by `steps`
     /// bisections.
     pub(super) fn enclose(&self, steps: usize) -> I {
@@ -565,13 +580,37 @@ impl Qd {
         self.enclose(96)
     }
 
-    /// The value rounded to binary64 (from a tight enclosure).
+    /// The value rounded to binary64 (from a tight enclosure: narrowed
+    /// further where a field's large coefficients leave the first one wide,
+    /// S9d.4b.2).
     pub(super) fn to_f64(&self) -> f64 {
         if let Some(a) = self.rational() {
             return rational_f64(a);
         }
+        let tiny = R::new(BigInt::from(1), BigInt::from(1u64 << 62));
         let i = self.interval();
-        rational_f64(&((i.lo() + i.hi()) / int(2)))
+        let size = i.abs_hi().max(int(1));
+        if i.hi() - i.lo() <= &tiny * size {
+            return rational_f64(&((i.lo() + i.hi()) / int(2)));
+        }
+        // Wide: the value at the narrowed isolator's middle, exactly (a
+        // rational interval's products of large coefficients are slow), at
+        // more bisections until two agree.
+        let mut last = None;
+        for steps in [160, 320, 640, 1280] {
+            let a = self.a.value_near(steps);
+            let b = if self.b.is_zero() {
+                0.0
+            } else {
+                self.b.value_near(steps) * rational_f64(&self.d).sqrt()
+            };
+            let v = a + b;
+            if last == Some(v) {
+                return v;
+            }
+            last = Some(v);
+        }
+        last.unwrap_or(f64::NAN)
     }
 }
 

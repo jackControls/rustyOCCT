@@ -1012,7 +1012,7 @@ fn similar(parts: &mut TopologyParts, s: f64, t: [f64; 3]) {
                 start: start * s,
                 sweep: sweep * s,
             },
-            Curve3::Section(_) | Curve3::Meet(_) | Curve3::Rise(_) => {
+            Curve3::Section(_) | Curve3::Meet(_) | Curve3::Rise(_) | Curve3::Toric(_) => {
                 unreachable!("scaled fixtures have no torus sections or meetings")
             }
             Curve3::BSpline(c) => {

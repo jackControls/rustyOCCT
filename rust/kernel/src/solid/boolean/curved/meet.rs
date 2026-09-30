@@ -278,8 +278,16 @@ pub(super) fn section(
                 _ => Ok(Section::Curves(Vec::new())),
             }
         }
+        // S9d.4b.2: a torus's meeting with a quadric, by the pair's
+        // relation (two tori refused before).
+        (Surf::Torus, Surf::Torus) => {
+            Err(Error::OutOfDomain("a torus against a torus (S9d.4b.2b)"))
+        }
         (Surf::Torus, _) | (_, Surf::Torus) => {
-            Err(Error::OutOfDomain("a torus against a curved face (S9d.4b)"))
+            match pair.expect("a torus and a quadric's relation") {
+                CylPair::Mixed(x) => Ok(Section::Curves(x.pieces.clone())),
+                _ => Ok(Section::Curves(Vec::new())),
+            }
         }
         // S9d.3a: a plane's section of a cone's wall.
         (Surf::Plane { p, m }, Surf::Cone { .. }) => Ok(Section::Curves(super::cone::plane_cone(
@@ -490,9 +498,10 @@ pub(super) fn edge_surface(
         (Crv::Line { p, d }, Surf::Torus) => {
             super::torus::line_torus(p, d, &py.f, py.ring.as_ref().expect("a torus"))
         }
-        (Crv::Conic { .. } | Crv::Circle(_), Surf::Torus) => {
-            Err(Error::OutOfDomain("a torus against a curved face (S9d.4b)"))
-        }
+        // S9d.4b.2: a cap's, a rim's or a sphere's circle against a whole
+        // torus.
+        (Crv::Conic { c, a, b }, Surf::Torus) => super::torus_curved::conic_torus(c, a, b, py),
+        (Crv::Circle(circ), Surf::Torus) => super::torus_curved::circ_torus(circ, py),
         // S9d.3a: a line against a cone's wall; S9d.3b's others.
         (Crv::Line { p, d }, Surf::Cone { .. }) => {
             super::cone::line_cone(p, d, &py.f, py.funnel.as_ref().expect("a cone"), &py.hi)
@@ -548,7 +557,7 @@ pub(super) fn edge_surface(
         )),
         // S9d.4b.1: a torus segment's or wedge's rim against a plane.
         (Crv::Torus(c), Surf::Plane { p: p0, m }) => super::torus_segment::rim_plane(c, p0, m),
-        (Crv::Meet(_) | Crv::Rise(_) | Crv::Cone(_) | Crv::Torus(_), _) => {
+        (Crv::Meet(_) | Crv::Rise(_) | Crv::Cone(_) | Crv::Torus(_) | Crv::Toric(_), _) => {
             unreachable!("a model edge is a line, an arc or a circle")
         }
         (Crv::Line { p, d }, Surf::Plane { p: p0, m }) => {
@@ -684,6 +693,7 @@ pub(super) fn tangent(curve: &Crv, pos: &Pos, x: &QV) -> QV {
         (Crv::Meet(m), Pos::Ang(cs)) => m.tangent(cs, x),
         (Crv::Cone(c), Pos::Ang(cs)) => c.tangent(cs),
         (Crv::Torus(c), _) => c.tangent(x),
+        (Crv::Toric(c), _) => c.tangent(x),
         (Crv::Conic { .. } | Crv::Meet(_) | Crv::Cone(_), Pos::T(_)) => {
             unreachable!("a conic's place is an angle")
         }

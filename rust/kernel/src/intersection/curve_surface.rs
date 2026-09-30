@@ -119,7 +119,7 @@ pub fn curve_surface(curve: &Curve3, surface: &Surface) -> Result<CurveSurfaceIn
                 "a torus section edge against an analytic surface",
             ))
         }
-        Curve3::Meet(_) | Curve3::Rise(_) => {
+        Curve3::Meet(_) | Curve3::Rise(_) | Curve3::Toric(_) => {
             return Err(Error::OutOfDomain(
                 "two cylinders' meeting edge against an analytic surface",
             ))

@@ -10,7 +10,8 @@
 //! axes, S9c's; S9b turns, leans or tilts the tool's frame, S9c.2a stands it
 //! on its side (perpendicular cylinders), S9d.1 makes it a sphere, a cap or
 //! a zone, S9d.3a a cone or frustum, S9d.4a a whole torus, S9d.4b.1 a
-//! torus v-segment or wedge; a result thinner than the
+//! torus v-segment or wedge, S9d.4b.2a makes the object a sphere or a cone
+//! against a whole torus; a result thinner than the
 //! resolution or touching itself; an undecided comparison); each result
 //! validates as it is built and its history passes the independent check
 //! (debug builds); when all three succeed their volumes agree,
@@ -121,8 +122,33 @@ pub fn check_boolean(data: &[u8]) {
         };
         pb = p;
     }
-    let Ok((a, _)) = Solid::extrude_with(OperationId(1), pa, fa, 0.0, h) else {
-        return;
+    // S9d.4b.2a: against a whole torus tool (the spline byte in 144..148),
+    // the flags' bits 5 and 6 make the object a sphere (1) or a
+    // cone (2) in its frame instead of its prism (0 and 3 keep it).
+    let whole_torus = (144..148).contains(&spline_byte);
+    let a = match (whole_torus, (flags >> 5) % 4) {
+        (true, 1) => {
+            let half = std::f64::consts::FRAC_PI_2;
+            let Ok((a, _)) =
+                Solid::sphere_with(OperationId(1), fa, 0.75 * s1, -half, half, tolerance)
+            else {
+                return;
+            };
+            a
+        }
+        (true, 2) => {
+            let r = 0.75 * s1;
+            let Ok((a, _)) = Solid::cone_with(OperationId(1), fa, r, r / 2.0, h, tolerance) else {
+                return;
+            };
+            a
+        }
+        _ => {
+            let Ok((a, _)) = Solid::extrude_with(OperationId(1), pa, fa, 0.0, h) else {
+                return;
+            };
+            a
+        }
     };
     // S9d.1: a sphere, a cap or a zone for the tool in its frame, by the
     // spline byte's two top bits.

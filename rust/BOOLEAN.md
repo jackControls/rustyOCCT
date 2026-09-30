@@ -21,9 +21,11 @@ S9d.2b's loops in exact frames among them), and S9d.3a's cones and
 frusta against polyhedral prisms (`curved/cone.rs`), and S9d.3b.1's
 cones against cylinders, spheres and cones meeting in rings or on a plane
 (`curved/cones.rs`), S9d.3b.2's cones and spheres in loops, S9d.4a's
-whole tori against polyhedral prisms (`curved/torus.rs`), and S9d.4b.1's
-torus v-segments and wedges against them (`curved/torus_segment.rs`); tori
-against curved faces (S9d.4b.2) are not.
+whole tori against polyhedral prisms (`curved/torus.rs`), S9d.4b.1's
+torus v-segments and wedges against them (`curved/torus_segment.rs`), and
+S9d.4b.2a's whole tori against prisms with arcs, spheres and cones
+(`curved/torus_curved.rs`); two tori (S9d.4b.2b) and parts of a torus
+against curved faces are not.
 
 ## Contract
 
@@ -561,6 +563,50 @@ loops winds holds its holes inside its outer loop on the cover (a wedge's
 over more than half a turn). `Solid::classify` decides a segment or a wedge
 (`decide::torus_part_location`: membership exactly, the distances from the
 wall within its range and from the end discs in rational intervals).
+
+### A whole torus against prisms with arcs, spheres and cones (S9d.4b.2a)
+
+The other input's curved face is a quadric (`procedural::Other`: a
+cylinder or cone on its affine frame, a sphere in the world), its function
+`G(u, v)` on the torus's angles a trigonometric polynomial of degree two in
+each (`curved/torus_curved.rs`, exact, reduced by `sin^2 = 1 - cos^2`). At
+a rational `u` the roots of `G` in `v` are a quartic's in a chart's
+half-angle tangent, so a point there lies in one `Q(alpha)`, and
+symmetrically at a rational `v`. The critical values of `u` are the real
+roots of the quartic's discriminant in `v` (degree 24 in a chart of `u`
+whose antipode is none); a tube's circle wholly on the quadric (every
+coefficient zero at one `u`) is `OutOfDomain`. On the line of each critical
+value every box is certified clear of `G`, of `G_v` or of `G_u` (binary64
+intervals, mean-value forms, halved to `1e-10` radians): a point where none
+clears is a singular point of the meeting, a tangency of the surfaces,
+`Degenerate`; a turning point is not. A rational `u` between each two
+critical values (and the chart's antipode) is a line whose roots, exact,
+seed a numerical trace of each component; runs where its slope in the
+angles is at most one (`|G_u| <= |G_v|`, turning points in `v` among them)
+are graphs over `u`, the others (turning points in `u`, `G_v = 0`) over
+`v`, switched where the slope is one (each graph's series as far from its
+own turning points as the other's), a component of one kind all round a ring
+over its parameter where it winds once in it alone. A piece's
+branch is a window of the other angle (rational directions) between its
+own values and the other roots at samples along its run; its switches are
+its points at rational parameters (on the graph over `u` beside them), its
+range their directions. Each piece is verified exactly: `G` has no zero on
+the window's ends over the range (Sturm counts, the range's algebraic ends
+widened to rational ones outside them), one root inside the window at a
+rational parameter in the range, and no double root in the rectangle
+(certified boxes clear of `G` or of its derivative in the other angle); a
+piece that fails is split and tried again. Every root on every line must
+lie on a verified piece: no component is missed. A coaxial quadric (`G`
+independent of `u`) meets the torus in circles: rings over `u` at the roots
+in `v`, stored as `Curve3::Circle` about the axis. Other sections are
+`Curve3::Toric` (`TOPOLOGY_MODEL.md`), their pcurves `Projection`s. A cap's,
+a rim's or a whole sphere's great circle meets the torus where the torus's
+quartic along it vanishes, a polynomial of degree eight in its half-angle
+tangent (a sphere's circle of a surd radius against a torus is
+`OutOfDomain`); a seam's tangency with a torus is retried at another seam.
+Two tori are S9d.4b.2b's `OutOfDomain("a torus against a torus
+(S9d.4b.2b)")`, a v-segment or wedge against a curved face
+`OutOfDomain("a torus segment or wedge against a curved face (S9d.4b)")`.
 
 ### Spline profiles (S9a.2)
 
@@ -1570,7 +1616,15 @@ height); its horizontal edges on a spline are its lifted restrictions.
   reviewed (`occt-boolean-torus-curved-divergences.json`): BRepGProp's
   default integration on faces bounded by B-spline sections misses by up
   to 9.8e-6, adaptively within 4.8e-9 and unchanged at an accuracy of
-  1e-12; thirteen solids' counts change when unified.
+  1e-12; thirteen solids' counts change when unified. With the kernel's
+  module (S9d.4b.2a) every case but the tori lies within the reference (its
+  enclosures within 1e-9), the two degenerate ones refused and the 12 tori
+  `unsupported` (S9d.4b.2b's): 19 match and 25 are reviewed, 20 of them
+  for the kernel's entity counts (OCCT's B-spline sections split at its own
+  points and faces split at the torus's seams, the kernel's sections in
+  exact pieces switched at rational points; five, native matches, by their
+  counts alone: four coaxial pairs, whose bands cross OCCT's seam parallel,
+  and `bore_cut`).
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

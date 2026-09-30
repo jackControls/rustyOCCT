@@ -10,7 +10,7 @@
 use super::{c, V2, V3};
 use crate::certified::Real;
 use crate::jet::{integrate_many, Jet};
-use crate::topology::{Curve3, Meet, Projection, Rise, Spiric, Surface};
+use crate::topology::{Curve3, Meet, Projection, Rise, Spiric, Surface, Toric};
 use crate::Frame3;
 
 /// Integration widths and depths for the integrals along projections.
@@ -126,8 +126,264 @@ pub(super) fn curve_jet<T: Real>(curve: &Curve3, fraction: &Jet<T>) -> Option<[J
         Curve3::Section(s) => section_jet(s, fraction)?,
         Curve3::Meet(m) => meet_jet(m, fraction)?.1,
         Curve3::Rise(m) => rise_jet(m, fraction)?,
+        Curve3::Toric(m) => toric_jet(m, fraction)?.1,
         Curve3::BSpline(_) => return None,
     })
+}
+
+/// A jet vector's dot product with a constant axis.
+fn dot_axis<T: Real>(v: &[Jet<T>; 3], axis: [f64; 3]) -> Jet<T> {
+    v[0].scale(&c(axis[0]))
+        .add(&v[1].scale(&c(axis[1])))
+        .add(&v[2].scale(&c(axis[2])))
+}
+
+/// A torus meeting's point along its parameter's jet `t` as `P0 + C P1 + S
+/// P2` (`C` and `S` the other angle's cosine and sine), and the quadric's
+/// affine functionals there, each `L0 + C L1 + S L2` with its sign in `G =
+/// sum sign L^2`.
+type ToricParts<T> = ([[Jet<T>; 3]; 3], Vec<([Jet<T>; 3], bool)>);
+
+fn toric_parts<T: Real>(m: &Toric, t: &Jet<T>) -> Option<ToricParts<T>> {
+    let n = t.order();
+    let (big, small) = (c::<T>(m.major), c::<T>(m.minor));
+    let (ct, st) = t.cos_sin();
+    let (o, x, y, nn) = (
+        m.frame.origin().to_array(),
+        m.frame.x().to_array(),
+        m.frame.y().to_array(),
+        m.frame.normal().to_array(),
+    );
+    let konst = |v: f64| Jet::constant(c::<T>(v), n);
+    let p: [[Jet<T>; 3]; 3] = if m.over_v {
+        // t = v: P = o + r sv n + cu (R + r cv) x + su (R + r cv) y.
+        let rho = ct.scale(&small).add_constant(&big);
+        let z = st.scale(&small);
+        [
+            std::array::from_fn(|k| z.scale(&c(nn[k])).add_constant(&c(o[k]))),
+            std::array::from_fn(|k| rho.scale(&c(x[k]))),
+            std::array::from_fn(|k| rho.scale(&c(y[k]))),
+        ]
+    } else {
+        // t = u: P = o + R e + cv r e + sv r n, e = cu x + su y.
+        let e: [Jet<T>; 3] = std::array::from_fn(|k| ct.scale(&c(x[k])).add(&st.scale(&c(y[k]))));
+        [
+            std::array::from_fn(|k| e[k].scale(&big).add_constant(&c(o[k]))),
+            std::array::from_fn(|k| e[k].scale(&small)),
+            std::array::from_fn(|k| konst(nn[k]).scale(&small)),
+        ]
+    };
+    // The origin's offset first (its cancellation exact for the constant
+    // part): `f . (P0 - o2)`.
+    let o2 = m.other.origin().to_array();
+    let rel: [Jet<T>; 3] = std::array::from_fn(|k| p[0][k].add_constant(&c::<T>(-o2[k])));
+    let lin = |f: [f64; 3]| -> [Jet<T>; 3] {
+        [dot_axis(&rel, f), dot_axis(&p[1], f), dot_axis(&p[2], f)]
+    };
+    let zero = || Jet::constant(c::<T>(0.0), n);
+    let mut out = Vec::new();
+    if m.other_sphere {
+        for f in [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]] {
+            out.push((lin(f), true));
+        }
+        out.push(([konst(m.other_radius), zero(), zero()], false));
+    } else {
+        out.push((lin(m.other.x().to_array()), true));
+        out.push((lin(m.other.y().to_array()), true));
+        let r = c::<T>(m.other_radius);
+        let rad = if m.other_half_angle == 0.0 {
+            [Jet::constant(r, n), zero(), zero()]
+        } else {
+            let (ca, sa) = T::cos_sin(&c(m.other_half_angle));
+            let tan = sa.div(&ca)?;
+            let l = lin(m.other.normal().to_array());
+            [
+                l[0].scale(&tan).add_constant(&r),
+                l[1].scale(&tan),
+                l[2].scale(&tan),
+            ]
+        };
+        out.push((rad, false));
+    }
+    Some((p, out))
+}
+
+/// `G` and its derivative in `s` at scalars: the functionals' constant
+/// terms and the other angle's enclosed cosine and sine.
+fn toric_g<T: Real>(fs: &[([Jet<T>; 3], bool)], cs: &(T, T)) -> (T, T) {
+    let (co, si) = cs;
+    let mut g = T::exact_f64(0.0);
+    let mut d = T::exact_f64(0.0);
+    for (l, plus) in fs {
+        let v = l[0].c[0].add(&l[1].c[0].mul(co)).add(&l[2].c[0].mul(si));
+        let dv = l[2].c[0].mul(co).sub(&l[1].c[0].mul(si));
+        let (gv, dd) = (v.square(), v.mul(&dv).mul(&T::exact_f64(2.0)));
+        if *plus {
+            g = g.add(&gv);
+            d = d.add(&dd);
+        } else {
+            g = g.sub(&gv);
+            d = d.sub(&dd);
+        }
+    }
+    (g, d)
+}
+
+/// A torus's meeting's angles and world point, as jets.
+type ToricJet<T> = ([Jet<T>; 2], [Jet<T>; 3]);
+
+/// The jets of a torus's meeting with a quadric (S9d.4b.2) in the fraction:
+/// the other angle `s` enclosed over the base by interval Newton inside the
+/// window (a unique root of `G` there), then its coefficients by the implicit
+/// function theorem, term by term: the `k`-th coefficient of `G` is linear in
+/// `s_k` with the slope `G_s` at the base, so `s_k` is minus the rest of that
+/// coefficient (with `s_k` zero, `cos s`, `sin s` and the functionals
+/// continued by their recurrences) over the slope, each an enclosure at every
+/// point of the base (inclusion isotone).
+fn toric_jet<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
+    let n = fraction.order();
+    let t = fraction.scale(&c(m.sweep)).add_constant(&c(m.start));
+    let (p, fs) = toric_parts(m, &t)?;
+    let (lo, hi) = t.c[0].bounds_f64();
+    let star = m.root_at(0.5 * lo + 0.5 * hi);
+    if !star.is_finite() {
+        return None;
+    }
+    let s0 = c::<T>(star);
+    // Interval Newton in its mean-value form over the base: `G` at the
+    // base's middle and at `s*`, plus `G_f` over the base times its
+    // half-width, over `G_s` (the natural extension of `G` over a wide
+    // base cancels badly).
+    let (flo, fhi) = fraction.c[0].bounds_f64();
+    let fmid = 0.5 * flo + 0.5 * fhi;
+    let point = flo == fhi;
+    let at_mid = |f: f64| {
+        Jet::variable(c::<T>(f), 0)
+            .scale(&c(m.sweep))
+            .add_constant(&c(m.start))
+    };
+    let (_, fs_mid) = toric_parts(m, &at_mid(fmid))?;
+    let (_, fs_one) = if point {
+        (p.clone(), fs.clone())
+    } else {
+        toric_parts(
+            m,
+            &Jet::variable(fraction.c[0].clone(), 1)
+                .scale(&c(m.sweep))
+                .add_constant(&c(m.start)),
+        )?
+    };
+    let spread = fraction.c[0].sub(&c(fmid));
+    let (g0, d0) = toric_g(&fs_mid, &T::cos_sin(&s0));
+    let size = |x: &T| {
+        let (a, b) = x.bounds_f64();
+        a.abs().max(b.abs())
+    };
+    let least = |x: &T| {
+        let (a, b) = x.bounds_f64();
+        if a > 0.0 {
+            a
+        } else if b < 0.0 {
+            -b
+        } else {
+            0.0
+        }
+    };
+    let slope0 = least(&d0);
+    if slope0 <= 0.0 || slope0.is_nan() {
+        return None;
+    }
+    // G's change over the base at s*: G_f times the spread.
+    let drift = |cs: &(T, T)| -> T {
+        let (co, si) = cs;
+        let mut out = T::exact_f64(0.0);
+        for (l, plus) in &fs_one {
+            let v = l[0].c[0].add(&l[1].c[0].mul(co)).add(&l[2].c[0].mul(si));
+            let vf = if point {
+                T::exact_f64(0.0)
+            } else {
+                l[0].c[1].add(&l[1].c[1].mul(co)).add(&l[2].c[1].mul(si))
+            };
+            let x = v.mul(&vf).mul(&T::exact_f64(2.0));
+            out = if *plus { out.add(&x) } else { out.sub(&x) };
+        }
+        out.mul(&spread)
+    };
+    let mut delta =
+        4.0 * (size(&g0) + size(&drift(&T::cos_sin(&s0)))) / slope0 + 1e-15 * (1.0 + star.abs());
+    let mut root = None;
+    for _ in 0..12 {
+        if !delta.is_finite() || delta > 0.5 {
+            return None;
+        }
+        let v = c::<T>(star - delta).union(&c(star + delta));
+        let cs = T::cos_sin(&v);
+        let (_, d) = toric_g(&fs_one, &cs);
+        if let Some(q) = g0.add(&drift(&cs)).div(&d) {
+            let next = s0.sub(&q);
+            let (nlo, nhi) = next.bounds_f64();
+            if nlo > star - delta && nhi < star + delta {
+                root = Some(next);
+                break;
+            }
+        }
+        delta *= 4.0;
+    }
+    let s_base = root?;
+    // Inside the window: the edge's own root.
+    let (slo, shi) = s_base.bounds_f64();
+    if !(slo > m.window[0] && shi < m.window[1]) {
+        return None;
+    }
+    let (c0, si0) = T::cos_sin(&s_base);
+    let (_, slope) = toric_g(&fs, &(c0.clone(), si0.clone()));
+    let zero = || T::exact_f64(0.0);
+    let cauchy =
+        |x: &[T], y: &[T], k: usize| (0..=k).fold(zero(), |acc, i| acc.add(&x[i].mul(&y[k - i])));
+    let mut s = vec![s_base];
+    let (mut co, mut sn) = (vec![c0.clone()], vec![si0.clone()]);
+    // Each functional's series along the meeting: `L0 + C L1 + S L2`.
+    let mut ls: Vec<Vec<T>> = fs
+        .iter()
+        .map(|(l, _)| vec![l[0].c[0].add(&l[1].c[0].mul(&c0)).add(&l[2].c[0].mul(&si0))])
+        .collect();
+    for k in 1..=n {
+        let kk = T::exact_f64(k as f64);
+        // cos and sin continued with s_k = 0: k S_k = sum C_i d_{k-1-i},
+        // k C_k = -sum S_i d_{k-1-i}, d_j = (j + 1) s_{j+1} (i = 0 holds
+        // s_k).
+        let (mut a_s, mut a_c) = (zero(), zero());
+        for i in 1..k {
+            let d = s[k - i].mul(&T::exact_f64((k - i) as f64));
+            a_s = a_s.add(&co[i].mul(&d));
+            a_c = a_c.add(&sn[i].mul(&d));
+        }
+        co.push(a_c.neg().div(&kk)?);
+        sn.push(a_s.div(&kk)?);
+        let mut g = zero();
+        for ((l, plus), series) in fs.iter().zip(ls.iter_mut()) {
+            let x = l[0].c[k]
+                .add(&cauchy(&l[1].c, &co, k))
+                .add(&cauchy(&l[2].c, &sn, k));
+            series.push(x);
+            let sq = cauchy(series, series, k);
+            g = if *plus { g.add(&sq) } else { g.sub(&sq) };
+        }
+        let sk = g.div(&slope)?.neg();
+        co[k] = co[k].sub(&si0.mul(&sk));
+        sn[k] = sn[k].add(&c0.mul(&sk));
+        for ((l, _), series) in fs.iter().zip(ls.iter_mut()) {
+            let fix = l[2].c[0].mul(&c0).sub(&l[1].c[0].mul(&si0)).mul(&sk);
+            series[k] = series[k].add(&fix);
+        }
+        s.push(sk);
+    }
+    let s = Jet { c: s };
+    let (cj, sj) = (Jet { c: co }, Jet { c: sn });
+    let point: [Jet<T>; 3] =
+        std::array::from_fn(|k| p[0][k].add(&cj.mul(&p[1][k])).add(&sj.mul(&p[2][k])));
+    let (u, v) = if m.over_v { (s, t) } else { (t, s) };
+    Some(([u, v], point))
 }
 
 /// `acos(x)` on jets: the angle of `(x, sqrt(1 - x^2))`, in `[0, pi]`.
@@ -342,6 +598,28 @@ pub(super) fn projection_jet<T: Real>(p: &Projection, fraction: &Jet<T>) -> Opti
     {
         if sec.frame == *frame && sec.major == *major && sec.minor == *minor {
             let [u, v] = section_angles(sec, &f)?;
+            let (lo, hi) = fraction.c[0].bounds_f64();
+            let lift = p.lift(0.5 * lo + 0.5 * hi);
+            let near = |j: Jet<T>, target: f64| {
+                let (a, b) = j.c[0].bounds_f64();
+                let k = ((target - (0.5 * a + 0.5 * b)) / std::f64::consts::TAU).round();
+                j.add_constant(&c(k * std::f64::consts::TAU))
+            };
+            return Some([near(u, lift.x), near(v, lift.y)]);
+        }
+    }
+    // A torus's meeting on its own torus: its angles, lifted (S9d.4b.2).
+    if let (
+        Curve3::Toric(m),
+        Surface::Torus {
+            frame,
+            major,
+            minor,
+        },
+    ) = (&p.curve, &p.surface)
+    {
+        if m.frame == *frame && m.major == *major && m.minor == *minor {
+            let ([u, v], _) = toric_jet(m, &f)?;
             let (lo, hi) = fraction.c[0].bounds_f64();
             let lift = p.lift(0.5 * lo + 0.5 * hi);
             let near = |j: Jet<T>, target: f64| {
@@ -774,6 +1052,56 @@ mod tests {
                     let (lo, hi) = j.c[1].bounds_f64();
                     assert!((slope - 0.5 * (lo + hi)).abs() < 1e-6, "{slope} {lo} {hi}");
                 }
+            }
+        }
+    }
+
+    /// A rod of radius 0.5 along x through a torus of radii 2.5 and 1
+    /// (S9d.4b.2): over `u` near 0 its meeting's top root lies near `v =
+    /// pi / 6`, on both surfaces; its jets enclose the binary64 points and
+    /// differences, and over an interval base every point in it.
+    #[test]
+    fn toric_meetings_lie_on_both_surfaces() {
+        let torus = frame([0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]);
+        let rod = frame([-4.5, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+        let m = Toric {
+            frame: torus,
+            major: 2.5,
+            minor: 1.0,
+            other: rod,
+            other_radius: 0.5,
+            other_sphere: false,
+            other_half_angle: 0.0,
+            over_v: false,
+            window: [0.2, 0.9],
+            start: -0.05,
+            sweep: 0.1,
+        };
+        for k in 0..=8 {
+            let f = k as f64 / 8.0;
+            let p = m.point(f);
+            assert!((p.y.hypot(p.z) - 0.5).abs() < 1e-14, "{p:?}");
+            let rho = p.x.hypot(p.y);
+            assert!(((rho - 2.5).hypot(p.z) - 1.0).abs() < 1e-14, "{p:?}");
+            let (_, jet) = toric_jet(&m, &Jet::variable(Fast::exact_f64(f), 2)).unwrap();
+            let h = 1e-6;
+            let (q0, q1) = (m.point(f - h), m.point(f + h));
+            for (i, j) in jet.iter().enumerate() {
+                let at = [p.x, p.y, p.z][i];
+                let (lo, hi) = j.c[0].bounds_f64();
+                assert!(lo - 1e-14 <= at && at <= hi + 1e-14);
+                let slope = ([q1.x, q1.y, q1.z][i] - [q0.x, q0.y, q0.z][i]) / (2.0 * h);
+                let (lo, hi) = j.c[1].bounds_f64();
+                assert!((slope - 0.5 * (lo + hi)).abs() < 1e-6, "{slope} {lo} {hi}");
+            }
+        }
+        let base = Fast::exact_f64(0.25).union(&Fast::exact_f64(0.5));
+        let (_, jet) = toric_jet(&m, &Jet::variable(base, 3)).unwrap();
+        for f in [0.25, 0.3, 0.4, 0.5] {
+            let p = m.point(f).to_array();
+            for (i, j) in jet.iter().enumerate() {
+                let (lo, hi) = j.c[0].bounds_f64();
+                assert!(lo - 1e-14 <= p[i] && p[i] <= hi + 1e-14, "{f} {i}");
             }
         }
     }

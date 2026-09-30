@@ -2840,6 +2840,78 @@ Decisions for S9, recorded before its code (2026-09-28):
     cases `LATER` in 2a's tests. In both, only a tangency of the surfaces
     (a singular point of the meeting) is `Degenerate`; a graph's turning
     point is a switch between graphs, not a refusal.
+  * **S9d.4b.2a implemented** (`solid/boolean/curved/torus_curved.rs`): a
+    whole torus against prisms with arcs, spheres and cones, all 32
+    fixtures but the tori as the reference (29 solid within the kernel's
+    enclosures, one empty, `pipe_equator` and `ball_touch` refused), the 12
+    `tori_*` `LATER` (S9d.4b.2b's `OutOfDomain("a torus against a torus
+    (S9d.4b.2b)")`), every history checked, results deterministic and moved
+    rigidly (`tests/torus_curved_booleans.rs`, 33 s in the dev profile at
+    opt-level 2); `compare_torus_curved_boolean.py` 19 matches and 25
+    reviewed (the capture's 15 measure reviews of 2a's cases now with the
+    kernel's entity counts, five native matches reviewed by their counts
+    alone: OCCT's B-spline sections split at its own points and faces split
+    at the torus's seams, the kernel's exact pieces), every other
+    comparison unchanged. Amendments, from the implementation: (a) the
+    graphs are over the torus's own `u` and `v` for every quadric, not over
+    a ruled surface's angle: a sphere is not ruled, a curve is tangent to at
+    most one of the meridian and the parallel at a regular point, and the
+    quadric's function `G(u, v)` is of degree two in each angle, so a point
+    at a rational parameter is algebraic of degree four either way; (b) the
+    decisions' branch is a window of the other angle (rational directions)
+    holding exactly one root over the piece's range, verified by Sturm
+    counts on its ends, one isolated root inside and certified boxes clear
+    of `G` or of its derivative in the other angle (no double root), as
+    S7b.3b's tracks; (c) the components are traced numerically from the
+    exact roots on a line of `u` between each two critical values (the
+    discriminant in `v`, degree 24 in a chart of `u`) and every such root
+    must lie on a verified piece, so none is missed; the symmetric fixtures
+    put turning points of two branches at one `u` (the bore's top and
+    bottom loops), which the discriminant's double roots do not refuse:
+    each critical line is instead certified regular (boxes clear of `G`,
+    `G_v` or `G_u`), a point where none clears a tangency within `1e-10`
+    radians; a tube's circle on the quadric is `OutOfDomain`; (d) the
+    switches lie where the meeting's slope in the angles is one, not midway
+    between turning points of different kinds: a graph's series converges
+    only as far as its own turning points, and switches near them made the
+    validator's jets wide and a sphere's variant take 411 s; (e) coaxial
+    pairs (`G` independent of `u`) are rings over `u`, stored as circles
+    about the axis; (f) `Curve3::Toric` holds the torus, the other quadric,
+    the parameter, its range and the window; its jets come from the
+    implicit function theorem term by term (each coefficient linear in the
+    new one, the functionals and `cos`, `sin` of the other angle continued
+    by their recurrences), the base's root by interval Newton in its
+    mean-value form over the base, its point from the root's change of sign
+    in the window; rigid motion, tessellation rates, the history check and
+    the writer's refusal as `Curve3::Meet`'s; (g) a cap's, a rim's or a
+    whole sphere's great circle meets the torus at the roots of a polynomial
+    of degree eight, a seam's tangency with a torus retried at another
+    seam; (h) `Qd::to_f64` of a number whose 96-bisection enclosure is wide
+    (a field's large coefficients) is its value at the isolator's middle,
+    exactly, at more bisections until two agree (`ball_tilt_cut`'s places
+    were off by a coarse enclosure, a vertex's angle on the wrong side of
+    another); (i) a projection pcurve takes 64 or 256 anchors where 16 leave
+    its lift unpinned (a section passing within 0.003 of a sphere's pole),
+    and a Boolean whose result the validator refuses only for undecided loop
+    winding (a torus face wound both ways, a torus knot) is
+    `ComputationLimit`, both found by a fuzz replay (`tests/
+    torus_curved_booleans.rs`, `a_section_near_a_spheres_pole_projects`,
+    `a_torus_face_wound_both_ways_is_undecided`; not kept as fuzz
+    regressions: 16 to 17 s each with debug assertions); (j) the fuzz
+    target's object is a sphere or a cone against a whole torus by the
+    flags' bits 5 and 6 (1 and 2): none of the corpus's 21 whole-torus
+    inputs decodes differently, those against prisms with arcs now
+    evaluating; (k) the DRAW bridge evaluates a coaxial pipe through a
+    tube, guards a half turn against a cylinder, and the upstream sentinel
+    `bopfuse_simple/ZL2` (a coaxial `pcylinder` through the tube)
+    evaluates, registered so, none replacing it. The corpus and the
+    regressions (1,435 inputs) replay with debug assertions without a
+    failure, the slowest 5.5 s, as do 4,110 variants of corpus inputs made a
+    whole torus against their prisms, spheres and cones (their spline byte
+    and flags set), which found (d) and (i); the slowest variant, a ball
+    about a torus in a turned frame, takes 26 s there (its sphere faces'
+    certified integrals along the meetings). Pending: the
+    DRAW survey, the campaign.
 
 ### Parallel tracks
 

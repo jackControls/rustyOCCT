@@ -42,7 +42,7 @@ fn ruled_of<'a>(m: &'a Prism, f: usize, axis: &'a P2, zero_k: &'a R) -> Option<R
 }
 
 /// A face's quadric as the other of a carrier.
-fn other_face(m: &Prism, f: usize) -> Other {
+pub(super) fn other_face(m: &Prism, f: usize) -> Other {
     match &m.faces[f].surf {
         Surf::Cyl { c, r, .. } => other_of(&m.f, c, r),
         Surf::Sphere { c, r } => other_sphere(c, r),

@@ -1778,6 +1778,59 @@ where `A v^2 + 2 B v + C = 0` and the curve is `v = (-B +- sqrt(D)) / A`,
   contains every root of `G(phi, .)` in `T`; intersected with `T` it
   converges quadratically.
 
+## A torus's meetings with quadrics in Booleans (S9d.4b.2a)
+
+* **The function.** On the torus's angles the quadric `sum (g_i . p -
+  e_i)^2 - (r + t (h . p - e_h))^2` along `p = o + (R + r cos v)(cos u x +
+  sin u y) + r sin v n` is `G(u, v)`, each affine functional of degree one
+  in `(cos u, sin u)` and in `(cos v, sin v)`, so `G` is of degree two in
+  each, exact with `sin^2 = 1 - cos^2` substituted (zero exactly when every
+  coefficient is). `G_u`, `G_v` are its exact derivatives. At a rational `u`
+  (`v`) `G` is a quadratic form in the other angle's `(cos, sin)`: times
+  `(1 + s^2)^2` a quartic in a chart's `s`, its roots isolated exactly.
+* **Critical values.** `H(t, s) = (1 + t^2)^2 (1 + s^2)^2 G` in charts of
+  `u` and `v`; the discriminant of `H` as a binary quartic in `s`, `256 a^3
+  e^3 - 192 a^2 b d e^2 - ... + b^2 c^2 d^2` in its coefficients (each of
+  degree four in `t`), is of degree 24 in `t` when the chart's antipode is
+  not critical. Its distinct real roots are the `u` where a root in `v` is
+  double: turning points in `u`, singular points of the meeting, or complex
+  pairs. The meeting's components each cross a line of `u` between two
+  critical values (a component's `u` spans an interval between critical
+  values or the whole turn), unless one lies on a tube's circle, where every
+  coefficient of `H` vanishes at one `t` (their gcd's real roots).
+* **Regularity.** A singular point of the meeting has `G = G_u = G_v = 0`,
+  so it lies on a critical line. Over the line (its isolator's image in
+  `u`) boxes in `v` are halved until each has `0` outside the enclosure of
+  `G`, `G_v` or `G_u` (mean-value forms: `F(m) + F_u(B)(U - m_u) + F_v(B)(V
+  - m_v)`, intersected with the natural extension); none clearing at `1e-10`
+  radians is a tangency within rounding.
+* **Pieces.** A piece over `u` on `[u0, u1]` with window `[w0, w1]` holds
+  exactly one root of `G(u, .)` in the window for every `u` of its range
+  when `G(u, w0)` and `G(u, w1)` have no zero on it (each a quadratic form
+  in `(cos u, sin u)`: Sturm counts in a chart based inside the range), the
+  window holds exactly one root at one rational `u` of it, and no point of
+  the rectangle has `G = G_v = 0` (boxes clearing `G` or `G_v`): roots then
+  neither cross the window's ends nor appear or merge inside. Over `v`
+  symmetrically. A graph's point at a rational parameter is that root,
+  `Q(alpha)` for a root `alpha` of the quartic; its angles' directions are
+  `(1 - alpha^2, 2 alpha)` turned by the chart's base and the rational
+  parameter, positive multiples of their `(cos, sin)`.
+* **Jets.** Along the parameter's series `t` the point is `P0 + C P1 + S
+  P2` (`C`, `S` the other angle's cosine and sine) and each functional `L =
+  L0 + C L1 + S L2`, so `G = sum +-L^2`. The other angle's constant term is
+  enclosed over the base `F` by interval Newton inside the window in its
+  mean-value form, `N(S) = s* - (G(f_m, s*) + G_f(F, S)(F - f_m)) /
+  G_s(F, S)` (the natural extension of `G` over a wide base cancels its
+  large terms); then its
+  `k`-th coefficient `s_k` enters the `k`-th coefficients of `C` and `S`
+  only through `-S_0 s_k` and `C_0 s_k` (the `i = 0` terms of their
+  recurrences), so `[G]_k = [G]_k|_{s_k = 0} + G_s s_k` and `s_k = -[G]_k|
+  _{s_k = 0} / G_s`, `G_s` at the base; every product encloses its exact
+  value at each point of the base, so the series is an enclosure there.
+* **Circles against the torus.** Along `c + a cos + b sin` the torus's
+  `(|l|^2 + R^2 - r^2)^2 - 4 R^2 (l_u^2 + l_v^2)` is a form of degree four
+  in `(cos, sin)`: times `(1 + t^2)^4` of degree eight.
+
 ## Lines and circles against surfaces (S7c.1)
 
 Along a line `p0 + s d` with rational `p0`, `d`, a plane's, cylinder's,
