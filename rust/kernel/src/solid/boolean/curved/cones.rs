@@ -3,10 +3,14 @@
 //! before a cone, whose ruling's leading coefficient `A` (a cylinder's a
 //! constant, a cone's a quadratic form in its angle) has no real root.
 //! Its discriminant `D = B^2 - A C` positive all round gives two rings over
-//! its angle, negative all round the surfaces apart; changing sign on
-//! every carrier is a loop (S9d.3b.2's). Two cones whose quadrics differ by
+//! its angle, negative all round the surfaces apart; changing sign against
+//! a sphere, loops (S9d.3b.2's, and S9d.3c's in a turned frame); changing
+//! sign on both of two ruled carriers, loops or components through
+//! infinity (S9d.3c, `cones_loops.rs`). Two cones whose quadrics differ by
 //! an affine function (their `A` zero for every ruling: parallel axes,
-//! equal slopes) meet on that plane, S9d.3a's section of one.
+//! equal slopes) meet on that plane, S9d.3a's section of one; a cylinder
+//! exactly along a cone's ruling (its `A` zero) is `Degenerate`.
+use super::cones_loops::ruling_point;
 use super::meet::{tangency, CylPair};
 use super::model::*;
 use super::num::*;
@@ -16,11 +20,6 @@ use crate::solid::split::{q, rational_f64, zero};
 use crate::{Error, Result};
 use num_rational::BigRational as R;
 use std::cmp::Ordering;
-
-/// A pair of a cone and a curved face meeting in loops: S9d.3b.2's.
-fn loops_later() -> Error {
-    Error::OutOfDomain("a cone meeting a curved face in a loop (S9d.3b.2)")
-}
 
 /// A face as a carrier: its ruled frame (a cylinder or a cone), or none.
 fn ruled_of<'a>(m: &'a Prism, f: usize, axis: &'a P2, zero_k: &'a R) -> Option<Ruled<'a>> {
@@ -123,6 +122,13 @@ pub(super) fn cone_pair(ms: [&Prism; 2], faces: [usize; 2], res: f64) -> Result<
         }
         let (a, d) = ruled_discriminant(ruled, &other);
         if vanishes(&a) {
+            if *ruled.k == zero() {
+                // A cylinder exactly along a cone's ruling (S9d.3c): one
+                // finite root per ruling, running off where `B` vanishes;
+                // the limit of the rounding case below, whose second branch
+                // a turned frame's rounding brings in from either side.
+                return Err(Error::Degenerate("a cylinder along a cone's ruling"));
+            }
             // Every ruling asymptotic to the other: the quadrics differ by
             // an affine function (two cones with parallel axes and equal
             // slopes).
@@ -165,9 +171,10 @@ pub(super) fn cone_pair(ms: [&Prism; 2], faces: [usize; 2], res: f64) -> Result<
                     // No ruling meets the other quadric.
                     return Ok(CylPair::Apart);
                 }
-                // A cone and a sphere in loops (S9d.3b.2): graphs over the
-                // cone's height about its rulings' tangencies, over its
-                // angle about its circles', as S9d.2b's.
+                // A cone and a sphere in loops (S9d.3b.2; in a turned frame
+                // S9d.3c): graphs over the cone's height about its rulings'
+                // tangencies, over its angle about its circles', as
+                // S9d.2b's and S9d.2c's.
                 if let Surf::Sphere { c, r } = &ms[1 - k].faces[faces[1 - k]].surf {
                     return super::spheres::loops(k, ruled, c, r, &other, &d, &chart);
                 }
@@ -230,7 +237,27 @@ pub(super) fn cone_pair(ms: [&Prism; 2], faces: [usize; 2], res: f64) -> Result<
         }
         return Ok(CylPair::Quartic(Box::new(Quartic { pieces, switches })));
     }
-    Err(loops_later())
+    // S9d.3c: two ruled faces whose discriminants change sign over both
+    // carriers' angles meet in loops, or in components through infinity
+    // where the rulings reach the other's asymptotic directions: graphs
+    // over both angles, the cylinder (its `A` constant) the first carrier.
+    let mut both: Vec<usize> = (0..2)
+        .filter(|&k| ruled_of(ms[k], faces[k], &axis, &zero_k).is_some())
+        .collect();
+    if both.len() == 2 {
+        both.sort_by_key(|&k| matches!(ms[k].faces[faces[k]].surf, Surf::Cone { .. }));
+        let carrier = |k: usize| {
+            (
+                k,
+                ruled_of(ms[k], faces[k], &axis, &zero_k).expect("a ruled face"),
+                other_face(ms[1 - k], faces[1 - k]),
+            )
+        };
+        return super::cones_loops::loops(carrier(both[0]), carrier(both[1]), res);
+    }
+    Err(Error::ComputationLimit(
+        "a cone and a curved face meeting in neither rings nor loops",
+    ))
 }
 
 /// A form's zeros on the circle, counter-clockwise from the angle `-pi`:
@@ -260,26 +287,6 @@ fn circle_roots(a: &Form) -> Result<Vec<[Qd; 2]>> {
         out.push([Qd::rat(int(-1)), Qd::rat(zero())]);
     }
     Ok(out)
-}
-
-/// A ruling's point at `w` over a direction of any field.
-fn ruling_point(ruled: Ruled, cs: &[Qd; 2], w: &Qd) -> QV {
-    let f = ruled.f;
-    let base = qadd(
-        &qv(&f.point(&ruled.c[0], &ruled.c[1], &zero())),
-        &qadd(
-            &qscale(&f.x, &cs[0].scale(ruled.r)),
-            &qscale(&f.y, &cs[1].scale(ruled.r)),
-        ),
-    );
-    let dir = qadd(
-        &qv(&f.n),
-        &qadd(
-            &qscale(&f.x, &cs[0].scale(ruled.k)),
-            &qscale(&f.y, &cs[1].scale(ruled.k)),
-        ),
-    );
-    qadd(&base, &dir.map(|x| x.mul(w)))
 }
 
 /// A quadric's quadratic, linear and constant parts, `p^T M p + l . p + c`.
@@ -320,7 +327,11 @@ fn plane_of(ms: [&Prism; 2], faces: [usize; 2], k: usize) -> Result<CylPair> {
         .ok_or(Error::Degenerate("a cone's quadric"))?;
     let lambda = &m2[i][j] / &m1[i][j];
     if (0..3).any(|i| (0..3).any(|j| m2[i][j] != &lambda * &m1[i][j])) {
-        return Err(loops_later());
+        // Two cones' asymptotic cones one cone make their quadratic parts
+        // proportional; a cylinder along a ruling is refused before.
+        return Err(Error::ComputationLimit(
+            "two cones' quadrics not differing by an affine function",
+        ));
     }
     let m: V = [0, 1, 2].map(|i| &l1[i] * &lambda - &l2[i]);
     let c = &c1 * &lambda - &c2;

@@ -521,13 +521,8 @@ pub(super) fn edge_surface(
             }
         }
         (Crv::Circle(circ), Surf::Cone { b: rb, k }) => {
-            // A turned cap's circle (of unequal axes) against a cone has no
-            // evidence yet: S9d.3c's.
-            if !super::spheres::equal_axes(circ) {
-                return Err(Error::OutOfDomain(
-                    "a turned cap's circle against a cone (S9d.3c)",
-                ));
-            }
+            // A turned cap's circle (of unequal axes) by S9d.2c's resultant
+            // with the cone's radius term (S9d.3c).
             super::spheres::circ_quadric(
                 circ,
                 &super::procedural::other_cone(&py.f, rb, k),

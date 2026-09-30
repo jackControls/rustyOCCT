@@ -1032,3 +1032,22 @@ with loops, whose containment the validator's rays cannot decide
 missing the whole sphere or torus now counts no hit, and a Boolean whose
 result reports only an undecided containment is `ComputationLimit`
 (`a_cavity_in_a_segment_is_undecided`). Both replay in under 3 s.
+
+## Boolean: a sphere's pole at a cone's apex height, a loop on a cone's far nappe
+
+`boolean/replay-775bd1c0c918547b46fc02bd6fa93e8a5b139c75.bin` and
+`boolean/replay-e7003ca0ed37a9487a672376ba20ed2be1106cf9.bin` are corpus
+inputs rewritten into S9d.3c's decode (the object a cone against a turned
+zone tool, and a sphere against a turned cone tool) for a local replay with
+debug assertions of 2,842 variants before S9d.3c's first campaign. The
+first (25 variants alike): a zone's pole at the frustum's virtual apex's
+height, tested against the frustum's `Curve3::Meet` pieces with the sphere,
+reached the carrier's place of a point at its apex height (a radius of
+zero: `a meeting's point off the apex`, a panic); such a point is on none of
+a cone carrier's pieces (the apex itself is refused before). The second:
+the sphere met the double cone in two loops, one on each nappe, and the
+height graph's turning points on the far nappe (the carrier's radius
+negative there) were placed on the wrong side of the angle `phi`, four
+events at one place (`two turning points within rounding`); the side is
+now `g / rho`'s sign, and the branch the sphere's gradient along the
+ruling. Both replay in under 2 s.

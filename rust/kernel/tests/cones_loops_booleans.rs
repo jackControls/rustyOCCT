@@ -1,8 +1,9 @@
-//! S9d.2c: Booleans of a sphere against cylinders where a frame is turned
-//! (a turned cap's circles of unequal axes against a cylinder, a sphere
-//! meeting a turned cylinder in a loop), against the independent reference
-//! (`fixtures/boolean-spheres-turned-*` from
-//! `tools/generate_spheres_turned_boolean_fixtures.py`). Each case runs once
+//! S9d.3c: Booleans of a cone against a cylinder or a cone meeting it in
+//! loops (in exact and turned frames, through infinity where two cones'
+//! direction cones cross), of a turned cone against a sphere in a loop, and
+//! of a turned cap against a cone, against the independent reference
+//! (`fixtures/boolean-cones-loops-*` from
+//! `tools/generate_cones_loops_boolean_fixtures.py`). Each case runs once
 //! (on a few threads) for the checks that read its result.
 #[path = "support/boolean_protocol.rs"]
 #[allow(dead_code)]
@@ -13,9 +14,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::OnceLock;
 
 fn cases() -> Vec<protocol::Case> {
-    protocol::cases(include_str!(
-        "../../fixtures/boolean-spheres-turned-cases.txt"
-    ))
+    protocol::cases(include_str!("../../fixtures/boolean-cones-loops-cases.txt"))
 }
 
 /// `f` over the cases on at most six threads, in the cases' order.
@@ -59,7 +58,7 @@ type Expected = std::collections::BTreeMap<String, (String, Option<(usize, [f64;
 
 fn expected() -> Expected {
     let mut expect = std::collections::BTreeMap::new();
-    for line in include_str!("../../fixtures/boolean-spheres-turned-expected.tsv")
+    for line in include_str!("../../fixtures/boolean-cones-loops-expected.tsv")
         .lines()
         .filter(|l| !l.starts_with('#'))
     {
@@ -222,25 +221,67 @@ fn results_are_deterministic_and_move_rigidly() {
     assert!(failures.is_empty(), "{failures:#?}");
 }
 
-/// A turned cylinder's loop keeps `Curve3::Rise`'s closed form for its
-/// pieces over the height: on the stored axes its binary64 points lie on the
-/// cylinder and within rounding of the sphere (the exact meeting's function
-/// on the stored ellipse is of degree two; the closed form reads it as the
-/// circle it rounds).
+/// A loop of two ruled faces is cut into graphs over both carriers' angles:
+/// its results hold `Curve3::Meet` edges over each input's surface, their
+/// binary64 points on both surfaces (the carrier's by its frame, the
+/// other's by its quadric) within rounding.
 #[test]
-fn a_turned_loops_height_pieces_lie_on_both_surfaces() {
+fn ruled_loops_run_over_both_carriers() {
+    use rusty_occt::topology::{Curve3, Meet};
+    let loops = [
+        "rod_graze_common",
+        "tip_graze_common",
+        "rod_lean_common",
+        "tilt_rod_common",
+        "cones_graze_common",
+        "cones_turned_common",
+        "cones_asymptotic_common",
+    ];
+    let on_other = |m: &Meet, p: rusty_occt::Point3| -> f64 {
+        let w = p - m.other.origin();
+        let (x2, y2, n2) = (m.other.x(), m.other.y(), m.other.normal());
+        let r = m.other_radius + m.other_half_angle.tan() * w.dot(n2);
+        w.dot(x2).hypot(w.dot(y2)) - r.abs()
+    };
+    for (name, run) in runs() {
+        if !loops.contains(&name.as_str()) {
+            continue;
+        }
+        let Ok((_, _, out, _)) = run else {
+            panic!("{name}: refused")
+        };
+        let mut carriers = std::collections::BTreeSet::new();
+        for e in out.iter().flat_map(|s| s.topology().edges().iter()) {
+            let Curve3::Meet(m) = &e.curve else { continue };
+            let n = m.frame.normal();
+            carriers.insert([n.x, n.y, n.z].map(f64::to_bits));
+            for k in 0..=16 {
+                let p = m.point(f64::from(k) / 16.0);
+                let [x, y, v] = m.frame.coordinates(p);
+                let off = x.hypot(y) - (m.radius + v * m.half_angle.tan()).abs();
+                assert!(off.abs() < 1e-9, "{name}: {off} off the carrier");
+                let off = on_other(m, p);
+                assert!(off.abs() < 1e-9, "{name}: {off} off the other");
+            }
+        }
+        assert!(carriers.len() >= 2, "{name}: pieces over one carrier only");
+    }
+}
+
+/// A turned cone's loop with a sphere keeps `Curve3::Rise`'s closed form
+/// for its pieces over the height (S9d.2c's, with the cone's radius): on
+/// the stored axes its binary64 points lie on the cone and within rounding
+/// of the sphere.
+#[test]
+fn a_turned_cones_height_pieces_lie_on_both_surfaces() {
     use rusty_occt::topology::Curve3;
     let loops = [
-        "bite_lean_fuse",
-        "bite_lean_cut",
-        "bite_lean_common",
-        "bite_tilt_fuse",
-        "bite_tilt_common",
-        "graze_tiltx_cut",
-        "graze_tiltx_common",
-        "bite_r125_cut",
-        "dome_bite_turned_cut",
-        "dome_bite_turned_common",
+        "ball_tilt_fuse",
+        "ball_tilt_cut",
+        "ball_tilt_common",
+        "ball_lean_cut",
+        "ball_lean_common",
+        "ball_r125_cut",
     ];
     for (name, run) in runs() {
         if !loops.contains(&name.as_str()) {
@@ -252,32 +293,32 @@ fn a_turned_loops_height_pieces_lie_on_both_surfaces() {
         let mut rises = 0;
         for e in out.iter().flat_map(|s| s.topology().edges().iter()) {
             let Curve3::Rise(m) = &e.curve else { continue };
+            assert!(m.half_angle != 0.0, "{name}: a cylinder's piece");
             rises += 1;
             for k in 0..=16 {
                 let p = m.point(f64::from(k) / 16.0);
                 let off = (p - m.centre).length() - m.sphere_radius;
                 assert!(off.abs() < 1e-12, "{name}: {off} off the sphere");
-                let [x, y, _] = m.frame.coordinates(p);
-                let off = x.hypot(y) - m.radius;
-                assert!(off.abs() < 1e-12, "{name}: {off} off the cylinder");
+                let [x, y, w] = m.frame.coordinates(p);
+                let off = x.hypot(y) - m.rho(w);
+                assert!(off.abs() < 1e-12, "{name}: {off} off the cone");
             }
         }
         assert!(rises > 0, "{name}: no piece over the height");
     }
 }
 
-/// A turned cap's circles meet the cylinder at points of `Q(alpha)`: the
+/// A turned cap's circles meet the cone at points of `Q(alpha)`: the
 /// hemispheres' results hold vertices on the rim's plane (their binary64
-/// views within rounding of it) where the rim crosses the cylinder (not in
-/// `dome_tiltx_rings`, whose rings lie on either side of the equator and
-/// whose split's great circle crosses the rod).
+/// views within rounding of it) where the rim crosses the cone (not in
+/// `dome_tilt_cone`, whose rim passes outside the coaxial cone and whose
+/// disc it cuts in an ellipse).
 #[test]
-fn a_turned_caps_rim_meets_the_cylinder_on_its_plane() {
+fn a_turned_caps_rim_meets_the_cone_on_its_plane() {
     use rusty_occt::Vec3;
     let caps = [
-        ("dome_tilt_pipe_cut", Vec3::new(0.0, 3.0, 4.0)),
-        ("dome_tilt_pipe_common", Vec3::new(0.0, 3.0, 4.0)),
-        ("dome_lean_bite_common", Vec3::new(3.0, 0.0, 4.0)),
+        ("dome_lean_frustum_common", Vec3::new(3.0, 0.0, 4.0)),
+        ("dome_cone_turned_common", Vec3::new(0.0, 3.0, 4.0)),
     ];
     for (name, run) in runs() {
         let Some((_, n)) = caps.iter().find(|(c, _)| c == name) else {

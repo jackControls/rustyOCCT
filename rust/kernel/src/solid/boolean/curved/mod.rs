@@ -16,6 +16,7 @@ mod algebraic;
 mod assemble;
 mod cone;
 mod cones;
+mod cones_loops;
 mod graph;
 mod meet;
 mod model;
