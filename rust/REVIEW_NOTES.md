@@ -3841,6 +3841,61 @@ Decisions for S9, recorded before its code (2026-09-28):
     keyed on that file, histories chained, the `boolean` target's first
     curved results given to a second operation, the DRAW survey and a
     campaign.
+  * **S9e.1 evidence (2026-09-30).** The case protocol chains: a `then OP
+    ID` row (`swapped`) and a third prism's rows after the tool's
+    (`identity_reference.encode_chained_case` and `native_chained_case`;
+    `occt_boolean_oracle.cpp` runs the second Boolean on the first result's
+    one solid, `tests/support/boolean_protocol.rs` likewise, the probe's
+    rows the second's). `chained_boolean_reference.py` is S9c.1's reference
+    generalized to three prisms and the chained set function: slices in
+    planes holding every axis (at most two directions among the three), the
+    first operation's convex pieces clipped from the first two sections'
+    parallelograms and the second's against the third's (a convex piece's
+    half-planes its edges), breakpoints over the three sections' lines
+    (parallel lines of two sections coinciding, three lines of at least two
+    sections concurrent, filtered on the closures of the sections they
+    belong to); every face of each prism swept against both others at once
+    (S9c.1's sweep against each, their crossings merged, breakpoints where
+    a crossing of one meets a crossing of the other), a piece kept where the
+    chained function differs across the face, one on faces of several
+    prisms counted by the first of them. `generate_chained_boolean_
+    fixtures.py --check`: 30 cases (10 chains; 10 fuses, 10 cuts, 10
+    commons; 23 solid, 1 empty, 6 degenerate) in `XY`, `SIDE` and `TILT`: a
+    box less a tilted hole halved by a box whose wall holds the hole's axis
+    (the wall crossing the hole's ellipse edges), that result as the tool
+    of a slab crossing the hole (the cut two solids), a box fused with a
+    tilted pin stepped by a box whose wall holds the pin's axis and as the
+    tool of a slab above it, a box on the holed top face (coplanar faces,
+    edges crossing on them; the common empty), a box less a groove of
+    radius 5/4 across its top (its top face in two result faces) drilled
+    through one of them, a column of the hole's frame whose cap cuts the
+    hole in a circle, a quarter cylinder bored coaxially; `degenerate` a
+    third cylinder tangent to the groove along a generatrix and a third
+    box whose top edge lies on the groove's wall (the line `y = 2.25, z =
+    3`, `0.75^2 + 1^2 = 1.25^2`). Checks: closed forms (the groove drilled,
+    the quarter bored) within 1.3e-40; S9c.1's pair reference for the first
+    result `X` in `V(X u C) + V(X n C) = V(X) + V(C)` and `V(X - C) = V(X)
+    - V(X n C)` (swapped `V(C - X)`), moments too, within 1.3e-41, and
+    `area(X u C) + area(X n C) = area(X) + area(C)` in the 9 chains
+    without a face of the third on another's within 7.0e-41; every face's
+    classes their closed-form area within 2.6e-41; Monte Carlo 2.7
+    standard errors; no near coincidence (the box on the holed top moved to
+    `z` 7.5: its top plane's events at the tilted hole's end cap fell 3.9e-16
+    from the hole's ellipse crossing its edge, the rounded `TILT` axes
+    separating an ideal coincidence). `test_chained_boolean_reference.py`
+    checks three boxes (one in `SIDE`) by their grid cells exactly for
+    every chain, with shared planes of both orientations, a third prism
+    far from the result, and the common's symmetry. Python 3.9 and 3.12
+    write the same files; the generator's check a CI group of its own
+    (`chained`, 26 s locally). The capture
+    `occt-boolean-chained-preimplementation` (`compare_chained_boolean.py`,
+    keyed on `solid/boolean/curved/given.rs`; the kernel `unsupported` on
+    all 30, its first Boolean evaluating and the second refused as "a
+    Boolean of a solid with curved faces or edges in any position (S9c)"):
+    every result valid with the reference's solid count, all 30 matching
+    (volumes within 5.7e-10, areas 8.0e-10, centres 5.9e-10 of the size;
+    exact frames 2.9e-16), no review; seven solids' counts change when
+    unified. S9e.1's kernel next.
 
 ### Parallel tracks
 

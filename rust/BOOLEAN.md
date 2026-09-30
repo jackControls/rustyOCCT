@@ -1967,6 +1967,45 @@ height); its horizontal edges on a spline are its lifted restrictions.
   their counts alone: coaxial bands crossing OCCT's seams, and sections
   split at OCCT's points against the kernel's exact pieces), no failure;
   every other Boolean comparison unchanged in its counts.
+* **S9e.1 evidence (a Boolean's result given to another Boolean), before
+  its kernel code.** The case protocol chains a second Boolean on the
+  first's one solid: a `then OP ID` row (`then OP ID swapped` when the
+  first result is the tool) and a third prism's rows after the tool's
+  (`identity_reference.encode_chained_case`, `native_chained_case`; the
+  native oracle and `tests/support/boolean_protocol.rs` read it, the rows
+  the second Boolean's). `chained_boolean_reference.py` (mpmath, 40 digits)
+  is S9c.1's reference generalized to three prisms and the chained set
+  function `op2(op1(a, b), c)` (swapped `op2(c, op1(a, b))`): slices in
+  planes holding every axis (the three axes take at most two directions),
+  each slice the first operation's convex pieces of the first two
+  sections' parallelograms and then the second's against the third's,
+  breakpoints over the three sections' lines; every face of each prism
+  swept against both others at once, a piece bounding the chain where the
+  chained function differs across the face, one on faces of several prisms
+  counted once. `generate_chained_boolean_fixtures.py --check` writes
+  `boolean-chained-cases.txt`, `-expected.tsv` and `-frames.tsv` with 30
+  cases (10 chains, each operation; 23 solid, 1 empty, 6 degenerate) in
+  `XY`, `SIDE` and `TILT`: a box less a tilted hole halved by a box whose
+  wall holds the hole's axis, and as the tool of a slab crossing the hole;
+  a box fused with a tilted pin, stepped, and as the tool of a slab above
+  it; a box on the holed top face (coplanar, edges crossing there); a box
+  less a groove across its top (its top face in two result faces) drilled
+  through one of them; a column cutting the hole in a circle; a quarter
+  cylinder bored coaxially; `degenerate` a third cylinder tangent to the
+  groove and a third box whose edge lies on the groove's wall. Checks:
+  closed forms within 1.3e-40; S9c.1's pair reference for the first result
+  in the volume identities within 1.3e-41 and the area identity (no face
+  of the third on another's) within 7.0e-41; face classes their closed
+  forms within 2.6e-41; Monte Carlo 2.7 standard errors; no near
+  coincidence. `test_chained_boolean_reference.py` checks three boxes by
+  their grid cells exactly, a far third prism and the common's symmetry.
+  `compare_chained_boolean.py` reproduces
+  `occt-boolean-chained-preimplementation`
+  (`rust_chained_boolean_exists` false, keyed on
+  `solid/boolean/curved/given.rs`; the kernel's probe `unsupported` on all
+  30): every result valid with the reference's solid count, all 30 match
+  (within 8.0e-10; exact frames 2.9e-16), no review; seven solids' counts
+  change when unified.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
