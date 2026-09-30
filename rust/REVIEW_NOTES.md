@@ -2914,8 +2914,11 @@ Decisions for S9, recorded before its code (2026-09-28):
     `pipe_hole_fuse`'s unified solid has 2 caps of one edge and 4 faces of
     three, the cylinder's two bands and the torus's band as two faces split
     on its outer equator (the kernel's 5 faces, 7 edges and 4 vertices with
-    that band whole). Pending: the
-    DRAW survey, the campaign.
+    that band whole). Campaign: the boolean campaign at `f4ea7a2a` (600 s,
+    a sampled replay) clean, 787 runs; its slowest input 41 s of the 60
+    under AddressSanitizer (a frustum against a tilted prism, 3.2 s
+    without: the exact arithmetic's allocations cost about twelvefold
+    there). Pending: the DRAW survey.
 
 ### Parallel tracks
 
