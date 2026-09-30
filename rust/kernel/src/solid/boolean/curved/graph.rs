@@ -338,7 +338,9 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
         }
     }
     // A torus and a quadric face (S9d.4b.2): its meeting's pieces, the same
-    // for every patch and for every face on one quadric (found once).
+    // for every patch and for every face on one quadric (found once); two
+    // tori (S9d.4b.2b) over the first's angles, the same for every pair of
+    // patches.
     let mut toric: Vec<((usize, usize), CylPair)> = Vec::new();
     for fa in 0..models[0].faces.len() {
         for fb in 0..models[1].faces.len() {
@@ -350,24 +352,34 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
                 )
             };
             let (k, g) = match (sa, sb) {
+                (Surf::Torus, Surf::Torus) => (0, fb),
                 (Surf::Torus, s) if quadric(s) => (0, fb),
                 (s, Surf::Torus) if quadric(s) => (1, fa),
                 _ => continue,
             };
             let pair = if boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]) {
                 let other = &models[1 - k];
-                // The first face on the same quadric.
-                let first = (0..=g)
-                    .find(|&h| same_quadric(&other.faces[h].surf, &other.faces[g].surf))
-                    .unwrap_or(g);
+                let tori = matches!(other.faces[g].surf, Surf::Torus);
+                // The first face on the same quadric (or torus).
+                let first = if tori {
+                    0
+                } else {
+                    (0..=g)
+                        .find(|&h| same_quadric(&other.faces[h].surf, &other.faces[g].surf))
+                        .unwrap_or(g)
+                };
                 if let Some((_, pair)) = toric.iter().find(|(key, _)| *key == (k, first)) {
                     pair.clone()
                 } else {
-                    let pair = super::torus_curved::torus_quadric(
-                        k,
-                        &models[k],
-                        &super::cones::other_face(other, g),
-                    )?;
+                    let pair = if tori {
+                        super::torus_curved::torus_torus(k, &models[k], other)?
+                    } else {
+                        super::torus_curved::torus_quadric(
+                            k,
+                            &models[k],
+                            &super::cones::other_face(other, g),
+                        )?
+                    };
                     toric.push(((k, first), pair.clone()));
                     pair
                 }

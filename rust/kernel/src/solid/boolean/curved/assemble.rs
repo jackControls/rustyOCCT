@@ -900,7 +900,8 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
         }
         Crv::Cone(c) => cone_curve3(arr, e, c, points),
         Crv::Toric(c) => {
-            // S9d.4b.2: on the torus's and the quadric's stored surfaces.
+            // S9d.4b.2: on the torus's and the quadric's (or the other
+            // torus's, S9d.4b.2b) stored surfaces.
             let CurveRef::Section(si, _) = first.curve else {
                 unreachable!("a torus meeting is a section")
             };
@@ -917,17 +918,22 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
             else {
                 return Err(Error::InvalidTopology("a torus meeting off a torus"));
             };
-            let (other, other_radius, other_sphere, other_half_angle) = match stored[1 - c.carrier]
-            {
-                Surface::Cylinder { frame, radius } => (*frame, *radius, false, 0.0),
-                Surface::Sphere { frame, radius } => (*frame, *radius, true, 0.0),
-                Surface::Cone {
-                    frame,
-                    radius,
-                    half_angle,
-                } => (*frame, *radius, false, *half_angle),
-                _ => return Err(Error::InvalidTopology("a torus meeting off a quadric")),
-            };
+            let (other, other_radius, other_sphere, other_half_angle, other_minor) =
+                match stored[1 - c.carrier] {
+                    Surface::Cylinder { frame, radius } => (*frame, *radius, false, 0.0, 0.0),
+                    Surface::Sphere { frame, radius } => (*frame, *radius, true, 0.0, 0.0),
+                    Surface::Cone {
+                        frame,
+                        radius,
+                        half_angle,
+                    } => (*frame, *radius, false, *half_angle, 0.0),
+                    Surface::Torus {
+                        frame,
+                        major,
+                        minor,
+                    } => (*frame, *major, false, 0.0, *minor),
+                    _ => return Err(Error::InvalidTopology("a torus meeting off a quadric")),
+                };
             let with = first.with == d0;
             let t0 = angle_of(if d0 { &first.pos[0] } else { &first.pos[1] });
             let t1 = angle_of(if dl { &last.pos[1] } else { &last.pos[0] });
@@ -980,6 +986,7 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                 other_radius,
                 other_sphere,
                 other_half_angle,
+                other_minor,
                 over_v: c.over_v,
                 window: c.window_angles(),
                 start,

@@ -1223,13 +1223,15 @@ fn curve_valid(curve: &Curve3, tol: &R, fast_tol2: &Fast, exact_tol2: &I) -> boo
         }
         // A torus's meeting with a quadric (S9d.4b.2): a ring torus, a
         // positive radius (a cone's may be zero at its frame's origin), a
-        // window of the other angle under a turn, a range within a turn.
+        // window of the other angle under a turn, a range within a turn;
+        // with another ring torus (S9d.4b.2b), neither a sphere nor a cone.
         Curve3::Toric(m) => {
             finite(&[
                 m.major,
                 m.minor,
                 m.other_radius,
                 m.other_half_angle,
+                m.other_minor,
                 m.window[0],
                 m.window[1],
                 m.start,
@@ -1240,6 +1242,11 @@ fn curve_valid(curve: &Curve3, tol: &R, fast_tol2: &Fast, exact_tol2: &I) -> boo
                     || (m.other_half_angle != 0.0 && m.other_radius >= 0.0))
                 && m.other_half_angle.abs() < std::f64::consts::FRAC_PI_2
                 && (!m.other_sphere || m.other_half_angle == 0.0)
+                && (m.other_minor == 0.0
+                    || (r(m.other_minor) > *tol
+                        && m.other_radius > m.other_minor
+                        && !m.other_sphere
+                        && m.other_half_angle == 0.0))
                 && m.window[0] < m.window[1]
                 && m.window[1] - m.window[0] < TAU
                 && m.sweep != 0.0

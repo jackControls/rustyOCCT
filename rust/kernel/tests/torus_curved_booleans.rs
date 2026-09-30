@@ -1,5 +1,5 @@
-//! S9d.4b.2a: Booleans of a whole torus against prisms with arcs, spheres
-//! and cones, against the independent reference
+//! S9d.4b.2a and S9d.4b.2b: Booleans of a whole torus against prisms with
+//! arcs, spheres, cones and whole tori, against the independent reference
 //! (`fixtures/boolean-torus-curved-*` from
 //! `tools/generate_torus_curved_boolean_fixtures.py`). Each case runs once
 //! (on a few threads) for the checks that read its result.
@@ -10,23 +10,6 @@ use rusty_occt::history;
 use rusty_occt::Error;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::OnceLock;
-
-/// Two tori meet in fields of degree eight about different axes: S9d.4b.2b's
-/// (every `tori_*` case).
-const LATER: &[&str] = &[
-    "tori_coax_fuse",
-    "tori_coax_common",
-    "tori_link_fuse",
-    "tori_link_common",
-    "tori_ring_fuse",
-    "tori_ring_cut",
-    "tori_ring_common",
-    "tori_side_cut",
-    "tori_side_common",
-    "tori_cross_cut",
-    "tori_cross_common",
-    "tori_kiss_fuse",
-];
 
 fn cases() -> Vec<protocol::Case> {
     protocol::cases(include_str!(
@@ -99,28 +82,9 @@ fn expected() -> Expected {
 #[test]
 fn every_case_matches_the_reference() {
     let expect = expected();
-    // The later sub-step's cases are exactly the two tori.
-    let names: Vec<String> = cases().into_iter().map(|c| c.name).collect();
-    for name in &names {
-        assert_eq!(
-            LATER.contains(&name.as_str()),
-            name.starts_with("tori_"),
-            "{name}"
-        );
-    }
     let mut failures = Vec::new();
     for (name, run) in runs() {
         let (kind, want) = &expect[name];
-        if LATER.contains(&name.as_str()) {
-            match run {
-                Err(Error::OutOfDomain(m)) if m.contains("S9d.4b.2b") => {}
-                other => failures.push(format!(
-                    "{name}: {:?} not S9d.4b.2b's",
-                    other.as_ref().map(|_| ())
-                )),
-            }
-            continue;
-        }
         match (kind.as_str(), run) {
             ("degenerate", Err(Error::Degenerate(_))) => continue,
             ("degenerate", other) => {
@@ -270,6 +234,8 @@ fn coaxial_pairs_meet_in_circles() {
         "ball_axis_common",
         "cone_coax_common",
         "pipe_tilt_common",
+        "tori_coax_fuse",
+        "tori_coax_common",
     ];
     for (name, run) in runs() {
         let Ok((_, _, out, _)) = run else { continue };
@@ -286,6 +252,9 @@ fn coaxial_pairs_meet_in_circles() {
             "ball_top_cut",
             "spike_cut",
             "stadium_cut",
+            "tori_ring_cut",
+            "tori_side_cut",
+            "tori_cross_cut",
         ]
         .contains(&name.as_str())
         {
@@ -364,20 +333,21 @@ fn a_torus_face_wound_both_ways_is_undecided() {
 }
 
 /// Only a tangency of the surfaces is refused: a coaxial cylinder along
-/// the outer equator and a sphere touching the equator at a point.
+/// the outer equator, a sphere touching the equator at a point and a
+/// coaxial torus touching along a circle.
 #[test]
 fn tangencies_are_degenerate() {
     for (name, run) in runs() {
-        if ["pipe_equator_fuse", "ball_touch_fuse"].contains(&name.as_str()) {
+        if ["pipe_equator_fuse", "ball_touch_fuse", "tori_kiss_fuse"].contains(&name.as_str()) {
             assert!(matches!(run, Err(Error::Degenerate(_))), "{name}");
         }
     }
 }
 
-/// A torus segment or wedge against a curved face stays S9d.4b's
-/// `OutOfDomain`; two tori name S9d.4b.2b.
+/// A torus segment or wedge against a curved face, a whole torus's too,
+/// stays S9d.4b's `OutOfDomain`.
 #[test]
-fn parts_and_tori_pairs_stay_later() {
+fn parts_stay_later() {
     use rusty_occt::identity::OperationId;
     use rusty_occt::{Frame3, Solid, Tolerance};
     use std::f64::consts::{FRAC_PI_2, TAU};
@@ -406,20 +376,115 @@ fn parts_and_tori_pairs_stay_later() {
     )
     .unwrap();
     let half = torus(1, -FRAC_PI_2, FRAC_PI_2, TAU);
-    match half.common(OperationId(3), &ball) {
-        Err(Error::OutOfDomain(m)) => assert!(m.contains("segment or wedge"), "{m}"),
-        other => panic!("{:?}", other.map(|_| ())),
-    }
-    let (a, b) = (torus(4, 0.0, TAU, TAU), torus(5, 0.0, TAU, TAU));
-    let b = b
+    let whole = torus(2, 0.0, TAU, TAU)
         .transform_with(
             OperationId(6),
             rusty_occt::RigidTransform::translation(rusty_occt::Vec3::new(0.5, 0.0, 0.0)).unwrap(),
         )
         .unwrap()
         .0;
-    match a.fuse(OperationId(7), &b) {
-        Err(Error::OutOfDomain(m)) => assert!(m.contains("S9d.4b.2b"), "{m}"),
-        other => panic!("{:?}", other.map(|_| ())),
+    for other in [&ball, &whole] {
+        match half.common(OperationId(3), other) {
+            Err(Error::OutOfDomain(m)) => assert!(m.contains("segment or wedge"), "{m}"),
+            other => panic!("{:?}", other.map(|_| ())),
+        }
     }
+}
+
+/// A whole torus of radii 2.5 and 0.75 about an axis parallel to `T`'s
+/// (radii 2.5 and 1), its centre on `T`'s core circle (S9d.4b.2b; the
+/// evidence's correction (c)): with the top circles at one height (its
+/// centre a quarter up, or `T` moved half a unit along x: both of radius
+/// 2.5, crossing) or its bottom on `T`'s top the surfaces are tangent where
+/// those circles cross (both normals along the axis), `Degenerate`; with
+/// the equators at one height (its centre on `T`'s plane) they cross
+/// transversally (the normals there along the two radii, 43 degrees apart)
+/// and the meeting only turns: the common two solids of 7.74729, as
+/// native DRAW's (`bcommon`, `vprops`: 7.74729, the fuse 69.359 and the cut
+/// 41.6007, each valid).
+#[test]
+fn parallel_tori_at_one_height() {
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{Frame3, Point3, RigidTransform, Solid, Tolerance, Vec3};
+    let tol = Tolerance::default();
+    let turn = std::f64::consts::TAU;
+    let (t, _) =
+        Solid::torus_with(OperationId(1), Frame3::xy(), 2.5, 1.0, 0.0, turn, turn, tol).unwrap();
+    let at = |z: f64| {
+        let f = Frame3::new(
+            Point3::new(2.5, 0.0, z),
+            Vec3::new(0.0, 0.0, 1.0),
+            Vec3::new(1.0, 0.0, 0.0),
+            tol,
+        )
+        .unwrap();
+        Solid::torus_with(OperationId(2), f, 2.5, 0.75, 0.0, turn, turn, tol)
+            .unwrap()
+            .0
+    };
+    let moved = Solid::torus_with(OperationId(7), Frame3::xy(), 2.5, 1.0, 0.0, turn, turn, tol)
+        .unwrap()
+        .0
+        .transform_with(
+            OperationId(6),
+            RigidTransform::translation(Vec3::new(0.5, 0.0, 0.0)).unwrap(),
+        )
+        .unwrap()
+        .0;
+    for other in [at(0.25), at(1.75), moved] {
+        assert!(
+            matches!(t.fuse(OperationId(3), &other), Err(Error::Degenerate(_))),
+            "a tangency"
+        );
+    }
+    let (out, h) = t.common(OperationId(5), &at(0.0)).unwrap();
+    assert_eq!(out.len(), 2);
+    let v: f64 = out.iter().map(|s| s.mass_properties().volume).sum();
+    assert!((v - 7.74729).abs() < 5e-6, "{v}");
+    let ins = [
+        t.topology().entity_set(t.resolution()),
+        at(0.0).topology().entity_set(tol),
+    ];
+    let outs: Vec<_> = out
+        .iter()
+        .map(|s| s.topology().entity_set(s.resolution()))
+        .collect();
+    assert!(history::check(&ins, &outs, &h).is_empty());
+}
+
+/// Two tori in a turned frame (S9d.4b.2b): the stored axes not exactly
+/// orthonormal, the other torus's function is of degree four in each of the
+/// first's angles, its points algebraic of degree eight and its turning
+/// points found by subdivision; the torus ringing the tube, moved as the
+/// results are above, keeps the reference's volume.
+#[test]
+fn turned_tori_meet_in_fields_of_degree_eight() {
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::topology::Curve3;
+    use rusty_occt::{Point3, RigidTransform, Vec3};
+    let motion =
+        RigidTransform::rotation(Point3::new(1.0, 0.0, 0.0), Vec3::new(1.0, 2.0, 2.0), 0.5)
+            .unwrap();
+    let case = cases()
+        .into_iter()
+        .find(|c| c.name == "tori_ring_common")
+        .unwrap();
+    let (a, b) = (protocol::build(&case.object), protocol::build(&case.tool));
+    let a = a.transform_with(OperationId(801), motion).unwrap().0;
+    let b = b.transform_with(OperationId(802), motion).unwrap().0;
+    let (out, _) = a.common(case.operation, &b).unwrap();
+    let (_, want) = &expected()["tori_ring_common"];
+    let (count, v) = want.unwrap();
+    assert_eq!(out.len(), count);
+    let m = out[0].topology().mass_enclosure().unwrap();
+    let slack = 1e-9 * v[0];
+    assert!(
+        m.volume[0] - slack <= v[0] && v[0] <= m.volume[1] + slack,
+        "{m:?}"
+    );
+    assert!(out[0]
+        .topology()
+        .edges()
+        .iter()
+        .any(|e| { matches!(&e.curve, Curve3::Toric(t) if t.other_minor > 0.0) }));
 }

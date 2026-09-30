@@ -278,11 +278,8 @@ pub(super) fn section(
                 _ => Ok(Section::Curves(Vec::new())),
             }
         }
-        // S9d.4b.2: a torus's meeting with a quadric, by the pair's
-        // relation (two tori refused before).
-        (Surf::Torus, Surf::Torus) => {
-            Err(Error::OutOfDomain("a torus against a torus (S9d.4b.2b)"))
-        }
+        // S9d.4b.2: a torus's meeting with a quadric or (S9d.4b.2b) another
+        // torus, by the pair's relation.
         (Surf::Torus, _) | (_, Surf::Torus) => {
             match pair.expect("a torus and a quadric's relation") {
                 CylPair::Mixed(x) => Ok(Section::Curves(x.pieces.clone())),
