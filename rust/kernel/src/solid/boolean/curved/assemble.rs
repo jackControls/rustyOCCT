@@ -68,13 +68,142 @@ struct REdge {
     ends: Option<[usize; 2]>,
 }
 
+/// The names of input faces by where a result lies on them: a given
+/// result's model face (S9e.1) holding several of its result faces names
+/// each piece by the result face it lies in (`given_parts`).
+struct Names<'a> {
+    arr: &'a Arr,
+    parts: BTreeMap<usize, EntityId>,
+}
+
+impl Names<'_> {
+    fn multiple(&self, o: usize, f: usize) -> bool {
+        self.arr.models[o]
+            .given
+            .as_ref()
+            .is_some_and(|g| g.ids[f].len() > 1)
+    }
+
+    /// A piece's input face.
+    fn piece(&self, pi: usize) -> EntityId {
+        let p = &self.arr.pieces[pi];
+        match self.parts.get(&pi) {
+            Some(id) => *id,
+            None => self.arr.models[p.op].faces[p.face].id,
+        }
+    }
+
+    /// Input face `f` of operand `o` where an arrangement edge lies on it.
+    fn by_edge(&self, o: usize, f: usize, gid: usize) -> EntityId {
+        if self.multiple(o, f) {
+            for (pi, p) in self.arr.pieces.iter().enumerate() {
+                if p.op == o && p.face == f && p.loops.iter().flatten().any(|h| h.0 == gid) {
+                    return self.piece(pi);
+                }
+            }
+        }
+        self.arr.models[o].faces[f].id
+    }
+
+    /// Input face `f` of operand `o` where an arrangement vertex lies on it.
+    fn by_vertex(&self, o: usize, f: usize, v: usize) -> EntityId {
+        if self.multiple(o, f) {
+            for (pi, p) in self.arr.pieces.iter().enumerate() {
+                if p.op == o
+                    && p.face == f
+                    && p.loops
+                        .iter()
+                        .flatten()
+                        .any(|h| self.arr.edges[h.0].ends.contains(&v))
+                {
+                    return self.piece(pi);
+                }
+            }
+        }
+        self.arr.models[o].faces[f].id
+    }
+}
+
+/// The result face each piece of a given result's model face holding
+/// several result faces lies in: its pieces joined across the edges they
+/// share (never across the model's edges between two result faces, which
+/// no two pieces of one model face share), each group named by a model
+/// edge on its boundary and the result face on its side.
+fn given_parts(arr: &Arr) -> Result<BTreeMap<usize, EntityId>> {
+    let mut out = BTreeMap::new();
+    for o in 0..2 {
+        let Some(g) = &arr.models[o].given else {
+            continue;
+        };
+        for f in 0..g.ids.len() {
+            if g.ids[f].len() < 2 {
+                continue;
+            }
+            let ps: Vec<usize> = (0..arr.pieces.len())
+                .filter(|&i| arr.pieces[i].op == o && arr.pieces[i].face == f)
+                .collect();
+            let mut parent: Vec<usize> = (0..ps.len()).collect();
+            let mut users: BTreeMap<usize, Vec<usize>> = BTreeMap::new();
+            for (k, &pi) in ps.iter().enumerate() {
+                for &(gid, _) in arr.pieces[pi].loops.iter().flatten() {
+                    users.entry(gid).or_default().push(k);
+                }
+            }
+            for us in users.values() {
+                for w in us.windows(2) {
+                    union(&mut parent, w[0], w[1]);
+                }
+            }
+            let mut named: BTreeMap<usize, EntityId> = BTreeMap::new();
+            for (k, &pi) in ps.iter().enumerate() {
+                for &(gid, _) in arr.pieces[pi].loops.iter().flatten() {
+                    if let CurveRef::Edge(eo, ei) = arr.edges[gid].curve {
+                        if let (true, Some(id)) = (eo == o, g.sides.get(&(ei, f))) {
+                            let r = find(&mut parent, k);
+                            named.entry(r).or_insert(*id);
+                        }
+                    }
+                }
+            }
+            for (k, &pi) in ps.iter().enumerate() {
+                let r = find(&mut parent, k);
+                let id = named.get(&r).ok_or(Error::ComputationLimit(
+                    "a given result's face part without its edges",
+                ))?;
+                out.insert(pi, *id);
+            }
+        }
+    }
+    Ok(out)
+}
+
+/// A result solid's provenance in its arrangement (S9e.1: a result given
+/// to another Boolean is its arrangement's kept pieces): each face slot's
+/// pieces, each edge slot's arrangement edges with their direction along
+/// it, each vertex slot's arrangement vertex (none for a pole).
+#[derive(Debug, Clone)]
+pub(super) struct Made {
+    pub(super) faces: Vec<Vec<usize>>,
+    pub(super) edges: Vec<Vec<(usize, bool)>>,
+    pub(super) vertices: Vec<Option<usize>>,
+}
+
 pub(super) fn assemble(arr: &Arr, op: Op2) -> Result<Vec<Component>> {
+    Ok(assemble_made(arr, op)?.into_iter().map(|x| x.0).collect())
+}
+
+/// The result's solids with their provenance.
+pub(super) fn assemble_made(arr: &Arr, op: Op2) -> Result<Vec<(Component, Made)>> {
     let kept: Vec<usize> = (0..arr.pieces.len())
         .filter(|&i| arr.pieces[i].keep)
         .collect();
     if kept.is_empty() {
         return Ok(Vec::new());
     }
+    let names = Names {
+        arr,
+        parts: given_parts(arr)?,
+    };
     // Pieces of one input face kept the same way, sharing an edge, join.
     let key = |i: usize| {
         let p = &arr.pieces[i];
@@ -365,8 +494,9 @@ pub(super) fn assemble(arr: &Arr, op: Op2) -> Result<Vec<Component>> {
             if is_cavity[si] || !both {
                 continue;
             }
-            let alone = build_component(
+            let (alone, _) = build_component(
                 arr,
+                &names,
                 op,
                 &faces,
                 &redges,
@@ -403,7 +533,7 @@ pub(super) fn assemble(arr: &Arr, op: Op2) -> Result<Vec<Component>> {
             inner.extend(&shells[c]);
         }
         out.push(build_component(
-            arr, op, &faces, &redges, &fins_of, &points, &all, &inner, &info,
+            arr, &names, op, &faces, &redges, &fins_of, &points, &all, &inner, &info,
         )?);
     }
     Ok(out)
@@ -412,6 +542,7 @@ pub(super) fn assemble(arr: &Arr, op: Op2) -> Result<Vec<Component>> {
 #[allow(clippy::too_many_arguments)]
 fn build_component(
     arr: &Arr,
+    names: &Names<'_>,
     op: Op2,
     faces: &[RFace],
     redges: &[REdge],
@@ -420,7 +551,7 @@ fn build_component(
     all: &[usize],
     inner: &BTreeSet<usize>,
     info: &BTreeMap<EntityId, (Operand, Role)>,
-) -> Result<Component> {
+) -> Result<(Component, Made)> {
     let mut p = TopologyParts::default();
     // Edges and vertices used.
     let mut used_edges: BTreeSet<usize> = BTreeSet::new();
@@ -698,7 +829,7 @@ fn build_component(
         let (mut c, mut t) = (Vec::new(), Vec::new());
         for &pi in &rf.pieces {
             let piece = &arr.pieces[pi];
-            let id = arr.models[piece.op].faces[piece.face].id;
+            let id = names.piece(pi);
             if piece.behind && !tool(piece.op) {
                 c.push(id);
             } else {
@@ -719,13 +850,13 @@ fn build_component(
                     match me.id {
                         Some(id) if tool(o) => t.push(id),
                         Some(id) => c.push(id),
-                        None => t.extend(me.faces.iter().map(|&f| arr.models[o].faces[f].id)),
+                        None => t.extend(me.faces.iter().map(|&f| names.by_edge(o, f, g))),
                     }
                 }
                 CurveRef::Section(si, _) => {
                     let s = &arr.secs[si];
-                    t.push(arr.models[0].faces[s.fa].id);
-                    t.push(arr.models[1].faces[s.fb].id);
+                    t.push(names.by_edge(0, s.fa, g));
+                    t.push(names.by_edge(1, s.fb, g));
                 }
             }
         }
@@ -761,8 +892,24 @@ fn build_component(
                 Some(id) if tool(*o) => t.push(id),
                 Some(id) => c.push(id),
                 None => {
-                    for &(o2, f) in &arr.vx[v].faces {
-                        t.push(arr.models[o2].faces[f].id);
+                    // A given result's vertex inside one of its edges (a
+                    // ring's seam, S9e.1) lies on that edge.
+                    let m = &arr.models[*o];
+                    let on: Vec<EntityId> = match &m.given {
+                        Some(_) => m
+                            .edges
+                            .iter()
+                            .filter(|e| e.start == *i || e.end == *i)
+                            .filter_map(|e| e.id)
+                            .collect(),
+                        None => Vec::new(),
+                    };
+                    if on.is_empty() {
+                        for &(o2, f) in &arr.vx[v].faces {
+                            t.push(names.by_vertex(o2, f, v));
+                        }
+                    } else {
+                        t.extend(on);
                     }
                 }
             },
@@ -770,18 +917,18 @@ fn build_component(
                 let me = &arr.models[*o].edges[*ei];
                 match me.id {
                     Some(id) => t.push(id),
-                    None => t.extend(me.faces.iter().map(|&f| arr.models[*o].faces[f].id)),
+                    None => t.extend(me.faces.iter().map(|&f| names.by_vertex(*o, f, v))),
                 }
-                t.push(arr.models[1 - o].faces[*g].id);
+                t.push(names.by_vertex(1 - o, *g, v));
             }
             VKey::Cross(fa, fb, _) => {
-                t.push(arr.models[0].faces[*fa].id);
-                t.push(arr.models[1].faces[*fb].id);
+                t.push(names.by_vertex(0, *fa, v));
+                t.push(names.by_vertex(1, *fb, v));
             }
             VKey::Ring(si, _) | VKey::Pole(si, _) => {
                 let s = &arr.secs[*si];
-                t.push(arr.models[0].faces[s.fa].id);
-                t.push(arr.models[1].faces[s.fb].id);
+                t.push(names.by_vertex(0, s.fa, v));
+                t.push(names.by_vertex(1, s.fb, v));
             }
         }
         let (c, t) = tidy(c, t);
@@ -810,7 +957,19 @@ fn build_component(
             Role::Region,
         ));
     }
-    Ok(Component { parts: p, plans })
+    let mut vertices: Vec<Option<usize>> = vec![None; p.vertices.len()];
+    for (&v, &vid) in &vertex_id {
+        vertices[vid.0] = Some(v);
+    }
+    let made = Made {
+        faces: all.iter().map(|&fi| faces[fi].pieces.clone()).collect(),
+        edges: used_edges
+            .iter()
+            .map(|&ri| redges[ri].parts.clone())
+            .collect(),
+        vertices,
+    };
+    Ok((Component { parts: p, plans }, made))
 }
 
 /// Whether two curves are one (exactly): a full circle's halves, or a
@@ -1211,8 +1370,17 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
             };
             let sweep = if with { sweep } else { -sweep };
             let fl = |x: &V| x.clone().map(|y| rational_f64(&y));
-            // A model arc: on its cap's arc frame.
+            // A given result's edge (S9e.1): on its stored circle or ellipse.
             if let CurveRef::Edge(o, ei) = first.curve {
+                if let Some(g) = &arr.models[o].given {
+                    if let Some(c) = given_arc(g.curves[ei].as_ref(), e, points, with) {
+                        return Ok(c);
+                    }
+                }
+            }
+            // A model arc: on its cap's arc frame.
+            if let (CurveRef::Edge(o, ei), None) = (first.curve, &arr.models[first_op(first)].given)
+            {
                 let m = &arr.models[o];
                 if let (EdgeKind::Rim(high, _), Some(fun)) = (m.edges[ei].kind, &m.funnel) {
                     // A cone's rim (S9d.3a): about its axis at its end.
@@ -1298,6 +1466,84 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                 sweep_angle: sweep,
             })
         }
+    }
+}
+
+/// The operand of an arrangement edge's model edge (0 for a section).
+fn first_op(g: &GEdge) -> usize {
+    match g.curve {
+        CurveRef::Edge(o, _) => o,
+        CurveRef::Section(..) => 0,
+    }
+}
+
+/// A given result's edge's piece on its stored circle or ellipse (the
+/// frame the result rounded), its ends' angles measured on it from their
+/// rounded points: none for another curve.
+fn given_arc(
+    curve: Option<&Curve3>,
+    e: &REdge,
+    points: &BTreeMap<usize, Point3>,
+    with: bool,
+) -> Option<Curve3> {
+    let turn = |t0: f64, t1: f64| {
+        let s = if with { t1 - t0 } else { t0 - t1 }.rem_euclid(TAU);
+        let s = if s == 0.0 { TAU } else { s };
+        if with {
+            s
+        } else {
+            -s
+        }
+    };
+    match curve? {
+        Curve3::Circle { frame, radius } | Curve3::CircularArc { frame, radius, .. } => {
+            let Some([s, t]) = e.ends else {
+                return Some(Curve3::Circle {
+                    frame: *frame,
+                    radius: *radius,
+                });
+            };
+            let angle = |p: Point3| {
+                let [x, y, _] = frame.coordinates(p);
+                y.atan2(x)
+            };
+            let (t0, t1) = (angle(points[&s]), angle(points[&t]));
+            Some(Curve3::CircularArc {
+                frame: *frame,
+                radius: *radius,
+                start_angle: t0,
+                sweep_angle: turn(t0, t1),
+            })
+        }
+        Curve3::EllipseArc {
+            frame,
+            major,
+            minor,
+            ..
+        } => {
+            let Some([s, t]) = e.ends else {
+                return Some(Curve3::EllipseArc {
+                    frame: *frame,
+                    major: *major,
+                    minor: *minor,
+                    start_angle: 0.0,
+                    sweep_angle: if with { TAU } else { -TAU },
+                });
+            };
+            let angle = |p: Point3| {
+                let [x, y, _] = frame.coordinates(p);
+                (y / minor).atan2(x / major)
+            };
+            let (t0, t1) = (angle(points[&s]), angle(points[&t]));
+            Some(Curve3::EllipseArc {
+                frame: *frame,
+                major: *major,
+                minor: *minor,
+                start_angle: t0,
+                sweep_angle: turn(t0, t1),
+            })
+        }
+        _ => None,
     }
 }
 

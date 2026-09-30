@@ -572,7 +572,7 @@ fn prism_model(solid: &Solid, profile: &Profile, op: Operand) -> Result<Model> {
             }
             _ => {
                 return Err(Error::OutOfDomain(
-                    "a Boolean of a prism with arcs and a solid other than a prism (S9c)",
+                    "a Boolean of a prism with arcs and a solid other than a prism (S9e.2)",
                 ))
             }
         };
@@ -909,7 +909,9 @@ fn zipped(polys: &[Vec<P2>]) -> Vec<[P2; 3]> {
 /// fragments join back by the face. Its side by exact ray parity.
 fn stored_model(solid: &Solid, op: Operand) -> Result<Model> {
     let other = || {
-        Error::OutOfDomain("a Boolean of a solid with curved faces or edges in any position (S9c)")
+        Error::OutOfDomain(
+            "a Boolean of a solid with curved faces or edges in any position (S9e.2)",
+        )
     };
     let t = &solid.topology;
     let point = |p: Point3| [q(p.x), q(p.y), q(p.z)];

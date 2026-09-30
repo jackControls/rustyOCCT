@@ -309,6 +309,9 @@ pub(super) enum EdgeKind {
     Rim(bool, usize),
     /// A sphere's split great circle, arc `j` (S9d.1).
     Split(usize),
+    /// A given result's edge (S9e.1): an arrangement edge of the Boolean
+    /// that made it, `j` in its given model.
+    Given(usize),
 }
 
 #[derive(Debug, Clone)]
@@ -359,6 +362,10 @@ pub(super) struct Prism {
     pub(super) funnel: Option<super::cone::Funnel>,
     /// A torus's own data (S9d.4a): its faces are its wall's four patches.
     pub(super) ring: Option<super::torus::Ring>,
+    /// A Boolean's result given to another Boolean (S9e.1): its faces are
+    /// its inputs' faces holding its kept pieces, each on its input's model
+    /// (`view`), its membership and regions the first Boolean's.
+    pub(super) given: Option<Box<super::given::Given>>,
 }
 
 fn out_of_domain(what: &'static str) -> Error {
@@ -371,7 +378,7 @@ impl Prism {
     pub(super) fn new(solid: &Solid, op: Operand, seam: &R) -> Result<Self> {
         let Construction::Prism(profile) = &solid.construction else {
             return Err(out_of_domain(
-                "a Boolean of a solid other than a prism with arcs in any position (S9c)",
+                "a Boolean of a solid other than a prism with arcs in any position (S9e.2)",
             ));
         };
         let f = Affine::new(&solid.frame)?;
@@ -679,6 +686,7 @@ impl Prism {
             ball: None,
             funnel: None,
             ring: None,
+            given: None,
         };
         prism.check_slots(solid)?;
         prism.boxes = (0..prism.faces.len()).map(|i| prism.face_box(i)).collect();
@@ -762,8 +770,21 @@ impl Prism {
         (lo, hi)
     }
 
+    /// A face's own model and index: the model itself, or for a given
+    /// result (S9e.1) its face's input model, on whose frame and data its
+    /// surface lies.
+    pub(super) fn view(&self, fi: usize) -> (&Prism, usize) {
+        match &self.given {
+            Some(g) => g.view(fi),
+            None => (self, fi),
+        }
+    }
+
     /// The outward normal of a face at a point on it.
     pub(super) fn normal_at(&self, fi: usize, p: &QV) -> QV {
+        if let Some(g) = &self.given {
+            return g.normal_at(fi, p);
+        }
         match &self.faces[fi].surf {
             Surf::Plane { m, .. } => qv(m),
             Surf::Sphere { c, .. } => qsub(p, &qv(c)),
@@ -1002,6 +1023,9 @@ impl Prism {
     /// (symbolically: `p + e d1 + e^2 d2`, `e` infinitesimal; a push along a
     /// cylinder's circle keeps to the cylinder).
     pub(super) fn member(&self, p: &QV, dirs: &[QV]) -> Loc {
+        if let Some(g) = &self.given {
+            return g.member(p, dirs);
+        }
         if let Some(ball) = &self.ball {
             return ball.member(p, dirs);
         }
@@ -1054,6 +1078,9 @@ impl Prism {
     /// Where a point on a face's surface lies in the face's region: inside,
     /// outside or on its boundary (exactly).
     pub(super) fn in_face(&self, fi: usize, p: &QV) -> Loc {
+        if let Some(g) = &self.given {
+            return g.in_face(fi, p);
+        }
         if let Some(ball) = &self.ball {
             return match self.faces[fi].kind {
                 FaceKind::Half(side) => ball.in_half(side, p),

@@ -6028,7 +6028,7 @@
       "path": "tests/boolean/bcut_simple/L3",
       "expected_rust": "unsupported",
       "expected_occt": "viewer_skipped",
-      "purpose": "S9b.2's Boolean group, a capability sentinel: a pocket and then a hole cut from a disc prism; the first cut is a stack with cylindrical walls, which the next bcut takes as its object: a Boolean of a solid with curved faces (S9c)."
+      "purpose": "S9b.2's Boolean group, a capability sentinel: a pocket and then a hole cut from a disc prism; the first cut is a stack with cylindrical walls, which the next bcut takes as its object: a Boolean of a solid with curved faces (S9c), a stack with arc walls given to another Boolean since S9e (S9e.2's)."
     },
     {
       "path": "tests/boolean/bopfuse_simple/U1",

@@ -98,7 +98,7 @@ pub(super) struct Piece {
     pub(super) behind: bool,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub(super) struct Arr {
     pub(super) models: [Prism; 2],
     pub(super) vx: Vec<Vx>,
@@ -248,16 +248,20 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
     // Cylinder pairs, and faces on one surface (A's, B's).
     let mut pairs: BTreeMap<(usize, usize), CylPair> = BTreeMap::new();
     let mut coinc: BTreeSet<(usize, usize)> = BTreeSet::new();
-    for (fa, a) in models[0].faces.iter().enumerate() {
-        let Surf::Cyl { c: ca, r: ra, .. } = &a.surf else {
+    // A given result's faces (S9e.1) reach their surfaces' frames and data
+    // through their inputs' models (`Prism::view`).
+    for fa in 0..models[0].faces.len() {
+        let (va, ia) = models[0].view(fa);
+        let Surf::Cyl { c: ca, r: ra, .. } = &va.faces[ia].surf else {
             continue;
         };
-        for (fb, b) in models[1].faces.iter().enumerate() {
-            let Surf::Cyl { c: cb, r: rb, .. } = &b.surf else {
+        for fb in 0..models[1].faces.len() {
+            let (vb, ib) = models[1].view(fb);
+            let Surf::Cyl { c: cb, r: rb, .. } = &vb.faces[ib].surf else {
                 continue;
             };
             let bx = [&models[0].boxes[fa], &models[1].boxes[fb]];
-            let pair = cyl_pair(&models[0], ca, ra, bx, &models[1], cb, rb)?;
+            let pair = cyl_pair(va, ca, ra, bx, vb, cb, rb)?;
             if matches!(pair, CylPair::Same) && boxes_meet(bx[0], bx[1]) {
                 coinc.insert((fa, fb));
             }
@@ -267,21 +271,23 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
     // A cylinder and a sphere (S9d.2): rings over the cylinder's angle, or
     // apart.
     let res = models[0].tolerance.linear();
-    for (fa, a) in models[0].faces.iter().enumerate() {
-        for (fb, b) in models[1].faces.iter().enumerate() {
-            let pair = match (&a.surf, &b.surf) {
+    for fa in 0..models[0].faces.len() {
+        let (va, ia) = models[0].view(fa);
+        for fb in 0..models[1].faces.len() {
+            let (vb, ib) = models[1].view(fb);
+            let pair = match (&va.faces[ia].surf, &vb.faces[ib].surf) {
                 (Surf::Cyl { c: ca, r: ra, .. }, Surf::Sphere { c, r }) => {
                     if !boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]) {
                         CylPair::Apart
                     } else {
-                        super::spheres::sphere_cyl(0, (&models[0].f, ca, ra), c, r, res)?
+                        super::spheres::sphere_cyl(0, (&va.f, ca, ra), c, r, res)?
                     }
                 }
                 (Surf::Sphere { c, r }, Surf::Cyl { c: cb, r: rb, .. }) => {
                     if !boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]) {
                         CylPair::Apart
                     } else {
-                        super::spheres::sphere_cyl(1, (&models[1].f, cb, rb), c, r, res)?
+                        super::spheres::sphere_cyl(1, (&vb.f, cb, rb), c, r, res)?
                     }
                 }
                 _ => continue,
@@ -300,7 +306,8 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                 continue;
             }
             let pair = if boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]) {
-                super::cones::cone_pair([&models[0], &models[1]], [fa, fb], res)?
+                let ((va, ia), (vb, ib)) = (models[0].view(fa), models[1].view(fb));
+                super::cones::cone_pair([va, vb], [ia, ib], res)?
             } else {
                 CylPair::Apart
             };
@@ -323,7 +330,7 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                 if let Some(pair) = spiric.get(&key) {
                     pair.clone()
                 } else {
-                    let t = &models[k];
+                    let t = models[k].view(if k == 0 { fa } else { fb }).0;
                     let pair = super::torus::plane_torus(
                         k,
                         &t.f,
@@ -375,13 +382,15 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                 if let Some((_, pair)) = toric.iter().find(|(key, _)| *key == (k, first)) {
                     pair.clone()
                 } else {
+                    let own = models[k].view(if k == 0 { fa } else { fb }).0;
+                    let (vo, io) = other.view(g);
                     let pair = if tori {
-                        super::torus_curved::torus_torus(k, &models[k], other)?
+                        super::torus_curved::torus_torus(k, own, vo)?
                     } else {
                         super::torus_curved::torus_quadric(
                             k,
-                            &models[k],
-                            &super::cones::other_face(other, g),
+                            own,
+                            &super::cones::other_face(vo, io),
                         )?
                     };
                     toric.push(((k, first), pair.clone()));
@@ -496,15 +505,19 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
         let (me, other) = (&models[o], &models[1 - o]);
         for (ei, e) in me.edges.iter().enumerate() {
             let ebox = intersect(&me.boxes[e.faces[0]], &me.boxes[e.faces[1]]);
-            // An arc edge's own cylinder (its wall).
-            let wall = e
-                .faces
-                .iter()
-                .copied()
-                .find(|&f| matches!(me.faces[f].surf, Surf::Cyl { .. }));
-            let own = match (&e.curve, wall) {
-                (Crv::Conic { .. }, Some(w)) => match &me.faces[w].surf {
-                    Surf::Cyl { c, r, .. } => Some((me, c, r)),
+            // An arc edge's own cylinder (its wall; a given result's conic's
+            // carrier, S9e.1), on its input's model.
+            let wall = match &me.given {
+                Some(g) => g.own[ei],
+                None => e
+                    .faces
+                    .iter()
+                    .copied()
+                    .find(|&f| matches!(me.faces[f].surf, Surf::Cyl { .. })),
+            };
+            let own = match (&e.curve, wall.map(|w| me.view(w))) {
+                (Crv::Conic { .. }, Some((vm, vw))) => match &vm.faces[vw].surf {
+                    Surf::Cyl { c, r, .. } => Some((vm, c, r)),
                     Surf::Plane { .. } | Surf::Sphere { .. } | Surf::Cone { .. } | Surf::Torus => {
                         None
                     }
@@ -520,7 +533,27 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                     (Surf::Cyl { .. }, Some(w), Crv::Conic { .. }) => pair_of(o, w, g),
                     _ => None,
                 };
-                let meet = match edge_surface(&e.curve, own, me.ball.as_ref(), other, g, pair) {
+                let (vo, vg) = other.view(g);
+                // Parallel cylinders' circles are in the first input's frame:
+                // an arc of the second input's cylinder meets the first's
+                // where its own circle meets the first's circle in its own
+                // frame (found by S9e.1's chains: the relation read as the
+                // first input's placed the second's arc at wrong angles).
+                let reversed;
+                let pair = match (pair, own, &vo.faces[vg].surf) {
+                    (
+                        Some(CylPair::Parallel { .. }),
+                        Some((vm, cx, rx)),
+                        Surf::Cyl { c, r, .. },
+                    ) if o == 1 => {
+                        let wall = wall.expect("an arc's own cylinder");
+                        let bx = [&me.boxes[wall], &other.boxes[g]];
+                        reversed = cyl_pair(vm, cx, rx, bx, vo, c, r)?;
+                        Some(&reversed)
+                    }
+                    (p, ..) => p,
+                };
+                let meet = match edge_surface(&e.curve, own, me.ball.as_ref(), vo, vg, pair) {
                     // A seam's tangency with a torus, or a torus seam's
                     // (S9d.4b.2): another seam is tried.
                     Err(Error::Degenerate(_))
@@ -768,7 +801,8 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                 continue;
             }
             let pair = pairs.get(&(fa, fb));
-            let curves = match section(&models[0], fa, &models[1], fb, pair)? {
+            let ((va, ia), (vb, ib)) = (models[0].view(fa), models[1].view(fb));
+            let curves = match section(va, ia, vb, ib, pair)? {
                 Section::Same => continue,
                 Section::Curves(c) => c,
             };
@@ -783,7 +817,8 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
             // parameters, its pcurves meridians' lines on either side. A
             // section through a pole off the axis's planes is refused.
             for (o, f) in [(0, fa), (1, fb)] {
-                let Some(poles) = stored_poles(&models[o], f) else {
+                let (vm, vf) = models[o].view(f);
+                let Some(poles) = stored_poles(vm, vf) else {
                     continue;
                 };
                 for (k, pole) in poles.into_iter().enumerate() {
@@ -809,7 +844,7 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                                 "a section through a sphere's pole off its meridians (S9d.1)",
                             ));
                         };
-                        if !meridian(&c.normal(), &models[o].f.n) {
+                        if !meridian(&c.normal(), &vm.f.n) {
                             return Err(Error::OutOfDomain(
                                 "a section through a sphere's pole off its meridians (S9d.1)",
                             ));
@@ -1110,6 +1145,7 @@ fn intersect(a: &([f64; 3], [f64; 3]), b: &([f64; 3], [f64; 3])) -> ([f64; 3], [
 /// Whether a meeting at `x` on face `g` may be a seam's: on a full circle's
 /// half wall anywhere, on a sphere's hemisphere only on its split (S9d.2).
 fn seam_at(m: &Prism, g: usize, x: &QV) -> bool {
+    let (m, g) = m.view(g);
     if let Some(fun) = &m.funnel {
         // A cone's faces: on the rims' seam direction (S9d.3a).
         return fun.on_seam(&m.f, x);
@@ -1559,8 +1595,8 @@ impl Arr {
     /// coordinates, or a cylinder's turn from its arc's start and height;
     /// and the orientation of those parameters against the outward normal.
     pub(super) fn params(&self, o: usize, f: usize) -> impl Fn([f64; 3]) -> [f64; 2] + '_ {
-        let m = &self.models[o];
-        let face = &m.faces[f];
+        let (m, lf) = self.models[o].view(f);
+        let face = &m.faces[lf];
         let fl = |x: &V| x.clone().map(|y| crate::solid::split::rational_f64(&y));
         let (of, xf, yf, nf) = (fl(&m.f.o), fl(&m.f.x), fl(&m.f.y), fl(&m.f.n));
         let surf = face.surf.clone();
@@ -1645,8 +1681,13 @@ impl Arr {
     /// The sign turning the parameters' area into the area about the face's
     /// outward normal.
     pub(super) fn param_sign(&self, o: usize, f: usize) -> f64 {
-        let m = &self.models[o];
-        let face = &m.faces[f];
+        let (m, lf) = self.models[o].view(f);
+        // The model face's own orientation (a given result's face reversed
+        // where its input's is), its input's frame and data.
+        let face = MFace {
+            surf: self.models[o].faces[f].surf.clone(),
+            ..m.faces[lf].clone()
+        };
         match &face.surf {
             // `(u, v)` runs counter-clockwise about the axis: the wall's
             // outward normal leans along it where the cone narrows upward.
@@ -1804,7 +1845,7 @@ impl Arr {
 /// Whether the result keeps a piece of operand `o` whose front and back
 /// the other solid holds as `(front, back)`, and whether its material lies
 /// behind the face.
-fn classify(o: usize, (front, back): (bool, bool), op: Op2) -> (bool, bool) {
+pub(super) fn classify(o: usize, (front, back): (bool, bool), op: Op2) -> (bool, bool) {
     if o == 0 {
         (
             holds(op, false, front) != holds(op, true, back),

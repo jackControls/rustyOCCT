@@ -184,3 +184,51 @@ fn results_are_deterministic_and_move_rigidly() {
         }
     }
 }
+
+/// Parallel circular cylinders (exact frames) where the second input's cap
+/// circle crosses the first's wall (found by S9e.1): the second's arc meets
+/// the first's cylinder where its own circle meets the first's, both in its
+/// own frame (read in the first's frame, its crossings were missed and the
+/// result left open). The common is the circles' lens over the heights both
+/// hold, whichever input comes first.
+#[test]
+fn a_second_inputs_arc_across_a_parallel_cylinder() {
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{Boundary, Frame3, Point2, Point3, Profile, Solid, Tolerance, Vec3};
+    let tol = Tolerance::default();
+    let disc = |cx: f64, cy: f64, r: f64| {
+        Profile::new(
+            Boundary::circle(Point2::new(cx, cy), r, tol).unwrap(),
+            vec![],
+            tol,
+        )
+        .unwrap()
+    };
+    let (a, _) =
+        Solid::extrude_with(OperationId(1), disc(0.0, 0.0, 3.0), Frame3::xy(), 0.0, 5.0).unwrap();
+    let down = Frame3::new(
+        Point3::new(0.0, 0.0, 6.0),
+        Vec3::new(0.0, 0.0, -1.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    // Over z in [2, 6], its circle about (4, 0.5) of radius 2.
+    let (b, _) = Solid::extrude_with(OperationId(2), disc(4.0, -0.5, 2.0), down, 0.0, 4.0).unwrap();
+    let (r1, r2, d) = (3.0f64, 2.0f64, 16.25f64.sqrt());
+    let xc = (d * d + r1 * r1 - r2 * r2) / (2.0 * d);
+    let (a1, a2) = ((xc / r1).acos(), ((d - xc) / r2).acos());
+    let lens = r1 * r1 * (a1 - a1.sin() * a1.cos()) + r2 * r2 * (a2 - a2.sin() * a2.cos());
+    let volume = |out: Vec<Solid>| out.iter().map(|s| s.mass_properties().volume).sum::<f64>();
+    for common in [
+        volume(a.common(OperationId(3), &b).unwrap().0),
+        volume(b.common(OperationId(4), &a).unwrap().0),
+    ] {
+        assert!((common - 3.0 * lens).abs() <= 1e-9 * lens, "{common}");
+    }
+    let (va, vb) = (a.mass_properties().volume, b.mass_properties().volume);
+    let fuse = volume(a.fuse(OperationId(5), &b).unwrap().0);
+    let cut = volume(a.cut(OperationId(6), &b).unwrap().0);
+    assert!((fuse - (va + vb - 3.0 * lens)).abs() <= 1e-9 * fuse);
+    assert!((cut - (va - 3.0 * lens)).abs() <= 1e-9 * cut);
+}
