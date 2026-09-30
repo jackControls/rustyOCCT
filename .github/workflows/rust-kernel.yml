@@ -111,7 +111,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: [algebra, brep, booleans, cones, cones-loops, tori, torus-parts]
+        group: [algebra, brep, booleans, cones, cones-loops, tori, torus-parts, spline-any]
     steps:
       - uses: actions/checkout@v4.2.2
       - run: rustup toolchain install stable --profile minimal
@@ -190,6 +190,9 @@ jobs:
       - name: Verify the torus parts' and caps' Boolean independent reference (S9d.4c)
         if: matrix.group == 'torus-parts'
         run: target/math-oracle-venv/bin/python rust/tools/generate_torus_parts_boolean_fixtures.py --check
+      - name: Verify the spline prisms' Boolean independent reference in any position (S9f.1)
+        if: matrix.group == 'spline-any'
+        run: target/math-oracle-venv/bin/python rust/tools/generate_spline_any_boolean_fixtures.py --check
 
   pinned-degree-oracle:
     name: Degree elevation / source-pinned OCCT
