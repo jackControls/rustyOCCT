@@ -2976,10 +2976,26 @@ Decisions for S9, recorded before its code (2026-09-28):
     corpus inputs made two tori (their spline byte, flags and heights byte
     set; the median 2.2 s, the slowest 124 s on a loaded host) and, before
     (iii), 324 made two tori with all three operations, 150 of them chosen
-    in turned frames (points of degree eight; the slowest 409 s). Pending:
+    in turned frames (points of degree eight; the slowest 409 s). The fuzz target's torus pairs are off
+    (`TORUS_PAIRS`): under AddressSanitizer they take 46 s at the median
+    and 111 s at the ninth decile of intersecting variants, over the
+    target's 60, all in the validator's and mass's certified integrals
+    along the meetings (a parallel track below); the kernel's tests and
+    the 2,950 replayed variants cover them meanwhile. Pending:
     the DRAW survey, the campaign.
 
 ### Parallel tracks
+
+* **Certified integrals along procedural meetings (S9d.4b.2b).** The
+  validator's and mass's certified integrals along `Curve3::Toric` meetings
+  on two tori take tens of seconds per Boolean under AddressSanitizer; faster
+  enclosures there (fewer jet evaluations, shared lifts) would let the fuzz
+  target decode torus pairs again (`TORUS_PAIRS`). Their enclosures may
+  change, so S9d.4b.2a's fixture widths must be re-checked.
+* **The DRAW adapter's curved primitives (S9d.4b.2b).** It builds every
+  `ptorus`, `psphere` and `pcone` with the same ids, so two tori (and two
+  spheres or cones) are refused as solids sharing ids: the upstream cases
+  with two of them do not evaluate until it rebuilds them with fresh ids.
 
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
