@@ -1032,3 +1032,15 @@ with loops, whose containment the validator's rays cannot decide
 missing the whole sphere or torus now counts no hit, and a Boolean whose
 result reports only an undecided containment is `ComputationLimit`
 (`a_cavity_in_a_segment_is_undecided`). Both replay in under 3 s.
+
+## Boolean: a torus band's certified integrals
+
+`boolean/slow-unit-17e131e351b53a29f4966c6dd07b19837efa0626.bin` is a
+corpus input (16 bytes): a torus band (the tube from `v = 0.5` to `2.25`
+with its cap, the spline byte 158) in the tilted frame against a prism,
+fused, cut and in common. Most of its time was the validator's and the
+mass's certified integrals along the band's projections (REVIEW_NOTES.md,
+the certified-integrals track): 5.3 s in a release build with debug
+assertions and 63 s under AddressSanitizer on a host at load 10 to 20
+before that track, 1.6 s and 17 s after. It passes every check and is kept so the
+replay times it; a twin of it (`8997...`, another height) is not.

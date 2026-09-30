@@ -634,6 +634,20 @@ pub(crate) trait Real: Clone + std::fmt::Debug {
     fn bounds_f64(&self) -> (f64, f64);
     /// The smallest enclosure of both.
     fn union(&self, o: &Self) -> Self;
+    /// This enclosure as a binary64 interval when the tier is binary64's
+    /// (memos of the projections' jets hold that tier only).
+    fn as_fast(&self) -> Option<Fast> {
+        None
+    }
+    /// A binary64 interval in this tier when it is binary64's.
+    fn of_fast(_x: Fast) -> Option<Self> {
+        None
+    }
+    /// `sum_(i <= k) a_i b_(k - i)`: a coefficient of two series' product
+    /// (`jet::Jet`), term by term.
+    fn convolve(a: &[Self], b: &[Self], k: usize) -> Self {
+        (0..=k).fold(Self::exact_f64(0.0), |acc, i| acc.add(&a[i].mul(&b[k - i])))
+    }
     /// `e^x` from the tier's own arithmetic: halve the argument until it
     /// is at most 1/2, sum the series to `x^14 / 14!` with the remainder
     /// bounded by twice the next term, then square back.
@@ -936,6 +950,51 @@ impl Real for Fast {
     fn bounds_f64(&self) -> (f64, f64) {
         (self.lo, self.hi)
     }
+    fn as_fast(&self) -> Option<Fast> {
+        Some(*self)
+    }
+    fn of_fast(x: Fast) -> Option<Self> {
+        Some(x)
+    }
+    /// The sum's bounds in rounded binary64 and one error bound for all of
+    /// it, rather than an exactly signed rounding per operation: each term's
+    /// bounds are its corners' rounded extremes (rounding is monotone, so
+    /// they are the extreme corners' rounded values), within `u |p|` of the
+    /// exact ones plus `2^-1075` where they underflow, and `k + 1` rounded
+    /// additions of partial sums at most `A = sum |p|` add at most
+    /// `(k + 1) u A`: `(k + 3) u A + (k + 1) 2^-1074` in all, `u = 2^-53`.
+    /// The bound taken is `4 (k + 3) u` times the rounded `A` (at least
+    /// `A (1 - (k + 1) u)`), and each end moves one more ulp outward after
+    /// its subtraction. Non-finite inputs or sums give the whole line.
+    fn convolve(a: &[Self], b: &[Self], k: usize) -> Self {
+        const WHOLE: Fast = Fast {
+            lo: f64::NEG_INFINITY,
+            hi: f64::INFINITY,
+        };
+        let (mut lo, mut hi, mut size) = (0.0f64, 0.0f64, 0.0f64);
+        for i in 0..=k {
+            let (x, y) = (a[i], b[k - i]);
+            if !(x.lo.is_finite() && x.hi.is_finite() && y.lo.is_finite() && y.hi.is_finite()) {
+                return WHOLE;
+            }
+            let (p, q, r, s) = (x.lo * y.lo, x.lo * y.hi, x.hi * y.lo, x.hi * y.hi);
+            let low = p.min(q).min(r.min(s));
+            let high = p.max(q).max(r.max(s));
+            lo += low;
+            hi += high;
+            size += low.abs().max(high.abs());
+        }
+        let terms = (k + 1) as f64;
+        let error = (4.0 * (terms + 2.0) * f64::EPSILON * 0.5) * size + terms * f64::from_bits(1);
+        let (lo, hi) = (lo - error, hi + error);
+        if !(lo.is_finite() && hi.is_finite()) {
+            return WHOLE;
+        }
+        Fast {
+            lo: next_down(lo),
+            hi: next_up(hi),
+        }
+    }
 }
 
 impl Fast {
@@ -1123,6 +1182,36 @@ fn bracket(x: &R) -> Option<Fast> {
 }
 
 impl Fast {
+    /// A few ulps' enclosure of a rational from its leading bits alone (no
+    /// exact comparison, unlike `from_r`): the quotient of the numerator's
+    /// and denominator's leading 64 bits, each within `2^-53` relative of
+    /// their exact values after their conversions, and the division within
+    /// `2^-53` more, widened by four ulps each way; `None` outside the
+    /// comfortably normal range.
+    pub(crate) fn near_r(x: &R) -> Option<Self> {
+        if x.numer().sign() == Sign::NoSign {
+            return Some(Fast::exact_f64(0.0));
+        }
+        let ((n, sn), (d, sd)) = (leading(x.numer()), leading(x.denom()));
+        let e = sn - sd;
+        if !(-900..=900).contains(&e) {
+            return None;
+        }
+        let mut f = n / d * f64::powi(2.0, e as i32);
+        if x.numer().sign() == Sign::Minus {
+            f = -f;
+        }
+        if !f.is_finite() || f.abs() < 1e-250 || f.abs() > 1e250 {
+            return None;
+        }
+        let (mut lo, mut hi) = (f, f);
+        for _ in 0..4 {
+            lo = next_down(lo);
+            hi = next_up(hi);
+        }
+        Some(Fast { lo, hi })
+    }
+
     /// An enclosure of 2 pi.
     pub(crate) fn two_pi() -> Self {
         fast_half_pi().mul(&Fast::exact_f64(4.0))

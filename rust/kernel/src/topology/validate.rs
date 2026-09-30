@@ -715,6 +715,19 @@ fn tiered<X: PartialEq>(unknown: X, fast: impl FnOnce() -> X, exact: impl FnOnce
     }
 }
 
+/// `tiered` for a sign from integrals along projections (S8d.2): binary64
+/// intervals at the loose sign width first (`projection::LOOSE`), which
+/// decide every sign not within it of zero, then at the tight one, then
+/// exactly. Every tier's enclosure holds the value, so a sign any of them
+/// decides is the value's.
+fn tiered_integral<X: PartialEq>(unknown: X, fast: impl Fn() -> X, exact: impl FnOnce() -> X) -> X {
+    let first = projection::with_sign_width(projection::LOOSE, &fast);
+    if first != unknown {
+        return first;
+    }
+    tiered(unknown, fast, exact)
+}
+
 /// A(t) = a0 + a1 t + sum_w c_w cos(w t) + s_w sin(w t), frequencies exact.
 struct Harmonic<T> {
     a0: V3<T>,
@@ -4074,7 +4087,7 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                     Some(acc.add(&periodic_area_v::<T>(lp)?))
                 })
             }
-            let total = tiered(
+            let total = tiered_integral(
                 None,
                 || total_v::<Fast>(&edge_loops)?.sign(),
                 || total_v::<I>(&edge_loops)?.sign(),
@@ -4094,7 +4107,7 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                 if lp.winding_v != 0 {
                     continue;
                 }
-                let sign = tiered(
+                let sign = tiered_integral(
                     None,
                     || periodic_area_v::<Fast>(lp)?.sign(),
                     || periodic_area_v::<I>(lp)?.sign(),
@@ -4145,7 +4158,7 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                 }
                 Some(sum)
             }
-            let total = tiered(
+            let total = tiered_integral(
                 None,
                 || total::<Fast>(&face.surface, &edge_loops, pole, turns, north)?.sign(),
                 || total::<I>(&face.surface, &edge_loops, pole, turns, north)?.sign(),
@@ -4165,7 +4178,7 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                 if lp.winding != 0 {
                     continue;
                 }
-                let sign = tiered(
+                let sign = tiered_integral(
                     None,
                     || periodic_area::<Fast>(lp)?.sign(),
                     || periodic_area::<I>(lp)?.sign(),
@@ -4219,14 +4232,14 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
         // sign, and no outer loop holds them.
         let complement = matches!(face.surface, Surface::Torus { .. } | Surface::Sphere { .. })
             && edge_loops.first().is_some_and(|(_, lp)| {
-                tiered(
+                tiered_integral(
                     None,
                     || loop_area::<Fast>(lp).sign(),
                     || loop_area::<I>(lp).sign(),
                 ) == Some(want_inner)
             });
         for (pos, (li, lp)) in edge_loops.iter().enumerate() {
-            let sign = tiered(
+            let sign = tiered_integral(
                 None,
                 || loop_area::<Fast>(lp).sign(),
                 || loop_area::<I>(lp).sign(),
@@ -4298,7 +4311,7 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                 continue;
             }
             let origin = shell_origin(view, &resolved, &shells[si]);
-            let sign = tiered(
+            let sign = tiered_integral(
                 None,
                 || shell_flux::<Fast>(faces, &resolved, &shells[si], origin)?.sign(),
                 || shell_flux::<I>(faces, &resolved, &shells[si], origin)?.sign(),

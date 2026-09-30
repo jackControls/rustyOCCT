@@ -84,18 +84,21 @@ pub(super) struct Sec {
 pub(super) type HLoop = Vec<(usize, bool)>;
 
 /// A face's piece: its loops (the outer first) of half-edges `(edge,
-/// forward)` running with the face's own normal, whether the result keeps
-/// it and whether its material lies behind the input face (`behind`: the
-/// face keeps its orientation).
+/// forward)` running with the face's own normal, whether the other solid
+/// holds its front and its back (`sides`), and for the operation (`for_op`)
+/// whether the result keeps it and whether its material lies behind the
+/// input face (`behind`: the face keeps its orientation).
 #[derive(Debug, Clone)]
 pub(super) struct Piece {
     pub(super) op: usize,
     pub(super) face: usize,
     pub(super) loops: Vec<Vec<(usize, bool)>>,
+    pub(super) sides: (bool, bool),
     pub(super) keep: bool,
     pub(super) behind: bool,
 }
 
+#[derive(Clone)]
 pub(super) struct Arr {
     pub(super) models: [Prism; 2],
     pub(super) vx: Vec<Vx>,
@@ -239,8 +242,9 @@ fn rational_between_num(a: &Qd, b: &Qd) -> Result<R> {
     ))
 }
 
-/// Builds the arrangement of two models.
-pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
+/// Builds the arrangement of two models, the one every operation shares:
+/// its pieces' sides decided, not yet kept or dropped (`Arr::for_op`).
+pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
     // Cylinder pairs, and faces on one surface (A's, B's).
     let mut pairs: BTreeMap<(usize, usize), CylPair> = BTreeMap::new();
     let mut coinc: BTreeSet<(usize, usize)> = BTreeSet::new();
@@ -452,6 +456,9 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
     };
     // Vertices: the inputs'.
     let mut vx: Vec<Vx> = Vec::new();
+    // Vertices' binary64 views where computed (`qv_f64`; a vertex's point
+    // never changes).
+    let mut views: Vec<Option<[f64; 3]>> = Vec::new();
     let mut on_edge: BTreeMap<(usize, usize), Vec<(usize, Pos)>> = BTreeMap::new();
     let mut input_vx: [Vec<usize>; 2] = [Vec::new(), Vec::new()];
     for (o, m) in models.iter().enumerate() {
@@ -827,13 +834,28 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
             let on: Vec<usize> = (0..vx.len())
                 .filter(|&v| vx[v].faces.contains(&(0, fa)) && vx[v].faces.contains(&(1, fb)))
                 .collect();
+            // Their binary64 views, once per vertex (each is tested against
+            // every piece of a meeting).
+            if curves.iter().any(|c| matches!(c, Crv::Toric(_))) {
+                for &v in &on {
+                    if views.len() <= v {
+                        views.resize(v + 1, None);
+                    }
+                    if views[v].is_none() {
+                        views[v] = Some(qv_f64(&vx[v].p));
+                    }
+                }
+            }
             for (bi, crv) in curves.iter().enumerate() {
                 let mut list: Vec<(usize, Pos)> = on
                     .iter()
                     .filter(|&&v| match crv {
                         // On both faces, so on both surfaces: the piece's
                         // window and range decide (S9d.4b.2).
-                        Crv::Toric(c) => c.holds(&vx[v].p),
+                        Crv::Toric(c) => match views.get(v).copied().flatten() {
+                            Some(view) => c.holds_at(&vx[v].p, view),
+                            None => c.holds(&vx[v].p),
+                        },
                         _ => on_curve(crv, &vx[v].p),
                     })
                     .map(|&v| (v, place(crv, &vx[v].p)))
@@ -975,13 +997,14 @@ pub(super) fn arrange(models: [Prism; 2], op: Op2) -> Result<Arr> {
         let loops = arr.trace(*o, *f, hs)?;
         let pieces = arr.group(*o, *f, loops)?;
         for loops in pieces {
-            let (keep, behind) = arr.classify(*o, *f, &loops[0], op)?;
+            let sides = arr.sides(*o, *f, &loops[0])?;
             arr.pieces.push(Piece {
                 op: *o,
                 face: *f,
                 loops,
-                keep,
-                behind,
+                sides,
+                keep: false,
+                behind: false,
             });
         }
     }
@@ -1747,16 +1770,17 @@ impl Arr {
         Ok(pieces)
     }
 
-    /// Whether the result keeps a piece and whether its material lies
-    /// behind the face: from the other solid's membership at a point of its
-    /// first edge pushed into it, then off the face either way.
-    fn classify(
-        &self,
-        o: usize,
-        f: usize,
-        outer: &[(usize, bool)],
-        op: Op2,
-    ) -> Result<(bool, bool)> {
+    /// Every piece's keeping and side for an operation (`classify`).
+    pub(super) fn for_op(&mut self, op: Op2) {
+        for piece in &mut self.pieces {
+            (piece.keep, piece.behind) = classify(piece.op, piece.sides, op);
+        }
+    }
+
+    /// Whether the other solid holds a piece's front and its back: its
+    /// membership at a point of the piece's first edge pushed into it, then
+    /// off the face either way.
+    fn sides(&self, o: usize, f: usize, outer: &[(usize, bool)]) -> Result<(bool, bool)> {
         let h = outer[0];
         let e = &self.edges[h.0];
         let x = &e.mid;
@@ -1773,17 +1797,24 @@ impl Arr {
             }
             (a, b) => (a == Loc::In, b == Loc::In),
         };
-        Ok(if o == 0 {
-            (
-                holds(op, false, front) != holds(op, true, back),
-                holds(op, true, back),
-            )
-        } else {
-            (
-                front == back && holds(op, front, false) != holds(op, back, true),
-                holds(op, back, true),
-            )
-        })
+        Ok((front, back))
+    }
+}
+
+/// Whether the result keeps a piece of operand `o` whose front and back
+/// the other solid holds as `(front, back)`, and whether its material lies
+/// behind the face.
+fn classify(o: usize, (front, back): (bool, bool), op: Op2) -> (bool, bool) {
+    if o == 0 {
+        (
+            holds(op, false, front) != holds(op, true, back),
+            holds(op, true, back),
+        )
+    } else {
+        (
+            front == back && holds(op, front, false) != holds(op, back, true),
+            holds(op, back, true),
+        )
     }
 }
 

@@ -857,8 +857,12 @@ impl ToricCrv {
     /// surfaces, its angles within the window and the range, each within a
     /// margin far above the view's error (a filter before the exact tests).
     fn near_f64(&self, x: &QV) -> bool {
+        self.near_view(qv_f64(x))
+    }
+
+    /// `near_f64` at the point's binary64 view `p` (`qv_f64`).
+    fn near_view(&self, p: [f64; 3]) -> bool {
         let [o, xa, ya, na] = self.m.frame;
-        let p = qv_f64(x);
         let d = [p[0] - o[0], p[1] - o[1], p[2] - o[2]];
         let l = super::graph::solve3(&xa, &ya, &na, &d);
         let (big, small) = (rational_f64(&self.m.big), rational_f64(&self.m.small));
@@ -893,7 +897,13 @@ impl ToricCrv {
     /// Whether a point of both surfaces lies on the piece: its other angle
     /// within the window, its parameter within the range (ends included).
     pub(super) fn holds(&self, x: &QV) -> bool {
-        if !self.near_f64(x) {
+        self.holds_at(x, qv_f64(x))
+    }
+
+    /// `holds` with the point's binary64 view (`qv_f64`) given: the
+    /// arrangement tests each vertex against every piece of a meeting.
+    pub(super) fn holds_at(&self, x: &QV, view: [f64; 3]) -> bool {
+        if !self.near_view(view) {
             return false;
         }
         let (p, s) = (self.place(x), self.m.dir_raw(!self.over_v, x));

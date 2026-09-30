@@ -217,11 +217,14 @@ impl Gen {
     fn sign_of(&self, p: &[R]) -> Ordering {
         let root = self.narrowed(SIGN_STEPS);
         let (lo, hi) = root.isolator();
-        let x = Fast::from_r(lo).union(&Fast::from_r(hi));
-        let v = p.iter().rev().fold(Fast::exact_f64(0.0), |acc, c| {
-            acc.mul(&x).add(&Fast::from_r(c))
+        // A few ulps' enclosures of the rationals (no exact comparisons).
+        let v = Fast::near_r(lo).zip(Fast::near_r(hi)).and_then(|(lo, hi)| {
+            let x = lo.union(&hi);
+            p.iter().rev().try_fold(Fast::exact_f64(0.0), |acc, c| {
+                Some(acc.mul(&x).add(&Fast::near_r(c)?))
+            })
         });
-        match v.sign() {
+        match v.and_then(|v| v.sign()) {
             Some(s @ (Ordering::Less | Ordering::Greater)) => s,
             _ => root.sign_polynomial(&IntPolynomial::from_rationals(p)),
         }
@@ -461,8 +464,37 @@ impl K {
                 let root = g.narrowed(steps);
                 let (lo, hi) = root.isolator();
                 let m = (lo + hi) / int(2);
-                let v = p.iter().rev().fold(zero(), |acc, c| rmul(&acc, &m) + c);
-                rational_f64(&v)
+                // Horner in integers over one denominator, reduced once:
+                // `sum n_i a^i b^(d - i) / (D b^d)` for `m = a / b` and the
+                // coefficients `n_i / D` (the same value).
+                let (n, den) = integral(p);
+                let (a, b) = (m.numer(), m.denom());
+                let mut b_power = BigInt::from(1);
+                let mut acc = BigInt::from(0);
+                for (i, c) in n.iter().enumerate().rev() {
+                    if i + 1 < n.len() {
+                        b_power *= b;
+                    }
+                    acc = acc * a + c * &b_power;
+                }
+                rational_f64(&R::new(acc, den * b_power))
+            }
+        }
+    }
+
+    /// A binary64 enclosure over the generator's isolator narrowed by
+    /// `steps` bisections, from a few ulps' enclosures of its rationals
+    /// (`None` where one is out of binary64's comfortable range).
+    fn enclose_fast(&self, steps: usize) -> Option<Fast> {
+        match self {
+            K::Rat(a) => Fast::near_r(a),
+            K::Alg(g, p) => {
+                let root = g.narrowed(steps);
+                let (lo, hi) = root.isolator();
+                let x = Fast::near_r(lo)?.union(&Fast::near_r(hi)?);
+                p.iter().rev().try_fold(Fast::exact_f64(0.0), |acc, c| {
+                    Some(acc.mul(&x).add(&Fast::near_r(c)?))
+                })
             }
         }
     }
@@ -672,6 +704,14 @@ impl Qd {
     /// different base fields).
     pub(super) fn cmp(&self, o: &Self) -> Ordering {
         if !self.same_base(o) {
+            // Binary64 enclosures first: certain where they exclude zero.
+            let fast = self
+                .enclose_fast(64)
+                .zip(o.enclose_fast(64))
+                .and_then(|(x, y)| x.sub(&y).sign());
+            if let Some(s @ (Ordering::Less | Ordering::Greater)) = fast {
+                return s;
+            }
             return approx_sign(|n| self.enclose(n).sub(&o.enclose(n)));
         }
         if let Some(d) = self.common(o) {
@@ -683,6 +723,15 @@ impl Qd {
             &Self::of(o.b.neg()),
             &o.d,
         )
+    }
+
+    /// `enclose` in binary64 (`K::enclose_fast`).
+    fn enclose_fast(&self, n: usize) -> Option<Fast> {
+        let a = self.a.enclose_fast(n)?;
+        if self.b.is_zero() {
+            return Some(a);
+        }
+        Some(a.add(&self.b.enclose_fast(n)?.mul(&Fast::near_r(&self.d)?.sqrt())))
     }
 
     fn enclose(&self, n: usize) -> I {
@@ -761,6 +810,16 @@ pub(super) fn mixed_dot_sign(a: &[Qd], b: &[Qd]) -> Ordering {
     let gb = b.iter().find_map(|x| x.gen());
     if let (Some(g), Some(h)) = (ga, gb) {
         if !Arc::ptr_eq(g, h) {
+            // Binary64 enclosures first: certain where they exclude zero.
+            let fast = a
+                .iter()
+                .zip(b)
+                .try_fold(Fast::exact_f64(0.0), |acc, (x, y)| {
+                    Some(acc.add(&x.enclose_fast(64)?.mul(&y.enclose_fast(64)?)))
+                });
+            if let Some(s @ (Ordering::Less | Ordering::Greater)) = fast.and_then(|v| v.sign()) {
+                return s;
+            }
             return approx_sign(|n| {
                 a.iter().zip(b).fold(I::exact(zero()), |acc, (x, y)| {
                     acc.add(&x.enclose(n).mul(&y.enclose(n)))

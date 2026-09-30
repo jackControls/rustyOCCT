@@ -83,9 +83,7 @@ impl<T: Real> Jet<T> {
 
     pub(crate) fn mul(&self, o: &Self) -> Self {
         let n = self.order();
-        let c = (0..=n)
-            .map(|k| (0..=k).fold(zero::<T>(), |acc, i| acc.add(&self.c[i].mul(&o.c[k - i]))))
-            .collect();
+        let c = (0..=n).map(|k| T::convolve(&self.c, &o.c, k)).collect();
         Self { c }
     }
 
@@ -98,10 +96,11 @@ impl<T: Real> Jet<T> {
         let n = self.order();
         let mut q: Vec<T> = Vec::with_capacity(n + 1);
         for k in 0..=n {
-            let mut acc = self.c[k].clone();
-            for (i, qi) in q.iter().enumerate() {
-                acc = acc.sub(&qi.mul(&o.c[k - i]));
-            }
+            let acc = if k == 0 {
+                self.c[0].clone()
+            } else {
+                self.c[k].sub(&T::convolve(&q, &o.c[1..], k - 1))
+            };
             q.push(acc.div(&o.c[0])?);
         }
         Some(Self { c: q })
@@ -114,10 +113,11 @@ impl<T: Real> Jet<T> {
         let two_s0 = s0.mul(&T::exact_f64(2.0));
         let mut s = vec![s0];
         for k in 1..=n {
-            let mut acc = self.c[k].clone();
-            for i in 1..k {
-                acc = acc.sub(&s[i].mul(&s[k - i]));
-            }
+            let acc = if k < 2 {
+                self.c[k].clone()
+            } else {
+                self.c[k].sub(&T::convolve(&s[1..], &s[1..], k - 2))
+            };
             s.push(acc.div(&two_s0)?);
         }
         Some(Self { c: s })
@@ -161,11 +161,7 @@ impl<T: Real> Jet<T> {
             .collect();
         for k in 1..=n {
             // k s_k = sum_{i<k} c_i d_{k-1-i}; k c_k = -sum s_i d_{k-1-i}.
-            let (mut a, mut b) = (zero::<T>(), zero::<T>());
-            for i in 0..k {
-                a = a.add(&cs[i].mul(&d[k - 1 - i]));
-                b = b.add(&sn[i].mul(&d[k - 1 - i]));
-            }
+            let (a, b) = (T::convolve(&cs, &d, k - 1), T::convolve(&sn, &d, k - 1));
             let kk = T::exact_f64(k as f64);
             sn.push(a.div(&kk).expect("a nonzero index"));
             cs.push(b.neg().div(&kk).expect("a nonzero index"));
@@ -182,10 +178,7 @@ impl<T: Real> Jet<T> {
             .map(|k| self.c[k + 1].mul(&T::exact_f64((k + 1) as f64)))
             .collect();
         for k in 1..=n {
-            let mut a = zero::<T>();
-            for i in 0..k {
-                a = a.add(&e[i].mul(&d[k - 1 - i]));
-            }
+            let a = T::convolve(&e, &d, k - 1);
             e.push(a.div(&T::exact_f64(k as f64)).expect("a nonzero index"));
         }
         Self { c: e }

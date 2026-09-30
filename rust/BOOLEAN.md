@@ -262,7 +262,11 @@ refused. A piece is classified at a rational point of one of its edges
 pushed into it and then off the face either way, against the other
 input's exact membership (the push's first-order sign at each boundary it
 lies on, a push along a cylinder's circle keeping to it), and kept as
-S9b.1 keeps fragments. Faces of both inputs on one surface (coplanar caps
+S9b.1 keeps fragments. The arrangement is the operation's own only in that
+keeping (which side of a piece the other input holds is decided without
+it), so the last two arrangements are kept by their inputs' content (the
+inputs' and the seams' `Debug` text): fuse, cut and common of one pair
+share one. Faces of both inputs on one surface (coplanar caps
 or walls, one cylinder) hold each other's edges within them, the edges
 crossing on it adding vertices; their pieces facing one way join.
 

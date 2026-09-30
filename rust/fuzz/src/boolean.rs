@@ -25,12 +25,12 @@ use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
 use rusty_occt::{Error, Frame3, Point3, Solid, Tolerance, Vec3};
 
-/// Whether two whole tori are decoded (S9d.4b.2b). Off until the
-/// certified integrals along two tori's meetings are fast enough for the
-/// target's 60 seconds under the sanitizer (46 s median, 111 s at the
-/// ninth decile of intersecting variants): the kernel's tests and the
-/// replays of 2,950 torus-pair variants cover them meanwhile.
-const TORUS_PAIRS: bool = false;
+/// Whether two whole tori are decoded (S9d.4b.2b): on since the certified
+/// integrals along their meetings were sped up (REVIEW_NOTES.md's track of
+/// that name): intersecting variants take about 3 s under the sanitizer at
+/// the median, 22 s at the ninth decile and 51 s at the slowest of 44 (46,
+/// 111 and several minutes before), within the target's 60 seconds.
+const TORUS_PAIRS: bool = true;
 
 pub fn check_boolean(data: &[u8]) {
     let mut b = Bytes(data, 0);
@@ -138,11 +138,11 @@ pub fn check_boolean(data: &[u8]) {
     // S9d.4b.2b: with both clear, the flags' and the heights byte's top
     // bits a whole torus, its radii by the object's scale and its kind
     // byte (no corpus input of 1,435 decodes to one). Two tori's Booleans
-    // are slow under the sanitizer (their faces' certified integrals along
-    // long meetings; in a turned frame, of degree eight, minutes): the tool
-    // then keeps its offset frame, and one operation (the chained one's
-    // byte) is checked by its volume's bounds, its history and its rigid
-    // motion.
+    // are the target's slowest under the sanitizer (their exact meetings
+    // and their faces' certified integrals along them; in a turned frame,
+    // of degree eight, longer): the tool then keeps its offset frame, and
+    // one operation (the chained one's byte) is checked by its volume's
+    // bounds, its history and its rigid motion.
     let whole_torus = (144..148).contains(&spline_byte);
     let tori =
         TORUS_PAIRS && whole_torus && (flags >> 5) % 4 == 0 && flags >= 128 && heights >= 128;
