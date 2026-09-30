@@ -50,7 +50,7 @@
         "measure"
       ],
       "reason": "BRepGProp's default integration on the rod less the frustum grazing its wall (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 1.5e-6 and area 1.9e-6 relative and its centre 3.3e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 9.7e-10 in volume, 6.9e-10 in area (relative) and 7.8e-11 in centre; its edges' tolerance is at most 1.8e-7 (2 of its 8 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a rod across the cone's axis (the strip against the section's disc along the axis, circular segments, one quadrature) within 2.2e-40, with a second slicing direction within 4.0e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a rod across the cone's axis (the strip against the section's disc along the axis, circular segments, one quadrature) within 2.2e-40, with a second slicing direction within 1.7e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
@@ -177,7 +177,7 @@
         "measure"
       ],
       "reason": "BRepGProp's default integration on the frustum in TILT against a frustum in LEAN (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 1.4e-8 and area 3.2e-8 relative and its centre 2.8e-9 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 6.7e-11 in volume, 5.8e-11 in area (relative) and 2.8e-11 in centre; its edges' tolerance is at most 1.5e-7 (2 of its 12 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with a second slicing direction within 4.0e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with a second slicing direction within 1.7e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
@@ -190,7 +190,7 @@
         "measure"
       ],
       "reason": "BRepGProp's default integration on the frustum in TILT against a frustum in LEAN (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 4.5e-7 and area 2.1e-7 relative and its centre 2.3e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 4e-9 in volume, 2.4e-9 in area (relative) and 3.5e-10 in centre; its edges' tolerance is at most 1.5e-7 (2 of its 6 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with a second slicing direction within 4.0e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with a second slicing direction within 1.7e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
@@ -229,7 +229,7 @@
         "measure"
       ],
       "reason": "BRepGProp's default integration on the frustum in TILT against a sphere off its axis (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 2.8e-7 and area 1.7e-7 relative and its centre 6.2e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 2.1e-11 in volume, 4.5e-12 in area (relative) and 1.2e-11 in centre; its edges' tolerance is at most 1e-7 (8 of its 23 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a whole sphere against a cone (the lens of two discs along the cone's ideal axis) within 1.2e-16 (ideal axes against stored ones), with a second slicing direction within 4.0e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a whole sphere against a cone (the lens of two discs along the cone's ideal axis) within 1.3e-16 (ideal axes against stored ones), with a second slicing direction within 1.7e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
@@ -242,7 +242,7 @@
         "measure"
       ],
       "reason": "BRepGProp's default integration on the frustum in TILT against a sphere off its axis (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 3.8e-7 and area 3.6e-7 relative and its centre 5.1e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 8.1e-12 in volume, 1.3e-10 in area (relative) and 1.5e-11 in centre; its edges' tolerance is at most 1e-7 (8 of its 23 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a whole sphere against a cone (the lens of two discs along the cone's ideal axis) within 1.2e-16 (ideal axes against stored ones), with a second slicing direction within 4.0e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a whole sphere against a cone (the lens of two discs along the cone's ideal axis) within 1.3e-16 (ideal axes against stored ones), with a second slicing direction within 1.7e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
@@ -255,7 +255,7 @@
         "measure"
       ],
       "reason": "BRepGProp's default integration on the frustum in TILT against a sphere off its axis (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 7.8e-7 and area 3.8e-7 relative and its centre 5.5e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 4.1e-11 in volume, 2.7e-11 in area (relative) and 1.3e-10 in centre; its edges' tolerance is at most 1e-7 (8 of its 17 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a whole sphere against a cone (the lens of two discs along the cone's ideal axis) within 1.2e-16 (ideal axes against stored ones), with a second slicing direction within 4.0e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a whole sphere against a cone (the lens of two discs along the cone's ideal axis) within 1.3e-16 (ideal axes against stored ones), with a second slicing direction within 1.7e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
@@ -268,7 +268,7 @@
         "measure"
       ],
       "reason": "BRepGProp's default integration on the cone in LEAN against a sphere off its axis (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 2.1e-7 and area 4.3e-7 relative and its centre 3.6e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 1.6e-11 in volume, 1.1e-11 in area (relative) and 3.5e-12 in centre; its edges' tolerance is at most 1e-7 (6 of its 16 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a whole sphere against a cone (the lens of two discs along the cone's ideal axis) within 1.2e-16 (ideal axes against stored ones), with a second slicing direction within 4.0e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a whole sphere against a cone (the lens of two discs along the cone's ideal axis) within 1.3e-16 (ideal axes against stored ones), with a second slicing direction within 1.7e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
@@ -281,20 +281,20 @@
         "measure"
       ],
       "reason": "BRepGProp's default integration on the cone in LEAN against a sphere off its axis (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 2.1e-6 and area 2e-6 relative and its centre 1.3e-7 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 6.4e-10 in volume, 6.7e-10 in area (relative) and 5.9e-11 in centre; its edges' tolerance is at most 1e-7 (6 of its 11 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a whole sphere against a cone (the lens of two discs along the cone's ideal axis) within 1.2e-16 (ideal axes against stored ones), with a second slicing direction within 4.0e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a whole sphere against a cone (the lens of two discs along the cone's ideal axis) within 1.3e-16 (ideal axes against stored ones), with a second slicing direction within 1.7e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
       "case": "ball_r125_cut",
       "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
       "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
-      "native_sha256": "21ac4caff1229d8d89705c7ad8ca561d1a7773858b3a7973ca6837c8314f8854",
+      "native_sha256": "f70b7c9808534bb538560eb23220be9acf3cc15c9e6b4ea062254124c568b6ae",
       "differences": [
         "centre",
         "measure"
       ],
-      "reason": "BRepGProp's default integration on the frustum turned about its axis against a sphere off it (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 7e-7 and area 6.9e-7 relative and its centre 4.7e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 5e-11 in volume, 2.4e-11 in area (relative) and 2.2e-11 in centre; its edges' tolerance is at most 1.5e-7 (6 of its 17 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
-      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a whole sphere against a cone (the lens of two discs along the cone's ideal axis) within 1.2e-16 (ideal axes against stored ones), with a second slicing direction within 4.0e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "reason": "BRepGProp's default integration on the frustum turned about its axis against a sphere off it (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 1.4e-7 and area 7.4e-9 relative and its centre 1.4e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 5.8e-11 in volume, 2.2e-11 in area (relative) and 2.8e-11 in centre; its edges' tolerance is at most 1e-7 (8 of its 23 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a whole sphere against a cone (the lens of two discs along the cone's ideal axis) within 1.3e-16 (ideal axes against stored ones), with a second slicing direction within 1.7e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {

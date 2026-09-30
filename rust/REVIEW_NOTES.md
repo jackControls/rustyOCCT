@@ -3326,15 +3326,21 @@ Decisions for S9, recorded before its code (2026-09-28):
     rounding (`rim_tangent_cone`). Closed forms (a rod across the axis by
     S9d.3b's strip, a whole sphere against a turned cone by the lens, a
     hemisphere against a coaxial cone by circular segments along the axis)
-    within 2.2e-40 in exact frames and 1.2e-16 in turned ones; two-way
+    within 2.2e-40 in exact frames and 1.3e-16 in turned ones; two-way
     checks: an input cut in two along its axis against the whole within
     5.3e-42 (six pairs), a hemisphere and its complement against the whole
     sphere within 1.4e-41; inclusion and exclusion 1.2e-41, the area
     identity and every face's classes 6.9e-41, the cone's wall two ways
-    2.7e-41, a second direction 4.0e-41 (twelve pairs), Monte Carlo 2.5
+    2.7e-41, a second direction 1.7e-41 (twelve pairs), Monte Carlo 2.5
     standard errors, no near coincidence but the declared pairs', every
     other edge and vertex at least 0.0156 from tangency with or incidence on
-    the other's surfaces; Python 3.9 and 3.12 write the same files; the
+    the other's surfaces, every plane at least 0.05 of the radius from
+    tangency to the other's spheres and parallel cylinders (a check added
+    when the kernel found two first fixtures' planes tangent to a sphere,
+    `Degenerate` by S9d.1's rule: `ball_r125`'s sphere on the frustum's base
+    inside its disc, `dome_lean_frustum`'s top plane on the sphere off both
+    faces; both moved clear and captured again before the kernel's commit);
+    Python 3.9 and 3.12 write the same files; the
     generator's check a CI group of its own (`cones-loops`, 25 CPU minutes
     locally). The capture `occt-boolean-cones-loops-preimplementation`
     (`compare_cones_loops_boolean.py`; the kernel `unsupported` on all 31:

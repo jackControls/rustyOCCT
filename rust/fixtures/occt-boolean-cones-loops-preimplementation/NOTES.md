@@ -19,7 +19,11 @@ cap's circles), a turned cap's circle against a cone with `OutOfDomain("a
 turned cap's circle against a cone (S9d.3c)")` (6: `dome_tilt_cone`,
 `dome_lean_frustum`, `rim_tangent_cone`), the messages read from
 `protocol::run` by a throwaway example. No protocol or oracle change was
-needed. `inputs.txt` holds the 31 cases of `boolean-cones-loops-cases.txt`
+needed. This is the second capture of the set, before the kernel code as
+the first: the first had two pairs with a plane tangent to a sphere
+(`ball_r125`, `dome_lean_frustum`), which S9d.1's rule makes `Degenerate`
+wherever it touches; the generator now checks for them and the pairs moved
+clear (the evidence's correction, its own commit). `inputs.txt` holds the 31 cases of `boolean-cones-loops-cases.txt`
 as explicit constructions (`identity_reference.native_boolean_case`),
 `oracle.cpp` is `occt_boolean_oracle.cpp` as captured and `native.txt` its
 results; each cone or frustum is `BRepPrimAPI_MakeCone` in its frame, each
@@ -45,8 +49,8 @@ and `XY`; hemispheres in `TILT` and `LEAN`.
   in centre (`rod_lean_common`), and 4.5e-4 in volume on the cylinder along a
   cone's ruling (`rod_ruling_exact_common`, declared degenerate). The same
   native results measured by BRepGProp with an adaptive accuracy of 1e-10
-  (a diagnostic build of the oracle, not committed; unchanged at 1e-12, so
-  converged) are within 1.7e-8 in volume (`rod_lean_common`), 1.3e-8 in
+  (a diagnostic build of the oracle, not committed; at 1e-12 the same to
+  two digits but one centre, 7.4e-12 for 7.6e-12, so converged) are within 1.7e-8 in volume (`rod_lean_common`), 1.3e-8 in
   area (`tilt_rod_common`) and 4.2e-9 in centre, their edges' tolerances
   at most 2.7e-7 and up to 8 of their edges B-splines. The geometry agrees
   with the reference within the native tolerances; the default measure
@@ -68,12 +72,14 @@ and `XY`; hemispheres in `TILT` and `LEAN`.
   cone by the lens of two discs along its ideal axis, a hemisphere against
   a coaxial cone by circular segments along the axis, its faces by their
   arcs and the disc by its chords) within 2.2e-40 in exact frames and
-  1.2e-16 in turned ones, an input cut in two along its axis against the
+  1.3e-16 in turned ones, an input cut in two along its axis against the
   whole within 5.3e-42, a hemisphere and its complement against the whole
   sphere within 1.4e-41, inclusion and exclusion 1.2e-41, the area
   identity and every face's classes 6.9e-41, the cone's wall two ways
-  2.7e-41, a second slicing direction 4.0e-41, Monte Carlo 2.5 standard
+  2.7e-41, a second slicing direction 1.7e-41, Monte Carlo 2.5 standard
   errors; its scan for near coincidences found none but in the declared
   degenerate pairs, every other edge and vertex at least 0.0156 (relative)
-  from tangency with or incidence on the other's surfaces. Python 3.9 and
+  from tangency with or incidence on the other's surfaces, every plane at
+  least 0.05 of the radius from tangency to the other's spheres and
+  parallel cylinders. Python 3.9 and
   3.12 write the same files.

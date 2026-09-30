@@ -1520,15 +1520,17 @@ height); its horizontal edges on a spline are its lifted restrictions.
   whole sphere against a turned cone by the lens along its ideal axis, a
   hemisphere against a coaxial cone by circular segments along the axis,
   its sphere face and the wall by their arcs above the chord, its disc by
-  its chords in its plane) within 2.2e-40 in exact frames and 1.2e-16 in
+  its chords in its plane) within 2.2e-40 in exact frames and 1.3e-16 in
   turned ones, an input cut in two along its axis (a prism in its frame, a
   frustum in an exact frame at a dyadic height) against the whole within
   5.3e-42, a hemisphere and its complement against the whole sphere within
   1.4e-41, inclusion and exclusion 1.2e-41, the area identity and every
   face's classes 6.9e-41, the cone's wall two ways 2.7e-41, a second
-  direction 4.0e-41, Monte Carlo 2.5 standard errors, no near coincidence
+  direction 1.7e-41, Monte Carlo 2.5 standard errors, no near coincidence
   but the declared pairs', every other edge and vertex at least 0.0156
-  from tangency with or incidence on the other's surfaces; Python 3.9 and
+  from tangency with or incidence on the other's surfaces, every plane at
+  least 0.05 of the radius from tangency to the other's spheres and
+  parallel cylinders; Python 3.9 and
   3.12 write the same files. `test_cones_loops_boolean_reference.py` checks
   a circular segment by polar quadrature, a cone wider than the ball giving
   the hemisphere, the split parts on the input's exact model, a split on a
