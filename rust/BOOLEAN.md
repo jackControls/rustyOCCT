@@ -2087,6 +2087,62 @@ height); its horizontal edges on a spline are its lifted restrictions.
   imprints kept after unifying, found by a diagnostic build printing the
   unified vertices), no failure; every other Boolean comparison unchanged
   in its counts.
+* **S9f.1 evidence (spline prisms against polyhedral prisms in any
+  position), before its kernel code.** `curved_boolean_reference.py`
+  (mpmath, 40 digits) takes spline walls: each of S8b's profile splines is
+  its exact Bezier spans (blossoms), one element per span, its joins the
+  profile's vertices; a line meets a span at the real roots of the
+  degree-`p` polynomial `(S(tau) - b) x d` (monotone runs, Newton steps; no
+  resultant); S9c.1's slices and face sweeps keep their structure, a spline
+  crossing implicit: its events with a line's crossing moving linearly are
+  the exact degree-`p` roots of `(S(tau) - Q0) x Q1`, tangencies those of
+  `S'(tau) x d`; a span's wall is swept by its generatrices, its crossings
+  of the other's planes exact polynomials in `tau`; a profile with splines
+  takes the symmetric Green forms on every element; and each face sweep
+  also integrates `X . N` and `x_i^2 N_i`, so every operation's volume and
+  moments come a second way, by the divergence theorem over the kept
+  pieces. `generate_spline_any_boolean_fixtures.py --check` writes
+  `boolean-spline-any-cases.txt`, `-expected.tsv` and `-frames.tsv` with 38
+  cases (12 fuses, 13 cuts, 13 commons; 32 solid, 1 empty, 5 degenerate):
+  the bulge under a tilted box (an oblique crease), the dome between two
+  `SIDE` planes (generatrices; the common `44/3` exactly), a leaning box
+  whose edges pierce the blob's wall, the wave in a `TILTX` slab, a turned
+  (`R125`) box on the capsule's base (coplanar caps) and one standing on
+  its top (a face shared with the opposite orientation), a tilted pin
+  across the lens hole's walls (a common of two solids), the bulge against
+  a box in the same `TILT` axes at an offset that rounds (`bulge_offset`), the
+  dome in `TILT` under an `XY` box, R4's `kink` (a quadratic whose apex is
+  a knot of multiplicity two, C1) in `TILT` against a leaning box (its cut
+  two solids), the blob as a leaning tool through a box; `degenerate` a
+  `TURN` wall tangent along the dome's apex generatrix, one tangent to the
+  kink at its knot, and a `TILTX` cap plane 8.9e-17 from a `TILT` blob's
+  axis. Checks: the divergence theorem 4.2e-41, inclusion and exclusion
+  4.5e-41, the area identity 1.2e-40, every face's classes 3.5e-41, a
+  second slicing direction for parallel axes 2.1e-41; S8b's split reference
+  on each spline profile's prism against a half-space box (oblique and
+  parallel planes, the prism in `XY` and `TILT`) 1.4e-41 exact and 1.9e-18
+  turned; S9a.2's `SplinePair` on `bulge_offset` (its offset taken exactly)
+  and on its own 17 one-spline fixtures 2.2e-17 (the 10 in `XY` to every
+  printed digit); solid counts as declared; margins outside the declared
+  pairs (vertices 0.019 from the other's faces, creases' extremes 0.12
+  from the caps, parallel planes 0.16 from tangency, edges crossing spline
+  walls at a sine of 0.37, oblique planes at 0.48 to the axis), the
+  declared pairs' below 1e-12. `test_spline_any_boolean_reference.py`
+  checks the root finder, the implicit events, every spline profile's
+  moments against S9a.2's Green, the dome between side planes both ways,
+  the degenerate margins and the kink's liftings. No protocol or oracle row
+  is new. `compare_spline_any_boolean.py` reproduces
+  `occt-boolean-spline-any-preimplementation`
+  (`rust_spline_any_boolean_exists` false, keyed on
+  `solid/boolean/curved/spline_walls.rs`; the probe `unsupported` on all 38,
+  32 from the polyhedral engine and the capsule's 6 from the curved
+  engine's model): every result valid with the reference's solids; 23 match
+  and 15 are reviewed (`occt-boolean-spline-any-divergences.json`):
+  BRepGProp's default integration on faces bounded by B-spline edges
+  misses by up to 6.7e-7 (the wave 1.0e-3), adaptively within 6.0e-9 in
+  volume but for the wave, while Green's theorem over OCCT's own faces and
+  pcurves (a diagnostic build) gives the reference within 1.3e-8 on all
+  38; two solids' counts change when unified.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

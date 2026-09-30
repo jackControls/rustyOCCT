@@ -4042,6 +4042,62 @@ Decisions for S9, recorded before its code (2026-09-28):
     profiles in new frames, `boolean_reference.SplinePair`'s slicing and
     40-digit meetings, the spline capture's oracle and its reviewed
     BRepGProp errors, S8b's oblique-split fixtures for creases.
+    * **S9f.1 evidence (2026-09-30), before its code (`BOOLEAN.md`).**
+      `curved_boolean_reference.py` takes spline walls (S9c.1's assertion
+      dropped): each spline segment is its exact Bezier spans, a line meets
+      a span at the real roots of a degree-`p` polynomial (monotone runs,
+      Newton steps at 40 digits, no resultant), an event between a spline
+      crossing and a line's crossing moving linearly is an exact degree-`p`
+      root, a tangency one of degree `p - 1`, knots are profile vertices;
+      a spline span's wall is swept by its generatrices, and every
+      operation's volume and moments are computed a second way by the
+      divergence theorem over the classified face pieces.
+      `generate_spline_any_boolean_fixtures.py --check` writes 38 cases
+      (12 fuses, 13 cuts, 13 commons; 32 solid, 1 empty, 5 degenerate):
+      S9a.2's bulge, dome, blob, wave, capsule and lens hole and a new
+      `kink` in new frames, oblique creases, generatrices of planes
+      parallel to the axis, tool edges piercing spline walls, coplanar caps
+      of either orientation, a same-axis pair whose offset rounds
+      (`bulge_offset`, both in `TILT`), turned (`R125`, `TURN`), leaning and
+      tilted tools, the blob as a leaning tool; `degenerate` a plane tangent
+      along the dome's apex generatrix, one tangent at the kink's knot, and
+      a `TILTX` cap plane 8.9e-17 from a `TILT` blob's axis. Checks: the
+      divergence theorem, inclusion and exclusion and the area identity
+      within 1.2e-40; S8b's split reference on half-space boxes (creases
+      and generatrices) 1.4e-41 exact, 1.9e-18 turned; S9a.2's `SplinePair`
+      on `bulge_offset` (its offset taken exactly) and on its own 17
+      one-spline fixtures 2.2e-17 (the 10 in `XY` to every digit); margins
+      outside the declared pairs at least 0.019. The capture
+      `occt-boolean-spline-any-preimplementation`
+      (`compare_spline_any_boolean.py`, keyed on
+      `solid/boolean/curved/spline_walls.rs`; the probe `unsupported` on
+      all 38): every result valid with the reference's solids, 23 matches,
+      15 reviewed (BRepGProp's default integration up to 6.7e-7, the wave
+      1.0e-3; Green's theorem over OCCT's own faces and pcurves, a
+      diagnostic build, within 1.3e-8 of the reference on all 38).
+      Corrections to the decisions: (a) R4 bites before any Boolean: a
+      profile spline C1 exactly at an interior knot of multiplicity `p`
+      whose poles lose C1 when lifted into a turned frame (the knot at (5,
+      4) along (-2, 1), poles (7, 3), (5, 4), (3, 5), in `TILT`: the knot's
+      pole 2^-53 off its neighbours' midpoint) is refused by S8b's
+      extrusion itself (`Solid::extrude_with`:
+      `InvalidTopology("edge_not_c1")`, a panic of the protocol's
+      construction), so the exact knot removal before lifting belongs to
+      S8b.2's prisms, and a Boolean fixture of it waits for that; the
+      fixture `kink_lean` keeps R4's knot of multiplicity two in `TILT` with
+      poles that stay C1 lifted (its apex, horizontal), so the curved
+      engine meets the knot as a C0 knot of the wall's surface
+      (`test_spline_any_boolean_reference.py` checks both liftings); (b) the
+      kernel refuses from two places, both to be relabelled S9f: a spline
+      prism with lines only reaches `polyhedra::stored_model` (32 cases),
+      one whose profile also holds an arc (the capsule) the curved engine's
+      model (6); S9f.1 must route both to the curved engine; (c) "a plane
+      within rounding of a wall's axis" arises from stored frames alone
+      (`TILT` against `TILTX`: `n_A . (x_B * y_B)` is `-8.9e-17`, exactly zero
+      for `TILT` against `SIDE`), so the kernel's test is S9c.1's (c) on the
+      exact models, not on the frames' names; (d) S8b's oblique-split
+      fixtures serve as closed forms (half-space boxes) rather than as
+      Boolean fixtures. S9f.1's kernel next.
 
 ### Parallel tracks
 
