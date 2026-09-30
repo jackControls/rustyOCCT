@@ -3285,10 +3285,11 @@ Decisions for S9, recorded before its code (2026-09-28):
   arrangement; 44 intersecting two-tori variants of 60 corpus inputs 30.7
   to 12.0 G at the median, 242 to 53 G at the ninth decile and 593 to 71 G
   at the slowest (0.6, 2.75 and 3.7 s), ten of them under AddressSanitizer
-  3 to 51 s (26 to 306 s before on the same host). The torus pairs are on,
-  within the target's 60 s here; at the Linux runners' 2.6-fold the
-  slowest tenth would not be, so a CI campaign may still time out on one
-  (then the arrangement's arithmetic, below, is next). Enclosures: every
+  3 to 51 s (26 to 306 s before on the same host). The torus pairs stay
+  off: within the target's 60 s here, but at the Linux runners' 2.6-fold
+  the slowest tenth would not be, so CI's fuzz runs would time out on them
+  now and then; the degree-eight arrangement's arithmetic (below) is
+  next. Enclosures: every
   curved Boolean fixture's volume and area within `6.1e-11` relative
   (`1.7e-11` before), medians 1.0 to 4.2 times as wide per set, at most 24
   times, none apart from its former one; all fixture tests, every
