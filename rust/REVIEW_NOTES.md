@@ -2912,6 +2912,65 @@ Decisions for S9, recorded before its code (2026-09-28):
     about a torus in a turned frame, takes 26 s there (its sphere faces'
     certified integrals along the meetings). Pending: the
     DRAW survey, the campaign.
+  * **S9d.4b.2b implemented** (`solid/boolean/curved/torus_curved.rs`): two
+    whole tori, all 12 `tori_*` fixtures as the reference (10 solid within
+    the kernel's enclosures, `tori_link_common` empty, `tori_kiss` refused),
+    every history checked, results deterministic and moved rigidly
+    (`tests/torus_curved_booleans.rs`, 95 s in the dev profile at opt-level
+    2 on a loaded host, the parallel fixtures' certified integrals the most
+    of it); `compare_torus_curved_boolean.py` 15 matches and 29 reviewed,
+    the kernel supported on all 44 (the eight tori whose unified counts
+    differ reviewed by them: coaxial and ringing pairs whose bands cross
+    OCCT's seams, by native DRAW's faces, the others' B-spline sections
+    split at OCCT's points), every other comparison unchanged and every
+    other fixture's kernel rows bit-identical. Corrections to the evidence,
+    from the implementation: (a) a tube's circle meets another torus in a
+    trigonometric polynomial of degree two, not four: along a round circle
+    `|l|^2` is affine in its angle's cosine and sine (a circle meets a torus
+    in at most four points), so where both stored frames are exactly
+    orthonormal `G` is of degree two in each angle as a quadric's (every
+    fixture) and S9d.4b.2a's discriminant applies; degree four in each
+    angle, points of degree eight, arise only where a stored frame is not
+    exactly orthonormal (axes rounded by a turn), whose discriminant (degree
+    112) is out of reach: there the turning points in `u` are enclosed by a
+    certified subdivision (boxes clear of `G` or `G_v`, the rest under
+    `1e-6` clear of `G_u`, one clear of none at `1e-10` a tangency), lines
+    between them seed the traces, and every turning point's box must lie in
+    a verified piece over `v`
+    (`turned_tori_meet_in_fields_of_degree_eight`); (c) only extreme circles
+    at one height are tangent: parallel tori whose top circles, or a top and
+    a bottom, lie at one height and cross touch there (`Degenerate`), but
+    with their equators at one height (`tori_side`'s first placement) the
+    surfaces cross at 43 degrees and the meeting only turns in `u` there: a
+    valid common of two solids, 7.74729, as native DRAW's (OCCT 7.9.3: the
+    fuse 69.359, the cut 41.6007; `parallel_tori_at_one_height`).
+    Amendments: (i) `Curve3::Toric` gains `other_minor` (the other torus's
+    minor radius, zero for a quadric), its jets `S^2 - 4 R2^2 P` from the
+    other torus's local coordinates' series; (ii) products in `Q(alpha)`
+    reduce by `x^j mod p` kept over one denominator (an integer product and
+    one reduction per coefficient), a field's sign is tried by a binary64
+    enclosure over its generator's isolator first, and a meeting keeps its
+    tangents by point: a turned pair's Boolean from 33 s to 15 s, every
+    result unchanged; (iii) the fuzz target's object is a whole torus
+    against a whole torus tool by the flags' and the heights byte's top bits
+    with the flags' bits 5 and 6 clear (no corpus input of 1,435 decodes to
+    one: with the flags' bit alone one did, and took 182 s under ASan), the
+    tool then in its offset frame and one operation checked by its volume's
+    bounds, its history and its motion; even so two tori take 46, 58 and 111
+    s under ASan for variants at the median, the third quartile and the
+    ninth decile of those that meet (a host at load 12), over the target's
+    60 s: the campaign will meet them (the validator's and the mass's
+    certified integrals along the meetings on both tori, which S9d.4b.2a's
+    rows fix bit for bit); (iv) the DRAW adapter builds every `ptorus` with
+    one set of ids, and a Boolean of two (transforms keep ids) is its `a
+    solid other than a prism sharing ids`: two tori do not evaluate there
+    yet. The corpus and the regressions (1,435 inputs) replay with debug
+    assertions without a failure, the slowest 8.0 s, as do 2,626 variants of
+    corpus inputs made two tori (their spline byte, flags and heights byte
+    set; the median 2.2 s, the slowest 124 s on a loaded host) and, before
+    (iii), 324 made two tori with all three operations, 150 of them chosen
+    in turned frames (points of degree eight; the slowest 409 s). Pending:
+    the DRAW survey, the campaign.
 
 ### Parallel tracks
 

@@ -1831,6 +1831,51 @@ where `A v^2 + 2 B v + C = 0` and the curve is `v = (-B +- sqrt(D)) / A`,
   `(|l|^2 + R^2 - r^2)^2 - 4 R^2 (l_u^2 + l_v^2)` is a form of degree four
   in `(cos, sin)`: times `(1 + t^2)^4` of degree eight.
 
+## Two tori's meetings in Booleans (S9d.4b.2b)
+
+* **The degree.** The other torus's function `F = S^2 - 4 R2^2 P`, `S =
+  |l|^2 + R2^2 - r2^2`, `P = l_u^2 + l_v^2`, `l = M^-1 (p - o2)` its local
+  coordinates. Along the first torus's tube circle at `u` (or its parallel
+  at `v`) `p = c + a cos + b sin` with `|a| = |b|`, `a . b = 0` in the first
+  frame's coordinates; when both frames are exactly orthonormal these are
+  the world's, `|l|^2 = |p - o2|^2` is affine in `(cos, sin)` and `P = |l|^2
+  - l_w^2` of degree two, so `G = F(p(u, v))` is of degree two in each
+  angle, a quadric's: at a rational parameter a quartic, the discriminant
+  of degree 24. (A circle meets a torus in at most four points: both
+  contain the circular points at infinity, the torus doubly.) With a frame
+  not exactly orthonormal `M^-T M^-1` is not a multiple of the identity on
+  the circle's plane, the circle an ellipse there, and `G` is of degree
+  four in each angle: an octic at a rational parameter, a point of degree
+  eight; the discriminant of an octic in `s` with coefficients of degree
+  eight in `t` is of degree 112. The exact reduction by `sin^2 = 1 -
+  cos^2` is canonical, so the degree read from `G`'s terms is its own.
+* **Turning points without a discriminant.** Every point with `G = G_v =
+  0` lies in a box of a subdivision of `[-pi, pi]^2` (bounds just past
+  `pi`) not cleared of `G` or of `G_v` by mean-value forms; a remaining box
+  under `1e-6` radians is kept when cleared of `G_u` (no singular point in
+  it: the implicit function theorem makes the meeting there a graph `u(v)`),
+  one of `1e-10` cleared of nothing is refused as a tangency. Merged boxes
+  (touching, across the periods) enclose the turning points in `u`; a
+  line of `u` outside all of them has only simple roots. A component
+  either winds about the axis (crossing every line of `u`) or has a least
+  and a greatest `u`, both turning points; if each turning point lies on a
+  verified piece over `v` (the box inside the piece's window of `u` and
+  range of `v`: the one root of `G(., v)` in the window at each `v` of the
+  range is then the turning point's), the component shares a point with a
+  piece and so with the traced components whose pieces those are.
+* **Jets.** With `L_k` the other torus's local coordinates along the
+  series (as a quadric's functionals), `[S]_k = sum_i [L_i^2]_k` (plus `R2^2
+  - r2^2` at `k = 0`), `[P]_k` likewise over the first two, `[G]_k = [S^2]_k
+  - 4 R2^2 [P]_k`; `s_k` enters `[G]_k` only as `(2 S_0 [S]_s - 4 R2^2
+  [P]_s) s_k = G_s s_k`, so `s_k = -[G]_k|_{s_k = 0} / G_s` as before, the
+  `k`-th coefficients of `S` then recomputed with `s_k`.
+* **Products in `Q(alpha)`.** For `alpha` a root of `p` of degree `n`,
+  `x^j mod p` for `j = n .. 2n - 2` over one common denominator `D`; a
+  product of reduced `a`, `b` (integer numerators over their least common
+  denominators) is `sum_{j < n} c_j x^j + sum_{j >= n} c_j (x^j mod p)`,
+  its integer numerators over `d_a d_b D` reduced once per coefficient: the
+  value of the rational reduction, without a gcd per operation.
+
 ## Lines and circles against surfaces (S7c.1)
 
 Along a line `p0 + s d` with rational `p0`, `d`, a plane's, cylinder's,

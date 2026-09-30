@@ -142,7 +142,9 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   (`degenerate_surface`). A torus's meeting with a quadric
   (`Curve3::Toric`, S9d.4b.2) needs a ring torus, a positive other radius
   (a cone's zero at its origin allowed), a window of the other angle under
-  a turn and a nonzero sweep of at most a turn (`degenerate_curve`); its
+  a turn and a nonzero sweep of at most a turn (`degenerate_curve`); with
+  another torus (S9d.4b.2b, `other_minor` positive) a ring torus there too,
+  neither a sphere nor a cone; its
   points and jets are its root inside the window (interval Newton, then
   the implicit function theorem), undecided where Newton's step does not
   close inside the window.
