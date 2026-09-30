@@ -2989,7 +2989,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     of both budgets, but one slow unit over the limit, 63 s under
     AddressSanitizer (`fd9294c7`, a whole torus in a turned frame against
     a prism with arcs, 9.8 s without; 30 s since the certified integrals'
-    track). Pending: the campaign.
+    track). Campaign: the boolean campaign at `afa36c7f` (600 s, a sampled
+    replay) clean, 1,173 runs, the slowest input 52 s under
+    AddressSanitizer (S9a.2's spline stack `d0a3de29`, the host loaded). The torus pairs off, as above.
   * **DRAW survey of S9d.4b (2026-09-30, `UPSTREAM_TESTS.md`).** With
     S9d.4b.1, S9d.4b.2a and S9d.4b.2b, and the adapter's curved primitives
     fixed first (the parallel track below): each `pcone`, `psphere` and
@@ -3207,7 +3209,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     at least one operation (7,417 of their operations), the others refused
     as documented (a turned cap's plane within the resolution of the
     object's cap, tangencies, a vertex on the other's face), none as
-    S9d.2b's `OutOfDomain`. Pending: the DRAW survey, the campaign.
+    S9d.2b's `OutOfDomain`. Campaign: the boolean campaign at `afa36c7f` (600 s, a sampled
+    replay) clean, 1,173 runs, the slowest input 52 s under
+    AddressSanitizer (S9a.2's spline stack `d0a3de29`, the host loaded). Pending: the DRAW survey.
   * **S9d.3c refined, before its code (2026-09-30).** Why each is refused.
     (1) `cones.rs`'s `cone_pair` takes a ruled carrier (a cylinder before a
     cone) whose ruling's leading coefficient `A` has no real root and whose
