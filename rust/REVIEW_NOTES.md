@@ -2910,7 +2910,11 @@ Decisions for S9, recorded before its code (2026-09-28):
     whole torus against their prisms, spheres and cones (their spline byte
     and flags set), which found (d) and (i); the slowest variant, a ball
     about a torus in a turned frame, takes 26 s there (its sphere faces'
-    certified integrals along the meetings). Pending: the
+    certified integrals along the meetings). Native DRAW confirms the coaxial count reviews' reading:
+    `pipe_hole_fuse`'s unified solid has 2 caps of one edge and 4 faces of
+    three, the cylinder's two bands and the torus's band as two faces split
+    on its outer equator (the kernel's 5 faces, 7 edges and 4 vertices with
+    that band whole). Pending: the
     DRAW survey, the campaign.
 
 ### Parallel tracks
