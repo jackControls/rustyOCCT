@@ -139,7 +139,13 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   on a sphere, where a meridian (`du = 0`) is a great-circle arc in `v` and
   a parallel a circle in `u`, and on a torus, where a meridian is a circle
   of the tube in `v`. A ring torus (`R - r > tol`) is required
-  (`degenerate_surface`).
+  (`degenerate_surface`). A torus's meeting with a quadric
+  (`Curve3::Toric`, S9d.4b.2) needs a ring torus, a positive other radius
+  (a cone's zero at its origin allowed), a window of the other angle under
+  a turn and a nonzero sweep of at most a turn (`degenerate_curve`); its
+  points and jets are its root inside the window (interval Newton, then
+  the implicit function theorem), undecided where Newton's step does not
+  close inside the window.
 * **UV closure.** Consecutive fins meet in UV within tolerance, with cylinder
   angle differences scaled by the radius, cone ones by `|R + v sin a|` and
   sphere ones by `|R cos v|` and torus ones by `R + r cos v` at the larger
