@@ -1839,6 +1839,77 @@ where `A v^2 + 2 B v + C = 0` and the curve is `v = (-B +- sqrt(D)) / A`,
   `1 / sqrt(1 - (g / rho)^2)`, which an edge's range between switches keeps
   bounded.
 
+## Two ruled faces in loops, turned cones (S9d.3c)
+
+* **Loops over both carriers.** A ruled carrier's ruling `o + r e + w (n +
+  k e)` against the other quadric gives `A w^2 + 2 B w + C` with `A`, `B`,
+  `C` quadratic forms in `(cos, sin)` on any affine frame (the stored axes;
+  exact, turned or not). The curve's points are the rulings' roots, so at
+  a direction where `D = B^2 - A C > 0` and `A != 0` it has two analytic
+  branches over the carrier's angle; they meet where `D` has a simple root
+  (the ruling tangent to the other quadric: a turning point of the graph,
+  the curve along the ruling there). Over an interval of `D_0 > 0` whose
+  ends are simple roots the plus branch from one end to the other and the
+  minus branch back are one closed curve. A point where both carriers'
+  graphs turn has both rulings along the curve's tangent, so both tangent
+  planes hold both rulings: the surfaces touch there (a node, a repeated
+  root of `D`) or the two rulings are one line (a common ruling through
+  each cone's apex, which lies then on the other surface: refused before).
+  So each turning point of one carrier is a regular point of the other's
+  graph, and switching between the carriers' graphs between turning points
+  of different kinds covers every component with graphs.
+* **Verification by arcs.** Switches are exact points at rational angles
+  of carrier 0 on known branches, so their order along the component is
+  exact (the plus branch by ascending chart `t`, the minus branch by
+  descending). A graph over carrier 0 between two switches of one branch
+  with no root of `D_0` between them is the component's arc between them
+  (it cannot pass a turning point). A graph over carrier 1 on its branch
+  `b` over a range containing no root of `D_1` (Sturm counts at the surd
+  ends) is an analytic arc through its ends; holding an exact interior
+  point of the component between the two switches, it is the arc of the
+  component (a circle) from one to the other through that point, not its
+  complement. The arcs between consecutive switches therefore cover the
+  component once.
+* **Components through infinity.** Where `A_0` vanishes at a simple root
+  `theta*` (the carrier's ruling along the other's asymptotic cone:
+  `D_0 = B_0^2 > 0` there), the root `(-B + s sqrt(D)) / A` with `s = sign
+  B` stays finite (`-C / 2B` at `theta*`, `C / (-B - s sqrt(D))` near it)
+  and the other runs off to infinity, changing sides: projectively the
+  component passes through the point at infinity of that ruling's
+  direction. Its point there is a cut; the finite branch's point a switch
+  (in `Q(alpha)` of `A`'s chart quartic). The points at infinity of the
+  curve are the common lines of both asymptotic cones, so each cut is an
+  `A_1` root of carrier 1 too; a graph over carrier 1 reaching a cut ends
+  at an `A_1` root on its running-off branch (`-sign B_1`), and holding no
+  root of `D_1` or `A_1` inside and an exact interior point of the run, it
+  is the component's arc up to the first point at infinity along it,
+  whichever `A_1` root was taken. A cone and a cylinder never have such
+  roots but along a ruling (`A_cone = |row . dir|^2 >= 0`, zero where a
+  ruling is parallel to the axis, where `A_cyl = q_cone(n) = 0` too); there
+  every ruling of the cylinder meets the cone once (`A = 0` identically),
+  and a turned frame's rounding would bring the second branch in from
+  either side: `Degenerate`.
+* **A turned cone's height graph.** With the cone's radius `rho(w) = r + k
+  w`, `F(u, w) = |d + w n|^2 - R^2 + rho(w)^2 q(cos, sin) + 2 rho(w) ((x . d
+  + w x . n) cos + (y . d + w y . n) sin)`: its coefficients are of degree
+  two in `w`, so `E(w) = rho2 P^2 - l^2` (`P = rho(w)^2 q(alpha, beta) /
+  rho2 + |d + w n|^2 - R^2`, `l = 2 rho(w) (alpha (x . d + w x . n) + beta
+  (y . d + w y . n))`) is a quartic and the discriminant of `F (1 + t^2)^2`
+  in `t` of degree at most twelve, as for a cylinder. At the apex's height
+  `rho = 0` the circle is a point, `F` constant in `u` and its quartic
+  `G (1 + t^2)^2` with double roots at `+-i`: the discriminant vanishes
+  there though no two real roots meet, and that root (rational, `-r / k`)
+  is left out; the loop never reaches it (a point there is the apex, on
+  the sphere only if refused). In an exact frame the discriminant is `-4
+  disc(Q_w) |Q_w(i)|^4` with `Q_w(i) = 2 rho(w) (alpha + i beta)`: `dw`'s
+  roots and the apex's, fourfold.
+* **A turned cap's circle against a cone.** S9d.2c's resultant with the
+  cone's function restricted to the circle's plane, `sum (a_i + X lx_i + Y
+  ly_i)^2 - (ra + X rx + Y ry)^2`; the tangency band `2 (rho + res) res` with
+  `rho` a bound of the radius term over the circle, `|ra| + |(rx, ry)|
+  max |(X, Y)|` (`max |(X, Y)|^2 = r2 / lambda_min` of the basis's Gram
+  matrix), the cone's gradient there at most about twice it.
+
 ## A torus's meetings with quadrics in Booleans (S9d.4b.2a)
 
 * **The function.** On the torus's angles the quadric `sum (g_i . p -

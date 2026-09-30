@@ -3350,6 +3350,72 @@ Decisions for S9, recorded before its code (2026-09-28):
     integration on approximated loops, up to 5.8e-6, 4.5e-4 on the declared
     ruling; adaptively converged within 1.7e-8), five solids' counts change
     when unified. S9d.3c's kernel next.
+  * **S9d.3c implemented** (`solid/boolean/curved/cones_loops.rs`,
+    `cones.rs`, `spheres.rs`, `spheres_turned.rs`, `meet.rs`): cone-cylinder
+    and cone-cone loops over both carriers' angles in any frames (a
+    component through infinity cut at the rulings' asymptotic directions, its
+    finite branch switched at `-C / 2B`), a cylinder exactly along a cone's
+    ruling `Degenerate`, a turned cone's loops with a sphere by S9d.2c's
+    height graph with the cone's radius, a turned cap's circle against a
+    cone by S9d.2c's resultant, as the refined decisions describe. All 31
+    fixtures as the reference (29 within the kernel's enclosures, each at
+    most `1e-9` wide; `rod_ruling_exact` refused as "a cylinder along a
+    cone's ruling", `rim_tangent_cone` as S9d.2c's crossing within the
+    resolution of tangency), every history checked, results deterministic
+    and moved rigidly; the loops' `Curve3::Meet` pieces run over both
+    carriers and lie within `1e-9` of both surfaces, the turned cones'
+    `Curve3::Rise` pieces within `1e-12`, the turned rims' crossings on the
+    rim's plane (`tests/cones_loops_booleans.rs`, 24 s in the dev profile at
+    `opt-level` 2; the module's tests check Sturm's count with a root at a
+    range's end and the boundaries' order, `spheres_turned.rs`'s a cone's
+    turning points against `dw`'s with the apex's left out).
+    `compare_cones_loops_boolean.py` 5 matches and 26 reviewed (the
+    capture's 24 measures, and the kernel's edges and vertices where it
+    splits its loops at its switches: `dome_cone_turned`'s two now reviewed
+    for their counts alone); `compare_cones_boolean.py` 21 matches and 19
+    reviewed as before, `ball_tilt_common` now within the reference (its
+    review adds its counts); every other comparison unchanged.
+    Amendments and corrections: (a) the evidence had two pairs with a plane
+    tangent to a sphere (`ball_r125`'s sphere on the frustum's base inside
+    its disc, `dome_lean_frustum`'s frustum's top plane on the sphere off
+    both faces), refused by S9d.1's rule wherever the touch lies: the
+    generator now checks every plane against the other's spheres and
+    parallel cylinders, both pairs moved clear, and the capture was taken
+    again before the kernel's commit (its own commits, `c3eeaa31` and
+    `555a5974`); (b) an asymptotic direction's binary64 place along a
+    component is its generator's enclosure (a first build took the
+    isolator's middle, far off before refinement: `cones_asymptotic`'s cut
+    misplaced, a piece verified across an `A` root and refused); (c) a point
+    at a cone carrier's apex height is on none of its `Curve3::Meet` pieces
+    (`MeetCrv::on`: the replays reached `place` with a zone's pole there, a
+    panic, 25 variants; a regression); (d) the height graph's turning points
+    on a cone's far nappe lie on the other side of `phi` (the side by `g /
+    rho`, the branch by the sphere's gradient along the ruling rather than
+    the axis): a sphere meeting both nappes had four events at one place
+    (`two turning points within rounding`, or no event of the other kind),
+    S9d.3b.2's exact-frame loops alike (a regression); (e) S9d.3b's
+    `ball_tilt_common` evaluates (`tests/cones_booleans.rs`'s `LATER` empty),
+    and S9d.2c's test of the S9d.3c refusals is gone; (f) the near-node test
+    of a carrier whose `A` has real roots takes `A`'s largest sampled size.
+    The `boolean` fuzz target decodes the object a sphere against a cone or
+    sphere tool and a cone against a sphere, cap or zone tool (the flags'
+    bits 5 and 6, as against a whole torus), a cone against a cone tool off
+    (`CONE_PAIRS`: two cones' certified integrals, the result's mass and
+    validation, take up to 80 s with debug assertions alone, 14 of 711
+    variants above 20 s, past the target's 60 s under the sanitizer). The
+    corpus (1,421 inputs) and the 16 regressions replay with debug
+    assertions without a failure (the slowest 13.1 s), and 2,842 variants
+    rewritten into the new configurations (the object's arcs against a
+    turned or sideways cone tool, a cone against a cone with `CONE_PAIRS`
+    on, a sphere against a cone, a cone against a turned cap or zone)
+    likewise (the slowest 79.5 s, a cone pair; a sphere and a cone 25.7 s):
+    2,349 of them evaluate at least one operation (7,045 of their
+    operations), the others refused as documented (a spline profile in any
+    position, S9c; two parallel faces within the resolution of one plane, a
+    plane through a cone's apex, tangencies, thin pieces, a cone's apex on
+    the other's surface, a ruling within rounding of the other's direction,
+    a near node), none as S9d.3b.2's or S9d.3c's `OutOfDomain`. Pending: the
+    DRAW survey, the campaign.
 
 ### Parallel tracks
 

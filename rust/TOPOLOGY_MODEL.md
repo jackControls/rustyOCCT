@@ -892,6 +892,17 @@ procedural pcurves with explicit conic edges.
   matrix differs from the identity by its axes' rounding; an edge's range,
   between switches, keeps `|g / rho|` below one), `1e-12` in
   `tests/spheres_turned_booleans.rs`.
+* **Two ruled faces in loops, and turned cones (S9d.3c).** No new curve: a
+  cone's loop with a cylinder or another cone is cut into `Curve3::Meet`
+  pieces over either input's angle (each the carrier of its pieces, the
+  other its other quadric), their ranges between switches or, where two
+  cones' asymptotic cones cross, ending at a carrier's asymptotic
+  direction (the running-off branch open there, the finite branch ending at
+  `-C / 2B`, S9d.3b.2's form of the root); a turned cone's loop with a
+  sphere keeps `Curve3::Rise` with the cone's `half_angle`, its closed form
+  on the stored frame the binary64 reading as S9d.2c's (`1e-12` in
+  `tests/cones_loops_booleans.rs`, the `Meet` pieces within `1e-9` of both
+  surfaces).
 * **A torus's meeting with a quadric (S9d.4b.2).** `Curve3::Toric`: the
   torus (`frame`, `major`, `minor`), the other quadric (`other`,
   `other_radius`, `other_sphere`, `other_half_angle`, as `Curve3::Meet`'s)
