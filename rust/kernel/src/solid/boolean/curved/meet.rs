@@ -498,7 +498,9 @@ pub(super) fn edge_surface(
         // S9d.4b.2: a cap's, a rim's or a sphere's circle against a whole
         // torus.
         (Crv::Conic { c, a, b }, Surf::Torus) => super::torus_curved::conic_torus(c, a, b, py),
-        (Crv::Circle(circ), Surf::Torus) => super::torus_curved::circ_torus(circ, py),
+        (Crv::Circle(circ), Surf::Torus) => {
+            super::torus_curved::circ_torus(circ, py, py.tolerance.linear())
+        }
         // S9d.3a: a line against a cone's wall; S9d.3b's others.
         (Crv::Line { p, d }, Surf::Cone { .. }) => {
             super::cone::line_cone(p, d, &py.f, py.funnel.as_ref().expect("a cone"), &py.hi)
@@ -560,7 +562,25 @@ pub(super) fn edge_surface(
         )),
         // S9d.4b.1: a torus segment's or wedge's rim against a plane.
         (Crv::Torus(c), Surf::Plane { p: p0, m }) => super::torus_segment::rim_plane(c, p0, m),
-        (Crv::Meet(_) | Crv::Rise(_) | Crv::Cone(_) | Crv::Torus(_) | Crv::Toric(_), _) => {
+        // S9d.4c: against a quadric or a torus.
+        (Crv::Torus(c), Surf::Cyl { .. } | Surf::Sphere { .. } | Surf::Cone { .. }) => {
+            super::torus_parts::rim_far(
+                c,
+                &super::torus_curved::Far::Quadric(Box::new(super::cones::other_face(py, fy))),
+            )
+        }
+        (Crv::Torus(c), Surf::Torus) => {
+            let ring = py.ring.as_ref().expect("a torus");
+            super::torus_parts::rim_far(
+                c,
+                &super::torus_curved::Far::Torus {
+                    f: Box::new(py.f.clone()),
+                    big: ring.big.clone(),
+                    small: ring.small.clone(),
+                },
+            )
+        }
+        (Crv::Meet(_) | Crv::Rise(_) | Crv::Cone(_) | Crv::Toric(_), _) => {
             unreachable!("a model edge is a line, an arc or a circle")
         }
         (Crv::Line { p, d }, Surf::Plane { p: p0, m }) => {

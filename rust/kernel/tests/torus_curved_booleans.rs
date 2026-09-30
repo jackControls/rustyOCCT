@@ -344,53 +344,6 @@ fn tangencies_are_degenerate() {
     }
 }
 
-/// A torus segment or wedge against a curved face, a whole torus's too,
-/// stays S9d.4b's `OutOfDomain`.
-#[test]
-fn parts_stay_later() {
-    use rusty_occt::identity::OperationId;
-    use rusty_occt::{Frame3, Solid, Tolerance};
-    use std::f64::consts::{FRAC_PI_2, TAU};
-    let tol = Tolerance::default();
-    let torus = |op: u64, low: f64, high: f64, angle: f64| {
-        Solid::torus_with(
-            OperationId(op),
-            Frame3::xy(),
-            2.5,
-            1.0,
-            low,
-            high,
-            angle,
-            tol,
-        )
-        .unwrap()
-        .0
-    };
-    let (ball, _) = Solid::sphere_with(
-        OperationId(9),
-        Frame3::xy(),
-        1.25,
-        -FRAC_PI_2,
-        FRAC_PI_2,
-        tol,
-    )
-    .unwrap();
-    let half = torus(1, -FRAC_PI_2, FRAC_PI_2, TAU);
-    let whole = torus(2, 0.0, TAU, TAU)
-        .transform_with(
-            OperationId(6),
-            rusty_occt::RigidTransform::translation(rusty_occt::Vec3::new(0.5, 0.0, 0.0)).unwrap(),
-        )
-        .unwrap()
-        .0;
-    for other in [&ball, &whole] {
-        match half.common(OperationId(3), other) {
-            Err(Error::OutOfDomain(m)) => assert!(m.contains("segment or wedge"), "{m}"),
-            other => panic!("{:?}", other.map(|_| ())),
-        }
-    }
-}
-
 /// A whole torus of radii 2.5 and 0.75 about an axis parallel to `T`'s
 /// (radii 2.5 and 1), its centre on `T`'s core circle (S9d.4b.2b; the
 /// evidence's correction (c)): with the top circles at one height (its

@@ -27,6 +27,7 @@ mod spheres;
 mod spheres_turned;
 mod torus;
 mod torus_curved;
+mod torus_parts;
 mod torus_segment;
 mod turned;
 
@@ -60,8 +61,8 @@ pub(super) fn applies(poly: &Polyhedron) -> bool {
     let cone = |s: &crate::Solid| matches!(s.construction, Construction::Cone { .. });
     let torus = |s: &crate::Solid| matches!(s.construction, Construction::Torus { .. });
     let quadric = |s: &crate::Solid| prism(s) || sphere(s) || cone(s);
-    // S9d.4: a torus against a prism, a sphere, a cone or a torus (parts
-    // against curved faces refused in `build`).
+    // S9d.4: a torus (a part too, S9d.4c) against a prism, a sphere, a cone
+    // or a torus.
     let any = |s: &crate::Solid| quadric(s) || torus(s);
     if (torus(&poly.a) && any(&poly.b)) || (any(&poly.a) && torus(&poly.b)) {
         return true;
@@ -106,24 +107,9 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
 
 fn attempt(poly: &Polyhedron, seam_a: &R, seam_b: &R) -> Result<Vec<Component>> {
     // S9d.4a and S9d.4b.1 take a torus (a part too) against a polyhedral
-    // prism; S9d.4b.2a a whole torus against a prism with arcs, a sphere or
-    // a cone, S9d.4b.2b against another whole torus.
-    let torus = |s: &crate::Solid| matches!(s.construction, Construction::Torus { .. });
-    let whole = |s: &crate::Solid| match &s.construction {
-        Construction::Torus {
-            low, high, angle, ..
-        } => high - low == std::f64::consts::TAU && *angle == std::f64::consts::TAU,
-        _ => false,
-    };
-    let polyhedral =
-        |s: &crate::Solid| matches!(s.construction, Construction::Prism(_)) && !applies_arcs(s);
-    if (torus(&poly.a) && !polyhedral(&poly.b) && !whole(&poly.a))
-        || (torus(&poly.b) && !polyhedral(&poly.a) && !whole(&poly.b))
-    {
-        return Err(Error::OutOfDomain(
-            "a torus segment or wedge against a curved face (S9d.4b)",
-        ));
-    }
+    // prism; S9d.4b.2 a whole torus against a prism with arcs, a sphere, a
+    // cone or another whole torus; S9d.4c a part against those too, and a
+    // sphere's cap or zone against a torus.
     let mut arr = shared(poly, seam_a, seam_b)?;
     arr.for_op(poly.op);
     assemble::assemble(&arr, poly.op)

@@ -28,8 +28,9 @@ turned caps against cones, S9d.4a's
 whole tori against polyhedral prisms (`curved/torus.rs`), S9d.4b.1's
 torus v-segments and wedges against them (`curved/torus_segment.rs`), and
 S9d.4b.2a's whole tori against prisms with arcs, spheres and cones and
-S9d.4b.2b's two whole tori (`curved/torus_curved.rs`); parts of a torus
-against curved faces are not.
+S9d.4b.2b's two whole tori (`curved/torus_curved.rs`), and S9d.4c's caps
+and zones against tori and torus parts against curved solids
+(`curved/torus_parts.rs`).
 
 ## Contract
 
@@ -679,10 +680,9 @@ in `v`, stored as `Curve3::Circle` about the axis. Other sections are
 `Curve3::Toric` (`TOPOLOGY_MODEL.md`), their pcurves `Projection`s. A cap's,
 a rim's or a whole sphere's great circle meets the torus where the torus's
 quartic along it vanishes, a polynomial of degree eight in its half-angle
-tangent (a sphere's circle of a surd radius against a torus is
-`OutOfDomain`); a seam's tangency with a torus is retried at another seam.
-A v-segment or wedge against a curved face is `OutOfDomain("a torus
-segment or wedge against a curved face (S9d.4b)")`.
+tangent (a sphere's circle of a surd radius, S9d.4c's below); a seam's
+tangency with a torus is retried at another seam. A v-segment or wedge
+against a curved face is S9d.4c's (below).
 
 ### Two whole tori (S9d.4b.2b)
 
@@ -725,6 +725,52 @@ the generator's isolator before Sturm-Tarski, and a meeting keeps its
 tangents by point; results are unchanged. The parallel fixtures' Booleans
 take about 20 s, most of it the certified integrals (the validator's and
 the mass's) along their meetings.
+
+### Caps and zones against tori, torus parts against curved solids (S9d.4c)
+
+A sphere's own circle (a cap's or zone's rim of radius `sqrt(R^2 - h^2)`,
+or a circle of a turned frame's cap on a basis of unequal lengths) meets a
+torus where the torus's quartic on the circle's plane vanishes on it
+(`curved/torus_parts.rs`, `circ_torus`): in coordinates `(s, t)` turned by
+a rational rotation the circle is a quadratic in `t` of constant leading
+coefficient, the quartic reduced modulo it `r1(s) t + r0(s)`, and their
+resultant, of degree at most eight in `s`, has one simple real root per
+crossing, `t = -r0 / r1` there (`Q(alpha)`); a repeated root or `r1`
+vanishing tries the next of eight rotations, a resultant vanishing
+identically is the circle on the torus, and a crossing within the
+resolution of a tangency (the count changing with the torus's function
+offset by `8 R r (R + r) res`, its gradient's bound on the torus times the
+resolution) is `Degenerate`. A round circle of a rational scale keeps
+S9d.4b.2a's octic. The cap's discs meet the torus in S9d.4a's spiric
+sections, its wall in S9d.4b.2a's meeting with the whole sphere.
+
+A torus v-segment or wedge (S9d.4b.1's model) against a prism with arcs, a
+sphere, a cone or a whole torus: its wall's meeting is S9d.4b.2's with the
+whole torus's surface (traced and verified over the whole torus, a
+tangency anywhere on it `Degenerate`), its pieces kept where the part's
+patches hold them; its end discs meet quadrics in plane sections and
+another torus in S9d.4a's spiric sections. A rim against a curved surface
+(`rim_far`) fixes one of the torus's angles at a quadratic surd (a
+segment's `v` at `(s sqrt(r^2 - z^2), z) / r`, a wedge's end `u` at its
+rounded direction over its length): the other surface's function `G` there
+is `A + sqrt(d) B` in the free angle, and the rim's crossings are the real
+roots of the norm `A^2 - d B^2` (degree eight, sixteen for two tori in
+rounded frames) at which `A + sqrt(d) B` vanishes, decided exactly in
+`Q(alpha)(sqrt(d))` (the conjugate's belong to the other ring or the
+opposite half-plane's circle); a root where its derivative vanishes too is
+a tangency. The halves' rims (circles of radius `R`) keep the conics'
+crossings. Signs of surds over algebraic fields are tried by a binary64
+enclosure before their exact products.
+
+Two corrections to the arrangement's assembly, both reachable only here:
+a shell of both inputs' faces enclosing a void (a band's end disc and inner
+wall under another input's face across its hole, in a fuse) is found by its
+certified flux built alone and made a cavity of the result (the
+validator's rays then leave its containment undecided: `ComputationLimit`,
+as S9d.4b.1's cavities), and a loop through a sphere's pole (a wedge's
+rounded end half-plane within rounding of a sphere's axis, a meridian's
+section through the pole) winds by its pcurves' lifted ends, the half turn
+at the pole included.
 
 ### Spline profiles (S9a.2)
 
@@ -1854,6 +1900,73 @@ height); its horizontal edges on a spline are its lifted restrictions.
   ringing pairs whose bands cross OCCT's seams, the others' B-spline
   sections split at OCCT's points; four of them native matches, reviewed by
   their counts alone).
+* **S9d.4c evidence (a sphere's cap or zone against a torus, torus
+  v-segments and wedges against curved solids), before its kernel code.**
+  `torus_parts_boolean_reference.py` (mpmath, 40 digits) is S9d.4b.2's
+  reference (every face of both inputs swept by two families of curves, the
+  divergence theorem on the classified pieces) with S9d.4b.1's part model
+  (a segment's end planes at the stored heights and its wall over its arc,
+  oriented by its `sigma`: the inner half inside out; a wedge's half-planes
+  on the rounded end direction, its wall over the turn and its meridian
+  discs) and a cap or zone as S9d.2c's `AxisSphere` reads it (its wall
+  about the unit axis between its ends' latitudes, its discs by chords);
+  solids by the part's normal slices, a region sheared between two slices
+  joined through intervals at levels between them. `generate_torus_parts_
+  boolean_fixtures.py --check` writes `boolean-torus-parts-cases.txt`,
+  `-expected.tsv` and `-frames.tsv` with 53 cases (7 fuses, 23 cuts, 23
+  commons; 51 solid, 2 degenerate; 45 in exact frames) on the torus of
+  radii 5/2 and 1: caps and zones against it (coaxial ones in circles, a cap
+  on the tube's top with a rim of surd radius across it, a zone about `x`
+  across the outer side, a hemisphere in `LEAN`, a zone against the torus
+  in `TILT`), the outer and inner halves against coaxial pipes, a cone, a
+  sphere and a lower hemisphere, a sphere about a point of the outer half's
+  rim and a torus ringing its outer side, the band `0.5..2.25` against a
+  sphere, a frustum and a ringing torus across its rims and in `TILT`
+  against a coaxial pipe, wedges of a quarter, a half and three quarters
+  against a pipe, a small torus, a sphere and a frustum across their end
+  discs and rims (the quarter in `LEAN` too); `degenerate` a cap's rim
+  within the resolution of tangency to the outer equator and a quarter
+  wedge's start rim touching a sphere. Checks: closed forms of the 9
+  coaxial pairs (both inputs' radial intervals along the axis, the walls by
+  their own elements) within 6.9e-40 in exact frames and 3.8e-17 in turned
+  ones; a half and the other half against the tool as the whole torus, a
+  cap or zone and the rest of its sphere against the torus as the whole
+  sphere, within 4.3e-42; every operation two ways 1.5e-31, both inputs
+  from their faces 8.3e-35, inclusion and exclusion 1.8e-35, the area
+  identity 8.3e-35, Monte Carlo 2.5 standard errors; no near coincidence
+  outside the declared pairs, surfaces meeting at a sine of at least 0.38,
+  edges crossing at 0.29, every plane at least 0.0059 of the case's size
+  from tangency to the other's spheres and tori.
+  `test_torus_parts_boolean_reference.py` checks the halves' and a
+  wedge's closed forms against their volumes of revolution, a half's
+  complement, and the reference on the outer half about a pipe, a
+  hemisphere in the tube and a quarter wedge in a ball. No protocol row is
+  new. `compare_torus_parts_boolean.py` reproduces
+  `occt-boolean-torus-parts-preimplementation`
+  (`rust_torus_parts_boolean_exists` false, keyed on
+  `solid/boolean/curved/torus_parts.rs`; the kernel's probe `unsupported`
+  on all 53): every solid count the reference's; 26 match (the coaxial
+  pairs within 2.4e-14) and 27 are reviewed
+  (`occt-boolean-torus-parts-divergences.json`): BRepGProp's default
+  integration on faces bounded by B-spline sections misses by up to 7.4e-6,
+  adaptively within 2.3e-8 and unchanged at 1e-12, and the quarter wedge in
+  `LEAN` against a sphere is wrong natively (its common 1.6e-4 off and
+  invalid under `BRepCheck_Analyzer`); fourteen solids' counts change when
+  unified.
+* **Kernel (S9d.4c).** `tests/torus_parts_booleans.rs`: all 53 fixtures as
+  the reference (51 within the kernel's enclosures, each at most `1e-9`
+  wide; the cap's rim within the resolution of tangency and the wedge's
+  rim touching a sphere refused), every history checked, results
+  deterministic and moved rigidly, the coaxial pairs meeting in circles and
+  the others in `Curve3::Toric` pieces, a band, a quarter wedge and a cap
+  turned by a rigid motion with their tools keeping the reference's
+  volumes, a void under a band's hole a cavity (`ComputationLimit`) and a
+  loop through a sphere's pole winding by its pcurves' ends.
+  `compare_torus_parts_boolean.py`: 16 matches, 37 reviewed (the capture's
+  27, 23 of them with the kernel's entity counts, and ten native matches by
+  their counts alone: coaxial bands crossing OCCT's seams, and sections
+  split at OCCT's points against the kernel's exact pieces), no failure;
+  every other Boolean comparison unchanged in its counts.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

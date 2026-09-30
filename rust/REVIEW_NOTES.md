@@ -3445,6 +3445,254 @@ Decisions for S9, recorded before its code (2026-09-28):
     boolean campaign at `428349e8` (600 s, a sampled replay) clean, 928
     runs, the slowest input 17 s under AddressSanitizer (cone pairs off,
     `CONE_PAIRS`). Pending: the DRAW survey.
+  * **S9d.4c refined, before its code (2026-09-30).** Why each is refused.
+    (1) `torus_curved::circ_torus` meets a sphere's own circle with a torus
+    only on a basis of equal lengths whose scale to the radius is rational
+    (`c + s (cos x + sin y)`, `s` rational: a whole sphere's great circle in
+    any frame, a hemisphere's rim in an exact one), as a conic
+    (`conic_torus`: the torus's quartic along it, an octic in the
+    half-angle tangent). A cap's or zone's rims have the radius `sqrt(R^2 -
+    h^2)`, a surd wherever `R^2 - h^2` is no square (every rim but a
+    hemisphere's), and in a turned frame every circle of a cap or zone lies
+    on a basis of unequal lengths (S9d.2c); both are refused with
+    `OutOfDomain("a sphere's circle of a surd radius against a torus
+    (S9d.4b)")`. With a surd scale the octic's coefficients lie in
+    `Q(sqrt(sigma))`, and its norm, of degree sixteen, holds every crossing
+    twice (the parameter's and its antipode's). (2) `curved::attempt`
+    refuses a torus v-segment or wedge against anything but a polyhedral
+    prism (`OutOfDomain("a torus segment or wedge against a curved face
+    (S9d.4b)")`): S9d.4b.1 meets a part's rims (S9d.4a's `TorusSec` rings:
+    a segment's end plane's ring over `u`, of radius `R +- sqrt(r^2 -
+    z^2)`; a wedge's end half-plane's ring over `v`, about `R (c, s) /
+    sqrt(c^2 + s^2)` on its rounded end direction) with planes only
+    (`rim_plane`, the two planes' line against the torus), and
+    `meet::edge_surface` holds no case of a rim against a cylinder, sphere,
+    cone or torus (`unreachable`); S9d.4b.2 built the wall's meeting with a
+    quadric or a torus for whole tori. Decisions. (1) A sphere's circle `c +
+    dx x + dy y`, `xx dx^2 + 2 xy dx dy + yy dy^2 = r2` (`r2` rational, the
+    basis's lengths any: a rim in an exact or a turned frame, a split's great
+    circle), against a torus: the torus's function on the circle's plane is
+    a quartic in `(dx, dy)` (its local coordinates affine in them); in
+    coordinates `(s, t)` turned by a rational rotation (S9d.2c's, then
+    further Pythagorean ones) the circle is a quadratic in `t` of constant
+    leading coefficient (positive: the basis's Gram form turned), the
+    quartic reduced modulo it is linear in `t`, `r1(s) t + r0(s)`, and their
+    resultant `a2 r0^2 - a1 r0 r1 + a0 r1^2` is a polynomial of degree at
+    most eight in `s`, whose simple real roots give one crossing each, `t =
+    -r0 / r1`: a point of `Q(alpha)` of degree at most eight, as
+    `conic_torus`'s. A repeated root, or `r1` vanishing at a root (two
+    crossings of one `s`, or a tangency), tries the next rotation; failing
+    all is a tangency (`Degenerate`); a resultant vanishing identically is
+    the circle on the torus (`Along`, as `conic_torus`'s). A crossing within
+    the resolution of a tangency is `Degenerate`, as S9d.2c's: the counts
+    with the torus's function offset by `+-delta` must be its own, `delta = 8
+    R r (R + r) res` (on the torus its gradient in local coordinates is `8 R
+    r rho`, `rho <= R + r`). A round circle with a rational scale keeps
+    `conic_torus` (every S9d.4b.2 row unchanged). The cap's discs meet the
+    torus in S9d.4a's spiric sections (a plane tangent to the torus
+    `Degenerate`), its wall in S9d.4b.2a's meeting with the whole sphere,
+    kept where the cap's face holds it. (2) A part's wall meets a quadric or
+    a torus in S9d.4b.2's meeting with the whole torus's surface, traced and
+    verified over the whole torus, its pieces kept where the part's patches
+    hold them (S9d.4b.1's face membership, `part_in_face`); its end discs
+    meet quadrics in S9c's and S9d's plane sections and another torus in
+    S9d.4a's spiric sections; what is new is a rim against a curved surface.
+    Along a rim one angle is fixed at a quadratic surd: a segment's `v` at
+    `(s sqrt(q2), z) / r` (`q2 = r^2 - z^2`, `s` the sign of the latitude's
+    cosine), a wedge's end `u` at `(c, s) / sqrt(n2)` (`n2 = c^2 + s^2` of
+    its rounded direction; the start's `u = (1, 0)` rational). The other
+    surface's function on the torus's angles, S9d.4b.2's `G(u, v)`, is there
+    a form in the free angle with coefficients in `Q(sqrt(d))`, `A + sqrt(d)
+    B`; in a chart whose antipode is no crossing its polynomial `p = A +
+    sqrt(d) B` has its roots among the norm's, `A^2 - d B^2`, rational and of
+    degree eight (`G` of degree two in each angle: a quartic over
+    `Q(sqrt(d))`; sixteen for two tori in frames not exactly orthonormal,
+    S9d.4b.2b's degree four in each angle; two exact tori meet in degree
+    four, as a quadric does). The rim's crossings are the norm's real roots
+    at which `p` vanishes, decided exactly in `Q(alpha)(sqrt(d))` (the
+    conjugate's are the other ring's, or the opposite half-plane's
+    circle's), each point in that tower (the fixed angle's surd with the
+    free angle's field); a root of `p` where `p'` vanishes too is a
+    tangency, `Degenerate`. A rim of rational radius (the halves' circles of
+    radius `R` at `w = +-r`, stored as conics) keeps S9d.4b.2's conic
+    crossings; a `d` that is a square is rational. No curve type,
+    validator, mass or exchange change: the rims keep `TorusSec`, the
+    meetings `Curve3::Toric`, the cap's circles `Circ`. (3) `Degenerate`: a
+    singular point of a torus's meeting with the other surface anywhere on
+    the whole torus (S9d.4b.2's regularity is certified over the whole torus
+    before its pieces are cut to the part; a tangency off a part's wall is
+    refused, not taken as no contact as S9d.4b.1 (d) takes a plane's: a
+    quadric or torus tangent off the wall is no part's construction, as the
+    halves' end planes are), a rim or a sphere's circle tangent to the other
+    surface, a sphere's circle within the resolution of tangency to a torus,
+    a plane tangent to a torus (S9d.4a's; on a part's own wall S9d.4b.1's),
+    and every earlier rule (a cone's apex on the other's surface; a tube's
+    circle on the other surface by design). A half's end plane is tangent
+    to its torus along its rim: a surface crossing the rim meets the disc
+    and the wall in curves tangent there, on opposite sides of the crossing
+    (one curve through a smooth edge), as S9d.4b.1's planes do. The kernel
+    in `solid/boolean/curved/torus_parts.rs` (a sphere's circle's resultant
+    and the rims' crossings), `mod.rs`'s refusal gone. Evidence first: an
+    independent reference (`torus_parts_boolean_reference.py`: S9d.4b.2's,
+    every face of both inputs swept by two families of curves, with
+    S9d.4b.1's part model and a cap's or zone's, their end discs by chords
+    and their walls over their ranges; solids by the torus's normal slices),
+    fixtures of sphere caps and zones against tori (coaxial ones meeting in
+    circles, caps and zones across the tube with rims of surd radius, turned
+    frames) and of the outer and inner halves, a band and wedges against a
+    cylinder, a sphere, a cone and a torus (coaxial ones, across the rims
+    and end discs, turned frames), a cap's rim within the resolution of
+    tangency to a torus and a part's rim tangent to a cylinder declared
+    `degenerate`; closed forms where the other's sections are discs about
+    the torus's axis (coaxial pairs; a wedge's by its turn and its end
+    discs), two-way checks (a segment and its complement against the whole
+    torus, a cap and its complement against the whole sphere, both families
+    of every face), and a native capture before
+    `solid/boolean/curved/torus_parts.rs` exists.
+  * **S9d.4c evidence (2026-09-30).** `torus_parts_boolean_reference.py`
+    takes S9d.4b.2's reference (every face of both inputs swept by two
+    families of curves against the other's surfaces and membership, the
+    divergence theorem on the classified pieces) with two more inputs:
+    S9d.4b.1's part model (a segment's end planes at the stored heights,
+    its wall's tube circles over the arc `[v_lo, v_hi]` and parallels over
+    that range, oriented by its `sigma`, its end discs from the axis to the
+    arc's ends; a wedge's half-planes on the rounded end direction, its wall
+    over the turn and the tube's discs in its half-planes) and a cap or zone
+    as S9d.2c's `AxisSphere` reads it (end planes through `o + h n` normal
+    to the stored axis, its wall's meridians and parallels about the unit
+    axis between the ends' latitudes, its discs by chords); solids by the
+    part's (else the torus's) normal slices, a thin region sheared between
+    two slices joined through a chain of intervals at levels between them
+    (bisected: overlaps alone, as S9d.4b.2's sweep joins, counted the tip of
+    a half's ring outside a coaxial dome apart). Heights are `r
+    sin(latitude)` rounded once (`sin_rn`, asserted equal to the host's
+    `sin` for every latitude used). `generate_torus_parts_boolean_fixtures.py
+    --check`: 53 cases (25 pairs; 7 fuses, 23 cuts, 23 commons; 51 solid, 2
+    degenerate; 45 in exact frames) on the torus of radii 5/2 and 1: a zone
+    and a cap of a coaxial sphere (circles), a cap on the tube's top with a
+    rim of surd radius across the tube (all three), a zone about `x` across
+    the outer side, a hemisphere in `LEAN` (its rim on unequal axes) and a
+    zone against the torus in `TILT`; the outer and inner halves against
+    coaxial pipes, a coaxial cone, sphere and lower hemisphere, a sphere
+    about a point of the outer half's top rim and a small torus ringing the
+    tube's outer side; the band `0.5..2.25` against a sphere, a frustum and
+    a ringing torus across its rims of surd radius, and in `TILT` against a
+    coaxial pipe; a quarter wedge against a pipe (all three) and a small
+    torus of a parallel axis across its end disc, a half wedge against a
+    sphere across its start disc and rim, a three-quarter wedge against a
+    frustum across its end disc, a quarter wedge in `LEAN` against a sphere
+    across its start rim; `degenerate` a cap's rim within the resolution of
+    tangency to the outer equator and a quarter wedge's start rim touching
+    a sphere. Checks: closed forms of the 9 coaxial pairs (one quadrature
+    along the axis of both inputs' radial intervals, the walls by their own
+    elements, a wedge by its turn and its meridian discs) within 6.9e-40 in
+    exact frames and 3.8e-17 turned; two-way checks, a half and the other
+    half (weighted by their orientation) against the tool as the whole torus
+    against it (S9d.4b.2's reference) and a cap or zone and the rest of its
+    sphere against the torus as the whole sphere, within 4.3e-42 (five
+    pairs; a band's rest of the tube bounds its region with a boundary
+    crossing itself, whose parity set is no signed complement); every
+    operation two ways 1.5e-31, both inputs from their faces 8.3e-35,
+    inclusion and exclusion 1.8e-35, the area identity 8.3e-35, Monte Carlo
+    2.5 standard errors; no near coincidence outside the declared pairs,
+    every other pair's surfaces meeting at a sine of at least 0.38, edges
+    (the rims too) crossing the other's surfaces at 0.29, and every plane at
+    least 0.0059 of the case's size from tangency to the other's spheres and
+    tori (a check the kernel's rules need: a plane tangent to a sphere or a
+    torus is refused wherever it touches). Python 3.9 and 3.12 write the
+    same files; the generator's check a CI group of its own (`torus-parts`,
+    50 CPU minutes locally). Fixture corrections before the capture, from
+    the reference's and a first kernel's runs: a cylinder tangent to the
+    outer half's rim also touched the outer equator (a surface tangency),
+    a small torus about `x` across the quarter wedge's end disc lay within
+    rounding of its equatorial plane (the end's rounded direction: a near
+    node), a frustum across the three-quarter wedge's end disc had its axis
+    in the end plane (a plane through its apex), a zone's sphere passed
+    through the torus's top circle with a parallel in its tangent plane
+    (the reference's quadrature did not converge), a small torus crossing
+    the outer half's rims, where its end planes are tangent to the torus,
+    left the reference's quadrature nodes off their intervals' structure,
+    and events of two crossings symmetric about a wedge's rim's centre fell
+    within rounding of each other: all moved clear. The capture
+    `occt-boolean-torus-parts-preimplementation`
+    (`compare_torus_parts_boolean.py`, keyed on
+    `solid/boolean/curved/torus_parts.rs`; the kernel `unsupported` on all
+    53, 16 as a sphere's circle of a surd radius against a torus and 37 as
+    a torus segment or wedge against a curved face): every solid count the
+    reference's, 26 match (the coaxial pairs within 2.4e-14), 27 reviewed:
+    25 BRepGProp's default integration on B-spline sections (up to 7.4e-6;
+    adaptively converged within 2.3e-8), and `qw_lean_ball`'s two results
+    wrong natively (the cut 4.7e-5 off in area, the common 1.6e-4 in volume
+    and invalid under `BRepCheck_Analyzer`); fourteen solids' counts change
+    when unified. S9d.4c's kernel next.
+  * **S9d.4c implemented** (`solid/boolean/curved/torus_parts.rs`,
+    `torus_curved.rs`, `meet.rs`, `mod.rs`, `assemble.rs`, `num.rs`): a
+    sphere's circle of a surd radius or on unequal axes against a torus by
+    the resultant of its quadratic and the torus's quartic in rationally
+    rotated coordinates (eight rotations, the band test with `8 R r (R + r)
+    res`), and torus v-segments and wedges against prisms with arcs,
+    spheres, cones and tori, their rims against a curved surface by the
+    norm of the other surface's function at the rim's fixed surd angle (the
+    points in `Q(alpha)(sqrt(d))`), `mod.rs`'s refusal gone, as the refined
+    decisions describe. All 53 fixtures as the reference (51 within the
+    kernel's enclosures, each at most `1e-9` wide; `rim_touch` refused as "a
+    sphere's circle within the resolution of tangency to a torus",
+    `qw_rim_touch` as "a torus part's rim tangent to the other input's
+    surface"), every history checked, results deterministic and moved
+    rigidly, the coaxial pairs in circles and the others in `Curve3::Toric`
+    pieces, a band, a quarter wedge and a cap turned with their tools
+    keeping the reference's volumes (`tests/torus_parts_booleans.rs`, 48 s
+    in the dev profile at `opt-level` 2). `compare_torus_parts_boolean.py`
+    16 matches and 37 reviewed (the capture's 27, 23 of them with the
+    kernel's entity counts, and ten native matches by their counts alone:
+    coaxial bands crossing OCCT's seams, sections split at OCCT's points
+    against the kernel's exact pieces); every other Boolean comparison
+    unchanged in its counts (boolean 45/0, its splines 33/13, polyhedral
+    43/2, curved 42/2, procedural 4/24, turned 2/13, capped 0/18, sphere
+    30/0, spheres 12/21, cone 25/5, cones 21/19, torus 11/24, torus segment
+    15/14, torus curved 15/29, spheres turned 0/18, cones' loops 5/26).
+    Amendments and corrections: (a) a rim's fixed angle is read from the
+    rim's own point at the free angle's `(1, 0)` (`TorusSec::at`: a
+    segment's `v` direction over `r`, a wedge's `u` direction over the
+    point's distance from the axis), whichever branch the rim is; (b) a
+    fuse's void between both inputs' faces (a band's end disc and inner
+    wall under another input's face over its hole) was assembled as a solid
+    of its own and failed validation (`shell_orientation`; S9d.4b.1's box
+    over a band's hole the same, found by the replays here): a shell of
+    both inputs' faces whose certified flux, the shell built alone, is
+    turned inward is now a cavity of the result, whose containment the
+    validator's rays leave undecided (`ComputationLimit`, as S9d.4b.1 (g));
+    (c) a loop through a sphere's pole (a quarter wedge's end half-plane,
+    on the rounded direction of its turn, within rounding of a sphere's
+    axis) wound by the sum of its pcurves' changes, a tie of half a turn at
+    the pole rounded away (`uv_gap`): a loop's winding is now its last
+    pcurve's end against its first's start; refusing a section within the
+    resolution of a pole but off it was tried first and dropped, as it
+    refused S9d.1's `wedges_through_a_spheres_poles` (the DRAW grids'
+    `ZI5`), which the winding by ends keeps; (d) surds over algebraic
+    fields (`Qd::sign`, `tower_sign`, `mixed_dot_sign`) try a binary64
+    enclosure before their exact products (a turned zone against a turned
+    quarter wedge about 16 to 12 s; every other comparison's rows unchanged); (e)
+    the DRAW bridge's guard of a half turn against a cylinder (S9d.4b)
+    evaluates now, moved to its common's volume, `torus_parts_boolean_
+    reference.py`'s 0.53575919723822447; (f) the `boolean` fuzz target
+    decodes a sphere or cone object against a v-segment or wedge tool and a
+    cap or zone object (the heights byte's top bit) against a whole torus or
+    a part, in the axis-aligned frames; in the tilted or a turned frame only
+    with `TURNED_PARTS`, off: of 3,000 replayed variants the 1,201 caps and
+    592 parts in turned frames took 2.1 s and 0.6 s at the median, 7.5 s
+    and 4.6 s at the ninth decile and 26 s and 50 s at the slowest (debug
+    assertions, no sanitizer), against 2.3 s at the slowest of 457 in the
+    axis-aligned frames; parts against prisms with arcs, refused before,
+    evaluate in every frame (4.5 s at the slowest of 750). The corpus (1,423
+    inputs) and the 17 regressions replay with debug assertions without a
+    failure (the slowest 2.9 s), as do the 3,000 variants with the committed
+    decode (the slowest 4.6 s; 24 to 36 s under AddressSanitizer for the
+    five slowest, a host running the test suite beside it) and with
+    `TURNED_PARTS` on (the slowest 50 s), which found (b) and (c) (two kept
+    as regressions, `fuzz/regressions/README.md`). No DRAW upstream case's
+    status changes before the survey (none reaches a part or a cap against
+    a torus). Pending: the DRAW survey, the campaign.
 
 ### Parallel tracks
 

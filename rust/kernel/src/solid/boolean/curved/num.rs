@@ -677,8 +677,17 @@ impl Qd {
         ))
     }
 
-    /// The exact sign.
+    /// The exact sign (a binary64 enclosure first where the number is a
+    /// surd over an algebraic field, S9d.4c: certain where it excludes
+    /// zero; the exact `a^2 - b^2 d` a product in the field).
     pub(super) fn sign(&self) -> Ordering {
+        if self.d != zero() && !self.b.is_zero() && self.gen().is_some() {
+            if let Some(s @ (Ordering::Less | Ordering::Greater)) =
+                self.enclose_fast(SIGN_STEPS).and_then(|v| v.sign())
+            {
+                return s;
+            }
+        }
         let sa = self.a.sign();
         let sb = if self.d == zero() {
             Ordering::Equal
@@ -782,6 +791,16 @@ impl Qd {
 
 /// The exact sign of `x + y sqrt(e)`, `x` and `y` of one field, `e >= 0`.
 pub(super) fn tower_sign(x: &Qd, y: &Qd, e: &R) -> Ordering {
+    // A binary64 enclosure first (S9d.4c): certain where it excludes zero.
+    if *e != zero() {
+        let fast = x
+            .enclose_fast(SIGN_STEPS)
+            .zip(y.enclose_fast(SIGN_STEPS))
+            .and_then(|(a, b)| Some(a.add(&b.mul(&Fast::near_r(e)?.sqrt()))));
+        if let Some(s @ (Ordering::Less | Ordering::Greater)) = fast.and_then(|v| v.sign()) {
+            return s;
+        }
+    }
     let sy = if *e == zero() {
         Ordering::Equal
     } else {
@@ -808,18 +827,27 @@ pub(super) fn tower_sign(x: &Qd, y: &Qd, e: &R) -> Ordering {
 pub(super) fn mixed_dot_sign(a: &[Qd], b: &[Qd]) -> Ordering {
     let ga = a.iter().find_map(|x| x.gen());
     let gb = b.iter().find_map(|x| x.gen());
+    // Binary64 enclosures first where a field is algebraic: certain where
+    // they exclude zero (S9d.4c: before the exact products in one field
+    // too, a tower's the costliest).
+    if ga.is_some() || gb.is_some() {
+        let steps = if ga.zip(gb).is_some_and(|(g, h)| !Arc::ptr_eq(g, h)) {
+            64
+        } else {
+            SIGN_STEPS
+        };
+        let fast = a
+            .iter()
+            .zip(b)
+            .try_fold(Fast::exact_f64(0.0), |acc, (x, y)| {
+                Some(acc.add(&x.enclose_fast(steps)?.mul(&y.enclose_fast(steps)?)))
+            });
+        if let Some(s @ (Ordering::Less | Ordering::Greater)) = fast.and_then(|v| v.sign()) {
+            return s;
+        }
+    }
     if let (Some(g), Some(h)) = (ga, gb) {
         if !Arc::ptr_eq(g, h) {
-            // Binary64 enclosures first: certain where they exclude zero.
-            let fast = a
-                .iter()
-                .zip(b)
-                .try_fold(Fast::exact_f64(0.0), |acc, (x, y)| {
-                    Some(acc.add(&x.enclose_fast(64)?.mul(&y.enclose_fast(64)?)))
-                });
-            if let Some(s @ (Ordering::Less | Ordering::Greater)) = fast.and_then(|v| v.sign()) {
-                return s;
-            }
             return approx_sign(|n| {
                 a.iter().zip(b).fold(I::exact(zero()), |acc, (x, y)| {
                     acc.add(&x.enclose(n).mul(&y.enclose(n)))

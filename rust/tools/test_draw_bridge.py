@@ -206,9 +206,8 @@ class BridgeTests(unittest.TestCase):
         # (S9c.2's: two cylinders, one turned, meeting in quartics), a stack
         # as an argument whose result's top face touches
         # itself at a vertex (Degenerate: a tower's corner on the corner of
-        # a notch), prisms touching along an edge (Degenerate), a torus's
-        # half turn against a cylinder (S9d.4b), two frusta on one cone
-        # (Degenerate), a section,
+        # a notch), prisms touching along an edge (Degenerate), two frusta
+        # on one cone (Degenerate), a section,
         # several objects, a result of two solids as an argument,
         # unifysamedom of other shapes, counts of an uncopied prism's result
         # and a Boolean's history.
@@ -230,6 +229,11 @@ class BridgeTests(unittest.TestCase):
         self.expect(boxes + "pcylinder c 1.75 2\nptorus t 2 0.5\nttranslate t 0 0 1\nbcommon r c t\n"
                     "checkprops r -v [expr {acos(-1) ** 2 / 3 - 5 * sqrt(3) * acos(-1) / 16}] "
                     "-deps 1e-6\n", "pass")
+        # A torus's half turn across a cylinder (S9d.4c): the wedge's end
+        # rim crossing the cylinder, their common torus_parts_boolean_
+        # reference.py's 0.53575919723822447.
+        self.expect(boxes + "pcylinder c 1 2\nptorus t 2 0.5 180\nttranslate t 1.25 0 1\nbcommon r c t\n"
+                    "checkprops r -v 0.53575919723822447 -deps 1e-6\n", "pass")
         # Two curved primitives in one Boolean (S9d.4b's survey): each is
         # built with ids of its own, a copy built again from its numbers.
         # Two unit spheres a unit apart: their common is the lens, 5 pi / 12.
@@ -253,8 +257,6 @@ class BridgeTests(unittest.TestCase):
         for gap, why in [
                 (boxes + "box t 1 1 2 1 1 1\nbfuse r a t\ncheckprops r -v 33\ncatch {bcut s r b}", "egenerate"),
                 (boxes + "box t 4 4 0 1 1 2\ncatch {bfuse r a t}", "egenerate"),
-                (boxes + "pcylinder c 1 2\nptorus t 2 0.5 180\nttranslate t 1 0 1\n"
-                 "catch {bcommon r c t}", "segment or wedge"),
                 # Two frusta on one cone (upstream's ZL6), built with ids of
                 # their own: the kernel's, not the adapter's, refusal.
                 (boxes + "pcone k 2 1 2\npcone m 1 0.5 1\nttranslate m 0 0 2\ncatch {bfuse r k m}",
