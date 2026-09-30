@@ -3043,6 +3043,74 @@ Decisions for S9, recorded before its code (2026-09-28):
     parallel track below. The S9a.2 and S9b.1 "Pending: the campaign"
     lines were closed by the later clean boolean campaigns (`326ad26c`,
     `29278966`, `85104dc3`, `f4ea7a2a`).
+  * **S9d.2c refined, before its code (2026-09-30).** Why each is refused.
+    (1) A cap's or zone's own circles (its rims, its split's great circle)
+    lie on bases of unequal lengths wherever its stored axis is not of unit
+    length exactly (every turned frame: a rim's `y = n * x` has `|y|^2 =
+    |n|^2 |x|^2`), so `c + s (cos x + sin y)` with one surd `s` is no longer
+    the circle and `circ_quadric` refuses; a whole sphere's circles keep
+    equal axes (two rows of a rational rotation, S9d.2a (c)), and so do an
+    exact frame's. (2) On a turned cylinder's stored axes the model's circle
+    at height `w`, `o + r (cos x + sin y) + w n`, is an ellipse in the world,
+    and the sphere's function on it, `F(u, w) = |d + w n + r (cos x + sin
+    y)|^2 - R^2` (`d = o - c`), is of degree two in `(cos u, sin u)`, not
+    linear as in an exact frame: `u(w)` has no closed form (a quartic in the
+    half-angle tangent at each height), which `RiseCrv::at`, its branch and
+    `loops`' exact check (the quartic `dw` in `w`) assume. Decisions. (1)
+    Such a circle is `c + dx x + dy y` with `xx dx^2 + yy dy^2 = r2`
+    (`Circ`'s places are already `(dx, dy)`, and its order and angles take
+    unequal axes: plane sections always had them): in coordinates `(s, t)`
+    turned from `(dx, dy)` by a rational rotation (the identity, then
+    `(3, 4, 5)`, `(5, 12, 13)`, `(8, 15, 17)`), both it and the other
+    quadric's function are quadratics in `t`; their resultant is a quartic
+    in `s` whose simple real roots give each meeting's `t` as the common
+    root `(a2 b0 - a0 b2) / (a1 b2 - a2 b1)`, a point of `Q(alpha)`. A
+    repeated root or a vanishing denominator (two meetings of one `s`, or a
+    tangency) tries the next rotation; failing all four is a tangency
+    (`Degenerate`), a resultant vanishing identically the circle on the
+    surface (as `circle_quadric`). A turned frame's rounding never leaves an
+    exact tangency, so a crossing within the resolution of one (a rim
+    tangent to a cylinder but for the axes' rounding) is `Degenerate` too:
+    the meetings with the quadric offset by `+-2 rho res` (`rho` its radius
+    at the circle's centre) are counted, and a count that differs from the
+    quadric's own means an extremum of its function along the circle within
+    that band. Cones take the same function (their other quadric's radius
+    term), so a turned cap's circle against a cone is met the same way. (2)
+    In a turned frame a loop's pieces over the angle stay `Curve3::Meet`'s
+    (the ruling's quadratic is exact in any affine frame), and a piece over
+    the height is the one root of `F(., w)` in its branch's half-turn (the
+    side `plus` of the rational direction `(alpha, beta) = 2 (x . d, y .
+    d)` in the cylinder's local coordinates, S9d.2b's branch test), for `w`
+    over its range: its point at a rational height the quartic's root there
+    (`Q(alpha)`, degree four). Each such piece is verified exactly: (a) no
+    root of `F` on the half-turn's boundary directions over the range, `E(w)
+    = rho2 P(w)^2 - l(w)^2` (`F = P + l / sqrt(rho2)` there, a quartic in
+    `w`; in an exact frame `-rho2 dw`); (b) no double root of `F(., w)`
+    over the range, the discriminant of its quartic in `t` (degree twelve in
+    `w`); (c) one root in the half-turn at a rational height inside; then
+    the root is analytic in `w` (the implicit function theorem). The height
+    graph's turning points (the ellipse tangent to the sphere) are that
+    discriminant's real roots: in an exact frame it is `-4 disc(Q_w)
+    |Q_w(i)|^4` (`F (1 + t^2)^2 = (1 + t^2) Q_w(t)`, `Q_w(i) = 2 r (alpha +
+    i beta)` constant and nonzero), so a turned frame's perturbation keeps
+    the pair near `+-i` apart and every real root a real tangency. A point's
+    height is its local `w` (the inverse frame's third row, the axis in an
+    exact frame), its branch and the cylinder's membership by its local
+    `(u, v)`: every exact-frame result unchanged. The topology's
+    `Curve3::Rise` keeps its closed form: on the stored axes its binary64
+    reading lies on the model's cylinder and within rounding of the sphere
+    (as `Meet`'s other frame's axes are read), an edge's range clear of
+    turning points by its switches, so no curve type, validator, mass or
+    exchange change. A cone's loops in a turned frame stay refused as
+    S9d.3c's (`OutOfDomain`). Evidence first: an extension of S9d.2's
+    reference taking a cap's end planes as the kernel reads them (through
+    `o + h n` normal to the stored axis, the same plane in an exact frame)
+    and slicing along a turned cap's axis (the prism cut obliquely), a
+    closed form where one exists and a two-way check (a cap and its
+    complement against the whole sphere sliced along the prism's axis),
+    fixtures of both classes with a declared degenerate (a turned rim
+    tangent to a cylinder within rounding), and a native capture before
+    `solid/boolean/curved/spheres_turned.rs` exists.
 
 ### Parallel tracks
 
