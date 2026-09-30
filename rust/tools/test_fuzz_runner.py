@@ -110,6 +110,127 @@ class FuzzRunnerTests(unittest.TestCase):
             self.assertEqual((evidence['regressions'],evidence['new_since_full_replay'],evidence['sampled']),
                              (1,2,run_fuzz.SAMPLE_SIZE))
 
+    def test_replay_shards_cover_the_corpus_exactly_once_by_contents(self):
+        with tempfile.TemporaryDirectory() as directory:
+            corpus=Path(directory)/'boolean'; corpus.mkdir()
+            for k in range(300): (corpus/f'{k:03}').write_bytes(k.to_bytes(2,'little')*3)
+            (corpus/'empty').write_bytes(b'')
+            plan=run_fuzz.shard_names(corpus,4)
+            self.assertEqual(plan,run_fuzz.shard_names(corpus,4))
+            names=[n for part in plan for n in part]
+            self.assertEqual(sorted(names),sorted(p.name for p in corpus.iterdir()))
+            self.assertEqual(len(names),len(set(names)))
+            self.assertTrue(all(part==sorted(part) and len(part)>40 for part in plan))
+            # The same bytes under another name (a seed and libFuzzer's copy) share a shard.
+            (corpus/'copy').write_bytes((corpus/'123').read_bytes())
+            again=run_fuzz.shard_names(corpus,4)
+            self.assertEqual([k for k,part in enumerate(again) if 'copy' in part],
+                             [k for k,part in enumerate(again) if '123' in part])
+            self.assertEqual(run_fuzz.shard_names(corpus,1),[sorted(p.name for p in corpus.iterdir())])
+
+    def test_shard_replay_runs_its_inputs_once_with_the_targets_limits(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory=Path(directory)
+            corpus=directory/'corpus'/'boolean'; corpus.mkdir(parents=True)
+            for k in range(40): (corpus/f'input{k}').write_bytes(bytes([k,1]))
+            plan=run_fuzz.shard_names(corpus,4)
+            seen={}
+            def replay(command,log,timeout,env):
+                run_corpus=Path(command[5])
+                seen.update(files=sorted(p.name for p in run_corpus.iterdir()),timeout=timeout,env=env,command=command)
+                log.write(f'#{len(seen["files"])+3}\tINITED cov: 9\nstat::number_of_executed_units: {len(seen["files"])+3}\n'
+                          'stat::slowest_unit_time_sec: 42\nstat::peak_rss_mb: 543\n')
+                return 0
+            with patch('run_fuzz.FUZZ',directory), patch('run_fuzz.run_process',side_effect=replay):
+                report=run_fuzz.replay_shard('boolean','n',corpus,2,directory,{})
+            self.assertEqual(seen['files'],plan[2])
+            self.assertEqual(report['names'],plan[2])
+            self.assertFalse((corpus.parent/'.boolean-shard-2').exists())
+            tail=seen['command'][seen['command'].index('--')+1:]
+            for flag in ['-runs=0','-timeout=60','-rss_limit_mb=2048','-max_len=256','-print_final_stats=1']:
+                self.assertIn(flag,tail)
+            self.assertIn('asan-allocator',seen['command'])
+            self.assertIn('malloc_context_size=5',seen['env']['ASAN_OPTIONS'])
+            self.assertEqual(seen['timeout'],run_fuzz.startup_budget(len(plan[2]),60))
+            self.assertEqual(report['budget_seconds'],seen['timeout'])
+            self.assertEqual((report['shard'],report['shards'],report['corpus_files']),(2,4,40))
+            self.assertTrue(report['passed'])
+            # A replay killed before INITED, or with an input over its limit, fails.
+            for change in [{'initial_executions':None},{'initial_executions':len(plan[2])},
+                           {'slowest_input_seconds':61},{'peak_rss_mb':None},{'exit_code':124}]:
+                self.assertFalse(run_fuzz.replay_shard_passed({**report,**change}),change)
+
+    def test_shard_check_accepts_only_the_whole_snapshot_once(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory=Path(directory)
+            corpus=directory/'corpus'/'boolean'; corpus.mkdir(parents=True)
+            for k in range(60): (corpus/f'input{k}').write_bytes(bytes([k,7]))
+            plan=run_fuzz.shard_names(corpus,4)
+            digest=run_fuzz.listing_digest(p.name for p in corpus.iterdir())
+            reports=[{'target':'boolean','shard':k,'shards':4,'corpus_digest':digest,'names':part,'passed':True,
+                      'elapsed_seconds':100.+k,'slowest_input_seconds':k,'peak_rss_mb':500+k} for k,part in enumerate(plan)]
+            with patch('run_fuzz.FUZZ',directory):
+                def check(changed):
+                    run_fuzz.manifest_path('boolean').unlink(missing_ok=True)
+                    result=run_fuzz.check_replay_shards('boolean',corpus,changed)
+                    self.assertEqual(result['manifest_written'],run_fuzz.manifest_path('boolean').exists())
+                    return result
+                result=check(reports)
+                self.assertTrue(result['passed'])
+                self.assertEqual((result['replayed_files'],result['slowest_input_seconds'],result['peak_rss_mb']),(60,3,503))
+                self.assertEqual(run_fuzz.manifest_path('boolean').read_text().split(),sorted(p.name for p in corpus.iterdir()))
+                missing=check(reports[:3])
+                self.assertFalse(missing['passed'])
+                self.assertEqual(missing['unreplayed'],plan[3])
+                self.assertIn('shard 3 did not report',missing['problems'])
+                self.assertFalse(check(reports+[reports[0]])['passed'])
+                failed=check([{**r,'passed':k!=1} for k,r in enumerate(reports)])
+                self.assertTrue(failed['complete'])
+                self.assertEqual(failed['failed_shards'],[1])
+                self.assertFalse(failed['passed'])
+                short=[dict(r) for r in reports]; short[0]['names']=short[0]['names'][1:]
+                self.assertEqual(check(short)['unreplayed'],[plan[0][0]])
+                moved=[dict(r) for r in reports]
+                moved[1]['names']=sorted(moved[1]['names']+[moved[0]['names'][0]])
+                self.assertEqual(check(moved)['duplicated'],[plan[0][0]])
+                self.assertFalse(check([{**r,'corpus_digest':'other'} for r in reports])['passed'])
+                self.assertFalse(check([{**r,'shards':3} for r in reports])['passed'])
+                # An input added after the snapshot was given to the shards.
+                (corpus/'late').write_bytes(b'late')
+                late=check(reports)
+                self.assertEqual(late['unreplayed'],['late'])
+                self.assertFalse(late['passed'])
+
+    def test_scheduled_campaign_of_a_sharded_target_samples_whatever_the_manifest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory=Path(directory)
+            corpus=directory/'corpus'/'boolean'; corpus.mkdir(parents=True)
+            regressions=directory/'regressions'/'boolean'; regressions.mkdir(parents=True)
+            (regressions/'r.bin').write_bytes(b'regression')
+            import hashlib
+            regression=hashlib.sha256(b'regression').hexdigest()
+            (corpus/regression).write_bytes(b'regression')
+            for k in range(300): (corpus/f'{k:03}').write_bytes(str(k).encode())
+            with patch('run_fuzz.FUZZ',directory):
+                chosen,evidence=run_fuzz.sharded_campaign_plan('boolean',corpus,11)
+                self.assertEqual(chosen,run_fuzz.sharded_campaign_plan('boolean',corpus,11)[0])
+            self.assertIn(regression,chosen)
+            self.assertEqual(len(chosen),1+run_fuzz.SAMPLE_SIZE)
+            self.assertEqual((evidence['replay'],evidence['shards'],evidence['regressions'],evidence['sampled']),
+                             ('sharded',run_fuzz.REPLAY_SHARDS['boolean'],1,run_fuzz.SAMPLE_SIZE))
+
+    def test_workflow_replay_jobs_match_replay_shards(self):
+        import re
+        text=(run_fuzz.ROOT/'.github/workflows/rust-fuzz.yml').read_text()
+        jobs=text[text.index('\n  replay-snapshot:'):]
+        targets={tuple(t.strip() for t in m.split(',')) for m in re.findall(r'\n\s+target: \[([^\]]*)\]',jobs)}
+        self.assertEqual(targets,{tuple(sorted(run_fuzz.REPLAY_SHARDS))})
+        shards=re.findall(r'\n\s+shard: \[([^\]]*)\]',jobs)
+        self.assertEqual(len(shards),1)
+        self.assertEqual({*run_fuzz.REPLAY_SHARDS.values()},{len(shards[0].split(','))})
+        self.assertEqual([int(k) for k in shards[0].split(',')],list(range(len(shards[0].split(',')))))
+        self.assertLessEqual(set(run_fuzz.REPLAY_SHARDS),set(run_fuzz.TARGETS))
+
     def test_requires_completed_mutation_after_corpus_replay(self):
         text = '#99\tINITED cov: 12 ft: 50\n#102\tDONE cov: 14\nstat::number_of_executed_units: 102\n'
         self.assertEqual(run_fuzz.statistics(text),{

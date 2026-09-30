@@ -541,6 +541,16 @@ SAMPLE_SIZE = 64
 # Exact tensor targets whose replay dominates CI (F7): per push they replay
 # their regressions only; they fuzz on the schedule.
 SCHEDULE_ONLY_TARGETS = {'surface_knots', 'degree_elevation', 'surface_editing'}
+# Targets whose scheduled full replay is split across this many jobs, each
+# replaying (-runs=0) the inputs whose contents hash to its shard under its
+# own startup budget; a check job then requires the shards' union to be the
+# snapshot they were given, each input exactly once (REVIEW_NOTES parallel
+# track "The boolean target's full replay"). Their scheduled campaign replays
+# regressions and a seeded sample before its mutation. The rust-fuzz.yml
+# replay job's matrix must list the same shards (test_fuzz_runner.py).
+# boolean: 356 CI inputs replayed in 1,830 s after a 275 s build at
+# 2efa1ec7, up from 1,242 s of startup at 85104dc3 on the same inputs.
+REPLAY_SHARDS = {'boolean': 4}
 
 
 def manifest_path(target):
@@ -575,6 +585,128 @@ def replay_plan(target, corpus, sample_seed, size=SAMPLE_SIZE):
     chosen = sorted(regressions | set(new) | set(sampled))
     return chosen, {'replay':'sample','manifest':True,'sample_seed':sample_seed,
                     'regressions':len(regressions),'new_since_full_replay':len(new),'sampled':len(sampled)}
+
+
+def sharded_campaign_plan(target, corpus, sample_seed, size=SAMPLE_SIZE):
+    """The scheduled campaign of a REPLAY_SHARDS target: the shard jobs of
+    the same run replay every input, so it replays the checked-in
+    regressions and a seeded sample, whatever the manifest says."""
+    names = sorted(p.name for p in corpus.iterdir())
+    regressions = regression_names(target) & set(names)
+    rest = [n for n in names if n not in regressions]
+    sampled = random.Random(sample_seed).sample(rest, min(size, len(rest)))
+    return sorted(regressions | set(sampled)), {'replay':'sharded','shards':REPLAY_SHARDS[target],
+        'sample_seed':sample_seed,'regressions':len(regressions),'sampled':len(sampled)}
+
+
+def shard_of(data, shards):
+    # By contents, not by name: a seed and libFuzzer's copy of the same
+    # bytes land in one shard, and the assignment needs no other input.
+    return int.from_bytes(hashlib.sha256(data).digest()[:8],'big') % shards
+
+
+def shard_names(corpus, shards):
+    """Every corpus file's name in exactly one of `shards` sorted lists."""
+    plan = [[] for _ in range(shards)]
+    for path in sorted(corpus.iterdir()):
+        plan[shard_of(path.read_bytes(),shards)].append(path.name)
+    return plan
+
+
+def listing_digest(names):
+    return hashlib.sha256(''.join(n+'\n' for n in sorted(names)).encode()).hexdigest()
+
+
+def replay_shard_passed(report):
+    # INITED is printed only after libFuzzer has run every corpus file, each
+    # once plus leak-check reruns, and the empty input once more.
+    return (report['exit_code'] == 0 and report['initial_executions'] is not None
+            and report['initial_executions'] >= report['nonempty_files']+1
+            and resource_limits_satisfied(report))
+
+
+def replay_shard(target, toolchain, corpus, shard, output, env, shards=None):
+    """Replay (-runs=0) one shard of the corpus with the target's limits."""
+    shards = shards or REPLAY_SHARDS[target]
+    plan = shard_names(corpus, shards)
+    names = plan[shard]
+    input_seconds = TARGET_INPUT_SECONDS.get(target,INPUT_SECONDS)
+    artifacts = FUZZ/'artifacts'/target
+    artifacts.mkdir(parents=True,exist_ok=True)
+    run_corpus = corpus.parent/f'.{target}-shard-{shard}'
+    if run_corpus.exists(): shutil.rmtree(run_corpus)
+    run_corpus.mkdir()
+    for name in names:
+        shutil.copy2(corpus/name,run_corpus/name)
+    budget = startup_budget(len(names),input_seconds,TARGET_MAX_STARTUP_SECONDS.get(target,MAX_STARTUP_SECONDS))
+    command = ['cargo',f'+{toolchain}','fuzz','run',target,str(run_corpus),'--fuzz-dir',str(FUZZ),
+               *sanitizer_build_args(target),'--','-runs=0',f'-timeout={input_seconds}','-rss_limit_mb=2048',
+               f'-max_len={max_len(target)}',f'-artifact_prefix={artifacts}/','-print_final_stats=1']
+    log_path = output/f'{target}-shard-{shard}.log'
+    campaign_env = campaign_environment(target,env)
+    started = time.monotonic()
+    try:
+        with log_path.open('w') as log:
+            code = run_process(command,log,budget,campaign_env)
+    finally:
+        shutil.rmtree(run_corpus)
+    report = {'target':target,'mode':'replay-shard','shard':shard,'shards':shards,
+              'corpus_files':sum(map(len,plan)),'corpus_digest':listing_digest(n for part in plan for n in part),
+              'shard_files':len(names),'nonempty_files':sum(1 for n in names if (corpus/n).stat().st_size),
+              'exit_code':code,'elapsed_seconds':round(time.monotonic()-started,2),'budget_seconds':budget,
+              'input_limit_seconds':input_seconds,'sanitizer_options':campaign_env.get('ASAN_OPTIONS'),
+              **statistics(log_path.read_text(errors='replace')),
+              'artifacts':[p.name for p in sorted(artifacts.iterdir())],'command':command,'names':names}
+    report['passed'] = replay_shard_passed(report)
+    return report
+
+
+def check_replay_shards(target, corpus, reports, shards=None):
+    """Accept the sharded full replay only if every shard of this snapshot
+    reported, each replayed exactly its inputs and passed. On success the
+    manifest records the snapshot, as a full replay's does."""
+    shards = shards or REPLAY_SHARDS[target]
+    plan = shard_names(corpus, shards)
+    everything = {n for part in plan for n in part}
+    digest = listing_digest(everything)
+    problems, by_shard = [], {}
+    for report in reports:
+        k = report.get('shard')
+        if report.get('target') != target or report.get('shards') != shards or k not in range(shards):
+            problems.append(f'report of {report.get("target")} shard {k} of {report.get("shards")} is not one of {shards} {target} shards')
+        elif k in by_shard:
+            problems.append(f'shard {k} reported twice')
+        else:
+            by_shard[k] = report
+    missing = [k for k in range(shards) if k not in by_shard]
+    problems += [f'shard {k} did not report' for k in missing]
+    counts = {}
+    for report in by_shard.values():
+        for name in report['names']:
+            counts[name] = counts.get(name,0)+1
+    unreplayed = sorted(everything-counts.keys())
+    unexpected = sorted(counts.keys()-everything)
+    duplicated = sorted(n for n,c in counts.items() if c > 1)
+    for k,report in sorted(by_shard.items()):
+        if report.get('corpus_digest') != digest:
+            problems.append(f'shard {k} replayed another snapshot')
+        if report['names'] != plan[k]:
+            problems.append(f'shard {k} replayed other inputs than its own')
+    failed = sorted(k for k,report in by_shard.items() if not report.get('passed'))
+    complete = not problems and not unreplayed and not unexpected and not duplicated
+    passed = complete and not failed
+    if passed:
+        write_manifest(target,corpus)
+    def most(key):
+        values = [r[key] for r in by_shard.values() if r.get(key) is not None]
+        return max(values) if values else None
+    return {'target':target,'mode':'replay-shards','shards':shards,'corpus_files':len(everything),
+            'corpus_digest':digest,'replayed_files':sum(counts.values()),
+            'shard_files':[len(by_shard[k]['names']) if k in by_shard else None for k in range(shards)],
+            'shard_elapsed_seconds':[by_shard[k].get('elapsed_seconds') if k in by_shard else None for k in range(shards)],
+            'slowest_input_seconds':most('slowest_input_seconds'),'peak_rss_mb':most('peak_rss_mb'),
+            'problems':problems,'unreplayed':unreplayed,'unexpected':unexpected,'duplicated':duplicated,
+            'failed_shards':failed,'complete':complete,'passed':passed,'manifest_written':passed}
 
 
 def version(command, cwd=ROOT):
@@ -758,6 +890,14 @@ def main():
                         help='replay the checked-in regressions and stop (schedule-only targets per push)')
     parser.add_argument('--per-push',action='store_true',
                         help='U6: regressions only for schedule-only targets, a sampled replay otherwise')
+    parser.add_argument('--scheduled',action='store_true',
+                        help='the schedule\'s campaign: a full replay, or for REPLAY_SHARDS targets '
+                             'regressions and a seeded sample (their shard jobs replay everything)')
+    parser.add_argument('--replay-shard',type=int,metavar='K',
+                        help='replay shard K of the unseeded corpus with -runs=0 and stop (REPLAY_SHARDS)')
+    parser.add_argument('--check-replay-shards',type=Path,metavar='DIR',
+                        help='check the shard reports under DIR against the unseeded corpus; '
+                             'write the manifest if they cover it exactly once and passed')
     args = parser.parse_args()
     if args.per_push:
         if set(args.target or TARGETS) <= SCHEDULE_ONLY_TARGETS:
@@ -766,8 +906,26 @@ def main():
             args.replay = 'sample'
     if not 1 <= args.seconds <= 3600: parser.error('--seconds must be in [1,3600]')
     targets = args.target or TARGETS
-    corpora = {target: seed_corpus(target) for target in targets}
+    sharding = args.replay_shard is not None or args.check_replay_shards is not None
+    if sharding:
+        if len(targets) != 1 or targets[0] not in REPLAY_SHARDS:
+            parser.error(f'shard replays take one --target of {sorted(REPLAY_SHARDS)}')
+        if args.replay_shard is not None and not 0 <= args.replay_shard < REPLAY_SHARDS[targets[0]]:
+            parser.error(f'--replay-shard must be in [0,{REPLAY_SHARDS[targets[0]]})')
+    # A shard replays, and the check reads, the snapshot it was given as it is.
+    corpora = {target: FUZZ/'corpus'/target if sharding else seed_corpus(target) for target in targets}
     if args.seed_only: return
+    if args.check_replay_shards is not None:
+        target = targets[0]
+        reports = [json.loads(p.read_text()) for p in sorted(args.check_replay_shards.rglob(f'{target}-shard-*.json'))]
+        report = check_replay_shards(target,corpora[target],reports)
+        print(json.dumps(report),flush=True)
+        for k,(files,seconds) in enumerate(zip(report['shard_files'],report['shard_elapsed_seconds'])):
+            print(f'{target} shard {k}: {files} inputs, {seconds} s',flush=True)
+        output = args.report_dir.resolve()
+        output.mkdir(parents=True,exist_ok=True)
+        (output/f'{target}-replay-shards.json').write_text(json.dumps(report,indent=2)+'\n')
+        raise SystemExit(0 if report['passed'] else 1)
     output = args.report_dir.resolve()
     output.mkdir(parents=True,exist_ok=True)
     summary = {'toolchain':args.toolchain,'seconds_per_target':args.seconds,'targets':[], 'platform':platform.platform()}
@@ -797,7 +955,15 @@ def main():
                 summary['targets'].append(report)
                 failed |= report['exit_code'] != 0 or (FUZZ/'Cargo.lock').read_bytes() != locked
                 print(json.dumps(report),flush=True)
-        for target in [] if args.minimize or args.regressions_only else targets:
+        if args.replay_shard is not None:
+            summary['mode']='replay-shard'
+            target=targets[0]
+            report=replay_shard(target,args.toolchain,corpora[target],args.replay_shard,output,env)
+            summary['targets'].append({k:v for k,v in report.items() if k != 'names'})
+            (output/f'{target}-shard-{args.replay_shard}.json').write_text(json.dumps(report,indent=2)+'\n')
+            failed |= not report['passed'] or (FUZZ/'Cargo.lock').read_bytes() != locked
+            print(json.dumps({k:v for k,v in report.items() if k != 'names'}),flush=True)
+        for target in [] if args.minimize or args.regressions_only or sharding else targets:
             artifacts = FUZZ/'artifacts'/target
             artifacts.mkdir(parents=True,exist_ok=True)
             log_path = output/f'{target}.log'
@@ -811,8 +977,12 @@ def main():
                 input_seconds=TARGET_INPUT_SECONDS.get(target,INPUT_SECONDS)
                 shutdown_seconds=shutdown_budget(input_seconds)
                 corpus=corpora[target]
-                if args.replay=='sample':
-                    chosen,replay=replay_plan(target,corpus,args.sample_seed)
+                mode='sharded' if args.scheduled and target in REPLAY_SHARDS else args.replay
+                if mode in ('sample','sharded'):
+                    if mode=='sharded':
+                        chosen,replay=sharded_campaign_plan(target,corpus,args.sample_seed)
+                    else:
+                        chosen,replay=replay_plan(target,corpus,args.sample_seed)
                     run_corpus=corpus.parent/f'.{target}-sample'
                     if run_corpus.exists(): shutil.rmtree(run_corpus)
                     run_corpus.mkdir()
@@ -852,7 +1022,7 @@ def main():
             summary['targets'].append(report)
             # An exit without a completed campaign is not a successful fuzz run.
             target_failed = code != 0 or not report['startup_budget_completed'] or not report['mutation_budget_completed'] or not report['mutation_executions'] or report['mutation_executions'] < 0 or not resource_limits_satisfied(report) or (FUZZ/'Cargo.lock').read_bytes() != locked
-            if args.replay=='full' and not target_failed:
+            if mode=='full' and not target_failed:
                 write_manifest(target,corpus)
             failed |= target_failed
             print(json.dumps(report),flush=True)

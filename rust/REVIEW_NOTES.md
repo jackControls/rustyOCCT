@@ -3039,19 +3039,43 @@ Decisions for S9, recorded before its code (2026-09-28):
     (`meet.rs`'s cylinders meeting in other curves, needing an exactly
     orthonormal oblique frame; `cones.rs`'s torus guard, which `graph.rs`
     never reaches). Acceptance (U6) needs the full boolean replay on a
-    schedule run, which exceeds the startup hour under AddressSanitizer: a
-    parallel track below. The S9a.2 and S9b.1 "Pending: the campaign"
+    schedule run, which exceeds the startup hour under AddressSanitizer in
+    one process: it is sharded across schedule jobs now (the parallel
+    track below). The S9a.2 and S9b.1 "Pending: the campaign"
     lines were closed by the later clean boolean campaigns (`326ad26c`,
     `29278966`, `85104dc3`, `f4ea7a2a`).
 
 ### Parallel tracks
 
 * **The boolean target's full replay under AddressSanitizer (S9
-  acceptance).** The corpus's full replay exceeds the 3,600 s startup
-  hour under the sanitizer (S9d.3a's note), so a schedule run cannot
-  replay it all as U6's acceptance asks: a minimised corpus, a faster
-  certified validation of curved results (the parallel track above), or
-  the replay split across schedule jobs.
+  acceptance), done: the replay split across schedule jobs.** The local
+  corpus's full replay (1,419 inputs) exceeds the 3,600 s startup hour
+  under the sanitizer (S9d.3a's note). CI's corpus is the cached one, 356
+  inputs (seeds, regressions and the few inputs campaigns kept): its only
+  scheduled full replay (`fc695afd`) stopped on crash `6d1fd061` after
+  1,667 s (a regression since), and per-push runs, which replay it whole
+  without a manifest, took 1,242 s of startup at `85104dc3`, 1,542 s at
+  `b96730a7`, 2,074 s at `f4ea7a2a` and 2,108 s at `2efa1ec7` (a 275 s
+  build; the slowest input `d0a3de29`, 42 s, within the 60 s limit), the
+  same inputs slower with each curved family. The schedule and manual
+  campaigns now replay `REPLAY_SHARDS` targets (`boolean`, four shards) in
+  jobs of their own (`FUZZING.md`): one published snapshot of the corpus,
+  each input replayed once with `-runs=0` in the shard its contents hash
+  to, under the target's limits and a startup hour per shard, and a check
+  job that passes only if the shards' union is the snapshot, each input
+  once, every shard green, and then writes the manifest. The campaign job
+  of the same run replays regressions and a seeded sample before its
+  mutation. Replayed locally in the four shards at `2efa1ec7` over CI's
+  356 inputs: 80, 96, 96 and 84 inputs in 106, 216, 196 and 121 s (639 s
+  against CI's 1,830 s in one process), the slowest 15 s, the check clean
+  and the manifest written. What remains: the next schedule
+  run's green shards and check (acceptance evidence); the Sunday
+  minimisation still merges the whole corpus in one process under the
+  hour (CI's 356 inputs fit, the local 1,419 did not); the sampled
+  campaign keeps no new inputs, so CI's boolean corpus grows by seeds and
+  regressions, as it did in practice before. `degree_elevation` overran
+  the hour once on the schedule (471 inputs, `7bf4e3a1`; 2,666 s the next
+  day), a candidate for `REPLAY_SHARDS` if it recurs.
 
 * **Certified integrals along procedural meetings (S9d.4b.2b).** The
   validator's and mass's certified integrals along `Curve3::Toric` meetings

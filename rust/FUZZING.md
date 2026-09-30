@@ -180,7 +180,63 @@ against the sample); the corpus grows on full replays. `surface_knots`,
 push (`--regressions-only`) and fuzz on the schedule. Acceptance still needs
 the full replay green on the schedule run of the accepted revision, plus the
 clean local 600-second campaign. Locally, a sampled `brep_io` run replayed 65
-inputs in 5.6 s where the full corpus took 126 s.
+inputs in 5.6 s where the full corpus took 126 s. A fuzz job saves the
+manifest only when its run changed it, so a restored manifest is never
+re-saved under a run's key another job of that run writes.
+
+**Sharded full replay (`REPLAY_SHARDS`).** A campaign replays its corpus in
+one process under one startup budget, build included and capped at an hour,
+so a corpus that replays slower than that can never pass a scheduled full
+replay. `boolean` is heading there: CI's 356 inputs took 1,242 s of startup
+at `85104dc3` and 2,108 s at `2efa1ec7` (a 275 s build, the slowest input
+42 s), the same inputs growing slower with each curved family, and the
+local corpus of 1,421 inputs exceeds the hour under AddressSanitizer. For
+the targets in `run_fuzz.py`'s `REPLAY_SHARDS` (`boolean`, four shards) the
+schedule and manual campaigns split the full replay across jobs of the run:
+
+1. `Replay snapshot` restores the corpus, seeds it and publishes it as an
+   artifact, so every shard reads the same inputs whatever other runs cache
+   meanwhile.
+2. Each `Full replay` job, `run_fuzz.py --target boolean --replay-shard K`,
+   replays the inputs whose contents hash to shard `K` (the first eight
+   bytes of their SHA-256, modulo the shard count) with `-runs=0` under the
+   target's own limits (60 s per input, 2 GiB, its sanitizer options and
+   length) and a startup budget of its own, `min(3600, 600 + 60 × (inputs +
+   1))` seconds. It fails on a finding, on its budget, without libFuzzer's
+   `INITED` (printed only once every file has run), or on a reported
+   slowest input or peak RSS over its limit, and it reports its inputs'
+   names.
+3. `Full replay complete`, `--check-replay-shards`, recomputes the shards
+   from the snapshot and passes only if each shard reported once with
+   exactly its own inputs, the union is the snapshot with each input once,
+   and every shard passed; it lists missing shards and unreplayed,
+   duplicated or unexpected inputs otherwise. Only then does it write and
+   save the manifest.
+
+The target's campaign job in the same run (`--scheduled`) replays its
+regressions and 64 inputs sampled with the run id (`"replay": "sharded"`,
+whatever the manifest), mutates for 600 seconds and writes no manifest; its
+new inputs, like a per-push sample's, are not retained. Acceptance of a
+sharded target needs the four `Full replay` jobs and `Full replay complete`
+green on the schedule run, with its campaign. Each shard is its own process,
+so allocator state no longer accumulates across the whole corpus; every
+input still runs once under the sanitizer and its limits. The artifacts'
+names carry the run id only: re-running failed jobs reuses the snapshot and
+the green shards' reports. `REPLAY_SHARDS` and the workflow's shard matrix
+change together (a unit test holds them equal). Locally, the same shards and
+check run over `rust/fuzz/corpus/boolean`:
+
+```sh
+for k in 0 1 2 3; do python3 rust/tools/run_fuzz.py --target boolean --replay-shard $k --report-dir target/replay-shards/$k; done
+python3 rust/tools/run_fuzz.py --target boolean --check-replay-shards target/replay-shards
+```
+
+At `2efa1ec7` on the development Mac, CI's 356 `boolean` inputs split 80,
+96, 96 and 84 and replayed in 106, 216, 196 and 121 s under the sanitizer
+(639 s in all against CI's 1,830 s in one process; the slowest input 15 s,
+544 MB at most), after one 167 s build; the check found each input once and
+wrote the manifest. At CI's 2.6 to 2.9 times that, a shard takes about a
+quarter of its hour.
 
 Retained corpora are minimised weekly (R12 of `REVIEW_NOTES.md`): on Sundays
 the fuzzing workflow runs `run_fuzz.py --minimize` instead of a campaign. It

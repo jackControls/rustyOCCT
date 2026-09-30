@@ -72,16 +72,23 @@ jobs:
           path: rust/fuzz/corpus/${{ matrix.target }}.replayed
           key: replayed-v1-${{ matrix.target }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: replayed-v1-${{ matrix.target }}-
+      - name: Note the restored manifest
+        id: restored
+        run: echo "manifest=${{ hashFiles(format('rust/fuzz/corpus/{0}.replayed', matrix.target)) }}" >> "$GITHUB_OUTPUT"
       - name: Run sanitizer and mathematical oracle campaign
         run: |
           if [ "$SCHEDULE" = '41 2 * * 0' ] || [ "$MINIMIZE" = true ]; then
             python3 rust/tools/run_fuzz.py --target "$FUZZ_TARGET" --toolchain "$NIGHTLY" --minimize
             exit
           fi
+          # --scheduled: a full replay, except for run_fuzz.py's REPLAY_SHARDS
+          # targets, whose full replay is the replay job's shards below.
           if [ "$EVENT" = schedule ]; then
-            python3 rust/tools/run_fuzz.py --target "$FUZZ_TARGET" --seconds 600 --toolchain "$NIGHTLY"
+            python3 rust/tools/run_fuzz.py --target "$FUZZ_TARGET" --seconds 600 --toolchain "$NIGHTLY" \
+              --scheduled --sample-seed "$GITHUB_RUN_ID"
           elif [ "$EVENT" = workflow_dispatch ]; then
-            python3 rust/tools/run_fuzz.py --target "$FUZZ_TARGET" --seconds "$REQUESTED_SECONDS" --toolchain "$NIGHTLY"
+            python3 rust/tools/run_fuzz.py --target "$FUZZ_TARGET" --seconds "$REQUESTED_SECONDS" --toolchain "$NIGHTLY" \
+              --scheduled --sample-seed "$GITHUB_RUN_ID"
           else
             # U6: regressions, inputs new since the last full replay and a
             # sample seeded by the run id; schedule-only targets replay their
@@ -106,8 +113,122 @@ jobs:
         with:
           path: rust/fuzz/corpus/${{ matrix.target }}
           key: corpus-v1-${{ matrix.target }}-${{ github.run_id }}-${{ github.run_attempt }}
+      # Only a manifest this run wrote: a sharded target's manifest is the
+      # replay check's to save under this key.
       - name: Retain the full replay's manifest
-        if: always() && github.event_name != 'pull_request' && hashFiles(format('rust/fuzz/corpus/{0}.replayed', matrix.target)) != ''
+        if: >-
+          always() && github.event_name != 'pull_request' &&
+          hashFiles(format('rust/fuzz/corpus/{0}.replayed', matrix.target)) != '' &&
+          hashFiles(format('rust/fuzz/corpus/{0}.replayed', matrix.target)) != steps.restored.outputs.manifest
+        uses: actions/cache/save@v4.2.3
+        with:
+          path: rust/fuzz/corpus/${{ matrix.target }}.replayed
+          key: replayed-v1-${{ matrix.target }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+  # The full replay of run_fuzz.py's REPLAY_SHARDS targets on the schedule
+  # (and manual campaigns): one corpus snapshot, split by each input's
+  # contents hash across the shard jobs, each replaying its inputs with
+  # -runs=0 under the target's own limits and a startup budget of its own;
+  # the check then requires every input of the snapshot replayed exactly
+  # once and every shard green, and records the manifest (FUZZING.md).
+  replay-snapshot:
+    name: Replay snapshot / ${{ matrix.target }}
+    if: >-
+      (github.event_name == 'schedule' && github.event.schedule != '41 2 * * 0') ||
+      (github.event_name == 'workflow_dispatch' && !inputs.minimize)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        target: [boolean]
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Restore evolving corpus
+        uses: actions/cache/restore@v4.2.3
+        with:
+          path: rust/fuzz/corpus/${{ matrix.target }}
+          key: corpus-v1-${{ matrix.target }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: corpus-v1-${{ matrix.target }}-
+      - run: python3 rust/tools/run_fuzz.py --target "${{ matrix.target }}" --seed-only
+      - name: Publish the snapshot every shard replays
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: replay-snapshot-${{ matrix.target }}-${{ github.run_id }}
+          path: rust/fuzz/corpus/${{ matrix.target }}/
+          retention-days: 30
+          if-no-files-found: error
+          overwrite: true
+
+  replay:
+    name: Full replay / ${{ matrix.target }} shard ${{ matrix.shard }}
+    needs: replay-snapshot
+    runs-on: ubuntu-24.04
+    # Build plus the shard's startup budget (at most 1h).
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [boolean]
+        shard: [0, 1, 2, 3]
+    env:
+      NIGHTLY: nightly-2026-09-22
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Install pinned fuzz toolchain
+        run: rustup toolchain install "$NIGHTLY" --profile minimal
+      - name: Cache fuzz runner
+        id: runner
+        uses: actions/cache@v4.2.3
+        with:
+          path: ~/.cargo/bin/cargo-fuzz
+          key: cargo-fuzz-0.13.1-${{ runner.os }}-${{ runner.arch }}
+      - if: steps.runner.outputs.cache-hit != 'true'
+        run: cargo install cargo-fuzz --version 0.13.1 --locked
+      - uses: actions/download-artifact@v4.3.0
+        with:
+          name: replay-snapshot-${{ matrix.target }}-${{ github.run_id }}
+          path: rust/fuzz/corpus/${{ matrix.target }}
+      - name: Replay the shard under the sanitizer
+        run: |
+          python3 rust/tools/run_fuzz.py --target "${{ matrix.target }}" --toolchain "$NIGHTLY" \
+            --replay-shard "${{ matrix.shard }}"
+      - name: Preserve the shard's evidence and reproducer inputs
+        if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: replay-${{ matrix.target }}-shard-${{ matrix.shard }}-${{ github.run_id }}
+          path: |
+            target/fuzz-reports/
+            rust/fuzz/artifacts/${{ matrix.target }}/
+          retention-days: 30
+          if-no-files-found: warn
+          overwrite: true
+
+  replay-check:
+    name: Full replay complete / ${{ matrix.target }}
+    needs: [replay-snapshot, replay]
+    if: always() && needs.replay-snapshot.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        target: [boolean]
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/download-artifact@v4.3.0
+        with:
+          name: replay-snapshot-${{ matrix.target }}-${{ github.run_id }}
+          path: rust/fuzz/corpus/${{ matrix.target }}
+      - uses: actions/download-artifact@v4.3.0
+        with:
+          pattern: replay-${{ matrix.target }}-shard-*-${{ github.run_id }}
+          path: target/replay-shards
+      - name: Check every input replayed exactly once and every shard green
+        run: |
+          python3 rust/tools/run_fuzz.py --target "${{ matrix.target }}" \
+            --check-replay-shards target/replay-shards
+      - name: Retain the full replay's manifest
+        if: hashFiles(format('rust/fuzz/corpus/{0}.replayed', matrix.target)) != ''
         uses: actions/cache/save@v4.2.3
         with:
           path: rust/fuzz/corpus/${{ matrix.target }}.replayed
