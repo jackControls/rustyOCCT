@@ -693,6 +693,25 @@ before, every certified result unchanged. The input replays in 2.3 s
 beside it (1.4 to 1.7 s of CPU each, a torus and a cylinder, two cones, two
 tori) are the traced graph's ordinary work and are unchanged.
 
+## Analytic intersections: a plane an ulp off a torus's axis on Linux
+
+`analytic_intersections/crash-6aaf4957eb5df03ee6bcfb941a50682840e8c058.bin`
+crashed only in Linux CI's per-push run at `428349e8` ("a parameter inside
+a component is on the curve"): a plane with normal `(-3, -1, 2)` through the
+centre of a torus (major radius 1.375, minor 0.15) about `(-1, -1, -2)`,
+both at `(6.875, 6.9375, 6.875)`. The normals are perpendicular, and on
+macOS the stored ones stay exactly so: the plane contains the axis, two
+meridian circles. glibc's `hypot` rounds correctly, and there each stored
+normal is an ulp off macOS's and their dot product `2.3e-17`, so the plane
+meets the torus in S7b.3a's two loops, each within `2.5e-18` of the meridian
+angle `+-pi/2`, whose nearest binary64 value is `6.1e-17` away: their ends'
+enclosures crossed, and every parameter the check took between them was off
+the loop. A procedural curve's loop now has disjoint end enclosures with
+both branches defined between them, or the intersection is
+`ComputationLimit`; `toroidal.rs`'s tests build glibc's frames bit for bit
+and turn either normal by an ulp or two on any host. On macOS the input
+still gives the two circles.
+
 ## Curve/surface: a circle nearly tangent to a cone
 
 `curve_surface/timeout-fdb4ae721b33aab65287ff8213216b9633bd2975.bin` and

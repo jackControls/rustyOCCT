@@ -2618,7 +2618,15 @@ Decisions for S9, recorded before its code (2026-09-28):
     2, 40 s), and the test jobs have time limits. At `4d5d3d5b` every job
     and comparison passed, the B-rep job's in 60 minutes 3 seconds against
     its 60 (90 now); the fuzz workflow was green there too. Both
-    workflows green at `b96730a7`, the first since `a608a3c2`.
+    workflows green at `b96730a7`, the first since `a608a3c2`. (j) The fuzz
+    workflow's Linux-only `analytic_intersections` crash `6aaf4957` (at
+    `428349e8`) is (a)'s `hypot` again, a plane through a torus's centre
+    an ulp off containing its axis whose two loops lie within `2.5e-18` of
+    the meridian angle `+-pi/2`, their ends' enclosures crossing with no
+    binary64 parameter between them, so a procedural curve's loop now has
+    disjoint end enclosures or the intersection is `ComputationLimit` (a
+    limit of binary64 enclosures, not a degeneracy, which S7 decides only
+    exactly; `toroidal.rs`'s tests take glibc's frames bit for bit).
   * **S9d.4b refined, before its code (2026-09-29).** Two sub-steps.
     S9d.4b.1: tori other than whole ones (S3's v-segments between two
     latitudes and wedges of a partial turn) against polyhedral prisms: the

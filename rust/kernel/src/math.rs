@@ -219,6 +219,17 @@ impl Frame3 {
     pub(crate) fn at(self, origin: Point3) -> Self {
         Self { origin, ..self }
     }
+    /// Axes taken bit for bit (tests reproducing the frames `new` builds
+    /// with another platform's `hypot`).
+    #[cfg(test)]
+    pub(crate) fn from_axes(origin: Point3, x: Vec3, y: Vec3, normal: Vec3) -> Self {
+        Self {
+            origin,
+            x,
+            y,
+            normal,
+        }
+    }
     pub fn origin(self) -> Point3 {
         self.origin
     }
