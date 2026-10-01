@@ -161,7 +161,7 @@ group, and stale success records are removed before each run.
 | `boolean/bopcommon_simple/C3`, `bopcut_simple/F6`, `G8`, `bopfuse_simple/N6` | Unsupported | Viewer skipped | A box turned by 45, 30 or 115 degrees with a corner on the other box's corner, wall or edge within rounding: a face thinner than the resolution, a face using an edge both ways, a face touching itself at a vertex, two solids touching at a point (S9b.1's `Degenerate`) |
 | `boolean/bcut_simple/H4` to `L2` (35 cases) | Viewer skipped | Viewer skipped | Pockets cut from a prism one after another by prisms of profiles in planes facing z or -z (`J3`'s last tool moved by `ttranslate`): the first cut is a stack (S9a.2; in `J4` and `J7` a polyhedron, S9b.1), which the next `bcut` takes as its object, on its stored geometry (S9b.2; in `J2` to `J7` and `K7` a third `bcut` takes the second's result): `checkprops -s` and the group's `checkshape`; each records a `checkview` |
 | `boolean/bopfuse_simple/H3`, `H4` | Viewer skipped | Viewer skipped | A box turned 45 degrees with its corner on the other's wall within rounding (`H3`'s inside it exactly): refused as a direction of zero length until S9b.2's face frames took each face's whole vector area |
-| `boolean/bcut_simple/L3` to `L6` | Viewer skipped | Viewer skipped | DRAW's rollex: a pocket and then a hole cut from a disc prism; the first cut is a stack with cylindrical walls, which the next `bcut` takes as its object with a cylinder standing on the pocket's floor (on a plane facing down in `L3` and `L4`): `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9e.2's stack given to another Boolean on its construction's curved arrangement; `L3` was the sentinel for its `OutOfDomain` since S9b.2, `L4` to `L6` registered in S9e.2's survey) |
+| `boolean/bcut_simple/L3` to `L6` | Viewer skipped | Viewer skipped | DRAW's rollex: a pocket and then a hole cut from a disc prism; the first cut is a stack with cylindrical walls, which the next `bcut` takes as its object with a cylinder standing on the pocket's floor (on a plane facing down in `L3` and `L4`): `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9e.2's stack given to another Boolean on its construction's curved arrangement; `L3` was the sentinel for its `OutOfDomain` since S9b.2, `L4` to `L6` registered in S9e.2's survey; the volume audit of the survey of S9e.1 and S9e.2 the reference's within 3.2e-16 relative) |
 | `boolean/bfuse_simple/E1` | Unsupported | Viewer skipped | Prisms with arcs sized by `SCALE`: the tool's profile does not translate exactly into the object's frame, so the kernel decides them on exact models, where an arc must end on its circle exactly; the `profile`'s half circles end off theirs by rounding (S9c) |
 | `boolean/bopcommon_simple/C8` | Unsupported | Viewer skipped | An angle `atan2(1,2)*180/pi` in `dset`, which the adapter does not evaluate |
 | `boolean/bopcommon_simple/S5`, `bopcut_simple/ZC7`, `S4`, `bopfuse_simple/U7`, `B3`, `boptuc_simple/R1` | Unsupported | Viewer skipped | Box corners on or tangent to a cylinder, boxes touching along an edge: pieces thinner than the resolution, results touching themselves (at a point or along an edge) or each other, a hole touching its boundary (the kernel's `Degenerate`) |
@@ -1251,6 +1251,62 @@ both; `bopcut_simple/ZQ1` (`wire`, unsupported on both) and
 `bopfuse_simple/ZP6` (a torus tangent to the other input) as before. None
 fails or times out. A contract run of the four (both backends) holds; the
 ledger does not change.
+
+**S9e.1 and S9e.2 in the Boolean group.** The same 1,802 cases were run
+again on both backends after S9e.1 (a Boolean's result of prisms with
+lines, arcs and circles, the only solid of its Boolean, given to another
+Boolean on its construction's exact model) and S9e.2 (a stack with arc
+walls, an S9b.1 result given with arcs and one solid of a result of
+several, on their construction's curved arrangement run again)
+(2026-09-30, `survey_upstream_tests.py --boolean`, the public dataset
+read through `--data-dir`, 120 seconds a case, four at once; no case
+loads it). Native DRAW's statuses are unchanged. Rust's change in the six
+cases S9e.2's run of the chained cases (above) found, and in no other:
+`bcut_simple/L3` to `L6`, the rollex, evaluate, each `viewer_skipped`, as
+registered there; `bcut_simple/G9` and `H3` (a frustum fused onto a
+cylinder, then a rod cut from the fuse) are refused as S9e.3's ("a
+Boolean's result of solids other than prisms given to another Boolean"),
+where the survey before refused them as a solid with curved faces or edges
+in any position (S9c). No case evaluates newly besides the rollex, none
+fails and none times out. The group's other cases giving a result to a
+second Boolean are S9b.2's pockets (registered since S9b.2's survey) or
+the 19 others of the 25 S9e.2's run found unchanged (restored arguments,
+constructs the adapter does not read, private data, `ZQ1`, `ZP6`). Rust
+evaluates 987 (983 before), every one registered; 592 cases native DRAW
+evaluates are refused (596), each for the reason the surveys above found,
+and 223 are unsupported on both. The previous table's stack with
+cylindrical or conical walls as a Boolean argument (S9c, 6) is gone: 4
+evaluate, 2 are S9e.3's. The sentinels are refused as before (`L3` no
+longer among them).
+
+The volume audit was run again on the 987 cases (`vprops` and `sprops`
+before each `checkprops`, both backends). On the 983 of the last audit
+both backends' values are that audit's bit for bit (Rust) and to the
+digit (native DRAW): S9e.1's and S9e.2's kernels, their amendments
+included (a reversed piece joined on one surface, a moved stack's height
+range, parallel cylinders met from the second input's arc's side), change
+no registered case's values, so no worker had to be built at an earlier
+commit to explain a difference. On the rollex Rust's values are S9e.2's
+audit's bit for bit: volume 199635.184534622938 and area
+30152.9544786437837 in all four, the centre (-1.96306181728239970,
+63.5144823959729763, 9.06871924355272263) in `L3` and `L4` and
+(-1.96306181728239615, 63.5144823959729834, 9.06871924355272085) in `L5`
+and `L6`. Against
+`generate_given_boolean_fixtures.py`'s `rollex_turned_cut` and
+`rollex_flat_cut` they are within 3.2e-16 relative in volume, 7.5e-17 in
+area and 1.5e-16 in the centre (scaled by the cube root of the volume;
+8.4e-17 in `L5` and `L6`); native DRAW's printed 199635, 30153 and
+(-1.96306, 63.5145, 9.06872) within 9.2e-7, 1.5e-6 and 3.0e-7, its
+printed digits. Rust agrees with native DRAW to its printed digits or 1e-6
+relative on all but the same 35 as before, native DRAW off in each.
+
+`bopfuse_simple/ZP6` is refused as before, a torus tangent to the other
+input's surface. The `gdml_public` grid's tori (`A1`, `A2`, `A9`, `B6`)
+stay refused by both hosts: the Rust adapter at `compound result` and,
+after it, at a `ptorus` on a DRAW `plane`; the native host at `add` or
+`wire`. A full contract run of the manifest (both backends, 30 seconds a
+case) holds for every case, the slowest Boolean case 9.8 seconds
+(`boptuc_simple/ZK8`), the rollex 1.5 to 1.6. The ledger does not change.
 
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and

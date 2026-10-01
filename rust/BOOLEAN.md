@@ -2290,7 +2290,7 @@ within rounding of parallel. The derived cases `boolean_prisms`,
 `boolean_stacks` (a step, a pocket, a box cut in two by a slab, a closed
 cavity, a tool through a round wall) and `boolean_polyhedra` (quarter
 turns, a bar turned 45 degrees through a box, a tilted bar cutting a box
-in two, a turned box inside another) and 983 cases of upstream's
+in two, a turned box inside another) and 987 cases of upstream's
 `boolean` group (86 of them stacks, 300 polyhedra of two boxes, one
 turned, 35 pockets cut one after another, a stack or a polyhedron given
 to the next `bcut`, 65 of S9c.1's prisms with arcs in any position: a
@@ -2315,7 +2315,9 @@ meeting the wall in quartics, its wide end through the caps in `ZK7` to
 `ZK9` and `ZL1`, and 20 more of S9d.3b.1's, two `pcone`s: a frustum and a
 narrower coaxial one on its top disc, inside it or through its discs, and 16 of
 S9d.4b.2a's: the cylinder and a coaxial torus whose tube its wall cuts in
-two circles) evaluate on both backends, and
+two circles, and 4 of S9e.2's: DRAW's rollex, a disc less a pocket across
+its rim, a stack with a cylindrical wall, given to the next `bcut` with a
+cylinder standing on the pocket's floor) evaluate on both backends, and
 S9c.2b.1 adds none. One of that
 sphere's turns, `ZI5`, was wrong until a sphere face's closing chord at
 a pole was enclosed narrowly (its volumes off by `32 pi / 9`, its `btuc`
@@ -2334,7 +2336,10 @@ certified integrals' speed-up (9 to 13 since), and are registered since
 that survey, in which no upstream case's status changed with S9d.2c,
 S9d.3c or S9d.4c (the group's spheres and tori are whole, no cap, zone
 or torus part, and its cones meet the cylinder in circles or rings, not
-loops). Of
+loops). The survey of S9e.1 and S9e.2 found no other case newly
+evaluating (the rollex registered in S9e.2's run of the chained cases),
+the volume audit's values of the 983 before bit for bit and the rollex's
+`generate_given_boolean_fixtures.py`'s within 3.2e-16 relative. Of
 the upstream cases in frames with different axes the rest are refused:
 S9b.1's, S9c.1's, S9c.2a's, S9c.2b.1's,
 S9d.1's, S9d.2a's, S9d.3a's, S9d.3b.1's and S9d.4b.2's `Degenerate` (a turned box's corner on
@@ -2351,6 +2356,7 @@ cap through a frustum's virtual apex, a frustum's base rim on a
 cylinder's rim, turned about the axis or not; two frusta on one cone or
 with one virtual apex, coincident rims or bases on one plane; three
 copies of a torus about perpendicular axes, their tubes touching), and an
-arc ending off its circle; of the stacks
-given to another Boolean, those with cylindrical or conical walls (S9c;
+arc ending off its circle; of the results
+given to another Boolean, a frustum fused onto a cylinder (`bcut_simple/
+G9`, `H3`: a result of solids other than prisms, S9e.3;
 `UPSTREAM_TESTS.md`).

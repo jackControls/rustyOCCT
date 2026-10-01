@@ -4001,7 +4001,8 @@ Decisions for S9, recorded before its code (2026-09-28):
     as before: no status changes, the ledger does not (`L3`'s sentinel
     purpose now names S9e.2). Campaign: the boolean
     campaign at `51c08edf` (600 s, a sampled replay) clean, 1,101 runs, the
-    slowest input 22 s under AddressSanitizer. Pending: the DRAW survey.
+    slowest input 22 s under AddressSanitizer. DRAW survey: that of S9e.1
+    and S9e.2, below (no status changes beyond S9e.2's rollex).
   * **S9e.2 refined, before its code (2026-09-30).** Why each is refused
     today: a stack given with an arc (or with curved walls of its own) goes
     to `polyhedra.rs`, whose `stored_model` refuses its cylinders and whose
@@ -4226,7 +4227,29 @@ Decisions for S9, recorded before its code (2026-09-28):
     `L3` no longer a sentinel); the others as before (`G9` and `H3` S9e.3's,
     the dataset's restored arguments and constructs, private data, `ZQ1`,
     `ZP6`), none failing or timing out; the ledger does not change.
-    Pending: the DRAW survey, the campaign.
+    DRAW survey: that of S9e.1 and S9e.2, below. Pending: the campaign.
+  * **DRAW survey of S9e.1 and S9e.2 (2026-09-30, `UPSTREAM_TESTS.md`).**
+    The 1,802 cases of the Boolean group run again on both backends after
+    S9e.1 and S9e.2 (the public dataset, 120 seconds a case): native
+    DRAW's statuses unchanged, Rust's changed only where S9e.2's run of
+    the chained cases found: `bcut_simple/L3` to `L6` (the rollex)
+    evaluate, as registered there, and `G9` and `H3` (a frustum fused onto
+    a cylinder, then cut) are refused as S9e.3's, not as S9c's solid with
+    curved faces in any position. No other case evaluates newly or changes
+    its refusal, none fails or times out, the sentinels are refused as
+    before (`L3` no longer one). Rust evaluates 987 (983 before), 987
+    registered, 592 refused (596), 223 unsupported on both. The volume
+    audit of the 987: on the 983 of the last audit Rust's values bit for
+    bit and native DRAW's to the digit, so S9e.1's and S9e.2's kernels and
+    amendments change no registered case and no worker at an earlier
+    commit was needed; the rollex's S9e.2's audit's bit for bit, the
+    references' (`rollex_turned_cut`, `rollex_flat_cut`) within 3.2e-16
+    relative in volume, 7.5e-17 in area and 1.5e-16 in the centre, native
+    DRAW's within its printed digits. Rust and native DRAW disagree on the
+    same 35 as before, native off in each. `bopfuse_simple/ZP6` and the
+    `gdml_public` tori refused as before. A full contract run holds (the
+    slowest Boolean case 9.8 seconds, the rollex 1.6); the ledger does not
+    change; no kernel change.
   * **S9f refined, before its code (2026-09-30).** Why splines stop today:
     a spline prism in another frame, or whose offset or heights round,
     reaches `polyhedra::stored_model` ("a solid with curved faces or edges
