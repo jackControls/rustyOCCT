@@ -4227,7 +4227,10 @@ Decisions for S9, recorded before its code (2026-09-28):
     `L3` no longer a sentinel); the others as before (`G9` and `H3` S9e.3's,
     the dataset's restored arguments and constructs, private data, `ZQ1`,
     `ZP6`), none failing or timing out; the ledger does not change.
-    DRAW survey: that of S9e.1 and S9e.2, below. Pending: the campaign.
+    DRAW survey: that of S9e.1 and S9e.2, below. Campaign: the boolean
+    campaign at `6c221525` (600 s, a sampled replay) clean, 1,230 runs,
+    the slowest input 30 s under AddressSanitizer (S9a.2's spline stack
+    `d0a3de29`).
   * **DRAW survey of S9e.1 and S9e.2 (2026-09-30, `UPSTREAM_TESTS.md`).**
     The 1,802 cases of the Boolean group run again on both backends after
     S9e.1 and S9e.2 (the public dataset, 120 seconds a case): native
@@ -4352,9 +4355,12 @@ Decisions for S9, recorded before its code (2026-09-28):
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions
-    and S9f.1's evidence (38 cases captured before its kernel code). Open,
-    in order: S9e.2's campaign and the DRAW survey of S9e.1 and S9e.2;
-    S9e.3 (results with spheres, cones or tori, procedural edges, deeper
+    and S9f.1's evidence (38 cases captured before its kernel code).
+    Since the pause (2026-10-01): S9e.2's campaign clean at `6c221525`
+    and the DRAW survey of S9e.1 and S9e.2 (no case changes but the
+    rollex, already registered), so S9e.1 and S9e.2 are done; `HANDOFF.md`
+    summarizes this state. Open, in order: S9e.3 (results with spheres,
+    cones or tori, procedural edges, deeper
     chains, `G9` and `H3`): its evidence first, a local WIP branch
     `s9e3-wip` began kernel code before any evidence and is to be restarted
     evidence first; S9f.1's kernel (spline walls in the curved engine and
