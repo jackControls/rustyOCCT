@@ -4352,6 +4352,165 @@ Decisions for S9, recorded before its code (2026-09-28):
       fixtures serve as closed forms (half-space boxes) rather than as
       Boolean fixtures. S9f.1's kernel next.
 
+  * **S9e.3 refined, before its code (2026-10-02).** Why each is refused
+    today. (1) `given::construction` takes a Boolean's result only when
+    both its inputs are prisms: a result of a sphere, cone or torus (or of
+    their caps, zones and parts) and a result one of whose inputs is itself
+    a result, a stack or a plane's piece (a deeper chain) are refused as
+    "a Boolean's result of solids other than prisms given to another
+    Boolean (S9e.3)" (the fuzz target's ~180 chained stages refused as
+    S9e.3's, DRAW's `bcut_simple/G9` and `H3`). (2) `given::model` keeps
+    only lines and conics as the model's edges ("a Boolean's result with
+    procedural edges given to another Boolean (S9e.3)") and reverses only a
+    plane's or a cylinder's side for a cut's tool face. (3) `curved::build`
+    refuses a given result whose partner is a sphere, cone or torus ("a
+    Boolean's result given to another Boolean with a sphere, cone or torus
+    (S9e.3)"). (4) Behind the refusals: `Given::view` goes down one level
+    (a leaf is a primitive's model); the given model knows an edge's own
+    surface only for a cylinder's conic (`own`), while a sphere's circle
+    meets a sphere through its own sphere (`edge_surface`'s `own_ball`, the
+    model's `ball`, none on a given model); `same_quadric` compares two
+    faces' surfaces on their model's frame, but a given model's faces lie
+    on their leaves' frames; `edge_surface` has no meeting for a section of
+    two faces as an edge (`Meet`, `Rise`, `Toric`, a plane's section of a
+    cone, `unreachable!`: only input edges were pierced); `assemble.rs`
+    rounds a section's procedural curve through the arrangement's models by
+    the curve's operand, which for a given edge are the first Boolean's.
+    Decisions. (1) *Leaves of every kind.* A given result's construction is
+    re-run whichever arrangement decided it: its inputs' exact models are
+    `model_of`'s (prisms of lines, arcs and circles; spheres, caps and
+    zones; cones and frusta; whole tori, v-segments and wedges; and given
+    results themselves, below), its arrangement S9c's or S9d's
+    (`arrange_shared` with every S9d pair it holds), named as S9e.1's (the
+    re-run's slots the stored ones, checked) or matched as S9e.2's. Its
+    faces are its inputs' faces holding kept pieces, on their exact
+    surfaces through `view`, which now goes down to the primitive model
+    (a leaf that is itself given passes its face to its own leaf); a face's
+    outward normal is its leaf's composed with each level's orientation
+    (`behind`), so a sphere's, cone's or torus's face kept as a cut's tool
+    is reversed there and only there: no rule reads a side from a given
+    face's own `Surf` (regions, normals and membership go through the
+    views and the set functions), which now copies the leaf's surface
+    unchanged for every kind. Membership and regions recurse: a level's
+    set function over its two leaves' memberships, each leaf's own
+    (`Prism::member`, `in_face`). (2) *Edges of every kind.* Every
+    arrangement edge on a kept piece's boundary is a model edge with its
+    first arrangement's exact curve and places: lines, conics (`Ang`), a
+    sphere's circles (`Circle`), a plane's sections of a cone (`Cone`) and
+    of a torus and the parts' rims (`Torus`), and the meetings of two
+    curved faces (`Meet`, `Rise`, `Toric`; S9d.3b's cone pairs' `Meet`).
+    Each model edge records its carrier: the model face on whose surface
+    its place is measured (a cylinder for a conic, as now; a sphere for a
+    sphere's circle, whose own sphere `edge_surface` needs; the cone for a
+    cone section; the torus for a torus section or rim; the curve's own
+    carrier for a meeting), through which the second arrangement reaches
+    the leaf's data. (3) *Deeper chains.* A given result's inputs may be
+    given results (of S9e.1's, S9e.2's or this class), each its own given
+    model re-run and named as above, so the model is the construction tree
+    evaluated level by level, each level's arrangement over its two
+    leaves' models; the cache of arrangements keeps every level's re-run
+    while the next is built. The tree is limited to three Booleans (the
+    given result's and two below it: a result given twice more):
+    deeper, `ComputationLimit("a given result's construction deeper than
+    three Booleans")`, each level's re-run growing the next's fields and
+    time (a kernel test shows the limit).
+    (4) *A given result against a sphere, cone or torus.* The partner's
+    faces meet the given model's through the views in the S9d pairs (the
+    leaf surfaces' relations: a sphere against planes, cylinders, spheres
+    and cones, a cone against those, a torus against every surface), the
+    partner's edges meet the given faces as S9d's input edges meet such
+    surfaces, and the second arrangement is S9d's; `build`'s refusal is
+    removed. (5) *Meetings of given edges* (the second arrangement's new
+    vertices on them). A given edge meets the partner's faces by S9c.1's
+    and S9d's edge meetings through its carrier: a line or conic against
+    every surface, a sphere's circle against planes, cylinders, spheres
+    (its own sphere the carrier's ball), cones and tori, a torus's section
+    or rim against planes (`rim_plane`: the line of the two planes against
+    the torus) and against quadrics and tori (`rim_far`). One meeting is
+    new and of the same degree as S9d.3a's: a plane's section of a cone
+    against another plane meets it on the line of the two planes against
+    the cone (`line_cone`, a quadratic), the roots kept on the section's
+    branch and placed by the cone's angle (a section through the cone's
+    apex is already refused). A given edge that is the meeting of two
+    curved surfaces (`Meet`, `Rise`, `Toric`, a cone pair's meeting), or a
+    plane's section of a cone against a curved face, met by a partner's
+    face is three surfaces two of them curved, a quartic and more along
+    the curve (resultants and certified isolation along the procedural
+    curve, the refined decisions of S9e): **S9e.3b**,
+    `OutOfDomain("a given result's meeting of two curved faces met by
+    another face (S9e.3b)")`; such an edge the partner's faces do not reach
+    stays in the model with its first arrangement's curve. (6) *Names and
+    stored curves.* Names as S9e.1's; a result edge along a given edge
+    keeps that edge's stored curve: a circle or ellipse its frame (its new
+    ends' angles on it, S9e.1's `given_arc`), a given edge of any other
+    curve kept whole its stored curve (reversed where the result runs it
+    the other way), a piece of one cut by the partner rounded from the
+    exact curve on its carrier's leaf (the curve's own model data, not the
+    second arrangement's operands). (7) *Degenerate.* S9d's rules in the
+    second arrangement (tangencies, a vertex of one on the other's face,
+    edges meeting, a plane tangent to a sphere or a torus wherever it
+    touches, a plane through a cone's apex, a torus's tube circle on the
+    other's surface, a result touching itself), the given model's faces
+    and edges as an input's. DRAW's `G9` and `H3` are such a case: the
+    `pcylinder` of radius 1 about `(5, 0)` touches the frustum's top circle
+    of radius 6 at `(6, 0, 4)` from inside (a rim tangent to the third's
+    wall, where both seams lie: DRAW's comment), so they stay refused, now
+    as "a tangency between the inputs" (S9c's rule), and OCCT's area
+    727.481 is not compared. (8) *What stays refused, and why.* S9e.3b's
+    meetings (5); deeper trees (3); configurations the `boolean` fuzz
+    target switches off for time (`TORUS_PAIRS`, two whole tori;
+    `CONE_PAIRS`, two cones; `TURNED_PARTS`, parts, caps and zones against
+    tori in turned frames) are not given in its chained stage either (no
+    first result is built), though the kernel takes them in its tests;
+    the chained stage keeps its limit of 12 faces on the first result; a
+    plane's piece (S9e.4); splines (S9f); and every rule by design of S9's
+    remaining scope. (9) *Fuzzing.* The chained stage's first results of
+    spheres, cones and tori reach the given model with the turned box and
+    cylinder (`GIVEN_CURVED`, `GIVEN_ROUND`); by the chained byte's next
+    bit the partner may be a sphere of radius 5/4 about the turned box's
+    centre (`GIVEN_BALL`: a given result against a sphere), the per-input
+    time under AddressSanitizer kept well under the target's 60 s (else
+    the switch off, as the others). (10) *Evidence first, S9e.3a.* The
+    case protocol chains further: a case may hold several `then` rows,
+    each with the next solid's rows, the previous result's one solid (or
+    picked solid) given to the next Boolean (the Python encoder, the
+    native oracle and the Rust protocol). An independent reference
+    (`chained_curved_boolean_reference.py`): S9d.4b.2's face sweeps
+    (`torus_curved_boolean_reference.py`: every face of every input
+    covered by two families of circles and lines, cut along each curve at
+    the other inputs' surfaces' roots, measured by the divergence theorem)
+    generalized to several inputs and a set function of their
+    memberships, each piece classified by the other inputs' memberships at
+    its point pushed off the face both ways (so faces of several inputs on
+    one surface need no special case: a piece bounds the chain where the
+    function differs across the face, and is counted by the first input
+    whose boundary holds it), nothing from the kernel; checks: both
+    families of every face, the inputs' closed forms, the pair identities
+    for the first result `X` and the third (`V(X u C) + V(X n C) = V(X) +
+    V(C)`, `V(X - C) = V(X) - V(X n C)`, moments, and the area identity
+    where no face of the third lies on another's), closed forms of coaxial
+    chains, S9e.1's slicing reference on chains of prisms (two engines),
+    Monte Carlo; solids counted by a grid at two resolutions against the
+    declared count. Fixtures (`generate_given_curved_boolean_fixtures.py`)
+    of every class: results with a sphere (a domed box cut by a tilted box
+    across the dome's circle, drilled through the circle), with a cone
+    (DRAW's `G9` with the `pcylinder` moved clear of the top rim, the
+    frustum's section by the cylinder's top crossed by a box; a box with a
+    conical countersink), with a torus (a box grooved by a torus, cut by a
+    tilted box across the groove's circles), with a procedural edge the
+    partner does not reach (a cylinder fused on a sphere, `Rise`, then cut
+    by a box clear of the meeting), deeper chains (a box less two crossing
+    holes then cut by a tilted box; a domed box drilled then cut), given
+    results against a sphere, a cone and a torus; declared `degenerate`:
+    `G9` itself and a box tangent to a given result's sphere. A native
+    capture before `solid/boolean/curved/chain.rs` (the given model's
+    carriers, recursion and the cone section's meeting) exists, the
+    comparison `compare_given_curved_boolean.py` keyed on it,
+    `test_given_curved_boolean_reference.py`, the generator's check a CI
+    group of its own (`given-curved`); then the kernel, its tests
+    (`tests/given_curved_booleans.rs`), the fuzz target's stage, the DRAW
+    survey of the chained cases and a campaign. **S9e.3b** after it, evidence
+    first: the meetings of (5).
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions
