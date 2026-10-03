@@ -268,6 +268,19 @@ impl ConeSec {
         ))
     }
 
+    /// The section's plane `n . p = d` in world terms and the cone as a
+    /// quadric (S9e.3b: the curve's two surfaces).
+    pub(super) fn surfaces(&self) -> ((V, R), super::procedural::Other) {
+        let f = &self.f;
+        let [a, b, mu, kappa] = &self.plane;
+        let n = add(
+            &add(&scale(f.row(0), a), &scale(f.row(1), b)),
+            &scale(f.row(2), mu),
+        );
+        let d = dot(&n, &f.o) - kappa;
+        ((n, d), super::procedural::other_cone(f, &self.b, &self.k))
+    }
+
     /// A point's `(cos, sin)` on the cone.
     pub(super) fn place(&self, x: &QV) -> [Qd; 2] {
         let l = self.f.local_q(x);

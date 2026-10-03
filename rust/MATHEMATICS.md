@@ -2076,6 +2076,51 @@ where `A v^2 + 2 B v + C = 0` and the curve is `v = (-B +- sqrt(D)) / A`,
   pcurves (half a turn along a meridian through it), which the sum leaves
   out.
 
+## Three surfaces' meetings in Booleans (S9e.3b)
+
+A given result's edge on the meeting of two surfaces `F1 = F2 = 0` met by a
+third `F3 = 0` (`solid/boolean/curved/triple.rs`):
+
+* **Parameterization.** With a plane `n . p = d` among the three, `p = p0 +
+  s a + t b` (`a`, `b` rational, spanning the plane: cross products with
+  `n`), and the two others become polynomials `G(s, t)` with rational
+  coefficients (a quadric's of degree 2, a torus's of degree 4). With
+  three quadrics, a ruled one (a cylinder `o + r (cos x + sin y) + w n` or a
+  cone `o + (r + k w)(cos x + sin y) + w n`) is parameterized by the
+  half-angle tangent `x` of a chart turned by a rational base and the
+  place `y` along the ruling, `p = (A(x) + y B(x)) / (1 + x^2)` (a
+  cylinder's `y` its height times `1 + x^2`, a cone's its radius about the
+  apex), and the two other quadrics become `G(x, y)` quadratic in `y`. A
+  chart whose antipode (the base's opposite direction, `x` infinite) holds
+  a common point of the two (a resultant zero there) is moved.
+* **Eliminant.** `E(x) = Res_y(G2, G3)`, by its values at `deg + 1`
+  integers (Sylvester determinants of the formal degrees, `deg = d2 deg_x
+  G3 + d3 deg_x G2`) and Newton's interpolation, the chart's `1 + x^2`
+  divided out where it divides: degree 4 for two conics, 8 for a conic and
+  a spiric quartic or for three quadrics (Bezout's counts).
+* **Points.** Each real root `alpha` of the square-free `E` (isolated over
+  the whole line) is a generator of `Q(alpha)`; the fibre's two
+  polynomials in `y` at `alpha` have their gcd taken over `Q(alpha)` by
+  Euclid's algorithm, each leading coefficient's sign exact at `alpha`
+  (Sturm-Tarski on the isolator: the defining polynomial may be reducible,
+  a remainder's leading term is dropped where it vanishes at `alpha`). A
+  gcd of degree one gives `y = -g0 / g1` in `Q(alpha)` and the point's
+  coordinates as rational functions of `(alpha, y)`; degree zero, no point
+  (a root of the leading coefficients); two or more, two points on one
+  fibre, and the projection is retried (the parameters exchanged, `t` sheared
+  to `t + c s` for `c` = 1, -1, 2, 1/2, another ruled carrier). No tower
+  `Q(alpha)(sqrt d)` is needed.
+* **Verification and degeneracy.** Each point's three functions are zero
+  exactly (signs in `Q(alpha)`), and the given curve's own test (both its
+  surfaces, its branch, window and range) keeps it. `det(grad F1, grad F2,
+  grad F3) = 0` at a kept point is the third surface tangent to the curve
+  (`Degenerate`). Two kept points within the
+  resolution (binary64 views) are a crossing within the resolution of a
+  tangency (`Degenerate`).
+* **Cost.** A torus among three curved surfaces gives `E` of degree 16 (32
+  for two tori and a quadric) in the chart's variable; two tori in a plane,
+  16: refused (`OutOfDomain`).
+
 ## Lines and circles against surfaces (S7c.1)
 
 Along a line `p0 + s d` with rational `p0`, `d`, a plane's, cylinder's,

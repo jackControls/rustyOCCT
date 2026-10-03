@@ -1378,6 +1378,22 @@ seconds a case) holds for every case, the slowest Boolean case
 alone 13.0, and 11.3 on a worker built at the last survey's commit at the
 same load; 9.8 in that survey), the rollex 1.7 to 1.8. The ledger does not change.
 
+**S9e.3b's given meetings in the Boolean group.** The same 20 unregistered
+cases giving a Boolean's result to another Boolean were run on both
+backends after S9e.3b's kernel (a given result's meeting of two curved
+faces, or a cone's or torus's general section, met by the partner,
+`curved/triple.rs`) (2026-10-03, `survey_upstream_tests.py --case`, the
+public dataset read through `--data-dir`, 120 seconds a case, four at
+once). Every status and reason is S9e.3a's: 5 load private data on both, 6
+give a Boolean a restored shape, 5 stop at constructs the adapter does not
+read, `bopcut_simple/ZQ1` stops at `wire` on both, `bcut_simple/G9` and
+`H3` are refused as a tangency between the inputs and `bopfuse_simple/ZP6`
+as a torus tangent to the other input. S9e.3b's kernel reaches none of
+them (none of the given results the adapter makes holds a meeting of two
+curved faces met by the partner); none evaluates newly, fails or times
+out, so none is registered, no volume audit is due and the ledger does not
+change.
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4

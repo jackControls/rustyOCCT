@@ -24,12 +24,6 @@ use crate::{Error, Point3, Result};
 /// The Booleans a given result's construction tree may hold.
 pub(super) const MAX_DEPTH: usize = 3;
 
-/// A given result's meeting of two curved faces (or a cone's or a torus's
-/// plane section against a curved face) met by a face of the other input:
-/// S9e.3b's.
-pub(super) const S9E3B: &str =
-    "a given result's meeting of two curved faces met by another face (S9e.3b)";
-
 /// The Booleans of a solid's construction tree (its longest path).
 pub(super) fn depth(s: &Solid) -> usize {
     match &s.construction {
@@ -195,6 +189,35 @@ pub(super) fn reversed(c: &Curve3) -> Option<Curve3> {
             s.sweep = -s.sweep;
         }
         Curve3::Circle { .. } | Curve3::BSpline(_) => return None,
+    }
+    Some(c)
+}
+
+/// A given edge's stored meeting of two curved faces (`Meet`, `Rise`,
+/// `Toric`) for a result edge over a part of it, from `a` (a rounded point
+/// on it) turning `sweep` (from the arrangement's places: an angle on the
+/// carrier or the torus, a height for a `Rise`): the stored curve from `a`'s
+/// parameter in its stored frame (S9e.3b).
+pub(super) fn piece(c: &Curve3, a: Point3, sweep: f64) -> Option<Curve3> {
+    let mut c = c.clone();
+    match &mut c {
+        Curve3::Meet(m) => {
+            let [x, y, _] = m.frame.coordinates(a);
+            (m.start, m.sweep) = (y.atan2(x), sweep);
+        }
+        Curve3::Rise(r) => {
+            (r.start, r.sweep) = (r.frame.coordinates(a)[2], sweep);
+        }
+        Curve3::Toric(t) => {
+            let [x, y, z] = t.frame.coordinates(a);
+            let start = if t.over_v {
+                z.atan2(x.hypot(y) - t.major)
+            } else {
+                y.atan2(x)
+            };
+            (t.start, t.sweep) = (start, sweep);
+        }
+        _ => return None,
     }
     Some(c)
 }

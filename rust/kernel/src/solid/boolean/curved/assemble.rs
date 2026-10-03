@@ -328,6 +328,29 @@ pub(super) fn assemble_made(arr: &Arr, op: Op2) -> Result<Vec<(Component, Made)>
             return false;
         }
         let gs: Vec<usize> = incident[&v].iter().copied().collect();
+        // So does any vertex at a pole of a sphere face it bounds (S9e.3b's
+        // replays: a given result's meridian split at the pole there).
+        let res = arr.models[0].tolerance.linear();
+        let p = qv_f64(&arr.vx[v].p);
+        let at_pole = gs.iter().flat_map(|&g| faces_of(g)).any(|fi| {
+            let rf = &faces[fi];
+            let crate::topology::Surface::Sphere { frame, radius } =
+                &arr.models[rf.op].faces[rf.face].stored
+            else {
+                return false;
+            };
+            let (c, n) = (frame.origin().to_array(), frame.normal().to_array());
+            [1.0, -1.0].into_iter().any(|s: f64| {
+                (0..3)
+                    .map(|i| (p[i] - c[i] - s * radius * n[i]).powi(2))
+                    .sum::<f64>()
+                    .sqrt()
+                    <= 4.0 * res
+            })
+        });
+        if at_pole {
+            return false;
+        }
         match gs.len() {
             2 => {
                 same_curve(&arr.edges[gs[0]].crv, &arr.edges[gs[1]].crv)
@@ -1209,8 +1232,8 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
         }
     }
     // S9e.3a: a result edge over the whole of a given edge of a procedural
-    // curve keeps that edge's stored curve; a piece of a meeting of two
-    // curved faces is S9e.3b's (its meetings are refused before).
+    // curve keeps that edge's stored curve; S9e.3b: over a part of a
+    // meeting of two curved faces, the stored curve between its ends.
     if let CurveRef::Edge(o, ei) = first.curve {
         if let (Some(g), true) = (&arr.models[o].given, super::chain::procedural(&first.crv)) {
             let whole = super::chain::whole(arr, e, o, ei);
@@ -1222,8 +1245,45 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
             {
                 return Ok(c);
             }
+            // A torus's section at a fixed angle (or a cone's normal to its
+            // axis) stored as a circle: an arc of it (S9e.1's `given_arc`).
+            if matches!(
+                g.curves[ei],
+                Some(Curve3::Circle { .. } | Curve3::CircularArc { .. })
+            ) {
+                let with = first.with == d0;
+                if let Some(c) = given_arc(g.curves[ei].as_ref(), e, points, with != g.flip[ei]) {
+                    return Ok(c);
+                }
+            }
             if !matches!(first.crv, Crv::Cone(_) | Crv::Torus(_)) {
-                return Err(Error::OutOfDomain(super::chain::S9E3B));
+                let (Some(c), Some((a, _))) = (g.curves[ei].as_ref(), ends) else {
+                    return Err(Error::ComputationLimit(
+                        "a part of a given meeting without its stored curve",
+                    ));
+                };
+                // The turn (or the rise) from the places, as for a section.
+                let (p0, p1) = (
+                    if d0 { &first.pos[0] } else { &first.pos[1] },
+                    if dl { &last.pos[1] } else { &last.pos[0] },
+                );
+                let sweep = match (p0, p1) {
+                    (Pos::T(w0), Pos::T(w1)) => w1.to_f64() - w0.to_f64(),
+                    _ => {
+                        let with = first.with == d0;
+                        let (t0, t1) = (angle_of(p0), angle_of(p1));
+                        let s = if with { t1 - t0 } else { t0 - t1 }.rem_euclid(TAU);
+                        let s = if s == 0.0 { TAU } else { s };
+                        if with {
+                            s
+                        } else {
+                            -s
+                        }
+                    }
+                };
+                return super::chain::piece(c, a, sweep).ok_or(Error::ComputationLimit(
+                    "a part of a given meeting off a meeting's stored curve",
+                ));
             }
         }
     }

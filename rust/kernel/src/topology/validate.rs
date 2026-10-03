@@ -2047,6 +2047,50 @@ fn signed_cover_crossings<T: Real>(loops: &[&Lp], p: &V2<T>) -> Option<i64> {
     Some(cover_hits(loops, p)?.iter().sum())
 }
 
+/// The +u ray's crossings from `p` (each +1 running in -v, -1 in +v) with
+/// the loops' chords and pcurves over every `v` alias: `cover_hits` with
+/// the parameters' roles exchanged (S9e.3b: a hole in a torus face wound
+/// in `v`); a sinusoid's pcurve (a cylinder's) is not taken.
+fn cover_hits_v<T: Real>(loops: &[&Lp], p: &V2<T>) -> Option<Vec<i64>> {
+    let swap = |x: &V2<T>| [x[1].clone(), x[0].clone()];
+    let q = swap(p);
+    let mut out = Vec::new();
+    for lp in loops {
+        let mut segments: Vec<(V2<T>, V2<T>)> = chords::<T>(lp)
+            .into_iter()
+            .map(|(a, b)| (swap(&a), swap(&b)))
+            .collect();
+        for u in &lp.fins {
+            match &u.pcurve {
+                Curve2::LineSegment { start, end } => {
+                    segments.push(([c(start.y), c(start.x)], [c(end.y), c(end.x)]))
+                }
+                Curve2::Projection(pr) => {
+                    out.extend(projection::cover_crossings_on::<T>(pr, &q, true)?)
+                }
+                _ => return None,
+            }
+        }
+        for (a, b) in segments {
+            for k in alias_range(&a[0], &b[0], &q[0])? {
+                let u = q[0].sub(&c(TAU * k as f64));
+                let (ra, rb) = (above(&a[0], &u)?, above(&b[0], &u)?);
+                if ra == rb {
+                    continue;
+                }
+                let slope = b[1].sub(&a[1]).div(&b[0].sub(&a[0]))?;
+                let v = a[1].add(&u.sub(&a[0]).mul(&slope));
+                match v.sub(&q[1]).sign()? {
+                    Ordering::Greater => out.push(if rb { -1 } else { 1 }),
+                    Ordering::Less => {}
+                    Ordering::Equal => return None,
+                }
+            }
+        }
+    }
+    Some(out)
+}
+
 /// The +v ray's crossings from p (each +1 running in -u, -1 in +u) with
 /// the loops' chords and pcurves over every u alias: lines exactly as
 /// segments, sinusoids at the alias (S9c.1), projections by certified
@@ -4114,7 +4158,45 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
                 );
                 match sign {
                     Some(s) if s == want_inner => {
-                        add(&mut issues, K::UncertifiedContainment, En::Loop(fi, *li));
+                        // Inside when the signed crossings of the +u ray
+                        // from a point of it with the other loops give the
+                        // face's sign, the band's right side running in +v
+                        // (S9e.3b: the +v ray's rule of a band wound in u
+                        // with the parameters exchanged, which reverses the
+                        // sign).
+                        let others: Vec<&Lp> = edge_loops
+                            .iter()
+                            .filter(|(l, _)| l != li)
+                            .map(|(_, other)| *other)
+                            .collect();
+                        let want: i64 = if forward { -1 } else { 1 };
+                        let start = &lp.fins[0].pcurve;
+                        let decided = [0.0, 0.376_953_125, 0.678_710_937_5].iter().find_map(|&t| {
+                            tiered(
+                                None,
+                                || {
+                                    Some(
+                                        cover_hits_v::<Fast>(&others, &pcurve_at(start, t))?
+                                            .iter()
+                                            .sum::<i64>(),
+                                    )
+                                },
+                                || {
+                                    Some(
+                                        cover_hits_v::<I>(&others, &pcurve_at(start, t))?
+                                            .iter()
+                                            .sum::<i64>(),
+                                    )
+                                },
+                            )
+                        });
+                        match decided {
+                            Some(n) if n == want => {}
+                            Some(_) => add(&mut issues, K::InnerLoopOutside, En::Loop(fi, *li)),
+                            None => {
+                                add(&mut issues, K::UncertifiedContainment, En::Loop(fi, *li));
+                            }
+                        }
                     }
                     Some(_) => {
                         add(&mut issues, K::LoopWinding, En::Loop(fi, *li));

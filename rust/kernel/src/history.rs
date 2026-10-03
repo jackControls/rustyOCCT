@@ -571,7 +571,8 @@ fn same_axes(f: &crate::Frame3, g: &crate::Frame3, r: f64, tol: f64) -> bool {
 
 /// Whether two curves are one procedural curve (S9e.3a): a torus's plane
 /// section on one torus and plane (either normal), a hyperbola or parabola
-/// of one frame and size, whatever their ranges.
+/// of one frame and size, whatever their ranges; S9e.3b: a meeting of two
+/// curved surfaces on the same surfaces and branch.
 fn same_procedural(c: &Curve3, d: &Curve3, tol: f64) -> bool {
     match (c, d) {
         (Curve3::Section(a), Curve3::Section(b)) => {
@@ -607,6 +608,41 @@ fn same_procedural(c: &Curve3, d: &Curve3, tol: f64) -> bool {
                 frame: g, focal: b, ..
             },
         ) => same_axes(f, g, a.abs().max(1.0), tol) && (a - b).abs() <= tol,
+        // S9e.3b: a given result's meeting of two curved faces split by
+        // another Boolean: the same two surfaces and branch (or window).
+        (Curve3::Meet(a), Curve3::Meet(b)) => {
+            let r = a.radius.max(a.other_radius).max(1.0);
+            same_axes(&a.frame, &b.frame, r, tol)
+                && same_axes(&a.other, &b.other, r, tol)
+                && (a.radius - b.radius).abs() <= tol
+                && (a.other_radius - b.other_radius).abs() <= tol
+                && (a.half_angle - b.half_angle).abs() * r <= tol
+                && (a.other_half_angle - b.other_half_angle).abs() * r <= tol
+                && a.other_sphere == b.other_sphere
+                && a.sign == b.sign
+        }
+        (Curve3::Rise(a), Curve3::Rise(b)) => {
+            let r = a.radius.max(a.sphere_radius).max(1.0);
+            same_axes(&a.frame, &b.frame, r, tol)
+                && near(a.centre, b.centre, tol)
+                && (a.radius - b.radius).abs() <= tol
+                && (a.sphere_radius - b.sphere_radius).abs() <= tol
+                && (a.half_angle - b.half_angle).abs() * r <= tol
+                && a.sign == b.sign
+        }
+        (Curve3::Toric(a), Curve3::Toric(b)) => {
+            let r = (a.major + a.minor).max(a.other_radius).max(1.0);
+            same_axes(&a.frame, &b.frame, r, tol)
+                && same_axes(&a.other, &b.other, r, tol)
+                && (a.major - b.major).abs() <= tol
+                && (a.minor - b.minor).abs() <= tol
+                && (a.other_radius - b.other_radius).abs() <= tol
+                && (a.other_minor - b.other_minor).abs() <= tol
+                && (a.other_half_angle - b.other_half_angle).abs() * r <= tol
+                && a.other_sphere == b.other_sphere
+                && a.over_v == b.over_v
+                && a.window == b.window
+        }
         _ => false,
     }
 }

@@ -34,12 +34,14 @@
 //! cylinder (`GIVEN_ROUND`: a stack or an S9b.1 result given with arcs);
 //! S9e.3a: first results of spheres, cones and tori are given too, and the
 //! chained byte's next bit may make the partner a sphere (`GIVEN_BALL`: a
-//! given result against a sphere). S9f.1: a spline prism against a line
-//! prism in a turned, leaning, tilted or side frame is decided by the
-//! curved engine's spline walls (`SPLINE_WALLS`; before it, refused), and
-//! the byte after the chained one's place, at or above 128, makes the
-//! object's spline profile R4's knot (`knot_profile`: a quadratic whose
-//! interior knot of multiplicity two is C1 exactly, removed before
+//! given result against a sphere); S9e.3b: their meetings of two curved
+//! faces met by the partner, which the chained byte's next bit centres on
+//! the first such edge (`GIVEN_MET`, off for time). S9f.1: a spline prism
+//! against a line prism in a turned, leaning, tilted or side frame is
+//! decided by the curved engine's spline walls (`SPLINE_WALLS`; before it,
+//! refused), and the byte after the chained one's place, at or above 128,
+//! makes the object's spline profile R4's knot (`knot_profile`: a quadratic
+//! whose interior knot of multiplicity two is C1 exactly, removed before
 //! lifting); spline walls against a prism with arcs, a curved solid or a
 //! given result stay refused (S9f's).
 use crate::analytic_intersections::Bytes;
@@ -98,6 +100,21 @@ const GIVEN_ROUND: bool = true;
 /// the turned box's centre instead (S9e.3a: a given result against a
 /// sphere), by the chained byte's next bit.
 const GIVEN_BALL: bool = true;
+
+/// Whether the chained stage's partner may reach the first result's
+/// meetings of two curved faces (`Meet`, `Rise`, `Toric`) or torus sections
+/// (S9e.3b: a given result's meeting met by the partner), and by the
+/// chained byte's next bit stand about the middle of the first such edge.
+/// Off: the corpus's slowest chained operations reaching them take 60 to
+/// 71 s an input under AddressSanitizer on the Mac (8 to 10 s with debug
+/// assertions: algebraic vertices in fields of degree eight through the
+/// second arrangement), past the target's 60 s and the Linux runners' 2.6
+/// times; off, a partner whose bounds meet such an edge's sampled box is
+/// not given that result (S9e.3a's results whose meetings the partner does
+/// not reach still are). The kernel's tests and the corpus replayed with it
+/// on (debug assertions, every input's partner centred on its meeting
+/// where it has one) cover them.
+const GIVEN_MET: bool = false;
 
 /// Whether a spline prism meets a line prism in frames with different
 /// axes (S9f.1's spline walls in the curved engine: creases, generatrices
@@ -489,15 +506,6 @@ pub fn check_boolean(data: &[u8]) {
             volume(m)
         );
     }
-    // S9b.2: an operation's first result is an input again, against a
-    // turned box about the object's origin (a fresh operation's ids).
-    let turned = Frame3::new(
-        fa.point(rusty_occt::Point2::new(0.5, 0.25), h / 3.0),
-        fa.normal(),
-        fa.x() * 3.0 + fa.y() * 4.0,
-        tolerance,
-    )
-    .ok();
     // One operation's first result, chosen by a byte after the others, of
     // at most 12 faces, cut by the box and in common with it: exact
     // fragments of larger stored models took up to 165 s an input under
@@ -507,6 +515,38 @@ pub fn check_boolean(data: &[u8]) {
     let chained = b.next();
     let round = GIVEN_ROUND && (chained / 3) % 2 == 1;
     let ball = GIVEN_BALL && (chained / 6) % 2 == 1;
+    let met = GIVEN_MET && (chained / 12) % 2 == 1;
+    let chosen = [&fused, &cut, &common][usize::from(chained % 3)];
+    let small = |s: &&Solid| {
+        s.topology().faces().len() <= 12
+            && (GIVEN_CURVED
+                || s.topology()
+                    .faces()
+                    .iter()
+                    .all(|f| matches!(f.surface, rusty_occt::topology::Surface::Plane(_))))
+    };
+    let first = chosen.as_ref().and_then(|out| out.first()).filter(small);
+    // S9b.2: an operation's first result is an input again, against a
+    // turned box about the object's origin (a fresh operation's ids). S9e.3b:
+    // by the chained byte's next bit, about the middle of the first result's
+    // first meeting of two curved faces or torus section instead (the box
+    // and the cylinder half above it), so the partner crosses that edge.
+    let meeting = first.filter(|_| met).and_then(|s| {
+        use rusty_occt::topology::Curve3 as C;
+        s.topology().edges().iter().find_map(|e| {
+            matches!(
+                e.curve,
+                C::Meet(_) | C::Rise(_) | C::Toric(_) | C::Section(_)
+            )
+            .then(|| e.curve.point(0.5))
+        })
+    });
+    let origin = match meeting {
+        Some(p) if ball => p,
+        Some(p) => p + fa.normal() * (-0.5 * h),
+        None => fa.point(rusty_occt::Point2::new(0.5, 0.25), h / 3.0),
+    };
+    let turned = Frame3::new(origin, fa.normal(), fa.x() * 3.0 + fa.y() * 4.0, tolerance).ok();
     let turned = turned.and_then(|f| {
         if ball {
             let half = std::f64::consts::FRAC_PI_2;
@@ -529,17 +569,32 @@ pub fn check_boolean(data: &[u8]) {
         let profile = rusty_occt::Profile::new(outline, vec![], tolerance).ok()?;
         Solid::extrude_with(OperationId(7), profile, f, 0.0, h).ok()
     });
+    // Off (`GIVEN_MET`), a partner reaching a meeting of two curved faces
+    // or a torus section of the first result is not given it.
+    let reaches = |first: &Solid, partner: &Solid| {
+        use rusty_occt::topology::Curve3 as C;
+        let b = partner.bounds();
+        first.topology().edges().iter().any(|e| {
+            if !matches!(
+                e.curve,
+                C::Meet(_) | C::Rise(_) | C::Toric(_) | C::Section(_)
+            ) {
+                return false;
+            }
+            let ps: Vec<[f64; 3]> = (0..=16)
+                .map(|k| e.curve.point(f64::from(k) / 16.0).to_array())
+                .collect();
+            (0..3).all(|i| {
+                let lo = ps.iter().map(|p| p[i]).fold(f64::INFINITY, f64::min);
+                let hi = ps.iter().map(|p| p[i]).fold(f64::NEG_INFINITY, f64::max);
+                let pad = 0.25 * (hi - lo) + 1e-6;
+                let (bl, bh) = (b.min.to_array()[i], b.max.to_array()[i]);
+                hi + pad >= bl && lo - pad <= bh
+            })
+        })
+    };
     if let Some((box_, _)) = turned {
-        let chosen = [&fused, &cut, &common][usize::from(chained % 3)];
-        let small = |s: &&Solid| {
-            s.topology().faces().len() <= 12
-                && (GIVEN_CURVED
-                    || s.topology()
-                        .faces()
-                        .iter()
-                        .all(|f| matches!(f.surface, rusty_occt::topology::Surface::Plane(_))))
-        };
-        if let Some(first) = chosen.as_ref().and_then(|out| out.first()).filter(small) {
+        if let Some(first) = first.filter(|f| GIVEN_MET || !reaches(f, &box_)) {
             let (c, m) = (
                 run(first.cut(OperationId(9), &box_)),
                 run(first.common(OperationId(10), &box_)),

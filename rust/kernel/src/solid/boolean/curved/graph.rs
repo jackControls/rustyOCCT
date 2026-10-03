@@ -590,8 +590,9 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                 _ => None,
             };
             let virtual_edge = e.id.is_none();
-            // A given edge of a curve whose meetings are S9e.3b's: none where
-            // one of its faces' surfaces is apart from the other's face.
+            // A given edge of a curve whose meetings are S9e.3b's (three
+            // surfaces, `triple.rs`): none where one of its faces' surfaces
+            // is apart from the other's face (no exact work there).
             let unmet = me.given.is_some()
                 && match &e.curve {
                     Crv::Meet(_) | Crv::Rise(_) | Crv::Toric(_) | Crv::Cone(_) => true,
@@ -646,7 +647,10 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                         .and_then(|v| v.ball.as_ref()),
                     None => me.ball.as_ref(),
                 };
-                let meet = match edge_surface(&e.curve, own, own_ball, vo, vg, pair) {
+                // The edge's and the face's boxes (S9e.3b: a three
+                // surfaces' point certainly outside them not constructed).
+                let clip = intersect(&ebox, &other.boxes[g]);
+                let meet = match edge_surface(&e.curve, own, own_ball, vo, vg, pair, Some(&clip)) {
                     // A seam's tangency with a torus, or a torus seam's
                     // (S9d.4b.2): another seam is tried.
                     Err(Error::Degenerate(_))

@@ -3,8 +3,8 @@
 State of the work for whoever continues it. `REVIEW_NOTES.md` remains the
 plan of record: its decisions, evidence, implemented, survey and campaign
 bullets are authoritative, and this page only summarizes them and says
-where to pick up. Written 2026-10-01; the code it describes is that of
-`6c221525` on `rust-kernel`, with the documentation commits after it.
+where to pick up. Written 2026-10-01, brought up to date 2026-10-03 for
+S9e.3b (branch `s9e3b`).
 
 ## Where things stand
 
@@ -15,57 +15,48 @@ where to pick up. Written 2026-10-01; the code it describes is that of
   and tori (S9d.1–S9d.4c). Every sub-step has its refined decisions, an
   independent reference, fixtures, a native capture taken before its kernel
   code, the kernel, a DRAW survey and a clean 600 s campaign.
-- **S9e.3a implemented** (branch `s9e3`, not yet pushed): given results of
-  spheres, cones and tori, deeper chains and given results against spheres,
-  cones and tori (`curved/chain.rs`), with its evidence captured before the
-  kernel; its DRAW chained cases surveyed (`G9` and `H3` refused as a
-  tangency); pending the full DRAW survey and the campaign.
-- **S9e.1 and S9e.2 done.** A Boolean's result given to another Boolean:
-  results of prisms with lines, arcs and circles (S9e.1, `curved/given.rs`),
-  stacks with arc walls, polyhedral results given with arcs, and one solid of
-  a result of several (S9e.2, `curved/matched.rs`), each with its DRAW
-  survey (the last full survey: 987 cases registered, none failing or
-  timing out) and a clean campaign (S9e.2's at `6c221525`, 1,230 runs).
-- **S9f decided, S9f.1 implemented** (branch `s9f1`, not yet pushed).
-  Splines in any position: decisions recorded ("S9f refined"), S9f.1's 38
-  cases (spline prisms against polyhedral prisms in any position)
-  referenced and captured before any kernel code, and its kernel
-  (`curved/spline_walls.rs`): spline walls in the curved engine, R4's knot
-  of multiplicity `p` removed exactly before every lift (the extrusion in a
-  turned frame failed before), the validator's exact Green path and
-  quadrature taking a crease's pieces across a knot line by a sliver and
-  past a cap by their control polygon; `boolean-spline-any-r4-*` adds the
-  rounded knot and exact parallels after the capture. Pending its DRAW
-  survey and campaign.
-- **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") are green
-  at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed; check
-  them after every push (see "Working rules").
+- **S9e.1, S9e.2 and S9e.3a done.** A Boolean's result given to another
+  Boolean: results of prisms with lines, arcs and circles (S9e.1,
+  `curved/given.rs`), stacks with arc walls, polyhedral results given with
+  arcs, and one solid of a result of several (S9e.2, `curved/matched.rs`),
+  results of spheres, cones and tori, deeper chains and given results
+  against spheres, cones and tori (S9e.3a, `curved/chain.rs`), each with its
+  DRAW survey (the last full survey, `507b8054`: 987 cases registered, none
+  failing or timing out) and a clean campaign (S9e.3a's and S9f.1's at
+  `b2765f20`, 989 runs).
+- **S9f.1 done.** Spline prisms against polyhedral prisms in any position
+  (`curved/spline_walls.rs`), with its survey and campaign as above.
+- **S9e.3b implemented** (branch `s9e3b`, over `507b8054`, not yet pushed):
+  a given result's meeting of two curved faces (`Meet`, `Rise`, `Toric`) or
+  a cone's or torus's general section met by the partner
+  (`curved/triple.rs`), its decisions, evidence and capture committed
+  before the kernel; the DRAW survey of the chained cases done (none
+  reaches it). Pending the campaign. Since this branch was cut,
+  `s9c2-kernel` has gained S9f.2a and S9f.2b.1 (`curved/spline_parallel.rs`,
+  `curved/spline_crossing.rs`): merge it before pushing (the guides, the
+  fuzz target and `meet.rs`'s routing touch the same places).
+- **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
+  at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
+  check them after every push (see "Working rules").
 
 ## What is open, in order
 
-1. **S9e.3a's DRAW survey and campaign** (its decisions, evidence, capture
-   and kernel done on branch `s9e3`: given results of spheres, cones and
-   tori, with procedural edges the partner does not reach, deeper chains to
-   three Booleans, given results against spheres, cones and tori; DRAW's
-   `G9` and `H3` refused as the tangency they are). Then **S9e.3b**,
-   evidence first: a given edge that is a meeting of two curved faces
-   (`Meet`, `Rise`, `Toric`, a cone pair's), a cone's section against a
-   curved face or a torus's general plane section against a curved face,
-   met by the partner (three surfaces, two curved: resultants and certified
-   isolation along the procedural curve); 156 of the fuzz corpus's 1,238
-   chained operations are refused as S9e.3b's. The old local branch
-   `s9e3-wip` is superseded: do not merge it.
-2. **S9f.1's DRAW survey and campaign** (its kernel done on branch `s9f1`, over
-   `s9c2-kernel` with S9e.3a: spline prisms against prisms of lines in any
-   position, `REVIEW_NOTES.md`'s "S9f.1 implemented"). The survey should
-   find upstream cases of spline prisms in turned frames newly evaluating;
-   the campaign runs the `boolean` target with `SPLINE_WALLS` on and R4's
-   knot decoded (the byte at index 14). The old local branch `s9f1-kernel`
-   is superseded: do not merge it.
+1. **S9e.3b's campaign** (its kernel done on branch `s9e3b`;
+   `REVIEW_NOTES.md`'s "S9e.3b implemented"). The fuzz target's
+   `GIVEN_MET` is off: the corpus's slowest chained operations reaching a
+   given meeting take 60 to 71 s an input under AddressSanitizer. The
+   campaign runs with it off; the next lever is the degree-eight
+   arrangement arithmetic (the second arrangement's predicates on vertices
+   in fields of degree eight), after which `GIVEN_MET` can be switched on
+   and a campaign run with it. Of the chained operations the debug replay
+   with it on reaches, the "points not separated by a projection" limits
+   (`triple.rs`'s retries exhausted: a fibre of two points under every
+   shear tried) are the one open refusal worth a closer look.
+2. **S9f.2a, S9f.2b** (on `s9c2-kernel`, see above), then **S9f.3**:
+   spline walls against spheres and cones ("S9f refined" gives the
+   degrees).
 3. **S9e.4**: imported bodies decided on their stored surfaces.
-4. **S9f.2a, S9f.2b, S9f.3**: spline walls against exactly parallel walls,
-   crossing cylinders, spheres and cones ("S9f refined" gives the degrees).
-5. **S9's acceptance** (U6): kernel and fuzz CI green at the accepted
+4. **S9's acceptance** (U6): kernel and fuzz CI green at the accepted
    revision, the schedule run's full replays green (boolean and
    `degree_elevation` are sharded across four jobs plus a completeness check,
    `REPLAY_SHARDS`), and a clean local 600 s campaign; record it in
@@ -76,7 +67,8 @@ the inputs, a cavity beside several solids, spline segments along one curve
 of different forms, an arc ending off its circle, a section through a
 sphere's pole off its meridians, a torus's tube circle on the other surface,
 a result touching itself, splines against tori, spline walls against spline
-walls with crossing axes.
+walls with crossing axes, a torus among three curved surfaces or two tori
+in one plane at a given meeting (S9e.3b, by cost).
 
 Parallel tracks (`REVIEW_NOTES.md`, "Parallel tracks"): the degree-eight
 arrangement arithmetic (the next lever for speed); the fuzz switches below.
@@ -158,6 +150,7 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_given_boolean.py` | 36 / 0 |
 | `compare_given_curved_boolean.py` | 25 / 23 |
 | `compare_spline_any_boolean.py` | 22 / 16 (the kernel within the reference on all 33 solid and empty cases, the 5 degenerate refused) |
+| `compare_given_met_boolean.py` | 8 / 42 (the kernel within the reference on all 42 solid cases, the 8 degenerate refused) |
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its
@@ -167,6 +160,8 @@ spline prisms. Then:
 - a replay with debug assertions of every boolean corpus input and every
   `rust/fuzz/regressions/boolean*` file, one process per file: build with
   `CARGO_INCREMENTAL=0 RUSTFLAGS="-C debug-assertions" cargo +nightly-2026-09-22 build --release --example replay_boolean` in `rust/fuzz`;
+  for a switch that is off (`GIVEN_MET`, `TORUS_PAIRS`, ...), replay once
+  more with it switched on in the source, which reaches the paths it gates;
 - `target/math-oracle-venv/bin/python -m unittest discover -s rust/tools -p 'test_*.py'` (the system Python lacks mpmath);
 - `python3 rust/tools/run_upstream_tests.py --ledger`;
 - a campaign: `python3 rust/tools/run_fuzz.py --target boolean --seconds 600 --toolchain nightly --replay sample` (the full local corpus exceeds the startup hour under AddressSanitizer; the sampled replay plus the debug-assertion replay above stand in for it, and CI's schedule runs the full replay in shards).
@@ -190,7 +185,7 @@ spline prisms. Then:
   on the exact arithmetic, and Linux runners about 2.6 times this host; the
   boolean target's limit is 60 s an input. Configurations too slow for it are
   switched off in `rust/fuzz/src/boolean.rs` (`TORUS_PAIRS`, `CONE_PAIRS`,
-  `TURNED_PARTS`; `GIVEN_CURVED`, `GIVEN_ROUND` and `GIVEN_BALL` are on). A heavily loaded
+  `TURNED_PARTS`, `GIVEN_MET`; `GIVEN_CURVED`, `GIVEN_ROUND` and `GIVEN_BALL` are on). A heavily loaded
   host makes campaigns time out spuriously; run them on a quiet machine.
 - **Keep debug-assertion tests optimized.** CI runs them with
   `CARGO_PROFILE_DEV_OPT_LEVEL=2`; time new test files that way.

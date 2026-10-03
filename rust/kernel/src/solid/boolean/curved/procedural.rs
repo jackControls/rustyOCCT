@@ -195,6 +195,28 @@ impl MeetCrv {
         }
     }
 
+    /// The carrier's ruled surface and its quadric, and the other quadric
+    /// (S9e.3b: the curve's two surfaces).
+    pub(super) fn surfaces(&self) -> (super::triple::Ruling, Other, Other) {
+        let ruling = super::triple::Ruling {
+            o: self.o.clone(),
+            x: self.x.clone(),
+            y: self.y.clone(),
+            n: self.n.clone(),
+            r: self.r.clone(),
+            k: self.slope.clone(),
+        };
+        let carrier = Other {
+            g: vec![self.k[0].clone(), self.k[1].clone()],
+            e: vec![dot(&self.k[0], &self.o), dot(&self.k[1], &self.o)],
+            r: self.r.clone(),
+            h: self.k[2].clone(),
+            eh: dot(&self.k[2], &self.o),
+            t: self.slope.clone(),
+        };
+        (ruling, carrier, self.other())
+    }
+
     fn other(&self) -> Other {
         Other {
             g: self.g.clone(),

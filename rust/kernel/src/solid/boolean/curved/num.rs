@@ -80,6 +80,14 @@ pub(super) struct Gen {
     /// every enclosure of the field's numbers narrows the same root the
     /// same way, and a sign is exact from any isolator.
     narrowed: Mutex<Vec<(usize, AlgebraicRoot)>>,
+    /// Exact signs decided (Sturm-Tarski) by polynomial, kept: a vertex's
+    /// coordinates are asked the same questions again and again (S9e.3b:
+    /// its surfaces' values on every section through it).
+    exact: Mutex<std::collections::HashMap<Vec<R>, Ordering>>,
+    /// A factor of `poly` known to vanish at the root (the gcd with every
+    /// polynomial found zero there): a polynomial it divides is zero at
+    /// the root without another Sturm-Tarski count.
+    divisor: Mutex<Option<Vec<R>>>,
     /// `x^j mod poly` for `j` from its degree `n` to `2 n - 2`, numerators
     /// over one common denominator (S9d.4b.2b: a product reduced without a
     /// rational operation per coefficient), computed once.
@@ -96,6 +104,8 @@ impl Gen {
             poly,
             root,
             narrowed: Mutex::new(Vec::new()),
+            exact: Mutex::new(std::collections::HashMap::new()),
+            divisor: Mutex::new(None),
             powers: OnceLock::new(),
         }
     }
@@ -226,7 +236,44 @@ impl Gen {
         });
         match v.and_then(|v| v.sign()) {
             Some(s @ (Ordering::Less | Ordering::Greater)) => s,
-            _ => root.sign_polynomial(&IntPolynomial::from_rationals(p)),
+            _ => {
+                let divisor = self
+                    .divisor
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .clone();
+                if let Some(d) = &divisor {
+                    if pmod(p, d).is_empty() {
+                        return Ordering::Equal;
+                    }
+                }
+                let known = self
+                    .exact
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .get(p)
+                    .copied();
+                known.unwrap_or_else(|| {
+                    let ip = IntPolynomial::from_rationals(p);
+                    let s = root.sign_polynomial(&ip);
+                    self.exact
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner())
+                        .insert(p.to_vec(), s);
+                    if s == Ordering::Equal && !ip.is_constant() {
+                        // The gcd with the known factor (or the generator's
+                        // polynomial) vanishes at the root too.
+                        let base = divisor.unwrap_or_else(|| self.poly.clone());
+                        let g = IntPolynomial::from_rationals(&base).gcd(&ip);
+                        if !g.is_constant() {
+                            let g: Vec<R> =
+                                g.0.iter().map(|c| R::from_integer(c.clone())).collect();
+                            *self.divisor.lock().unwrap_or_else(|e| e.into_inner()) = Some(g);
+                        }
+                    }
+                    s
+                })
+            }
         }
     }
 }

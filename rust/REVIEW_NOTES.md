@@ -5052,6 +5052,115 @@ Decisions for S9, recorded before its code (2026-09-28):
     integration on faces bounded by approximated sections, up to 4.8e-6;
     adaptively within 3.2e-8, unchanged at 1e-12, the smallest results the
     farthest); 12 results' counts change when unified. S9e.3b's kernel next.
+  * **S9e.3b implemented** (`solid/boolean/curved/triple.rs`, `meet.rs`'s
+    routing, `graph.rs`'s clip boxes, `assemble.rs`'s pieces of given
+    meetings, `chain.rs`'s `piece`; the curves' `surfaces`; the validator's
+    holes in torus bands wound in `v`, `polyhedra.rs`'s face boxes,
+    `history.rs`'s split meetings, `num.rs`'s kept exact signs): a given
+    result's edge on a meeting of two curved faces (`Meet`, `Rise`,
+    `Toric`), or on a cone's or a torus's general plane section, met by a
+    face of the other input, as the refined decisions describe. With a
+    plane among the three, the other two restricted to the plane's rational
+    affine coordinates (an integer basis of cross products with its normal,
+    its point on the axis of the normal's largest component); with three
+    quadrics, the two others along a ruled one's rulings (the curve's
+    carrier, else the partner's) over a rational chart whose antipode holds
+    no common point; the restrictions made primitive, their resultant by
+    Sylvester determinants at integers and Newton's interpolation; at each
+    real root of its square-free part the fibre's gcd over `Q(alpha)`, every
+    point in one `Q(alpha)` of degree at most 8, verified on all three
+    surfaces and kept by the curve's own test; dependent gradients there
+    `Degenerate`, two meetings within the resolution likewise; a torus among
+    three curved surfaces and two tori in a plane `OutOfDomain` by cost.
+    All 50 fixtures as declared (42 within the kernel's enclosures, each at
+    most `1e-9` wide; the 8 declared degenerate refused: `peg_touch` and
+    `peg_kiss` as the partner tangent to the given meeting, `cone_cut_rod`
+    by S9d.3a's rule, below), every stage's history complete and chaining,
+    results deterministic and moved rigidly, given results translated with
+    their last solids keeping the reference's volumes, and three more: the
+    elliptic section met by the rod lowered clear of the apex, the crossing
+    rods' meeting met by a wall along both rods' rulings (a fibre of two
+    points, the projection sheared) and a torus's meeting with a ball
+    refused by cost, each consistent by the kernel's pair identities
+    (`tests/given_met_booleans.rs`, 9 tests). `compare_given_met_boolean.py`
+    8 matches and 42 reviewed: the 38 native measures reviewed before, and
+    the kernel's entity counts against OCCT's unified ones in 32, 4 of them
+    alone (its exact
+    meeting pieces and whole periodic faces, OCCT's split approximations
+    and seams); every other Boolean comparison unchanged in its counts.
+    Amendments to the decisions and the evidence, from the implementation:
+    (a) `cone_cut_rod` is declared `degenerate` after the capture: the rod's
+    top cap's plane `z = 6` holds the frustum's apex, S9d.3a's refusal of a
+    plane through a cone's apex, which the kernel found (its inputs, rows
+    and native observations unchanged; the generator's check and the
+    capture's reproduce); (b) the validator decides a hole in a torus face
+    wound in `v` (a plane's cut across the tube leaves a band) by the `+u`
+    ray's signed crossings with the other loops, every `v` alias, the
+    band's right side running in `+v` (the `+v` rule of a band wound in `u`
+    with the parameters exchanged): before, such a hole was always
+    `UncertifiedContainment`, a `ComputationLimit` (`torus_rod_tilt`'s fuse
+    and cut, the rod's hole in the band); (c) a Boolean result's bounds take
+    each torus face's whole box and each cylinder's or cone's circles
+    between its edges' heights (sampled, padded), as a sphere's before: a
+    chained result's vertices classify against the given result, whose
+    bounds from its edges alone left them outside (`torus_cut_*`'s and
+    `torus_rod_wall`'s rigid motions); (d) the independent history check
+    takes a split meeting (`Meet`, `Rise`, `Toric`) as one curve: the same
+    surfaces and branch whatever its range; (e) a result edge over part of
+    a given meeting keeps the stored curve from its start's parameter in
+    the stored frame turning (or rising) by the places' sweep, and over
+    part of a torus's section at a fixed angle stored as a circle an arc of
+    that circle (the replay's history check found such pieces rounded as
+    spiric sections); (f) a vertex at a pole of a sphere face it bounds
+    stays in the result (the replay: a given meridian joined across the
+    pole, its pcurve undefined there); (g) a budget: an eliminant whose
+    coefficient bound (each restriction's degree times the other's largest
+    coefficient, in bits) passes 4,096 bits is `ComputationLimit("a given
+    meeting's eliminant past its budget of coefficient bits (S9e.3b)")`
+    (the replay: torus sections in turned frames against the turned
+    cylinder, eliminants of 8,000 to 11,000 bits, 50 to 170 s an input with
+    debug assertions; the fixtures' at most 1,300); (h) for time: the
+    eliminant of three surfaces is kept for every piece of the meeting and
+    every face on the partner's surface, a simple root of it needs no check
+    of its fibre, and each root's point is enclosed in binary64 intervals
+    (Euclid's algorithm on the fibre in intervals, the restrictions scaled
+    by a power of two) so a point certainly outside the edge's and the
+    face's boxes is never constructed; the exact signs a generator decides
+    by Sturm-Tarski are kept by polynomial (a vertex's surfaces are tested
+    on every section through it).
+    The fuzz target's chained stage may centre its partner on the first
+    result's first meeting of two curved faces or torus section by the
+    chained byte's next bit (`GIVEN_MET`), off: with it on, the corpus's
+    slowest chained operations reaching such an edge took 60 to 71 s an
+    input under AddressSanitizer on the Mac (8 to 10 s with debug
+    assertions: vertices in fields of degree eight through the second
+    arrangement), past the target's 60 s; off, a partner whose bounds meet
+    the sampled box of a `Meet`, `Rise`, `Toric` or torus section edge of
+    the first result is not given it. Replays with debug assertions of the
+    corpus and the regressions (1,454 inputs, one process each), none
+    failing: as committed (`GIVEN_MET` off) the slowest input 4.8 s (as at
+    the base, not S9e.3b's; 34 s under AddressSanitizer), 684 of 1,176
+    chained operations evaluating, 16 still reaching S9e.3b's path past the
+    filter and refused as its limits or cost (the slowest such input 21 s
+    under AddressSanitizer); with it on, 767 of 1,296 evaluating (659 of
+    1,238 at S9e.3a), the slowest input 10.2 s, S9e.3b's refusals 16
+    projections separating no points, 14 eliminants past the budget, 4
+    meetings within the resolution and 2 by cost (156 refused as S9e.3b's
+    before); with every chained partner centred on a meeting where the
+    first result has one (`FORCE_MET`, 168 operations, 98 of them
+    evaluating), the slowest input 15.2 s, 753 of 1,296 evaluating in all.
+    Every check of HANDOFF's verification passes: formatting, clippy, the
+    1.85 check, the test suite, every comparison unchanged with 0 failures
+    (`compare_split.py` and `compare_brep.py --family spline` too), the
+    reference tests, the generator's check and the ledger. DRAW
+    (`UPSTREAM_TESTS.md`): the 20 unregistered cases giving a Boolean's
+    result to another Boolean, surveyed on both backends, as after S9e.3a
+    (the kernel reaches none of them: 5 private data, 6 a restored shape
+    given to a Boolean, 5 constructs the adapter does not read, `ZQ1`'s
+    wire, `G9` and `H3` a tangency between the inputs, `ZP6` a torus tangent
+    to the other input); none evaluates newly, so none is registered and no
+    volume audit is due; the ledger does not change. Pending: the DRAW
+    survey, the campaign.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

@@ -222,15 +222,17 @@ impl Polyhedron {
         };
         let mut bounds = crate::solid::split::edge_bounds(&topology);
         // A sphere's face bulges past its edges (S9d.1): its whole sphere's
-        // box, and every vertex (a pole's vertex loop among them).
+        // box, and every vertex (a pole's vertex loop among them). S9e.3b: a
+        // torus's face its whole torus's box, and a cylinder's or a cone's
+        // its surface's between its edges' heights (a given result's faces
+        // bulge past its edges too, and the next Boolean's vertices lie on
+        // them).
         for f in topology.faces() {
-            if let crate::topology::Surface::Sphere { frame, radius } = &f.surface {
-                let c = frame.origin().to_array();
-                let r = radius * (1.0 + 4.0 * f64::EPSILON);
+            if let Some([lo2, hi2]) = face_box(&topology, f) {
                 let (mut lo, mut hi) = (bounds.min.to_array(), bounds.max.to_array());
                 for i in 0..3 {
-                    lo[i] = lo[i].min(c[i] - r);
-                    hi[i] = hi[i].max(c[i] + r);
+                    lo[i] = lo[i].min(lo2[i]);
+                    hi[i] = hi[i].max(hi2[i]);
                 }
                 bounds.min = crate::Point3::new(lo[0], lo[1], lo[2]);
                 bounds.max = crate::Point3::new(hi[0], hi[1], hi[2]);
@@ -287,6 +289,89 @@ impl Polyhedron {
             (true, true) => Location::Boundary,
             _ => Location::Outside,
         })
+    }
+}
+
+/// A box holding a curved face: a sphere's or a torus's whole surface; a
+/// cylinder's or a cone's between the least and greatest heights along its
+/// axis of its edges (sampled, padded by a tenth of their span): the full
+/// circles there. None for a plane or a spline face (their edges bound
+/// them).
+fn face_box(t: &crate::topology::Topology, f: &crate::topology::Face) -> Option<[[f64; 3]; 2]> {
+    use crate::topology::{Loop, Surface};
+    let grow = |c: [f64; 3], e: [f64; 3]| {
+        let e = e.map(|x| x * (1.0 + 8.0 * f64::EPSILON));
+        Some([
+            [c[0] - e[0], c[1] - e[1], c[2] - e[2]],
+            [c[0] + e[0], c[1] + e[1], c[2] + e[2]],
+        ])
+    };
+    // The reach along each world axis of `a x + b y + c n`, |a|, |b|, |c|
+    // at most the given.
+    let reach = |frame: &crate::Frame3, a: f64, b: f64, c: f64| {
+        let (x, y, n) = (
+            frame.x().to_array(),
+            frame.y().to_array(),
+            frame.normal().to_array(),
+        );
+        [0, 1, 2].map(|i| a * x[i].abs() + b * y[i].abs() + c * n[i].abs())
+    };
+    let heights = |frame: &crate::Frame3| -> Option<(f64, f64)> {
+        let (mut lo, mut hi) = (f64::INFINITY, f64::NEG_INFINITY);
+        for l in &f.loops {
+            match &t.loops()[l.0] {
+                Loop::Edges { fins, .. } => {
+                    for k in fins {
+                        let e = &t.edges()[t.fins()[k.0].edge.0];
+                        for j in 0..=32 {
+                            let h = frame.coordinates(e.curve.point(f64::from(j) / 32.0))[2];
+                            lo = lo.min(h);
+                            hi = hi.max(h);
+                        }
+                    }
+                }
+                Loop::Vertex(v) => {
+                    let h = frame.coordinates(t.vertices()[v.0].position)[2];
+                    lo = lo.min(h);
+                    hi = hi.max(h);
+                }
+            }
+        }
+        let pad = 0.1 * (hi - lo) + 1e-9 * (1.0 + lo.abs().max(hi.abs()));
+        (lo <= hi).then_some((lo - pad, hi + pad))
+    };
+    match &f.surface {
+        Surface::Sphere { frame, radius } => grow(frame.origin().to_array(), [*radius; 3]),
+        Surface::Torus {
+            frame,
+            major,
+            minor,
+        } => grow(
+            frame.origin().to_array(),
+            reach(frame, major + minor, major + minor, *minor),
+        ),
+        Surface::Cylinder { frame, radius } => {
+            let (lo, hi) = heights(frame)?;
+            let mid = frame.point(crate::Point2::new(0.0, 0.0), 0.5 * lo + 0.5 * hi);
+            grow(
+                mid.to_array(),
+                reach(frame, *radius, *radius, 0.5 * (hi - lo)),
+            )
+        }
+        Surface::Cone {
+            frame,
+            radius,
+            half_angle,
+        } => {
+            // Heights along the axis: v cos a; the radius r + v sin a there.
+            let (lo, hi) = heights(frame)?;
+            let (s, c) = half_angle.sin_cos();
+            let rad = |h: f64| (radius + h / c * s).abs();
+            let r = rad(lo).max(rad(hi));
+            let mid = frame.point(crate::Point2::new(0.0, 0.0), 0.5 * lo + 0.5 * hi);
+            grow(mid.to_array(), reach(frame, r, r, 0.5 * (hi - lo)))
+        }
+        _ => None,
     }
 }
 

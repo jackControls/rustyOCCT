@@ -1195,11 +1195,26 @@ pub(super) fn crossings<T: Real>(pr: &Projection, p: &V2<T>) -> Option<u32> {
 /// clear of every alias in `u`, or below `p` in `v`, counts nothing;
 /// others are bisected, at most 40 times. `None` when undecided.
 pub(super) fn cover_crossings<T: Real>(pr: &Projection, p: &V2<T>) -> Option<Vec<i64>> {
+    cover_crossings_on(pr, p, false)
+}
+
+/// `cover_crossings` with the parameters' roles exchanged (`swap`): the
+/// `+u` ray's crossings over every `v` alias, `p` given as `(v, u)` (a torus
+/// face wound in `v`, S9e.3b).
+pub(super) fn cover_crossings_on<T: Real>(
+    pr: &Projection,
+    p: &V2<T>,
+    swap: bool,
+) -> Option<Vec<i64>> {
     use std::cmp::Ordering;
     use std::f64::consts::TAU;
     if T::EXACT {
         return None;
     }
+    let at = |f: f64| -> Option<V2<T>> {
+        let [a, b] = projection_at::<T>(pr, f)?;
+        Some(if swap { [b, a] } else { [a, b] })
+    };
     let mut out = Vec::new();
     let mut stack = vec![(0.0f64, 1.0f64, 0usize)];
     while let Some((lo, hi, depth)) = stack.pop() {
@@ -1207,6 +1222,7 @@ pub(super) fn cover_crossings<T: Real>(pr: &Projection, p: &V2<T>) -> Option<Vec
         let base = T::exact_f64(lo).union(&T::exact_f64(hi));
         let decided = (|| -> Option<Vec<i64>> {
             let [u, v] = projection_jet(pr, &Jet::variable(base, 1))?;
+            let [u, v] = if swap { [v, u] } else { [u, v] };
             let ((ul, uh), (pl, ph)) = (u.c[0].bounds_f64(), p[0].bounds_f64());
             let kmin = ((pl - uh) / TAU).floor() as i64 - 1;
             let kmax = ((ph - ul) / TAU).ceil() as i64 + 1;
@@ -1231,7 +1247,7 @@ pub(super) fn cover_crossings<T: Real>(pr: &Projection, p: &V2<T>) -> Option<Vec
                 if dv != Some(Ordering::Greater) || !monotone {
                     return None;
                 }
-                let (a, b) = (projection_at::<T>(pr, lo)?, projection_at::<T>(pr, hi)?);
+                let (a, b) = (at(lo)?, at(hi)?);
                 let above = |x: &T| Some(x.sub(&uk).sign()? == Ordering::Greater);
                 let (ra, rb) = (above(&a[0])?, above(&b[0])?);
                 if ra != rb {

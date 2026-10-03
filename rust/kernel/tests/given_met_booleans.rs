@@ -1,11 +1,11 @@
-//! S9e.3a: a Boolean's result of spheres, cones and tori (or with procedural
-//! edges the partner does not reach), deeper chains, and given results
-//! against a sphere, a cone or a torus, against the independent reference
-//! (`fixtures/boolean-given-curved-*` from
-//! `tools/generate_given_curved_boolean_fixtures.py`): each case's Booleans
-//! in turn, each on the previous one's result's one solid and the next
-//! solid, as object or tool (`swapped`). Each case runs once (on a few
-//! threads) for the checks that read its result.
+//! S9e.3b: a Boolean's result whose edges on meetings of two curved faces
+//! (`Rise`, `Meet`, `Toric`), or on a cone's or a torus's general plane
+//! section, a face of the other input meets, against the independent
+//! reference (`fixtures/boolean-given-met-*` from
+//! `tools/generate_given_met_boolean_fixtures.py`): each case's Booleans in
+//! turn, the second on the first's one solid and the third solid, as object
+//! or tool (`swapped`). Each case runs once (on a few threads) for the checks
+//! that read its result.
 #[path = "support/boolean_protocol.rs"]
 #[allow(dead_code)]
 mod protocol;
@@ -16,9 +16,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::OnceLock;
 
 fn cases() -> Vec<protocol::Case> {
-    protocol::cases(include_str!(
-        "../../fixtures/boolean-given-curved-cases.txt"
-    ))
+    protocol::cases(include_str!("../../fixtures/boolean-given-met-cases.txt"))
 }
 
 /// `f` over the cases on at most six threads, in the cases' order.
@@ -62,7 +60,7 @@ type Expected = std::collections::BTreeMap<String, (String, Option<(usize, [f64;
 
 fn expected() -> Expected {
     let mut expect = std::collections::BTreeMap::new();
-    for line in include_str!("../../fixtures/boolean-given-curved-expected.tsv")
+    for line in include_str!("../../fixtures/boolean-given-met-expected.tsv")
         .lines()
         .filter(|l| !l.starts_with('#'))
     {
@@ -291,22 +289,20 @@ fn results_are_deterministic_and_move_rigidly() {
 
 /// A given result moved rigidly, given to the last Boolean with the last
 /// solid moved alike, keeps the reference's volumes: its model built again
-/// from its moved construction. The motion is a translation by binary64
-/// steps, as S9e.1's: a turned motion rounds the frames apart.
+/// from its moved construction (a translation by binary64 steps, as
+/// S9e.3a's).
 #[test]
 fn moved_results_keep_their_volumes() {
     use rusty_occt::{RigidTransform, Vec3};
     let motion = RigidTransform::translation(Vec3::new(0.5, -0.25, 1.0)).unwrap();
     let expect = expected();
     for name in [
-        "dome_tilt_cut",
-        "g9_clear_cut",
-        "countersink_drill_common",
-        "groove_drill_fuse",
-        "holes_tilt_common",
-        "dome_deep_cut",
-        "holed_ball_common",
-        "holed_torus_cut",
+        "peg_tilt_cut",
+        "peg_wall_common",
+        "cross_ball_fuse",
+        "torus_rod_wall_fuse",
+        "cone_cut_ball_cut",
+        "torus_cut_pipe_common",
     ] {
         let case = cases().into_iter().find(|c| c.name == name).unwrap();
         let all = stages(&case).unwrap_or_else(|e| panic!("{name}: {e}"));
@@ -331,15 +327,51 @@ fn moved_results_keep_their_volumes() {
     }
 }
 
-/// Declared degenerate cases are refused: DRAW's G9 (the third cylinder
-/// touching the frustum's top circle) and a box touching the dome's top.
+/// Declared degenerate cases are refused: the box touching the peg's
+/// meeting with the sphere at its lowest point and the ball through that
+/// point with dependent normals (the partner tangent to the given meeting),
+/// and the rod whose top cap's plane holds the frustum's apex (S9d.3a's).
 #[test]
 fn tangencies_are_degenerate() {
     for (name, run) in runs() {
-        let g9 = name.strip_prefix("g9_").is_some_and(|op| !op.contains('_'));
-        if g9 || name.starts_with("dome_touch") {
+        if name.starts_with("peg_touch") || name.starts_with("peg_kiss") {
+            match run {
+                Err(Error::Degenerate(m)) => assert!(m.contains("S9e.3b"), "{name}: {m}"),
+                other => panic!("{name}: {:?}", other.as_ref().map(|_| ())),
+            }
+        }
+        if name.starts_with("cone_cut_rod") {
             assert!(matches!(run, Err(Error::Degenerate(_))), "{name}: {run:?}");
         }
+    }
+}
+
+/// The kernel stores the frames the reference swept, bit for bit.
+#[test]
+fn stored_frames_are_the_reference_inputs() {
+    let hex = |x: f64| format!("{:016x}", x.to_bits());
+    let cases = cases();
+    for row in include_str!("../../fixtures/boolean-given-met-frames.tsv")
+        .lines()
+        .filter(|l| !l.starts_with('#'))
+    {
+        let w: Vec<&str> = row.split('\t').collect();
+        let case = cases.iter().find(|c| c.name == w[0]).unwrap();
+        let (which, axis) = w[1].split_once(' ').unwrap();
+        let k: usize = which.trim_start_matches("solid").parse().unwrap();
+        let spec = match k {
+            0 => &case.object,
+            1 => &case.tool,
+            _ => &case.then.as_ref().unwrap().third,
+        };
+        let frame = protocol::build(spec).frame();
+        let v = match axis {
+            "n" => frame.normal(),
+            "x" => frame.x(),
+            _ => frame.y(),
+        };
+        let got = [v.x, v.y, v.z].map(hex).join(" ");
+        assert_eq!(got, w[2], "{} {}", w[0], w[1]);
     }
 }
 
@@ -357,88 +389,75 @@ fn boolean(a: &Solid, op: &str, id: u64, b: &Solid) -> Result<Vec<Solid>, Error>
     .map(|r| r.0)
 }
 
-/// A construction tree deeper than three Booleans is a limit: the domed box
-/// drilled twice more, then cut (`chain::MAX_DEPTH`).
-#[test]
-fn deeper_trees_are_a_limit() {
-    let box_ = solid(
-        "op 91\nframe 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0\noffsets 0.0 4.0\n\
-         boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0",
-    );
-    let ball = solid("op 92\nframe 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0\nsphere 3.0 -1.5707963267948966 1.5707963267948966");
-    let drill = |x: f64, op: u64| {
-        solid(&format!(
-            "op {op}\nframe 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0\noffsets -1.0 8.0\nboundary C {x} 5.0 0.5"
-        ))
-    };
-    // A slab clear of the dome's faces, across the first drill.
-    let slab = solid(
-        "op 99\nframe 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0\noffsets 1.5 2.5\n\
-         boundary P 4 0.5 0.5 1.6 0.5 1.6 9.5 0.5 9.5",
-    );
-    let one = |v: Vec<Solid>| <[Solid; 1]>::try_from(v).ok().unwrap()[0].clone();
-    let domed = one(boolean(&box_, "fuse", 93, &ball).unwrap());
-    let d1 = one(boolean(&domed, "cut", 95, &drill(1.25, 94)).unwrap());
-    let d2 = one(boolean(&d1, "cut", 97, &drill(9.0, 96)).unwrap());
-    // Three Booleans: given once more.
-    let kept = boolean(&d2, "common", 98, &slab);
-    assert!(kept.is_ok(), "{:?}", kept.map(|r| r.len()));
-    let d3 = one(boolean(&d2, "cut", 101, &drill(3.0, 100)).unwrap());
-    // Four: a limit.
-    assert!(matches!(
-        boolean(&d3, "common", 102, &slab),
-        Err(Error::ComputationLimit(_))
-    ));
+fn volume(out: &[Solid]) -> f64 {
+    out.iter().map(|s| s.mass_properties().volume).sum()
 }
 
-/// A partner face meeting a given meeting of two curved faces (S9e.3b,
-/// since its kernel): the sphere fused with the peg, its `Rise` crossed by
-/// a box, the cut and the common consistent by the kernel's own measures.
-#[test]
-fn a_meeting_of_curved_faces_met_evaluates() {
-    let case = cases()
-        .into_iter()
-        .find(|c| c.name == "peg_clear_cut")
-        .unwrap();
+/// The given result of a case's first Boolean.
+fn given_of(name: &str) -> Solid {
+    let case = cases().into_iter().find(|c| c.name == name).unwrap();
     let (_, _, first, _) = protocol::run_first(&case).unwrap();
-    let given = protocol::given(&case, first);
-    let cross = solid(
-        "op 97\nframe 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0\noffsets 2.5 7.0\n\
-         boundary P 4 -4.0 -4.0 4.0 -4.0 4.0 4.0 -4.0 4.0",
-    );
-    let volume = |out: Vec<Solid>| out.iter().map(|s| s.mass_properties().volume).sum::<f64>();
-    let c = volume(boolean(&given, "cut", 98, &cross).unwrap());
-    let m = volume(boolean(&given, "common", 99, &cross).unwrap());
-    let v = given.mass_properties().volume;
-    assert!((c + m - v).abs() <= 1e-9 * v, "{c} + {m} for {v}");
+    protocol::given(&case, first)
 }
 
-/// The kernel stores the frames the reference swept, bit for bit.
+/// The three operations with a partner keep the pair identities by the
+/// kernel's own measures: `V(X u C) + V(X n C) = V(X) + V(C)` and `V(X - C)
+/// = V(X) - V(X n C)`.
+fn identities(given: &Solid, partner: &Solid) -> Result<(), String> {
+    let f = boolean(given, "fuse", 97, partner).map_err(|e| e.to_string())?;
+    let c = boolean(given, "cut", 97, partner).map_err(|e| e.to_string())?;
+    let m = boolean(given, "common", 97, partner).map_err(|e| e.to_string())?;
+    let (vx, vc) = (
+        given.mass_properties().volume,
+        partner.mass_properties().volume,
+    );
+    let near = |a: f64, b: f64| (a - b).abs() <= 1e-9 * a.abs().max(b.abs()).max(1.0);
+    if !near(volume(&f) + volume(&m), vx + vc) || !near(volume(&c), vx - volume(&m)) {
+        return Err(format!(
+            "fuse {} cut {} common {} given {vx} partner {vc}",
+            volume(&f),
+            volume(&c),
+            volume(&m)
+        ));
+    }
+    Ok(())
+}
+
+/// A cone's elliptic section met by a rod (the declared fixture's rod
+/// lowered clear of the frustum's apex): a conic against a conic in the
+/// section's plane, the three operations consistent.
 #[test]
-fn stored_frames_are_the_reference_inputs() {
-    let hex = |x: f64| format!("{:016x}", x.to_bits());
-    let cases = cases();
-    for row in include_str!("../../fixtures/boolean-given-curved-frames.tsv")
-        .lines()
-        .filter(|l| !l.starts_with('#'))
-    {
-        let w: Vec<&str> = row.split('\t').collect();
-        let case = cases.iter().find(|c| c.name == w[0]).unwrap();
-        let (which, axis) = w[1].split_once(' ').unwrap();
-        let k: usize = which.trim_start_matches("solid").parse().unwrap();
-        let spec = match k {
-            0 => &case.object,
-            1 => &case.tool,
-            2 => &case.then.as_ref().unwrap().third,
-            _ => &case.more[k - 3].third,
-        };
-        let frame = protocol::build(spec).frame();
-        let v = match axis {
-            "n" => frame.normal(),
-            "x" => frame.x(),
-            _ => frame.y(),
-        };
-        let got = [v.x, v.y, v.z].map(hex).join(" ");
-        assert_eq!(got, w[2], "{} {}", w[0], w[1]);
+fn a_cone_section_met_by_a_rod() {
+    let given = given_of("cone_cut_rod_cut");
+    let rod = solid(
+        "op 96\nframe 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0\noffsets -1.0 5.5\nboundary C 0.1 2.5 0.4",
+    );
+    identities(&given, &rod).unwrap();
+}
+
+/// Two crossing rods' meeting met by a wall through the thick rod's axis
+/// (parallel to its rulings, the carrier's fibre holding two points): the
+/// projection retried, the three operations consistent.
+#[test]
+fn a_meeting_met_by_a_wall_along_the_carriers_rulings() {
+    let given = given_of("cross_wall_fuse");
+    let wall = solid(
+        "op 96\nframe 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0\noffsets -8.0 8.0\n\
+         boundary P 4 -8.0 0.25 8.0 0.25 8.0 8.0 -8.0 8.0",
+    );
+    identities(&given, &wall).unwrap();
+}
+
+/// A torus among three curved surfaces is refused by cost (S9e.3b): the
+/// torus and the rod's `Toric` met by a ball.
+#[test]
+fn a_torus_among_three_curved_surfaces_is_refused() {
+    let given = given_of("torus_rod_wall_fuse");
+    let ball = solid(
+        "op 96\nframe 3.49 0.09 0.87 0.0 0.0 1.0 1.0 0.0 0.0\nsphere 0.3 -1.5707963267948966 1.5707963267948966",
+    );
+    match boolean(&given, "cut", 97, &ball) {
+        Err(Error::OutOfDomain(m)) => assert!(m.contains("S9e.3b"), "{m}"),
+        other => panic!("{:?}", other.map(|r| r.len())),
     }
 }

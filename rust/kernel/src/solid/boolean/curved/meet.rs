@@ -499,6 +499,7 @@ pub(super) fn edge_surface(
     py: &Prism,
     fy: usize,
     pair: Option<&CylPair>,
+    clip: Option<&([f64; 3], [f64; 3])>,
 ) -> Result<EdgeMeet> {
     match (curve, &py.faces[fy].surf) {
         // S9f.1: a line against a spline wall, a cap edge or a crease over
@@ -579,7 +580,7 @@ pub(super) fn edge_surface(
         (Crv::Torus(c), Surf::Plane { p: p0, m }) => super::torus_segment::rim_plane(c, p0, m),
         // S9d.4c: against a quadric or a torus (a circle of the torus at a
         // fixed angle: a part's rim, or a given result's section normal to
-        // or holding the axis; another plane's section is S9e.3b's).
+        // or holding the axis; another plane's section is S9e.3b's, below).
         (Crv::Torus(c), Surf::Cyl { .. } | Surf::Sphere { .. } | Surf::Cone { .. })
             if c.fixed_angle() =>
         {
@@ -602,11 +603,11 @@ pub(super) fn edge_surface(
         // S9e.3a: a given result's plane section of a cone against a plane,
         // on the line of the two planes.
         (Crv::Cone(c), Surf::Plane { p: p0, m }) => c.meet_plane(p0, m),
-        // A given result's meeting of two curved faces (or a cone's section
-        // against a curved face) met by another face: three surfaces, two
-        // of them curved (S9e.3b).
+        // S9e.3b: a given result's meeting of two curved faces met by
+        // another face, or a cone's or a torus's general section met by a
+        // curved face: three surfaces, two or three of them curved.
         (Crv::Meet(_) | Crv::Rise(_) | Crv::Cone(_) | Crv::Toric(_) | Crv::Torus(_), _) => {
-            Err(Error::OutOfDomain(super::chain::S9E3B))
+            super::triple::meet(curve, py, fy, clip)
         }
         (Crv::Line { p, d }, Surf::Plane { p: p0, m }) => {
             let md = dot(m, d);

@@ -117,6 +117,28 @@ impl RiseCrv {
         )
     }
 
+    /// The carrier's ruled surface and its quadric, and the sphere (S9e.3b:
+    /// the curve's two surfaces).
+    pub(super) fn surfaces(&self) -> (super::triple::Ruling, Other, Other) {
+        let ruling = super::triple::Ruling {
+            o: self.o.clone(),
+            x: self.x.clone(),
+            y: self.y.clone(),
+            n: self.n.clone(),
+            r: self.r.clone(),
+            k: self.k.clone(),
+        };
+        let carrier = Other {
+            g: vec![self.rows[0].clone(), self.rows[1].clone()],
+            e: vec![dot(&self.rows[0], &self.o), dot(&self.rows[1], &self.o)],
+            r: self.r.clone(),
+            h: self.rows[2].clone(),
+            eh: dot(&self.rows[2], &self.o),
+            t: self.k.clone(),
+        };
+        (ruling, carrier, other_sphere(&self.c, &self.rr))
+    }
+
     /// The carrier's radius at a height.
     fn rho(&self, w: &R) -> R {
         &self.r + &self.k * w

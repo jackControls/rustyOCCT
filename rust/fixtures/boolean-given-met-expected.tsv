@@ -98,13 +98,16 @@ torus_rod_wall_cut	result 1 56.53568213443452071865284 125.476367652962136160262
 torus_rod_wall_common	expect solid S9e.3b toric plane
 torus_rod_wall_common	meet 4 0.99
 torus_rod_wall_common	result 1 5.884711038303640735420968 31.02702512405591414744996 3.387298423030195159629388 0.0 0.0
-cone_cut_rod_fuse	expect solid S9e.3b cone cylinder
+cone_cut_rod_fuse	expect degenerate S9e.3b cone cylinder
+cone_cut_rod_fuse	reason the rod's top cap's plane z = 6 holds the frustum's apex (S9d.3a's refusal of a plane through a cone's apex)
 cone_cut_rod_fuse	meet 2 0.42
 cone_cut_rod_fuse	result 1 48.37658554879947670755288 96.60157849885944946588222 0.006437416667381827537525844 0.03712078392509799301170667 1.193751226178540885200388
-cone_cut_rod_cut	expect solid S9e.3b cone cylinder
+cone_cut_rod_cut	expect degenerate S9e.3b cone cylinder
+cone_cut_rod_cut	reason the rod's top cap's plane z = 6 holds the frustum's apex (S9d.3a's refusal of a plane through a cone's apex)
 cone_cut_rod_cut	meet 2 0.42
 cone_cut_rod_cut	result 1 44.85800177677890788983345 81.82457542949486117962384 -0.0009014699156779072472733716 -0.1560631854645914291182206 1.091291340411422678329752
-cone_cut_rod_common	expect solid S9e.3b cone cylinder
+cone_cut_rod_common	expect degenerate S9e.3b cone cylinder
+cone_cut_rod_common	reason the rod's top cap's plane z = 6 holds the frustum's apex (S9d.3a's refusal of a plane through a cone's apex)
 cone_cut_rod_common	meet 2 0.42
 cone_cut_rod_common	result 1 0.4097429504560449011847253 3.226233120865521615023652 0.09869148214553672820749159 2.443684926793769314488314 0.4420196201571260396269195
 cone_cut_ball_fuse	expect solid S9e.3b cone sphere

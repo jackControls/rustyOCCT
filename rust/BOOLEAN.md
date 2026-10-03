@@ -919,18 +919,18 @@ torus at a fixed angle, against quadrics and tori. One meeting is new: a
 cone's section against a plane, on the line of the two planes
 (`ConeSec::meet_plane`). A meeting of two curved faces, a cone's section
 against a curved face or a torus's general section against a curved face,
-met by the partner, is three surfaces two of them curved: S9e.3b's,
-`OutOfDomain`; where one of the edge's faces' surfaces is apart from the
-partner's face the edge is not met and stays given. A result edge over the
+met by the partner, is three surfaces two of them curved: S9e.3b's (below);
+where one of the edge's faces' surfaces is apart from the partner's face the
+edge is not met and stays given. A result edge over the
 whole of a given edge keeps its stored curve; a piece of a cone's or a
 torus's section is rounded from its exact curve on its primitive model.
 
 In scope besides S9e.1's and S9e.2's: results of spheres, cones and tori
 with prisms, spheres, cones and tori; results with procedural edges the
 partner does not reach; deeper chains to three Booleans; given results
-against spheres, cones and tori. Refused: S9e.3b's meetings; deeper trees;
-a plane's piece (S9e.4); splines (S9f); every S9d degeneracy in the second
-arrangement. DRAW's `bcut_simple/G9` and `H3` are such a degeneracy: the
+against spheres, cones and tori. Refused until S9e.3b: its meetings.
+Refused: deeper trees; a plane's piece (S9e.4); splines (S9f); every S9d
+degeneracy in the second arrangement. DRAW's `bcut_simple/G9` and `H3` are such a degeneracy: the
 rod of radius 1 about `(5, 0)` touches the frustum's top circle of radius 6
 at `(6, 0, 4)`, a tangency between the inputs.
 
@@ -940,6 +940,44 @@ general section was met by it and the result left open (the fuzz replay's
 sphere partner): such a section met by a curved face is now S9e.3b's; and
 the independent history check takes a torus's plane section, a hyperbola
 and a parabola split by another Boolean as one curve.
+
+### Given meetings of curved faces met by the partner (S9e.3b)
+
+A given result's edge on a meeting of two curved faces (`Meet`, `Rise`,
+`Toric`), or on a plane's section of a cone or a torus other than a circle
+of the torus, is met by the partner's faces where three surfaces meet
+(`curved/triple.rs`). With a plane among the three, the other two are
+restricted to the plane's rational affine coordinates (a quadric's conic, a
+torus's spiric quartic); with three quadrics, the two others are restricted
+to a ruled one's rulings over its rational chart (the given curve's
+carrier, else the partner's). The resultant in the second parameter (degree
+4 for two conics, 8 for a conic and a quartic or for three quadrics) has
+its real roots isolated exactly; at each the second parameter is the
+fibre's gcd over `Q(alpha)`, so every vertex lies in one `Q(alpha)` with no
+tower. A fibre holding two points (a plane along a cylinder's rulings, a
+partner parallel to the carrier) retries the projection (the parameters
+exchanged, sheared, another ruled carrier). Each point is verified on all
+three surfaces exactly and kept where the given curve's own test holds it
+(branch, window, range); the second arrangement then takes it as any
+vertex of an edge met by a face. A result edge over part of a given
+meeting keeps its stored curve between its ends' parameters.
+
+`Degenerate`: the partner tangent to the given curve at a meeting (the
+three gradients dependent there, exactly), two meetings of one edge within
+the resolution, and S9's rules. Refused by cost: a torus among three
+curved surfaces (a `Toric` met by a curved face, a `Meet` or `Rise` met by
+a torus) and two tori in one plane, eliminants of degree 16 or more
+(`OutOfDomain`). Found with it: a torus face wound in `v` (a plane's cut
+across the tube) with a hole is now decided by the `+u` ray's signed
+crossings (before, `UncertifiedContainment` always), a result's bounds take
+its torus faces' whole box and its cylinders' and cones' circles between
+their edges' heights (a given result's faces bulge past its edges, and the
+next Boolean's vertices classify against them), a vertex at a pole of a
+sphere face it bounds stays in the result (a meridian's pcurve is undefined
+across it), and the history check takes a split meeting's pieces as one
+curve. An eliminant whose coefficient bound passes 4,096 bits is a
+`ComputationLimit` (torus sections in turned frames against a turned
+cylinder: 8,000 to 11,000 bits, minutes an operation).
 
 ### Spline profiles (S9a.2)
 

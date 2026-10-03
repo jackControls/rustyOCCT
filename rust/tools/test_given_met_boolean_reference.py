@@ -126,7 +126,7 @@ class GivenMetReferenceTests(unittest.TestCase):
         fixtures.validate(listed)
         self.assertEqual({c.klass for c in listed}, set(fixtures.CLASSES))
         self.assertEqual({c.partner for c in listed}, set(fixtures.PARTNERS))
-        self.assertEqual(sum(c.kind == 'degenerate' for c in listed), 5)
+        self.assertEqual(sum(c.kind == 'degenerate' for c in listed), 8)
         for c in listed:
             self.assertEqual(c.expr(), ref.chain_expr(c.op1, c.op2, c.swapped))
 

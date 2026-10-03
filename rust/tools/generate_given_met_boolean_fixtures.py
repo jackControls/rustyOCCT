@@ -47,7 +47,10 @@ box above `w = 2.2` (an elliptic section of the cone), with a rod
 (`cone_cut_rod`) and a ball (`cone_cut_ball`) across the section; the torus
 less a box beyond the wall `x = 5/2` (a spiric section), with a pipe along
 `x` (`torus_cut_pipe`, its common two solids) and a ball (`torus_cut_ball`)
-across the section; declared `degenerate`: a box whose bottom face `z = 4`
+across the section (`cone_cut_rod` declared `degenerate` after the capture:
+the rod's top cap's plane `z = 6` holds the frustum's apex, S9d.3a's refusal
+of a plane through a cone's apex); declared `degenerate`: a box whose
+bottom face `z = 4`
 touches the peg's loop at its lowest point `(0, 3, 4)` (`peg_touch`), and a
 ball of radius 13/16 about `(0, 15/4, 69/16)` through that point, whose
 normal there, `(0, -12, -5) / 13`, is dependent on the sphere's and the
@@ -150,6 +153,8 @@ ROD_Z = prism([disc(0.0, 0.5, 1.0)], at('XY', (0, 0, 0)), -6.0, 6.0)
 FRUSTUM = cone(3.0, 1.0, 4.0, at('XY', (0, 0, 0)))
 # A torus of radii 3 and 1 about the z axis.
 RING = torus(3.0, 1.0, at('XY', (0, 0, 0)))
+APEX = ('the rod\'s top cap\'s plane z = 6 holds the frustum\'s apex (S9d.3a\'s refusal of a plane through a '
+        'cone\'s apex)')
 TOUCH = ('a box\'s bottom face z = 4 tangent to the given sphere\'s and peg\'s meeting at its lowest point '
          '(0, 3, 4)')
 KISS = ('a ball of radius 13/16 about (0, 15/4, 69/16) through the given meeting\'s lowest point (0, 3, 4), its '
@@ -201,9 +206,11 @@ def cases():
     out += group('torus_rod_wall', 'toric', 'plane',
                  [RING, prism([disc(3.1, 0.0, 0.5)], at('XY', (0, 0, 0)), -3.0, 3.0),
                   big_box(3.1, -8.0, -4.0, 8.0, 8.0, 4.0)], 'fuse', {'fuse': 1, 'cut': 1, 'common': 1})
+    # Declared after the capture: the rod's top cap's plane z = 6 holds the
+    # frustum's apex (S9d.3a's refusal), which S9e.3b's kernel found.
     out += group('cone_cut_rod', 'cone', 'cylinder',
                  [FRUSTUM, FRUSTUM_CUT, prism([disc(0.1, 2.5, 0.4)], at('XY', (0, 0, 0)), -1.0, 6.0)],
-                 'cut', {'fuse': 1, 'cut': 1, 'common': 1})
+                 'cut', {'fuse': 1, 'cut': 1, 'common': 1}, reason=APEX)
     out += group('cone_cut_ball', 'cone', 'sphere',
                  [FRUSTUM, FRUSTUM_CUT, sphere(0.6, at('XY', (0.2, -1.2, 3.6)))], 'cut',
                  {'fuse': 1, 'cut': 1, 'common': 1})
@@ -230,7 +237,7 @@ def validate(listed):
         for frame in c.frames:
             assert frame_name(frame) in FRAMES, c.name
         assert len(c.specs) == 3, c.name
-        assert (c.kind == 'degenerate') == (c.touch is not None), c.name
+        assert c.touch is None or c.kind == 'degenerate', c.name
 
 
 # ------------------------------------------------------------------ the chains' work
@@ -244,8 +251,8 @@ def evaluate(job):
     # quadrature takes 1e-22 (the touching pieces' endpoint singularities
     # converge slowly; the kernel refuses these cases, their rows are
     # rounded to binary64).
-    ref.MERGE = degenerate
-    ref.QUAD = mp.mpf(10)**(-22 if degenerate else -32)
+    ref.MERGE = touch is not None
+    ref.QUAD = mp.mpf(10)**(-22 if touch is not None else -32)
     out = gc.evaluate((name, specs, op1, [], ops, swapped, degenerate, mc_n))
     cases_ = [gc.solid(s, gc.OPERATIONS[k]) for k, s in enumerate(specs)]
     chain = ref.Chain(cases_)
@@ -338,7 +345,7 @@ def generate(results, listed):
         out.append(f'{case.name}\texpect {case.kind} S9e.3b {case.klass} {case.partner}')
         if case.kind == 'degenerate':
             out.append(f'{case.name}\treason {case.reason}')
-        else:
+        if case.touch is None:
             mine = klass_points(points, case.klass)
             out.append(f'{case.name}\tmeet {len(mine)} {mp.nstr(min(p[1] for p in mine), 3)}')
         for x in row:

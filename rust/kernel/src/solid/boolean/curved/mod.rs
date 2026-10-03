@@ -34,6 +34,7 @@ mod torus;
 mod torus_curved;
 mod torus_parts;
 mod torus_segment;
+mod triple;
 mod turned;
 
 use super::polyhedra::{Component, Polyhedron};
