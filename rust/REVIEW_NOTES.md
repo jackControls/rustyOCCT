@@ -5067,7 +5067,10 @@ Decisions for S9, recorded before its code (2026-09-28):
     stage's spline results, S9f; sub-resolution results and contacts),
     median 0.31 s, the slowest 2.2 s (27 s under AddressSanitizer on this
     host, where the corpus's slowest input takes 29 s).
-    Pending: the DRAW survey, the campaign.
+    Campaign: the boolean campaign at `089c5fbe` (600 s, a sampled
+    replay) clean, 860 runs, the slowest input 44 s under
+    AddressSanitizer on a host at load 10 (S9e.3b's agent working).
+    Pending: the DRAW survey.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions
