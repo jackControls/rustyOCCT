@@ -565,6 +565,40 @@ seconds. Single-file replay is timed separately because libFuzzer does not
 enforce its usual alarm in that mode. Published Linux campaigns must still
 pass the unchanged 60-second/2-GiB input gates.
 
+## Degree elevation: a degree-19 periodic axis raised to 25
+
+`degree_elevation/timeout-559a48007e6dd6414eb28692d5545d662d920ec1.bin` is
+the original 21-byte artifact of the scheduled
+[run 36868817257](https://github.com/jackControls/rustyOCCT/actions/runs/36868817257)
+(87 s under AddressSanitizer against the 60 s limit). It is a surface: U a
+uniform periodic degree-19 axis of 23 simple knots scaled by `2^4096`, V the
+clamped degree-2 axis `0, 1, 4`, small integer controls, raised to degrees
+25 and 2, then staged (an identity, then the same elevation again). The
+scale is immaterial (the same input at scale 1 takes as long): nearly all of
+the time was the production control map, Prautzsch's rank curves over three
+periods, six degree steps of about 21 ranks each inserting about 63 knots,
+every blend a `BigRational` product and sum reduced by `num_integer`'s
+binary gcd. Every coefficient fits 64 bits there. The map is now computed in
+machine words first, the knots moved by one positive affine map onto
+integers (the insertion ratios are invariant under it), each sum and product
+reduced as `BigRational`'s, and any overflow computes it again with
+`BigRational` through `crate::rational`'s faster gcd; knot refinement's
+blends use that too. The map, and so every result, is the same exact map:
+the target's independent reconstruction, composition and jets pass
+unchanged, and the kernel's tests compare the word and rational maps.
+
+| Input | Release replay | AddressSanitizer (loaded Mac) |
+| --- | ---: | ---: |
+| `timeout-559a…` | 9.6 s → 1.1 s (map 4.7 s → 0.36 s) | 262 s → 14 s (733 → 28 Gcycles) |
+| `slow-unit-25ac…` (55 s on Linux) | 4.0 s → 1.7 s | 62 s → 39 s (168 → 103 Gcycles) |
+| corpus `41cb4b82…` | 5.6 s → 3.1 s | 100 s → 35 s (190 → 97 Gcycles) |
+| corpus `8db50da3…` | | 48 s → 34 s (131 → 93 Gcycles) |
+
+The run's other slow units now spend most of their time in the independent
+oracle's Cox systems, which this change does not touch. With debug
+assertions the target's 278 corpus inputs and 4 regressions replay without a
+failure, the slowest in 3.4 s. The 60-second limit is unchanged.
+
 ## Spline/linear: sub-float known-factor root pairs
 
 `spline_linear/slow-replay-9ff24f8f748d219d6d9db4edc3ee40340a02bad0.bin` and
@@ -598,6 +632,20 @@ mutated prism text referenced location 1 while the location table was empty.
 The reader range-checked subshape locations but not those of edge
 representations and faces, so the converter indexed the table out of bounds. The reader now range-checks every curve, pcurve, surface and
 location reference and returns `BrepError::Reference`.
+
+## B-rep interop: the harness's integer nudge overflowed
+
+`brep_io/crash-faf6616697c9ef66c6d010852377229eb8a0c82c.bin` is the original
+75-byte artifact of the scheduled
+[run 36868817257](https://github.com/jackControls/rustyOCCT/actions/runs/36868817257):
+`attempt to add with overflow` at `src/brep_io.rs:100`, in the target's own
+`mutate`, before any text reached the reader. The mutation that turns a
+number into an integer casts it with `as i64`, which saturates a huge or
+infinite number at the end of `i64`'s range, and then added a nudge in
+`-2..=2` under overflow checks. No kernel value is involved. The nudge now
+saturates too (`saturating_add`), the same integer token for every other
+number and the same bytes consumed, so every check on the mutated text is
+unchanged; the input replays in 0.02 s with debug assertions.
 
 ## Surface editing: a completing input past the 20-second limit
 
@@ -1131,3 +1179,43 @@ poles, and the sphere face's loop through the pole had its winding from its
 pcurves' changes alone, half a turn at the pole left out (`uv_gap`); a
 loop's winding is now its last pcurve's end against its first's start.
 Both replay in under 2 s.
+
+## Boolean: a cavity beside a lens hole's spline walls
+
+`boolean/crash-1962418372712ecacc6f188064195b85e80eb14b.bin` was found by
+the scheduled run 36868817257 (at `0dbd7c44`), mutated from
+`replay-26c72abf…`: a square with a lens hole of two cubics in the tilted
+frame, less a holed square inside it in 2D and over the middle of its
+height. The cut leaves a closed void around the lens, a valid solid, but the
+validator's rays do not decide spline faces, so the void's containment is
+`uncertified_containment`. The polyhedral and curved results map a result
+failing only on that (or on `uncertified_loop_winding`) to
+`ComputationLimit` (S9d.4b.1, S9d.4b.2a); S9a.2's stacks did not and
+returned `InvalidTopology`. Both now take one rule (`undecided` in
+`solid/boolean.rs`); `tests/booleans.rs`,
+`a_cavity_beside_spline_walls_is_undecided`, checks it in the tilted and the
+axis-aligned frame, the fuse being the object and the common the tool. It
+replays in 0.15 s.
+
+## Split: a spiric section filling AddressSanitizer's stack depot
+
+`split/oom-dfe03a750d28f053865e6e878831548356994524.bin` is the input the
+scheduled run 37008675181 (at `0dbd7c44`) was running when the process
+crossed the 2 GiB RSS gate: a whole torus (major 1.625, minor 0.875) in the
+tilted frame cut by an oblique plane, a spiric section. It is not an
+unbounded allocation: alone it runs in 0.28 s and 8 MB with debug
+assertions, and 49 variants with the torus's axes or the plane's normal
+turned by one or two ulps (the Linux `hypot` lesson) all split alike in
+0.2 s within 21 MB; at the gate the run held 50 MB live and 59 MB
+quarantined, and its RSS had climbed steadily from 75 MB through 2,770
+inputs. The rest was AddressSanitizer's stack depot, which keeps every
+distinct allocation and free stack for the process's life: this input
+alone records 985,416 distinct 30-frame stacks (248 MB; 493 MB peak RSS
+alone under the sanitizer), its certified projections' rational interval
+arithmetic reached through deep and varied call paths, and 1,400 corpus
+inputs replayed locally left 3.9 million (941 MB of depot, 1,350 MB RSS).
+`split` now keeps five-frame stacks as `analytic_intersections`,
+`curve_surface`, `curve_curve` and `boolean` do (`SHORT_STACK_TARGETS` in
+`tools/run_fuzz.py`): 14,849 stacks and 255 MB for this input, 88,036 stacks
+(10 MB) and 434 MB RSS for the 1,400. The 2 GiB gate, the quarantine and
+the input limits are unchanged.

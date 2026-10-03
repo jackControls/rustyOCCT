@@ -201,33 +201,9 @@ impl Polyhedron {
         let topology =
             Topology::from_parts(component.parts.with_measured_enclosures(), self.tolerance())
                 .map_err(|issues| {
-                    // A containment the validator's rays cannot decide (a
-                    // cavity in a solid bounded by a sphere or torus face
-                    // with loops, S9d.4b.1) is undecided, not invalid.
-                    if !issues.is_empty()
-                        && issues
-                            .iter()
-                            .all(|i| i.kind == crate::topology::IssueKind::UncertifiedContainment)
-                    {
-                        return Error::ComputationLimit(
-                            "a cavity's containment the validator's rays leave undecided",
-                        );
-                    }
-                    // A face's loops whose winding the validator leaves
-                    // undecided (a torus face wound in both directions, a
-                    // torus knot: S9d.4b.2a) likewise.
-                    use crate::topology::IssueKind as K;
-                    if issues.iter().any(|i| i.kind == K::UncertifiedLoopWinding)
-                        && issues.iter().all(|i| {
-                            matches!(
-                                i.kind,
-                                K::UncertifiedLoopWinding | K::UncertifiedContainment
-                            )
-                        })
-                    {
-                        return Error::ComputationLimit(
-                            "a face's loop winding the validator leaves undecided",
-                        );
+                    // Undecided, not invalid (S9d.4b.1, S9d.4b.2a).
+                    if let Some(e) = super::undecided(&issues) {
+                        return e;
                     }
                     Error::InvalidTopology(
                         issues

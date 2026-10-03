@@ -2637,6 +2637,30 @@ Decisions for S9, recorded before its code (2026-09-28):
     exclusions, signs and root brackets first and ends each root with
     interval Newton steps and bisection, every root the same adjacent
     binary64 pair as before (10.9 s to 0.8 s, `fuzz/regressions/README.md`).
+    (l) The scheduled fuzz run 36868817257 (at `0dbd7c44`) found boolean
+    `19624183`, a cut leaving a void beside a lens hole's spline walls that
+    the validator's rays cannot decide (`uncertified_containment`), refused
+    as `InvalidTopology` by S9a.2's stacks where the polyhedral and curved
+    results say `ComputationLimit` (S9d.4b.1, S9d.4b.2a): every result now
+    takes one rule (`undecided` in `solid/boolean.rs`, `tests/booleans.rs`).
+    (m) The scheduled fuzz run 37008675181 (at `0dbd7c44`) stopped split at
+    the 2 GiB RSS gate on `dfe03a75`, a torus's spiric section that alone
+    takes 8 MB and 0.28 s (ulp-turned frames alike) but records 985,416
+    distinct allocation stacks, 248 MB of AddressSanitizer's never-freed
+    stack depot, with 50 MB live at the gate: split now keeps five-frame
+    stacks as boolean does (`SHORT_STACK_TARGETS`; 1,400 corpus inputs
+    1,350 MB RSS before, 434 MB after; no limit changed).
+    (n) The scheduled fuzz run 36868817257's `brep_io` crash `faf66166`
+    was the harness's own overflow, a number cast to `i64` (saturating at
+    its end) and then nudged by `-2..=2`, no kernel value: the nudge
+    saturates too, every check on the mutated text unchanged. (o) The same
+    run's `degree_elevation` timeout `559a4800` (87 s under
+    AddressSanitizer) raises a degree-19 periodic axis to 25, nearly all of
+    it the production control map's `BigRational` blends: the map is
+    computed in machine words on the knots moved affinely onto integers
+    (the insertion ratios unchanged), again with `BigRational` on any
+    overflow, the same exact map (9.6 s to 1.1 s in release, 262 s to 14 s
+    under the sanitizer on a loaded Mac, `fuzz/regressions/README.md`).
   * **S9d.4b refined, before its code (2026-09-29).** Two sub-steps.
     S9d.4b.1: tori other than whole ones (S3's v-segments between two
     latitudes and wedges of a partial turn) against polyhedral prisms: the

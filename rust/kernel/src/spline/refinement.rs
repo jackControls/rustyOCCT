@@ -3,8 +3,10 @@
 //! applied to sparse unit controls, then shared across all transverse fields.
 //! OCCT references: BSplSLib::InsertKnots and BSplCLib::InsertKnots.
 use super::{common_denominator, integer, ExactKnotVector};
+use crate::rational;
 use num_bigint::BigInt;
 use num_rational::BigRational as R;
+use std::collections::btree_map::Entry;
 use std::collections::BTreeMap;
 
 pub(super) type Sparse = Vec<(usize, R)>;
@@ -15,10 +17,24 @@ pub(super) fn blend(left: &Sparse, right: &Sparse, alpha: &R) -> Sparse {
     if alpha == &integer(1) {
         return right.clone();
     }
-    let complement = integer(1) - alpha;
-    let mut result: BTreeMap<usize, R> = left.iter().map(|(i, x)| (*i, &complement * x)).collect();
+    // `crate::rational`'s operations give `num_rational`'s values with a
+    // faster gcd (a degree-elevation fuzz timeout, fuzz/regressions).
+    let complement = rational::sub(&integer(1), alpha);
+    let mut result: BTreeMap<usize, R> = left
+        .iter()
+        .map(|(i, x)| (*i, rational::mul(&complement, x)))
+        .collect();
     for (i, x) in right {
-        *result.entry(*i).or_insert_with(|| integer(0)) += alpha * x;
+        let term = rational::mul(alpha, x);
+        match result.entry(*i) {
+            Entry::Occupied(mut sum) => {
+                let total = rational::add(sum.get(), &term);
+                sum.insert(total);
+            }
+            Entry::Vacant(slot) => {
+                slot.insert(term);
+            }
+        }
     }
     result
         .into_iter()
@@ -67,7 +83,10 @@ impl Work {
         let (first, last) = (k - p + 1, k - mult);
         let changed: Vec<_> = (first..=last)
             .map(|i| {
-                let alpha = (u - &self.knots[i]) / (&self.knots[i + p] - &self.knots[i]);
+                let alpha = rational::div(
+                    &rational::sub(u, &self.knots[i]),
+                    &rational::sub(&self.knots[i + p], &self.knots[i]),
+                );
                 debug_assert!(alpha >= integer(0) && alpha <= integer(1));
                 blend(&self.rows[i - 1], &self.rows[i], &alpha)
             })

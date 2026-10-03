@@ -41,6 +41,9 @@ class FuzzRunnerTests(unittest.TestCase):
             if target not in run_fuzz.ALLOCATOR_TARGETS:
                 self.assertEqual(run_fuzz.campaign_environment(target,base),base)
         self.assertEqual(run_fuzz.campaign_environment('surface_knots',{})['ASAN_OPTIONS'],'quarantine_size_mb=64')
+        # The split target's spiric sections fill the stack depot (37008675181).
+        self.assertEqual(run_fuzz.campaign_environment('split',{})['ASAN_OPTIONS'],
+                         'quarantine_size_mb=64:malloc_context_size=5')
 
     def test_allocator_hook_is_linked_only_with_address_sanitizer(self):
         for target in run_fuzz.TARGETS:
