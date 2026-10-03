@@ -25,8 +25,11 @@ records them.
   `degenerate`: the cylinder tangent to the wall, or a turning point at a
   knot, `Degenerate` in the decisions) and the sub-step that decides it:
   `S9f.2b.1` (every meeting a graph over the spline's parameter inside the
-  faces) or `S9f.2b.2` (a meeting turning back inside the faces: loops,
-  refused by S9f.2b.1's kernel); then for a degenerate case `reason TEXT`;
+  faces) or `S9f.2b.2` (a meeting turning back inside the faces: loops; or
+  a cap circle of the cylinder prism meeting a spline wall inside its
+  heights in a cap plane holding the wall's axis direction: a tower field;
+  both refused by S9f.2b.1's kernel); then for a degenerate case `reason
+  TEXT`;
 * `result N volume area cx cy cz` (totals over the N solids, world
   coordinates) or `empty`.
 
@@ -59,7 +62,10 @@ results (limits relative to the case's size):
   knot or vertex of the profile (`knot`), every vertical edge of either
   prism crossing the other's curved wall at a sine of at least 1e-3
   (`pierce`). The declared degenerate pairs must fail their margin (below
-  1e-12) and are exempt from the rest.
+  1e-12) and are exempt from the rest. A pair is declared `S9f.2b.2` exactly
+  when a turning point lies inside both faces or a tower point inside the
+  spline wall's heights (`towers`: the reference's `wall_cylinder_events` on
+  a cap plane of the cylinder prism holding the wall's axis).
 
 Pairs run in worker processes (`--workers`).
 """
@@ -87,6 +93,7 @@ FRAMES = dict(CURVED_FRAMES, STEEP=(0.0, 5.0, 12.0, 1.0, 0.0, 0.0))
 
 TOUCH = 'a cylinder tangent to a spline wall'
 KNOT_TURN = "a spline wall's meeting with a cylinder turning back at a knot"
+TURN_EDGE = "a spline wall's meeting with a cylinder turning back on a face's boundary"
 
 
 def at(name, origin):
@@ -131,9 +138,14 @@ def cases():
     most of the blob as the object, a rod ending inside the blob, a
     stadium's arc and edges against the bulge, a tilted ring's hole around
     the dome); loops (S9f.2b.2: a perpendicular rod through the bulge's
-    wall, a tilted rod through the lens's); and the declared degenerate
-    classes: a rod touching the dome's apex, and a rod whose meeting with
-    `knot`'s wall turns back at its knot."""
+    wall, a tilted rod through the lens's); S9f.2b.2's evidence: towers (a
+    rod's cap circle on the dome's arch and across the lens's two cubics,
+    in planes holding the walls' axis), loops cut by a tower's cap circle
+    (the bulge), by the spline prism's top cap (the bulge) and by a tilted
+    rod's cap circle (the lens); and the declared degenerate classes: a rod
+    touching the dome's apex, a rod whose meeting with `knot`'s wall turns
+    back at its knot, and a rod whose loop on the dome turns back on its
+    cap's rim."""
     p = profiles()
     out = []
     out += group('bulge_tilt', (p['bulge'], at('XY', (0, 0, 0)), 0.0, 3.0),
@@ -158,7 +170,25 @@ def cases():
                  ([disc(3.0, 1.5, 1.0)], at('SIDE', (-1.0, 0.0, 0.0)), 0.0, 14.0), ONE3, step=LOOPS)
     out += group('lens_tilt_loop', (p['lens'], at('XY', (0, 0, 0)), 0.0, 4.0),
                  ([disc(0.0, 0.0, 0.5)], at('TILT', (5.0, 1.0, -0.5)), 0.0, 6.0), ONE3, step=LOOPS)
+    # S9f.2b.2 (its evidence): a rod's cap circle on a spline wall in a
+    # plane holding the wall's axis (a tower field), on the dome's arch and
+    # across the lens's two cubics; a loop cut by such a cap circle (the
+    # bulge), by the spline prism's top cap (the bulge) and by a tilted
+    # rod's cap circle (the lens).
+    out += group('dome_cap_tower', (p['dome'], at('XY', (0, 0, 0)), 0.0, 3.0),
+                 ([disc(1.0, 1.5, 1.25)], at('SIDE', (-1.0, 0.0, 0.0)), 0.0, 3.5), ONE3, step=LOOPS)
+    out += group('lens_cap_tower', (p['lens'], at('XY', (0, 0, 0)), 0.0, 4.0),
+                 ([disc(5.0, 2.0, 2.5)], at('SIDE', (1.0, 0.0, 0.0)), 0.0, 4.5), ONE3, step=LOOPS)
+    out += group('bulge_cap_loop', (p['bulge'], at('XY', (0, 0, 0)), 0.0, 3.0),
+                 ([disc(3.0, 1.5, 1.0)], at('SIDE', (-1.0, 0.0, 0.0)), 0.0, 11.95), ONE3, step=LOOPS)
+    out += group('bulge_side_cap_loop', (p['bulge'], at('XY', (0, 0, 0)), 0.0, 3.0),
+                 ([disc(3.0, 2.5, 1.0)], at('SIDE', (-1.0, 0.0, 0.0)), 0.0, 14.0), ONE3, step=LOOPS)
+    out += group('lens_tilt_cap_loop', (p['lens'], at('XY', (0, 0, 0)), 0.0, 4.0),
+                 ([disc(0.0, 0.0, 0.5)], at('TILT', (5.0, 1.0, -0.5)), 0.0, 3.4), ONE3, step=LOOPS)
     # Declared degenerate.
+    out += group('cap_turn', (p['dome'], at('XY', (0, 0, 0)), 0.0, 3.0),
+                 ([disc(2.875, 1.5, 1.0)], at('SIDE', (-1.0, 0.0, 0.0)), 0.0, 3.5),
+                 {op: ('degenerate', TURN_EDGE) for op in ('cut', 'common')}, step=LOOPS)
     out += group('dome_touch', (p['dome'], at('XY', (0, 0, 0)), 0.0, 3.0),
                  ([disc(3.0, 1.5, 1.0)], at('SIDE', (-1.0, 0.0, 0.0)), 0.0, 6.0),
                  {op: ('degenerate', TOUCH) for op in ('fuse', 'common')})
@@ -353,12 +383,29 @@ def crossing_margins(pair):
     return out
 
 
+def towers(pair):
+    """The points where a cap circle of the cylinder prism meets a spline wall
+    in a cap plane holding the wall's axis direction (a tower field,
+    S9f.2b.2's), inside the spline wall's heights."""
+    S, C, spans, circs = spline_and_cylinders(pair)
+    if ref.apply(C.inv, S.n)[2] != 0:
+        return 0
+    count = 0
+    for el in spans:
+        for circ in circs:
+            for h in (C.lo, C.hi):
+                for tau, X in ref.wall_cylinder_events(S, el, C, circ, C, h):
+                    if 0 <= tau <= 1 and in_faces(S, C, circ, X)[0] == 0:
+                        count += 1
+    return count
+
+
 def margins(pair):
     return {**s9f2a.plane_margins(pair), **crossing_margins(pair)}
 
 
 MARGIN = mp.mpf(10)**-3
-DEGENERATE_MARGIN = {TOUCH: 'touch', KNOT_TURN: 'knot'}
+DEGENERATE_MARGIN = {TOUCH: 'touch', KNOT_TURN: 'knot', TURN_EDGE: 'loop'}
 
 
 # ------------------------------------------------------------------ the pairs' work
@@ -407,7 +454,7 @@ def evaluate(job):
     near = s9f1.near_coincidences(pair)
     stats = {'volume_quadrature': pair.slicing.quad_error/size**4,
              'face_quadrature': max(sw.quad_error for _, _, _, sw in pair.face_areas())/size**2,
-             'breaks': len(pair.slicing.breaks)}
+             'breaks': len(pair.slicing.breaks), 'towers': towers(pair)}
     return name, rows, {op: res[op][0] for op in ref.OPS}, res, checks, near, margins(pair), stats
 
 
@@ -532,8 +579,9 @@ def main():
         if near and not first.near:
             failed.append(f'{name}: near coincidences {near}')
         loops = first.step == LOOPS
-        if loops != (margin['loop'] < INF):
-            failed.append(f'{name}: declared {first.step}, turning points inside the faces: {margin["loop"]}')
+        if loops != (margin['loop'] < INF or stats['towers'] > 0):
+            failed.append(f'{name}: declared {first.step}, turning points inside the faces: {margin["loop"]}, '
+                          f'tower points {stats["towers"]}')
         for key, value in margin.items():
             if value < MARGIN:
                 failed.append(f'{name}: {key} margin {mp.nstr(value, 3)}')

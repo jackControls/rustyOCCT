@@ -2,8 +2,9 @@
 its fixture list (`generate_spline_crossing_boolean_fixtures.py`): a spline
 wall's meeting with a cylinder on a crossing axis at the caps' heights and
 its turning points against closed forms, the slicing and the divergence
-theorem against the product of chords on a perpendicular pair, and the
-fixtures' classes and declared degeneracies' margins."""
+theorem against the product of chords on a perpendicular pair, a cap
+circle's tower points (S9f.2b.2) in closed form, and the fixtures' classes
+and declared degeneracies' margins."""
 from fractions import Fraction as F
 import unittest
 
@@ -88,11 +89,43 @@ class SplineCrossingBooleanReferenceTests(unittest.TestCase):
         margin = fixtures.crossing_margins(pair)
         self.assertGreater(margin['loop'], fixtures.MARGIN)
 
+    def test_tower_points_in_closed_form(self):
+        # S9f.2b.2: the rod about (1, 3/2) of radius 5/4 ending at x = 5/2
+        # inside the dome: its cap's plane holds the dome's ruling at tau =
+        # 3/8 (y = 15/8), met by the cap's circle at z = 3/2 +- sqrt(25/16 -
+        # (15/8 - 1)^2); no turning point (|y - 1| <= 1 < 5/4 on the arch),
+        # so the pair is S9f.2b.2's by its towers alone.
+        firsts = {}
+        for c in fixtures.cases():
+            firsts.setdefault(c.pair_name, c)
+        c = firsts['dome_cap_tower']
+        pair = ref.Pair(c.obj, c.tool)
+        self.assertEqual(c.step, fixtures.LOOPS)
+        self.assertEqual(fixtures.towers(pair), 2)
+        self.assertEqual(fixtures.crossing_margins(pair)['loop'], fixtures.INF)
+        S, C, spans, circs = fixtures.spline_and_cylinders(pair)
+        got = ref.wall_cylinder_events(S, spans[0], C, circs[0], C, C.hi)
+        self.assertEqual(len(got), 2)
+        q = mp.mpf(25)/16-(mp.mpf(15)/8-1)**2
+        for (tau, X), s in zip(sorted(got, key=lambda e: e[1][2]), (-1, 1)):
+            self.assertLess(abs(tau-mp.mpf(3)/8), mp.mpf(10)**-38)
+            self.assertLess(abs(X[0]-mp.mpf(5)/2)+abs(X[1]-mp.mpf(15)/8), mp.mpf(10)**-38)
+            self.assertLess(abs(X[2]-(mp.mpf(3)/2+s*mp.sqrt(q))), mp.mpf(10)**-38)
+        # The loops cut by caps: turning points inside both faces, the
+        # bulge's cut by a tower cap (both), the tilted lens's by a cap
+        # circle off the wall's axis (no tower).
+        for name, tower in (('bulge_cap_loop', True), ('bulge_side_cap_loop', False),
+                            ('lens_tilt_cap_loop', False)):
+            pair = ref.Pair(firsts[name].obj, firsts[name].tool)
+            self.assertLess(fixtures.crossing_margins(pair)['loop'], fixtures.INF)
+            self.assertEqual(fixtures.towers(pair) > 0, tower)
+
     def test_declared_degenerate_pairs_fail_their_margin(self):
         firsts = {}
         for c in fixtures.cases():
             firsts.setdefault(c.pair_name, c)
-        for name, reason in (('dome_touch', fixtures.TOUCH), ('knot_turn', fixtures.KNOT_TURN)):
+        for name, reason in (('dome_touch', fixtures.TOUCH), ('knot_turn', fixtures.KNOT_TURN),
+                             ('cap_turn', fixtures.TURN_EDGE)):
             c = firsts[name]
             self.assertEqual(c.reason, reason)
             margin = fixtures.crossing_margins(ref.Pair(c.obj, c.tool))
@@ -103,7 +136,7 @@ class SplineCrossingBooleanReferenceTests(unittest.TestCase):
         fixtures.validate(listed)
         self.assertEqual({c.operation for c in listed}, {'fuse', 'cut', 'common'})
         self.assertEqual({c.reason for c in listed if c.kind == 'degenerate'},
-                         {fixtures.TOUCH, fixtures.KNOT_TURN})
+                         {fixtures.TOUCH, fixtures.KNOT_TURN, fixtures.TURN_EDGE})
         self.assertEqual({c.step for c in listed}, {fixtures.STEP, fixtures.LOOPS})
         frames = {fixtures.frame_name(f) for c in listed for f in c.frames}
         self.assertTrue({'XY', 'SIDE', 'TILT', 'LEAN', 'STEEP'} <= frames)
@@ -112,6 +145,9 @@ class SplineCrossingBooleanReferenceTests(unittest.TestCase):
         names = {c.pair_name for c in listed}
         self.assertTrue({'steep_blob', 'ring_dome', 'bulge_stadium_tilt', 'blob_tilt_end', 'wave_lean',
                          'capsule_tilt'} <= names)
+        # S9f.2b.2's: towers, loops cut by caps, a turning point on a rim.
+        self.assertTrue({'dome_cap_tower', 'lens_cap_tower', 'bulge_cap_loop', 'bulge_side_cap_loop',
+                         'lens_tilt_cap_loop', 'cap_turn'} <= names)
         self.assertTrue(any(fixtures.has_spline(c.tool) for c in listed))
 
 
