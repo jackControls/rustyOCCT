@@ -579,10 +579,9 @@ fn wall_green<T: Real>(
             let vb = v.add_constant(&c::<T>(&-v0)).scale(&iv);
             let dub = du.scale(&iu);
             Some(
-                patch
-                    .g
+                tensor_jets(&patch.g, &ub, &vb)
                     .iter()
-                    .map(|g| tensor_jet(g, &ub, &vb).mul(&dub).neg())
+                    .map(|g| g.mul(&dub).neg())
                     .collect(),
             )
         },
@@ -609,6 +608,75 @@ fn casteljau_jet<T: Real>(mut row: Vec<Jet<T>>, t: &Jet<T>) -> Jet<T> {
         }
     }
     row.swap_remove(0)
+}
+
+/// Tensor Bernstein polynomials (rows in `v̄`, then `ū`) at the same jets of
+/// `(ū, v̄)`, by the Bernstein bases' jets made once per degree (`B_i(ū) =
+/// C(n, i) ū^i (1 - ū)^(n - i)`), each polynomial then `sum_i B_i(ū) sum_j
+/// g_ij b_j(v̄)`, one product of jets per row (S9f.2b.2: a wall's ten moment
+/// tensors, of degree up to `5 p` in `ū`, at every node and piece of the
+/// integrals along its meetings, two hundred products each by de
+/// Casteljau's form; over the integrals' pieces the bases' enclosures came
+/// out no wider, the pieces no more numerous).
+fn tensor_jets<T: Real>(gs: &[Tensor<T>], u: &Jet<T>, v: &Jet<T>) -> Vec<Jet<T>> {
+    let rectangular = gs.iter().all(|g| {
+        !g.is_empty()
+            && g.iter()
+                .all(|row| !row.is_empty() && row.len() == g[0].len())
+    });
+    if !rectangular {
+        return gs.iter().map(|g| tensor_jet(g, u, v)).collect();
+    }
+    let basis = |t: &Jet<T>, n: usize| -> Vec<Jet<T>> {
+        let one = Jet::constant(T::exact_f64(1.0), t.order());
+        let s = one.sub(t);
+        let mut tp = vec![one.clone()];
+        let mut sp = vec![one];
+        for k in 1..=n {
+            tp.push(tp[k - 1].mul(t));
+            sp.push(sp[k - 1].mul(&s));
+        }
+        let mut binomial = 1.0f64;
+        (0..=n)
+            .map(|i| {
+                let b = tp[i].mul(&sp[n - i]).scale(&T::exact_f64(binomial));
+                binomial = binomial * (n - i) as f64 / (i + 1) as f64;
+                b
+            })
+            .collect()
+    };
+    // The bases by degree, each made once.
+    let mut bases_u: Vec<(usize, Vec<Jet<T>>)> = Vec::new();
+    let mut bases_v: Vec<(usize, Vec<Jet<T>>)> = Vec::new();
+    for g in gs {
+        let (nu, nv) = (g.len() - 1, g[0].len() - 1);
+        if !bases_u.iter().any(|(n, _)| *n == nu) {
+            bases_u.push((nu, basis(u, nu)));
+        }
+        if !bases_v.iter().any(|(n, _)| *n == nv) {
+            bases_v.push((nv, basis(v, nv)));
+        }
+    }
+    let zero = Jet::constant(T::exact_f64(0.0), u.order());
+    gs.iter()
+        .map(|g| {
+            let find = |bases: &[(usize, Vec<Jet<T>>)], n: usize| {
+                bases
+                    .iter()
+                    .position(|(m, _)| *m == n)
+                    .expect("a basis made")
+            };
+            let bu = &bases_u[find(&bases_u, g.len() - 1)].1;
+            let bv = &bases_v[find(&bases_v, g[0].len() - 1)].1;
+            g.iter().zip(bu).fold(zero.clone(), |acc, (row, b)| {
+                let r = row
+                    .iter()
+                    .zip(bv.iter())
+                    .fold(zero.clone(), |a, (x, bj)| a.add(&bj.scale(x)));
+                acc.add(&b.mul(&r))
+            })
+        })
+        .collect()
 }
 
 /// A tensor Bernstein polynomial at jets of `(ū, v̄)` (rows in `v̄`, then

@@ -1248,29 +1248,51 @@ fn curve_valid(curve: &Curve3, tol: &R, fast_tol2: &Fast, exact_tol2: &I) -> boo
         // A spline wall's meeting with a cylinder (S9f.2b): a nonrational
         // wall of degree one in `v` over two pole rows, a range inside its
         // `u` domain, a sign, a positive radius, a ruling crossing the
-        // cylinder's axis, the discriminant positive at the ends.
+        // cylinder's axis, the discriminant positive at the ends. A graph
+        // over `v` (S9f.2b.2): its window inside one knot span of the `u`
+        // domain, its range inside the `v` domain, the cylinder's function
+        // along the ruling of opposite signs at the window's ends at the
+        // range's ends and middle.
         Curve3::WallMeet(m) => {
             let s = &m.wall;
-            let ((u0, u1), _) = s.domain();
+            let ((u0, u1), (v0, v1)) = s.domain();
             let (a, b) = (m.start, m.start + m.sweep);
             let inside = |x: f64| u0 <= x && x <= u1;
-            let crossing = |f: f64| {
-                let (_, dir) = m.ruling(m.start + m.sweep * f);
+            let crossing = |u: f64| {
+                let (_, dir) = m.ruling(u);
                 let (x2, y2) = (m.other.x(), m.other.y());
                 dir.dot(x2).hypot(dir.dot(y2)) > 1e-6 * dir.length()
             };
-            finite(&[m.other_radius, m.sign, m.start, m.sweep])
+            let common = finite(&[m.other_radius, m.sign, m.start, m.sweep])
                 && !s.is_rational()
                 && !s.u_knots().is_periodic()
                 && s.v_knots().degree() == 1
                 && s.v_knots().pole_count() == 2
                 && r(m.other_radius) > *tol
                 && (m.sign == 1.0 || m.sign == -1.0)
-                && m.sweep != 0.0
-                && inside(a)
-                && inside(b)
-                && crossing(0.0)
-                && crossing(1.0)
+                && m.sweep != 0.0;
+            match m.window {
+                None => common && inside(a) && inside(b) && crossing(a) && crossing(b),
+                Some([wa, wb]) => {
+                    let knots = s.u_knots().knots();
+                    let one_span = !knots.iter().any(|k| wa < *k && *k < wb);
+                    let in_v = |x: f64| v0 <= x && x <= v1;
+                    let brackets = [0.0, 0.5, 1.0].iter().all(|f| {
+                        let t = m.start + m.sweep * f - v0;
+                        m.along(wa, t) * m.along(wb, t) < 0.0
+                    });
+                    common
+                        && finite(&[wa, wb])
+                        && wa < wb
+                        && inside(wa)
+                        && inside(wb)
+                        && one_span
+                        && in_v(a)
+                        && in_v(b)
+                        && crossing(0.5 * wa + 0.5 * wb)
+                        && brackets
+                }
+            }
         }
         // A torus's meeting with a quadric (S9d.4b.2): a ring torus, a
         // positive radius (a cone's may be zero at its frame's origin), a

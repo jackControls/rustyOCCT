@@ -1,5 +1,6 @@
-//! S9f.2b.1: spline walls against cylinder walls on crossing axes
-//! (REVIEW_NOTES.md, "S9f.2b refined, before its code").
+//! S9f.2b: spline walls against cylinder walls on crossing axes
+//! (REVIEW_NOTES.md, "S9f.2b refined, before its code" and "S9f.2b.2
+//! refined, before its code").
 //!
 //! Along a spline wall's ruling at the run parameter `tau`, `X = o + S_x(tau)
 //! x + S_y(tau) y + w n` (the spline prism's exact model), the cylinder's
@@ -12,51 +13,58 @@
 //! branches are `w = (-B +- sqrt(D)) / A`, `D = B^2 - A C` of degree `2 p`,
 //! its roots the turning points (the ruling tangent to the cylinder).
 //!
-//! The section of a spline wall and a cylinder is each branch over each
-//! maximal range of the segment's run where `D > 0` (`Crv::WallMeet`, a graph
-//! over `tau`): a turning point ends a range where it lies outside either
-//! face (the pieces beside it are outside too); one inside both faces is
-//! S9f.2b.2's (loops, `OutOfDomain`); one on a face's boundary, at an
-//! interior knot or a segment's end, or of multiplicity above one (the
-//! cylinder tangent to the wall) is `Degenerate`. A point is on a branch
-//! when its profile point lies on the segment within the range, it lies on
-//! the cylinder and `A w + B(tau) = sum q_i (g_i . X - e_i)` (half `F`'s
-//! derivative in `w`) has the branch's sign, exactly; a piece's midpoint at
-//! a rational `tau` lies in `Q(sqrt(D(tau)))`.
+//! The meeting of a spline wall and a cylinder (`meeting`, once per pair of
+//! faces) is each branch over each maximal range of the segment's run where
+//! `D > 0` (`Crv::WallMeet`, a graph over `tau`, S9f.2b.1): a turning point
+//! ends a range where it lies outside either face (the pieces beside it are
+//! outside too); one on a face's boundary, at an interior knot or a
+//! segment's end, or of multiplicity above one (the cylinder tangent to the
+//! wall) is `Degenerate`. A turning point inside both faces (a loop,
+//! S9f.2b.2) gets a graph over the height instead (`Window`): the run
+//! parameter the one root of `F(., w)` in a rational window of the run
+//! inside one arc, over the heights `[w-(tau_s), w+(tau_s)]` of a rational
+//! switch `tau_s` on the side where `D > 0`, the graphs over `tau` on both
+//! branches ending there and the two switch points vertices; each such piece
+//! verified exactly before it is kept (`height_piece`). A point is on a
+//! graph over `tau` when its profile point lies on the segment within the
+//! range, it lies on the cylinder and `A w + B(tau) = sum q_i (g_i . X -
+//! e_i)` (half `F`'s derivative in `w`) has the branch's sign, exactly; on
+//! a graph over the height when its profile point lies on the segment
+//! strictly inside the window, it lies on the cylinder and its height in the
+//! range. A graph over `tau`'s midpoint at a rational `tau` lies in
+//! `Q(sqrt(D(tau)))`, a graph over the height's at a rational height in the
+//! window's root's field, of degree at most `2 p`.
 //!
 //! Vertices: a curve over a spline segment (a cap edge or a crease, `w = h0
 //! + h1 S_x + h2 S_y`) meets the cylinder at the roots of `F` along it,
 //! degree `2 p` (`wallcrv_cyl`); a cylinder's cap circle meets the wall at
 //! the roots of `F` along its cap plane's crease on the wall, degree `2 p`,
-//! at its angle there (`conic_wall`; a cap plane holding the wall's axis
+//! at its angle there (`conic_wall`). A cap plane holding the wall's axis
 //! direction meets the wall in generatrices whose points with the circle lie
-//! in `Q(alpha)(sqrt(delta))`, a tower: S9f.2b.2's); the cylinder prism's
-//! vertical edges meet the wall by S9f.1's `line_wall` (degree `p`), the
-//! spline prism's the cylinder at quadratic surds. Every root is the arc's
-//! own parameter (S9f.1's generators), so every vertex on the wall lies in
-//! `Q(alpha)` of degree at most `2 p` or in `Q(sqrt(d))`.
-use super::meet::{conic_angle, EdgeMeet, Pos, Section};
+//! in a tower `Q(alpha)(sqrt(delta))`: they are found instead where each
+//! arc's implicit equation vanishes at the circle's projection, a
+//! polynomial of degree `2 p` in its half-angle tangent `t`, each point in
+//! the one field `Q(t)` (a primitive element of the tower, S9f.2b.2,
+//! `tower_points`). The cylinder prism's vertical edges meet the wall by
+//! S9f.1's `line_wall` (degree `p`), the spline prism's the cylinder at
+//! quadratic surds. So every vertex on the wall lies in `Q(alpha)` of degree
+//! at most `2 p` or in `Q(sqrt(d))`.
+use super::meet::{conic_angle, CylPair, EdgeMeet, Pos};
 use super::model::{Affine, Crv, FaceKind, Loc, Prism, Seg, P2};
 use super::num::*;
 use super::procedural::{other_of, Other};
-use super::spline_walls::{combine, qpoint, trim, BArc, Roots, SplineSeg, WallCrv};
+use super::spheres::Mixed;
+use super::spline_walls::{
+    combine, derivative, peval, peval_r, qpoint, trim, BArc, Roots, SplineSeg, WallCrv,
+};
+use super::turned::roots_repeated;
+use crate::polynomial::real::{isolate, AlgebraicRoot, Budget, IntPolynomial};
+use crate::polynomial::RootIsolationOptions;
 use crate::solid::split::{rational_f64, zero};
 use crate::{Error, Result};
 use num_rational::BigRational as R;
 use std::cmp::Ordering;
 use std::sync::Arc;
-
-fn loops() -> Error {
-    Error::OutOfDomain(
-        "a spline wall's meeting with a cylinder turning back inside the faces (S9f.2b.2)",
-    )
-}
-
-fn tower() -> Error {
-    Error::OutOfDomain(
-        "a cylinder's cap circle meeting a spline wall in a plane along the wall's axis (S9f.2b.2)",
-    )
-}
 
 fn tangent_wall() -> Error {
     Error::Degenerate("a cylinder tangent to a spline wall")
@@ -72,6 +80,12 @@ fn turning_edge() -> Error {
 
 fn tangent_curve() -> Error {
     Error::Degenerate("a spline edge of one input tangent to a face of the other")
+}
+
+fn unverified() -> Error {
+    Error::ComputationLimit(
+        "a spline wall's meeting's graph over the height not verified (S9f.2b.2)",
+    )
 }
 
 // ------------------------------------------------------------ polynomials
@@ -174,10 +188,52 @@ fn coeffs_at(f: &Affine, other: &Other, uv: &[R; 2]) -> (R, R, R) {
     (a, b, c)
 }
 
+/// The distinct real roots of a polynomial strictly inside `(lo, hi)`;
+/// `None` for the zero polynomial or a root at either end.
+fn roots_within(p: &[R], lo: &R, hi: &R) -> Option<Vec<AlgebraicRoot>> {
+    let p = trim(p.to_vec());
+    if p.is_empty() {
+        return None;
+    }
+    let ip = IntPolynomial::from_rationals(&p);
+    if ip.is_constant() {
+        return Some(Vec::new());
+    }
+    if ip.sign_at(lo) == Ordering::Equal || ip.sign_at(hi) == Ordering::Equal {
+        return None;
+    }
+    isolate(
+        &ip,
+        lo.clone(),
+        hi.clone(),
+        &mut Budget::new(RootIsolationOptions::default()),
+    )
+    .ok()
+}
+
+fn horner(p: &[f64], s: f64) -> f64 {
+    p.iter().rev().fold(0.0, |acc, c| acc * s + c)
+}
+
+fn floats(p: &[R]) -> Vec<f64> {
+    p.iter().map(rational_f64).collect()
+}
+
 // ------------------------------------------------------------ the curve
 
+/// A graph over the height's window (S9f.2b.2): its run parameters, its
+/// arc and that arc's own parameters at the window's ends.
+#[derive(Debug, Clone, PartialEq)]
+pub(super) struct Window {
+    pub(super) tau: [R; 2],
+    pub(super) arc: usize,
+    pub(super) s: [R; 2],
+}
+
 /// A branch of a spline wall's meeting with a cylinder over a range of the
-/// segment's run (S9f.2b.1), placed by the run parameter.
+/// segment's run (S9f.2b.1), placed by the run parameter; or a graph over
+/// the height about a turning point (S9f.2b.2, `window`), placed by the
+/// height.
 #[derive(Debug, Clone)]
 pub(super) struct WallMeetCrv {
     pub(super) seg: Arc<SplineSeg>,
@@ -186,9 +242,11 @@ pub(super) struct WallMeetCrv {
     pub(super) other: Other,
     /// The spline prism's operand: its face in the section is the wall.
     pub(super) carrier: usize,
-    /// The branch: `A w + B(tau)` positive or negative.
+    /// The branch: `A w + B(tau)` positive or negative (over the run).
     pub(super) plus: bool,
+    /// Run parameters, or heights for a graph over the height.
     pub(super) range: [Qd; 2],
+    pub(super) window: Option<Window>,
 }
 
 impl PartialEq for WallMeetCrv {
@@ -201,6 +259,7 @@ impl PartialEq for WallMeetCrv {
             && self.other.e == o.other.e
             && self.other.r == o.other.r
             && self.plus == o.plus
+            && self.window == o.window
             && self.range[0].cmp(&o.range[0]) == Ordering::Equal
             && self.range[1].cmp(&o.range[1]) == Ordering::Equal
     }
@@ -218,13 +277,23 @@ impl WallMeetCrv {
             })
     }
 
-    fn within(&self, tau: &Qd) -> bool {
-        tau.cmp(&self.range[0]) != Ordering::Less && tau.cmp(&self.range[1]) != Ordering::Greater
+    fn within(&self, t: &Qd) -> bool {
+        t.cmp(&self.range[0]) != Ordering::Less && t.cmp(&self.range[1]) != Ordering::Greater
     }
 
-    /// The run parameter of a point on the curve, if it is on it.
+    /// The curve's place of a point on it (its run parameter, or its
+    /// height for a graph over the height), if it is on it.
     pub(super) fn locate(&self, x: &QV) -> Option<Qd> {
         let l = self.f.local_q(x);
+        if let Some(win) = &self.window {
+            if !self.within(&l[2]) || self.other.value(x).sign() != Ordering::Equal {
+                return None;
+            }
+            let tau = self.seg.locate(&[l[0].clone(), l[1].clone()])?;
+            let inside = tau.cmp(&Qd::rat(win.tau[0].clone())) == Ordering::Greater
+                && tau.cmp(&Qd::rat(win.tau[1].clone())) == Ordering::Less;
+            return inside.then(|| l[2].clone());
+        }
         let tau = self.seg.locate(&[l[0].clone(), l[1].clone()])?;
         if !self.within(&tau) || self.other.value(x).sign() != Ordering::Equal {
             return None;
@@ -246,9 +315,13 @@ impl WallMeetCrv {
             .expect("a point on a spline wall's meeting at a known parameter")
     }
 
-    /// The curve's point at a rational run parameter inside its range.
-    pub(super) fn at(&self, tau: &R) -> Option<QV> {
-        let uv = self.seg.point(&Qd::rat(tau.clone()));
+    /// The curve's point at a rational place inside its range: over the
+    /// run in `Q(sqrt(D))`, over the height the window's root.
+    pub(super) fn at(&self, k: &R) -> Option<QV> {
+        if let Some(win) = &self.window {
+            return self.height_at(win, k);
+        }
+        let uv = self.seg.point(&Qd::rat(k.clone()));
         let (Some(u), Some(v)) = (uv[0].rational(), uv[1].rational()) else {
             return None;
         };
@@ -269,10 +342,45 @@ impl WallMeetCrv {
         ))
     }
 
-    /// The tangent along increasing `tau` at a point (unit-free): `F_w dS -
-    /// F_tau n` on the plus branch (`F_w > 0`), its opposite on the other.
-    pub(super) fn tangent(&self, x: &QV, tau: &Qd) -> QV {
-        let d = self.seg.deriv(tau);
+    /// A graph over the height's point at a rational height: the one root
+    /// of `F(., w)` in the window, its field's generator that root (S9f.1's
+    /// generators: one per polynomial and root).
+    fn height_at(&self, win: &Window, w: &R) -> Option<QV> {
+        let arc = &self.seg.arcs[win.arc];
+        let (a, b, c) = ruling_coeffs(&self.f, arc, &self.other);
+        let p = padd(&padd(&pscale(&b, &(int(2) * w)), &c), &[&a * w * w]);
+        let mut rs = roots_within(&p, &win.s[0], &win.s[1])?;
+        if rs.len() != 1 {
+            return None;
+        }
+        let root = rs.pop()?;
+        let s = match root.rational_value() {
+            Some(x) => K::Rat(x.clone()),
+            None => K::generator(&Arc::new(Gen::new(p, root))),
+        };
+        let s = Qd::of(s);
+        Some(qpoint(
+            &self.f,
+            &peval(&arc.x, &s),
+            &peval(&arc.y, &s),
+            &Qd::rat(w.clone()),
+        ))
+    }
+
+    /// The tangent at a point (unit-free): `F_w dS - F_tau n`, along
+    /// increasing `tau` on the plus branch (`F_w > 0`), its opposite on the
+    /// other; over the height along rising `w` (its `w` component `-F_tau`,
+    /// never zero on a verified window).
+    pub(super) fn tangent(&self, x: &QV, place: &Qd) -> QV {
+        let tau = if self.window.is_some() {
+            let l = self.f.local_q(x);
+            self.seg
+                .locate(&[l[0].clone(), l[1].clone()])
+                .expect("a point of a spline wall's meeting on its wall")
+        } else {
+            place.clone()
+        };
+        let d = self.seg.deriv(&tau);
         let ds = qadd(&qscale(&self.f.x, &d[0]), &qscale(&self.f.y, &d[1]));
         let mut ft = Qd::rat(zero());
         for (g, e) in self.other.g.iter().zip(&self.other.e) {
@@ -280,14 +388,19 @@ impl WallMeetCrv {
         }
         let fw = self.slope(x);
         let t: QV = std::array::from_fn(|k| ds[k].mul(&fw).sub(&ft.scale(&self.f.n[k])));
-        if self.plus {
-            t
+        let flip = if self.window.is_some() {
+            ft.sign() == Ordering::Greater
         } else {
+            !self.plus
+        };
+        if flip {
             t.map(|c| c.neg())
+        } else {
+            t
         }
     }
 
-    /// Points in binary64 from `t0` to `t1` (run parameters).
+    /// Points in binary64 from `t0` to `t1` (run parameters, or heights).
     pub(super) fn samples(&self, t0: f64, t1: f64, n: usize) -> Vec<[f64; 3]> {
         let fl = |v: &V| v.clone().map(|x| rational_f64(&x));
         let (o, x, y, nn) = (fl(&self.f.o), fl(&self.f.x), fl(&self.f.y), fl(&self.f.n));
@@ -299,19 +412,54 @@ impl WallMeetCrv {
             .map(|(g, e)| (fl(g), rational_f64(e)))
             .collect();
         let r = rational_f64(&self.other.r);
+        // `A`, `B` and `C` at a profile point, and its world point at `w`.
+        let abc = |u: f64, v: f64| {
+            let base: [f64; 3] = [0, 1, 2].map(|k| o[k] + x[k] * u + y[k] * v);
+            let (mut a, mut b, mut c) = (0.0, 0.0, -r * r);
+            for (g, e) in &rows {
+                let p = g[0] * base[0] + g[1] * base[1] + g[2] * base[2] - e;
+                let q = g[0] * nn[0] + g[1] * nn[1] + g[2] * nn[2];
+                a += q * q;
+                b += q * p;
+                c += p * p;
+            }
+            (base, a, b, c)
+        };
+        if let Some(win) = &self.window {
+            let arc = &self.seg.arcs[win.arc];
+            let (px, py) = (floats(&arc.x), floats(&arc.y));
+            let [s0, s1] = [rational_f64(&win.s[0]), rational_f64(&win.s[1])];
+            let f = |s: f64, w: f64| {
+                let (_, a, b, c) = abc(horner(&px, s), horner(&py, s));
+                a * w * w + 2.0 * b * w + c
+            };
+            return (0..=n)
+                .map(|i| {
+                    let w = t0 + (t1 - t0) * i as f64 / n as f64;
+                    let (mut a, mut b) = (s0, s1);
+                    let fa = f(a, w);
+                    for _ in 0..200 {
+                        let mid = 0.5 * a + 0.5 * b;
+                        if mid <= a || mid >= b {
+                            break;
+                        }
+                        if f(mid, w).signum() == fa.signum() {
+                            a = mid;
+                        } else {
+                            b = mid;
+                        }
+                    }
+                    let s = 0.5 * a + 0.5 * b;
+                    let (base, ..) = abc(horner(&px, s), horner(&py, s));
+                    [0, 1, 2].map(|k| base[k] + nn[k] * w)
+                })
+                .collect();
+        }
         (0..=n)
             .map(|i| {
                 let t = t0 + (t1 - t0) * i as f64 / n as f64;
                 let [u, v] = self.seg.point_f64(t);
-                let base: [f64; 3] = [0, 1, 2].map(|k| o[k] + x[k] * u + y[k] * v);
-                let (mut a, mut b, mut c) = (0.0, 0.0, -r * r);
-                for (g, e) in &rows {
-                    let p = g[0] * base[0] + g[1] * base[1] + g[2] * base[2] - e;
-                    let q = g[0] * nn[0] + g[1] * nn[1] + g[2] * nn[2];
-                    a += q * q;
-                    b += q * p;
-                    c += p * p;
-                }
+                let (base, a, b, c) = abc(u, v);
                 let s = if self.plus { 1.0 } else { -1.0 };
                 let sq = s * (b * b - a * c).max(0.0).sqrt();
                 let (pp, mm) = (-b + sq, -b - sq);
@@ -322,14 +470,15 @@ impl WallMeetCrv {
     }
 }
 
-// ------------------------------------------------------------ the section
+// ------------------------------------------------------------ the meeting
 
-/// A spline wall's section by a cylinder wall of another prism on a
+/// A spline wall's meeting with a cylinder wall of another prism on a
 /// crossing axis (`sm`'s face `sf` holding segment `seg`, `cm`'s face `cf`
 /// on the cylinder `c`, `r`): each branch over each range of the run where
-/// the discriminant is positive.
+/// the discriminant is positive, a graph over the height about each turning
+/// point inside both faces, and those graphs' switches.
 #[allow(clippy::too_many_arguments)]
-pub(super) fn section(
+pub(super) fn meeting(
     sm: &Prism,
     sf: usize,
     seg: &Arc<SplineSeg>,
@@ -337,7 +486,7 @@ pub(super) fn section(
     cf: usize,
     c: &P2,
     r: &R,
-) -> Result<Section> {
+) -> Result<CylPair> {
     let other = other_of(&cm.f, c, r);
     let f = &sm.f;
     let rs = match seg.roots_of(&|arc: &BArc| {
@@ -349,7 +498,9 @@ pub(super) fn section(
     };
     let first = Qd::rat(seg.first.clone());
     let last = Qd::rat(seg.last.clone());
-    let mut bounds = vec![first.clone()];
+    // The ranges' bounds: the segment's ends and the turning points, those
+    // inside both faces marked (loops, S9f.2b.2).
+    let mut bounds: Vec<(Qd, bool)> = vec![(first, false)];
     for root in &rs {
         // The turning point: on the ruling at w = -B / A.
         let uv = seg.point(&root.tau);
@@ -383,16 +534,33 @@ pub(super) fn section(
             if root.end || inside != (Loc::In, Loc::In) {
                 return Err(turning_edge());
             }
-            return Err(loops());
+            // A loop's turning point (S9f.2b.2): a graph over the height.
+            bounds.push((root.tau.clone(), true));
+            continue;
         }
         if !root.end {
-            bounds.push(root.tau.clone());
+            bounds.push((root.tau.clone(), false));
         }
     }
-    bounds.push(last);
+    bounds.push((last, false));
     let mut out = Vec::new();
-    for w in bounds.windows(2) {
-        let k = super::graph::rational_between_num(&w[0], &w[1])?;
+    let mut switches = Vec::new();
+    let mut switch_at: Vec<Option<R>> = vec![None; bounds.len()];
+    for i in 0..bounds.len() {
+        if !bounds[i].1 {
+            continue;
+        }
+        let (piece, tau_s, xs) = height_piece(seg, f, &other, &bounds, i)?;
+        out.push(Crv::WallMeet(Box::new(WallMeetCrv {
+            carrier: seg.op,
+            ..piece
+        })));
+        switch_at[i] = Some(tau_s);
+        switches.extend(xs);
+    }
+    for i in 0..bounds.len() - 1 {
+        let (lo, hi) = (&bounds[i].0, &bounds[i + 1].0);
+        let k = super::graph::rational_between_num(lo, hi)?;
         let uv = seg.point(&Qd::rat(k));
         let (Some(u), Some(v)) = (uv[0].rational(), uv[1].rational()) else {
             unreachable!("a rational run parameter's point is rational")
@@ -401,6 +569,9 @@ pub(super) fn section(
         if &b * &b - &a * &cc <= zero() {
             continue;
         }
+        // A loop's turning point ends the ranges beside it at its switch.
+        let lo = switch_at[i].clone().map_or(lo.clone(), Qd::rat);
+        let hi = switch_at[i + 1].clone().map_or(hi.clone(), Qd::rat);
         for plus in [true, false] {
             out.push(Crv::WallMeet(Box::new(WallMeetCrv {
                 seg: seg.clone(),
@@ -408,11 +579,255 @@ pub(super) fn section(
                 other: other.clone(),
                 carrier: seg.op,
                 plus,
-                range: [w[0].clone(), w[1].clone()],
+                range: [lo.clone(), hi.clone()],
+                window: None,
             })));
         }
     }
-    Ok(Section::Curves(out))
+    Ok(CylPair::Mixed(Box::new(Mixed {
+        pieces: out,
+        switches,
+    })))
+}
+
+/// A binary64 view of the cylinder's function along an arc's rulings: each
+/// row's `P_i(s)`, `P_i'(s)` and `q_i`, `A`, `r^2`, the arc's coordinates'
+/// derivatives and the frame's `x`, `y` and `|n|`.
+struct View {
+    rows: Vec<(Vec<f64>, Vec<f64>, f64)>,
+    a: f64,
+    r2: f64,
+    dx: Vec<f64>,
+    dy: Vec<f64>,
+    fx: [f64; 3],
+    fy: [f64; 3],
+    nn: f64,
+}
+
+impl View {
+    fn new(f: &Affine, arc: &BArc, other: &Other) -> Self {
+        let rows: Vec<(Vec<f64>, Vec<f64>, f64)> = rows(f, arc, other, None)
+            .iter()
+            .map(|(p, q)| (floats(p), floats(&derivative(p)), rational_f64(q)))
+            .collect();
+        let a = rows.iter().map(|(_, _, q)| q * q).sum();
+        let fl = |v: &V| v.clone().map(|x| rational_f64(&x));
+        let n = fl(&f.n);
+        Self {
+            rows,
+            a,
+            r2: rational_f64(&(&other.r * &other.r)),
+            dx: floats(&arc.dx),
+            dy: floats(&arc.dy),
+            fx: fl(&f.x),
+            fy: fl(&f.y),
+            nn: (n[0] * n[0] + n[1] * n[1] + n[2] * n[2]).sqrt(),
+        }
+    }
+
+    /// The gentler branch's slope at the arc's parameter `s`: `|dw/ds|`
+    /// over the profile's speed (infinite where `D <= 0`).
+    fn slope(&self, s: f64) -> f64 {
+        let (mut b, mut db, mut c, mut dc) = (0.0, 0.0, -self.r2, 0.0);
+        for (p, dp, q) in &self.rows {
+            let (pv, dpv) = (horner(p, s), horner(dp, s));
+            b += q * pv;
+            db += q * dpv;
+            c += pv * pv;
+            dc += 2.0 * pv * dpv;
+        }
+        let d = b * b - self.a * c;
+        if d.is_nan() || d <= 0.0 {
+            return f64::INFINITY;
+        }
+        let dd = 2.0 * b * db - self.a * dc;
+        let sq = d.sqrt();
+        let (wp, wm) = (
+            (-db + dd / (2.0 * sq)) / self.a,
+            (-db - dd / (2.0 * sq)) / self.a,
+        );
+        let (sx, sy) = (horner(&self.dx, s), horner(&self.dy, s));
+        let speed = (0..3)
+            .map(|k| (self.fx[k] * sx + self.fy[k] * sy).powi(2))
+            .sum::<f64>()
+            .sqrt();
+        wp.abs().min(wm.abs()) * self.nn / speed
+    }
+}
+
+/// The graph over the height about the turning point `bounds[i]` (inside
+/// both faces), its switch's run parameter and its two switch points (the
+/// carrier set by the caller). On the side of the turning point `s*` where
+/// `D > 0` (the sign of `D'` there, exactly), `d1` is where the gentler
+/// branch's slope over the profile's arc length has fallen to one (binary64,
+/// at most a third of the way to the next bound and inside the arc); the
+/// switch `s_s` a quarter of the way (the slope there about two: it grows as
+/// the distance's inverse square root; the graphs over the height cost more
+/// per point than those over the run, the run's more per piece the nearer
+/// they end to `s*`), the window's near end `s0` at `d1`, its far end
+/// `s1` past `s*` as far (at most half the way to the bound behind and
+/// inside the arc), all rational. The piece is kept when, exactly: (i) `F`'s
+/// roots in `w` at `s0` (surds, or none) lie outside the range
+/// `[w-(s_s), w+(s_s)]` and `D(s1) < 0`; (ii) at the rational height `-B(s_s)
+/// / A` the window holds one root of `F`; (iii) `H = A C'^2 - 4 B B' C' + 4
+/// C B'^2` has no root in the closed window (every root in the window is
+/// then simple at every height). Otherwise the distances halve, at most
+/// twenty times.
+fn height_piece(
+    seg: &Arc<SplineSeg>,
+    f: &Affine,
+    other: &Other,
+    bounds: &[(Qd, bool)],
+    i: usize,
+) -> Result<(WallMeetCrv, R, [QV; 2])> {
+    let tau = &bounds[i].0;
+    // Its arc (not at a knot: refused before).
+    let k = (0..seg.arcs.len())
+        .find(|&k| tau.cmp(&Qd::rat(seg.arcs[k].d[1].clone())) == Ordering::Less)
+        .ok_or_else(unverified)?;
+    let arc = &seg.arcs[k];
+    let [d0, d1] = &arc.d;
+    let span = d1 - d0;
+    let s_of = |t: &Qd| t.add_r(&-d0).scale(&(int(1) / &span));
+    let star = s_of(tau);
+    let (a, b, c) = ruling_coeffs(f, arc, other);
+    let dpoly = padd(&pmul(&b, &b), &pscale(&c, &-a.clone()));
+    let side = match peval(&derivative(&dpoly), &star).sign() {
+        Ordering::Greater => 1.0,
+        Ordering::Less => -1.0,
+        Ordering::Equal => return Err(tangent_wall()),
+    };
+    let s_star = star.to_f64();
+    let span_f = rational_f64(&span);
+    let gap = |j: usize| (bounds[j].0.to_f64() - tau.to_f64()).abs() / span_f;
+    let (ahead, behind) = if side > 0.0 {
+        (i + 1, i - 1)
+    } else {
+        (i - 1, i + 1)
+    };
+    let to_end = |dir: f64| if dir > 0.0 { 1.0 - s_star } else { s_star };
+    let d_max = (gap(ahead) / 3.0).min(0.9 * to_end(side));
+    let back_max = (gap(behind) / 2.0).min(0.9 * to_end(-side));
+    if !(d_max > 0.0 && back_max > 0.0) {
+        return Err(unverified());
+    }
+    let view = View::new(f, arc, other);
+    let steep = |d: f64| view.slope(s_star + side * d) > 1.0;
+    let mut reach = if steep(d_max) {
+        d_max
+    } else {
+        let (mut lo, mut hi) = (d_max * 1e-12, d_max);
+        for _ in 0..100 {
+            let mid = (lo * hi).sqrt();
+            if !(lo < mid && mid < hi) {
+                break;
+            }
+            if steep(mid) {
+                lo = mid;
+            } else {
+                hi = mid;
+            }
+        }
+        hi
+    };
+    let mut back = reach.min(back_max);
+    let dyadic = |x: f64| R::from_float(x).ok_or_else(unverified);
+    let one = int(1);
+    for _ in 0..20 {
+        let ss = dyadic(s_star + side * 0.25 * reach)?;
+        let s0 = dyadic(s_star + side * reach)?;
+        let s1 = dyadic(s_star - side * back)?;
+        reach *= 0.5;
+        back *= 0.5;
+        // Strictly ordered about the turning point, inside the arc.
+        let q = |x: &R| Qd::rat(x.clone());
+        let ordered = if side > 0.0 {
+            zero() < s1
+                && q(&s1).cmp(&star) == Ordering::Less
+                && star.cmp(&q(&ss)) == Ordering::Less
+                && ss < s0
+                && s0 < one
+        } else {
+            zero() < s0
+                && s0 < ss
+                && q(&ss).cmp(&star) == Ordering::Less
+                && star.cmp(&q(&s1)) == Ordering::Less
+                && s1 < one
+        };
+        if !ordered {
+            continue;
+        }
+        // The range: the branches' heights at the switch.
+        let at = |s: &R| {
+            let (bs, cs) = (peval_r(&b, s), peval_r(&c, s));
+            let d = &bs * &bs - &a * &cs;
+            (bs, d)
+        };
+        let (bs, ds) = at(&ss);
+        if ds <= zero() {
+            continue;
+        }
+        let inv = int(1) / &a;
+        let w = [
+            Qd::new(-&bs * &inv, -&inv, ds.clone()),
+            Qd::new(-&bs * &inv, inv.clone(), ds.clone()),
+        ];
+        // (i) The window's ends.
+        let (b0, d0v) = at(&s0);
+        let clear0 = match d0v.cmp(&zero()) {
+            Ordering::Less => true,
+            Ordering::Equal => false,
+            Ordering::Greater => [-&inv, inv.clone()].iter().all(|sg| {
+                let root = Qd::new(-&b0 * &inv, sg.clone(), d0v.clone());
+                root.cmp(&w[0]) == Ordering::Less || root.cmp(&w[1]) == Ordering::Greater
+            }),
+        };
+        if !clear0 || at(&s1).1 >= zero() {
+            continue;
+        }
+        let (lo, hi) = if s0 < s1 {
+            (s0.clone(), s1.clone())
+        } else {
+            (s1.clone(), s0.clone())
+        };
+        // (ii) One root at a height inside the range.
+        let wp = -&bs * &inv;
+        let probe = padd(&padd(&pscale(&b, &(int(2) * &wp)), &c), &[&a * &wp * &wp]);
+        if !matches!(roots_within(&probe, &lo, &hi), Some(rs) if rs.len() == 1) {
+            continue;
+        }
+        // (iii) No double root in the window at any height.
+        let (db, dc) = (derivative(&b), derivative(&c));
+        let h = padd(
+            &padd(
+                &pscale(&pmul(&dc, &dc), &a),
+                &pscale(&pmul(&pmul(&b, &db), &dc), &int(-4)),
+            ),
+            &pscale(&pmul(&c, &pmul(&db, &db)), &int(4)),
+        );
+        if !matches!(roots_within(&h, &lo, &hi), Some(rs) if rs.is_empty()) {
+            continue;
+        }
+        let tau_of = |s: &R| d0 + s * &span;
+        let u = peval_r(&arc.x, &ss);
+        let v = peval_r(&arc.y, &ss);
+        let xs = [0, 1].map(|j| qpoint(f, &Qd::rat(u.clone()), &Qd::rat(v.clone()), &w[j]));
+        let piece = WallMeetCrv {
+            seg: seg.clone(),
+            f: f.clone(),
+            other: other.clone(),
+            carrier: 0,
+            plus: true,
+            range: w,
+            window: Some(Window {
+                tau: [tau_of(&lo), tau_of(&hi)],
+                arc: k,
+                s: [lo, hi],
+            }),
+        };
+        return Ok((piece, tau_of(&ss), xs));
+    }
+    Err(unverified())
 }
 
 /// How far (binary64, in the prism's local units) a point on a wall face's
@@ -475,7 +890,9 @@ pub(super) fn wallcrv_cyl(curve: &WallCrv, cf: &Affine, c: &P2, r: &R) -> Result
 /// Where a cylinder's cap edge (the conic `cc + a cos + b sin` on its own
 /// cylinder `c`, `r` of the model `cm`) meets a spline wall (segment `seg` on
 /// frame `sf`) on a crossing axis: the cylinder's function along the cap
-/// plane's crease on the wall, each root at its angle on the circle.
+/// plane's crease on the wall, each root at its angle on the circle; a cap
+/// plane holding the wall's axis direction by the arcs' implicit equations
+/// along the circle (`tower_points`).
 #[allow(clippy::too_many_arguments)]
 pub(super) fn conic_wall(
     cm: &Prism,
@@ -493,11 +910,14 @@ pub(super) fn conic_wall(
     let (mx, my) = (dot(&m, &sf.x), dot(&m, &sf.y));
     if mn == zero() {
         // The cap plane holds the wall's axis direction: its generatrices
-        // on the wall, the circle's points there in a tower (S9f.2b.2's);
+        // on the wall, the circle's points there in a tower (S9f.2b.2);
         // none when the plane misses the segment.
         return match seg.roots_of(&|arc: &BArc| combine(&k, &mx, &arc.x, &my, &arc.y))? {
             Roots::At(rs) if rs.is_empty() => Ok(EdgeMeet::None),
-            _ => Err(tower()),
+            Roots::At(_) => tower_points(cc, a, b, sf, seg),
+            Roots::Along | Roots::Partly => {
+                Err(Error::OutOfDomain("a spline wall along a plane (S9f)"))
+            }
         };
     }
     let inv = int(-1) / &mn;
@@ -517,6 +937,105 @@ pub(super) fn conic_wall(
         let x = qpoint(sf, &uv[0], &uv[1], &w);
         let cs = conic_angle(cc, a, b, &x);
         out.push((Pos::Ang(cs), x));
+    }
+    Ok(EdgeMeet::Points(out))
+}
+
+/// The rotations tried in turn for a chart of the circle (rational points
+/// of the unit circle, S9d.2c's).
+fn rotations() -> Vec<[R; 2]> {
+    let r = |a: i64, b: i64, c: i64| [R::new(a.into(), c.into()), R::new(b.into(), c.into())];
+    vec![
+        r(1, 0, 1),
+        r(3, 4, 5),
+        r(5, 12, 13),
+        r(8, 15, 17),
+        r(7, 24, 25),
+        r(20, 21, 29),
+        r(12, 35, 37),
+        r(9, 40, 41),
+    ]
+}
+
+/// S9f.2b.2: where the circle `cc + a cos + b sin`, in a plane holding the
+/// wall's axis direction, meets the spline wall (segment `seg` on frame
+/// `sf`): its projection along the axis meets the profile where each arc's
+/// implicit equation vanishes, `f(u(t), v(t)) (1 + t^2)^d`, a polynomial of
+/// degree at most `2 p` in the circle's half-angle tangent `t` in a chart
+/// whose antipode is no point of the curve; each real root whose point lies
+/// on the segment (`locate`: not another branch of the implicit curve) is a
+/// crossing, its point and its `(cos, sin)` in `Q(t)` (a primitive element
+/// of the tower `Q(alpha)(sqrt(delta))`); a point found on two arcs (a
+/// knot) is kept once. A repeated root on the segment is the circle tangent
+/// to a generatrix there: the meeting's turning point on the cap's rim.
+fn tower_points(cc: &V, a: &V, b: &V, sf: &Affine, seg: &SplineSeg) -> Result<EdgeMeet> {
+    let (l0, la, lb) = (sf.local(cc), sf.local_dir(a), sf.local_dir(b));
+    let mut out: Vec<(Pos, QV)> = Vec::new();
+    for arc in &seg.arcs {
+        let imp = arc.implicit();
+        let mut done = false;
+        for [c0, s0] in rotations() {
+            // The antipode `(cos, sin) = -(c0, s0)`: a rational point.
+            let anti = [0, 1].map(|i| Qd::rat(&l0[i] - &la[i] * &c0 - &lb[i] * &s0));
+            if imp.value(&anti).sign() == Ordering::Equal {
+                continue;
+            }
+            // cos = (c0 (1 - t^2) - 2 s0 t) / q, sin = (s0 (1 - t^2) + 2 c0 t)
+            // / q, q = 1 + t^2.
+            let q = vec![int(1), zero(), int(1)];
+            let cn = vec![c0.clone(), &s0 * int(-2), -c0.clone()];
+            let sn = vec![s0.clone(), &c0 * int(2), -s0.clone()];
+            let coord = |i: usize| {
+                padd(
+                    &padd(&pscale(&q, &l0[i]), &pscale(&cn, &la[i])),
+                    &pscale(&sn, &lb[i]),
+                )
+            };
+            let poly = imp.homogeneous(&coord(0), &coord(1), &q);
+            if poly.is_empty() {
+                return Err(Error::OutOfDomain("a spline wall along a plane (S9f)"));
+            }
+            done = true;
+            if poly.len() <= 1 {
+                break;
+            }
+            let (sf_poly, roots) = roots_repeated(&poly)?;
+            for (root, repeated) in roots {
+                let t = match root.rational_value() {
+                    Some(x) => K::Rat(x.clone()),
+                    None => K::generator(&Arc::new(Gen::new(sf_poly.clone(), root))),
+                };
+                let inv = t
+                    .mul(&t)
+                    .add(&K::Rat(int(1)))
+                    .recip()
+                    .expect("1 + t^2 is positive");
+                let (cn, sn) = (K::Rat(int(1)).sub(&t.mul(&t)), t.scale(&int(2)));
+                let cs = [
+                    Qd::of(cn.scale(&c0).sub(&sn.scale(&s0)).mul(&inv)),
+                    Qd::of(cn.scale(&s0).add(&sn.scale(&c0)).mul(&inv)),
+                ];
+                let x: QV = std::array::from_fn(|i| {
+                    cs[0].scale(&a[i]).add(&cs[1].scale(&b[i])).add_r(&cc[i])
+                });
+                let l = sf.local_q(&x);
+                if seg.locate(&[l[0].clone(), l[1].clone()]).is_none() {
+                    continue;
+                }
+                if repeated {
+                    return Err(turning_edge());
+                }
+                if !out.iter().any(|(_, y)| qv_eq(y, &x)) {
+                    out.push((Pos::Ang(cs), x));
+                }
+            }
+            break;
+        }
+        if !done {
+            return Err(Error::ComputationLimit(
+                "a cap circle's chart through the spline wall (S9f.2b.2)",
+            ));
+        }
     }
     Ok(EdgeMeet::Points(out))
 }

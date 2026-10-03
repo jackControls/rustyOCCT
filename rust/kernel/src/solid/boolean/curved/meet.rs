@@ -268,6 +268,26 @@ fn parallel_apart(fx: &Affine, cx: &P2, rx: &R, fy: &Affine, cy: &P2, ry: &R) ->
     inside || outside
 }
 
+/// A spline wall's section by a cylinder on a crossing axis (S9f.2b): the
+/// pieces of the pair's relation, or found here without one.
+fn crossing_section(
+    pair: Option<&CylPair>,
+    find: impl FnOnce() -> Result<CylPair>,
+) -> Result<Section> {
+    let found;
+    let pair = match pair {
+        Some(p) => p,
+        None => {
+            found = find()?;
+            &found
+        }
+    };
+    Ok(Section::Curves(match pair {
+        CylPair::Mixed(x) => x.pieces.clone(),
+        _ => Vec::new(),
+    }))
+}
+
 /// Where two faces' surfaces meet (face `fx` of `px`, `fy` of `py`).
 pub(super) fn section(
     px: &Prism,
@@ -284,18 +304,24 @@ pub(super) fn section(
         // S9f.2a: against a cylinder or a spline wall on an exactly parallel
         // axis, generatrices over the profiles' crossings.
         // S9f.2b: on a crossing axis, its meeting's branches over the run.
+        // S9f.2b.2: by the pair's relation (its graphs over the height and
+        // their switches, found once per pair of faces).
         (Surf::Spline(s), Surf::Cyl { c, r, .. }) => {
             if super::spline_parallel::map2(&px.f, &py.f).is_some() {
                 super::spline_parallel::spline_cyl(px, s, py, c, r)
             } else {
-                super::spline_crossing::section(px, fx, s, py, fy, c, r)
+                crossing_section(pair, || {
+                    super::spline_crossing::meeting(px, fx, s, py, fy, c, r)
+                })
             }
         }
         (Surf::Cyl { c, r, .. }, Surf::Spline(s)) => {
             if super::spline_parallel::map2(&py.f, &px.f).is_some() {
                 super::spline_parallel::spline_cyl(py, s, px, c, r)
             } else {
-                super::spline_crossing::section(py, fy, s, px, fx, c, r)
+                crossing_section(pair, || {
+                    super::spline_crossing::meeting(py, fy, s, px, fx, c, r)
+                })
             }
         }
         (Surf::Spline(s), Surf::Spline(t)) => super::spline_parallel::spline_spline(px, s, py, t),

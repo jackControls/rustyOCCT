@@ -333,6 +333,42 @@ impl Implicit {
         self.f.eval(&x[0], &x[1])
     }
 
+    /// The equation along a rational curve `(U(t), V(t)) / Q(t)`
+    /// (polynomials, ascending) times `Q^d`, `d` its total degree: `sum c_ij
+    /// U^i V^j Q^(d - i - j)` (S9f.2b.2: a cap circle's projection, in its
+    /// half-angle tangent).
+    pub(super) fn homogeneous(&self, u: &[R], v: &[R], q: &[R]) -> Vec<R> {
+        let terms: Vec<(usize, usize, &R)> = self
+            .f
+            .0
+            .iter()
+            .enumerate()
+            .flat_map(|(i, row)| {
+                row.iter()
+                    .enumerate()
+                    .filter(|(_, c)| **c != zero())
+                    .map(move |(j, c)| (i, j, c))
+            })
+            .collect();
+        let d = terms.iter().map(|(i, j, _)| i + j).max().unwrap_or(0);
+        let powers = |p: &[R]| {
+            let mut out = vec![vec![int(1)]];
+            for k in 1..=d {
+                let next = pmul(&out[k - 1], p);
+                out.push(next);
+            }
+            out
+        };
+        let (pu, pv, pq) = (powers(u), powers(v), powers(q));
+        let mut out: Vec<R> = Vec::new();
+        for (i, j, c) in terms {
+            let term = pmul(&pmul(&pu[i], &pv[j]), &pq[d - i - j]);
+            let scaled: Vec<R> = term.iter().map(|x| x * c).collect();
+            out = padd(&out, &scaled);
+        }
+        trim(out)
+    }
+
     /// The arc's parameter at a point of its curve, or `None` where the
     /// inversion is undetermined (a node or cusp of the curve).
     pub(super) fn param(&self, x: &[Qd; 2]) -> Option<Qd> {

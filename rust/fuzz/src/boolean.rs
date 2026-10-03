@@ -49,9 +49,10 @@
 //! rounds (the curved engine instead of S9a.2's one frame). S9f.2b: a
 //! spline prism against a prism with arcs on crossing axes (the tool
 //! leaning, tilted or on its side) meets it along the walls' meetings with
-//! the cylinders (`SPLINE_CROSSING`), their loops round a cylinder
-//! refused (S9f.2b.2's); spline walls against spline walls on crossing
-//! axes, a curved solid or a given result stay refused (S9f's).
+//! the cylinders (`SPLINE_CROSSING`), their loops round a turning point
+//! inside the faces and a cap circle on a wall in a plane along its axis
+//! too (S9f.2b.2); spline walls against spline walls on crossing axes, a
+//! curved solid or a given result stay refused (S9f's).
 use crate::analytic_intersections::Bytes;
 use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
@@ -142,8 +143,13 @@ const SPLINE_PARALLEL: bool = true;
 /// Whether a spline prism meets a prism with arcs or circles (the split
 /// target's stadium and round hole) on crossing axes: the tool leaning,
 /// tilted or on its side (S9f.2b's meetings of spline walls with
-/// cylinders, in the curved engine; their loops round the cylinder,
-/// S9f.2b.2's, stay refused).
+/// cylinders, in the curved engine; S9f.2b.2's loops round a turning point
+/// inside the faces, graphs over the height, and cap circles on a wall in a
+/// plane along its axis among them: of 1,431 replayed variants the 150
+/// reaching them took 0.85 s at the median and 6.8 s at the slowest with
+/// debug assertions on a host at load 30 to 48, half the corpus's slowest
+/// input there; 32 s under AddressSanitizer at load 6 to 15, the corpus's
+/// slowest 36 s).
 const SPLINE_CROSSING: bool = true;
 
 /// R4's knot on the target's sizes: a rectangle `2s` by `t` under a
