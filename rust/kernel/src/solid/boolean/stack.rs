@@ -134,6 +134,11 @@ impl Stack {
                     {
                         return Error::Degenerate("a result touching itself at a vertex");
                     }
+                    // Undecided, not invalid, as the polyhedral and curved
+                    // results' (a cavity beside spline walls).
+                    if let Some(e) = super::undecided(&issues) {
+                        return e;
+                    }
                     Error::InvalidTopology(issues.first().map_or("a stack", |i| i.kind.name()))
                 })?;
         let mass = match known {

@@ -229,6 +229,39 @@ fn translated(profile: &Profile, du: f64, dv: f64) -> Result<Option<Profile>> {
     Ok(Some(Profile::new(out.remove(0), holes, tolerance)?))
 }
 
+/// A result the validator finds nothing wrong with but cannot certify is
+/// undecided, not invalid: every issue a cavity's containment its rays
+/// leave undecided (a cavity in a solid bounded by a sphere or torus face
+/// with loops, S9d.4b.1, or beside spline walls, which its rays do not
+/// decide), or among them a face's loop winding it leaves undecided (a
+/// torus face wound in both directions, a torus knot: S9d.4b.2a). One rule
+/// for every result validated (stacks, polyhedral and curved results,
+/// given and matched ones).
+fn undecided(issues: &[crate::topology::Issue]) -> Option<Error> {
+    use crate::topology::IssueKind as K;
+    if issues.is_empty() {
+        return None;
+    }
+    if issues.iter().all(|i| i.kind == K::UncertifiedContainment) {
+        return Some(Error::ComputationLimit(
+            "a cavity's containment the validator's rays leave undecided",
+        ));
+    }
+    if issues.iter().any(|i| i.kind == K::UncertifiedLoopWinding)
+        && issues.iter().all(|i| {
+            matches!(
+                i.kind,
+                K::UncertifiedLoopWinding | K::UncertifiedContainment
+            )
+        })
+    {
+        return Some(Error::ComputationLimit(
+            "a face's loop winding the validator leaves undecided",
+        ));
+    }
+    None
+}
+
 /// Whether an exact rational is a binary64, and which.
 fn as_f64(x: &R) -> Option<f64> {
     let f = rational_f64(x);

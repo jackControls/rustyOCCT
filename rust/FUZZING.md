@@ -169,7 +169,11 @@ manifest replays the same inputs. Without a manifest the whole corpus
 replays. `analytic_intersections` also keeps allocation stack traces to five frames
 (`malloc_context_size=5`): with thirty, AddressSanitizer's stack depot grew
 it to 1,489 MB in 120 s against 33 MB without a sanitizer; five frames keep
-227 MB and still name each allocation's site. Campaigns pass `-reload=0`: libFuzzer otherwise rereads the corpus
+227 MB and still name each allocation's site. `curve_surface`,
+`curve_curve`, `boolean` and `split` keep five frames too (`SHORT_STACK_TARGETS`
+in `run_fuzz.py`): one spiric split of a torus alone recorded 985,416
+distinct 30-frame stacks, 248 MB of depot, and stopped a scheduled `split`
+run at the 2 GiB gate with 50 MB live. Campaigns pass `-reload=0`: libFuzzer otherwise rereads the corpus
 directory every second and reruns every file newer than its first read that
 added no coverage, outside the stop-file check. The first per-push runs after
 U6 (`88ae24df`) copied a whole corpus into the sample directory with fresh

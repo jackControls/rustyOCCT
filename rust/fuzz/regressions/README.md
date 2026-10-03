@@ -1131,3 +1131,43 @@ poles, and the sphere face's loop through the pole had its winding from its
 pcurves' changes alone, half a turn at the pole left out (`uv_gap`); a
 loop's winding is now its last pcurve's end against its first's start.
 Both replay in under 2 s.
+
+## Boolean: a cavity beside a lens hole's spline walls
+
+`boolean/crash-1962418372712ecacc6f188064195b85e80eb14b.bin` was found by
+the scheduled run 36868817257 (at `0dbd7c44`), mutated from
+`replay-26c72abf…`: a square with a lens hole of two cubics in the tilted
+frame, less a holed square inside it in 2D and over the middle of its
+height. The cut leaves a closed void around the lens, a valid solid, but the
+validator's rays do not decide spline faces, so the void's containment is
+`uncertified_containment`. The polyhedral and curved results map a result
+failing only on that (or on `uncertified_loop_winding`) to
+`ComputationLimit` (S9d.4b.1, S9d.4b.2a); S9a.2's stacks did not and
+returned `InvalidTopology`. Both now take one rule (`undecided` in
+`solid/boolean.rs`); `tests/booleans.rs`,
+`a_cavity_beside_spline_walls_is_undecided`, checks it in the tilted and the
+axis-aligned frame, the fuse being the object and the common the tool. It
+replays in 0.15 s.
+
+## Split: a spiric section filling AddressSanitizer's stack depot
+
+`split/oom-dfe03a750d28f053865e6e878831548356994524.bin` is the input the
+scheduled run 37008675181 (at `0dbd7c44`) was running when the process
+crossed the 2 GiB RSS gate: a whole torus (major 1.625, minor 0.875) in the
+tilted frame cut by an oblique plane, a spiric section. It is not an
+unbounded allocation: alone it runs in 0.28 s and 8 MB with debug
+assertions, and 49 variants with the torus's axes or the plane's normal
+turned by one or two ulps (the Linux `hypot` lesson) all split alike in
+0.2 s within 21 MB; at the gate the run held 50 MB live and 59 MB
+quarantined, and its RSS had climbed steadily from 75 MB through 2,770
+inputs. The rest was AddressSanitizer's stack depot, which keeps every
+distinct allocation and free stack for the process's life: this input
+alone records 985,416 distinct 30-frame stacks (248 MB; 493 MB peak RSS
+alone under the sanitizer), its certified projections' rational interval
+arithmetic reached through deep and varied call paths, and 1,400 corpus
+inputs replayed locally left 3.9 million (941 MB of depot, 1,350 MB RSS).
+`split` now keeps five-frame stacks as `analytic_intersections`,
+`curve_surface`, `curve_curve` and `boolean` do (`SHORT_STACK_TARGETS` in
+`tools/run_fuzz.py`): 14,849 stacks and 255 MB for this input, 88,036 stacks
+(10 MB) and 434 MB RSS for the 1,400. The 2 GiB gate, the quarantine and
+the input limits are unchanged.

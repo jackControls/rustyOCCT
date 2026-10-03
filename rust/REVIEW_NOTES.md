@@ -2637,6 +2637,19 @@ Decisions for S9, recorded before its code (2026-09-28):
     exclusions, signs and root brackets first and ends each root with
     interval Newton steps and bisection, every root the same adjacent
     binary64 pair as before (10.9 s to 0.8 s, `fuzz/regressions/README.md`).
+    (l) The scheduled fuzz run 36868817257 (at `0dbd7c44`) found boolean
+    `19624183`, a cut leaving a void beside a lens hole's spline walls that
+    the validator's rays cannot decide (`uncertified_containment`), refused
+    as `InvalidTopology` by S9a.2's stacks where the polyhedral and curved
+    results say `ComputationLimit` (S9d.4b.1, S9d.4b.2a): every result now
+    takes one rule (`undecided` in `solid/boolean.rs`, `tests/booleans.rs`).
+    (m) The scheduled fuzz run 37008675181 (at `0dbd7c44`) stopped split at
+    the 2 GiB RSS gate on `dfe03a75`, a torus's spiric section that alone
+    takes 8 MB and 0.28 s (ulp-turned frames alike) but records 985,416
+    distinct allocation stacks, 248 MB of AddressSanitizer's never-freed
+    stack depot, with 50 MB live at the gate: split now keeps five-frame
+    stacks as boolean does (`SHORT_STACK_TARGETS`; 1,400 corpus inputs
+    1,350 MB RSS before, 434 MB after; no limit changed).
   * **S9d.4b refined, before its code (2026-09-29).** Two sub-steps.
     S9d.4b.1: tori other than whole ones (S3's v-segments between two
     latitudes and wedges of a partial turn) against polyhedral prisms: the

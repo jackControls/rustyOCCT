@@ -64,8 +64,14 @@ ALLOCATOR_TARGETS = {'surface_knots', 'degree_elevation', 'spline_linear', 'brep
 # boolean joined in S9a.2: with the allocator purge, a 600 s campaign at
 # f510f3a6 left replay at 1,849 MB and stopped at the gate with 28 MB live
 # and 53 MB quarantined, the rest the depot of its exact arrangements'
-# stacks.
-SHORT_STACK_TARGETS = {'analytic_intersections', 'curve_surface', 'curve_curve', 'boolean'}
+# stacks. split joined after the scheduled run 37008675181 stopped at the
+# gate with 50 MB live and 59 MB quarantined: one torus's spiric split
+# (its certified projections' rational intervals) records 985,416 distinct
+# 30-frame stacks, 248 MB of depot (14,849 and 9 MB with five frames), and
+# 1,400 corpus inputs replayed locally left 3.9 million (941 MB, 1,350 MB
+# RSS) against 88,036 (10 MB, 434 MB RSS) with five.
+SHORT_STACK_TARGETS = {'analytic_intersections', 'curve_surface', 'curve_curve', 'boolean',
+                       'split'}
 # The pinned libFuzzer checks stop_file between MutateAndTestOne batches,
 # not between each callback. Keep its default mutation sequence length.
 MUTATION_DEPTH = 5

@@ -866,3 +866,71 @@ fn identical_prisms_with_a_spline_hole_fuse_into_one() {
         assert!((volume(&out) - x.mass_properties().volume).abs() < 1e-9);
     }
 }
+
+#[test]
+fn a_cavity_beside_spline_walls_is_undecided() {
+    // Found by the `boolean` target: a square with a lens hole of two
+    // cubics less a holed square inside it in 2D and in height leaves a
+    // closed void around the lens, valid, but the validator's rays do not
+    // decide spline walls, so the cut is `ComputationLimit` (as a
+    // polyhedral or curved result's undecided containment is), not an
+    // invalid body; the fuse is the object and the common the tool.
+    use rusty_occt::topology::SplineSpan;
+    use rusty_occt::{BSplineCurve2, Error};
+    let cubic = |p: [(f64, f64); 4]| {
+        let poles = p.iter().map(|(x, y)| Point2::new(*x, *y)).collect();
+        let curve = BSplineCurve2::new(3, poles, None, vec![0.0, 1.0], vec![4, 4]).unwrap();
+        Segment::Spline(SplineSpan::whole(curve))
+    };
+    let (a, h) = (0.75, 0.75);
+    let lower = [(-a, 0.0), (-a / 2.0, -h), (a / 2.0, -h), (a, 0.0)];
+    let upper = [(a, 0.0), (a / 2.0, h), (-a / 2.0, h), (-a, 0.0)];
+    let rev = |p: [(f64, f64); 4]| [p[3], p[2], p[1], p[0]];
+    let hole = Boundary::path(
+        vec![Point2::new(-a, 0.0), Point2::new(a, 0.0)],
+        vec![cubic(rev(upper)), cubic(rev(lower))],
+        tol(),
+    )
+    .unwrap();
+    let tilt = Frame3::new(
+        Point3::new(1.0, -2.0, 0.5),
+        Vec3::new(0.0, 3.0, 4.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tol(),
+    )
+    .unwrap();
+    for frame in [tilt, Frame3::xy()] {
+        let x = prism(
+            rect(-1.5, -1.5, 1.5, 1.5),
+            vec![hole.clone()],
+            frame,
+            0.0,
+            2.0,
+            1,
+        );
+        let ring = Boundary::circle(Point2::new(0.0, 0.0), 0.9375, tol()).unwrap();
+        let y = prism(
+            rect(-1.25, -1.25, 1.25, 1.25),
+            vec![ring],
+            frame,
+            0.5,
+            1.5,
+            2,
+        );
+        let r = x.cut(OperationId(3), &y);
+        assert!(
+            matches!(r, Err(Error::ComputationLimit(_))),
+            "{:?}",
+            r.map(|o| o.0.len())
+        );
+        let (f, h) = x.fuse(OperationId(4), &y).unwrap();
+        assert_eq!(f.len(), 1);
+        assert_eq!(f[0].topology().body_id(), x.topology().body_id());
+        check(&x, &y, &f, &h);
+        let (m, h) = x.common(OperationId(5), &y).unwrap();
+        assert_eq!(m.len(), 1);
+        let vy = y.mass_properties().volume;
+        assert!((volume(&m) - vy).abs() <= 1e-9 * vy, "{} {vy}", volume(&m));
+        check(&x, &y, &m, &h);
+    }
+}
