@@ -211,6 +211,63 @@ impl ConeSec {
         Some(qv(&self.f.point(&(&rho * &cs[0]), &(&rho * &cs[1]), &w)))
     }
 
+    /// Where the section meets a plane `m . (x - p0) = 0` (S9e.3a: a given
+    /// result's section as an edge): the line of the two planes against the
+    /// cone, its roots on the section kept (on its nappe and branch) and
+    /// placed by the cone's angle; the planes parallel, none or `Along`; a
+    /// double root a tangency.
+    pub(super) fn meet_plane(&self, p0: &V, m: &V) -> Result<EdgeMeet> {
+        let f = &self.f;
+        let [a, b, mu, kappa] = &self.plane;
+        // The section's plane in world terms: nc . (x - o) + kappa = 0.
+        let nc = add(
+            &add(&scale(f.row(0), a), &scale(f.row(1), b)),
+            &scale(f.row(2), mu),
+        );
+        let d = cross(&nc, m);
+        if is_zero(&d) {
+            return Ok(if dot(&nc, &sub(p0, &f.o)) + kappa == zero() {
+                EdgeMeet::Along
+            } else {
+                EdgeMeet::None
+            });
+        }
+        let (k1, k2) = (dot(&nc, &f.o) - kappa, dot(m, p0));
+        let dd = dot(&d, &d);
+        let p = scale(
+            &add(&scale(&cross(m, &d), &k1), &scale(&cross(&d, &nc), &k2)),
+            &(int(1) / dd),
+        );
+        // (u0 + t du)^2 + (v0 + t dv)^2 - (b + k (w0 + t dw))^2 = 0.
+        let (l, ld) = (f.local(&p), f.local_dir(&d));
+        let rho0 = &self.b + &self.k * &l[2];
+        let kd = &self.k * &ld[2];
+        let qa = &ld[0] * &ld[0] + &ld[1] * &ld[1] - &kd * &kd;
+        let qb = int(2) * (&l[0] * &ld[0] + &l[1] * &ld[1] - &rho0 * &kd);
+        let qc = &l[0] * &l[0] + &l[1] * &l[1] - &rho0 * &rho0;
+        let roots = if qa == zero() {
+            if qb == zero() {
+                return Ok(if qc == zero() {
+                    EdgeMeet::Along
+                } else {
+                    EdgeMeet::None
+                });
+            }
+            vec![Qd::rat(-&qc / &qb)]
+        } else {
+            quadratic(&qa, &qb, &qc)?
+        };
+        let p = qv(&p);
+        Ok(EdgeMeet::Points(
+            roots
+                .into_iter()
+                .map(|t| qadd(&p, &qscale(&d, &t)))
+                .filter(|x| self.on(x))
+                .map(|x| (Pos::Ang(self.place(&x)), x))
+                .collect(),
+        ))
+    }
+
     /// A point's `(cos, sin)` on the cone.
     pub(super) fn place(&self, x: &QV) -> [Qd; 2] {
         let l = self.f.local_q(x);
@@ -279,6 +336,21 @@ impl ConeSec {
     /// Whether the plane is normal to the axis (its section a circle).
     pub(super) fn normal_to_axis(&self) -> bool {
         self.plane[0] == zero() && self.plane[1] == zero()
+    }
+
+    /// A section normal to the axis as the conic it is (S9e.3a: a given
+    /// result's edge): `c + a cos + b sin` on the cone's frame, its angle
+    /// the cone's (the same places).
+    pub(super) fn as_conic(&self) -> Option<Crv> {
+        if !self.normal_to_axis() {
+            return None;
+        }
+        let (rho, w) = self.circle();
+        Some(Crv::Conic {
+            c: self.f.point(&zero(), &zero(), &w),
+            a: scale(&self.f.x, &rho),
+            b: scale(&self.f.y, &rho),
+        })
     }
 
     /// A plane normal to the axis: its circle's radius and height.

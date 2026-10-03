@@ -561,6 +561,56 @@ fn on_line(p: Point3, a: Point3, b: Point3, tol: f64) -> bool {
     d2 > R::from_integer(0.into()) && c2 <= &t * &t * d2
 }
 
+/// Whether two frames hold one origin, normal line and x line within
+/// tolerance over a reach `r` (either way round).
+fn same_axes(f: &crate::Frame3, g: &crate::Frame3, r: f64, tol: f64) -> bool {
+    near(f.origin(), g.origin(), tol)
+        && f.normal().cross(g.normal()).length() * r <= tol
+        && f.x().cross(g.x()).length() * r <= tol
+}
+
+/// Whether two curves are one procedural curve (S9e.3a): a torus's plane
+/// section on one torus and plane (either normal), a hyperbola or parabola
+/// of one frame and size, whatever their ranges.
+fn same_procedural(c: &Curve3, d: &Curve3, tol: f64) -> bool {
+    match (c, d) {
+        (Curve3::Section(a), Curve3::Section(b)) => {
+            let r = a.major + a.minor;
+            let plane = |s: f64| {
+                (0..3).all(|k| (a.plane[k] - s * b.plane[k]).abs() * r <= tol)
+                    && (a.plane[3] - s * b.plane[3]).abs() <= tol
+            };
+            same_axes(&a.frame, &b.frame, r, tol)
+                && (a.major - b.major).abs() <= tol
+                && (a.minor - b.minor).abs() <= tol
+                && (plane(1.0) || plane(-1.0))
+        }
+        (
+            Curve3::HyperbolaArc {
+                frame: f,
+                major: a,
+                minor: b,
+                ..
+            },
+            Curve3::HyperbolaArc {
+                frame: g,
+                major: x,
+                minor: y,
+                ..
+            },
+        ) => same_axes(f, g, a.max(*b), tol) && (a - x).abs() <= tol && (b - y).abs() <= tol,
+        (
+            Curve3::ParabolaArc {
+                frame: f, focal: a, ..
+            },
+            Curve3::ParabolaArc {
+                frame: g, focal: b, ..
+            },
+        ) => same_axes(f, g, a.abs().max(1.0), tol) && (a - b).abs() <= tol,
+        _ => false,
+    }
+}
+
 fn circle_of(c: &Curve3) -> Option<(crate::Frame3, f64)> {
     match c {
         Curve3::Circle { frame, radius } | Curve3::CircularArc { frame, radius, .. } => {
@@ -1106,7 +1156,11 @@ fn same_support(piece: &EntityInfo, whole: &Geometry, tol: f64, edges: &Entities
             // other within tolerance, whatever the frames' axes' signs.
             _ => match (ellipse_of(c), ellipse_of(d)) {
                 (Some(a), Some(b)) => on_ellipse(&a, &b, tol) && on_ellipse(&b, &a, tol),
-                _ => false,
+                // One procedural curve (S9e.3a: a given result's section of a
+                // torus or a cone split by another Boolean): the same
+                // surfaces' meeting, its data within tolerance whatever
+                // its range.
+                _ => same_procedural(c, d, tol),
             },
         },
         (Geometry::Surface { .. }, Geometry::Surface { .. }) => {

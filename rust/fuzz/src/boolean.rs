@@ -31,7 +31,10 @@
 //! different axes) too, on its construction's exact model (`GIVEN_CURVED`);
 //! S9e.2: a stack with arc walls and one solid of several are given too,
 //! and the chained byte's upper bits may turn the box into a turned
-//! cylinder (`GIVEN_ROUND`: a stack or an S9b.1 result given with arcs).
+//! cylinder (`GIVEN_ROUND`: a stack or an S9b.1 result given with arcs);
+//! S9e.3a: first results of spheres, cones and tori are given too, and the
+//! chained byte's next bit may make the partner a sphere (`GIVEN_BALL`: a
+//! given result against a sphere).
 use crate::analytic_intersections::Bytes;
 use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
@@ -79,6 +82,11 @@ const GIVEN_CURVED: bool = true;
 /// with arcs, decided on its construction's curved arrangement matched to
 /// its stored topology), by the chained byte's upper bits.
 const GIVEN_ROUND: bool = true;
+
+/// Whether the chained stage's partner may be a sphere of radius 1.25 about
+/// the turned box's centre instead (S9e.3a: a given result against a
+/// sphere), by the chained byte's next bit.
+const GIVEN_BALL: bool = true;
 
 pub fn check_boolean(data: &[u8]) {
     let mut b = Bytes(data, 0);
@@ -429,7 +437,12 @@ pub fn check_boolean(data: &[u8]) {
     // 1.25 on the box's frame.
     let chained = b.next();
     let round = GIVEN_ROUND && (chained / 3) % 2 == 1;
+    let ball = GIVEN_BALL && (chained / 6) % 2 == 1;
     let turned = turned.and_then(|f| {
+        if ball {
+            let half = std::f64::consts::FRAC_PI_2;
+            return Solid::sphere_with(OperationId(7), f, 1.25, -half, half, tolerance).ok();
+        }
         let outline = if round {
             rusty_occt::Boundary::circle(rusty_occt::Point2::new(0.0, 0.0), 1.25, tolerance)
         } else {

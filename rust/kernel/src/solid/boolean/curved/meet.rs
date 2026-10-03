@@ -97,7 +97,7 @@ pub(super) fn conic_tangent(a: &V, b: &V, cs: &[Qd; 2]) -> QV {
 
 /// A plane's coefficients on a prism's cylinder: `alpha cos + beta sin +
 /// mu w + kappa = 0` over `(cu + r cos, cv + r sin, w)`.
-fn plane_on_cylinder(f: &Affine, c: &P2, r: &R, p: &V, m: &V) -> [R; 4] {
+pub(super) fn plane_on_cylinder(f: &Affine, c: &P2, r: &R, p: &V, m: &V) -> [R; 4] {
     let (mx, my, mn) = (dot(m, &f.x), dot(m, &f.y), dot(m, &f.n));
     let kappa = dot(m, &sub(&f.o, p)) + &c[0] * &mx + &c[1] * &my;
     [r * &mx, r * &my, mn, kappa]
@@ -562,14 +562,18 @@ pub(super) fn edge_surface(
         )),
         // S9d.4b.1: a torus segment's or wedge's rim against a plane.
         (Crv::Torus(c), Surf::Plane { p: p0, m }) => super::torus_segment::rim_plane(c, p0, m),
-        // S9d.4c: against a quadric or a torus.
-        (Crv::Torus(c), Surf::Cyl { .. } | Surf::Sphere { .. } | Surf::Cone { .. }) => {
+        // S9d.4c: against a quadric or a torus (a circle of the torus at a
+        // fixed angle: a part's rim, or a given result's section normal to
+        // or holding the axis; another plane's section is S9e.3b's).
+        (Crv::Torus(c), Surf::Cyl { .. } | Surf::Sphere { .. } | Surf::Cone { .. })
+            if c.fixed_angle() =>
+        {
             super::torus_parts::rim_far(
                 c,
                 &super::torus_curved::Far::Quadric(Box::new(super::cones::other_face(py, fy))),
             )
         }
-        (Crv::Torus(c), Surf::Torus) => {
+        (Crv::Torus(c), Surf::Torus) if c.fixed_angle() => {
             let ring = py.ring.as_ref().expect("a torus");
             super::torus_parts::rim_far(
                 c,
@@ -580,8 +584,14 @@ pub(super) fn edge_surface(
                 },
             )
         }
-        (Crv::Meet(_) | Crv::Rise(_) | Crv::Cone(_) | Crv::Toric(_), _) => {
-            unreachable!("a model edge is a line, an arc or a circle")
+        // S9e.3a: a given result's plane section of a cone against a plane,
+        // on the line of the two planes.
+        (Crv::Cone(c), Surf::Plane { p: p0, m }) => c.meet_plane(p0, m),
+        // A given result's meeting of two curved faces (or a cone's section
+        // against a curved face) met by another face: three surfaces, two
+        // of them curved (S9e.3b).
+        (Crv::Meet(_) | Crv::Rise(_) | Crv::Cone(_) | Crv::Toric(_) | Crv::Torus(_), _) => {
+            Err(Error::OutOfDomain(super::chain::S9E3B))
         }
         (Crv::Line { p, d }, Surf::Plane { p: p0, m }) => {
             let md = dot(m, d);

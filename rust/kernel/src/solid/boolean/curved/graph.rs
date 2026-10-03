@@ -124,6 +124,55 @@ fn same_quadric(a: &Surf, b: &Surf) -> bool {
     }
 }
 
+/// A model edge's places at its start and end and whether it runs with its
+/// curve's parameter: a line's keys (it runs from its start), an arc's
+/// angles, a given edge's first arrangement's places (S9e.3a: of every
+/// curve).
+pub(super) fn edge_places(m: &Prism, ei: usize) -> (Pos, Pos, bool) {
+    let e = &m.edges[ei];
+    if let Crv::Line { d, .. } = &e.curve {
+        return (
+            Pos::T(line_key(&m.verts[e.start].p, d)),
+            Pos::T(line_key(&m.verts[e.end].p, d)),
+            true,
+        );
+    }
+    if let Some(Some(([a, b], with))) = m.given.as_ref().map(|g| &g.places[ei]) {
+        return (a.clone(), b.clone(), *with);
+    }
+    match &e.arc {
+        Some((a, b, ccw)) => (Pos::Ang(a.clone()), Pos::Ang(b.clone()), *ccw),
+        None => unreachable!("an arc edge has its ends' angles"),
+    }
+}
+
+/// Whether a place lies strictly between two others along an edge running
+/// from `a` to `b` (with or against its parameter, `ccw`), `None` at an end.
+fn strictly_within(pos: &Pos, a: &Pos, b: &Pos, ccw: bool) -> Option<bool> {
+    match (pos, a, b) {
+        (Pos::T(t), Pos::T(a), Pos::T(b)) => {
+            let (lo, hi) = if a.cmp(b) == Ordering::Greater {
+                (b, a)
+            } else {
+                (a, b)
+            };
+            match (t.cmp(lo), t.cmp(hi)) {
+                (Ordering::Greater, Ordering::Less) => Some(true),
+                (Ordering::Equal, _) | (_, Ordering::Equal) => None,
+                _ => Some(false),
+            }
+        }
+        (Pos::Ang(x2), Pos::Ang(a), Pos::Ang(b)) => {
+            if same_dir(x2, a) || same_dir(x2, b) {
+                None
+            } else {
+                Some(between_run(a, x2, b, ccw))
+            }
+        }
+        _ => unreachable!("places of one kind"),
+    }
+}
+
 /// The line key of a point: `x . d / |d|^2` (its parameter less a constant
 /// of the line).
 fn line_key(x: &QV, d: &V) -> Qd {
@@ -376,7 +425,10 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                     0
                 } else {
                     (0..=g)
-                        .find(|&h| same_quadric(&other.faces[h].surf, &other.faces[g].surf))
+                        .find(|&h| {
+                            std::ptr::eq(other.view(h).0, other.view(g).0)
+                                && same_quadric(&other.faces[h].surf, &other.faces[g].surf)
+                        })
                         .unwrap_or(g)
                 };
                 if let Some((_, pair)) = toric.iter().find(|(key, _)| *key == (k, first)) {
@@ -485,15 +537,7 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                 vx[s].faces.insert((o, f));
                 vx[t].faces.insert((o, f));
             }
-            let (ps, pt) = match (&e.curve, &e.arc) {
-                (Crv::Line { d, .. }, _) => {
-                    (Pos::T(line_key(&vx[s].p, d)), Pos::T(line_key(&vx[t].p, d)))
-                }
-                (Crv::Conic { .. } | Crv::Circle(_) | Crv::Torus(_), Some((a, b, _))) => {
-                    (Pos::Ang(a.clone()), Pos::Ang(b.clone()))
-                }
-                _ => unreachable!("an arc edge has its ends' angles"),
-            };
+            let (ps, pt, _) = edge_places(m, ei);
             on_edge
                 .entry((o, ei))
                 .or_default()
@@ -525,8 +569,29 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                 _ => None,
             };
             let virtual_edge = e.id.is_none();
+            // A given edge of a curve whose meetings are S9e.3b's: none where
+            // one of its faces' surfaces is apart from the other's face.
+            let unmet = me.given.is_some()
+                && match &e.curve {
+                    Crv::Meet(_) | Crv::Rise(_) | Crv::Toric(_) | Crv::Cone(_) => true,
+                    Crv::Torus(c) => !c.fixed_angle(),
+                    _ => false,
+                };
             for (g, gface) in other.faces.iter().enumerate() {
                 if !boxes_meet(&ebox, &other.boxes[g]) {
+                    continue;
+                }
+                if unmet
+                    && !(matches!(e.curve, Crv::Cone(_) | Crv::Torus(_))
+                        && matches!(
+                            other.view(g).0.faces[other.view(g).1].surf,
+                            Surf::Plane { .. }
+                        ))
+                    && e.faces.iter().any(|&f| {
+                        matches!(pair_of(o, f, g), Some(CylPair::Apart))
+                            || super::chain::planes_apart(me, f, other, g)
+                    })
+                {
                     continue;
                 }
                 let pair = match (&gface.surf, wall, &e.curve) {
@@ -553,7 +618,14 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                     }
                     (p, ..) => p,
                 };
-                let meet = match edge_surface(&e.curve, own, me.ball.as_ref(), vo, vg, pair) {
+                // A sphere's circle's own sphere: a given edge's through its
+                // faces' views (S9e.3a).
+                let own_ball = match &me.given {
+                    Some(_) => super::chain::own_model(me, ei, |v| v.ball.is_some())
+                        .and_then(|v| v.ball.as_ref()),
+                    None => me.ball.as_ref(),
+                };
+                let meet = match edge_surface(&e.curve, own, own_ball, vo, vg, pair) {
                     // A seam's tangency with a torus, or a torus seam's
                     // (S9d.4b.2): another seam is tried.
                     Err(Error::Degenerate(_))
@@ -585,22 +657,7 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                         let l = &on_edge[&(o, ei)];
                         (l[0].1.clone(), l[1].1.clone())
                     };
-                    let inside = match (&pos, &ps, &pt) {
-                        (Pos::T(t), Pos::T(a), Pos::T(b)) => match (t.cmp(a), t.cmp(b)) {
-                            (Ordering::Greater, Ordering::Less) => Some(true),
-                            (Ordering::Equal, _) | (_, Ordering::Equal) => None,
-                            _ => Some(false),
-                        },
-                        (Pos::Ang(x2), Pos::Ang(a), Pos::Ang(b)) => {
-                            let ccw = e.arc.as_ref().expect("an arc").2;
-                            if same_dir(x2, a) || same_dir(x2, b) {
-                                None
-                            } else {
-                                Some(between_run(a, x2, b, ccw))
-                            }
-                        }
-                        _ => unreachable!("places of one kind"),
-                    };
+                    let inside = strictly_within(&pos, &ps, &pt, edge_places(me, ei).2);
                     let region = other.in_face(g, &x);
                     let end_vertex = if same_end(&pos, &ps) {
                         input_vx[o][e.start]
@@ -732,9 +789,18 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
     for ((o, ei), list) in &on_edge {
         let e = &models[*o].edges[*ei];
         let mut list = list.clone();
-        let ccw = e.arc.as_ref().is_none_or(|a| a.2);
+        let ccw = edge_places(&models[*o], *ei).2;
         let start = list[0].1.clone();
-        let cmp = |x: &Pos, y: &Pos| -> Ordering { order_on(x, y, &start, ccw) };
+        // A height running against the edge (a given `Rise`, S9e.3a) orders
+        // its places the other way.
+        let cmp = |x: &Pos, y: &Pos| -> Ordering {
+            let o = order_on(x, y, &start, ccw);
+            if matches!(start, Pos::T(_)) && !ccw {
+                o.reverse()
+            } else {
+                o
+            }
+        };
         let (first, last) = (list.remove(0), list.remove(0));
         list.sort_by(|x, y| cmp(&x.1, &y.1));
         for w in list.windows(2) {
@@ -1102,31 +1168,13 @@ fn edge_at(m: &Prism, g: usize, x: &QV) -> Result<Option<(usize, Pos)>> {
             continue;
         }
         let pos = place(&f.curve, x);
-        let (ps, pt) = match (&f.curve, &f.arc) {
-            (Crv::Line { d, .. }, _) => (
-                Pos::T(line_key(&m.verts[f.start].p, d)),
-                Pos::T(line_key(&m.verts[f.end].p, d)),
-            ),
-            (Crv::Conic { .. } | Crv::Circle(_) | Crv::Torus(_), Some((a, b, _))) => {
-                (Pos::Ang(a.clone()), Pos::Ang(b.clone()))
-            }
-            _ => unreachable!("an arc edge has its ends' angles"),
-        };
+        let (ps, pt, ccw) = edge_places(m, fi);
         if same_end(&pos, &ps) || same_end(&pos, &pt) {
             return Err(Error::Degenerate(
                 "a vertex of one input on an edge of the other",
             ));
         }
-        let within = match (&pos, &ps, &pt) {
-            (Pos::T(t), Pos::T(a), Pos::T(b)) => {
-                t.cmp(a) == Ordering::Greater && t.cmp(b) == Ordering::Less
-            }
-            (Pos::Ang(t), Pos::Ang(a), Pos::Ang(b)) => {
-                between_run(a, t, b, f.arc.as_ref().expect("an arc").2)
-            }
-            _ => false,
-        };
-        if within {
+        if strictly_within(&pos, &ps, &pt, ccw) == Some(true) {
             return Ok(Some((fi, pos)));
         }
     }
@@ -1682,13 +1730,16 @@ impl Arr {
     /// outward normal.
     pub(super) fn param_sign(&self, o: usize, f: usize) -> f64 {
         let (m, lf) = self.models[o].view(f);
-        // The model face's own orientation (a given result's face reversed
-        // where its input's is), its input's frame and data.
-        let face = MFace {
-            surf: self.models[o].faces[f].surf.clone(),
-            ..m.faces[lf].clone()
+        // The primitive face's orientation, its frame and data, reversed
+        // where a given result reverses the face (S9e.3a: through every
+        // level, a sphere's, cone's or torus's face too).
+        let face = &m.faces[lf];
+        let sign = if self.models[o].reversed(f) {
+            -1.0
+        } else {
+            1.0
         };
-        match &face.surf {
+        sign * match &face.surf {
             // `(u, v)` runs counter-clockwise about the axis: the wall's
             // outward normal leans along it where the cone narrows upward.
             // `(u, v)` runs with the torus's outward normal (against an

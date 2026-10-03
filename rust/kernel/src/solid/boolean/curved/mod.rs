@@ -14,6 +14,7 @@
 //! them, and their pieces facing one way join.
 mod algebraic;
 mod assemble;
+mod chain;
 mod cone;
 mod cones;
 mod cones_loops;
@@ -110,16 +111,18 @@ const SEAMS: [(i64, i64); 5] = [(2, 7), (3, 11), (5, 13), (7, 19), (11, 23)];
 
 pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
     // S9e.1 and S9e.2 take a given result with a prism or another given
-    // result.
-    let prism = |s: &crate::Solid| matches!(s.construction, Construction::Prism(_));
+    // result, S9e.3a with a sphere, cone or torus too.
+    let piece = |s: &crate::Solid| {
+        matches!(
+            s.construction,
+            Construction::Clipped(_) | Construction::Half(_)
+        )
+    };
     for (x, y) in [(&poly.a, &poly.b), (&poly.b, &poly.a)] {
-        if given::applies(x, y) && !given::applies(y, x) && !prism(y) {
-            return Err(Error::OutOfDomain(match y.construction {
-                Construction::Sphere { .. } | Construction::Cone { .. } | Construction::Torus { .. } => {
-                    "a Boolean's result given to another Boolean with a sphere, cone or torus (S9e.3)"
-                }
-                _ => "a Boolean's result given to another Boolean with a plane's piece (S9e.4)",
-            }));
+        if given::applies(x, y) && piece(y) {
+            return Err(Error::OutOfDomain(
+                "a Boolean's result given to another Boolean with a plane's piece (S9e.4)",
+            ));
         }
     }
     let seams = SEAMS;

@@ -256,6 +256,16 @@ pub(super) struct TorusSec {
 }
 
 impl TorusSec {
+    /// Whether the section is a circle of the torus at one of its angles: a
+    /// plane normal to the axis (`v` fixed, graphed over `u`) or holding it
+    /// (`u` fixed, over `v`), as a part's rims are (S9e.3a: a given result's
+    /// other sections are general spiric curves).
+    pub(super) fn fixed_angle(&self) -> bool {
+        let [a, b, m, k] = &self.plane;
+        let z = zero();
+        (*a == z && *b == z && !self.over_v) || (*m == z && *k == z && self.over_v)
+    }
+
     pub(super) fn ring(&self) -> Ring {
         Ring {
             big: self.big.clone(),

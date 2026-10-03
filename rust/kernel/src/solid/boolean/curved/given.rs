@@ -25,9 +25,16 @@
 //! result of several solids is given as its whole construction, every
 //! solid's faces and edges in the model, and the second arrangement keeps
 //! the given solid's (`matched::keep_solid`).
+//!
+//! S9e.3a: the construction's inputs may be spheres, cones, tori and given
+//! results themselves (`chain.rs`): every face keeps its leaf's surface (a
+//! reversed one through its orientation alone), every edge its first
+//! arrangement's curve and places, and the views go down to the primitive
+//! model.
 use super::assemble::{assemble_made, Made};
 use super::graph::{classify, holds, Arr, CurveRef};
 use super::matched::{matched, Match};
+use super::meet::Pos;
 use super::model::*;
 use super::num::*;
 use crate::identity::{EntityId, Role};
@@ -70,6 +77,10 @@ pub(super) struct Given {
     /// given solid's, where the construction has several.
     solids: Vec<usize>,
     solid: Option<usize>,
+    /// Each model edge's places at its start and end and whether it runs
+    /// with its curve's parameter (S9e.3a: a line's none, its direction
+    /// runs from its start).
+    pub(super) places: Vec<Option<([Pos; 2], bool)>>,
 }
 
 /// Whether a solid has an arc (a prism) or a face other than a plane, or is
@@ -127,15 +138,20 @@ fn rerun(poly: &Polyhedron) -> Result<(Arr, Vec<(Component, Made)>)> {
 fn construction(s: &Solid) -> Result<(Polyhedron, bool)> {
     match &s.construction {
         Construction::Polyhedron(poly) => {
-            // S9e.1 and S9e.2: a result of prisms (planes and cylinders).
-            if [&poly.a, &poly.b]
-                .iter()
-                .any(|x| !matches!(x.construction, Construction::Prism(_)))
-            {
+            // S9e.1 and S9e.2: a result of prisms (planes and cylinders);
+            // S9e.3a: of spheres, cones, tori and given results too, to the
+            // depth limit.
+            if [&poly.a, &poly.b].iter().any(|x| {
+                matches!(
+                    x.construction,
+                    Construction::Clipped(_) | Construction::Half(_)
+                )
+            }) {
                 return Err(out_of_domain(
-                    "a Boolean's result of solids other than prisms given to another Boolean (S9e.3)",
+                    "a Boolean's result of a plane's piece given to another Boolean (S9e.4)",
                 ));
             }
+            super::chain::check_depth(s)?;
             Ok((poly.as_ref().clone(), super::applies(poly)))
         }
         Construction::Stack(st) => {
@@ -219,18 +235,6 @@ pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
         t.id_of(slot)
             .ok_or(Error::InvalidTopology("an unnamed slot"))
     };
-    // Every edge on a kept piece a line or a conic (S9c.1's).
-    for (_, made) in &out {
-        for parts in &made.edges {
-            for &(g, _) in parts {
-                if !matches!(arr.edges[g].crv, Crv::Line { .. } | Crv::Conic { .. }) {
-                    return Err(out_of_domain(
-                        "a Boolean's result with procedural edges given to another Boolean (S9e.3)",
-                    ));
-                }
-            }
-        }
-    }
     let leaves = arr.models.clone();
     // The given solid's region names the model's faces of other solids
     // (their pieces are dropped from the second arrangement: `keep_solid`).
@@ -263,6 +267,10 @@ pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
                     Some(&mf) => mf,
                     None => {
                         let lf = &leaves[piece.op].faces[piece.face];
+                        // A plane's or a cylinder's side reversed with the
+                        // face; a sphere's, cone's or torus's surface as its
+                        // leaf's, the face reversed through `behind` alone
+                        // (S9e.3a).
                         let surf = match (&lf.surf, piece.behind) {
                             (s, true) => s.clone(),
                             (Surf::Plane { p, m }, false) => Surf::Plane {
@@ -274,11 +282,7 @@ pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
                                 r: r.clone(),
                                 inside: !inside,
                             },
-                            _ => {
-                                return Err(out_of_domain(
-                                    "a Boolean's result of solids other than prisms given to another Boolean (S9e.3)",
-                                ))
-                            }
+                            (s, false) => s.clone(),
                         };
                         faces.push(MFace {
                             kind: lf.kind,
@@ -353,6 +357,7 @@ pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
     let mut curves: Vec<Option<Curve3>> = Vec::new();
     let mut flip: Vec<bool> = Vec::new();
     let mut solids: Vec<usize> = Vec::new();
+    let mut places: Vec<Option<([Pos; 2], bool)>> = Vec::new();
     let mut sides: BTreeMap<(usize, usize), EntityId> = BTreeMap::new();
     for (&g, &(fs, c)) in &sides_of {
         let [Some((left, lrid)), Some((right, rrid))] = fs else {
@@ -369,7 +374,12 @@ pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
             })
         };
         let (start, end) = (vertex(ge.ends[0]), vertex(ge.ends[1]));
-        let (curve, arc) = match (&ge.crv, &ge.pos) {
+        // A cone's section normal to its axis is the circle it is (S9e.3a).
+        let crv = match &ge.crv {
+            Crv::Cone(c) => c.as_conic().unwrap_or_else(|| ge.crv.clone()),
+            x => x.clone(),
+        };
+        let (curve, arc) = match (&crv, &ge.pos) {
             // A line runs from its start to its end along its direction.
             (Crv::Line { p, d }, _) => (
                 Crv::Line {
@@ -378,18 +388,25 @@ pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
                 },
                 None,
             ),
-            (Crv::Conic { .. }, [super::meet::Pos::Ang(a), super::meet::Pos::Ang(b)]) => {
-                (ge.crv.clone(), Some((a.clone(), b.clone(), ge.with)))
-            }
+            // A conic, a sphere's circle, a cone's or a torus's section, a
+            // meeting placed by an angle (S9e.3a: every curve the first
+            // arrangement makes).
+            (_, [Pos::Ang(a), Pos::Ang(b)]) => (crv.clone(), Some((a.clone(), b.clone(), ge.with))),
+            // A meeting placed by a height (`Rise`).
+            (_, [Pos::T(_), Pos::T(_)]) => (crv.clone(), None),
             _ => {
-                return Err(out_of_domain(
-                    "a Boolean's result with procedural edges given to another Boolean (S9e.3)",
+                return Err(Error::InvalidTopology(
+                    "a given result's edge of mixed places",
                 ))
             }
         };
+        places.push(match &crv {
+            Crv::Line { .. } => None,
+            _ => Some((ge.pos.clone(), ge.with)),
+        });
         let ei = edges.len();
         // The conic's carrier: the cylinder whose angle is its parameter.
-        let carrier = match (&ge.crv, ge.curve) {
+        let carrier = match (&crv, ge.curve) {
             (Crv::Conic { .. }, CurveRef::Section(si, _)) => {
                 let sec = &arr.secs[si];
                 if matches!(leaves[0].faces[sec.fa].surf, Surf::Cyl { .. }) {
@@ -411,7 +428,7 @@ pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
         let stored = rid.map(|&(_, j)| t.edges()[j].curve.clone());
         // A stored circle or ellipse turning against the conic's
         // parameter (its frame's normal against the conic's `a x b`).
-        flip.push(match (&ge.crv, &stored) {
+        flip.push(match (&crv, &stored) {
             (
                 Crv::Conic { a, b, .. },
                 Some(
@@ -480,6 +497,7 @@ pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
             flip,
             solids,
             solid: (out.len() > 1).then_some(k),
+            places,
         })),
     })
 }
@@ -491,17 +509,26 @@ impl Given {
         self.solid.map(|k| (self.solids.as_slice(), k))
     }
 
-    /// A model face's input model and input face.
+    /// A model face's primitive model and its face: its input's, down
+    /// through every given level (S9e.3a).
     pub(super) fn view(&self, fi: usize) -> (&Prism, usize) {
         let (o, f) = self.leaf[fi];
-        (&self.leaves[o], f)
+        self.leaves[o].view(f)
     }
 
-    /// The outward normal of a model face: its input face's, reversed
-    /// where the result reverses it (a cut's tool's faces).
+    /// Whether a model face runs against its primitive model's face: its
+    /// orientation composed through every given level (S9e.3a).
+    pub(super) fn reversed(&self, fi: usize) -> bool {
+        let (o, f) = self.leaf[fi];
+        !self.behind[fi] ^ self.leaves[o].reversed(f)
+    }
+
+    /// The outward normal of a model face: its input face's (its own
+    /// given model's, S9e.3a), reversed where the result reverses it (a
+    /// cut's tool's faces).
     pub(super) fn normal_at(&self, fi: usize, p: &QV) -> QV {
-        let (m, f) = self.view(fi);
-        let n = m.normal_at(f, p);
+        let (o, f) = self.leaf[fi];
+        let n = self.leaves[o].normal_at(f, p);
         if self.behind[fi] {
             n
         } else {

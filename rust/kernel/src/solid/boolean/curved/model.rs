@@ -780,6 +780,12 @@ impl Prism {
         }
     }
 
+    /// Whether a face runs against its primitive model's face (`view`): a
+    /// given result's face reversed through its levels (S9e.3a).
+    pub(super) fn reversed(&self, fi: usize) -> bool {
+        self.given.as_ref().is_some_and(|g| g.reversed(fi))
+    }
+
     /// The outward normal of a face at a point on it.
     pub(super) fn normal_at(&self, fi: usize, p: &QV) -> QV {
         if let Some(g) = &self.given {

@@ -63,8 +63,8 @@ struct RFace {
 
 /// A result edge: arrangement edges joined along one curve, each with its
 /// direction along the chain, and its end vertices (none for a ring).
-struct REdge {
-    parts: Vec<(usize, bool)>,
+pub(super) struct REdge {
+    pub(super) parts: Vec<(usize, bool)>,
     ends: Option<[usize; 2]>,
 }
 
@@ -748,7 +748,7 @@ fn build_component(
                 })
                 .sum();
             if total != 0 {
-                let m = &arr.models[rf.op];
+                let (m, _) = arr.models[rf.op].view(rf.face);
                 let apex = m
                     .funnel
                     .as_ref()
@@ -1055,6 +1055,25 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
             });
         }
     }
+    // S9e.3a: a result edge over the whole of a given edge of a procedural
+    // curve keeps that edge's stored curve; a piece of a meeting of two
+    // curved faces is S9e.3b's (its meetings are refused before).
+    if let CurveRef::Edge(o, ei) = first.curve {
+        if let (Some(g), true) = (&arr.models[o].given, super::chain::procedural(&first.crv)) {
+            let whole = super::chain::whole(arr, e, o, ei);
+            let ends = e.ends.map(|[s, t]| (points[&s], points[&t]));
+            if let Some(c) = g.curves[ei]
+                .as_ref()
+                .filter(|_| whole)
+                .and_then(|c| super::chain::stored(c, ends))
+            {
+                return Ok(c);
+            }
+            if !matches!(first.crv, Crv::Cone(_) | Crv::Torus(_)) {
+                return Err(Error::OutOfDomain(super::chain::S9E3B));
+            }
+        }
+    }
     match &first.crv {
         Crv::Rise(m) => {
             // Over the carrier's stored cylinder, heights from its origin.
@@ -1083,7 +1102,11 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                 unreachable!("a rise's places")
             };
             let fl = |x: &V| x.clone().map(|y| rational_f64(&y));
-            let n = arr.models[m.carrier].f.n.clone();
+            // The carrier's primitive model (a given face's view, S9e.3a).
+            let n = super::chain::curve_model(arr, first.curve, m.carrier, |_| true)
+                .f
+                .n
+                .clone();
             // The stored frame's origin's height along the model's axis,
             // from the model's circle centre at height 0.
             let origin = frame.origin().to_array();
@@ -1102,7 +1125,13 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                 sweep: w1.to_f64() - w0.to_f64(),
             })))
         }
-        Crv::Cone(c) => cone_curve3(arr, e, c, points),
+        Crv::Cone(c) => cone_curve3(
+            arr,
+            super::chain::curve_model(arr, first.curve, c.carrier, |v| v.funnel.is_some()),
+            e,
+            c,
+            points,
+        ),
         Crv::Toric(c) => {
             // S9d.4b.2: on the torus's and the quadric's (or the other
             // torus's, S9d.4b.2b) stored surfaces.
@@ -1159,13 +1188,14 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                 let x = c
                     .at(&[int(1), crate::solid::split::zero()])
                     .ok_or(Error::ComputationLimit("a torus meeting's circle"))?;
-                let l = arr.models[c.carrier].f.local_q(&x);
+                let cm = super::chain::curve_model(arr, first.curve, c.carrier, |_| true);
+                let l = cm.f.local_q(&x);
                 let (lu, lv, lw) = (l[0].to_f64(), l[1].to_f64(), l[2].to_f64());
                 let circle = Frame3::new(
                     frame.point(Point2::default(), lw),
                     frame.normal(),
                     frame.x(),
-                    arr.models[c.carrier].tolerance,
+                    cm.tolerance,
                 )?;
                 let radius = lu.hypot(lv);
                 return Ok(if e.ends.is_none() {
@@ -1200,7 +1230,8 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
         Crv::Torus(c) => {
             // S8d.3's spiric section on the stored torus (S9d.4a): the
             // plane in its frame, a unit normal; over its parameter's angle.
-            let m = &arr.models[c.carrier];
+            // The torus's primitive model (a given face's view, S9e.3a).
+            let m = super::chain::curve_model(arr, first.curve, c.carrier, |v| v.ring.is_some());
             let stored = &m
                 .faces
                 .iter()
@@ -1251,6 +1282,15 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                 unreachable!("a circle's places")
             };
             let with = first.with == d0;
+            // A given result's circle (S9e.3a): on its stored circle.
+            if let CurveRef::Edge(o, ei) = first.curve {
+                if let Some(g) = &arr.models[o].given {
+                    if let Some(c) = given_arc(g.curves[ei].as_ref(), e, points, with != g.flip[ei])
+                    {
+                        return Ok(c);
+                    }
+                }
+            }
             let (t0, t1) = (c.angle(p0), c.angle(p1));
             let sweep = if e.ends.is_none() {
                 TAU
@@ -1331,10 +1371,11 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                 }
             };
             // The stored frame's angle of the model's: its x axis turned.
+            let cm = super::chain::curve_model(arr, first.curve, m.carrier, |_| true);
             let base = frame
                 .x()
-                .dot(arr.models[m.carrier].frame.y())
-                .atan2(frame.x().dot(arr.models[m.carrier].frame.x()));
+                .dot(cm.frame.y())
+                .atan2(frame.x().dot(cm.frame.x()));
             Ok(Curve3::Meet(Box::new(crate::topology::Meet {
                 frame,
                 radius,
@@ -1832,11 +1873,11 @@ fn cone_pcurve(surface: &Surface, curve: &Curve3, reversed: bool, uv: Point2) ->
 /// it), its parameter running as the chain runs.
 fn cone_curve3(
     arr: &Arr,
+    m: &super::model::Prism,
     e: &REdge,
     c: &super::cone::ConeSec,
     points: &BTreeMap<usize, Point3>,
 ) -> Result<Curve3> {
-    let m = &arr.models[c.carrier];
     let fun = m.funnel.as_ref().expect("a cone's section on a cone");
     let (g0, d0) = e.parts[0];
     // The chain's direction at its start, from its first part's samples.
