@@ -12,7 +12,9 @@
 //! split at a rational seam, tried again at another when a meeting falls
 //! on it. Faces of both inputs on one surface hold each other's edges within
 //! them, and their pieces facing one way join. S9f.1: a spline prism's walls
-//! against a prism of lines (`spline_walls.rs`).
+//! against a prism of lines (`spline_walls.rs`); S9f.2a: against arc,
+//! circle and spline walls on an exactly parallel axis
+//! (`spline_parallel.rs`).
 mod algebraic;
 mod assemble;
 mod chain;
@@ -29,6 +31,7 @@ mod procedural;
 mod sphere;
 mod spheres;
 mod spheres_turned;
+mod spline_parallel;
 mod spline_walls;
 mod torus;
 mod torus_curved;
@@ -99,8 +102,20 @@ fn spline_leaves(s: &crate::Solid) -> bool {
     }
 }
 
-/// S9f.1 takes a spline prism against a prism of lines only; the others are
-/// later sub-steps' or refused (REVIEW_NOTES.md, "S9f refined").
+/// Whether two solids' stored normals are exactly parallel (as rationals).
+fn parallel_axes(x: &crate::Solid, y: &crate::Solid) -> bool {
+    let v = |s: &crate::Solid| s.frame.normal().to_array().map(crate::solid::split::q);
+    let (a, b) = (v(x), v(y));
+    let zero = crate::solid::split::zero();
+    &a[1] * &b[2] - &a[2] * &b[1] == zero
+        && &a[2] * &b[0] - &a[0] * &b[2] == zero
+        && &a[0] * &b[1] - &a[1] * &b[0] == zero
+}
+
+/// S9f.1 takes a spline prism against a prism of lines in any position,
+/// S9f.2a against a prism with arcs, circles or splines on an exactly
+/// parallel axis; the others are later sub-steps' or refused
+/// (REVIEW_NOTES.md, "S9f refined").
 fn spline_pairs(poly: &Polyhedron) -> Result<()> {
     for (x, y) in [(&poly.a, &poly.b), (&poly.b, &poly.a)] {
         if spline_leaves(x) {
@@ -111,12 +126,15 @@ fn spline_pairs(poly: &Polyhedron) -> Result<()> {
         if !applies_splines(x) || line_prism(y) {
             continue;
         }
+        if matches!(y.construction, Construction::Prism(_)) && parallel_axes(x, y) {
+            continue;
+        }
         return Err(Error::OutOfDomain(match &y.construction {
             Construction::Prism(p) if profile_splines(p) => {
-                "spline walls against spline walls in any position (S9f.2)"
+                "spline walls against spline walls on crossing axes (refused, S9f)"
             }
             Construction::Prism(_) => {
-                "a spline prism against a prism with arcs in any position (S9f.2)"
+                "a spline prism against a prism with arcs on crossing axes (S9f.2b)"
             }
             Construction::Sphere { .. } | Construction::Cone { .. } => {
                 "a spline prism against a sphere or a cone (S9f.3)"
