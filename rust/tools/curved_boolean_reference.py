@@ -123,6 +123,28 @@ Newton's method at 40 digits (on the distance's gradient where the
 crossing is tangent), as S9a.2's reference finds its meetings, never a
 resultant. Each crossing's slice parameter and each face's parameter there
 are breakpoints of the slicing and of the face sweeps.
+
+**S9f.2b: crossing walls.** With crossing axes the other prism may hold
+arcs and circles against a spline prism (no second spline). The slicing's
+planes hold both axes, so a spline wall's section is still its chords'
+parallelograms and a cylinder's its chords' (surds), and an event where a
+spline chord, a cylinder's chord and a height line are concurrent is a
+point of the two walls' meeting at a cap's height: along the spline wall's
+ruling `X = o + S(tau) + w n` the cylinder's equation in its own frame is
+`A w^2 + 2 B(tau) w + C(tau)` (degrees 0, `p`, `2 p`), so at the spline
+prism's cap (`w` fixed) or the cylinder prism's (`w` linear in `S(tau)`)
+the points are the real roots of an exact polynomial of degree `2 p` in
+`tau` (`wall_cylinder_events`), `s` read from the point. A cylinder wall's
+generatrices swept against a spline wall cross it implicitly; their events
+are the same meetings at the face's own heights and the other's caps, and
+the generatrices whose projection along the spline's axis touches a span
+(at the span's points where it runs along the cylinder's axis's
+projection, the cylinder met on that ruling at 40 digits). A cap's sweep
+line meets the other's cylinder (a surd) on a spline cap edge, or a
+spline wall on a cylinder prism's cap circle, at the same polynomials'
+roots. The meeting's turning points (`wall_cylinder_turns`: the roots of
+`B^2 - A C`, degree `2 p`) need no event of their own: the slices' combinatorics
+change only at the trace's tangencies, which they are.
 """
 from fractions import Fraction as F
 import itertools
@@ -1464,7 +1486,18 @@ class Slicing:
                         assert len(imp) == 1, 'two spline chords in a triple'
                         (ab_s, sc), = imp
                         (p1, e1), (p2, e2) = [l for l in trip if not implicit(l[1])]
-                        assert e1.k == 0 and e2.k == 0, 'a spline chord against a surd line'
+                        if e1.k != 0 or e2.k != 0:
+                            # S9f.2b: a spline chord, a cylinder's chord and a
+                            # height line concurrent (crossing axes): the
+                            # meeting of the two walls at that height.
+                            assert not self.parallel, 'a spline chord against a surd line'
+                            surd, height = (e1, e2) if e1.k != 0 else (e2, e1)
+                            assert height.k == 0, 'two surd lines with a spline chord'
+                            for s in self.crossing_events(sc, surd.key, height.key):
+                                if M(lo)-tol <= s <= M(hi)+tol and \
+                                        self.relevant(s, tuple(l[1].key for l in trip), tol):
+                                    found.append(s)
+                            continue
                         det = cross2(p1, p2)
                         X0 = psub(pscale(e1.L, p2[1]/det), pscale(e2.L, p1[1]/det))
                         X1 = psub(pscale(e2.L, p1[0]/det), pscale(e1.L, p2[0]/det))
@@ -1491,6 +1524,23 @@ class Slicing:
                             found.append(s)
         self.events = len(found)
         return merge_breaks(cand+found, M(lo), M(hi), mp.mpf(10)**-30*self.size)
+
+    def prism_of(self, tag):
+        return self.A if tag == 'A' else self.B
+
+    def crossing_events(self, sc, surd_key, height_key):
+        """S9f.2b: the slice parameters where the spline chord `sc`, the
+        cylinder chord `surd_key` and the height line `height_key` are
+        concurrent: the walls' meeting at that height (`wall_cylinder_events`),
+        `s = d . (X - P0)`."""
+        S = sc.section.prism
+        C = self.prism_of(surd_key[0])
+        circ = C.profile.elements[surd_key[2]]
+        H = self.prism_of(height_key[0])
+        h = H.lo if height_key[2] == 'lo' else H.hi
+        P0, d = Mv(self.P0), Mv(self.d)
+        return [sum(((X[i]-P0[i])*d[i] for i in range(3)), mp.mpf(0))
+                for _, X in wall_cylinder_events(S, sc.el, C, circ, H, h)]
 
     def relevant(self, s, keys, tol):
         """Whether the lines `keys` (some branch of each) meet at `s` on both
@@ -2061,6 +2111,135 @@ def parallel_crossings(A, B):
     return out
 
 
+# ------------------------------------------------------------------ S9f.2b: crossing axes
+#
+# A spline span's wall `X = o + S(tau) + w n` of one prism against a
+# cylinder wall of another whose axis crosses it: the cylinder's equation
+# in its own frame along the wall's ruling is quadratic in `w` with
+# coefficients of degrees `p` and `2 p` in `tau`, so the meeting's points at
+# a fixed height of either prism (a cap of the spline prism: `w` constant;
+# a cap of the cylinder prism: `w` linear in `S(tau)`) are the real roots of
+# an exact polynomial of degree `2 p` in `tau` (`real_roots`: Yun's factors,
+# `mp.polyroots` at 60 digits), and the turning points of the meeting over
+# `tau` (the ruling tangent to the cylinder) the roots of its discriminant,
+# of degree `2 p` too. No resultant.
+
+
+def _wall_local(S, el, C):
+    """The cylinder prism `C`'s local coordinates of the wall's point at
+    `(tau, w)`: [(P_k(tau), q_k)] with coordinate `k = P_k + w q_k`."""
+    X = [padd(padd(pscale(el.X, S.x[i]), pscale(el.Y, S.y[i])), [S.o[i]-C.o[i]]) for i in range(3)]
+    out = []
+    for row in C.inv:
+        P = [F(0)]
+        for i in range(3):
+            P = padd(P, pscale(X[i], row[i]))
+        out.append((ptrim(P), dot(row, S.n)))
+    return out
+
+
+def wall_cylinder_events(S, el, C, circ, H, h):
+    """[(tau, X)]: the points of the spline span `el`'s wall (prism `S`, `tau`
+    in the span widened by `SPAN_SLACK`) on the cylinder of the circle or
+    arc `circ` of prism `C` (crossing axes) at the height `h` of prism `H`
+    (`S` or `C`), `X` in world coordinates (mpf). On a cap of `C` holding
+    the wall's axis direction (its ruling along the cap plane) the points
+    lie on the generatrices at the roots of `C`'s height (degree `p`), each
+    met by the cylinder at the roots of a quadratic, at 40 digits (a tower
+    field: S9f.2b.2's)."""
+    L = _wall_local(S, el, C)
+    (P0, q0), (P1, q1), (P2, q2) = L
+    cu, cv, r = circ.c[0], circ.c[1], circ.r
+    if H is S:
+        U = padd(P0, [q0*h])
+        V = padd(P1, [q1*h])
+    elif q2 != 0:
+        # w = (h - P2) / q2.
+        wpoly = pscale(psub([F(h)], P2), 1/q2)
+        U = padd(P0, pscale(wpoly, q0))
+        V = padd(P1, pscale(wpoly, q1))
+    else:
+        out = []
+        for tau in real_roots(psub(P2, [F(h)])):
+            if not -SPAN_SLACK <= tau <= 1+SPAN_SLACK:
+                continue
+            u0 = peval([M(c) for c in P0], tau)-M(cu)
+            v0 = peval([M(c) for c in P1], tau)-M(cv)
+            a = M(q0)**2+M(q1)**2
+            b = u0*M(q0)+v0*M(q1)
+            cc = u0*u0+v0*v0-M(r)**2
+            disc = b*b-a*cc
+            if disc < 0:
+                continue
+            for s in (-1, 1):
+                w = (-b+s*mp.sqrt(disc))/a
+                x, y = el.point(tau)
+                out.append((tau, tuple(S.om[i]+x*S.xm[i]+y*S.ym[i]+w*S.nm[i] for i in range(3))))
+        return out
+    E = psub(padd(pmul(psub(U, [cu]), psub(U, [cu])), pmul(psub(V, [cv]), psub(V, [cv]))), [r*r])
+    assert not pzero(E), 'a spline wall on a cylinder (S9f.2b)'
+    out = []
+    for tau in real_roots(E):
+        if not -SPAN_SLACK <= tau <= 1+SPAN_SLACK:
+            continue
+        x, y = el.point(tau)
+        if H is S:
+            w = M(h)
+        else:
+            w = (M(h)-peval([M(c) for c in P2], tau))/M(q2)
+        out.append((tau, tuple(S.om[i]+x*S.xm[i]+y*S.ym[i]+w*S.nm[i] for i in range(3))))
+    return out
+
+
+def wall_cylinder_turns(S, el, C, circ):
+    """The turning points of a spline span's wall's meeting with a cylinder
+    (crossing axes): [(tau, X)] at the real roots in the span of the
+    discriminant `B^2 - A C` (degree `2 p`) of the cylinder's equation along
+    the ruling, `A w^2 + 2 B w + C`, and the discriminant itself (exact)."""
+    (P0, q0), (P1, q1), _ = _wall_local(S, el, C)
+    U, V = psub(P0, [circ.c[0]]), psub(P1, [circ.c[1]])
+    A = q0*q0+q1*q1
+    B = padd(pscale(U, q0), pscale(V, q1))
+    Cc = psub(padd(pmul(U, U), pmul(V, V)), [circ.r*circ.r])
+    D = psub(pmul(B, B), pscale(Cc, A))
+    out = []
+    if pzero(D):
+        return out, D
+    for tau in real_roots(D):
+        if not -SPAN_SLACK <= tau <= 1+SPAN_SLACK:
+            continue
+        x, y = el.point(tau)
+        w = -peval([M(c) for c in B], tau)/M(A)
+        out.append((tau, tuple(S.om[i]+x*S.xm[i]+y*S.ym[i]+w*S.nm[i] for i in range(3))))
+    return out, D
+
+
+def generatrix_tangencies(S, el, C, circ):
+    """The points where a generatrix of the cylinder of `circ` (prism `C`),
+    projected along the spline prism `S`'s axis, touches the span `el`: on
+    the wall's rulings at the span's points whose tangent runs along the
+    projection of `C`'s axis, the cylinder's points there (40 digits)."""
+    d = apply(S.inv, C.n)[:2]
+    if d == (0, 0):
+        return []
+    (P0, q0), (P1, q1), _ = _wall_local(S, el, C)
+    out = []
+    for tau in el.tangent_params(d):
+        u0 = peval([M(c) for c in P0], tau)-M(circ.c[0])
+        v0 = peval([M(c) for c in P1], tau)-M(circ.c[1])
+        a = M(q0)**2+M(q1)**2
+        b = u0*M(q0)+v0*M(q1)
+        cc = u0*u0+v0*v0-M(circ.r)**2
+        disc = b*b-a*cc
+        if disc < 0:
+            continue
+        x, y = el.point(tau)
+        for s in (-1, 1):
+            w = (-b+s*mp.sqrt(disc))/a
+            out.append((tau, tuple(S.om[i]+x*S.xm[i]+y*S.ym[i]+w*S.nm[i] for i in range(3))))
+    return out
+
+
 # ------------------------------------------------------------------ face areas
 
 class FaceSweep:
@@ -2151,7 +2330,11 @@ class FaceSweep:
         # S9f.2a: a curved wall's generatrices against parallel spline walls
         # change class at the 2D crossings only (`crossing_params`).
         parallel_curved = f.family != 'affine' and self.duv == (0, 0)
-        if splines and not parallel_curved:
+        # S9f.2b: a cylinder wall's generatrices against spline walls on a
+        # crossing axis meet them at implicit crossings whose events are the
+        # walls' meetings (`crossing_breaks`).
+        self.crossing_curved = bool(splines) and f.family == 'trig' and not self.parallel
+        if splines and not parallel_curved and not self.crossing_curved:
             assert f.family == 'affine' and den == P(1), 'a curved face against a spline wall'
             assert all(pdeg(c) <= 1 for c in Nb), 'a family of degree above one'
             Nb0 = (ptrim(Nb[0])[0], ptrim(Nb[1])[0])
@@ -2169,6 +2352,8 @@ class FaceSweep:
             for i, el in enumerate(o.profile.elements):
                 if el.kind == 'spline':
                     self.implicit_oe.append((i, el))
+                    if self.crossing_curved:
+                        continue
                     c = cross2(Nb1, d)
                     if c != 0:
                         for tau in el.tangent_params(d):
@@ -2241,12 +2426,25 @@ class FaceSweep:
         # that crossing's point (linear in the family's parameter) lies on
         # the span.
         for i, el in self.implicit_oe:
+            if self.crossing_curved:
+                found += self.crossing_breaks(i, el)
+                cand += [self.face_param(X) for _, X in generatrix_tangencies(self.other, el, f.prism, f.el)]
+                continue
             Nb0, Nb1 = self.line_uv
             d = self.duv
             for g in ('own', 'Oh'):
                 for de in groups[g]:
                     if de.k != 0 and self.parallel:
                         # S9f.2a: an arc's crossing, at the 2D crossings.
+                        continue
+                    if de.k != 0 and g == 'own':
+                        # S9f.2b: a cylinder prism's cap circle against a
+                        # spline wall on a crossing axis.
+                        circ = f.prism.profile.elements[de.key[1]]
+                        for _, X in wall_cylinder_events(self.other, el, f.prism, circ, f.prism, f.h):
+                            for xx in self.in_domain(self.face_param(X)):
+                                if self.relevant(xx, de.key, ('Oe', i), tol):
+                                    found.append(xx)
                         continue
                     assert de.k == 0 and pdeg(de.L) <= 1, 'a spline crossing against a surd'
                     L = ptrim(de.L)+[F(0)]
@@ -2261,6 +2459,15 @@ class FaceSweep:
                 for de in groups[g]:
                     if de.k != 0 and self.parallel:
                         # S9f.2a: an arc's crossing, at the 2D crossings.
+                        continue
+                    if de.k != 0 and g == 'Oe':
+                        # S9f.2b: the spline prism's cap edge against the
+                        # other's cylinder on a crossing axis.
+                        circ = self.other.profile.elements[de.key[1]]
+                        for _, X in wall_cylinder_events(f.prism, el, self.other, circ, f.prism, f.h):
+                            for xx in self.in_domain(self.face_param(X)):
+                                if self.relevant(xx, ('own', i), de.key, tol):
+                                    found.append(xx)
                         continue
                     assert de.k == 0 and pdeg(de.L) <= 1, 'a spline crossing against a surd'
                     L = ptrim(de.L)+[F(0)]
@@ -2283,6 +2490,31 @@ class FaceSweep:
             cand = [xx for x in cand for xx in self.in_domain(x)]
         self.events = len(found)
         return merge_breaks(cand+found, lo, hi, mp.mpf(10)**-30*max(1, hi-lo))
+
+    def face_param(self, X):
+        """The face's family parameter of a point on it: a cap's `u`, a
+        cylinder wall's angle (S9f.2b's events)."""
+        f = self.face
+        u, v, _ = f.prism.local(X)
+        if f.kind == 'cap':
+            return u
+        assert f.kind == 'cyl', 'a crossing event on a face other than a cap or a cylinder'
+        return mp.atan2(v-f.el.cm[1], u-f.el.cm[0])
+
+    def crossing_breaks(self, i, el):
+        """S9f.2b: the cylinder wall's generatrices against the other's
+        spline span `el` (element `i`) on a crossing axis: their implicit
+        crossing meets the face's own heights and the other's caps at the
+        walls' meetings at those heights."""
+        f, o = self.face, self.other
+        found = []
+        for H, key in ((f.prism, 'own'), (o, 'Oh')):
+            for name, h in (('lo', H.lo), ('hi', H.hi)):
+                for _, X in wall_cylinder_events(o, el, f.prism, f.el, H, h):
+                    for xx in self.in_domain(self.face_param(X)):
+                        if self.relevant(xx, (key, name), ('Oe', i), self.tol):
+                            found.append(xx)
+        return found
 
     def crossing_params(self):
         """S9f.2a: the face's parameters at the profiles' 2D crossings (a
