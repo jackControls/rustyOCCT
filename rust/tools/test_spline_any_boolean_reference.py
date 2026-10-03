@@ -124,6 +124,37 @@ class SplineAnyBooleanReferenceTests(unittest.TestCase):
         self.assertTrue(c1(spline.poles[1:4]))
         self.assertFalse(c1([(7.0, 3.0), (5.0, 4.0), (3.0, 5.0)]))
 
+    def test_r4_fixtures_take_the_rounded_knot_and_exact_parallels(self):
+        from curve_surface_reference import stored_axes
+        listed = fixtures.r4_cases()
+        fixtures.validate(listed)
+        self.assertEqual({c.pair_name for c in listed}, {'knot_tilt', 'blob_side_turned'})
+        self.assertFalse({c.name for c in listed} & {c.name for c in fixtures.cases()})
+        # R4's knot: multiplicity two (the degree), C1 exactly in the
+        # profile, off C1 by its lifted poles in TILT (the kernel removes
+        # the knot once before lifting).
+        spline = fixtures.profiles()['knot'][0].segments[2]
+        self.assertEqual(spline.mults[1], spline.degree)
+        left, right = spline.pieces()
+        d0 = tuple(left[-1][i]-left[-2][i] for i in range(2))
+        d1 = tuple(right[1][i]-right[0][i] for i in range(2))
+        self.assertEqual(d0, d1)
+        o, x, y, _ = stored_axes(at('TILT', (0, 0, 0)))
+        lift = [tuple(F(o[i]+x[i]*p[0]+y[i]*p[1]) for i in range(3)) for p in spline.poles[1:4]]
+        self.assertNotEqual(tuple((lift[0][i]+lift[2][i])/2 for i in range(3)), lift[1])
+        # TILT's axis against the caps of SIDE and the x planes of XY:
+        # exactly parallel (generatrices); against TILTX's caps 8.9e-17 off.
+        n = tuple(F(c) for c in stored_axes(at('TILT', (0, 0, 0)))[3])
+
+        def cap(name):
+            _, cx, cy, _ = (tuple(F(c) for c in v) for v in stored_axes(at(name, (0, 0, 0))))
+            return ref.cross(cx, cy)
+
+        self.assertEqual(ref.dot(n, cap('SIDE')), 0)
+        self.assertEqual(ref.dot(n, (F(1), F(0), F(0))), 0)
+        self.assertLess(abs(float(ref.dot(n, cap('TILTX')))), 1e-16)
+        self.assertNotEqual(ref.dot(n, cap('TILTX')), 0)
+
     def test_cases_cover_the_decisions(self):
         listed = fixtures.cases()
         fixtures.validate(listed)

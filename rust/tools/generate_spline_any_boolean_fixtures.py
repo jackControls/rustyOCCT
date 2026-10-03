@@ -18,6 +18,17 @@ a knot, `InvalidTopology("edge_not_c1")`, before any Boolean). Frames are S9c.1'
 (`generate_curved_boolean_fixtures.FRAMES`, stored bit for bit by the
 kernel's `Frame3::new`; `boolean-spline-any-frames.tsv` records them).
 
+`boolean-spline-any-r4-*` hold the fixtures added with S9f.1's kernel,
+after the native capture (the compared set is the 38 above, unchanged):
+`knot` (R4 of the decisions: a quadratic from (10, 2) to (0, 6) whose
+interior knot of multiplicity two at (5, 4), C1 exactly there along (-2,
+1), loses C1 lifted into `TILT`, the knot's pole 2^-53 off its neighbours'
+midpoint: the deferred rounded-knot fixture, under a box whose planes crease
+its wall across the knot and cut it in generatrices of planes exactly
+parallel to its axis), and the blob in `TILT` against a `SIDE` box (`n_A .
+m` exactly zero for its caps: generatrices, where `TILTX`'s is -8.9e-17,
+`blob_rounding`).
+
 `boolean-spline-any-expected.tsv` gives per case, from
 `curved_boolean_reference.py` with S9f.1's spline walls:
 
@@ -93,13 +104,20 @@ AXIS_ROUNDING = "a plane within rounding of a spline wall's axis"
 
 
 def profiles():
-    """S9a.2's spline profiles and `kink`: a quadratic from (8, 0) over its
+    """S9a.2's spline profiles, `kink`: a quadratic from (8, 0) over its
     apex (4, 4) back to the origin, closed by the base line, its interior
     knot of multiplicity two (the degree) at the apex, C1 there exactly (the
-    knot's pole the midpoint of its neighbours, equal spans)."""
+    knot's pole the midpoint of its neighbours, equal spans); and `knot`
+    (R4's of the evidence): a quadratic from (10, 2) to (0, 6) through the
+    knot of multiplicity two at (5, 4), along (-2, 1), poles (7, 3), (5, 4),
+    (3, 5), C1 there exactly, closed by lines through (0, 0) and (10, 0)."""
     p = spline_profiles()
     p['kink'] = [Boundary(points=[(0.0, 0.0), (8.0, 0.0)], segments=[
         None, spline(2, [(8.0, 0.0), (6.0, 4.0), (4.0, 4.0), (2.0, 4.0), (0.0, 0.0)], (0.0, 1.0, 2.0), (3, 2, 3))])]
+    p['knot'] = [Boundary(points=[(0.0, 0.0), (10.0, 0.0), (10.0, 2.0), (0.0, 6.0)], segments=[
+        None, None,
+        spline(2, [(10.0, 2.0), (7.0, 3.0), (5.0, 4.0), (3.0, 5.0), (0.0, 6.0)], (0.0, 1.0, 2.0), (3, 2, 3)),
+        None])]
     return p
 
 
@@ -188,6 +206,27 @@ def cases():
     out += group('blob_rounding', (p['blob'], at('TILT', (0, 0, 0)), 0.0, 5.0),
                  ([square(-6.0, -6.0, 12.0, 6.0)], at('TILTX', (0, 3.2, 2.4)), 0.0, 6.0),
                  {op: ('degenerate', AXIS_ROUNDING) for op in ('cut', 'common')}, near=True)
+    return out
+
+
+def r4_cases():
+    """The fixtures added with S9f.1's kernel (`boolean-spline-any-r4-*`):
+    R4's rounded knot in `TILT` (`knot`, which the extrusion refused before
+    the kernel removed the knot exactly before lifting) under an `XY` box
+    whose bottom plane creases its wall across the knot (its top plane's
+    crease leaving through the top cap) and whose `x` planes, exactly
+    parallel to `TILT`'s axis, cut it in generatrices (the box off the
+    plane `z = 0`, which holds the prism's base edge: an edge in the plane
+    of a face of the other, off that face, is refused, S9c.1's rule);
+    and the blob in `TILT` against a `SIDE` box, its caps exactly parallel
+    to the blob's axis (generatrices; `TILTX`'s, -8.9e-17 off, is
+    `blob_rounding`'s degenerate rounding)."""
+    p = profiles()
+    out = []
+    out += group('knot_tilt', (p['knot'], at('TILT', (0, 0, 0)), 0.0, 5.0),
+                 ([square(0.0, 0.0, 4.0, 6.0)], at('XY', (3, 1, 0.25)), 0.0, 1.5), ONE3)
+    out += group('blob_side_turned', (p['blob'], at('TILT', (0, 0, 0)), 0.0, 5.0),
+                 ([square(1.0, -3.0, 6.0, 2.0)], at('SIDE', (5, 0, 0)), 0.0, 2.0), ONE3)
     return out
 
 
@@ -543,12 +582,12 @@ def reference_checks(results, workers):
     return worst, covered
 
 
-def generate(results):
+def generate(results, listed, prefix):
     by_pair = {r[0]: r for r in results}
     blocks = []
     out = [f'# case\trow ({STEP}, curved_boolean_reference.py with spline walls: expect KIND {STEP}, reason TEXT '
            'for a degenerate case, then result N volume area cx cy cz or empty)']
-    for case in cases():
+    for case in listed:
         blocks.append(case.encode())
         _, rows, _, res, _, near, _, _ = by_pair[case.pair_name]
         row = rows[case.operation]
@@ -563,19 +602,19 @@ def generate(results):
         for r in row:
             out.append(f'{case.name}\t{r}')
     frames = ['# case\tframe (obj, tool) axis (n, x, y)\tstored unit vector (stored_axes, as hex bits)']
-    for case in cases():
+    for case in listed:
         for label, c in (('obj', case.obj), ('tool', case.tool)):
             _, x, y, n = stored_axes(c.frame)
             for key, v in (('n', n), ('x', x), ('y', y)):
                 frames.append(f'{case.name}\t{label} {key}\t'+' '.join(struct.pack('>d', q).hex() for q in v))
-    return {'boolean-spline-any-cases.txt': '\n'.join(blocks)+'\n',
-            'boolean-spline-any-expected.tsv': '\n'.join(out)+'\n',
-            'boolean-spline-any-frames.tsv': '\n'.join(frames)+'\n'}
+    return {f'{prefix}-cases.txt': '\n'.join(blocks)+'\n',
+            f'{prefix}-expected.tsv': '\n'.join(out)+'\n',
+            f'{prefix}-frames.tsv': '\n'.join(frames)+'\n'}
 
 
-def jobs():
+def jobs(listed):
     pairs = {}
-    for c in cases():
+    for c in listed:
         pairs.setdefault(c.pair_name, [c.obj, c.tool, [], c.opposite])[2].append(c.operation)
     return [(name, obj, tool, ops, opposite) for name, (obj, tool, ops, opposite) in pairs.items()]
 
@@ -602,9 +641,9 @@ def main():
     parser.add_argument('--check', action='store_true')
     parser.add_argument('--workers', type=int, default=max(1, (os.cpu_count() or 2)-2))
     args = parser.parse_args()
-    listed = cases()
+    listed = cases()+r4_cases()
     validate(listed)
-    results = run(jobs(), evaluate, args.workers)
+    results = run(jobs(listed), evaluate, args.workers)
     declared = {c.pair_name: c for c in listed}
     worst_margin, degenerate_margin = {}, {}
     for name, _, _, _, _, near, margin, _ in results:
@@ -630,7 +669,8 @@ def main():
               's9a2_fixtures_turned_frames': 1e-15}
     for key, value in worst.items():
         assert value <= limits[key], (key, mp.nstr(value, 3))
-    files = generate(results)
+    files = {**generate(results, cases(), 'boolean-spline-any'),
+             **generate(results, r4_cases(), 'boolean-spline-any-r4')}
     for name, contents in files.items():
         target = ROOT/'fixtures'/name
         if args.check:
