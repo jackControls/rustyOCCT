@@ -5903,7 +5903,18 @@ Decisions for S9, recorded before its code (2026-09-28):
     chained reference, the hemispheres against a quadrature of their
     sections, the files' reader on the hemisphere's and the tangent
     profile's files, and the case list and its protocol rows. The
-    generator's check is a CI group of its own (`imported`).
+    generator's check is a CI group of its own (`imported`); Python 3.9
+    and 3.12 write the same files. The capture
+    `occt-boolean-imported-preimplementation` (`compare_imported_boolean.py`,
+    keyed on `solid/imported.rs`; the kernel's probe `unsupported` on all
+    69, every file read and converted): every result valid, 61 matching
+    (volumes within 5.1e-9, areas 3.4e-9, centres 4.5e-9 of the size), 8
+    reviewed: the crossing cylinders and the torus with the rod through its
+    tube, BRepGProp's default integration on faces bounded by approximated
+    sections (up to 2.8e-5; adaptively within 1.7e-9, unchanged at
+    1e-12), and the declared tangent fuses, which OCCT keeps as two solids
+    touching along a line where the reference's rays count one; 14
+    results' counts change when unified. S9e.4a's kernel next.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

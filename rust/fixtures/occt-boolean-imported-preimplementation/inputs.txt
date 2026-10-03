@@ -1,0 +1,483 @@
+case box_slab_fuse
+brep imported/box.brep
+boolean fuse
+plane 0.0 0.0 1.5 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -2.0 -12.0 10.5 12.0 -12.0 10.5 12.0 12.0 -7.5 -2.0 12.0 -7.5
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case box_slab_cut
+brep imported/box.brep
+boolean cut
+plane 0.0 0.0 1.5 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -2.0 -12.0 10.5 12.0 -12.0 10.5 12.0 12.0 -7.5 -2.0 12.0 -7.5
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case box_slab_common
+brep imported/box.brep
+boolean common
+plane 0.0 0.0 1.5 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -2.0 -12.0 10.5 12.0 -12.0 10.5 12.0 12.0 -7.5 -2.0 12.0 -7.5
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case box_drill_fuse
+brep imported/box.brep
+boolean fuse
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.0 5.0 -1.0 2.0
+prism 0.0 0.0 6.0
+end
+case box_drill_cut
+brep imported/box.brep
+boolean cut
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.0 5.0 -1.0 2.0
+prism 0.0 0.0 6.0
+end
+case box_drill_common
+brep imported/box.brep
+boolean common
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.0 5.0 -1.0 2.0
+prism 0.0 0.0 6.0
+end
+case tilt_box_fuse
+brep imported/box_tilt.brep
+boolean fuse
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.0 0.0 1.0 10.0 0.0 1.0 10.0 10.0 1.0 0.0 10.0 1.0
+prism 0.0 0.0 1.5
+end
+case tilt_box_cut
+brep imported/box_tilt.brep
+boolean cut
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.0 0.0 1.0 10.0 0.0 1.0 10.0 10.0 1.0 0.0 10.0 1.0
+prism 0.0 0.0 1.5
+end
+case tilt_box_common
+brep imported/box_tilt.brep
+boolean common
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.0 0.0 1.0 10.0 0.0 1.0 10.0 10.0 1.0 0.0 10.0 1.0
+prism 0.0 0.0 1.5
+end
+case cyl_box_fuse
+brep imported/cyl.brep
+boolean fuse
+plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.0 0.0 0.0 10.0 0.0 0.0 10.0 10.0 0.0 0.0 10.0 0.0
+prism 0.0 0.0 4.0
+end
+case cyl_box_cut
+brep imported/cyl.brep
+boolean cut
+plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.0 0.0 0.0 10.0 0.0 0.0 10.0 10.0 0.0 0.0 10.0 0.0
+prism 0.0 0.0 4.0
+end
+case cyl_box_common
+brep imported/cyl.brep
+boolean common
+plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.0 0.0 0.0 10.0 0.0 0.0 10.0 10.0 0.0 0.0 10.0 0.0
+prism 0.0 0.0 4.0
+end
+case box_cyl_fuse
+plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.0 0.0 0.0 10.0 0.0 0.0 10.0 10.0 0.0 0.0 10.0 0.0
+prism 0.0 0.0 4.0
+boolean fuse
+brep imported/cyl.brep
+end
+case box_cyl_cut
+plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.0 0.0 0.0 10.0 0.0 0.0 10.0 10.0 0.0 0.0 10.0 0.0
+prism 0.0 0.0 4.0
+boolean cut
+brep imported/cyl.brep
+end
+case box_cyl_common
+plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.0 0.0 0.0 10.0 0.0 0.0 10.0 10.0 0.0 0.0 10.0 0.0
+prism 0.0 0.0 4.0
+boolean common
+brep imported/cyl.brep
+end
+case rods_fuse
+brep imported/cyl_side.brep
+boolean fuse
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.0 5.0 -1.0 2.0
+prism 0.0 0.0 6.0
+end
+case rods_cut
+brep imported/cyl_side.brep
+boolean cut
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.0 5.0 -1.0 2.0
+prism 0.0 0.0 6.0
+end
+case rods_common
+brep imported/cyl_side.brep
+boolean common
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.0 5.0 -1.0 2.0
+prism 0.0 0.0 6.0
+end
+case dee_slab_fuse
+brep imported/dee.brep
+boolean fuse
+plane 0.0 0.0 1.5 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -2.0 -12.0 10.5 12.0 -12.0 10.5 12.0 12.0 -7.5 -2.0 12.0 -7.5
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case dee_slab_cut
+brep imported/dee.brep
+boolean cut
+plane 0.0 0.0 1.5 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -2.0 -12.0 10.5 12.0 -12.0 10.5 12.0 12.0 -7.5 -2.0 12.0 -7.5
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case dee_slab_common
+brep imported/dee.brep
+boolean common
+plane 0.0 0.0 1.5 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -2.0 -12.0 10.5 12.0 -12.0 10.5 12.0 12.0 -7.5 -2.0 12.0 -7.5
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case halves_box_fuse
+brep imported/halves.brep
+boolean fuse
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 5.5 2.0 1.0 9.0 2.0 1.0 9.0 8.0 1.0 5.5 8.0 1.0
+prism 0.0 0.0 3.0
+end
+case halves_box_cut
+brep imported/halves.brep
+boolean cut
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 5.5 2.0 1.0 9.0 2.0 1.0 9.0 8.0 1.0 5.5 8.0 1.0
+prism 0.0 0.0 3.0
+end
+case halves_box_common
+brep imported/halves.brep
+boolean common
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 5.5 2.0 1.0 9.0 2.0 1.0 9.0 8.0 1.0 5.5 8.0 1.0
+prism 0.0 0.0 3.0
+end
+case plate_bore_fuse
+brep imported/plate.brep
+boolean fuse
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 0.0 0.0 -1.0 3.0
+prism 0.0 0.0 5.0
+end
+case plate_bore_cut
+brep imported/plate.brep
+boolean cut
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 0.0 0.0 -1.0 3.0
+prism 0.0 0.0 5.0
+end
+case plate_bore_common
+brep imported/plate.brep
+boolean common
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 0.0 0.0 -1.0 3.0
+prism 0.0 0.0 5.0
+end
+case ball_box_fuse
+brep imported/ball.brep
+boolean fuse
+plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.0 0.0 0.0 10.0 0.0 0.0 10.0 10.0 0.0 0.0 10.0 0.0
+prism 0.0 0.0 4.0
+end
+case ball_box_cut
+brep imported/ball.brep
+boolean cut
+plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.0 0.0 0.0 10.0 0.0 0.0 10.0 10.0 0.0 0.0 10.0 0.0
+prism 0.0 0.0 4.0
+end
+case ball_box_common
+brep imported/ball.brep
+boolean common
+plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.0 0.0 0.0 10.0 0.0 0.0 10.0 10.0 0.0 0.0 10.0 0.0
+prism 0.0 0.0 4.0
+end
+case dome_box_fuse
+brep imported/dome.brep
+boolean fuse
+plane 0.0 0.0 1.0 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -2.0 -4.800000000000001 4.6 7.0 -4.800000000000001 4.6 7.0 4.800000000000001 -2.5999999999999996 -2.0 4.800000000000001 -2.5999999999999996
+prism 0.0 3.5999999999999996 4.800000000000001
+end
+case dome_box_cut
+brep imported/dome.brep
+boolean cut
+plane 0.0 0.0 1.0 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -2.0 -4.800000000000001 4.6 7.0 -4.800000000000001 4.6 7.0 4.800000000000001 -2.5999999999999996 -2.0 4.800000000000001 -2.5999999999999996
+prism 0.0 3.5999999999999996 4.800000000000001
+end
+case dome_box_common
+brep imported/dome.brep
+boolean common
+plane 0.0 0.0 1.0 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -2.0 -4.800000000000001 4.6 7.0 -4.800000000000001 4.6 7.0 4.800000000000001 -2.5999999999999996 -2.0 4.800000000000001 -2.5999999999999996
+prism 0.0 3.5999999999999996 4.800000000000001
+end
+case frustum_bore_fuse
+brep imported/frustum.brep
+boolean fuse
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.0 5.0 -1.0 2.0
+prism 0.0 0.0 6.0
+end
+case frustum_bore_cut
+brep imported/frustum.brep
+boolean cut
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.0 5.0 -1.0 2.0
+prism 0.0 0.0 6.0
+end
+case frustum_bore_common
+brep imported/frustum.brep
+boolean common
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.0 5.0 -1.0 2.0
+prism 0.0 0.0 6.0
+end
+case frustum_box_fuse
+brep imported/frustum.brep
+boolean fuse
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 6.0 0.0 1.0 12.0 0.0 1.0 12.0 10.0 1.0 6.0 10.0 1.0
+prism 0.0 0.0 2.0
+end
+case frustum_box_cut
+brep imported/frustum.brep
+boolean cut
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 6.0 0.0 1.0 12.0 0.0 1.0 12.0 10.0 1.0 6.0 10.0 1.0
+prism 0.0 0.0 2.0
+end
+case frustum_box_common
+brep imported/frustum.brep
+boolean common
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 6.0 0.0 1.0 12.0 0.0 1.0 12.0 10.0 1.0 6.0 10.0 1.0
+prism 0.0 0.0 2.0
+end
+case spike_ball_fuse
+brep imported/spike.brep
+boolean fuse
+sphere 0.0 0.0 5.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5 -1.5707963267948966 1.5707963267948966
+end
+case spike_ball_cut
+brep imported/spike.brep
+boolean cut
+sphere 0.0 0.0 5.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5 -1.5707963267948966 1.5707963267948966
+end
+case spike_ball_common
+brep imported/spike.brep
+boolean common
+sphere 0.0 0.0 5.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5 -1.5707963267948966 1.5707963267948966
+end
+case ring_box_fuse
+brep imported/ring.brep
+boolean fuse
+plane 0.0 0.0 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 -8.0 -8.0 0.5 8.0 -8.0 0.5 8.0 8.0 0.5 -8.0 8.0 0.5
+prism 0.0 0.0 3.5
+end
+case ring_box_cut
+brep imported/ring.brep
+boolean cut
+plane 0.0 0.0 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 -8.0 -8.0 0.5 8.0 -8.0 0.5 8.0 8.0 0.5 -8.0 8.0 0.5
+prism 0.0 0.0 3.5
+end
+case ring_box_common
+brep imported/ring.brep
+boolean common
+plane 0.0 0.0 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 -8.0 -8.0 0.5 8.0 -8.0 0.5 8.0 8.0 0.5 -8.0 8.0 0.5
+prism 0.0 0.0 3.5
+end
+case ring_pin_fuse
+brep imported/ring.brep
+boolean fuse
+plane 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.0 0.0 -3.0 0.75
+prism 0.0 0.0 6.0
+end
+case ring_pin_cut
+brep imported/ring.brep
+boolean cut
+plane 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.0 0.0 -3.0 0.75
+prism 0.0 0.0 6.0
+end
+case ring_pin_common
+brep imported/ring.brep
+boolean common
+plane 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.0 0.0 -3.0 0.75
+prism 0.0 0.0 6.0
+end
+case both_fuse
+brep imported/box.brep
+boolean fuse
+brep imported/ball.brep
+end
+case both_cut
+brep imported/box.brep
+boolean cut
+brep imported/ball.brep
+end
+case both_common
+brep imported/box.brep
+boolean common
+brep imported/ball.brep
+end
+case slab_ball_fuse
+plane 0.0 0.0 7.5 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -2.0 -12.0 16.5 12.0 -12.0 16.5 12.0 12.0 -1.5 -2.0 12.0 -1.5
+prism 0.0 0.8999999999999999 1.2000000000000002
+boolean fuse
+brep imported/ball.brep
+end
+case slab_ball_cut
+plane 0.0 0.0 7.5 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -2.0 -12.0 16.5 12.0 -12.0 16.5 12.0 12.0 -1.5 -2.0 12.0 -1.5
+prism 0.0 0.8999999999999999 1.2000000000000002
+boolean cut
+brep imported/ball.brep
+end
+case slab_ball_common
+plane 0.0 0.0 7.5 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -2.0 -12.0 16.5 12.0 -12.0 16.5 12.0 12.0 -1.5 -2.0 12.0 -1.5
+prism 0.0 0.8999999999999999 1.2000000000000002
+boolean common
+brep imported/ball.brep
+end
+case chain_drill_fuse
+brep imported/box.brep
+boolean cut
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.0 5.0 -1.0 2.0
+prism 0.0 0.0 6.0
+then fuse
+plane 0.0 0.0 1.5 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -2.0 -12.0 10.5 12.0 -12.0 10.5 12.0 12.0 -7.5 -2.0 12.0 -7.5
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case chain_drill_cut
+brep imported/box.brep
+boolean cut
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.0 5.0 -1.0 2.0
+prism 0.0 0.0 6.0
+then cut
+plane 0.0 0.0 1.5 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -2.0 -12.0 10.5 12.0 -12.0 10.5 12.0 12.0 -7.5 -2.0 12.0 -7.5
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case chain_drill_common
+brep imported/box.brep
+boolean cut
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.0 5.0 -1.0 2.0
+prism 0.0 0.0 6.0
+then common
+plane 0.0 0.0 1.5 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -2.0 -12.0 10.5 12.0 -12.0 10.5 12.0 12.0 -7.5 -2.0 12.0 -7.5
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case cyl_tangent_fuse
+brep imported/cyl.brep
+boolean fuse
+plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 8.0 0.0 0.0 12.0 0.0 0.0 12.0 10.0 0.0 8.0 10.0 0.0
+prism 0.0 0.0 4.0
+end
+case cyl_tangent_cut
+brep imported/cyl.brep
+boolean cut
+plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 8.0 0.0 0.0 12.0 0.0 0.0 12.0 10.0 0.0 8.0 10.0 0.0
+prism 0.0 0.0 4.0
+end
+case cyl_tangent_common
+brep imported/cyl.brep
+boolean common
+plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 8.0 0.0 0.0 12.0 0.0 0.0 12.0 10.0 0.0 8.0 10.0 0.0
+prism 0.0 0.0 4.0
+end
+case ball_touch_fuse
+brep imported/ball.brep
+boolean fuse
+plane 0.0 0.0 7.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 3.0 3.0 7.0 7.0 3.0 7.0 7.0 7.0 7.0 3.0 7.0 7.0
+prism 0.0 0.0 2.0
+end
+case ball_touch_cut
+brep imported/ball.brep
+boolean cut
+plane 0.0 0.0 7.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 3.0 3.0 7.0 7.0 3.0 7.0 7.0 7.0 7.0 3.0 7.0 7.0
+prism 0.0 0.0 2.0
+end
+case ball_touch_common
+brep imported/ball.brep
+boolean common
+plane 0.0 0.0 7.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 3.0 3.0 7.0 7.0 3.0 7.0 7.0 7.0 7.0 3.0 7.0 7.0
+prism 0.0 0.0 2.0
+end
+case box_kiss_fuse
+brep imported/box.brep
+boolean fuse
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 12.0 5.0 -1.0 2.0
+prism 0.0 0.0 6.0
+end
+case box_kiss_cut
+brep imported/box.brep
+boolean cut
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 12.0 5.0 -1.0 2.0
+prism 0.0 0.0 6.0
+end
+case box_kiss_common
+brep imported/box.brep
+boolean common
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 12.0 5.0 -1.0 2.0
+prism 0.0 0.0 6.0
+end
+case dee_turn_fuse
+brep imported/dee_turn.brep
+boolean fuse
+plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.0 0.0 0.0 10.0 0.0 0.0 10.0 10.0 0.0 0.0 10.0 0.0
+prism 0.0 0.0 4.0
+end
+case dee_turn_cut
+brep imported/dee_turn.brep
+boolean cut
+plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.0 0.0 0.0 10.0 0.0 0.0 10.0 10.0 0.0 0.0 10.0 0.0
+prism 0.0 0.0 4.0
+end
+case dee_turn_common
+brep imported/dee_turn.brep
+boolean common
+plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.0 0.0 0.0 10.0 0.0 0.0 10.0 10.0 0.0 0.0 10.0 0.0
+prism 0.0 0.0 4.0
+end
