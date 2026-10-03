@@ -4707,7 +4707,8 @@ Decisions for S9, recorded before its code (2026-09-28):
     replay) clean, 989 runs, the slowest input 22 s under
     AddressSanitizer (the first, at `6582f379`, found `d238291d`, a wall
     crossing a sphere within rounding of tangency: S9d.1's sections now
-    refuse it). Pending: the DRAW survey.
+    refuse it). DRAW survey: that of S9e.3a and S9f.1, below (no status
+    changes; `G9` and `H3` refused as a tangency, as above).
   * **S9f.1 implemented** (`solid/boolean/curved/spline_walls.rs`,
     `model.rs`'s `Seg::Spline`, `Surf::Spline` and `Crv::Spline`, `meet.rs`,
     `graph.rs`'s places and joints, `assemble.rs`'s spline curves and wall
@@ -4815,7 +4816,32 @@ Decisions for S9, recorded before its code (2026-09-28):
     replay) clean, 989 runs, the slowest input 22 s under
     AddressSanitizer (the first, at `6582f379`, found `d238291d`, a wall
     crossing a sphere within rounding of tangency: S9d.1's sections now
-    refuse it). Pending: the DRAW survey.
+    refuse it). DRAW survey: that of S9e.3a and S9f.1, below (no case of
+    the group reaches S9f.1's kernel).
+  * **DRAW survey of S9e.3a and S9f.1 (2026-10-03, `UPSTREAM_TESTS.md`).**
+    The 1,802 cases of the Boolean group run again on both backends after
+    S9e.3a, S9f.1 and `b2765f20` (a plane crossing a sphere within the
+    resolution of tangency `Degenerate`) (the public dataset, 120 seconds
+    a case): no status changes on either backend. Rust evaluates 987, all
+    registered, 592 refused, 223 unsupported on both, as before. The one
+    reason changed is S9e.3a's run's: `bcut_simple/G9` and `H3` refused as
+    a tangency between the inputs (the rod's circle on the frustum's top
+    circle), not as S9e.3's. No case evaluates newly, none fails or times
+    out, the sentinels are refused as before. S9f.1's kernel reaches no
+    case (the group's spline solids come from `nurbsconvert`, which the
+    adapter does not run); `b2765f20` turns no case `Degenerate` (the
+    group's spheres are cut through their centres, `ZI4` to `ZJ3`, or by
+    `ZP9`'s wall 1.053 from the centre of a sphere of radius 7.5, the
+    box's other planes missing it by 9.5 or more) and changes no refusal.
+    The volume audit of the 987: Rust's values the last audit's bit for
+    bit and native DRAW's to the digit, so no worker at an earlier commit
+    was needed; the same 35 disagreements, native off in each (three
+    cases first ran with an empty script, the audit script's two backend
+    threads rewriting one copy; run again they agree, and the script now
+    writes one per backend). `bopfuse_simple/ZP6` and the `gdml_public`
+    tori refused as before. A full contract run holds (the slowest Boolean
+    case 13.5 seconds on a loaded machine, a worker at the last survey's
+    commit as slow at that load); the ledger does not change; no kernel change.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

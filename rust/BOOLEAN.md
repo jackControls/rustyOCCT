@@ -2501,7 +2501,13 @@ or torus part, and its cones meet the cylinder in circles or rings, not
 loops). The survey of S9e.1 and S9e.2 found no other case newly
 evaluating (the rollex registered in S9e.2's run of the chained cases),
 the volume audit's values of the 983 before bit for bit and the rollex's
-`generate_given_boolean_fixtures.py`'s within 3.2e-16 relative. Of
+`generate_given_boolean_fixtures.py`'s within 3.2e-16 relative. The
+survey of S9e.3a and S9f.1 (with `b2765f20`'s plane crossing a sphere
+within the resolution of tangency) found no status changed and no case
+newly evaluating (S9f.1's spline solids in the group come from
+`nurbsconvert`, which the adapter does not run; S9e.3a's given results
+reach only `G9` and `H3`), the volume audit's values of the 987 bit for
+bit, and no registered sphere near a tangency. Of
 the upstream cases in frames with different axes the rest are refused:
 S9b.1's, S9c.1's, S9c.2a's, S9c.2b.1's,
 S9d.1's, S9d.2a's, S9d.3a's, S9d.3b.1's and S9d.4b.2's `Degenerate` (a turned box's corner on
@@ -2520,5 +2526,6 @@ with one virtual apex, coincident rims or bases on one plane; three
 copies of a torus about perpendicular axes, their tubes touching), and an
 arc ending off its circle; of the results
 given to another Boolean, a frustum fused onto a cylinder (`bcut_simple/
-G9`, `H3`: a result of solids other than prisms, S9e.3;
-`UPSTREAM_TESTS.md`).
+G9`, `H3`: a result of solids other than prisms, S9e.3, until S9e.3a; since
+then the rod's circle touching the frustum's top circle, a tangency
+between the inputs; `UPSTREAM_TESTS.md`).

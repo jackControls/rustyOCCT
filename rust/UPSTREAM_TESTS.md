@@ -140,7 +140,7 @@ group, and stale success records are removed before each run.
 | `boolean/bopcommon_simple` (122 cases), `bopcut_simple` (106), `bopfuse_simple` (89), `boptuc_simple` (83), `bcommon_simple/I5`, `J1`, `bfuse_simple/L2`, `E2`, `bcut_simple/G7`, `L8` | Viewer skipped | Viewer skipped | `bop` and its operations, `bfuse`, `bcut` and `bcommon` of two boxes, a box and a `pcylinder`, or two cylinders in one frame (some moved by `ttranslate`, some sized by `dset`): `checkprops -s` (or `-s empty`) and the group's `checkshape`; each records a `checkview` (S9a; 86 of them, `bopfuse_simple/B2`, `Z8` and `ZB3` among them, are S9a.2's stacks) |
 | `boolean/bopcommon_simple` (81 more cases), `bopcut_simple` (68), `bopfuse_simple` (69), `boptuc_simple` (80) | Viewer skipped | Viewer skipped | `bop` and its operations on two boxes in frames with different axes (one turned by `trotate` about z, or about x and moved by `ttranslate`, some sized by `dset`; `K3` and `P6` by quarter turns, which the adapter turns exactly): `checkprops -s` (or `-s empty`) and the group's `checkshape`; each records a `checkview` (S9b.1's polyhedra) |
 | `boolean/bopcommon_simple/ZL6` | Unsupported | Viewer skipped | A frustum of radii 8 and 4 and height 8 and one of radii 4 and 2 standing on its top disc, on the first's cone, their virtual apexes one point: a cone's apex on the other input's surface (`Degenerate` since S9d.4b's survey, when the adapter built two `pcone`s with ids of their own; solids other than prisms sharing ids before; an S9a sentinel) |
-| `boolean/bopcommon_simple/ZP9` | Viewer skipped | Viewer skipped | `bop` and `bopcommon` of a 100 box and a sphere of radius 7.5 placed on a DRAW `plane` (`psphere name plane R`, its centre 1.053 inside the box's wall `x = 100`), the wall cutting a cap off the sphere: `checkprops -s` and the group's `checkshape`; it records a `checkview` (S9d.1's spheres against polyhedral prisms; the adapter places a sphere on a plane since S9d.1's survey) |
+| `boolean/bopcommon_simple/ZP9` | Viewer skipped | Viewer skipped | `bop` and `bopcommon` of a 100 box and a sphere of radius 7.5 placed on a DRAW `plane` (`psphere name plane R`, its centre 1.053 inside the box's wall `x = 100`), the wall cutting a cap off the sphere: `checkprops -s` and the group's `checkshape`; it records a `checkview` (S9d.1's spheres against polyhedral prisms; the adapter places a sphere on a plane since S9d.1's survey; the wall far from tangency, which `b2765f20` refuses within the resolution) |
 | `boolean/bcommon_simple/A1`, `bfuse_simple/A4` | Unsupported | Viewer skipped | A unit sphere and a unit box whose corner is at the centre, its far corners on the sphere (an S9a sentinel), the box quarter-turned so a wall is tangent to the sphere: a vertex of one input on the other's face (S9d.2a's `Degenerate`; S9d.1 reported it as a meeting at every seam tried), a tangency between the inputs (S9d.1's `Degenerate`) |
 | `boolean/bopcommon_simple`, `bopcut_simple`, `bopfuse_simple`, `boptuc_simple`: `ZI8`, `ZI9`, `ZJ1`, `ZJ2`, `ZJ3` (20 cases) | Viewer skipped | Viewer skipped | `bop` and its operations on a `pcylinder` of radius 4 and height 8 and a sphere of radius 6 centred on its top cap (turned by `trotate` about the cap's centre: whole quarter turns about z in `ZI9` to `ZJ2`, about y in `ZJ3`): the cap inside the sphere, the wall meeting it in a parallel at height `8 - 2 sqrt(5)`: `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9d.2a's coaxial rings) |
 | `boolean/bopfuse_simple/ZH5` | Unsupported | Viewer skipped | A cylinder of radius 4 and a sphere of radius 4 centred on its top cap: the rim is the sphere's equator, the wall tangent to the sphere along it; the coaxial pair's discriminant vanishes identically: a tangency between the inputs (`Degenerate`; the survey below found it refused as a computation limit, S9d.1 as S9d.2's `OutOfDomain`) |
@@ -161,7 +161,7 @@ group, and stale success records are removed before each run.
 | `boolean/bopcommon_simple/C3`, `bopcut_simple/F6`, `G8`, `bopfuse_simple/N6` | Unsupported | Viewer skipped | A box turned by 45, 30 or 115 degrees with a corner on the other box's corner, wall or edge within rounding: a face thinner than the resolution, a face using an edge both ways, a face touching itself at a vertex, two solids touching at a point (S9b.1's `Degenerate`) |
 | `boolean/bcut_simple/H4` to `L2` (35 cases) | Viewer skipped | Viewer skipped | Pockets cut from a prism one after another by prisms of profiles in planes facing z or -z (`J3`'s last tool moved by `ttranslate`): the first cut is a stack (S9a.2; in `J4` and `J7` a polyhedron, S9b.1), which the next `bcut` takes as its object, on its stored geometry (S9b.2; in `J2` to `J7` and `K7` a third `bcut` takes the second's result): `checkprops -s` and the group's `checkshape`; each records a `checkview` |
 | `boolean/bopfuse_simple/H3`, `H4` | Viewer skipped | Viewer skipped | A box turned 45 degrees with its corner on the other's wall within rounding (`H3`'s inside it exactly): refused as a direction of zero length until S9b.2's face frames took each face's whole vector area |
-| `boolean/bcut_simple/L3` to `L6` | Viewer skipped | Viewer skipped | DRAW's rollex: a pocket and then a hole cut from a disc prism; the first cut is a stack with cylindrical walls, which the next `bcut` takes as its object with a cylinder standing on the pocket's floor (on a plane facing down in `L3` and `L4`): `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9e.2's stack given to another Boolean on its construction's curved arrangement; `L3` was the sentinel for its `OutOfDomain` since S9b.2, `L4` to `L6` registered in S9e.2's survey; the volume audit of the survey of S9e.1 and S9e.2 the reference's within 3.2e-16 relative) |
+| `boolean/bcut_simple/L3` to `L6` | Viewer skipped | Viewer skipped | DRAW's rollex: a pocket and then a hole cut from a disc prism; the first cut is a stack with cylindrical walls, which the next `bcut` takes as its object with a cylinder standing on the pocket's floor (on a plane facing down in `L3` and `L4`): `checkprops -s` and the group's `checkshape`; each records a `checkview` (S9e.2's stack given to another Boolean on its construction's curved arrangement; `L3` was the sentinel for its `OutOfDomain` since S9b.2, `L4` to `L6` registered in S9e.2's survey; the volume audit of the survey of S9e.1 and S9e.2 the reference's within 3.2e-16 relative, that of S9e.3a and S9f.1 the same bit for bit) |
 | `boolean/bfuse_simple/E1` | Unsupported | Viewer skipped | Prisms with arcs sized by `SCALE`: the tool's profile does not translate exactly into the object's frame, so the kernel decides them on exact models, where an arc must end on its circle exactly; the `profile`'s half circles end off theirs by rounding (S9c) |
 | `boolean/bopcommon_simple/C8` | Unsupported | Viewer skipped | An angle `atan2(1,2)*180/pi` in `dset`, which the adapter does not evaluate |
 | `boolean/bopcommon_simple/S5`, `bopcut_simple/ZC7`, `S4`, `bopfuse_simple/U7`, `B3`, `boptuc_simple/R1` | Unsupported | Viewer skipped | Box corners on or tangent to a cylinder, boxes touching along an edge: pieces thinner than the resolution, results touching themselves (at a point or along an edge) or each other, a hole touching its boundary (the kernel's `Degenerate`) |
@@ -172,7 +172,7 @@ more evaluated on both with their image commands recorded (`buc60769`,
 S7's `lowalgos/intss` cases `bug23177_1`, `bug23177_2` and `bug24648`, and
 987 Boolean cases of S9a, S9a.2, S9b.1, S9b.2, S9c.1, S9c.2a, S9c.2b.2,
 S9d.1, S9d.2, S9d.3a, S9d.1's pole follow-up, S9d.3b.1, S9d.4b.2a and
-S9e.2; S9c.2b.1 adds none).
+S9e.2; S9c.2b.1, S9e.3a and S9f.1 add none).
 S8e registers the upstream `bsplit` group as capability sentinels: `boolean/splitter/A5`
 and `B5` and the 22 `bugs` cases that call `bsplit` (with `bug29333_1` and
 `bug29333_2`, registered before). They need S9's general builder: tools that
@@ -1329,6 +1329,54 @@ face, a restored 2D ellipse and trimmed curve), `bopcut_simple/ZQ1`
 (`wire`, unsupported on both) and `bopfuse_simple/ZP6` (a torus tangent to
 the other input). None evaluates newly, fails or times out; none is
 registered; the ledger does not change.
+
+**S9e.3a and S9f.1 in the Boolean group.** The same 1,802 cases were run
+again on both backends after S9e.3a (a Boolean's result with spheres,
+cones and tori given to another Boolean, chains of up to three Booleans,
+`curved/chain.rs`), S9f.1 (spline prisms against prisms of lines in any
+position, `curved/spline_walls.rs`) and `b2765f20` (a plane crossing a
+sphere within the resolution of tangency `Degenerate`, also two spheres'
+radical plane) (2026-10-03, `survey_upstream_tests.py --boolean`, the
+public dataset read through `--data-dir`, 120 seconds a case, four at
+once; no case loads it). No status changes on either backend: Rust
+evaluates 987, every one registered, 592 cases native DRAW evaluates are
+refused, 223 are unsupported on both. One refusal's reason changes, as
+S9e.3a's run of the chained cases (above) found: `bcut_simple/G9` and `H3`
+are refused as a tangency between the inputs, where the survey before
+refused them as S9e.3's. No other case evaluates newly or changes its
+refusal, none fails and none times out, and the sentinels are refused as
+before, each for its reason. S9f.1's kernel reaches no case of the group:
+its spline solids come from `nurbsconvert` (96 cases), which the adapter
+does not run, and its other refusals are unchanged; S9e.3a's reaches only
+`G9` and `H3`. `b2765f20` turns no case `Degenerate`: the group's spheres
+are cut by planes through their centres (`ZI4` to `ZJ3`) or by
+`bopcommon_simple/ZP9`'s wall 1.053 from the centre of a sphere of radius
+7.5, the box's other planes missing it by 9.5 or more, and no refused
+case's reason becomes the new one.
+
+The volume audit was run again on the 987 cases (`vprops` and `sprops`
+before each `checkprops`, both backends): both backends' values are the
+last audit's bit for bit (Rust) and to the digit (native DRAW), the
+rollex's included, so S9e.3a's and S9f.1's kernels, their amendments (R4's
+knot removal before every lift, a plane's section of a cone normal to its
+axis given as a circle) and `b2765f20` change no registered case's values,
+and no worker had to be built at an earlier commit. The references'
+agreement is the last audit's (the rollex within 3.2e-16 relative of
+`generate_given_boolean_fixtures.py`'s). Rust agrees with native DRAW to
+its printed digits or 1e-6 relative on all but the same 35 as before,
+native DRAW off in each. (Three cases first ran with an empty script, the
+audit's own two backend threads rewriting one copy of it; run again, they
+agree.)
+
+`bopfuse_simple/ZP6` is refused as before, a torus tangent to the other
+input's surface. The `gdml_public` grid's tori (`A1`, `A2`, `A9`, `B6`)
+stay refused by both hosts as before: the Rust adapter at `compound
+result` and, after it, at a `ptorus` on a DRAW `plane`; the native host at
+`add` or `wire`. A full contract run of the manifest (both backends, 30
+seconds a case) holds for every case, the slowest Boolean case
+13.5 seconds (`bopcut_simple/ZK8`, on a machine loaded by other work:
+alone 13.0, and 11.3 on a worker built at the last survey's commit at the
+same load; 9.8 in that survey), the rollex 1.7 to 1.8. The ledger does not change.
 
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
