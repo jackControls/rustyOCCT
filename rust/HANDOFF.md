@@ -73,8 +73,11 @@ and their DRAW survey (branch `s9-draw-3`), then for S9e.4a (branch
   on 13 bodies OCCT wrote (`rust/fixtures/imported/`) referenced and
   captured before the kernel, the kernel within the reference on all 57
   solid cases, the 9 degenerate refused, the 3 turned profiles S9e.4b's;
-  the DRAW adapter's restored solids reach it. Pending the DRAW survey and
-  the campaign.
+  the DRAW adapter's restored solids reach it: of the 1,814 cases restoring
+  a shape for a Boolean (never surveyed before), the import reaches 171
+  and 16 evaluate on both backends with native DRAW's volumes, registered
+  (1,089 cases; the ledger's `checknbshapes` 2 to 4 mapped and verified).
+  Pending the campaign.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").

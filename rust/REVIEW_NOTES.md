@@ -5978,6 +5978,30 @@ Decisions for S9, recorded before its code (2026-09-28):
     reverted the same: an interaction of the off switches, not S9e.4's, open.
     The `brep_io` corpus (1,469 inputs) and its 2 regressions replay clean
     (the slowest 0.6 s). Pending: the DRAW survey, the campaign.
+  * **DRAW survey of S9e.4a (2026-10-03, `UPSTREAM_TESTS.md`).** The
+    cases restoring a shape and giving it to a Boolean, never surveyed
+    before (the adapter refused restored arguments; the Boolean surveys ran
+    the self-contained cases): 1,814 of every group, none registered, run on
+    the Rust adapter (the public dataset, 120 seconds a case) and on native
+    DRAW where the import reaches them. 561 load private data, 598 give a
+    Boolean a restored shape other than one solid, 123 stop at constructs
+    the reader does not represent, 276 at the validator's rejection of a
+    restored shape, 8 time out at their first restores, 77 at other
+    commands the adapter does not read; the import reaches 171: 84 bodies
+    none of the kernel's constructions and 31 prisms whose arcs round off
+    their circles (S9e.4b), 3 with spline faces (S9f), 37 refused by S9's
+    rules (tangencies, faces within the resolution of one plane, thin
+    faces), and 16 evaluate on both backends with every check (boxes,
+    hexahedra, wedges, prisms with cylindrical walls and cylinders fused,
+    cut and intersected, `bfuse_complex/N3` a result of imported solids
+    fused again, `bugs/modalg_6/bug21427`). Their volume audit (`vprops`
+    and `sprops` before each `checkprops`): Rust's values native DRAW's to
+    its printed digits in all 16. Registered (1,089 cases; the contract
+    holds on both backends within 30 seconds, Rust 0.2 to 5.6 s on a loaded
+    host); the ledger records `F5`'s and `Q2`'s `checknbshapes` confirmed
+    natively (mapped-and-verified 2 to 4, lost 12,844 to 12,842). The
+    survey found the refusal of a profile its rounded points make touch
+    (`bcut_complex/I6`, now S9e.4b's: amendment (b) above).
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

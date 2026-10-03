@@ -4,9 +4,13 @@
   "sources": {
     "resources/DrawResources/CheckCommands.tcl": "ff1a6ab0a57e4746346587b3bee439128d8494bf28f14c2f2d854d10136525ff",
     "resources/DrawResources/TestCommands.tcl": "badd93f0168b28f8f150c59507cc0bf63e8f0462fcb479095af2b4c6bfb236ab",
+    "tests/boolean/bcommon_complex/C5": "70ffb4187d71aedcd90720e57fe86c92668b103f34ad2dd1d15c180b9ce6ece1",
     "tests/boolean/bcommon_simple/A1": "0bf3ab9bd586c0830ad6f4a80c9f635e9fef6827fce2491c0cca50ccf912e728",
     "tests/boolean/bcommon_simple/I5": "f8086ea8e06eb760a0c43c005db9a40d8b4f5573d5af050e7d3c06206a29f49e",
     "tests/boolean/bcommon_simple/J1": "767998e1bf6f2423a097f608b559fb452daeaef72028dbfd3102645b5c8eded7",
+    "tests/boolean/bcut_complex/J2": "56a2497e52398ae21ee549c7cf573c2f40d90b9244b24fd4514b90448aa40449",
+    "tests/boolean/bcut_complex/J7": "c5999beb34e7e8f6d73d2156f175450cb4e290188073b8b45f096b90618d9d71",
+    "tests/boolean/bcut_complex/O9": "e20dc94cc44a0c9cd8325c15f9c736bb67e3d5cd5977cb1368275f5c48164500",
     "tests/boolean/bcut_simple/G7": "32b95d55c8a08b2b39d2c64e39d1fa4502bbb3fa78c92949bd0bb27e3365b319",
     "tests/boolean/bcut_simple/G8": "7f630a0200be640a8501b44c0532bc623a761872e90fd9e863dd1dd4c865d5c8",
     "tests/boolean/bcut_simple/H4": "7b1c1af963eed279cf52dc97968534208bb05c2c26717fbe81e48c4c22ae2a21",
@@ -50,11 +54,22 @@
     "tests/boolean/bcut_simple/L6": "6d985364644b3f25f78f47a47e68f7ee508a0d885fdcad2d540bfce78a790e9f",
     "tests/boolean/bcut_simple/L8": "f4eaa30c6004c82263238dabf6c6d77395449e900e5c899cdb9c37e1f14f74c3",
     "tests/boolean/begin": "d69546786e4458613f453d5083979bd5e2e67ae1f0f01b93f1bd93825e3a66bd",
+    "tests/boolean/bfuse_complex/F5": "d26376bc2c83399c04080088d93909d92db53989b193c847fc98110f585ea5c7",
+    "tests/boolean/bfuse_complex/H4": "e416b187b848482b08a6571942f6ced6dc0081a878e10d41d889b7604132b74d",
+    "tests/boolean/bfuse_complex/I4": "5d95104ac5396f8007877a9732265ee6bb10c9d58eb909f24cf888f57e7dd9e9",
+    "tests/boolean/bfuse_complex/I8": "fe78cd8a60f4b16158a09d87b84cce0cf957667218875e5f0ffd7ba6372e510f",
+    "tests/boolean/bfuse_complex/J4": "b66fdb1309e1a2a1b6bac27f459a4d094cbfb6e508348e64ee3ca031646f944a",
     "tests/boolean/bfuse_complex/J5": "cda6d3fe80781b6537b23d7fb33728a0ff0eddfeff7025ea8f359cfbe64c632c",
+    "tests/boolean/bfuse_complex/J7": "e3525a437196d925e0cd5709e0e684f6f6e76d6e252422da45b812e09cd3eabf",
+    "tests/boolean/bfuse_complex/L1": "7cdfedabb23089a9d34e932c9128827c8f52654990546d18d316a483e73ca249",
+    "tests/boolean/bfuse_complex/L3": "81d28da707961f0242738fb66df363bf97ee86720f2756d75a61d8cd16264a8f",
+    "tests/boolean/bfuse_complex/N3": "a4fe43684c4fce69098409f62925d71e8cafcb5eca8bebd245a4a581bc9f78b9",
+    "tests/boolean/bfuse_complex/Q2": "753a667951fc62efc6fc91b2e19926ac3ef86d63c41f64090e8faf593653fb46",
     "tests/boolean/bfuse_simple/A4": "dd113d92590b01a08725be98ae9a184a55b72910d9dfce97a5bd495f170745fc",
     "tests/boolean/bfuse_simple/E1": "b4c9767189a819abcfeb8ed2afcab1928383f12242e579053078d9c42c4bff59",
     "tests/boolean/bfuse_simple/E2": "1f254d4e9b211faadbe3dc01239bfdffb7c563a573176b7bdf0ec59125a85261",
     "tests/boolean/bfuse_simple/L2": "eee3cb4bcb138fbda94f62144a4be688fb17e1aa49f731b40e6e2871e441c5e5",
+    "tests/boolean/bopcommon_complex/K5": "7fbced9c34fd491d990770267c39f7e5672ccb4ea76a5d64cfd2b58cf28dbd57",
     "tests/boolean/bopcommon_simple/A1": "f4390fc464cd35b5996363eebf706b73684dc228bdf8a5502393c56b5f9bca6c",
     "tests/boolean/bopcommon_simple/A2": "30e69fe59d9934441839671729872bc666b113b74e2b3c409389a68e92b20832",
     "tests/boolean/bopcommon_simple/A3": "3d84cb51b2d2395d1ebb1af2e8b03043b9b5af4f1a595e5c8013cb2e0470d623",
@@ -1039,6 +1054,7 @@
     "tests/bugs/modalg_1/begin": "16a2a51b965d83e675a1c75b1aed0eb0de88905d9ffdc81d57466305d0cf9c8a",
     "tests/bugs/modalg_1/buc60684": "771b69a7c29a5140a0fd370d0f17a6a27551b67e8fa19233b48c56f90d4245cb",
     "tests/bugs/modalg_6/begin": "16a2a51b965d83e675a1c75b1aed0eb0de88905d9ffdc81d57466305d0cf9c8a",
+    "tests/bugs/modalg_6/bug21427": "36bc85505fe46de0b983ef2562494e63012fc10f17d337054e2410fef829c7c2",
     "tests/bugs/modalg_6/bug27264_1": "ecc5bff3b3d2bea7a6c12b760198e7f669a147d0b94c285d5dc0727cf85eec5d",
     "tests/bugs/modalg_6/bug27264_2": "2daf28576e5426677317117aee70378eb6dde825e14464c5203a90336e8d1e6a",
     "tests/bugs/modalg_6/bug28189_2": "2b32b4257cfcfc6f7d111d71e7301f089147ebeac7350d145737698185c24418",
@@ -7624,6 +7640,118 @@
       "expected_rust": "viewer_skipped",
       "expected_occt": "viewer_skipped",
       "purpose": "S9e.2: a pocket and then a hole cut from a disc prism (DRAW's rollex): the first bcut is a stack with cylindrical walls (a disc of radius 60 less a pocket of radius 40 across its rim over the top 6 of its height), which the next bcut takes as its object with a cylinder of radius 30 standing on the pocket's floor (extruded up from the floor): decided on the stack's construction's curved arrangement matched to its stored topology; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcommon_complex/C5",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4a: restored solids of the public dataset given to a Boolean, each decided on the construction its stored surfaces give (matched to its stored topology within its resolution): a box and a hexahedron, bcommon; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_complex/J2",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4a: restored solids of the public dataset given to a Boolean, each decided on the construction its stored surfaces give (matched to its stored topology within its resolution): a prism of eight planes less a box, bcut; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_complex/J7",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4a: restored solids of the public dataset given to a Boolean, each decided on the construction its stored surfaces give (matched to its stored topology within its resolution): a box less a wedge (five planes), bcut; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_complex/O9",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4a: restored solids of the public dataset given to a Boolean, each decided on the construction its stored surfaces give (matched to its stored topology within its resolution): a box and a prism with a cylindrical wall, bfuse; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bfuse_complex/F5",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4a: restored solids of the public dataset given to a Boolean, each decided on the construction its stored surfaces give (matched to its stored topology within its resolution): a box and a cylinder, bfuse; checkshape, checkprops -s -v and checknbshapes (wires, faces, shells, solids); its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bfuse_complex/H4",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4a: restored solids of the public dataset given to a Boolean, each decided on the construction its stored surfaces give (matched to its stored topology within its resolution): two boxes, bfuse; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bfuse_complex/I4",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4a: restored solids of the public dataset given to a Boolean, each decided on the construction its stored surfaces give (matched to its stored topology within its resolution): a cylinder and a box, bfuse; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bfuse_complex/I8",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4a: restored solids of the public dataset given to a Boolean, each decided on the construction its stored surfaces give (matched to its stored topology within its resolution): a box and a wedge (five planes), bfuse; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bfuse_complex/J4",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4a: restored solids of the public dataset given to a Boolean, each decided on the construction its stored surfaces give (matched to its stored topology within its resolution): a box and a prism with a cylindrical wall, bfuse (as O9); checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bfuse_complex/J7",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4a: restored solids of the public dataset given to a Boolean, each decided on the construction its stored surfaces give (matched to its stored topology within its resolution): a box and a prism with a cylindrical wall, bfuse (as O9); checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bfuse_complex/L1",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4a: restored solids of the public dataset given to a Boolean, each decided on the construction its stored surfaces give (matched to its stored topology within its resolution): two boxes sharing faces, bfuse; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bfuse_complex/L3",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4a: restored solids of the public dataset given to a Boolean, each decided on the construction its stored surfaces give (matched to its stored topology within its resolution): a prism of planes and a cylindrical wall and a cylinder, bfuse; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bfuse_complex/N3",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4a: restored solids of the public dataset given to a Boolean, each decided on the construction its stored surfaces give (matched to its stored topology within its resolution): two boxes and a prism of eight planes, fused in turn (the first result, of imported solids, given to the second bfuse on its construction); checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bfuse_complex/Q2",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4a: restored solids of the public dataset given to a Boolean, each decided on the construction its stored surfaces give (matched to its stored topology within its resolution): a box and a cylinder, bfuse (as F5); checkshape, checkprops -s -v and checknbshapes; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopcommon_complex/K5",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4a: restored solids of the public dataset given to a Boolean, each decided on the construction its stored surfaces give (matched to its stored topology within its resolution): a cylinder and a box, bop and bopcommon; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/bugs/modalg_6/bug21427",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4a: restored solids of the public dataset given to a Boolean, each decided on the construction its stored surfaces give (matched to its stored topology within its resolution): a prism of nine planes less a box, bcut; checkprops -s and checkshape; its checkview is recorded."
     }
   ],
   "derived_sources": {
@@ -7653,12 +7781,12 @@
     },
     "assertions": 35766,
     "statuses": {
-      "lost": 12844,
-      "mapped-and-verified": 2,
+      "lost": 12842,
+      "mapped-and-verified": 4,
       "model-independent": 22920
     },
     "lost_by_reason": {
-      "mapping unverified: count synthesizer": 5398,
+      "mapping unverified: count synthesizer": 5396,
       "mapping unverified: native selector": 1578,
       "mapping unverified: per-use length synthesis": 1975,
       "no mapping: OCCT persistence formats": 75,
@@ -7696,8 +7824,8 @@
         "lost": 981
       },
       "checknbshapes": {
-        "lost": 5413,
-        "mapped-and-verified": 2
+        "lost": 5411,
+        "mapped-and-verified": 4
       },
       "checkpoint": {
         "model-independent": 42

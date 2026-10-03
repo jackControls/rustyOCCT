@@ -1441,6 +1441,48 @@ seconds (`boptuc_simple/ZK8`, on a machine at load 5 to 8 with a fuzz
 campaign running; 13.5 in the last survey), the rollex 2.1. The ledger
 does not change.
 
+**S9e.4a's imported solids: cases restoring a shape for a Boolean.**
+Before S9e.4a the adapter refused every restored shape as a Boolean
+argument ("an argument other than a solid the adapter made"), and the
+Boolean surveys above ran only the boolean group's self-contained cases.
+Every case of every group that restores a shape and gives it to a Boolean
+command (`bfuse`, `bcut`, `bcommon`, `btuc`, `bop`), 1,814 cases (1,371 of
+the boolean group, 420 of `bugs`, 18 of `perf`, 4 of `lowalgos`, 1 of
+`blend`), none
+registered, was run on the Rust adapter after S9e.4a (2026-10-03, the public
+dataset, 120 seconds a case, four at once), its restored solids imported
+(`Solid::imported_with`) and the cases they reach run on native DRAW too.
+Of the 1,814: 561 load private data; 598 give a Boolean a restored shape
+that is not one solid (faces, shells, compounds); 123 stop at constructs
+the reader does not represent, 276 at the validator's rejection of a
+restored shape (an edge not C1, a pcurve off its edge: failures before
+any Boolean, as the restore-only surveys found), 8 time out at their
+first restores (before any Boolean), 77 at other commands the adapter does
+not read (`bsection`, `halfspace`, `explode`, ...). The import reaches 171:
+84 bodies none of the kernel's constructions (S9e.4b), 31 prisms whose arcs
+round off their circles in their caps' frames (S9e.4b), 3 with spline
+faces (S9f), 37 refused by S9's rules on their constructions (tangencies,
+faces within the resolution of one plane, thin faces, a plane through a
+cone's apex, a vertex on a face), and 16 evaluate on both backends: boxes,
+hexahedra, wedges, prisms with cylindrical walls and cylinders of the
+`CTO9xx` and `cts`/`pro` series fused, cut and intersected
+(`bcommon_complex/C5`, `bcut_complex/J2`, `J7`, `O9`, `bfuse_complex/F5`,
+`H4`, `I4`, `I8`, `J4`, `J7`, `L1`, `L3`, `N3` (two fuses, the first
+result of imported solids given to the second), `Q2`,
+`bopcommon_complex/K5`) and `bugs/modalg_6/bug21427` (a prism of nine
+planes less a box), every check passing on both (`checkprops`,
+`checkshape`, `checknbshapes` in `F5` and `Q2`; `viewer_skipped`). A
+volume audit (`vprops` and `sprops` before each `checkprops`, both
+backends): Rust's volume, area and centre agree with native DRAW's to its
+printed digits in all 16 (`L1`'s fused cubes 4,000,000 and 160,000 within
+3e-16 relative). They are registered (`data`, `viewer_skipped` on both;
+1,089 cases): the contract holds for them on both backends within 30
+seconds (Rust 0.2 to 5.6 s on a loaded host), and the ledger records
+`F5`'s and `Q2`'s `checknbshapes` confirmed natively: mapped-and-verified 2
+to 4, lost 12,844 to 12,842 (`--write-ledger`). One case,
+`bcut_complex/I6`, failed when its restored profile's rounded points touched
+in the construction: such a body is now S9e.4b's (unsupported).
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4
