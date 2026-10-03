@@ -85,6 +85,15 @@ PUSH = mp.mpf(10)**-34
 # A surface vanishing on a face: below this at every sample, relative to the
 # size to its degree.
 VANISH = mp.mpf(10)**-28
+# Roots of different surfaces this near along a curve, relative to its range,
+# are one (`merged`), where `MERGE` is set: S9e.3b's declared tangencies only,
+# whose margins are not checked (at an ordinary crossing of two roots it
+# makes two events this near, the spacing margin's near coincidence).
+TINY = mp.mpf(10)**-30
+MERGE = False
+# The quadrature's tolerance relative to the size to the fourth (S9e.3b's
+# declared tangencies take a coarser one: `QUAD`).
+QUAD = mp.mpf(10)**-32
 
 SET = {
     'fuse': lambda a, b: a or b,
@@ -179,6 +188,8 @@ def curve_pieces(cur, others, skip, sign):
                 keep[i] = keep[m] = False
         roots += [(t, k) for t, ok in zip(rts, keep) if ok]
     roots.sort(key=lambda x: x[0])
+    if MERGE:
+        roots = merged(roots, span)
 
     pushed = {others.surfs[k][0] for k in skip}
 
@@ -206,6 +217,25 @@ def curve_pieces(cur, others, skip, sign):
     for (t0, j0), (t1, j1) in zip(pts, pts[1:]):
         if t1 > t0:
             out.append((t0, t1, cls(t0, t1), j0, j1))
+    return out
+
+
+def merged(roots, span):
+    """Sorted roots `(t, surface)` with consecutive roots of different
+    surfaces within `TINY` of the curve's range taken as one, bounded by
+    both (S9e.3b's declared tangencies, `MERGE`: two surfaces whose sections
+    are tangent at a point the curve passes within rounding of; the piece
+    between them would be classified by rounding noise, its measure far
+    below the checks, and their order flip the structure, an event found
+    again and again)."""
+    out = []
+    for t, k in roots:
+        if out and t-out[-1][0] <= TINY*span and out[-1][1] != k:
+            prev = out[-1][1]
+            both = tuple(sorted(set(prev if isinstance(prev, tuple) else (prev,)) | {k}, key=repr))
+            out[-1] = (out[-1][0], both)
+        else:
+            out.append((t, k))
     return out
 
 
@@ -405,7 +435,7 @@ class Sweep:
         """{class: [area, volume, moments about c0]} of the face."""
         if self.events is None:
             self.find_events()
-        tol = mp.mpf(10)**-32*self.size**4
+        tol = QUAD*self.size**4
         tot = {}
         pts = self.breakpoints()
         k = 0

@@ -1,0 +1,742 @@
+case peg_tilt_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 2.0 1.0
+then fuse 95
+op 94
+frame 0.0 0.0 0.0 0.0 -4.0 3.0 1.0 0.0 0.0
+offsets 1.0 6.0
+boundary P 4 -6.0 -6.0 6.0 -6.0 6.0 9.0 -6.0 9.0
+end
+case peg_tilt_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 2.0 1.0
+then cut 95
+op 94
+frame 0.0 0.0 0.0 0.0 -4.0 3.0 1.0 0.0 0.0
+offsets 1.0 6.0
+boundary P 4 -6.0 -6.0 6.0 -6.0 6.0 9.0 -6.0 9.0
+end
+case peg_tilt_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 2.0 1.0
+then common 95
+op 94
+frame 0.0 0.0 0.0 0.0 -4.0 3.0 1.0 0.0 0.0
+offsets 1.0 6.0
+boundary P 4 -6.0 -6.0 6.0 -6.0 6.0 9.0 -6.0 9.0
+end
+case peg_wall_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 2.0 1.0
+then fuse 95 swapped
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -8.0 10.0
+boundary P 4 -8.0 2.0 8.0 2.0 8.0 8.0 -8.0 8.0
+end
+case peg_wall_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 2.0 1.0
+then cut 95 swapped
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -8.0 10.0
+boundary P 4 -8.0 2.0 8.0 2.0 8.0 8.0 -8.0 8.0
+end
+case peg_wall_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 2.0 1.0
+then common 95 swapped
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -8.0 10.0
+boundary P 4 -8.0 2.0 8.0 2.0 8.0 8.0 -8.0 8.0
+end
+case peg_pipe_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 2.0 1.0
+then fuse 95
+op 94
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -7.0 7.0
+boundary C 2.9 4.1 0.5
+end
+case peg_pipe_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 2.0 1.0
+then cut 95
+op 94
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -7.0 7.0
+boundary C 2.9 4.1 0.5
+end
+case peg_pipe_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 2.0 1.0
+then common 95
+op 94
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -7.0 7.0
+boundary C 2.9 4.1 0.5
+end
+case peg_ball_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 2.0 1.0
+then fuse 95
+op 94
+frame 0.25 2.75 4.25 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+end
+case peg_ball_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 2.0 1.0
+then cut 95
+op 94
+frame 0.25 2.75 4.25 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+end
+case peg_ball_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 2.0 1.0
+then common 95
+op 94
+frame 0.25 2.75 4.25 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+end
+case peg_cone_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 2.0 1.0
+then fuse 95
+op 94
+frame -1.5 3.2 4.2 1.0 0.0 0.0 0.0 1.0 0.0
+cone 1.2 0.4 3.0
+end
+case peg_cone_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 2.0 1.0
+then cut 95
+op 94
+frame -1.5 3.2 4.2 1.0 0.0 0.0 0.0 1.0 0.0
+cone 1.2 0.4 3.0
+end
+case peg_cone_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 2.0 1.0
+then common 95
+op 94
+frame -1.5 3.2 4.2 1.0 0.0 0.0 0.0 1.0 0.0
+cone 1.2 0.4 3.0
+end
+case cross_tilt_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.0 2.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.5 1.0
+then fuse 95
+op 94
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 1.5 6.5
+boundary P 4 -7.0 -6.0 7.0 -6.0 7.0 6.0 -7.0 6.0
+end
+case cross_tilt_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.0 2.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.5 1.0
+then cut 95
+op 94
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 1.5 6.5
+boundary P 4 -7.0 -6.0 7.0 -6.0 7.0 6.0 -7.0 6.0
+end
+case cross_tilt_common 1e-07
+op 91
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.0 2.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.5 1.0
+then common 95
+op 94
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 1.5 6.5
+boundary P 4 -7.0 -6.0 7.0 -6.0 7.0 6.0 -7.0 6.0
+end
+case cross_wall_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.0 2.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.5 1.0
+then fuse 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -8.0 8.0
+boundary P 4 0.0 -8.0 8.0 -8.0 8.0 8.0 0.0 8.0
+end
+case cross_wall_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.0 2.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.5 1.0
+then cut 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -8.0 8.0
+boundary P 4 0.0 -8.0 8.0 -8.0 8.0 8.0 0.0 8.0
+end
+case cross_wall_common 1e-07
+op 91
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.0 2.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.5 1.0
+then common 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -8.0 8.0
+boundary P 4 0.0 -8.0 8.0 -8.0 8.0 8.0 0.0 8.0
+end
+case cross_ball_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.0 2.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.5 1.0
+then fuse 95
+op 94
+frame 0.95 0.6 1.9 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 0.6 -1.5707963267948966 1.5707963267948966
+end
+case cross_ball_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.0 2.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.5 1.0
+then cut 95
+op 94
+frame 0.95 0.6 1.9 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 0.6 -1.5707963267948966 1.5707963267948966
+end
+case cross_ball_common 1e-07
+op 91
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.0 2.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.5 1.0
+then common 95
+op 94
+frame 0.95 0.6 1.9 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 0.6 -1.5707963267948966 1.5707963267948966
+end
+case frustum_pipe_wall_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 3.0 1.0 4.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -5.0 5.0
+boundary C 0.5 2.0 0.6
+then fuse 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -8.0 8.0
+boundary P 4 1.85 -8.0 8.0 -8.0 8.0 8.0 1.85 8.0
+end
+case frustum_pipe_wall_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 3.0 1.0 4.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -5.0 5.0
+boundary C 0.5 2.0 0.6
+then cut 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -8.0 8.0
+boundary P 4 1.85 -8.0 8.0 -8.0 8.0 8.0 1.85 8.0
+end
+case frustum_pipe_wall_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 3.0 1.0 4.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -5.0 5.0
+boundary C 0.5 2.0 0.6
+then common 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -8.0 8.0
+boundary P 4 1.85 -8.0 8.0 -8.0 8.0 8.0 1.85 8.0
+end
+case torus_rod_tilt_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.0 0.0 6.283185307179586 6.283185307179586
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 3.0 0.0 0.5
+then fuse 95
+op 94
+frame 0.0 0.0 0.0 0.0 -4.0 3.0 1.0 0.0 0.0
+offsets 0.3 5.5
+boundary P 4 -5.0 -6.0 5.0 -6.0 5.0 6.0 -5.0 6.0
+end
+case torus_rod_tilt_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.0 0.0 6.283185307179586 6.283185307179586
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 3.0 0.0 0.5
+then cut 95
+op 94
+frame 0.0 0.0 0.0 0.0 -4.0 3.0 1.0 0.0 0.0
+offsets 0.3 5.5
+boundary P 4 -5.0 -6.0 5.0 -6.0 5.0 6.0 -5.0 6.0
+end
+case torus_rod_tilt_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.0 0.0 6.283185307179586 6.283185307179586
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 3.0 0.0 0.5
+then common 95
+op 94
+frame 0.0 0.0 0.0 0.0 -4.0 3.0 1.0 0.0 0.0
+offsets 0.3 5.5
+boundary P 4 -5.0 -6.0 5.0 -6.0 5.0 6.0 -5.0 6.0
+end
+case torus_rod_wall_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.0 0.0 6.283185307179586 6.283185307179586
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 3.1 0.0 0.5
+then fuse 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -4.0 4.0
+boundary P 4 3.1 -8.0 8.0 -8.0 8.0 8.0 3.1 8.0
+end
+case torus_rod_wall_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.0 0.0 6.283185307179586 6.283185307179586
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 3.1 0.0 0.5
+then cut 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -4.0 4.0
+boundary P 4 3.1 -8.0 8.0 -8.0 8.0 8.0 3.1 8.0
+end
+case torus_rod_wall_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.0 0.0 6.283185307179586 6.283185307179586
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 3.1 0.0 0.5
+then common 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -4.0 4.0
+boundary P 4 3.1 -8.0 8.0 -8.0 8.0 8.0 3.1 8.0
+end
+case cone_cut_rod_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 3.0 1.0 4.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 2.2 5.5
+boundary P 4 -4.0 -5.0 4.0 -5.0 4.0 5.0 -4.0 5.0
+then fuse 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 6.0
+boundary C 0.1 2.5 0.4
+end
+case cone_cut_rod_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 3.0 1.0 4.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 2.2 5.5
+boundary P 4 -4.0 -5.0 4.0 -5.0 4.0 5.0 -4.0 5.0
+then cut 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 6.0
+boundary C 0.1 2.5 0.4
+end
+case cone_cut_rod_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 3.0 1.0 4.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 2.2 5.5
+boundary P 4 -4.0 -5.0 4.0 -5.0 4.0 5.0 -4.0 5.0
+then common 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 6.0
+boundary C 0.1 2.5 0.4
+end
+case cone_cut_ball_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 3.0 1.0 4.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 2.2 5.5
+boundary P 4 -4.0 -5.0 4.0 -5.0 4.0 5.0 -4.0 5.0
+then fuse 95
+op 94
+frame 0.2 -1.2 3.6 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 0.6 -1.5707963267948966 1.5707963267948966
+end
+case cone_cut_ball_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 3.0 1.0 4.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 2.2 5.5
+boundary P 4 -4.0 -5.0 4.0 -5.0 4.0 5.0 -4.0 5.0
+then cut 95
+op 94
+frame 0.2 -1.2 3.6 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 0.6 -1.5707963267948966 1.5707963267948966
+end
+case cone_cut_ball_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 3.0 1.0 4.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 2.2 5.5
+boundary P 4 -4.0 -5.0 4.0 -5.0 4.0 5.0 -4.0 5.0
+then common 95
+op 94
+frame 0.2 -1.2 3.6 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 0.6 -1.5707963267948966 1.5707963267948966
+end
+case torus_cut_pipe_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.0 0.0 6.283185307179586 6.283185307179586
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -4.0 4.0
+boundary P 4 2.5 -8.0 8.0 -8.0 8.0 8.0 2.5 8.0
+then fuse 95
+op 94
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -6.0 6.0
+boundary C 1.6 1.0 0.4
+end
+case torus_cut_pipe_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.0 0.0 6.283185307179586 6.283185307179586
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -4.0 4.0
+boundary P 4 2.5 -8.0 8.0 -8.0 8.0 8.0 2.5 8.0
+then cut 95
+op 94
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -6.0 6.0
+boundary C 1.6 1.0 0.4
+end
+case torus_cut_pipe_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.0 0.0 6.283185307179586 6.283185307179586
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -4.0 4.0
+boundary P 4 2.5 -8.0 8.0 -8.0 8.0 8.0 2.5 8.0
+then common 95
+op 94
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -6.0 6.0
+boundary C 1.6 1.0 0.4
+end
+case torus_cut_ball_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.0 0.0 6.283185307179586 6.283185307179586
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -4.0 4.0
+boundary P 4 2.5 -8.0 8.0 -8.0 8.0 8.0 2.5 8.0
+then fuse 95
+op 94
+frame 2.6 -1.6 -0.9 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 0.5 -1.5707963267948966 1.5707963267948966
+end
+case torus_cut_ball_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.0 0.0 6.283185307179586 6.283185307179586
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -4.0 4.0
+boundary P 4 2.5 -8.0 8.0 -8.0 8.0 8.0 2.5 8.0
+then cut 95
+op 94
+frame 2.6 -1.6 -0.9 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 0.5 -1.5707963267948966 1.5707963267948966
+end
+case torus_cut_ball_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.0 0.0 6.283185307179586 6.283185307179586
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -4.0 4.0
+boundary P 4 2.5 -8.0 8.0 -8.0 8.0 8.0 2.5 8.0
+then common 95
+op 94
+frame 2.6 -1.6 -0.9 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 0.5 -1.5707963267948966 1.5707963267948966
+end
+case peg_touch_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 2.0 1.0
+then fuse 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 4.0 12.0
+boundary P 4 -8.0 -8.0 8.0 -8.0 8.0 8.0 -8.0 8.0
+end
+case peg_touch_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 2.0 1.0
+then cut 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 4.0 12.0
+boundary P 4 -8.0 -8.0 8.0 -8.0 8.0 8.0 -8.0 8.0
+end
+case peg_touch_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 2.0 1.0
+then common 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 4.0 12.0
+boundary P 4 -8.0 -8.0 8.0 -8.0 8.0 8.0 -8.0 8.0
+end
+case peg_kiss_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 2.0 1.0
+then fuse 95
+op 94
+frame 0.0 3.75 4.3125 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 0.8125 -1.5707963267948966 1.5707963267948966
+end
+case peg_kiss_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 2.0 1.0
+then cut 95
+op 94
+frame 0.0 3.75 4.3125 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 0.8125 -1.5707963267948966 1.5707963267948966
+end
