@@ -5203,6 +5203,57 @@ Decisions for S9, recorded before its code (2026-09-28):
     keyed on it); then the kernel in that file, its tests, and the boolean
     target's spline variants against the turned, leaning and tilted arcs
     (`SPLINE_CROSSING`).
+    * **S9f.2b evidence (2026-10-03), before its code (`BOOLEAN.md`).**
+      `curved_boolean_reference.py` takes arcs and circles against spline
+      walls on crossing axes: the slicing's planes hold both axes, and an
+      event where a spline chord, a cylinder's chord and a height line are
+      concurrent is the walls' meeting at a cap's height, the real roots
+      of an exact polynomial of degree `2 p` in the span's parameter
+      (`wall_cylinder_events`: the cylinder's equation along the ruling,
+      `w` fixed at the spline prism's cap or linear in `S(tau)` at the
+      cylinder prism's); a cylinder wall's generatrices swept against a
+      spline wall meet its implicit crossings at the same points and where
+      their projection touches a span; the caps' sweep lines on spline cap
+      edges and cylinder cap circles at the same roots; the turning points
+      (`wall_cylinder_turns`, the roots of `B^2 - A C`) need no event of
+      their own (the trace's tangencies). `generate_spline_crossing_boolean_fixtures.py
+      --check` writes 34 cases (11 fuses, 11 cuts, 12 commons; 30 solid, 4
+      degenerate; 28 of S9f.2b.1, 6 of S9f.2b.2): tilted rods along the
+      bulge's and capsule's walls (the capsule's crossing its double knot),
+      a leaning rod along the wave's top across its knot, a perpendicular
+      rod covering the dome, a steep cylinder holding most of the blob as
+      the object (`STEEP`, the normal (0, 5, 12) / 13), a tilted rod ending
+      inside the blob (its cap circle on the wall), a stadium's arc and
+      edges against the bulge, a tilted ring's hole around the dome, every
+      meeting a graph over the spline's parameter inside the faces, its
+      turning points at least 0.56 outside a face; loops (S9f.2b.2: a
+      perpendicular rod through the bulge's wall, a tilted rod through the
+      lens's); and `degenerate` a rod touching the dome's apex (a point
+      contact) and one whose meeting with `knot`'s wall turns back at its
+      knot of multiplicity two. Checks: the divergence theorem, inclusion
+      and exclusion and the area identity within 9.4e-41, every face's
+      classes 4.5e-41, the four perpendicular pairs' commons as `int L(y)
+      W(y) dy` (the profile's chord along `x` times the disc's height
+      chord) 7.1e-44; margins outside the declared pairs at least 0.011
+      (vertical edges piercing curved walls, vertices 0.037 from the
+      other's faces, creases 0.073 from the caps, meetings crossing caps
+      at 0.11, turning points 0.56 outside a face, the loops' 1.5 inside
+      both); the same files under Python 3.9 and 3.12;
+      `test_spline_crossing_boolean_reference.py` (the meeting at a cap
+      and its turning points against closed forms, the tower field's
+      points, the product of chords, the degenerate margins); the
+      generator's check a CI group of its own (`spline-crossing`). The
+      capture `occt-boolean-spline-crossing-preimplementation`
+      (`compare_spline_crossing_boolean.py`, keyed on
+      `solid/boolean/curved/spline_crossing.rs`; the probe `unsupported` on
+      all 34, refused by `spline_pairs`): every result valid with the
+      reference's solids, 13 matches, 21 reviewed (BRepGProp's default
+      integration up to 1.5e-6, `knot_turn_cut` 1.3e-5, the wave 2.9e-4;
+      a diagnostic build's adaptive BRepGProp and Green's theorem over
+      OCCT's own faces and pcurves, the better within 4.0e-9 in volume,
+      1.4e-9 in area and 8.6e-9 in the centre on all 21); five solids'
+      counts change when unified. No correction to the decisions from the
+      evidence. S9f.2b.1's kernel next.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions
