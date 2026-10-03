@@ -66,6 +66,24 @@ pub(super) trait Num<T: Real>: Clone {
     fn powi(&self, n: u8) -> Self {
         (0..n).fold(self.lift(&T::exact_f64(1.0)), |acc, _| acc.mul(self))
     }
+    /// The middle of the value's enclosure at the base (a binary64 choice
+    /// between equal forms, S9f.2b).
+    fn mid(&self) -> f64;
+    /// Whether the value's enclosure at the base is about a point, within
+    /// rounding (S9f.2b: a de Casteljau step's form).
+    fn sharp(&self) -> bool;
+}
+
+fn middle<T: Real>(x: &T) -> f64 {
+    let (lo, hi) = x.bounds_f64();
+    0.5 * lo + 0.5 * hi
+}
+
+/// An enclosure about a point (a node's or a jet's base, within rounding),
+/// not over a range.
+fn sharp<T: Real>(x: &T) -> bool {
+    let (lo, hi) = x.bounds_f64();
+    hi - lo <= 1e-12 * lo.abs().max(hi.abs()).max(1.0)
 }
 
 /// A plain enclosure.
@@ -109,6 +127,56 @@ impl<T: Real> Num<T> for Point<T> {
     fn cos_sin(&self) -> (Self, Self) {
         let (co, si) = T::cos_sin(&self.0);
         (Point(co), Point(si))
+    }
+    fn mid(&self) -> f64 {
+        middle(&self.0)
+    }
+    fn sharp(&self) -> bool {
+        sharp(&self.0)
+    }
+}
+
+/// Taylor jets (`crate::jet`) as the integrands' numbers (S9f.2b: a spline
+/// wall's meeting evaluated once for its jets and its quadrature).
+impl<T: Real> Num<T> for crate::jet::Jet<T> {
+    fn lift(&self, x: &T) -> Self {
+        Self::constant(x.clone(), self.order())
+    }
+    fn add(&self, o: &Self) -> Self {
+        crate::jet::Jet::add(self, o)
+    }
+    fn sub(&self, o: &Self) -> Self {
+        crate::jet::Jet::sub(self, o)
+    }
+    fn neg(&self) -> Self {
+        crate::jet::Jet::neg(self)
+    }
+    fn mul(&self, o: &Self) -> Self {
+        crate::jet::Jet::mul(self, o)
+    }
+    fn square(&self) -> Self {
+        crate::jet::Jet::square(self)
+    }
+    fn scale(&self, s: &T) -> Self {
+        crate::jet::Jet::scale(self, s)
+    }
+    fn shift(&self, s: &T) -> Self {
+        self.add_constant(s)
+    }
+    fn div(&self, o: &Self) -> Option<Self> {
+        crate::jet::Jet::div(self, o)
+    }
+    fn sqrt(&self) -> Option<Self> {
+        crate::jet::Jet::sqrt(self)
+    }
+    fn cos_sin(&self) -> (Self, Self) {
+        crate::jet::Jet::cos_sin(self)
+    }
+    fn mid(&self) -> f64 {
+        middle(&self.c[0])
+    }
+    fn sharp(&self) -> bool {
+        sharp(&self.c[0])
     }
 }
 
@@ -284,6 +352,13 @@ impl<T: Real> Num<T> for Series<T> {
         }
         let len = self.len;
         (Self { c: co, len }, Self { c: si, len })
+    }
+
+    fn mid(&self) -> f64 {
+        middle(&self.c[0])
+    }
+    fn sharp(&self) -> bool {
+        sharp(&self.c[0])
     }
 }
 
@@ -921,17 +996,173 @@ fn patch_integrands<T: Real, N: Num<T>>(
     Some(out)
 }
 
+/// A pcurve piece's `(ū, v̄, ū')` in a patch's local coordinates at `τ`.
+trait PieceAt<T: Real> {
+    fn at<N: Num<T>>(&self, t: &N) -> Option<[N; 3]>;
+}
+
+impl<T: Real> PieceAt<T> for Piece<T> {
+    fn at<N: Num<T>>(&self, t: &N) -> Option<[N; 3]> {
+        Piece::at(self, t)
+    }
+}
+
+/// A piece of a spline wall's meeting (S9f.2b) on its wall between two
+/// knots, in the knot span's patch: the pcurve's fraction `g = ga + τ len`
+/// (the edge's `g`, or `1 - g` reversed), the wall's `u` affine in it, the
+/// `v` the curve's on that span's polynomial (`wall_meet::eval`).
+struct WallPiece<'a> {
+    m: &'a crate::topology::WallMeet,
+    span: &'a super::wall_meet::Span,
+    ga: R,
+    len: R,
+    reversed: bool,
+}
+
+impl WallPiece<'_> {
+    /// The piece's local `ū` at its fraction's end `t` (0 or 1), exactly.
+    fn u_local(&self, t: i64) -> Option<R> {
+        let g = &self.ga + &self.len * ratio(t, 1);
+        let f = if self.reversed { ratio(1, 1) - g } else { g };
+        let u = R::from_float(self.m.start)? + R::from_float(self.m.sweep)? * f;
+        let [u0, u1] = &self.span.u;
+        Some((u - u0) / (u1 - u0))
+    }
+}
+
+impl<T: Real> PieceAt<T> for WallPiece<'_> {
+    fn at<N: Num<T>>(&self, t: &N) -> Option<[N; 3]> {
+        let g = t.scale(&c(&self.len)).shift(&c(&self.ga));
+        let f = if self.reversed {
+            g.neg().shift(&T::exact_f64(1.0))
+        } else {
+            g
+        };
+        let u = f
+            .scale(&T::exact_f64(self.m.sweep))
+            .shift(&T::exact_f64(self.m.start));
+        let (v, _) = super::wall_meet::eval(self.m, self.span, &u)?;
+        let ([u0, u1], [v0, v1]) = (&self.span.u, &self.span.v);
+        let ub = u.shift(&c(&-u0)).scale(&c(&(ratio(1, 1) / (u1 - u0))));
+        let vb = v.shift(&c(&-v0)).scale(&c(&(ratio(1, 1) / (v1 - v0))));
+        let sense = if self.reversed { -1 } else { 1 };
+        let slope = R::from_float(self.m.sweep)? * &self.len * ratio(sense, 1) / (u1 - u0);
+        Some([ub, vb, t.lift(&c(&slope))])
+    }
+}
+
+/// Halvings of a spline wall's meeting's piece before its sweep is given up
+/// (S9f.2b: its `v` a square root whose series over a wide range near a
+/// turning point beyond the piece is undefined).
+const WALL_SPLITS: usize = 40;
+
+/// A spline wall's meeting's piece's sweep (`sweep_piece`), its fraction
+/// range halved exactly where the rule cannot run on it whole. A piece
+/// whose discriminant (binary64, at its ends and middle: a guide, not an
+/// enclosure) varies by more than a factor of two is halved without a try:
+/// its square root's series about the piece reaches a turning point's
+/// distance, and a sweep that fails spends its whole budget first (a
+/// meeting ending `10^-7` short of a turning point needs some twenty
+/// halvings toward that end).
+fn sweep_wall<T: Real>(
+    nets: &[Net<T>],
+    at: usize,
+    piece: &WallPiece<'_>,
+    rest: &[T; 3],
+    third: Option<&T>,
+    count: usize,
+    depth: usize,
+) -> Option<Vec<T>> {
+    let (ua, ub) = (piece.u_local(0)?, piece.u_local(1)?);
+    let graded = {
+        let f = crate::solid::split::rational_f64;
+        let (a, b) = (f(&ua), f(&ub));
+        let d = [a, 0.5 * (a + b), b].map(|x| super::wall_meet::discriminant_f64(piece.span, x));
+        let (lo, hi) = (d[0].min(d[1]).min(d[2]), d[0].max(d[1]).max(d[2]));
+        lo > 0.5 * hi
+    };
+    if graded || depth >= WALL_SPLITS {
+        let ends = [c(&ua), c(&ub)];
+        let mut local = vec![zero::<T>(); count];
+        if sweep_piece(nets, at, piece, ends, rest, third, &mut local).is_some() {
+            return Some(local);
+        }
+    }
+    if depth >= WALL_SPLITS {
+        return None;
+    }
+    let half = &piece.len / ratio(2, 1);
+    let mut out = vec![zero::<T>(); count];
+    for ga in [piece.ga.clone(), &piece.ga + &half] {
+        let part = WallPiece {
+            m: piece.m,
+            span: piece.span,
+            ga,
+            len: half.clone(),
+            reversed: piece.reversed,
+        };
+        accumulate(
+            &mut out,
+            &sweep_wall(nets, at, &part, rest, third, count, depth + 1)?,
+        );
+    }
+    Some(out)
+}
+
 /// `-ū'(τ) v̄(τ) f̄(ū(τ), σ v̄(τ))` of a piece in a patch's local
 /// coordinates.
-struct Sweep<'a, T> {
+struct Sweep<'a, T, P> {
     net: &'a Net<T>,
-    piece: &'a Piece<T>,
+    piece: &'a P,
     rest: &'a [T; 3],
     /// `1/3` when all fourteen integrands are wanted.
     third: Option<&'a T>,
 }
 
-impl<T: Real> Integrand2<T> for Sweep<'_, T> {
+/// A piece's sweep in patch `at` and the same `J` of the line between its
+/// end `ū` values (`ends`) in every patch below it in its column, added to
+/// `total`.
+#[allow(clippy::too_many_arguments)]
+fn sweep_piece<T: Real, P: PieceAt<T>>(
+    nets: &[Net<T>],
+    at: usize,
+    piece: &P,
+    ends: [T; 2],
+    rest: &[T; 3],
+    third: Option<&T>,
+    total: &mut [T],
+) -> Option<()> {
+    let patch = &nets[at];
+    accumulate(
+        total,
+        &integrate_2d(&Sweep {
+            net: patch,
+            piece,
+            rest,
+            third,
+        })?,
+    );
+    let [us, vs] = &patch.domain;
+    let one = || vec![T::exact_f64(1.0)];
+    let line = Piece::new(ends.to_vec(), one(), one());
+    for below in nets {
+        let [bu, bv] = &below.domain;
+        if bu == us && bv[1] <= vs[0] {
+            accumulate(
+                total,
+                &integrate_2d(&Sweep {
+                    net: below,
+                    piece: &line,
+                    rest,
+                    third,
+                })?,
+            );
+        }
+    }
+    Some(())
+}
+
+impl<T: Real, P: PieceAt<T>> Integrand2<T> for Sweep<'_, T, P> {
     fn at<N: Num<T>>(&self, tau: &N, sigma: &N) -> Option<Vec<N>> {
         let [u, v, slope] = self.piece.at(tau)?;
         let values = patch_integrands(self.net, &u, &sigma.mul(&v), self.rest, self.third)?;
@@ -1082,32 +1313,43 @@ pub(super) fn spline_face<T: Real>(
         .collect();
     let mut total = vec![zero::<T>(); if all { 14 } else { 4 }];
     let third = c::<T>(&ratio(1, 3));
-    let mut add = |at: usize, piece: &Piece<T>, ends: [T; 2]| -> Option<()> {
-        let patch = &nets[at];
-        let sweep = |net, piece| {
-            integrate_2d(&Sweep {
-                net,
-                piece,
-                rest: &rest,
-                third: all.then_some(&third),
-            })
-        };
-        accumulate(&mut total, &sweep(patch, piece)?);
-        let [us, vs] = &patch.domain;
-        let one = || vec![T::exact_f64(1.0)];
-        let line = Piece::new(ends.to_vec(), one(), one());
-        for below in &nets {
-            let [bu, bv] = &below.domain;
-            if bu == us && bv[1] <= vs[0] {
-                accumulate(&mut total, &sweep(below, &line)?);
-            }
-        }
-        Some(())
-    };
+    let third = all.then_some(&third);
     // The slivers' error bounds (`sliver_net`).
     let mut extras: Vec<Vec<T>> = Vec::new();
     for lp in loops {
         for fin in &lp.fins {
+            // A spline wall's meeting's projection onto this wall (S9f.2b):
+            // its pieces between the wall's knots, exactly, each in its
+            // knot span's patch.
+            if let Curve2::Projection(pr) = &fin.pcurve {
+                let crate::topology::Curve3::WallMeet(m) = &pr.curve else {
+                    return None;
+                };
+                if m.wall != *surface {
+                    return None;
+                }
+                let spans = super::wall_meet::spans(m)?;
+                let one = ratio(1, 1);
+                for (fa, fb, k) in super::wall_meet::pieces(m)? {
+                    let (ga, gb) = if pr.reversed {
+                        (&one - &fb, &one - &fa)
+                    } else {
+                        (fa, fb)
+                    };
+                    let span = spans.spans.get(k)?;
+                    let at = nets.iter().position(|q| q.domain[0] == span.u)?;
+                    let piece = WallPiece {
+                        m,
+                        span,
+                        len: &gb - &ga,
+                        ga,
+                        reversed: pr.reversed,
+                    };
+                    let values = sweep_wall(&nets, at, &piece, &rest, third, total.len(), 0)?;
+                    accumulate(&mut total, &values);
+                }
+                continue;
+            }
             let arcs = pcurve_arcs(&fin.pcurve)?;
             // Lines are split where they cross a patch boundary.
             let mut cuts = vec![ratio(0, 1), ratio(1, 1)];
@@ -1157,7 +1399,8 @@ pub(super) fn spline_face<T: Real>(
                 let [[u0, u1], _] = &nets[at].domain;
                 let local = |u: &R| c::<T>(&((u - u0) / (u1 - u0)));
                 let ends = [local(&points[0].0), local(&points[points.len() - 1].0)];
-                add(at, &exact_piece(&h, Some(&nets[at].domain)), ends)?;
+                let piece = exact_piece(&h, Some(&nets[at].domain));
+                sweep_piece(&nets, at, &piece, ends, &rest, third, &mut total)?;
                 extras.extend(extra);
             }
         }
@@ -1167,13 +1410,7 @@ pub(super) fn spline_face<T: Real>(
             if a[0].bounds_f64() == b[0].bounds_f64() && width(&a[0]) == 0.0 {
                 continue;
             }
-            let inside = |p: &Net<T>, x: &[T; 2]| {
-                p.domain.iter().zip(x).all(|([lo, hi], v)| {
-                    matches!(v.cmp(&c(lo)), Some(Ordering::Greater | Ordering::Equal))
-                        && matches!(v.cmp(&c(hi)), Some(Ordering::Less | Ordering::Equal))
-                })
-            };
-            let at = nets.iter().position(|p| inside(p, &a) && inside(p, &b))?;
+            let at = super::chord_patch(nets.iter().map(|p| &p.domain), &a, &b)?;
             let [[u0, u1], [v0, v1]] = &nets[at].domain;
             let local = |x: &T, lo: &R, hi: &R| x.sub(&c(lo)).div(&c(&(hi - lo)));
             let ends = [local(&a[0], u0, u1)?, local(&b[0], u0, u1)?];
@@ -1182,7 +1419,7 @@ pub(super) fn spline_face<T: Real>(
                 vec![local(&a[1], v0, v1)?, local(&b[1], v0, v1)?],
                 vec![T::exact_f64(1.0)],
             );
-            add(at, &piece, ends)?;
+            sweep_piece(&nets, at, &piece, ends, &rest, third, &mut total)?;
         }
     }
     for extra in &extras {

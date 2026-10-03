@@ -940,6 +940,29 @@ procedural pcurves with explicit conic edges.
   or in a tower `Q(alpha)(sqrt(d))` over a rim's fixed angle; no stored
   number but their binary64 views). A loop through a sphere's pole winds by
   its pcurves' lifted ends, not their changes' sum.
+* **A spline wall's meeting with a cylinder (S9f.2b).** `Curve3::WallMeet`:
+  the wall face's own stored surface (`wall`, a nonrational B-spline of
+  degree `p` in `u` and one in `v`, two pole rows, as S9f.1 stores a
+  wall), the other cylinder (`other` frame, `other_radius`), the branch
+  (`sign`) and the `u` range (`start`, `sweep`): at `u` the wall's ruling
+  `L(u) + (v - v0) M(u)` meets the cylinder where `a t^2 + 2 b t + c = 0`,
+  and `t = (-b + sign sqrt(d)) / a`, or `c / (-b - sign sqrt(d))` where
+  that cancels less, `d = a r^2 - (P x M)^2` (Lagrange's identity, `P` the
+  foot in the cylinder's axes) positive over the range (no turning point).
+  On its own wall its pcurve is a `Projection` that reads its `(u, v)`
+  (deviation zero by definition, no inverse of the spline surface); on the
+  cylinder a `Projection` by the cylinder's inverse, as `Meet`'s. The wall
+  is only C^k across its knots, so its certified jets come from one knot
+  span's polynomial (`validate/wall_meet.rs`: `a`, `b`, `c` and `d` as
+  exact Bernstein polynomials in the span's `ū`, made once per wall and
+  cylinder; across a knot the union of both spans' jets to order `k + 1`,
+  `None` past it) and the integrals along it, the validator's Green and
+  mass terms on both faces, are split at the knots' fractions exactly; the
+  tessellation's bounds take their pieces split there. A rigid motion moves
+  the surface's poles and the other frame; the writer refuses it
+  (`Unwritable`) until D13's interchange approximation, the reader never
+  makes one, and history, `curve_curve` and `curve_surface` refuse it as
+  `Meet`.
 * **A cone's sections in Boolean results (S9d.3a).** `HyperbolaArc` and
   `ParabolaArc` edges bound Boolean results too; a rigid motion moves their
   frames, and a body's bounds hold their coordinates' extremes inside their

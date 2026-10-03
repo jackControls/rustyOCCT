@@ -85,7 +85,12 @@ pub(super) fn curve_model(
 pub(super) fn procedural(crv: &Crv) -> bool {
     matches!(
         crv,
-        Crv::Meet(_) | Crv::Rise(_) | Crv::Toric(_) | Crv::Cone(_) | Crv::Torus(_)
+        Crv::Meet(_)
+            | Crv::Rise(_)
+            | Crv::Toric(_)
+            | Crv::Cone(_)
+            | Crv::Torus(_)
+            | Crv::WallMeet(_)
     )
 }
 
@@ -185,6 +190,10 @@ pub(super) fn reversed(c: &Curve3) -> Option<Curve3> {
             s.sweep = -s.sweep;
         }
         Curve3::Toric(s) => {
+            s.start += s.sweep;
+            s.sweep = -s.sweep;
+        }
+        Curve3::WallMeet(s) => {
             s.start += s.sweep;
             s.sweep = -s.sweep;
         }

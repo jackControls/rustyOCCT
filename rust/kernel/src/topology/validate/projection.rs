@@ -150,6 +150,8 @@ pub(super) fn curve_jet<T: Real>(curve: &Curve3, fraction: &Jet<T>) -> Option<[J
         Curve3::Meet(m) => meet_jet(m, fraction)?.1,
         Curve3::Rise(m) => rise_jet(m, fraction)?,
         Curve3::Toric(m) => toric_jet(m, fraction)?.1,
+        // S9f.2b: on the knot spans its base meets.
+        Curve3::WallMeet(m) => super::wall_meet::jet(m, fraction, None)?.1,
         Curve3::BSpline(_) => return None,
     })
 }
@@ -852,11 +854,29 @@ fn angle_near<T: Real>(y: &Jet<T>, x: &Jet<T>, reference: f64) -> Option<Jet<T>>
 /// The jets of a projection's `(u, v)` in the fraction: `fraction` is the
 /// pcurve's own (the edge's is `1 - fraction` for a reversed use).
 pub(super) fn projection_jet<T: Real>(p: &Projection, fraction: &Jet<T>) -> Option<[Jet<T>; 2]> {
+    projection_jet_pinned(p, fraction, None)
+}
+
+/// `projection_jet`, a spline wall's meeting (S9f.2b) evaluated on the
+/// wall's knot span `pin` when given (its integrals' pieces, split at the
+/// knots exactly).
+fn projection_jet_pinned<T: Real>(
+    p: &Projection,
+    fraction: &Jet<T>,
+    pin: Option<usize>,
+) -> Option<[Jet<T>; 2]> {
     let f = if p.reversed {
         fraction.neg().add_constant(&c(1.0))
     } else {
         fraction.clone()
     };
+    // A spline wall's meeting on its own wall: its own parameters (S9f.2b).
+    if let (Curve3::WallMeet(m), Surface::BSpline(s)) = (&p.curve, &p.surface) {
+        if m.wall == *s {
+            let ([u, v], _) = super::wall_meet::jet(m, &f, pin)?;
+            return Some([u, v]);
+        }
+    }
     // A torus section on its own torus: its angles, lifted (S8d.3).
     if let (
         Curve3::Section(sec),
@@ -928,7 +948,10 @@ pub(super) fn projection_jet<T: Real>(p: &Projection, fraction: &Jet<T>) -> Opti
             return Some([u.add_constant(&c(k * std::f64::consts::TAU)), v]);
         }
     }
-    let point = curve_jet(&p.curve, &f)?;
+    let point = match (&p.curve, pin) {
+        (Curve3::WallMeet(m), Some(_)) => super::wall_meet::jet(m, &f, pin)?.1,
+        _ => curve_jet(&p.curve, &f)?,
+    };
     let frame = frame_of(&p.surface)?;
     let (o, x, y, n) = (
         frame.origin().to_array(),
@@ -1111,6 +1134,19 @@ fn along<T: Real>(
     if T::EXACT {
         return None;
     }
+    // A spline wall's meeting (S9f.2b): piece by piece between its wall's
+    // knots.
+    if matches!(p.curve, Curve3::WallMeet(_)) {
+        let mut totals = vec![T::exact_f64(0.0); n];
+        wall_pieces(
+            p,
+            n,
+            relative,
+            &|_, u, v, du, dv| g(u, v, du, dv),
+            &mut totals,
+        )?;
+        return Some(totals);
+    }
     let id = memo_id(p);
     let integrand = |f: &Jet<T>| {
         // One order more, so the derivatives keep the order asked for.
@@ -1127,6 +1163,70 @@ fn along<T: Real>(
         SIGN_WIDTH.with(|w| w.get())
     };
     integrate_many(&integrand, n, 0.0, 1.0, ORDER, width, DEPTH, relative)
+}
+
+/// An integrand along a spline wall's meeting's piece on knot span `k`:
+/// from `k` and the jets of `u`, `v`, `u'`, `v'` (in the pcurve's
+/// fraction).
+pub(super) type WallIntegrands<'a, T> =
+    &'a dyn Fn(usize, &Jet<T>, &Jet<T>, &Jet<T>, &Jet<T>) -> Option<Vec<Jet<T>>>;
+
+/// The integrals along a projection of a spline wall's meeting (S9f.2b),
+/// added to `totals`: over each piece of its fraction between the wall's
+/// knots, exactly (`wall_meet::pieces`), its jets on that knot span's
+/// polynomial, the piece's fraction `g = ga + tau (gb - ga)` integrated
+/// over `tau` in `[0, 1]` (the integrands, forms in `u'` and `v'`, given the
+/// fraction's derivatives).
+pub(super) fn wall_pieces<T: Real>(
+    p: &Projection,
+    n: usize,
+    relative: bool,
+    g: WallIntegrands<'_, T>,
+    totals: &mut [T],
+) -> Option<()> {
+    let Curve3::WallMeet(m) = &p.curve else {
+        return None;
+    };
+    // Binary64 intervals only, as `along`.
+    if T::EXACT {
+        return None;
+    }
+    let one = num_rational::BigRational::from_integer(1.into());
+    for (fa, fb, k) in super::wall_meet::pieces(m)? {
+        let (ga, gb) = if p.reversed {
+            (&one - &fb, &one - &fa)
+        } else {
+            (fa, fb)
+        };
+        let len = &gb - &ga;
+        let (start, scale) = (T::from_r(&ga), T::from_r(&len));
+        let per = T::from_r(&(&one / &len));
+        let integrand = |tau: &Jet<T>| {
+            let t1 = Jet::variable(tau.c[0].clone(), tau.order() + 1);
+            let at = t1.scale(&scale).add_constant(&start);
+            let [u, v] = projection_jet_pinned(p, &at, Some(k))?;
+            let (du, dv) = (u.derivative().scale(&per), v.derivative().scale(&per));
+            let cut = |j: &Jet<T>| Jet {
+                c: j.c[..=tau.order()].to_vec(),
+            };
+            Some(
+                g(k, &cut(&u), &cut(&v), &cut(&du), &cut(&dv))?
+                    .iter()
+                    .map(|x| x.scale(&scale))
+                    .collect(),
+            )
+        };
+        let width = if relative {
+            WIDTH
+        } else {
+            SIGN_WIDTH.with(|w| w.get())
+        };
+        let values = integrate_many(&integrand, n, 0.0, 1.0, ORDER, width, DEPTH, relative)?;
+        for (t, x) in totals.iter_mut().zip(values) {
+            *t = t.add(&x);
+        }
+    }
+    Some(())
 }
 
 /// Crossings of the `+u` ray from `p` with a projection pcurve (half-open
@@ -1307,8 +1407,16 @@ pub(crate) fn conic_point_fast(curve: &Curve3, t: f64) -> Option<[crate::certifi
 pub(crate) fn section_rates(curve: &Curve3, pieces: usize) -> Option<(f64, f64)> {
     use crate::certified::Fast;
     let (mut second, mut turn) = (0.0f64, 0.0f64);
-    for k in 0..pieces {
-        let (a, b) = (k as f64 / pieces as f64, (k + 1) as f64 / pieces as f64);
+    // A spline wall's meeting's pieces split at its wall's knots too
+    // (S9f.2b: its second derivative jumps there).
+    let mut cuts: Vec<f64> = (0..=pieces).map(|k| k as f64 / pieces as f64).collect();
+    if let Curve3::WallMeet(m) = curve {
+        cuts.extend(super::wall_meet::knot_fractions(m));
+        cuts.sort_by(f64::total_cmp);
+        cuts.dedup();
+    }
+    for w in cuts.windows(2) {
+        let (a, b) = (w[0], w[1]);
         let base = Fast::exact_f64(a).union(&Fast::exact_f64(b));
         let jet = curve_jet(curve, &Jet::variable(base, 2))?;
         let norm = |k: usize| {

@@ -660,7 +660,8 @@ fn circle_of(c: &Curve3) -> Option<(crate::Frame3, f64)> {
         | Curve3::Section(_)
         | Curve3::Meet(_)
         | Curve3::Rise(_)
-        | Curve3::Toric(_) => None,
+        | Curve3::Toric(_)
+        | Curve3::WallMeet(_) => None,
     }
 }
 

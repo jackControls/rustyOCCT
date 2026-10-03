@@ -645,7 +645,16 @@ fn build_component(
         };
         for l in &face_fins[k] {
             let fins = match &wall {
-                Some(s) => wall_fins(arr, redges, l, &edge_id, &arr.models[rf.op], s)?,
+                Some(s) => wall_fins(
+                    arr,
+                    redges,
+                    l,
+                    &edge_id,
+                    &arr.models[rf.op],
+                    s,
+                    &p.edges,
+                    &surface,
+                )?,
                 None => loop_fins(&p, l, &edge_id, &surface)?,
             };
             let mut fids = Vec::new();
@@ -1031,6 +1040,7 @@ fn same_curve(a: &Crv, b: &Crv) -> bool {
         (Crv::Torus(x), Crv::Torus(y)) => x == y,
         (Crv::Toric(x), Crv::Toric(y)) => x == y,
         (Crv::Spline(x), Crv::Spline(y)) => x == y,
+        (Crv::WallMeet(x), Crv::WallMeet(y)) => x == y,
         _ => false,
     }
 }
@@ -1114,6 +1124,7 @@ fn spline_curve3(arr: &Arr, e: &REdge, c: &WallCrv) -> Result<Curve3> {
 /// exact places: a vertical edge's or a generatrix's `t` constant, a cap
 /// edge's `v` constant, a crease S8b.3's `wall_pcurve` of its piece (its
 /// ends at its vertices' heights, as its edge's).
+#[allow(clippy::too_many_arguments)]
 fn wall_fins(
     arr: &Arr,
     redges: &[REdge],
@@ -1121,6 +1132,8 @@ fn wall_fins(
     edge_id: &BTreeMap<usize, EdgeId>,
     m: &Prism,
     seg: &SplineSeg,
+    edges: &[crate::topology::Edge],
+    surface: &Surface,
 ) -> Result<Vec<Fin>> {
     let lo = rational_f64(&m.lo);
     let local = |v: usize| m.f.local_q(&arr.vx[v].p);
@@ -1158,6 +1171,16 @@ fn wall_fins(
                     crate::solid::split::spline::wall_pcurve(&piece, &|p| height(p) - lo)?
                 }
             }
+            // S9f.2b: a meeting with a cylinder, its own `(u, v)` on its
+            // wall (the wall is the curve's).
+            Crv::WallMeet(_) => Curve2::Projection(Box::new(
+                crate::topology::Projection::own_wall(
+                    edges[edge_id[&ri].0].curve.clone(),
+                    surface.clone(),
+                    !fwd,
+                )
+                .ok_or(Error::InvalidTopology("a wall's meeting off its own wall"))?,
+            )),
             _ => {
                 return Err(Error::InvalidTopology(
                     "a spline wall's edge off its lines and curves",
@@ -1289,6 +1312,39 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
     }
     match &first.crv {
         Crv::Spline(c) => spline_curve3(arr, e, c),
+        // S9f.2b: on the spline wall's and the cylinder's stored surfaces,
+        // a graph over the wall's own parameter (the curve's `t`).
+        Crv::WallMeet(m) => {
+            let CurveRef::Section(si, _) = first.curve else {
+                unreachable!("a spline wall's meeting is a section")
+            };
+            let s = &arr.secs[si];
+            let stored = [
+                &arr.models[0].faces[s.fa].stored,
+                &arr.models[1].faces[s.fb].stored,
+            ];
+            let Surface::BSpline(wall) = stored[m.carrier] else {
+                return Err(Error::InvalidTopology("a wall's meeting off a spline wall"));
+            };
+            let Surface::Cylinder { frame, radius } = stored[1 - m.carrier] else {
+                return Err(Error::InvalidTopology("a wall's meeting off a cylinder"));
+            };
+            let (a, b) = chain_taus(arr, e);
+            let (ta, tb) = (m.seg.t_of(&a).to_f64(), m.seg.t_of(&b).to_f64());
+            if ta == tb {
+                return Err(Error::Degenerate(
+                    "a wall's meeting's piece within rounding",
+                ));
+            }
+            Ok(Curve3::WallMeet(Box::new(crate::topology::WallMeet {
+                wall: wall.clone(),
+                other: *frame,
+                other_radius: *radius,
+                sign: if m.plus { 1.0 } else { -1.0 },
+                start: ta,
+                sweep: tb - ta,
+            })))
+        }
         Crv::Rise(m) => {
             // Over the carrier's stored cylinder, heights from its origin.
             let CurveRef::Section(si, _) = first.curve else {

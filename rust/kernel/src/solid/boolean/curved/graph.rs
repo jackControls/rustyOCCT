@@ -203,6 +203,8 @@ pub(super) fn place(crv: &Crv, x: &QV) -> Pos {
             c.place(x)
                 .expect("a point on a spline curve at a known parameter"),
         ),
+        // S9f.2b: by the segment's run parameter.
+        Crv::WallMeet(c) => Pos::T(c.place(x)),
     }
 }
 
@@ -292,7 +294,7 @@ pub(super) fn rational_between(a: &[Qd; 2], b: &[Qd; 2], ccw: bool) -> Result<[R
 }
 
 /// A rational strictly between two numbers (`a < b`).
-fn rational_between_num(a: &Qd, b: &Qd) -> Result<R> {
+pub(super) fn rational_between_num(a: &Qd, b: &Qd) -> Result<R> {
     let (ia, ib) = (a.interval(), b.interval());
     let m = (ia.hi() + ib.lo()) / int(2);
     let x = Qd::rat(m.clone());
@@ -1045,7 +1047,7 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                     Crv::Conic { .. } | Crv::Circle(_) => {
                         (true, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())]))
                     }
-                    Crv::Line { .. } | Crv::Rise(_) | Crv::Spline(_) => {
+                    Crv::Line { .. } | Crv::Rise(_) | Crv::Spline(_) | Crv::WallMeet(_) => {
                         (false, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())]))
                     }
                 };
@@ -1439,6 +1441,19 @@ fn midpoint(crv: &Crv, a: &Pos, b: &Pos, ccw: bool) -> Result<(QV, Pos)> {
                 .ok_or(Error::ComputationLimit("a meeting's point off its piece"))?;
             Ok((x, Pos::T(Qd::rat(k))))
         }
+        // S9f.2b: a rational run parameter, its point in `Q(sqrt(D))`.
+        (Crv::WallMeet(c), Pos::T(ta), Pos::T(tb)) => {
+            let (lo, hi) = if ta.cmp(tb) == Ordering::Less {
+                (ta, tb)
+            } else {
+                (tb, ta)
+            };
+            let k = rational_between_num(lo, hi)?;
+            let x = c
+                .at(&k)
+                .ok_or(Error::ComputationLimit("a meeting's point off its piece"))?;
+            Ok((x, Pos::T(Qd::rat(k))))
+        }
         (Crv::Circle(c), Pos::Ang(sa), Pos::Ang(sb)) => {
             let cs = rational_between(sa, sb, ccw)?;
             let x = c.at(&cs);
@@ -1534,6 +1549,7 @@ fn on_curve(crv: &Crv, x: &QV) -> bool {
         Crv::Circle(c) => c.on(x),
         Crv::Rise(c) => c.on(x),
         Crv::Spline(c) => c.on(x),
+        Crv::WallMeet(c) => c.on(x),
         Crv::Conic { c, a, b } => {
             let cs = conic_angle(c, a, b, x);
             let back = conic_point(c, a, b, &cs);
@@ -1672,6 +1688,16 @@ impl Arr {
                     unreachable!("a spline curve's places")
                 };
                 let mut pts = c.samples(t0.to_f64(), t1.to_f64(), 32);
+                if !h.1 {
+                    pts.reverse();
+                }
+                pts
+            }
+            Crv::WallMeet(c) => {
+                let (Pos::T(t0), Pos::T(t1)) = (&e.pos[0], &e.pos[1]) else {
+                    unreachable!("a spline wall's meeting's places")
+                };
+                let mut pts = c.samples(t0.to_f64(), t1.to_f64(), 48);
                 if !h.1 {
                     pts.reverse();
                 }

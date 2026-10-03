@@ -19,11 +19,11 @@ use super::bernstein::{
 use super::spline_taylor::{lift_patches_about, spline_jet1, Patch as Jets};
 use super::Lp;
 use crate::certified::Real;
+use crate::jet::Jet;
 use crate::surface::ExactBezierSurface3;
 use crate::topology::Curve2;
 use crate::BSplineSurface3;
 use num_rational::BigRational as R;
-use std::cmp::Ordering;
 
 /// `S` (relative to the integration's origin), `S_u` and `S_v` over a box.
 type Jet1<T> = [[T; 3]; 3];
@@ -477,6 +477,13 @@ fn exact_green<T: Real>(
     let mut total: Option<Vec<T>> = None;
     for lp in loops {
         for fin in &lp.fins {
+            // A spline wall's meeting's projection onto this wall (S9f.2b):
+            // `-G(ū, v̄) dū` along it, piece by piece between the knots on
+            // each knot span's patch, with jets.
+            if let Curve2::Projection(pr) = &fin.pcurve {
+                add_all(&mut total, wall_green(&patches, pr, surface)?);
+                continue;
+            }
             let arcs = pcurve_arcs(&fin.pcurve)?;
             // Split lines where they cross a patch boundary.
             let mut cuts = vec![ratio(0, 1), ratio(1, 1)];
@@ -523,15 +530,10 @@ fn exact_green<T: Real>(
             }
         }
         // Chords closing the loop's gaps: their ends must certainly share a
-        // patch.
+        // patch (S9f.2b: within a sliver of it, `chord_patch`).
         for (a, b) in super::chords::<T>(lp) {
-            let inside = |p: &Patch<T>, x: &[T; 2]| {
-                p.domain.iter().zip(x).all(|([lo, hi], v)| {
-                    matches!(v.cmp(&c(lo)), Some(Ordering::Greater | Ordering::Equal))
-                        && matches!(v.cmp(&c(hi)), Some(Ordering::Less | Ordering::Equal))
-                })
-            };
-            let patch = patches.iter().find(|p| inside(p, &a) && inside(p, &b))?;
+            let at = super::chord_patch(patches.iter().map(|p| &p.domain), &a, &b)?;
+            let patch = &patches[at];
             let one = vec![T::exact_f64(1.0), T::exact_f64(1.0)];
             let uv = [
                 vec![a[0].clone(), b[0].clone()],
@@ -543,6 +545,82 @@ fn exact_green<T: Real>(
     }
     let count = patches.first()?.g.len();
     Some(total.unwrap_or_else(|| vec![T::exact_f64(0.0); count]))
+}
+
+/// `-∫ G dū` along a spline wall's meeting's projection onto its own wall
+/// (S9f.2b), for every integrand: on each piece between the wall's knots
+/// (`projection::wall_pieces`, exact splits) the patch of its knot span,
+/// `G` there at the piece's local `(ū, v̄)` jets.
+fn wall_green<T: Real>(
+    patches: &[Patch<T>],
+    pr: &crate::topology::Projection,
+    surface: &BSplineSurface3,
+) -> Option<Vec<T>> {
+    let crate::topology::Curve3::WallMeet(m) = &pr.curve else {
+        return None;
+    };
+    if m.wall != *surface {
+        return None;
+    }
+    let spans = super::wall_meet::spans(m)?;
+    let count = patches.first()?.g.len();
+    let mut totals = vec![T::exact_f64(0.0); count];
+    super::projection::wall_pieces(
+        pr,
+        count,
+        true,
+        &|k, u, v, du, _| {
+            let span = spans.spans.get(k)?;
+            let patch = patches.iter().find(|q| q.domain[0] == span.u)?;
+            let [[u0, u1], [v0, v1]] = &patch.domain;
+            let iu = c::<T>(&(ratio(1, 1) / (u1 - u0)));
+            let iv = c::<T>(&(ratio(1, 1) / (v1 - v0)));
+            let ub = u.add_constant(&c::<T>(&-u0)).scale(&iu);
+            let vb = v.add_constant(&c::<T>(&-v0)).scale(&iv);
+            let dub = du.scale(&iu);
+            Some(
+                patch
+                    .g
+                    .iter()
+                    .map(|g| tensor_jet(g, &ub, &vb).mul(&dub).neg())
+                    .collect(),
+            )
+        },
+        &mut totals,
+    )?;
+    Some(totals)
+}
+
+/// A Bernstein polynomial at a jet by de Casteljau: about a point base in
+/// the form `(1 - t) a + t b`, whose enclosures do not grow with the levels
+/// where `t` lies in `[0, 1]` (`a + t (b - a)` widens them by up to `1 + 2
+/// t` a level: a tensor of degree nine `10^4` times); over a range as `a +
+/// t (b - a)` (`wall_meet::bernstein`'s choice).
+fn casteljau_jet<T: Real>(mut row: Vec<Jet<T>>, t: &Jet<T>) -> Jet<T> {
+    let point = super::quadrature::Num::<T>::sharp(t);
+    let s = Jet::constant(T::exact_f64(1.0), t.order()).sub(t);
+    for last in (1..row.len()).rev() {
+        for i in 0..last {
+            row[i] = if point {
+                row[i].mul(&s).add(&row[i + 1].mul(t))
+            } else {
+                row[i].add(&t.mul(&row[i + 1].sub(&row[i])))
+            };
+        }
+    }
+    row.swap_remove(0)
+}
+
+/// A tensor Bernstein polynomial at jets of `(ū, v̄)` (rows in `v̄`, then
+/// `ū`), as `casteljau_jet`.
+fn tensor_jet<T: Real>(g: &Tensor<T>, u: &Jet<T>, v: &Jet<T>) -> Jet<T> {
+    let n = u.order();
+    casteljau_jet(
+        g.iter()
+            .map(|row| casteljau_jet(row.iter().map(|x| Jet::constant(x.clone(), n)).collect(), v))
+            .collect(),
+        u,
+    )
 }
 
 /// The flux of a face on a nonrational, nonperiodic spline surface

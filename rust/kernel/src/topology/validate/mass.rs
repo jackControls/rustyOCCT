@@ -865,6 +865,28 @@ fn rev_lines<T: Real>(fs: &[Rev<T>], a: &V2<T>, b: &V2<T>) -> Option<Vec<T>> {
     if d.sign()? == Ordering::Equal {
         return Some(vec![c(0.0); fs.len()]);
     }
+    // A steep line (its `du` at most 2^-20 of its `dv`: a gap between two
+    // fins' rounded ends, their angles an ulp apart) is enclosed over its
+    // box, `-du F(box)`: the expansion below in powers of its slope loses
+    // the line's own smallness (S9f.2a: a closing chord of `du` 3e-31 and
+    // `dv` 2.8e-17 left a cylinder face's moments 10^27 wide).
+    let (dl, dh) = d.bounds_f64();
+    let (vl, vh) = b[1].sub(&a[1]).bounds_f64();
+    let dv_min = if vl > 0.0 {
+        vl
+    } else if vh < 0.0 {
+        -vh
+    } else {
+        0.0
+    };
+    if dv_min > 1048576.0 * dl.abs().max(dh.abs()) {
+        let (u, v) = (a[0].union(&b[0]), a[1].union(&b[1]));
+        return Some(
+            fs.iter()
+                .map(|f| d.mul(&rev_eval(f, &u, &v)).neg())
+                .collect(),
+        );
+    }
     let m = b[1].sub(&a[1]).div(&d)?;
     let mut ends: BTreeMap<i64, (T, T, T, T)> = BTreeMap::new();
     let mut cache: BTreeMap<(i64, u32), (T, T)> = BTreeMap::new();
@@ -1839,7 +1861,8 @@ fn curve_moments<T: Real>(curve: &Curve3, reference: &V3<T>) -> Option<(T, V3<T>
         | Curve3::Section(_)
         | Curve3::Meet(_)
         | Curve3::Rise(_)
-        | Curve3::Toric(_) => None,
+        | Curve3::Toric(_)
+        | Curve3::WallMeet(_) => None,
     }
 }
 

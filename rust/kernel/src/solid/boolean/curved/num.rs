@@ -790,6 +790,11 @@ impl Qd {
         Some(a.add(&self.b.enclose_fast(n)?.mul(&Fast::near_r(&self.d)?.sqrt())))
     }
 
+    /// An enclosure, its generator's isolator narrowed by `n` bisections.
+    pub(super) fn enclose_at(&self, n: usize) -> I {
+        self.enclose(n)
+    }
+
     fn enclose(&self, n: usize) -> I {
         let a = self.a.enclose(n);
         if self.b.is_zero() {

@@ -217,6 +217,9 @@ pub enum Curve3 {
     /// A torus's meeting with a cylinder, a cone or a sphere (S9d.4b.2), a
     /// graph over one of the torus's angles.
     Toric(Box<Toric>),
+    /// A spline wall's meeting with a cylinder (S9f.2b), a graph over the
+    /// wall's `u`.
+    WallMeet(Box<WallMeet>),
 }
 
 /// A plane's section of a torus as a graph over one of its angles (S8d.3).
@@ -542,6 +545,130 @@ impl Toric {
     }
 }
 
+/// A spline wall's meeting with a cylinder (S9f.2b; D13), a graph over the
+/// wall's `u`. The wall is its face's own stored surface `wall`, a
+/// nonrational B-spline of degree one in `v` over two rows of poles, so its
+/// ruling at `u` is `L(u) + (v - v0) M(u)`, `L` the row at `v0` and `M` the
+/// rows' difference over `v1 - v0` (the wall's axis, within the poles'
+/// rounding). At `u = start + sweep f` the ruling meets the cylinder
+/// `|(w . x2, w . y2)| = other_radius` (`w` from `other`'s origin, `x2` and
+/// `y2` its axes) where `a t^2 + 2 b t + c = 0` (`t = v - v0`), and the
+/// edge is `t = (-b + sign sqrt(b^2 - a c)) / a`, or `c / (-b - sign
+/// sqrt(b^2 - a c))` where that cancels less (`Meet`'s form). An edge's
+/// range keeps `b^2 - a c > 0` (no turning point), so it is analytic on each
+/// knot span of the wall and C^(p-1) across its knots (as the wall); on its
+/// own wall its pcurve is its own `(u, v)`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct WallMeet {
+    pub wall: crate::BSplineSurface3,
+    pub other: Frame3,
+    pub other_radius: f64,
+    pub sign: f64,
+    pub start: f64,
+    pub sweep: f64,
+}
+
+impl WallMeet {
+    /// The wall's two pole rows (at `v0` and `v1`), its `v` range and its
+    /// flat `u` knots, binary64.
+    fn rows(&self) -> ([Vec<Point3>; 2], [f64; 2], Vec<f64>) {
+        let s = &self.wall;
+        let n = s.u_knots().pole_count();
+        let poles = s.poles();
+        let rows = [
+            (0..n).map(|i| poles[2 * i]).collect(),
+            (0..n).map(|i| poles[2 * i + 1]).collect(),
+        ];
+        let (_, (v0, v1)) = s.domain();
+        let k = s.u_knots();
+        let flat = k
+            .knots()
+            .iter()
+            .zip(k.multiplicities())
+            .flat_map(|(x, m)| std::iter::repeat_n(*x, *m))
+            .collect();
+        (rows, [v0, v1], flat)
+    }
+
+    /// The ruling's foot `L(u)` and direction `M(u)` (binary64, de Boor).
+    pub fn ruling(&self, u: f64) -> (Point3, crate::Vec3) {
+        let (rows, [v0, v1], flat) = self.rows();
+        let p = self.wall.u_knots().degree();
+        let n = rows[0].len();
+        // The span: flat[k] <= u < flat[k + 1], clamped to the domain.
+        let mut k = p;
+        while k + 1 < n && flat[k + 1] <= u {
+            k += 1;
+        }
+        let eval = |row: &[Point3]| -> Point3 {
+            let mut d: Vec<[f64; 3]> = (0..=p).map(|j| row[k - p + j].to_array()).collect();
+            for r in 1..=p {
+                for j in (r..=p).rev() {
+                    let i = k - p + j;
+                    let den = flat[i + p + 1 - r] - flat[i];
+                    let alpha = if den == 0.0 { 0.0 } else { (u - flat[i]) / den };
+                    let below = d[j - 1];
+                    for (x, b) in d[j].iter_mut().zip(below) {
+                        *x = (1.0 - alpha) * b + alpha * *x;
+                    }
+                }
+            }
+            Point3::new(d[p][0], d[p][1], d[p][2])
+        };
+        let (a, b) = (eval(&rows[0]), eval(&rows[1]));
+        (a, (b - a) / (v1 - v0))
+    }
+
+    /// The wall's `(u, v)` at a fraction.
+    pub fn parameters(&self, fraction: f64) -> (f64, f64) {
+        let u = self.start + self.sweep * fraction;
+        let (foot, dir) = self.ruling(u);
+        let w = foot - self.other.origin();
+        let (x2, y2) = (self.other.x(), self.other.y());
+        let (wx, wy, mx, my) = (w.dot(x2), w.dot(y2), dir.dot(x2), dir.dot(y2));
+        let a = mx * mx + my * my;
+        let b = wx * mx + wy * my;
+        let c = wx * wx + wy * wy - self.other_radius * self.other_radius;
+        // `b^2 - a c` as `a r^2 - (P x M)^2` (Lagrange's identity).
+        let cross = wx * my - wy * mx;
+        let d = (a * self.other_radius * self.other_radius - cross * cross).max(0.0);
+        let sq = self.sign * d.sqrt();
+        let (p, m) = (-b + sq, -b - sq);
+        let t = if p.abs() >= m.abs() { p / a } else { c / m };
+        (u, self.wall.domain().1 .0 + t)
+    }
+
+    pub fn point(&self, fraction: f64) -> Point3 {
+        let (u, v) = self.parameters(fraction);
+        let (foot, dir) = self.ruling(u);
+        foot + dir * (v - self.wall.domain().1 .0)
+    }
+}
+
+/// A spline surface moved rigidly: its poles moved, and R4 under rounding
+/// as for curves (S9f.1): a knot of multiplicity `p` removed once where the
+/// motion's rounding breaks C1.
+fn moved_spline_surface(
+    s: &crate::BSplineSurface3,
+    motion: crate::RigidTransform,
+) -> Result<crate::BSplineSurface3> {
+    let image = |s: &crate::BSplineSurface3| {
+        crate::BSplineSurface3::new(
+            s.u_knots().clone(),
+            s.v_knots().clone(),
+            s.poles().iter().map(|p| motion.point(*p)).collect(),
+            Some(s.weights().to_vec()),
+        )
+    };
+    let mut moved = image(s)?;
+    if !validate::continuity::surface_c1(&moved) {
+        if let Some(reduced) = c1_reduced_surface(s)? {
+            moved = image(&reduced)?;
+        }
+    }
+    Ok(moved)
+}
+
 /// A pcurve defined as the exact inverse of its face's surface map applied
 /// to its fin's edge (D13; S8d.2): at a fraction `f` the surface's
 /// parameters of the edge's point at `f` (or `1 - f` for a reversed use),
@@ -604,6 +731,14 @@ impl Projection {
         } else {
             fraction
         };
+        // A spline wall's meeting on its own wall: its own parameters
+        // (S9f.2b; the wall has no closed-form inverse).
+        if let (Curve3::WallMeet(m), Surface::BSpline(s)) = (&self.curve, &self.surface) {
+            if m.wall == *s {
+                let (u, v) = m.parameters(f);
+                return Point2::new(u, v);
+            }
+        }
         let p = self.curve.point(f);
         let Some(mut uv) = Self::inverse(&self.surface, p) else {
             return Point2::new(f64::NAN, f64::NAN);
@@ -618,6 +753,29 @@ impl Projection {
             uv.y = near(uv.y, lift.y);
         }
         uv
+    }
+
+    /// A spline wall's meeting's projection onto its own wall (S9f.2b): its
+    /// own parameters, no lift (the wall is not periodic); its ends as the
+    /// lifts.
+    pub(crate) fn own_wall(curve: Curve3, surface: Surface, reversed: bool) -> Option<Self> {
+        let Curve3::WallMeet(m) = &curve else {
+            return None;
+        };
+        if !matches!(&surface, Surface::BSpline(s) if *s == m.wall) {
+            return None;
+        }
+        let at = |f: f64| {
+            let (u, v) = m.parameters(if reversed { 1.0 - f } else { f });
+            Point2::new(u, v)
+        };
+        let lifts = vec![at(0.0), at(1.0)];
+        Some(Self {
+            curve,
+            surface,
+            reversed,
+            lifts,
+        })
     }
 
     /// A projection of `curve` onto `surface` with `anchors` recorded lifts,
@@ -878,6 +1036,7 @@ impl Curve3 {
             Self::Meet(m) => m.point(fraction),
             Self::Rise(m) => m.point(fraction),
             Self::Toric(m) => m.point(fraction),
+            Self::WallMeet(m) => m.point(fraction),
         }
     }
 }
@@ -1525,6 +1684,14 @@ impl Topology {
                     other: m.other.transformed(motion, tolerance)?,
                     ..(**m).clone()
                 })),
+                // S9f.2b: a spline wall's meeting with a cylinder: its wall
+                // moved as its face's (`moved_spline_surface`), so its pcurve
+                // there stays its own, and the cylinder's frame.
+                Curve3::WallMeet(m) => Curve3::WallMeet(Box::new(WallMeet {
+                    wall: moved_spline_surface(&m.wall, motion)?,
+                    other: m.other.transformed(motion, tolerance)?,
+                    ..(**m).clone()
+                })),
                 // S9d.4a: a torus's spiric sections in Boolean results (the
                 // plane is in the torus's frame, so it moves with it).
                 Curve3::Section(sec) => Curve3::Section(Box::new(Spiric {
@@ -1587,24 +1754,7 @@ impl Topology {
                     major: *major,
                     minor: *minor,
                 },
-                Surface::BSpline(s) => {
-                    let image = |s: &crate::BSplineSurface3| {
-                        crate::BSplineSurface3::new(
-                            s.u_knots().clone(),
-                            s.v_knots().clone(),
-                            s.poles().iter().map(|p| motion.point(*p)).collect(),
-                            Some(s.weights().to_vec()),
-                        )
-                    };
-                    let mut moved = image(s)?;
-                    // R4 under rounding, as for curves (S9f.1).
-                    if !validate::continuity::surface_c1(&moved) {
-                        if let Some(reduced) = c1_reduced_surface(s)? {
-                            moved = image(&reduced)?;
-                        }
-                    }
-                    Surface::BSpline(moved)
-                }
+                Surface::BSpline(s) => Surface::BSpline(moved_spline_surface(s, motion)?),
             };
         }
         // An exact projection's pcurve holds its edge's curve and its face's
@@ -4481,7 +4631,8 @@ pub(crate) fn plane_pcurve(curve: &Curve3, sense: Orientation, frame: Frame3) ->
         | Curve3::Section(_)
         | Curve3::Meet(_)
         | Curve3::Rise(_)
-        | Curve3::Toric(_) => {
+        | Curve3::Toric(_)
+        | Curve3::WallMeet(_) => {
             let reversed = sense == Orientation::Reversed;
             let start = local(curve.point(if reversed { 1.0 } else { 0.0 }));
             Curve2::Projection(Box::new(

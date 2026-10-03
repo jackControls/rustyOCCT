@@ -124,6 +124,11 @@ pub fn curve_surface(curve: &Curve3, surface: &Surface) -> Result<CurveSurfaceIn
                 "two cylinders' meeting edge against an analytic surface",
             ))
         }
+        Curve3::WallMeet(_) => {
+            return Err(Error::OutOfDomain(
+                "a spline wall's meeting with a cylinder against an analytic surface",
+            ))
+        }
         // An ellipse edge's whole ellipse, by its angle (S8a.2).
         Curve3::EllipseArc {
             frame,

@@ -595,14 +595,15 @@ fn edge_length(curve: &Curve3) -> f64 {
             total * sweep_angle.abs() / pieces as f64
         }
         // Hyperbolas, parabolas, torus sections (S8d.2-3), cylinders'
-        // meetings (S9c.2) and a torus's with a quadric (S9d.4b.2): chords
-        // of 4096 pieces.
+        // meetings (S9c.2), a torus's with a quadric (S9d.4b.2) and a
+        // spline wall's with a cylinder (S9f.2b): chords of 4096 pieces.
         Curve3::HyperbolaArc { .. }
         | Curve3::ParabolaArc { .. }
         | Curve3::Section(_)
         | Curve3::Meet(_)
         | Curve3::Rise(_)
-        | Curve3::Toric(_) => {
+        | Curve3::Toric(_)
+        | Curve3::WallMeet(_) => {
             let pieces = 4096;
             (0..pieces)
                 .map(|k| {

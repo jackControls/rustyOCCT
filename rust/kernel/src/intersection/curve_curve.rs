@@ -199,6 +199,11 @@ impl Exact {
             AnalyticCurve::Edge(Curve3::Meet(_) | Curve3::Rise(_) | Curve3::Toric(_)) => {
                 return Err(Error::OutOfDomain("two cylinders' meeting edge"))
             }
+            AnalyticCurve::Edge(Curve3::WallMeet(_)) => {
+                return Err(Error::OutOfDomain(
+                    "a spline wall's meeting with a cylinder as an edge",
+                ))
+            }
             // An ellipse edge's whole ellipse (S8a.2).
             AnalyticCurve::Edge(Curve3::EllipseArc {
                 frame,

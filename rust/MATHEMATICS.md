@@ -2484,6 +2484,159 @@ t_out) != 0` (the arc before `J` near `J - e t_in`, the one after near `J
 + e t_out`, on opposite sides of `l`); otherwise the plane touches the
 solid along the edge.
 
+## Spline walls on parallel axes (S9f.2a)
+
+**The map between the frames.** Two prisms on stored axes `(o, x, y, n)`
+and `(o', x', y', n')` with `n x n' = 0` exactly: the second's frame
+coordinates of a point are `rows' . (P - o')`, the rows of the inverse of
+`[x' y' n']`, and `rows'_u . n' = rows'_v . n' = 0` with `n` a multiple of
+`n'`, so `u'` and `v'` of the first's `o + u x + v y + w n` are affine in
+`(u, v)` alone, with rational coefficients (`map2`). Every wall of both
+runs along the common direction; two walls meet in the generatrices over
+the 2D crossings of their profile curves.
+
+**A spline against a cylinder.** The cylinder `(u' - c_u)^2 + (v' -
+c_v)^2 = r^2` (a circle in its frame, an ellipse in the spline's unless the
+map is a similarity) holds the generatrix over the arc's point `S(s)`
+exactly when `E(s) = (u'(S(s)) - c_u)^2 + (v'(S(s)) - c_v)^2 - r^2 = 0`, a
+polynomial of degree `2 p` with rational coefficients; its roots in `[0,
+1]` are isolated exactly with their multiplicities (a root of multiplicity
+above one is a tangency along a generatrix) and are the arc's own
+parameter, so every such vertex lies in `Q(alpha)` with `alpha` S9f.1's
+generator of the arc's polynomial. A cap edge or a crease over the
+segment, `(S(s), h(S(s)))`, meets the cylinder at the same roots; the
+cylinder's cap edge (the conic `c + a cos t + b sin t` at its height) meets
+the spline's wall there too, at `(cos t, sin t) = ((u' - c_u) / r, (v' -
+c_v) / r)`.
+
+**Two splines.** For a Bézier arc `B(sigma) = (B_x, B_y)` of degree `q`
+in its own frame, its implicit equation is the Sylvester resultant `f(X, Y)
+= Res_sigma(B_x(sigma) - X, B_y(sigma) - Y)`, of degree at most `deg B_y`
+in `X` and `deg B_x` in `Y`, found exactly by evaluating the determinant on
+the integer grid and interpolating (Newton's divided differences in each
+variable); `f(B(sigma)) = 0` identically, and a point of the curve has `f
+= 0`. Its first subresultant `S_1 = a sigma + b`, the determinant of the
+Sylvester matrix of `deg B_y - 1` shifts of `B_x - X` and `deg B_x - 1`
+shifts of `B_y - Y` with its last two columns replaced in turn by the
+columns of `sigma^1` and `sigma^0`, is a combination of the two
+polynomials of degree one in `sigma`, so at a point of the curve where `a
+!= 0` its root is the common root: `sigma = -b(X, Y) / a(X, Y)` (`a`, `b`
+interpolated on the grid too; a coordinate of degree one gives `sigma`
+directly). On the first arc `S(s)` (degree `p`) the polynomial `R(s) =
+f(m(S(s)))` (degree at most `p q`) vanishes exactly where the first arc's
+point lies on the second arc's curve; at each root `alpha` in `[0, 1]`
+`sigma = -b / a` at `m(S(alpha))` is an element of `Q(alpha)` (one
+inversion in the field), and the crossing is the second arc's when `0 <=
+sigma <= 1` and `B(sigma) = m(S(alpha))` exactly (`a = 0` there, a node or
+cusp of the second arc's curve, is a limit). The field is always the
+object's arc parameter's, whichever input's edge or face the crossing is
+found from, so one crossing is one number. A crossing at an interior
+knot of either curve crosses when the legs `t_in` (the arriving arc's end
+derivative) and `t_out` (the leaving arc's start derivative) lie on the
+other curve's two sides, `sign(t x (-t_in)) = -sign(t x t_out) != 0` for
+its tangent `t`; otherwise the curves touch there.
+
+**A point of another field on a segment.** On each arc whose control box
+holds the point's enclosure, `f` at the point (exact, in its field) is
+zero exactly when the point is on the arc's curve, and then `sigma = -b /
+a` places it, on the arc when `0 <= sigma <= 1` and `B(sigma)` is the point
+exactly.
+
+**Membership off the segments.** An irrational point `x` off every
+spline segment is classified at a rational point of a box holding `x` that
+no boundary element meets: the point's enclosure with its generator's
+isolator narrowed by 64, 160 and then 320 bisections, a line misses it when the four corners lie
+strictly on one side, a circle when every corner lies strictly inside or
+the box's nearest point strictly outside, a Bézier arc when its control
+points' box is apart from it or both halves of its exact de Casteljau
+subdivision miss it (to depth 64). The box is connected and free of the
+boundary, so every point of it is classified as `x`.
+
+**A steep line in the certified mass integrals.** On a cylinder or cone
+the integral `-int F(u, v) du` along a line pcurve is expanded in powers
+of its slope `m = dv / du` from its start; for a line with `|du| <= 2^-20
+|dv|` (a gap between two fins' rounded ends, their angles an ulp apart)
+the expansion's interval terms lose the line's smallness (`m^2` times
+cancelling enclosures), so the line is enclosed as `-du F(box)` over its
+parameter box instead, certified by the mean value theorem.
+
+## Spline walls against crossing cylinders (S9f.2b)
+
+**The meeting.** Along the spline prism's ruling at the run parameter
+`tau`, `X = o + S_x(tau) x + S_y(tau) y + w n`, the cylinder's function in
+its own frame's exact rows (`sum_i (g_i . X - e_i)^2 - r^2`, `g_i` the
+rows of the inverse of its stored axes, `e_i` its centre's coordinates) is
+`F = A w^2 + 2 B(tau) w + C(tau)` with `P_i = g_i . (o + S_x x + S_y y) -
+e_i`, `q_i = g_i . n`, `A = sum q_i^2`, `B = sum q_i P_i` (degree `p` on
+a Bézier arc) and `C = sum P_i^2 - r^2` (degree `2 p`). On crossing axes
+`A > 0`, and the meeting's two branches are the graphs `w_+-(tau) = (-B +-
+sqrt(D)) / A`, `D = B^2 - A C`, over the ranges of `tau` where `D > 0`;
+`D`'s roots (degree `2 p`) are the turning points, where the ruling is
+tangent to the cylinder (`w = -B / A`, a double root of `F`). A point is on
+a branch when it lies on the cylinder and `A w + B = sum q_i (g_i . X -
+e_i)` has the branch's sign. The curve's tangent is `(S'(tau), w')` with
+`w' = -(2 B' w + C') / (2 (A w + B))`.
+
+**Vertices.** A curve over the segment at height `w = h_0 + h_1 S_x + h_2
+S_y` (a cap edge, `h_1 = h_2 = 0`, or a crease of the cylinder prism's cap
+plane) meets the cylinder at the roots of `F(h(S(tau)), tau)`, degree `2
+p` in `tau`; a cylinder's cap circle meets the wall at those roots on its
+cap plane's crease, at its angle `atan2` of the point's coordinates. Every
+root is the arc's own parameter, so every vertex on the wall lies in
+S9f.1's `Q(alpha)` (degree at most `2 p`) or, on a vertical edge of the
+spline prism against the cylinder, in `Q(sqrt(d))`. A cap plane holding the
+wall's axis direction exactly (`h_0 + h_1 S_x + h_2 S_y` with the plane
+parallel to `n`) meets the wall in generatrices, whose points with the
+circle lie in a tower `Q(alpha)(sqrt(delta))`: refused (S9f.2b.2).
+
+**The rounded curve.** `Curve3::WallMeet` stores the wall's surface, of
+degree one in `v` between its two pole rows: at `u` its ruling is `L(u) +
+t M(u)`, `t = v - v_0`, `M = (R_1 - R_0) / (v_1 - v_0)`. In the cylinder's
+stored axes `(o_c, x_c, y_c)` with `W = L - o_c`, `w_x = W . x_c`, `w_y =
+W . y_c`, `m_x = M . x_c`, `m_y = M . y_c`, the ruling meets `w_x^2 + w_y^2
+= r^2` where `a t^2 + 2 b t + c = 0`, `a = m_x^2 + m_y^2`, `b = w_x m_x +
+w_y m_y`, `c = w_x^2 + w_y^2 - r^2`, and `b^2 - a c = a r^2 - (w_x m_y -
+w_y m_x)^2` (Lagrange's identity `(w . m)^2 + (w x m)^2 = |w|^2 |m|^2` in
+the plane), free of the cancellation of `b^2` against `a c`. The root is
+`(-b + s sqrt(d)) / a`, or `c / (-b - s sqrt(d))` where that cancels less.
+
+**Certified evaluation.** On a knot span, `L`, `M` and so `w_x`, `w_y`,
+`m_x`, `m_y` are Bernstein polynomials of degree `p` in the span's local
+`ū` with exact rational coefficients; `a`, `b`, `c` (degree `2 p`) and `d
+= a r^2 - x^2` (`x = w_x m_y - w_y m_x`, degree `4 p` written with `a r^2`
+raised by multiplying with one's Bernstein coefficients) are found exactly
+once per wall and cylinder by the product rule `(f g)_k = sum_(i + j = k)
+C(m, i) C(n, j) / C(m + n, k) f_i g_j`. At a point `ū` each is enclosed by
+de Casteljau's `(1 - ū) a + ū b`, whose enclosure grows by a few units in
+the last place of the coefficients and not with the levels: near a turning
+point, where the curve's `t` is `d`'s square root and its enclosure `d`'s
+over `2 a sqrt(d)`, `d` formed from enclosed factors was a hundred times
+wider. Over a range (the remainder boxes of the quadrature and the jets'
+integrals) the factors are evaluated by `a + ū (b - a)` and combined,
+which overestimates less than the products' higher degrees.
+
+**Across a knot.** The wall is `C^k` there (`k = p - m`, `m` the knot's
+multiplicity); a jet of order `n` about a base whose enclosure meets the
+knot is the union of both spans' jets when `n <= k + 1` (Taylor's theorem
+with the remainder `f^(n)(xi) / n!`, `f^(k)` absolutely continuous and
+`f^(k+1)` between the spans' values), and undefined past it. Integrals are
+split at the knots' edge fractions exactly (rationals of the stored
+`start` and `sweep`), each piece on its span's polynomial, so no remainder
+crosses a knot.
+
+**Near a turning point.** A piece's series in `ū` reaches the nearest
+root of `d` in the complex plane; a meeting ending at distance `delta`
+(in `ū`) before a turning point needs pieces no longer than about
+`delta` near that end. The quadrature halves a piece without a try where
+`d`'s binary64 values at its ends and middle differ by more than a factor
+of two (`d` is linear near a simple root, so such a piece's length exceeds
+its distance to the root), and a meeting ending `6.7e-7` short of a turning
+point takes some twenty halvings toward that end, one sweep each. A
+turning point outside the faces but within the resolution of both is
+`Degenerate`: its meeting's end there lies a rounding away from turning
+back, where `d` and the square root's slope are as large as the rounding
+allows.
+
 ## Tessellation bounds (T-a)
 
 A mesh triangle has nodes `X_i` and parameter points `p_i` on its face's

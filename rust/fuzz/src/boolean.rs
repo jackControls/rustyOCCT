@@ -42,8 +42,16 @@
 //! refused), and the byte after the chained one's place, at or above 128,
 //! makes the object's spline profile R4's knot (`knot_profile`: a quadratic
 //! whose interior knot of multiplicity two is C1 exactly, removed before
-//! lifting); spline walls against a prism with arcs, a curved solid or a
-//! given result stay refused (S9f's).
+//! lifting). S9f.2a: a spline prism against a prism with arcs or splines
+//! in the frame turned about the axis meets it on an exactly parallel
+//! axis (`SPLINE_PARALLEL`), and in the tilted frame the byte after R4's,
+//! at or above 128, offsets a spline variant's tool by an amount that
+//! rounds (the curved engine instead of S9a.2's one frame). S9f.2b: a
+//! spline prism against a prism with arcs on crossing axes (the tool
+//! leaning, tilted or on its side) meets it along the walls' meetings with
+//! the cylinders (`SPLINE_CROSSING`), their loops round a cylinder
+//! refused (S9f.2b.2's); spline walls against spline walls on crossing
+//! axes, a curved solid or a given result stay refused (S9f's).
 use crate::analytic_intersections::Bytes;
 use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
@@ -123,6 +131,20 @@ const GIVEN_MET: bool = false;
 /// 2.95 s at the slowest (a lens hole as a tilted tool), that one 23 s
 /// under AddressSanitizer where the corpus's slowest input takes 29 s.
 const SPLINE_WALLS: bool = true;
+
+/// Whether a spline prism meets a prism with arcs, circles or splines on an
+/// exactly parallel axis (S9f.2a's walls: generatrices over the profiles'
+/// exact crossings, in the spline arcs' fields): the tool turned about the
+/// axis, or in the tilted frame offset by an amount that rounds (the byte
+/// after R4's, at or above 128).
+const SPLINE_PARALLEL: bool = true;
+
+/// Whether a spline prism meets a prism with arcs or circles (the split
+/// target's stadium and round hole) on crossing axes: the tool leaning,
+/// tilted or on its side (S9f.2b's meetings of spline walls with
+/// cylinders, in the curved engine; their loops round the cylinder,
+/// S9f.2b.2's, stay refused).
+const SPLINE_CROSSING: bool = true;
 
 /// R4's knot on the target's sizes: a rectangle `2s` by `t` under a
 /// quadratic from `(2s, t)` to `(0, 2t)` whose interior knot of
@@ -273,6 +295,42 @@ pub fn check_boolean(data: &[u8]) {
         };
         pb = p;
     }
+    // S9f.2a: a spline prism against a prism with arcs (the split target's
+    // stadium and round hole) or splines on an exactly parallel axis: the
+    // tool turned about it, or in the tilted frame offset by an amount that
+    // rounds (S9a.2's one frame otherwise).
+    let curved = |spline: bool, kind: u8| spline || kind % 6 == 2 || kind % 6 == 4;
+    let curved_pair = splines != 0
+        && spline_byte < 144
+        && curved(splines & 1 == 1, ka)
+        && curved(splines & 2 == 2, kb);
+    let offset_tilt = tilted && splines != 0 && data.get(15).is_some_and(|k| *k >= 128);
+    if !SPLINE_PARALLEL && curved_pair && (offset_tilt || (!tilted && pick % 4 == 1)) {
+        return;
+    }
+    // S9f.2b: a spline prism against a prism with arcs on crossing axes
+    // (the tool leaning, tilted or on its side; off: refused as before
+    // its kernel). Spline walls against spline walls there stay refused
+    // (S9f.3).
+    let crossing = !tilted && (pick % 4 >= 2 || (pick % 4 == 0 && pick >= 128));
+    if !SPLINE_CROSSING && curved_pair && splines != 3 && crossing {
+        return;
+    }
+    let fb = if offset_tilt {
+        // The tilted frame's own normal and `x` (normalized again they
+        // could turn by an ulp: no longer exactly parallel).
+        let Ok(f) = Frame3::new(
+            Point3::new(1.0 + dx / 3.0, -2.0 + dy / 3.0, 0.5 + h / 5.0),
+            Vec3::new(0.0, 3.0, 4.0),
+            Vec3::new(1.0, 0.0, 0.0),
+            tolerance,
+        ) else {
+            return;
+        };
+        f
+    } else {
+        fb
+    };
     // S9d.4b.2a: against a whole torus tool (the spline byte in 144..148),
     // the flags' bits 5 and 6 make the object a sphere (1) or a
     // cone (2) in its frame instead of its prism (0 and 3 keep it);

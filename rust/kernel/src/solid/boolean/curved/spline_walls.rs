@@ -33,8 +33,11 @@
 //! roots of `S_y - v`, right of it by the exact sign of `S_x - u` there. An
 //! irrational point off every spline segment (none arises against a
 //! polyhedral partner: every irrational point of S9f.1 lies on a spline
-//! wall or on an arc's cylinder) is undecided, taken as on the boundary,
-//! which the arrangement refuses where it matters.
+//! wall or on an arc's cylinder) is undecided here; the profile classifies
+//! it at a rational point of a box about it that no element of the
+//! profile meets (S9f.2a, `Prism::rational_proxy`), and a point of
+//! another field on a segment is found by the arc's implicit equation
+//! (`foreign_param`).
 //!
 //! Tangencies are `Degenerate`: a plane along a generatrix (a root of even
 //! multiplicity), a plane touching the wall at a knot (a root of
@@ -46,6 +49,7 @@
 use super::meet::{EdgeMeet, Pos, Section};
 use super::model::{Affine, Crv, Prism};
 use super::num::*;
+use super::spline_parallel::Implicit;
 use crate::polynomial::real::{AlgebraicRoot, IntPolynomial};
 use crate::solid::split::spline::{power, roots, Span};
 use crate::solid::split::{q, rational_f64, zero};
@@ -53,7 +57,7 @@ use crate::{Error, Result};
 use num_bigint::BigInt;
 use num_rational::BigRational as R;
 use std::cmp::Ordering;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 /// An exact Bézier arc of a spline segment, in the segment's run.
 #[derive(Debug, Clone)]
@@ -61,15 +65,26 @@ pub(super) struct BArc {
     /// Control points in run order.
     pub(super) cps: Vec<[R; 2]>,
     /// The coordinates in powers of the arc's parameter `s` in `[0, 1]`.
-    x: Vec<R>,
-    y: Vec<R>,
+    pub(super) x: Vec<R>,
+    pub(super) y: Vec<R>,
     /// Their derivatives in `s`.
-    dx: Vec<R>,
-    dy: Vec<R>,
+    pub(super) dx: Vec<R>,
+    pub(super) dy: Vec<R>,
     /// The run parameter's range: `tau = d0 + s (d1 - d0)`.
     pub(super) d: [R; 2],
     /// The control points in binary64 (for views only).
     cf: Vec<[f64; 2]>,
+    /// Its implicit equation and inversion in its frame (S9f.2a), made once.
+    implicit: OnceLock<Arc<Implicit>>,
+}
+
+impl BArc {
+    /// The arc's implicit equation and its parameter's inversion (S9f.2a).
+    pub(super) fn implicit(&self) -> Arc<Implicit> {
+        self.implicit
+            .get_or_init(|| Arc::new(Implicit::of(&self.x, &self.y)))
+            .clone()
+    }
 }
 
 /// A spline profile segment, exact.
@@ -87,16 +102,19 @@ pub(super) struct SplineSeg {
     pub(super) span: Span,
     /// Whether it bounds a hole (its material on its right).
     pub(super) hole: bool,
+    /// Its prism's operand (0 for the object): two spline walls' crossings
+    /// lie in the object's segment's fields (S9f.2a).
+    pub(super) op: usize,
 }
 
-fn trim(mut p: Vec<R>) -> Vec<R> {
+pub(super) fn trim(mut p: Vec<R>) -> Vec<R> {
     while p.last().is_some_and(|c| *c == zero()) {
         p.pop();
     }
     p
 }
 
-fn derivative(p: &[R]) -> Vec<R> {
+pub(super) fn derivative(p: &[R]) -> Vec<R> {
     p.iter()
         .enumerate()
         .skip(1)
@@ -105,18 +123,18 @@ fn derivative(p: &[R]) -> Vec<R> {
 }
 
 /// A polynomial's value at a number of any field (Horner).
-fn peval(p: &[R], s: &Qd) -> Qd {
+pub(super) fn peval(p: &[R], s: &Qd) -> Qd {
     p.iter()
         .rev()
         .fold(Qd::rat(zero()), |acc, c| acc.mul(s).add_r(c))
 }
 
-fn peval_r(p: &[R], s: &R) -> R {
+pub(super) fn peval_r(p: &[R], s: &R) -> R {
     p.iter().rev().fold(zero(), |acc, c| acc * s + c)
 }
 
 /// `a + b X + c Y` of two power series.
-fn combine(a: &R, b: &R, x: &[R], c: &R, y: &[R]) -> Vec<R> {
+pub(super) fn combine(a: &R, b: &R, x: &[R], c: &R, y: &[R]) -> Vec<R> {
     let n = x.len().max(y.len()).max(1);
     let mut out = vec![zero(); n];
     out[0] = a.clone();
@@ -210,7 +228,7 @@ pub(super) enum Against {
 }
 
 impl SplineSeg {
-    pub(super) fn new(span: &Span, hole: bool) -> Result<Self> {
+    pub(super) fn new(span: &Span, hole: bool, op: usize) -> Result<Self> {
         let curve = span.curve().as_curve3();
         if curve.is_rational() || curve.is_periodic() {
             return Err(Error::OutOfDomain(
@@ -257,6 +275,7 @@ impl SplineSeg {
                 cps,
                 d,
                 cf,
+                implicit: OnceLock::new(),
             });
         }
         Ok(Self {
@@ -266,6 +285,7 @@ impl SplineSeg {
             rev,
             span: crate::topology::c1_reduced_span(span)?,
             hole,
+            op,
         })
     }
 
@@ -289,7 +309,7 @@ impl SplineSeg {
     }
 
     /// The run parameter of an arc's parameter.
-    fn tau_of(&self, k: usize, s: &K) -> Qd {
+    pub(super) fn tau_of(&self, k: usize, s: &K) -> Qd {
         let d = &self.arcs[k].d;
         Qd::of(s.scale(&(&d[1] - &d[0]))).add_r(&d[0])
     }
@@ -391,7 +411,10 @@ impl SplineSeg {
     /// it: for a point of `Q(alpha)` the arc whose polynomials at `alpha`
     /// give it (every such point was found at its arc's parameter), for a
     /// rational point the common roots of `S_x - u` and `S_y - v`; a surd's
-    /// point is never on a spline (none but a joint's, rational).
+    /// point is never on a spline (none but a joint's, rational). S9f.2a: a
+    /// point of another field (a crossing found on the other input's spline
+    /// or cylinder) by each arc's implicit equation and its parameter's
+    /// inversion (`foreign_param`).
     pub(super) fn locate(&self, x: &[Qd; 2]) -> Option<Qd> {
         if x.iter().any(|c| c.field().is_some()) {
             return None;
@@ -405,10 +428,47 @@ impl SplineSeg {
                     return Some(self.tau_of(k, &alpha.a));
                 }
             }
-            return None;
+            return self.foreign_param(x);
         }
         let (u, v) = (x[0].rational()?, x[1].rational()?);
         self.rational_param(&[u.clone(), v.clone()])
+    }
+
+    /// The run parameter of a point of an algebraic field on the segment
+    /// whose generator is not its arcs' own (S9f.2a): on each arc whose
+    /// control box holds the point's enclosure, the exact sign of the arc's
+    /// implicit equation there and, where it vanishes, the arc's parameter
+    /// from its inversion (`Implicit::param`), the arc's point there the
+    /// given one exactly.
+    fn foreign_param(&self, x: &[Qd; 2]) -> Option<Qd> {
+        let (ix, iy) = (x[0].interval(), x[1].interval());
+        let one = Qd::rat(int(1));
+        let nil = Qd::rat(zero());
+        for (k, a) in self.arcs.iter().enumerate() {
+            let apart = |i: usize, e: &crate::certified::Interval| {
+                a.cps.iter().all(|c| &c[i] < e.lo()) || a.cps.iter().all(|c| &c[i] > e.hi())
+            };
+            if apart(0, &ix) || apart(1, &iy) {
+                continue;
+            }
+            let imp = a.implicit();
+            if imp.value(x).sign() != Ordering::Equal {
+                continue;
+            }
+            let Some(s) = imp.param(x) else {
+                continue;
+            };
+            if s.cmp(&nil) == Ordering::Less || s.cmp(&one) == Ordering::Greater {
+                continue;
+            }
+            if x[0].cmp(&peval(&a.x, &s)) != Ordering::Equal
+                || x[1].cmp(&peval(&a.y, &s)) != Ordering::Equal
+            {
+                continue;
+            }
+            return Some(self.tau_of(k, &s.a));
+        }
+        None
     }
 
     /// A rational point's run parameter on the segment.
