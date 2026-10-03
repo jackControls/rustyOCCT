@@ -5161,7 +5161,10 @@ Decisions for S9, recorded before its code (2026-09-28):
     to the other input); none evaluates newly, so none is registered and no
     volume audit is due; the ledger does not change. DRAW survey: that of
     S9e.3b, S9f.2a and S9f.2b.1, below (no status or refusal changes; the
-    volume audit's values bit for bit). Pending: the campaign.
+    volume audit's values bit for bit).
+    Campaign: the boolean campaign at `b0b9adc6` (600 s, a sampled
+    replay) clean, 995 runs, the slowest input 21 s under
+    AddressSanitizer (`GIVEN_MET` off).
   * **S9f.2a refined, before its code (2026-10-03).** Why it is refused
     today: `curved::spline_pairs` refuses a spline prism against a prism
     holding arcs or circles ("a spline prism against a prism with arcs in

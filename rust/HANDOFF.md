@@ -68,12 +68,11 @@ and their DRAW survey (branch `s9-draw-3`).
 
 ## What is open, in order
 
-1. **S9e.3b's campaign** (`REVIEW_NOTES.md`'s "S9e.3b implemented"; the
-   DRAW survey of S9e.3b, S9f.2a and S9f.2b.1 is done, branch
-   `s9-draw-3`: no status or refusal changes, the volume audit's 987 bit
-   for bit). The fuzz target's `GIVEN_MET` is off: the corpus's slowest
+1. **`GIVEN_MET` in the fuzz target** (S9e.3b is done: its DRAW survey,
+   with S9f.2a's and S9f.2b.1's, changed nothing, and its campaign at
+   `b0b9adc6` is clean). The switch is off: the corpus's slowest
    chained operations reaching a given meeting take 60 to 71 s an input
-   under AddressSanitizer. The campaign runs with it off; the next lever is the degree-eight
+   under AddressSanitizer. The next lever is the degree-eight
    arrangement arithmetic (the second arrangement's predicates on vertices
    in fields of degree eight), after which `GIVEN_MET` can be switched on
    and a campaign run with it. Of the chained operations the debug replay
