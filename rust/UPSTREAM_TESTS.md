@@ -1308,6 +1308,28 @@ after it, at a `ptorus` on a DRAW `plane`; the native host at `add` or
 case) holds for every case, the slowest Boolean case 9.8 seconds
 (`boptuc_simple/ZK8`), the rollex 1.5 to 1.6. The ledger does not change.
 
+**S9e.3a's given results in the Boolean group.** The boolean group's 20
+unregistered cases in which a Boolean's result is an argument of another
+Boolean command (S9e.2's 25 less the rollex's four, the scan finding one
+fewer of the dataset's restored arguments) were run on both backends after
+S9e.3a (2026-10-02, `survey_upstream_tests.py --case`, the public dataset
+read through `--data-dir`, 120 seconds a case). `bcut_simple/G9` and `H3`
+(a frustum of radii 7 and 6 fused onto a cylinder of radius 9, then a rod
+of radius 1 about `(5, 0)` cut from the fuse) are refused now as "a
+tangency between the inputs (S9c)": the rod's circle touches the
+frustum's top circle of radius 6 at `(6, 0, 4)` (where both seams lie, as
+DRAW's comment says), the decisions' refusal; before, the given result was
+refused as S9e.3's. Native DRAW's area 727.481 is the reference's
+(`generate_given_curved_boolean_fixtures.py`'s `g9_cut`, 727.4813665;
+`g9_clear_cut`, the rod moved to `x = 4.5`, evaluates on the kernel with
+the same measures). The others do not change: 5 load private data on both,
+6 give a Boolean a restored shape (not a solid the adapter made), 5 stop at
+constructs the adapter does not read (`mkplane`, a `prism` of a restored
+face, a restored 2D ellipse and trimmed curve), `bopcut_simple/ZQ1`
+(`wire`, unsupported on both) and `bopfuse_simple/ZP6` (a torus tangent to
+the other input). None evaluates newly, fails or times out; none is
+registered; the ledger does not change.
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4

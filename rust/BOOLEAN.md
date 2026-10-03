@@ -823,8 +823,9 @@ scope: a result of prisms of lines, arcs and circles in any frames (S9c.1's
 pairs) that is the only solid of its Boolean, as object or tool, with a
 prism of lines, arcs and circles or another such result (S9e.2 adds
 stacks, S9b.1 results and one solid of several, below). Refused: a plane's
-piece (S9e.4); a result of spheres, cones, tori or with procedural
-edges, a result against a sphere, cone or torus, and deeper chains (S9e.3);
+piece (S9e.4); results of spheres, cones and tori, with procedural
+edges, against a sphere, cone or torus, and deeper chains are S9e.3a's
+(below), a meeting of two curved faces met by the partner S9e.3b's;
 a given edge through an irrational point against a cylinder
 (`ComputationLimit`, as a section's line in S9c.1); every S9c.1
 degeneracy, including where the other input meets a given model's section
@@ -889,6 +890,56 @@ loops now run about the face's normal, every vertex's way on chosen about
 it. And a stack moved rigidly kept no height range (every point off its
 heights), so a result with a moved stack among its inputs classified its
 own vertices outside; the moved stack keeps its range.
+
+### Given results of spheres, cones and tori, deeper chains (S9e.3a)
+
+A Boolean's result whose construction holds spheres, caps, zones, cones,
+frusta, tori or their parts, or given results themselves, is decided on the
+same given model (`curved/given.rs`, `curved/chain.rs`): its construction
+is re-run whichever arrangement decided it (S9c's or S9d's), its faces are
+its leaves' faces holding kept pieces on their exact surfaces (a view goes
+down every given level to the primitive model; a face's outward normal and
+its parameters' sign compose each level's orientation, so a sphere's,
+cone's or torus's face kept as a cut's tool is reversed there alone), and
+every first-arrangement edge on a kept piece is a model edge with its exact
+curve and places: lines, conics, a sphere's circles, a cone's sections (one
+normal to the axis given as the circle it is), a torus's sections and
+rims, and the meetings of two curved faces (`Meet`, `Rise`, `Toric`). The
+construction tree is evaluated level by level, each level's arrangement
+over its two leaves' models, to three Booleans (deeper,
+`ComputationLimit`). A given result may meet a sphere, cone or torus: the
+leaves' surfaces meet the partner's in S9d's pairs.
+
+The second arrangement meets a given edge by S9c.1's and S9d's edge
+meetings through the edge's own surface (a sphere's circle its sphere,
+reached through its faces' views): lines and conics against every
+surface, a sphere's circle against planes, cylinders, spheres, cones and
+tori, a torus's section against planes and, where it is a circle of the
+torus at a fixed angle, against quadrics and tori. One meeting is new: a
+cone's section against a plane, on the line of the two planes
+(`ConeSec::meet_plane`). A meeting of two curved faces, a cone's section
+against a curved face or a torus's general section against a curved face,
+met by the partner, is three surfaces two of them curved: S9e.3b's,
+`OutOfDomain`; where one of the edge's faces' surfaces is apart from the
+partner's face the edge is not met and stays given. A result edge over the
+whole of a given edge keeps its stored curve; a piece of a cone's or a
+torus's section is rounded from its exact curve on its primitive model.
+
+In scope besides S9e.1's and S9e.2's: results of spheres, cones and tori
+with prisms, spheres, cones and tori; results with procedural edges the
+partner does not reach; deeper chains to three Booleans; given results
+against spheres, cones and tori. Refused: S9e.3b's meetings; deeper trees;
+a plane's piece (S9e.4); splines (S9f); every S9d degeneracy in the second
+arrangement. DRAW's `bcut_simple/G9` and `H3` are such a degeneracy: the
+rod of radius 1 about `(5, 0)` touches the frustum's top circle of radius 6
+at `(6, 0, 4)`, a tangency between the inputs.
+
+Corrections found here: S9d.4c's meeting of a part's rim with a curved
+face assumes a circle at a fixed angle of the torus, and a given result's
+general section was met by it and the result left open (the fuzz replay's
+sphere partner): such a section met by a curved face is now S9e.3b's; and
+the independent history check takes a torus's plane section, a hyperbola
+and a parabola split by another Boolean as one curve.
 
 ### Spline profiles (S9a.2)
 
@@ -2269,6 +2320,18 @@ height); its horizontal edges on a spline are its lifted restrictions.
   reviewed (BRepGProp's default integration on faces bounded by
   approximated meetings of two curved faces, up to 6.4e-6; adaptively
   within 2.4e-9); `G9`'s cut has DRAW's area 727.481.
+* **Kernel (S9e.3a).** `tests/given_curved_booleans.rs`: all 48 fixtures
+  as the reference (42 within the kernel's enclosures, each at most `1e-9`
+  wide; the 6 declared degenerate refused as tangencies, `G9` among them),
+  every stage's history complete and chaining, results deterministic and
+  moved rigidly, given results translated with their last solids keeping
+  the reference's volumes, a tree of four Booleans `ComputationLimit`, a
+  given `Rise` met by a box S9e.3b's, the stored frames the reference's bit
+  for bit. `compare_given_curved_boolean.py`: 25 matches and 23 reviewed
+  (the native measures, and entity counts: the kernel's exact meeting
+  pieces and whole periodic faces against OCCT's split approximations and
+  seams); every other Boolean comparison unchanged in its counts. DRAW's
+  `G9` and `H3` refused as the tangency they are (`UPSTREAM_TESTS.md`).
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
@@ -2276,7 +2339,9 @@ height); its horizontal edges on a spline are its lifted restrictions.
   cut and common with the volume identities, rigid motions of the results
   and every result vertex classified on its boundary; one operation's first
   result (of at most 12 faces; curved ones too since S9e.1, `GIVEN_CURVED`)
-  cut by a turned box and in common with it.
+  cut by a turned box and in common with it (S9e.2: or a turned cylinder,
+  `GIVEN_ROUND`; S9e.3a: results of spheres, cones and tori too, or a
+  sphere, `GIVEN_BALL`).
 
 ## DRAW commands
 

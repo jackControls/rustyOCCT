@@ -4592,6 +4592,85 @@ Decisions for S9, recorded before its code (2026-09-28):
     adaptively within 2.4e-9, unchanged at 1e-12); `G9`'s cut has DRAW's
     area 727.481; 18 results' counts change when unified. S9e.3a's kernel
     next.
+  * **S9e.3a implemented** (`solid/boolean/curved/chain.rs`, `given.rs`'s
+    leaves of every kind, `graph.rs`'s edge places and meetings, `meet.rs`,
+    `cone.rs`, `torus.rs`, `assemble.rs`'s carriers and stored curves,
+    `model.rs`, `mod.rs`'s routing, `history.rs`'s split supports): a
+    given result's construction re-run whichever arrangement decided it
+    (spheres, caps, zones, cones, tori and their parts, and given results,
+    as leaves; views down to the primitive model, normals and the
+    parameters' sign composed through each level's orientation), every
+    first-arrangement edge a model edge with its exact curve and places
+    (`Given::places`), deeper chains to three Booleans
+    (`chain::MAX_DEPTH`), a given result against a sphere, cone or torus,
+    as the refined decisions describe. All 48 fixtures as the reference
+    (42 within the kernel's enclosures, each at most `1e-9` wide; the 6
+    declared degenerate refused, each "a tangency
+    between the inputs": `G9`'s rod touching the frustum's top circle and
+    the box touching the dome), every stage's history complete over its
+    inputs and chaining (each stage's given solid one of the previous
+    stage's results by its ids), results deterministic and moved rigidly,
+    given results translated with their last solids keeping the
+    reference's volumes, a tree of four Booleans `ComputationLimit`, a
+    peg's `Rise` met by a box S9e.3b's, the stored frames the reference's
+    bit for bit (`tests/given_curved_booleans.rs`, 14 s at `opt-level`
+    2). `compare_given_curved_boolean.py` 25 matches and 23 reviewed: the
+    15 native measures reviewed before, and 22 results whose entity
+    counts differ from OCCT's unified ones (the kernel's meetings of two
+    curved faces in exact pieces switched at rational points and its
+    periodic faces whole, where OCCT splits its approximated meetings at
+    its own points and its faces at their seams; the holes' seam vertex
+    OCCT keeps); every other Boolean
+    comparison unchanged in its counts (boolean 45/0, its splines 33/13,
+    polyhedral 43/2, curved 42/2, procedural 4/24, turned 2/13, capped
+    0/18, sphere 30/0, spheres 12/21, cone 25/5, cones 21/19, torus 11/24,
+    torus segment 15/14, torus curved 15/29, spheres turned 0/18, cones'
+    loops 5/26, torus parts 16/37, chained 24/6, given 36/0; S9f.1's 38
+    unsupported). Amendments to the decisions, from the implementation:
+    (a) a plane's section of a cone normal to its axis is given as the
+    circle it is (`Crv::Conic` on the cone's frame, its angle the cone's:
+    the same places), so every surface meets it as a conic (`G9`'s body:
+    the frustum's circle at the cylinder's top, met by a rod and a box);
+    (b) a torus's plane section meets a curved face by S9d.4c's `rim_far`
+    only where it is a circle of the torus at a fixed angle (a plane normal
+    to or holding the axis, as a part's rims are); another plane's section
+    met by a curved face is S9e.3b's: the fuzz replay found `rim_far`
+    taking a general section (a box's face across a torus, then a sphere)
+    and the second result open (`InvalidTopology`, three corpus inputs
+    with the sphere partner); (c) a given edge of S9e.3b's curves is not
+    met where one of its faces' surfaces is apart from the other face's
+    (a plane parallel to a cylinder's axis beyond its radius, a plane
+    beyond a sphere, a curved pair's relation `Apart`), so a meeting the
+    partner does not reach stays given (`dome_deep`'s `Rise`); (d) a result
+    edge over the whole of a given edge (every model edge of its stored
+    edge, none split) keeps the stored curve, oriented by its ends; a piece
+    of a cone's or a torus's section is rounded from the exact curve on its
+    primitive model (`chain::curve_model`, also for every section of the
+    second arrangement, whose carrier's frame and data are its view's);
+    a given sphere's circle keeps its stored frame as a given conic does;
+    (e) the independent history check takes a torus's plane section, a
+    hyperbola and a parabola split by another Boolean as one curve (the
+    same torus or frame and plane or size, whatever its range), as S9e.1's
+    took an ellipse. The `boolean` fuzz target's chained stage now gives
+    first results of spheres, cones and tori, and by the chained byte's
+    next bit its partner is a sphere of radius 1.25 about the turned box's
+    centre (`GIVEN_BALL`, on): replaying the corpus (1,425 inputs) and the
+    19 regressions with debug assertions, no failure, the slowest 5.0 s on
+    a loaded machine (the chained stage's operations 4.3 s at the
+    slowest); of the corpus's 1,238 chained operations 659 evaluate (409
+    before), none is refused as S9e.3's (468 before), 156 as S9e.3b's (a
+    meeting of two curved faces, or a torus's general section, met by the
+    partner), the others as documented (spline stacks, S9c's arcs off
+    their circles, S9c.1's degeneracies, a plane within rounding of a
+    cylinder's direction). DRAW (`UPSTREAM_TESTS.md`): of the 20
+    unregistered cases giving a Boolean's result to another Boolean,
+    surveyed on both backends, `bcut_simple/G9` and `H3` are refused now
+    as a tangency between the inputs (the decisions' refusal; before, as
+    S9e.3's), the others as before (5 private data, 6 a restored shape
+    given to a Boolean, 5 constructs the adapter does not read, `ZQ1`'s
+    wire, `ZP6`'s torus tangent to the other input); none evaluates newly,
+    fails or times out, so none is registered; the ledger does not change.
+    Pending: the DRAW survey, the campaign.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

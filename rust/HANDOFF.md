@@ -15,6 +15,11 @@ where to pick up. Written 2026-10-01; the code it describes is that of
   and tori (S9d.1–S9d.4c). Every sub-step has its refined decisions, an
   independent reference, fixtures, a native capture taken before its kernel
   code, the kernel, a DRAW survey and a clean 600 s campaign.
+- **S9e.3a implemented** (branch `s9e3`, not yet pushed): given results of
+  spheres, cones and tori, deeper chains and given results against spheres,
+  cones and tori (`curved/chain.rs`), with its evidence captured before the
+  kernel; its DRAW chained cases surveyed (`G9` and `H3` refused as a
+  tangency); pending the full DRAW survey and the campaign.
 - **S9e.1 and S9e.2 done.** A Boolean's result given to another Boolean:
   results of prisms with lines, arcs and circles (S9e.1, `curved/given.rs`),
   stacks with arc walls, polyhedral results given with arcs, and one solid of
@@ -31,13 +36,18 @@ where to pick up. Written 2026-10-01; the code it describes is that of
 
 ## What is open, in order
 
-1. **S9e.3**: results containing spheres, cones or tori, results with
-   procedural edges (`Meet`, `Rise`, sections, `Toric`), deeper chains, and
-   results against a sphere, cone or torus. DRAW's `G9` and `H3` belong here;
-   about 180 chained stages of the boolean fuzz corpus are refused as S9e.3's.
-   Start with the refined decisions and the evidence. A local branch
-   `s9e3-wip` on the development machine holds kernel code begun before any
-   evidence: do not merge it as is.
+1. **S9e.3a's DRAW survey and campaign** (its decisions, evidence, capture
+   and kernel done on branch `s9e3`: given results of spheres, cones and
+   tori, with procedural edges the partner does not reach, deeper chains to
+   three Booleans, given results against spheres, cones and tori; DRAW's
+   `G9` and `H3` refused as the tangency they are). Then **S9e.3b**,
+   evidence first: a given edge that is a meeting of two curved faces
+   (`Meet`, `Rise`, `Toric`, a cone pair's), a cone's section against a
+   curved face or a torus's general plane section against a curved face,
+   met by the partner (three surfaces, two curved: resultants and certified
+   isolation along the procedural curve); 156 of the fuzz corpus's 1,238
+   chained operations are refused as S9e.3b's. The old local branch
+   `s9e3-wip` is superseded: do not merge it.
 2. **S9f.1's kernel**: spline walls in the curved engine (`Seg::Spline`,
    `Surf::SplineWall`, `Crv::Spline`): creases as affine images of the
    profile, generatrices at degree-`p` roots, vertices in `Q(alpha)` of
@@ -144,6 +154,7 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_torus_parts_boolean.py` | 16 / 37 |
 | `compare_chained_boolean.py` | 24 / 6 |
 | `compare_given_boolean.py` | 36 / 0 |
+| `compare_given_curved_boolean.py` | 25 / 23 |
 | `compare_spline_any_boolean.py` | kernel unsupported on all 38 (S9f.1's kernel next) |
 
 Every one must report 0 failures. Then:
@@ -175,7 +186,7 @@ Every one must report 0 failures. Then:
   on the exact arithmetic, and Linux runners about 2.6 times this host; the
   boolean target's limit is 60 s an input. Configurations too slow for it are
   switched off in `rust/fuzz/src/boolean.rs` (`TORUS_PAIRS`, `CONE_PAIRS`,
-  `TURNED_PARTS`; `GIVEN_CURVED` and `GIVEN_ROUND` are on). A heavily loaded
+  `TURNED_PARTS`; `GIVEN_CURVED`, `GIVEN_ROUND` and `GIVEN_BALL` are on). A heavily loaded
   host makes campaigns time out spuriously; run them on a quiet machine.
 - **Keep debug-assertion tests optimized.** CI runs them with
   `CARGO_PROFILE_DEV_OPT_LEVEL=2`; time new test files that way.
