@@ -26,10 +26,17 @@ where to pick up. Written 2026-10-01; the code it describes is that of
   a result of several (S9e.2, `curved/matched.rs`), each with its DRAW
   survey (the last full survey: 987 cases registered, none failing or
   timing out) and a clean campaign (S9e.2's at `6c221525`, 1,230 runs).
-- **S9f decided, S9f.1's evidence captured.** Splines in any position:
-  decisions recorded ("S9f refined"), and S9f.1's 38 cases (spline prisms
-  against polyhedral prisms in any position) referenced and captured before
-  any kernel code.
+- **S9f decided, S9f.1 implemented** (branch `s9f1`, not yet pushed).
+  Splines in any position: decisions recorded ("S9f refined"), S9f.1's 38
+  cases (spline prisms against polyhedral prisms in any position)
+  referenced and captured before any kernel code, and its kernel
+  (`curved/spline_walls.rs`): spline walls in the curved engine, R4's knot
+  of multiplicity `p` removed exactly before every lift (the extrusion in a
+  turned frame failed before), the validator's exact Green path and
+  quadrature taking a crease's pieces across a knot line by a sliver and
+  past a cap by their control polygon; `boolean-spline-any-r4-*` adds the
+  rounded knot and exact parallels after the capture. Pending its DRAW
+  survey and campaign.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") are green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed; check
   them after every push (see "Working rules").
@@ -48,18 +55,13 @@ where to pick up. Written 2026-10-01; the code it describes is that of
    isolation along the procedural curve); 156 of the fuzz corpus's 1,238
    chained operations are refused as S9e.3b's. The old local branch
    `s9e3-wip` is superseded: do not merge it.
-2. **S9f.1's kernel**: spline walls in the curved engine (`Seg::Spline`,
-   `Surf::SplineWall`, `Crv::Spline`): creases as affine images of the
-   profile, generatrices at degree-`p` roots, vertices in `Q(alpha)` of
-   degree at most `p`, exact membership on walls, the two refusal sites
-   (`polyhedra::stored_model`, `curved/model.rs`) routed to it and relabelled
-   S9f. Its evidence found a defect before any Boolean: a spline profile with
-   an interior C1 knot of multiplicity `p`, extruded in a turned frame, has
-   lifted poles 2^-53 off C1 and `Solid::extrude_with` fails with
-   `InvalidTopology("edge_not_c1")`; fix it in the lifting (exact knot
-   removal before lifting, or a documented `PrecisionLoss`), then add the
-   deferred rounded-knot fixture. A local branch `s9f1-kernel` holds
-   unfinished, unverified work.
+2. **S9f.1's DRAW survey and campaign** (its kernel done on branch `s9f1`, over
+   `s9c2-kernel` with S9e.3a: spline prisms against prisms of lines in any
+   position, `REVIEW_NOTES.md`'s "S9f.1 implemented"). The survey should
+   find upstream cases of spline prisms in turned frames newly evaluating;
+   the campaign runs the `boolean` target with `SPLINE_WALLS` on and R4's
+   knot decoded (the byte at index 14). The old local branch `s9f1-kernel`
+   is superseded: do not merge it.
 3. **S9e.4**: imported bodies decided on their stored surfaces.
 4. **S9f.2a, S9f.2b, S9f.3**: spline walls against exactly parallel walls,
    crossing cylinders, spheres and cones ("S9f refined" gives the degrees).
@@ -155,9 +157,11 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_chained_boolean.py` | 24 / 6 |
 | `compare_given_boolean.py` | 36 / 0 |
 | `compare_given_curved_boolean.py` | 25 / 23 |
-| `compare_spline_any_boolean.py` | kernel unsupported on all 38 (S9f.1's kernel next) |
+| `compare_spline_any_boolean.py` | 22 / 16 (the kernel within the reference on all 33 solid and empty cases, the 5 degenerate refused) |
 
-Every one must report 0 failures. Then:
+Every one must report 0 failures; since S9f.1 also `compare_split.py`
+(72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its
+spline prisms. Then:
 
 - the fuzz crate: `cd rust/fuzz && cargo +nightly-2026-09-22 fmt --check && cargo +nightly-2026-09-22 check`;
 - a replay with debug assertions of every boolean corpus input and every

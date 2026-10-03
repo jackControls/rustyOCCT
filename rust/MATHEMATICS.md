@@ -2174,6 +2174,21 @@ knot: it compares the homogeneous curve's position and first derivative
 from both sides of each knot, by de Boor's recurrence on the two spans in
 `Fraction`s. The seam's left side is the domain's end.
 
+**Built C1 under rounding (S9f.1).** For a nonrational curve of degree `p`
+and a knot `u_r` of multiplicity `p`, Tiller's removal of one copy touches
+the `p - m + 1 = 1` pole at the knot alone: it is removable exactly when
+that pole is the combination of its neighbours `P_k = (1 - a) P_{k-1} + a
+P_{k+1}`, `a = (u_r - u_{k}) / (u_{k+p+1} - u_{k})` (the midpoint for equal
+spans), and the curve with the knot's multiplicity `p - 1` has the other
+poles unchanged. Its basis is `C^1` at the knot whatever its poles, so the
+reduced curve's images under any rounding map (a lift `frame.point(p, h)`,
+a crease's affine height, a rigid motion) stay C1, where the unreduced
+curve's images keep C1 only while the three poles stay exactly collinear
+in the right ratio, which a turned frame's rounding breaks by one ulp. The
+reduced curve is the same curve in the same parameter, so its pieces, walls
+and pcurves are interchangeable with the stored curve's up to the poles'
+rounding.
+
 ## Complete spline/line and spline/segment preimages
 
 Closed rational B-spline ranges against infinite lines or closed segments
@@ -2370,6 +2385,59 @@ product), or on one circle (equal centres and radii) with equal
 region-left senses. A cylinder wall's pcurves are lines in (angle,
 height): an arc's fin advances the angle by its sweep, a vertical keeps
 it, so each loop's winding is its angle's change over `2 pi`.
+
+## Spline walls in any position (S9f.1)
+
+**Meetings.** On a Bézier arc of a profile spline, `S(s) = (x(s), y(s))`
+of degree `p` (power basis, rational coefficients, `s` in `[0, 1]`), the
+wall `X(s, w) = o + x(s) x + y(s) y + w n` of a prism on the stored axes
+meets a plane `m . (X - p0) = 0` where `a(s) + b w = 0`, `a = m . (o - p0)
++ (m . x) x(s) + (m . y) y(s)`, `b = m . n`. For `b != 0` the crease is
+the graph `w = -a(s) / b`, an affine function of the profile point, so its
+curve is the profile's piece with each pole `P` placed at `-a(P) / b`
+(exact for an affine height, rounded once per pole) and its pcurve on the
+wall the identity in the curve's parameter (Greville abscissae) with `v =
+w(P) - low` per pole. For `b = 0` the plane holds the axis and meets the
+wall in the generatrices over the real roots of `a(s)` (degree `p`),
+isolated exactly with their multiplicities (square-free factors, Sturm
+sequences): a simple root crosses, a root of multiplicity above one is a
+tangency along a generatrix, and a root at an interior knot of multiplicity
+above one on either arc a tangency at the knot. A line `q + t d` meets the
+wall over the roots of its trace's equation `d_v (x(s) - q_u) - d_u (y(s)
+- q_v)`, and a cap edge or a crease meets a plane over the roots of `m .
+X(s, h(s)) - m . p0`, affine in `S(s)` again. A plane within rounding of
+the axis, `(m . x)^2 + (m . y)^2 > 10^24 (m . n)^2`, has a crease steeper
+than `10^12` (no binary64 edge holds it) and is refused.
+
+**Fields.** Each root `alpha` is the arc's own parameter: rational, or the
+generator of `Q(alpha)` defined by the root's polynomial (its primitive
+integer coefficients, a positive leading one) and isolator (S9c.2b.2's
+`Gen`), one generator per root of one polynomial (a plane's function along
+a cap edge and its generatrix's polynomial are one polynomial, so their
+common vertex is one number). A point `X(alpha, w)` with `w` in
+`Q(alpha)` (a cap's height, or where another plane meets the generatrix) is
+in `Q(alpha)^3`; its coordinates in the model's frame give it back on its
+arc by evaluating the arc's polynomials at `alpha` (`x(alpha) - u` and
+`y(alpha) - v` exactly zero), and a rational point by the common roots of
+`gcd(x(s) - u, y(s) - v)`. Numbers of two different generators compare by
+enclosures, equal below `10^-40` of their size (`approx_sign`).
+
+**Membership.** A point on a spline segment lies on the profile's
+boundary; its side after a push `d` is the sign of `d . (-y'(s), x'(s))` at
+its parameter (left of the run is material on an outer boundary).
+Otherwise, for a rational point `(u, v)`, the `+u` ray's parity counts, on
+each arc, the changes of the predicate `y(s) > v` along `s` (at the
+roots of `y(s) - v`, isolated exactly, and at the arc's ends) where `x(s)
+> u` at the change, the sign decided by Sturm-Tarski at the root: the same
+predicate the chords of lines count at their ends (an end strictly above
+the point), so a joint at the point's height is counted once, consistently,
+on either side. A segment's joint edge in a plane holding the axis lies in
+that plane's trace `l` through the joint `J`; the solid's boundary crosses
+the plane there exactly when the arriving segment's end tangent `t_in`
+and the leaving one's `t_out` satisfy `sign(n_l . t_in) = sign(n_l .
+t_out) != 0` (the arc before `J` near `J - e t_in`, the one after near `J
++ e t_out`, on opposite sides of `l`); otherwise the plane touches the
+solid along the edge.
 
 ## Tessellation bounds (T-a)
 

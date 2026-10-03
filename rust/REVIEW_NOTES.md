@@ -4695,6 +4695,109 @@ Decisions for S9, recorded before its code (2026-09-28):
     wire, `ZP6`'s torus tangent to the other input); none evaluates newly,
     fails or times out, so none is registered; the ledger does not change.
     Pending: the DRAW survey, the campaign.
+  * **S9f.1 implemented** (`solid/boolean/curved/spline_walls.rs`,
+    `model.rs`'s `Seg::Spline`, `Surf::Spline` and `Crv::Spline`, `meet.rs`,
+    `graph.rs`'s places and joints, `assemble.rs`'s spline curves and wall
+    pcurves, `mod.rs`'s routing, `polyhedra.rs`; R4 in `topology.rs` and
+    `split/spline.rs`; the validator's slivers in `spline_flux.rs`,
+    `quadrature.rs` and `spline_deviation.rs`): spline prisms (profiles of
+    lines, arcs and splines) against prisms of lines in any position,
+    same-axis pairs whose offset rounds included, as the refined decisions
+    describe. A spline segment is its exact Bézier arcs run as the profile
+    runs (its run parameter the curve's own, mirrored for a reversed span);
+    a plane meets its wall in the crease `w = -a(tau)/b` (the rounded curve
+    S8b.3's `plane_image` of the piece, its wall pcurve S8b.3's
+    `wall_pcurve`, both ends at their vertices' heights) or, parallel to
+    the axis, in generatrices over the exact roots of `a` (degree `p`); a
+    line meets the wall at its trace's roots and a cap edge or crease meets
+    a plane at the plane's function's roots along it. Every root is the
+    arc's parameter, rational or a generator of `Q(alpha)` (S9c.2b.2's
+    `Gen`), one generator per root of one polynomial (its primitive
+    coefficients and index), so every vertex on a wall is in `Q(alpha)` of
+    degree at most `p` at a known parameter; membership is exact (a point
+    of a segment found again at its generator or by `gcd(S_x - u, S_y -
+    v)`, its side from the run's tangent; another rational point by the
+    `+u` ray's crossings at the roots of `S_y - v`). Both refusal sites are
+    routed to it (`polyhedra::stored_model` keeps a spline prism against a
+    plane's piece, relabelled S9f; `model.rs`'s refusal is gone) and what
+    stays refused is labelled S9f: spline walls against spline walls or a
+    prism with arcs (S9f.2), a sphere or cone (S9f.3), a torus, a given
+    result or a plane's piece, and a Boolean's result with spline walls
+    given to another Boolean. All 38 fixtures as the reference (33 within
+    the kernel's enclosures of volume, area and centre, each at most `1e-9`
+    wide; the 5 degenerate refused: the dome's apex generatrix, the kink's
+    knot, `TILT`'s blob against `TILTX`'s caps 8.9e-17 off its axis), and
+    `boolean-spline-any-r4-*` (6 cases written after the capture, no native
+    rows): R4's rounded knot in `TILT` creased across the knot by an `XY`
+    box whose `x` planes, exactly parallel to `TILT`'s axis, cut it in
+    generatrices, and the blob in `TILT` against a `SIDE` box (its caps
+    exactly parallel to the axis: generatrices, where `TILTX`'s are
+    refused); every history complete, results deterministic and moved
+    rigidly (`tests/spline_any_booleans.rs`, 9 tests, 15 s at `opt-level`
+    2, 15 s in release). `compare_spline_any_boolean.py` 22 matches and 16
+    reviewed: the 15 native measures reviewed before (their reasons now
+    state the kernel's outcome) and `capsule_stand_cut`'s counts (OCCT's
+    unified result keeps the capsule's top spline edge split in four where
+    the standing box's footprint crosses it, three vertices found by a
+    diagnostic build printing the unified solid's vertices; the kernel
+    joins pieces of one curve); every other Boolean comparison unchanged,
+    `compare_split.py` 72/56 and `compare_brep.py --family spline` 10/3.
+    Amendments to the decisions and the evidence, from the
+    implementation: (a) R4 is fixed in the lifting by the preferred
+    option: every lift or placement of a profile spline (a prism's walls and
+    cap edges, a crease, every piece of S8b.3's splits, S9a.2's profile
+    Booleans and stacks, and S9f.1's results: `topology::lifted_spline`,
+    `spline_wall`, `placed_spline`, `spline::piece`) first removes one copy
+    of each interior knot of multiplicity `p` where the profile is exactly
+    C1 (`topology::c1_reduced`: the profile's own poles less the knot's,
+    the same curve in the same parameter, C1 by construction), and a lift
+    still not C1 is `PrecisionLoss`; a general body's rigid motion removes
+    it where the motion's rounding breaks C1 (`moved_parts`). R4's profile
+    of the evidence now extrudes in `TILT` (`InvalidTopology("edge_not_c1")`
+    before); the stored prisms of profiles with such knots change in every
+    frame (their poles less the knot's), no other stored geometry; (b) a
+    crease's pcurve is the identity in `u` by rounded Greville abscissae,
+    so its Bézier arcs end a rounding step across the wall's knot lines
+    (`kink_lean`, the wave) and its control polygon may leave the wall's
+    `v` range by a cap (the wave's crease near the top): the deviation
+    bound already took slivers (S8b.3's (c)); now the deviation also boxes a
+    control polygon past the domain by the curve's exact nonnegativity
+    against the bound, and the exact Green path and the certified
+    quadrature take both, the slivers integrated on the patch's polynomial
+    with their error added (at most `2 (deg + 1) δ` of `u` travel times
+    `|G|` of both patches over the sliver's box): the kink's common's
+    volume enclosure was 14% wide (the strips), the wave's area 1.7%;
+    (c) a plane holding a spline joint's vertical edge (between two spline
+    walls) across its face (`blob_lean`: the box's wall `y = 4` through the
+    blob's C1 joint at `(8, 4)`, an edge on a face, refused by S9c.1's rule)
+    takes the edge's parts inside it as its face's, and meets the walls
+    there, when the arriving and leaving segments lie on the plane's two
+    sides; touching (both on one side, or a tangent) is `Degenerate` (a
+    replayed variant found a lens hole's corner in a tilted hole wall,
+    non-manifold before); (d) the ray's crossings with a spline count by
+    the chords' predicate (an end strictly above the point): counted the
+    other way a joint at the point's height flipped the parity (a replayed
+    variant, a box apart from a bulge at its joints' height, an open
+    result); (e) an edge of one input in the plane of a face of the other
+    but off that face stays refused (S9c.1's rule), so the rounded-knot
+    fixture's box stands off the plane of the prism's base edge; (f) a
+    vertex found twice keeps one point, and an edge's place there is
+    recomputed from that point (its field); (g) a line or curve over a
+    spline tangent to the other's face is `Degenerate` with its own label
+    (the dome's tangent fixtures refuse there first, before their
+    sections). The `boolean` fuzz target decodes spline prisms against its
+    turned, leaning, tilted and side tools through S9f.1 (`SPLINE_WALLS`,
+    on; S9f's refusals accepted), and the byte at index 14, at or above 128,
+    makes the object's spline R4's knot (`knot_profile`; earlier inputs
+    decode as before but for that byte). Replays with debug assertions: the
+    corpus (1,426 inputs) and the 23 regressions, none failing, the slowest
+    6.9 s; 2,852 spline variants of the corpus (the object or the tool a
+    spline prism, the tool turned, leaning, tilted or on its side, R4's
+    knot for every other object), none failing after (c), (d) and (a)'s
+    pieces (59 corpus inputs decoding R4's knot had found S9a.2's pieces
+    across it refused, `InvalidCurve`), median 0.29 s, the slowest 2.95 s
+    (23 s under AddressSanitizer on this host, where the corpus's slowest input takes 29 s); three kept as regressions
+    (`fuzz/regressions/README.md`). Pending: the DRAW survey, the campaign.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

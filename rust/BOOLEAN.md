@@ -970,6 +970,66 @@ on one spline segment are one face on that segment's whole degree-`(p, 1)`
 wall (S8b's) where they join, their pcurves lines in (curve parameter,
 height); its horizontal edges on a spline are its lifted restrictions.
 
+### Spline walls in any position (S9f.1)
+
+A prism whose profile holds S8b's spline segments (with lines and arcs)
+meets a prism of lines in any relative position, a same-axis pair whose
+offset or heights round included, in the curved engine
+(`curved/spline_walls.rs`): a spline segment is its exact Bézier arcs run
+as the profile runs (`Seg::Spline`), its wall `o + S_x(tau) x + S_y(tau) y
++ w n` a face (`Surf::Spline`), its cap edges curves over it at a constant
+height (`Crv::Spline`). A plane `m . (P - p) = 0` meets a wall where
+`a(tau) + b w = 0` (`a` affine in `S`, `b = m . n`): for `b != 0` in the
+crease `w = -a(tau) / b` (`Crv::Spline` with that height, its rounded
+curve the affine image of the profile's piece, S8b.3's `plane_image`, and
+its pcurve on the wall S8b.3's `wall_pcurve`), for `b = 0` in generatrices
+at the roots of `a` on each arc (degree `p`); a line meets a wall at the
+roots of its trace's equation on each arc, a cap edge or a crease meets a
+plane at the roots of the plane's function along it. Every root is the
+arc's own parameter, rational or the generator `alpha` of `Q(alpha)` (S9c.2b.2's
+fields, `num.rs`), one generator for every root of one polynomial
+wherever it is found (its primitive coefficients and root index key it), so
+every vertex on a wall is a point of `Q(alpha)`, degree at most `p`, at a
+known parameter. Membership is exact: a point of a spline segment (found
+again from its coordinates at its generator, or for a rational point as the
+common roots of `S_x - u` and `S_y - v`) is on the profile's boundary, its
+side from the run's tangent there; any other rational point counts the
+`+u` ray's crossings with each arc at the roots of `S_y - v`, by the
+chords' predicate (an end strictly above the point), right of it by the
+exact sign of `S_x - u` there. A spline joint's vertical edge (between two
+spline walls) lying in a plane of the other prism, across the plane's
+face, is part of that face when the segments arriving and leaving lie on
+the plane's two sides there (the plane crosses the solid along it), a
+contact otherwise.
+
+`Degenerate`: a plane tangent to a wall along a generatrix (a root of
+multiplicity above one), at a knot (above one on either side), or along a
+joint's edge; a line or a curve over a spline tangent to the other's face;
+a plane within rounding of a wall's axis (the crease's slope past `10^12`,
+S9c.1's (c) on the exact models: `TILT`'s axis against `TILTX`'s caps is
+`-8.9e-17` off, against `SIDE`'s and `XY`'s `x` planes exactly parallel,
+generatrices). An edge of one input in the plane of a face of the other,
+even off that face, is refused as S9c.1 refuses it. Refused, with S9f's
+labels: a spline prism against a prism with arcs or another spline prism in
+any position (S9f.2), a sphere or a cone (S9f.3), a torus, a given result
+or a plane's piece (S9f), and a Boolean's result with spline walls given
+to another Boolean (S9f).
+
+R4 under rounding (found by the evidence before any Boolean): an interior
+knot of multiplicity `p` where the profile is exactly C1 is removed once,
+exactly, before every lift and placement of a spline (`topology::c1_reduced`:
+the profile's own poles less the knot's, C1 by construction), in prisms'
+walls and cap edges (`lifted_spline`, `spline_wall`), in creases and
+pieces (`placed_spline`, `spline::piece`) and in a general body's rigid
+motion where the motion's rounding breaks C1; a lift still not C1 is
+`PrecisionLoss`. The validator's exact Green path and its certified
+quadrature take a spline pcurve piece whose control polygon leaves its
+patch: by the surface's domain while the curve keeps to it (a crease
+nearly touching a cap), boxed by that bound; across a knot line by a sliver
+at most `2^-20` of the patch (a crease's rounded identity in `u` a step
+past the line), integrated on the patch's polynomial with the slivers'
+error bounded and added (`BREP_VALIDATION.md`).
+
 ## Evidence
 
 * **Case protocol.** A Boolean case (`identity_reference.
@@ -2244,7 +2304,16 @@ height); its horizontal edges on a spline are its lifted restrictions.
   misses by up to 6.7e-7 (the wave 1.0e-3), adaptively within 6.0e-9 in
   volume but for the wave, while Green's theorem over OCCT's own faces and
   pcurves (a diagnostic build) gives the reference within 1.3e-8 on all
-  38; two solids' counts change when unified.
+  38; two solids' counts change when unified. With S9f.1's kernel: 22
+  matches and 16 reviewed, the kernel within the reference on the 33
+  results and refusing the 5 degenerate cases; the new review is
+  `capsule_stand_cut`'s counts (OCCT's unified cut keeps the capsule's top
+  spline edge split in four where the standing box's footprint crosses it,
+  three vertices a diagnostic build printing the unified solid's vertices
+  placed). `boolean-spline-any-r4-*` (written by the same generator after
+  the capture, 6 cases, no native rows) adds R4's rounded knot in `TILT`
+  and `TILT`'s walls against planes exactly parallel to its axis (`XY`'s
+  `x` planes, `SIDE`'s caps), checked by the kernel's tests.
 * **S9e.2 evidence (a stack, an S9b.1 result or one solid of several given
   to another Boolean), before its kernel code.** The protocol's `then` row
   may end `solid X Y Z`: the first result's solid holding the point

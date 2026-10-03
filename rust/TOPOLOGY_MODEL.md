@@ -750,6 +750,14 @@ interop.
   trims it) and a `reversed` flag, the fraction mapped affinely onto the
   range, backwards when flagged. `Surface::BSpline` is a
   `BSplineSurface3` in its own `(u, v)`; its loops do not wind.
+* **Built C1 (S9f.1).** A knot of multiplicity `p` where a profile is
+  exactly C1 is C1 only while its neighbouring poles stay aligned, which a
+  turned frame's rounding breaks (R4 under rounding): every spline the
+  kernel builds from a profile (a prism's walls and cap edges, a split's or
+  a Boolean's pieces and creases) is cut from the curve with one copy of
+  each such knot removed exactly (the profile's poles less the knot's,
+  multiplicity `p - 1`, C1 by construction), and a general body's rigid
+  motion removes it where the motion's rounding breaks C1.
 * **Validation.** C1 by exact knot removal (R4); deviations by exact
   rational composition or second-order Taylor enclosures; vertex gaps from
   exact ends; UV gaps on a spline surface in 3D; signed and periodic areas,

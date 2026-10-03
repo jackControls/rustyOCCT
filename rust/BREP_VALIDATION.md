@@ -240,8 +240,11 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   exact composition (S4b, `MATHEMATICS.md`), provided each common Bézier
   piece of a spline pcurve on a spline surface lies in one patch by its
   control points, or but for slivers at most `2^-20` of the patch across
-  its knot lines, whose departure is bounded exactly and added (S8b.3), and
-  the composed degree is at most 96. Every other use
+  its knot lines, whose departure is bounded exactly and added (S8b.3), its
+  control polygon past the surface's domain only where the curve certainly
+  keeps to it (its homogeneous coordinate against the bound exactly
+  nonnegative: a crease nearly touching a cap, S9f.1), and the composed
+  degree is at most 96. Every other use
   with spline geometry (an arc, an analytic curved surface, a pcurve across
   a knot line) is decided by second-order Taylor enclosures on halved
   pieces; only a periodic spline surface leaves it
@@ -252,7 +255,13 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   a spline pcurve on a cylinder, cone, sphere or torus as `-∫ F du` over
   halved pieces, the surface's exact antiderivative `F` evaluated over each
   piece's box; on a nonrational spline surface whose pcurve pieces each lie
-  in one patch exactly, by Green's theorem with column antiderivatives; and
+  in one patch exactly, by Green's theorem with column antiderivatives
+  (S9f.1: a piece past the surface's domain by its control polygon alone,
+  as above, boxed by the bound; a piece across a `u` knot line by a sliver
+  at most `2^-20` of the patch, a crease's rounded identity in `u` a step
+  past the line, integrated on the patch's polynomial and the slivers'
+  error added, at most `2 (deg + 1) δ` of `u` travel there times `|G|` of
+  both patches over the sliver's box); and
   on any other nonperiodic spline surface by strips, the antiderivative in
   `v` enclosed over 32 strips of the domain from the surface's jets.
   Otherwise the shell's orientation is `uncertified_shell_orientation`. A
@@ -268,9 +277,11 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   planes, spline pcurves on cylinders, cones, spheres and tori, the area
   terms of a nonrational spline surface and every term of a rational one)
   by a certified eight-node Gauss–Legendre quadrature whose remainders are
-  bounded by interval Taylor series (F8, `MATHEMATICS.md`), with S4d's
-  first-order Green integrals and strips as the fallback where it cannot
-  run. On the fixtures every enclosure lies within `1e-12` of its
+  bounded by interval Taylor series (F8, `MATHEMATICS.md`; S9f.1: its
+  pieces past the domain or across a knot line by a sliver taken as the
+  exact path takes them, the slivers' error bounded by `|f̄|` over their
+  columns), with S4d's first-order Green integrals and strips as the
+  fallback where it cannot run. On the fixtures every enclosure lies within `1e-12` of its
   property's scale (at worst `7.6e-15` of the volume, `5.6e-15` of the
   area, `2.3e-14` of `V^(1/3)` for the centroid and `1.6e-13` of
   `V^(5/3)` for the inertia), where S4d's first-order enclosures were
