@@ -1334,7 +1334,78 @@ struct Frag {
 
 /// Builds a polyhedral Boolean's components in its inputs' frames.
 #[allow(clippy::too_many_lines)]
+/// S9e.4a: the pair with each imported input in its construction's place
+/// (the construction its stored surfaces give, with ids of its own), and the
+/// names of the constructions' entities' stored entities; none without an
+/// imported input.
+pub(super) fn substituted(
+    poly: &Polyhedron,
+) -> Result<Option<(Polyhedron, BTreeMap<EntityId, EntityId>)>> {
+    let imported = |s: &Solid| match &s.construction {
+        Construction::Imported(i) => Some(i.clone()),
+        _ => None,
+    };
+    let (ia, ib) = (imported(&poly.a), imported(&poly.b));
+    if ia.is_none() && ib.is_none() {
+        return Ok(None);
+    }
+    let mut names = BTreeMap::new();
+    let mut stand = |s: &Solid,
+                     i: Option<Box<crate::solid::imported::Imported>>|
+     -> Result<Box<Solid>> {
+        let Some(i) = i else {
+            return Ok(Box::new(s.clone()));
+        };
+        // S9c's model takes an arc whose ends lie on its circle exactly; an
+        // imported profile rounded into its cap's frame may hold none.
+        if !crate::solid::imported::arcs_on_circles(&i.recognized) {
+            return Err(Error::OutOfDomain(
+                "an imported prism's arc whose ends round off its circle in its cap's frame (S9e.4b)",
+            ));
+        }
+        names.extend(i.names.iter().map(|(k, v)| (*k, *v)));
+        Ok(i.recognized)
+    };
+    let a = stand(&poly.a, ia)?;
+    let b = stand(&poly.b, ib)?;
+    let ids: BTreeSet<EntityId> = a
+        .topology
+        .ids()
+        .map(|(id, _)| id)
+        .chain([a.topology.body_id()])
+        .collect();
+    if b.topology.ids().any(|(id, _)| ids.contains(&id)) || ids.contains(&b.topology.body_id()) {
+        return Err(Error::InvalidLabel(
+            "an imported solid's construction sharing ids with the other input",
+        ));
+    }
+    Ok(Some((
+        Polyhedron {
+            a,
+            b,
+            op: poly.op,
+            index: poly.index,
+        },
+        names,
+    )))
+}
+
 pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
+    // S9e.4a: an imported input decided on its construction, the result's
+    // plans naming its stored entities.
+    if let Some((sub, names)) = substituted(poly)? {
+        let mut out = build(&sub)?;
+        for component in &mut out {
+            for plan in &mut component.plans {
+                for id in plan.1.iter_mut().chain(plan.2.iter_mut()) {
+                    if let Some(n) = names.get(id) {
+                        *id = *n;
+                    }
+                }
+            }
+        }
+        return Ok(out);
+    }
     // S9c.1: prisms with arcs in any position.
     if super::curved::applies(poly) {
         return super::curved::build(poly);

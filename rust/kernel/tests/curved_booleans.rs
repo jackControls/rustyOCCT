@@ -232,3 +232,71 @@ fn a_second_inputs_arc_across_a_parallel_cylinder() {
     assert!((fuse - (va + vb - 3.0 * lens)).abs() <= 1e-9 * fuse);
     assert!((cut - (va - 3.0 * lens)).abs() <= 1e-9 * cut);
 }
+
+/// A circle as two arcs (two faces on one cylinder, a periodic face split
+/// at a seam) against a box crossing the arcs' joint, in frames with equal
+/// axes and an offset that rounds (the curved engine): the same solids as
+/// the circle's. A point on the arcs' shared chord, run either way, was
+/// taken inside both circular segments and the box's cap piece inside the
+/// circle kept, the fuse left open (S9e.4a found it; latent since S9c.1).
+#[test]
+fn two_arcs_of_one_circle_are_its_circle() {
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{Boundary, Frame3, Point2, Point3, Profile, Segment, Solid, Tolerance, Vec3};
+    let tol = Tolerance::default();
+    let at = |x: f64, z: f64| {
+        Frame3::new(
+            Point3::new(x, 0.0, z),
+            Vec3::new(0.0, 0.0, 1.0),
+            Vec3::new(1.0, 0.0, 0.0),
+            tol,
+        )
+        .unwrap()
+    };
+    let arc = Segment::Arc {
+        center: Point2::new(5.0, 5.0),
+        radius: 2.5,
+        ccw: true,
+    };
+    let halves = Boundary::path(
+        vec![Point2::new(7.5, 5.0), Point2::new(2.5, 5.0)],
+        vec![arc.clone(), arc],
+        tol,
+    )
+    .unwrap();
+    let circle = Boundary::circle(Point2::new(5.0, 5.0), 2.5, tol).unwrap();
+    let square = Boundary::polygon(
+        vec![
+            Point2::new(5.5, 2.0),
+            Point2::new(9.0, 2.0),
+            Point2::new(9.0, 8.0),
+            Point2::new(5.5, 8.0),
+        ],
+        tol,
+    )
+    .unwrap();
+    let prism = |b: Boundary, op: u64, f: Frame3, h: [f64; 2]| {
+        let profile = Profile::new(b, vec![], tol).unwrap();
+        Solid::extrude_with(OperationId(op), profile, f, h[0], h[1])
+            .unwrap()
+            .0
+    };
+    let tool = prism(square, 2, at(0.0, 1.0), [0.0, 3.0]);
+    let volume = |out: Vec<Solid>| out.iter().map(|s| s.mass_properties().volume).sum::<f64>();
+    for (k, profile) in [halves, circle].into_iter().enumerate() {
+        let object = prism(profile, 1, at(0.1, 0.0), [0.0, 5.0]);
+        let f = volume(object.fuse(OperationId(3), &tool).unwrap().0);
+        let c = volume(object.cut(OperationId(4), &tool).unwrap().0);
+        let m = volume(object.common(OperationId(5), &tool).unwrap().0);
+        let (va, vb) = (
+            object.mass_properties().volume,
+            tool.mass_properties().volume,
+        );
+        assert!((f - (va + vb - m)).abs() <= 1e-9 * f, "{k}: fuse {f}");
+        assert!((c - (va - m)).abs() <= 1e-9 * va, "{k}: cut {c}");
+        assert!(
+            (m - 23.478130341535252).abs() <= 1e-9 * m,
+            "{k}: common {m}"
+        );
+    }
+}

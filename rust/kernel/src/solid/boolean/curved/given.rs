@@ -152,7 +152,14 @@ fn construction(s: &Solid) -> Result<(Polyhedron, bool)> {
                 ));
             }
             super::chain::check_depth(s)?;
-            Ok((poly.as_ref().clone(), super::applies(poly)))
+            // S9e.4a: an imported input as its construction, as the result
+            // was built.
+            let poly = match crate::solid::boolean::polyhedra::substituted(poly)? {
+                Some((sub, _)) => sub,
+                None => poly.as_ref().clone(),
+            };
+            let direct = super::applies(&poly);
+            Ok((poly, direct))
         }
         Construction::Stack(st) => {
             // The stack's two prisms, entity ids of their own (the model's

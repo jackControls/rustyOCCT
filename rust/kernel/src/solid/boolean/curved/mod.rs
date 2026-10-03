@@ -23,7 +23,7 @@ mod cones;
 mod cones_loops;
 mod given;
 mod graph;
-mod matched;
+pub(crate) mod matched;
 mod meet;
 mod model;
 mod num;

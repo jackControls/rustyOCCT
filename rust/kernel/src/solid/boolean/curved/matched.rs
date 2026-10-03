@@ -22,10 +22,10 @@ use std::collections::{BTreeMap, BTreeSet};
 /// A re-run solid's slots matched to the stored ones: each re-run face,
 /// edge and vertex slot's stored slot.
 #[derive(Debug, Clone)]
-pub(super) struct Match {
-    pub(super) faces: Vec<usize>,
-    pub(super) edges: Vec<usize>,
-    pub(super) vertices: Vec<usize>,
+pub(crate) struct Match {
+    pub(crate) faces: Vec<usize>,
+    pub(crate) edges: Vec<usize>,
+    pub(crate) vertices: Vec<usize>,
 }
 
 fn near(a: Point3, b: Point3, tol: f64) -> bool {
@@ -80,7 +80,7 @@ fn bounds_of(
 
 /// The re-run solid `parts` matched to the stored topology `t` within the
 /// resolution `tol`, or none where they differ.
-pub(super) fn matched(parts: &TopologyParts, t: &Topology, tol: f64) -> Option<Match> {
+pub(crate) fn matched(parts: &TopologyParts, t: &Topology, tol: f64) -> Option<Match> {
     if parts.vertices.len() != t.vertices().len()
         || parts.edges.len() != t.edges().len()
         || parts.faces.len() != t.faces().len()

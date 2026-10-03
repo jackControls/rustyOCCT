@@ -219,6 +219,16 @@ impl Frame3 {
     pub(crate) fn at(self, origin: Point3) -> Self {
         Self { origin, ..self }
     }
+    /// The same plane's frame turned over about its x axis, exactly: `(x,
+    /// -y, -normal)` (S9e.4a: an imported cap's frame with its normal into
+    /// the material).
+    pub(crate) fn flipped(self) -> Self {
+        Self {
+            y: -self.y,
+            normal: -self.normal,
+            ..self
+        }
+    }
     /// Axes taken bit for bit (tests reproducing the frames `new` builds
     /// with another platform's `hypot`).
     #[cfg(test)]

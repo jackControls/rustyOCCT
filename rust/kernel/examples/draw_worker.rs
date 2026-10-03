@@ -2023,7 +2023,7 @@ fn general(s: &Solid) -> bool {
 /// sphere or a torus; the kernel decides what it supports), or a Boolean
 /// result of one solid (a prism, a stack or a polyhedron: S9b.2 takes the
 /// last two on their stored geometry); and whether OCCT's shape reuses
-/// its shapes.
+/// its shapes. A restored solid is imported first (`boolean`, S9e.4a).
 fn boolean_argument(shape: &Shape) -> Result<(&Solid, bool)> {
     match shape {
         Shape::Solid(s) => Ok((s, false)),
@@ -2072,8 +2072,35 @@ fn boolean(
     operations: [OperationId; 3],
     primitives: &BTreeMap<EntityId, Primitive>,
 ) -> Result<Shape> {
-    let (a, ua) = boolean_argument(object)?;
-    let (b, ub) = boolean_argument(tool)?;
+    // S9e.4a: a restored solid is imported under its argument's operation
+    // (the construction its stored surfaces give, or unsupported).
+    let imported = |shape: &Shape, operation: OperationId| -> Result<Option<Solid>> {
+        match shape {
+            Shape::Body {
+                body,
+                resolution,
+                kind: "SOLID",
+                ..
+            } => Ok(Some(
+                Solid::imported_with(operation, body.topology.clone(), *resolution)
+                    .map_err(boolean_failure)?
+                    .0,
+            )),
+            _ => Ok(None),
+        }
+    };
+    let (ia, ib) = (
+        imported(object, operations[1])?,
+        imported(tool, operations[2])?,
+    );
+    let (a, ua) = match &ia {
+        Some(s) => (s, false),
+        None => boolean_argument(object)?,
+    };
+    let (b, ub) = match &ib {
+        Some(s) => (s, false),
+        None => boolean_argument(tool)?,
+    };
     let mut a = match object {
         Shape::Boolean { .. } if !general(a) => rebuilt(a, operations[1])?,
         _ => a.clone(),

@@ -915,8 +915,9 @@ impl Prism {
     /// A profile point (of any field) against the profile, exactly: the
     /// parity of the chords crossed by the ray to `+u`, flipped inside each
     /// arc's circular segment (between its chord and itself). A point on an
-    /// arc's chord counts as on the arc's side of it (the two tests jump
-    /// together there).
+    /// arc's chord is taken displaced by `(eta, eps)`, `0 < eta << eps`,
+    /// for every chord alike, as the ray's half-open crossings take it (the
+    /// two tests jump together there).
     fn on_profile(&self, x: &[Qd; 2]) -> OnProfile {
         let mut inside = false;
         // A spline segment's crossings left undecided (S9f.1): unless the
@@ -971,8 +972,18 @@ impl Prism {
                         } else {
                             Ordering::Greater
                         };
+                        // A point on the chord: displaced by `(eta, eps)`,
+                        // `0 < eta << eps`, as the ray's half-open
+                        // crossings take it, for every chord alike (two
+                        // arcs of one circle share their chord run either
+                        // way, S9e.4a: displaced toward each arc it lay in
+                        // both segments).
                         if side == Ordering::Equal && between() {
-                            side = arc_side;
+                            side = if chord[0] == zero() {
+                                zero().cmp(&chord[1])
+                            } else {
+                                chord[0].cmp(&zero())
+                            };
                         }
                         if g == Ordering::Less && side == arc_side {
                             inside = !inside;

@@ -8,6 +8,7 @@ use crate::topology::Topology;
 mod attrs;
 mod boolean;
 mod enclose;
+mod imported;
 pub(crate) mod split;
 mod stack;
 use crate::{
@@ -95,6 +96,9 @@ enum Construction {
     /// A solid of a Boolean of polyhedral prisms in any relative position
     /// (S9b).
     Polyhedron(Box<boolean::polyhedra::Polyhedron>),
+    /// An imported solid decided on the construction its stored surfaces
+    /// give (S9e.4a).
+    Imported(Box<imported::Imported>),
 }
 
 /// An immutable, validated normal extrusion of one planar material region,
@@ -330,6 +334,14 @@ impl Solid {
                     ));
                 }
                 poly.rebuilt(operation)
+            }
+            Construction::Imported(_) => {
+                if frame != self.frame {
+                    return Err(Error::OutOfDomain(
+                        "an imported solid moves with its motion",
+                    ));
+                }
+                Ok(self.clone())
             }
         }
     }
@@ -713,6 +725,9 @@ impl Solid {
             Construction::Torus { .. } => Err(Error::OutOfDomain(
                 "split and fuse rebuild prisms; this solid is a torus",
             )),
+            Construction::Imported(_) => Err(Error::OutOfDomain(
+                "a prism operation on an imported solid (S9e.4b)",
+            )),
         }
     }
 
@@ -822,7 +837,8 @@ impl Solid {
             | Construction::Clipped(_)
             | Construction::Half(_)
             | Construction::Stack(_)
-            | Construction::Polyhedron(_) => None,
+            | Construction::Polyhedron(_)
+            | Construction::Imported(_) => None,
         }
     }
     /// The body's resolution.
@@ -833,6 +849,7 @@ impl Solid {
             Construction::Half(half) => half.tolerance(),
             Construction::Stack(stack) => stack.tolerance(),
             Construction::Polyhedron(poly) => poly.tolerance(),
+            Construction::Imported(imported) => imported.tolerance,
             Construction::Cone { tolerance, .. }
             | Construction::Sphere { tolerance, .. }
             | Construction::Torus { tolerance, .. } => *tolerance,
@@ -883,6 +900,8 @@ impl Solid {
                 return stack.classify([x, y, z], [self.start, self.end], tolerance)
             }
             Construction::Polyhedron(poly) => return poly.classify(point, self.bounds, tolerance),
+            // S9e.4a: its construction's (within the resolution).
+            Construction::Imported(imported) => return imported.recognized.classify(point),
             Construction::Cone { bottom, top, .. } => {
                 let z = finite(z, "axial coordinate")?;
                 let local = [finite(x, "coordinate")?, finite(y, "coordinate")?, z];
@@ -1013,6 +1032,14 @@ impl Solid {
             Construction::Half(half) => {
                 half.rebuilt_with(self.operation, frame, Some(self.mass.moved(transform)))?
             }
+            // An imported solid's stored geometry moves, its construction
+            // with it (S9e.4a).
+            Construction::Imported(imported) => imported.moved(
+                &self.topology,
+                self.operation,
+                transform,
+                self.mass.moved(transform),
+            )?,
             // A polyhedral Boolean's stored geometry moves (S9b).
             Construction::Polyhedron(poly) => poly.moved(
                 &self.topology,

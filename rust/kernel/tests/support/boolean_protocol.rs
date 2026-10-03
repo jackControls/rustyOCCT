@@ -198,12 +198,11 @@ pub fn imported_topology(path: &str) -> (rusty_occt::topology::Topology, rusty_o
     (topology, solid.tolerance)
 }
 
-/// An imported solid: the file read and converted; no constructor takes
-/// it before S9e.4's kernel, so every such case is out of the kernel's
-/// domain.
-fn imported(_spec: &CaseSpec, path: &str) -> Result<Solid, Error> {
-    let _ = imported_topology(path);
-    Err(Error::OutOfDomain("an imported solid in a Boolean (S9e.4)"))
+/// An imported solid: the file read and converted, its solid made under the
+/// case's operation (`Solid::imported_with`, S9e.4a).
+fn imported(spec: &CaseSpec, path: &str) -> Result<Solid, Error> {
+    let (topology, resolution) = imported_topology(path);
+    Solid::imported_with(spec.operation, topology, resolution).map(|(s, _)| s)
 }
 
 fn boolean(

@@ -51,7 +51,10 @@
 //! leaning, tilted or on its side) meets it along the walls' meetings with
 //! the cylinders (`SPLINE_CROSSING`), their loops round a cylinder
 //! refused (S9f.2b.2's); spline walls against spline walls on crossing
-//! axes, a curved solid or a given result stay refused (S9f's).
+//! axes, a curved solid or a given result stay refused (S9f's). S9e.4a: the
+//! object written by the kernel's `.brep` writer and read back is imported
+//! (`Solid::imported_with`) and given the chosen operation with the tool
+//! again, its volume the object's own result's (`IMPORTED`).
 use crate::analytic_intersections::Bytes;
 use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
@@ -123,6 +126,11 @@ const GIVEN_BALL: bool = true;
 /// on (debug assertions, every input's partner centred on its meeting
 /// where it has one) cover them.
 const GIVEN_MET: bool = false;
+
+/// Whether the object written by the kernel's `.brep` writer and read back
+/// is imported and given the chosen operation again (S9e.4a: an imported
+/// solid decided on the construction its stored surfaces give). On.
+const IMPORTED: bool = true;
 
 /// Whether a spline prism meets a line prism in frames with different
 /// axes (S9f.1's spline walls in the curved engine: creases, generatrices
@@ -663,7 +671,43 @@ pub fn check_boolean(data: &[u8]) {
             }
         }
     }
+    // S9e.4a: the object written by the kernel's writer, read back and
+    // imported (`IMPORTED`), given the chosen operation with the same tool:
+    // where both evaluate, the same volume within 1e-9 (its construction
+    // read off the written surfaces is the object's within rounding).
+    if IMPORTED {
+        if let (Some(imported), Some(direct)) = (reimported(&a), chosen) {
+            let r = match chained % 3 {
+                0 => imported.fuse(OperationId(11), &tool),
+                1 => imported.cut(OperationId(11), &tool),
+                _ => imported.common(OperationId(11), &tool),
+            };
+            if let Some(out) = run(r) {
+                assert!(
+                    near(volume(&out), volume(direct)),
+                    "imported {} for {}",
+                    volume(&out),
+                    volume(direct)
+                );
+            }
+        }
+    }
     for out in [&fused, &cut, &common].into_iter().flatten() {
         moves(out);
     }
+}
+
+/// A solid written by the kernel's `.brep` writer, read back and imported
+/// (S9e.4a); none where the writer, the reader or the recognition refuses
+/// it (a spline prism, S9f; arcs off their circles once rounded are
+/// refused by the Boolean, S9e.4b).
+fn reimported(s: &Solid) -> Option<Solid> {
+    use rusty_occt::occt_brep::{import, read, write};
+    let text = write(s.topology(), s.resolution().linear()).ok()?;
+    let doc = read(&text).ok()?;
+    let solid = import(&doc).solids.into_iter().next()?;
+    let topology = solid.result.ok()?;
+    Solid::imported_with(OperationId(11), topology, solid.tolerance)
+        .ok()
+        .map(|(s, _)| s)
 }
