@@ -4703,7 +4703,11 @@ Decisions for S9, recorded before its code (2026-09-28):
     radical plane;
     `fuzz/regressions/boolean/crash-d238291d9edbe60570ae31479609845872d763c0.bin`,
     `tests/sphere_booleans.rs`).
-    Pending: the DRAW survey, the campaign.
+    Campaign: the boolean campaign at `b2765f20` (600 s, a sampled
+    replay) clean, 989 runs, the slowest input 22 s under
+    AddressSanitizer (the first, at `6582f379`, found `d238291d`, a wall
+    crossing a sphere within rounding of tangency: S9d.1's sections now
+    refuse it). Pending: the DRAW survey.
   * **S9f.1 implemented** (`solid/boolean/curved/spline_walls.rs`,
     `model.rs`'s `Seg::Spline`, `Surf::Spline` and `Crv::Spline`, `meet.rs`,
     `graph.rs`'s places and joints, `assemble.rs`'s spline curves and wall
@@ -4806,7 +4810,12 @@ Decisions for S9, recorded before its code (2026-09-28):
     pieces (59 corpus inputs decoding R4's knot had found S9a.2's pieces
     across it refused, `InvalidCurve`), median 0.29 s, the slowest 2.95 s
     (23 s under AddressSanitizer on this host, where the corpus's slowest input takes 29 s); three kept as regressions
-    (`fuzz/regressions/README.md`). Pending: the DRAW survey, the campaign.
+    (`fuzz/regressions/README.md`). 
+    Campaign: the boolean campaign at `b2765f20` (600 s, a sampled
+    replay) clean, 989 runs, the slowest input 22 s under
+    AddressSanitizer (the first, at `6582f379`, found `d238291d`, a wall
+    crossing a sphere within rounding of tangency: S9d.1's sections now
+    refuse it). Pending: the DRAW survey.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions
