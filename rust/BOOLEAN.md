@@ -2241,6 +2241,34 @@ height); its horizontal edges on a spline are its lifted restrictions.
   case with OCCT's unified entity counts, no review; every other Boolean
   comparison unchanged in its counts. DRAW's `bcut_simple/L3` to `L6`
   evaluate and are registered (`UPSTREAM_TESTS.md`).
+* **S9e.3a evidence (given results of spheres, cones and tori, deeper
+  chains, given results against a sphere, cone or torus), before its kernel
+  code.** The protocol chains further Booleans (several `then` rows, each
+  with its solid's rows). `chained_curved_boolean_reference.py` sweeps every
+  face of every solid against all the others (S9d.4b.2's face sweeps,
+  several solids and a set function; pushes off a face only for a solid
+  with a surface on it), solids counted by rays at two resolutions.
+  `generate_given_curved_boolean_fixtures.py --check` writes
+  `boolean-given-curved-cases.txt`, `-expected.tsv` (its `expect` rows
+  naming the class: `sphere`, `cone`, `torus`, `procedural`, `deep`,
+  `partner`) and `-frames.tsv`: 48 cases (16 chains; 42 solid, 6
+  degenerate): a domed box against a tilted slab and a cylinder through
+  the dome's circle; DRAW's `G9` body with its rod moved clear, crossed by
+  a box and bored coaxially; a countersunk box drilled; a box grooved by a
+  torus against a tilted slab and a cylinder; a sphere and peg cut clear of
+  their meeting; two deeper chains; a holed box against a sphere, a cone
+  and a torus; `degenerate` `G9` itself and a box touching the dome.
+  Checks: coaxial closed forms within 5.9e-41, two families of curves
+  within 3.3e-35, the pair identities 4.1e-41, the area identity 1.5e-40,
+  Monte Carlo 2.4 standard errors, no near coincidence.
+  `compare_given_curved_boolean.py` reproduces
+  `occt-boolean-given-curved-preimplementation`
+  (`rust_given_curved_boolean_exists` false, keyed on
+  `solid/boolean/curved/chain.rs`; the kernel's probe `unsupported` on all
+  48): every result valid with the reference's solid count, 33 match, 15
+  reviewed (BRepGProp's default integration on faces bounded by
+  approximated meetings of two curved faces, up to 6.4e-6; adaptively
+  within 2.4e-9); `G9`'s cut has DRAW's area 727.481.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

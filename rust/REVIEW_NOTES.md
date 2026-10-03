@@ -4511,6 +4511,87 @@ Decisions for S9, recorded before its code (2026-09-28):
     (`tests/given_curved_booleans.rs`), the fuzz target's stage, the DRAW
     survey of the chained cases and a campaign. **S9e.3b** after it, evidence
     first: the meetings of (5).
+  * **S9e.3a evidence (2026-10-02).** The case protocol chains further
+    Booleans: a case may hold several `then` rows, each followed by its
+    solid's rows, the previous Boolean's one solid (or picked solid) the
+    next one's argument (`identity_reference.encode_chained_case` and
+    `native_chained_case` with `more`; `occt_boolean_oracle.cpp`'s stages;
+    `tests/support/boolean_protocol.rs`'s `Case::more` and `given_by`).
+    `chained_curved_boolean_reference.py` is S9d.4b.2's reference
+    (`torus_curved_boolean_reference.py`: its inputs, curve families, roots
+    along a curve and quadrature) generalized to several solids and a set
+    function of their memberships: every face of every solid swept by its
+    two families against the surfaces of all the others, each piece
+    classified by the others' memberships at a golden point (pushed off the
+    face by 1e-34 of the size both ways only for a solid with a surface on
+    the face's, where its roots vanish: faces of several solids on one
+    surface need no special case), a piece bounding the chain where the set
+    function differs across the face, counted by the first solid whose
+    boundary holds it; one sweep serves every expression of the solids (the
+    given result, the chain, each solid). Two findings while building it:
+    roots of another solid's surface at a curve's end within rounding (a
+    face's edge on another solid's plane, as where boxes share edges) are
+    dropped, else the structure flips on noise; and an event the scan
+    misses (a feature narrower than its spacing) shows as a quadrature node
+    of another structure, bisected from that node against the interval's
+    middle (`refined`; none was needed in the fixtures). Solids by rays
+    along `z` at two resolutions (S9d.4b.2's binary64 `FloatModel`, a
+    prism's lower cap at its own height: S9d.4b.2's puts it at zero, where
+    all its prisms start) against declared counts.
+    `generate_given_curved_boolean_fixtures.py --check`: 48 cases (16
+    chains; 16 fuses, 16 cuts, 16 commons; 42 solid, 6 degenerate; classes
+    9 `sphere`, 15 `cone`, 6 `torus`, 3 `procedural`, 6 `deep`, 9
+    `partner`) in `XY`, `SIDE`, `TILT` and `R125`: a box with a dome (a
+    sphere of radius 3 about its top face's centre) with a `TILT` slab
+    across the dome's circle and a cylinder through it (swapped); DRAW's
+    `G9` body (a cylinder of radius 9 and height 3 fused with a frustum of
+    radii 7 and 6 on its base, coplanar bottoms) with the `pcylinder` moved
+    to `x = 4.5`, a box crossing the frustum's section by the cylinder's
+    top and a coaxial bore; a box with a countersink (a frustum from radius
+    1 to 3 at the top face) drilled coaxially; a box grooved by a torus of
+    radii 3 and 1 (its top at `z = 1/2`: circles of surd radii) with a
+    `TILT` slab across the groove and a cylinder through its outer circle;
+    a sphere fused with a peg off its axis (a `Rise`) cut by a box clear of
+    it; deeper chains: a box less a hole along `x` and a vertical hole, then
+    a `TILT` slab, and the domed box drilled, then an `R125` box whose wall
+    crosses the dome clear of the drill; a box less the hole along `x`
+    against a sphere about its top face's centre, a frustum standing in it
+    and a torus whose tube crosses the hole; `degenerate` `G9` itself and a
+    box touching the dome's top. Checks: coaxial closed forms (rings about
+    the axis by Simpson's rule between their kinks, horizontal faces and
+    walls where the set changes) within 5.9e-41; the two families within
+    3.3e-35; each solid's closed form 1.5e-40; the pair identities for the
+    given result and the last solid within 4.1e-41 and the area identity
+    1.5e-40 (15 chains); Monte Carlo 2.4 standard errors; every surface met
+    at a sine of at least 0.24 on the scanned curves and every family's
+    events at least 2.6e-5 apart outside the declared cases.
+    `test_given_curved_boolean_reference.py` checks boxes by their grid
+    cells exactly (frames of different axes, faces on one plane both ways,
+    a fourth box), a hemisphere less a coaxial cylinder by closed forms and
+    S9e.1's quarter bored against the slicing reference. Python 3.9 and
+    3.12 write the same files; the generator's check a CI group of its own
+    (`given-curved`, 23 CPU minutes, 8 on four workers). Fixture
+    corrections before the capture, from the reference's runs and a first
+    kernel's (outside the repository): the groove's slab at `w = 1` held a
+    chord tangent to the torus's bottom circle along its parabolic
+    direction (the reference's quadrature did not converge) and at `w =
+    1.4` passed through a point of the torus's top circle (the kernel found
+    a result thinner than the resolution), and at 1.5 to 2.1 its common
+    kept a sliver of volume 0.03 whose ray counts differed between
+    resolutions: moved to 1.8 to 2.4; the peg's wall held the sphere's axis
+    (S9d.1's refusal of a section through a pole off the meridians): moved
+    off it; the groove's drill left a crescent too thin for the rays:
+    widened. The capture `occt-boolean-given-curved-preimplementation`
+    (`compare_given_curved_boolean.py`, keyed on
+    `solid/boolean/curved/chain.rs`; the kernel `unsupported` on all 48, its
+    first Booleans evaluating and the one given a result refused as S9e.3's):
+    every result valid with the reference's solid count, 33 matching
+    (volumes within 1.6e-8, areas 1.0e-8, centres 2.1e-9 of the size; exact
+    frames 1e-15), 15 reviewed (BRepGProp's default integration on faces
+    bounded by approximated meetings of two curved faces, up to 6.4e-6;
+    adaptively within 2.4e-9, unchanged at 1e-12); `G9`'s cut has DRAW's
+    area 727.481; 18 results' counts change when unified. S9e.3a's kernel
+    next.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions
