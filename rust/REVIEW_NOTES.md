@@ -4842,6 +4842,139 @@ Decisions for S9, recorded before its code (2026-09-28):
     tori refused as before. A full contract run holds (the slowest Boolean
     case 13.5 seconds on a loaded machine, a worker at the last survey's
     commit as slow at that load); the ledger does not change; no kernel change.
+  * **S9e.3b refined, before its code (2026-10-03).** Why each is refused
+    today. A given result's edge on a meeting of two curved faces
+    (`Crv::Meet`: a cylinder's or a cone's rulings against another quadric;
+    `Crv::Rise`: a cylinder or cone and a sphere over the height;
+    `Crv::Toric`: a torus and a quadric or another torus) or on a plane's
+    section of a cone or of a torus other than a circle of the torus
+    (`Crv::Cone`, `Crv::Torus`) is a model edge since S9e.3a, but where a
+    face of the other input reaches it `meet::edge_surface` refuses it
+    ("a given result's meeting of two curved faces met by another face
+    (S9e.3b)"): the meeting of the edge's two surfaces with the partner's is
+    three surfaces, two or three of them curved, and no S9 pair computes it
+    (S9e.3a's only such meetings are a cone's section against a plane, on
+    the line of the two planes, and a torus's circle at a fixed angle,
+    S9d.4c's `rim_far`). Where one of the edge's faces' surfaces is apart
+    from the partner's face (`graph.rs`'s `unmet`: a curved pair `Apart`,
+    `chain::planes_apart`) the edge is kept as given; and `assemble.rs`
+    refuses a result edge over part of such a given edge of a meeting of two
+    curved faces (it keeps only a whole one's stored curve). In the fuzz
+    corpus 156 of 1,238 chained operations stop there; DRAW's chained cases
+    do not reach it. Decisions. (1) *Classes.* (a) *A plane among the
+    three*: a given `Meet`, `Rise` or `Toric` met by the partner's plane, and
+    a given section of a cone or a torus met by the partner's cylinder,
+    sphere, cone or torus; (b) *three quadrics*: a given `Meet` or `Rise`
+    met by the partner's cylinder, sphere or cone. (2) *Representation.*
+    Every new vertex is a point whose three coordinates lie in one
+    `Q(alpha)` (S9c.2b.2's fields: `alpha` a real root of a square-free
+    eliminant `E` with rational coefficients, isolated by rational
+    intervals, one generator per root, numbers polynomials in `alpha`; a
+    `Qd` without its surd): no tower, because both parameters of the point
+    are found in `Q(alpha)`. The two parameters: in (a), affine coordinates
+    `(s, t)` of the plane, `p = p0 + s e1 + t e2` (`e1`, `e2` rational
+    vectors spanning it: cross products with its normal), the other two
+    surfaces restricted to the plane polynomials `G(s, t)` of degree 2 (a
+    quadric's conic) or 4 (a torus's spiric curve); in (b), a ruled one of
+    the three (the given curve's carrier first) parameterized by the
+    half-angle tangent `x` of its angle in a chart rotated by a rational
+    base direction (S9c.2b.1's `Chart`) and the place `y` along the ruling,
+    `p = (A(x) + y B(x)) / Q(x)` (a cylinder's circle point and axis over
+    `1 + x^2`; a cone's apex and generatrix direction), the two other
+    quadrics restricted quadratics in `y` with coefficients of degree at
+    most 4 in `x`. `E` is the resultant in the second parameter: of degree 4
+    for two conics, 8 for a conic and a spiric curve, 8 for three quadrics
+    (Bezout's counts; the chart's spurious factor `1 + x^2` removed). At
+    each real root the fibre's two polynomials in the second parameter have
+    their gcd over `Q(alpha)` taken by Euclid's algorithm (leading
+    coefficients' exact signs at `alpha`): of degree one, the parameter is
+    `-g0 / g1` and the point a rational map of the two; of degree zero, no
+    point there (a root of the leading coefficients); of two or more, two
+    points share the fibre (a plane parallel to a cylinder's rulings, a
+    partner parallel to the carrier) and the projection is retried: the two
+    parameters' roles exchanged, then rational shears `s + c t` (`c` = 1,
+    -1, 2, 1/2, ...) of the plane's coordinates or, in (b), another ruled
+    surface of the three as carrier; none separating the points is
+    `ComputationLimit("a given meeting's points not separated by a
+    projection (S9e.3b)")`. The chart's antipode (a rational direction) is
+    tested exactly and the chart's base moved where it holds a point. (3)
+    *Exactness.* Every real root of `E` is isolated over the whole line, so
+    no meeting is missed; each point found is verified exactly (the three
+    surfaces' functions zero at it, signs in `Q(alpha)`), and the given
+    edge's curve keeps it only where its own exact test holds (`on`: both
+    its surfaces, its branch, its window and range), so a point of the
+    other branch, of another piece or of the same surfaces' other component
+    is dropped; its place on the curve (the carrier's angle, a height, a
+    torus angle's direction) is computed from the point in its field, and
+    the second arrangement takes it as any vertex of an edge met by a face
+    (on the face, inside it; its sections through it by their own exact
+    tests; orders on a curve between numbers of different fields by
+    enclosures, as S9c.2b.2's). (4) *Degenerate.* The partner's surface
+    tangent to the given curve at a meeting on the edge: the three gradients
+    linearly dependent there (`det(grad F1, grad F2, grad F3) = 0`, exactly:
+    three surfaces through a point with dependent normals, which a double
+    root of `E` at a point is), `Degenerate("a given meeting of two faces
+    tangent to a face of the other input (S9e.3b)")`; two meetings of one
+    given edge with one surface within the resolution of each other (a
+    crossing within the resolution of a tangency, as S9d.4c's rims)
+    likewise; a meeting at the given edge's end, S9's rule (a vertex of one
+    input on the other's face); the given curve on the partner's surface
+    (`E` zero identically and the curve on it), `Along`, taken as faces on
+    one surface where one of the edge's faces lies on it, else S9's rule (an
+    edge of one input on a face of the other); and S9d's rules for every
+    pair in the second arrangement, unchanged. (5) *What stays refused, and
+    why.* By cost, a torus among three curved surfaces (a `Toric` met by a
+    curved face, a `Meet` or `Rise` met by a torus) and two tori's quartics
+    in one plane (a torus's general section met by a torus, two tori's
+    `Toric` met by a plane): eliminants of degree 16 (32 for two tori and a
+    quadric) in the chart's variable, every vertex in a field of that degree
+    and every later predicate a product there (S9d.4b.2b's two tori, the
+    lightest of these, are already switched off in the fuzz target for
+    time): `OutOfDomain("a given result's meeting met by a third surface of
+    degree sixteen or more: a torus among three curved surfaces, or two
+    tori in one plane (S9e.3b)")`; a projection that separates no points
+    (2), a limit; everything else as before. (6) *Stored curves.* A result
+    edge over part of a given edge of a procedural curve keeps the given
+    edge's stored curve with the piece's ends' parameters on it (a `Rise`'s
+    heights, a `Meet`'s or a `Toric`'s angle on the stored carrier, as
+    S9e.1's `given_arc` for conics), a cone's or a torus's section's piece
+    rounded as S9e.3a's (`chain::curve_model`); names and histories as
+    S9e.3a's (a piece Modified from its given edge). (7) *Fuzzing.* The
+    chained stage's partners (the turned box, the cylinder, `GIVEN_BALL`'s
+    sphere) reach these meetings; a switch `GIVEN_MET` (on), switched off if
+    the per-input time under AddressSanitizer comes near the target's 60
+    s. (8) *Evidence first.* Fixtures (`generate_given_met_boolean_fixtures.py`)
+    from S9e.3a's chained reference unchanged (`chained_curved_boolean_reference.py`:
+    it decides the chain by its solids' memberships, so a partner across a
+    given meeting needs nothing new), with an independent check of the
+    meetings themselves (`given_met_reference.py`): each pair of surfaces of
+    the given result's solids traced along the families of one's faces as
+    roots of the other, the partner's surfaces' signs along the traced
+    curve bracketed and the triple points refined by Newton's method in 40
+    digits, kept where the given result's boundary has an edge there (its
+    set function differs among the four quadrants about the curve) and the
+    partner's face holds it; every chain outside the declared cases must
+    hold such a point with every triple point's sine (the normals'
+    determinant over their lengths) at least 0.05, and each declared
+    degenerate chain its triple point with dependent normals within 1e-30.
+    Chains of every class: a sphere with a peg (`Rise`) met by a `TILT`
+    slab, by a wall through the peg's axis (parallel to its rulings), by a
+    pipe, by a ball and by a frustum; two crossing rods (`Meet` rings) met
+    by a `TILT` slab, by a wall parallel to a rod and by a ball; a frustum
+    pierced by a pipe (a cone's and a cylinder's `Meet`) met by a slab; a
+    torus with a rod through its tube (`Toric`) met by a `TILT` slab and a
+    wall; a frustum cut obliquely (a cone's section) met by a rod and a
+    ball; a torus cut by a wall off its axis (a spiric section) met by a
+    pipe and a ball; declared `degenerate`: a box's face tangent to the
+    peg's `Rise` at its lowest point, and a pipe through that point whose
+    normal there is dependent on the sphere's and the peg's (no two of the
+    three surfaces tangent). A native capture before
+    `solid/boolean/curved/triple.rs` (the three surfaces' meetings) exists,
+    the comparison `compare_given_met_boolean.py` keyed on it,
+    `test_given_met_boolean_reference.py`, the generator's check a CI group
+    of its own (`given-met`); then the kernel, its tests
+    (`tests/given_met_booleans.rs`), the fuzz target's switch, the DRAW
+    survey of the chained cases and a campaign.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions
