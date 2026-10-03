@@ -570,6 +570,14 @@ fn segment_count(
             )?;
             Some((&m.frame, second, turn, 1.0))
         }
+        // A spline wall's meeting with a cylinder (S9f.2b) likewise, its
+        // rates' pieces split at the wall's knots.
+        Curve3::WallMeet(m) => {
+            let (second, turn) = crate::topology::section_rates(&edge.curve, 64).ok_or(
+                Error::ComputationLimit("a spline wall's meeting's curvature enclosure"),
+            )?;
+            Some((&m.other, second, turn, 1.0))
+        }
         Curve3::LineSegment { .. } | Curve3::BSpline(_) => None,
     } {
         let sigma = bounds::frame_norm(frame);

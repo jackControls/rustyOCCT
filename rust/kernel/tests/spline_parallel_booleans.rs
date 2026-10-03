@@ -2,7 +2,7 @@
 //! spline walls whose axes are exactly parallel, against the independent
 //! reference (`fixtures/boolean-spline-parallel-*` from
 //! `tools/generate_spline_parallel_boolean_fixtures.py`), and the decisions'
-//! refusals: coincident spline walls, crossing axes, arcs whose degrees'
+//! refusals: coincident spline walls, crossing spline walls, arcs whose degrees'
 //! product exceeds 16.
 use rusty_occt::identity::OperationId;
 use rusty_occt::topology::SplineSpan;
@@ -326,19 +326,13 @@ fn coincident_spline_walls_are_refused() {
     }
 }
 
-/// Crossing axes stay refused: a cylinder's (S9f.2b's) and another spline
-/// wall's (by design).
+/// Spline walls against spline walls on crossing axes stay refused (by
+/// design; against a cylinder they are S9f.2b's,
+/// `tests/spline_crossing_booleans.rs`).
 #[test]
-fn crossing_axes_stay_refused() {
+fn crossing_spline_walls_stay_refused() {
     let a = prism(1, dome(), Frame3::xy(), 0.0, 5.0);
     let side = frame((-1.0, 1.0, 2.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0));
-    let b = prism(2, disc(1.0), side, 0.0, 6.0);
-    let r = a.fuse(OperationId(3), &b);
-    assert!(
-        matches!(&r, Err(Error::OutOfDomain(m)) if m.contains("S9f.2b")),
-        "{:?}",
-        r.map(|x| x.0.len())
-    );
     let c = prism(4, dome(), side, 0.0, 6.0);
     let r = a.fuse(OperationId(5), &c);
     assert!(

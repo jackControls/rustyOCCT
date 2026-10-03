@@ -31,6 +31,7 @@ mod procedural;
 mod sphere;
 mod spheres;
 mod spheres_turned;
+mod spline_crossing;
 mod spline_parallel;
 mod spline_walls;
 mod torus;
@@ -114,7 +115,8 @@ fn parallel_axes(x: &crate::Solid, y: &crate::Solid) -> bool {
 
 /// S9f.1 takes a spline prism against a prism of lines in any position,
 /// S9f.2a against a prism with arcs, circles or splines on an exactly
-/// parallel axis; the others are later sub-steps' or refused
+/// parallel axis, S9f.2b against a prism with arcs or circles (no spline) on
+/// a crossing axis; the others are later sub-steps' or refused
 /// (REVIEW_NOTES.md, "S9f refined").
 fn spline_pairs(poly: &Polyhedron) -> Result<()> {
     for (x, y) in [(&poly.a, &poly.b), (&poly.b, &poly.a)] {
@@ -129,12 +131,14 @@ fn spline_pairs(poly: &Polyhedron) -> Result<()> {
         if matches!(y.construction, Construction::Prism(_)) && parallel_axes(x, y) {
             continue;
         }
+        // S9f.2b: against a prism of lines, arcs and circles on a crossing
+        // axis (spline walls against cylinder walls).
+        if matches!(&y.construction, Construction::Prism(p) if !profile_splines(p)) {
+            continue;
+        }
         return Err(Error::OutOfDomain(match &y.construction {
-            Construction::Prism(p) if profile_splines(p) => {
-                "spline walls against spline walls on crossing axes (refused, S9f)"
-            }
             Construction::Prism(_) => {
-                "a spline prism against a prism with arcs on crossing axes (S9f.2b)"
+                "spline walls against spline walls on crossing axes (refused, S9f)"
             }
             Construction::Sphere { .. } | Construction::Cone { .. } => {
                 "a spline prism against a sphere or a cone (S9f.3)"

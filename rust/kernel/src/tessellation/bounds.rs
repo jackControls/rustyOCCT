@@ -156,7 +156,8 @@ pub(super) fn curve_point(curve: &Curve3, t: f64) -> Option<P> {
         | Curve3::Section(_)
         | Curve3::Meet(_)
         | Curve3::Rise(_)
-        | Curve3::Toric(_) => crate::topology::conic_point_fast(curve, t)?,
+        | Curve3::Toric(_)
+        | Curve3::WallMeet(_) => crate::topology::conic_point_fast(curve, t)?,
         Curve3::BSpline(_) => return None,
     })
 }
@@ -437,7 +438,11 @@ pub(super) fn segment_bound(curve: &Curve3, dt: f64) -> (f64, f64) {
         }
         // A torus section (S8d.3), two cylinders' meeting (S9c.2): their
         // rates per unit fraction.
-        Curve3::Section(_) | Curve3::Meet(_) | Curve3::Rise(_) | Curve3::Toric(_) => {
+        Curve3::Section(_)
+        | Curve3::Meet(_)
+        | Curve3::Rise(_)
+        | Curve3::Toric(_)
+        | Curve3::WallMeet(_) => {
             let Some((second, turn)) = crate::topology::section_rates(curve, 64) else {
                 return (f64::INFINITY, f64::INFINITY);
             };

@@ -34,6 +34,7 @@ pub(crate) use projection::{conic_point_fast, projection_range, section_rates};
 mod spline_deviation;
 mod spline_flux;
 mod spline_taylor;
+mod wall_meet;
 pub(crate) use mass::{edge_length, face_mass, mass, sheet_measure};
 
 /// Issue classes of the validation contract.
@@ -325,7 +326,8 @@ fn arc_of(c: &Curve3) -> Option<(&Frame3, [f64; 2], f64, f64)> {
         | Curve3::Section(_)
         | Curve3::Meet(_)
         | Curve3::Rise(_)
-        | Curve3::Toric(_) => None,
+        | Curve3::Toric(_)
+        | Curve3::WallMeet(_) => None,
     }
 }
 
@@ -372,6 +374,13 @@ enum SplineUse {
 /// Whether a use involves spline geometry, which only the endpoint and
 /// continuity checks certify before the rest of S4.
 fn spline_use(curve: &Curve3, s: &Surface, p: &Curve2) -> bool {
+    // A spline wall's meeting's projection onto its own wall (S9f.2b) lies
+    // on it by definition: no spline rule decides it.
+    if let Curve2::Projection(pr) = p {
+        if matches!(curve, Curve3::WallMeet(_)) && pr.curve == *curve && pr.surface == *s {
+            return false;
+        }
+    }
     matches!(curve, Curve3::BSpline(_))
         || matches!(s, Surface::BSpline(_))
         || matches!(p, Curve2::BSpline(_))
@@ -394,7 +403,8 @@ fn curve_at<T: Real>(curve: &Curve3, t: f64) -> V3<T> {
         | Curve3::Section(_)
         | Curve3::Meet(_)
         | Curve3::Rise(_)
-        | Curve3::Toric(_) => {
+        | Curve3::Toric(_)
+        | Curve3::WallMeet(_) => {
             projection::conic_point::<T>(curve, t).expect("a conic or section evaluates")
         }
         _ => {
@@ -824,7 +834,8 @@ fn add_curve<T: Real>(h: &mut Harmonic<T>, curve: &Curve3, forward: bool) -> boo
         | Curve3::Section(_)
         | Curve3::Meet(_)
         | Curve3::Rise(_)
-        | Curve3::Toric(_) => return false,
+        | Curve3::Toric(_)
+        | Curve3::WallMeet(_) => return false,
         Curve3::LineSegment { start, end } => {
             let (a, b) = (v3::<T>(start.to_array()), v3::<T>(end.to_array()));
             if forward {
@@ -1234,6 +1245,33 @@ fn curve_valid(curve: &Curve3, tol: &R, fast_tol2: &Fast, exact_tol2: &I) -> boo
                 && m.sweep != 0.0
                 && a.hypot(b) > 1e-12
         }
+        // A spline wall's meeting with a cylinder (S9f.2b): a nonrational
+        // wall of degree one in `v` over two pole rows, a range inside its
+        // `u` domain, a sign, a positive radius, a ruling crossing the
+        // cylinder's axis, the discriminant positive at the ends.
+        Curve3::WallMeet(m) => {
+            let s = &m.wall;
+            let ((u0, u1), _) = s.domain();
+            let (a, b) = (m.start, m.start + m.sweep);
+            let inside = |x: f64| u0 <= x && x <= u1;
+            let crossing = |f: f64| {
+                let (_, dir) = m.ruling(m.start + m.sweep * f);
+                let (x2, y2) = (m.other.x(), m.other.y());
+                dir.dot(x2).hypot(dir.dot(y2)) > 1e-6 * dir.length()
+            };
+            finite(&[m.other_radius, m.sign, m.start, m.sweep])
+                && !s.is_rational()
+                && !s.u_knots().is_periodic()
+                && s.v_knots().degree() == 1
+                && s.v_knots().pole_count() == 2
+                && r(m.other_radius) > *tol
+                && (m.sign == 1.0 || m.sign == -1.0)
+                && m.sweep != 0.0
+                && inside(a)
+                && inside(b)
+                && crossing(0.0)
+                && crossing(1.0)
+        }
         // A torus's meeting with a quadric (S9d.4b.2): a ring torus, a
         // positive radius (a cone's may be zero at its frame's origin), a
         // window of the other angle under a turn, a range within a turn;
@@ -1418,6 +1456,29 @@ fn pcurve_end_exact(p: &Curve2, t: f64) -> Option<[R; 2]> {
 /// meeting ends on a spline surface, exactly (S4); `None` when an end is
 /// not exact or off the surface's domain.
 fn spline_gap2(s: &crate::BSplineSurface3, p: &Curve2, next: &Curve2) -> Option<R> {
+    let (a, b) = (
+        spline_point_at(s, pcurve_end_exact(p, 1.0)?)?,
+        spline_point_at(s, pcurve_end_exact(next, 0.0)?)?,
+    );
+    Some((0..3).map(|k| (&a[k] - &b[k]) * (&a[k] - &b[k])).sum())
+}
+
+/// A pcurve's end (`t` 0 or 1) on a spline surface in 3D, enclosed: an
+/// exact pcurve's on the surface's patch, a spline wall's meeting's
+/// projection onto its own wall (S9f.2b) the meeting's own end point.
+fn spline_end<T: Real>(s: &crate::BSplineSurface3, p: &Curve2, t: f64) -> Option<V3<T>> {
+    if let Curve2::Projection(pr) = p {
+        if matches!(&pr.curve, Curve3::WallMeet(m) if m.wall == *s) {
+            let f = if pr.reversed { 1.0 - t } else { t };
+            return projection::conic_point::<T>(&pr.curve, f);
+        }
+    }
+    Some(spline_point_at(s, pcurve_end_exact(p, t)?)?.map(|x| q::<T>(&x)))
+}
+
+/// A spline surface's point at exact parameters, exactly (`None` off its
+/// domain).
+fn spline_point_at(s: &crate::BSplineSurface3, q: [R; 2]) -> Option<[R; 3]> {
     let patches = s.bezier_patches().ok()?;
     let ((ua, ub), (va, vb)) = s.domain();
     let (ua, ub, va, vb) = (r(ua), r(ub), r(va), r(vb));
@@ -1438,11 +1499,7 @@ fn spline_gap2(s: &crate::BSplineSurface3, p: &Curve2, next: &Curve2) -> Option<
         })?;
         Some(patch_point(patch, &q[0], &q[1]))
     };
-    let (a, b) = (
-        at(pcurve_end_exact(p, 1.0)?)?,
-        at(pcurve_end_exact(next, 0.0)?)?,
-    );
-    Some((0..3).map(|k| (&a[k] - &b[k]) * (&a[k] - &b[k])).sum())
+    at(q)
 }
 
 /// A Bézier patch's point at `(u, v)`, exactly, by de Casteljau: inside its
@@ -1476,11 +1533,21 @@ fn patch_point(patch: &crate::ExactBezierSurface3, u: &R, v: &R) -> [R; 3] {
 
 fn uv_gap2<T: Real>(s: &Surface, p: &Curve2, next: &Curve2, shift: [f64; 2]) -> T {
     if let Surface::BSpline(spline) = s {
-        // Measured in 3D; unknown when not exact.
-        return spline_gap2(spline, p, next).map_or_else(
-            || c::<T>(0.0).widen(&R::from_integer(BigInt::from(1) << 1000)),
-            |g| q(&g),
-        );
+        // Measured in 3D, exactly; a spline wall's meeting's end enclosed
+        // (S9f.2b); unknown otherwise.
+        if let Some(g) = spline_gap2(spline, p, next) {
+            return q(&g);
+        }
+        return match (
+            spline_end::<T>(spline, p, 1.0),
+            spline_end::<T>(spline, next, 0.0),
+        ) {
+            (Some(a), Some(b)) => {
+                let d = vsub(&a, &b);
+                vdot(&d, &d)
+            }
+            _ => c::<T>(0.0).widen(&R::from_integer(BigInt::from(1) << 1000)),
+        };
     }
     let (a, b) = (pcurve_at::<T>(p, 1.0), pcurve_at::<T>(next, 0.0));
     let mut du = a[0].sub(&b[0].add(&c(shift[0])));
@@ -1854,6 +1921,60 @@ fn chords<T: Real>(lp: &Lp) -> Vec<(V2<T>, V2<T>)> {
             (a, b)
         })
         .collect()
+}
+
+/// The patch a closing chord's ends certainly share on a spline surface:
+/// the first whose domain holds both enclosures, else the first holding
+/// them within `2^-40` of its width past its sides inside the surface's
+/// domain and anywhere past its sides on the domain's edges (S9f.2b: a
+/// spline wall's meeting's end enclosed by its jets about a point on a
+/// cap's or a knot's line; a chord of the loop's gap, its integrand on that
+/// patch's polynomial or its extension, closes a gap within the tolerance;
+/// past the domain's edge that patch's polynomial is the only one there).
+fn chord_patch<'a, T: Real>(
+    mut domains: impl Iterator<Item = &'a [[R; 2]; 2]> + Clone,
+    a: &V2<T>,
+    b: &V2<T>,
+) -> Option<usize> {
+    let mut whole: Option<[[R; 2]; 2]> = None;
+    for d in domains.clone() {
+        whole = Some(match whole {
+            None => d.clone(),
+            Some(w) => std::array::from_fn(|k| {
+                [
+                    w[k][0].clone().min(d[k][0].clone()),
+                    w[k][1].clone().max(d[k][1].clone()),
+                ]
+            }),
+        });
+    }
+    let whole = whole?;
+    let holds = |d: &[[R; 2]; 2], x: &V2<T>, slack: bool| {
+        d.iter()
+            .zip(x)
+            .zip(&whole)
+            .all(|(([lo, hi], v), [first, last])| {
+                let s = if slack {
+                    (hi - lo) / R::from_integer(BigInt::from(1u64 << 40))
+                } else {
+                    R::from_integer(0.into())
+                };
+                (slack && lo == first
+                    || matches!(
+                        v.cmp(&q::<T>(&(lo - &s))),
+                        Some(Ordering::Greater | Ordering::Equal)
+                    ))
+                    && (slack && hi == last
+                        || matches!(
+                            v.cmp(&q::<T>(&(hi + &s))),
+                            Some(Ordering::Less | Ordering::Equal)
+                        ))
+            })
+    };
+    domains
+        .clone()
+        .position(|d| holds(d, a, false) && holds(d, b, false))
+        .or_else(|| domains.position(|d| holds(d, a, true) && holds(d, b, true)))
 }
 
 /// Twice the signed area of an unwound loop closed by chords.
@@ -3131,6 +3252,8 @@ fn closed_curve(curve: &Curve3) -> bool {
         Curve3::Rise(_) => false,
         // A torus's meeting over a whole turn of its angle (S9d.4b.2).
         Curve3::Toric(m) => m.sweep.abs() == TAU,
+        // A spline wall's meeting over its wall's `u` never closes (S9f.2b).
+        Curve3::WallMeet(_) => false,
         Curve3::LineSegment { .. } => false,
         // A spline ring edge is a full period; its seam is tested for C1.
         Curve3::BSpline(span) => span.is_closed_period(),

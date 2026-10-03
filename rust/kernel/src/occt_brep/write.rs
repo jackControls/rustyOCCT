@@ -44,7 +44,11 @@ struct EdgeGeometry {
 /// the edge.
 fn curve_record(c: &Curve3, ring_start: Option<f64>) -> EdgeGeometry {
     match c {
-        Curve3::Section(_) | Curve3::Meet(_) | Curve3::Rise(_) | Curve3::Toric(_) => {
+        Curve3::Section(_)
+        | Curve3::Meet(_)
+        | Curve3::Rise(_)
+        | Curve3::Toric(_)
+        | Curve3::WallMeet(_) => {
             unreachable!("sections and meetings are refused before their records")
         }
         Curve3::BSpline(span) => EdgeGeometry {
@@ -262,7 +266,11 @@ fn bspline_surface_record(s: &BSplineSurface3) -> String {
 /// The point of a curve at its own parameter `t` (as `curve_record` writes it).
 fn curve_at(c: &Curve3, t: f64) -> Point3 {
     match c {
-        Curve3::Section(_) | Curve3::Meet(_) | Curve3::Rise(_) | Curve3::Toric(_) => {
+        Curve3::Section(_)
+        | Curve3::Meet(_)
+        | Curve3::Rise(_)
+        | Curve3::Toric(_)
+        | Curve3::WallMeet(_) => {
             unreachable!("sections and meetings are refused before their records")
         }
         Curve3::BSpline(span) => span.curve().point(t).expect("a parameter in the range"),
@@ -1050,6 +1058,15 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
         )
     }) {
         return Err(unwritable("two cylinders' meeting edge (D13)"));
+    }
+    // A spline wall's meeting with a cylinder (S9f.2b) likewise.
+    if t.edges()
+        .iter()
+        .any(|e| matches!(e.curve, Curve3::WallMeet(_)))
+    {
+        return Err(unwritable(
+            "a spline wall's meeting with a cylinder edge (D13)",
+        ));
     }
     // Edge geometry and pcurves per face.
     let geometry: Vec<EdgeGeometry> = t

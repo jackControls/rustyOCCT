@@ -34,9 +34,9 @@ pub(super) fn tangency() -> Error {
 }
 
 /// A spline wall against a curved face other than a cylinder or a spline
-/// wall on a parallel axis (S9f.2b and S9f.3's).
+/// wall (S9f.3's: spheres and cones).
 fn spline_curved() -> Error {
-    Error::OutOfDomain("a spline wall against a curved face in any position (S9f.2b, S9f.3)")
+    Error::OutOfDomain("a spline wall against a curved face in any position (S9f.3)")
 }
 
 fn quartic() -> Error {
@@ -283,11 +283,20 @@ pub(super) fn section(
         (Surf::Spline(s), Surf::Plane { p, m }) => super::spline_walls::plane_wall(px, s, p, m),
         // S9f.2a: against a cylinder or a spline wall on an exactly parallel
         // axis, generatrices over the profiles' crossings.
+        // S9f.2b: on a crossing axis, its meeting's branches over the run.
         (Surf::Spline(s), Surf::Cyl { c, r, .. }) => {
-            super::spline_parallel::spline_cyl(px, s, py, c, r)
+            if super::spline_parallel::map2(&px.f, &py.f).is_some() {
+                super::spline_parallel::spline_cyl(px, s, py, c, r)
+            } else {
+                super::spline_crossing::section(px, fx, s, py, fy, c, r)
+            }
         }
         (Surf::Cyl { c, r, .. }, Surf::Spline(s)) => {
-            super::spline_parallel::spline_cyl(py, s, px, c, r)
+            if super::spline_parallel::map2(&py.f, &px.f).is_some() {
+                super::spline_parallel::spline_cyl(py, s, px, c, r)
+            } else {
+                super::spline_crossing::section(py, fy, s, px, fx, c, r)
+            }
         }
         (Surf::Spline(s), Surf::Spline(t)) => super::spline_parallel::spline_spline(px, s, py, t),
         (Surf::Spline(_), _) | (_, Surf::Spline(_)) => Err(spline_curved()),
@@ -625,9 +634,15 @@ pub(super) fn edge_surface(
         // A given result's meeting of two curved faces (or a cone's section
         // against a curved face) met by another face: three surfaces, two
         // of them curved (S9e.3b).
-        (Crv::Meet(_) | Crv::Rise(_) | Crv::Cone(_) | Crv::Toric(_) | Crv::Torus(_), _) => {
-            Err(Error::OutOfDomain(super::chain::S9E3B))
-        }
+        (
+            Crv::Meet(_)
+            | Crv::Rise(_)
+            | Crv::Cone(_)
+            | Crv::Toric(_)
+            | Crv::Torus(_)
+            | Crv::WallMeet(_),
+            _,
+        ) => Err(Error::OutOfDomain(super::chain::S9E3B)),
         (Crv::Line { p, d }, Surf::Plane { p: p0, m }) => {
             let md = dot(m, d);
             let off = qdot(&qsub(&qv(p0), p), m);
@@ -763,7 +778,10 @@ pub(super) fn tangent(curve: &Crv, pos: &Pos, x: &QV) -> QV {
         (Crv::Torus(c), _) => c.tangent(x),
         (Crv::Toric(c), _) => c.tangent(x),
         (Crv::Spline(c), Pos::T(t)) => c.tangent(t),
-        (Crv::Spline(_), Pos::Ang(_)) => unreachable!("a spline curve's place is its parameter"),
+        (Crv::WallMeet(c), Pos::T(t)) => c.tangent(x, t),
+        (Crv::Spline(_) | Crv::WallMeet(_), Pos::Ang(_)) => {
+            unreachable!("a spline curve's place is its parameter")
+        }
         (Crv::Conic { .. } | Crv::Meet(_) | Crv::Cone(_), Pos::T(_)) => {
             unreachable!("a conic's place is an angle")
         }

@@ -322,6 +322,9 @@ pub(super) enum Crv {
     /// A curve over a spline segment on its wall (S9f.1): a cap edge or a
     /// plane's crease, placed by the segment's run parameter.
     Spline(Box<WallCrv>),
+    /// A spline wall's meeting with a cylinder on a crossing axis (S9f.2b),
+    /// a branch over a range of the segment's run, placed by it.
+    WallMeet(Box<super::spline_crossing::WallMeetCrv>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

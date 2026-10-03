@@ -481,6 +481,10 @@ pub(super) fn spline_cyl(
 /// Where a curve over a spline segment (a cap edge or a crease) meets a
 /// cylinder wall of another prism (`c`, `r` on frame `cf`).
 pub(super) fn wallcrv_cyl(curve: &WallCrv, cf: &Affine, c: &P2, r: &R) -> Result<EdgeMeet> {
+    // S9f.2b: on a crossing axis.
+    if map2(&curve.f, cf).is_none() {
+        return super::spline_crossing::wallcrv_cyl(curve, cf, c, r);
+    }
     let rs = cylinder_roots(&curve.seg, &curve.f, cf, c, r)?;
     Ok(EdgeMeet::Points(
         rs.into_iter()
@@ -507,6 +511,10 @@ pub(super) fn conic_wall(
     sf: &Affine,
     seg: &SplineSeg,
 ) -> Result<EdgeMeet> {
+    // S9f.2b: on a crossing axis.
+    if map2(sf, &cm.f).is_none() {
+        return super::spline_crossing::conic_wall(cm, c, r, cc, a, b, sf, seg);
+    }
     let rs = cylinder_roots(seg, sf, &cm.f, c, r)?;
     let m = map2(sf, &cm.f).expect("parallel axes");
     let inv = int(1) / r;

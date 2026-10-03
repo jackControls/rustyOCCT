@@ -44,9 +44,12 @@
 //! in the frame turned about the axis meets it on an exactly parallel
 //! axis (`SPLINE_PARALLEL`), and in the tilted frame the byte after R4's,
 //! at or above 128, offsets a spline variant's tool by an amount that
-//! rounds (the curved engine instead of S9a.2's one frame); spline walls
-//! against a prism with arcs on crossing axes, a curved solid or a given
-//! result stay refused (S9f's).
+//! rounds (the curved engine instead of S9a.2's one frame). S9f.2b: a
+//! spline prism against a prism with arcs on crossing axes (the tool
+//! leaning, tilted or on its side) meets it along the walls' meetings with
+//! the cylinders (`SPLINE_CROSSING`), their loops round a cylinder
+//! refused (S9f.2b.2's); spline walls against spline walls on crossing
+//! axes, a curved solid or a given result stay refused (S9f's).
 use crate::analytic_intersections::Bytes;
 use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
@@ -118,6 +121,13 @@ const SPLINE_WALLS: bool = true;
 /// axis, or in the tilted frame offset by an amount that rounds (the byte
 /// after R4's, at or above 128).
 const SPLINE_PARALLEL: bool = true;
+
+/// Whether a spline prism meets a prism with arcs or circles (the split
+/// target's stadium and round hole) on crossing axes: the tool leaning,
+/// tilted or on its side (S9f.2b's meetings of spline walls with
+/// cylinders, in the curved engine; their loops round the cylinder,
+/// S9f.2b.2's, stay refused).
+const SPLINE_CROSSING: bool = true;
 
 /// R4's knot on the target's sizes: a rectangle `2s` by `t` under a
 /// quadratic from `(2s, t)` to `(0, 2t)` whose interior knot of
@@ -273,12 +283,20 @@ pub fn check_boolean(data: &[u8]) {
     // tool turned about it, or in the tilted frame offset by an amount that
     // rounds (S9a.2's one frame otherwise).
     let curved = |spline: bool, kind: u8| spline || kind % 6 == 2 || kind % 6 == 4;
-    let parallel_curved = splines != 0
+    let curved_pair = splines != 0
         && spline_byte < 144
         && curved(splines & 1 == 1, ka)
         && curved(splines & 2 == 2, kb);
     let offset_tilt = tilted && splines != 0 && data.get(15).is_some_and(|k| *k >= 128);
-    if !SPLINE_PARALLEL && parallel_curved && (offset_tilt || (!tilted && pick % 4 == 1)) {
+    if !SPLINE_PARALLEL && curved_pair && (offset_tilt || (!tilted && pick % 4 == 1)) {
+        return;
+    }
+    // S9f.2b: a spline prism against a prism with arcs on crossing axes
+    // (the tool leaning, tilted or on its side; off: refused as before
+    // its kernel). Spline walls against spline walls there stay refused
+    // (S9f.3).
+    let crossing = !tilted && (pick % 4 >= 2 || (pick % 4 == 0 && pick >= 128));
+    if !SPLINE_CROSSING && curved_pair && splines != 3 && crossing {
         return;
     }
     let fb = if offset_tilt {
