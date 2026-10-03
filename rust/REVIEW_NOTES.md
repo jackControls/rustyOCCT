@@ -2650,6 +2650,17 @@ Decisions for S9, recorded before its code (2026-09-28):
     stack depot, with 50 MB live at the gate: split now keeps five-frame
     stacks as boolean does (`SHORT_STACK_TARGETS`; 1,400 corpus inputs
     1,350 MB RSS before, 434 MB after; no limit changed).
+    (n) The scheduled fuzz run 36868817257's `brep_io` crash `faf66166`
+    was the harness's own overflow, a number cast to `i64` (saturating at
+    its end) and then nudged by `-2..=2`, no kernel value: the nudge
+    saturates too, every check on the mutated text unchanged. (o) The same
+    run's `degree_elevation` timeout `559a4800` (87 s under
+    AddressSanitizer) raises a degree-19 periodic axis to 25, nearly all of
+    it the production control map's `BigRational` blends: the map is
+    computed in machine words on the knots moved affinely onto integers
+    (the insertion ratios unchanged), again with `BigRational` on any
+    overflow, the same exact map (9.6 s to 1.1 s in release, 262 s to 14 s
+    under the sanitizer on a loaded Mac, `fuzz/regressions/README.md`).
   * **S9d.4b refined, before its code (2026-09-29).** Two sub-steps.
     S9d.4b.1: tori other than whole ones (S3's v-segments between two
     latitudes and wedges of a partial turn) against polyhedral prisms: the

@@ -565,6 +565,40 @@ seconds. Single-file replay is timed separately because libFuzzer does not
 enforce its usual alarm in that mode. Published Linux campaigns must still
 pass the unchanged 60-second/2-GiB input gates.
 
+## Degree elevation: a degree-19 periodic axis raised to 25
+
+`degree_elevation/timeout-559a48007e6dd6414eb28692d5545d662d920ec1.bin` is
+the original 21-byte artifact of the scheduled
+[run 36868817257](https://github.com/jackControls/rustyOCCT/actions/runs/36868817257)
+(87 s under AddressSanitizer against the 60 s limit). It is a surface: U a
+uniform periodic degree-19 axis of 23 simple knots scaled by `2^4096`, V the
+clamped degree-2 axis `0, 1, 4`, small integer controls, raised to degrees
+25 and 2, then staged (an identity, then the same elevation again). The
+scale is immaterial (the same input at scale 1 takes as long): nearly all of
+the time was the production control map, Prautzsch's rank curves over three
+periods, six degree steps of about 21 ranks each inserting about 63 knots,
+every blend a `BigRational` product and sum reduced by `num_integer`'s
+binary gcd. Every coefficient fits 64 bits there. The map is now computed in
+machine words first, the knots moved by one positive affine map onto
+integers (the insertion ratios are invariant under it), each sum and product
+reduced as `BigRational`'s, and any overflow computes it again with
+`BigRational` through `crate::rational`'s faster gcd; knot refinement's
+blends use that too. The map, and so every result, is the same exact map:
+the target's independent reconstruction, composition and jets pass
+unchanged, and the kernel's tests compare the word and rational maps.
+
+| Input | Release replay | AddressSanitizer (loaded Mac) |
+| --- | ---: | ---: |
+| `timeout-559a…` | 9.6 s → 1.1 s (map 4.7 s → 0.36 s) | 262 s → 14 s (733 → 28 Gcycles) |
+| `slow-unit-25ac…` (55 s on Linux) | 4.0 s → 1.7 s | 62 s → 39 s (168 → 103 Gcycles) |
+| corpus `41cb4b82…` | 5.6 s → 3.1 s | 100 s → 35 s (190 → 97 Gcycles) |
+| corpus `8db50da3…` | | 48 s → 34 s (131 → 93 Gcycles) |
+
+The run's other slow units now spend most of their time in the independent
+oracle's Cox systems, which this change does not touch. With debug
+assertions the target's 278 corpus inputs and 4 regressions replay without a
+failure, the slowest in 3.4 s. The 60-second limit is unchanged.
+
 ## Spline/linear: sub-float known-factor root pairs
 
 `spline_linear/slow-replay-9ff24f8f748d219d6d9db4edc3ee40340a02bad0.bin` and
@@ -598,6 +632,20 @@ mutated prism text referenced location 1 while the location table was empty.
 The reader range-checked subshape locations but not those of edge
 representations and faces, so the converter indexed the table out of bounds. The reader now range-checks every curve, pcurve, surface and
 location reference and returns `BrepError::Reference`.
+
+## B-rep interop: the harness's integer nudge overflowed
+
+`brep_io/crash-faf6616697c9ef66c6d010852377229eb8a0c82c.bin` is the original
+75-byte artifact of the scheduled
+[run 36868817257](https://github.com/jackControls/rustyOCCT/actions/runs/36868817257):
+`attempt to add with overflow` at `src/brep_io.rs:100`, in the target's own
+`mutate`, before any text reached the reader. The mutation that turns a
+number into an integer casts it with `as i64`, which saturates a huge or
+infinite number at the end of `i64`'s range, and then added a nudge in
+`-2..=2` under overflow checks. No kernel value is involved. The nudge now
+saturates too (`saturating_add`), the same integer token for every other
+number and the same bytes consumed, so every check on the mutated text is
+unchanged; the input replays in 0.02 s with debug assertions.
 
 ## Surface editing: a completing input past the 20-second limit
 
