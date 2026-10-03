@@ -4941,6 +4941,46 @@ Decisions for S9, recorded before its code (2026-09-28):
     target's spline variants against arcs and splines in the frame turned
     about the axis (`SPLINE_PARALLEL`) and a rounding offset in the tilted
     frame.
+    * **S9f.2a evidence (2026-10-03), before its code (`BOOLEAN.md`).**
+      `curved_boolean_reference.py` takes arcs, circles and splines against
+      spline walls on exactly parallel axes: the 2D crossings of the
+      profiles' curves projected along the axis (`parallel_crossings`, in
+      the exact affine map between the frames: a span against a circle at
+      the real roots of the exact degree-`2 p` polynomial, a tangency a root
+      of even multiplicity; two spans by subdivision in fractions and
+      40-digit Newton steps, on the distance's gradient where tangent, no
+      resultant) are breakpoints of the slicing and of every face sweep
+      (S9f.1's assertions against a surd or a second spline chord now
+      limited to crossing axes). `generate_spline_parallel_boolean_fixtures.py
+      --check` writes 43 cases (15 fuses, 14 cuts, 14 commons; 39 solid, 4
+      degenerate): spline walls against discs (`R125`, a quarter turn and
+      a half turn `FLIP`, a new frame stored bit for bit), a stadium's arcs
+      and lines (`TILT2` about `TILT`'s axis), a holed square, a capsule's
+      spline against a disc; spline against spline (bulge and dome, blob
+      and lens, the wave against its half-turned mirror, two domes about
+      the tilted axis, a quartic hump against a cubic lens, two capsules);
+      rounding offsets in `TILT`; and `degenerate` a disc and a half-turned
+      dome each tangent to the dome along its apex generatrix. Checks: the
+      divergence theorem, inclusion and exclusion and the area identity
+      within 1.3e-40, a second slicing axis 1.3e-40, S9a.2's `SplinePair`
+      on the 33 cases whose map is an exact turn or an offset (the tool's
+      profile turned exactly into the object's frame) 2.4e-39 in `XY` and
+      2.2e-17 in `TILT`, margins at least 0.06 outside the declared pairs
+      (crossing sines 0.47, near misses 0.37, vertices 0.13), the declared
+      pairs' crossing sines below 5.7e-21; Python 3.9 and 3.12 write the
+      same files; `test_spline_parallel_boolean_reference.py`; the
+      generator's check a CI group of its own (`spline-parallel`). The
+      capture `occt-boolean-spline-parallel-preimplementation`
+      (`compare_spline_parallel_boolean.py`, keyed on
+      `solid/boolean/curved/spline_parallel.rs`; the probe `unsupported` on
+      all 43, the 20 against arcs and the 23 against splines refused by
+      `spline_pairs`): every result valid with the reference's solids, 31
+      matches, 12 reviewed (BRepGProp's default integration up to 1.9e-7,
+      the waves 8.6e-4; adaptively within 2.3e-9 in volume but for the
+      waves; Green's theorem over OCCT's own faces and pcurves, a
+      diagnostic build, within 1.1e-8 of the reference on all 39 results);
+      four solids' counts change when unified. No correction to the
+      decisions from the evidence. S9f.2a's kernel next.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions
