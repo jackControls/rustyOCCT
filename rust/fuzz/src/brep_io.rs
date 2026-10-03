@@ -97,7 +97,12 @@ fn mutate(u: &mut Unstructured, text: &str) -> Result<String> {
                 *word = match (word.parse::<f64>(), u.int_in_range(0..=3)?) {
                     (Ok(x), 0) => format!("{:?}", x * (1.0 + 1e-9)),
                     (Ok(x), 1) => format!("{:?}", -x),
-                    (Ok(x), 2) => format!("{}", x as i64 + i64::from(u.int_in_range(-2..=2)?)),
+                    // `as` saturates a huge or infinite number at the end of
+                    // i64's range; the nudge saturates there too.
+                    (Ok(x), 2) => format!(
+                        "{}",
+                        (x as i64).saturating_add(i64::from(u.int_in_range(-2..=2)?))
+                    ),
                     _ => u.choose(&WORDS)?.to_string(),
                 };
             }

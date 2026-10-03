@@ -54,6 +54,13 @@ averaging: duplicate controls by congruence class, increase the selected knot
 multiplicities, refine the remaining knots, and average p+1 rank curves.
 Sparse maps are reused for every transverse homogeneous field of a surface.
 Identical source and destination axes also share the map between U and V.
+The map's coefficients are computed in machine words first: the working
+knots are moved by one positive affine map onto coprime integers, which
+leaves every insertion ratio `(u - t_i) / (t_{i+p} - t_i)` unchanged, and each
+sum and product is reduced exactly as `BigRational` reduces it. Any overflow
+discards the words and computes the map again with `BigRational`. Either way
+the map is the same exact rational map (a degree-19 periodic timeout's map
+fell from 4.7 to 0.36 seconds, `fuzz/regressions/README.md`).
 Periodic working data spans three periods: the fundamental interval and one
 neighbor on either side. With n cyclic poles and degree p, validation requires
 n > p. Thus the unclamped working active interval contains the whole central
