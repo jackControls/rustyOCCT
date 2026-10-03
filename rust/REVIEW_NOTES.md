@@ -4694,6 +4694,15 @@ Decisions for S9, recorded before its code (2026-09-28):
     given to a Boolean, 5 constructs the adapter does not read, `ZQ1`'s
     wire, `ZP6`'s torus tangent to the other input); none evaluates newly,
     fails or times out, so none is registered; the ledger does not change.
+    The local campaign at `6582f379` found a tilted stadium's flat wall
+    4e-16 inside the tangent plane of the `GIVEN_BALL` sphere by the turned
+    frame's rounding, met in a circle of radius 1e-8 the validator refused
+    (`degenerate_curve`), so a plane crossing a sphere within the
+    resolution of tangency (a cap no higher than it) is now `Degenerate`
+    as S9d.2c's circles are (`sphere::plane_section`, also for two spheres'
+    radical plane;
+    `fuzz/regressions/boolean/crash-d238291d9edbe60570ae31479609845872d763c0.bin`,
+    `tests/sphere_booleans.rs`).
     Pending: the DRAW survey, the campaign.
   * **S9f.1 implemented** (`solid/boolean/curved/spline_walls.rs`,
     `model.rs`'s `Seg::Spline`, `Surf::Spline` and `Crv::Spline`, `meet.rs`,

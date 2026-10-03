@@ -497,14 +497,16 @@ pub(super) struct Mixed {
 }
 
 /// Two spheres' meeting: their radical plane's section (`None` apart), the
-/// same sphere refused.
-pub(super) fn sphere_sphere(c1: &V, r1: &R, c2: &V, r2: &R) -> Result<Option<Circ>> {
+/// same sphere refused, the plane crossing either sphere within the
+/// resolution `res` of tangency `Degenerate`.
+pub(super) fn sphere_sphere(c1: &V, r1: &R, c2: &V, r2: &R, res: f64) -> Result<Option<Circ>> {
     let m = sub(c2, c1);
     if is_zero(&m) {
         return Err(Error::Degenerate("two spheres about one centre"));
     }
     let (p0, m) = radical(c1, r1, c2, r2);
-    plane_section(c1, r1, &p0, &m)
+    plane_section(c2, r2, &p0, &m, res)?;
+    plane_section(c1, r1, &p0, &m, res)
 }
 
 /// The radical plane of two spheres: a point and its normal.

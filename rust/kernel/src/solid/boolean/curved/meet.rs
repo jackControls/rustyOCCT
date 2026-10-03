@@ -362,7 +362,7 @@ pub(super) fn section(
         // A plane's section of a sphere: a circle (S9d.1).
         (Surf::Plane { p, m }, Surf::Sphere { c, r })
         | (Surf::Sphere { c, r }, Surf::Plane { p, m }) => Ok(Section::Curves(
-            super::sphere::plane_section(c, r, p, m)?
+            super::sphere::plane_section(c, r, p, m, px.tolerance.linear())?
                 .map(|circ| Crv::Circle(Box::new(circ)))
                 .into_iter()
                 .collect(),
@@ -382,7 +382,7 @@ pub(super) fn section(
             }
         }
         (Surf::Sphere { c: c1, r: r1 }, Surf::Sphere { c: c2, r: r2 }) => Ok(Section::Curves(
-            super::spheres::sphere_sphere(c1, r1, c2, r2)?
+            super::spheres::sphere_sphere(c1, r1, c2, r2, px.tolerance.linear())?
                 .map(|circ| Crv::Circle(Box::new(circ)))
                 .into_iter()
                 .collect(),

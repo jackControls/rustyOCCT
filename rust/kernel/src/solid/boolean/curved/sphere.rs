@@ -145,17 +145,29 @@ impl Circ {
 }
 
 /// A plane's section of a sphere: `None` when they miss (a tangency
-/// refused).
-pub(super) fn plane_section(c: &V, r: &R, p0: &V, m: &V) -> Result<Option<Circ>> {
+/// refused). A plane crossing the sphere within the resolution `res` of
+/// tangency is `Degenerate` too, as S9d.2c's circles are: a turned frame's
+/// rounding never leaves an exact tangency, and the plane would cut a cap
+/// no higher than the resolution, its circle as small as `1e-8`.
+pub(super) fn plane_section(c: &V, r: &R, p0: &V, m: &V, res: f64) -> Result<Option<Circ>> {
     let mm = dot(m, m);
     let off = dot(m, &sub(p0, c));
     // The centre's projection and the section's radius squared.
     let centre = add(c, &scale(m, &(&off / &mm)));
-    let r2 = r * r - &off * &off / &mm;
+    let dd = &off * &off / &mm;
+    let r2 = r * r - &dd;
     match sign(&r2) {
         Ordering::Less => return Ok(None),
         Ordering::Equal => return Err(tangency()),
         Ordering::Greater => {}
+    }
+    // The centre's distance `d < r` at least `r - res`: `(r - res)^2 <=
+    // d^2`, always when `r <= res`.
+    let lo = r - q(res);
+    if sign(&lo) != Ordering::Greater || dd >= &lo * &lo {
+        return Err(Error::Degenerate(
+            "a plane crossing a sphere within the resolution of tangency (S9d.1)",
+        ));
     }
     let x = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
         .iter()

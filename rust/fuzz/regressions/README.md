@@ -1244,3 +1244,23 @@ the curve with the knot removed once (`spline::piece`), as 58 other corpus
 inputs found. `tests/spline_any_booleans.rs` checks all three
 configurations. They replay in 0.2 s, under 0.1 s and 0.3 s with debug
 assertions (the third in 4 s under AddressSanitizer).
+
+## Boolean: a wall within rounding of tangency to the chained stage's sphere
+
+`boolean/crash-d238291d9edbe60570ae31479609845872d763c0.bin` is from the
+local campaign at `6582f379`, mutated from a corpus input. It decodes two
+stadiums in the shared tilted frame (the object `2.75` by `1.0` over
+heights `0..1.75`, the tool `1.25` by `2.25` stacked on its top), and its
+chained byte gives the cut's one solid, the object itself, to the
+`GIVEN_BALL` sphere of radius 1.25 about the turned box's frame. The
+sphere's centre lies `1.25` from the stadium's flat wall exactly, but the
+frames' rounding put the wall 4e-16 inside the sphere: the plane's section
+was a circle of radius 1e-8, and the chained cut and common failed with
+`InvalidTopology(degenerate_curve)` (the plain stadium against the sphere
+too). A plane crossing a sphere within the resolution of tangency (a cap
+no higher than the resolution) is now `Degenerate`, as S9d.2c's circles
+within the resolution of tangency are; a plane missing it by less stays a
+miss (`tests/sphere_booleans.rs`,
+`a_wall_crossing_within_the_resolution_of_tangency_is_degenerate`). It
+replays in 0.3 s with debug assertions, and 348 single-byte mutations of
+it replay without a failure.

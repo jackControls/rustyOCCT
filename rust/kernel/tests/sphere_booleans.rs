@@ -380,3 +380,136 @@ fn wedges_through_a_spheres_poles() {
     check(block.cut(OperationId(3), &b).unwrap().0, 512.0 - ball / 2.0);
     check(b.cut(OperationId(3), &block).unwrap().0, ball / 2.0);
 }
+
+/// A plane crossing a sphere within the resolution of tangency is
+/// `Degenerate` (the `boolean` target's
+/// `fuzz/regressions/boolean/crash-d238291d9edbe60570ae31479609845872d763c0.bin`):
+/// the tilted stadium's flat wall, 1.25 from the centre of a sphere of
+/// radius 1.25 about the turned box's frame but for rounding (4e-16 inside
+/// it), met it in a circle of radius 1e-8 the validator refused as a
+/// degenerate curve, for the stadium and for its cut given again. A box's
+/// wall `2^-24` inside an upright sphere is refused alike; `2^-24` outside
+/// it (a gap, no meeting) and `2^-16` inside or outside it evaluate.
+#[test]
+fn a_wall_crossing_within_the_resolution_of_tangency_is_degenerate() {
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{
+        Boundary, Error, Frame3, Point2, Point3, Profile, Segment, Solid, Tolerance, Vec3,
+    };
+    let tol = Tolerance::default();
+    let half = std::f64::consts::FRAC_PI_2;
+    let stadium = |s: f64, t: f64| {
+        let outer = Boundary::path(
+            vec![
+                Point2::new(0.0, -t),
+                Point2::new(s, -t),
+                Point2::new(s, t),
+                Point2::new(0.0, t),
+            ],
+            vec![
+                Segment::Line,
+                Segment::Arc {
+                    center: Point2::new(s, 0.0),
+                    radius: t,
+                    ccw: true,
+                },
+                Segment::Line,
+                Segment::Arc {
+                    center: Point2::new(0.0, 0.0),
+                    radius: t,
+                    ccw: true,
+                },
+            ],
+            tol,
+        )
+        .unwrap();
+        Profile::new(outer, vec![], tol).unwrap()
+    };
+    let degenerate = |stage: &str, a: &Solid, b: &Solid| {
+        for (op, r) in [
+            ("fuse", a.fuse(OperationId(3), b)),
+            ("cut", a.cut(OperationId(4), b)),
+            ("common", a.common(OperationId(5), b)),
+        ] {
+            assert!(
+                matches!(&r, Err(Error::Degenerate(m)) if m.contains("tangency")),
+                "{stage} {op}: {:?}",
+                r.map(|x| x.0.len())
+            );
+        }
+    };
+    let tilt = Frame3::new(
+        Point3::new(1.0, -2.0, 0.5),
+        Vec3::new(0.0, 3.0, 4.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    let h = 1.75;
+    let (a, _) = Solid::extrude_with(OperationId(1), stadium(2.75, 1.0), tilt, 0.0, h).unwrap();
+    let (stack, _) =
+        Solid::extrude_with(OperationId(2), stadium(1.25, 2.25), tilt, h, h + 1.0).unwrap();
+    let turned = Frame3::new(
+        tilt.point(Point2::new(0.5, 0.25), h / 3.0),
+        tilt.normal(),
+        tilt.x() * 3.0 + tilt.y() * 4.0,
+        tol,
+    )
+    .unwrap();
+    let (ball, _) = Solid::sphere_with(OperationId(7), turned, 1.25, -half, half, tol).unwrap();
+    degenerate("stadium", &a, &ball);
+    // The fuzz input's chained stage: the stadium less the touching stack.
+    let given = a.cut(OperationId(4), &stack).unwrap().0;
+    assert_eq!(given.len(), 1);
+    degenerate("given", &given[0], &ball);
+
+    let up = Frame3::new(
+        Point3::new(0.0, 0.0, 0.0),
+        Vec3::new(0.0, 0.0, 1.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    let square = Boundary::polygon(
+        vec![
+            Point2::new(-4.0, -4.0),
+            Point2::new(4.0, -4.0),
+            Point2::new(4.0, 4.0),
+            Point2::new(-4.0, 4.0),
+        ],
+        tol,
+    )
+    .unwrap();
+    let (block, _) = Solid::extrude_with(
+        OperationId(1),
+        Profile::new(square, vec![], tol).unwrap(),
+        up,
+        0.0,
+        8.0,
+    )
+    .unwrap();
+    let r = 2.0;
+    let sphere = |e: f64| {
+        let c = Frame3::new(
+            Point3::new(4.0 - r + e, 0.0, 4.0),
+            Vec3::new(0.0, 0.0, 1.0),
+            Vec3::new(1.0, 0.0, 0.0),
+            tol,
+        )
+        .unwrap();
+        Solid::sphere_with(OperationId(2), c, r, -half, half, tol)
+            .unwrap()
+            .0
+    };
+    let tiny = 2f64.powi(-24);
+    degenerate("box", &block, &sphere(tiny));
+    let ball = 4.0 * std::f64::consts::PI * r * r * r / 3.0;
+    for e in [-tiny, 2f64.powi(-16), -(2f64.powi(-16))] {
+        // The common: the ball less the cap of height `e` past the wall.
+        let k = e.max(0.0);
+        let cap = std::f64::consts::PI * k * k * (3.0 * r - k) / 3.0;
+        let common = block.common(OperationId(5), &sphere(e)).unwrap().0;
+        let v: f64 = common.iter().map(|s| s.mass_properties().volume).sum();
+        assert!((v - (ball - cap)).abs() <= 1e-9 * ball, "{e}: {v}");
+    }
+}
