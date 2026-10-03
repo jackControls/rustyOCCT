@@ -4975,6 +4975,83 @@ Decisions for S9, recorded before its code (2026-09-28):
     of its own (`given-met`); then the kernel, its tests
     (`tests/given_met_booleans.rs`), the fuzz target's switch, the DRAW
     survey of the chained cases and a campaign.
+  * **S9e.3b evidence (2026-10-03).** `generate_given_met_boolean_fixtures.py
+    --check`: 50 cases of 17 chains (45 solid, 5 declared `degenerate`;
+    given edges of classes `rise` 20, `meet` 12, `toric` 6, `cone` 6,
+    `spiric` 6; partners' surfaces plane 24, cylinder 9, sphere 14, cone 3)
+    in `XY`, `SIDE`, `TILT` and `TILTX`: a sphere of radius 5 fused with a
+    peg of radius 1 about `(0, 2)` (a `Rise` loop from `(0, 3, 4)` up to
+    `(0, 1, sqrt 24)`) met by a `TILTX` slab, by a box whose wall `y = 2`
+    holds the peg's axis (parallel to its rulings, swapped), by a pipe along
+    `x`, a ball and a frustum along `x`; a rod of radius 2 along `x` fused
+    with a rod of radius 1 along `z` off its axis by 1/2 (two `Meet` rings)
+    met by a `TILT` slab, a wall through the thin rod's axis and a ball; a
+    frustum of radii 3 and 1 fused with a pipe through its wall (a cone's
+    and a cylinder's `Meet`) met by a wall; a torus of radii 3 and 1 fused
+    with a rod through its tube (`Toric` loops) met by a `TILTX` slab and a
+    wall through the rod's axis; the frustum less a `TILT` box (an elliptic
+    section) met by a rod and a ball; the torus less a box beyond `x = 5/2`
+    (a spiric section) met by a pipe and a ball; declared `degenerate`: a
+    box whose bottom face `z = 4` touches the `Rise` at its lowest point and
+    a ball of radius 13/16 about `(0, 15/4, 69/16)` through that point, its
+    normal there dependent on the sphere's and the peg's though no two of
+    the three surfaces touch (fuse and cut: its common's pieces touch at the
+    point, which rays count unsteadily). The rows are S9e.3a's chained
+    reference's: the two families within 1.1e-35, each solid's closed form
+    1.6e-36, the pair identities for the given result and the partner within
+    9.2e-41 and the area identity 1.8e-40 (15 chains), Monte Carlo 3.2
+    standard errors, the solid counts the declared ones by rays at two
+    resolutions, every surface met at a sine of at least 0.41 on the
+    scanned curves and every family's events at least 3.7e-6 apart outside
+    the declared cases. `given_met_reference.py` finds the meetings
+    themselves independently: for two solids of the given result, each face
+    of one swept by its families, the roots of the other's surfaces along
+    each scanned curve traced across the face, each partner surface's sign
+    changes between traced points refined by Newton's method on the curve's
+    two parameters in 40 digits, kept where the given result's set holds one
+    or three of the four quadrants about the meeting (an edge of it) and the
+    partner's membership changes across its surface: 34 triple points, each
+    found at least twice (from both solids' faces or both families), every
+    chain outside the declared cases holding at least one of its class on
+    the partner's surface of its kind, every sine (the unit normals'
+    determinant) at least 0.38; each declared tangency at its point on all
+    three surfaces within 1e-30 with its normals' determinant zero, on the
+    given result's edge and the partner's face. Amendment to the decisions'
+    "unchanged": the declared tangencies' sections touch on the faces
+    through the point, where the chained reference's structure flipped on
+    rounding noise (a crescent between two section curves classified at its
+    golden point once shorter than 1e-37, an event found again and again)
+    and its quadrature met endpoint singularities converging slowly; for
+    them alone (`MERGE`, `QUAD`, off by default) roots of different surfaces
+    within 1e-30 of a curve's range are one and the quadrature takes 1e-22
+    of the size to the fourth, their checks at 1e-18 (their rows rounded to
+    binary64; the kernel refuses them); S9e.3a's fixtures regenerate byte for
+    byte. Fixture corrections before the capture, from the reference's runs:
+    slabs grazing a torus's top or leaving thin caps on a rod were moved
+    (solid counts unsteady between the rays' resolutions); a frustum
+    partner standing in the peg (thin crescents between near-parallel
+    walls) laid along `x`; a wall through `(3, 0)`, tangent to the torus's top
+    circle (a family curve tangent to it, the quadrature not converging),
+    moved to `x = 3.1` with the rod; a rod internally tangent to the
+    frustum's base circle moved off it; a pipe tangent to the meeting (its
+    section's fourth-order contact with the sphere's parallels) and a ball
+    with the tangency at its pole replaced by the ball above; slabs cut to
+    their solids' extent (Monte Carlo samples the inputs' common box).
+    Python 3.9 and 3.12 write the same files; `test_given_met_boolean_reference.py`
+    checks the triple points in closed form (`(+-1, 2, 2 sqrt 5)` on the
+    wall through the peg's axis, `(0, 3/2, +-sqrt 7 / 2)` and `(0, -1/2,
+    +-sqrt 15 / 2)` on the wall through the thin rod's), on all three
+    surfaces with their sines for the elliptic section and the rod, the
+    declared tangency, and a meeting of the two surfaces off the given
+    result's edges; the generator's check a CI group of its own (`given-met`).
+    The capture `occt-boolean-given-met-preimplementation`
+    (`compare_given_met_boolean.py`, keyed on `solid/boolean/curved/triple.rs`;
+    the kernel `unsupported` on all 50, its first Booleans evaluating and the
+    one given a result refused as S9e.3b's): every result valid with the
+    reference's solid count, 12 matching, 38 reviewed (BRepGProp's default
+    integration on faces bounded by approximated sections, up to 4.8e-6;
+    adaptively within 3.2e-8, unchanged at 1e-12, the smallest results the
+    farthest); 12 results' counts change when unified. S9e.3b's kernel next.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

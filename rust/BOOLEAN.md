@@ -2401,6 +2401,32 @@ error bounded and added (`BREP_VALIDATION.md`).
   pieces and whole periodic faces against OCCT's split approximations and
   seams); every other Boolean comparison unchanged in its counts. DRAW's
   `G9` and `H3` refused as the tangency they are (`UPSTREAM_TESTS.md`).
+* **S9e.3b evidence (given meetings of two curved faces, and cones' and
+  tori's general sections, met by the partner), before its kernel code.**
+  `generate_given_met_boolean_fixtures.py --check` writes
+  `boolean-given-met-cases.txt`, `-expected.tsv` (its `expect` rows naming
+  the given edges' class, `rise`, `meet`, `toric`, `cone` or `spiric`, and
+  the partner's surface; `meet N SINE` rows the triple points found) and
+  `-frames.tsv`: 50 cases (17 chains; 45 solid, 5 degenerate): a sphere and
+  a peg met by a tilted slab, a wall through the peg's axis, a pipe, a ball
+  and a frustum; two crossing rods met by a slab, a wall and a ball; a
+  frustum pierced by a pipe met by a wall; a torus with a rod through its
+  tube met by a slab and a wall; a frustum cut obliquely and a torus cut off
+  its axis met by rods, pipes and balls; `degenerate` a box touching the
+  peg's meeting at its lowest point and a ball there with dependent
+  normals. Rows from S9e.3a's chained reference (two families within
+  1.1e-35, closed forms 1.6e-36, the pair identities 9.2e-41, the area
+  identity 1.8e-40, Monte Carlo 3.2 standard errors);
+  `given_met_reference.py` traces the meetings independently (34 triple
+  points on the given edges inside the partner's faces, every sine at least
+  0.38; the declared tangencies' normals dependent exactly).
+  `compare_given_met_boolean.py` reproduces
+  `occt-boolean-given-met-preimplementation`
+  (`rust_given_met_boolean_exists` false, keyed on
+  `solid/boolean/curved/triple.rs`; the kernel's probe `unsupported` on all
+  50): every result valid with the reference's solid count, 12 match, 38
+  reviewed (BRepGProp's default integration on approximated sections, up to
+  4.8e-6; adaptively within 3.2e-8).
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
