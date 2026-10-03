@@ -2766,7 +2766,15 @@ within the resolution of tangency) found no status changed and no case
 newly evaluating (S9f.1's spline solids in the group come from
 `nurbsconvert`, which the adapter does not run; S9e.3a's given results
 reach only `G9` and `H3`), the volume audit's values of the 987 bit for
-bit, and no registered sphere near a tangency. Of
+bit, and no registered sphere near a tangency. The survey of S9e.3b,
+S9f.2a and S9f.2b.1 found every status and refusal unchanged and no case
+newly evaluating (no spline wall of the group meets another prism's wall,
+and no given result the adapter makes holds a meeting of two curved
+faces met by the partner: `G9` and `H3` stay a tangency), the volume
+audit's values of the 987 bit for bit, the tori of `ZL2` to `ZL5` and the
+spheres through their poles of `ZI4` to `ZI7` among them, so S9e.3b's
+validator for torus bands, bounds of curved faces and pole vertices move
+none. Of
 the upstream cases in frames with different axes the rest are refused:
 S9b.1's, S9c.1's, S9c.2a's, S9c.2b.1's,
 S9d.1's, S9d.2a's, S9d.3a's, S9d.3b.1's and S9d.4b.2's `Degenerate` (a turned box's corner on

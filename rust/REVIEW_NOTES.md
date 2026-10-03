@@ -5159,8 +5159,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     given to a Boolean, 5 constructs the adapter does not read, `ZQ1`'s
     wire, `G9` and `H3` a tangency between the inputs, `ZP6` a torus tangent
     to the other input); none evaluates newly, so none is registered and no
-    volume audit is due; the ledger does not change. Pending: the DRAW
-    survey, the campaign.
+    volume audit is due; the ledger does not change. DRAW survey: that of
+    S9e.3b, S9f.2a and S9f.2b.1, below (no status or refusal changes; the
+    volume audit's values bit for bit). Pending: the campaign.
   * **S9f.2a refined, before its code (2026-10-03).** Why it is refused
     today: `curved::spline_pairs` refuses a spline prism against a prism
     holding arcs or circles ("a spline prism against a prism with arcs in
@@ -5389,7 +5390,8 @@ Decisions for S9, recorded before its code (2026-09-28):
     Campaign: the boolean campaign at `089c5fbe` (600 s, a sampled
     replay) clean, 860 runs, the slowest input 44 s under
     AddressSanitizer on a host at load 10 (S9e.3b's agent working).
-    Pending: the DRAW survey.
+    DRAW survey: that of S9e.3b, S9f.2a and S9f.2b.1, below (no case of
+    the group reaches S9f.2a's kernel).
   * **S9f.2b refined, before its code (2026-10-03).** Why it is refused
     today: `curved::spline_pairs` refuses a spline prism against a prism
     with arcs or circles whose axis crosses its own ("a spline prism
@@ -5653,7 +5655,34 @@ Decisions for S9, recorded before its code (2026-09-28):
     Campaign: the boolean campaign at `6c77655a` (600 s, a sampled
     replay) clean, 902 runs, the slowest input 50 s under
     AddressSanitizer at load 6 to 8 (`1b405929`, an existing corpus
-    input, near the 60 s limit). Pending: the DRAW survey.
+    input, near the 60 s limit). DRAW survey: that of S9e.3b, S9f.2a and
+    S9f.2b.1, below (no case of the group reaches S9f.2b.1's kernel).
+  * **DRAW survey of S9e.3b, S9f.2a and S9f.2b.1 (2026-10-03,
+    `UPSTREAM_TESTS.md`).** The 1,802 cases of the Boolean group run again
+    on both backends at `b0b9adc6` (the public dataset, 120 seconds a case,
+    four at once): every status and every refusal's reason is the last
+    survey's (`507b8054`) on both backends. Rust evaluates 987, all
+    registered, 592 refused, 223 unsupported on both, as before. No case
+    evaluates newly, none fails or times out, the sentinels are refused as
+    before. The three kernels reach no case: the group's spline solids come
+    from `nurbsconvert` (96 cases), which the adapter does not run, so no
+    spline wall meets another prism's wall (S9f.2a, S9f.2b.1); of its
+    results given to another Boolean only `bcut_simple/G9` and `H3` reach
+    the kernel, refused as a tangency between the inputs, and no given
+    result the adapter makes holds a meeting of two curved faces met by
+    the partner (S9e.3b, as its run of the chained cases found). The
+    volume audit of the 987: both backends' values the last audit's bit
+    for bit (Rust) and to the digit (native DRAW), the coaxial tori `ZL2`
+    to `ZL5`, the spheres sectioned through their poles `ZI4` to `ZI7` and
+    every case with cylinder or cone faces among them, so S9e.3b's
+    validator for holes in torus bands wound in v, its bounds taking torus,
+    cylinder and cone faces' bulges and its pole vertices, and S9f.2a's
+    mass integrals taking a steep line by its box, move no registered
+    case's values and no worker at an earlier commit was needed; the same
+    35 disagreements, native off in each. `bopfuse_simple/ZP6` and the
+    `gdml_public` tori refused as before. A full contract run holds (the
+    slowest Boolean case 12.8 seconds on a loaded machine, 13.5 in the
+    last survey); the ledger does not change; no kernel change.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

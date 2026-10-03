@@ -4,7 +4,8 @@ State of the work for whoever continues it. `REVIEW_NOTES.md` remains the
 plan of record: its decisions, evidence, implemented, survey and campaign
 bullets are authoritative, and this page only summarizes them and says
 where to pick up. Written 2026-10-01, brought up to date 2026-10-03 for
-S9f.2a, S9f.2b.1 and S9e.3b (branch `s9e3b`, `s9c2-kernel` merged in).
+S9f.2a, S9f.2b.1 and S9e.3b (branch `s9e3b`, `s9c2-kernel` merged in)
+and their DRAW survey (branch `s9-draw-3`).
 
 ## Where things stand
 
@@ -21,9 +22,11 @@ S9f.2a, S9f.2b.1 and S9e.3b (branch `s9e3b`, `s9c2-kernel` merged in).
   arcs, and one solid of a result of several (S9e.2, `curved/matched.rs`),
   results of spheres, cones and tori, deeper chains and given results
   against spheres, cones and tori (S9e.3a, `curved/chain.rs`), each with its
-  DRAW survey (the last full survey, `507b8054`: 987 cases registered, none
-  failing or timing out) and a clean campaign (S9e.3a's and S9f.1's at
-  `b2765f20`, 989 runs).
+  DRAW survey (the last full survey, that of S9e.3b, S9f.2a and S9f.2b.1
+  at `b0b9adc6`, branch `s9-draw-3`: 987 cases registered, none failing or
+  timing out, the volume audit's values those of `507b8054`'s bit for
+  bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
+  runs).
 - **S9f.1 done.** Spline prisms against polyhedral prisms in any position
   (`curved/spline_walls.rs`), with its survey and campaign as above.
 - **S9f.2a implemented** (on `s9c2-kernel`): spline walls against arc,
@@ -35,7 +38,8 @@ S9f.2a, S9f.2b.1 and S9e.3b (branch `s9e3b`, `s9c2-kernel` merged in).
   reference on all 39 results and refusing the 4 degenerate tangencies; the
   validator's mass integrals take a steep line by its box. Campaign clean
   at `089c5fbe` (860 runs, the slowest input 44 s under AddressSanitizer on
-  a loaded host); pending its DRAW survey.
+  a loaded host); its DRAW survey done (that of S9e.3b, S9f.2a and
+  S9f.2b.1: no case of the group reaches it).
 - **S9f.2b.1 implemented** (on `s9c2-kernel`): spline walls against
   cylinder walls of a prism whose axis crosses theirs (leaning, tilted or
   side rods, rings and stadiums), the meeting's branches as graphs over the
@@ -46,27 +50,30 @@ S9f.2a, S9f.2b.1 and S9e.3b (branch `s9e3b`, `s9c2-kernel` merged in).
   the reference on all 24 S9f.2b.1 results, refusing the 4 degenerate
   cases and S9f.2b.2's 6 (loops round a turning point inside the faces,
   tower fields). Campaign clean at `6c77655a` (902 runs, the slowest input
-  50 s under AddressSanitizer at load 6 to 8); pending its DRAW survey.
+  50 s under AddressSanitizer at load 6 to 8); its DRAW survey done (as
+  S9f.2a's: no case of the group reaches it).
 - **S9e.3b implemented** (branch `s9e3b`, over `507b8054`, with
   `s9c2-kernel` at `c8e37abe` merged in; not yet pushed): a given result's
   meeting of two curved faces (`Meet`, `Rise`, `Toric`) or a cone's or
   torus's general section met by the partner (`curved/triple.rs`), its
   decisions, evidence and capture committed before the kernel; the DRAW
-  survey of the chained cases done (none reaches it). Pending the full DRAW
-  survey and the campaign. A given `WallMeet` edge never reaches it (a
-  given result with spline walls is refused before, S9f).
+  survey of the chained cases done (none reaches it), and the full DRAW
+  survey (that of S9e.3b, S9f.2a and S9f.2b.1: no status or refusal
+  changes, the volume audit's values bit for bit). Pending the campaign.
+  A given `WallMeet` edge never reaches it (a given result with spline
+  walls is refused before, S9f).
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
 
 ## What is open, in order
 
-1. **The DRAW survey of S9e.3b, S9f.2a and S9f.2b.1** (one full survey of
-   the Boolean group covers the three), then **S9e.3b's campaign**
-   (`REVIEW_NOTES.md`'s "S9e.3b implemented"). The fuzz target's
-   `GIVEN_MET` is off: the corpus's slowest chained operations reaching a
-   given meeting take 60 to 71 s an input under AddressSanitizer. The
-   campaign runs with it off; the next lever is the degree-eight
+1. **S9e.3b's campaign** (`REVIEW_NOTES.md`'s "S9e.3b implemented"; the
+   DRAW survey of S9e.3b, S9f.2a and S9f.2b.1 is done, branch
+   `s9-draw-3`: no status or refusal changes, the volume audit's 987 bit
+   for bit). The fuzz target's `GIVEN_MET` is off: the corpus's slowest
+   chained operations reaching a given meeting take 60 to 71 s an input
+   under AddressSanitizer. The campaign runs with it off; the next lever is the degree-eight
    arrangement arithmetic (the second arrangement's predicates on vertices
    in fields of degree eight), after which `GIVEN_MET` can be switched on
    and a campaign run with it. Of the chained operations the debug replay
