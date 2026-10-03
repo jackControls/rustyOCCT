@@ -5331,7 +5331,10 @@ Decisions for S9, recorded before its code (2026-09-28):
     sub-resolution contacts, 8 turning back on a face's boundary), median
     0.34 s, the slowest 5.7 s (47 s under AddressSanitizer on this host at
     load 9 to 14, where the corpus's two slowest inputs took 47 and 52 s).
-    Pending: the DRAW survey, the campaign.
+    Campaign: the boolean campaign at `6c77655a` (600 s, a sampled
+    replay) clean, 902 runs, the slowest input 50 s under
+    AddressSanitizer at load 6 to 8 (`1b405929`, an existing corpus
+    input, near the 60 s limit). Pending: the DRAW survey.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions
