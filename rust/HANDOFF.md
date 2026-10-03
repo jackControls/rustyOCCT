@@ -5,7 +5,8 @@ plan of record: its decisions, evidence, implemented, survey and campaign
 bullets are authoritative, and this page only summarizes them and says
 where to pick up. Written 2026-10-01, brought up to date 2026-10-03 for
 S9f.2a, S9f.2b.1 and S9e.3b (branch `s9e3b`, `s9c2-kernel` merged in)
-and their DRAW survey (branch `s9-draw-3`).
+and their DRAW survey (branch `s9-draw-3`), then for S9e.4a (branch
+`s9e4`, over `s9c2-kernel` at `e80e2fd9`).
 
 ## Where things stand
 
@@ -62,6 +63,18 @@ and their DRAW survey (branch `s9-draw-3`).
   changes, the volume audit's values bit for bit). Pending the campaign.
   A given `WallMeet` edge never reaches it (a given result with spline
   walls is refused before, S9f).
+- **S9e.4a implemented** (branch `s9e4`; not yet pushed): imported solids
+  (a `.brep` or STEP body without a construction, `Solid::imported_with`)
+  whose stored topology is a prism of lines, arcs and circles, a sphere,
+  cap or zone, a cone or frustum or a whole torus, decided on that
+  construction read off their stored surfaces and matched to the stored
+  topology (`solid/imported.rs`), standing in a Boolean for the body with
+  the history over its stored ids: decisions ("S9e.4 refined"), 69 cases
+  on 13 bodies OCCT wrote (`rust/fixtures/imported/`) referenced and
+  captured before the kernel, the kernel within the reference on all 57
+  solid cases, the 9 degenerate refused, the 3 turned profiles S9e.4b's;
+  the DRAW adapter's restored solids reach it. Pending the DRAW survey and
+  the campaign.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -83,7 +96,14 @@ and their DRAW survey (branch `s9-draw-3`).
    about it a graph over the cylinder's angle in a verified window, and the
    tower fields of a cap circle on a wall along its axis), then **S9f.3**
    (spheres and cones; "S9f refined" gives the degrees).
-3. **S9e.4**: imported bodies decided on their stored surfaces.
+3. **S9e.4b**: imported bodies other than the kernel's constructions
+   (results of other Booleans, general polyhedra and curved bodies) on
+   their stored surfaces (the S9e text's plan: edges as their faces'
+   meetings, vertices as common points, an exact membership and face
+   regions of their own), with a plane's piece against curved faces;
+   S9e.4a's campaign first. The reader's header check refuses OCCT 8.1's
+   version-3 `.brep` (`(c) Open Cascade`; 27 dataset files): widening it
+   needs a survey of the restores it opens.
 4. **S9's acceptance** (U6): kernel and fuzz CI green at the accepted
    revision, the schedule run's full replays green (boolean and
    `degree_elevation` are sharded across four jobs plus a completeness check,
@@ -182,12 +202,16 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_spline_parallel_boolean.py` | 31 / 12 (the kernel within the reference on all 39 results, the 4 degenerate refused) |
 | `compare_spline_crossing_boolean.py` | 13 / 21 (the kernel within the reference on all 24 S9f.2b.1 results, the 4 degenerate refused, S9f.2b.2's 6 `unsupported`) |
 | `compare_given_met_boolean.py` | 8 / 42 (the kernel within the reference on all 42 solid cases, the 8 degenerate refused) |
+| `compare_imported_boolean.py` | 54 / 15 (the kernel within the reference on all 57 solid cases, the 9 degenerate refused, the 3 turned profiles `unsupported`) |
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its
-spline prisms, and `compare_brep_io.py` (6,835 / 7). Where `curved_boolean_reference.py` or
-`chained_curved_boolean_reference.py` changes, every generator importing it
-runs with `--check --workers 4`. Then:
+spline prisms, and `compare_brep_io.py` (6,835 / 7); since S9e.4
+`compare_step.py` (23 / 6, with STEP-b's SDK at `target/step-b-sdk`: the
+pinned SDK lacks the STEP toolkits' headers), whose bodies imported solids
+may be. Where `curved_boolean_reference.py`,
+`chained_curved_boolean_reference.py` or `torus_curved_boolean_reference.py`
+changes, every generator importing it runs with `--check --workers 4`. Then:
 
 - the fuzz crate: `cd rust/fuzz && cargo +nightly-2026-09-22 fmt --check && cargo +nightly-2026-09-22 check`;
 - a replay with debug assertions of every boolean corpus input and every
@@ -219,7 +243,9 @@ runs with `--check --workers 4`. Then:
   boolean target's limit is 60 s an input. Configurations too slow for it are
   switched off in `rust/fuzz/src/boolean.rs` (`TORUS_PAIRS`, `CONE_PAIRS`,
   `TURNED_PARTS`, `GIVEN_MET`; `GIVEN_CURVED`, `GIVEN_ROUND`, `GIVEN_BALL`,
-  `SPLINE_WALLS`, `SPLINE_PARALLEL` and `SPLINE_CROSSING` are on). A heavily loaded
+  `SPLINE_WALLS`, `SPLINE_PARALLEL`, `SPLINE_CROSSING` and `IMPORTED` are
+  on; all four off switches on at once make corpus input `6fab9d41` fail
+  `vertex_off_curve`, each alone clean, open). A heavily loaded
   host makes campaigns time out spuriously; run them on a quiet machine.
 - **Keep debug-assertion tests optimized.** CI runs them with
   `CARGO_PROFILE_DEV_OPT_LEVEL=2`; time new test files that way.

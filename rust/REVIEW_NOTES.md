@@ -5915,6 +5915,69 @@ Decisions for S9, recorded before its code (2026-09-28):
     1e-12), and the declared tangent fuses, which OCCT keeps as two solids
     touching along a line where the reference's rays count one; 14
     results' counts change when unified. S9e.4a's kernel next.
+  * **S9e.4a implemented** (`solid/imported.rs`, `Construction::Imported`,
+    `polyhedra.rs`'s `substituted`, `given.rs`'s construction,
+    `model.rs`'s profile test, `Frame3::flipped`; the DRAW adapter): an
+    imported solid decided on the construction its stored surfaces give,
+    as the refined decisions describe. All 69 fixtures as declared (57
+    within the kernel's enclosures, each at most `1e-9` wide; the 9
+    declared degenerate refused as tangencies; the 3 turned profiles
+    `OutOfDomain` as S9e.4b's, their arcs' ends rounding off their
+    circles), every history complete over the imported bodies' stored ids
+    and none naming a construction's own, results deterministic and moved
+    rigidly, both inputs translated keeping the reference's volumes, every
+    body its construction (its closed-form volume within `1e-9`, points
+    classified, its stored vertices on its boundary, two imports' ids
+    apart), STEP solids (a box, cylinders one tilted, a sphere, a
+    hemisphere, a cone, a frustum, a torus, an L prism, a plate with a
+    hole) imported and cut consistently, a cavity and a spline prism
+    refused, the stored frames the reference's bit for bit
+    (`tests/imported_booleans.rs`, 9.5 s at `opt-level` 2).
+    `compare_imported_boolean.py` 54 matches and 15 reviewed (the native
+    measures as captured; entity counts: the kernel's whole periodic faces
+    and exact meeting pieces against OCCT's seams and split approximations,
+    the imported seam-split cylinder's two faces against OCCT's unified
+    one), every enclosure within the reference with the comparison's
+    `1e-12` slack; every other comparison unchanged (boolean 45/0, its
+    splines 33/13, polyhedral 43/2, curved 42/2, procedural 4/24, turned
+    2/13, capped 0/18, sphere 30/0, spheres 12/21, cone 25/5, cones 21/19,
+    torus 11/24, torus segment 15/14, torus curved 15/29, spheres turned
+    0/18, cones' loops 5/26, torus parts 16/37, chained 24/6, given 36/0,
+    given curved 25/23, spline any 22/16, spline parallel 31/12, spline
+    crossing 13/21, given met 8/42; split 72/56, brep spline 10/3, brep_io
+    6,835/7, step 23/6 on STEP-b's SDK). Amendments and corrections, from
+    the implementation: (a) the history checker requires a `Generated`
+    relation's parents, so an import's entity is generated from a label of
+    its stored slot (its kind above its ordinal), not from none; (b) a
+    construction the stored data cannot build (a profile whose rounded
+    points touch, a degenerate height) is none of the kernel's, S9e.4b's
+    `OutOfDomain` (a dataset prism of `bcut_complex/I6` raised the
+    profile's self-intersection before); (c) the curved engine's profile
+    test took a point on an arc's chord as on the arc's side of it: two
+    arcs of one circle (a seam-split cylinder) share their chord run either
+    way, a point on it counted in both circular segments, and the box's cap
+    piece inside the circle was kept, the fuse left open ("an open Boolean
+    of arcs in any position") wherever the curved engine met such a prism
+    in frames of equal axes (latent since S9c.1, a kernel prism of two half
+    circles against a box with an offset that rounds reproducing it): a
+    point on a chord is displaced alike for every chord, `(eta, eps)` as
+    the ray's half-open crossings take it (`tests/curved_booleans.rs`). The
+    `boolean` fuzz target's object is written by the kernel's writer, read
+    back, imported and given the chosen operation again (`IMPORTED`, on):
+    replaying the corpus (1,430 inputs) and the 24 regressions with debug
+    assertions, no failure, the slowest 20 s on a host at load 11 to 37
+    (11.8 s instrumented); of the imported operations 645 evaluate, 237 are
+    refused as documented (42 arcs off their circles once rounded,
+    S9e.4b's; 195 degeneracies of the converter's frames normalized again:
+    faces within the resolution of one plane, thin faces, planes within
+    rounding of a cylinder's or a spline wall's direction, tangencies) and
+    476 spline objects are not recognized (S9f). With `GIVEN_MET` on the
+    replay is clean too (the slowest 31 s); with all four off switches on at
+    once one corpus input (`6fab9d41`) fails `vertex_off_curve` before the
+    imported stage, each switch alone clean and S9e.4's engine change
+    reverted the same: an interaction of the off switches, not S9e.4's, open.
+    The `brep_io` corpus (1,469 inputs) and its 2 regressions replay clean
+    (the slowest 0.6 s). Pending: the DRAW survey, the campaign.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

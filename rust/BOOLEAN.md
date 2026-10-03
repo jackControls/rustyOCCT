@@ -30,7 +30,10 @@ torus v-segments and wedges against them (`curved/torus_segment.rs`), and
 S9d.4b.2a's whole tori against prisms with arcs, spheres and cones and
 S9d.4b.2b's two whole tori (`curved/torus_curved.rs`), and S9d.4c's caps
 and zones against tori and torus parts against curved solids
-(`curved/torus_parts.rs`).
+(`curved/torus_parts.rs`). Since S9e a Boolean's result is an input again
+(below), and S9e.4a's imported solids (a `.brep` or STEP body without a
+construction, `solid/imported.rs`) are decided on the construction their
+stored surfaces give.
 
 ## Contract
 
@@ -978,6 +981,51 @@ across it), and the history check takes a split meeting's pieces as one
 curve. An eliminant whose coefficient bound passes 4,096 bits is a
 `ComputationLimit` (torus sections in turned frames against a turned
 cylinder: 8,000 to 11,000 bits, minutes an operation).
+
+### Imported solids (S9e.4a)
+
+A body without a construction (a `.brep` or STEP converter's cell topology
+and resolution) is a solid through `Solid::imported_with(operation,
+topology, resolution)` (`solid/imported.rs`): its entities renamed under the
+operation (each slot its ordinal, so two imports never share ids), each
+generated in the history from a label of its slot. What it stores is
+rounded (OCCT writes surfaces and curves with 17 significant digits,
+vertices with 15; the converter normalizes every frame again), so it is
+decided on the construction its stored surfaces give, read off them once: a
+prism of lines, arcs and circles (two planar caps facing apart, every other
+face a plane or cylinder along their normal; the bottom cap's stored frame,
+turned exactly to point into the material, its loops' vertices and arc
+centres in that frame's exact affine map rounded once, the stored radii,
+the top cap's height rounded once); a sphere, cap or zone (the stored frame
+and radius, each disc's latitude from its ring's height); a cone or frustum
+(the stored frame moved along its axis to the lower end, the rings' radii,
+zero at the apex); a whole torus (the stored frame and radii). The
+construction's topology is matched to the stored one by S9e.2's geometric
+match (vertices within the resolution, edges through their points, faces by
+their edges and surface kinds), so with the converter's own validation
+every stored surface lies within the resolution of the construction's. In a
+Boolean the construction stands in the imported solid's place
+(`polyhedra::build`), every pair's engine and rule its own, and the
+result's plans are renamed through the match: the history is over the
+stored ids. The imported solid classifies by its construction and moves
+with it (its stored geometry moved, its construction rebuilt in the moved
+frame); its mass is the stored topology's certified enclosure. A result of
+an imported solid given to another Boolean re-runs with the same
+construction. No stored edge is trusted as an exact curve, so a line
+tangent to its arc and a periodic face split at a seam (two arcs of one
+circle) are the profile's data, decided as S9c decides them.
+
+Refused: a prism's arc whose ends, rounded into its cap's frame, lie off
+its circle (a frame turned by 30 degrees; S9e.4b); a torus's v-segment or
+wedge, a cavity, several shells and every other body (`OutOfDomain`,
+S9e.4b: a general body on its stored surfaces); spline faces or edges
+(S9f); S9's degeneracies unchanged (an imported cylinder tangent to the
+partner's wall). OCCT 8.1 writes `.brep` version 3 under a copyright line
+the reader refuses, so the fixtures are version 1. Found with it: a point
+on a profile arc's chord is displaced alike for every chord (two arcs of
+one circle share their chord, run either way, and the point counted inside
+both circular segments, so a box crossing such a prism in the same axes
+was left open, latent since S9c.1).
 
 ### Spline profiles (S9a.2)
 
@@ -2660,6 +2708,45 @@ walls against spline walls on crossing axes stay refused (S9f).
   50): every result valid with the reference's solid count, 12 match, 38
   reviewed (BRepGProp's default integration on approximated sections, up to
   4.8e-6; adaptively within 3.2e-8).
+* **S9e.4 evidence (imported solids), before its kernel code.** 13 bodies
+  written by OCCT itself (`occt_boolean_oracle.cpp`'s `write` blocks,
+  `BRepPrimAPI` makers and `MakePrism`, `BRepTools::Write` in version 1)
+  under `rust/fixtures/imported/`; the case protocol's `brep PATH` row.
+  `generate_imported_boolean_fixtures.py --check` writes
+  `boolean-imported-cases.txt`, `-expected.tsv`, `-frames.tsv` and
+  `-bodies.txt`: 69 cases (23 groups; 57 solid, 9 degenerate, 3
+  unsupported): boxes (one tilted), cylinders (one along `x`), a profile of
+  lines and a tangent arc, a cylinder of two half faces, a plate with a
+  hole, a sphere, a hemisphere, a frustum, a cone with its apex and a torus
+  against slabs, rods, boxes, a sphere and another imported body, as object
+  and tool, and one chain. Rows from the constructions OCCT was given:
+  S9e.3a's chained reference, S9d.1's sphere reference and coaxial closed
+  forms (closed forms within 4.3e-41, two families 8.6e-32, pair identities
+  2.3e-41, Monte Carlo 2.4 standard errors); every file read independently
+  with its locations, each stored vertex on its construction's surfaces.
+  `compare_imported_boolean.py` reproduces
+  `occt-boolean-imported-preimplementation`
+  (`rust_imported_boolean_exists` false, keyed on `solid/imported.rs`; the
+  probe reading every file and reporting `unsupported`): every result
+  valid, 61 match, 8 reviewed (BRepGProp's default integration on the
+  crossing cylinders' and the torus's approximated sections, up to 2.8e-5,
+  adaptively within 1.7e-9; the declared tangent fuses OCCT keeps as two
+  solids touching along a line).
+* **Kernel (S9e.4a).** `tests/imported_booleans.rs`: all 69 fixtures as
+  the reference (57 within the kernel's enclosures, each at most `1e-9`
+  wide; the 9 declared degenerate refused as tangencies, the 3 turned
+  profiles `OutOfDomain` as S9e.4b's), every history complete over the
+  imported bodies' stored ids (no relation from a construction's), results
+  deterministic and moved rigidly, both inputs translated keeping the
+  reference's volumes, every body its construction (its closed-form volume,
+  points classified, its stored vertices on its boundary, two imports'
+  ids apart), STEP solids imported and cut alike (a box, cylinders, a
+  sphere, a hemisphere, cones, a torus, an L prism, a plate with a hole; a
+  cavity and a spline prism refused), the stored frames the reference's bit
+  for bit. `compare_imported_boolean.py`: 54 matches and 15 reviewed (the
+  native measures, and entity counts: the kernel's whole periodic faces and
+  exact meeting pieces against OCCT's seams and split approximations, the
+  imported seam-split cylinder's two faces kept).
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
@@ -2669,7 +2756,9 @@ walls against spline walls on crossing axes stay refused (S9f).
   result (of at most 12 faces; curved ones too since S9e.1, `GIVEN_CURVED`)
   cut by a turned box and in common with it (S9e.2: or a turned cylinder,
   `GIVEN_ROUND`; S9e.3a: results of spheres, cones and tori too, or a
-  sphere, `GIVEN_BALL`).
+  sphere, `GIVEN_BALL`); S9e.4a: the object written by the kernel's
+  `.brep` writer, read back and imported, given the chosen operation again,
+  its volume the object's own result's (`IMPORTED`).
 
 ## DRAW commands
 
