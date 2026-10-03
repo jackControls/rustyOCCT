@@ -14,7 +14,10 @@
 //! solids, and the one holding the point strictly inside (`Solid::classify`,
 //! exactly one) is the second's argument. S9e.3: further `then` rows, each
 //! with its solid's rows, chain further Booleans on the previous result
-//! (`Case::more`); the rows are the last's.
+//! (`Case::more`); the rows are the last's. S9e.4: any solid's rows may be
+//! one `brep PATH` row instead, the one solid of that `.brep` file (a path
+//! under `rust/fixtures`) through the reader and converter, an imported
+//! solid (`input`).
 #[path = "identity_protocol.rs"]
 #[allow(dead_code)]
 mod identity_protocol;
@@ -113,7 +116,7 @@ pub fn run(case: &Case) -> Result<Run, Error> {
     // one's.
     for then in case.then.iter().chain(&case.more) {
         let first = given_by(&case.name, then, out);
-        let third = build(&then.third);
+        let third = input(&then.third)?;
         (a, b) = if then.swapped {
             (third, first)
         } else {
@@ -161,9 +164,46 @@ pub fn given_by(name: &str, then: &Then, out: Vec<Solid>) -> Solid {
 /// result and history.
 #[allow(dead_code)]
 pub fn run_first(case: &Case) -> Result<Run, Error> {
-    let (a, b) = (build(&case.object), build(&case.tool));
+    let (a, b) = (input(&case.object)?, input(&case.tool)?);
     let (out, history) = boolean(&a, &case.op, case.operation, &b)?;
     Ok((a, b, out, history))
+}
+
+/// A case's solid: its construction (`build`), or for a `brep` row (S9e.4)
+/// the one solid of the file, read and converted (`imported`).
+pub fn input(spec: &CaseSpec) -> Result<Solid, Error> {
+    match &spec.brep {
+        Some(path) => imported(spec, path),
+        None => Ok(build(spec)),
+    }
+}
+
+/// The topology and resolution of a fixture file's one solid.
+pub fn imported_topology(path: &str) -> (rusty_occt::topology::Topology, rusty_occt::Tolerance) {
+    use rusty_occt::occt_brep::{import, read};
+    let file = format!("{}/../fixtures/{path}", env!("CARGO_MANIFEST_DIR"));
+    let text = std::fs::read_to_string(&file).unwrap_or_else(|e| panic!("{file}: {e}"));
+    let doc = read(&text).unwrap_or_else(|e| panic!("{file}: {e}"));
+    let imported = import(&doc);
+    assert!(
+        imported.unsupported.is_empty(),
+        "{file}: {:?}",
+        imported.unsupported
+    );
+    let [solid] =
+        <[_; 1]>::try_from(imported.solids).unwrap_or_else(|_| panic!("{file}: not one solid"));
+    let topology = solid
+        .result
+        .unwrap_or_else(|e| panic!("{file}: the converter rejects it: {e:?}"));
+    (topology, solid.tolerance)
+}
+
+/// An imported solid: the file read and converted; no constructor takes
+/// it before S9e.4's kernel, so every such case is out of the kernel's
+/// domain.
+fn imported(_spec: &CaseSpec, path: &str) -> Result<Solid, Error> {
+    let _ = imported_topology(path);
+    Err(Error::OutOfDomain("an imported solid in a Boolean (S9e.4)"))
 }
 
 fn boolean(

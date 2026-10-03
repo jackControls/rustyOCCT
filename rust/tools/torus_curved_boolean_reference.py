@@ -636,8 +636,12 @@ class Prism:
                 p, q = Mv(e[1]), Mv(e[2])
                 cr = p[0]*q[1]-q[0]*p[1]
                 A0 += cr/2
-                mx += (p[0]+q[0])*cr/6
-                my += (p[1]+q[1])*cr/6
+                # The arcs' forms, `int x^2 dy / 2` and `-int y^2 dx / 2`
+                # (a polygon's `(x_i + x_j) cr / 6` sums to the same only
+                # over segments alone: with arcs off the origin's lines the
+                # two forms differ, S9e.4's tangent profile found).
+                mx += (q[1]-p[1])*(p[0]*p[0]+p[0]*q[0]+q[0]*q[0])/6
+                my -= (q[0]-p[0])*(p[1]*p[1]+p[1]*q[1]+q[1]*q[1])/6
                 wall += norm(cross(fr.vec(q[0]-p[0], q[1]-p[1], Z), fr.nm))
             else:
                 _, C, a, t0, t1 = e

@@ -26,6 +26,9 @@ pub struct CaseSpec {
     pub transforms: Vec<RigidTransform>,
     /// S6: `face` or `wire` for a `Body` instead of a solid.
     pub make: Option<String>,
+    /// S9e.4: an imported solid instead, the one solid of this `.brep` file
+    /// (a path under `rust/fixtures`).
+    pub brep: Option<String>,
 }
 
 fn labels(words: &[&str]) -> BoundaryLabels {
@@ -54,6 +57,7 @@ pub fn parse(block: &str) -> CaseSpec {
         torus: None,
         transforms: Vec::new(),
         make: None,
+        brep: None,
     };
     for line in block.lines().filter(|l| !l.trim().is_empty()) {
         let w: Vec<&str> = line.split_whitespace().collect();
@@ -67,6 +71,7 @@ pub fn parse(block: &str) -> CaseSpec {
             "frame" => spec.frame = std::array::from_fn(|i| f(i + 1)),
             "offsets" => (spec.start, spec.end) = (f(1), f(2)),
             "make" => spec.make = Some(w[1].to_string()),
+            "brep" => spec.brep = Some(w[1].to_string()),
             "box" => spec.box_at = Some(([f(1), f(2), f(3)], [f(4), f(5), f(6)])),
             "cone" => spec.cone = Some([f(1), f(2), f(3)]),
             "sphere" => spec.sphere = Some([f(1), f(2), f(3)]),

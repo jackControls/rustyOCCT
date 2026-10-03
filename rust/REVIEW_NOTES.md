@@ -5838,6 +5838,72 @@ Decisions for S9, recorded before its code (2026-09-28):
     histories over the imported bodies' ids, determinism, rigid motion),
     the DRAW adapter's restored solids as Boolean arguments, the fuzz
     switch, the DRAW survey and a campaign.
+  * **S9e.4 evidence (2026-10-03).** The bodies are OCCT's own output:
+    `occt_boolean_oracle.cpp` takes a block `write NAME PATH` (one solid's
+    rows, `BRepTools::Write` in format version 1 without triangulations)
+    and new rows `box` (`BRepPrimAPI_MakeBox(gp_Ax2, DX, DY, DZ)`),
+    `cylinder` (`BRepPrimAPI_MakeCylinder(gp_Ax2, R, H)`) and `brep PATH`
+    (`BRepTools::Read` of the file's one solid, under the directory
+    `OCCT_BOOLEAN_FIXTURES` names); `compare_imported_boolean.py
+    --write-bodies` writes the 13 bodies of `boolean-imported-bodies.txt`
+    to `rust/fixtures/imported/` (generated, nothing from `data/`): a box
+    (`MakeBox`), a box in the `TILT` frame, a cylinder (`MakeCylinder`), a
+    cylinder along `x`, a prism of lines and an arc tangent to them, a
+    cylinder of two half faces, a plate with a hole (`MakePrism`, whose top
+    shares its bottom's records under a translation), a sphere, a
+    hemisphere (a cap), a frustum, a cone with its apex, a torus and the
+    tangent profile turned by 30 degrees. The case protocol takes an
+    imported input as one row `brep PATH` (`identity_reference.Case.brep`,
+    `encode_case` and `native_case`; `tests/support/boolean_protocol.rs`'s
+    `input` reads and converts the file, and since no constructor takes it
+    reports the case `OutOfDomain`). `generate_imported_boolean_fixtures.py
+    --check`: 69 cases of 23 groups (57 solid, 9 declared `degenerate`, 3
+    `unsupported`; 21 of class `prism`, 15 `cylinder`, 12 `sphere`, 9
+    `cone`, 6 `torus`, 3 `both`, 3 `chain`), each imported body against
+    prisms of lines and arcs (`TILT` slabs, coaxial and crossing rods,
+    boxes), a sphere or another imported body, as object and as tool, and
+    one chain (the imported box less a rod, then with a `TILT` slab);
+    `degenerate` an imported cylinder whose generatrix a box's wall
+    touches, a box touching the imported sphere's top point and a rod
+    touching the imported box's wall; `unsupported` the turned profile
+    against a box. The reference is the constructions OCCT was given:
+    S9e.3a's chained reference for 21 groups, S9d.1's sphere reference
+    (`generate_sphere_boolean_fixtures.evaluate`, its own checks) for the
+    hemisphere against a `TILT` box, the coaxial sections
+    (`generate_given_curved_boolean_fixtures.Coaxial`) for the plate with
+    a hole (with a Monte-Carlo estimate of its own). Checks, relative to
+    the case's size: closed forms (coaxial sections for five groups, the
+    hemispheres for two) within 4.3e-41; the two families 8.6e-32; each
+    solid's closed form 2.8e-40; the pair identities 2.3e-41 and the area
+    identity 1.9e-40; the sphere reference's checks within 1.4e-40; Monte
+    Carlo 2.4 standard errors; solid counts by rays at two resolutions;
+    every meeting's sine at least 0.45 and events at least 5.3e-5 of their
+    range apart outside the declared cases (an event found twice within
+    1e-25 counted once: a tangent profile's joint is both a vertex and its
+    arc's extreme along a chord). Every file read independently
+    (`stored_records`: `brep_io_reference`'s records and locations, each
+    face and vertex instance as placed): its faces' kinds the
+    construction's and every vertex within 3.7e-32 of the size on the
+    construction's surfaces (OCCT's 15 digits). Correction from the
+    evidence: `torus_curved_boolean_reference.Prism.closed` added a
+    polygon's moment terms (`(x_i + x_j) cr / 6`) to the arcs' Green's
+    forms (`int x^2 dy / 2`): the two agree only summed over segments
+    alone, so a profile whose arc's centre lies off the origin's lines
+    (the tangent profile) had its moments off by `cr / 6` per segment; the
+    segments now take the arcs' forms (its fixtures' profiles, stadiums
+    about the origin, were not affected: a check, the fixtures unchanged;
+    every generator importing it is checked again). Fixture corrections
+    from the reference's runs: the solid counts of three groups (the slab
+    leaves the tangent profile's arc whole; the rod takes the frustum's
+    narrow end; a slab below the ball replaced by one across its middle),
+    a sphere touching the cone's apex moved to hold it inside (the
+    apex at its centre, the meeting at right angles), a tangent box's
+    common declared empty. `test_imported_boolean_reference.py` checks two
+    boxes by their grid cells exactly, the coaxial sections against the
+    chained reference, the hemispheres against a quadrature of their
+    sections, the files' reader on the hemisphere's and the tangent
+    profile's files, and the case list and its protocol rows. The
+    generator's check is a CI group of its own (`imported`).
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

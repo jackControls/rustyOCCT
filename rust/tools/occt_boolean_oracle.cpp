@@ -31,7 +31,21 @@
 // finds the point inside (TopAbs_IN, exactly one of them, else `failure`) is
 // the second's argument. S9e.3: further `then` rows, each with its solid's
 // rows, chain further Booleans the same way on the previous result; the
-// output is the last Boolean's.
+// output is the last Boolean's. S9e.4: either input may instead be one row
+// `brep PATH`, a solid read by BRepTools::Read from PATH (relative to the
+// directory in the environment's OCCT_BOOLEAN_FIXTURES, the repository's
+// rust/fixtures), the file's one solid (an imported body); and two further
+// primitive rows build what such files hold: `box ox oy oz nx ny nz xx xy xz
+// DX DY DZ`, BRepPrimAPI_MakeBox(gp_Ax2(origin, normal, x), DX, DY, DZ), and
+// `cylinder ox oy oz nx ny nz xx xy xz R H`,
+// BRepPrimAPI_MakeCylinder(gp_Ax2(origin, normal, x), R, H). A block `write
+// NAME PATH` (instead of `case`), one solid's rows and `end` writes that
+// solid with BRepTools::Write to PATH (relative to the same directory; the
+// format's version 1, without triangulations, which the kernel's reader
+// takes: its header check knows version 3 only under the older copyright
+// line, `Matra-Datavision`, and OCCT 8.1 writes `Open Cascade` there) and
+// prints `NAME written` (`NAME failure` if it cannot be built or written):
+// the imported bodies' files are OCCT's own output.
 //
 // Output: `NAME done N valid warnings` (N solids in the result, the result
 // checked by BRepCheck_Analyzer, 1 if the operation reported warnings), then
@@ -49,12 +63,16 @@
 #include <BRepBuilderAPI_MakeVertex.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
 #include <BRepCheck_Analyzer.hxx>
+#include <BRep_Builder.hxx>
 #include <BRepClass3d_SolidClassifier.hxx>
 #include <BRepGProp.hxx>
+#include <BRepPrimAPI_MakeBox.hxx>
 #include <BRepPrimAPI_MakeCone.hxx>
+#include <BRepPrimAPI_MakeCylinder.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
 #include <BRepPrimAPI_MakeSphere.hxx>
 #include <BRepPrimAPI_MakeTorus.hxx>
+#include <BRepTools.hxx>
 #include <GProp_GProps.hxx>
 #include <Geom_BSplineCurve.hxx>
 #include <NCollection_Array1.hxx>
@@ -72,6 +90,7 @@
 #include <gp_Pln.hxx>
 
 #include <algorithm>
+#include <cstdlib>
 #include <iomanip>
 #include <iostream>
 #include <memory>
@@ -118,8 +137,16 @@ Handle(Geom_BSplineCurve) spline(std::istringstream& in) {
   return new Geom_BSplineCurve(poles, knots, mults, degree);
 }
 
+// A path under the fixtures directory (S9e.4).
+std::string fixture(const std::string& path) {
+  const char* dir = std::getenv("OCCT_BOOLEAN_FIXTURES");
+  if (dir == nullptr) throw Standard_Failure("OCCT_BOOLEAN_FIXTURES unset");
+  return std::string(dir) + "/" + path;
+}
+
 // One prism's construction rows, as occt_split_oracle.cpp reads them, or
-// (S9d.1) a sphere's row, or (S9d.3a) a cone's, or (S9d.4a) a torus's.
+// (S9d.1) a sphere's row, or (S9d.3a) a cone's, or (S9d.4a) a torus's, or
+// (S9e.4) a box's, a cylinder's or an imported solid's.
 struct Prism {
   gp_Ax3 frame;
   std::vector<TopoDS_Wire> wires;
@@ -128,7 +155,27 @@ struct Prism {
   TopoDS_Shape primitive;
 
   void row(const std::string& kind, std::istringstream& in) {
-    if (kind == "sphere") {
+    if (kind == "brep") {
+      std::string path;
+      if (!(in >> path)) throw Standard_Failure("brep row");
+      TopoDS_Shape read;
+      BRep_Builder builder;
+      if (!BRepTools::Read(read, fixture(path).c_str(), builder)) throw Standard_Failure("brep read");
+      int solids = 0;
+      for (TopExp_Explorer e(read, TopAbs_SOLID); e.More(); e.Next()) {
+        primitive = e.Current();
+        ++solids;
+      }
+      if (solids != 1) throw Standard_Failure("a brep file of one solid");
+    } else if (kind == "box") {
+      auto v = numbers(in, 12);
+      gp_Ax2 axis(gp_Pnt(v[0], v[1], v[2]), gp_Dir(v[3], v[4], v[5]), gp_Dir(v[6], v[7], v[8]));
+      primitive = BRepPrimAPI_MakeBox(axis, v[9], v[10], v[11]).Shape();
+    } else if (kind == "cylinder") {
+      auto v = numbers(in, 11);
+      gp_Ax2 axis(gp_Pnt(v[0], v[1], v[2]), gp_Dir(v[3], v[4], v[5]), gp_Dir(v[6], v[7], v[8]));
+      primitive = BRepPrimAPI_MakeCylinder(axis, v[9], v[10]).Shape();
+    } else if (kind == "sphere") {
       auto v = numbers(in, 12);
       gp_Ax2 axis(gp_Pnt(v[0], v[1], v[2]), gp_Dir(v[3], v[4], v[5]), gp_Dir(v[6], v[7], v[8]));
       primitive = BRepPrimAPI_MakeSphere(axis, v[9], v[10], v[11]).Shape();
@@ -241,7 +288,30 @@ int main() {
     if (line.find_first_not_of(" \t\r") == std::string::npos) continue;
     std::istringstream head(line);
     std::string tag, name;
-    if (!(head >> tag >> name) || tag != "case") return 2;
+    if (!(head >> tag >> name) || (tag != "case" && tag != "write")) return 2;
+    if (tag == "write") {
+      // S9e.4: one solid written by BRepTools::Write.
+      std::string path;
+      head >> path;
+      Prism body;
+      try {
+        while (std::getline(std::cin, line) && line != "end") {
+          std::istringstream in(line);
+          std::string kind;
+          in >> kind;
+          body.row(kind, in);
+        }
+        if (path.empty() || !BRepTools::Write(body.shape(), fixture(path).c_str(), false, false,
+                                              TopTools_FormatVersion_VERSION_1))
+          throw Standard_Failure("write");
+        std::cout << name << " written\n" << std::flush;
+      } catch (const Standard_Failure&) {
+        std::cout << name << " failure\n" << std::flush;
+        while (line != "end" && std::getline(std::cin, line)) {
+        }
+      }
+      continue;
+    }
     std::ostringstream out;
     out << std::setprecision(17);
     try {

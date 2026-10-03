@@ -307,6 +307,7 @@ class Case:
     sphere: tuple = None         # (radius, low, high) for Solid::sphere_with on the frame
     torus: tuple = None          # (major, minor, low, high, angle) for Solid::torus_with
     make: str = None             # 'face' (Body::face_from_profile) or 'wire' (the first boundary's)
+    brep: str = None             # S9e.4: an imported solid, the one solid of this .brep (under rust/fixtures)
 
 
 def number(x):
@@ -331,7 +332,12 @@ def segment_words(seg, lift, dim):
 
 def encode_case(c):
     out = [f'case {c.name} {number(c.tolerance)}', f'op {c.operation}']
-    if c.box is not None:
+    if c.brep is not None:
+        # S9e.4: an imported solid, its file's one solid (the construction's
+        # fields are the reference's, not the kernel's input).
+        assert not c.transforms and c.make is None, f'{c.name}: an imported solid in place'
+        out.append(f'brep {c.brep}')
+    elif c.box is not None:
         out.append('box '+' '.join(number(x) for x in (*c.box[0], *c.box[1])))
     elif c.cone is not None:
         out.append('frame '+' '.join(number(x) for x in c.frame))
@@ -812,7 +818,12 @@ def native_case(c):
     `BRepPrimAPI_MakeTorus(gp_Ax2, R, r)` takes them. A v-segment or a wedge
     (S9d.4b.1) adds its latitudes and turn, `torus ox oy oz nx ny nz xx xy xz
     R r LOW HIGH ANGLE`, as `BRepPrimAPI_MakeTorus(gp_Ax2, R, r, angle1,
-    angle2, angle)` takes them (a whole torus keeps the short row)."""
+    angle2, angle)` takes them (a whole torus keeps the short row). An
+    imported solid (S9e.4) is one row `brep PATH`, the file (under
+    `rust/fixtures`) `BRepTools::Read` reads."""
+    if c.brep is not None:
+        assert not c.transforms and c.make is None, f'{c.name}: an imported solid in place'
+        return '\n'.join([f'case {c.name}', f'brep {c.brep}', 'end'])
     if c.torus is not None:
         assert not c.transforms and c.make is None, f'{c.name}: a torus in place'
         major, minor, low, high, angle = c.torus

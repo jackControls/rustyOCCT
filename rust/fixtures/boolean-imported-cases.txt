@@ -1,0 +1,627 @@
+case box_slab_fuse 1e-07
+op 91
+brep imported/box.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 1.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+end
+case box_slab_cut 1e-07
+op 91
+brep imported/box.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 1.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+end
+case box_slab_common 1e-07
+op 91
+brep imported/box.brep
+boolean common 93
+op 92
+frame 0.0 0.0 1.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+end
+case box_drill_fuse 1e-07
+op 91
+brep imported/box.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 5.0 5.0 2.0
+end
+case box_drill_cut 1e-07
+op 91
+brep imported/box.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 5.0 5.0 2.0
+end
+case box_drill_common 1e-07
+op 91
+brep imported/box.brep
+boolean common 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 5.0 5.0 2.0
+end
+case tilt_box_fuse 1e-07
+op 91
+brep imported/box_tilt.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+end
+case tilt_box_cut 1e-07
+op 91
+brep imported/box_tilt.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+end
+case tilt_box_common 1e-07
+op 91
+brep imported/box_tilt.brep
+boolean common 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+end
+case cyl_box_fuse 1e-07
+op 91
+brep imported/cyl.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+end
+case cyl_box_cut 1e-07
+op 91
+brep imported/cyl.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+end
+case cyl_box_common 1e-07
+op 91
+brep imported/cyl.brep
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+end
+case box_cyl_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+brep imported/cyl.brep
+end
+case box_cyl_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+brep imported/cyl.brep
+end
+case box_cyl_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean common 93
+op 92
+brep imported/cyl.brep
+end
+case rods_fuse 1e-07
+op 91
+brep imported/cyl_side.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 5.0 5.0 2.0
+end
+case rods_cut 1e-07
+op 91
+brep imported/cyl_side.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 5.0 5.0 2.0
+end
+case rods_common 1e-07
+op 91
+brep imported/cyl_side.brep
+boolean common 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 5.0 5.0 2.0
+end
+case dee_slab_fuse 1e-07
+op 91
+brep imported/dee.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 1.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+end
+case dee_slab_cut 1e-07
+op 91
+brep imported/dee.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 1.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+end
+case dee_slab_common 1e-07
+op 91
+brep imported/dee.brep
+boolean common 93
+op 92
+frame 0.0 0.0 1.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+end
+case halves_box_fuse 1e-07
+op 91
+brep imported/halves.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 4 5.5 2.0 9.0 2.0 9.0 8.0 5.5 8.0
+end
+case halves_box_cut 1e-07
+op 91
+brep imported/halves.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 4 5.5 2.0 9.0 2.0 9.0 8.0 5.5 8.0
+end
+case halves_box_common 1e-07
+op 91
+brep imported/halves.brep
+boolean common 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 4 5.5 2.0 9.0 2.0 9.0 8.0 5.5 8.0
+end
+case plate_bore_fuse 1e-07
+op 91
+brep imported/plate.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary C 0.0 0.0 3.0
+end
+case plate_bore_cut 1e-07
+op 91
+brep imported/plate.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary C 0.0 0.0 3.0
+end
+case plate_bore_common 1e-07
+op 91
+brep imported/plate.brep
+boolean common 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary C 0.0 0.0 3.0
+end
+case ball_box_fuse 1e-07
+op 91
+brep imported/ball.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+end
+case ball_box_cut 1e-07
+op 91
+brep imported/ball.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+end
+case ball_box_common 1e-07
+op 91
+brep imported/ball.brep
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+end
+case dome_box_fuse 1e-07
+op 91
+brep imported/dome.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 1.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary P 4 -2.0 -6.0 7.0 -6.0 7.0 6.0 -2.0 6.0
+end
+case dome_box_cut 1e-07
+op 91
+brep imported/dome.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 1.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary P 4 -2.0 -6.0 7.0 -6.0 7.0 6.0 -2.0 6.0
+end
+case dome_box_common 1e-07
+op 91
+brep imported/dome.brep
+boolean common 93
+op 92
+frame 0.0 0.0 1.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary P 4 -2.0 -6.0 7.0 -6.0 7.0 6.0 -2.0 6.0
+end
+case frustum_bore_fuse 1e-07
+op 91
+brep imported/frustum.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 5.0 5.0 2.0
+end
+case frustum_bore_cut 1e-07
+op 91
+brep imported/frustum.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 5.0 5.0 2.0
+end
+case frustum_bore_common 1e-07
+op 91
+brep imported/frustum.brep
+boolean common 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 5.0 5.0 2.0
+end
+case frustum_box_fuse 1e-07
+op 91
+brep imported/frustum.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 2.0
+boundary P 4 6.0 0.0 12.0 0.0 12.0 10.0 6.0 10.0
+end
+case frustum_box_cut 1e-07
+op 91
+brep imported/frustum.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 2.0
+boundary P 4 6.0 0.0 12.0 0.0 12.0 10.0 6.0 10.0
+end
+case frustum_box_common 1e-07
+op 91
+brep imported/frustum.brep
+boolean common 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 2.0
+boundary P 4 6.0 0.0 12.0 0.0 12.0 10.0 6.0 10.0
+end
+case spike_ball_fuse 1e-07
+op 91
+brep imported/spike.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 5.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.5 -1.5707963267948966 1.5707963267948966
+end
+case spike_ball_cut 1e-07
+op 91
+brep imported/spike.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 5.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.5 -1.5707963267948966 1.5707963267948966
+end
+case spike_ball_common 1e-07
+op 91
+brep imported/spike.brep
+boolean common 93
+op 92
+frame 0.0 0.0 5.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.5 -1.5707963267948966 1.5707963267948966
+end
+case ring_box_fuse 1e-07
+op 91
+brep imported/ring.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.5
+boundary P 4 -8.0 -8.0 8.0 -8.0 8.0 8.0 -8.0 8.0
+end
+case ring_box_cut 1e-07
+op 91
+brep imported/ring.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.5
+boundary P 4 -8.0 -8.0 8.0 -8.0 8.0 8.0 -8.0 8.0
+end
+case ring_box_common 1e-07
+op 91
+brep imported/ring.brep
+boolean common 93
+op 92
+frame 0.0 0.0 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.5
+boundary P 4 -8.0 -8.0 8.0 -8.0 8.0 8.0 -8.0 8.0
+end
+case ring_pin_fuse 1e-07
+op 91
+brep imported/ring.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 5.0 0.0 0.75
+end
+case ring_pin_cut 1e-07
+op 91
+brep imported/ring.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 5.0 0.0 0.75
+end
+case ring_pin_common 1e-07
+op 91
+brep imported/ring.brep
+boolean common 93
+op 92
+frame 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 5.0 0.0 0.75
+end
+case both_fuse 1e-07
+op 91
+brep imported/box.brep
+boolean fuse 93
+op 92
+brep imported/ball.brep
+end
+case both_cut 1e-07
+op 91
+brep imported/box.brep
+boolean cut 93
+op 92
+brep imported/ball.brep
+end
+case both_common 1e-07
+op 91
+brep imported/box.brep
+boolean common 93
+op 92
+brep imported/ball.brep
+end
+case slab_ball_fuse 1e-07
+op 91
+frame 0.0 0.0 7.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+boolean fuse 93
+op 92
+brep imported/ball.brep
+end
+case slab_ball_cut 1e-07
+op 91
+frame 0.0 0.0 7.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+boolean cut 93
+op 92
+brep imported/ball.brep
+end
+case slab_ball_common 1e-07
+op 91
+frame 0.0 0.0 7.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+boolean common 93
+op 92
+brep imported/ball.brep
+end
+case chain_drill_fuse 1e-07
+op 91
+brep imported/box.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 5.0 5.0 2.0
+then fuse 95
+op 94
+frame 0.0 0.0 1.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+end
+case chain_drill_cut 1e-07
+op 91
+brep imported/box.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 5.0 5.0 2.0
+then cut 95
+op 94
+frame 0.0 0.0 1.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+end
+case chain_drill_common 1e-07
+op 91
+brep imported/box.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 5.0 5.0 2.0
+then common 95
+op 94
+frame 0.0 0.0 1.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+end
+case cyl_tangent_fuse 1e-07
+op 91
+brep imported/cyl.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 8.0 0.0 12.0 0.0 12.0 10.0 8.0 10.0
+end
+case cyl_tangent_cut 1e-07
+op 91
+brep imported/cyl.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 8.0 0.0 12.0 0.0 12.0 10.0 8.0 10.0
+end
+case cyl_tangent_common 1e-07
+op 91
+brep imported/cyl.brep
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 8.0 0.0 12.0 0.0 12.0 10.0 8.0 10.0
+end
+case ball_touch_fuse 1e-07
+op 91
+brep imported/ball.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 7.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 2.0
+boundary P 4 3.0 3.0 7.0 3.0 7.0 7.0 3.0 7.0
+end
+case ball_touch_cut 1e-07
+op 91
+brep imported/ball.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 7.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 2.0
+boundary P 4 3.0 3.0 7.0 3.0 7.0 7.0 3.0 7.0
+end
+case ball_touch_common 1e-07
+op 91
+brep imported/ball.brep
+boolean common 93
+op 92
+frame 0.0 0.0 7.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 2.0
+boundary P 4 3.0 3.0 7.0 3.0 7.0 7.0 3.0 7.0
+end
+case box_kiss_fuse 1e-07
+op 91
+brep imported/box.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 12.0 5.0 2.0
+end
+case box_kiss_cut 1e-07
+op 91
+brep imported/box.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 12.0 5.0 2.0
+end
+case box_kiss_common 1e-07
+op 91
+brep imported/box.brep
+boolean common 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 12.0 5.0 2.0
+end
+case dee_turn_fuse 1e-07
+op 91
+brep imported/dee_turn.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+end
+case dee_turn_cut 1e-07
+op 91
+brep imported/dee_turn.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+end
+case dee_turn_common 1e-07
+op 91
+brep imported/dee_turn.brep
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+end

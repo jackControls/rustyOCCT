@@ -112,7 +112,7 @@ jobs:
       fail-fast: false
       matrix:
         group: [algebra, brep, booleans, cones, cones-loops, tori, torus-parts, chained, spline-any, given,
-                given-curved, given-met, spline-parallel, spline-crossing]
+                given-curved, given-met, spline-parallel, spline-crossing, imported]
     steps:
       - uses: actions/checkout@v4.2.2
       - run: rustup toolchain install stable --profile minimal
@@ -212,6 +212,9 @@ jobs:
       - name: Verify the spline prisms' Boolean independent reference with crossing walls (S9f.2b)
         if: matrix.group == 'spline-crossing'
         run: target/math-oracle-venv/bin/python rust/tools/generate_spline_crossing_boolean_fixtures.py --check --workers 4
+      - name: Verify the imported solids' Boolean independent reference (S9e.4a)
+        if: matrix.group == 'imported'
+        run: target/math-oracle-venv/bin/python rust/tools/generate_imported_boolean_fixtures.py --check --workers 4
 
   pinned-degree-oracle:
     name: Degree elevation / source-pinned OCCT
