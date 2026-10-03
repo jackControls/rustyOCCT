@@ -1,27 +1,34 @@
 # Booleans of spline prisms against prisms with arc or circle walls on crossing axes (S9f.2b): native observations before any kernel code
 
 Source reference `3d097a0328e71b826377d4814ab05ec3c3d23871`, OCCT 8.1.0
-built headless with exception checks, captured 2026-10-03 by
+built headless with exception checks, first captured 2026-10-03 by
 `compare_spline_crossing_boolean.py --capture` (`compare_boolean.py`'s
-probe and protocol on S9f.2b's fixtures). `capture.json` records the Rust
-revision and that the kernel's S9f.2b code did not exist
-(`rust_spline_crossing_boolean_exists` false:
-`rust/kernel/src/solid/boolean/curved/spline_crossing.rs` absent). The
-kernel's probe reports every case `unsupported`: the curved engine's
-`spline_pairs` refuses all 34 with `OutOfDomain("a spline prism against a
+probe and protocol on S9f.2b's fixtures) while the kernel's S9f.2b code did
+not exist (`rust/kernel/src/solid/boolean/curved/spline_crossing.rs`
+absent; the probe reported every case `unsupported`: the curved engine's
+`spline_pairs` refused all 34 with `OutOfDomain("a spline prism against a
 prism with arcs on crossing axes (S9f.2b)")`, the message read from
-`protocol::run` by a throwaway example. No protocol or oracle change was
+`protocol::run` by a throwaway example). No protocol or oracle change was
 needed: the protocol's `B` path segments and the native `wire S` rows
 already carry a spline's poles lifted by its frame and an arc's circle (S5,
 S8b, S9a.2), and the oracle builds each spline as a `Geom_BSplineCurve`
 edge and each prism by `BRepPrimAPI_MakePrism` of its profile face in its
-own frame. `inputs.txt` holds the 34 cases of
-`boolean-spline-crossing-cases.txt` as explicit constructions
-(`identity_reference.native_boolean_case`), `oracle.cpp` is
-`occt_boolean_oracle.cpp` as captured and `native.txt` its results.
-Frames: the spline prisms in `XY`, their partners in `TILT`, `LEAN`,
-`SIDE` and `STEEP` (the normal (0, 5, 12) / 13), the steep cylinder the
-object against the blob.
+own frame.
+
+Taken again, whole, on 2026-10-03 for S9f.2b.2's evidence (17 cases added,
+51 in all) before S9f.2b.2's code: `capture.json` records the Rust revision
+(the extended fixtures, `2db283c4`) and that S9f.2b.2's code did not exist
+(`rust_spline_loops_boolean_exists` false: `spline_crossing.rs` still
+refusing a turning point inside both faces and a cap circle in a plane
+holding the wall's axis with its two `OutOfDomain(... (S9f.2b.2))`, every
+S9f.2b.2 case `unsupported`, the 28 S9f.2b.1 cases the kernel's as before).
+The 34 earlier rows are the first capture's to the bit. `inputs.txt` holds
+the 51 cases of `boolean-spline-crossing-cases.txt` as explicit
+constructions (`identity_reference.native_boolean_case`), `oracle.cpp` is
+`occt_boolean_oracle.cpp` as captured (unchanged) and `native.txt` its
+results. Frames: the spline prisms in `XY`, their partners in `TILT`,
+`LEAN`, `SIDE` and `STEEP` (the normal (0, 5, 12) / 13), the steep cylinder
+the object against the blob.
 
 ## Observations
 
@@ -66,6 +73,31 @@ object against the blob.
   8/15/10 (a plane's, a cylinder's or a spline wall's faces split by the
   Boolean merged). The kernel's results will be compared with the unified
   counts, as S9c's.
+
+## S9f.2b.2's cases (the recapture)
+
+* All 17 done, every result and solid valid with no warnings, every solid
+  count the reference's: towers alone (`dome_cap_tower`, a rod ending
+  inside the dome, its cap circle on the arch's generatrix at `x = 5/2`;
+  `lens_cap_tower`, a wide rod ending inside the lens, its cap circle on
+  both cubics' generatrices), loops cut by caps (`bulge_cap_loop`, a tower
+  cap circle near the bulge's apex; `bulge_side_cap_loop`, the bulge's top
+  cap; `lens_tilt_cap_loop`, a tilted rod's cap circle), and the declared
+  degenerate `cap_turn` (a turning point on the rod's cap rim, valid
+  natively; the decisions refuse it).
+* 4 match within the 2e-8 allowance (`bulge_cap_loop` and `cap_turn_cut`),
+  13 are reviewed, all `measure` (and `centre` for 12): BRepGProp's default
+  integration misses by up to 2.0e-6 in volume (`lens_tilt_cap_loop_common`,
+  a sliver of volume 0.35), 9.7e-7 in area and 3.5e-7 of the size in the
+  centre. The diagnostic build's adaptive BRepGProp (up to 1.7e-5 off in
+  area on some faces, as before) and Green's theorem over OCCT's own faces
+  and pcurves: the better of the two within 2.1e-9 in volume, 3.7e-9 in
+  area and 1.8e-10 in the centre on all 13: the native geometry is the
+  reference's; its default measure is not.
+* Five more solids' counts change when unified: `bulge_cap_loop_fuse`
+  13/24/16 to 12/22/15, `bulge_side_cap_loop_cut` 9/21/14 to 8/19/13,
+  `bulge_side_cap_loop_common` 5/9/6 to 4/7/5, `lens_tilt_cap_loop_cut`
+  7/12/8 to 6/10/7, `lens_tilt_cap_loop_common` 4/6/4 to 3/4/3.
 * The reference itself is checked independently
   (`generate_spline_crossing_boolean_fixtures.py --check`): every operation
   two ways (the slicing, and the divergence theorem over the classified
@@ -82,8 +114,7 @@ object against the blob.
 
 `compare_spline_crossing_boolean.py` requires every later run to reproduce
 these rows (on another platform, its reviewed record; the Linux record is
-pending CI). While `spline_crossing.rs` is absent the probe
-(`rust/kernel/examples/boolean_probe.rs`) must report `unsupported` on all
-34 cases, which the comparison lists under `rust_unsupported`; any other
-row, or a probe failure, is a failure. With the module, S9f.2b.2's six
-loop cases may stay `unsupported`.
+pending CI). While S9f.2b.2's two refusals stand in `spline_crossing.rs`
+its 23 cases may stay `unsupported` (listed under `rust_unsupported`);
+once they are gone an `unsupported` S9f.2b.2 case is a failure
+(`rust_unsupported_after_its_code`).
