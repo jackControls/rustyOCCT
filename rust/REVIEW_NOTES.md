@@ -5686,6 +5686,158 @@ Decisions for S9, recorded before its code (2026-09-28):
     `gdml_public` tori refused as before. A full contract run holds (the
     slowest Boolean case 12.8 seconds on a loaded machine, 13.5 in the
     last survey); the ledger does not change; no kernel change.
+  * **S9e.4 refined, before its code (2026-10-03).** Why it is refused
+    today. A body without a construction has no `Solid` at all: the
+    `.brep` converter (`occt_brep::import`) and STEP's reader give a cell
+    `Topology` with the body's resolution (the largest OCCT tolerance), and
+    nothing builds a solid from it; DRAW's adapter keeps a restored solid as
+    a `Shape::Body`, which `boolean_argument` refuses ("an argument other
+    than a solid the adapter made"), and S9b.2's stored model takes only a
+    Boolean's results and a plane's pieces. What such a body stores (OCCT's
+    `.brep`, `TopTools_ShapeSet` and `GeomTools`): surfaces and curves with
+    17 significant digits (OCCT's binary64 values exactly), vertices,
+    tolerances and edge ranges with 15, so a stored vertex lies off its
+    faces' stored surfaces by up to about `5e-16` of its size (a tilted
+    box's corner `1.4` beside its edge's line ending at
+    `1.4000000000000004`); the converter builds every frame again with
+    `Frame3::new` (the stored axes the kernel's normalization of OCCT's,
+    within an ulp, with the platform's `hypot`). The S9e text's plan (every
+    edge the meeting of its faces' stored surfaces, every vertex their
+    common point within the resolution, faces' regions and the solid's
+    membership decided exactly on general faces) needs an exact point
+    membership and face regions for faces of any shape on curved surfaces,
+    which nothing in S9 has (each model's `member` and `in_face` are its
+    construction's: a profile's, a sphere's latitudes, a cone's heights).
+    Decisions. (1) *Sub-steps.* **S9e.4a** (this step): an imported solid
+    whose stored topology is one of the kernel's constructions (a prism of
+    lines, arcs and circles; a sphere, a cap or a zone; a cone or a
+    frustum; a whole torus) is that construction, read off its stored
+    surfaces, and decided on the construction's exact model; **S9e.4b**:
+    every other imported body (a general body on its stored surfaces, the
+    S9e text's plan, with an exact membership of its own), and a plane's
+    piece (`Clipped`, `Half`) against curved faces, which S9e.2 deferred
+    here (its refusals keep naming S9e.4). (2) *The constructor.*
+    `Solid::imported_with(operation, topology, resolution)` (and `_in`):
+    the topology's entities renamed under the operation as
+    `Topology::from_parts` names them (kind `External`, role `External`,
+    each slot its ordinal) but with the operation's id, so two imported
+    bodies have distinct ids; the history every entity `Generated` with no
+    parents, as a primitive's. It recognizes the construction (3), builds
+    it with ids of its own (an operation derived from the import's), and
+    matches it to the stored topology (4); a body recognized as none is
+    `OutOfDomain("an imported solid other than a prism, a sphere, a cone or
+    a torus (S9e.4b)")`, spline faces or edges `OutOfDomain(... (S9f))`. (3)
+    *Recognition*, each number read from the stored data once: a *prism*:
+    the first pair (in stored face order) of plane faces whose outward
+    normals are opposite, every other face a plane parallel to their normal
+    or a cylinder whose axis is (candidates within `1e-9` in the sine; the
+    match decides), the first of the pair the bottom cap; the frame the
+    bottom cap's stored plane frame (turned `(x, -y, -n)`, exactly, where
+    its normal leaves the material: the prism's normal points into it); the
+    profile the bottom cap's loops: each vertex's local coordinates in the
+    frame's exact affine map, rounded once to binary64; a stored line a
+    line; a stored arc its circle (its centre's local coordinates rounded
+    once, the stored radius, counter-clockwise where its sweep, its frame's
+    normal against the prism's and its fin's sense agree); a ring a circle;
+    the outer boundary the loop of the greatest area, the others holes; the
+    heights `0` (the bottom cap's plane is the frame's own, exactly) and the
+    top cap's stored origin's local height rounded once; `Solid::extrude`
+    of them. A *sphere, cap or zone*: one spherical face and at most two
+    planar faces, each bounded by one ring of it, normal to its stored axis;
+    the stored frame and radius exactly, each disc's latitude `asin(h / R)`
+    of its ring's centre's local height `h` (a missing end a pole, `-+pi /
+    2`). A *cone or frustum*: one conical face and one or two discs normal
+    to its axis, the other end the apex vertex; the stored frame with the
+    axes kept bit for bit and the origin moved along the axis to the lower
+    end's height where that is not zero, each end's ring's stored radius
+    (`0` at the apex) and the upper end's height above the lower. A *whole
+    torus*: one toroidal face without loops; the stored frame and radii
+    exactly, the whole tube and turn. A torus's v-segment or wedge, a
+    cavity or several shells, any other face: S9e.4b's. (4)
+    *Verification.* The construction's topology is matched to the stored
+    one by S9e.2's geometric match (`matched.rs`): every vertex the one
+    stored vertex within the resolution, one to one; every edge the stored
+    edge between the matched ends through its points at a quarter, a half
+    and three quarters (a ring by its distance from the stored ring); every
+    face the stored face bounded by the matched edges on a surface of the
+    same kind. With the converter's validation (every stored edge on its
+    faces' stored surfaces within the resolution, `pcurve_off_edge`), every
+    stored surface then lies within twice the resolution of the
+    construction's along every edge, and the construction's surface is the
+    stored one exactly where it was read (a sphere's, a torus's, a cone's
+    frame, a cap's plane). A body unmatched is S9e.4b's (`OutOfDomain`).
+    (5) *The exact model and the stored edges.* The body is decided on its
+    construction's exact model: S9c's prism model on the stored cap's frame
+    (its affine axes in rationals), S9d's sphere, cone and torus models on
+    the stored frames. No stored edge is trusted as an exact curve: every
+    edge is the construction's (a prism's lines and arcs between its
+    rounded profile points, its verticals, a sphere's or a cone's rings at
+    their heights), and the stored curves only name and verify it. So a
+    profile's line tangent to its arc (a smooth join) and a periodic face
+    split at a seam into faces (two arcs of one circle, two cylinder faces)
+    are the construction's profile data, decided exactly as S9c decides
+    them, not refused (in S9e.4b, where an edge is its faces' meeting, they
+    stay refused). (6) *In a Boolean.* `polyhedra::build` takes an imported
+    input as its construction (with the construction's ids), so every
+    pair's engine and every rule are the construction's; the result's
+    components' plans name the imported body's entities through the match
+    (each construction entity the stored entity matched to it), so the
+    history is over the imported body's ids, and the result keeps the
+    imported solid as its input (classification, rigid motion). A result
+    of an imported solid given to another Boolean (S9e.1 to S9e.3) re-runs
+    its first arrangement with the same construction. The construction's
+    ids must be apart from the partner's (`InvalidLabel` otherwise, never
+    met but by a forged operation id). (7) *Refused.* A prism's arc whose
+    ends, rounded into the cap's frame, are off its circle exactly (S9c's
+    requirement: a frame whose rotation rounds the profile's points, a
+    profile turned by 30 degrees) `OutOfDomain("an imported prism's arc
+    whose ends round off its circle in its cap's frame (S9e.4b)")`; S9's
+    rules unchanged (`Degenerate`: an imported cylinder tangent to the
+    partner's plane, a face of the partner touching an imported sphere at a
+    point). (8) *Its other queries.* Classification is the construction's
+    (within the resolution); mass properties the stored topology's
+    certified enclosure (the body's own measure); bounds the construction's
+    widened by the stored edges'; a rigid motion moves the stored topology
+    (its stored geometry, as S9b's results) and the construction with it
+    (rebuilt in the moved frame), the match kept (both keep their ids). (9)
+    *The reader.* OCCT 8.1's `BRepTools::Write` writes format version 3
+    under the copyright line `(c) Open Cascade`, which the reader refuses
+    (its header check expects `Matra-Datavision`; 27 files of the public
+    dataset carry the newer line): the fixtures are written in version 1
+    (`TopTools_FormatVersion_VERSION_1`, no triangulations); the header
+    check is left to the import track, since widening it changes which
+    dataset files restore (a survey of its own). (10) *Fuzzing.* The
+    `boolean` target's object written by the kernel's writer and read back
+    (`occt_brep::write`, `read`, `import`), imported and given the same
+    Boolean, its volumes those of the object's own result within the
+    resolution (`IMPORTED`, a switch). (11) *Evidence first.* Bodies
+    written by OCCT (`occt_boolean_oracle.cpp`'s `write` blocks:
+    `BRepPrimAPI_MakeBox`, `MakeCylinder`, `MakeSphere`, `MakeCone`,
+    `MakeTorus` and `MakePrism` of a profile) under
+    `rust/fixtures/imported/`, generated, never from `data/`; cases whose
+    inputs may be a `brep PATH` row (`identity_reference`'s `Case.brep`);
+    the reference the constructions OCCT was given, through S9e.3a's
+    chained reference (`chained_curved_boolean_reference.py`, pairs and one
+    chain), S9d.1's sphere reference for a zone, coaxial closed forms,
+    Monte Carlo and the pair identities, with each file's stored vertices
+    checked within `1e-12` of the case's size of the construction's
+    (`generate_imported_boolean_fixtures.py --check`): boxes (one in the
+    `TILT` frame), cylinders (one along `x`), a prism with tangent arcs, a
+    cylinder of two half faces, a plate with a hole, a sphere, a zone, a
+    frustum, a cone with its apex and a torus, against prisms of lines and
+    arcs, a sphere and another imported body, as object and as tool, and
+    one chain; declared `degenerate` an imported cylinder tangent to a
+    box's wall, a box touching an imported sphere and a cylinder tangent to
+    an imported box's wall; declared `unsupported` the prism with arcs
+    turned by 30 degrees. A native capture before `solid/imported.rs`
+    exists (`compare_imported_boolean.py` keyed on it, the kernel's probe
+    reading every file and reporting `unsupported`),
+    `test_imported_boolean_reference.py`, the generator's check a CI group
+    (`imported`); then the kernel, its tests (`tests/imported_booleans.rs`:
+    enclosures within `1e-9` of the reference, degenerate cases refused,
+    histories over the imported bodies' ids, determinism, rigid motion),
+    the DRAW adapter's restored solids as Boolean arguments, the fuzz
+    switch, the DRAW survey and a campaign.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions
