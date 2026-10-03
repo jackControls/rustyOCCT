@@ -1,0 +1,152 @@
+{
+  "note": "Reviewed BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut and BRepAlgoAPI_Common differences from the S9f.2a reference and the kernel.",
+  "reviews": [
+    {
+      "case": "capsule_disc_turn_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "040f9169c4af10dc6682c0e232053ef85a73f4fe81f47ddec101c1a721e2c4cd",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's B-spline edges (the spline walls and the caps they bound) misses the reference by 2.0e-08 in volume (1.31099037 against 1.31099035), 2.3e-08 in area and 9.0e-10 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) the volume is within 1.9e-09 and the centre 3.1e-10; the adaptive surface integration is erratic on these faces (2.2e-09). Green's theorem over OCCT's own faces gives the reference within 6.2e-09: the native geometry is the reference's, its measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "curved_boolean_reference.py with S9f.2a's parallel walls (generate_spline_parallel_boolean_fixtures.py --check): each operation's volume and first moments two ways (the slicing, and the divergence theorem over the classified face pieces) within 1.3e-40 of the case's size, inclusion and exclusion within 1.3e-40, the area identity within 9.8e-41, every face's classes within 3.0e-41 of its closed-form area, a second slicing axis within 1.3e-40; S9a.2's SplinePair (atoms by Green's theorem, meetings by root finding) on the 33 cases whose map between the frames is an exact turn or offset within 2.4e-39 in XY and 2.2e-17 in TILT. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) integrating each native solid's volume, area and first moments by Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 6-point Gauss-Legendre, exact for its planes, cylinders and linear extrusions, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre) agrees with the reference within 9.5e-09 in volume, 1.0e-08 in area and 1.1e-08 of the size in the centre over all 39 cases with a result (this case: 6.2e-09 in volume, 2.7e-09 in area, 3.0e-09 in the centre).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "bulge_dome_turn_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "b243287558fa37b860e0ce08a60c09de0065b684effe0f5d1ba656a7f152e059",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's B-spline edges (the spline walls and the caps they bound) misses the reference by 1.3e-07 in volume (354.318173 against 354.31822), 1.6e-07 in area and 9.8e-10 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) the volume is within 1.4e-11 and the centre 2.7e-11; the adaptive surface integration is erratic on these faces (4.7e-06). Green's theorem over OCCT's own faces gives the reference within 1.5e-10: the native geometry is the reference's, its measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "curved_boolean_reference.py with S9f.2a's parallel walls (generate_spline_parallel_boolean_fixtures.py --check): each operation's volume and first moments two ways (the slicing, and the divergence theorem over the classified face pieces) within 1.3e-40 of the case's size, inclusion and exclusion within 1.3e-40, the area identity within 9.8e-41, every face's classes within 3.0e-41 of its closed-form area, a second slicing axis within 1.3e-40; S9a.2's SplinePair (atoms by Green's theorem, meetings by root finding) on the 33 cases whose map between the frames is an exact turn or offset within 2.4e-39 in XY and 2.2e-17 in TILT. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) integrating each native solid's volume, area and first moments by Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 6-point Gauss-Legendre, exact for its planes, cylinders and linear extrusions, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre) agrees with the reference within 9.5e-09 in volume, 1.0e-08 in area and 1.1e-08 of the size in the centre over all 39 cases with a result (this case: 1.2e-11 in volume, 1.5e-10 in area, 9.0e-11 in the centre).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "bulge_dome_turn_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "d8197fd8a5cbaef535c4d431e2c6085bbaed8e964fcb14f5b533017ff43fe669",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's B-spline edges (the spline walls and the caps they bound) misses the reference by 1.5e-07 in volume (316.98484 against 316.984887), 1.9e-07 in area and 5.0e-09 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) the volume is within 1.5e-11 and the centre 3.0e-11; the adaptive surface integration is erratic on these faces (1.6e-09). Green's theorem over OCCT's own faces gives the reference within 1.9e-10: the native geometry is the reference's, its measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "curved_boolean_reference.py with S9f.2a's parallel walls (generate_spline_parallel_boolean_fixtures.py --check): each operation's volume and first moments two ways (the slicing, and the divergence theorem over the classified face pieces) within 1.3e-40 of the case's size, inclusion and exclusion within 1.3e-40, the area identity within 9.8e-41, every face's classes within 3.0e-41 of its closed-form area, a second slicing axis within 1.3e-40; S9a.2's SplinePair (atoms by Green's theorem, meetings by root finding) on the 33 cases whose map between the frames is an exact turn or offset within 2.4e-39 in XY and 2.2e-17 in TILT. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) integrating each native solid's volume, area and first moments by Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 6-point Gauss-Legendre, exact for its planes, cylinders and linear extrusions, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre) agrees with the reference within 9.5e-09 in volume, 1.0e-08 in area and 1.1e-08 of the size in the centre over all 39 cases with a result (this case: 1.4e-11 in volume, 1.9e-10 in area, 1.0e-10 in the centre).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "bulge_dome_turn_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "f0da9ba6ced1106c9ca0330b0834fc34a0266dd33b509616639245a19b215057",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's B-spline edges (the spline walls and the caps they bound) misses the reference by 1.1e-07 in volume (3.01511379 against 3.01511345), 2.0e-08 in area and 2.4e-09 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) the volume is within 2.3e-09 and the centre 1.2e-10; the adaptive surface integration is erratic on these faces (2.3e-08). Green's theorem over OCCT's own faces gives the reference within 1.1e-08: the native geometry is the reference's, its measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "curved_boolean_reference.py with S9f.2a's parallel walls (generate_spline_parallel_boolean_fixtures.py --check): each operation's volume and first moments two ways (the slicing, and the divergence theorem over the classified face pieces) within 1.3e-40 of the case's size, inclusion and exclusion within 1.3e-40, the area identity within 9.8e-41, every face's classes within 3.0e-41 of its closed-form area, a second slicing axis within 1.3e-40; S9a.2's SplinePair (atoms by Green's theorem, meetings by root finding) on the 33 cases whose map between the frames is an exact turn or offset within 2.4e-39 in XY and 2.2e-17 in TILT. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) integrating each native solid's volume, area and first moments by Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 6-point Gauss-Legendre, exact for its planes, cylinders and linear extrusions, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre) agrees with the reference within 9.5e-09 in volume, 1.0e-08 in area and 1.1e-08 of the size in the centre over all 39 cases with a result (this case: 1.5e-09 in volume, 2.6e-09 in area, 1.1e-08 in the centre).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "blob_lens_r125_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "ed7955d57d32a9fc41cbdfbba2b537072cf511374cdd7f972518c5809bc208ba",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's B-spline edges (the spline walls and the caps they bound) misses the reference by 3.1e-08 in volume (17.8339742 against 17.8339736), 2.7e-08 in area and 8.7e-09 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) the volume is within 1.3e-11 and the centre 1.3e-11; the adaptive surface integration is erratic on these faces (1.4e-08). Green's theorem over OCCT's own faces gives the reference within 9.6e-10: the native geometry is the reference's, its measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "curved_boolean_reference.py with S9f.2a's parallel walls (generate_spline_parallel_boolean_fixtures.py --check): each operation's volume and first moments two ways (the slicing, and the divergence theorem over the classified face pieces) within 1.3e-40 of the case's size, inclusion and exclusion within 1.3e-40, the area identity within 9.8e-41, every face's classes within 3.0e-41 of its closed-form area, a second slicing axis within 1.3e-40; S9a.2's SplinePair (atoms by Green's theorem, meetings by root finding) on the 33 cases whose map between the frames is an exact turn or offset within 2.4e-39 in XY and 2.2e-17 in TILT. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) integrating each native solid's volume, area and first moments by Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 6-point Gauss-Legendre, exact for its planes, cylinders and linear extrusions, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre) agrees with the reference within 9.5e-09 in volume, 1.0e-08 in area and 1.1e-08 of the size in the centre over all 39 cases with a result (this case: 9.6e-10 in volume, 6.2e-10 in area, 8.9e-10 in the centre).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "wave_wave_flip_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "7fdb13900a7c23682d0ca7c80f4d56adc75cdfb0857e95978a996ab8dede9f44",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's B-spline edges (the waves, quadratic B-splines of three spans, as S8b, S9a.2 and S9f.1 reviewed) misses the reference by 5.0e-04 in volume (501.465953 against 501.21322), 1.5e-04 in area and 3.9e-05 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) the volume is within 3.7e-04 and the centre 1.1e-04, no better: BRepGProp does not converge on these faces, as S9f.1's wave_tiltx. Green's theorem over OCCT's own faces gives the reference within 2.2e-09: the native geometry is the reference's, its measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "curved_boolean_reference.py with S9f.2a's parallel walls (generate_spline_parallel_boolean_fixtures.py --check): each operation's volume and first moments two ways (the slicing, and the divergence theorem over the classified face pieces) within 1.3e-40 of the case's size, inclusion and exclusion within 1.3e-40, the area identity within 9.8e-41, every face's classes within 3.0e-41 of its closed-form area, a second slicing axis within 1.3e-40; S9a.2's SplinePair (atoms by Green's theorem, meetings by root finding) on the 33 cases whose map between the frames is an exact turn or offset within 2.4e-39 in XY and 2.2e-17 in TILT. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) integrating each native solid's volume, area and first moments by Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 6-point Gauss-Legendre, exact for its planes, cylinders and linear extrusions, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre) agrees with the reference within 9.5e-09 in volume, 1.0e-08 in area and 1.1e-08 of the size in the centre over all 39 cases with a result (this case: 9.6e-10 in volume, 2.2e-09 in area, 8.7e-10 in the centre).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "wave_wave_flip_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "55934867ff916ea68a0ff66df43c4d5e263b6df5aa810fd2b1e70b1d838dd1ae",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's B-spline edges (the waves, quadratic B-splines of three spans, as S8b, S9a.2 and S9f.1 reviewed) misses the reference by 8.6e-04 in volume (304.223835 against 303.96322), 2.4e-04 in area and 2.0e-04 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) the volume is within 6.3e-04 and the centre 2.5e-04, no better: BRepGProp does not converge on these faces, as S9f.1's wave_tiltx. Green's theorem over OCCT's own faces gives the reference within 1.6e-09: the native geometry is the reference's, its measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "curved_boolean_reference.py with S9f.2a's parallel walls (generate_spline_parallel_boolean_fixtures.py --check): each operation's volume and first moments two ways (the slicing, and the divergence theorem over the classified face pieces) within 1.3e-40 of the case's size, inclusion and exclusion within 1.3e-40, the area identity within 9.8e-41, every face's classes within 3.0e-41 of its closed-form area, a second slicing axis within 1.3e-40; S9a.2's SplinePair (atoms by Green's theorem, meetings by root finding) on the 33 cases whose map between the frames is an exact turn or offset within 2.4e-39 in XY and 2.2e-17 in TILT. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) integrating each native solid's volume, area and first moments by Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 6-point Gauss-Legendre, exact for its planes, cylinders and linear extrusions, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre) agrees with the reference within 9.5e-09 in volume, 1.0e-08 in area and 1.1e-08 of the size in the centre over all 39 cases with a result (this case: 1.6e-09 in volume, 1.3e-09 in area, 1.5e-09 in the centre).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "wave_wave_flip_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "fba7fd8b8e01454c648168a68b008d93ce35f73ba3f5509c69f1abd13e3f9ca7",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's B-spline edges (the waves, quadratic B-splines of three spans, as S8b, S9a.2 and S9f.1 reviewed) misses the reference by 1.7e-04 in volume (24.791111 against 24.7867803), 1.1e-04 in area and 1.7e-05 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) the volume is within 5.6e-04 and the centre 2.0e-10, no better: BRepGProp does not converge on these faces, as S9f.1's wave_tiltx. Green's theorem over OCCT's own faces gives the reference within 1.1e-08: the native geometry is the reference's, its measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "curved_boolean_reference.py with S9f.2a's parallel walls (generate_spline_parallel_boolean_fixtures.py --check): each operation's volume and first moments two ways (the slicing, and the divergence theorem over the classified face pieces) within 1.3e-40 of the case's size, inclusion and exclusion within 1.3e-40, the area identity within 9.8e-41, every face's classes within 3.0e-41 of its closed-form area, a second slicing axis within 1.3e-40; S9a.2's SplinePair (atoms by Green's theorem, meetings by root finding) on the 33 cases whose map between the frames is an exact turn or offset within 2.4e-39 in XY and 2.2e-17 in TILT. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) integrating each native solid's volume, area and first moments by Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 6-point Gauss-Legendre, exact for its planes, cylinders and linear extrusions, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre) agrees with the reference within 9.5e-09 in volume, 1.0e-08 in area and 1.1e-08 of the size in the centre over all 39 cases with a result (this case: 8.9e-09 in volume, 1.0e-08 in area, 1.1e-08 in the centre).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "hump_lens_turn_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "e1f6ef9f03366d14ff0402ef7dc93b7106b409692f4fd183a62523127e78e5ff",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's B-spline edges (the spline walls and the caps they bound) misses the reference by 2.6e-08 in volume (94.9932934 against 94.9932909), 3.7e-08 in area and 2.7e-09 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) the volume is within 3.6e-10 and the centre 5.6e-11; the adaptive surface integration is erratic on these faces (6.9e-06). Green's theorem over OCCT's own faces gives the reference within 5.6e-10: the native geometry is the reference's, its measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "curved_boolean_reference.py with S9f.2a's parallel walls (generate_spline_parallel_boolean_fixtures.py --check): each operation's volume and first moments two ways (the slicing, and the divergence theorem over the classified face pieces) within 1.3e-40 of the case's size, inclusion and exclusion within 1.3e-40, the area identity within 9.8e-41, every face's classes within 3.0e-41 of its closed-form area, a second slicing axis within 1.3e-40; S9a.2's SplinePair (atoms by Green's theorem, meetings by root finding) on the 33 cases whose map between the frames is an exact turn or offset within 2.4e-39 in XY and 2.2e-17 in TILT. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) integrating each native solid's volume, area and first moments by Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 6-point Gauss-Legendre, exact for its planes, cylinders and linear extrusions, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre) agrees with the reference within 9.5e-09 in volume, 1.0e-08 in area and 1.1e-08 of the size in the centre over all 39 cases with a result (this case: 6.7e-11 in volume, 5.6e-10 in area, 5.5e-10 in the centre).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "hump_lens_turn_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "879df33e7e1edef5a3ed485efee4c373693196e1b7fb7c48cfeb423cda891810",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's B-spline edges (the spline walls and the caps they bound) misses the reference by 7.7e-08 in volume (31.9932934 against 31.9932909), 5.8e-08 in area and 7.6e-09 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) the volume is within 1.1e-09 and the centre 2.6e-10; the adaptive surface integration is erratic on these faces (5.5e-09). Green's theorem over OCCT's own faces gives the reference within 1.6e-09: the native geometry is the reference's, its measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "curved_boolean_reference.py with S9f.2a's parallel walls (generate_spline_parallel_boolean_fixtures.py --check): each operation's volume and first moments two ways (the slicing, and the divergence theorem over the classified face pieces) within 1.3e-40 of the case's size, inclusion and exclusion within 1.3e-40, the area identity within 9.8e-41, every face's classes within 3.0e-41 of its closed-form area, a second slicing axis within 1.3e-40; S9a.2's SplinePair (atoms by Green's theorem, meetings by root finding) on the 33 cases whose map between the frames is an exact turn or offset within 2.4e-39 in XY and 2.2e-17 in TILT. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) integrating each native solid's volume, area and first moments by Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 6-point Gauss-Legendre, exact for its planes, cylinders and linear extrusions, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre) agrees with the reference within 9.5e-09 in volume, 1.0e-08 in area and 1.1e-08 of the size in the centre over all 39 cases with a result (this case: 2.0e-10 in volume, 1.5e-09 in area, 1.6e-09 in the centre).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "hump_lens_turn_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "b462f09421cd0d44ef171df5a9d4501e537acff3e0893ff4e27d6017ca7db5d0",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's B-spline edges (the spline walls and the caps they bound) misses the reference by 1.2e-07 in volume (25.6067059 against 25.6067091), 1.2e-07 in area and 6.2e-09 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) the volume is within 8.8e-10 and the centre 1.1e-10; the adaptive surface integration is erratic on these faces (5.6e-08). Green's theorem over OCCT's own faces gives the reference within 2.0e-09: the native geometry is the reference's, its measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "curved_boolean_reference.py with S9f.2a's parallel walls (generate_spline_parallel_boolean_fixtures.py --check): each operation's volume and first moments two ways (the slicing, and the divergence theorem over the classified face pieces) within 1.3e-40 of the case's size, inclusion and exclusion within 1.3e-40, the area identity within 9.8e-41, every face's classes within 3.0e-41 of its closed-form area, a second slicing axis within 1.3e-40; S9a.2's SplinePair (atoms by Green's theorem, meetings by root finding) on the 33 cases whose map between the frames is an exact turn or offset within 2.4e-39 in XY and 2.2e-17 in TILT. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) integrating each native solid's volume, area and first moments by Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 6-point Gauss-Legendre, exact for its planes, cylinders and linear extrusions, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre) agrees with the reference within 9.5e-09 in volume, 1.0e-08 in area and 1.1e-08 of the size in the centre over all 39 cases with a result (this case: 2.5e-10 in volume, 1.5e-09 in area, 2.0e-09 in the centre).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "bulge_disc_offset_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "fb06ef2f6d37816b3e4e2a962a010f058550d183e19b2ca614c4ef768ab70364",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's B-spline edges (the spline walls and the caps they bound) misses the reference by 7.8e-08 in volume (10.9725129 against 10.972512), 3.8e-08 in area and 9.4e-10 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) the volume is within 1.5e-09 and the centre 1.4e-10; the adaptive surface integration is erratic on these faces (1.8e-09). Green's theorem over OCCT's own faces gives the reference within 9.5e-09: the native geometry is the reference's, its measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "curved_boolean_reference.py with S9f.2a's parallel walls (generate_spline_parallel_boolean_fixtures.py --check): each operation's volume and first moments two ways (the slicing, and the divergence theorem over the classified face pieces) within 1.3e-40 of the case's size, inclusion and exclusion within 1.3e-40, the area identity within 9.8e-41, every face's classes within 3.0e-41 of its closed-form area, a second slicing axis within 1.3e-40; S9a.2's SplinePair (atoms by Green's theorem, meetings by root finding) on the 33 cases whose map between the frames is an exact turn or offset within 2.4e-39 in XY and 2.2e-17 in TILT. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) integrating each native solid's volume, area and first moments by Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 6-point Gauss-Legendre, exact for its planes, cylinders and linear extrusions, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre) agrees with the reference within 9.5e-09 in volume, 1.0e-08 in area and 1.1e-08 of the size in the centre over all 39 cases with a result (this case: 9.5e-09 in volume, 5.0e-11 in area, 7.1e-09 in the centre).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}

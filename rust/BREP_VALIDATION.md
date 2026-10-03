@@ -281,7 +281,12 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   pieces past the domain or across a knot line by a sliver taken as the
   exact path takes them, the slivers' error bounded by `|f̄|` over their
   columns), with S4d's first-order Green integrals and strips as the
-  fallback where it cannot run. On the fixtures every enclosure lies within `1e-12` of its
+  fallback where it cannot run. A line pcurve or closing chord on a
+  cylinder or cone whose `du` is at most `2^-20` of its `dv` (a gap
+  between two fins' rounded ends, their angles an ulp apart) is enclosed
+  as `-du F` over its box rather than by the expansion in its slope's
+  powers, which lost its smallness (S9f.2a: a cylinder face of a `TILT2`
+  stadium in a common, its moments 10^27 wide). On the fixtures every enclosure lies within `1e-12` of its
   property's scale (at worst `7.6e-15` of the volume, `5.6e-15` of the
   area, `2.3e-14` of `V^(1/3)` for the centroid and `1.6e-13` of
   `V^(5/3)` for the inertia), where S4d's first-order enclosures were

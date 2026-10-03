@@ -4842,6 +4842,232 @@ Decisions for S9, recorded before its code (2026-09-28):
     tori refused as before. A full contract run holds (the slowest Boolean
     case 13.5 seconds on a loaded machine, a worker at the last survey's
     commit as slow at that load); the ledger does not change; no kernel change.
+  * **S9f.2a refined, before its code (2026-10-03).** Why it is refused
+    today: `curved::spline_pairs` refuses a spline prism against a prism
+    holding arcs or circles ("a spline prism against a prism with arcs in
+    any position (S9f.2)") or splines ("spline walls against spline walls
+    in any position (S9f.2)"); behind that refusal `meet::section` and
+    `meet::edge_surface` have no spline wall against a curved face
+    (`spline_curved`), `SplineSeg::locate` finds a point of `Q(alpha)` on
+    a segment only at its own arcs' generator, and a spline profile's
+    membership is undecided at an irrational point off its segments
+    (`OnProfile::Undecided`: none arose against S9f.1's polyhedral
+    partners). Decisions.
+    (1) *Domain.* Two prisms whose stored normals are exactly parallel
+    (`n_A x n_B = 0` in rationals: bitwise equal or opposite, which a rigid
+    motion of both keeps), at least one holding a spline segment and the
+    other an arc, a circle or a spline (a prism of lines only is S9f.1's in
+    any position), in frames that differ: turned about the axis (`TURN`'s
+    quarter turn and a half turn exactly, `R125`'s rounded rotation,
+    `TILT2` against `TILT` about the tilted axis), or with equal axes and an
+    origins' offset that is not binary64 in the object's frame. The
+    relation to S9a.2: S9a.2 decides two profiles in one exact frame
+    (bitwise-equal axes, a binary64 offset, the routing unchanged): one 2D
+    arrangement of profiles, its spline crossings found by the same
+    resultants (`implicit_on`, degree `p q`) but rounded to binary64
+    parameters at the profile level and paired by certified boxes, and
+    stacks of slabs. Here the tool's profile lies in the object's frame
+    under a rational affine map that is neither the identity nor a
+    binary64 translation (a circle becomes an ellipse with rational
+    implicit coefficients unless the map is a similarity), so no profile
+    arrangement can be rounded first: the walls are faces of the curved
+    engine (S9f.1's `Surf::Spline` and S9c's cylinders), meeting in
+    generatrices over exact 2D crossings, every vertex exact and rounded
+    once at assembly. Crossing axes stay refused: against a cylinder
+    S9f.2b's, against a spline wall by design.
+    (2) *Meetings*, all walls parallel, so every wall against wall section
+    is generatrices: (a) a spline wall (degree `p`) against a cylinder
+    wall: the cylinder's frame coordinates `(u', v')` of the spline's
+    profile point are rational affine functions of `(u, v)` (the axis
+    carries no `u'` or `v'`), so on each Bézier arc `E(tau) = (u'(S(tau)) -
+    c_u)^2 + (v'(S(tau)) - c_v)^2 - r^2`, degree `2 p`, exact; generatrices
+    over its roots strictly inside the spline's run, every vertex there in
+    `Q(alpha)` of degree at most `2 p`, `alpha` the arc's own parameter
+    (S9f.1's generators); (b) a spline wall against a spline wall: on each
+    pair of arcs (degrees `p` and `q`, the second's control points mapped
+    exactly into the first's frame), `R(tau) = f(S(tau))` with `f(X, Y) =
+    Res_sigma(B_x(sigma) - X, B_y(sigma) - Y)` the second arc's implicit
+    equation (Sylvester, exact, of degree `q`; S9a.2's polynomial), degree at
+    most `p q`; at each root `alpha` in `[0, 1]` the second arc's parameter
+    is an element of `Q(alpha)`, `sigma = -b(alpha) / a(alpha)` from the
+    first subresultant `a sigma + b` of `B_x(sigma) - X` and `B_y(sigma) - Y`
+    at the point (`a`, `b` polynomials in `(X, Y)` from exact evaluations
+    and interpolation, once per arc), the crossing kept when `sigma` lies
+    in `[0, 1]`; `a = 0` there (a node or cusp of the second arc's curve)
+    is `ComputationLimit`. One field per crossing whichever way it is
+    found: always the object's (operand A's) spline parameter's; (c) a cap
+    edge or crease over a spline segment against the other's cylinder or
+    spline wall: the same polynomials along its segment (it projects onto
+    the segment), its place the run parameter; an arc's or circle's cap
+    edge (a conic) against a spline wall: (a)'s roots, the point on its
+    own cap and its angle `((u' - c_u) / r, (v' - c_v) / r)`; a spline cap
+    edge of the second input against the first's spline wall: (b)'s
+    crossings in the first's field at the second's run parameter; (d) line
+    walls against spline walls S9f.1's (generatrices of degree `p`), arcs
+    against lines or arcs S9c's (parallel cylinders: circles, or S9c.2b.2's
+    lines through algebraic points).
+    (3) *Places and membership.* A point of another field on a spline
+    segment (a crossing found on the other wall) is found on it exactly:
+    its own generator's arc first (S9f.1), then on each arc whose control
+    box holds it the exact sign of the arc's implicit equation at the
+    point, and where that vanishes the subresultant's parameter, on the arc
+    when in `[0, 1]` with the arc's point there the given one. An
+    irrational point off every segment (a plane's generatrix on one spline
+    wall, or a crossing with a cylinder, tested against the other spline
+    profile) is decided at a rational point of a box about it certified
+    free of the profile's boundary (its enclosure narrowed until every line
+    misses the box by its corners' sides, every circle by distance, every
+    spline arc by its control boxes under exact subdivision), by S9f.1's
+    ray there; no such box within 2^-64 of the point's size leaves it
+    undecided (refused where it matters, as S9f.1's).
+    (4) *Cost.* The fields' degrees are at most `2 p <= 14` against a
+    cylinder and `p q` against a spline (up to 49 for two septics); arcs
+    whose degrees' product exceeds 16 are refused (`ComputationLimit("two
+    spline walls of degrees whose product exceeds 16 (S9f.2a)")`), checked
+    by the kernel's tests; S9a.2's and the boolean target's profiles are of
+    degree at most three (products at most 9).
+    (5) *Degenerate.* Walls tangent along a generatrix: a root of `E` or `R`
+    of multiplicity above one inside both runs (a spline touching or
+    osculating a circle or another spline), as S9f.1's tangent planes and
+    S9a.2's tangent splines; a touch at a knot of either (a root at a knot
+    of multiplicity above one on either arc beside it, or the second's
+    parameter at its knot with the curves not crossing); a vertical edge of
+    one on the other's curved wall (a crossing at a segment's end) is the
+    engine's edge on a face, as before; a crossing within the resolution of
+    another or of a vertex the engine's own. Coincident walls (`R`
+    identically zero on a pair of arcs: one curve in both frames, as when a
+    symmetric profile is turned onto itself) are refused as
+    `OutOfDomain("spline walls of both inputs on one surface in different
+    frames (refused, S9f)")` (S9a.2 shares one curve in one frame only); `E`
+    cannot vanish on an arc (a polynomial arc is no circle or ellipse).
+    Walls within rounding of tangency are not refused exactly: their
+    results validate or are `PrecisionLoss`; fixtures keep a margin.
+    (6) *Stays refused*: crossing axes (S9f.2b, by design for two spline
+    walls), spheres and cones (S9f.3), tori, given results with spline
+    walls, coincident spline walls, rational and periodic profile splines.
+    (7) *Evidence first*: `curved_boolean_reference.py`'s parallel slicing
+    and face sweeps extended to spline chords against arcs' and splines'
+    chords, their events the 2D crossings (a spline against a circle mapped
+    into its frame by the exact roots of its degree-`2 p` polynomial, two
+    splines by S9a.2's reference's subdivision in fractions and 40-digit
+    Newton steps, no resultant); `generate_spline_parallel_boolean_fixtures.py`
+    with spline walls against a stadium's line and arc walls, against discs
+    and a holed square, a capsule against a disc (its arc against the
+    disc's), spline against spline (turned, quarter and half turns, rotated
+    about the tilted axis, rounding offsets), cubics against cubics and a
+    quartic against a cubic, and declared degenerate tangencies (a dome
+    touching a disc, a dome touching a half-turned dome); checked two ways
+    (slicing and the divergence theorem), by inclusion and exclusion, the
+    area identity, a second slicing axis, S9a.2's `SplinePair` where the
+    map is exact (quarter and half turns, the tool's profile turned
+    exactly; rounding offsets taken exactly), margins (crossing sines,
+    near misses, vertices); a native capture before
+    `curved/spline_parallel.rs` exists (`compare_spline_parallel_boolean.py`
+    keyed on it); then the kernel in that file, its tests, and the boolean
+    target's spline variants against arcs and splines in the frame turned
+    about the axis (`SPLINE_PARALLEL`) and a rounding offset in the tilted
+    frame.
+    * **S9f.2a evidence (2026-10-03), before its code (`BOOLEAN.md`).**
+      `curved_boolean_reference.py` takes arcs, circles and splines against
+      spline walls on exactly parallel axes: the 2D crossings of the
+      profiles' curves projected along the axis (`parallel_crossings`, in
+      the exact affine map between the frames: a span against a circle at
+      the real roots of the exact degree-`2 p` polynomial, a tangency a root
+      of even multiplicity; two spans by subdivision in fractions and
+      40-digit Newton steps, on the distance's gradient where tangent, no
+      resultant) are breakpoints of the slicing and of every face sweep
+      (S9f.1's assertions against a surd or a second spline chord now
+      limited to crossing axes). `generate_spline_parallel_boolean_fixtures.py
+      --check` writes 43 cases (15 fuses, 14 cuts, 14 commons; 39 solid, 4
+      degenerate): spline walls against discs (`R125`, a quarter turn and
+      a half turn `FLIP`, a new frame stored bit for bit), a stadium's arcs
+      and lines (`TILT2` about `TILT`'s axis), a holed square, a capsule's
+      spline against a disc; spline against spline (bulge and dome, blob
+      and lens, the wave against its half-turned mirror, two domes about
+      the tilted axis, a quartic hump against a cubic lens, two capsules);
+      rounding offsets in `TILT`; and `degenerate` a disc and a half-turned
+      dome each tangent to the dome along its apex generatrix. Checks: the
+      divergence theorem, inclusion and exclusion and the area identity
+      within 1.3e-40, a second slicing axis 1.3e-40, S9a.2's `SplinePair`
+      on the 33 cases whose map is an exact turn or an offset (the tool's
+      profile turned exactly into the object's frame) 2.4e-39 in `XY` and
+      2.2e-17 in `TILT`, margins at least 0.06 outside the declared pairs
+      (crossing sines 0.47, near misses 0.37, vertices 0.13), the declared
+      pairs' crossing sines below 5.7e-21; Python 3.9 and 3.12 write the
+      same files; `test_spline_parallel_boolean_reference.py`; the
+      generator's check a CI group of its own (`spline-parallel`). The
+      capture `occt-boolean-spline-parallel-preimplementation`
+      (`compare_spline_parallel_boolean.py`, keyed on
+      `solid/boolean/curved/spline_parallel.rs`; the probe `unsupported` on
+      all 43, the 20 against arcs and the 23 against splines refused by
+      `spline_pairs`): every result valid with the reference's solids, 31
+      matches, 12 reviewed (BRepGProp's default integration up to 1.9e-7,
+      the waves 8.6e-4; adaptively within 2.3e-9 in volume but for the
+      waves; Green's theorem over OCCT's own faces and pcurves, a
+      diagnostic build, within 1.1e-8 of the reference on all 39 results);
+      four solids' counts change when unified. No correction to the
+      decisions from the evidence. S9f.2a's kernel next.
+  * **S9f.2a implemented** (`solid/boolean/curved/spline_parallel.rs`;
+    `mod.rs`'s `spline_pairs` and `parallel_axes`, `meet.rs`'s sections and
+    edge meetings, `spline_walls.rs`'s `foreign_param` and the arcs'
+    implicit forms, `model.rs`'s `rational_proxy`, the operand on each
+    `SplineSeg`; the validator's steep lines in `mass.rs`): spline walls
+    against arc, circle and spline walls on exactly parallel axes as the
+    refined decisions describe. Each Bézier arc keeps its implicit equation
+    and inversion in its own frame, made once (`Implicit`: the Sylvester
+    resultant and the first subresultant's `a`, `b` interpolated exactly on
+    an integer grid; a coordinate of degree one inverts directly); a spline
+    against a cylinder at the roots of `E` on the spline's arcs
+    (`cylinder_roots`), two splines at the roots of `f(m(S))` on the
+    object's segment's arcs, the other's parameter `-b / a` in the root's
+    field (`crossings`, swapped when the tool's segment is given first, so
+    the object's field always holds the crossing). Both refusal sites gave
+    way (`spline_pairs` now refuses crossing axes only, relabelled S9f.2b
+    and S9f; `spline_curved` names S9f.2b and S9f.3). All 43 fixtures as
+    the reference (39 within the kernel's enclosures of volume, area and
+    centre, each at most `1e-9` wide, with OCCT's unified counts on every
+    solid; the 4 degenerate refused: a disc and a half-turned dome tangent
+    to the dome along its apex generatrix); every history complete,
+    results deterministic and moved rigidly
+    (`tests/spline_parallel_booleans.rs`, 8 tests, 15 s at `opt-level` 2 and
+    16 s in release: a mirrored dome refused,
+    crossing axes refused with their labels, a quintic against a quartic a
+    limit and a quartic against a quartic consistent, a disc through the
+    wave's knot as S9a.2's one-frame Boolean; and the module's 3: the
+    implicit forms and inversion, a crossing found from both sides in one
+    field, coincident arcs refused). `compare_spline_parallel_boolean.py`
+    31 matches and 12 reviewed, unchanged; every other Boolean comparison
+    unchanged, `compare_split.py` 72/56 and `compare_brep.py --family
+    spline` 10/3. Amendments to the decisions, from the implementation:
+    (a) a crossing at a knot of either curve is kept only where the legs
+    beside the knot lie on the other curve's two sides (`crosses_at_knot`,
+    the knot's legs the arcs' end derivatives), at knots of both refused,
+    as a touch at a knot; (b) coincident spline walls of two prisms meet
+    first at their arches' ends, a vertex of one on the other's face
+    (`Degenerate`), before any resultant vanishes; the module's test
+    reaches the coincident arcs; (c) the validator's certified mass
+    integrals on a cylinder or cone took a steep line (its `du` at most
+    `2^-20` of its `dv`: the gap between a vertical edge's pcurve and a
+    section's at a stadium arc's start in `TILT2`, their angles an ulp apart
+    at `-7.4e-16`) by the expansion in its slope's powers, which left
+    `dome_stadium_tilt2_common`'s centre enclosure `10^26` wide; such a line
+    is now enclosed as `-du F` over its box (`rev_lines`, `BREP_VALIDATION.md`).
+    The `boolean` fuzz target's spline variants against the stadium and
+    the round hole or a spline in the frame turned about the axis evaluate
+    through S9f.2a (`SPLINE_PARALLEL`, on), and in the tilted frame the byte
+    at index 15, at or above 128, offsets a spline variant's tool by an
+    amount that rounds (the tilted frame's own normal and `x`: normalized
+    again they turned by an ulp, crossing axes). Replays with debug
+    assertions: the corpus (1,430 inputs) and the 24 regressions, none
+    failing, the slowest 6.3 s; 1,908 S9f.2a variants of every third
+    corpus input (the object, the tool or both a spline prism against the
+    stadium, the round hole or a spline, turned about the axis; and in the
+    tilted frame at an offset that rounds), none failing, 5,606 of their
+    operations evaluating (the rest refused as documented: the chained
+    stage's spline results, S9f; sub-resolution results and contacts),
+    median 0.31 s, the slowest 2.2 s (27 s under AddressSanitizer on this
+    host, where the corpus's slowest input takes 29 s).
+    Pending: the DRAW survey, the campaign.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

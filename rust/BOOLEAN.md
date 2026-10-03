@@ -1030,6 +1030,40 @@ at most `2^-20` of the patch (a crease's rounded identity in `u` a step
 past the line), integrated on the patch's polynomial with the slivers'
 error bounded and added (`BREP_VALIDATION.md`).
 
+### Spline walls against parallel curved walls (S9f.2a)
+
+A spline prism meets a prism with arcs, circles or splines whose stored
+normal is exactly parallel to its own (bitwise equal or opposite) in any
+other frame, turned about the axis or offset by an amount that rounds
+(`curved/spline_parallel.rs`; S9a.2 keeps one exact frame). The other
+frame's `(u', v')` are rational affine functions of this one's `(u, v)`
+(`map2`), so every wall against wall section is generatrices over the 2D
+crossings of the profiles' curves: a spline arc against a cylinder at the
+roots of `|m(S(s)) - c|^2 - r^2` (degree `2 p`); against another spline
+arc at the roots of `f(m(S(s)))`, `f` the other arc's implicit equation in
+its own frame (the Sylvester resultant of `B_x(sigma) - X` and `B_y(sigma)
+- Y`, interpolated exactly on an integer grid, once per arc), degree at
+most `p q`, the other's parameter at each root `-b / a` of their first
+subresultant (an element of the root's field), the crossing kept when it
+lies in `[0, 1]`. Every root is the spline arc's own parameter, S9f.1's
+generator: against a cylinder the spline's, between two splines always the
+object's, so a crossing found from either input's edges or faces is one
+number. Cap edges and creases over a spline meet the other's curved wall at
+the same roots, a cylinder's cap edge (a conic) the spline's wall at its
+angle there. A point of another field is found on a spline segment by the
+arc's implicit equation's exact sign and its inversion; an irrational
+point off every spline segment is classified at a rational point of a box
+about it that no element of the profile meets (lines by sides, circles by
+distance, spline arcs by their control boxes under exact subdivision).
+
+`Degenerate`: walls tangent along a generatrix (a root of multiplicity
+above one), a crossing at a knot of either curve where the legs beside it
+do not lie on the other's two sides, at knots of both. `ComputationLimit`:
+arcs whose degrees' product exceeds 16, a crossing at a node or cusp of the
+other arc's curve. `OutOfDomain`: coincident spline walls (a resultant
+identically zero on an arc, refused, S9f); crossing axes (against a
+cylinder S9f.2b's, against a spline wall refused, S9f).
+
 ## Evidence
 
 * **Case protocol.** A Boolean case (`identity_reference.
@@ -2314,6 +2348,64 @@ error bounded and added (`BREP_VALIDATION.md`).
   the capture, 6 cases, no native rows) adds R4's rounded knot in `TILT`
   and `TILT`'s walls against planes exactly parallel to its axis (`XY`'s
   `x` planes, `SIDE`'s caps), checked by the kernel's tests.
+* **S9f.2a evidence (spline walls against arc, circle and spline walls on
+  exactly parallel axes), before its kernel code.**
+  `curved_boolean_reference.py` takes the other prism's arcs, circles and
+  splines when the axes are exactly parallel: every wall is swept along the
+  common axis, so a spline's chord meets the other's arc or spline chord,
+  and a curved wall's generatrices change class, only where the slice's
+  trace or the generatrix passes a 2D crossing of the profiles' curves
+  projected along the axis (`parallel_crossings`, in the exact affine map
+  between the frames' `(u, v)`): a span against a circle at the real roots
+  of the exact degree-`2 p` polynomial `|S(tau) - c|^2 - r^2` of the span
+  mapped into the circle's frame (Yun's factors: a tangency a root of even
+  multiplicity), two spans by subdivision of their Bezier forms in
+  fractions while their control boxes meet, then Newton's method at 40
+  digits (on the distance's gradient where tangent), never a resultant;
+  each crossing's slice parameter and face parameters are breakpoints.
+  `generate_spline_parallel_boolean_fixtures.py --check` writes
+  `boolean-spline-parallel-cases.txt`, `-expected.tsv` and `-frames.tsv`
+  with 43 cases (15 fuses, 14 cuts, 14 commons; 39 solid, 4 degenerate):
+  spline walls against a disc (the bulge, `R125`), a stadium's arc and
+  line walls (the dome in `TILT`, the stadium in `TILT2`: a quarter turn
+  about the tilted axis), a holed square's round hole and lines (the blob,
+  `TURN`), a disc across the lens hole (`FLIP`, a half turn), a disc across
+  the capsule's spline; spline walls against spline walls (the bulge and a
+  turned dome, the blob and an `R125` lens, the wave and its half-turned
+  mirror crossing it four times (a common of two solids), two domes about
+  the tilted axis, a quartic hump against a cubic lens, two capsules);
+  rounding offsets in `TILT` (the bulge against a disc and a dome); and
+  `degenerate` a disc's cylinder and a half-turned dome each tangent to the
+  dome's wall along its apex generatrix. Checks: the divergence theorem
+  1.3e-40, inclusion and exclusion 1.3e-40, the area identity 9.8e-41,
+  every face's classes 3.0e-41, a second slicing direction 1.3e-40; S9a.2's
+  `SplinePair` on the 33 cases whose map is an exact turn or an offset in
+  one frame (the tool's profile turned exactly into the object's frame)
+  2.4e-39 in `XY` and 2.2e-17 in `TILT`; solid counts as declared; margins
+  outside the declared pairs (crossings at a sine of 0.47, near misses
+  0.37 apart, vertices 0.13 from the other's faces, creases 0.06 from the
+  caps), the declared pairs' crossing sines below 5.7e-21. Python 3.9 and
+  3.12 write the same files. `test_spline_parallel_boolean_reference.py`
+  checks the exact map between parallel frames, a span's crossings with a
+  circle (closed forms, a tangency's multiplicity, a near miss) and with
+  another span (crossing, touching and missing parabolas), containment in
+  closed form both ways, S9a.2's `SplinePair` on a quarter-turned pair and
+  the degenerate margins. No protocol or oracle row is new.
+  `compare_spline_parallel_boolean.py` reproduces
+  `occt-boolean-spline-parallel-preimplementation`
+  (`rust_spline_parallel_boolean_exists` false, keyed on
+  `solid/boolean/curved/spline_parallel.rs`; the probe `unsupported` on all
+  43, refused by the curved engine's `spline_pairs`): every result valid
+  with the reference's solids; 31 match and 12 are reviewed
+  (`occt-boolean-spline-parallel-divergences.json`): BRepGProp's default
+  integration on faces bounded by B-spline edges misses by up to 1.9e-7
+  (the waves 8.6e-4), adaptively within 2.3e-9 in volume but for the
+  waves, while Green's theorem over OCCT's own faces and pcurves (a
+  diagnostic build) gives the reference within 1.1e-8 on all 39 results;
+  four solids' counts change when unified. With S9f.2a's kernel: 31
+  matches and 12 reviewed, unchanged, the kernel within the reference on
+  the 39 results with OCCT's unified counts on every solid, and refusing
+  the 4 degenerate cases.
 * **S9e.2 evidence (a stack, an S9b.1 result or one solid of several given
   to another Boolean), before its kernel code.** The protocol's `then` row
   may end `solid X Y Z`: the first result's solid holding the point

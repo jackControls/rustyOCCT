@@ -227,7 +227,8 @@ enum OnProfile {
     Segment(usize, usize),
     Joint(usize, usize),
     /// An irrational point off every spline segment, whose crossings with
-    /// a spline are not decided (S9f.1: none against a polyhedral partner).
+    /// a spline are not decided and no rational proxy was found in its
+    /// enclosures (S9f.2a), taken as on the boundary.
     Undecided,
 }
 
@@ -481,7 +482,11 @@ impl Prism {
                             Segment::Spline(span) => {
                                 // S9f.1: its exact arcs, run as the profile
                                 // runs, its ends the path points exactly.
-                                let seg = SplineSeg::new(span, hole)?;
+                                let seg = SplineSeg::new(
+                                    span,
+                                    hole,
+                                    usize::from(matches!(op, Operand::B)),
+                                )?;
                                 if seg.start() != &p || seg.end() != &qq {
                                     return Err(out_of_domain(
                                         "a spline whose ends lie off its path points in a Boolean in any position (S9f)",
@@ -987,12 +992,40 @@ impl Prism {
             }
         }
         if undecided {
-            OnProfile::Undecided
-        } else if inside {
+            // S9f.2a: at a rational point near it, no boundary between.
+            return match self.rational_proxy(x) {
+                Some(p) => self.on_profile(&p.map(Qd::rat)),
+                None => OnProfile::Undecided,
+            };
+        }
+        if inside {
             OnProfile::In
         } else {
             OnProfile::Out
         }
+    }
+
+    /// A rational point in a box about an irrational profile point that no
+    /// segment of the profile meets (S9f.2a: the point off every spline
+    /// segment, its ray's crossings undecided): the point's enclosure
+    /// narrowed until every line misses the box by its corners' sides,
+    /// every circle by distance, every spline arc by its control boxes
+    /// under exact subdivision (to depth 64); `None` when none is found at
+    /// 320 bisections of its generator (a point within that of the boundary).
+    fn rational_proxy(&self, x: &[Qd; 2]) -> Option<[R; 2]> {
+        for steps in [64, 160, 320] {
+            let (ix, iy) = (x[0].enclose_at(steps), x[1].enclose_at(steps));
+            let lo = [ix.lo().clone(), iy.lo().clone()];
+            let hi = [ix.hi().clone(), iy.hi().clone()];
+            if self
+                .bounds
+                .iter()
+                .all(|b| b.segs.iter().all(|s| misses_box(s, &lo, &hi)))
+            {
+                return Some([(&lo[0] + &hi[0]) / int(2), (&lo[1] + &hi[1]) / int(2)]);
+            }
+        }
+        None
     }
 
     /// Whether a direction from an arc's centre lies strictly within its
@@ -1283,6 +1316,78 @@ impl Prism {
             }
         }
     }
+}
+
+/// Whether a profile segment certainly misses the box `lo..hi` (S9f.2a's
+/// proxies): a line by the box's corners all strictly on one side of it or
+/// its box apart, an arc's whole circle by distance, a spline's arcs by
+/// their control boxes under exact subdivision.
+fn misses_box(seg: &Seg, lo: &P2, hi: &P2) -> bool {
+    let corners = [
+        [lo[0].clone(), lo[1].clone()],
+        [hi[0].clone(), lo[1].clone()],
+        [lo[0].clone(), hi[1].clone()],
+        [hi[0].clone(), hi[1].clone()],
+    ];
+    let apart = |pts: &[&P2]| {
+        (0..2).any(|i| pts.iter().all(|p| p[i] < lo[i]) || pts.iter().all(|p| p[i] > hi[i]))
+    };
+    match seg {
+        Seg::Line { p, q } => {
+            if apart(&[p, q]) {
+                return true;
+            }
+            let d = [&q[0] - &p[0], &q[1] - &p[1]];
+            let sides: Vec<Ordering> = corners
+                .iter()
+                .map(|c| sign(&(&d[0] * (&c[1] - &p[1]) - &d[1] * (&c[0] - &p[0]))))
+                .collect();
+            sides.iter().all(|s| *s == Ordering::Greater)
+                || sides.iter().all(|s| *s == Ordering::Less)
+        }
+        Seg::Arc { c, r, .. } => {
+            let d2 = |p: &P2| {
+                let (a, b) = (&p[0] - &c[0], &p[1] - &c[1]);
+                &a * &a + &b * &b
+            };
+            let r2 = r * r;
+            if corners.iter().all(|p| d2(p) < r2) {
+                return true;
+            }
+            let near = [
+                c[0].clone().max(lo[0].clone()).min(hi[0].clone()),
+                c[1].clone().max(lo[1].clone()).min(hi[1].clone()),
+            ];
+            d2(&near) > r2
+        }
+        Seg::Spline(s) => s.arcs.iter().all(|a| bezier_misses(&a.cps, lo, hi, 0)),
+    }
+}
+
+/// Whether a Bézier arc misses a box: its control box apart, or both its
+/// halves (exact subdivision) missing it, to a depth of 64.
+fn bezier_misses(cps: &[P2], lo: &P2, hi: &P2, depth: usize) -> bool {
+    let apart =
+        (0..2).any(|i| cps.iter().all(|p| p[i] < lo[i]) || cps.iter().all(|p| p[i] > hi[i]));
+    if apart {
+        return true;
+    }
+    if depth >= 64 {
+        return false;
+    }
+    let half = R::new(1.into(), 2.into());
+    let mut cur: Vec<P2> = cps.to_vec();
+    let (mut left, mut right) = (vec![cps[0].clone()], vec![cps[cps.len() - 1].clone()]);
+    for _ in 1..cps.len() {
+        cur = cur
+            .windows(2)
+            .map(|w| [(&w[0][0] + &w[1][0]) * &half, (&w[0][1] + &w[1][1]) * &half])
+            .collect();
+        left.push(cur[0].clone());
+        right.push(cur[cur.len() - 1].clone());
+    }
+    right.reverse();
+    bezier_misses(&left, lo, hi, depth + 1) && bezier_misses(&right, lo, hi, depth + 1)
 }
 
 /// Whether the direction `d` from `c` runs along the ray to `e`.

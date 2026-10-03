@@ -2439,6 +2439,82 @@ t_out) != 0` (the arc before `J` near `J - e t_in`, the one after near `J
 + e t_out`, on opposite sides of `l`); otherwise the plane touches the
 solid along the edge.
 
+## Spline walls on parallel axes (S9f.2a)
+
+**The map between the frames.** Two prisms on stored axes `(o, x, y, n)`
+and `(o', x', y', n')` with `n x n' = 0` exactly: the second's frame
+coordinates of a point are `rows' . (P - o')`, the rows of the inverse of
+`[x' y' n']`, and `rows'_u . n' = rows'_v . n' = 0` with `n` a multiple of
+`n'`, so `u'` and `v'` of the first's `o + u x + v y + w n` are affine in
+`(u, v)` alone, with rational coefficients (`map2`). Every wall of both
+runs along the common direction; two walls meet in the generatrices over
+the 2D crossings of their profile curves.
+
+**A spline against a cylinder.** The cylinder `(u' - c_u)^2 + (v' -
+c_v)^2 = r^2` (a circle in its frame, an ellipse in the spline's unless the
+map is a similarity) holds the generatrix over the arc's point `S(s)`
+exactly when `E(s) = (u'(S(s)) - c_u)^2 + (v'(S(s)) - c_v)^2 - r^2 = 0`, a
+polynomial of degree `2 p` with rational coefficients; its roots in `[0,
+1]` are isolated exactly with their multiplicities (a root of multiplicity
+above one is a tangency along a generatrix) and are the arc's own
+parameter, so every such vertex lies in `Q(alpha)` with `alpha` S9f.1's
+generator of the arc's polynomial. A cap edge or a crease over the
+segment, `(S(s), h(S(s)))`, meets the cylinder at the same roots; the
+cylinder's cap edge (the conic `c + a cos t + b sin t` at its height) meets
+the spline's wall there too, at `(cos t, sin t) = ((u' - c_u) / r, (v' -
+c_v) / r)`.
+
+**Two splines.** For a Bézier arc `B(sigma) = (B_x, B_y)` of degree `q`
+in its own frame, its implicit equation is the Sylvester resultant `f(X, Y)
+= Res_sigma(B_x(sigma) - X, B_y(sigma) - Y)`, of degree at most `deg B_y`
+in `X` and `deg B_x` in `Y`, found exactly by evaluating the determinant on
+the integer grid and interpolating (Newton's divided differences in each
+variable); `f(B(sigma)) = 0` identically, and a point of the curve has `f
+= 0`. Its first subresultant `S_1 = a sigma + b`, the determinant of the
+Sylvester matrix of `deg B_y - 1` shifts of `B_x - X` and `deg B_x - 1`
+shifts of `B_y - Y` with its last two columns replaced in turn by the
+columns of `sigma^1` and `sigma^0`, is a combination of the two
+polynomials of degree one in `sigma`, so at a point of the curve where `a
+!= 0` its root is the common root: `sigma = -b(X, Y) / a(X, Y)` (`a`, `b`
+interpolated on the grid too; a coordinate of degree one gives `sigma`
+directly). On the first arc `S(s)` (degree `p`) the polynomial `R(s) =
+f(m(S(s)))` (degree at most `p q`) vanishes exactly where the first arc's
+point lies on the second arc's curve; at each root `alpha` in `[0, 1]`
+`sigma = -b / a` at `m(S(alpha))` is an element of `Q(alpha)` (one
+inversion in the field), and the crossing is the second arc's when `0 <=
+sigma <= 1` and `B(sigma) = m(S(alpha))` exactly (`a = 0` there, a node or
+cusp of the second arc's curve, is a limit). The field is always the
+object's arc parameter's, whichever input's edge or face the crossing is
+found from, so one crossing is one number. A crossing at an interior
+knot of either curve crosses when the legs `t_in` (the arriving arc's end
+derivative) and `t_out` (the leaving arc's start derivative) lie on the
+other curve's two sides, `sign(t x (-t_in)) = -sign(t x t_out) != 0` for
+its tangent `t`; otherwise the curves touch there.
+
+**A point of another field on a segment.** On each arc whose control box
+holds the point's enclosure, `f` at the point (exact, in its field) is
+zero exactly when the point is on the arc's curve, and then `sigma = -b /
+a` places it, on the arc when `0 <= sigma <= 1` and `B(sigma)` is the point
+exactly.
+
+**Membership off the segments.** An irrational point `x` off every
+spline segment is classified at a rational point of a box holding `x` that
+no boundary element meets: the point's enclosure with its generator's
+isolator narrowed by 64, 160 and then 320 bisections, a line misses it when the four corners lie
+strictly on one side, a circle when every corner lies strictly inside or
+the box's nearest point strictly outside, a Bézier arc when its control
+points' box is apart from it or both halves of its exact de Casteljau
+subdivision miss it (to depth 64). The box is connected and free of the
+boundary, so every point of it is classified as `x`.
+
+**A steep line in the certified mass integrals.** On a cylinder or cone
+the integral `-int F(u, v) du` along a line pcurve is expanded in powers
+of its slope `m = dv / du` from its start; for a line with `|du| <= 2^-20
+|dv|` (a gap between two fins' rounded ends, their angles an ulp apart)
+the expansion's interval terms lose the line's smallness (`m^2` times
+cancelling enclosures), so the line is enclosed as `-du F(box)` over its
+parameter box instead, certified by the mean value theorem.
+
 ## Tessellation bounds (T-a)
 
 A mesh triangle has nodes `X_i` and parameter points `p_i` on its face's

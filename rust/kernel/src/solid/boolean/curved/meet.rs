@@ -33,9 +33,10 @@ pub(super) fn tangency() -> Error {
     Error::Degenerate("a tangency between the inputs (S9c)")
 }
 
-/// A spline wall against a curved face (S9f.2 and S9f.3's).
+/// A spline wall against a curved face other than a cylinder or a spline
+/// wall on a parallel axis (S9f.2b and S9f.3's).
 fn spline_curved() -> Error {
-    Error::OutOfDomain("a spline wall against a curved face in any position (S9f.2)")
+    Error::OutOfDomain("a spline wall against a curved face in any position (S9f.2b, S9f.3)")
 }
 
 fn quartic() -> Error {
@@ -280,6 +281,15 @@ pub(super) fn section(
         // generatrices; a spline wall against a curved face is S9f.2's.
         (Surf::Plane { p, m }, Surf::Spline(s)) => super::spline_walls::plane_wall(py, s, p, m),
         (Surf::Spline(s), Surf::Plane { p, m }) => super::spline_walls::plane_wall(px, s, p, m),
+        // S9f.2a: against a cylinder or a spline wall on an exactly parallel
+        // axis, generatrices over the profiles' crossings.
+        (Surf::Spline(s), Surf::Cyl { c, r, .. }) => {
+            super::spline_parallel::spline_cyl(px, s, py, c, r)
+        }
+        (Surf::Cyl { c, r, .. }, Surf::Spline(s)) => {
+            super::spline_parallel::spline_cyl(py, s, px, c, r)
+        }
+        (Surf::Spline(s), Surf::Spline(t)) => super::spline_parallel::spline_spline(px, s, py, t),
         (Surf::Spline(_), _) | (_, Surf::Spline(_)) => Err(spline_curved()),
         // S9d.4a: a plane's section of a torus, by the pair's relation.
         (Surf::Plane { .. }, Surf::Torus) | (Surf::Torus, Surf::Plane { .. }) => {
@@ -505,6 +515,16 @@ pub(super) fn edge_surface(
         // a spline against a plane; others are S9f.2's.
         (Crv::Line { p, d }, Surf::Spline(s)) => super::spline_walls::line_wall(p, d, &py.f, s),
         (Crv::Spline(c), Surf::Plane { p: p0, m }) => super::spline_walls::wallcrv_plane(c, p0, m),
+        // S9f.2a: a curve over a spline against a cylinder or a spline wall,
+        // a cylinder's cap edge against a spline wall, on parallel axes.
+        (Crv::Spline(c), Surf::Cyl { c: cc, r, .. }) => {
+            super::spline_parallel::wallcrv_cyl(c, &py.f, cc, r)
+        }
+        (Crv::Spline(c), Surf::Spline(s)) => super::spline_parallel::wallcrv_wall(c, &py.f, s),
+        (Crv::Conic { c, a, b }, Surf::Spline(s)) if own.is_some() => {
+            let (om, oc, or) = own.expect("an arc's own cylinder");
+            super::spline_parallel::conic_wall(om, oc, or, c, a, b, &py.f, s)
+        }
         (Crv::Spline(_), _) | (_, Surf::Spline(_)) => Err(spline_curved()),
         // S9d.4a: a line against a torus; a circle is S9d.4b's.
         (Crv::Line { p, d }, Surf::Torus) => {
