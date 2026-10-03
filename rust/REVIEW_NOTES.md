@@ -5807,6 +5807,39 @@ Decisions for S9, recorded before its code (2026-09-28):
     `boolean` fuzz target's crossing variants reaching loops and towers
     through `SPLINE_CROSSING` (a switch of their own if they are slow under
     AddressSanitizer).
+    * **S9f.2b.2 evidence (2026-10-03), before its code.**
+      `generate_spline_crossing_boolean_fixtures.py --check` writes 51
+      cases (16 fuses, 17 cuts, 18 commons; 45 solid, 6 degenerate; 28 of
+      S9f.2b.1, 23 of S9f.2b.2), 17 of them new: `dome_cap_tower` (a rod
+      along `x` ending at `x = 5/2` inside the dome, its cap circle on the
+      arch's generatrix at `tau = 3/8`, no turning point), `lens_cap_tower`
+      (a rod of radius 2.5 ending inside the lens, its cap circle on both
+      cubics' generatrices: degree six), `bulge_cap_loop` (the bulge's loop
+      cut by a tower cap circle at `x = 10.95`, 0.061 beyond the turning
+      points), `bulge_side_cap_loop` (a loop cut by the bulge's top cap,
+      its turning points 0.5 below it), `lens_tilt_cap_loop` (the tilted
+      rod's loop on the lens cut by its cap circle, 0.30 beyond the turning
+      points), and the declared degenerate `cap_turn` (a rod whose loop on
+      the dome turns back on its cap's rim, `y = 15/8` at `x = 5/2`). A
+      pair is declared S9f.2b.2's exactly when a turning point lies inside
+      both faces or a tower point inside the wall's heights (`towers`).
+      Checks as S9f.2b's: the divergence theorem within 2.6e-41, inclusion
+      and exclusion 2.0e-41, the area identity 9.4e-41, faces' classes
+      4.5e-41, the nine perpendicular pairs' commons as the product of
+      chords 4.4e-42; margins outside the declared pairs at least 0.006
+      (`bulge_cap_loop`'s cap circle crossing the bulge near its apex at a
+      shallow angle), the declared pairs' zero; Python 3.9 and 3.12 the same
+      files; the reference test checks the dome's tower points in closed
+      form. The recapture (`compare_spline_crossing_boolean.py`, keyed on
+      S9f.2b.2's two refusals in `spline_crossing.rs`): the 34 earlier rows
+      to the bit, the 17 new done and valid with the reference's counts, 4
+      matching, 13 reviewed (BRepGProp's default up to 2.0e-6 in volume;
+      adaptive BRepGProp and Green's theorem over OCCT's faces, the better
+      within 2.1e-9 in volume, 3.7e-9 in area, 1.8e-10 in the centre), five
+      more solids' counts changing when unified; 17 matches and 34 reviewed
+      in all, S9f.2b.2's 23 `unsupported` until its code, failures after.
+      No correction to the decisions from the evidence. S9f.2b.2's kernel
+      next.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions
