@@ -358,8 +358,12 @@ fn over_box(patch: &ExactBezierSurface3, b: &[[R; 2]; 2]) -> Option<Vec<[R; 3]>>
 /// bound of the surface's departure from that patch's polynomial on them:
 /// on each neighbouring patch's part of the piece's box, both polynomials
 /// re-expressed exactly over it, the largest control point of their
-/// difference (the difference lies in its hull). A piece reaching beyond
-/// the surface's domain, or across a rational patch, is `None`.
+/// difference (the difference lies in its hull). A piece whose control
+/// polygon leaves the surface's domain while its curve certainly keeps to
+/// it (its homogeneous coordinate against the bound exactly nonnegative: a
+/// crease nearly touching a cap, S9f.1, as Green's exact path takes it,
+/// S8b.3's (d)) is boxed by that bound; a piece reaching beyond the
+/// surface's domain, or across a rational patch, is `None`.
 fn patch_near<'a>(
     patches: &'a [ExactBezierSurface3],
     uv: &[Vec<R>; 4],
@@ -375,13 +379,26 @@ fn patch_near<'a>(
         let hi = points.iter().map(f).max().expect("a point").clone();
         [lo, hi]
     };
-    let bbox = [lo_hi(&|p| &p.0), lo_hi(&|p| &p.1)];
-    // Inside the surface's domain.
-    for (axis, [below, above]) in bbox.iter().enumerate() {
-        let lo = patches.iter().map(|q| &q.domain()[axis][0]).min()?;
-        let hi = patches.iter().map(|q| &q.domain()[axis][1]).max()?;
-        if below < lo || above > hi {
-            return None;
+    let mut bbox = [lo_hi(&|p| &p.0), lo_hi(&|p| &p.1)];
+    // Inside the surface's domain: the hull, or the curve where its hull
+    // leaves the domain.
+    for (axis, [below, above]) in bbox.iter_mut().enumerate() {
+        let lo = patches.iter().map(|q| &q.domain()[axis][0]).min()?.clone();
+        let hi = patches.iter().map(|q| &q.domain()[axis][1]).max()?.clone();
+        let (x, w) = (&uv[axis], &uv[3]);
+        if *below < lo {
+            let off: Vec<R> = x.iter().zip(w).map(|(x, w)| x - &lo * w).collect();
+            if !super::bernstein::nonnegative(&off) {
+                return None;
+            }
+            *below = lo;
+        }
+        if *above > hi {
+            let off: Vec<R> = x.iter().zip(w).map(|(x, w)| &hi * w - x).collect();
+            if !super::bernstein::nonnegative(&off) {
+                return None;
+            }
+            *above = hi;
         }
     }
     let two = ratio(2, 1);

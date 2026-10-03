@@ -1219,3 +1219,28 @@ inputs replayed locally left 3.9 million (941 MB of depot, 1,350 MB RSS).
 `tools/run_fuzz.py`): 14,849 stacks and 255 MB for this input, 88,036 stacks
 (10 MB) and 434 MB RSS for the 1,400. The 2 GiB gate, the quarantine and
 the input limits are unchanged.
+
+## Boolean: spline walls in any position (S9f.1)
+
+Three inputs replayed before S9f.1's kernel was committed, none from a
+campaign. `boolean/replay-ec02b1bf118dc78762cd2737908f5eeb5c9e1f83.bin`
+and `boolean/replay-d8d4cf6a46ae12c670d47796801753bbb0316362.bin` are
+spline variants of the corpus (the decode's frame byte set to a turned,
+leaning, tilted or side tool, the spline byte to a spline object or tool,
+the byte at index 14 to R4's knot for every other object; 2,852 replayed
+with debug assertions): a bulge prism apart from a leaning box at the
+height of its joints, whose fuse, cut and common came out open
+(`InvalidTopology`), the `+u` ray's crossings with the spline counted by
+the opposite predicate to the chords' at a joint at the point's height; and
+a tilted box's hole wall in the plane of a lens hole's corner, which the
+kernel took as a plane crossing the prism along the joint's edge (a
+non-manifold cut) where it touches it there (`Degenerate` now, the
+arriving and leaving segments on one side of the plane).
+`boolean/replay-197f00ac2a7f93dcd90d3a794ededf7d90f12497.bin` is a corpus
+input whose index 14 byte now decodes R4's knot: in one frame S9a.2 cut the
+spline across its knot of multiplicity two and the rounded poles next to it
+left the result's profile off C1 (`InvalidCurve`); pieces are now cut from
+the curve with the knot removed once (`spline::piece`), as 58 other corpus
+inputs found. `tests/spline_any_booleans.rs` checks all three
+configurations. They replay in 0.2 s, under 0.1 s and 0.3 s with debug
+assertions (the third in 4 s under AddressSanitizer).

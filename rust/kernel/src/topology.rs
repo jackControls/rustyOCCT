@@ -1453,9 +1453,20 @@ impl Topology {
         let move_span =
             |span: &SplineSpan<crate::BSplineCurve3>| -> Result<SplineSpan<crate::BSplineCurve3>> {
                 let c = span.curve();
-                let poles = c.poles().iter().map(|p| motion.point(*p)).collect();
+                let image = |c: &crate::BSplineCurve3| {
+                    c.with_poles(c.poles().iter().map(|p| motion.point(*p)).collect())
+                };
                 let [first, last] = span.range();
-                let moved = SplineSpan::new(c.with_poles(poles)?, first, last)?;
+                let mut moved = image(c)?;
+                // R4 under rounding: a knot of multiplicity `p`, C1 while
+                // its poles stay aligned, removed once where the motion's
+                // rounding breaks C1 (`c1_reduced`, S9f.1).
+                if !validate::continuity::curve_c1(&moved, [first, last], span.is_closed_period()) {
+                    if let Some(reduced) = c1_reduced(c)? {
+                        moved = image(&reduced)?;
+                    }
+                }
+                let moved = SplineSpan::new(moved, first, last)?;
                 Ok(if span.is_reversed() {
                     moved.reversed()
                 } else {
@@ -1577,13 +1588,22 @@ impl Topology {
                     minor: *minor,
                 },
                 Surface::BSpline(s) => {
-                    let poles = s.poles().iter().map(|p| motion.point(*p)).collect();
-                    Surface::BSpline(crate::BSplineSurface3::new(
-                        s.u_knots().clone(),
-                        s.v_knots().clone(),
-                        poles,
-                        Some(s.weights().to_vec()),
-                    )?)
+                    let image = |s: &crate::BSplineSurface3| {
+                        crate::BSplineSurface3::new(
+                            s.u_knots().clone(),
+                            s.v_knots().clone(),
+                            s.poles().iter().map(|p| motion.point(*p)).collect(),
+                            Some(s.weights().to_vec()),
+                        )
+                    };
+                    let mut moved = image(s)?;
+                    // R4 under rounding, as for curves (S9f.1).
+                    if !validate::continuity::surface_c1(&moved) {
+                        if let Some(reduced) = c1_reduced_surface(s)? {
+                            moved = image(&reduced)?;
+                        }
+                    }
+                    Surface::BSpline(moved)
                 }
             };
         }
@@ -4128,26 +4148,207 @@ impl Topology {
     }
 }
 
+/// R4 under rounding (S9f.1): a nonrational open B-spline with one copy of
+/// each interior knot of multiplicity equal to its degree removed, exactly,
+/// where the curve is exactly C1 there (`None` when it has no such knot or
+/// none is removable). The removal of one copy of a knot of multiplicity `p`
+/// drops the knot's pole and keeps every other pole, so the reduced curve's
+/// poles are the stored binary64 ones (each rounded exactly), its
+/// parameterisation the same, and its knot of multiplicity `p - 1` C1 by
+/// construction whatever its poles: lifted, placed or moved by rounding
+/// maps it stays C1, where the stored curve's knot of multiplicity `p` is
+/// C1 only while its poles stay exactly aligned.
+pub(crate) fn c1_reduced(curve: &crate::BSplineCurve3) -> Result<Option<crate::BSplineCurve3>> {
+    let p = curve.degree();
+    if curve.is_rational() || curve.is_periodic() {
+        return Ok(None);
+    }
+    let (first, last) = curve.domain();
+    let mut exact = curve.to_exact();
+    let mut changed = false;
+    for (k, m) in curve.knots().iter().zip(curve.multiplicities()) {
+        if *m != p || *k <= first || *k >= last {
+            continue;
+        }
+        let u = num_rational::BigRational::from_float(*k)
+            .ok_or(Error::InvalidCurve("a finite knot"))?;
+        if let Some(reduced) = exact.remove_knot(&u, p - 1)? {
+            exact = reduced;
+            changed = true;
+        }
+    }
+    if !changed {
+        return Ok(None);
+    }
+    let f = crate::decide::splines::to_f64;
+    let poles = exact
+        .homogeneous_poles()
+        .iter()
+        .map(|h| {
+            Point3::new(
+                f(&(&h[0] / &h[3])),
+                f(&(&h[1] / &h[3])),
+                f(&(&h[2] / &h[3])),
+            )
+        })
+        .collect();
+    let knots = exact.knots().iter().map(f).collect();
+    Ok(Some(crate::BSplineCurve3::new(
+        p,
+        poles,
+        None,
+        knots,
+        exact.multiplicities().to_vec(),
+    )?))
+}
+
+/// `c1_reduced` of a planar spline.
+pub(crate) fn c1_reduced2(curve: &crate::BSplineCurve2) -> Result<Option<crate::BSplineCurve2>> {
+    let Some(r) = c1_reduced(curve.as_curve3())? else {
+        return Ok(None);
+    };
+    Ok(Some(crate::BSplineCurve2::new(
+        r.degree(),
+        r.poles().iter().map(|p| Point2::new(p.x, p.y)).collect(),
+        None,
+        r.knots().to_vec(),
+        r.multiplicities().to_vec(),
+    )?))
+}
+
+/// A profile span with `c1_reduced2`'s knots removed where they are (its
+/// range and direction kept): the curve S9f.1's results are cut from.
+pub(crate) fn c1_reduced_span(
+    span: &SplineSpan<crate::BSplineCurve2>,
+) -> Result<SplineSpan<crate::BSplineCurve2>> {
+    let Some(reduced) = c1_reduced2(span.curve())? else {
+        return Ok(span.clone());
+    };
+    let [first, last] = span.range();
+    let within = SplineSpan::new(reduced, first, last)?;
+    Ok(if span.is_reversed() {
+        within.reversed()
+    } else {
+        within
+    })
+}
+
+/// A nonrational open B-spline surface with one copy of each interior knot
+/// of multiplicity equal to its degree removed in either direction, exactly,
+/// where every row across it is C1 there (`c1_reduced`'s rule): its poles
+/// the stored ones less the knots' rows.
+pub(crate) fn c1_reduced_surface(
+    surface: &crate::BSplineSurface3,
+) -> Result<Option<crate::BSplineSurface3>> {
+    if surface.is_rational() || surface.u_knots().is_periodic() || surface.v_knots().is_periodic() {
+        return Ok(None);
+    }
+    let mut exact = surface.to_exact();
+    let mut changed = false;
+    for (axis, knots) in [surface.u_knots(), surface.v_knots()]
+        .into_iter()
+        .enumerate()
+    {
+        let p = knots.degree();
+        let (first, last) = knots.domain();
+        for (k, m) in knots.knots().iter().zip(knots.multiplicities()) {
+            if *m != p || *k <= first || *k >= last {
+                continue;
+            }
+            let u = num_rational::BigRational::from_float(*k)
+                .ok_or(Error::InvalidSurface("a finite knot"))?;
+            let reduced = if axis == 0 {
+                exact.remove_u_knot(&u, p - 1)?
+            } else {
+                exact.remove_v_knot(&u, p - 1)?
+            };
+            if let Some(reduced) = reduced {
+                exact = reduced;
+                changed = true;
+            }
+        }
+    }
+    if !changed {
+        return Ok(None);
+    }
+    let f = crate::decide::splines::to_f64;
+    let axis = |k: &crate::ExactKnotVector| -> Result<crate::KnotVector> {
+        crate::KnotVector::new(
+            k.degree(),
+            k.knots().iter().map(f).collect(),
+            k.multiplicities().to_vec(),
+        )
+    };
+    let poles = exact
+        .homogeneous_poles()
+        .iter()
+        .map(|h| {
+            Point3::new(
+                f(&(&h[0] / &h[3])),
+                f(&(&h[1] / &h[3])),
+                f(&(&h[2] / &h[3])),
+            )
+        })
+        .collect();
+    Ok(Some(crate::BSplineSurface3::new(
+        axis(exact.u_knots())?,
+        axis(exact.v_knots())?,
+        poles,
+        None,
+    )?))
+}
+
+/// A profile spline's poles placed by `place` (R4 under rounding): first
+/// each interior knot of multiplicity `p` where the profile is exactly C1
+/// removed once, exactly (`c1_reduced`: the profile's own poles less the
+/// knot's), so the placed curve is C1 there by construction whatever the
+/// placement rounds; its other knots unchanged. A curve still not C1 placed
+/// (a piece whose rounded poles left C1 at such a knot, no longer removable
+/// exactly) is `PrecisionLoss`.
+fn lift_c1(
+    curve: &crate::BSplineCurve2,
+    place: &dyn Fn(Point2) -> Point3,
+) -> Result<crate::BSplineCurve3> {
+    let reduced = c1_reduced(curve.as_curve3())?;
+    let c = reduced.as_ref().unwrap_or(curve.as_curve3());
+    let lifted = crate::BSplineCurve3::new(
+        c.degree(),
+        c.poles()
+            .iter()
+            .map(|p| place(Point2::new(p.x, p.y)))
+            .collect(),
+        None,
+        c.knots().to_vec(),
+        c.multiplicities().to_vec(),
+    )?;
+    let (first, last) = lifted.domain();
+    if validate::continuity::curve_c1(&lifted, [first, last], false) {
+        Ok(lifted)
+    } else {
+        Err(Error::PrecisionLoss)
+    }
+}
+
 /// A spline profile segment lifted to `height` on `frame` (S8b): its poles
-/// placed by the frame, its knots unchanged, run as the segment runs.
+/// placed by the frame, run as the segment runs; each interior knot of
+/// multiplicity `p` where the profile is exactly C1 removed once first (R4:
+/// its lifted poles would round off C1 in a turned frame, `lift_c1`).
 pub(crate) fn lifted_spline(
     span: &SplineSpan<crate::BSplineCurve2>,
     frame: Frame3,
     height: f64,
 ) -> Result<Curve3> {
-    let c = span.curve().as_curve3();
-    let poles = c
-        .poles()
-        .iter()
-        .map(|p| frame.point(Point2::new(p.x, p.y), height))
-        .collect();
-    let lifted = crate::BSplineCurve3::new(
-        c.degree(),
-        poles,
-        None,
-        c.knots().to_vec(),
-        c.multiplicities().to_vec(),
-    )?;
+    placed_spline(span, &|p| frame.point(p, height))
+}
+
+/// A spline profile segment's image by `place` (a lift to a height, or a
+/// crease on a plane, S8b.3), C1 kept as `lifted_spline` keeps it, run as
+/// the segment runs.
+pub(crate) fn placed_spline(
+    span: &SplineSpan<crate::BSplineCurve2>,
+    place: &dyn Fn(Point2) -> Point3,
+) -> Result<Curve3> {
+    let lifted = lift_c1(span.curve(), place)?;
     let whole = SplineSpan::whole(lifted);
     Ok(Curve3::BSpline(if span.is_reversed() {
         whole.reversed()
@@ -4158,22 +4359,32 @@ pub(crate) fn lifted_spline(
 
 /// A spline segment's wall (S8b): the degree-(p, 1) surface over its knots
 /// and `[0, high - low]`, its poles the profile's lifted to `low` and `high`;
-/// with the parameters `u` at the segment's start and end.
+/// with the parameters `u` at the segment's start and end. Each interior
+/// knot of multiplicity `p` where the profile is exactly C1 is removed once
+/// first, as `lifted_spline` removes it (R4: its lifted rows would round
+/// off C1 in a turned frame); a wall still not C1 is `PrecisionLoss`.
 pub(crate) fn spline_wall(
     span: &SplineSpan<crate::BSplineCurve2>,
     frame: Frame3,
     low: f64,
     high: f64,
 ) -> Result<(Surface, f64, f64)> {
+    let build = |c: &crate::BSplineCurve3| -> Result<crate::BSplineSurface3> {
+        let mut poles = Vec::with_capacity(2 * c.poles().len());
+        for p in c.poles() {
+            poles.push(frame.point(Point2::new(p.x, p.y), low));
+            poles.push(frame.point(Point2::new(p.x, p.y), high));
+        }
+        let u = c.knot_vector().clone();
+        let v = crate::KnotVector::new(1, vec![0.0, high - low], vec![2, 2])?;
+        crate::BSplineSurface3::new(u, v, poles, None)
+    };
     let c = span.curve().as_curve3();
-    let mut poles = Vec::with_capacity(2 * c.poles().len());
-    for p in c.poles() {
-        poles.push(frame.point(Point2::new(p.x, p.y), low));
-        poles.push(frame.point(Point2::new(p.x, p.y), high));
+    let reduced = c1_reduced(c)?;
+    let surface = build(reduced.as_ref().unwrap_or(c))?;
+    if !validate::continuity::surface_c1(&surface) {
+        return Err(Error::PrecisionLoss);
     }
-    let u = c.knot_vector().clone();
-    let v = crate::KnotVector::new(1, vec![0.0, high - low], vec![2, 2])?;
-    let surface = crate::BSplineSurface3::new(u, v, poles, None)?;
     let (first, last) = c.domain();
     let (a, b) = if span.is_reversed() {
         (last, first)

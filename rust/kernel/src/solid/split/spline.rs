@@ -478,48 +478,34 @@ pub(crate) fn twice_area_beyond_chord(span: &Span) -> f64 {
 }
 
 /// The part of a spline's curve between parameters `u0` and `u1`, traversed
-/// from `u0` (the same restriction a section of the curve makes).
+/// from `u0` (the same restriction a section of the curve makes), cut from
+/// the curve with each interior knot of multiplicity `p` where it is C1
+/// removed once (R4 under rounding, S9f.1: a piece's poles rounded next to
+/// such a knot would leave it off C1; with the knot's multiplicity `p - 1`
+/// the piece is C1 there by construction).
 pub(crate) fn piece(span: &Span, u0: f64, u1: f64) -> Result<Span> {
-    let whole = SplineSpan::whole(span.curve().clone());
+    let curve = crate::topology::c1_reduced2(span.curve())?.unwrap_or_else(|| span.curve().clone());
+    let whole = SplineSpan::whole(curve);
     let part = restrict(&whole, u0.min(u1), u0.max(u1))?;
     Ok(if u0 > u1 { part.reversed() } else { part })
 }
 
 /// A piece's image on a plane over the profile: each pole `p` at the height
-/// `height(p)`, exact for a height affine in `p` up to rounding.
-pub(super) fn plane_image(
+/// `height(p)`, exact for a height affine in `p` up to rounding (a knot of
+/// multiplicity `p` whose image rounds off C1 removed once first, R4:
+/// `topology::placed_spline`).
+pub(crate) fn plane_image(
     piece: &Span,
     frame: crate::Frame3,
     height: &dyn Fn(Point2) -> f64,
 ) -> Result<crate::topology::Curve3> {
-    let c = piece.curve().as_curve3();
-    let poles = c
-        .poles()
-        .iter()
-        .map(|p| {
-            let p = Point2::new(p.x, p.y);
-            frame.point(p, height(p))
-        })
-        .collect();
-    let curve = crate::BSplineCurve3::new(
-        c.degree(),
-        poles,
-        None,
-        c.knots().to_vec(),
-        c.multiplicities().to_vec(),
-    )?;
-    let whole = SplineSpan::whole(curve);
-    Ok(crate::topology::Curve3::BSpline(if piece.is_reversed() {
-        whole.reversed()
-    } else {
-        whole
-    }))
+    crate::topology::placed_spline(piece, &|p| frame.point(p, height(p)))
 }
 
 /// A piece's pcurve on its wall (`u` the curve's parameter, `v` the height
 /// above the wall's low end): `u` itself, as the spline with its Greville
 /// abscissae for poles, and `v(p)` at each pole.
-pub(super) fn wall_pcurve(
+pub(crate) fn wall_pcurve(
     piece: &Span,
     v: &dyn Fn(Point2) -> f64,
 ) -> Result<crate::topology::Curve2> {

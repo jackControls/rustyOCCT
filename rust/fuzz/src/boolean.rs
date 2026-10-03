@@ -34,11 +34,22 @@
 //! cylinder (`GIVEN_ROUND`: a stack or an S9b.1 result given with arcs);
 //! S9e.3a: first results of spheres, cones and tori are given too, and the
 //! chained byte's next bit may make the partner a sphere (`GIVEN_BALL`: a
-//! given result against a sphere).
+//! given result against a sphere). S9f.1: a spline prism against a line
+//! prism in a turned, leaning, tilted or side frame is decided by the
+//! curved engine's spline walls (`SPLINE_WALLS`; before it, refused), and
+//! the byte after the chained one's place, at or above 128, makes the
+//! object's spline profile R4's knot (`knot_profile`: a quadratic whose
+//! interior knot of multiplicity two is C1 exactly, removed before
+//! lifting); spline walls against a prism with arcs, a curved solid or a
+//! given result stay refused (S9f's).
 use crate::analytic_intersections::Bytes;
 use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
-use rusty_occt::{Error, Frame3, Point3, Solid, Tolerance, Vec3};
+use rusty_occt::topology::SplineSpan;
+use rusty_occt::{
+    BSplineCurve2, Boundary, Error, Frame3, Point2, Point3, Profile, Segment, Solid, Tolerance,
+    Vec3,
+};
 
 /// Whether two whole tori are decoded (S9d.4b.2b). Off: since the certified
 /// integrals along their meetings were sped up (REVIEW_NOTES.md's track of
@@ -87,6 +98,51 @@ const GIVEN_ROUND: bool = true;
 /// the turned box's centre instead (S9e.3a: a given result against a
 /// sphere), by the chained byte's next bit.
 const GIVEN_BALL: bool = true;
+
+/// Whether a spline prism meets a line prism in frames with different
+/// axes (S9f.1's spline walls in the curved engine: creases, generatrices
+/// and vertices in the arcs' fields `Q(alpha)`). On: 2,852 spline variants
+/// of the corpus replayed with debug assertions in 0.29 s at the median and
+/// 2.95 s at the slowest (a lens hole as a tilted tool), that one 23 s
+/// under AddressSanitizer where the corpus's slowest input takes 29 s.
+const SPLINE_WALLS: bool = true;
+
+/// R4's knot on the target's sizes: a rectangle `2s` by `t` under a
+/// quadratic from `(2s, t)` to `(0, 2t)` whose interior knot of
+/// multiplicity two (the degree) at `(s, 2t)` is C1 exactly (its pole the
+/// midpoint of `(7s/4, 3t/2)` and `(s/4, 5t/2)`, equal spans), its lifted
+/// poles off C1 by rounding in turned frames unless removed first.
+fn knot_profile(s: f64, t: f64) -> Option<Profile> {
+    let tol = Tolerance::default();
+    let poles = [
+        (2.0 * s, t),
+        (1.75 * s, 1.5 * t),
+        (s, 2.0 * t),
+        (0.25 * s, 2.5 * t),
+        (0.0, 2.0 * t),
+    ]
+    .iter()
+    .map(|(x, y)| Point2::new(*x, *y))
+    .collect();
+    let curve = BSplineCurve2::new(2, poles, None, vec![0.0, 1.0, 2.0], vec![3, 2, 3]).ok()?;
+    let outer = Boundary::path(
+        vec![
+            Point2::new(0.0, 0.0),
+            Point2::new(2.0 * s, 0.0),
+            Point2::new(2.0 * s, t),
+            Point2::new(0.0, 2.0 * t),
+        ],
+        vec![
+            Segment::Line,
+            Segment::Line,
+            Segment::Spline(SplineSpan::whole(curve)),
+            Segment::Line,
+        ],
+        tol,
+    )
+    .ok()?;
+    Profile::new(outer, vec![], tol).ok()
+}
 
 pub fn check_boolean(data: &[u8]) {
     let mut b = Bytes(data, 0);
@@ -177,10 +233,22 @@ pub fn check_boolean(data: &[u8]) {
     let spline_byte = b.next();
     let splines = spline_byte % 4;
     if splines & 1 == 1 {
-        let Some(p) = spline_profile(ka, s1, t1) else {
+        // S9f.1: R4's knot by the byte after the chained one's place (read
+        // there, so earlier inputs decode as before).
+        let knot = data.get(14).is_some_and(|k| *k >= 128);
+        let Some(p) = (if knot {
+            knot_profile(s1, t1)
+        } else {
+            spline_profile(ka, s1, t1)
+        }) else {
             return;
         };
         pa = p;
+    }
+    // S9f.1: a spline prism against a line prism in frames with different
+    // axes (off: refused as before its kernel).
+    if !SPLINE_WALLS && splines != 0 && !tilted && (pick % 4 != 0 || pick >= 128) {
+        return;
     }
     if splines & 2 == 2 {
         let Some(p) = spline_profile(kb, s2, t2) else {
@@ -345,6 +413,7 @@ pub fn check_boolean(data: &[u8]) {
                     || m.contains("S9c")
                     || m.contains("S9d")
                     || m.contains("S9e")
+                    || m.contains("S9f")
                     || m.contains("different forms")
                     || m.contains("along the plane") =>
             {

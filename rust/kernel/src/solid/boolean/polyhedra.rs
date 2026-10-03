@@ -884,6 +884,13 @@ fn zipped(polys: &[Vec<P2>]) -> Vec<[P2; 3]> {
 /// face's straight edges), so each triangle is planar exactly; a face's
 /// fragments join back by the face. Its side by exact ray parity.
 fn stored_model(solid: &Solid, op: Operand) -> Result<Model> {
+    // S9f.1: a spline prism in any position is the curved engine's against
+    // a prism of lines; against a plane's piece it is S9f's still.
+    if super::curved::applies_splines(solid) {
+        return Err(Error::OutOfDomain(
+            "a spline prism against a solid other than a prism in any position (S9f)",
+        ));
+    }
     let other = || {
         Error::OutOfDomain(
             "a Boolean of a solid with curved faces or edges in any position (S9e.4)",

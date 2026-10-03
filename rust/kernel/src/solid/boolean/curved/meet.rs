@@ -33,6 +33,11 @@ pub(super) fn tangency() -> Error {
     Error::Degenerate("a tangency between the inputs (S9c)")
 }
 
+/// A spline wall against a curved face (S9f.2 and S9f.3's).
+fn spline_curved() -> Error {
+    Error::OutOfDomain("a spline wall against a curved face in any position (S9f.2)")
+}
+
 fn quartic() -> Error {
     Error::OutOfDomain("two cylinders meeting in curves other than lines and conics (S9c.2)")
 }
@@ -271,6 +276,11 @@ pub(super) fn section(
     pair: Option<&CylPair>,
 ) -> Result<Section> {
     match (&px.faces[fx].surf, &py.faces[fy].surf) {
+        // S9f.1: a plane's section of a spline wall, its crease or its
+        // generatrices; a spline wall against a curved face is S9f.2's.
+        (Surf::Plane { p, m }, Surf::Spline(s)) => super::spline_walls::plane_wall(py, s, p, m),
+        (Surf::Spline(s), Surf::Plane { p, m }) => super::spline_walls::plane_wall(px, s, p, m),
+        (Surf::Spline(_), _) | (_, Surf::Spline(_)) => Err(spline_curved()),
         // S9d.4a: a plane's section of a torus, by the pair's relation.
         (Surf::Plane { .. }, Surf::Torus) | (Surf::Torus, Surf::Plane { .. }) => {
             match pair.expect("a plane and a torus's relation") {
@@ -491,6 +501,11 @@ pub(super) fn edge_surface(
     pair: Option<&CylPair>,
 ) -> Result<EdgeMeet> {
     match (curve, &py.faces[fy].surf) {
+        // S9f.1: a line against a spline wall, a cap edge or a crease over
+        // a spline against a plane; others are S9f.2's.
+        (Crv::Line { p, d }, Surf::Spline(s)) => super::spline_walls::line_wall(p, d, &py.f, s),
+        (Crv::Spline(c), Surf::Plane { p: p0, m }) => super::spline_walls::wallcrv_plane(c, p0, m),
+        (Crv::Spline(_), _) | (_, Surf::Spline(_)) => Err(spline_curved()),
         // S9d.4a: a line against a torus; a circle is S9d.4b's.
         (Crv::Line { p, d }, Surf::Torus) => {
             super::torus::line_torus(p, d, &py.f, py.ring.as_ref().expect("a torus"))
@@ -727,6 +742,8 @@ pub(super) fn tangent(curve: &Crv, pos: &Pos, x: &QV) -> QV {
         (Crv::Cone(c), Pos::Ang(cs)) => c.tangent(cs),
         (Crv::Torus(c), _) => c.tangent(x),
         (Crv::Toric(c), _) => c.tangent(x),
+        (Crv::Spline(c), Pos::T(t)) => c.tangent(t),
+        (Crv::Spline(_), Pos::Ang(_)) => unreachable!("a spline curve's place is its parameter"),
         (Crv::Conic { .. } | Crv::Meet(_) | Crv::Cone(_), Pos::T(_)) => {
             unreachable!("a conic's place is an angle")
         }

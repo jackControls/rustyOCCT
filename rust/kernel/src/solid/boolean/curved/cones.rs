@@ -46,7 +46,7 @@ pub(super) fn other_face(m: &Prism, f: usize) -> Other {
         Surf::Cyl { c, r, .. } => other_of(&m.f, c, r),
         Surf::Sphere { c, r } => other_sphere(c, r),
         Surf::Cone { b, k } => other_cone(&m.f, b, k),
-        Surf::Plane { .. } | Surf::Torus => unreachable!("a quadric face"),
+        Surf::Plane { .. } | Surf::Torus | Surf::Spline(_) => unreachable!("a quadric face"),
     }
 }
 

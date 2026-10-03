@@ -12,7 +12,7 @@ use super::meet::*;
 use super::model::*;
 use super::num::*;
 use crate::profile::boolean::Op2;
-use crate::solid::split::{q, zero};
+use crate::solid::split::{q, rational_f64, zero};
 use crate::{Error, Result};
 use num_rational::BigRational as R;
 use std::cmp::Ordering;
@@ -140,6 +140,14 @@ pub(super) fn edge_places(m: &Prism, ei: usize) -> (Pos, Pos, bool) {
     if let Some(Some(([a, b], with))) = m.given.as_ref().map(|g| &g.places[ei]) {
         return (a.clone(), b.clone(), *with);
     }
+    // A spline cap edge over its whole run (S9f.1).
+    if let Crv::Spline(c) = &e.curve {
+        return (
+            Pos::T(Qd::rat(c.seg.first.clone())),
+            Pos::T(Qd::rat(c.seg.last.clone())),
+            true,
+        );
+    }
     match &e.arc {
         Some((a, b, ccw)) => (Pos::Ang(a.clone()), Pos::Ang(b.clone()), *ccw),
         None => unreachable!("an arc edge has its ends' angles"),
@@ -190,6 +198,11 @@ pub(super) fn place(crv: &Crv, x: &QV) -> Pos {
         Crv::Cone(c) => Pos::Ang(c.place(x)),
         Crv::Torus(c) => Pos::Ang(c.place(x)),
         Crv::Toric(c) => Pos::Ang(c.place(x)),
+        // S9f.1: a point found on the spline at its arc's parameter.
+        Crv::Spline(c) => Pos::T(
+            c.place(x)
+                .expect("a point on a spline curve at a known parameter"),
+        ),
     }
 }
 
@@ -515,6 +528,12 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
             pairs.get(&(other, own))
         }
     };
+    // S9f.1: a spline prism's vertical edge between two spline walls (a
+    // joint, smooth or not) lying in a plane of the other input, across
+    // that plane's face: the plane crosses the solid's boundary along it,
+    // so the face holds the edge's parts inside it and meets the walls
+    // there, not in generatrices of its own: (operand, edge, other's face).
+    let (along, touching) = joint_edges_on_planes(&models)?;
     // Vertices: the inputs'.
     let mut vx: Vec<Vx> = Vec::new();
     // Vertices' binary64 views where computed (`qv_f64`; a vertex's point
@@ -562,9 +581,11 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
             let own = match (&e.curve, wall.map(|w| me.view(w))) {
                 (Crv::Conic { .. }, Some((vm, vw))) => match &vm.faces[vw].surf {
                     Surf::Cyl { c, r, .. } => Some((vm, c, r)),
-                    Surf::Plane { .. } | Surf::Sphere { .. } | Surf::Cone { .. } | Surf::Torus => {
-                        None
-                    }
+                    Surf::Plane { .. }
+                    | Surf::Sphere { .. }
+                    | Surf::Cone { .. }
+                    | Surf::Torus
+                    | Surf::Spline(_) => None,
                 },
                 _ => None,
             };
@@ -639,8 +660,11 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                     EdgeMeet::None => continue,
                     EdgeMeet::Along => {
                         // The edge on the face's surface: taken with the
-                        // faces on one surface when one of its faces is.
-                        if e.faces.iter().any(|&f| coincident_with(o, f, g)) {
+                        // faces on one surface when one of its faces is,
+                        // or a spline joint's edge across a plane's face.
+                        if e.faces.iter().any(|&f| coincident_with(o, f, g))
+                            || along.contains(&(o, ei, g))
+                        {
                             continue;
                         }
                         return Err(if virtual_edge {
@@ -696,21 +720,35 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                                 return Err(meeting());
                             };
                             let fe = &other.edges[f];
-                            let on_surface = fe.faces.iter().any(|&h| {
-                                h != g && e.faces.iter().any(|&ef| coincident_with(o, ef, h))
-                            });
+                            // Or the two edges in one plane, one of them a
+                            // spline joint's edge across it (S9f.1).
+                            let on_surface =
+                                fe.faces.iter().any(|&h| {
+                                    h != g && e.faces.iter().any(|&ef| coincident_with(o, ef, h))
+                                }) || e.faces.iter().any(|&ef| along.contains(&(1 - o, f, ef)))
+                                    || fe
+                                        .faces
+                                        .iter()
+                                        .any(|&h| h != g && along.contains(&(o, ei, h)));
                             if !on_surface {
                                 return Err(meeting());
                             }
-                            let id = match vx.iter().position(|v| qv_eq(&v.p, &x)) {
-                                Some(id) => id,
+                            let (id, pos, fpos) = match vx.iter().position(|v| qv_eq(&v.p, &x)) {
+                                // Places from the vertex's own point: its
+                                // field, where another root found it
+                                // (S9f.1).
+                                Some(id) => (
+                                    id,
+                                    place(&e.curve, &vx[id].p),
+                                    place(&other.edges[f].curve, &vx[id].p),
+                                ),
                                 None => {
                                     vx.push(Vx {
                                         p: x.clone(),
                                         key: VKey::Pierce(o, ei, g, k),
                                         faces: BTreeSet::new(),
                                     });
-                                    vx.len() - 1
+                                    (vx.len() - 1, pos, fpos)
                                 }
                             };
                             for &ef in &e.faces {
@@ -826,6 +864,26 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
             });
             half.entry((*o, e.faces[0])).or_default().push((gid, true));
             half.entry((*o, e.faces[1])).or_default().push((gid, false));
+        }
+    }
+    // A spline joint's edge across a plane's face (S9f.1): the face holds
+    // its parts inside it.
+    for &(o, ei, g) in &along {
+        for &gid in parts_of.get(&(o, ei)).map_or(&[][..], |x| x) {
+            match models[1 - o].in_face(g, &edges[gid].mid) {
+                Loc::In if touching.contains(&(o, ei, g)) => {
+                    return Err(Error::Degenerate(
+                        "a plane touching a spline prism along a joint's edge",
+                    ))
+                }
+                Loc::In => {
+                    let h = half.entry((1 - o, g)).or_default();
+                    h.push((gid, true));
+                    h.push((gid, false));
+                }
+                Loc::On => return Err(Error::Degenerate("edges of both inputs overlapping")),
+                Loc::Out => {}
+            }
         }
     }
     // Faces on one surface: each holds the other's edges within it.
@@ -983,7 +1041,7 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                     Crv::Conic { .. } | Crv::Circle(_) => {
                         (true, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())]))
                     }
-                    Crv::Line { .. } | Crv::Rise(_) => {
+                    Crv::Line { .. } | Crv::Rise(_) | Crv::Spline(_) => {
                         (false, Pos::Ang([Qd::rat(int(1)), Qd::rat(zero())]))
                     }
                 };
@@ -1110,6 +1168,84 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
         }
     }
     Ok(arr)
+}
+
+/// Spline joints' edges on planes of the other input, and those touching.
+type Joints = (
+    BTreeSet<(usize, usize, usize)>,
+    BTreeSet<(usize, usize, usize)>,
+);
+
+/// S9f.1: each spline prism's vertical edge between two spline walls (its
+/// joint) lying in the plane of a face of the other input, the plane's
+/// face meeting it: `(operand, edge, face)`. Its ends must lie off that
+/// face (a vertex of one input on the other's face is `Degenerate`).
+///
+/// The plane holds the axis, so its trace in the profile is a line through
+/// the joint: it crosses the boundary there when the segments arriving and
+/// leaving lie on its two sides (their end tangents strictly on one side of
+/// its normal, exactly), and touches it otherwise (`touching`: refused
+/// where the edge meets the face, a contact of the inputs along an edge).
+fn joint_edges_on_planes(models: &[Prism; 2]) -> Result<Joints> {
+    let mut out = BTreeSet::new();
+    let mut touching = BTreeSet::new();
+    for o in 0..2 {
+        let (me, other) = (&models[o], &models[1 - o]);
+        if me.given.is_some() {
+            continue;
+        }
+        for (ei, e) in me.edges.iter().enumerate() {
+            let (EdgeKind::Vertical(b, j), Crv::Line { p, d }) = (e.kind, &e.curve) else {
+                continue;
+            };
+            if !e
+                .faces
+                .iter()
+                .all(|&f| matches!(me.faces[f].surf, Surf::Spline(_)))
+            {
+                continue;
+            }
+            let ebox = intersect(&me.boxes[e.faces[0]], &me.boxes[e.faces[1]]);
+            for g in 0..other.faces.len() {
+                let (vo, vg) = other.view(g);
+                let Surf::Plane { p: p0, m } = &vo.faces[vg].surf else {
+                    continue;
+                };
+                if !boxes_meet(&ebox, &other.boxes[g]) || dot(m, d) != zero() {
+                    continue;
+                }
+                if qdot(&qsub(&qv(p0), p), m).sign() != Ordering::Equal {
+                    continue;
+                }
+                // Its ends off the face.
+                for v in [e.start, e.end] {
+                    if other.in_face(g, &me.verts[v].p) != Loc::Out {
+                        return Err(Error::Degenerate(
+                            "a vertex of one input on the other's face",
+                        ));
+                    }
+                }
+                // The segments' sides of the plane's trace at the joint.
+                let segs = &me.bounds[b].segs;
+                let (Seg::Spline(arriving), Seg::Spline(leaving)) =
+                    (&segs[(j + segs.len() - 1) % segs.len()], &segs[j])
+                else {
+                    unreachable!("a joint of two spline walls")
+                };
+                let trace = [dot(m, &me.f.x), dot(m, &me.f.y)];
+                let side = |t: [R; 2]| sign(&(&trace[0] * &t[0] + &trace[1] * &t[1]));
+                let (a, l) = (
+                    side(arriving.end_tangent(false)),
+                    side(leaving.end_tangent(true)),
+                );
+                if a == Ordering::Equal || l == Ordering::Equal || a != l {
+                    touching.insert((o, ei, g));
+                }
+                out.insert((o, ei, g));
+            }
+        }
+    }
+    Ok((out, touching))
 }
 
 /// The poles of a sphere face's stored surface (`c -+ r n / |n|` on the
@@ -1277,6 +1413,16 @@ fn midpoint(crv: &Crv, a: &Pos, b: &Pos, ccw: bool) -> Result<(QV, Pos)> {
             let x = qadd(p, &qscale(d, &t));
             Ok((x, Pos::T(Qd::rat(k))))
         }
+        // S9f.1: a rational run parameter, so a rational point.
+        (Crv::Spline(c), Pos::T(ta), Pos::T(tb)) => {
+            let (lo, hi) = if ta.cmp(tb) == Ordering::Less {
+                (ta, tb)
+            } else {
+                (tb, ta)
+            };
+            let k = Qd::rat(rational_between_num(lo, hi)?);
+            Ok((c.point(&k), Pos::T(k)))
+        }
         (Crv::Rise(c), Pos::T(ta), Pos::T(tb)) => {
             let (lo, hi) = if ta.cmp(tb) == Ordering::Less {
                 (ta, tb)
@@ -1383,6 +1529,7 @@ fn on_curve(crv: &Crv, x: &QV) -> bool {
         Crv::Toric(c) => c.on(x),
         Crv::Circle(c) => c.on(x),
         Crv::Rise(c) => c.on(x),
+        Crv::Spline(c) => c.on(x),
         Crv::Conic { c, a, b } => {
             let cs = conic_angle(c, a, b, x);
             let back = conic_point(c, a, b, &cs);
@@ -1515,6 +1662,16 @@ impl Arr {
                 } else {
                     vec![b, a]
                 }
+            }
+            Crv::Spline(c) => {
+                let (Pos::T(t0), Pos::T(t1)) = (&e.pos[0], &e.pos[1]) else {
+                    unreachable!("a spline curve's places")
+                };
+                let mut pts = c.samples(t0.to_f64(), t1.to_f64(), 32);
+                if !h.1 {
+                    pts.reverse();
+                }
+                pts
             }
             Crv::Rise(c) => {
                 let (Pos::T(w0), Pos::T(w1)) = (&e.pos[0], &e.pos[1]) else {
@@ -1651,8 +1808,23 @@ impl Arr {
         let kind = face.kind;
         let ball = m.ball.clone();
         let ring = m.ring.as_ref().map(|r| r.params(&m.f));
+        let lo = rational_f64(&m.lo);
         move |p: [f64; 3]| -> [f64; 2] {
             match &surf {
+                // A spline wall (S9f.1): its stored surface's parameters,
+                // the curve's own parameter and the height above the low
+                // cap.
+                Surf::Spline(s) => {
+                    let d = [p[0] - of[0], p[1] - of[1], p[2] - of[2]];
+                    let l = solve3(&xf, &yf, &nf, &d);
+                    let tau = s.tau_near(l[0], l[1]);
+                    let t = if s.rev {
+                        rational_f64(&s.first) + rational_f64(&s.last) - tau
+                    } else {
+                        tau
+                    };
+                    [t, l[2] - lo]
+                }
                 // A torus's patch: its angles from its seams (S9d.4a).
                 Surf::Torus => ring.as_ref().expect("a torus's ring")(p, kind),
                 // A cone's wall: its projection on the plane of `(u, v)`,
@@ -1740,6 +1912,16 @@ impl Arr {
             1.0
         };
         sign * match &face.surf {
+            // A spline wall's `(t, v)` normal is `S_t x n`, the run's right
+            // when the run follows `t`: outward on an outer boundary run
+            // with `t` or a hole's run against it (S8b.2's walls).
+            Surf::Spline(s) => {
+                if s.rev == s.hole {
+                    1.0
+                } else {
+                    -1.0
+                }
+            }
             // `(u, v)` runs counter-clockwise about the axis: the wall's
             // outward normal leans along it where the cone narrows upward.
             // `(u, v)` runs with the torus's outward normal (against an

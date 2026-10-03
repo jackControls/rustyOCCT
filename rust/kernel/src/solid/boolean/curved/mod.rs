@@ -11,7 +11,8 @@
 //! result's faces and solids and named (`assemble.rs`). Full circles are
 //! split at a rational seam, tried again at another when a meeting falls
 //! on it. Faces of both inputs on one surface hold each other's edges within
-//! them, and their pieces facing one way join.
+//! them, and their pieces facing one way join. S9f.1: a spline prism's walls
+//! against a prism of lines (`spline_walls.rs`).
 mod algebraic;
 mod assemble;
 mod chain;
@@ -28,6 +29,7 @@ mod procedural;
 mod sphere;
 mod spheres;
 mod spheres_turned;
+mod spline_walls;
 mod torus;
 mod torus_curved;
 mod torus_parts;
@@ -56,6 +58,76 @@ fn applies_arcs(s: &crate::Solid) -> bool {
     }
 }
 
+/// Whether a profile holds a spline segment.
+fn profile_splines(p: &crate::Profile) -> bool {
+    p.boundaries().any(|b| match &b.kind {
+        BoundaryKind::Path { segments, .. } => {
+            segments.iter().any(|s| matches!(s, Segment::Spline(_)))
+        }
+        _ => false,
+    })
+}
+
+/// Whether a prism's profile holds a spline segment (S9f.1).
+pub(super) fn applies_splines(s: &crate::Solid) -> bool {
+    matches!(&s.construction, Construction::Prism(p) if profile_splines(p))
+}
+
+/// Whether a solid is a prism of a line profile (S9b.1's polyhedra).
+fn line_prism(s: &crate::Solid) -> bool {
+    match &s.construction {
+        Construction::Prism(p) => p.boundaries().all(|b| match &b.kind {
+            BoundaryKind::Polygon(_) => true,
+            BoundaryKind::Path { segments, .. } => {
+                segments.iter().all(|s| matches!(s, Segment::Line))
+            }
+            BoundaryKind::Circle { .. } => false,
+        }),
+        _ => false,
+    }
+}
+
+/// Whether a Boolean's result (a stack among them) was made from a spline
+/// prism, at any depth.
+fn spline_leaves(s: &crate::Solid) -> bool {
+    match &s.construction {
+        Construction::Polyhedron(p) => [&p.a, &p.b]
+            .iter()
+            .any(|x| applies_splines(x) || spline_leaves(x)),
+        Construction::Stack(st) => profile_splines(&st.a) || profile_splines(&st.b),
+        _ => false,
+    }
+}
+
+/// S9f.1 takes a spline prism against a prism of lines only; the others are
+/// later sub-steps' or refused (REVIEW_NOTES.md, "S9f refined").
+fn spline_pairs(poly: &Polyhedron) -> Result<()> {
+    for (x, y) in [(&poly.a, &poly.b), (&poly.b, &poly.a)] {
+        if spline_leaves(x) {
+            return Err(Error::OutOfDomain(
+                "a Boolean's result with spline walls given to another Boolean (S9f)",
+            ));
+        }
+        if !applies_splines(x) || line_prism(y) {
+            continue;
+        }
+        return Err(Error::OutOfDomain(match &y.construction {
+            Construction::Prism(p) if profile_splines(p) => {
+                "spline walls against spline walls in any position (S9f.2)"
+            }
+            Construction::Prism(_) => {
+                "a spline prism against a prism with arcs in any position (S9f.2)"
+            }
+            Construction::Sphere { .. } | Construction::Cone { .. } => {
+                "a spline prism against a sphere or a cone (S9f.3)"
+            }
+            Construction::Torus { .. } => "a spline prism against a torus (refused, S9f)",
+            _ => "a spline prism against a solid other than a prism in any position (S9f)",
+        }));
+    }
+    Ok(())
+}
+
 /// Whether S9c.1 takes the pair: two prisms, one of them with an arc.
 pub(super) fn applies(poly: &Polyhedron) -> bool {
     let arcs = applies_arcs;
@@ -76,6 +148,11 @@ pub(super) fn applies(poly: &Polyhedron) -> bool {
     // where either input has an arc or a curved face, and one solid of
     // several of these.
     if given::applies(&poly.a, &poly.b) || given::applies(&poly.b, &poly.a) {
+        return true;
+    }
+    // S9f.1: a spline prism against a prism (against a solid other than a
+    // prism of lines refused in `build`).
+    if prism(&poly.a) && prism(&poly.b) && (applies_splines(&poly.a) || applies_splines(&poly.b)) {
         return true;
     }
     // S9d.3: a cone against a prism, a sphere or a cone (S9d.3b's refused
@@ -110,6 +187,8 @@ fn model_of(s: &crate::Solid, op: Operand, seam: &R) -> Result<model::Prism> {
 const SEAMS: [(i64, i64); 5] = [(2, 7), (3, 11), (5, 13), (7, 19), (11, 23)];
 
 pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
+    // S9f.1: a spline prism against a prism of lines only.
+    spline_pairs(poly)?;
     // S9e.1 and S9e.2 take a given result with a prism or another given
     // result, S9e.3a with a sphere, cone or torus too.
     let piece = |s: &crate::Solid| {

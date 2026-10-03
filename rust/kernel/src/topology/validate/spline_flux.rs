@@ -14,7 +14,7 @@
 //! antiderivative is enclosed over strips of the `v` domain.
 use super::bernstein::{
     c, derivative, difference, lift, pcurve_arcs, piece_of, power, product, quotient_integral, r,
-    ratio, scaled, sum, Bern,
+    ratio, scaled, sum, value, Bern,
 };
 use super::spline_taylor::{lift_patches_about, spline_jet1, Patch as Jets};
 use super::Lp;
@@ -261,6 +261,116 @@ fn locate<'a, T: Real>(
     })
 }
 
+/// A tensor's value over a box of its local coordinates (de Casteljau in
+/// interval arithmetic, any box, inside the unit square or not).
+fn tensor_at<T: Real>(g: &Tensor<T>, u: &T, v: &T) -> T {
+    let along_v: Bern<T> = g.iter().map(|row| value(row, v)).collect();
+    value(&along_v, u)
+}
+
+/// The patch holding a spline pcurve piece's points but for slivers across
+/// its `u` boundaries at most `2^-20` of its width (a crease's pcurve over
+/// a wall's knot line: the identity in `u` rounds, so a piece ending on a
+/// knot line at a rounding step past it, S8b.3's (c) and S9f.1), and per
+/// integrand a bound of the error of integrating the slivers on that
+/// patch's polynomial: on a sliver `δ` wide the piece's `u` turns at most
+/// `deg + 1` times, so `∫|du| ≤ 2 (deg + 1) δ` there, and the true `-∫ G
+/// dū` (the neighbour's `G`) and the computed one each lie within that
+/// times their `|G|` over the sliver's box. `None` for a piece across a `v`
+/// boundary or beyond the surface.
+fn sliver_patch<'a, T: Real>(
+    patches: &'a [Patch<T>],
+    points: &[(R, R)],
+    piece: &[Vec<R>; 4],
+) -> Option<(&'a Patch<T>, Vec<T>)> {
+    let span = |f: &dyn Fn(&(R, R)) -> &R| -> [R; 2] {
+        let lo = points.iter().map(f).min().expect("a point").clone();
+        let hi = points.iter().map(f).max().expect("a point").clone();
+        [lo, hi]
+    };
+    let (mut us, mut vs) = (span(&|p| &p.0), span(&|p| &p.1));
+    // Inside the surface's domain: the hull, or the curve where its hull
+    // leaves the domain (a crease nearly touching a cap, as `locate`).
+    for (axis, range) in [&mut us, &mut vs].into_iter().enumerate() {
+        let lo = patches.iter().map(|q| &q.domain[axis][0]).min()?.clone();
+        let hi = patches.iter().map(|q| &q.domain[axis][1]).max()?.clone();
+        let (x, w) = (&piece[axis], &piece[3]);
+        if range[0] < lo {
+            let off: Vec<R> = x.iter().zip(w).map(|(x, w)| x - &lo * w).collect();
+            if !super::bernstein::nonnegative(&off) {
+                return None;
+            }
+            range[0] = lo;
+        }
+        if range[1] > hi {
+            let off: Vec<R> = x.iter().zip(w).map(|(x, w)| &hi * w - x).collect();
+            if !super::bernstein::nonnegative(&off) {
+                return None;
+            }
+            range[1] = hi;
+        }
+    }
+    let two = ratio(2, 1);
+    let mid = (&us[0] + &us[1]) / &two;
+    let sliver = ratio(1, 1 << 20);
+    let holds_v = |q: &Patch<T>| q.domain[1][0] <= vs[0] && vs[1] <= q.domain[1][1];
+    let patch = patches
+        .iter()
+        .find(|q| holds_v(q) && q.domain[0][0] <= mid && mid <= q.domain[0][1])?;
+    let [u0, u1] = &patch.domain[0];
+    let width = u1 - u0;
+    let limit = &width * &sliver;
+    if u0 - &us[0] > limit || &us[1] - u1 > limit {
+        return None;
+    }
+    let degree = piece[0].len().saturating_sub(1) as i64;
+    let count = patch.g.len();
+    let mut bound = vec![ratio(0, 1); count];
+    // |G| over a box of global (u, v), in a patch's local units.
+    let sup = |q: &Patch<T>, ua: &R, ub: &R| -> Option<Vec<R>> {
+        let [[a0, a1], [b0, b1]] = &q.domain;
+        let local = |x: &R, lo: &R, hi: &R| c::<T>(&((x - lo) / (hi - lo)));
+        let u = local(ua, a0, a1).union(&local(ub, a0, a1));
+        let v = local(&vs[0], b0, b1).union(&local(&vs[1], b0, b1));
+        q.g.iter()
+            .map(|g| {
+                let (lo, hi) = tensor_at(g, &u, &v).bounds_f64();
+                let m = lo.abs().max(hi.abs());
+                if m.is_finite() {
+                    R::from_float(m)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    };
+    for (outside, edge, other_edge) in [
+        (u0 - &us[0], u0.clone(), 1usize),
+        (&us[1] - u1, u1.clone(), 0usize),
+    ] {
+        if outside <= ratio(0, 1) {
+            continue;
+        }
+        let neighbour = patches
+            .iter()
+            .find(|q| q.domain[0][other_edge] == edge && holds_v(q))?;
+        let (lo, hi) = if other_edge == 1 {
+            (us[0].clone(), edge.clone())
+        } else {
+            (edge.clone(), us[1].clone())
+        };
+        let mine = sup(patch, &lo, &hi)?;
+        let theirs = sup(neighbour, &lo, &hi)?;
+        let wn = &neighbour.domain[0][1] - &neighbour.domain[0][0];
+        let turns = ratio(2 * (degree + 1), 1) * &outside;
+        for k in 0..count {
+            bound[k] += &turns * (&mine[k] / &width + &theirs[k] / &wn);
+        }
+    }
+    let extra = bound.iter().map(|e| T::exact_f64(0.0).widen(e)).collect();
+    Some((patch, extra))
+}
+
 /// `-∫ G dū` along one piece in one patch, for every integrand. The piece
 /// is homogeneous `(U, V, W)` in global `(u, v)`, as exact Bernstein
 /// coordinates. With `high`, a rational piece is integrated by the certified
@@ -397,10 +507,19 @@ fn exact_green<T: Real>(
                 let points: Vec<(R, R)> = (0..piece[3].len())
                     .map(|i| (&piece[0][i] / &piece[3][i], &piece[1][i] / &piece[3][i]))
                     .collect();
-                let patch = locate(&patches, &points, &piece)?;
+                let (patch, extra) = match locate(&patches, &points, &piece) {
+                    Some(patch) => (patch, None),
+                    None => {
+                        let (patch, extra) = sliver_patch(&patches, &points, &piece)?;
+                        (patch, Some(extra))
+                    }
+                };
                 let uniform = piece[3].iter().all(|x| *x == piece[3][0]);
                 let uv = [lift(&piece[0]), lift(&piece[1]), lift(&piece[3])];
                 add_all(&mut total, piece_integrals(patch, &uv, uniform, high)?);
+                if let Some(extra) = extra {
+                    add_all(&mut total, extra);
+                }
             }
         }
         // Chords closing the loop's gaps: their ends must certainly share a

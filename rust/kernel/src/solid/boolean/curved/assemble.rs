@@ -13,6 +13,7 @@ use super::graph::*;
 use super::meet::Pos;
 use super::model::*;
 use super::num::*;
+use super::spline_walls::{SplineSeg, WallCrv};
 use crate::identity::{EntityId, EntityKind, Role};
 use crate::profile::boolean::{Op2, Operand};
 use crate::solid::split::rational_f64;
@@ -614,8 +615,16 @@ fn build_component(
             flip(mface.sense)
         };
         let mut loop_ids = Vec::new();
+        // A spline wall's pcurves come from its exact places (S9f.1).
+        let wall = match &arr.models[rf.op].faces[rf.face].surf {
+            Surf::Spline(s) => Some(s.clone()),
+            _ => None,
+        };
         for l in &face_fins[k] {
-            let fins = loop_fins(&p, l, &edge_id, &surface)?;
+            let fins = match &wall {
+                Some(s) => wall_fins(arr, redges, l, &edge_id, &arr.models[rf.op], s)?,
+                None => loop_fins(&p, l, &edge_id, &surface)?,
+            };
             let mut fids = Vec::new();
             for fin in fins {
                 let id = FinId(p.fins.len());
@@ -998,8 +1007,152 @@ fn same_curve(a: &Crv, b: &Crv) -> bool {
         (Crv::Cone(x), Crv::Cone(y)) => x == y,
         (Crv::Torus(x), Crv::Torus(y)) => x == y,
         (Crv::Toric(x), Crv::Toric(y)) => x == y,
+        (Crv::Spline(x), Crv::Spline(y)) => x == y,
         _ => false,
     }
+}
+
+/// A chain's run parameters along a curve over a spline (S9f.1): at its
+/// start and at its end.
+fn chain_taus(arr: &Arr, e: &REdge) -> (Qd, Qd) {
+    let (g0, d0) = e.parts[0];
+    let (gl, dl) = *e.parts.last().expect("a part");
+    let a = &arr.edges[g0].pos[if d0 { 0 } else { 1 }];
+    let b = &arr.edges[gl].pos[if dl { 1 } else { 0 }];
+    let (Pos::T(a), Pos::T(b)) = (a, b) else {
+        unreachable!("a spline curve's places")
+    };
+    (a.clone(), b.clone())
+}
+
+/// A crease's heights at its piece's poles: at its end poles its vertices'
+/// heights (so its ends are their rounded points', S8b.3's (b)), at the
+/// others the plane's, exact and rounded once.
+fn crease_heights<'a>(
+    arr: &'a Arr,
+    c: &'a WallCrv,
+    piece: &crate::solid::split::spline::Span,
+    from: usize,
+    to: usize,
+) -> impl Fn(Point2) -> f64 + 'a {
+    let poles = piece.curve().poles();
+    let ends = if piece.is_reversed() {
+        [poles[poles.len() - 1], poles[0]]
+    } else {
+        [poles[0], poles[poles.len() - 1]]
+    };
+    let w = |v: usize| c.f.local_q(&arr.vx[v].p)[2].to_f64();
+    let heights = [w(from), w(to)];
+    move |p: Point2| {
+        if p == ends[0] {
+            heights[0]
+        } else if p == ends[1] {
+            heights[1]
+        } else {
+            c.height_f64(p)
+        }
+    }
+}
+
+/// A chain's piece of its spline segment (S9f.1): the stored segment's
+/// reduced curve (R4) restricted exactly to the chain's ends' rounded
+/// curve parameters (S8b.3's restriction), traversed from the chain's
+/// start; its start and end vertices.
+fn spline_piece(
+    arr: &Arr,
+    e: &REdge,
+    seg: &SplineSeg,
+) -> Result<(crate::solid::split::spline::Span, [usize; 2])> {
+    let (a, b) = chain_taus(arr, e);
+    let ends = e
+        .ends
+        .ok_or(Error::InvalidTopology("a spline curve without ends"))?;
+    let (ta, tb) = (seg.t_of(&a).to_f64(), seg.t_of(&b).to_f64());
+    if ta == tb {
+        return Err(Error::Degenerate("a spline piece within rounding"));
+    }
+    Ok((crate::solid::split::spline::piece(&seg.span, ta, tb)?, ends))
+}
+
+/// A curve over a spline segment rounded once (S9f.1): its piece lifted to
+/// its cap, or the piece's image on its plane for a crease (its ends at its
+/// vertices' heights).
+fn spline_curve3(arr: &Arr, e: &REdge, c: &WallCrv) -> Result<Curve3> {
+    let (piece, [s, t]) = spline_piece(arr, e, &c.seg)?;
+    if c.level() {
+        return crate::topology::lifted_spline(&piece, c.frame, rational_f64(&c.h[0]));
+    }
+    let height = crease_heights(arr, c, &piece, s, t);
+    crate::solid::split::spline::plane_image(&piece, c.frame, &height)
+}
+
+/// A spline wall face's fins (S9f.1): pcurves in the stored wall's `(t,
+/// v)` (the curve's own parameter, the height above the low cap) from the
+/// exact places: a vertical edge's or a generatrix's `t` constant, a cap
+/// edge's `v` constant, a crease S8b.3's `wall_pcurve` of its piece (its
+/// ends at its vertices' heights, as its edge's).
+fn wall_fins(
+    arr: &Arr,
+    redges: &[REdge],
+    uses: &[(usize, bool)],
+    edge_id: &BTreeMap<usize, EdgeId>,
+    m: &Prism,
+    seg: &SplineSeg,
+) -> Result<Vec<Fin>> {
+    let lo = rational_f64(&m.lo);
+    let local = |v: usize| m.f.local_q(&arr.vx[v].p);
+    let mut out = Vec::new();
+    for &(ri, fwd) in uses {
+        let e = &redges[ri];
+        let [s, t] = e
+            .ends
+            .ok_or(Error::InvalidTopology("a spline wall's edge without ends"))?;
+        let (from, to) = if fwd { (s, t) } else { (t, s) };
+        let line = |a: (f64, f64), b: (f64, f64)| Curve2::LineSegment {
+            start: Point2::new(a.0, a.1),
+            end: Point2::new(b.0, b.1),
+        };
+        let pcurve = match &arr.edges[e.parts[0].0].crv {
+            Crv::Line { .. } => {
+                let l = local(from);
+                let tau = seg
+                    .locate(&[l[0].clone(), l[1].clone()])
+                    .ok_or(Error::InvalidTopology("a line on a spline wall off it"))?;
+                let u = seg.t_of(&tau).to_f64();
+                line((u, l[2].to_f64() - lo), (u, local(to)[2].to_f64() - lo))
+            }
+            Crv::Spline(c) => {
+                let (piece, [ps, pt]) = spline_piece(arr, e, seg)?;
+                let piece = if fwd { piece } else { piece.reversed() };
+                if c.level() {
+                    let [a, b] = piece.range();
+                    let (ua, ub) = if piece.is_reversed() { (b, a) } else { (a, b) };
+                    let v = rational_f64(&c.h[0]) - lo;
+                    line((ua, v), (ub, v))
+                } else {
+                    let (f0, f1) = if fwd { (ps, pt) } else { (pt, ps) };
+                    let height = crease_heights(arr, c, &piece, f0, f1);
+                    crate::solid::split::spline::wall_pcurve(&piece, &|p| height(p) - lo)?
+                }
+            }
+            _ => {
+                return Err(Error::InvalidTopology(
+                    "a spline wall's edge off its lines and curves",
+                ))
+            }
+        };
+        out.push(Fin {
+            edge: edge_id[&ri],
+            sense: if fwd {
+                Orientation::Forward
+            } else {
+                Orientation::Reversed
+            },
+            pcurve,
+            enclosure: None,
+        });
+    }
+    Ok(out)
 }
 
 fn flip(o: Orientation) -> Orientation {
@@ -1075,6 +1228,7 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
         }
     }
     match &first.crv {
+        Crv::Spline(c) => spline_curve3(arr, e, c),
         Crv::Rise(m) => {
             // Over the carrier's stored cylinder, heights from its origin.
             let CurveRef::Section(si, _) = first.curve else {

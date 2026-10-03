@@ -940,6 +940,120 @@ impl<T: Real> Integrand2<T> for Sweep<'_, T> {
     }
 }
 
+/// The patch of a spline pcurve piece not lying in one patch by its control
+/// points (S9f.1), and per integrand a bound of the error of integrating it
+/// there: a hull leaving the surface's domain while the curve certainly
+/// keeps to it (its coordinate against the bound exactly nonnegative: a
+/// crease nearly touching a cap) is boxed by the bound; a hull across a
+/// `u` boundary by a sliver at most `2^-20` of the patch's width (a
+/// crease's pcurve over a wall's knot line, its rounded identity in `u` a
+/// step past it) is integrated on that patch's polynomial, the slivers'
+/// error within `2 (deg + 1) δ̄` (the piece's `ū` turns at most `deg + 1`
+/// times there) times `|G|` over the sliver's columns, each patch's and its
+/// neighbour's (`G` the antiderivative in `v̄` from the domain's start, at
+/// most the sum of `|f̄|` over the columns' boxes). `None` otherwise.
+fn sliver_net<T: Real>(
+    nets: &[Net<T>],
+    points: &[(R, R)],
+    h: &[Vec<R>; 4],
+    rest: &[T; 3],
+    all: bool,
+) -> Option<(usize, Vec<T>)> {
+    let span = |f: &dyn Fn(&(R, R)) -> &R| -> [R; 2] {
+        let lo = points.iter().map(f).min().expect("a point").clone();
+        let hi = points.iter().map(f).max().expect("a point").clone();
+        [lo, hi]
+    };
+    let mut ranges = [span(&|p| &p.0), span(&|p| &p.1)];
+    for (axis, range) in ranges.iter_mut().enumerate() {
+        let lo = nets.iter().map(|q| &q.domain[axis][0]).min()?.clone();
+        let hi = nets.iter().map(|q| &q.domain[axis][1]).max()?.clone();
+        let (x, w) = (&h[axis], &h[3]);
+        if range[0] < lo {
+            let off: Vec<R> = x.iter().zip(w).map(|(x, w)| x - &lo * w).collect();
+            if !super::bernstein::nonnegative(&off) {
+                return None;
+            }
+            range[0] = lo;
+        }
+        if range[1] > hi {
+            let off: Vec<R> = x.iter().zip(w).map(|(x, w)| &hi * w - x).collect();
+            if !super::bernstein::nonnegative(&off) {
+                return None;
+            }
+            range[1] = hi;
+        }
+    }
+    let [us, vs] = &ranges;
+    let count = if all { 14 } else { 4 };
+    let holds_v = |q: &Net<T>| q.domain[1][0] <= vs[0] && vs[1] <= q.domain[1][1];
+    let within = |q: &Net<T>| holds_v(q) && q.domain[0][0] <= us[0] && us[1] <= q.domain[0][1];
+    if let Some(at) = nets.iter().position(within) {
+        return Some((at, vec![zero(); count]));
+    }
+    let mid = (&us[0] + &us[1]) / ratio(2, 1);
+    let at = nets
+        .iter()
+        .position(|q| holds_v(q) && q.domain[0][0] <= mid && mid <= q.domain[0][1])?;
+    let [u0, u1] = &nets[at].domain[0];
+    let width = u1 - u0;
+    let limit = &width * ratio(1, 1 << 20);
+    if u0 - &us[0] > limit || &us[1] - u1 > limit {
+        return None;
+    }
+    let third = c::<T>(&ratio(1, 3));
+    // Σ |f̄| over the u box of the patch's column (itself and the patches
+    // below it), per integrand.
+    let column = |q: &Net<T>, ua: &R, ub: &R| -> Option<Vec<R>> {
+        let mut out = vec![ratio(0, 1); count];
+        for below in nets
+            .iter()
+            .filter(|b| b.domain[0] == q.domain[0] && b.domain[1][0] <= q.domain[1][0])
+        {
+            let [b0, b1] = &below.domain[0];
+            let local = |x: &R| c::<T>(&((x - b0) / (b1 - b0)));
+            let u = Point(local(ua).union(&local(ub)));
+            let v = Point(T::exact_f64(0.0).union(&T::exact_f64(1.0)));
+            let values = patch_integrands(below, &u, &v, rest, all.then_some(&third))?;
+            for (o, x) in out.iter_mut().zip(values) {
+                let (lo, hi) = x.0.bounds_f64();
+                let m = lo.abs().max(hi.abs());
+                *o += R::from_float(m).filter(|_| m.is_finite())?;
+            }
+        }
+        Some(out)
+    };
+    let degree = h[0].len().saturating_sub(1) as i64;
+    let mut bound = vec![ratio(0, 1); count];
+    for (outside, edge, other_edge) in [
+        (u0 - &us[0], u0.clone(), 1usize),
+        (&us[1] - u1, u1.clone(), 0usize),
+    ] {
+        if outside <= ratio(0, 1) {
+            continue;
+        }
+        let neighbour = nets
+            .iter()
+            .find(|q| q.domain[0][other_edge] == edge && holds_v(q))?;
+        let (lo, hi) = if other_edge == 1 {
+            (us[0].clone(), edge.clone())
+        } else {
+            (edge.clone(), us[1].clone())
+        };
+        let mine = column(&nets[at], &lo, &hi)?;
+        let theirs = column(neighbour, &lo, &hi)?;
+        let wn = &neighbour.domain[0][1] - &neighbour.domain[0][0];
+        let turns = ratio(2 * (degree + 1), 1) * &outside;
+        for k in 0..count {
+            bound[k] += &turns * (&mine[k] / &width + &theirs[k] / &wn);
+        }
+    }
+    Some((
+        at,
+        bound.iter().map(|e| T::exact_f64(0.0).widen(e)).collect(),
+    ))
+}
+
 /// The fourteen mass integrals (`all`) or the four with `|N|` of a face on a
 /// nonperiodic spline surface relative to `origin`, by Green's theorem
 /// through its patches with `G` from the domain's start: a boundary piece
@@ -990,6 +1104,8 @@ pub(super) fn spline_face<T: Real>(
         }
         Some(())
     };
+    // The slivers' error bounds (`sliver_net`).
+    let mut extras: Vec<Vec<T>> = Vec::new();
     for lp in loops {
         for fin in &lp.fins {
             let arcs = pcurve_arcs(&fin.pcurve)?;
@@ -1026,16 +1142,23 @@ pub(super) fn spline_face<T: Real>(
                 if points.iter().all(|p| p.0 == points[0].0) {
                     continue;
                 }
-                let at = nets.iter().position(|p| {
+                let (at, extra) = match nets.iter().position(|p| {
                     let [[u0, u1], [v0, v1]] = &p.domain;
                     points
                         .iter()
                         .all(|(u, v)| u0 <= u && u <= u1 && v0 <= v && v <= v1)
-                })?;
+                }) {
+                    Some(at) => (at, None),
+                    None => {
+                        let (at, extra) = sliver_net(&nets, &points, &h, &rest, all)?;
+                        (at, Some(extra))
+                    }
+                };
                 let [[u0, u1], _] = &nets[at].domain;
                 let local = |u: &R| c::<T>(&((u - u0) / (u1 - u0)));
                 let ends = [local(&points[0].0), local(&points[points.len() - 1].0)];
                 add(at, &exact_piece(&h, Some(&nets[at].domain)), ends)?;
+                extras.extend(extra);
             }
         }
         // Chords closing the loop's gaps: their ends must certainly share a
@@ -1061,6 +1184,9 @@ pub(super) fn spline_face<T: Real>(
             );
             add(at, &piece, ends)?;
         }
+    }
+    for extra in &extras {
+        accumulate(&mut total, extra);
     }
     Some(total)
 }

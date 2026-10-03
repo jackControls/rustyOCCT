@@ -6,6 +6,7 @@
 //! symbolic push along given directions (a point on the boundary decided
 //! by where the push takes it).
 use super::num::*;
+use super::spline_walls::{Against, SplineSeg, WallCrv};
 use crate::identity::{EntityId, Role};
 use crate::profile::boolean::Operand;
 use crate::profile::{BoundaryKind, Segment};
@@ -16,6 +17,7 @@ use crate::{Error, Frame3, Result};
 use num_rational::BigRational as R;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 /// A frame's exact affine map on its stored axes.
 #[derive(Debug, Clone, PartialEq)]
@@ -140,17 +142,21 @@ pub(super) enum Seg {
         q: P2,
         ccw: bool,
     },
+    /// A spline segment (S9f.1): its exact arcs, run as the profile runs.
+    Spline(Arc<SplineSeg>),
 }
 
 impl Seg {
     pub(super) fn start(&self) -> &P2 {
         match self {
             Seg::Line { p, .. } | Seg::Arc { p, .. } => p,
+            Seg::Spline(s) => s.start(),
         }
     }
     pub(super) fn end(&self) -> &P2 {
         match self {
             Seg::Line { q, .. } | Seg::Arc { q, .. } => q,
+            Seg::Spline(s) => s.end(),
         }
     }
     /// The unit-free tangent at a point of the segment, along its run.
@@ -164,6 +170,15 @@ impl Seg {
                 } else {
                     [dy, dx.neg()]
                 }
+            }
+            // At a joint (its start or end): its end control leg.
+            Seg::Spline(s) => {
+                let at_start = s
+                    .start()
+                    .iter()
+                    .zip(x)
+                    .all(|(a, b)| b.cmp(&Qd::rat(a.clone())) == Ordering::Equal);
+                s.end_tangent(at_start).map(Qd::rat)
             }
         }
     }
@@ -211,6 +226,9 @@ enum OnProfile {
     Out,
     Segment(usize, usize),
     Joint(usize, usize),
+    /// An irrational point off every spline segment, whose crossings with
+    /// a spline are not decided (S9f.1: none against a polyhedral partner).
+    Undecided,
 }
 
 /// A face of a model: its kind and exact surface, and the input face it is
@@ -271,6 +289,9 @@ pub(super) enum Surf {
     /// A torus on the model's frame (S9d.4a), its material inside (its
     /// radii in the model's `ring`).
     Torus,
+    /// A spline segment's wall on the model's frame (S9f.1), its material
+    /// left of the run on an outer boundary, right of it on a hole's.
+    Spline(Arc<SplineSeg>),
 }
 
 /// A 3D curve, exact.
@@ -297,6 +318,9 @@ pub(super) enum Crv {
     /// A torus's meeting with a quadric (S9d.4b.2), a graph over one of its
     /// angles, placed by that angle's direction.
     Toric(Box<super::torus_curved::ToricCrv>),
+    /// A curve over a spline segment on its wall (S9f.1): a cap edge or a
+    /// plane's crease, placed by the segment's run parameter.
+    Spline(Box<WallCrv>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -454,10 +478,16 @@ impl Prism {
                                     ccw: *ccw,
                                 }
                             }
-                            Segment::Spline(_) => {
-                                return Err(out_of_domain(
-                                    "a spline profile in a Boolean of prisms in any position (S9c)",
-                                ))
+                            Segment::Spline(span) => {
+                                // S9f.1: its exact arcs, run as the profile
+                                // runs, its ends the path points exactly.
+                                let seg = SplineSeg::new(span, hole)?;
+                                if seg.start() != &p || seg.end() != &qq {
+                                    return Err(out_of_domain(
+                                        "a spline whose ends lie off its path points in a Boolean in any position (S9f)",
+                                    ));
+                                }
+                                Seg::Spline(Arc::new(seg))
                             }
                         });
                     }
@@ -533,6 +563,7 @@ impl Prism {
                         r: r.clone(),
                         inside: *ccw != bound.hole,
                     },
+                    Seg::Spline(s) => Surf::Spline(s.clone()),
                 };
                 wall_of.insert((b, j), faces.len());
                 faces.push(MFace {
@@ -603,6 +634,17 @@ impl Prism {
                                 Some((rel(p).map(Qd::rat), rel(qq).map(Qd::rat), *ccw)),
                             )
                         }
+                        // S9f.1: the segment at the cap's height, placed by
+                        // its run parameter.
+                        Seg::Spline(s) => (
+                            Crv::Spline(Box::new(WallCrv {
+                                seg: s.clone(),
+                                f: f.clone(),
+                                h: [h.clone(), zero(), zero()],
+                                frame: solid.frame,
+                            })),
+                            None,
+                        ),
                     };
                     // The cap's material lies on the run's left seen from
                     // outside the top cap (on an outer boundary): the wall
@@ -740,6 +782,14 @@ impl Prism {
                     }
                 }
             }
+            // A spline's control points: their hull holds it (S9f.1).
+            Seg::Spline(s) => {
+                for h in heights {
+                    for c in s.hull() {
+                        pts.push(f64s(&self.f.point(&c[0], &c[1], h)));
+                    }
+                }
+            }
         };
         match self.faces[fi].kind {
             FaceKind::Cap(_) => {
@@ -793,6 +843,22 @@ impl Prism {
         }
         match &self.faces[fi].surf {
             Surf::Plane { m, .. } => qv(m),
+            // S9f.1: the run's tangent across the axis at the point's
+            // parameter, its right on an outer boundary.
+            Surf::Spline(s) => {
+                let l = self.f.local_q(p);
+                let tau = s
+                    .locate(&[l[0].clone(), l[1].clone()])
+                    .expect("a point on its spline wall at a known parameter");
+                let d = s.deriv(&tau);
+                let t = qadd(&qscale(&self.f.x, &d[0]), &qscale(&self.f.y, &d[1]));
+                let m = qcross(&t, &qv(&self.f.n));
+                if s.hole {
+                    m.map(|x| x.neg())
+                } else {
+                    m
+                }
+            }
             Surf::Sphere { c, .. } => qsub(p, &qv(c)),
             Surf::Torus => {
                 let ring = self.ring.as_ref().expect("a torus");
@@ -845,12 +911,30 @@ impl Prism {
     /// together there).
     fn on_profile(&self, x: &[Qd; 2]) -> OnProfile {
         let mut inside = false;
+        // A spline segment's crossings left undecided (S9f.1): unless the
+        // point lies on a later segment, the point is undecided.
+        let mut undecided = false;
         for (b, bound) in self.bounds.iter().enumerate() {
             for (j, seg) in bound.segs.iter().enumerate() {
                 let (p, qq) = (seg.start(), seg.end());
                 let xp = [x[0].add_r(&-&p[0]), x[1].add_r(&-&p[1])];
                 if xp[0].sign() == Ordering::Equal && xp[1].sign() == Ordering::Equal {
                     return OnProfile::Joint(b, j);
+                }
+                // S9f.1: on the spline at a known parameter, or the `+u`
+                // ray's crossings with its arcs (its end is the next
+                // segment's joint, its start found above).
+                if let Seg::Spline(s) = seg {
+                    match s.against(x) {
+                        Ok(Against::On(tau)) => {
+                            if tau.cmp(&Qd::rat(s.last.clone())) != Ordering::Equal {
+                                return OnProfile::Segment(b, j);
+                            }
+                        }
+                        Ok(Against::Flips(flip)) => inside ^= flip,
+                        Ok(Against::Undecided) | Err(_) => undecided = true,
+                    }
+                    continue;
                 }
                 let chord = [&qq[0] - &p[0], &qq[1] - &p[1]];
                 // (q - p) x (x - p): positive on the chord's left.
@@ -861,6 +945,7 @@ impl Prism {
                     t.sign() == Ordering::Greater && t.cmp(&Qd::rat(len)) == Ordering::Less
                 };
                 match seg {
+                    Seg::Spline(_) => unreachable!("taken above"),
                     Seg::Line { .. } => {
                         if side == Ordering::Equal && between() {
                             return OnProfile::Segment(b, j);
@@ -901,7 +986,9 @@ impl Prism {
                 }
             }
         }
-        if inside {
+        if undecided {
+            OnProfile::Undecided
+        } else if inside {
             OnProfile::In
         } else {
             OnProfile::Out
@@ -927,6 +1014,7 @@ impl Prism {
         match self.on_profile(x) {
             OnProfile::In => Loc::In,
             OnProfile::Out => Loc::Out,
+            OnProfile::Undecided => Loc::On,
             OnProfile::Segment(b, j) => match self.element_side(b, j, x, dirs) {
                 Some(true) => Loc::In,
                 Some(false) => Loc::Out,
@@ -996,6 +1084,20 @@ impl Prism {
                     let s = dir[0].scale(&left[0]).add(&dir[1].scale(&left[1])).sign();
                     if s != Ordering::Equal {
                         return Some((s == Ordering::Greater) != bound.hole);
+                    }
+                }
+                None
+            }
+            // S9f.1: left of the run's tangent at the point's parameter is
+            // material on an outer boundary, as for a line.
+            Seg::Spline(s) => {
+                let tau = s.locate(x)?;
+                let d = s.deriv(&tau);
+                let left = [d[1].neg(), d[0].clone()];
+                for dir in dirs {
+                    let sd = mixed_dot_sign(&[dir[0].clone(), dir[1].clone()], &left);
+                    if sd != Ordering::Equal {
+                        return Some((sd == Ordering::Greater) != bound.hole);
                     }
                 }
                 None
@@ -1158,6 +1260,20 @@ impl Prism {
                             return Loc::Out;
                         }
                     }
+                    // S9f.1: on the wall at a known parameter, its ends the
+                    // vertical edges; off the segment outside the face.
+                    Seg::Spline(s) => match s.locate(&x) {
+                        None => return Loc::Out,
+                        Some(tau) => {
+                            if tau.cmp(&Qd::rat(s.first.clone())) == Ordering::Equal
+                                || tau.cmp(&Qd::rat(s.last.clone())) == Ordering::Equal
+                            {
+                                Loc::On
+                            } else {
+                                Loc::In
+                            }
+                        }
+                    },
                 };
                 if on_height {
                     Loc::On
