@@ -108,6 +108,21 @@ N_i / 2` over its pieces (`N dA` the family's `X0'(x) x E dx dt` with the
 face's outward sense), so each operation's volume and first moments are
 computed a second way, by the divergence theorem over the kept pieces,
 independently of the slicing (`Pair.divergence_volumes`).
+
+**S9f.2a: parallel walls.** With exactly parallel axes the other prism may
+hold arcs, circles or splines too: every wall is swept along the common
+axis, so a spline's chord meets the other's arc or spline chord, and a
+curved wall's generatrices change class, only where the slice's trace or
+the generatrix passes a 2D crossing of the two profiles' curves projected
+along the axis (`parallel_crossings`, in the exact affine map between the
+frames' `(u, v)`): a span against a circle at the real roots of the exact
+polynomial `|S(tau) - c|^2 - r^2` of degree `2 p` (its square-free factors:
+a tangency is a root of even multiplicity), two spans by subdivision of
+their Bezier forms in fractions while their control boxes meet, then
+Newton's method at 40 digits (on the distance's gradient where the
+crossing is tangent), as S9a.2's reference finds its meetings, never a
+resultant. Each crossing's slice parameter and each face's parameter there
+are breakpoints of the slicing and of the face sweeps.
 """
 from fractions import Fraction as F
 import itertools
@@ -1299,6 +1314,9 @@ class Slicing:
         self.sA = Section(A, self.P0, self.dp, g, h, 'A')
         self.sB = Section(B, self.P0, self.dp, g, h, 'B')
         self.implicit = any(implicit(d) for _, d in self.sA.lines+self.sB.lines)
+        # S9f.2a: spline chords against the other's arc or spline chords
+        # coincide where the trace passes a 2D crossing of the profiles.
+        self.cross2d = parallel_crossings(A, B) if self.parallel else []
         lo, hi = [], []
         for prism in (A, B):
             l, u = self.s_range(prism)
@@ -1382,6 +1400,14 @@ class Slicing:
             for p in sec.structure:
                 cand += real_roots(p)
             cand += sec.structure_s
+        # S9f.2a: the traces through the profiles' 2D crossings (a spline's
+        # chord meeting the other's arc or spline chord).
+        sec = self.sA
+        den = M(cross2(sec.U1, sec.U2))
+        if den != 0:
+            for c in self.cross2d:
+                X = c.on(self.A)[2]
+                cand.append(((X[0]-sec.U0m[0])*sec.U2m[1]-(X[1]-sec.U0m[1])*sec.U2m[0])/den)
         tol = mp.mpf(10)**-20*self.size
         lines = self.sA.lines+self.sB.lines
         found = []
@@ -1395,12 +1421,19 @@ class Slicing:
                     # S9f.1: a spline chord `ab . X = t(s)` meets the other's
                     # parallel line `ab' . X = L(s)` where `t(s) = kappa L(s)`
                     # (`ab = kappa ab'`).
-                    assert not (implicit(d1) and implicit(d2)), 'spline walls on both prisms'
+                    if implicit(d1) and implicit(d2):
+                        # S9f.2a: two spline chords, at the 2D crossings.
+                        assert self.parallel, 'spline walls on both prisms with crossing axes'
+                        continue
                     if implicit(d1):
                         sc, other, factor = d1, d2, kappa
                     else:
                         sc, other, factor = d2, d1, 1/kappa
-                    assert other.k == 0, 'a spline chord against a surd line'
+                    if other.k != 0:
+                        # S9f.2a: a spline chord against an arc's, at the 2D
+                        # crossings.
+                        assert self.parallel, 'a spline chord against a surd line'
+                        continue
                     for tau, s in sc.events(pscale(other.L, factor)):
                         if M(lo)-tol <= s <= M(hi)+tol and self.relevant(s, (d1.key, d2.key), tol):
                             found.append(s)
@@ -1738,6 +1771,296 @@ def overlap_area(p, q):
     return abs(area_f(out))
 
 
+# ------------------------------------------------------------------ S9f.2a: parallel walls
+#
+# Two prisms whose axes are exactly parallel: every wall is swept along the
+# common axis, so a spline wall meets the other's arc or spline walls in
+# generatrices over the 2D crossings of the profiles' curves projected along
+# the axis. The second prism's `(u', v')` are exact affine functions of the
+# first's `(u, v)` (`parallel_map`); a crossing of a spline span with a
+# circle is a root of the exact polynomial `|S(tau) - c|^2 - r^2` (degree
+# `2 p`) of the span mapped into the circle's frame (`real_roots`: Yun's
+# factors, `mp.polyroots` at 60 digits, a tangency a root of even
+# multiplicity); two spline spans (the second mapped exactly into the
+# first's frame) cross where subdivision of their Bezier forms in fractions
+# keeps their control boxes meeting down to 2^-26, then Newton's method on
+# `C(s) = D(u)` at 40 digits, or on the gradient of `|C(s) - D(u)|^2 / 2`
+# where the crossing is tangent (S9a.2's reference's method, no
+# resultant). The slicing and the face sweeps take every crossing's
+# parameter as a breakpoint (a spurious one costs nothing).
+
+
+def parallel_map(A, B):
+    """The exact affine map from B's `(u', v')` to A's `(u, v)` (axes
+    exactly parallel): `((a0, a1, a2), (b0, b1, b2))`, `u = a0 + a1 u' + a2
+    v'`."""
+    assert cross(A.n, B.n) == (0, 0, 0), 'S9f.2a: axes exactly parallel'
+    o = apply(A.inv, sub(B.o, A.o))
+    x = apply(A.inv, B.x)
+    y = apply(A.inv, B.y)
+    return ((o[0], x[0], y[0]), (o[1], x[1], y[1]))
+
+
+def invert_map(m):
+    (a0, a1, a2), (b0, b1, b2) = m
+    det = a1*b2-a2*b1
+    assert det != 0
+    i11, i12, i21, i22 = b2/det, -a2/det, -b1/det, a1/det
+    return ((-(i11*a0+i12*b0), i11, i12), (-(i21*a0+i22*b0), i21, i22))
+
+
+def map_point(m, p):
+    return (m[0][0]+m[0][1]*p[0]+m[0][2]*p[1], m[1][0]+m[1][1]*p[0]+m[1][2]*p[1])
+
+
+def _bez_halves(ctrl):
+    cur, left, right = list(ctrl), [ctrl[0]], [ctrl[-1]]
+    for _ in range(len(ctrl)-1):
+        cur = [((x[0]+y[0])/2, (x[1]+y[1])/2) for x, y in zip(cur, cur[1:])]
+        left.append(cur[0])
+        right.append(cur[-1])
+    return left, right[::-1]
+
+
+def _box(ctrl):
+    xs, ys = [c[0] for c in ctrl], [c[1] for c in ctrl]
+    return min(xs), max(xs), min(ys), max(ys)
+
+
+class Curve2:
+    """A Bezier span's exact power coefficients and 40-digit jets."""
+
+    def __init__(self, ctrl):
+        self.ctrl = tuple((F(x), F(y)) for x, y in ctrl)
+        self.X = ptrim(power_of([c[0] for c in self.ctrl]))
+        self.Y = ptrim(power_of([c[1] for c in self.ctrl]))
+        self.Xm, self.Ym = [M(c) for c in self.X], [M(c) for c in self.Y]
+        self.dXm, self.dYm = [M(c) for c in pder(self.X)], [M(c) for c in pder(self.Y)]
+        self.ddXm, self.ddYm = [M(c) for c in pder(pder(self.X))], [M(c) for c in pder(pder(self.Y))]
+
+    def point(self, t):
+        return peval(self.Xm, t), peval(self.Ym, t)
+
+    def d1(self, t):
+        return peval(self.dXm, t), peval(self.dYm, t)
+
+    def d2(self, t):
+        return peval(self.ddXm, t), peval(self.ddYm, t)
+
+
+def span_span_meets(P, Q, reach=F(0), limit=F(1, 2**26)):
+    """Candidate parameter boxes `(s0, s1, u0, u1)` where two spans'
+    control boxes meet (within `reach`) down to `limit`."""
+    stack = [(P.ctrl, F(0), F(1), Q.ctrl, F(0), F(1))]
+    out, steps = [], 0
+    while stack:
+        cp, s0, s1, cq, u0, u1 = stack.pop()
+        steps += 1
+        assert steps < 2000000, 'spline/spline subdivision did not settle (an overlap?)'
+        a, b = _box(cp), _box(cq)
+        if a[0] > b[1]+reach or b[0] > a[1]+reach or a[2] > b[3]+reach or b[2] > a[3]+reach:
+            continue
+        if s1-s0 <= limit and u1-u0 <= limit:
+            out.append((s0, s1, u0, u1))
+            continue
+        if s1-s0 >= u1-u0:
+            L, R = _bez_halves(cp)
+            m = (s0+s1)/2
+            stack += [(L, s0, m, cq, u0, u1), (R, m, s1, cq, u0, u1)]
+        else:
+            L, R = _bez_halves(cq)
+            m = (u0+u1)/2
+            stack += [(cp, s0, s1, L, u0, m), (cp, s0, s1, R, m, u1)]
+    return out
+
+
+def _newton_meet(P, Q, s, u):
+    """Newton's method on `P(s) = Q(u)`: (s, u), or None where singular."""
+    for _ in range(100):
+        (x1, y1), (x2, y2) = P.point(s), Q.point(u)
+        fx, fy = x1-x2, y1-y2
+        (a, b), (c, d) = P.d1(s), Q.d1(u)
+        det = b*c-a*d
+        if abs(det) <= mp.mpf(10)**-30*(a*a+b*b+c*c+d*d):
+            return None
+        ds, du = (fx*d-c*fy)/det, (b*fx-a*fy)/det
+        s, u = s+ds, u+du
+        if abs(ds)+abs(du) < mp.mpf(10)**-45:
+            break
+    return s, u
+
+
+def _newton_near(P, Q, s, u):
+    """Newton's method on the gradient of `|P(s) - Q(u)|^2 / 2` (a local
+    minimum of the distance: a touch or a near miss)."""
+    for _ in range(200):
+        (x1, y1), (x2, y2) = P.point(s), Q.point(u)
+        e = (x1-x2, y1-y2)
+        p1, q1 = P.d1(s), Q.d1(u)
+        p2, q2 = P.d2(s), Q.d2(u)
+        g = (e[0]*p1[0]+e[1]*p1[1], -(e[0]*q1[0]+e[1]*q1[1]))
+        h11 = p1[0]**2+p1[1]**2+e[0]*p2[0]+e[1]*p2[1]
+        h22 = q1[0]**2+q1[1]**2-(e[0]*q2[0]+e[1]*q2[1])
+        h12 = -(p1[0]*q1[0]+p1[1]*q1[1])
+        det = h11*h22-h12*h12
+        if det == 0:
+            return None
+        ds, du = -(g[0]*h22-g[1]*h12)/det, -(h11*g[1]-h12*g[0])/det
+        s, u = s+ds, u+du
+        if abs(ds)+abs(du) < mp.mpf(10)**-42:
+            break
+    return s, u
+
+
+def span_crossings(P, Q):
+    """[(s, u, sine, distance)] where spans P and Q (one frame) cross or
+    touch, `s` and `u` in [0, 1]."""
+    out = []
+    pad = mp.mpf(2)**-20
+    tiny = mp.mpf(10)**-28
+    for s0, s1, u0, u1 in span_span_meets(P, Q):
+        s, u = M(s0+s1)/2, M(u0+u1)/2
+        if any(abs(s-a)+abs(u-b) < mp.mpf(2)**-18 for a, b, _, _ in out):
+            continue
+        r = _newton_meet(P, Q, s, u)
+        if r is None or not (M(s0)-pad <= r[0] <= M(s1)+pad and M(u0)-pad <= r[1] <= M(u1)+pad):
+            r = _newton_near(P, Q, s, u)
+        if r is None:
+            continue
+        s, u = r
+        if not (-tiny <= s <= 1+tiny and -tiny <= u <= 1+tiny):
+            continue
+        s, u = min(max(s, M(0)), M(1)), min(max(u, M(0)), M(1))
+        (x1, y1), (x2, y2) = P.point(s), Q.point(u)
+        dist = mp.sqrt((x1-x2)**2+(y1-y2)**2)
+        if dist > mp.mpf(10)**-30:
+            continue
+        (a, b), (c, d) = P.d1(s), Q.d1(u)
+        sine = abs(a*d-b*c)/mp.sqrt((a*a+b*b)*(c*c+d*d))
+        if not any(abs(s-a2)+abs(u-b2) < mp.mpf(10)**-25 for a2, b2, _, _ in out):
+            out.append((s, u, sine, dist))
+    return out
+
+
+def span_near_misses(P, Q, reach):
+    """Local minima of the distance between two spans within `reach` that
+    are not crossings: [(s, u, distance)]."""
+    out = []
+    tiny = mp.mpf(10)**-28
+    for s0, s1, u0, u1 in span_span_meets(P, Q, reach, F(1, 2**10)):
+        r = _newton_near(P, Q, M(s0+s1)/2, M(u0+u1)/2)
+        if r is None:
+            continue
+        s, u = r
+        if not (-tiny <= s <= 1+tiny and -tiny <= u <= 1+tiny):
+            continue
+        (x1, y1), (x2, y2) = P.point(s), Q.point(u)
+        dist = mp.sqrt((x1-x2)**2+(y1-y2)**2)
+        if dist <= mp.mpf(10)**-30:
+            continue
+        if not any(abs(s-a)+abs(u-b) < mp.mpf(10)**-20 for a, b, _ in out):
+            out.append((s, u, dist))
+    return out
+
+
+def circle_poly(ctrl, c, r):
+    """`|S(tau) - c|^2 - r^2` of a span `S` (exact)."""
+    X = psub(ptrim(power_of([p[0] for p in ctrl])), [c[0]])
+    Y = psub(ptrim(power_of([p[1] for p in ctrl])), [c[1]])
+    return psub(padd(pmul(X, X), pmul(Y, Y)), [r*r])
+
+
+def span_circle(ctrl, rd, size):
+    """[(tau, phi, sine, multiplicity)] where a span (in the circle's frame)
+    meets a round element `rd` within its range."""
+    poly = ptrim(circle_poly(ctrl, rd.c, rd.r))
+    assert not pzero(poly), 'a spline span on a circle'
+    C = Curve2(ctrl)
+    out = []
+    for f, mult in squarefree(poly):
+        for tau in real_roots(f):
+            if not (-mp.mpf(10)**-30 <= tau <= 1+mp.mpf(10)**-30):
+                continue
+            tau = min(max(tau, M(0)), M(1))
+            x, y = C.point(tau)
+            phi = mp.atan2(y-rd.cm[1], x-rd.cm[0])
+            if rd.range_bad(phi) > mp.mpf(10)**-25*size:
+                continue
+            dx, dy = C.d1(tau)
+            sine = abs(dx*mp.cos(phi)+dy*mp.sin(phi))/mp.sqrt(dx*dx+dy*dy)
+            out.append((tau, phi, sine, mult))
+    return out
+
+
+def span_circle_near(ctrl, rd, size):
+    """Near misses of a span and a round element: [(tau, distance)] at the
+    critical points of `|S - c|^2` where it does not vanish, within the
+    element's range."""
+    poly = ptrim(circle_poly(ctrl, rd.c, rd.r))
+    C = Curve2(ctrl)
+    out = []
+    for tau in real_roots(pder(poly)):
+        if not (0 <= tau <= 1):
+            continue
+        x, y = C.point(tau)
+        phi = mp.atan2(y-rd.cm[1], x-rd.cm[0])
+        if rd.range_bad(phi) > mp.mpf(10)**-25*size:
+            continue
+        dist = abs(mp.sqrt((x-rd.cm[0])**2+(y-rd.cm[1])**2)-rd.rm)
+        if dist > mp.mpf(10)**-30:
+            out.append((tau, dist))
+    return out
+
+
+class Crossing:
+    """A 2D crossing (or touch) of a curved element of each prism: per
+    prism its element's index, its parameter (`tau` on a span, the angle on
+    an arc or circle) and the point in its `(u, v)`."""
+
+    def __init__(self, A, B, ia, ta, XA, ib, tb, XB, sine, touch):
+        self.at = {id(A): (ia, ta, XA), id(B): (ib, tb, XB)}
+        self.sine, self.touch = sine, touch
+
+    def on(self, prism):
+        return self.at[id(prism)]
+
+
+def parallel_crossings(A, B):
+    """Every crossing of a spline span of either prism with an arc, circle
+    or span of the other (S9f.2a; axes exactly parallel)."""
+    if not (A.profile.splines or B.profile.splines):
+        return []
+    curved = lambda p: [(i, el) for i, el in enumerate(p.profile.elements) if el.kind != 'seg']
+    m = parallel_map(A, B)
+    inv = invert_map(m)
+    size = max([M(1)]+[abs(M(c)) for p in (A, B) for v in p.profile.vertices for c in v])
+    out = []
+    for ia, ea in curved(A):
+        for ib, eb in curved(B):
+            if ea.kind != 'spline' and eb.kind != 'spline':
+                continue
+            if ea.kind == 'spline' and eb.kind == 'spline':
+                P = Curve2(ea.ctrl)
+                Q = Curve2(tuple(map_point(m, c) for c in eb.ctrl))
+                Qb = Curve2(eb.ctrl)
+                for s, u, sine, _ in span_crossings(P, Q):
+                    out.append(Crossing(A, B, ia, s, P.point(s), ib, u, Qb.point(u), sine,
+                                        sine < mp.mpf(10)**-20))
+            elif ea.kind == 'spline':
+                ctrl = tuple(map_point(inv, c) for c in ea.ctrl)
+                P = Curve2(ea.ctrl)
+                for tau, phi, sine, mult in span_circle(ctrl, eb, size):
+                    XB = (eb.cm[0]+eb.rm*mp.cos(phi), eb.cm[1]+eb.rm*mp.sin(phi))
+                    out.append(Crossing(A, B, ia, tau, P.point(tau), ib, phi, XB, sine, mult > 1))
+            else:
+                ctrl = tuple(map_point(m, c) for c in eb.ctrl)
+                Q = Curve2(eb.ctrl)
+                for tau, phi, sine, mult in span_circle(ctrl, ea, size):
+                    XA = (ea.cm[0]+ea.rm*mp.cos(phi), ea.cm[1]+ea.rm*mp.sin(phi))
+                    out.append(Crossing(A, B, ia, phi, XA, ib, tau, Q.point(tau), sine, mult > 1))
+    return out
+
+
 # ------------------------------------------------------------------ face areas
 
 class FaceSweep:
@@ -1745,9 +2068,11 @@ class FaceSweep:
     pieces inside, outside and on the other's faces (same or opposite
     orientation)."""
 
-    def __init__(self, face, other, size, divergence=False):
+    def __init__(self, face, other, size, divergence=False, crossings=()):
         self.face, self.other, self.size = face, other, size
         self.divergence = divergence
+        self.crossings = crossings
+        self.parallel = cross(face.prism.n, other.n) == (0, 0, 0)
         f, o = face, other
         # The face's lines in the other's coordinates: numerators over den.
         rel = tuple(psub(f.num[i], pscale(f.den, o.o[i])) for i in range(3))
@@ -1823,7 +2148,10 @@ class FaceSweep:
         if f.kind == 'cap':
             self.implicit_own = [(i, el) for i, el in enumerate(f.prism.profile.elements) if el.kind == 'spline']
         splines = [(i, el) for i, el in enumerate(o.profile.elements) if el.kind == 'spline']
-        if splines:
+        # S9f.2a: a curved wall's generatrices against parallel spline walls
+        # change class at the 2D crossings only (`crossing_params`).
+        parallel_curved = f.family != 'affine' and self.duv == (0, 0)
+        if splines and not parallel_curved:
             assert f.family == 'affine' and den == P(1), 'a curved face against a spline wall'
             assert all(pdeg(c) <= 1 for c in Nb), 'a family of degree above one'
             Nb0 = (ptrim(Nb[0])[0], ptrim(Nb[1])[0])
@@ -1876,7 +2204,8 @@ class FaceSweep:
                     w = (psub(Nb[0], pscale(den, el.p[0])), psub(Nb[1], pscale(den, el.p[1])))
                     structure.append(psub(pscale(w[0], el.e[1]), pscale(w[1], el.e[0])))
                 elif el.kind == 'spline':
-                    self.structure_x += [x for _, x in el.point_events(Nb0, Nb1)]
+                    if not parallel_curved:
+                        self.structure_x += [x for _, x in el.point_events(Nb0, Nb1)]
                 else:
                     W = (psub(Nb[0], pscale(den, el.c[0])), psub(Nb[1], pscale(den, el.c[1])))
                     structure.append(psub(padd(pmul(W[0], W[0]), pmul(W[1], W[1])),
@@ -1904,6 +2233,7 @@ class FaceSweep:
         for poly in structure:
             cand += self.params(poly)
         cand += self.structure_x
+        cand += self.crossing_params()
         found = []
         pairs = [('own', 'Oh'), ('own', 'Oe'), ('own', 'Ov'), ('Oh', 'Oe'), ('Oh', 'Ov')]
         tol = self.tol
@@ -1915,6 +2245,9 @@ class FaceSweep:
             d = self.duv
             for g in ('own', 'Oh'):
                 for de in groups[g]:
+                    if de.k != 0 and self.parallel:
+                        # S9f.2a: an arc's crossing, at the 2D crossings.
+                        continue
                     assert de.k == 0 and pdeg(de.L) <= 1, 'a spline crossing against a surd'
                     L = ptrim(de.L)+[F(0)]
                     Q0 = (Nb0[0]+L[0]*d[0], Nb0[1]+L[0]*d[1])
@@ -1926,6 +2259,9 @@ class FaceSweep:
         for i, el in self.implicit_own:
             for g in ('Oh', 'Oe', 'Ov'):
                 for de in groups[g]:
+                    if de.k != 0 and self.parallel:
+                        # S9f.2a: an arc's crossing, at the 2D crossings.
+                        continue
                     assert de.k == 0 and pdeg(de.L) <= 1, 'a spline crossing against a surd'
                     L = ptrim(de.L)+[F(0)]
                     for _, x in el.point_events((F(0), L[0]), (F(1), L[1])):
@@ -1947,6 +2283,19 @@ class FaceSweep:
             cand = [xx for x in cand for xx in self.in_domain(x)]
         self.events = len(found)
         return merge_breaks(cand+found, lo, hi, mp.mpf(10)**-30*max(1, hi-lo))
+
+    def crossing_params(self):
+        """S9f.2a: the face's parameters at the profiles' 2D crossings (a
+        cap's sweep line through one, a curved wall's generatrix on it)."""
+        f = self.face
+        out = []
+        for c in self.crossings:
+            i, t, X = c.on(f.prism)
+            if f.kind == 'cap':
+                out.append(X[0])
+            elif f.kind in ('cyl', 'spl') and i == f.index:
+                out.append(t)
+        return out
 
     def in_domain(self, x):
         lo, hi = M(self.face.domain[0]), M(self.face.domain[1])
@@ -2156,7 +2505,7 @@ class Pair:
             out = []
             for tag, p, o in (('A', self.A, self.B), ('B', self.B, self.A)):
                 for f in p.faces:
-                    sweep = FaceSweep(f, o, self.size, self.divergence)
+                    sweep = FaceSweep(f, o, self.size, self.divergence, self.slicing.cross2d)
                     out.append((tag, f, sweep.areas(), sweep))
             self._areas = out
         return self._areas
