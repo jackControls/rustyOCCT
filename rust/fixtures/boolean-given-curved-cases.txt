@@ -1,0 +1,753 @@
+case dome_tilt_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 3.0 -1.5707963267948966 1.5707963267948966
+then fuse 95
+op 94
+frame 0.0 0.0 4.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 1.5 4.0
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+end
+case dome_tilt_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 3.0 -1.5707963267948966 1.5707963267948966
+then cut 95
+op 94
+frame 0.0 0.0 4.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 1.5 4.0
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+end
+case dome_tilt_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 3.0 -1.5707963267948966 1.5707963267948966
+then common 95
+op 94
+frame 0.0 0.0 4.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 1.5 4.0
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+end
+case dome_drill_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 3.0 -1.5707963267948966 1.5707963267948966
+then fuse 95 swapped
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 8.0
+boundary C 7.5 5.0 1.0
+end
+case dome_drill_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 3.0 -1.5707963267948966 1.5707963267948966
+then cut 95 swapped
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 8.0
+boundary C 7.5 5.0 1.0
+end
+case dome_drill_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 3.0 -1.5707963267948966 1.5707963267948966
+then common 95 swapped
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 8.0
+boundary C 7.5 5.0 1.0
+end
+case g9_clear_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary C 0.0 0.0 9.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 7.0 6.0 4.0
+then fuse 95
+op 94
+frame 4.5 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 9.0
+boundary C 0.0 0.0 1.0
+end
+case g9_clear_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary C 0.0 0.0 9.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 7.0 6.0 4.0
+then cut 95
+op 94
+frame 4.5 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 9.0
+boundary C 0.0 0.0 1.0
+end
+case g9_clear_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary C 0.0 0.0 9.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 7.0 6.0 4.0
+then common 95
+op 94
+frame 4.5 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 9.0
+boundary C 0.0 0.0 1.0
+end
+case g9_box_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary C 0.0 0.0 9.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 7.0 6.0 4.0
+then fuse 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 5.0
+boundary P 4 3.0 -2.0 12.0 -2.0 12.0 2.0 3.0 2.0
+end
+case g9_box_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary C 0.0 0.0 9.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 7.0 6.0 4.0
+then cut 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 5.0
+boundary P 4 3.0 -2.0 12.0 -2.0 12.0 2.0 3.0 2.0
+end
+case g9_box_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary C 0.0 0.0 9.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 7.0 6.0 4.0
+then common 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 5.0
+boundary P 4 3.0 -2.0 12.0 -2.0 12.0 2.0 3.0 2.0
+end
+case g9_bore_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary C 0.0 0.0 9.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 7.0 6.0 4.0
+then fuse 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 5.0
+boundary C 0.0 0.0 2.0
+end
+case g9_bore_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary C 0.0 0.0 9.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 7.0 6.0 4.0
+then cut 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 5.0
+boundary C 0.0 0.0 2.0
+end
+case g9_bore_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary C 0.0 0.0 9.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 7.0 6.0 4.0
+then common 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 5.0
+boundary C 0.0 0.0 2.0
+end
+case countersink_drill_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 5.0 5.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 1.0 3.0 3.0
+then fuse 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 6.0
+boundary C 5.0 5.0 0.5
+end
+case countersink_drill_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 5.0 5.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 1.0 3.0 3.0
+then cut 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 6.0
+boundary C 5.0 5.0 0.5
+end
+case countersink_drill_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 5.0 5.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 1.0 3.0 3.0
+then common 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 6.0
+boundary C 5.0 5.0 0.5
+end
+case groove_tilt_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -2.0 0.5
+boundary P 4 -5.0 -5.0 5.0 -5.0 5.0 5.0 -5.0 5.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.0 0.0 6.283185307179586 6.283185307179586
+then fuse 95
+op 94
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 1.8 2.4
+boundary P 4 -6.0 -15.0 6.0 -15.0 6.0 15.0 -6.0 15.0
+end
+case groove_tilt_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -2.0 0.5
+boundary P 4 -5.0 -5.0 5.0 -5.0 5.0 5.0 -5.0 5.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.0 0.0 6.283185307179586 6.283185307179586
+then cut 95
+op 94
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 1.8 2.4
+boundary P 4 -6.0 -15.0 6.0 -15.0 6.0 15.0 -6.0 15.0
+end
+case groove_tilt_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -2.0 0.5
+boundary P 4 -5.0 -5.0 5.0 -5.0 5.0 5.0 -5.0 5.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.0 0.0 6.283185307179586 6.283185307179586
+then common 95
+op 94
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 1.8 2.4
+boundary P 4 -6.0 -15.0 6.0 -15.0 6.0 15.0 -6.0 15.0
+end
+case groove_drill_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -2.0 0.5
+boundary P 4 -5.0 -5.0 5.0 -5.0 5.0 5.0 -5.0 5.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.0 0.0 6.283185307179586 6.283185307179586
+then fuse 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 2.0
+boundary C 4.0 0.0 0.6
+end
+case groove_drill_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -2.0 0.5
+boundary P 4 -5.0 -5.0 5.0 -5.0 5.0 5.0 -5.0 5.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.0 0.0 6.283185307179586 6.283185307179586
+then cut 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 2.0
+boundary C 4.0 0.0 0.6
+end
+case groove_drill_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -2.0 0.5
+boundary P 4 -5.0 -5.0 5.0 -5.0 5.0 5.0 -5.0 5.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.0 0.0 6.283185307179586 6.283185307179586
+then common 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -3.0 2.0
+boundary C 4.0 0.0 0.6
+end
+case peg_clear_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 3.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 1.25 0.0 1.0
+then fuse 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -5.0 -1.5
+boundary P 4 -4.0 -4.0 4.0 -4.0 4.0 4.0 -4.0 4.0
+end
+case peg_clear_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 3.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 1.25 0.0 1.0
+then cut 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -5.0 -1.5
+boundary P 4 -4.0 -4.0 4.0 -4.0 4.0 4.0 -4.0 4.0
+end
+case peg_clear_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 3.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 1.25 0.0 1.0
+then common 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -5.0 -1.5
+boundary P 4 -4.0 -4.0 4.0 -4.0 4.0 4.0 -4.0 4.0
+end
+case holes_tilt_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -1.0 11.0
+boundary C 5.0 2.5 1.5
+then cut 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 6.0
+boundary C 3.0 1.5 1.0
+then fuse 97
+op 96
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 2.0 4.5
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+end
+case holes_tilt_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -1.0 11.0
+boundary C 5.0 2.5 1.5
+then cut 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 6.0
+boundary C 3.0 1.5 1.0
+then cut 97
+op 96
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 2.0 4.5
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+end
+case holes_tilt_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -1.0 11.0
+boundary C 5.0 2.5 1.5
+then cut 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 6.0
+boundary C 3.0 1.5 1.0
+then common 97
+op 96
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 2.0 4.5
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+end
+case dome_deep_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 3.0 -1.5707963267948966 1.5707963267948966
+then cut 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 8.0
+boundary C 7.5 5.0 1.0
+then fuse 97
+op 96
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 12.0 5.0 0.0
+offsets 0.0 10.0
+boundary P 4 -20.0 -20.0 6.0 -20.0 6.0 20.0 -20.0 20.0
+end
+case dome_deep_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 3.0 -1.5707963267948966 1.5707963267948966
+then cut 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 8.0
+boundary C 7.5 5.0 1.0
+then cut 97
+op 96
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 12.0 5.0 0.0
+offsets 0.0 10.0
+boundary P 4 -20.0 -20.0 6.0 -20.0 6.0 20.0 -20.0 20.0
+end
+case dome_deep_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 3.0 -1.5707963267948966 1.5707963267948966
+then cut 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 8.0
+boundary C 7.5 5.0 1.0
+then common 97
+op 96
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 12.0 5.0 0.0
+offsets 0.0 10.0
+boundary P 4 -20.0 -20.0 6.0 -20.0 6.0 20.0 -20.0 20.0
+end
+case holed_ball_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -1.0 11.0
+boundary C 5.0 2.5 1.5
+then fuse 95
+op 94
+frame 5.0 5.0 5.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 3.0 -1.5707963267948966 1.5707963267948966
+end
+case holed_ball_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -1.0 11.0
+boundary C 5.0 2.5 1.5
+then cut 95
+op 94
+frame 5.0 5.0 5.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 3.0 -1.5707963267948966 1.5707963267948966
+end
+case holed_ball_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -1.0 11.0
+boundary C 5.0 2.5 1.5
+then common 95
+op 94
+frame 5.0 5.0 5.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 3.0 -1.5707963267948966 1.5707963267948966
+end
+case holed_cone_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -1.0 11.0
+boundary C 5.0 2.5 1.5
+then fuse 95
+op 94
+frame 5.0 5.0 3.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 0.5 4.0
+end
+case holed_cone_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -1.0 11.0
+boundary C 5.0 2.5 1.5
+then cut 95
+op 94
+frame 5.0 5.0 3.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 0.5 4.0
+end
+case holed_cone_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -1.0 11.0
+boundary C 5.0 2.5 1.5
+then common 95
+op 94
+frame 5.0 5.0 3.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 2.0 0.5 4.0
+end
+case holed_torus_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -1.0 11.0
+boundary C 5.0 2.5 1.5
+then fuse 95
+op 94
+frame 5.0 5.0 4.5 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.0 0.0 6.283185307179586 6.283185307179586
+end
+case holed_torus_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -1.0 11.0
+boundary C 5.0 2.5 1.5
+then cut 95
+op 94
+frame 5.0 5.0 4.5 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.0 0.0 6.283185307179586 6.283185307179586
+end
+case holed_torus_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -1.0 11.0
+boundary C 5.0 2.5 1.5
+then common 95
+op 94
+frame 5.0 5.0 4.5 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.0 0.0 6.283185307179586 6.283185307179586
+end
+case g9_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary C 0.0 0.0 9.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 7.0 6.0 4.0
+then fuse 95
+op 94
+frame 5.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 9.0
+boundary C 0.0 0.0 1.0
+end
+case g9_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary C 0.0 0.0 9.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 7.0 6.0 4.0
+then cut 95
+op 94
+frame 5.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 9.0
+boundary C 0.0 0.0 1.0
+end
+case g9_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary C 0.0 0.0 9.0
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 7.0 6.0 4.0
+then common 95
+op 94
+frame 5.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 9.0
+boundary C 0.0 0.0 1.0
+end
+case dome_touch_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 3.0 -1.5707963267948966 1.5707963267948966
+then fuse 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 7.0 9.0
+boundary P 4 3.0 3.0 7.0 3.0 7.0 7.0 3.0 7.0
+end
+case dome_touch_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 3.0 -1.5707963267948966 1.5707963267948966
+then cut 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 7.0 9.0
+boundary P 4 3.0 3.0 7.0 3.0 7.0 7.0 3.0 7.0
+end
+case dome_touch_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+boolean fuse 93
+op 92
+frame 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 3.0 -1.5707963267948966 1.5707963267948966
+then common 95
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 7.0 9.0
+boundary P 4 3.0 3.0 7.0 3.0 7.0 7.0 3.0 7.0
+end

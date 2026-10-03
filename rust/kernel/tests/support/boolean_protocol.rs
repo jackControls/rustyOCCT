@@ -12,7 +12,9 @@
 //! Boolean's result must be one solid; the rows are the second's. S9e.2: the
 //! `then` row may end `solid X Y Z`: the first result may hold several
 //! solids, and the one holding the point strictly inside (`Solid::classify`,
-//! exactly one) is the second's argument.
+//! exactly one) is the second's argument. S9e.3: further `then` rows, each
+//! with its solid's rows, chain further Booleans on the previous result
+//! (`Case::more`); the rows are the last's.
 #[path = "identity_protocol.rs"]
 #[allow(dead_code)]
 mod identity_protocol;
@@ -29,6 +31,8 @@ pub struct Case {
     pub operation: OperationId,
     /// A second Boolean on the first's result (S9e.1).
     pub then: Option<Then>,
+    /// Further Booleans, each on the previous one's result (S9e.3).
+    pub more: Vec<Then>,
 }
 
 /// The second Boolean of a chained case: its operation, id, third solid
@@ -54,30 +58,38 @@ pub fn cases(text: &str) -> Vec<Case> {
                 .expect("a boolean row");
             let w: Vec<&str> = lines[at].split_whitespace().collect();
             let object = parse(&lines[..at].join("\n"));
-            let then_at = lines
+            let thens: Vec<usize> = lines
                 .iter()
-                .position(|l| l.starts_with("then "))
-                .unwrap_or(lines.len());
+                .enumerate()
+                .filter(|(_, l)| l.starts_with("then "))
+                .map(|(k, _)| k)
+                .collect();
+            let then_at = thens.first().copied().unwrap_or(lines.len());
             let tool_rows: Vec<&str> = std::iter::once(lines[0])
                 .chain(lines[at + 1..then_at].iter().copied())
                 .collect();
             let tool = parse(&tool_rows.join("\n"));
-            let then = (then_at < lines.len()).then(|| {
-                let t: Vec<&str> = lines[then_at].split_whitespace().collect();
-                let rows: Vec<&str> = std::iter::once(lines[0])
-                    .chain(lines[then_at + 1..].iter().copied())
-                    .collect();
-                Then {
-                    op: t[1].to_string(),
-                    operation: OperationId(t[2].parse().expect("an operation id")),
-                    third: parse(&rows.join("\n")),
-                    swapped: t.get(3) == Some(&"swapped"),
-                    pick: t
-                        .iter()
-                        .position(|w| *w == "solid")
-                        .map(|k| [1, 2, 3].map(|i| t[k + i].parse::<f64>().expect("a pick point"))),
-                }
-            });
+            let mut stages: Vec<Then> = thens
+                .iter()
+                .enumerate()
+                .map(|(j, &k)| {
+                    let next = thens.get(j + 1).copied().unwrap_or(lines.len());
+                    let t: Vec<&str> = lines[k].split_whitespace().collect();
+                    let rows: Vec<&str> = std::iter::once(lines[0])
+                        .chain(lines[k + 1..next].iter().copied())
+                        .collect();
+                    Then {
+                        op: t[1].to_string(),
+                        operation: OperationId(t[2].parse().expect("an operation id")),
+                        third: parse(&rows.join("\n")),
+                        swapped: t.get(3) == Some(&"swapped"),
+                        pick: t.iter().position(|w| *w == "solid").map(|k| {
+                            [1, 2, 3].map(|i| t[k + i].parse::<f64>().expect("a pick point"))
+                        }),
+                    }
+                })
+                .collect();
+            let then = (!stages.is_empty()).then(|| stages.remove(0));
             Case {
                 name: object.name.clone(),
                 object,
@@ -85,6 +97,7 @@ pub fn cases(text: &str) -> Vec<Case> {
                 op: w[1].to_string(),
                 operation: OperationId(w[2].parse().expect("an operation id")),
                 then,
+                more: stages,
             }
         })
         .collect()
@@ -94,31 +107,37 @@ pub fn cases(text: &str) -> Vec<Case> {
 pub type Run = (Solid, Solid, Vec<Solid>, History);
 
 pub fn run(case: &Case) -> Result<Run, Error> {
-    let (a, b, out, history) = run_first(case)?;
-    let Some(then) = &case.then else {
-        return Ok((a, b, out, history));
-    };
+    let (mut a, mut b, mut out, mut history) = run_first(case)?;
     // S9e.1: the second Boolean on the first's one solid (S9e.2: the one
-    // holding the pick point).
-    let first = given(case, out);
-    let third = build(&then.third);
-    let (a, b) = if then.swapped {
-        (third, first)
-    } else {
-        (first, third)
-    };
-    let (out, history) = boolean(&a, &then.op, then.operation, &b)?;
+    // holding the pick point); S9e.3: each further Boolean on the previous
+    // one's.
+    for then in case.then.iter().chain(&case.more) {
+        let first = given_by(&case.name, then, out);
+        let third = build(&then.third);
+        (a, b) = if then.swapped {
+            (third, first)
+        } else {
+            (first, third)
+        };
+        (out, history) = boolean(&a, &then.op, then.operation, &b)?;
+    }
     Ok((a, b, out, history))
 }
 
 /// The first result's solid the second Boolean takes: its one solid, or
 /// the one holding the pick point strictly inside (S9e.2).
+#[allow(dead_code)]
 pub fn given(case: &Case, out: Vec<Solid>) -> Solid {
     let then = case.then.as_ref().expect("a chained case");
+    given_by(&case.name, then, out)
+}
+
+/// The previous result's solid a chained Boolean takes (S9e.3: of any
+/// stage).
+pub fn given_by(name: &str, then: &Then, out: Vec<Solid>) -> Solid {
     let Some([x, y, z]) = then.pick else {
-        let [first] = <[Solid; 1]>::try_from(out).unwrap_or_else(|_| {
-            panic!("{}: the first Boolean's result is not one solid", case.name)
-        });
+        let [first] = <[Solid; 1]>::try_from(out)
+            .unwrap_or_else(|_| panic!("{name}: the previous Boolean's result is not one solid"));
         return first;
     };
     let point = rusty_occt::Point3::new(x, y, z);
@@ -126,15 +145,14 @@ pub fn given(case: &Case, out: Vec<Solid>) -> Solid {
         .into_iter()
         .filter(|s| {
             s.classify(point)
-                .unwrap_or_else(|e| panic!("{}: the pick point: {e}", case.name))
+                .unwrap_or_else(|e| panic!("{name}: the pick point: {e}"))
                 == rusty_occt::Location::Inside
         })
         .collect();
     assert_eq!(
         inside.len(),
         1,
-        "{}: the pick point is not inside exactly one solid",
-        case.name
+        "{name}: the pick point is not inside exactly one solid"
     );
     inside.remove(0)
 }

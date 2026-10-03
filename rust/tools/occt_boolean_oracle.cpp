@@ -29,7 +29,9 @@
 // second Boolean's. S9e.2: the `then` row may end `solid X Y Z`: the first
 // result may then hold several solids, and the one BRepClass3d_SolidClassifier
 // finds the point inside (TopAbs_IN, exactly one of them, else `failure`) is
-// the second's argument.
+// the second's argument. S9e.3: further `then` rows, each with its solid's
+// rows, chain further Booleans the same way on the previous result; the
+// output is the last Boolean's.
 //
 // Output: `NAME done N valid warnings` (N solids in the result, the result
 // checked by BRepCheck_Analyzer, 1 if the operation reported warnings), then
@@ -243,11 +245,17 @@ int main() {
     std::ostringstream out;
     out << std::setprecision(17);
     try {
-      Prism prisms[3];
-      int current = 0;
-      std::string operation, then;
-      bool swapped = false, picked = false;
-      gp_Pnt pick;
+      // The object, the tool, and each chained Boolean's solid (S9e.1;
+      // S9e.3 several).
+      std::vector<Prism> prisms(2);
+      std::size_t current = 0;
+      std::string operation;
+      struct Stage {
+        std::string then;
+        bool swapped = false, picked = false;
+        gp_Pnt pick;
+      };
+      std::vector<Stage> stages;
       while (std::getline(std::cin, line) && line != "end") {
         std::istringstream in(line);
         std::string kind;
@@ -256,21 +264,24 @@ int main() {
           if (current != 0 || !(in >> operation)) throw Standard_Failure("boolean row");
           current = 1;
         } else if (kind == "then") {
-          if (current != 1 || !(in >> then)) throw Standard_Failure("then row");
+          Stage stage;
+          if (current < 1 || !(in >> stage.then)) throw Standard_Failure("then row");
           std::string word;
           while (in >> word) {
-            if (word == "swapped" && !swapped && !picked) {
-              swapped = true;
-            } else if (word == "solid" && !picked) {
+            if (word == "swapped" && !stage.swapped && !stage.picked) {
+              stage.swapped = true;
+            } else if (word == "solid" && !stage.picked) {
               double x, y, z;
               if (!(in >> x >> y >> z)) throw Standard_Failure("then row");
-              pick = gp_Pnt(x, y, z);
-              picked = true;
+              stage.pick = gp_Pnt(x, y, z);
+              stage.picked = true;
             } else {
               throw Standard_Failure("then row");
             }
           }
-          current = 2;
+          stages.push_back(stage);
+          prisms.emplace_back();
+          current = prisms.size() - 1;
         } else {
           prisms[current].row(kind, in);
         }
@@ -294,27 +305,31 @@ int main() {
         std::cout << name << " not_done 0 0 0\n" << std::flush;
         continue;
       }
-      if (current == 2) {
-        // The first result's one solid (S9e.2: the one holding the pick
-        // point), given to the second Boolean.
+      bool failed = false;
+      for (std::size_t k = 0; k < stages.size(); ++k) {
+        const Stage& stage = stages[k];
+        // The previous result's one solid (S9e.2: the one holding the pick
+        // point), given to the next Boolean (S9e.3: of any stage).
         TopoDS_Shape first;
         int count = 0;
         for (TopExp_Explorer e(op->Shape(), TopAbs_SOLID); e.More(); e.Next()) {
-          if (picked) {
-            BRepClass3d_SolidClassifier classifier(e.Current(), pick, 1e-7);
+          if (stage.picked) {
+            BRepClass3d_SolidClassifier classifier(e.Current(), stage.pick, 1e-7);
             if (classifier.State() != TopAbs_IN) continue;
           }
           first = e.Current();
           ++count;
         }
         if (count != 1) throw Standard_Failure("the first result is not one solid");
-        const TopoDS_Shape third = prisms[2].shape();
-        op = swapped ? boolean(then, third, first) : boolean(then, first, third);
+        const TopoDS_Shape third = prisms[2 + k].shape();
+        op = stage.swapped ? boolean(stage.then, third, first) : boolean(stage.then, first, third);
         if (!op->IsDone() || op->HasErrors()) {
           std::cout << name << " not_done 0 0 0\n" << std::flush;
-          continue;
+          failed = true;
+          break;
         }
       }
+      if (failed) continue;
       const TopoDS_Shape result = op->Shape();
       std::vector<Solid> solids;
       for (TopExp_Explorer e(result, TopAbs_SOLID); e.More(); e.Next()) {

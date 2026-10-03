@@ -442,7 +442,7 @@ def pick_words(pick):
 
 
 def encode_chained_case(obj, operation, tool, boolean_operation, then, third, then_operation, swapped,
-                        pick=None):
+                        pick=None, more=()):
     """S9e.1: a Boolean's result given to another Boolean. The first
     Boolean's block (`encode_boolean_case`) without its `end`, then a row
     `then OP ID` (`OP` the second operation, `ID` its operation id; `then OP
@@ -452,24 +452,36 @@ def encode_chained_case(obj, operation, tool, boolean_operation, then, third, th
     must be one solid, the second's argument. Blocks without a `then` row
     are unchanged. S9e.2: `pick` (a point) ends the `then` row with `solid X
     Y Z`: the first result may hold several solids, and the one holding the
-    point strictly inside (exactly one) is the second's argument."""
+    point strictly inside (exactly one) is the second's argument. S9e.3:
+    `more` chains further Booleans, each `(OP, solid, ID, swapped, pick)`
+    another `then` row and its solid's rows after the previous ones, the
+    previous Boolean's result (its one solid, or the picked one) its
+    argument."""
     assert then in BOOLEAN_OPERATIONS, then
     first = encode_boolean_case(obj, operation, tool, boolean_operation).rsplit('\nend', 1)[0]
-    rest = encode_case(third).split('\n')[1:-1]
-    row = f'then {then} {then_operation}'+(' swapped' if swapped else '')+pick_words(pick)
-    return '\n'.join([first, row, *rest, 'end'])
+    rows = []
+    for op, solid, op_id, sw, pk in [(then, third, then_operation, swapped, pick), *more]:
+        assert op in BOOLEAN_OPERATIONS, op
+        rows.append(f'then {op} {op_id}'+(' swapped' if sw else '')+pick_words(pk))
+        rows += encode_case(solid).split('\n')[1:-1]
+    return '\n'.join([first, *rows, 'end'])
 
 
-def native_chained_case(obj, operation, tool, then, third, swapped, pick=None):
+def native_chained_case(obj, operation, tool, then, third, swapped, pick=None, more=()):
     """The explicit OCCT rows of a chained Boolean (occt_boolean_oracle.cpp):
     `native_boolean_case` without its `end`, a `then OP` row (`then OP
     swapped`; S9e.2: ending `solid X Y Z` with a pick point), the third
-    solid's rows without their `case` row, and `end`."""
+    solid's rows without their `case` row, and `end`. S9e.3: `more` adds
+    further stages, each `(OP, solid, swapped, pick)` another `then` row and
+    its solid's rows."""
     assert then in BOOLEAN_OPERATIONS, then
     first = native_boolean_case(obj, operation, tool).rsplit('\nend', 1)[0]
-    rest = native_case(third).split('\n')[1:-1]
-    row = f'then {then}'+(' swapped' if swapped else '')+pick_words(pick)
-    return '\n'.join([first, row, *rest, 'end'])
+    rows = []
+    for op, solid, sw, pk in [(then, third, swapped, pick), *more]:
+        assert op in BOOLEAN_OPERATIONS, op
+        rows.append(f'then {op}'+(' swapped' if sw else '')+pick_words(pk))
+        rows += native_case(solid).split('\n')[1:-1]
+    return '\n'.join([first, *rows, 'end'])
 
 
 def box_boundaries(size):
