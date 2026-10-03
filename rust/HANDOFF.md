@@ -37,6 +37,15 @@ where to pick up. Written 2026-10-01; the code it describes is that of
   past a cap by their control polygon; `boolean-spline-any-r4-*` adds the
   rounded knot and exact parallels after the capture. Pending its DRAW
   survey and campaign.
+- **S9f.2a implemented** (branch `s9f2a`, not yet pushed): spline walls
+  against arc, circle and spline walls of a prism whose axis is exactly
+  parallel (turned about the axis, rotated about a tilted axis, offset by
+  an amount that rounds), generatrices over the profiles' exact crossings
+  (`curved/spline_parallel.rs`): decisions ("S9f.2a refined"), 43 cases
+  referenced and captured before the kernel code, the kernel within the
+  reference on all 39 results and refusing the 4 degenerate tangencies; the
+  validator's mass integrals take a steep line by its box. Pending its DRAW
+  survey and campaign.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") are green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed; check
   them after every push (see "Working rules").
@@ -63,8 +72,12 @@ where to pick up. Written 2026-10-01; the code it describes is that of
    knot decoded (the byte at index 14). The old local branch `s9f1-kernel`
    is superseded: do not merge it.
 3. **S9e.4**: imported bodies decided on their stored surfaces.
-4. **S9f.2a, S9f.2b, S9f.3**: spline walls against exactly parallel walls,
-   crossing cylinders, spheres and cones ("S9f refined" gives the degrees).
+4. **S9f.2a's DRAW survey and campaign** (its kernel done on branch
+   `s9f2a`, over `s9c2-kernel`: `REVIEW_NOTES.md`'s "S9f.2a implemented";
+   the campaign runs the `boolean` target with `SPLINE_PARALLEL` on and
+   the tilted offset decoded, the byte at index 15). Then **S9f.2b,
+   S9f.3**: spline walls against crossing cylinders, spheres and cones
+   ("S9f refined" gives the degrees).
 5. **S9's acceptance** (U6): kernel and fuzz CI green at the accepted
    revision, the schedule run's full replays green (boolean and
    `degree_elevation` are sharded across four jobs plus a completeness check,
@@ -76,7 +89,7 @@ the inputs, a cavity beside several solids, spline segments along one curve
 of different forms, an arc ending off its circle, a section through a
 sphere's pole off its meridians, a torus's tube circle on the other surface,
 a result touching itself, splines against tori, spline walls against spline
-walls with crossing axes.
+walls with crossing axes, coincident spline walls in different frames.
 
 Parallel tracks (`REVIEW_NOTES.md`, "Parallel tracks"): the degree-eight
 arrangement arithmetic (the next lever for speed); the fuzz switches below.
@@ -158,6 +171,7 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_given_boolean.py` | 36 / 0 |
 | `compare_given_curved_boolean.py` | 25 / 23 |
 | `compare_spline_any_boolean.py` | 22 / 16 (the kernel within the reference on all 33 solid and empty cases, the 5 degenerate refused) |
+| `compare_spline_parallel_boolean.py` | 31 / 12 (the kernel within the reference on all 39 results, the 4 degenerate refused) |
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its

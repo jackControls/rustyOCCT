@@ -4981,6 +4981,67 @@ Decisions for S9, recorded before its code (2026-09-28):
       diagnostic build, within 1.1e-8 of the reference on all 39 results);
       four solids' counts change when unified. No correction to the
       decisions from the evidence. S9f.2a's kernel next.
+  * **S9f.2a implemented** (`solid/boolean/curved/spline_parallel.rs`;
+    `mod.rs`'s `spline_pairs` and `parallel_axes`, `meet.rs`'s sections and
+    edge meetings, `spline_walls.rs`'s `foreign_param` and the arcs'
+    implicit forms, `model.rs`'s `rational_proxy`, the operand on each
+    `SplineSeg`; the validator's steep lines in `mass.rs`): spline walls
+    against arc, circle and spline walls on exactly parallel axes as the
+    refined decisions describe. Each Bézier arc keeps its implicit equation
+    and inversion in its own frame, made once (`Implicit`: the Sylvester
+    resultant and the first subresultant's `a`, `b` interpolated exactly on
+    an integer grid; a coordinate of degree one inverts directly); a spline
+    against a cylinder at the roots of `E` on the spline's arcs
+    (`cylinder_roots`), two splines at the roots of `f(m(S))` on the
+    object's segment's arcs, the other's parameter `-b / a` in the root's
+    field (`crossings`, swapped when the tool's segment is given first, so
+    the object's field always holds the crossing). Both refusal sites gave
+    way (`spline_pairs` now refuses crossing axes only, relabelled S9f.2b
+    and S9f; `spline_curved` names S9f.2b and S9f.3). All 43 fixtures as
+    the reference (39 within the kernel's enclosures of volume, area and
+    centre, each at most `1e-9` wide, with OCCT's unified counts on every
+    solid; the 4 degenerate refused: a disc and a half-turned dome tangent
+    to the dome along its apex generatrix); every history complete,
+    results deterministic and moved rigidly
+    (`tests/spline_parallel_booleans.rs`, 8 tests, 15 s at `opt-level` 2 and
+    16 s in release: a mirrored dome refused,
+    crossing axes refused with their labels, a quintic against a quartic a
+    limit and a quartic against a quartic consistent, a disc through the
+    wave's knot as S9a.2's one-frame Boolean; and the module's 3: the
+    implicit forms and inversion, a crossing found from both sides in one
+    field, coincident arcs refused). `compare_spline_parallel_boolean.py`
+    31 matches and 12 reviewed, unchanged; every other Boolean comparison
+    unchanged, `compare_split.py` 72/56 and `compare_brep.py --family
+    spline` 10/3. Amendments to the decisions, from the implementation:
+    (a) a crossing at a knot of either curve is kept only where the legs
+    beside the knot lie on the other curve's two sides (`crosses_at_knot`,
+    the knot's legs the arcs' end derivatives), at knots of both refused,
+    as a touch at a knot; (b) coincident spline walls of two prisms meet
+    first at their arches' ends, a vertex of one on the other's face
+    (`Degenerate`), before any resultant vanishes; the module's test
+    reaches the coincident arcs; (c) the validator's certified mass
+    integrals on a cylinder or cone took a steep line (its `du` at most
+    `2^-20` of its `dv`: the gap between a vertical edge's pcurve and a
+    section's at a stadium arc's start in `TILT2`, their angles an ulp apart
+    at `-7.4e-16`) by the expansion in its slope's powers, which left
+    `dome_stadium_tilt2_common`'s centre enclosure `10^26` wide; such a line
+    is now enclosed as `-du F` over its box (`rev_lines`, `BREP_VALIDATION.md`).
+    The `boolean` fuzz target's spline variants against the stadium and
+    the round hole or a spline in the frame turned about the axis evaluate
+    through S9f.2a (`SPLINE_PARALLEL`, on), and in the tilted frame the byte
+    at index 15, at or above 128, offsets a spline variant's tool by an
+    amount that rounds (the tilted frame's own normal and `x`: normalized
+    again they turned by an ulp, crossing axes). Replays with debug
+    assertions: the corpus (1,430 inputs) and the 24 regressions, none
+    failing, the slowest 6.3 s; 1,908 S9f.2a variants of every third
+    corpus input (the object, the tool or both a spline prism against the
+    stadium, the round hole or a spline, turned about the axis; and in the
+    tilted frame at an offset that rounds), none failing, 5,606 of their
+    operations evaluating (the rest refused as documented: the chained
+    stage's spline results, S9f; sub-resolution results and contacts),
+    median 0.31 s, the slowest 2.2 s (27 s under AddressSanitizer on this
+    host, where the corpus's slowest input takes 29 s).
+    Pending: the DRAW survey, the campaign.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

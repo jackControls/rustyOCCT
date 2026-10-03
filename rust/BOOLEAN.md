@@ -1030,6 +1030,40 @@ at most `2^-20` of the patch (a crease's rounded identity in `u` a step
 past the line), integrated on the patch's polynomial with the slivers'
 error bounded and added (`BREP_VALIDATION.md`).
 
+### Spline walls against parallel curved walls (S9f.2a)
+
+A spline prism meets a prism with arcs, circles or splines whose stored
+normal is exactly parallel to its own (bitwise equal or opposite) in any
+other frame, turned about the axis or offset by an amount that rounds
+(`curved/spline_parallel.rs`; S9a.2 keeps one exact frame). The other
+frame's `(u', v')` are rational affine functions of this one's `(u, v)`
+(`map2`), so every wall against wall section is generatrices over the 2D
+crossings of the profiles' curves: a spline arc against a cylinder at the
+roots of `|m(S(s)) - c|^2 - r^2` (degree `2 p`); against another spline
+arc at the roots of `f(m(S(s)))`, `f` the other arc's implicit equation in
+its own frame (the Sylvester resultant of `B_x(sigma) - X` and `B_y(sigma)
+- Y`, interpolated exactly on an integer grid, once per arc), degree at
+most `p q`, the other's parameter at each root `-b / a` of their first
+subresultant (an element of the root's field), the crossing kept when it
+lies in `[0, 1]`. Every root is the spline arc's own parameter, S9f.1's
+generator: against a cylinder the spline's, between two splines always the
+object's, so a crossing found from either input's edges or faces is one
+number. Cap edges and creases over a spline meet the other's curved wall at
+the same roots, a cylinder's cap edge (a conic) the spline's wall at its
+angle there. A point of another field is found on a spline segment by the
+arc's implicit equation's exact sign and its inversion; an irrational
+point off every spline segment is classified at a rational point of a box
+about it that no element of the profile meets (lines by sides, circles by
+distance, spline arcs by their control boxes under exact subdivision).
+
+`Degenerate`: walls tangent along a generatrix (a root of multiplicity
+above one), a crossing at a knot of either curve where the legs beside it
+do not lie on the other's two sides, at knots of both. `ComputationLimit`:
+arcs whose degrees' product exceeds 16, a crossing at a node or cusp of the
+other arc's curve. `OutOfDomain`: coincident spline walls (a resultant
+identically zero on an arc, refused, S9f); crossing axes (against a
+cylinder S9f.2b's, against a spline wall refused, S9f).
+
 ## Evidence
 
 * **Case protocol.** A Boolean case (`identity_reference.
@@ -2368,7 +2402,10 @@ error bounded and added (`BREP_VALIDATION.md`).
   (the waves 8.6e-4), adaptively within 2.3e-9 in volume but for the
   waves, while Green's theorem over OCCT's own faces and pcurves (a
   diagnostic build) gives the reference within 1.1e-8 on all 39 results;
-  four solids' counts change when unified.
+  four solids' counts change when unified. With S9f.2a's kernel: 31
+  matches and 12 reviewed, unchanged, the kernel within the reference on
+  the 39 results with OCCT's unified counts on every solid, and refusing
+  the 4 degenerate cases.
 * **S9e.2 evidence (a stack, an S9b.1 result or one solid of several given
   to another Boolean), before its kernel code.** The protocol's `then` row
   may end `solid X Y Z`: the first result's solid holding the point
