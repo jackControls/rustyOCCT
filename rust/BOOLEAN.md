@@ -1064,6 +1064,49 @@ other arc's curve. `OutOfDomain`: coincident spline walls (a resultant
 identically zero on an arc, refused, S9f); crossing axes (against a
 cylinder S9f.2b's, against a spline wall refused, S9f).
 
+### Spline walls against crossing cylinders (S9f.2b.1)
+
+A spline prism meets a prism with arcs or circles whose stored normal
+crosses its own (`n_A x n_B != 0` exactly), a leaning, tilted or side
+rod, ring or stadium (`curved/spline_crossing.rs`). Along the spline
+wall's ruling at the run parameter `tau` the cylinder's function in its
+own frame's exact rows is `F = A w^2 + 2 B(tau) w + C(tau)` (`A` a
+positive constant, `B` of degree `p`, `C` of `2 p` on each Bézier arc),
+so the section is each branch `w = (-B +- sqrt(D)) / A` over each maximal
+range of the segment's run where `D = B^2 - A C > 0` (`Crv::WallMeet`, a
+graph over `tau`, placed by `tau`): a turning point (a root of `D`) ends a
+range where it lies outside either face, and the pieces beside it are
+outside too. A point is on a branch when its profile point lies on the
+segment within the range, it lies on the cylinder and `A w + B` has the
+branch's sign, exactly; a piece's midpoint at a rational `tau` lies in
+`Q(sqrt(D(tau)))`. Vertices: a cap edge or a crease over the segment meets
+the cylinder at the roots of `F` along it (degree `2 p`, `wallcrv_cyl`); a
+cylinder's cap circle meets the wall at the roots of `F` on its cap plane's
+crease, at its angle there (`conic_wall`); vertical edges by S9f.1's
+`line_wall` and quadratic surds. Every root is the arc's own parameter, so
+every vertex lies in `Q(alpha)` of degree at most `2 p` or in
+`Q(sqrt(d))`.
+
+In the topology the meeting is a new procedural curve,
+`Curve3::WallMeet` (`TOPOLOGY_MODEL.md`): the wall face's stored surface,
+the other cylinder's stored frame and radius, the branch's sign and the
+`u` range; on its own wall its pcurve reads its own `(u, v)`, on the
+cylinder it is the cylinder's inverse. Its certified jets come from one
+knot span's polynomial (across a knot the union of both spans' jets to
+the order the wall's continuity allows), the integrals along it are split
+at the knots exactly, and `a`, `b`, `c` and the discriminant are exact
+Bernstein polynomials per wall and cylinder (`MATHEMATICS.md`).
+
+`Degenerate`: the cylinder tangent to the wall (a root of `D` of
+multiplicity above one near the faces); a turning point at an interior
+knot; a turning point on a face's boundary, at a segment's end, or outside
+the faces within the resolution of both (a rounding away from turning back
+on a cap's edge); a vertex's polynomial with a multiple root (an edge
+tangent to the other's face). `OutOfDomain` (S9f.2b.2): a turning point
+inside both faces (loops round it), a cylinder's cap circle on a spline
+wall in a plane holding the wall's axis direction (a tower field). Spline
+walls against spline walls on crossing axes stay refused (S9f).
+
 ## Evidence
 
 * **Case protocol.** A Boolean case (`identity_reference.
@@ -2402,6 +2445,12 @@ cylinder S9f.2b's, against a spline wall refused, S9f).
   build's adaptive BRepGProp or Green's theorem over OCCT's own faces and
   pcurves gives the reference within 4.0e-9 in volume, 1.4e-9 in area and
   8.6e-9 in the centre on all 21; five solids' counts change when unified.
+  With S9f.2b.1's kernel: 13 matches and 21 reviewed, the kernel within
+  the reference on the 24 results of S9f.2b.1 with OCCT's unified counts
+  on every solid but `capsule_tilt`'s three (OCCT splits the meeting's
+  ellipse arcs on the capsule's caps at the rod's seam generatrix, and in
+  the fuse its seam at the hole: those three reviews now name the counts
+  too), refusing the 4 degenerate cases and S9f.2b.2's 6 (`unsupported`).
 * **S9f.2a evidence (spline walls against arc, circle and spline walls on
   exactly parallel axes), before its kernel code.**
   `curved_boolean_reference.py` takes the other prism's arcs, circles and

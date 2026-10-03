@@ -46,6 +46,17 @@ where to pick up. Written 2026-10-01; the code it describes is that of
   reference on all 39 results and refusing the 4 degenerate tangencies; the
   validator's mass integrals take a steep line by its box. Pending its DRAW
   survey and campaign.
+- **S9f.2b.1 implemented** (branch `s9f2b`, not yet pushed): spline walls
+  against cylinder walls of a prism whose axis crosses theirs (leaning,
+  tilted or side rods, rings and stadiums), the meeting's branches as
+  graphs over the spline's parameter between turning points
+  (`curved/spline_crossing.rs`) and a new procedural edge,
+  `Curve3::WallMeet`, certified per knot span
+  (`topology/validate/wall_meet.rs`): decisions ("S9f.2b refined"), 34
+  cases referenced and captured before the kernel code, the kernel within
+  the reference on all 24 S9f.2b.1 results, refusing the 4 degenerate
+  cases and S9f.2b.2's 6 (loops round a turning point inside the faces,
+  tower fields). Pending its DRAW survey and campaign.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") are green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed; check
   them after every push (see "Working rules").
@@ -75,9 +86,14 @@ where to pick up. Written 2026-10-01; the code it describes is that of
 4. **S9f.2a's DRAW survey and campaign** (its kernel done on branch
    `s9f2a`, over `s9c2-kernel`: `REVIEW_NOTES.md`'s "S9f.2a implemented";
    the campaign runs the `boolean` target with `SPLINE_PARALLEL` on and
-   the tilted offset decoded, the byte at index 15). Then **S9f.2b,
-   S9f.3**: spline walls against crossing cylinders, spheres and cones
-   ("S9f refined" gives the degrees).
+   the tilted offset decoded, the byte at index 15). Then **S9f.2b.1's
+   DRAW survey and campaign** (its kernel done on branch `s9f2b`, over
+   `s9c2-kernel`: `REVIEW_NOTES.md`'s "S9f.2b.1 implemented"; the campaign
+   runs the `boolean` target with `SPLINE_CROSSING` on), **S9f.2b.2**
+   (loops round a turning point inside the faces, each piece about it a
+   graph over the cylinder's angle in a verified window, and the tower
+   fields of a cap circle on a wall along its axis), **S9f.3** (spheres
+   and cones; "S9f refined" gives the degrees).
 5. **S9's acceptance** (U6): kernel and fuzz CI green at the accepted
    revision, the schedule run's full replays green (boolean and
    `degree_elevation` are sharded across four jobs plus a completeness check,
@@ -172,6 +188,7 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_given_curved_boolean.py` | 25 / 23 |
 | `compare_spline_any_boolean.py` | 22 / 16 (the kernel within the reference on all 33 solid and empty cases, the 5 degenerate refused) |
 | `compare_spline_parallel_boolean.py` | 31 / 12 (the kernel within the reference on all 39 results, the 4 degenerate refused) |
+| `compare_spline_crossing_boolean.py` | 13 / 21 (the kernel within the reference on all 24 S9f.2b.1 results, the 4 degenerate refused, S9f.2b.2's 6 `unsupported`) |
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its
@@ -204,7 +221,8 @@ spline prisms. Then:
   on the exact arithmetic, and Linux runners about 2.6 times this host; the
   boolean target's limit is 60 s an input. Configurations too slow for it are
   switched off in `rust/fuzz/src/boolean.rs` (`TORUS_PAIRS`, `CONE_PAIRS`,
-  `TURNED_PARTS`; `GIVEN_CURVED`, `GIVEN_ROUND` and `GIVEN_BALL` are on). A heavily loaded
+  `TURNED_PARTS`; `GIVEN_CURVED`, `GIVEN_ROUND`, `GIVEN_BALL`, `SPLINE_WALLS`,
+  `SPLINE_PARALLEL` and `SPLINE_CROSSING` are on). A heavily loaded
   host makes campaigns time out spuriously; run them on a quiet machine.
 - **Keep debug-assertion tests optimized.** CI runs them with
   `CARGO_PROFILE_DEV_OPT_LEVEL=2`; time new test files that way.

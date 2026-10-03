@@ -2515,6 +2515,83 @@ the expansion's interval terms lose the line's smallness (`m^2` times
 cancelling enclosures), so the line is enclosed as `-du F(box)` over its
 parameter box instead, certified by the mean value theorem.
 
+## Spline walls against crossing cylinders (S9f.2b)
+
+**The meeting.** Along the spline prism's ruling at the run parameter
+`tau`, `X = o + S_x(tau) x + S_y(tau) y + w n`, the cylinder's function in
+its own frame's exact rows (`sum_i (g_i . X - e_i)^2 - r^2`, `g_i` the
+rows of the inverse of its stored axes, `e_i` its centre's coordinates) is
+`F = A w^2 + 2 B(tau) w + C(tau)` with `P_i = g_i . (o + S_x x + S_y y) -
+e_i`, `q_i = g_i . n`, `A = sum q_i^2`, `B = sum q_i P_i` (degree `p` on
+a Bézier arc) and `C = sum P_i^2 - r^2` (degree `2 p`). On crossing axes
+`A > 0`, and the meeting's two branches are the graphs `w_+-(tau) = (-B +-
+sqrt(D)) / A`, `D = B^2 - A C`, over the ranges of `tau` where `D > 0`;
+`D`'s roots (degree `2 p`) are the turning points, where the ruling is
+tangent to the cylinder (`w = -B / A`, a double root of `F`). A point is on
+a branch when it lies on the cylinder and `A w + B = sum q_i (g_i . X -
+e_i)` has the branch's sign. The curve's tangent is `(S'(tau), w')` with
+`w' = -(2 B' w + C') / (2 (A w + B))`.
+
+**Vertices.** A curve over the segment at height `w = h_0 + h_1 S_x + h_2
+S_y` (a cap edge, `h_1 = h_2 = 0`, or a crease of the cylinder prism's cap
+plane) meets the cylinder at the roots of `F(h(S(tau)), tau)`, degree `2
+p` in `tau`; a cylinder's cap circle meets the wall at those roots on its
+cap plane's crease, at its angle `atan2` of the point's coordinates. Every
+root is the arc's own parameter, so every vertex on the wall lies in
+S9f.1's `Q(alpha)` (degree at most `2 p`) or, on a vertical edge of the
+spline prism against the cylinder, in `Q(sqrt(d))`. A cap plane holding the
+wall's axis direction exactly (`h_0 + h_1 S_x + h_2 S_y` with the plane
+parallel to `n`) meets the wall in generatrices, whose points with the
+circle lie in a tower `Q(alpha)(sqrt(delta))`: refused (S9f.2b.2).
+
+**The rounded curve.** `Curve3::WallMeet` stores the wall's surface, of
+degree one in `v` between its two pole rows: at `u` its ruling is `L(u) +
+t M(u)`, `t = v - v_0`, `M = (R_1 - R_0) / (v_1 - v_0)`. In the cylinder's
+stored axes `(o_c, x_c, y_c)` with `W = L - o_c`, `w_x = W . x_c`, `w_y =
+W . y_c`, `m_x = M . x_c`, `m_y = M . y_c`, the ruling meets `w_x^2 + w_y^2
+= r^2` where `a t^2 + 2 b t + c = 0`, `a = m_x^2 + m_y^2`, `b = w_x m_x +
+w_y m_y`, `c = w_x^2 + w_y^2 - r^2`, and `b^2 - a c = a r^2 - (w_x m_y -
+w_y m_x)^2` (Lagrange's identity `(w . m)^2 + (w x m)^2 = |w|^2 |m|^2` in
+the plane), free of the cancellation of `b^2` against `a c`. The root is
+`(-b + s sqrt(d)) / a`, or `c / (-b - s sqrt(d))` where that cancels less.
+
+**Certified evaluation.** On a knot span, `L`, `M` and so `w_x`, `w_y`,
+`m_x`, `m_y` are Bernstein polynomials of degree `p` in the span's local
+`ū` with exact rational coefficients; `a`, `b`, `c` (degree `2 p`) and `d
+= a r^2 - x^2` (`x = w_x m_y - w_y m_x`, degree `4 p` written with `a r^2`
+raised by multiplying with one's Bernstein coefficients) are found exactly
+once per wall and cylinder by the product rule `(f g)_k = sum_(i + j = k)
+C(m, i) C(n, j) / C(m + n, k) f_i g_j`. At a point `ū` each is enclosed by
+de Casteljau's `(1 - ū) a + ū b`, whose enclosure grows by a few units in
+the last place of the coefficients and not with the levels: near a turning
+point, where the curve's `t` is `d`'s square root and its enclosure `d`'s
+over `2 a sqrt(d)`, `d` formed from enclosed factors was a hundred times
+wider. Over a range (the remainder boxes of the quadrature and the jets'
+integrals) the factors are evaluated by `a + ū (b - a)` and combined,
+which overestimates less than the products' higher degrees.
+
+**Across a knot.** The wall is `C^k` there (`k = p - m`, `m` the knot's
+multiplicity); a jet of order `n` about a base whose enclosure meets the
+knot is the union of both spans' jets when `n <= k + 1` (Taylor's theorem
+with the remainder `f^(n)(xi) / n!`, `f^(k)` absolutely continuous and
+`f^(k+1)` between the spans' values), and undefined past it. Integrals are
+split at the knots' edge fractions exactly (rationals of the stored
+`start` and `sweep`), each piece on its span's polynomial, so no remainder
+crosses a knot.
+
+**Near a turning point.** A piece's series in `ū` reaches the nearest
+root of `d` in the complex plane; a meeting ending at distance `delta`
+(in `ū`) before a turning point needs pieces no longer than about
+`delta` near that end. The quadrature halves a piece without a try where
+`d`'s binary64 values at its ends and middle differ by more than a factor
+of two (`d` is linear near a simple root, so such a piece's length exceeds
+its distance to the root), and a meeting ending `6.7e-7` short of a turning
+point takes some twenty halvings toward that end, one sweep each. A
+turning point outside the faces but within the resolution of both is
+`Degenerate`: its meeting's end there lies a rounding away from turning
+back, where `d` and the square root's slope are as large as the rounding
+allows.
+
 ## Tessellation bounds (T-a)
 
 A mesh triangle has nodes `X_i` and parameter points `p_i` on its face's

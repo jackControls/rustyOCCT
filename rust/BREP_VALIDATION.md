@@ -286,7 +286,21 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   between two fins' rounded ends, their angles an ulp apart) is enclosed
   as `-du F` over its box rather than by the expansion in its slope's
   powers, which lost its smallness (S9f.2a: a cylinder face of a `TILT2`
-  stadium in a common, its moments 10^27 wide). On the fixtures every enclosure lies within `1e-12` of its
+  stadium in a common, its moments 10^27 wide). A spline wall's meeting
+  with a cylinder (`Curve3::WallMeet`, S9f.2b) has on its own wall a
+  pcurve that reads its own `(u, v)`: the wall's Green integrals and mass
+  terms along it are taken piece by piece between the wall's knots, split
+  exactly, each piece's `ū` and `v̄` from jets on its knot span's
+  polynomial and `G` (or the quadrature's sweep) on that span's patch; a
+  sweep whose square root's series cannot run near a turning point beyond
+  the piece is halved toward it (at most 40 times, guided by the
+  discriminant's binary64 values, a piece whose discriminant varies by
+  more than a factor of two halved without a try). A closing chord on a
+  spline surface lies in the first patch holding both its ends'
+  enclosures, else within `2^-40` of a patch's width past its sides inside
+  the domain and anywhere past the domain's edges (the boundary patch's
+  polynomial is the only one there; such a meeting's end on a cap is
+  enclosed about the cap's `v`). On the fixtures every enclosure lies within `1e-12` of its
   property's scale (at worst `7.6e-15` of the volume, `5.6e-15` of the
   area, `2.3e-14` of `V^(1/3)` for the centroid and `1.6e-13` of
   `V^(5/3)` for the inertia), where S4d's first-order enclosures were

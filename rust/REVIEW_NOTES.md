@@ -5254,6 +5254,84 @@ Decisions for S9, recorded before its code (2026-09-28):
       1.4e-9 in area and 8.6e-9 in the centre on all 21); five solids'
       counts change when unified. No correction to the decisions from the
       evidence. S9f.2b.1's kernel next.
+  * **S9f.2b.1 implemented** (`solid/boolean/curved/spline_crossing.rs`;
+    `mod.rs`'s `spline_pairs`, `meet.rs`'s sections and edge meetings,
+    `spline_parallel.rs`'s cap edges and conics on crossing axes, `graph.rs`'s
+    placements, `assemble.rs`'s curves and the own wall's pcurves; the
+    topology's `Curve3::WallMeet` with `topology/validate/wall_meet.rs` and
+    its handling in `projection.rs`, `quadrature.rs`, `spline_flux.rs`,
+    `mass.rs`, `spline_taylor.rs`, the tessellation's bounds, the writer,
+    the reader, history, `curve_curve`, `curve_surface` and `chain.rs`):
+    spline walls against cylinder walls on crossing axes as the refined
+    decisions describe. `Crv::WallMeet` holds the segment, the cylinder's
+    exact rows, the branch and its range of `tau`; its sections come from
+    `D`'s exact roots on the segment's arcs, each turning point classified
+    by its point on the ruling (`w = -B / A`) against both faces; vertices
+    from S9f.1's `roots_of` on degree-`2 p` polynomials (`wallcrv_cyl`,
+    `conic_wall`). All 34 fixtures as the reference (the 24 results of
+    S9f.2b.1 within the kernel's enclosures of volume, area and centre, each
+    at most `1e-9` wide; the 4 degenerate refused; S9f.2b.2's 6
+    `OutOfDomain` naming S9f.2b.2); every history complete, results
+    deterministic and moved rigidly (`tests/spline_crossing_booleans.rs`, 7
+    tests, 42 s in release and 41 s at `opt-level` 2 with debug
+    assertions: also a cap circle on the dome's wall along its axis refused
+    as S9f.2b.2's and the same rod through the whole prism evaluated,
+    crossing spline walls refused, and two found by the fuzz variants
+    below; the module's 4: the curve on both surfaces with jets enclosing
+    its points and slopes, jets across a knot to the wall's continuity
+    and `None` past it, the pieces' exact splits, the own wall's pcurve).
+    `compare_spline_crossing_boolean.py` 13 matches and 21 reviewed (the
+    capsule's three reviews now name its counts too: OCCT splits the
+    meeting's ellipse arcs on the capsule's caps at the rod's seam
+    generatrix, `x = 0.2`, at `(0.2, -0.65, 0)` and `(0.2, 0.85, 2)`, and in
+    the fuse stops the rod's seam at the hole, which `occt_counts` does not
+    synthesize for a hole that does not wind); every other comparison
+    unchanged, `compare_split.py` 72/56, `compare_brep.py --family spline`
+    10/3, `compare_brep_io.py` 6835/7. Amendments to the decisions, from
+    the implementation: (a) a jet over a base across a knot is the union of
+    both spans' jets up to order `k + 1`, `k` the wall's least continuity
+    (`p - 1` for R4's walls), not `p - 1`: Taylor's remainder holds with
+    `f^(k)` absolutely continuous, its next derivative between the spans'
+    values; integrals are split at the knots' fractions exactly (rationals
+    of the stored `start` and `sweep`), so no sliver is left to bound; (b)
+    `a`, `b`, `c` and `d` are exact Bernstein polynomials in a span's `ū`,
+    made once per wall and cylinder by the product rule, enclosed at a point
+    within a few units in the last place of their coefficients: formed from
+    enclosed factors (the foot and the direction each from two rows), `d`
+    was a hundred times wider, and a meeting's end `6.7e-7` in `u` short of
+    a turning point (a lens wall under a leaning holed slab, a fuzz variant)
+    left its `v` `2.2e-10` wide past the wall's cap, its chord's ends in no
+    patch (`uncertified_shell_orientation`), now `3.5e-12`; over a range
+    (remainder boxes) the factors' polynomials are combined instead; (c)
+    the quadrature halves a wall piece toward a turning point (at most 40
+    times), without a try where `d`'s binary64 values over the piece differ
+    by more than a factor of two (a failing sweep spends its whole budget
+    first: twenty failing tries took minutes), so that end takes some
+    twenty halvings, one sweep each; (d) a closing chord on a spline
+    surface may pass the domain's edges (`chord_patch`: the boundary patch's
+    polynomial is the only one there), still within `2^-40` of a patch's
+    width at its interior sides; (e) a turning point outside the faces but
+    within the resolution of both is `Degenerate` with the label of one on
+    a face's boundary (R4's knot under a leaning stadium: its ruling at
+    `u = 1/2` tangent to the arc's cylinder on the top cap but for the
+    frame's rounding, a fuzz variant whose meeting's end left its loop
+    winding undecided); (f) the binary64 tier's conversions of a span's
+    exact numbers are made once (most of an evaluation otherwise). The
+    `boolean` fuzz target decodes a spline prism against the stadium or
+    the round hole leaning, tilted or on its side through S9f.2b.1
+    (`SPLINE_CROSSING`, on; before, refused as S9f.2b's), spline against
+    spline there still refused. Replays with debug assertions: the corpus
+    (1,430 inputs) and the 24 regressions, none failing, the slowest
+    11.4 s on a host at load 14; 1,431 S9f.2b variants of every third
+    corpus input (the object or the tool a spline prism against the stadium
+    or the round hole, leaning, tilted or on its side), none failing, 3,232
+    of their operations evaluating (the rest refused as documented: the
+    chained stage's spline results, S9f; S9f.2b.2's cap circles along the
+    wall's axis and turning points inside the faces; tangencies and
+    sub-resolution contacts, 8 turning back on a face's boundary), median
+    0.34 s, the slowest 5.7 s (47 s under AddressSanitizer on this host at
+    load 9 to 14, where the corpus's two slowest inputs took 47 and 52 s).
+    Pending: the DRAW survey, the campaign.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions
