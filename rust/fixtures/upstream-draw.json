@@ -8,8 +8,10 @@
     "tests/boolean/bcommon_simple/A1": "0bf3ab9bd586c0830ad6f4a80c9f635e9fef6827fce2491c0cca50ccf912e728",
     "tests/boolean/bcommon_simple/I5": "f8086ea8e06eb760a0c43c005db9a40d8b4f5573d5af050e7d3c06206a29f49e",
     "tests/boolean/bcommon_simple/J1": "767998e1bf6f2423a097f608b559fb452daeaef72028dbfd3102645b5c8eded7",
+    "tests/boolean/bcut_complex/H3": "0a9a0c681f083635c74e010db5f3fccce0bb1895f41aaebc849cb6e95d96d85d",
     "tests/boolean/bcut_complex/J2": "56a2497e52398ae21ee549c7cf573c2f40d90b9244b24fd4514b90448aa40449",
     "tests/boolean/bcut_complex/J7": "c5999beb34e7e8f6d73d2156f175450cb4e290188073b8b45f096b90618d9d71",
+    "tests/boolean/bcut_complex/K8": "96bd7ea3110749076ae6b4fa6b5758d92e6c12d7e293dfcd481d7c71ebc4684b",
     "tests/boolean/bcut_complex/O9": "e20dc94cc44a0c9cd8325c15f9c736bb67e3d5cd5977cb1368275f5c48164500",
     "tests/boolean/bcut_simple/G7": "32b95d55c8a08b2b39d2c64e39d1fa4502bbb3fa78c92949bd0bb27e3365b319",
     "tests/boolean/bcut_simple/G8": "7f630a0200be640a8501b44c0532bc623a761872e90fd9e863dd1dd4c865d5c8",
@@ -54,16 +56,21 @@
     "tests/boolean/bcut_simple/L6": "6d985364644b3f25f78f47a47e68f7ee508a0d885fdcad2d540bfce78a790e9f",
     "tests/boolean/bcut_simple/L8": "f4eaa30c6004c82263238dabf6c6d77395449e900e5c899cdb9c37e1f14f74c3",
     "tests/boolean/begin": "d69546786e4458613f453d5083979bd5e2e67ae1f0f01b93f1bd93825e3a66bd",
+    "tests/boolean/bfuse_complex/C9": "dfa1020cfdc3ef866914fdd7d53a4cac7e20bd6668f752211ac7a156b6dff120",
+    "tests/boolean/bfuse_complex/E9": "133d658567d1b24cbce3a6a5226b6094ed3104592f4c0d052c7ede14823a4158",
     "tests/boolean/bfuse_complex/F5": "d26376bc2c83399c04080088d93909d92db53989b193c847fc98110f585ea5c7",
     "tests/boolean/bfuse_complex/H4": "e416b187b848482b08a6571942f6ced6dc0081a878e10d41d889b7604132b74d",
     "tests/boolean/bfuse_complex/I4": "5d95104ac5396f8007877a9732265ee6bb10c9d58eb909f24cf888f57e7dd9e9",
+    "tests/boolean/bfuse_complex/I6": "98c0de5206fa398bb00900ddab07bb1a8e07d303bfb30c03e10f97f19cee151a",
     "tests/boolean/bfuse_complex/I8": "fe78cd8a60f4b16158a09d87b84cce0cf957667218875e5f0ffd7ba6372e510f",
     "tests/boolean/bfuse_complex/J4": "b66fdb1309e1a2a1b6bac27f459a4d094cbfb6e508348e64ee3ca031646f944a",
     "tests/boolean/bfuse_complex/J5": "cda6d3fe80781b6537b23d7fb33728a0ff0eddfeff7025ea8f359cfbe64c632c",
     "tests/boolean/bfuse_complex/J7": "e3525a437196d925e0cd5709e0e684f6f6e76d6e252422da45b812e09cd3eabf",
     "tests/boolean/bfuse_complex/L1": "7cdfedabb23089a9d34e932c9128827c8f52654990546d18d316a483e73ca249",
     "tests/boolean/bfuse_complex/L3": "81d28da707961f0242738fb66df363bf97ee86720f2756d75a61d8cd16264a8f",
+    "tests/boolean/bfuse_complex/N1": "d8004059df3adabc2fb7ead01ad2b1cf9ce40a0a5fa87c3beb6ae4750ee60d89",
     "tests/boolean/bfuse_complex/N3": "a4fe43684c4fce69098409f62925d71e8cafcb5eca8bebd245a4a581bc9f78b9",
+    "tests/boolean/bfuse_complex/N9": "fc9975ea5d99e5443d3e1acaa12e820e6aab6adc63dc50b67206a7f0e4c3219f",
     "tests/boolean/bfuse_complex/Q2": "753a667951fc62efc6fc91b2e19926ac3ef86d63c41f64090e8faf593653fb46",
     "tests/boolean/bfuse_simple/A4": "dd113d92590b01a08725be98ae9a184a55b72910d9dfce97a5bd495f170745fc",
     "tests/boolean/bfuse_simple/E1": "b4c9767189a819abcfeb8ed2afcab1928383f12242e579053078d9c42c4bff59",
@@ -7752,6 +7759,55 @@
       "expected_rust": "viewer_skipped",
       "expected_occt": "viewer_skipped",
       "purpose": "S9e.4a: restored solids of the public dataset given to a Boolean, each decided on the construction its stored surfaces give (matched to its stored topology within its resolution): a prism of nine planes less a box, bcut; checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_complex/H3",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.1: restored solids of the public dataset given to a Boolean, prisms whose arcs' ends round off their circles in their caps' frames, each end taken onto its circle in the exact model: a prism of planes and a cylindrical wall less a cylinder, bcut; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_complex/K8",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.1: restored solids of the public dataset given to a Boolean, prisms whose arcs' ends round off their circles in their caps' frames, each end taken onto its circle in the exact model: a prism of eight planes less a prism with two cylindrical walls, bcut; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bfuse_complex/C9",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.1: restored solids of the public dataset given to a Boolean, prisms whose arcs' ends round off their circles in their caps' frames, each end taken onto its circle in the exact model: a prism with two cylindrical walls and a cylinder, bfuse; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bfuse_complex/E9",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.1: restored solids of the public dataset given to a Boolean, prisms whose arcs' ends round off their circles in their caps' frames, each end taken onto its circle in the exact model: a box and a prism with two cylindrical walls, bfuse; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bfuse_complex/I6",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.1: restored solids of the public dataset given to a Boolean, prisms whose arcs' ends round off their circles in their caps' frames, each end taken onto its circle in the exact model: a prism with two cylindrical walls and a prism of eight planes, bfuse (K8's bodies); checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bfuse_complex/N1",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.1: restored solids of the public dataset given to a Boolean, prisms whose arcs' ends round off their circles in their caps' frames, each end taken onto its circle in the exact model: a prism of planes and a cylindrical wall and a cylinder, bfuse; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bfuse_complex/N9",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.1: restored solids of the public dataset given to a Boolean, prisms whose arcs' ends round off their circles in their caps' frames, each end taken onto its circle in the exact model: a prism of planes and a cylindrical wall and a cylinder, bfuse; checkprops -s; its checkview is recorded."
     }
   ],
   "derived_sources": {

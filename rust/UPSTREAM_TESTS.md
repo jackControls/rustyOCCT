@@ -167,12 +167,14 @@ group, and stale success records are removed before each run.
 | `boolean/bopcommon_simple/S5`, `bopcut_simple/ZC7`, `S4`, `bopfuse_simple/U7`, `B3`, `boptuc_simple/R1` | Unsupported | Viewer skipped | Box corners on or tangent to a cylinder, boxes touching along an edge: pieces thinner than the resolution, results touching themselves (at a point or along an edge) or each other, a hole touching its boundary (the kernel's `Degenerate`) |
 | `boolean/bcut_simple/G8` | Unsupported | Viewer skipped | A semi-infinite prism of an exploded face (`explode`, `SemiInf`) |
 
-There are **five original geometry tests passing on both backends** and 991
-more evaluated on both with their image commands recorded (`buc60769`,
-S7's `lowalgos/intss` cases `bug23177_1`, `bug23177_2` and `bug24648`, and
-987 Boolean cases of S9a, S9a.2, S9b.1, S9b.2, S9c.1, S9c.2a, S9c.2b.2,
-S9d.1, S9d.2, S9d.3a, S9d.1's pole follow-up, S9d.3b.1, S9d.4b.2a and
-S9e.2; S9c.2b.1, S9e.3a, S9f.1, S9e.3b, S9f.2a and S9f.2b.1 add none).
+There are **five original geometry tests passing on both backends** and
+1,014 more evaluated on both with their image commands recorded
+(`buc60769`, S7's `lowalgos/intss` cases `bug23177_1`, `bug23177_2` and
+`bug24648`, 987 Boolean cases of S9a, S9a.2, S9b.1, S9b.2, S9c.1, S9c.2a,
+S9c.2b.2, S9d.1, S9d.2, S9d.3a, S9d.1's pole follow-up, S9d.3b.1,
+S9d.4b.2a and S9e.2, and 23 Booleans of restored solids, 16 of S9e.4a and
+7 of S9e.4b.1; S9c.2b.1, S9e.3a, S9f.1, S9e.3b, S9f.2a, S9f.2b.1 and
+S9f.2b.2 add none).
 S8e registers the upstream `bsplit` group as capability sentinels: `boolean/splitter/A5`
 and `B5` and the 22 `bugs` cases that call `bsplit` (with `bug29333_1` and
 `bug29333_2`, registered before). They need S9's general builder: tools that
@@ -1482,6 +1484,54 @@ seconds (Rust 0.2 to 5.6 s on a loaded host), and the ledger records
 to 4, lost 12,844 to 12,842 (`--write-ledger`). One case,
 `bcut_complex/I6`, failed when its restored profile's rounded points touched
 in the construction: such a body is now S9e.4b's (unsupported).
+
+**S9f.2b.2 and S9e.4b.1: the Boolean group and the restore cases.** Both
+sets were run again after S9f.2b.2 (a spline wall's meeting with a
+crossing cylinder turning back inside both faces, and a cap circle on a
+wall along its axis, `curved/spline_crossing.rs`) and S9e.4b.1 (imported
+prisms whose arcs' ends round off their circles in their caps' frames,
+each end taken onto its circle, `curved/snapped.rs`) (2026-10-03, at
+`93e6fcd0`, the public dataset, 120 seconds a case, four at once). The
+1,802 self-contained cases of the Boolean group on both backends: every
+status and every refusal's reason is the last survey's, 987 evaluating,
+every one registered, 592 refused, 223 unsupported on both; none fails or
+times out, the sentinels, `bopfuse_simple/ZP6` and the `gdml_public` tori
+are refused as before. The 1,814 restore cases on the Rust adapter, and the
+171 the import reaches on native DRAW too: only the 31 prisms whose arcs
+round off their circles move. 7 evaluate on both backends with every check
+(`bcut_complex/H3`, `K8`, `bfuse_complex/C9`, `E9`, `I6`, `N1`, `N9`:
+prisms with one or two cylindrical walls of the `CTO9xx`, `cts` and `pro`
+series fused with or cut by cylinders, boxes and prisms of planes); 18 are
+refused by S9's rules (12 two faces within the resolution of one plane, 3
+an edge of one input meeting an edge of the other, `bcut_complex/J4` and
+`bfuse_complex/I9` a tangency, `bugs/modalg_7/bug29807_b1` two cylinders'
+section within the resolution of a node) and 6 as S9e.4b.4's (arcs of two
+circles meeting at a joint: `bcut_complex/E8`, `P4`, `bfuse_complex/D5`,
+`E1`, `bugs/modalg_2/bug4993_1`, `_2`). `bcut_complex/I6` is refused as
+S9e.4b's, as the last survey's amendment made it. Of the 171 the import
+reaches, 23 now evaluate on both backends, 55 are refused by S9's rules, 84
+are bodies none of the kernel's constructions, 6 are S9e.4b.4's and 3 have
+spline faces (S9f); native DRAW does not evaluate 24 of them
+(`checksection`, `bopargcheck`). Every other status and reason is the last
+survey's, the same 8 timing out at their first restores. No case reaches
+S9f.2b.2's loops and towers: the group's spline solids come from
+`nurbsconvert`, which the adapter does not run, and the three restored
+spline bodies (`bcut_complex/L9`, `O1`, `bfuse_complex/N7`) are refused
+before any wall meets a cylinder.
+
+The volume audit (`vprops` and `sprops` before each `checkprops`, both
+backends): the 7 new cases' volume, area and centre agree with native
+DRAW's to its printed digits; the 1,003 registered cases' values are the
+last audits' bit for bit on both backends (the 987 of the Boolean group's
+survey at `b0b9adc6`, the 16 of S9e.4a's), so neither kernel moves a
+registered value; the same 35 disagreements as before, native off in each.
+The 7 are registered (`data`, `viewer_skipped` on both; 1,096 cases): the
+contract holds for them on both backends within 30 seconds (Rust 1.8 to 6.5
+s on a host at load 25 to 31). The ledger does not change. A full
+contract run of the manifest (both backends, the dataset present, 30
+seconds a case) holds for every case, the slowest Boolean case 16.2
+seconds (`boptuc_simple/ZK8`, on a host at load 7 to 31; 12.8 in the last
+survey), the restore cases 0.2 to 5.0, the rollex 4.4.
 
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and

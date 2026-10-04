@@ -8,7 +8,8 @@ S9f.2a, S9f.2b.1 and S9e.3b (branch `s9e3b`, `s9c2-kernel` merged in),
 their DRAW survey (branch `s9-draw-3`), then for S9e.4a (branch `s9e4`,
 over `s9c2-kernel` at `e80e2fd9`) and S9f.2b.2 (branch `s9f2b2`, over
 `s9c2-kernel` at `f3362b50`), then for S9e.4b.1 (branch `s9e4b`, over
-`s9c2-kernel` at `7199e06a`).
+`s9c2-kernel` at `7199e06a`), then for the DRAW survey of S9f.2b.2 and
+S9e.4b.1 (branch `s9-draw-4`, over `s9c2-kernel` at `93e6fcd0`).
 
 ## Where things stand
 
@@ -25,10 +26,10 @@ over `s9c2-kernel` at `e80e2fd9`) and S9f.2b.2 (branch `s9f2b2`, over
   arcs, and one solid of a result of several (S9e.2, `curved/matched.rs`),
   results of spheres, cones and tori, deeper chains and given results
   against spheres, cones and tori (S9e.3a, `curved/chain.rs`), each with its
-  DRAW survey (the last full survey, that of S9e.3b, S9f.2a and S9f.2b.1
-  at `b0b9adc6`, branch `s9-draw-3`: 987 cases registered, none failing or
-  timing out, the volume audit's values those of `507b8054`'s bit for
-  bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
+  DRAW survey (the last full survey, that of S9f.2b.2 and S9e.4b.1 at
+  `93e6fcd0`, branch `s9-draw-4`: the Boolean group's 987 cases and 23
+  restore cases registered, none failing or timing out, the volume audit's
+  values those of `b0b9adc6`'s and S9e.4a's bit for bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
   runs).
 - **S9f.1 done.** Spline prisms against polyhedral prisms in any position
   (`curved/spline_walls.rs`), with its survey and campaign as above.
@@ -66,8 +67,9 @@ over `s9c2-kernel` at `e80e2fd9`) and S9f.2b.2 (branch `s9f2b2`, over
   `tower_points`). Decisions ("S9f.2b.2 refined"), 17 more cases referenced
   and the whole set captured again before the kernel code, the kernel
   within the reference on all 45 results of S9f.2b and refusing the 6
-  degenerate cases. Campaign clean at `7199e06a` (with S9e.4a's); pending
-  its DRAW survey.
+  degenerate cases. Campaign clean at `7199e06a` (with S9e.4a's); its DRAW
+  survey done (that of S9f.2b.2 and S9e.4b.1: no case reaches its loops or
+  towers).
 - **S9e.3b implemented** (branch `s9e3b`, over `507b8054`, with
   `s9c2-kernel` at `c8e37abe` merged in; not yet pushed): a given result's
   meeting of two curved faces (`Meet`, `Rise`, `Toric`) or a cone's or
@@ -105,11 +107,11 @@ over `s9c2-kernel` at `e80e2fd9`) and S9f.2b.2 (branch `s9f2b2`, over
   the kernel within the reference on all 27 solid cases, the 6 degenerate
   refused, the lens (two circles at a joint) S9e.4b.4's; S9e.4a's
   `dee_turn` cases now degenerate under S9's rules (a corner on the box's).
-  A trial of the survey's 31 such DRAW cases: 7 evaluate with every check
-  (`bcut_complex/H3`, `K8`, `bfuse_complex/C9`, `E9`, `I6`, `N1`, `N9`), 17
-  refused by S9's rules, 6 S9e.4b.4's, 1 a cylinders' section within the
-  resolution of a node. Pending: the DRAW survey (with a volume audit) and
-  the campaign.
+  Its DRAW survey (that of S9f.2b.2 and S9e.4b.1, branch `s9-draw-4`): of
+  the 31 such restore cases 7 evaluate on both backends with every check
+  and native DRAW's volumes (`bcut_complex/H3`, `K8`, `bfuse_complex/C9`,
+  `E9`, `I6`, `N1`, `N9`), registered (1,096 cases), 18 refused by S9's
+  rules, 6 S9e.4b.4's; nothing else moves. Pending: the campaign.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -127,14 +129,16 @@ over `s9c2-kernel` at `e80e2fd9`) and S9f.2b.2 (branch `s9f2b2`, over
    with it on reaches, the "points not separated by a projection" limits
    (`triple.rs`'s retries exhausted: a fibre of two points under every
    shear tried) are the one open refusal worth a closer look.
-2. **S9f.2b.2's and S9e.4b.1's DRAW survey** (the campaign of S9e.4a and
-   S9f.2b.2 is clean at `7199e06a`; S9e.4b.1's campaign after its push;
+2. **S9e.4b.1's campaign** after its push (its DRAW survey, with
+   S9f.2b.2's, is done at `93e6fcd0`, branch `s9-draw-4`: 7 restore cases
+   registered, no other status moving, no case reaching S9f.2b.2's loops
+   and towers; the campaign of S9e.4a and S9f.2b.2 is clean at `7199e06a`;
    the recaptured `occt-boolean-spline-crossing-preimplementation`'s Linux
    record and reviews from CI's run, as every capture's), then **S9f.3**
    (spheres and cones; "S9f refined" gives the degrees).
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
-   their circles) is implemented (above, pending its DRAW survey and
-   campaign); next **S9e.4b.2**, polyhedra other than prisms on their
+   their circles) is implemented (above, its DRAW survey done, pending
+   its campaign); next **S9e.4b.2**, polyhedra other than prisms on their
    stored planes (7 DRAW cases), then **S9e.4b.3**, a plane's pieces of a
    sphere, cylinder or cone and S9e.2's deferred `Clipped` and `Half`
    against curved faces (39 cases), then **S9e.4b.4**, the S9e text's plan
