@@ -105,11 +105,13 @@ pub(super) struct Gen {
 }
 
 /// A polynomial with rational coefficients as integer numerators over one
-/// positive denominator sharing no factor with all of them, trimmed: one
-/// form for each polynomial, so equal polynomials are equal and hash alike
-/// (by their integers: `num_rational`'s hash expands every rational into
-/// its continued fraction). A field's products and sums are integer ones
-/// with one content reduction, not a gcd per coefficient and operation.
+/// positive denominator, trimmed. A field's products and sums are integer
+/// ones, not a gcd per coefficient and operation: a product is reduced to
+/// the one form (the denominator sharing no factor with all numerators),
+/// a sum is not (the next product reduces it), so `same` compares two by
+/// value and `canonical` gives the one form, which keys the kept signs and
+/// inverses by their integers (`num_rational`'s hash expands every
+/// rational into its continued fraction).
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(super) struct Ip {
     /// The numerators, then the denominator (one vector: an element of a
@@ -202,7 +204,7 @@ impl Ip {
                     }
                 })
                 .collect();
-            return Ip::new(num, self.den().clone());
+            return Ip::loose(num, self.den().clone());
         }
         let g = crate::rational::gcd(self.den(), o.den());
         let (ka, kb) = (o.den() / &g, self.den() / &g);
@@ -217,14 +219,69 @@ impl Ip {
                 }
             })
             .collect();
-        Ip::new(num, self.den() * &ka)
+        Ip::loose(num, self.den() * &ka)
     }
 
+    /// Times a rational `a / b`: in its one form where it was, by gcds of
+    /// `a` with the denominator and of `b` with the numerators (each with
+    /// a factor as small as the rational's).
     fn scale(&self, k: &R) -> Self {
-        Ip::new(
-            self.num().iter().map(|c| c * k.numer()).collect(),
-            self.den() * k.denom(),
+        let (a, b) = (k.numer(), k.denom());
+        if a.sign() == num_bigint::Sign::NoSign || self.num().is_empty() {
+            return Ip::zero();
+        }
+        let one = BigInt::from(1);
+        let ga = crate::rational::gcd(a, self.den());
+        let mut gb = b.clone();
+        for c in self.num() {
+            if gb == one {
+                break;
+            }
+            gb = crate::rational::gcd(&gb, c);
+        }
+        let (a, b) = (a / &ga, b / &gb);
+        Ip::raw(
+            self.num().iter().map(|c| c / &gb * &a).collect(),
+            self.den() / &ga * &b,
         )
+    }
+
+    /// A sum's numerators over a denominator, trimmed, the denominator
+    /// positive, without the content's gcd (a product reduces it): equal
+    /// polynomials may differ in this form, compared by `same` and keyed
+    /// by `canonical`.
+    fn loose(mut num: Vec<BigInt>, mut den: BigInt) -> Self {
+        while num
+            .last()
+            .is_some_and(|c| c.sign() == num_bigint::Sign::NoSign)
+        {
+            num.pop();
+        }
+        if num.is_empty() {
+            return Ip::zero();
+        }
+        if den.sign() == num_bigint::Sign::Minus {
+            den = -den;
+            for c in &mut num {
+                *c = -&*c;
+            }
+        }
+        Ip::raw(num, den)
+    }
+
+    /// The one form.
+    fn canonical(&self) -> Self {
+        Ip::new(self.num().to_vec(), self.den().clone())
+    }
+
+    /// Whether the two are one polynomial (numerators cross-multiplied).
+    fn same(&self, o: &Self) -> bool {
+        self.num().len() == o.num().len()
+            && self
+                .num()
+                .iter()
+                .zip(o.num())
+                .all(|(x, y)| x * o.den() == y * self.den())
     }
 
     fn neg(&self) -> Self {
@@ -467,7 +524,7 @@ impl Gen {
                     .exact
                     .lock()
                     .unwrap_or_else(|e| e.into_inner())
-                    .get(p)
+                    .get(&p.canonical())
                     .copied();
                 if let Some(s) = known {
                     return s;
@@ -485,7 +542,7 @@ impl Gen {
                     self.exact
                         .lock()
                         .unwrap_or_else(|e| e.into_inner())
-                        .insert(p.clone(), s);
+                        .insert(p.canonical(), s);
                     if s == Ordering::Equal && !ip.is_constant() {
                         // The gcd with the known factor (or the generator's
                         // polynomial) vanishes at the root too.
@@ -787,7 +844,7 @@ impl PartialEq for K {
     fn eq(&self, o: &Self) -> bool {
         match (self, o) {
             (K::Rat(a), K::Rat(b)) => a == b,
-            (K::Alg(g, p), K::Alg(h, q)) => Arc::ptr_eq(g, h) && p == q,
+            (K::Alg(g, p), K::Alg(h, q)) => Arc::ptr_eq(g, h) && p.same(q),
             _ => false,
         }
     }
@@ -996,7 +1053,7 @@ impl K {
         match self {
             K::Rat(a) => (*a != zero()).then(|| K::Rat(int(1) / a)),
             K::Alg(g, p) => {
-                let key = p.clone();
+                let key = p.canonical();
                 if let Some(known) = g
                     .inverses
                     .lock()
