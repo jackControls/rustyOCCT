@@ -221,26 +221,18 @@ degree eight (branch `given-met-speed`), both over `s9c2-kernel` at
 
 ## What is open, in order
 
-1. **A campaign with `GIVEN_MET` on** (branch `given-met-speed`, merged
-   into `s9c2-kernel`). The switch is on: the arithmetic of fields of degree
-   eight was sped up (REVIEW_NOTES.md's "The degree-eight arrangement's
-   arithmetic": signs from a certified dyadic point before Sturm-Tarski,
-   numbers as integers over one denominator, fewer inverses, rational
-   reductions by the crate's Lehmer gcd, coprimality modulo a prime), the
-   corpus's slowest chained operations reaching a given meeting 24 to 42 G
-   instructions with debug assertions (92 to 123 G before), under
-   AddressSanitizer 21 to 35 s at load 6 to 7 (60 to 71 s before), each two
-   runs (libFuzzer's leak check); the corpus and its regressions replay
-   with debug assertions and the switch on without a failure. The "points
-   not separated by a projection" limits were two cylinders with parallel
-   axes and a sphere crossing their two common rulings at equal heights; a
-   sheared projection separates them now (4 evaluate, 4 degenerate). Next:
-   merge, push, CI, and the boolean campaign with the switch on. Open
-   levers, in REVIEW_NOTES.md: libFuzzer's leak-check rerun (an input whose
-   run keeps the kernel's cached arrangements runs twice under the
-   sanitizer), the certified integrals along a cone carrier's meetings, the
-   torus meetings' root sampling (`e36969f1`, the corpus's slowest input,
-   43.6 G).
+1. **`GIVEN_MET` is on** (branch `given-met-speed`): the arithmetic of
+   fields of degree eight was sped up (REVIEW_NOTES.md's "The degree-eight
+   arrangement's arithmetic"), the corpus's slowest inputs too ("The
+   boolean target's slowest inputs": `e36969f1` from 67 to 20 s under
+   AddressSanitizer), and a meridian loop through one pole of a sphere
+   fixed (S9e.4b.3a's amendment, found by the replay with the switch on).
+   The campaign with `GIVEN_MET`, `SPLINE_SPHERE` and `SPLINE_CONE` on is
+   clean at `a32d256f` (895 runs, the slowest input 31 s under
+   AddressSanitizer). Open levers: libFuzzer's leak-check rerun (an input
+   whose run keeps the kernel's caches runs twice under the sanitizer),
+   the certified integrals along a cone carrier's meetings, the torus
+   meetings' root sampling.
 2. **The Linux records and reviews** of the recaptured
    `occt-boolean-spline-crossing-preimplementation` and of the
    spline-sphere, spline-cone, imported-polyhedra, imported-arcs and

@@ -8231,6 +8231,13 @@ Decisions for S9, recorded before its code (2026-09-28):
   of its instructions in `projection::along`); the torus meetings' root
   sampling (`e36969f1`'s `all_roots`, 72 bisections a root at each of 17 to
   49 samples).
+
+  Campaign: the boolean campaign at `a32d256f` with `GIVEN_MET`,
+  `SPLINE_SPHERE` and `SPLINE_CONE` on, after this track, the slowest
+  inputs' and the meridian loop's fix (600 s, a sampled replay) clean, 895
+  runs, the slowest input 31 s under AddressSanitizer at load 5 to 9
+  (`c4d14627`, a polyhedral chained cut; `e36969f1` no longer among the five
+  slowest).
 * **The boolean target's slowest inputs (S9's campaign), done.** The 600 s
   boolean campaigns were clean but the corpus's slowest input, `e36969f1`,
   took 45, 52 and 60 s under AddressSanitizer at the target's 60 s limit
@@ -8313,6 +8320,13 @@ Decisions for S9, recorded before its code (2026-09-28):
   `86b1d834` and here alike (`GIVEN_MET` on, S9e.4b.3a's stage and the
   validator together; fixed on its own track), so the replays above count
   1,457 inputs.
+
+  Campaign: the boolean campaign at `a32d256f` with `GIVEN_MET`,
+  `SPLINE_SPHERE` and `SPLINE_CONE` on, after this track, the slowest
+  inputs' and the meridian loop's fix (600 s, a sampled replay) clean, 895
+  runs, the slowest input 31 s under AddressSanitizer at load 5 to 9
+  (`c4d14627`, a polyhedral chained cut; `e36969f1` no longer among the five
+  slowest).
 * **The DRAW adapter's curved primitives (S9d.4b.2b), done in S9d.4b's
   survey.** It built every `ptorus`, `psphere` and `pcone` with the same
   ids, so two tori (and two spheres or cones) were refused as solids
