@@ -441,3 +441,76 @@ fn turned_tori_meet_in_fields_of_degree_eight() {
         .iter()
         .any(|e| { matches!(&e.curve, Curve3::Toric(t) if t.other_minor > 0.0) }));
 }
+
+/// Two tori of equal radii about one centre, the second's frame built from
+/// the first's normal normalized again (an ulp off it) or with its axes
+/// turned (rounded otherwise): one surface within rounding, `Degenerate`
+/// (its meeting's projections were left unpinned, `PrecisionLoss`, before);
+/// a thinner torus there, nested within it, evaluates as about the first's
+/// own frame.
+#[test]
+fn tori_within_rounding_of_one_surface_are_degenerate() {
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{Frame3, Point2, Point3, Solid, Tolerance, Vec3};
+    let tol = Tolerance::default();
+    let turn = std::f64::consts::TAU;
+    let tilt = Frame3::new(
+        Point3::new(1.0, -2.0, 0.5),
+        Vec3::new(0.0, 3.0, 4.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    let centre = tilt.point(Point2::new(0.0, 0.0), 1.5);
+    let ring = |id: u64, f: Frame3, small: f64| {
+        Solid::torus_with(OperationId(id), f, 2.0, small, 0.0, turn, turn, tol)
+            .unwrap()
+            .0
+    };
+    let own = Frame3::new(
+        centre,
+        Vec3::new(0.0, 3.0, 4.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    assert_eq!(own.normal(), tilt.normal());
+    let first = ring(1, own, 0.75);
+    // The normal normalized again, an ulp off (where this platform's
+    // `hypot` keeps it, turned by an ulp first).
+    let hint = tilt.x() * 3.0 + tilt.y() * 4.0;
+    let up = |x: f64, k: i64| f64::from_bits(x.to_bits().wrapping_add_signed(k));
+    let n = tilt.normal();
+    let again = [(0, 0), (1, 0), (0, 1), (-1, 0), (0, -1)]
+        .into_iter()
+        .map(|(ky, kz)| Frame3::new(centre, Vec3::new(n.x, up(n.y, ky), up(n.z, kz)), hint, tol))
+        .find_map(|f| f.ok().filter(|f| f.normal() != n))
+        .expect("a frame an ulp off");
+    let turned = Frame3::new(centre, Vec3::new(0.0, 3.0, 4.0), tilt.y(), tol).unwrap();
+    for f in [again, turned] {
+        let other = ring(2, f, 0.75);
+        for r in [
+            first.fuse(OperationId(3), &other),
+            first.cut(OperationId(4), &other),
+            first.common(OperationId(5), &other),
+        ] {
+            assert!(
+                matches!(&r, Err(Error::Degenerate(m)) if m.contains("one surface")),
+                "{:?}",
+                r.map(|x| x.0.len())
+            );
+        }
+    }
+    let (near, own) = (ring(2, again, 0.5), ring(2, own, 0.5));
+    let volume = |r: Vec<Solid>| r.iter().map(|s| s.mass_properties().volume).sum::<f64>();
+    let (a, b) = (
+        volume(first.cut(OperationId(4), &near).unwrap().0),
+        volume(first.cut(OperationId(4), &own).unwrap().0),
+    );
+    // The tube's ring between the radii: 2 pi^2 R (r1^2 - r2^2).
+    let want = 2.0 * std::f64::consts::PI.powi(2) * 2.0 * (0.5625 - 0.25);
+    assert!(
+        (a - b).abs() <= 1e-9 * a && (a - want).abs() <= 1e-9 * want,
+        "{a} {b} {want}"
+    );
+}

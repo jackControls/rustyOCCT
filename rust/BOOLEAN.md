@@ -720,7 +720,12 @@ on the pieces. Pieces, their verification and `Curve3::Toric` (its
 `other_minor` the other torus's minor radius, `TOPOLOGY_MODEL.md`) are
 S9d.4b.2a's with forms of either degree; the tori's seams are circles
 (`conic_torus`). Coaxial tori meet in circles, tori tangent along one
-refused (`tori_kiss`). Parallel tori whose top or bottom circles lie at
+refused (`tori_kiss`). Two tori of equal radii whose centres lie within
+`10^-12` of their size of each other and whose axes are within rounding of
+parallel (a frame's normal normalized again, or one normal with the axes
+turned and rounded) are one surface within rounding, `Degenerate`, as one
+surface exactly is (their meeting's projections were left unpinned,
+`PrecisionLoss`, before). Parallel tori whose top or bottom circles lie at
 one height and cross are tangent there (both normals along the axes), a
 singular point of the meeting, `Degenerate`; with their equators at one
 height they cross transversally (the normals along the two radii) and the
