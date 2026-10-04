@@ -1314,3 +1314,32 @@ cylinders are (`spline_crossing::meeting_with`;
 `a_spline_wall_and_a_cylinder_within_rounding_of_parallel_are_degenerate_unless_apart`).
 It replays in 0.1 s with debug assertions, and 605 single-byte mutations of
 it (every value of the chained byte among them) replay without a failure.
+
+## Boolean: a meridian loop through one pole of the chained stage's sphere
+
+`boolean/replay-21928984a54f016cf7e3e987dcdd3f07df37c15c.bin` is a corpus
+input (its original name kept) that failed the debug-assertion replay at
+`86b1d834`, the merge of S9e.4b.3a's kernel with `GIVEN_MET` switched on
+(`unexpected error invalid topology: uv_gap`); it passed at either parent,
+`GIVEN_MET` off at the one with S9e.4b.3a. It decodes a rectangle `4.25`
+by `0.5` over heights `0..2.25` in the tilted frame and a torus band
+(`0.5..2.25`, radii `1.3125` and `0.65625`) in the tilted frame offset by
+an amount that rounds; the chained byte gives the cut's first result to the
+`GIVEN_BALL` sphere about the middle of its first torus section
+(`GIVEN_MET`), which lies on the bar's wall. The wall holds the sphere's
+axis: its section is a meridian through the north pole, inside the bar,
+and the sphere face's loop runs up it, through the pole and down the other
+side, then closes along the bar's bottom circle. S9e.4b.3a's rule for a
+loop through a pole set its winding to none without lifting its pcurves,
+so its closing fin was a turn off its first unless the loop happened to
+start at the pole; the cut failed `uv_gap`. A box with a wall through a
+sphere's axis fails alike in 76 of 80 frames and operations at `86b1d834`
+(`tests/sphere_booleans.rs`,
+`a_meridian_loop_through_one_pole_closes_on_its_first_fin`). The loop's
+pcurves from that pole on are now lifted by the turn, and the rule takes
+only the pole the face would close at (`assemble.rs`); the chained
+operations evaluate as before S9e.4b.3a, their volumes the same
+(`tests/given_met_booleans.rs`,
+`a_ball_about_a_section_on_a_wall_through_its_axis`). It replays in 3.1 s
+with debug assertions, and 540 single-byte mutations of it (every value of
+the chained byte among them) replay without a failure.

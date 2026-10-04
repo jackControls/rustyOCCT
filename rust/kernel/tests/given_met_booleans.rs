@@ -461,3 +461,43 @@ fn a_torus_among_three_curved_surfaces_is_refused() {
         other => panic!("{:?}", other.map(|r| r.len())),
     }
 }
+
+/// The fuzz replay's chained stage (`fuzz/regressions/README.md`): a bar in
+/// the tilted frame less a torus band across it, given to a ball about the
+/// middle of its first torus section, which lies on the bar's wall, so the
+/// wall holds the ball's axis and its section is a meridian through the
+/// ball's pole inside the bar (`uv_gap` at `86b1d834`; `sphere_booleans.rs`'s
+/// box and ball alike): the three operations consistent.
+#[test]
+fn a_ball_about_a_section_on_a_wall_through_its_axis() {
+    use rusty_occt::topology::Curve3;
+    use rusty_occt::{Boundary, Frame3, Point3, Profile, Tolerance, Vec3};
+    let tol = Tolerance::default();
+    let frame = |o: Point3| Frame3::new(o, Vec3::new(0.0, 3.0, 4.0), Vec3::new(1.0, 0.0, 0.0), tol);
+    let fa = frame(Point3::new(1.0, -2.0, 0.5)).unwrap();
+    let fb = frame(Point3::new(
+        1.0 + 0.625 / 3.0,
+        -2.0 - 0.875 / 3.0,
+        0.5 + 2.25 / 5.0,
+    ))
+    .unwrap();
+    let bar = Profile::new(Boundary::rectangle(4.25, 0.5, tol).unwrap(), vec![], tol).unwrap();
+    let (a, _) = Solid::extrude_with(OperationId(1), bar, fa, 0.0, 2.25).unwrap();
+    let turn = std::f64::consts::TAU;
+    let (band, _) =
+        Solid::torus_with(OperationId(2), fb, 1.3125, 0.65625, 0.5, 2.25, turn, tol).unwrap();
+    let given = boolean(&a, "cut", 4, &band).unwrap().remove(0);
+    let at = given
+        .topology()
+        .edges()
+        .iter()
+        .find_map(|e| {
+            use Curve3::{Meet, Rise, Section, Toric};
+            matches!(e.curve, Meet(_) | Rise(_) | Toric(_) | Section(_)).then(|| e.curve.point(0.5))
+        })
+        .unwrap();
+    let f = Frame3::new(at, fa.normal(), fa.x() * 3.0 + fa.y() * 4.0, tol).unwrap();
+    let half = std::f64::consts::FRAC_PI_2;
+    let (ball, _) = Solid::sphere_with(OperationId(7), f, 1.25, -half, half, tol).unwrap();
+    identities(&given, &ball).unwrap();
+}

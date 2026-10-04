@@ -305,6 +305,74 @@ fn sections_through_a_spheres_poles() {
     ));
 }
 
+/// A box's wall through a sphere's axis, one pole inside the box and the
+/// other beyond a cap's plane (the fuzz replay's chained ball about a
+/// meeting on a prism's wall, `fuzz/regressions/README.md`): the sphere
+/// face's loop runs up its meridian through the pole and down the other
+/// side and closes along the cap's circle, winding none. Its pcurves from
+/// the pole on are lifted by a turn so the loop closes on its first fin
+/// (S9e.4b.3a set its winding to none without lifting them, `uv_gap`
+/// unless the loop happened to start at the pole: 76 of these 80 at
+/// `86b1d834`). The volumes are the closed forms' and the histories
+/// complete, for either pole and whatever the sphere's reference direction.
+#[test]
+fn a_meridian_loop_through_one_pole_closes_on_its_first_fin() {
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{history, Boundary, Frame3, Point2, Point3, Profile, Solid, Tolerance, Vec3};
+    let tol = Tolerance::default();
+    let pi = std::f64::consts::PI;
+    let half = std::f64::consts::FRAC_PI_2;
+    let outer = Boundary::polygon(
+        [(0.0, 0.0), (4.0, 0.0), (4.0, 2.0), (0.0, 2.0)]
+            .map(|(x, y)| Point2::new(x, y))
+            .to_vec(),
+        tol,
+    )
+    .unwrap();
+    let profile = Profile::new(outer, vec![], tol).unwrap();
+    let (a, _) = Solid::extrude_with(OperationId(1), profile, Frame3::xy(), 0.0, 2.0).unwrap();
+    let r = 1.25;
+    // Half the ball less its cap of height 0.75 beyond z = 0 or z = 2.
+    let ball = 4.0 * pi * r * r * r / 3.0;
+    let common = (ball - pi * 0.75 * 0.75 * (3.0 * r - 0.75) / 3.0) / 2.0;
+    for z in [0.5, 1.5] {
+        for x in [(1.0, 0.0), (3.0, 4.0), (0.0, 1.0), (-3.0, 4.0), (-1.0, 0.0)] {
+            for up in [1.0, -1.0] {
+                let f = Frame3::new(
+                    Point3::new(2.0, 0.0, z),
+                    Vec3::new(0.0, 0.0, up),
+                    Vec3::new(x.0, x.1, 0.0),
+                    tol,
+                )
+                .unwrap();
+                let (b, _) = Solid::sphere_with(OperationId(2), f, r, -half, half, tol).unwrap();
+                let ins = [
+                    a.topology().entity_set(a.resolution()),
+                    b.topology().entity_set(b.resolution()),
+                ];
+                for (out, want) in [
+                    (a.fuse(OperationId(3), &b), 16.0 + ball - common),
+                    (a.cut(OperationId(4), &b), 16.0 - common),
+                    (a.common(OperationId(5), &b), common),
+                    (b.cut(OperationId(6), &a), ball - common),
+                ] {
+                    let (out, h) = out.unwrap_or_else(|e| panic!("{z} {x:?} {up}: {e}"));
+                    let v: f64 = out.iter().map(|s| s.mass_properties().volume).sum();
+                    assert!(
+                        (v - want).abs() <= 1e-9 * want,
+                        "{z} {x:?} {up}: {v} {want}"
+                    );
+                    let outs: Vec<_> = out
+                        .iter()
+                        .map(|s| s.topology().entity_set(s.resolution()))
+                        .collect();
+                    assert!(history::check(&ins, &outs, &h).is_empty());
+                }
+            }
+        }
+    }
+}
+
 /// A box's vertical edge along an upright sphere's axis (through its
 /// stored poles), whatever the sphere's reference direction, and the DRAW
 /// grids' `ZI5` (a sphere turned a quarter turn about x, then about y, its
